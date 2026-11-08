@@ -14,7 +14,7 @@ export function MobileNotificationCenter() {
       position="top-center"
       style={{
         width: '100%',
-        top: 'calc(env(safe-area-inset-top) + 16px)',
+        top: 'calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px)',
         pointerEvents: 'auto',
       }}
       theme={resolvedTheme}

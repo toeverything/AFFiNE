@@ -65,14 +65,16 @@ export class UserInfo extends LitElement {
   override render() {
     return html`<div class="user-info-container">
       <div class="user-avatar-container">
-        ${this.avatarIcon
-          ? this.avatarIcon
-          : this.avatarUrl && !this.avatarLoadedFailed
-            ? html`<img
-                .src=${this.avatarUrl}
-                @error=${this._handleAvatarLoadError}
-              />`
-            : html`<span class="default-avatar"></span>`}
+        ${
+          this.avatarIcon
+            ? this.avatarIcon
+            : this.avatarUrl && !this.avatarLoadedFailed
+              ? html`<img
+                  .src=${this.avatarUrl}
+                  @error=${this._handleAvatarLoadError}
+                />`
+              : html`<span class="default-avatar"></span>`
+        }
       </div>
       <span class="user-name">${this.userName}</span>
     </div>`;

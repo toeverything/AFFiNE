@@ -5,8 +5,8 @@ import clsx from 'clsx';
 import {
   useCallback,
   useContext,
-  useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -71,12 +71,14 @@ export const MobileMenu = ({
   const activeIndex = subMenus.length;
 
   // dynamic height for slider
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (sliderElement && finalOpen) {
       const active = sliderElement.querySelector(
         `.${styles.menuContent}[data-index="${activeIndex}"]`
       );
       if (!active) return;
+
+      setSliderHeight(active.getBoundingClientRect().height);
 
       // for the situation that content is loaded asynchronously
       return observeResize(active, entry => {
@@ -156,6 +158,7 @@ export const MobileMenu = ({
           onOpenChange={onOpenChange}
           width="100%"
           animation="slideBottom"
+          contentAnimation="none"
           withoutCloseButton={true}
           contentOptions={{
             className: clsx(className, styles.mobileMenuModal),
@@ -163,6 +166,7 @@ export const MobileMenu = ({
           }}
           contentWrapperStyle={contentWrapperStyle}
           disableAutoFocus={true}
+          preserveEditingFocusOnAction
         >
           <div
             ref={setSliderElement}

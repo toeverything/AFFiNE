@@ -23,7 +23,7 @@ export class WorkspaceStatsJob {
     const started = Date.now();
 
     try {
-      const result = await this.withAdvisoryLock(REFRESH_LOCK_KEY, async tx => {
+      const result = await this.withRefreshLockRetry(async tx => {
         const backlog = await this.countDirty(tx);
         metrics.workspace
           .gauge('admin_stats_dirty_backlog')
@@ -40,7 +40,9 @@ export class WorkspaceStatsJob {
       });
 
       if (!result) {
-        this.logger.debug('skip admin stats refresh, lock not acquired');
+        this.logger.warn(
+          'Skipped incremental admin stats refresh after retrying lock acquisition'
+        );
         return;
       }
 
@@ -63,6 +65,9 @@ export class WorkspaceStatsJob {
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async recalibrate() {
+    const scanHighWater =
+      (await this.prisma.workspace.aggregate({ _max: { sid: true } }))._max
+        .sid ?? 0;
     let lastSid = 0;
     let processed = 0;
     let completed = true;
@@ -74,6 +79,7 @@ export class WorkspaceStatsJob {
           const workspaces = await this.fetchWorkspaceBatch(
             tx,
             lastSid,
+            scanHighWater,
             FULL_REFRESH_BATCH_SIZE
           );
           if (!workspaces.length) {
@@ -166,18 +172,14 @@ export class WorkspaceStatsJob {
     return await this.prisma.$transaction(
       async tx => {
         const [lock] = await tx.$queryRaw<{ locked: boolean }[]>`
-          SELECT pg_try_advisory_lock(${lockIdSql}) AS locked
+          SELECT pg_try_advisory_xact_lock(${lockIdSql}) AS locked
         `;
 
         if (!lock?.locked) {
           return null;
         }
 
-        try {
-          return await callback(tx);
-        } finally {
-          await tx.$executeRaw`SELECT pg_advisory_unlock(${lockIdSql})`;
-        }
+        return await callback(tx);
       },
       {
         maxWait: 5_000,
@@ -283,15 +285,10 @@ export class WorkspaceStatsJob {
       ),
       public_page_stats AS (
         SELECT workspace_id, COUNT(*) AS public_page_count
-        FROM workspace_pages
-        WHERE public = TRUE AND workspace_id IN (SELECT workspace_id FROM targets)
-        GROUP BY workspace_id
-      ),
-      feature_stats AS (
-        SELECT workspace_id,
-               ARRAY_AGG(DISTINCT name ORDER BY name) FILTER (WHERE activated) AS features
-        FROM workspace_features
-        WHERE workspace_id IN (SELECT workspace_id FROM targets)
+        FROM doc_access_policies
+        WHERE visibility = 'public'
+          AND public_role = 'external'
+          AND workspace_id IN (SELECT workspace_id FROM targets)
         GROUP BY workspace_id
       ),
       aggregated AS (
@@ -301,14 +298,12 @@ export class WorkspaceStatsJob {
                COALESCE(bs.blob_count, 0) AS blob_count,
                COALESCE(bs.blob_size, 0) AS blob_size,
                COALESCE(ms.member_count, 0) AS member_count,
-               COALESCE(pp.public_page_count, 0) AS public_page_count,
-               COALESCE(fs.features, ARRAY[]::text[]) AS features
+               COALESCE(pp.public_page_count, 0) AS public_page_count
         FROM targets t
         LEFT JOIN snapshot_stats ss ON ss.workspace_id = t.workspace_id
         LEFT JOIN blob_stats bs ON bs.workspace_id = t.workspace_id
         LEFT JOIN member_stats ms ON ms.workspace_id = t.workspace_id
         LEFT JOIN public_page_stats pp ON pp.workspace_id = t.workspace_id
-        LEFT JOIN feature_stats fs ON fs.workspace_id = t.workspace_id
       )
       INSERT INTO workspace_admin_stats (
         workspace_id,
@@ -318,7 +313,6 @@ export class WorkspaceStatsJob {
         blob_size,
         member_count,
         public_page_count,
-        features,
         updated_at
       )
       SELECT
@@ -329,7 +323,6 @@ export class WorkspaceStatsJob {
         blob_size,
         member_count,
         public_page_count,
-        features,
         NOW()
       FROM aggregated
       ON CONFLICT (workspace_id) DO UPDATE SET
@@ -339,7 +332,6 @@ export class WorkspaceStatsJob {
         blob_size = EXCLUDED.blob_size,
         member_count = EXCLUDED.member_count,
         public_page_count = EXCLUDED.public_page_count,
-        features = EXCLUDED.features,
         updated_at = EXCLUDED.updated_at
     `;
   }
@@ -347,12 +339,13 @@ export class WorkspaceStatsJob {
   private async fetchWorkspaceBatch(
     tx: Prisma.TransactionClient,
     lastSid: number,
+    scanHighWater: number,
     limit: number
   ) {
     return tx.$queryRaw<{ id: string; sid: number }[]>`
       SELECT id, sid
       FROM workspaces
-      WHERE sid > ${lastSid}
+      WHERE sid > ${lastSid} AND sid <= ${scanHighWater}
       ORDER BY sid
       LIMIT ${limit}
     `;

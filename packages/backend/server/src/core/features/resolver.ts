@@ -31,7 +31,11 @@ export class UserFeatureResolver extends AvailableUserFeatureConfig {
     description: 'Enabled features of a user',
   })
   async userFeatures(@Parent() user: UserType) {
-    const features = await this.models.userFeature.list(user.id);
+    const features = await this.models.userFeature.list(
+      user.id,
+      undefined,
+      Array.from(this.availableUserFeatures())
+    );
     const availableUserFeatures = this.availableUserFeatures();
     return features.filter(feature => availableUserFeatures.has(feature));
   }

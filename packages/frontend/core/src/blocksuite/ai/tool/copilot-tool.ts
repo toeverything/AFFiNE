@@ -1,4 +1,4 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable typescript/no-non-null-assertion */
 import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import { IS_MAC } from '@blocksuite/affine/global/env';
 import {
@@ -25,7 +25,6 @@ export class CopilotTool extends BaseTool {
 
   private _dragging = false;
 
-  // eslint-disable-next-line rxjs/finnish
   draggingAreaUpdated = new Subject<boolean | void>();
 
   dragLastPoint: [number, number] = [0, 0];

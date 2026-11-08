@@ -101,6 +101,44 @@ describe('op consumer', () => {
     expect(message).toContain('"code":"E_PANIC"');
   });
 
+  it('serializes worker stacks for calls and observables', async ctx => {
+    for (const kind of ['call', 'observable'] as const) {
+      ctx.postMessage.mockClear();
+      const marker = 'WORKER_STACK_MARKER';
+      const error = new TypeError(marker);
+      error.stack = `TypeError: ${marker}\n    at workerTask (worker.ts:42:7)`;
+      ctx.consumer.register('any', () => {
+        if (kind === 'observable') {
+          return new Observable(observer => observer.error(error));
+        }
+        throw error;
+      });
+
+      if (kind === 'observable') {
+        ctx.handlers.subscribe({
+          type: 'subscribe',
+          id: 'any:1',
+          name: 'any',
+          payload: undefined,
+        });
+      } else {
+        ctx.handlers.call({
+          type: 'call',
+          id: 'any:1',
+          name: 'any',
+          payload: undefined,
+        });
+      }
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(ctx.postMessage.mock.calls[0][0].error).toMatchObject({
+        name: 'TypeError',
+        message: marker,
+        stacktrace: expect.stringContaining('worker.ts:42:7'),
+      });
+    }
+  });
+
   it('should handle cancel message', async ctx => {
     ctx.consumer.register('add', ({ a, b }, { signal }) => {
       const { reject, resolve, promise } = Promise.withResolvers<number>();

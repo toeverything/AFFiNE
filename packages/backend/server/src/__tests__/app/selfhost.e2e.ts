@@ -16,6 +16,7 @@ const test = ava as TestFn<{
   app: TestingApp;
   db: PrismaClient;
 }>;
+let originalDeploymentType: typeof env.DEPLOYMENT_TYPE;
 
 const mobileUAString =
   'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
@@ -47,6 +48,7 @@ export class TestResolver {
 }
 
 test.before('init selfhost server', async t => {
+  originalDeploymentType = globalThis.env.DEPLOYMENT_TYPE;
   // @ts-expect-error override
   globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
   const app = await createTestingApp({
@@ -69,7 +71,12 @@ test.beforeEach(async t => {
 });
 
 test.after.always(async t => {
-  await t.context.app.close();
+  try {
+    await t.context.app.close();
+  } finally {
+    // @ts-expect-error restore mutable test env singleton
+    globalThis.env.DEPLOYMENT_TYPE = originalDeploymentType;
+  }
 });
 
 test('do not allow visit index.html directly', async t => {

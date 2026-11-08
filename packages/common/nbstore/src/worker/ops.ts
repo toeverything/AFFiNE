@@ -14,9 +14,12 @@ import type { AvailableStorageImplementations } from '../impls';
 import type {
   AggregateResult,
   BlobRecord,
+  BlobSource,
   DocClock,
   DocClocks,
   DocDiff,
+  DocLifecycle,
+  DocLifecycleResult,
   DocRecord,
   DocUpdate,
   ListedBlobRecord,
@@ -55,6 +58,10 @@ interface GroupedWorkerOps {
     getDocTimestamps: [Date | null, DocClocks];
     getDocTimestamp: [string, DocClock | null];
     deleteDoc: [string, void];
+    applyDocLifecycle: [
+      { docId: string; lifecycle: DocLifecycle },
+      DocLifecycleResult,
+    ];
     subscribeDocUpdate: [void, { update: DocRecord; origin?: string }];
     waitForConnected: [void, void];
   };
@@ -97,6 +104,8 @@ interface GroupedWorkerOps {
     state: [void, BlobSyncState];
     blobState: [string, BlobSyncBlobState];
     downloadBlob: [string, boolean];
+    registerSource: [BlobSource, void];
+    unregisterSource: [BlobSource, void];
     uploadBlob: [{ blob: BlobRecord; force?: boolean }, true];
     fullDownload: [string | null, void];
   };

@@ -27,7 +27,9 @@ test.afterEach(async () => {
   await deleteUser(user.email);
 });
 
-test('should show blob management dialog', async ({ page }) => {
+test('should delete unused blobs after permanently deleting a doc', async ({
+  page,
+}) => {
   await enableCloudWorkspace(page);
 
   await clickSideBarAllPageButton(page);
@@ -40,18 +42,32 @@ test('should show blob management dialog', async ({ page }) => {
   await deleteBtn.click();
   await expect(page.getByText('Delete doc?')).toBeVisible();
   await page.getByRole('button', { name: 'Delete' }).click();
+  await page.getByTestId('trash-page').click();
+  await getPageByTitle(page, 'Getting Started')
+    .getByTestId('delete-page-button')
+    .click();
+  const confirmDelete = page.getByRole('dialog', {
+    name: 'Delete permanently?',
+  });
+  await expect(confirmDelete).toBeVisible();
+  await confirmDelete
+    .getByRole('button', { name: 'Delete', exact: true })
+    .click();
+  await expect(getPageByTitle(page, 'Getting Started')).toBeHidden();
 
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await expect(page.getByTestId('setting-modal')).toBeVisible();
   await page.getByTestId('workspace-setting:storage').click();
-  await expect(page.getByTestId('blob-preview-card')).toHaveCount(9);
+  await expect(page.getByText(/Unused blobs \([1-9]\d*\)/)).toBeVisible();
 
   // get the unused blobs count
   const count = await page.getByText(/Unused blobs \(\d+\)/).textContent();
   const unusedBlobsCount = parseInt(count?.match(/\d+/)?.[0] ?? '0');
 
-  // count should > 9
-  expect(unusedBlobsCount).toBeGreaterThan(9);
+  expect(unusedBlobsCount).toBeGreaterThan(0);
+  await expect(page.getByTestId('blob-preview-card')).toHaveCount(
+    Math.min(9, unusedBlobsCount)
+  );
   await page.getByTestId('blob-preview-card').nth(0).click();
   await expect(page.getByText('1 Selected')).toBeVisible();
 

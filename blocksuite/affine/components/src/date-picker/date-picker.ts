@@ -178,18 +178,20 @@ export class DatePicker extends WithDisposable(LitElement) {
             </div>`
         )}
       </div>
-      ${this.onClear
-        ? html`<div class="date-picker-footer">
-            <button
-              tabindex="0"
-              aria-label="clear"
-              class="footer-button interactive"
-              @click=${() => this.onClear?.()}
-            >
-              Clear
-            </button>
-          </div>`
-        : nothing}`;
+      ${
+        this.onClear
+          ? html`<div class="date-picker-footer">
+              <button
+                tabindex="0"
+                aria-label="clear"
+                class="footer-button interactive"
+                @click=${() => this.onClear?.()}
+              >
+                Clear
+              </button>
+            </div>`
+          : nothing
+      }`;
   }
 
   /** Week header */

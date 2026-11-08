@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { join } from 'node:path/posix';
 
-import { Path, prettier } from '@affine-tools/utils';
+import { formatCode, Path } from '@affine-tools/utils';
 import { parse } from 'path-to-regexp';
 
 const curdir = Path.dir(import.meta.url);
@@ -238,13 +238,13 @@ async function printRoutes(schema: BuiltRouteSchema) {
     ['Relative Paths']: printRelativePaths,
     ['Path Factories']: printFactories,
   };
-  const content = await prettier(
+  const content = await formatCode(
     Object.entries(parts)
       .map(([key, print]) => {
         return `// #region ${key}\n${print(schema)}\n// #endregion`;
       })
       .join('\n\n'),
-    'typescript'
+    routerOutputFile
   );
 
   fs.writeFileSync(routerOutputFile, content, 'utf-8');

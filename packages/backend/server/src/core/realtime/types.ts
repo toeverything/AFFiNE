@@ -10,9 +10,14 @@ import type { z } from 'zod';
 
 import type { CurrentUser } from '../auth';
 
+export type RealtimeRequestContext = {
+  connectionId?: string;
+};
+
 declare global {
   interface Events {
     'realtime.topic.changed': RealtimePublishPayload;
+    'realtime.connection.disconnected': { connectionId: string };
   }
 }
 
@@ -21,7 +26,8 @@ export type RealtimeRequestHandler<Op extends RealtimeRequestName> = {
   input: z.ZodType<RealtimeRequestInputOf<Op>>;
   handle(
     user: CurrentUser,
-    input: RealtimeRequestInputOf<Op>
+    input: RealtimeRequestInputOf<Op>,
+    context?: RealtimeRequestContext
   ): Promise<RealtimeRequestOutputOf<Op>>;
 };
 

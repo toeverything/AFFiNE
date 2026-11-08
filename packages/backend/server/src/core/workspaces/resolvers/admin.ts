@@ -25,12 +25,7 @@ import { SafeIntResolver } from 'graphql-scalars';
 
 import { PaginationInput, URLHelper } from '../../../base';
 import { PageInfo } from '../../../base/graphql/pagination';
-import {
-  Feature,
-  Models,
-  WorkspaceFeatureName,
-  WorkspaceMemberStatus,
-} from '../../../models';
+import { Models, WorkspaceMemberStatus } from '../../../models';
 import { Admin } from '../../common';
 import { WorkspaceUserType } from '../../user';
 import { TimeWindow } from './analytics-types';
@@ -117,9 +112,6 @@ class ListWorkspaceInput {
 
   @Field(() => String, { nullable: true })
   keyword?: string;
-
-  @Field(() => [Feature], { nullable: true })
-  features?: WorkspaceFeatureName[];
 
   @Field(() => AdminWorkspaceSort, { nullable: true })
   orderBy?: AdminWorkspaceSort;
@@ -397,9 +389,6 @@ export class AdminWorkspace {
   @Field()
   enableDocEmbedding!: boolean;
 
-  @Field(() => [Feature])
-  features!: WorkspaceFeatureName[];
-
   @Field(() => WorkspaceUserType, { nullable: true })
   owner?: WorkspaceUserType | null;
 
@@ -469,7 +458,6 @@ export class AdminWorkspaceResolver {
       first: filter.first,
       skip: filter.skip,
       keyword: filter.keyword,
-      features: filter.features,
       order: this.mapSort(filter.orderBy),
       flags: {
         public: filter.public ?? undefined,
@@ -491,7 +479,6 @@ export class AdminWorkspaceResolver {
     this.assertCloudOnly();
     const total = await this.models.workspace.adminCountWorkspaces({
       keyword: filter.keyword,
-      features: filter.features,
       flags: {
         public: filter.public ?? undefined,
         enableAi: filter.enableAi ?? undefined,

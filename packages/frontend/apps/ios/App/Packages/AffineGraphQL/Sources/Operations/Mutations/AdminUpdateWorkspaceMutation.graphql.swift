@@ -7,7 +7,7 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
   public static let operationName: String = "adminUpdateWorkspace"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) { adminUpdateWorkspace(input: $input) { __typename id public createdAt name avatarKey enableAi enableSharing enableUrlPreview enableDocEmbedding features owner { __typename id name email avatarUrl } memberCount publicPageCount snapshotCount snapshotSize blobCount blobSize } }"#
+      #"mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) { adminUpdateWorkspace(input: $input) { __typename id public createdAt name avatarKey enableAi enableSharing enableUrlPreview enableDocEmbedding owner { __typename id name email avatarUrl } memberCount publicPageCount snapshotCount snapshotSize blobCount blobSize } }"#
     ))
 
   public var input: AdminUpdateWorkspaceInput
@@ -52,7 +52,6 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
         .field("enableSharing", Bool.self),
         .field("enableUrlPreview", Bool.self),
         .field("enableDocEmbedding", Bool.self),
-        .field("features", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
         .field("owner", Owner?.self),
         .field("memberCount", Int.self),
         .field("publicPageCount", Int.self),
@@ -74,7 +73,6 @@ public class AdminUpdateWorkspaceMutation: GraphQLMutation {
       public var enableSharing: Bool { __data["enableSharing"] }
       public var enableUrlPreview: Bool { __data["enableUrlPreview"] }
       public var enableDocEmbedding: Bool { __data["enableDocEmbedding"] }
-      public var features: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["features"] }
       public var owner: Owner? { __data["owner"] }
       public var memberCount: Int { __data["memberCount"] }
       public var publicPageCount: Int { __data["publicPageCount"] }

@@ -41,9 +41,9 @@ export class AIAnswerWrapper extends LitElement {
   protected override render() {
     return html`<style>
         :host {
-          height: ${this.options?.height
-            ? this.options?.height + 'px'
-            : '100%'};
+          height: ${
+            this.options?.height ? this.options?.height + 'px' : '100%'
+          };
         }
       </style>
       <slot></slot> `;

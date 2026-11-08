@@ -1,7 +1,372 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
 
+    },
+    " | " : {
+
+    },
+    "." : {
+
+    },
+    "6-digit code" : {
+
+    },
+    "acknowledge that you agree to AFFiNE's" : {
+
+    },
+    "AFFiNE Cloud" : {
+
+    },
+    "and" : {
+
+    },
+    "Cancel Anytime" : {
+
+    },
+    "Continue with Email" : {
+
+    },
+    "Email" : {
+
+    },
+    "Enter the code sent to" : {
+
+    },
+    "Enter your email address" : {
+
+    },
+    "Enter your password" : {
+
+    },
+    "Everything," : {
+
+    },
+    "G" : {
+
+    },
+    "Get Started" : {
+
+    },
+    "Individual Plans" : {
+
+    },
+    "Or" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "We'll use this to improve your experience and prioritize relevant features." : {
+
+    },
+    "Which best describes you?" : {
+
+    },
+    "Write, organize, and connect ideas with docs, whiteboards, and AI." : {
+
+    },
+    "AI" : {
+
+    },
+    "AFFINE AI" : {
+
+    },
+    "AFFiNE home is still loading." : {
+
+    },
+    "AFFiNE is still loading. Please try again in a moment." : {
+
+    },
+    "AFFiNE is still loading. Please wait a moment and try again." : {
+
+    },
+    "AI-powered organization and insights" : {
+
+    },
+    "Access AFFiNE on Mac, Windows, Linux, Web, iPhone, and Android" : {
+
+    },
+    "Access your workspace on Mac, Windows, Linux, Web, iPhone, and Android" : {
+
+    },
+    "Bigger Picture" : {
+
+    },
+    "Capture notes, meetings, and plans in one focused workspace." : {
+
+    },
+    "Chat with your documents and knowledge" : {
+
+    },
+    "Checking sign-in method..." : {
+
+    },
+    "Clear Docs" : {
+
+    },
+    "Connect ideas, plans, and knowledge visually." : {
+
+    },
+    "Connect to a Self-Hosted Instance" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue anywhere. Work across\niPhone, iPad, and desktop." : {
+
+    },
+    "Continue free" : {
+
+    },
+    "Continue with Apple" : {
+
+    },
+    "Continue with Google" : {
+
+    },
+    "Create here" : {
+
+    },
+    "Docs" : {
+
+    },
+    "Educator" : {
+
+    },
+    "Every Device" : {
+
+    },
+    "Everything stays up to date, wherever you work" : {
+
+    },
+    "Enter a valid email address." : {
+
+    },
+    "Enter your password." : {
+
+    },
+    "Enter the 6-digit sign-in code." : {
+
+    },
+    "For people who want to create, organize faster with AI." : {
+
+    },
+    "For people who want their workspace available everywhere." : {
+
+    },
+    "Finishing sign-in..." : {
+
+    },
+    "Generate articles, notes, and content in seconds" : {
+
+    },
+    "Get More Done with " : {
+
+    },
+    "Keep your knowledge available everywhere." : {
+
+    },
+    "LITE" : {
+
+    },
+    "Loading price" : {
+
+    },
+    "Logging in..." : {
+
+    },
+    "Missing required information" : {
+
+    },
+    "Multiple Views" : {
+
+    },
+    "Next" : {
+
+    },
+    "No active purchases were found to restore." : {
+
+    },
+    "One Idea, " : {
+
+    },
+    "Onboarding" : {
+
+    },
+    "Opening self-hosted sign-in..." : {
+
+    },
+    "Other" : {
+
+    },
+    "Paywall" : {
+
+    },
+    "Pick up where you left off, anytime" : {
+
+    },
+    "Plans" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Product" : {
+
+    },
+    "Professional" : {
+
+    },
+    "Pro" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Resend code" : {
+
+    },
+    "See pro benefits" : {
+
+    },
+    "See the " : {
+
+    },
+    "Sending a new code..." : {
+
+    },
+    "Sign in Success" : {
+
+    },
+    "Sign-in was cancelled." : {
+
+    },
+    "Signing in..." : {
+
+    },
+    "Start AFFiNE without an account" : {
+
+    },
+    "Stay synced across desktop, web, and mobile devices." : {
+
+    },
+    "Student" : {
+
+    },
+    "Subscriptions auto-renew until canceled." : {
+
+    },
+    "Subscription Terms" : {
+
+    },
+    "Tasks" : {
+
+    },
+    "Terms of Conditions" : {
+
+    },
+    "Terms of Use" : {
+
+    },
+    "This email is not available for sign-in." : {
+
+    },
+    "Turn Ideas into " : {
+
+    },
+    "Unable to check available sign-in methods." : {
+
+    },
+    "Unable to complete OAuth sign-in." : {
+
+    },
+    "Unable to complete sign-in." : {
+
+    },
+    "Unable to determine subscription status." : {
+
+    },
+    "Unable to load subscription options right now." : {
+
+    },
+    "Unable to load the selected plan." : {
+
+    },
+    "Unable to open OAuth sign-in." : {
+
+    },
+    "Unable to present sign-in." : {
+
+    },
+    "Unable to read appearance setting." : {
+
+    },
+    "Unable to sign in. Please try again." : {
+
+    },
+    "Unable to start OAuth sign-in." : {
+
+    },
+    "Use email code instead" : {
+
+    },
+    "Verifying sign-in code..." : {
+
+    },
+    "Views" : {
+
+    },
+    "Waiting for Apple sign-in..." : {
+
+    },
+    "Waiting for Google sign-in..." : {
+
+    },
+    "OK" : {
+
+    },
+    "We sent a new sign-in code to %@." : {
+
+    },
+    "We sent a sign-in code to %@." : {
+
+    },
+    "Write, summarize, and structure ideas in seconds." : {
+
+    },
+    "Your Work, " : {
+
+    },
+    "Your purchase is still being processed. Please try again in a moment." : {
+
+    },
+    "/month" : {
+
+    },
+    "/mo, billed annually" : {
+
+    },
+    "/year" : {
+
+    },
+    "BEST FOR YOU" : {
+
+    },
+    "Secure cloud backup for your content" : {
+
+    },
+    "Sync docs and boards across all devices" : {
+
+    },
+    "Upload files larger than 10 MB" : {
+
+    },
+    "Rewrite, improve, and translate your writing" : {
+
+    }
   },
   "version" : "1.0"
 }

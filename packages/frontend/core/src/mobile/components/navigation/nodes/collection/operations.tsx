@@ -24,39 +24,22 @@ import {
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { MobileNavigationMenuItems } from '../../menu-host';
 import { CollectionRenameSubMenu } from './dialog';
 
-export const useNavigationPanelCollectionNodeOperations = (
+export const useNavigationPanelCollectionAddDoc = (
   collectionId: string,
-  onOpenCollapsed: () => void,
-  onOpenEdit: () => void
+  onOpenCollapsed: () => void
 ) => {
   const t = useI18n();
-  const {
-    workbenchService,
-    workspaceService,
-    collectionService,
-    compatibleFavoriteItemsAdapter,
-  } = useServices({
-    WorkbenchService,
+  const { workspaceService, collectionService } = useServices({
     WorkspaceService,
     CollectionService,
-    CompatibleFavoriteItemsAdapter,
   });
-
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
   );
-
-  const favorite = useLiveData(
-    useMemo(
-      () =>
-        compatibleFavoriteItemsAdapter.isFavorite$(collectionId, 'collection'),
-      [collectionId, compatibleFavoriteItemsAdapter]
-    )
-  );
   const { openConfirmModal } = useConfirmModal();
-
   const createAndAddDocument = useCallback(() => {
     const newDoc = createPage();
     collectionService.addDocToCollection(collectionId, newDoc.id);
@@ -66,26 +49,47 @@ export const useNavigationPanelCollectionNodeOperations = (
     });
     onOpenCollapsed();
   }, [collectionId, collectionService, createPage, onOpenCollapsed]);
+  return useCallback(() => {
+    openConfirmModal({
+      title: t['com.affine.collection.add-doc.confirm.title'](),
+      description: t['com.affine.collection.add-doc.confirm.description'](),
+      cancelText: t['Cancel'](),
+      confirmText: t['Confirm'](),
+      confirmButtonOptions: { variant: 'primary' },
+      onConfirm: createAndAddDocument,
+    });
+  }, [createAndAddDocument, openConfirmModal, t]);
+};
 
+export const useNavigationPanelCollectionNodeOperations = (
+  collectionId: string,
+  handleAddDocToCollection: () => void,
+  onOpenEdit: () => void
+) => {
+  const t = useI18n();
+  const {
+    workbenchService,
+    collectionService,
+    compatibleFavoriteItemsAdapter,
+  } = useServices({
+    WorkbenchService,
+    CollectionService,
+    CompatibleFavoriteItemsAdapter,
+  });
+
+  const favorite = useLiveData(
+    useMemo(
+      () =>
+        compatibleFavoriteItemsAdapter.isFavorite$(collectionId, 'collection'),
+      [collectionId, compatibleFavoriteItemsAdapter]
+    )
+  );
   const handleToggleFavoriteCollection = useCallback(() => {
     compatibleFavoriteItemsAdapter.toggle(collectionId, 'collection');
     track.$.navigationPanel.organize.toggleFavorite({
       type: 'collection',
     });
   }, [compatibleFavoriteItemsAdapter, collectionId]);
-
-  const handleAddDocToCollection = useCallback(() => {
-    openConfirmModal({
-      title: t['com.affine.collection.add-doc.confirm.title'](),
-      description: t['com.affine.collection.add-doc.confirm.description'](),
-      cancelText: t['Cancel'](),
-      confirmText: t['Confirm'](),
-      confirmButtonOptions: {
-        variant: 'primary',
-      },
-      onConfirm: createAndAddDocument,
-    });
-  }, [createAndAddDocument, openConfirmModal, t]);
 
   const handleOpenInSplitView = useCallback(() => {
     workbenchService.workbench.openCollection(collectionId, { at: 'beside' });
@@ -153,14 +157,14 @@ export const useNavigationPanelCollectionNodeOperations = (
 
 export const useNavigationPanelCollectionNodeOperationsMenu = (
   collectionId: string,
-  onOpenCollapsed: () => void,
+  handleAddDocToCollection: () => void,
   onOpenEdit: () => void
 ): NodeOperation[] => {
   const t = useI18n();
 
   const {
     favorite,
-    handleAddDocToCollection,
+    handleAddDocToCollection: addDocToCollection,
     handleDeleteCollection,
     handleOpenInNewTab,
     handleOpenInSplitView,
@@ -169,7 +173,7 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
     handleRename,
   } = useNavigationPanelCollectionNodeOperations(
     collectionId,
-    onOpenCollapsed,
+    handleAddDocToCollection,
     onOpenEdit
   );
 
@@ -181,7 +185,7 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
         view: (
           <IconButton
             size="16"
-            onClick={handleAddDocToCollection}
+            onClick={addDocToCollection}
             tooltip={t[
               'com.affine.rootAppSidebar.explorer.collection-add-tooltip'
             ]()}
@@ -209,10 +213,7 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
       {
         index: 99,
         view: (
-          <MenuItem
-            prefixIcon={<PlusIcon />}
-            onClick={handleAddDocToCollection}
-          >
+          <MenuItem prefixIcon={<PlusIcon />} onClick={addDocToCollection}>
             {t['New Page']()}
           </MenuItem>
         ),
@@ -272,7 +273,7 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
     ],
     [
       favorite,
-      handleAddDocToCollection,
+      addDocToCollection,
       handleDeleteCollection,
       handleOpenInNewTab,
       handleOpenInSplitView,
@@ -282,4 +283,27 @@ export const useNavigationPanelCollectionNodeOperationsMenu = (
       t,
     ]
   );
+};
+
+export const NavigationPanelCollectionNodeMenu = ({
+  collectionId,
+  handleAddDocToCollection,
+  onOpenEdit,
+  additionalOperations,
+}: {
+  collectionId: string;
+  handleAddDocToCollection: () => void;
+  onOpenEdit: () => void;
+  additionalOperations?: NodeOperation[];
+}) => {
+  const operations = useNavigationPanelCollectionNodeOperationsMenu(
+    collectionId,
+    handleAddDocToCollection,
+    onOpenEdit
+  );
+  const allOperations = useMemo(
+    () => [...(additionalOperations ?? []), ...operations],
+    [additionalOperations, operations]
+  );
+  return <MobileNavigationMenuItems operations={allOperations} />;
 };

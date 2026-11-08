@@ -9,7 +9,6 @@ mutation adminUpdateWorkspace($input: AdminUpdateWorkspaceInput!) {
     enableSharing
     enableUrlPreview
     enableDocEmbedding
-    features
     owner {
       id
       name

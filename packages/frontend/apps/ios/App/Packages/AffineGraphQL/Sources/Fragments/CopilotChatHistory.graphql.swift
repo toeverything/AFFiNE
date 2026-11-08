@@ -5,7 +5,7 @@
 
 public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
   public static var fragmentDefinition: StaticString {
-    #"fragment CopilotChatHistory on CopilotHistories { __typename sessionId workspaceId docId parentSessionId promptName model optionalModels action pinned title tokens messages { __typename id role content attachments streamObjects { __typename type textDelta toolCallId toolName args result } createdAt } createdAt updatedAt }"#
+    #"fragment CopilotChatHistory on CopilotHistories { __typename sessionId workspaceId docId parentSessionId promptName action pinned title messages { __typename id role content attachments scopeSnapshot streamObjects { __typename type textDelta toolCallId toolName args result } createdAt } createdAt updatedAt }"#
   }
 
   public let __data: DataDict
@@ -19,12 +19,9 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
     .field("docId", String?.self),
     .field("parentSessionId", String?.self),
     .field("promptName", String.self),
-    .field("model", String.self),
-    .field("optionalModels", [String].self),
     .field("action", String?.self),
     .field("pinned", Bool.self),
     .field("title", String?.self),
-    .field("tokens", Int.self),
     .field("messages", [Message].self),
     .field("createdAt", AffineGraphQL.DateTime.self),
     .field("updatedAt", AffineGraphQL.DateTime.self),
@@ -38,14 +35,10 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
   public var docId: String? { __data["docId"] }
   public var parentSessionId: String? { __data["parentSessionId"] }
   public var promptName: String { __data["promptName"] }
-  public var model: String { __data["model"] }
-  public var optionalModels: [String] { __data["optionalModels"] }
   /// An mark identifying which view to use to display the session
   public var action: String? { __data["action"] }
   public var pinned: Bool { __data["pinned"] }
   public var title: String? { __data["title"] }
-  /// The number of tokens used in the session
-  public var tokens: Int { __data["tokens"] }
   public var messages: [Message] { __data["messages"] }
   public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
   public var updatedAt: AffineGraphQL.DateTime { __data["updatedAt"] }
@@ -64,6 +57,7 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
       .field("role", String.self),
       .field("content", String.self),
       .field("attachments", [String]?.self),
+      .field("scopeSnapshot", AffineGraphQL.JSON?.self),
       .field("streamObjects", [StreamObject]?.self),
       .field("createdAt", AffineGraphQL.DateTime.self),
     ] }
@@ -75,6 +69,7 @@ public struct CopilotChatHistory: AffineGraphQL.SelectionSet, Fragment {
     public var role: String { __data["role"] }
     public var content: String { __data["content"] }
     public var attachments: [String]? { __data["attachments"] }
+    public var scopeSnapshot: AffineGraphQL.JSON? { __data["scopeSnapshot"] }
     public var streamObjects: [StreamObject]? { __data["streamObjects"] }
     public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
 

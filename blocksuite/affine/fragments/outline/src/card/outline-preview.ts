@@ -101,11 +101,13 @@ export class OutlineBlockPreview extends SignalWatcher(
         class="${styles.text} ${styles.textGeneral} ${headingClass}"
         >${previewText}</span
       >
-      ${this._context.showIcons$.value
-        ? html`<span class=${iconClass}
-            >${previewIconMap[block.props.type]}</span
-          >`
-        : nothing}`;
+      ${
+        this._context.showIcons$.value
+          ? html`<span class=${iconClass}
+              >${previewIconMap[block.props.type]}</span
+            >`
+          : nothing
+      }`;
   }
 
   override render() {
@@ -148,15 +150,17 @@ export class OutlineBlockPreview extends SignalWatcher(
         assertType<BookmarkBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.props.title ||
-            block.props.url ||
-            placeholderMap['bookmark']}</span
+            >${
+              block.props.title || block.props.url || placeholderMap['bookmark']
+            }</span
           >
-          ${showPreviewIcon
-            ? html`<span class=${iconClass}
-                >${previewIconMap['bookmark']}</span
-              >`
-            : nothing}
+          ${
+            showPreviewIcon
+              ? html`<span class=${iconClass}
+                  >${previewIconMap['bookmark']}</span
+                >`
+              : nothing
+          }
         `;
       case 'affine:code':
         assertType<CodeBlockModel>(block);
@@ -164,47 +168,61 @@ export class OutlineBlockPreview extends SignalWatcher(
           <span class="${styles.text} ${styles.textGeneral}"
             >${block.props.language ?? placeholderMap['code']}</span
           >
-          ${showPreviewIcon
-            ? html`<span class=${iconClass}>${previewIconMap['code']}</span>`
-            : nothing}
+          ${
+            showPreviewIcon
+              ? html`<span class=${iconClass}>${previewIconMap['code']}</span>`
+              : nothing
+          }
         `;
       case 'affine:database':
         assertType<DatabaseBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.props.title.toString().length
-              ? block.props.title.toString()
-              : placeholderMap['database']}</span
+            >${
+              block.props.title.toString().length
+                ? block.props.title.toString()
+                : placeholderMap['database']
+            }</span
           >
-          ${showPreviewIcon
-            ? html`<span class=${iconClass}>${previewIconMap['table']}</span>`
-            : nothing}
+          ${
+            showPreviewIcon
+              ? html`<span class=${iconClass}>${previewIconMap['table']}</span>`
+              : nothing
+          }
         `;
       case 'affine:image':
         assertType<ImageBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.props.caption?.length
-              ? block.props.caption
-              : placeholderMap['image']}</span
+            >${
+              block.props.caption?.length
+                ? block.props.caption
+                : placeholderMap['image']
+            }</span
           >
-          ${showPreviewIcon
-            ? html`<span class=${iconClass}>${previewIconMap['image']}</span>`
-            : nothing}
+          ${
+            showPreviewIcon
+              ? html`<span class=${iconClass}>${previewIconMap['image']}</span>`
+              : nothing
+          }
         `;
       case 'affine:attachment':
         assertType<AttachmentBlockModel>(block);
         return html`
           <span class="${styles.text} ${styles.textGeneral}"
-            >${block.props.name?.length
-              ? block.props.name
-              : placeholderMap['attachment']}</span
+            >${
+              block.props.name?.length
+                ? block.props.name
+                : placeholderMap['attachment']
+            }</span
           >
-          ${showPreviewIcon
-            ? html`<span class=${iconClass}
-                >${previewIconMap['attachment']}</span
-              >`
-            : nothing}
+          ${
+            showPreviewIcon
+              ? html`<span class=${iconClass}
+                  >${previewIconMap['attachment']}</span
+                >`
+              : nothing
+          }
         `;
       default:
         return nothing;

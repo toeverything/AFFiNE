@@ -17,9 +17,13 @@ The `MicrophoneListener` class provides real-time monitoring of microphone usage
 ```typescript
 import { MicrophoneListener } from '@affine/native';
 
-const listener = new MicrophoneListener((isRunning: boolean, processName: string) => {
-  console.log(`Microphone ${isRunning ? 'started' : 'stopped'} by ${processName}`);
-});
+const listener = new MicrophoneListener(
+  (isRunning: boolean, processName: string) => {
+    console.log(
+      `Microphone ${isRunning ? 'started' : 'stopped'} by ${processName}`
+    );
+  }
+);
 
 // Check current status
 console.log('Is microphone currently active:', listener.is_running());

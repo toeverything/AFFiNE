@@ -826,6 +826,60 @@ Hello world
         .sort((a, b) => (a ?? '').localeCompare(b ?? '')),
       entry: snapshotDocByTitle(collection, 'entry', titleById),
     }).toMatchSnapshot();
+
+    const nestedCollection = new TestWorkspace();
+    nestedCollection.storeExtensions = testStoreExtensions;
+    nestedCollection.meta.initialize();
+    const nestedPlan = await ObsidianTransformer.planObsidianVault({
+      collection: nestedCollection,
+      schema,
+      importedFiles: [
+        withRelativePath(
+          new File(['![[logo.png]]'], 'entry.md', {
+            type: 'text/markdown',
+          }),
+          'vault/notes/entry.md'
+        ),
+        withRelativePath(
+          new File(
+            [JSON.stringify({ attachmentFolderPath: 'attachments' })],
+            'app.json',
+            { type: 'application/json' }
+          ),
+          'vault/.obsidian/app.json'
+        ),
+        withRelativePath(
+          new File([new Uint8Array([137, 80, 78, 71])], 'logo.png', {
+            type: 'image/png',
+          }),
+          'vault/attachments/logo.png'
+        ),
+        withRelativePath(
+          new File([new Uint8Array([137, 80, 78, 72])], 'logo.png', {
+            type: 'image/png',
+          }),
+          'vault/other/logo.png'
+        ),
+      ],
+      extensions: testStoreExtensions,
+    });
+    const configuredLogo = nestedPlan.batch.blobs.find(
+      blob => blob.sourcePath === 'vault/attachments/logo.png'
+    );
+    expect(configuredLogo).toBeTruthy();
+    expect(JSON.stringify(nestedPlan.batch.docs)).toContain(
+      configuredLogo!.blobId
+    );
+    expect(nestedPlan.batch.blobs).toHaveLength(2);
+    expect(nestedPlan.batch.folders).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'notes', name: 'notes' }),
+        expect.objectContaining({
+          parentPath: 'notes',
+          pageId: nestedPlan.docIds[0],
+        }),
+      ])
+    );
   });
 
   test('imports notion html zip golden baseline', async () => {
@@ -1599,6 +1653,82 @@ hhh
    1. bbb
    2. ccc
 2. ddd
+`;
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toEqual(markdown);
+  });
+
+  test('numbered list not starting at 1', async () => {
+    const listBlock = (id: string, insert: string, order: number) => ({
+      type: 'block' as const,
+      id,
+      flavour: 'affine:list',
+      props: {
+        type: 'numbered',
+        text: {
+          '$blocksuite:internal:text$': true,
+          delta: [{ insert }],
+        },
+        checked: false,
+        collapsed: false,
+        order,
+      },
+      children: [],
+    });
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:m5hvdXHXS2',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:1Ll22zT992',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            listBlock('block:Fd0ZCYB7a4', 'aaa', 1),
+            {
+              type: 'block',
+              id: 'block:8-GeKDc06x',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [{ insert: 'bbb' }],
+                },
+              },
+              children: [],
+            },
+            listBlock('block:f0dFVu0Qnm', 'ccc', 3),
+            listBlock('block:Rjdm_SRsxY', 'ddd', 4),
+          ],
+        },
+      ],
+    };
+
+    const markdown = `1. aaa
+
+bbb
+
+3. ccc
+4. ddd
 `;
 
     const mdAdapter = new MarkdownAdapter(createJob(), provider);
@@ -3875,48 +4005,40 @@ describe('markdown to snapshot', () => {
     });
   });
 
-  test('html inline color span imports to nearest supported text color', async () => {
-    const markdown = `<span style="color: #00afde;">Hello</span>`;
-    const blockSnapshot: BlockSnapshot = {
-      type: 'block',
-      id: 'matchesReplaceMap[0]',
-      flavour: 'affine:note',
-      props: {
-        xywh: '[0,0,800,95]',
-        background: DefaultTheme.noteBackgrounColor,
-        index: 'a0',
-        hidden: false,
-        displayMode: NoteDisplayMode.DocAndEdgeless,
-      },
-      children: [
-        {
-          type: 'block',
-          id: 'matchesReplaceMap[1]',
-          flavour: 'affine:paragraph',
-          props: {
-            type: 'text',
-            text: {
-              '$blocksuite:internal:text$': true,
-              delta: [
-                {
-                  insert: 'Hello',
-                  attributes: {
-                    color: 'var(--affine-v2-text-highlight-fg-blue)',
-                  },
-                },
-              ],
-            },
-          },
-          children: [],
-        },
-      ],
-    };
-
+  test.each([
+    ['#00afde', 'blue'],
+    ['rgb(0 175 222 / 100%)', 'blue'],
+    ['#c83030', 'red'],
+    ['red', 'red'],
+    ['hsl(0, 100%, 50%)', 'red'],
+    ['#db7123', 'orange'],
+    ['#ac7400', 'yellow'],
+    ['#04b745', 'green'],
+    ['#0e4841', 'teal'],
+    ['#7c3aed', 'purple'],
+    ['#7a7a7a', 'grey'],
+    ['rgb(26, 26, 26)', null],
+    ['#333', null],
+    ['#fff', null],
+    ['rgba(0, 175, 222, 0.5)', null],
+  ])('maps supported HTML color %s conservatively', async (color, mapped) => {
     const mdAdapter = new MarkdownAdapter(createJob(), provider);
     const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
-      file: markdown,
+      file: `<span style="color: ${color};">Hello</span>`,
     });
-    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+    expect(rawBlockSnapshot.children[0]?.props.text).toEqual({
+      '$blocksuite:internal:text$': true,
+      delta: [
+        mapped
+          ? {
+              insert: 'Hello',
+              attributes: {
+                color: `var(--affine-v2-text-highlight-fg-${mapped})`,
+              },
+            }
+          : { insert: 'Hello' },
+      ],
+    });
   });
 
   test('paragraph', async () => {
@@ -4912,55 +5034,50 @@ bbb
 
   describe('inline latex', () => {
     test.each([
-      ['dollar sign syntax', 'inline $E=mc^2$ latex\n'],
-      ['backslash syntax', 'inline \\(E=mc^2\\) latex\n'],
-    ])('should convert %s correctly', async (_, markdown) => {
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert: 'inline ',
-                  },
-                  {
-                    insert: ' ',
-                    attributes: {
-                      latex: 'E=mc^2',
-                    },
-                  },
-                  {
-                    insert: ' latex',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
+      [
+        'dollar sign syntax',
+        'inline $E=mc^2$ latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
         ],
-      };
-
+      ],
+      [
+        'backslash syntax',
+        'inline \\(E=mc^2\\) latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
+        ],
+      ],
+      [
+        'digit-prefixed expressions',
+        '$(\\mathbb Z^+,|)$ has $4\\vee 6=12$ and $4\\wedge 6=2$.\n',
+        [
+          { insert: ' ', attributes: { latex: '(\\mathbb Z^+,|)' } },
+          { insert: ' has ' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+          { insert: ' and ' },
+          { insert: ' ', attributes: { latex: '4\\wedge 6=2' } },
+          { insert: '.' },
+        ],
+      ],
+      [
+        'an even backslash run before the delimiter',
+        '\\\\$4\\vee 6=12$\n',
+        [
+          { insert: '\\' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+        ],
+      ],
+    ])('should convert %s correctly', async (_, markdown, expectedDelta) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual(expectedDelta);
     });
   });
 
@@ -4999,47 +5116,29 @@ bbb
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
     });
+  });
 
-    test('escapes dollar signs followed by a digit or space and digit', async () => {
-      const markdown =
-        'The price of the T-shirt is $9.15 and the price of the hat is $ 8\n';
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert:
-                      'The price of the T-shirt is $9.15 and the price of the hat is $ 8',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
-        ],
-      };
+  describe('dollar currency', () => {
+    test.each([
+      [
+        'plain prices',
+        'The T-shirt is $9.15 and the hat is $ 8\n',
+        'The T-shirt is $9.15 and the hat is $ 8',
+      ],
+      ['adjacent amounts', '$100$200\n', '$100$200'],
+      ['an escaped dollar', 'costs \\$4 today\n', 'costs $4 today'],
+      ['an escaped closing dollar', '$5\\$ and $10\n', '$5$ and $10'],
+      ['an escaped opening dollar', '\\$5 and x$\n', '$5 and x$'],
+      ['an odd backslash run', '\\\\\\$4\n', '\\$4'],
+      ['an even backslash run', 'costs \\\\$4 today\n', 'costs \\$4 today'],
+    ])('keeps %s as text', async (_, markdown, expectedText) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual([
+        { insert: expectedText },
+      ]);
     });
   });
 

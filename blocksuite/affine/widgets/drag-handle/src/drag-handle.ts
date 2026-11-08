@@ -267,16 +267,18 @@ export class AffineDragHandleWidget extends WidgetComponent<RootBlockModel> {
         </div>
         <div class="affine-drag-handle-container">
           <div class=${classMap(classes)}>
-            ${isGfx
-              ? html`
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                `
-              : nothing}
+            ${
+              isGfx
+                ? html`
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                  `
+                : nothing
+            }
           </div>
         </div>
         <div class="affine-drag-hover-rect" style=${hoverRectStyle}></div>

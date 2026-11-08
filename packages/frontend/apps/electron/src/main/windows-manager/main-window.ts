@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-import { BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 import electronWindowState from 'electron-window-state';
 import { BehaviorSubject, map, shareReplay } from 'rxjs';
 
@@ -17,6 +17,8 @@ import { buildWebPreferences } from '../web-preferences';
 
 const IS_DEV: boolean =
   process.env.NODE_ENV === 'development' && !process.env.CI;
+const DOCK_VISIBILITY_THROTTLE_MS = 1100;
+const FULL_SCREEN_EXIT_TIMEOUT_MS = 2000;
 
 const TraySettingsState = {
   $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
@@ -44,7 +46,26 @@ export class MainWindowManager {
   mainWindowReady: Promise<BrowserWindow> | undefined;
   mainWindow$ = new BehaviorSubject<BrowserWindow | undefined>(undefined);
 
+  private backgroundRequested = false;
   private hiddenMacWindow: BrowserWindow | undefined;
+  private lastDockShowAt = 0;
+  private pendingDockHide: ReturnType<typeof setTimeout> | undefined;
+
+  private constructor() {
+    const traySettingsSubscription = TraySettingsState.$.subscribe(state => {
+      if (!state.enabled || !state.closeToTray) {
+        void this.ensureDockVisible().catch(err => {
+          logger.error('Failed to restore Dock visibility:', err);
+        });
+      }
+    });
+
+    beforeAppQuit(() => {
+      traySettingsSubscription.unsubscribe();
+      this.cancelPendingDockHide();
+      this.cleanupWindows();
+    });
+  }
 
   get mainWindow() {
     return this.mainWindow$.value;
@@ -66,11 +87,87 @@ export class MainWindowManager {
   }
 
   private cleanupWindows() {
+    this.cancelPendingDockHide();
     closeAllWindows();
     this.mainWindowReady = undefined;
     this.mainWindow$.next(undefined);
     this.hiddenMacWindow?.destroy();
     this.hiddenMacWindow = undefined;
+  }
+
+  private cancelPendingDockHide() {
+    if (this.pendingDockHide) {
+      clearTimeout(this.pendingDockHide);
+      this.pendingDockHide = undefined;
+    }
+  }
+
+  private shouldHideDock() {
+    const settings = TraySettingsState.value;
+    return (
+      isMacOS() &&
+      this.backgroundRequested &&
+      settings.enabled &&
+      settings.closeToTray
+    );
+  }
+
+  private async showDock() {
+    this.cancelPendingDockHide();
+    if (app.isReady() && app.dock && !app.dock.isVisible()) {
+      await app.dock.show();
+      this.lastDockShowAt = Date.now();
+    }
+  }
+
+  private scheduleDockHide(mainWindow: BrowserWindow) {
+    this.cancelPendingDockHide();
+    if (!app.dock || !this.shouldHideDock()) {
+      return;
+    }
+
+    const hideDock = () => {
+      this.pendingDockHide = undefined;
+      if (
+        this.shouldHideDock() &&
+        !mainWindow.isDestroyed() &&
+        !mainWindow.isVisible()
+      ) {
+        app.dock?.hide();
+      }
+    };
+    const delay =
+      DOCK_VISIBILITY_THROTTLE_MS - (Date.now() - this.lastDockShowAt);
+    if (delay > 0) {
+      this.pendingDockHide = setTimeout(hideDock, delay);
+    } else {
+      hideDock();
+    }
+  }
+
+  private async hideMainWindow(mainWindow: BrowserWindow) {
+    this.backgroundRequested = true;
+    this.cancelPendingDockHide();
+
+    if (mainWindow.isFullScreen()) {
+      await new Promise<void>(resolve => {
+        const done = () => {
+          clearTimeout(timeout);
+          mainWindow.removeListener('leave-full-screen', done);
+          mainWindow.removeListener('closed', done);
+          resolve();
+        };
+        const timeout = setTimeout(done, FULL_SCREEN_EXIT_TIMEOUT_MS);
+        mainWindow.once('leave-full-screen', done);
+        mainWindow.once('closed', done);
+        mainWindow.setFullScreen(false);
+      });
+    }
+
+    if (this.backgroundRequested && !mainWindow.isDestroyed()) {
+      mainWindow.hide();
+      this.scheduleDockHide(mainWindow);
+    }
   }
 
   private async createMainWindow() {
@@ -132,10 +229,6 @@ export class MainWindowManager {
       uiSubjects.onFullScreen$.next(mainWindow.isFullScreen());
     });
 
-    beforeAppQuit(() => {
-      this.cleanupWindows();
-    });
-
     mainWindow.on('close', e => {
       // TODO(@pengx17): gracefully close the app, for example, ask user to save unsaved changes
       e.preventDefault();
@@ -151,25 +244,9 @@ export class MainWindowManager {
           this.mainWindow$.next(undefined);
         }
       } else {
-        // hide window on macOS
-        // application quit will be handled by closing the hidden window
-        //
-        // explanation:
-        // - closing the top window (by clicking close button or CMD-w)
-        //   - will be captured in "close" event here
-        //   - hiding the app to make the app open faster when user click the app icon
-        // - quit the app by "cmd+q" or right click on the dock icon and select "quit"
-        //   - all browser windows will capture the "close" event
-        //   - the hidden window will close all windows
-        //   - "window-all-closed" event will be emitted and eventually quit the app
-        if (mainWindow.isFullScreen()) {
-          mainWindow.once('leave-full-screen', () => {
-            mainWindow.hide();
-          });
-          mainWindow.setFullScreen(false);
-        } else {
-          mainWindow.hide();
-        }
+        void this.hideMainWindow(mainWindow).catch(err => {
+          logger.error('Failed to hide main window:', err);
+        });
       }
     });
 
@@ -230,17 +307,41 @@ export class MainWindowManager {
 
     if (IS_DEV) {
       // do not gain focus in dev mode
+      this.backgroundRequested = false;
+      await this.showDock();
       mainWindow.showInactive();
     } else if (
       !TraySettingsState.value.enabled ||
       !TraySettingsState.value.startMinimized
     ) {
-      mainWindow.show();
+      await this.showMainWindow();
     }
 
     this.preventMacAppQuit();
 
     return mainWindow;
+  }
+
+  async showMainWindow() {
+    this.backgroundRequested = false;
+    const mainWindow = await this.ensureMainWindow();
+    await this.showDock();
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    return mainWindow;
+  }
+
+  async closeMainWindowToBackground() {
+    await this.hideMainWindow(await this.ensureMainWindow());
+  }
+
+  async ensureDockVisible() {
+    if (!this.shouldHideDock()) {
+      await this.showDock();
+    }
   }
 }
 
@@ -253,12 +354,15 @@ export async function getMainWindow() {
 }
 
 export async function showMainWindow() {
-  const window = await getMainWindow();
-  if (!window) return;
-  if (window.isMinimized()) {
-    window.restore();
-  }
-  window.focus();
+  return MainWindowManager.instance.showMainWindow();
+}
+
+export async function closeMainWindowToBackground() {
+  return MainWindowManager.instance.closeMainWindowToBackground();
+}
+
+export async function ensureDockVisible() {
+  return MainWindowManager.instance.ensureDockVisible();
 }
 
 const getWindowAdditionalArguments = async () => {

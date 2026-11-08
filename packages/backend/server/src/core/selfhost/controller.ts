@@ -10,7 +10,7 @@ import {
   UseNamedGuard,
 } from '../../base';
 import { Models } from '../../models';
-import { Public, SessionIssuer } from '../auth';
+import { AuthService, Public, SessionIssuer } from '../auth';
 import { ServerService } from '../config';
 import { validators } from '../utils/validators';
 
@@ -26,6 +26,7 @@ export class CustomSetupController {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
+    private readonly auth: AuthService,
     private readonly sessionIssuer: SessionIssuer,
     private readonly mutex: Mutex,
     private readonly server: ServerService
@@ -72,10 +73,11 @@ export class CustomSetupController {
         'selfhost setup'
       );
 
-      await this.sessionIssuer.issue(req, res, {
-        userId: user.id,
-        method: 'password',
-      });
+      const issued = await this.auth.issueUser(
+        user.id,
+        this.sessionIssuer.target(req)
+      );
+      this.sessionIssuer.apply(res, issued);
       res.send({ id: user.id, email: user.email, name: user.name });
     } catch (e) {
       await this.models.user.delete(user.id);

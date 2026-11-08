@@ -1,5 +1,3 @@
-import { format } from 'date-fns';
-
 import { Bold } from './template';
 
 export interface DateProps {
@@ -7,5 +5,9 @@ export interface DateProps {
 }
 
 export const IOSDate = (props: DateProps) => {
-  return <Bold>{format(props.value, 'yyyy-MM-dd')}</Bold>;
+  const year = String(props.value.getFullYear()).padStart(4, '0');
+  const month = String(props.value.getMonth() + 1).padStart(2, '0');
+  const day = String(props.value.getDate()).padStart(2, '0');
+
+  return <Bold>{`${year}-${month}-${day}`}</Bold>;
 };

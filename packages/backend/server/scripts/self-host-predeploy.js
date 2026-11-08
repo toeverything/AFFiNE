@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
+import { upgradeConfig } from './upgrade-config.js';
+
 const SELF_HOST_CONFIG_DIR = `${homedir()}/.affine/config`;
 
 function generatePrivateKey() {
@@ -29,6 +31,8 @@ const files = [{ to: 'private.key', generator: generatePrivateKey }];
 function prepare() {
   fs.mkdirSync(SELF_HOST_CONFIG_DIR, { recursive: true });
 
+  upgradeConfig();
+
   for (const { to, generator } of files) {
     const targetFilePath = path.join(SELF_HOST_CONFIG_DIR, to);
     if (!fs.existsSync(targetFilePath)) {
@@ -44,20 +48,6 @@ function runPrismaMigrations() {
     encoding: 'utf-8',
     env: process.env,
     stdio: 'inherit',
-  });
-}
-
-function repairPgvectorEmbeddingTables() {
-  console.log('repairing copilot pgvector embedding tables.');
-  const sql = fs.readFileSync(
-    path.join(import.meta.dirname, 'repair-pgvector-embedding-tables.sql'),
-    'utf-8'
-  );
-  execSync('yarn prisma db execute --stdin --schema schema.prisma', {
-    encoding: 'utf-8',
-    env: process.env,
-    input: sql,
-    stdio: ['pipe', 'inherit', 'inherit'],
   });
 }
 
@@ -109,5 +99,4 @@ function fixFailedMigrations() {
 prepare();
 fixFailedMigrations();
 runPrismaMigrations();
-repairPgvectorEmbeddingTables();
 runDataMigrations();

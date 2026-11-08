@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpException,
   HttpStatus,
   Logger,
   Param,
@@ -12,8 +13,11 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
-import { Throttle } from '../../../base';
-import { CurrentUser } from '../../../core/auth';
+import { ActionForbidden, Throttle } from '../../../base';
+import { Public } from '../../../core/auth';
+import { extractTokenFromHeader } from '../../../core/auth/input';
+import { CopilotEnabled } from '../feature';
+import { McpCredentialService } from './credential';
 import { WorkspaceMcpProvider, type WorkspaceMcpServer } from './provider';
 
 type JsonRpcId = string | number | null;
@@ -43,32 +47,47 @@ const SUPPORTED_PROTOCOL_VERSIONS = new Set([
   '2024-10-07',
 ]);
 
+@CopilotEnabled()
 @Controller('/api/workspaces/:workspaceId/mcp')
 export class WorkspaceMcpController {
   private readonly logger = new Logger(WorkspaceMcpController.name);
 
-  constructor(private readonly provider: WorkspaceMcpProvider) {}
+  constructor(
+    private readonly provider: WorkspaceMcpProvider,
+    private readonly credentials: McpCredentialService
+  ) {}
 
   @Get('/')
   @Delete('/')
+  @Public()
   @HttpCode(HttpStatus.METHOD_NOT_ALLOWED)
   async STATELESS_MCP_ENDPOINT() {
     return this.errorResponse(null, -32000, 'Method not allowed.');
   }
 
   @Throttle('default')
+  @Public()
   @Post('/')
   async mcp(
     @Req() req: Request,
     @Res() res: Response,
-    @CurrentUser() user: CurrentUser,
     @Param('workspaceId') workspaceId: string
   ) {
     const abortController = new AbortController();
     req.on('close', () => abortController.abort());
 
     try {
-      const server = await this.provider.for(user.id, workspaceId);
+      const token =
+        extractTokenFromHeader(req.get('authorization') ?? '') ?? '';
+      const credential = await this.credentials.authenticate(
+        token,
+        workspaceId
+      );
+      const server = await this.provider.for(
+        credential.userId,
+        workspaceId,
+        credential.accessMode
+      );
       const body = req.body as unknown;
       const isBatch = Array.isArray(body);
       const messages = isBatch ? body : [body];
@@ -111,6 +130,18 @@ export class WorkspaceMcpController {
 
       res.status(HttpStatus.OK).json(isBatch ? responses : responses[0]);
     } catch (error) {
+      if (error instanceof HttpException) {
+        res
+          .status(error.getStatus())
+          .json(this.errorResponse(null, -32000, 'Authentication failed'));
+        return;
+      }
+      if (error instanceof ActionForbidden) {
+        res
+          .status(HttpStatus.FORBIDDEN)
+          .json(this.errorResponse(null, -32000, 'Access denied'));
+        return;
+      }
       this.logger.error('Failed to handle MCP request', error);
       res
         .status(HttpStatus.INTERNAL_SERVER_ERROR)

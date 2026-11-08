@@ -217,7 +217,8 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                 <span class="label">${label}</span>
                 <toggle-switch
                   style="margin-left: auto;"
-                  .on="${wrapped}"
+                  .on=${wrapped}
+                  .onChange=${(on: boolean) => blockComponent.setWrap(on)}
                 ></toggle-switch>
               </editor-menu-action>
             `;
@@ -234,15 +235,13 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
         return {
           action: () => {},
           render: () => {
-            const lineNumber = blockComponent.model.props.lineNumber ?? true;
+            const lineNumber = blockComponent.showLineNumbers;
             const label = lineNumber ? 'Cancel line number' : 'Line number';
             return html`
               <editor-menu-action
                 @click=${() => {
-                  const currentLineNumber =
-                    blockComponent.model.props.lineNumber ?? true;
                   blockComponent.store.updateBlock(blockComponent.model, {
-                    lineNumber: !currentLineNumber,
+                    lineNumber: !blockComponent.showLineNumbers,
                   });
                 }}
                 aria-label=${label}
@@ -251,7 +250,12 @@ export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
                 <span class="label">${label}</span>
                 <toggle-switch
                   style="margin-left: auto;"
-                  .on="${lineNumber}"
+                  .on=${lineNumber}
+                  .onChange=${(on: boolean) => {
+                    blockComponent.store.updateBlock(blockComponent.model, {
+                      lineNumber: on,
+                    });
+                  }}
                 ></toggle-switch>
               </editor-menu-action>
             `;

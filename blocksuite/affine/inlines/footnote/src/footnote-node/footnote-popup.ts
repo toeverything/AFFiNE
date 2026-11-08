@@ -195,9 +195,13 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
           .label=${this._popupLabel$.value}
           .tooltip=${this._tooltip$.value}
         ></footnote-popup-chip>
-        ${description
-          ? html` <div class="footnote-popup-description">${description}</div> `
-          : nothing}
+        ${
+          description
+            ? html`
+                <div class="footnote-popup-description">${description}</div>
+              `
+            : nothing
+        }
       </div>
     `;
   }

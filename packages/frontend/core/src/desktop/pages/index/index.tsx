@@ -39,14 +39,18 @@ export const Component = ({
   defaultIndexRoute = 'all',
   children,
   fallback,
+  createErrorFallback,
 }: {
   defaultIndexRoute?: string;
   children?: ReactNode;
   fallback?: ReactNode;
+  createErrorFallback?: (retry: () => void) => ReactNode;
 }) => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
   const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(false);
+  const [createAttempt, setCreateAttempt] = useState(0);
   const authService = useService(AuthService);
   const defaultServerService = useService(DefaultServerService);
 
@@ -118,6 +122,9 @@ export const Component = ({
       }
     } else {
       if (list.length === 0) {
+        if (BUILD_CONFIG.isMobileEdition && enableLocalWorkspace) {
+          return;
+        }
         setNavigating(false);
         return;
       }
@@ -151,7 +158,12 @@ export const Component = ({
       return;
     }
 
-    createFirstAppData(workspacesService)
+    const creation = createFirstAppData(workspacesService);
+    if (!creation) return;
+
+    setCreateError(false);
+    setCreating(true);
+    creation
       .then(createdWorkspace => {
         if (createdWorkspace) {
           if (createdWorkspace.defaultPageId) {
@@ -166,20 +178,28 @@ export const Component = ({
       })
       .catch(err => {
         console.error('Failed to create first app data', err);
+        setCreateError(true);
       })
       .finally(() => {
         setCreating(false);
       });
   }, [
     jumpToPage,
-    jumpToSignIn,
     openPage,
     workspacesService,
-    loggedIn,
     listIsLoading,
     list,
     enableLocalWorkspace,
+    createAttempt,
   ]);
+
+  const retryCreate = useCallback(() => {
+    setCreateAttempt(attempt => attempt + 1);
+  }, []);
+
+  if (createError && createErrorFallback) {
+    return createErrorFallback(retryCreate);
+  }
 
   if (navigating || creating) {
     return fallback ?? <AppContainer fallback />;

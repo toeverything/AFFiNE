@@ -355,9 +355,9 @@ export class DocEditTool extends WithDisposable(ShadowlessElement) {
             <div class="doc-edit-tool-result-wrapper">
               <div class="doc-edit-tool-result-title">${op}</div>
               <div
-                class="doc-edit-tool-result-card ${this.isCollapsed
-                  ? 'collapsed'
-                  : ''}"
+                class="doc-edit-tool-result-card ${
+                  this.isCollapsed ? 'collapsed' : ''
+                }"
               >
                 <div class="doc-edit-tool-result-card-header">
                   <div class="doc-edit-tool-result-card-header-title">

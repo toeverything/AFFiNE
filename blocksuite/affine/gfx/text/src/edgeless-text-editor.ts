@@ -455,21 +455,25 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
         .yText=${text}
         .enableFormat=${false}
         .enableAutoScrollHorizontally=${false}
-        style=${isEmpty
-          ? styleMap({
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
+        style=${
+          isEmpty
+            ? styleMap({
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
         ${EdgelessTextEditor.PADDING_HORIZONTAL}px`,
-            })
-          : nothing}
+              })
+            : nothing
+        }
       ></rich-text>
-      ${isEmpty
-        ? html`<span class="edgeless-text-editor-placeholder">
-            Type from here
-          </span>`
-        : nothing}
+      ${
+        isEmpty
+          ? html`<span class="edgeless-text-editor-placeholder">
+              Type from here
+            </span>`
+          : nothing
+      }
     </div>`;
   }
 

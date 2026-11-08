@@ -8,52 +8,8 @@
   "crypto": {
     "privateKey": {
       "type": "String",
-      "desc": "The private key for used by the crypto module to create signed tokens or encrypt data.",
+      "desc": "Private key for Node signing and encryption plus native runtime identity.",
       "env": "AFFINE_PRIVATE_KEY"
-    }
-  },
-  "job": {
-    "queue": {
-      "type": "Object",
-      "desc": "The config for job queues",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html"
-    },
-    "worker": {
-      "type": "Object",
-      "desc": "The config for job workers",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html"
-    },
-    "queues.copilot": {
-      "type": "Object",
-      "desc": "The config for copilot job queue"
-    },
-    "queues.calendar": {
-      "type": "Object",
-      "desc": "The config for calendar job queue"
-    },
-    "queues.doc": {
-      "type": "Object",
-      "desc": "The config for doc job queue"
-    },
-    "queues.indexer": {
-      "type": "Object",
-      "desc": "The config for indexer job queue"
-    },
-    "queues.notification": {
-      "type": "Object",
-      "desc": "The config for notification job queue"
-    },
-    "queues.nightly": {
-      "type": "Object",
-      "desc": "The config for nightly job queue"
-    },
-    "queues.backendRuntime": {
-      "type": "Object",
-      "desc": "The config for backend runtime job queue"
-    },
-    "queues.inviteAbuse": {
-      "type": "Object",
-      "desc": "The config for invite abuse disposition job queue"
     }
   },
   "throttle": {
@@ -71,49 +27,61 @@
     }
   },
   "auth": {
-    "allowSignup": {
-      "type": "Boolean",
-      "desc": "Whether allow new registrations."
-    },
-    "allowSignupForOauth": {
-      "type": "Boolean",
-      "desc": "Whether allow new registrations via configured oauth."
-    },
-    "requireEmailDomainVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email domain record verification before accessing restricted resources."
-    },
-    "requireEmailVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email verification before accessing restricted resources(not implemented)."
-    },
-    "newAccountShareActionDelay": {
-      "type": "Number",
-      "desc": "Minimum account age in seconds before new accounts can invite members or create share links."
-    },
     "trustedCloudflareHeaders": {
       "type": "Boolean",
       "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
     },
-    "inviteQuotaShadowMode": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should record would-block decisions without rejecting requests or executing abuse actions."
-    },
-    "inviteQuotaFailOpenOnRuntimeError": {
-      "type": "Boolean",
-      "desc": "Whether workspace invite quota should fail open when native runtime admission is unavailable. Keep disabled for production."
+    "signInRateLimit": {
+      "type": "Object",
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
     },
     "passwordRequirements": {
       "type": "Object",
       "desc": "The password strength requirements when set new password."
     },
+    "allowSignup": {
+      "type": "Boolean",
+      "desc": "Allow new registrations."
+    },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Allow new registrations through configured OAuth providers."
+    },
+    "requireEmailDomainVerification": {
+      "type": "Boolean",
+      "desc": "Require email domain verification for restricted resources."
+    },
+    "newAccountActionDelay": {
+      "type": "Number",
+      "desc": "Minimum account age in seconds for invites and document publishing."
+    },
     "session.ttl": {
       "type": "Number",
-      "desc": "Application auth expiration time in seconds."
+      "desc": "Application auth expiration in seconds."
     },
     "session.ttr": {
       "type": "Number",
-      "desc": "Application auth time to refresh in seconds."
+      "desc": "Application auth refresh interval in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "Refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Expired refresh generation retention in seconds."
     }
   },
   "mailer": {
@@ -207,18 +175,6 @@
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
     }
   },
-  "permission": {
-    "readModel": {
-      "type": "String",
-      "desc": "Permission data source for Rust evaluation",
-      "env": "AFFINE_PERMISSION_READ_MODEL"
-    },
-    "fallbackLegacyLoader": {
-      "type": "Boolean",
-      "desc": "Fallback from projection loader to legacy loader when projection input loading fails",
-      "env": "AFFINE_PERMISSION_FALLBACK_LEGACY_LOADER"
-    }
-  },
   "storages": {
     "avatar.publicPath": {
       "type": "String",
@@ -290,13 +246,6 @@
       "desc": "Whether allow guest users to create demo workspaces."
     }
   },
-  "docService": {
-    "endpoint": {
-      "type": "String",
-      "desc": "The endpoint of the doc service.",
-      "env": "DOC_SERVICE_ENDPOINT"
-    }
-  },
   "telemetry": {
     "allowedOrigin": {
       "type": "Array",
@@ -357,59 +306,6 @@
     }
   },
   "copilot": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin. <br> Document: <a href=\"https://docs.affine.pro/self-host-affine/administer/ai\" target=\"_blank\">https://docs.affine.pro/self-host-affine/administer/ai</a>"
-    },
-    "byok.enabled": {
-      "type": "Boolean",
-      "desc": "Whether to enable workspace BYOK."
-    },
-    "byok.allowedProviders": {
-      "type": "Array",
-      "desc": "The allowlist for workspace BYOK providers."
-    },
-    "byok.allowCustomEndpoint": {
-      "type": "Boolean",
-      "desc": "Whether workspace BYOK custom endpoints are accepted."
-    },
-    "providers.profiles": {
-      "type": "Array",
-      "desc": "The profile list for copilot providers."
-    },
-    "providers.defaults": {
-      "type": "Object",
-      "desc": "The default provider ids for model output types and global fallback."
-    },
-    "providers.openai": {
-      "type": "Object",
-      "desc": "The config for the openai provider.",
-      "link": "https://github.com/openai/openai-node"
-    },
-    "providers.cloudflareWorkersAi": {
-      "type": "Object",
-      "desc": "The config for the Cloudflare Workers AI provider."
-    },
-    "providers.fal": {
-      "type": "Object",
-      "desc": "The config for the fal provider."
-    },
-    "providers.gemini": {
-      "type": "Object",
-      "desc": "The config for the gemini provider."
-    },
-    "providers.geminiVertex": {
-      "type": "Object",
-      "desc": "The config for the gemini provider in Google Vertex AI."
-    },
-    "providers.anthropic": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider."
-    },
-    "providers.anthropicVertex": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider in Google Vertex AI."
-    },
     "unsplash": {
       "type": "Object",
       "desc": "The config for the unsplash key."
@@ -417,6 +313,26 @@
     "exa": {
       "type": "Object",
       "desc": "The config for the exa web search key."
+    },
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
+    },
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "AI providers that workspace owners and admins may add through AI BYOK."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Allow AI BYOK keys to use a custom provider endpoint."
+    },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
     },
     "storage": {
       "type": "Object",
@@ -426,39 +342,27 @@
   "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable indexer plugin",
-      "env": "AFFINE_INDEXER_ENABLED"
+      "desc": "Enable the indexer."
     },
     "provider.type": {
       "type": "String",
-      "desc": "Indexer search service provider name",
-      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+      "desc": "Search provider type."
     },
     "provider.endpoint": {
       "type": "String",
-      "desc": "Indexer search service endpoint",
-      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+      "desc": "Remote search provider endpoint."
     },
     "provider.apiKey": {
       "type": "String",
-      "desc": "Indexer search service api key. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/server/current/api-key.html",
-      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+      "desc": "Remote search provider API key."
     },
     "provider.username": {
       "type": "String",
-      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
-      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+      "desc": "Remote search provider username."
     },
     "provider.password": {
       "type": "String",
-      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
-      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
-    },
-    "autoIndex.batchSize": {
-      "type": "Number",
-      "desc": "Number of workspaces automatically indexed per batch"
+      "desc": "Remote search provider password."
     }
   },
   "oauth": {
@@ -474,7 +378,7 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config",
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
       "link": "https://openid.net/specs/openid-connect-core-1_0.html"
     },
     "providers.apple": {
@@ -484,23 +388,21 @@
     }
   },
   "payment": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether enable payment plugin"
-    },
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
     },
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable payment integration."
+    },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options and credentials",
-      "link": "https://docs.stripe.com/api"
+      "desc": "Stripe SDK options and credentials."
     },
     "revenuecat": {
       "type": "Object",
-      "desc": "RevenueCat integration configs",
-      "link": "https://www.revenuecat.com/docs/"
+      "desc": "RevenueCat integration configuration."
     }
   },
   "worker": {

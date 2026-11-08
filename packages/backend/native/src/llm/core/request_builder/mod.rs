@@ -1,4 +1,4 @@
-use llm_adapter::core::{self as adapter_core, EmbeddingRequest, ImageInput, ImageRequest, RerankRequest};
+use llm_adapter::core::{self as adapter_core, EmbeddingRequest, ImageRequest, RerankRequest};
 use napi::Result;
 use napi_derive::napi;
 use serde::Serialize;
@@ -8,7 +8,7 @@ use super::contracts::{
   LlmImageRequestBuildContract, LlmImageRequestContract, LlmRequestContract, LlmRerankRequestContract,
   LlmStructuredRequestContract, ModelConditionsContract, PromptMessageContract,
 };
-use crate::llm::{LlmDispatchPayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload, host::invalid_arg};
+use crate::llm::{LlmDispatchPayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload, invalid_arg};
 
 mod types;
 
@@ -62,36 +62,9 @@ pub(crate) fn build_image_request(request: ImageRequest) -> Result<ImageRequest>
 }
 
 pub(crate) fn build_image_request_from_messages(request: LlmImageRequestBuildContract) -> Result<ImageRequest> {
-  let protocol = request.protocol.clone();
-  let mut request =
+  let request =
     adapter_core::build_image_request_from_prompt_messages(to_adapter(&request)?).map_err(map_builder_error)?;
-  if protocol == "fal_image" {
-    keep_fal_data_uri_inputs_as_urls(&mut request);
-  }
   Ok(request)
-}
-
-fn keep_fal_data_uri_inputs_as_urls(request: &mut ImageRequest) {
-  let ImageRequest::Edit(edit) = request else {
-    return;
-  };
-
-  for image in &mut edit.images {
-    let replacement = match image {
-      ImageInput::Data {
-        data_base64,
-        media_type,
-        ..
-      } => Some(ImageInput::Url {
-        url: format!("data:{media_type};base64,{data_base64}"),
-        media_type: Some(media_type.clone()),
-      }),
-      _ => None,
-    };
-    if let Some(replacement) = replacement {
-      *image = replacement;
-    }
-  }
 }
 
 pub(crate) fn infer_prompt_model_conditions(messages: Vec<PromptMessageInput>) -> Result<ModelConditionsContract> {
@@ -141,7 +114,11 @@ fn to_adapter_prompt_messages<T: Serialize>(messages: Vec<T>) -> Result<Vec<adap
 
 #[cfg(test)]
 mod tests {
-  use llm_adapter::core::{EmbeddingRequest, ImageRequest, RerankCandidate};
+  use base64::{Engine, engine::general_purpose::STANDARD};
+  use llm_adapter::{
+    core::{EmbeddingRequest, ImageRequest, RerankCandidate},
+    protocol::openai::{chat, responses},
+  };
   use serde_json::json;
 
   use super::{
@@ -237,7 +214,7 @@ mod tests {
   fn should_materialize_structured_request_with_response_contract() {
     let response = llm_build_canonical_structured_request(
       serde_json::from_value::<CanonicalStructuredRequestContract>(json!({
-        "model": "gemini-2.5-flash",
+        "model": "gemini-3.7-flash",
         "messages": [
           { "role": "user", "content": "hello" }
         ],
@@ -253,7 +230,7 @@ mod tests {
     assert_eq!(
       response,
       json!({
-        "model": "gemini-2.5-flash",
+        "model": "gemini-3.7-flash",
         "messages": [
           {
             "role": "user",
@@ -265,6 +242,28 @@ mod tests {
         "responseMimeType": "application/json"
       }),
     );
+    let data = STANDARD.encode(include_bytes!("../../../../fixtures/transcript.m4a"));
+    let input = serde_json::from_value::<CanonicalStructuredRequestContract>(json!({
+      "model": "custom-audio",
+      "messages": [{
+        "role": "user", "content": "Transcribe this audio slice.",
+        "attachments": [{ "kind": "data", "data": data, "mimeType": "audio/m4a", "encoding": "base64" }]
+      }],
+      "schema": { "type": "array", "items": { "type": "object" } }
+    }))
+    .unwrap();
+    let request = super::build_canonical_structured_request(input.try_into().unwrap())
+      .unwrap()
+      .request
+      .as_core_request();
+    let wire = chat::request::encode(&request, false).unwrap();
+    assert_eq!(
+      wire["messages"][0]["content"][1],
+      json!({
+        "type": "input_audio", "input_audio": { "data": data, "format": "m4a" }
+      })
+    );
+    assert!(responses::request::encode(&request, false).is_err());
   }
 
   #[test]
@@ -471,11 +470,10 @@ mod tests {
   }
 
   #[test]
-  fn should_keep_fal_data_uri_image_inputs_as_urls() {
+  fn should_canonicalize_data_uri_image_inputs() {
     let response = llm_build_image_request_from_messages(
       serde_json::from_value(json!({
         "model": "lora/image-to-image",
-        "protocol": "fal_image",
         "messages": [{
           "role": "user",
           "content": "restyle",
@@ -493,11 +491,7 @@ mod tests {
     let response = serde_json::to_value(response).unwrap();
     assert_eq!(
       response.pointer("/images/0"),
-      Some(&json!({
-        "kind": "url",
-        "url": "data:image/png;base64,aW1n",
-        "media_type": "image/png"
-      }))
+      Some(&json!({ "kind": "data", "data_base64": "aW1n", "media_type": "image/png" }))
     );
   }
 

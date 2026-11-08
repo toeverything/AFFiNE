@@ -161,8 +161,9 @@ export class SizeDropdownMenu extends SignalWatcher(
             .labelHeight="${'20px'}"
             .iconContainerWidth="${icon ? 'unset' : '65px'}"
           >
-            ${icon ??
-            html`<span class="label">${format?.(size) ?? size}</span>`}
+            ${
+              icon ?? html`<span class="label">${format?.(size) ?? size}</span>`
+            }
             ${EditorChevronDown}
           </editor-icon-button>
         `}

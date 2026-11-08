@@ -1,34 +1,38 @@
-import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import {
-  Button,
-  type ButtonProps,
-  IconButton,
-} from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { Button, IconButton } from '@affine/component/ui/button';
 import { SubscriptionService } from '@affine/core/modules/cloud';
-import { UrlService } from '@affine/core/modules/url';
-import { UserFriendlyError } from '@affine/error';
-import { createCustomerPortalMutation } from '@affine/graphql';
+import type { SubscriptionType } from '@affine/core/modules/cloud/entities/subscription';
+import { SubscriptionRecurring } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useState } from 'react';
+import { useService } from '@toeverything/infra';
+import { useCallback, useState } from 'react';
 
-import { useMutation } from '../../../../../components/hooks/use-mutation';
 import { CancelAction, ResumeAction } from '../plans/actions';
+import {
+  ManageSubscriptionButton,
+  SubscriptionSourceRow,
+} from './manage-subscription';
 import * as styles from './style.css';
 
-export const PaymentMethod = () => {
-  const t = useI18n();
-  const subscriptionService = useService(SubscriptionService);
-  useEffect(() => {
-    subscriptionService.subscription.revalidate();
-    subscriptionService.prices.revalidate();
-  }, [subscriptionService]);
+export const PaymentMethod = ({
+  subscription,
+}: {
+  subscription: SubscriptionType;
+}) =>
+  subscription.provider === 'stripe' ? (
+    <StripePaymentMethod subscription={subscription} />
+  ) : (
+    <SubscriptionSourceRow source={subscription} />
+  );
 
-  const proSubscription = useLiveData(subscriptionService.subscription.pro$);
-  const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
+const StripePaymentMethod = ({
+  subscription,
+}: {
+  subscription: SubscriptionType;
+}) => {
+  const t = useI18n();
+  const isBeliever = subscription.recurring === SubscriptionRecurring.Lifetime;
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   return (
@@ -40,16 +44,15 @@ export const PaymentMethod = () => {
           'com.affine.payment.billing-setting.payment-method.description'
         ]()}
       >
-        <PaymentMethodUpdater />
+        <ManageSubscriptionButton source={subscription} />
       </SettingRow>
-      {isBeliever ? null : proSubscription?.end &&
-        proSubscription?.canceledAt ? (
+      {isBeliever ? null : subscription.end && subscription.canceledAt ? (
         <SettingRow
           name={t['com.affine.payment.billing-setting.expiration-date']()}
           desc={t[
             'com.affine.payment.billing-setting.expiration-date.description'
           ]({
-            expirationDate: new Date(proSubscription.end).toLocaleDateString(),
+            expirationDate: new Date(subscription.end).toLocaleDateString(),
           })}
         >
           <ResumeSubscription />
@@ -72,47 +75,6 @@ export const PaymentMethod = () => {
         </CancelAction>
       )}
     </>
-  );
-};
-
-export const PaymentMethodUpdater = ({
-  inCardView,
-  className,
-  variant,
-}: {
-  inCardView?: boolean;
-  className?: string;
-  variant?: ButtonProps['variant'];
-}) => {
-  const { isMutating, trigger } = useMutation({
-    mutation: createCustomerPortalMutation,
-  });
-  const urlService = useService(UrlService);
-  const t = useI18n();
-
-  const update = useAsyncCallback(async () => {
-    await trigger(null, {
-      onSuccess: data => {
-        urlService.openExternal(data.createCustomerPortal);
-      },
-    }).catch(e => {
-      const userFriendlyError = UserFriendlyError.fromAny(e);
-      notify.error(userFriendlyError);
-    });
-  }, [trigger, urlService]);
-
-  return (
-    <Button
-      onClick={update}
-      loading={isMutating}
-      disabled={isMutating}
-      className={className}
-      variant={variant}
-    >
-      {inCardView
-        ? t['com.affine.payment.billing-setting.payment-method']()
-        : t['com.affine.payment.billing-setting.payment-method.go']()}
-    </Button>
   );
 };
 

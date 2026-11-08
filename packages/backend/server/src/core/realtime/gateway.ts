@@ -4,7 +4,12 @@ import type {
   RealtimeUnsubscribeEnvelope,
 } from '@affine/realtime';
 import { getRealtimeInputKey } from '@affine/realtime';
-import { applyDecorators, Logger, UseInterceptors } from '@nestjs/common';
+import {
+  applyDecorators,
+  Logger,
+  Optional,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -20,6 +25,7 @@ import type { Server, Socket } from 'socket.io';
 
 import {
   checkCanaryDateClientVersion,
+  EventBus,
   GatewayErrorWrapper,
   OnEvent,
   UnsupportedClientVersion,
@@ -63,7 +69,8 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   constructor(
     private readonly registry: RealtimeRegistry,
-    private readonly publisher: RealtimePublisher
+    private readonly publisher: RealtimePublisher,
+    @Optional() private readonly event?: EventBus
   ) {}
 
   afterInit(_server: Server) {
@@ -76,17 +83,28 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayDisconnect {
         this.subscriptions.delete(subscriptionId);
       }
     }
+    this.event?.emit('realtime.connection.disconnected', {
+      connectionId: client.id,
+    });
+    this.event?.broadcast('realtime.connection.disconnected', {
+      connectionId: client.id,
+    });
   }
 
   @SubscribeMessage('realtime:request')
   async onRequest(
     @CurrentUser() user: CurrentUser,
-    @MessageBody() envelope: RealtimeRequestEnvelope
+    @MessageBody() envelope: RealtimeRequestEnvelope,
+    @ConnectedSocket() client?: Socket
   ) {
     this.assertVersion(envelope.clientVersion);
     const handler = this.registry.getRequest(envelope.op);
     const input = handler.input.parse(envelope.input);
-    return { data: await handler.handle(user, input as never) };
+    return {
+      data: await handler.handle(user, input as never, {
+        connectionId: client?.id,
+      }),
+    };
   }
 
   @SubscribeMessage('realtime:subscribe')

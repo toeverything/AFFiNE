@@ -260,9 +260,11 @@ export class ToolResultCard extends SignalWatcher(
         <div class="ai-tool-header" @click=${this.toggleCard}>
           <div class="ai-icon">${this.icon}</div>
           <div class="ai-tool-name">${this.name}</div>
-          ${this.isCollapsed
-            ? this.renderFooterIcons()
-            : html` <div class="ai-icon">${ToggleDownIcon()}</div> `}
+          ${
+            this.isCollapsed
+              ? this.renderFooterIcons()
+              : html` <div class="ai-icon">${ToggleDownIcon()}</div> `
+          }
         </div>
         <div class="ai-tool-results" data-collapsed=${this.isCollapsed}>
           <div class="ai-tool-result-collapse-wrapper">
@@ -285,11 +287,13 @@ export class ToolResultCard extends SignalWatcher(
                         ${this.renderIcon(result.icon)}
                       </div>
                     </div>
-                    ${result.content
-                      ? html`<div class="result-content">
-                          ${result.content}
-                        </div>`
-                      : nothing}
+                    ${
+                      result.content
+                        ? html`<div class="result-content">
+                            ${result.content}
+                          </div>`
+                        : nothing
+                    }
                   </a>
                 `
               )}

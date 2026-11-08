@@ -4,11 +4,15 @@ import { Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 
+import {
+  buildSafeCallbackUrl,
+  evaluateLocalRedirect,
+  evaluateRedirectUri,
+} from '../../native';
 import { Config } from '../config';
 import { ActionForbidden } from '../error';
 import { OnEvent } from '../event';
 
-const ALLOWED_REDIRECT_PROTOCOLS = new Set(['http:', 'https:']);
 // Keep in sync with frontend /redirect-proxy allowlist.
 const TRUSTED_REDIRECT_DOMAINS = [
   'google.com',
@@ -21,14 +25,6 @@ const TRUSTED_REDIRECT_DOMAINS = [
   'reddit.com',
   'affine.pro',
 ].map(d => d.toLowerCase());
-
-function normalizeHostname(hostname: string) {
-  return hostname.toLowerCase().replace(/\.$/, '');
-}
-
-function hostnameMatchesDomain(hostname: string, domain: string) {
-  return hostname === domain || hostname.endsWith(`.${domain}`);
-}
 
 @Injectable()
 export class URLHelper {
@@ -101,24 +97,6 @@ export class URLHelper {
     return new URLSearchParams(query).toString();
   }
 
-  addSimpleQuery(
-    url: string,
-    key: string,
-    value: string | number | boolean,
-    escape = true
-  ) {
-    const urlObj = new URL(url);
-    if (escape) {
-      urlObj.searchParams.set(key, String(value));
-      return urlObj.toString();
-    } else {
-      const query =
-        (urlObj.search ? urlObj.search + '&' : '?') + `${key}=${value}`;
-
-      return urlObj.origin + urlObj.pathname + query;
-    }
-  }
-
   url(path: string, query: Record<string, any> = {}) {
     const url = new URL(path, this.requestOrigin);
 
@@ -134,93 +112,57 @@ export class URLHelper {
   }
 
   safeLink(path: string, query: Record<string, any> = {}) {
-    if (!this.isAllowedCallbackUrl(path)) {
+    try {
+      return buildSafeCallbackUrl(
+        path,
+        this.requestOrigin,
+        this.allowedOrigins,
+        Object.entries(query).map(([name, value]) => ({
+          name,
+          value: String(value),
+        }))
+      );
+    } catch {
       throw new ActionForbidden();
     }
-    return this.link(path, query);
   }
 
   safeRedirect(res: Response, to: string) {
     try {
-      const finalTo = new URL(decodeURIComponent(to), this.requestBaseUrl);
-
-      for (const host of this.redirectAllowHosts) {
-        const hostURL = new URL(host);
-        if (
-          hostURL.origin === finalTo.origin &&
-          finalTo.pathname.startsWith(hostURL.pathname)
-        ) {
-          return res.redirect(finalTo.toString().replace(/\/$/, ''));
-        }
-      }
+      const canonical = evaluateLocalRedirect(
+        to,
+        this.requestBaseUrl,
+        this.redirectAllowHosts
+      );
+      return res.redirect(canonical);
     } catch {
-      // just ignore invalid url
-    }
-
-    // redirect to home if the url is invalid
-    return res.redirect(this.baseUrl);
-  }
-
-  isAllowedCallbackUrl(url: string): boolean {
-    if (!url) {
-      return false;
-    }
-
-    // Allow same-app relative paths (e.g. `/magic-link?...`).
-    if (url.startsWith('/') && !url.startsWith('//')) {
-      return true;
-    }
-
-    try {
-      const u = new URL(url);
-      if (!ALLOWED_REDIRECT_PROTOCOLS.has(u.protocol)) {
-        return false;
-      }
-      if (u.username || u.password) {
-        return false;
-      }
-      return this.allowedOrigins.includes(u.origin);
-    } catch {
-      return false;
+      return res.redirect(this.baseUrl);
     }
   }
 
-  isAllowedRedirectUri(redirectUri: string): boolean {
-    if (!redirectUri) {
-      return false;
-    }
-
-    // Allow internal navigation (e.g. `/` or `/redirect-proxy?...`).
-    if (redirectUri.startsWith('/') && !redirectUri.startsWith('//')) {
-      return true;
-    }
-
+  canonicalRedirectUri(redirectUri: string, query: Record<string, any> = {}) {
     try {
-      const u = new URL(redirectUri);
-      if (!ALLOWED_REDIRECT_PROTOCOLS.has(u.protocol)) {
-        return false;
-      }
-      if (u.username || u.password) {
-        return false;
-      }
-
-      const hostname = normalizeHostname(u.hostname);
-
-      // Allow server known hosts.
-      for (const origin of this.allowedOrigins) {
-        const allowedHost = normalizeHostname(new URL(origin).hostname);
-        if (hostname === allowedHost) {
-          return true;
-        }
-      }
-
-      // Allow known trusted domains (for redirect-proxy).
-      return TRUSTED_REDIRECT_DOMAINS.some(domain =>
-        hostnameMatchesDomain(hostname, domain)
+      return evaluateRedirectUri(
+        redirectUri,
+        this.requestOrigin,
+        this.allowedOrigins,
+        TRUSTED_REDIRECT_DOMAINS,
+        Object.entries(query).map(([name, value]) => ({
+          name,
+          value: String(value),
+        }))
       );
     } catch {
-      return false;
+      throw new ActionForbidden();
     }
+  }
+
+  redirectPolicy() {
+    return {
+      redirectBaseUrl: this.requestOrigin,
+      redirectAllowedOrigins: this.allowedOrigins,
+      redirectTrustedDomains: TRUSTED_REDIRECT_DOMAINS,
+    };
   }
 
   verify(url: string | URL) {

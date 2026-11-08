@@ -301,9 +301,11 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
                   Click to open this chat
                 </affine-tooltip>
               </div>
-              ${session.docId
-                ? this.renderSessionDoc(session.docId, session.sessionId)
-                : nothing}
+              ${
+                session.docId
+                  ? this.renderSessionDoc(session.docId, session.sessionId)
+                  : nothing
+              }
               <div
                 class="ai-session-item-delete"
                 @click=${(e: MouseEvent) => {

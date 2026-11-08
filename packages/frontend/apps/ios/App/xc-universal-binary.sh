@@ -41,8 +41,9 @@ fi
 FFI_TARGET=${1}
 # path to source code root
 SRC_ROOT=${2}
-# Keep Cargo artifacts in a stable location that the rest of this script can reference.
-export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$SRC_ROOT/../../../target}"
+# Keep Cargo artifacts in a stable repo-local location so Xcode does not inherit
+# a sandbox-specific CARGO_TARGET_DIR from the parent shell.
+export CARGO_TARGET_DIR="$SRC_ROOT/../../../target"
 # buildvariant from our xcconfigs
 BUILDVARIANT=$(echo "${3}" | tr '[:upper:]' '[:lower:]')
 
@@ -103,7 +104,7 @@ else
   exit 1
 fi
 
-$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --library "$BINDGEN_LIB" --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi
+$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
 
 if [ $IS_SIMULATOR -eq 0 ]; then
   cp "$DEVICE_ARM64_LIB" "$OUTPUT_LIB"

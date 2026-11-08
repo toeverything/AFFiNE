@@ -1,5 +1,5 @@
 
-/* eslint-disable */
+/* oxlint-disable */
 // @ts-nocheck
 
 import stickerCover000 from './stickers/Arrows/Cover/arrow-1.svg';

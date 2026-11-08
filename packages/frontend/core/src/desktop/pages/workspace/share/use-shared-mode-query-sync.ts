@@ -46,13 +46,15 @@ export const useSharedModeQuerySync = ({
 
     const nextSearch = getSearchWithMode(location.search, currentPublishMode);
     if (nextSearch !== location.search) {
-      navigate(
-        {
-          pathname: location.pathname,
-          search: nextSearch,
-        },
-        { replace: true }
-      );
+      Promise.resolve(
+        navigate(
+          {
+            pathname: location.pathname,
+            search: nextSearch,
+          },
+          { replace: true }
+        )
+      ).catch(console.error);
     }
   }, [currentPublishMode, location.pathname, location.search, navigate]);
 

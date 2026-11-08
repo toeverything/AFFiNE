@@ -1,26 +1,14 @@
 import {
-  addContextCategoryMutation,
-  addContextDocMutation,
-  addContextFileMutation,
-  ContextCategories as GraphQLContextCategories,
-  createCopilotContextMutation,
   createCopilotMessageMutation,
   createCopilotSessionMutation,
   forkCopilotSessionMutation,
   getCopilotSessionQuery,
   getTranscriptTaskQuery,
-  listContextObjectQuery,
-  listContextQuery,
-  matchFilesQuery,
-  matchWorkspaceDocsQuery,
-  removeContextDocMutation,
-  removeContextFileMutation,
   settleTranscriptTaskMutation,
   submitTranscriptTaskMutation,
   updateCopilotSessionMutation,
 } from '@affine/graphql';
 
-import { ContextCategories } from '../../models';
 import { TestingApp } from './testing-app';
 
 export const cleanObject = (
@@ -130,232 +118,6 @@ export async function forkCopilotSession(
   });
 
   return res.forkCopilotSession;
-}
-
-export async function createCopilotContext(
-  app: TestingApp,
-  workspaceId: string,
-  sessionId: string
-): Promise<string> {
-  const res = await app.gql({
-    query: createCopilotContextMutation,
-    variables: { workspaceId, sessionId },
-  });
-
-  return res.createCopilotContext;
-}
-
-export async function matchFiles(
-  app: TestingApp,
-  contextId: string,
-  content: string,
-  limit: number
-): Promise<
-  | {
-      fileId: string;
-      chunk: number;
-      content: string;
-      distance: number | null;
-    }[]
-  | undefined
-> {
-  const res = await app.gql({
-    query: matchFilesQuery,
-    variables: { contextId, content, limit, threshold: 1 },
-  });
-
-  return res.currentUser?.copilot?.contexts?.[0]?.matchFiles;
-}
-
-export async function matchWorkspaceDocs(
-  app: TestingApp,
-  contextId: string,
-  content: string,
-  limit: number
-): Promise<
-  | {
-      docId: string;
-      chunk: number;
-      content: string;
-      distance: number | null;
-    }[]
-  | undefined
-> {
-  const res = await app.gql({
-    query: matchWorkspaceDocsQuery,
-    variables: { contextId, content, limit, threshold: 1 },
-  });
-
-  return res.currentUser?.copilot?.contexts?.[0]?.matchWorkspaceDocs;
-}
-
-export async function listContext(
-  app: TestingApp,
-  workspaceId: string,
-  sessionId: string
-): Promise<
-  {
-    id: string;
-    workspaceId: string;
-  }[]
-> {
-  const res = await app.gql({
-    query: listContextQuery,
-    variables: { workspaceId, sessionId },
-  });
-
-  return (res.currentUser?.copilot?.contexts || []).filter(
-    (context): context is { id: string; workspaceId: string } => !!context.id
-  );
-}
-
-export async function addContextFile(
-  app: TestingApp,
-  contextId: string,
-  fileName: string,
-  content: Buffer
-): Promise<{ id: string }> {
-  const res = await app.gql({
-    query: addContextFileMutation,
-    variables: {
-      content: new File([content], fileName, {
-        type: 'application/octet-stream',
-      }),
-      options: { contextId },
-    },
-  });
-
-  return res.addContextFile;
-}
-
-export async function removeContextFile(
-  app: TestingApp,
-  contextId: string,
-  fileId: string
-): Promise<boolean> {
-  const res = await app.gql({
-    query: removeContextFileMutation,
-    variables: { options: { contextId, fileId } },
-  });
-
-  return res.removeContextFile;
-}
-
-export async function addContextDoc(
-  app: TestingApp,
-  contextId: string,
-  docId: string
-): Promise<{ id: string }[]> {
-  const res = await app.gql({
-    query: addContextDocMutation,
-    variables: { options: { contextId, docId } },
-  });
-
-  return [res.addContextDoc];
-}
-
-export async function addContextCategory(
-  app: TestingApp,
-  contextId: string,
-  type: ContextCategories,
-  categoryId: string,
-  docs: string[]
-): Promise<{ type: string; id: string; docs: { id: string }[] }> {
-  const graphqlType =
-    type === ContextCategories.Collection
-      ? GraphQLContextCategories.Collection
-      : GraphQLContextCategories.Tag;
-  const res = await app.gql({
-    query: addContextCategoryMutation,
-    variables: { options: { contextId, type: graphqlType, categoryId, docs } },
-  });
-
-  return res.addContextCategory;
-}
-
-export async function removeContextDoc(
-  app: TestingApp,
-  contextId: string,
-  docId: string
-): Promise<boolean> {
-  const res = await app.gql({
-    query: removeContextDocMutation,
-    variables: { options: { contextId, docId } },
-  });
-
-  return res.removeContextDoc;
-}
-
-export async function listContextDocAndFiles(
-  app: TestingApp,
-  workspaceId: string,
-  sessionId: string,
-  contextId: string
-): Promise<
-  | {
-      docs: {
-        id: string;
-        status: string | null;
-        createdAt: number;
-      }[];
-      files: {
-        id: string;
-        name: string;
-        blobId: string;
-        chunkSize: number;
-        status: string;
-        error: string | null;
-        createdAt: number;
-      }[];
-    }
-  | undefined
-> {
-  const res = await app.gql({
-    query: listContextObjectQuery,
-    variables: { workspaceId, sessionId, contextId },
-  });
-
-  const context = res.currentUser?.copilot?.contexts?.[0];
-  if (!context) {
-    return undefined;
-  }
-
-  return {
-    docs: context.docs,
-    files: context.files.map(({ mimeType: _mimeType, ...file }) => file),
-  };
-}
-
-export async function listContextCategories(
-  app: TestingApp,
-  workspaceId: string,
-  sessionId: string,
-  contextId: string
-): Promise<
-  | {
-      collections: {
-        type: string;
-        id: string;
-        docs: {
-          id: string;
-          status: string | null;
-          createdAt: number;
-        }[];
-      }[];
-    }
-  | undefined
-> {
-  const res = await app.gql({
-    query: listContextObjectQuery,
-    variables: { workspaceId, sessionId, contextId },
-  });
-
-  const context = res.currentUser?.copilot?.contexts?.[0];
-  if (!context) {
-    return undefined;
-  }
-
-  return { collections: context.collections };
 }
 
 export async function submitTranscriptTask(
@@ -734,7 +496,6 @@ type ChatMessage = {
 type History = {
   sessionId: string;
   pinned: boolean;
-  tokens: number;
   action: string | null;
   createdAt: string;
   messages: ChatMessage[];
@@ -773,7 +534,6 @@ export async function getHistories(
           histories(docId: $docId, options: $options) {
             sessionId
             pinned
-            tokens
             action
             createdAt
             messages {
@@ -811,7 +571,6 @@ export async function getWorkspaceSessions(
             histories(docId: null, options: $options) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {
@@ -858,7 +617,6 @@ export async function getDocSessions(
             histories(docId: $docId, options: $options) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {
@@ -912,7 +670,6 @@ export async function getPinnedSessions(
             }) {
               sessionId
               pinned
-              tokens
               action
               createdAt
               messages {

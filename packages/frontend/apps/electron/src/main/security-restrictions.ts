@@ -5,10 +5,16 @@ import { logger } from './logger';
 import { openExternalSafely } from './security/open-external';
 import { validateRedirectProxyUrl } from './security/redirect-proxy';
 
+const pendingInternalNavigation = new WeakMap<Electron.WebContents, string>();
+
 export const checkSource = (
   e: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent
 ) => {
-  const url = e.senderFrame?.url || e.sender.getURL();
+  const url =
+    e.senderFrame?.url ||
+    (e.senderFrame && e.senderFrame !== e.sender.mainFrame
+      ? ''
+      : e.sender.getURL() || pendingInternalNavigation.get(e.sender) || '');
   const result = isInternalUrl(url);
   if (!result) logger.error('invalid source', url);
   return result;
@@ -16,6 +22,17 @@ export const checkSource = (
 
 export const registerSecurityRestrictions = () => {
   app.on('web-contents-created', (_, contents) => {
+    contents.on('did-start-navigation', ({ url, isMainFrame }) => {
+      if (!isMainFrame) return;
+      if (isInternalUrl(url)) {
+        pendingInternalNavigation.set(contents, url);
+      } else {
+        pendingInternalNavigation.delete(contents);
+      }
+    });
+    contents.on('did-stop-loading', () => {
+      pendingInternalNavigation.delete(contents);
+    });
     /**
      * Block navigation to origins not on the allowlist.
      *

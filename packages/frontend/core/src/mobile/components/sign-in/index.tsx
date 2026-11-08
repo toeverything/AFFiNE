@@ -8,10 +8,12 @@ export const MobileSignInPanel = ({
   onClose,
   server,
   initStep,
+  showCloseButton = false,
 }: {
   onClose: () => void;
   server?: string;
   initStep?: SignInStep;
+  showCloseButton?: boolean;
 }) => {
   const onAuthenticated = useCallback(
     (status: AuthSessionStatus) => {
@@ -23,7 +25,7 @@ export const MobileSignInPanel = ({
   );
 
   return (
-    <MobileSignInLayout>
+    <MobileSignInLayout showCloseButton={showCloseButton} onClose={onClose}>
       <SignInPanel
         onSkip={onClose}
         onAuthenticated={onAuthenticated}

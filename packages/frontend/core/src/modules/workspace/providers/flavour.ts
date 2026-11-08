@@ -1,4 +1,5 @@
 import type {
+  BlobSource,
   BlobStorage,
   DocStorage,
   ListedBlobRecord,
@@ -10,6 +11,11 @@ import { createIdentifier, type LiveData } from '@toeverything/infra';
 import type { WorkspaceProfileInfo } from '../entities/profile';
 import type { Workspace } from '../entities/workspace';
 import type { WorkspaceMetadata } from '../metadata';
+
+export interface WorkspaceBlobSourceSession {
+  close(): Promise<void>;
+  get(blob: string): Promise<Blob | null>;
+}
 
 export interface WorkspaceFlavourProvider {
   flavour: string;
@@ -43,11 +49,20 @@ export interface WorkspaceFlavourProvider {
     signal?: AbortSignal
   ): Promise<WorkspaceProfileInfo | undefined>;
 
-  getWorkspaceBlob(id: string, blob: string): Promise<Blob | null>;
+  getWorkspaceBlob(
+    id: string,
+    blob: string,
+    source?: BlobSource
+  ): Promise<Blob | null>;
 
-  listBlobs(workspaceId: string): Promise<ListedBlobRecord[]>;
+  openWorkspaceBlobSource?(
+    id: string,
+    source: BlobSource
+  ): WorkspaceBlobSourceSession;
 
-  deleteBlob(
+  listManageableBlobs(workspaceId: string): Promise<ListedBlobRecord[]>;
+
+  deleteManagedBlob(
     workspaceId: string,
     blob: string,
     permanent: boolean

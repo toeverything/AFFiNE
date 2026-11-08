@@ -1,9 +1,9 @@
 import type {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
 import type { AIDraftState } from '@affine/core/modules/ai-button/services/ai-draft';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -404,8 +404,8 @@ export class AIChatContent extends SignalWatcher(
         .notificationService=${this.notificationService}
         .aiDraftService=${this.aiDraftService}
         .aiToolsConfigService=${this.aiToolsConfigService}
-        .subscriptionService=${this.subscriptionService}
         .aiModelService=${this.aiModelService}
+        .subscriptionService=${this.subscriptionService}
         .onAISubscribe=${this.onAISubscribe}
         .trackOptions=${{
           where: 'chat-panel',

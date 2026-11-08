@@ -1,8 +1,6 @@
 use napi::Result;
 
-use crate::llm::core::contracts::{
-  CapabilityMatchRequest, CapabilityMatchResponse, RequestedModelMatchRequest, RequestedModelMatchResponse,
-};
+use crate::llm::core::contracts::{CapabilityMatchRequest, CapabilityMatchResponse};
 
 #[napi(catch_unwind)]
 pub fn llm_match_model_capabilities(payload: CapabilityMatchRequest) -> Result<CapabilityMatchResponse> {
@@ -14,25 +12,7 @@ pub fn llm_match_model_capabilities(payload: CapabilityMatchRequest) -> Result<C
     .map_err(crate::llm::map_json_error)?;
 
   Ok(CapabilityMatchResponse {
-    model_id: llm_adapter::core::select_model_id(&models, &cond).map_err(crate::llm::host::invalid_arg)?,
-  })
-}
-
-#[napi(catch_unwind)]
-pub fn llm_resolve_requested_model_match(payload: RequestedModelMatchRequest) -> Result<RequestedModelMatchResponse> {
-  let matched_optional_model = llm_adapter::core::matches_requested_model_list(
-    &payload.provider_ids,
-    &payload.optional_models,
-    payload.requested_model_id.as_deref(),
-  );
-
-  Ok(RequestedModelMatchResponse {
-    selected_model: if matched_optional_model {
-      payload.requested_model_id
-    } else {
-      payload.default_model
-    },
-    matched_optional_model,
+    model_id: llm_adapter::core::select_model_id(&models, &cond).map_err(crate::llm::invalid_arg)?,
   })
 }
 

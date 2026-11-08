@@ -1,3 +1,4 @@
+import { pretty } from '@react-email/render';
 import test from 'ava';
 
 import { normalizeSMTPHeloHostname } from '../core/mail/utils';
@@ -8,7 +9,7 @@ test('should render emails', async t => {
   for (const render of Object.values(Renderers)) {
     // @ts-expect-error use [PreviewProps]
     const content = await render();
-    t.snapshot(content.html, content.subject);
+    t.snapshot(await pretty(content.html), content.subject);
   }
 });
 
@@ -20,7 +21,7 @@ test('should render mention email with empty doc title', async t => {
       title: '',
     },
   });
-  t.snapshot(content.html, content.subject);
+  t.snapshot(await pretty(content.html), content.subject);
 });
 
 test('should normalize valid SMTP HELO hostnames', t => {

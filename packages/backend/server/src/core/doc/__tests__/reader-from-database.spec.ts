@@ -159,7 +159,7 @@ test('should get doc content', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, docId, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates, user.id);
 
   const docContent = await docReader.getDocContent(workspace.id, docId);
 
@@ -185,7 +185,12 @@ test('should get workspace content with default avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(
+    workspace.id,
+    workspace.id,
+    updates,
+    user.id
+  );
 
   mock.method(docReader, 'parseWorkspaceContent', () => ({
     name: 'Test Workspace',
@@ -221,7 +226,12 @@ test('should get workspace content with custom avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(
+    workspace.id,
+    workspace.id,
+    updates,
+    user.id
+  );
 
   const avatarKey = randomUUID();
 
@@ -237,7 +247,7 @@ test('should get workspace content with custom avatar', async t => {
     id: workspace.id,
     name: 'Test Workspace',
     avatarKey,
-    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
   });
 
   // should save to database
@@ -258,7 +268,7 @@ test('should get workspace content with custom avatar', async t => {
     id: workspace.id,
     name: 'Test Workspace 2',
     avatarKey,
-    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
   });
 });
 
@@ -278,7 +288,21 @@ test('should return doc markdown success', async t => {
     docSnapshot.id,
     false
   );
-  t.snapshot(result);
+  if (result) {
+    const { revision, ...markdown } = result;
+    t.truthy(revision);
+    t.snapshot(markdown);
+  }
+  const canvas = await docReader.getDocCanvas(workspace.id, docSnapshot.id);
+  t.is(canvas?.version, 1);
+  t.is(canvas?.docId, docSnapshot.id);
+  t.truthy(canvas?.revision);
+  t.deepEqual(canvas?.counts, {
+    connector: 6,
+    group: 6,
+    shape: 7,
+    text: 7,
+  });
 });
 
 test('should read markdown return null when doc not exists', async t => {
@@ -293,4 +317,5 @@ test('should read markdown return null when doc not exists', async t => {
     false
   );
   t.is(result, null);
+  t.is(await docReader.getDocCanvas(workspace.id, randomUUID()), null);
 });

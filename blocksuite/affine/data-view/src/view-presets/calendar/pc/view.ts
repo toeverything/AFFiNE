@@ -416,10 +416,12 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
             postfix: html`<div
                 style="font-size:14px;color:var(--affine-text-secondary-color);"
               >
-                ${this.view.startDateMapping$.value.status === 'ready'
-                  ? this.view.propertyGetOrCreate(selectedStart ?? '').name$
-                      .value
-                  : ''}
+                ${
+                  this.view.startDateMapping$.value.status === 'ready'
+                    ? this.view.propertyGetOrCreate(selectedStart ?? '').name$
+                        .value
+                    : ''
+                }
               </div>
               ${ArrowRightSmallIcon()}`,
             select: () => {
@@ -448,9 +450,11 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
             postfix: html`<div
                 style="font-size:14px;color:var(--affine-text-secondary-color);"
               >
-                ${selectedEnd
-                  ? this.view.propertyGetOrCreate(selectedEnd).name$.value
-                  : 'None'}
+                ${
+                  selectedEnd
+                    ? this.view.propertyGetOrCreate(selectedEnd).name$.value
+                    : 'None'
+                }
               </div>
               ${ArrowRightSmallIcon()}`,
             select: () => {
@@ -726,10 +730,9 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
     return html`
       <div
         ${ref(element => this.logic.bindEntryDraggable(dndKey, entry, element))}
-        class="calendar-entry ${entry.kind} ${segmentClass} ${this.logic
-          .selectedEntryId === entry.id
-          ? 'selected'
-          : ''}"
+        class="calendar-entry ${entry.kind} ${segmentClass} ${
+          this.logic.selectedEntryId === entry.id ? 'selected' : ''
+        }"
         role="button"
         tabindex="0"
         aria-label=${entry.title || 'Untitled'}
@@ -744,31 +747,37 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
           this.logic.handleEntryKeydown(entry, event);
         }}
       >
-        ${showLeftHandle
-          ? html`<span
-              class="calendar-resize-handle left"
-              @pointerdown=${(event: PointerEvent) =>
-                this.logic.startResize(entry, 'start', event)}
-            ></span>`
-          : nothing}
+        ${
+          showLeftHandle
+            ? html`<span
+                class="calendar-resize-handle left"
+                @pointerdown=${(event: PointerEvent) =>
+                  this.logic.startResize(entry, 'start', event)}
+              ></span>`
+            : nothing
+        }
         ${this.renderEntryTitle(entry)}
-        ${entry.kind === 'row' && entry.cardProperties.length
-          ? html`<span class="calendar-entry-properties">
-              ${entry.cardProperties.map(
-                property =>
-                  html`<span class="calendar-entry-property"
-                    >${property.value}</span
-                  >`
-              )}
-            </span>`
-          : nothing}
-        ${showRightHandle
-          ? html`<span
-              class="calendar-resize-handle right"
-              @pointerdown=${(event: PointerEvent) =>
-                this.logic.startResize(entry, 'end', event)}
-            ></span>`
-          : nothing}
+        ${
+          entry.kind === 'row' && entry.cardProperties.length
+            ? html`<span class="calendar-entry-properties">
+                ${entry.cardProperties.map(
+                  property =>
+                    html`<span class="calendar-entry-property"
+                      >${property.value}</span
+                    >`
+                )}
+              </span>`
+            : nothing
+        }
+        ${
+          showRightHandle
+            ? html`<span
+                class="calendar-resize-handle right"
+                @pointerdown=${(event: PointerEvent) =>
+                  this.logic.startResize(entry, 'end', event)}
+              ></span>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -785,16 +794,18 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
         ${entry.titleSegments.map(
           segment =>
             html`<span
-              class="calendar-entry-title-segment ${segment.linkedDoc
-                ? 'linked-doc-segment'
-                : ''}"
+              class="calendar-entry-title-segment ${
+                segment.linkedDoc ? 'linked-doc-segment' : ''
+              }"
             >
               ${segment.linkedDoc ? LinkedPageIcon() : nothing}
-              ${segment.text
-                ? html`<span class="calendar-entry-title-text"
-                    >${segment.text}</span
-                  >`
-                : nothing}
+              ${
+                segment.text
+                  ? html`<span class="calendar-entry-title-text"
+                      >${segment.text}</span
+                    >`
+                  : nothing
+              }
             </span>`
         )}
       </span>`;
@@ -895,11 +906,12 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
     if (!preview) return nothing;
 
     return html`<div
-      class="calendar-entry-preview ${preview.continuesLeft
-        ? 'continues-left'
-        : ''} ${preview.continuesRight ? 'continues-right' : ''}"
-      style="grid-column:${preview.sIdx +
-      1} / span ${preview.span};grid-row:${preview.slot + 1};"
+      class="calendar-entry-preview ${
+        preview.continuesLeft ? 'continues-left' : ''
+      } ${preview.continuesRight ? 'continues-right' : ''}"
+      style="grid-column:${
+        preview.sIdx + 1
+      } / span ${preview.span};grid-row:${preview.slot + 1};"
     >
       ${preview.title}
     </div>`;
@@ -919,17 +931,19 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
         </span>
       </div>
       <div class="calendar-empty-month-hint-actions">
-        ${this.logic.view.readonly$.value
-          ? nothing
-          : html`<button
-              class="calendar-empty-month-hint-action"
-              @click=${() =>
-                this.logic.createRowOnDate(
-                  getDefaultCreateDate(this.logic.currentMonth)
-                )}
-            >
-              ${PlusIcon()}<span>New row</span>
-            </button>`}
+        ${
+          this.logic.view.readonly$.value
+            ? nothing
+            : html`<button
+                class="calendar-empty-month-hint-action"
+                @click=${() =>
+                  this.logic.createRowOnDate(
+                    getDefaultCreateDate(this.logic.currentMonth)
+                  )}
+              >
+                ${PlusIcon()}<span>New row</span>
+              </button>`
+        }
         <button
           class="calendar-empty-month-hint-close"
           aria-label="Dismiss"
@@ -963,14 +977,16 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
             ${monthFormatter.format(new Date(this.logic.currentMonth))}
           </div>
           <div class="calendar-nav">
-            ${this.logic.isCurrentMonth()
-              ? nothing
-              : html`<button
-                  class="calendar-today-button"
-                  @click=${() => this.logic.goToday()}
-                >
-                  <span>Today</span>
-                </button>`}
+            ${
+              this.logic.isCurrentMonth()
+                ? nothing
+                : html`<button
+                    class="calendar-today-button"
+                    @click=${() => this.logic.goToday()}
+                  >
+                    <span>Today</span>
+                  </button>`
+            }
             <button
               class="calendar-icon-button"
               aria-label="Previous month"
@@ -1022,13 +1038,13 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
                       return html`
                         <div
                           data-date=${day.date}
-                          class="calendar-day ${day.inMonth
-                            ? ''
-                            : 'is-outside'} ${day.date === today
-                            ? 'is-today'
-                            : ''} ${this.logic.isDayInPreview(day.date)
-                            ? 'is-drop-target'
-                            : ''}"
+                          class="calendar-day ${
+                            day.inMonth ? '' : 'is-outside'
+                          } ${day.date === today ? 'is-today' : ''} ${
+                            this.logic.isDayInPreview(day.date)
+                              ? 'is-drop-target'
+                              : ''
+                          }"
                           style="--calendar-segment-slots:${getCalendarDaySegmentSlots(
                             day,
                             movingEntryId
@@ -1044,17 +1060,19 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
                             ${this.renderDayPreview(day.date)}
                             ${this.renderPreviewSpacer(day, preview, dayIndex)}
                           </div>
-                          ${canReserveNewRow
-                            ? html`<button
-                                class="calendar-new-row"
-                                aria-label="+ New row"
-                                ?disabled=${this.logic.isInteracting}
-                                @click=${() =>
-                                  this.logic.createRowOnDate(day.date)}
-                              >
-                                ${PlusIcon()}<span>New row</span>
-                              </button>`
-                            : nothing}
+                          ${
+                            canReserveNewRow
+                              ? html`<button
+                                  class="calendar-new-row"
+                                  aria-label="+ New row"
+                                  ?disabled=${this.logic.isInteracting}
+                                  @click=${() =>
+                                    this.logic.createRowOnDate(day.date)}
+                                >
+                                  ${PlusIcon()}<span>New row</span>
+                                </button>`
+                              : nothing
+                          }
                         </div>
                       `;
                     }
@@ -1083,25 +1101,31 @@ export class CalendarViewUI extends DataViewUIBase<CalendarViewUILogic> {
   override render(): TemplateResult {
     const setup = this.logic.view.dateMapping$.value.status === 'setup';
     return html`
-      ${this.logic.headerWidget
-        ? renderUniLit(this.logic.headerWidget, {
-            dataViewLogic: this.logic,
-          })
-        : nothing}
+      ${
+        this.logic.headerWidget
+          ? renderUniLit(this.logic.headerWidget, {
+              dataViewLogic: this.logic,
+            })
+          : nothing
+      }
       <div class=${setup ? 'calendar-setup-wrap' : ''}>
         <div class="calendar-scroll" @wheel="${this.logic.onWheel}">
           ${this.renderCalendar(setup)}
         </div>
-        ${setup
-          ? html`<div class="calendar-setup">
-              <button
-                @click=${(event: MouseEvent) =>
-                  this.logic.openSetupMenu(event.currentTarget as HTMLElement)}
-              >
-                ${TodayIcon()}<span>Select or create date property</span>
-              </button>
-            </div>`
-          : nothing}
+        ${
+          setup
+            ? html`<div class="calendar-setup">
+                <button
+                  @click=${(event: MouseEvent) =>
+                    this.logic.openSetupMenu(
+                      event.currentTarget as HTMLElement
+                    )}
+                >
+                  ${TodayIcon()}<span>Select or create date property</span>
+                </button>
+              </div>`
+            : nothing
+        }
       </div>
     `;
   }

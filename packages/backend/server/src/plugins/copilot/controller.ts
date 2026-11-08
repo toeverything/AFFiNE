@@ -2,7 +2,6 @@ import {
   BeforeApplicationShutdown,
   Controller,
   Get,
-  Logger,
   Param,
   Query,
   Req,
@@ -27,21 +26,19 @@ import {
 } from 'rxjs';
 
 import {
-  applyAttachHeaders,
-  BlobNotFound,
   CallMetric,
   Config,
   mapSseError,
   metrics,
   UnsplashIsNotConfigured,
 } from '../../base';
-import { CurrentUser, Public } from '../../core/auth';
+import { CurrentUser } from '../../core/auth';
+import { CopilotEnabled } from './feature';
 import {
   ActionStreamHost,
   projectActionEventToChatEvent,
 } from './runtime/hosts/action-stream-host';
 import { TurnOrchestrator } from './runtime/turn-orchestrator';
-import { CopilotStorage } from './storage';
 import { getSignal } from './utils';
 
 export interface ChatEvent {
@@ -52,16 +49,15 @@ export interface ChatEvent {
 
 const PING_INTERVAL = 5000;
 
+@CopilotEnabled()
 @Controller('/api/copilot')
 export class CopilotController implements BeforeApplicationShutdown {
-  private readonly logger = new Logger(CopilotController.name);
   private readonly ongoingStreamCount$ = new BehaviorSubject(0);
 
   constructor(
     private readonly config: Config,
     private readonly orchestrator: TurnOrchestrator,
-    private readonly actionStreams: ActionStreamHost,
-    private readonly storage: CopilotStorage
+    private readonly actionStreams: ActionStreamHost
   ) {}
 
   async beforeApplicationShutdown() {
@@ -103,8 +99,6 @@ export class CopilotController implements BeforeApplicationShutdown {
     @Param('sessionId') sessionId: string,
     @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params: query, throwInStream: false };
-
     try {
       const { signal, onConnectionClosed } = getSignal(req);
       let endBeforePromiseResolve = false;
@@ -122,19 +116,14 @@ export class CopilotController implements BeforeApplicationShutdown {
         () => endBeforePromiseResolve
       );
 
-      info.model = prepared.model;
-      info.finalMessage = prepared.finalMessage.filter(
-        m => m.role !== 'system'
-      );
-      metrics.ai.counter('chat_stream_calls').add(1, { model: prepared.model });
+      metrics.ai.counter('chat_stream_calls').add(1);
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
 
       const source$ = from(prepared.stream).pipe(
         map(data => this.toMessageEvent(prepared.messageId, data)),
         catchError(e => {
-          metrics.ai.counter('chat_stream_errors').add(1);
-          info.throwInStream = true;
-          return mapSseError(e, info);
+          metrics.ai.counter('chat_stream_errors').add(1, { stage: 'stream' });
+          return mapSseError(e, { endpoint: 'chat', stage: 'stream' });
         }),
         finalize(() => {
           this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1);
@@ -143,8 +132,8 @@ export class CopilotController implements BeforeApplicationShutdown {
 
       return this.mergePingStream(prepared.messageId || '', source$);
     } catch (err) {
-      metrics.ai.counter('chat_stream_errors').add(1, info);
-      return mapSseError(err, info);
+      metrics.ai.counter('chat_stream_errors').add(1, { stage: 'prepare' });
+      return mapSseError(err, { endpoint: 'chat', stage: 'prepare' });
     }
   }
 
@@ -156,8 +145,6 @@ export class CopilotController implements BeforeApplicationShutdown {
     @Param('sessionId') sessionId: string,
     @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params: query, throwInStream: false };
-
     try {
       const { signal, onConnectionClosed } = getSignal(req);
       let endBeforePromiseResolve = false;
@@ -175,21 +162,19 @@ export class CopilotController implements BeforeApplicationShutdown {
         () => endBeforePromiseResolve
       );
 
-      info.model = prepared.model;
-      info.finalMessage = prepared.finalMessage.filter(
-        m => m.role !== 'system'
-      );
-      metrics.ai.counter('chat_object_stream_calls').add(1, {
-        model: prepared.model,
-      });
+      metrics.ai.counter('chat_object_stream_calls').add(1);
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
 
       const source$ = from(prepared.stream).pipe(
         map(data => this.toMessageEvent(prepared.messageId, data)),
         catchError(e => {
-          metrics.ai.counter('chat_object_stream_errors').add(1);
-          info.throwInStream = true;
-          return mapSseError(e, info);
+          metrics.ai
+            .counter('chat_object_stream_errors')
+            .add(1, { stage: 'stream' });
+          return mapSseError(e, {
+            endpoint: 'chat_object',
+            stage: 'stream',
+          });
         }),
         finalize(() => {
           this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1);
@@ -198,8 +183,13 @@ export class CopilotController implements BeforeApplicationShutdown {
 
       return this.mergePingStream(prepared.messageId || '', source$);
     } catch (err) {
-      metrics.ai.counter('chat_object_stream_errors').add(1, info);
-      return mapSseError(err, info);
+      metrics.ai
+        .counter('chat_object_stream_errors')
+        .add(1, { stage: 'prepare' });
+      return mapSseError(err, {
+        endpoint: 'chat_object',
+        stage: 'prepare',
+      });
     }
   }
 
@@ -211,7 +201,6 @@ export class CopilotController implements BeforeApplicationShutdown {
     @Param('sessionId') sessionId: string,
     @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params: query, throwInStream: false };
     try {
       const { signal } = getSignal(req);
 
@@ -221,20 +210,16 @@ export class CopilotController implements BeforeApplicationShutdown {
         query,
         signal
       );
-      info.actionId = prepared.actionId;
-      info.actionVersion = prepared.actionVersion;
-      metrics.ai.counter('action_stream_calls').add(1, {
-        actionId: prepared.actionId,
-        actionVersion: prepared.actionVersion,
-      });
+      metrics.ai.counter('action_stream_calls').add(1);
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
 
       const source$ = from(prepared.stream).pipe(
         map(data => projectActionEventToChatEvent(prepared.messageId, data)),
         catchError(e => {
-          metrics.ai.counter('action_stream_errors').add(1, info);
-          info.throwInStream = true;
-          return mapSseError(e, info);
+          metrics.ai
+            .counter('action_stream_errors')
+            .add(1, { stage: 'stream' });
+          return mapSseError(e, { endpoint: 'action', stage: 'stream' });
         }),
         finalize(() =>
           this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1)
@@ -243,8 +228,8 @@ export class CopilotController implements BeforeApplicationShutdown {
 
       return this.mergePingStream(prepared.messageId || '', source$);
     } catch (err) {
-      metrics.ai.counter('action_stream_errors').add(1, info);
-      return mapSseError(err, info);
+      metrics.ai.counter('action_stream_errors').add(1, { stage: 'prepare' });
+      return mapSseError(err, { endpoint: 'action', stage: 'prepare' });
     }
   }
 
@@ -256,7 +241,6 @@ export class CopilotController implements BeforeApplicationShutdown {
     @Param('sessionId') sessionId: string,
     @Query() query: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    const info: any = { sessionId, params: query, throwInStream: false };
     try {
       const { signal, onConnectionClosed } = getSignal(req);
       let endBeforePromiseResolve = false;
@@ -273,10 +257,7 @@ export class CopilotController implements BeforeApplicationShutdown {
         signal,
         () => endBeforePromiseResolve
       );
-      info.model = prepared.model;
-      metrics.ai.counter('images_stream_calls').add(1, {
-        model: prepared.model,
-      });
+      metrics.ai.counter('images_stream_calls').add(1);
       this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
 
       const source$ = from(prepared.stream).pipe(
@@ -284,9 +265,10 @@ export class CopilotController implements BeforeApplicationShutdown {
           this.toAttachmentEvent(prepared.messageId, attachment)
         ),
         catchError(e => {
-          metrics.ai.counter('images_stream_errors').add(1, info);
-          info.throwInStream = true;
-          return mapSseError(e, info);
+          metrics.ai
+            .counter('images_stream_errors')
+            .add(1, { stage: 'stream' });
+          return mapSseError(e, { endpoint: 'images', stage: 'stream' });
         }),
         finalize(() =>
           this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1)
@@ -295,8 +277,8 @@ export class CopilotController implements BeforeApplicationShutdown {
 
       return this.mergePingStream(prepared.messageId || '', source$);
     } catch (err) {
-      metrics.ai.counter('images_stream_errors').add(1, info);
-      return mapSseError(err, info);
+      metrics.ai.counter('images_stream_errors').add(1, { stage: 'prepare' });
+      return mapSseError(err, { endpoint: 'images', stage: 'prepare' });
     }
   }
 
@@ -329,49 +311,5 @@ export class CopilotController implements BeforeApplicationShutdown {
     });
 
     res.status(response.status).send(await response.json());
-  }
-
-  @Public()
-  @Get('/blob/:userId/:workspaceId/:key')
-  async getBlob(
-    @Res() res: Response,
-    @Param('userId') userId: string,
-    @Param('workspaceId') workspaceId: string,
-    @Param('key') key: string
-  ) {
-    const { body, metadata, redirectUrl } = await this.storage.get(
-      userId,
-      workspaceId,
-      key,
-      true
-    );
-
-    if (redirectUrl) {
-      // redirect to signed url
-      return res.redirect(redirectUrl);
-    }
-
-    if (!body) {
-      throw new BlobNotFound({
-        spaceId: workspaceId,
-        blobId: key,
-      });
-    }
-
-    // metadata should always exists if body is not null
-    if (metadata) {
-      res.setHeader('content-type', metadata.contentType);
-      res.setHeader('last-modified', metadata.lastModified.toUTCString());
-      res.setHeader('content-length', metadata.contentLength);
-    } else {
-      this.logger.warn(`Blob ${workspaceId}/${key} has no metadata`);
-    }
-    applyAttachHeaders(res, {
-      contentType: metadata?.contentType,
-      filename: key,
-    });
-
-    res.setHeader('cache-control', 'public, max-age=2592000, immutable');
-    body.pipe(res);
   }
 }

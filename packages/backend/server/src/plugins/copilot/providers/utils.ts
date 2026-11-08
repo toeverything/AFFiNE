@@ -174,8 +174,8 @@ export class TextStreamParser {
             result += `\nCrawling the web "${chunk.input.url}"\n`;
             break;
           }
-          case 'doc_keyword_search': {
-            result += `\nSearching the keyword "${chunk.input.query}"\n`;
+          case 'doc_search': {
+            result += `\nSearching workspace documents for "${chunk.input.query}"\n`;
             break;
           }
           case 'doc_read': {
@@ -196,27 +196,11 @@ export class TextStreamParser {
         );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
-          case 'doc_semantic_search': {
-            const output = chunk.output;
-            if (Array.isArray(output)) {
-              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
-            } else if (typeof output === 'string') {
-              result += `\n${output}\n`;
-            } else {
-              const message = asRecord(output)?.message;
-              this.logger.warn(
-                `Unexpected result type for doc_semantic_search: ${
-                  typeof message === 'string' ? message : 'Unknown error'
-                }`
-              );
-            }
-            break;
-          }
-          case 'doc_keyword_search': {
-            const output = chunk.output;
-            if (Array.isArray(output)) {
-              result += `\nFound ${output.length} document${output.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
-              result += `\n${this.getKeywordSearchLinks(output)}\n`;
+          case 'doc_search': {
+            const output = asRecord(chunk.output);
+            const hits = output?.hits;
+            if (Array.isArray(hits)) {
+              result += `\nFound ${hits.length} document${hits.length !== 1 ? 's' : ''} related to “${chunk.input.query}”.\n`;
             }
             break;
           }
@@ -284,18 +268,6 @@ export class TextStreamParser {
   ): string {
     const links = list.reduce((acc, result) => {
       return acc + `\n\n[${result.title ?? result.url}](${result.url})\n\n`;
-    }, '');
-    return links;
-  }
-
-  private getKeywordSearchLinks(
-    list: {
-      docId: string;
-      title: string;
-    }[]
-  ): string {
-    const links = list.reduce((acc, result) => {
-      return acc + `\n\n[${result.title}](${result.docId})\n\n`;
     }, '');
     return links;
   }

@@ -173,10 +173,12 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly _FootNoteDefaultContent = (footnote: FootNote) => {
+    const label =
+      footnote.label.match(/^(?:doc|attachment)-(\d+)$/)?.[1] ?? footnote.label;
     return html`<span
       class="footnote-content-default"
       @click=${this.onFootnoteClick}
-      >${footnote.label}</span
+      >${label}</span
     >`;
   };
 

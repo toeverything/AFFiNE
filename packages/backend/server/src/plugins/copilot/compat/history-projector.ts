@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AiPromptRole } from '@prisma/client';
+import { AiSessionMessageRole } from '@prisma/client';
 
 import type { Conversation, Turn } from '../core';
 import { chatMessageFromTurn } from '../core';
@@ -16,7 +16,6 @@ export type CanonicalConversationHistory = {
   conversation: Conversation;
   turns: Turn[];
   prompt: ResolvedPrompt;
-  tokenCost: number;
 };
 
 export type CanonicalConversationMeta = Omit<
@@ -35,7 +34,7 @@ export class CompatHistoryProjector {
   private projectSessionBase(
     history: CanonicalConversationMeta
   ): Omit<ChatHistory, 'messages'> {
-    const { conversation, prompt, tokenCost } = history;
+    const { conversation, prompt } = history;
     return {
       userId: conversation.userId,
       sessionId: conversation.id,
@@ -45,10 +44,7 @@ export class CompatHistoryProjector {
       pinned: conversation.pinned,
       title: conversation.title,
       action: prompt.action || null,
-      model: prompt.model,
-      optionalModels: prompt.optionalModels || [],
       promptName: prompt.name,
-      tokens: tokenCost,
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,
     };
@@ -84,7 +80,7 @@ export class CompatHistoryProjector {
           .concat(messages)
           .filter(
             message =>
-              message.role !== AiPromptRole.user ||
+              message.role !== AiSessionMessageRole.user ||
               !!message.content.trim() ||
               !!message.attachments?.length
           )

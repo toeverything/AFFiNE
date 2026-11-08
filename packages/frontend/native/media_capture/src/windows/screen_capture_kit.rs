@@ -270,7 +270,8 @@ fn get_running_processes() -> Vec<u32> {
     let h_snapshot = match h_snapshot_result {
       Ok(handle) => {
         if handle == INVALID_HANDLE_VALUE {
-          // eprintln!("CreateToolhelp32Snapshot returned INVALID_HANDLE_VALUE");
+          // eprintln!("CreateToolhelp32Snapshot returned
+          // INVALID_HANDLE_VALUE");
           return Vec::new();
         }
         handle

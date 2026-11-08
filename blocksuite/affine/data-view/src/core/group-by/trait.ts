@@ -353,6 +353,7 @@ export class GroupTrait {
   }
 
   addToGroup(rowId: string, key: string) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     const groupInfo = this.groupInfo$.value;
     if (!groupMap || !groupInfo) {
@@ -448,6 +449,7 @@ export class GroupTrait {
     toGroupKey: string,
     position: InsertToPosition
   ) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -490,6 +492,7 @@ export class GroupTrait {
   }
 
   moveGroupTo(groupKey: string, position: InsertToPosition) {
+    this.view.lockRows(false);
     const groups = this.groupsDataListAll$.value;
     if (!groups) {
       return;
@@ -506,6 +509,7 @@ export class GroupTrait {
   }
 
   removeFromGroup(rowId: string, key: string) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -524,6 +528,7 @@ export class GroupTrait {
   }
 
   updateValue(rows: string[], value: unknown) {
+    this.view.lockRows(false);
     const propertyId = this.property$.value?.id;
     if (!propertyId) {
       return;

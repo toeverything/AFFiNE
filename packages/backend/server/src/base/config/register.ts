@@ -1,29 +1,38 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import { mergeWith, once, set } from 'lodash-es';
 import { z } from 'zod';
 
 import { type EnvConfigType, parseEnvValue } from './env';
 import { AppConfigByPath } from './types';
 
-export type JSONSchema = { description?: string } & (
-  | { type?: undefined; oneOf?: JSONSchema[] }
-  | {
-      type: 'string' | 'number' | 'boolean';
-      enum?: string[];
-    }
-  | {
-      type: 'array';
-      items?: JSONSchema;
-    }
-  | {
-      type: 'object';
-      properties?: Record<string, JSONSchema>;
-      required?: string[];
-    }
-);
+export type JSONSchema = {
+  $id?: string;
+  $ref?: string;
+  $schema?: string;
+  additionalProperties?: boolean | JSONSchema;
+  allOf?: JSONSchema[];
+  anyOf?: JSONSchema[];
+  definitions?: Record<string, JSONSchema>;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  format?: string;
+  items?: JSONSchema;
+  minItems?: number;
+  minLength?: number;
+  oneOf?: JSONSchema[];
+  pattern?: string;
+  properties?: Record<string, JSONSchema>;
+  required?: string[];
+  title?: string;
+  type?:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'array'
+    | 'object'
+    | 'null'
+    | Array<'string' | 'number' | 'boolean' | 'array' | 'object' | 'null'>;
+};
 
 type ConfigType = EnvConfigType | 'array' | 'object' | 'any';
 export type ConfigDescriptor<T> = {
@@ -34,6 +43,7 @@ export type ConfigDescriptor<T> = {
   default: T;
   env?: [string, EnvConfigType];
   link?: string;
+  internal?: boolean;
 };
 
 type ConfigDefineDescriptor<T> = {
@@ -44,6 +54,7 @@ type ConfigDefineDescriptor<T> = {
   env?: string | [string, EnvConfigType];
   link?: string;
   schema?: JSONSchema;
+  internal?: boolean;
 };
 
 function typeFromShape(shape: z.ZodType<any>): ConfigType {
@@ -87,19 +98,17 @@ function shapeFromType(type: ConfigType): z.ZodType<any> {
 }
 
 function typeFromSchema(schema: JSONSchema): ConfigType {
-  if ('type' in schema) {
-    switch (schema.type) {
-      case 'string':
-        return 'string';
-      case 'number':
-        return 'float';
-      case 'boolean':
-        return 'boolean';
-      case 'array':
-        return 'array';
-      case 'object':
-        return 'object';
-    }
+  switch (schema.type) {
+    case 'string':
+      return 'string';
+    case 'number':
+      return 'float';
+    case 'boolean':
+      return 'boolean';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
   }
 
   return 'any';
@@ -168,6 +177,7 @@ function standardizeDescriptor<T>(
     },
     env,
     link: desc.link,
+    internal: desc.internal,
     schema: {
       type: schemaFromType(type),
       description: desc.desc,
@@ -201,11 +211,19 @@ export function defineModuleConfig<T extends keyof AppConfigSchema>(
   module: T,
   defs: ModuleConfigDescriptors<AppConfigByPath<T>>
 ) {
+  registerModuleConfig(
+    module,
+    defs as Record<string, ConfigDefineDescriptor<unknown>>
+  );
+}
+
+function registerModuleConfig(
+  module: string,
+  defs: Record<string, ConfigDefineDescriptor<unknown>>
+) {
   const descriptors: Record<string, ConfigDescriptor<any>> = {};
   Object.entries(defs).forEach(([key, desc]) => {
-    descriptors[key] = standardizeDescriptor(
-      desc as ConfigDefineDescriptor<any>
-    );
+    descriptors[key] = standardizeDescriptor(desc);
   });
 
   APP_CONFIG_DESCRIPTORS[module] = {
@@ -214,31 +232,59 @@ export function defineModuleConfig<T extends keyof AppConfigSchema>(
   };
 }
 
-const CONFIG_JSON_PATHS = [
-  join(env.projectRoot, 'config.json'),
-  `${homedir()}/.affine/config/config.json`,
-];
-function readConfigJSONOverrides(path: string) {
-  const overrides: DeepPartial<AppConfig> = {};
-  if (existsSync(path)) {
-    try {
-      const config = JSON.parse(readFileSync(path, 'utf-8')) as AppConfig;
+export type NativeAppConfigDescriptor = {
+  key: string;
+  description: string;
+  defaultValue: unknown;
+  schema: JSONSchema;
+  internal: boolean;
+  envName?: string | null;
+  envType?: string | null;
+  link?: string | null;
+};
 
-      Object.entries(config).forEach(([key, value]) => {
-        if (key === '$schema') {
-          return;
-        }
-
-        Object.entries(value).forEach(([k, v]) => {
-          set(overrides, `${key}.${k}`, v);
-        });
-      });
-    } catch (e) {
-      console.error('Invalid json config file', e);
-    }
-  }
-
-  return overrides;
+export function defineNativeModuleConfig<T extends keyof AppConfigSchema>(
+  module: T,
+  descriptors: NativeAppConfigDescriptor[],
+  validate: (module: string, key: string, value: unknown) => string[],
+  nodeDefinitions: Partial<ModuleConfigDescriptors<AppConfigByPath<T>>> = {}
+) {
+  registerModuleConfig(module, {
+    ...nodeDefinitions,
+    ...Object.fromEntries(
+      descriptors.map(descriptor => [
+        descriptor.key,
+        {
+          desc: descriptor.description,
+          default: descriptor.defaultValue,
+          schema: descriptor.schema,
+          internal: descriptor.internal,
+          link: descriptor.link ?? undefined,
+          env:
+            descriptor.envName &&
+            (descriptor.envType === 'string' ||
+              descriptor.envType === 'integer')
+              ? [descriptor.envName, descriptor.envType]
+              : undefined,
+          validate: (value: unknown) => {
+            const errors = validate(module, descriptor.key, value);
+            return errors.length
+              ? {
+                  success: false as const,
+                  error: new z.ZodError(
+                    errors.map(message => ({
+                      code: z.ZodIssueCode.custom,
+                      message,
+                      path: [],
+                    }))
+                  ),
+                }
+              : { success: true as const, data: value };
+          },
+        },
+      ])
+    ),
+  } as Record<string, ConfigDefineDescriptor<unknown>>);
 }
 
 export function override(config: AppConfig, update: DeepPartial<AppConfig>) {
@@ -279,7 +325,9 @@ export function override(config: AppConfig, update: DeepPartial<AppConfig>) {
   });
 }
 
-export function getDefaultConfig(): AppConfig {
+export function getDefaultConfig(
+  excludedKeys: ReadonlySet<string> = new Set()
+): AppConfig {
   const config = {} as AppConfig;
   const envs = process.env;
 
@@ -287,6 +335,9 @@ export function getDefaultConfig(): AppConfig {
     const modulizedConfig = {};
 
     for (const [key, desc] of Object.entries(defs)) {
+      if (excludedKeys.has(`${module}.${key}`)) {
+        continue;
+      }
       let defaultValue = desc.default;
 
       if (desc.env) {
@@ -317,11 +368,6 @@ Error: ${issue.message}`;
     // @ts-expect-error all keys are known
     config[module] = modulizedConfig;
   }
-
-  CONFIG_JSON_PATHS.forEach(path => {
-    const overrides = readConfigJSONOverrides(path);
-    override(config, overrides);
-  });
 
   return config as AppConfigSchema;
 }

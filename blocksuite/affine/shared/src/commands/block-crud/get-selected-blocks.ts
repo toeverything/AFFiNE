@@ -5,7 +5,7 @@ import type {
   TextSelection,
 } from '@blocksuite/std';
 import { BlockComponent } from '@blocksuite/std';
-import type { RoleType } from '@blocksuite/store';
+import type { BlockModel, RoleType } from '@blocksuite/store';
 
 import type { ImageSelection } from '../../selection/index.js';
 
@@ -129,35 +129,33 @@ export const getSelectedBlocksCommand: Command<
     dirtyResult = dirtyResult.filter(ctx.filter);
   }
 
-  const getModelPath = (el: BlockComponent) => {
-    const path: number[] = [];
-    let model = el.model;
-    while (model) {
-      const parent = ctx.std.store.getParent(model.id);
-      if (!parent) break;
-      path.unshift(parent.children.findIndex(child => child.id === model.id));
-      model = parent;
-    }
-    return path;
-  };
-
-  const compareByModelPath = (a: BlockComponent, b: BlockComponent) => {
-    if (a === b) return 0;
-    const aPath = getModelPath(a);
-    const bPath = getModelPath(b);
-    const length = Math.min(aPath.length, bPath.length);
-    for (let i = 0; i < length; i++) {
-      const diff = aPath[i] - bPath[i];
-      if (diff !== 0) return diff;
-    }
-    return aPath.length - bPath.length;
-  };
+  const seen = new Set<BlockComponent>();
 
   // remove duplicate elements
-  const result: BlockComponent[] = dirtyResult
-    .filter((el, index) => dirtyResult.indexOf(el) === index)
+  const result: BlockComponent[] = dirtyResult.filter(el => {
+    if (seen.has(el)) return false;
+    seen.add(el);
+    return true;
+  });
+
+  if (result.length > 1) {
+    const modelOrder = new Map<string, number>();
+    const visit = (model: BlockModel) => {
+      modelOrder.set(model.id, modelOrder.size);
+      model.children.forEach(visit);
+    };
+    const root = ctx.std.store.root;
+    if (root) {
+      visit(root);
+    }
+
     // sort by model tree position, which is the order used for paste/export
-    .sort(compareByModelPath);
+    result.sort(
+      (a, b) =>
+        (modelOrder.get(a.blockId) ?? Number.MAX_SAFE_INTEGER) -
+        (modelOrder.get(b.blockId) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
 
   if (result.length === 0) return;
 

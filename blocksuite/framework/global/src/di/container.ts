@@ -319,9 +319,9 @@ class ContainerEditor {
     Arg1 extends ServiceIdentifier<any>,
     Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait,
     Trait = ServiceIdentifierType<Arg1>,
-    Deps extends Arg2 extends Type<Trait>
+    Deps extends (Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
-      : [] = Arg2 extends Type<Trait>
+      : []) = Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [],
     Arg3 extends Deps = Deps,
@@ -365,9 +365,9 @@ class ContainerEditor {
     Arg1 extends ServiceIdentifier<any>,
     Arg2 extends Type<Trait> | ServiceFactory<Trait> | Trait,
     Trait = ServiceIdentifierType<Arg1>,
-    Deps extends Arg2 extends Type<Trait>
+    Deps extends (Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
-      : [] = Arg2 extends Type<Trait>
+      : []) = Arg2 extends Type<Trait>
       ? TypesToDeps<ConstructorParameters<Arg2>>
       : [],
     Arg3 extends Deps = Deps,

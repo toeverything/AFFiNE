@@ -1,11 +1,13 @@
 import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
+  type BlobSource,
   type BlobStorage,
   type DocStorage,
   type ListedBlobRecord,
   universalId,
 } from '@affine/nbstore';
+import { DiskDocStorage } from '@affine/nbstore/disk';
 import {
   IndexedDBBlobStorage,
   IndexedDBBlobSyncStorage,
@@ -46,6 +48,7 @@ import type {
   WorkspaceProfileInfo,
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
+import { getDiskSyncRemoteOptions } from './disk-config';
 import { getWorkspaceProfileWorker } from './out-worker';
 import {
   dedupeWorkspaceIds,
@@ -388,7 +391,11 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     };
   }
 
-  async getWorkspaceBlob(id: string, blobKey: string): Promise<Blob | null> {
+  async getWorkspaceBlob(
+    id: string,
+    blobKey: string,
+    _source?: BlobSource
+  ): Promise<Blob | null> {
     const storage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
@@ -402,7 +409,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       : null;
   }
 
-  async listBlobs(id: string): Promise<ListedBlobRecord[]> {
+  async listManageableBlobs(id: string): Promise<ListedBlobRecord[]> {
     const storage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
@@ -414,7 +421,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return storage.list();
   }
 
-  async deleteBlob(
+  async deleteManagedBlob(
     id: string,
     blob: string,
     permanent: boolean
@@ -430,6 +437,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {
+    const disk = getDiskSyncRemoteOptions(workspaceId);
     return {
       local: {
         doc: {
@@ -488,6 +496,21 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         },
       },
       remotes: {
+        ...(disk
+          ? {
+              disk: {
+                doc: {
+                  name: DiskDocStorage.identifier,
+                  opts: {
+                    flavour: this.flavour,
+                    type: 'workspace',
+                    id: workspaceId,
+                    syncFolder: disk.syncFolder,
+                  },
+                },
+              },
+            }
+          : {}),
         v1: {
           doc: this.DocStorageV1Type
             ? {

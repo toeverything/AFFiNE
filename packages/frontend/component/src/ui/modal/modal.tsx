@@ -25,6 +25,8 @@ import { SafeArea } from '../safe-area';
 import { InsideModalContext, ModalConfigContext } from './context';
 import * as styles from './styles.css';
 
+type ModalAnimation = 'fadeScaleTop' | 'none' | 'slideBottom' | 'slideRight';
+
 export interface ModalProps extends DialogProps {
   width?: CSSProperties['width'];
   height?: CSSProperties['height'];
@@ -48,16 +50,28 @@ export interface ModalProps extends DialogProps {
   /**
    * @default 'fadeScaleTop'
    */
-  animation?: 'fadeScaleTop' | 'none' | 'slideBottom' | 'slideRight';
+  animation?: ModalAnimation;
+  contentAnimation?: ModalAnimation;
   /**
    * Whether to show the modal in full screen mode
    */
   fullScreen?: boolean;
   disableAutoFocus?: boolean;
+  preserveEditingFocusOnAction?: boolean;
 }
 type PointerDownOutsideEvent = Parameters<
   Exclude<DialogContentProps['onPointerDownOutside'], undefined>
 >[0];
+
+const isTextEditingElement = (element: Element) =>
+  element instanceof HTMLInputElement ||
+  element instanceof HTMLTextAreaElement ||
+  (element instanceof HTMLElement && element.isContentEditable);
+
+const getEnabledModalAction = (element: Element) =>
+  element.closest(
+    'button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [role="menuitem"]:not([aria-disabled="true"]), [data-modal-action]:not([aria-disabled="true"])'
+  );
 
 const getVar = (style: number | string = '', defaultValue = '') => {
   return style
@@ -151,6 +165,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
         style: contentStyle,
         className: contentClassName,
         onPointerDownOutside,
+        onPointerDown,
         onEscapeKeyDown,
         ...otherContentOptions
       } = {},
@@ -164,8 +179,10 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       contentWrapperClassName,
       contentWrapperStyle,
       animation = BUILD_CONFIG.isMobileEdition ? 'slideBottom' : 'fadeScaleTop',
+      contentAnimation = animation,
       fullScreen,
       disableAutoFocus,
+      preserveEditingFocusOnAction = false,
       ...otherProps
     } = props;
     const { className: closeButtonClassName, ...otherCloseButtonProps } =
@@ -176,9 +193,9 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
     );
 
     useEffect(() => {
-      if (open) return modalConfigOnOpen?.();
+      if (open) return modalConfigOnOpen?.(() => onOpenChange?.(false));
       return;
-    }, [modalConfigOnOpen, open]);
+    }, [modalConfigOnOpen, onOpenChange, open]);
 
     useEffect(() => {
       if (open) {
@@ -209,6 +226,29 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
         persistent && e.preventDefault();
       },
       [onEscapeKeyDown, persistent]
+    );
+
+    const handlePointerDown = useCallback(
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        onPointerDown?.(event);
+        if (
+          !preserveEditingFocusOnAction ||
+          event.defaultPrevented ||
+          !(event.target instanceof Element)
+        ) {
+          return;
+        }
+        const activeElement = document.activeElement;
+        if (
+          activeElement &&
+          event.currentTarget.contains(activeElement) &&
+          isTextEditingElement(activeElement) &&
+          getEnabledModalAction(event.target)
+        ) {
+          event.preventDefault();
+        }
+      },
+      [onPointerDown, preserveEditingFocusOnAction]
     );
 
     const handleAutoFocus = useCallback(
@@ -244,19 +284,34 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
           >
             <SafeArea
               bottom={BUILD_CONFIG.isMobileEdition}
-              bottomOffset={dynamicKeyboardHeight ?? 12}
+              bottomOffset={
+                fullScreen
+                  ? 0
+                  : dynamicKeyboardHeight === undefined
+                    ? 12
+                    : `calc(${getVar(dynamicKeyboardHeight)} + 12px)`
+              }
               data-full-screen={fullScreen}
               data-modal={modal}
               className={clsx(
-                `anim-${animation}`,
+                `anim-${contentAnimation}`,
                 styles.modalContentWrapper,
                 contentWrapperClassName
               )}
               data-mobile={BUILD_CONFIG.isMobileEdition ? '' : undefined}
-              style={contentWrapperStyle}
+              style={{
+                ...assignInlineVars({
+                  [styles.keyboardInsetVar]: getVar(
+                    dynamicKeyboardHeight,
+                    '0px'
+                  ),
+                }),
+                ...contentWrapperStyle,
+              }}
             >
               <Dialog.Content
                 onPointerDownOutside={handlePointerDownOutSide}
+                onPointerDown={handlePointerDown}
                 onEscapeKeyDown={handleEscapeKeyDown}
                 className={clsx(styles.modalContent, contentClassName)}
                 onOpenAutoFocus={handleAutoFocus}
@@ -268,9 +323,13 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
                     ),
                     [styles.heightVar]: getVar(
                       height,
-                      fullScreen ? '100dvh' : 'unset'
+                      fullScreen
+                        ? `calc(100dvh - ${styles.keyboardInsetVar})`
+                        : 'unset'
                     ),
-                    [styles.minHeightVar]: getVar(minHeight, '26px'),
+                    [styles.minHeightVar]: fullScreen
+                      ? `calc(100dvh - ${styles.keyboardInsetVar})`
+                      : getVar(minHeight, '26px'),
                   }),
                   ...contentStyle,
                 }}

@@ -15,7 +15,6 @@ public struct ListWorkspaceInput: InputObject {
     enableDocEmbedding: GraphQLNullable<Bool> = nil,
     enableSharing: GraphQLNullable<Bool> = nil,
     enableUrlPreview: GraphQLNullable<Bool> = nil,
-    features: GraphQLNullable<[GraphQLEnum<FeatureType>]> = nil,
     first: Int? = nil,
     keyword: GraphQLNullable<String> = nil,
     orderBy: GraphQLNullable<GraphQLEnum<AdminWorkspaceSort>> = nil,
@@ -27,7 +26,6 @@ public struct ListWorkspaceInput: InputObject {
       "enableDocEmbedding": enableDocEmbedding,
       "enableSharing": enableSharing,
       "enableUrlPreview": enableUrlPreview,
-      "features": features,
       "first": first,
       "keyword": keyword,
       "orderBy": orderBy,
@@ -54,11 +52,6 @@ public struct ListWorkspaceInput: InputObject {
   public var enableUrlPreview: GraphQLNullable<Bool> {
     get { __data["enableUrlPreview"] }
     set { __data["enableUrlPreview"] = newValue }
-  }
-
-  public var features: GraphQLNullable<[GraphQLEnum<FeatureType>]> {
-    get { __data["features"] }
-    set { __data["features"] = newValue }
   }
 
   public var first: Int? {

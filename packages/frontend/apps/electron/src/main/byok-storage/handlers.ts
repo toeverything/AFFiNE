@@ -14,20 +14,58 @@ export function disposeWorkspaceByokStorage() {
 }
 
 const allowedProviders = new Set(['openai', 'anthropic', 'gemini', 'fal']);
+const allowedInputs = new Set(['text', 'image', 'audio', 'file']);
+const allowedOutputs = new Set([
+  'text',
+  'object',
+  'structured',
+  'embedding',
+  'rerank',
+  'image',
+]);
+const allowedFeatures = new Set(['tool_calling', 'reasoning', 'web_search']);
+const allowedAttachmentKinds = new Set(['image', 'audio', 'file']);
+const allowedAttachmentSources = new Set([
+  'url',
+  'data',
+  'bytes',
+  'file_handle',
+]);
 
 type WorkspaceByokKey = {
   id: string;
   provider: 'openai' | 'anthropic' | 'gemini' | 'fal';
   name: string;
   description?: string | null;
-  apiKey: string;
-  endpoint?: string | null;
+  credential: string;
+  definition: {
+    endpoint: {
+      kind: 'provider_default' | 'openai_compatible';
+      url?: string | null;
+      dialect?: 'responses' | 'chat_completions' | null;
+    };
+    models: Array<{
+      modelId: string;
+      enabled: boolean;
+      capabilities: Array<{
+        input: string[];
+        output: string[];
+        features: string[];
+        attachmentKinds: string[];
+        attachmentSources: string[];
+      }>;
+    }>;
+  };
   sortOrder?: number | null;
   enabled?: boolean | null;
 };
 
-type WorkspaceByokKeyInput = Omit<WorkspaceByokKey, 'apiKey'> & {
-  apiKey?: string | null;
+type WorkspaceByokKeyInput = Omit<
+  WorkspaceByokKey,
+  'credential' | 'definition'
+> & {
+  credential?: string | null;
+  definition?: WorkspaceByokKey['definition'];
 };
 
 function assertSupported() {
@@ -43,6 +81,78 @@ function hasOwnField(
   return Object.prototype.hasOwnProperty.call(key, field);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isAllowedStringArray(
+  value: unknown,
+  allowed: Set<string>
+): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(item => typeof item === 'string' && allowed.has(item))
+  );
+}
+
+function isValidEndpoint(value: unknown) {
+  if (!isRecord(value) || typeof value.kind !== 'string') return false;
+  if (value.kind === 'provider_default')
+    return value.url == null && value.dialect == null;
+  if (
+    value.kind !== 'openai_compatible' ||
+    typeof value.url !== 'string' ||
+    !['responses', 'chat_completions'].includes(String(value.dialect))
+  )
+    return false;
+  try {
+    const endpoint = new URL(value.url);
+    return (
+      (endpoint.protocol === 'http:' || endpoint.protocol === 'https:') &&
+      !!endpoint.hostname &&
+      !endpoint.username &&
+      !endpoint.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isValidCapability(value: unknown) {
+  return (
+    isRecord(value) &&
+    isAllowedStringArray(value.input, allowedInputs) &&
+    value.input.length > 0 &&
+    isAllowedStringArray(value.output, allowedOutputs) &&
+    value.output.length > 0 &&
+    isAllowedStringArray(value.features, allowedFeatures) &&
+    isAllowedStringArray(value.attachmentKinds, allowedAttachmentKinds) &&
+    isAllowedStringArray(value.attachmentSources, allowedAttachmentSources)
+  );
+}
+
+function isValidDefinition(
+  value: unknown
+): value is WorkspaceByokKey['definition'] {
+  return (
+    isRecord(value) &&
+    isValidEndpoint(value.endpoint) &&
+    Array.isArray(value.models) &&
+    value.models.length > 0 &&
+    value.models.every(
+      model =>
+        isRecord(model) &&
+        typeof model.modelId === 'string' &&
+        model.modelId.trim().length > 0 &&
+        model.modelId.length <= 512 &&
+        typeof model.enabled === 'boolean' &&
+        Array.isArray(model.capabilities) &&
+        model.capabilities.length > 0 &&
+        model.capabilities.every(isValidCapability)
+    )
+  );
+}
+
 function normalizeKey(
   key: WorkspaceByokKeyInput,
   existing?: WorkspaceByokKey,
@@ -51,8 +161,15 @@ function normalizeKey(
   if (!allowedProviders.has(key.provider)) {
     throw new Error('Unsupported BYOK provider.');
   }
-  const apiKey = key.apiKey ?? existing?.apiKey;
-  if (!key.id || !key.name || !apiKey) {
+  const credential = key.credential ?? existing?.credential;
+  const definition = key.definition ?? existing?.definition;
+  if (
+    definition?.endpoint.kind === 'openai_compatible' &&
+    key.provider !== 'openai'
+  ) {
+    throw new Error('OpenAI-compatible endpoints require OpenAI provider.');
+  }
+  if (!key.id || !key.name || !credential || !isValidDefinition(definition)) {
     throw new Error('Invalid BYOK key.');
   }
   return {
@@ -62,10 +179,8 @@ function normalizeKey(
     description: hasOwnField(key, 'description')
       ? (key.description ?? null)
       : (existing?.description ?? null),
-    apiKey,
-    endpoint: hasOwnField(key, 'endpoint')
-      ? (key.endpoint ?? null)
-      : (existing?.endpoint ?? null),
+    credential,
+    definition,
     sortOrder: hasOwnField(key, 'sortOrder')
       ? (key.sortOrder ?? defaultSortOrder)
       : (existing?.sortOrder ?? defaultSortOrder),
@@ -111,13 +226,11 @@ function writeWorkspaceKeys(workspaceId: string, keys: WorkspaceByokKey[]) {
   byokStorage.set(workspaceId, keys.map(encryptKey));
 }
 
-function toPublicKey({ apiKey: _, ...key }: WorkspaceByokKey) {
+function toPublicKey({ credential: _, ...key }: WorkspaceByokKey) {
   return {
     ...key,
     storage: 'local',
     configured: true,
-    endpointEditable: false,
-    testStatus: 'passed',
   };
 }
 

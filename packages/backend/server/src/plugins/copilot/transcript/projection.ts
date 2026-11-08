@@ -6,6 +6,14 @@ import type {
   TranscriptionPayloadV2,
 } from './types';
 
+export type RawTranscriptSegment = {
+  sliceIndex: number;
+  speaker: string;
+  startSec: number;
+  endSec: number;
+  text: string;
+};
+
 function formatSection(title: string, items: string[]) {
   if (!items.length) {
     return [];
@@ -24,6 +32,58 @@ export function formatTranscriptTime(time: number) {
   return [hours, minutes, seconds]
     .map(part => String(part).padStart(2, '0'))
     .join(':');
+}
+
+export function normalizeTranscriptSegments(
+  rawSegments: RawTranscriptSegment[]
+): NormalizedTranscriptSegment[] {
+  const normalized: NormalizedTranscriptSegment[] = [];
+  const dedupe = new Set<string>();
+  const sorted = [...rawSegments].sort((left, right) => {
+    return (
+      left.startSec - right.startSec ||
+      left.endSec - right.endSec ||
+      left.sliceIndex - right.sliceIndex
+    );
+  });
+
+  for (const segment of sorted) {
+    const text = segment.text.trim();
+    if (!text) continue;
+
+    const startSec = Math.max(
+      normalized.at(-1)?.endSec ?? 0,
+      segment.startSec,
+      0
+    );
+    const endSec = Math.max(segment.endSec, startSec);
+    if (endSec <= startSec) continue;
+
+    const speaker = segment.speaker.trim() || 'Speaker';
+    const key = `${speaker}|${startSec}|${endSec}|${text}`;
+    if (dedupe.has(key)) continue;
+
+    dedupe.add(key);
+    normalized.push({
+      speaker,
+      startSec,
+      endSec,
+      start: formatTranscriptTime(startSec),
+      end: formatTranscriptTime(endSec),
+      text,
+    });
+  }
+
+  return normalized;
+}
+
+export function buildNormalizedTranscript(
+  segments: NormalizedTranscriptSegment[]
+) {
+  return segments
+    .map(segment => `${segment.start} ${segment.speaker}: ${segment.text}`)
+    .join('\n')
+    .trim();
 }
 
 export function toLegacyTranscriptionSegments(

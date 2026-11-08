@@ -514,7 +514,7 @@ export class LiveData<T = unknown>
       const subscription = this.subscribe(v => {
         if (predicate(v)) {
           resolve(v as any);
-          // oxlint-disable-next-line @typescript-eslint/no-floating-promises
+          // oxlint-disable-next-line typescript/no-floating-promises
           Promise.resolve().then(() => {
             subscription.unsubscribe();
           });
@@ -552,7 +552,7 @@ export class LiveData<T = unknown>
       throw this.poisonedError;
     }
     this.ops$.next('watch');
-    // oxlint-disable-next-line @typescript-eslint/no-floating-promises -- never throw
+    // oxlint-disable-next-line typescript/no-floating-promises -- never throw
     Promise.resolve().then(() => {
       this.ops$.next('unwatch');
     });

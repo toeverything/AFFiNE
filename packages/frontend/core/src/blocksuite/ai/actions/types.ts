@@ -1,14 +1,6 @@
 import type { AIToolsConfig } from '@affine/core/modules/ai-button';
 import type {
-  AddContextFileInput,
-  ContextMatchedDocChunk,
-  ContextMatchedFileChunk,
-  ContextWorkspaceEmbeddingStatus,
   CopilotChatHistoryFragment,
-  CopilotContextBlob,
-  CopilotContextCategory,
-  CopilotContextDoc,
-  CopilotContextFile,
   CopilotHistories,
   getCopilotHistoriesQuery,
   QueryChatHistoriesInput,
@@ -59,7 +51,7 @@ export const imageProcessingTypes = [
 ] as const;
 
 declare global {
-  // oxlint-disable-next-line @typescript-eslint/no-namespace
+  // oxlint-disable-next-line typescript/no-namespace
   namespace BlockSuitePresets {
     type TrackerControl =
       | 'format-bar'
@@ -126,7 +118,6 @@ declare global {
     interface AIDocContextOption {
       docId: string;
       docTitle: string;
-      docContent: string;
       tags: string;
       createDate: string;
       updatedDate: string;
@@ -152,6 +143,16 @@ declare global {
         selectedMarkdown?: string;
         html?: string;
       };
+      scopeSelectors?: Array<{
+        kind: 'document' | 'tag' | 'collection' | 'favorite';
+        id: string;
+        name?: string;
+      }>;
+      focusSelectors?: Array<{
+        kind: 'document' | 'tag' | 'collection' | 'favorite';
+        id: string;
+        name?: string;
+      }>;
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -275,99 +276,9 @@ declare global {
       ): Promise<AIActionTextResponse<T>>;
     }
 
-    type AIDocsAndFilesContext = {
-      docs: CopilotContextDoc[];
-      files: CopilotContextFile[];
-      tags: CopilotContextCategory[];
-      collections: CopilotContextCategory[];
-      blobs: CopilotContextBlob[];
-    };
-
-    interface AIContextService {
-      createContext: (
-        workspaceId: string,
-        sessionId: string
-      ) => Promise<string>;
-      getContextId: (
-        workspaceId: string,
-        sessionId: string
-      ) => Promise<string | undefined>;
-      addContextDoc: (options: {
-        contextId: string;
-        docId: string;
-      }) => Promise<CopilotContextDoc>;
-      removeContextDoc: (options: {
-        contextId: string;
-        docId: string;
-      }) => Promise<boolean>;
-      addContextFile: (
-        file: File,
-        options: AddContextFileInput
-      ) => Promise<CopilotContextFile>;
-      removeContextFile: (options: {
-        contextId: string;
-        fileId: string;
-      }) => Promise<boolean>;
-      addContextTag: (options: {
-        contextId: string;
-        tagId: string;
-        docIds: string[];
-      }) => Promise<CopilotContextCategory>;
-      removeContextTag: (options: {
-        contextId: string;
-        tagId: string;
-      }) => Promise<boolean>;
-      addContextCollection: (options: {
-        contextId: string;
-        collectionId: string;
-        docIds: string[];
-      }) => Promise<CopilotContextCategory>;
-      removeContextCollection: (options: {
-        contextId: string;
-        collectionId: string;
-      }) => Promise<boolean>;
-      getContextDocsAndFiles: (
-        workspaceId: string,
-        sessionId: string,
-        contextId: string
-      ) => Promise<AIDocsAndFilesContext | undefined>;
-      pollContextDocsAndFiles: (
-        workspaceId: string,
-        sessionId: string,
-        contextId: string,
-        onPoll: (result: AIDocsAndFilesContext | undefined) => void,
-        abortSignal: AbortSignal
-      ) => Promise<void>;
-      pollEmbeddingStatus: (
-        workspaceId: string,
-        onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
-        abortSignal: AbortSignal
-      ) => Promise<void>;
-      matchContext: (
-        content: string,
-        contextId?: string,
-        workspaceId?: string,
-        limit?: number,
-        scopedThreshold?: number,
-        threshold?: number
-      ) => Promise<{
-        files?: ContextMatchedFileChunk[];
-        docs?: ContextMatchedDocChunk[];
-      }>;
-      addContextBlob: (options: {
-        blobId: string;
-        contextId: string;
-      }) => Promise<CopilotContextBlob>;
-      removeContextBlob: (options: {
-        blobId: string;
-        contextId: string;
-      }) => Promise<boolean>;
-    }
-
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)
     interface AIHistory {
       sessionId: string;
-      tokens: number;
       action: string | null;
       createdAt: string;
       messages: {

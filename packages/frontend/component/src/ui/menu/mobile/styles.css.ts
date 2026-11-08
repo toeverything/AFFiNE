@@ -25,7 +25,7 @@ export const mobileMenuModal = style({
 export const slider = style({
   display: 'flex',
   alignItems: 'start',
-  transition: 'all 0.23s',
+  transition: 'transform 0.23s',
 });
 
 export const menuContent = style({
@@ -42,8 +42,13 @@ export const menuContent = style({
 });
 
 export const mobileMenuItem = style({
+  width: '100%',
   padding: '10px 20px',
   borderRadius: 0,
+  appearance: 'none',
+  font: 'inherit',
+  lineHeight: '22px',
+  touchAction: 'manipulation',
 
   ':hover': {
     vars: {

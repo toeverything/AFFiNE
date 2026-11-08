@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { type Blob } from '@prisma/client';
 
 import { TestingApp } from './testing-app';
@@ -55,20 +57,6 @@ export async function listBlobs(
   return res.workspace.blobs;
 }
 
-export async function getWorkspaceBlobsSize(
-  app: TestingApp,
-  workspaceId: string
-): Promise<number> {
-  const res = await app.gql(`
-    query {
-      workspace(id: "${workspaceId}") {
-        blobsSize
-      }
-    }
-  `);
-  return res.workspace.blobsSize;
-}
-
 export async function collectAllBlobSizes(app: TestingApp): Promise<number> {
   const res = await app.gql(`
     query {
@@ -104,7 +92,7 @@ export async function setBlob(
     .attach(
       '0',
       buffer,
-      `blob-${Math.random().toString(16).substring(2, 10)}.data`
+      createHash('sha256').update(buffer).digest('base64url')
     )
     .expect(200);
 
@@ -131,6 +119,7 @@ export async function createBlobUpload(
         createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
           method
           blobKey
+          alreadyUploaded
           uploadUrl
           uploadId
           partSize

@@ -1,6 +1,12 @@
+import { fileURLToPath } from 'node:url';
+
 import { testResultDir } from '@affine-test/kit/playwright';
 import type { PlaywrightTestConfig } from '@playwright/test';
 // import { devices } from '@playwright/test';
+
+const runtimeConfigPath = fileURLToPath(
+  new URL('./runtime-config.json', import.meta.url)
+);
 
 /**
  * Read environment variables from file.
@@ -45,6 +51,7 @@ const config: PlaywrightTestConfig = {
           'postgresql://affine:affine@localhost:5432/affine',
         NODE_ENV: 'test',
         AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
+        AFFINE_BACKEND_RUNTIME_CONFIG_PATH: runtimeConfigPath,
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',

@@ -1,5 +1,5 @@
 import { useQuery } from '@affine/admin/use-query';
-import type { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { AdminWorkspaceSort } from '@affine/graphql';
 import {
   adminWorkspacesCountQuery,
   adminWorkspacesQuery,
@@ -10,7 +10,6 @@ import type { WorkspaceFlagFilter } from './schema';
 
 export const useWorkspaceList = (filter?: {
   keyword?: string;
-  features?: FeatureType[];
   orderBy?: AdminWorkspaceSort;
   flags?: WorkspaceFlagFilter;
 }) => {
@@ -21,9 +20,7 @@ export const useWorkspaceList = (filter?: {
 
   const filterKey = useMemo(
     () =>
-      `${filter?.keyword ?? ''}-${[...(filter?.features ?? [])]
-        .sort()
-        .join(',')}-${filter?.orderBy ?? ''}-${JSON.stringify(
+      `${filter?.keyword ?? ''}-${filter?.orderBy ?? ''}-${JSON.stringify(
         filter?.flags ?? {}
       )}`,
     [filter]
@@ -39,10 +36,6 @@ export const useWorkspaceList = (filter?: {
         first: pagination.pageSize,
         skip: pagination.pageIndex * pagination.pageSize,
         keyword: filter?.keyword || undefined,
-        features:
-          filter?.features && filter.features.length > 0
-            ? filter.features
-            : undefined,
         orderBy: filter?.orderBy,
         public: filter?.flags?.public,
         enableAi: filter?.flags?.enableAi,

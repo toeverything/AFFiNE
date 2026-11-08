@@ -6,6 +6,7 @@
 //
 
 import Apollo
+import AffineGraphQL
 import Foundation
 
 extension QLService {
@@ -17,5 +18,36 @@ extension QLService {
         self.session.configuration.httpCookieStorage?.setCookie(cookie)
       }
     }
+
+    @discardableResult
+    override func sendRequest(
+      _ request: URLRequest,
+      taskDescription: String?,
+      rawTaskCompletionHandler: RawCompletion?,
+      completion: @escaping Completion
+    ) -> URLSessionTask {
+      super.sendRequest(
+        QLService.shared.authorized(request),
+        taskDescription: taskDescription,
+        rawTaskCompletionHandler: rawTaskCompletionHandler,
+        completion: completion
+      )
+    }
+  }
+}
+
+extension QLService {
+  func authorized(_ request: URLRequest) -> URLRequest {
+    guard request.value(forHTTPHeaderField: "Authorization") == nil,
+          let requestURL = request.url,
+          let token = AuthAccessTokenCache.shared.token(
+            for: requestURL, matching: serverBaseURL)
+    else {
+      return request
+    }
+
+    var authorized = request
+    authorized.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+    return authorized
   }
 }

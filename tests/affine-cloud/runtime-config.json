@@ -1,0 +1,9 @@
+{
+  "indexer": {
+    "enabled": true,
+    "provider": {
+      "type": "embedded",
+      "endpoint": ""
+    }
+  }
+}

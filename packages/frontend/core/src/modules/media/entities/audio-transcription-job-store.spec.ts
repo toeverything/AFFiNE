@@ -1,5 +1,4 @@
 import {
-  retryTranscriptTaskMutation,
   settleTranscriptTaskMutation,
   submitTranscriptTaskMutation,
 } from '@affine/graphql';
@@ -22,7 +21,10 @@ function createStore(
   gql: ReturnType<typeof vi.fn>,
   getAudioTranscriptionInput: () => Promise<AudioTranscriptionInput> = async () => ({
     files: [],
-  })
+  }),
+  realtimeRequest: ReturnType<typeof vi.fn> = vi
+    .fn()
+    .mockResolvedValue({ task: { id: 'task-2' } })
 ) {
   const framework = new Framework();
   const server = {
@@ -31,7 +33,7 @@ function createStore(
     },
   };
   const realtime = {
-    request: vi.fn().mockResolvedValue({ task: { id: 'task-2' } }),
+    request: realtimeRequest,
     subscribe: vi.fn(),
   };
   framework
@@ -67,12 +69,16 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
     const gql = vi
       .fn()
       .mockResolvedValueOnce({ submitTranscriptTask: { id: 'task-1' } })
-      .mockResolvedValueOnce({ retryTranscriptTask: { id: 'task-2' } })
       .mockResolvedValueOnce({ settleTranscriptTask: { id: 'task-2' } });
-    const store = createStore(gql, async () => ({
-      files: [file],
-      input: { strategy: 'gemini' },
-    }));
+    const realtimeRequest = vi
+      .fn()
+      .mockResolvedValueOnce({ task: { id: 'task-2', status: 'running' } })
+      .mockResolvedValueOnce({ task: { id: 'task-2' } });
+    const store = createStore(
+      gql,
+      async () => ({ files: [file] }),
+      realtimeRequest
+    );
 
     await store.submitTranscriptTask();
     await store.retryTranscriptTask('task-1');
@@ -87,22 +93,12 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
           workspaceId: 'workspace-1',
           blobId: 'blob-1',
           blobs: [file],
-          input: { strategy: 'gemini' },
+          input: undefined,
         },
       })
     );
     expect(gql).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({
-        query: retryTranscriptTaskMutation,
-        variables: {
-          workspaceId: 'workspace-1',
-          taskId: 'task-1',
-        },
-      })
-    );
-    expect(gql).toHaveBeenNthCalledWith(
-      3,
       expect.objectContaining({
         query: settleTranscriptTaskMutation,
         variables: {
@@ -110,6 +106,24 @@ describe('AudioTranscriptionJobStore transcript task API', () => {
           taskId: 'task-2',
         },
       })
+    );
+    expect(realtimeRequest).toHaveBeenNthCalledWith(
+      1,
+      'copilot.transcript.task.retry',
+      {
+        workspaceId: 'workspace-1',
+        taskId: 'task-1',
+      }
+    );
+    expect(realtimeRequest).toHaveBeenNthCalledWith(
+      2,
+      'copilot.transcript.task.get',
+      {
+        workspaceId: 'workspace-1',
+        taskId: 'task-2',
+        blobId: 'blob-1',
+      },
+      { timeoutMs: 10000 }
     );
   });
 });

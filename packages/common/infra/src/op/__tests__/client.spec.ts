@@ -11,6 +11,7 @@ interface TestOps extends OpSchema {
   bin: [Uint8Array, Uint8Array];
   sub: [Uint8Array, number];
   init: [{ fastText?: boolean } | undefined, { ok: true }];
+  any: [undefined, unknown];
 }
 
 declare module 'vitest' {
@@ -85,15 +86,17 @@ describe('op client', () => {
     expect(data.byteLength).toBe(0);
   });
 
-  it('should send optional payload call with abort signal', async ctx => {
-    const abortController = new AbortController();
-    const result = ctx.producer.call(
-      'init',
-      { fastText: true },
-      abortController.signal
-    );
+  it.for([true, false])(
+    'should preserve payload with optional abort signal: %s',
+    async (withSignal, ctx) => {
+      const abortController = new AbortController();
+      const result = ctx.producer.call(
+        'init',
+        { fastText: true },
+        withSignal ? abortController.signal : undefined
+      );
 
-    expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
+      expect(ctx.postMessage.mock.calls[0][0]).toMatchInlineSnapshot(`
       {
         "id": "init:1",
         "name": "init",
@@ -104,14 +107,15 @@ describe('op client', () => {
       }
     `);
 
-    ctx.handlers.return({
-      type: 'return',
-      id: 'init:1',
-      data: { ok: true },
-    });
+      ctx.handlers.return({
+        type: 'return',
+        id: 'init:1',
+        data: { ok: true },
+      });
 
-    await expect(result).resolves.toEqual({ ok: true });
-  });
+      await expect(result).resolves.toEqual({ ok: true });
+    }
+  );
 
   it('should send undefined payload for optional input call', async ctx => {
     const result = ctx.producer.call('init', undefined);
@@ -240,6 +244,41 @@ describe('op client', () => {
     expect(data.byteLength).toBe(0);
 
     sub.unsubscribe();
+  });
+
+  it('hydrates worker stacks for calls and observables', async ctx => {
+    const marker = 'WORKER_STACK_MARKER';
+    const remoteError = {
+      name: 'TypeError',
+      message: marker,
+      stacktrace: `TypeError: ${marker}\n    at workerTask (worker.ts:42:7)`,
+    } as unknown as Error;
+
+    const call = ctx.producer.call('any', undefined);
+    ctx.handlers.return({
+      type: 'return',
+      id: 'any:1',
+      error: remoteError,
+    });
+    await expect(call).rejects.toMatchObject({
+      name: 'TypeError',
+      message: marker,
+      stack: expect.stringContaining('worker.ts:42:7'),
+    });
+
+    const observableError = new Promise<unknown>(resolve => {
+      ctx.producer.ob$('any').subscribe({ error: resolve });
+    });
+    ctx.handlers.error({
+      type: 'error',
+      id: 'any:2',
+      error: remoteError,
+    });
+    await expect(observableError).resolves.toMatchObject({
+      name: 'TypeError',
+      message: marker,
+      stack: expect.stringContaining('worker.ts:42:7'),
+    });
   });
 
   it('should unsubscribe subscription op', ctx => {

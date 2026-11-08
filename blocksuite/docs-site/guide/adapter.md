@@ -18,12 +18,24 @@ export abstract class BaseAdapter<AdapterTarget = unknown> {
     return this.job.adapterConfigs;
   }
 
-  abstract fromDocSnapshot(payload: FromDocSnapshotPayload): Promise<FromDocSnapshotResult<AdapterTarget>>;
-  abstract fromBlockSnapshot(payload: FromBlockSnapshotPayload): Promise<FromBlockSnapshotResult<AdapterTarget>>;
-  abstract fromSliceSnapshot(payload: FromSliceSnapshotPayload): Promise<FromSliceSnapshotResult<AdapterTarget>>;
-  abstract toDocSnapshot(payload: ToDocSnapshotPayload<AdapterTarget>): Promise<DocSnapshot>;
-  abstract toBlockSnapshot(payload: ToBlockSnapshotPayload<AdapterTarget>): Promise<BlockSnapshot>;
-  abstract toSliceSnapshot(payload: ToSliceSnapshotPayload<AdapterTarget>): Promise<SliceSnapshot | null>;
+  abstract fromDocSnapshot(
+    payload: FromDocSnapshotPayload
+  ): Promise<FromDocSnapshotResult<AdapterTarget>>;
+  abstract fromBlockSnapshot(
+    payload: FromBlockSnapshotPayload
+  ): Promise<FromBlockSnapshotResult<AdapterTarget>>;
+  abstract fromSliceSnapshot(
+    payload: FromSliceSnapshotPayload
+  ): Promise<FromSliceSnapshotResult<AdapterTarget>>;
+  abstract toDocSnapshot(
+    payload: ToDocSnapshotPayload<AdapterTarget>
+  ): Promise<DocSnapshot>;
+  abstract toBlockSnapshot(
+    payload: ToBlockSnapshotPayload<AdapterTarget>
+  ): Promise<BlockSnapshot>;
+  abstract toSliceSnapshot(
+    payload: ToSliceSnapshotPayload<AdapterTarget>
+  ): Promise<SliceSnapshot | null>;
 }
 ```
 

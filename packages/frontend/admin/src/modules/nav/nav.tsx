@@ -1,11 +1,7 @@
 import { cn } from '@affine/admin/utils';
 import { ROUTES } from '@affine/routes';
 import { AccountIcon, SelfhostIcon } from '@blocksuite/icons/rc';
-import {
-  BarChart3Icon,
-  LayoutDashboardIcon,
-  ListChecksIcon,
-} from 'lucide-react';
+import { BarChart3Icon, LayoutDashboardIcon } from 'lucide-react';
 
 import { NavItem } from './nav-item';
 import { ServerVersion } from './server-version';
@@ -52,18 +48,6 @@ export function Nav({ isCollapsed = false }: NavProps) {
             isCollapsed={isCollapsed}
           />
         )}
-        <NavItem
-          to={ROUTES.admin.queue}
-          icon={<ListChecksIcon size={18} />}
-          label="Queue"
-          isCollapsed={isCollapsed}
-        />
-        {/* <NavItem
-          to="/admin/ai"
-          icon={<AiOutlineIcon fontSize={20} />}
-          label="AI"
-          isCollapsed={isCollapsed}
-        /> */}
         <SettingsItem isCollapsed={isCollapsed} />
         <NavItem
           to={ROUTES.admin.about}

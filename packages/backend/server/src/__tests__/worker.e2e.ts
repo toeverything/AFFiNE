@@ -1,4 +1,5 @@
 import serverNativeModule from '@affine/server-native';
+import { Logger } from '@nestjs/common';
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
@@ -91,6 +92,7 @@ const assertAndSnapshotRaw = async (
     referer?: string | null;
     method?: 'GET' | 'OPTIONS' | 'POST';
     body?: any;
+    headers?: Record<string, string>;
     checker?: (res: Response) => any;
   }
 ) => {
@@ -108,6 +110,9 @@ const assertAndSnapshotRaw = async (
   }
   if (referer) {
     req.set('Referer', referer);
+  }
+  if (options?.headers) {
+    req.set(options.headers);
   }
 
   const res = req.send(options?.body).expect(status).expect(checker);
@@ -225,9 +230,19 @@ test('should preview link', async t => {
     {
       status: 204,
       method: 'OPTIONS',
+      headers: {
+        'Access-Control-Request-Headers': 'content-type, x-affine-version',
+      },
       checker: (res: Response) => {
-        if (!res.headers['access-control-allow-methods']) {
-          throw new Error('Missing CORS headers');
+        if (
+          !res.headers['access-control-allow-methods'] ||
+          !res.headers['access-control-allow-headers']
+            ?.toLowerCase()
+            .includes('x-affine-version')
+        ) {
+          throw new Error(
+            `Missing CORS headers: ${JSON.stringify(res.headers)}`
+          );
         }
       },
     }
@@ -289,11 +304,43 @@ test('should preview link', async t => {
         {
           status: 200,
           method: 'POST',
-          body: { url: pageUrl },
+          body: { url: pageUrl, include: ['transcript'] },
         }
       );
     } finally {
       fetchSpy.restore();
+    }
+  }
+
+  {
+    const secret = `secret-${Date.now()}`;
+    const pageUrl = `http://external.com/private/page?token=${secret}&user=name`;
+    const logSpies = [
+      Sinon.spy(Logger.prototype, 'debug'),
+      Sinon.spy(Logger.prototype, 'warn'),
+      Sinon.spy(Logger.prototype, 'error'),
+    ];
+    const fetchSpy = stubSafeFetch(request => ({
+      body: '<title>Safe log test</title>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    }));
+    try {
+      await t.context.app
+        .POST('/api/worker/link-preview')
+        .set('Origin', 'http://localhost:3010')
+        .send({ url: pageUrl })
+        .expect(200);
+      const logged = logSpies
+        .flatMap(spy => spy.getCalls())
+        .map(call => JSON.stringify(call.args))
+        .join('\n');
+      t.true(logged.includes('http://external.com/private/page'));
+      t.false(logged.includes(secret));
+      t.false(logged.includes('?token='));
+    } finally {
+      fetchSpy.restore();
+      logSpies.forEach(spy => spy.restore());
     }
   }
 
@@ -354,5 +401,76 @@ test('should preview link', async t => {
         fetchSpy.restore();
       }
     }
+  }
+});
+
+test('should not forward Accept-Encoding when fetching a link-preview target', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: '<html><head><meta property="og:title" content="Test" /></head></html>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    };
+  });
+
+  try {
+    const pageUrl = `http://external.com/accept-encoding-${Date.now()}`;
+    await t.context.app
+      .POST('/api/worker/link-preview')
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send({ url: pageUrl })
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
+  }
+});
+
+test('should not forward Accept-Encoding when proxying an image', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fakeBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+    'base64'
+  );
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: fakeBuffer,
+      headers: { 'content-type': 'image/png' },
+    };
+  });
+
+  try {
+    const imageUrl = `http://example.com/accept-encoding-${Date.now()}.png`;
+    await t.context.app
+      .GET(`/api/worker/image-proxy?url=${imageUrl}`)
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send()
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
   }
 });

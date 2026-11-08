@@ -1,4 +1,4 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable typescript/no-non-null-assertion */
 import {
   CanvasRenderer,
   type SurfaceBlockModel,

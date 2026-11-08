@@ -1,8 +1,12 @@
 import { apis } from '@affine/electron-api';
-import { ByokKeyStorage, ByokKeyTestStatus } from '@affine/graphql';
 
 import { capabilitiesFor } from './metadata';
-import type { ByokKey, LocalByokKeyInput, LocalByokPublicKey } from './types';
+import {
+  type ByokKey,
+  ByokStorage,
+  type LocalByokKeyInput,
+  type LocalByokPublicKey,
+} from './types';
 
 function byokStorageApi() {
   return BUILD_CONFIG.isElectron ? apis?.byokStorage : undefined;
@@ -26,14 +30,12 @@ function toLocalByokKey(key: LocalByokPublicKey): ByokKey {
     provider: key.provider,
     name: key.name,
     description: key.description ?? null,
-    storage: ByokKeyStorage.local,
+    storage: ByokStorage.local,
     configured: key.configured ?? true,
     enabled: key.enabled ?? true,
-    endpoint: key.endpoint ?? null,
-    endpointEditable: key.endpointEditable ?? false,
     sortOrder: key.sortOrder ?? 0,
-    capabilities: capabilitiesFor(key.provider, ByokKeyStorage.local),
-    testStatus: key.testStatus ?? ByokKeyTestStatus.passed,
+    definition: key.definition,
+    capabilities: capabilitiesFor(key),
   };
 }
 

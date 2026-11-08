@@ -1,4 +1,4 @@
-import type { AdminWorkspaceSort, FeatureType } from '@affine/graphql';
+import type { AdminWorkspaceSort } from '@affine/graphql';
 import type { ColumnDef, PaginationState } from '@tanstack/react-table';
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -13,8 +13,6 @@ interface DataTableProps<TData, TValue> {
   workspacesCount: number;
   keyword: string;
   onKeywordChange: (value: string) => void;
-  selectedFeatures: FeatureType[];
-  onFeaturesChange: (features: FeatureType[]) => void;
   flags: WorkspaceFlagFilter;
   onFlagsChange: Dispatch<SetStateAction<WorkspaceFlagFilter>>;
   sort: AdminWorkspaceSort | undefined;
@@ -35,8 +33,6 @@ export function DataTable<TData extends { id: string }, TValue>({
   workspacesCount,
   keyword,
   onKeywordChange,
-  selectedFeatures,
-  onFeaturesChange,
   flags,
   onFlagsChange,
   sort,
@@ -51,14 +47,12 @@ export function DataTable<TData extends { id: string }, TValue>({
       totalCount={workspacesCount}
       pagination={pagination}
       onPaginationChange={onPaginationChange}
-      resetFiltersDeps={[keyword, selectedFeatures, sort, flags]}
+      resetFiltersDeps={[keyword, sort, flags]}
       renderToolbar={table => (
         <DataTableToolbar
           table={table}
           keyword={keyword}
           onKeywordChange={onKeywordChange}
-          selectedFeatures={selectedFeatures}
-          onFeaturesChange={onFeaturesChange}
           flags={flags}
           onFlagsChange={onFlagsChange}
           sort={sort}

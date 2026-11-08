@@ -31,6 +31,7 @@ export const RenameDialog = ({
 
   return (
     <Modal
+      preserveEditingFocusOnAction
       width="100%"
       open={open}
       onOpenChange={onOpenChange}

@@ -1,4 +1,4 @@
-# we will make this file shared by prettier|eslint|oxlint
+# shared by oxfmt|oxlint
 **/node_modules
 .yarn
 .github/helm

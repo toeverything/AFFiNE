@@ -92,6 +92,7 @@ export class ImportService extends Service {
   async importObsidianVault(files: File[], context?: ImportRunContext) {
     const collection = this.workspaceService.workspace.docCollection;
     const commitService = this.createCommitService({
+      organize: true,
       explorerIcon: true,
     });
     if (!BUILD_CONFIG.isElectron) {

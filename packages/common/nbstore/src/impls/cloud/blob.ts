@@ -1,23 +1,16 @@
 import { UserFriendlyError } from '@affine/error';
-import {
-  abortBlobUploadMutation,
-  BlobUploadMethod,
-  completeBlobUploadMutation,
-  createBlobUploadMutation,
-  deleteBlobMutation,
-  getBlobUploadPartUrlQuery,
-  listBlobsQuery,
-  releaseDeletedBlobsMutation,
-  setBlobMutation,
-  workspaceBlobQuotaQuery,
-} from '@affine/graphql';
 
 import {
   type BlobRecord,
+  type BlobSource,
   BlobStorageBase,
-  OverCapacityError,
-  OverSizeError,
+  type SourceBlobRecord,
 } from '../../storage';
+import {
+  type BlobSourceCandidate,
+  BlobSourceRegistry,
+} from './blob-source-registry';
+import { CloudBlobWriter } from './blob-writer';
 import { HttpConnection } from './http';
 
 interface CloudBlobStorageOptions {
@@ -25,38 +18,28 @@ interface CloudBlobStorageOptions {
   id: string;
 }
 
-const SHOULD_MANUAL_REDIRECT =
-  BUILD_CONFIG.isAndroid || BUILD_CONFIG.isIOS || BUILD_CONFIG.isElectron;
-const UPLOAD_REQUEST_TIMEOUT = 0;
+type SourceRegistration = {
+  controller: AbortController;
+  dirty: boolean;
+  promise?: Promise<void>;
+  source: BlobSource;
+};
 
-function toStrictArrayBuffer(
-  data: ArrayBuffer | ArrayBufferLike | ArrayBufferView
-): ArrayBuffer {
-  if (data instanceof ArrayBuffer) {
-    return data;
+const MAX_PENDING_SOURCE_REGISTRATIONS = 32;
+
+export function sourceScopedBlobUrl(
+  workspaceId: string,
+  key: string,
+  source: BlobSource
+) {
+  const query = new URLSearchParams({
+    sourceType: source.type,
+    docId: source.docId,
+  });
+  if (source.type === 'history') {
+    query.set('timestampMs', String(source.timestampMs));
   }
-
-  if (ArrayBuffer.isView(data)) {
-    if (data.buffer instanceof ArrayBuffer) {
-      if (data.byteOffset === 0 && data.byteLength === data.buffer.byteLength) {
-        return data.buffer;
-      }
-      return data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength
-      );
-    }
-
-    const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    const copy = new Uint8Array(bytes.byteLength);
-    copy.set(bytes);
-    return copy.buffer;
-  }
-
-  const bytes = new Uint8Array(data);
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return copy.buffer;
+  return `/api/workspaces/${encodeURIComponent(workspaceId)}/blobs/v1/${encodeURIComponent(key)}?${query}`;
 }
 
 export class CloudBlobStorage extends BlobStorageBase {
@@ -68,367 +51,308 @@ export class CloudBlobStorage extends BlobStorageBase {
   }
 
   readonly connection = new HttpConnection(this.options.serverBaseUrl);
+  private readonly writer = new CloudBlobWriter(
+    this.connection,
+    this.options.id,
+    this.options.serverBaseUrl
+  );
 
-  override async get(key: string, signal?: AbortSignal) {
-    const res = await this.connection.fetch(
-      '/api/workspaces/' +
-        this.options.id +
-        '/blobs/' +
-        key +
-        (SHOULD_MANUAL_REDIRECT ? '?redirect=manual' : ''),
-      {
-        cache: 'default',
-        headers: {
-          'x-affine-version': BUILD_CONFIG.appVersion,
-        },
-        signal,
-      }
+  private readonly sources = new BlobSourceRegistry();
+  private readonly sourceRegistrations = new Map<string, SourceRegistration>();
+  private readonly pendingSourceRegistrations = new Set<SourceRegistration>();
+
+  private sourceId(source: BlobSource) {
+    return this.sources.sourceId(source);
+  }
+
+  private sourceQuery(source: BlobSource) {
+    const query = new URLSearchParams({
+      sourceType: source.type,
+      docId: source.docId,
+    });
+    if (source.type === 'history') {
+      query.set('timestampMs', String(source.timestampMs));
+    }
+    return query;
+  }
+
+  private removeKeyCandidate(key: string, candidate: BlobSourceCandidate) {
+    this.sources.removeKeyCandidate(key, candidate);
+  }
+
+  private removeSource(source: BlobSource) {
+    this.sources.removeOwned(source);
+  }
+
+  private replaceSource(
+    source: BlobSource,
+    entries: SourceBlobRecord[],
+    registration: SourceRegistration
+  ) {
+    this.sources.replaceOwned(source, entries, registration);
+  }
+
+  private isRegistrationCurrent(registration: SourceRegistration) {
+    return (
+      this.sourceRegistrations.get(this.sourceId(registration.source)) ===
+      registration
     );
-
-    if (res.status === 404) {
-      return null;
-    }
-
-    try {
-      const contentType = res.headers.get('content-type');
-
-      let blob;
-
-      if (
-        SHOULD_MANUAL_REDIRECT &&
-        contentType?.startsWith('application/json')
-      ) {
-        const json = await res.json();
-        if ('url' in json && typeof json.url === 'string') {
-          const res = await this.connection.fetch(json.url, {
-            cache: 'default',
-            headers: {
-              'x-affine-version': BUILD_CONFIG.appVersion,
-            },
-            signal,
-          });
-
-          blob = await res.blob();
-        } else {
-          throw new Error('Invalid blob response');
-        }
-      } else {
-        blob = await res.blob();
-      }
-
-      return {
-        key,
-        data: new Uint8Array(await blob.arrayBuffer()),
-        mime: blob.type,
-        size: blob.size,
-        createdAt: new Date(res.headers.get('last-modified') || Date.now()),
-      };
-    } catch (err) {
-      throw new Error('blob download error: ' + err);
-    }
   }
 
-  override async set(blob: BlobRecord, signal?: AbortSignal) {
-    try {
-      const blobSizeLimit = await this.getBlobSizeLimit();
-      if (blob.data.byteLength > blobSizeLimit) {
-        throw new OverSizeError(this.humanReadableBlobSizeLimitCache);
-      }
-
-      const init = await this.connection.gql({
-        query: createBlobUploadMutation,
-        variables: {
-          workspaceId: this.options.id,
-          key: blob.key,
-          size: blob.data.byteLength,
-          mime: blob.mime,
-        },
-        context: { signal },
-      });
-
-      const upload = init.createBlobUpload;
-      if (upload.alreadyUploaded) {
-        return;
-      }
-      if (upload.method === BlobUploadMethod.GRAPHQL) {
-        await this.uploadViaGraphql(blob, signal);
-        return;
-      }
-
-      if (upload.method === BlobUploadMethod.PRESIGNED) {
-        try {
-          if (!upload.uploadUrl) {
-            throw new Error('Missing upload URL for presigned upload.');
-          }
-          await this.uploadViaPresigned(
-            upload.uploadUrl,
-            upload.headers,
-            blob.data,
-            signal
-          );
-          await this.completeUpload(blob.key, undefined, undefined, signal);
-          return;
-        } catch {
-          await this.uploadViaGraphql(blob, signal);
-          return;
-        }
-      }
-
-      if (upload.method === BlobUploadMethod.MULTIPART) {
-        try {
-          if (!upload.uploadId || !upload.partSize) {
-            throw new Error(
-              'Missing upload ID or part size for multipart upload.'
-            );
-          }
-          const parts = await this.uploadViaMultipart(
-            blob.key,
-            upload.uploadId,
-            upload.partSize,
-            blob.data,
-            upload.uploadedParts,
-            signal
-          );
-          await this.completeUpload(blob.key, upload.uploadId, parts, signal);
-          return;
-        } catch {
-          if (upload.uploadId) {
-            await this.tryAbortMultipartUpload(
-              blob.key,
-              upload.uploadId,
-              signal
-            );
-          }
-          await this.uploadViaGraphql(blob, signal);
-          return;
-        }
-      }
-
-      await this.uploadViaGraphql(blob, signal);
-    } catch (err) {
-      const userFriendlyError = UserFriendlyError.fromAny(err);
-      if (userFriendlyError.is('STORAGE_QUOTA_EXCEEDED')) {
-        throw new OverCapacityError();
-      }
-      if (userFriendlyError.is('BLOB_QUOTA_EXCEEDED')) {
-        throw new OverSizeError(this.humanReadableBlobSizeLimitCache);
-      }
-      if (userFriendlyError.is('CONTENT_TOO_LARGE')) {
-        throw new OverSizeError(
-          null,
-          'Upload stopped by network proxy: file size exceeds the set limit.'
-        );
-      }
-      throw err;
-    }
+  private isCandidateCurrent(key: string, candidate: BlobSourceCandidate) {
+    return this.sources.hasCandidate(key, candidate);
   }
 
-  override async delete(key: string, permanently: boolean) {
-    await this.connection.gql({
-      query: deleteBlobMutation,
-      variables: { workspaceId: this.options.id, key, permanently },
-    });
-  }
-
-  override async release() {
-    await this.connection.gql({
-      query: releaseDeletedBlobsMutation,
-      variables: { workspaceId: this.options.id },
-    });
-  }
-
-  override async list() {
-    const res = await this.connection.gql({
-      query: listBlobsQuery,
-      variables: { workspaceId: this.options.id },
-    });
-
-    return res.workspace.blobs.map(blob => ({
-      ...blob,
-      createdAt: new Date(blob.createdAt),
-    }));
-  }
-
-  private async uploadViaGraphql(blob: BlobRecord, signal?: AbortSignal) {
-    await this.connection.gql({
-      query: setBlobMutation,
-      variables: {
-        workspaceId: this.options.id,
-        blob: new File([toStrictArrayBuffer(blob.data)], blob.key, {
-          type: blob.mime,
-        }),
-      },
-      context: { signal },
-      timeout: UPLOAD_REQUEST_TIMEOUT,
-    });
-  }
-
-  private async uploadViaPresigned(
-    uploadUrl: string,
-    headers: Record<string, string> | null | undefined,
-    data: Uint8Array,
+  async registerSource(
+    source: BlobSource,
     signal?: AbortSignal
-  ) {
-    const res = await this.fetchWithTimeout(uploadUrl, {
-      method: 'PUT',
-      headers: headers ?? undefined,
-      body: toStrictArrayBuffer(data),
-      signal,
-      timeout: UPLOAD_REQUEST_TIMEOUT,
-    });
-    if (!res.ok) {
-      throw new Error(`Presigned upload failed with status ${res.status}`);
+  ): Promise<void> {
+    const id = this.sourceId(source);
+    const existing = this.sourceRegistrations.get(id);
+    if (existing) {
+      return this.refreshSource(existing, signal);
     }
-  }
-
-  private async uploadViaMultipart(
-    key: string,
-    uploadId: string,
-    partSize: number,
-    data: Uint8Array,
-    uploadedParts: { partNumber: number; etag: string }[] | null | undefined,
-    signal?: AbortSignal
-  ) {
-    const partsMap = new Map<number, string>();
-    for (const part of uploadedParts ?? []) {
-      partsMap.set(part.partNumber, part.etag);
-    }
-    const total = data.byteLength;
-    const totalParts = Math.ceil(total / partSize);
-
-    for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
-      if (partsMap.has(partNumber)) {
-        continue;
-      }
-      const start = (partNumber - 1) * partSize;
-      const end = Math.min(start + partSize, total);
-      const chunk = data.subarray(start, end);
-
-      const part = await this.connection.gql({
-        query: getBlobUploadPartUrlQuery,
-        variables: { workspaceId: this.options.id, key, uploadId, partNumber },
-        context: { signal },
-      });
-
-      const res = await this.fetchWithTimeout(
-        part.workspace.blobUploadPartUrl.uploadUrl,
-        {
-          method: 'PUT',
-          headers: part.workspace.blobUploadPartUrl.headers ?? undefined,
-          body: toStrictArrayBuffer(chunk),
-          signal,
-          timeout: UPLOAD_REQUEST_TIMEOUT,
-        }
-      );
-      if (!res.ok) {
-        throw new Error(
-          `Multipart upload failed at part ${partNumber} with status ${res.status}`
-        );
-      }
-
-      const etag = res.headers.get('etag');
-      if (!etag) {
-        throw new Error(`Missing ETag for part ${partNumber}.`);
-      }
-      partsMap.set(partNumber, etag);
-    }
-
-    if (partsMap.size !== totalParts) {
-      throw new Error('Multipart upload has missing parts.');
-    }
-
-    return [...partsMap.entries()]
-      .sort((left, right) => left[0] - right[0])
-      .map(([partNumber, etag]) => ({ partNumber, etag }));
-  }
-
-  private async completeUpload(
-    key: string,
-    uploadId: string | undefined,
-    parts: { partNumber: number; etag: string }[] | undefined,
-    signal?: AbortSignal
-  ) {
-    await this.connection.gql({
-      query: completeBlobUploadMutation,
-      variables: { workspaceId: this.options.id, key, uploadId, parts },
-      context: { signal },
-      timeout: UPLOAD_REQUEST_TIMEOUT,
-    });
-  }
-
-  private async tryAbortMultipartUpload(
-    key: string,
-    uploadId: string,
-    signal?: AbortSignal
-  ) {
-    try {
-      await this.connection.gql({
-        query: abortBlobUploadMutation,
-        variables: { workspaceId: this.options.id, key, uploadId },
-        context: { signal },
-      });
-    } catch {}
-  }
-
-  private async fetchWithTimeout(
-    input: string,
-    init: RequestInit & { timeout?: number }
-  ) {
-    const externalSignal = init.signal;
-    if (externalSignal?.aborted) {
-      throw externalSignal.reason;
-    }
-
-    const abortController = new AbortController();
-    externalSignal?.addEventListener('abort', reason => {
-      abortController.abort(reason);
-    });
-
-    const timeout = init.timeout ?? 15000;
-    const timeoutId =
-      timeout > 0
-        ? setTimeout(() => {
-            abortController.abort(new Error('request timeout'));
-          }, timeout)
-        : undefined;
-
-    try {
-      const resolvedUrl = new URL(input, this.options.serverBaseUrl).toString();
-      return await globalThis.fetch(resolvedUrl, {
-        ...init,
-        signal: abortController.signal,
-      });
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    }
-  }
-
-  private humanReadableBlobSizeLimitCache: string | null = null;
-  private blobSizeLimitCache: number | null = null;
-  private blobSizeLimitCacheTime = 0;
-  private async getBlobSizeLimit() {
-    // If cache time is less than 120 seconds, return the cached value directly
     if (
-      this.blobSizeLimitCache !== null &&
-      Date.now() - this.blobSizeLimitCacheTime < 120 * 1000
+      this.pendingSourceRegistrations.size >= MAX_PENDING_SOURCE_REGISTRATIONS
     ) {
-      return this.blobSizeLimitCache;
+      throw new Error('Blob source registration budget exceeded');
     }
-    try {
-      const res = await this.connection.gql({
-        query: workspaceBlobQuotaQuery,
-        variables: { id: this.options.id },
-      });
+    const registration = {
+      controller: new AbortController(),
+      dirty: false,
+      source,
+    } satisfies SourceRegistration;
+    this.sourceRegistrations.set(id, registration);
+    return this.refreshSource(registration, signal);
+  }
 
-      this.humanReadableBlobSizeLimitCache =
-        res.workspace.quota.humanReadable.blobLimit;
-      this.blobSizeLimitCache = res.workspace.quota.blobLimit;
-      this.blobSizeLimitCacheTime = Date.now();
-      return this.blobSizeLimitCache;
-    } catch (err) {
-      throw UserFriendlyError.fromAny(err);
+  private refreshSource(
+    registration: SourceRegistration,
+    signal?: AbortSignal
+  ): Promise<void> {
+    if (registration.promise) {
+      registration.dirty = true;
+      return registration.promise;
     }
+    if (
+      this.pendingSourceRegistrations.size >= MAX_PENDING_SOURCE_REGISTRATIONS
+    ) {
+      throw new Error('Blob source registration budget exceeded');
+    }
+    const registrationSignal = signal
+      ? AbortSignal.any([signal, registration.controller.signal])
+      : registration.controller.signal;
+    registration.promise = this.loadSource(
+      registration.source,
+      registration,
+      registrationSignal
+    ).finally(() => {
+      this.pendingSourceRegistrations.delete(registration);
+      registration.promise = undefined;
+    });
+    this.pendingSourceRegistrations.add(registration);
+    return registration.promise;
+  }
+
+  async unregisterSource(source: BlobSource) {
+    const id = this.sourceId(source);
+    const registration = this.sourceRegistrations.get(id);
+    if (registration) {
+      this.sourceRegistrations.delete(id);
+      registration.controller.abort();
+    }
+    this.removeSource(source);
+    await registration?.promise?.catch(() => {});
+  }
+
+  private async loadSource(
+    source: BlobSource,
+    registration: SourceRegistration,
+    signal?: AbortSignal
+  ) {
+    do {
+      registration.dirty = false;
+      try {
+        const res = await this.connection.fetch(
+          `/api/workspaces/${encodeURIComponent(this.options.id)}/blob-manifest/v1?${this.sourceQuery(source)}`,
+          { cache: 'no-store', signal }
+        );
+        if (!res.ok) {
+          throw new Error(
+            `Blob source manifest failed with status ${res.status}`
+          );
+        }
+        const manifest = (await res.json()) as {
+          version: 1;
+          entries: SourceBlobRecord[];
+        };
+        if (this.isRegistrationCurrent(registration)) {
+          this.replaceSource(source, manifest.entries, registration);
+        }
+      } catch (error) {
+        if (this.isRegistrationCurrent(registration)) {
+          this.removeSource(source);
+        }
+        throw error;
+      }
+    } while (registration.dirty && this.isRegistrationCurrent(registration));
+  }
+
+  async *readableSources(signal?: AbortSignal) {
+    let cursor: string | undefined;
+    try {
+      do {
+        const query = new URLSearchParams({ limit: '100' });
+        if (cursor) query.set('cursor', cursor);
+        const res = await this.connection.fetch(
+          `/api/workspaces/${encodeURIComponent(this.options.id)}/readable-blob-manifest/v1?${query}`,
+          { cache: 'no-store', signal }
+        );
+        if (!res.ok) {
+          throw new Error(
+            `Readable blob manifest failed with status ${res.status}`
+          );
+        }
+        const manifest = (await res.json()) as {
+          version: 1;
+          entries: SourceBlobRecord[];
+          nextCursor?: string;
+        };
+        for (const entry of manifest.entries) {
+          this.sources.replaceWorkspace([entry], {});
+          yield entry;
+        }
+        cursor = manifest.nextCursor;
+      } while (cursor);
+    } finally {
+      this.sources.replaceWorkspace([], {});
+    }
+  }
+
+  override async get(key: string, signal?: AbortSignal, source?: BlobSource) {
+    signal?.throwIfAborted();
+    let candidates = this.sourceCandidates(key, source);
+    if (candidates.length === 0) {
+      const failed = await this.refreshRegisteredSources(source, signal);
+      signal?.throwIfAborted();
+      candidates = this.sourceCandidates(key, source);
+      if (candidates.length === 0) {
+        if (failed) throw failed.reason;
+        return null;
+      }
+    }
+
+    const attempt = async (candidates: BlobSourceCandidate[]) => {
+      for (const candidate of candidates) {
+        if (!this.isCandidateCurrent(key, candidate)) {
+          continue;
+        }
+        let res: Response;
+        try {
+          res = await this.connection.fetch(
+            sourceScopedBlobUrl(this.options.id, key, candidate.source),
+            { cache: 'no-store', signal }
+          );
+        } catch (error) {
+          if (
+            error instanceof UserFriendlyError &&
+            (error.status === 403 || error.status === 404)
+          ) {
+            if (this.isCandidateCurrent(key, candidate)) {
+              this.removeKeyCandidate(key, candidate);
+            }
+            continue;
+          }
+          throw error;
+        }
+        if (!this.isCandidateCurrent(key, candidate)) {
+          continue;
+        }
+        if (res.status === 403 || res.status === 404) {
+          if (this.isCandidateCurrent(key, candidate)) {
+            this.removeKeyCandidate(key, candidate);
+          }
+          continue;
+        }
+        if (!res.ok) {
+          throw new Error(`Blob download failed with status ${res.status}`);
+        }
+        const blob = await res.blob();
+        const data = new Uint8Array(await blob.arrayBuffer());
+        if (!this.isCandidateCurrent(key, candidate)) {
+          continue;
+        }
+        return {
+          key,
+          data,
+          mime: blob.type,
+          size: blob.size,
+          createdAt: new Date(res.headers.get('last-modified') || Date.now()),
+        };
+      }
+      return null;
+    };
+
+    return attempt(candidates);
+  }
+
+  private sourceCandidates(key: string, source?: BlobSource) {
+    return this.sources
+      .candidates(key)
+      .filter(
+        candidate =>
+          !source || this.sourceId(candidate.source) === this.sourceId(source)
+      );
+  }
+
+  private async refreshRegisteredSources(
+    source?: BlobSource,
+    signal?: AbortSignal
+  ) {
+    const registrations = source
+      ? [this.sourceRegistrations.get(this.sourceId(source))].filter(
+          (registration): registration is SourceRegistration => !!registration
+        )
+      : [...this.sourceRegistrations.values()];
+    if (registrations.length === 0) {
+      throw new Error('Blob source context is required');
+    }
+    let failed: PromiseRejectedResult | undefined;
+    for (
+      let offset = 0;
+      offset < registrations.length;
+      offset += MAX_PENDING_SOURCE_REGISTRATIONS
+    ) {
+      const results = await Promise.allSettled(
+        registrations
+          .slice(offset, offset + MAX_PENDING_SOURCE_REGISTRATIONS)
+          .map(
+            async registration =>
+              registration.promise ?? this.refreshSource(registration, signal)
+          )
+      );
+      failed ??= results.find(result => result.status === 'rejected');
+    }
+    return failed;
+  }
+
+  override set(blob: BlobRecord, signal?: AbortSignal) {
+    return this.writer.set(blob, signal);
+  }
+
+  override delete(key: string, permanently: boolean) {
+    return this.writer.delete(key, permanently);
+  }
+
+  override release() {
+    return this.writer.release();
+  }
+
+  override async list(): Promise<never> {
+    throw new Error('Workspace blob inventory is unavailable');
+  }
+
+  async listManageable() {
+    return this.writer.listManageable();
   }
 }

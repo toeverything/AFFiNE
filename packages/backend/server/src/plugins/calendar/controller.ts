@@ -48,10 +48,14 @@ export class CalendarController {
 
     await this.calendar.assertCanLinkProvider(user.id, providerName);
 
+    const canonicalRedirectUri = redirectUri
+      ? this.url.canonicalRedirectUri(redirectUri)
+      : undefined;
+
     const state = await this.oauth.saveOAuthState({
       provider: providerName,
       userId: user.id,
-      redirectUri,
+      redirectUri: canonicalRedirectUri,
     });
 
     const callbackUrl = this.calendar.getCallbackUrl();
@@ -138,7 +142,9 @@ export class CalendarController {
     } catch (error) {
       if (state.redirectUri) {
         const message = this.getCallbackErrorMessage(error);
-        const redirectUrl = this.buildErrorRedirect(state.redirectUri, message);
+        const redirectUrl = this.url.canonicalRedirectUri(state.redirectUri, {
+          error: message,
+        });
         return this.url.safeRedirect(res, redirectUrl);
       }
       throw error;
@@ -149,12 +155,6 @@ export class CalendarController {
     }
 
     return res.status(200).send({ ok: true });
-  }
-
-  private buildErrorRedirect(redirectUri: string, message: string) {
-    const url = new URL(redirectUri, this.url.requestBaseUrl);
-    url.searchParams.set('error', message);
-    return url.toString();
   }
 
   private getCallbackErrorMessage(error: unknown) {

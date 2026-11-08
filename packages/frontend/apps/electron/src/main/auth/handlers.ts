@@ -1,12 +1,18 @@
-import { net, session } from 'electron';
+import os from 'node:os';
+
+import type { AuthTokenResponse } from '@affine/auth';
+import { session } from 'electron';
 
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
 import {
-  deleteNativeAuthToken,
-  getNativeAuthToken,
-  setNativeAuthToken,
-} from './native-token';
+  clearAuthSession,
+  getInstallationId,
+  getValidAccessToken,
+  revokeAuthSession,
+  setAuthSession,
+} from './auth-session';
+import { authFetch, getAuthTransportSession } from './transport';
 
 export interface SignInResponse {
   id?: string;
@@ -29,10 +35,6 @@ export interface PasswordSignInResponse extends SignInResponse {
   sessionOnly?: boolean;
 }
 
-interface ExchangeResponse {
-  token?: string;
-}
-
 const authCookieNames = [
   'affine_session',
   'affine_user_id',
@@ -46,14 +48,21 @@ function authUrl(endpoint: string, path: string) {
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(text || response.statusText);
+    let message = text || response.statusText;
+    try {
+      const error = JSON.parse(text);
+      if (typeof error.message === 'string') {
+        message = error.message;
+      }
+    } catch {}
+    throw new Error(message);
   }
 
   return text ? JSON.parse(text) : ({} as T);
 }
 
 async function fetchAuth(endpoint: string, path: string, body?: unknown) {
-  return await net.fetch(authUrl(endpoint, path), {
+  return await authFetch(authUrl(endpoint, path), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -65,18 +74,21 @@ async function fetchAuth(endpoint: string, path: string, body?: unknown) {
 }
 
 async function clearAuthCookies(endpoint: string) {
+  const sessions = [session.defaultSession, getAuthTransportSession()];
   await Promise.all(
-    authCookieNames.map(name =>
-      session.defaultSession.cookies
-        .remove(endpoint, name)
-        .catch(error =>
-          logger.debug(
-            'failed to clear native auth cookie',
-            endpoint,
-            name,
-            error
+    sessions.flatMap(authSession =>
+      authCookieNames.map(name =>
+        authSession.cookies
+          .remove(endpoint, name)
+          .catch(error =>
+            logger.debug(
+              'failed to clear native auth cookie',
+              endpoint,
+              name,
+              error
+            )
           )
-        )
+      )
     )
   );
 }
@@ -88,15 +100,16 @@ async function exchangeSession(endpoint: string, response: SignInResponse) {
 
   const exchangeResponse = await fetchAuth(
     endpoint,
-    '/api/auth/native/exchange',
-    { code: response.exchangeCode }
+    '/api/auth/session/exchange',
+    {
+      code: response.exchangeCode,
+      installationId: await getInstallationId(),
+      platform: 'electron',
+      deviceName: os.hostname(),
+    }
   );
-  const body = await readJson<ExchangeResponse>(exchangeResponse);
-  if (!body.token) {
-    throw new Error('Missing native auth token.');
-  }
-
-  const persistent = setNativeAuthToken(endpoint, body.token);
+  const body = await readJson<AuthTokenResponse>(exchangeResponse);
+  const { persistent } = await setAuthSession(endpoint, body);
   await clearAuthCookies(endpoint);
   return { persistent };
 }
@@ -146,7 +159,7 @@ export const authHandlers = {
       challenge?: string;
     }
   ) => {
-    const response = await net.fetch(authUrl(endpoint, '/api/auth/sign-in'), {
+    const response = await authFetch(authUrl(endpoint, '/api/auth/sign-in'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -154,6 +167,13 @@ export const authHandlers = {
         'x-affine-version': BUILD_CONFIG.appVersion,
         ...(credential.verifyToken
           ? { 'x-captcha-token': credential.verifyToken }
+          : {}),
+        ...(credential.verifyToken
+          ? {
+              'x-captcha-provider': credential.challenge
+                ? 'hashcash'
+                : 'turnstile',
+            }
           : {}),
         ...(credential.challenge
           ? { 'x-captcha-challenge': credential.challenge }
@@ -181,22 +201,18 @@ export const authHandlers = {
   },
 
   signOut: async (_e, endpoint: string) => {
-    const token = getNativeAuthToken(endpoint);
-    if (token) {
-      await net.fetch(authUrl(endpoint, '/api/auth/sign-out'), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'x-affine-version': BUILD_CONFIG.appVersion,
-        },
-      });
+    try {
+      await revokeAuthSession(endpoint);
+    } finally {
+      await clearAuthCookies(endpoint);
     }
-
-    deleteNativeAuthToken(endpoint);
-    await clearAuthCookies(endpoint);
   },
 
-  readEndpointToken: async (_e, endpoint: string) => {
-    return { token: getNativeAuthToken(endpoint) };
+  clearSession: async (_e, endpoint: string) => {
+    await clearAuthSession(endpoint, 'local-clear');
+  },
+
+  getValidAccessToken: async (_e, endpoint: string) => {
+    return { token: await getValidAccessToken(endpoint, 120_000) };
   },
 } satisfies NamespaceHandlers;

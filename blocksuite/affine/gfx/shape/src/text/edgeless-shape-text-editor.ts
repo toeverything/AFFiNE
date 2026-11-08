@@ -501,21 +501,23 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
 
     return html` <style>
         edgeless-shape-text-editor v-text [data-v-text] {
-          overflow-wrap: ${constrainedAutoWidth
-            ? 'anywhere'
-            : autoWidth
-              ? 'normal'
-              : 'anywhere'};
-          word-break: ${constrainedAutoWidth
-            ? 'break-word'
-            : autoWidth
-              ? 'normal'
-              : 'break-word'} !important;
-          white-space: ${constrainedAutoWidth
-            ? 'pre-wrap'
-            : autoWidth
-              ? 'pre'
-              : 'pre-wrap'} !important;
+          overflow-wrap: ${
+            constrainedAutoWidth
+              ? 'anywhere'
+              : autoWidth
+                ? 'normal'
+                : 'anywhere'
+          };
+          word-break: ${
+            constrainedAutoWidth
+              ? 'break-word'
+              : autoWidth
+                ? 'normal'
+                : 'break-word'
+          } !important;
+          white-space: ${
+            constrainedAutoWidth ? 'pre-wrap' : autoWidth ? 'pre' : 'pre-wrap'
+          } !important;
         }
 
         edgeless-shape-text-editor .inline-editor {

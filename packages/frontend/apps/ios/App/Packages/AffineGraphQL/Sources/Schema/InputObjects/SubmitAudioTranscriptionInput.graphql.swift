@@ -13,14 +13,12 @@ public struct SubmitAudioTranscriptionInput: InputObject {
   public init(
     quality: GraphQLNullable<TranscriptionQualityInput> = nil,
     sliceManifest: GraphQLNullable<[AudioSliceManifestItemInput]> = nil,
-    sourceAudio: GraphQLNullable<TranscriptionSourceAudioInput> = nil,
-    strategy: GraphQLNullable<String> = nil
+    sourceAudio: GraphQLNullable<TranscriptionSourceAudioInput> = nil
   ) {
     __data = InputDict([
       "quality": quality,
       "sliceManifest": sliceManifest,
-      "sourceAudio": sourceAudio,
-      "strategy": strategy
+      "sourceAudio": sourceAudio
     ])
   }
 
@@ -37,10 +35,5 @@ public struct SubmitAudioTranscriptionInput: InputObject {
   public var sourceAudio: GraphQLNullable<TranscriptionSourceAudioInput> {
     get { __data["sourceAudio"] }
     set { __data["sourceAudio"] = newValue }
-  }
-
-  public var strategy: GraphQLNullable<String> {
-    get { __data["strategy"] }
-    set { __data["strategy"] = newValue }
   }
 }

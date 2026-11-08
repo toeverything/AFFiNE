@@ -21,19 +21,19 @@ import {
   useServices,
 } from '@toeverything/infra';
 import { bodyEmphasized } from '@toeverything/theme/typography';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import {
   NavigationBackButton,
   SearchInput,
   SearchResLabel,
+  useMobileShellTabs,
 } from '../../components';
 import { searchVTScope } from '../../components/search-input/style.css';
+import { MobileBackCoordinator } from '../../modules/back-coordinator';
 import { MobileSearchService } from '../../modules/search';
 import { SearchResults } from '../../views/search/search-results';
 import * as styles from '../../views/search/style.css';
-
-const searchInput$ = new LiveData('');
 
 const RecentList = () => {
   const { mobileSearchService, collectionService, tagService } = useServices({
@@ -134,31 +134,36 @@ const WithQueryList = () => {
 export const Component = () => {
   const t = useI18n();
   useThemeColorV2('layer/background/mobile/primary');
-  const searchInput = useLiveData(searchInput$);
+  useMobileShellTabs({ hidden: true });
   const searchService = useService(MobileSearchService);
+  const backCoordinator = useService(MobileBackCoordinator);
+  const searchInput = useLiveData(searchService.query$);
 
   const onSearch = useCallback(
     (v: string) => {
-      searchInput$.next(v);
-      searchService.recentDocs.query(v);
-      searchService.collections.query(v);
-      searchService.docs.query(v);
-      searchService.tags.query(v);
+      searchService.query(v);
     },
-    [
-      searchService.collections,
-      searchService.docs,
-      searchService.recentDocs,
-      searchService.tags,
-    ]
+    [searchService]
   );
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo({ top: searchService.scrollAnchor$.value });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      searchService.scrollAnchor$.next(window.scrollY);
+    };
+  }, [searchService]);
 
   const transitionBack = useCallback(() => {
     startScopedViewTransition(searchVTScope, async () => {
-      history.back();
+      if (!backCoordinator.request('ui-back')) {
+        backCoordinator.request('ui-up');
+      }
       await sleep(10);
     });
-  }, []);
+  }, [backCoordinator]);
 
   return (
     <>

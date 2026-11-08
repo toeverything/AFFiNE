@@ -1,0 +1,26 @@
+mutation rotateMcpCredential(
+  $id: ID!
+  $workspaceId: String!
+  $expirationDays: Int!
+) {
+  rotateMcpCredential(
+    id: $id
+    workspaceId: $workspaceId
+    expirationDays: $expirationDays
+  ) {
+    credential {
+      id
+      name
+      workspaceId
+      accessMode
+      fingerprint
+      createdAt
+      expiresAt
+      lastUsedAt
+      revokedAt
+      graceEndsAt
+      status
+    }
+    token
+  }
+}

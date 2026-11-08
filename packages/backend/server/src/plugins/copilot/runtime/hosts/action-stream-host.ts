@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
-import type { LlmImageResponse } from '../../../../native';
+import {
+  getCopilotActionRecipe,
+  type LlmImageResponse,
+} from '../../../../native';
+import type { CopilotScopeMode } from '../../access';
 import { PromptService } from '../../prompt';
 import type { PromptMessage } from '../../providers/types';
 import type { ChatSession } from '../../session';
@@ -8,6 +12,10 @@ import { ChatQuerySchema } from '../../types';
 import { projectActionEventToChatEvent } from '../action-output-projector';
 import type { ActionRuntimeBridgeEvent } from '../action-runtime-bridge';
 import { ActionRuntimeBridge } from '../action-runtime-bridge';
+import {
+  buildStructuredResponseFromSchemaJson,
+  requireStructuredOutputContract,
+} from '../contracts';
 import { ConversationHost } from './conversation-host';
 import { ImageResultHost } from './image-result-host';
 
@@ -15,32 +23,6 @@ export { projectActionEventToChatEvent };
 
 function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-const ACTION_PROMPTS: Record<string, string> = {
-  'mindmap.generate': 'mindmap.generate',
-  'slides.outline': 'slides.outline',
-};
-
-type ImageActionRoutePreparation = {
-  modelId?: string;
-  messages: PromptMessage[];
-  options: Record<string, unknown>;
-};
-
-function isImageAction(id: string) {
-  return id.startsWith('image.filter.');
-}
-
-function actionTextResultSchema() {
-  return {
-    type: 'object',
-    properties: {
-      result: { type: 'string' },
-    },
-    required: ['result'],
-    additionalProperties: false,
-  };
 }
 
 @Injectable()
@@ -73,6 +55,7 @@ export class ActionStreamHost {
       firstQueryValue(query.actionId) ?? prepared.session.config.promptName;
     const actionId = requestedActionId;
     const actionVersion = firstQueryValue(query.actionVersion) ?? 'v1';
+    const recipe = getCopilotActionRecipe(actionId, actionVersion);
     const retryOf = parsedQuery.retry
       ? firstQueryValue(query.runId)
       : undefined;
@@ -81,19 +64,21 @@ export class ActionStreamHost {
       ...this.conversations.buildLatestTurnPromptParams(prepared.latestTurn),
     };
     const finalMessage = await this.preparePromptMessages(
-      actionId,
+      recipe.promptRef,
       prepared.session,
       params
     );
-    const imageRoutes = await this.prepareImageRoutes(
-      actionId,
-      prepared.session,
-      params,
-      userId,
-      parsedQuery.byokLeaseId,
-      prepared.quotaBackedRoutesAllowed,
-      signal
-    );
+    const responseContract = recipe.responseContract
+      ? requireStructuredOutputContract(
+          buildStructuredResponseFromSchemaJson(recipe.responseContract.schema)
+        )
+      : undefined;
+    const producesImage = recipe.outputProjection === 'first_image';
+    if (producesImage && prepared.scopeMode !== 'canonical') {
+      throw new BadRequestException(
+        "Local workspaces don't support generated images."
+      );
+    }
     const runStream = this.bridge.runStream({
       userId,
       workspaceId: prepared.session.config.workspaceId,
@@ -108,43 +93,34 @@ export class ActionStreamHost {
         params,
         messageId: prepared.messageId,
       },
-      persistAttachment: isImageAction(actionId)
+      persistAttachment: producesImage
         ? attachment =>
             this.persistImageAttachment(
               userId,
               prepared.session.config.workspaceId,
-              attachment
+              attachment,
+              prepared.scopeMode
             )
         : undefined,
-      prepareStructuredRoutes: isImageAction(actionId)
-        ? undefined
-        : {
-            stepId: 'generate',
-            modelId:
-              typeof query.modelId === 'string' && query.modelId
-                ? query.modelId
-                : undefined,
-            messages: finalMessage,
-            responseSchemaJson: actionTextResultSchema(),
-            options: {
-              ...prepared.session.config.promptConfig,
-              signal,
-              user: userId,
-              workspace: prepared.session.config.workspaceId,
-              session: sessionId,
-              byokLeaseId: parsedQuery.byokLeaseId,
-              quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
-              featureKind: 'action',
-            },
-          },
-      prepareImageRoutes: imageRoutes
-        ? {
-            stepId: 'generate-image',
-            modelId: imageRoutes.modelId,
-            messages: imageRoutes.messages,
-            options: imageRoutes.options,
-          }
-        : undefined,
+      step: {
+        slot: recipe.slot,
+        builtInRouteId: recipe.promptRef,
+        profileId: parsedQuery.profileId,
+        modelId: parsedQuery.modelId,
+        messages: finalMessage,
+        responseContract,
+        options: {
+          ...prepared.session.config.promptConfig,
+          signal,
+          user: userId,
+          workspace: prepared.session.config.workspaceId,
+          session: sessionId,
+          byokLeaseId: parsedQuery.byokLeaseId,
+          managedTargetId: parsedQuery.routeTargetId,
+          quotaBackedRoutesAllowed: prepared.quotaBackedRoutesAllowed,
+          featureKind: producesImage ? 'image' : 'action',
+        },
+      },
       signal,
     });
 
@@ -157,18 +133,13 @@ export class ActionStreamHost {
   }
 
   private async preparePromptMessages(
-    actionId: string,
+    promptRef: string,
     session: ChatSession,
     params: Record<string, unknown>
   ): Promise<PromptMessage[]> {
-    const promptName = ACTION_PROMPTS[actionId];
-    if (!promptName) {
-      return session.finish(params);
-    }
-
-    const prompt = await this.prompts.get(promptName);
+    const prompt = await this.prompts.get(promptRef);
     if (!prompt) {
-      throw new Error(`Prompt ${promptName} not found`);
+      throw new Error(`Prompt ${promptRef} not found`);
     }
     return this.prompts.finish(
       prompt,
@@ -177,48 +148,11 @@ export class ActionStreamHost {
     );
   }
 
-  private async prepareImageRoutes(
-    actionId: string,
-    session: ChatSession,
-    params: Record<string, unknown>,
-    userId: string,
-    byokLeaseId?: string,
-    quotaBackedRoutesAllowed?: boolean,
-    signal?: AbortSignal
-  ): Promise<ImageActionRoutePreparation | undefined> {
-    if (!isImageAction(actionId)) {
-      return undefined;
-    }
-
-    const prompt = await this.prompts.get(actionId);
-    if (!prompt) {
-      throw new Error(`Prompt ${actionId} not found`);
-    }
-    const finalMessage = this.prompts.finish(
-      prompt,
-      params as Record<string, string>,
-      session.config.sessionId
-    );
-    return {
-      modelId: prompt.model,
-      messages: finalMessage,
-      options: {
-        ...prompt.config,
-        signal,
-        user: userId,
-        workspace: session.config.workspaceId,
-        session: session.config.sessionId,
-        byokLeaseId,
-        quotaBackedRoutesAllowed,
-        featureKind: 'image',
-      },
-    };
-  }
-
   private async persistImageAttachment(
     userId: string,
     workspaceId: string,
-    attachment: unknown
+    attachment: unknown,
+    scopeMode: CopilotScopeMode
   ) {
     if (!attachment || typeof attachment !== 'object') {
       return attachment;
@@ -235,7 +169,8 @@ export class ActionStreamHost {
     const persisted = await this.imageResults.persistNativeArtifact(
       userId,
       workspaceId,
-      artifact
+      artifact,
+      scopeMode
     );
     if (!persisted) {
       return attachment;

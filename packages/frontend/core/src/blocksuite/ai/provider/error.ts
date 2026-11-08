@@ -7,6 +7,10 @@ export enum AIErrorType {
   PaymentRequired = 'PaymentRequired',
   Unauthorized = 'Unauthorized',
   RequestTimeout = 'RequestTimeout',
+  SelectedSourcesProcessing = 'SelectedSourcesProcessing',
+  SelectedSourcesFailed = 'SelectedSourcesFailed',
+  SelectedSourcesUnavailable = 'SelectedSourcesUnavailable',
+  SelectedSourcesLimitExceeded = 'SelectedSourcesLimitExceeded',
 }
 
 export class UnauthorizedError extends BaseAIError {
@@ -44,8 +48,44 @@ export class RequestTimeoutError extends BaseAIError {
   }
 }
 
+export class SelectedSourcesProcessingError extends BaseAIError {
+  readonly type = AIErrorType.SelectedSourcesProcessing;
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class SelectedSourcesFailedError extends BaseAIError {
+  readonly type = AIErrorType.SelectedSourcesFailed;
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class SelectedSourcesUnavailableError extends BaseAIError {
+  readonly type = AIErrorType.SelectedSourcesUnavailable;
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class SelectedSourcesLimitExceededError extends BaseAIError {
+  readonly type = AIErrorType.SelectedSourcesLimitExceeded;
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export type AIError =
   | UnauthorizedError
   | PaymentRequiredError
   | GeneralNetworkError
-  | RequestTimeoutError;
+  | RequestTimeoutError
+  | SelectedSourcesProcessingError
+  | SelectedSourcesFailedError
+  | SelectedSourcesUnavailableError
+  | SelectedSourcesLimitExceededError;

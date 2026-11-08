@@ -114,7 +114,7 @@ export async function buildCanonicalNativeRequest({
     request = llmBuildCanonicalRequest({
       model,
       messages: normalizedMessages,
-      maxTokens: options.maxTokens ?? undefined,
+      maxTokens: options.maxOutputTokens ?? undefined,
       temperature: options.temperature ?? undefined,
       tools: toolContracts,
       include,
@@ -171,7 +171,7 @@ export async function buildCanonicalNativeStructuredRequest({
       model,
       messages: normalizedMessages,
       schema: explicitResponseContract?.responseSchemaJson,
-      maxTokens: options.maxTokens ?? undefined,
+      maxTokens: options.maxOutputTokens ?? undefined,
       temperature: options.temperature ?? undefined,
       reasoning,
       strict: options.strict,

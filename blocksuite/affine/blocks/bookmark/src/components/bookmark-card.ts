@@ -1,7 +1,10 @@
 import { getEmbedCardIcons } from '@blocksuite/affine-block-embed';
 import { LoadingIcon, WebIcon16 } from '@blocksuite/affine-components/icons';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import {
+  LinkPreviewServiceIdentifier,
+  ThemeProvider,
+} from '@blocksuite/affine-shared/services';
 import { getHostName } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { OpenInNewIcon } from '@blocksuite/icons/lit';
@@ -111,6 +114,11 @@ export class BookmarkCard extends SignalWatcher(
         </div>
         <div class="affine-bookmark-banner">${bannerImage}</div>
       </div>
+      <affine-link-preview-details
+        .url=${url}
+        .floating=${isGfxBlockComponent(this.bookmark)}
+        .provider=${this.bookmark.std.get(LinkPreviewServiceIdentifier)}
+      ></affine-link-preview-details>
     `;
   }
 

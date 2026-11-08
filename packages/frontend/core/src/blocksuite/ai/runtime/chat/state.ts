@@ -45,6 +45,18 @@ export type AIChatMessage = {
   userId?: string;
   userName?: string;
   avatarUrl?: string;
+  scopeSnapshot?: AIChatScopeReceipt | null;
+};
+
+export type AIChatScopeReceipt = {
+  resolvedAt: string;
+  selectors: Array<{
+    kind: 'document' | 'tag' | 'collection' | 'favorite' | 'artifact';
+    id: string;
+    name?: string;
+  }>;
+  requiredDocIds: string[];
+  requiredArtifactIds: string[];
 };
 
 export type AIChatTab =
@@ -79,10 +91,11 @@ export type AIChatHistoryGroups = {
   error: Error | null;
 };
 
-export type AIChatContextItem =
+export type AIChatScopeSelector =
   | {
       kind: 'doc';
       docId: string;
+      name?: string;
       state?: string;
       createdAt?: number;
       tooltip?: string;
@@ -99,6 +112,7 @@ export type AIChatContextItem =
   | {
       kind: 'tag';
       tagId: string;
+      name?: string;
       docIds: string[];
       state?: string;
       createdAt?: number;
@@ -107,6 +121,7 @@ export type AIChatContextItem =
   | {
       kind: 'collection';
       collectionId: string;
+      name?: string;
       docIds: string[];
       state?: string;
       createdAt?: number;
@@ -118,25 +133,31 @@ export type AIChatContextItem =
       state?: string;
       createdAt?: number;
       tooltip?: string;
+    }
+  | {
+      kind: 'favorite';
+      favoriteId: string;
+      name?: string;
     };
 
-export type AIChatContextState = {
-  contextId: string | null;
-  items: AIChatContextItem[];
-  loading: boolean;
-  polling: boolean;
+export type AIChatScopeSelection = {
+  items: AIChatScopeSelector[];
+  syncing: boolean;
   error: Error | null;
-  embeddingCompleted: boolean;
-  embeddingCount: Record<'finished' | 'processing' | 'failed', number>;
+};
+
+export type AIChatFocusState = {
+  items: AIChatScopeSelector[];
 };
 
 export type AIChatComposerState = {
   text: string;
   attachments: (string | Blob | File)[];
-  context: AIChatContextState;
+  scopeSelection: AIChatScopeSelection;
+  focus: AIChatFocusState;
   reasoning: boolean;
   toolsConfig?: AIToolsConfig;
-  modelId?: string;
+  routeTargetId?: string;
 };
 
 export type AIChatNavigationRequest = {
@@ -172,19 +193,12 @@ export function createInitialComposerState(): AIChatComposerState {
   return {
     text: '',
     attachments: [],
-    context: {
-      contextId: null,
+    scopeSelection: {
       items: [],
-      loading: false,
-      polling: false,
+      syncing: false,
       error: null,
-      embeddingCompleted: false,
-      embeddingCount: {
-        finished: 0,
-        processing: 0,
-        failed: 0,
-      },
     },
+    focus: { items: [] },
     reasoning: false,
   };
 }

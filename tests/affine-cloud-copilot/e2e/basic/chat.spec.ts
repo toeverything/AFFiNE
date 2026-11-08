@@ -384,8 +384,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content:
-          'AFFiNE is an open source all in one workspace.\nTranslate to chinese.',
+        content: 'Translate to chinese.',
       },
       {
         role: 'assistant',
@@ -470,8 +469,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content:
-          'AFFiNE is an open source all in one workspace.\nTranslate to chinese.',
+        content: 'Translate to chinese.',
       },
       {
         role: 'assistant',
@@ -515,7 +513,7 @@ test.describe('AIBasic/Chat', () => {
 
     // create new doc
     await utils.editor.createDoc(page, 'Doc 1', 'doc1');
-    await utils.chatPanel.expectToHaveHistory(page, [
+    await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
         content: 'Hello, how can you help me? Answer in 50 words.',

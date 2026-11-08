@@ -1,6 +1,6 @@
-import { z } from 'zod';
+import serverNativeModule from '@affine/server-native';
 
-import { defineModuleConfig, JSONSchema } from '../../base';
+import { defineNativeModuleConfig } from '../../base';
 
 export interface OAuthProviderConfig {
   clientId: string;
@@ -18,6 +18,7 @@ export type OIDCArgs = {
 
 export interface OAuthOIDCProviderConfig extends OAuthProviderConfig {
   issuer: string;
+  allowPrivateNetwork?: boolean;
   args?: OIDCArgs;
 }
 
@@ -40,66 +41,8 @@ declare global {
   }
 }
 
-const schema: JSONSchema = {
-  type: 'object',
-  properties: {
-    clientId: { type: 'string' },
-    clientSecret: { type: 'string' },
-    args: { type: 'object' },
-  },
-};
-
-defineModuleConfig('oauth', {
-  'providers.google': {
-    desc: 'Google OAuth provider config',
-    default: {
-      clientId: '',
-      clientSecret: '',
-    },
-    schema,
-    link: 'https://developers.google.com/identity/protocols/oauth2/web-server',
-  },
-  'providers.github': {
-    desc: 'GitHub OAuth provider config',
-    default: {
-      clientId: '',
-      clientSecret: '',
-    },
-    schema,
-    link: 'https://docs.github.com/en/apps/oauth-apps',
-  },
-  'providers.oidc': {
-    desc: 'OIDC OAuth provider config',
-    default: {
-      clientId: '',
-      clientSecret: '',
-      issuer: '',
-      args: {},
-    },
-    schema,
-    link: 'https://openid.net/specs/openid-connect-core-1_0.html',
-    shape: z.object({
-      issuer: z
-        .string()
-        .url()
-        .regex(/^https?:\/\//, 'issuer must be a valid URL')
-        .or(z.string().length(0)),
-      args: z.object({
-        scope: z.string().optional(),
-        claim_id: z.string().optional(),
-        claim_email: z.string().optional(),
-        claim_name: z.string().optional(),
-        claim_email_verified: z.string().optional(),
-      }),
-    }),
-  },
-  'providers.apple': {
-    desc: 'Apple OAuth provider config',
-    default: {
-      clientId: '',
-      clientSecret: '',
-    },
-    schema,
-    link: 'https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app',
-  },
-});
+defineNativeModuleConfig(
+  'oauth',
+  serverNativeModule.appConfigDescriptors('oauth'),
+  serverNativeModule.validateAppConfigValue
+);

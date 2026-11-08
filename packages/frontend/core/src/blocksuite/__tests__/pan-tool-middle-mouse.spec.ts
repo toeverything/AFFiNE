@@ -1,4 +1,4 @@
-// eslint-disable-next-line import-x/no-extraneous-dependencies
+// oxlint-disable-next-line import-x-js/no-extraneous-dependencies
 import { PanTool } from '@blocksuite/affine-gfx-pointer';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';

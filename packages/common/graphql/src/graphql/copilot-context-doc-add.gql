@@ -1,7 +1,0 @@
-mutation addContextDoc($options: AddContextDocInput!) {
-  addContextDoc(options: $options) {
-    id
-    createdAt
-    status
-  }
-}

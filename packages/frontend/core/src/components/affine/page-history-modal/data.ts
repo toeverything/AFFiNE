@@ -1,6 +1,6 @@
 import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { useDocCollectionPage } from '@affine/core/components/hooks/use-block-suite-workspace-page';
-import { FetchService, GraphQLService } from '@affine/core/modules/cloud';
+import { FetchService } from '@affine/core/modules/cloud';
 import {
   type WorkspaceFlavourProvider,
   WorkspaceService,
@@ -102,39 +102,59 @@ const snapshotFetcher = async (
 // so that we do not need to worry about providers etc
 // TODO(@Peng): fix references to the page (the referenced page will shown as deleted)
 // if we simply clone the current workspace, it maybe time consuming right?
-const docCollectionMap = new Map<string, Workspace>();
-
 // assume the workspace is a cloud workspace since the history feature is only enabled for cloud workspace
-const getOrCreateShellWorkspace = (
+const createShellWorkspace = (
   workspaceId: string,
+  pageDocId: string,
+  timestampMs: number,
   flavourProvider?: WorkspaceFlavourProvider
 ) => {
-  let docCollection = docCollectionMap.get(workspaceId);
-  if (!docCollection) {
-    docCollection = new WorkspaceImpl({
-      id: workspaceId,
-      rootDoc: new YDoc({ guid: workspaceId }),
-      blobSource: {
-        name: 'cloud',
-        readonly: true,
-        async get(key) {
-          return flavourProvider?.getWorkspaceBlob(workspaceId, key) ?? null;
-        },
-        set() {
-          return Promise.resolve('');
-        },
-        delete() {
-          return Promise.resolve();
-        },
-        list() {
-          return Promise.resolve([]);
-        },
+  const source = {
+    type: 'history' as const,
+    workspaceId,
+    docId: pageDocId,
+    timestampMs,
+  };
+  const sourceSession = flavourProvider?.openWorkspaceBlobSource?.(
+    workspaceId,
+    source
+  );
+  const docCollection = new WorkspaceImpl({
+    id: workspaceId,
+    rootDoc: new YDoc({ guid: workspaceId }),
+    blobSource: {
+      name: 'cloud',
+      readonly: true,
+      async get(key) {
+        return (
+          (await sourceSession?.get(key)) ??
+          flavourProvider?.getWorkspaceBlob(workspaceId, key, source) ??
+          null
+        );
       },
-    });
-    docCollectionMap.set(workspaceId, docCollection);
-    docCollection.doc.emit('sync', [true, docCollection.doc]);
-  }
-  return docCollection;
+      set() {
+        return Promise.resolve('');
+      },
+      delete() {
+        return Promise.resolve();
+      },
+      list() {
+        return Promise.resolve([]);
+      },
+    },
+  });
+  docCollection.doc.emit('sync', [true, docCollection.doc]);
+  return {
+    docCollection,
+    dispose() {
+      docCollection.dispose();
+      sourceSession
+        ?.close()
+        .catch(error =>
+          logger.error('Failed to close history blob source', error)
+        );
+    },
+  };
 };
 
 // workspace id + page id + timestamp -> snapshot (update binary)
@@ -163,18 +183,31 @@ export const useSnapshotPage = (
 ) => {
   const affineWorkspace = useService(WorkspaceService).workspace;
   const workspacesService = useService(WorkspacesService);
-  const fetchService = useService(FetchService);
-  const graphQLService = useService(GraphQLService);
   const snapshot = usePageHistory(docCollection.id, pageDocId, ts);
+  const historyShell = useMemo(() => {
+    if (!ts) return;
+    return createShellWorkspace(
+      docCollection.id,
+      pageDocId,
+      new Date(ts).getTime(),
+      workspacesService.getWorkspaceFlavourProvider(affineWorkspace.meta)
+    );
+  }, [
+    affineWorkspace.meta,
+    docCollection.id,
+    pageDocId,
+    ts,
+    workspacesService,
+  ]);
+
+  useEffect(() => () => historyShell?.dispose(), [historyShell]);
+
   const page = useMemo(() => {
-    if (!ts) {
+    if (!ts || !historyShell) {
       return;
     }
     const pageId = pageDocId + '-' + ts;
-    const historyShellWorkspace = getOrCreateShellWorkspace(
-      docCollection.id,
-      workspacesService.getWorkspaceFlavourProvider(affineWorkspace.meta)
-    );
+    const historyShellWorkspace = historyShell.docCollection;
     let page = historyShellWorkspace.getDoc(pageId)?.getStore();
     if (!page && snapshot) {
       page = historyShellWorkspace.createDoc(pageId).getStore();
@@ -185,31 +218,15 @@ export const useSnapshotPage = (
       }); // must load before applyUpdate
     }
     return page ?? undefined;
-  }, [
-    ts,
-    pageDocId,
-    docCollection.id,
-    workspacesService,
-    affineWorkspace.meta,
-    snapshot,
-  ]);
+  }, [historyShell, pageDocId, snapshot, ts]);
 
   useEffect(() => {
-    const historyShellWorkspace = getOrCreateShellWorkspace(
-      docCollection.id,
-      workspacesService.getWorkspaceFlavourProvider(affineWorkspace.meta)
-    );
+    if (!historyShell) return;
     // apply the rootdoc's update to the current workspace
     // this makes sure the page reference links are not deleted ones in the preview
     const update = encodeStateAsUpdate(docCollection.doc);
-    applyUpdate(historyShellWorkspace.doc, update);
-  }, [
-    affineWorkspace.meta,
-    docCollection,
-    fetchService,
-    graphQLService,
-    workspacesService,
-  ]);
+    applyUpdate(historyShell.docCollection.doc, update);
+  }, [docCollection, historyShell]);
 
   return page;
 };

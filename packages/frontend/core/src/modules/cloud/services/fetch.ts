@@ -59,6 +59,7 @@ export class FetchService extends Service {
           headers: {
             ...init?.headers,
             'x-affine-version': BUILD_CONFIG.appVersion,
+            'x-affine-client-kind': BUILD_CONFIG.isNative ? 'native' : 'web',
           },
         }
       );

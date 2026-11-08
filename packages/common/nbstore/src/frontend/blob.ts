@@ -1,4 +1,4 @@
-import type { BlobRecord, BlobStorage } from '../storage';
+import type { BlobRecord, BlobSource, BlobStorage } from '../storage';
 import { SingletonLocker } from '../storage/lock';
 import type { BlobSync } from '../sync/blob';
 
@@ -66,6 +66,14 @@ export class BlobFrontend {
       throw new Error(`Blob ${blobIdOrRecord} not found`);
     }
     return this.sync.uploadBlob(blob, false);
+  }
+
+  registerSource(source: BlobSource) {
+    return this.sync.registerSource(source);
+  }
+
+  unregisterSource(source: BlobSource) {
+    return this.sync.unregisterSource(source);
   }
 
   fullDownload(peerId?: string, signal?: AbortSignal) {

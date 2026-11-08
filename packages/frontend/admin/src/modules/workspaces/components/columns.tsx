@@ -35,20 +35,6 @@ export const useColumns = () => {
               <div className="w-full truncate font-mono text-xs text-muted-foreground">
                 {workspace.id}
               </div>
-              <div className="flex flex-wrap gap-2 text-xxs">
-                {workspace.features.length ? (
-                  workspace.features.map(feature => (
-                    <span
-                      key={feature}
-                      className="rounded-md border border-border/60 bg-chip-white px-2 py-0.5"
-                    >
-                      {feature}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-muted-foreground">No features</span>
-                )}
-              </div>
             </div>
           );
         },

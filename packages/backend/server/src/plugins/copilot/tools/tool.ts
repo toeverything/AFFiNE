@@ -7,6 +7,8 @@ import { toToolJsonSchema } from './json-schema';
 export type CopilotToolExecuteOptions = {
   signal?: AbortSignal;
   messages?: PromptMessage[];
+  runId?: string;
+  toolCallId?: string;
 };
 
 export type CopilotTool = {

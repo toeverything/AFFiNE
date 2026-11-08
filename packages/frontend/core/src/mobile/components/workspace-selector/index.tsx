@@ -30,7 +30,12 @@ export const WorkspaceSelector = forwardRef<
 
   // revalidate workspace list when open workspace list
   useEffect(() => {
-    if (open) workspaceManager?.list.revalidate();
+    if (!open) return;
+    const timer = window.setTimeout(
+      () => workspaceManager?.list.revalidate(),
+      250
+    );
+    return () => window.clearTimeout(timer);
   }, [workspaceManager, open]);
 
   return (

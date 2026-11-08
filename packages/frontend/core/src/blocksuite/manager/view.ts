@@ -36,6 +36,8 @@ import { getInternalViewExtensions } from '@blocksuite/affine/extensions/view';
 import { FoundationViewExtension } from '@blocksuite/affine/foundation/view';
 import { InlineCommentViewExtension } from '@blocksuite/affine/inlines/comment';
 import { AffineCanvasTextFonts } from '@blocksuite/affine/shared/services';
+import { BlockStdScope } from '@blocksuite/affine/std';
+import type { Store } from '@blocksuite/affine/store';
 import { LinkedDocViewExtension } from '@blocksuite/affine/widgets/linked-doc/view';
 import type { FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
@@ -363,4 +365,11 @@ class ViewProvider {
 
 export function getViewManager() {
   return ViewProvider.getInstance();
+}
+
+export function createBlockStdScope(store: Store) {
+  return new BlockStdScope({
+    store,
+    extensions: getViewManager().config.init().value.get('page'),
+  });
 }

@@ -3,6 +3,7 @@ import { map } from 'rxjs';
 
 import type { GlobalCache } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
+import { type WorkspaceMetadata, workspaceMetadataKey } from '../metadata';
 
 const WORKSPACE_PROFILE_CACHE_KEY = 'workspace-information:';
 
@@ -11,20 +12,25 @@ export class WorkspaceProfileCacheStore extends Store {
     super();
   }
 
-  watchProfileCache(workspaceId: string) {
-    return this.cache.watch(WORKSPACE_PROFILE_CACHE_KEY + workspaceId).pipe(
-      map(data => {
-        if (!data || typeof data !== 'object') {
-          return null;
-        }
+  watchProfileCache(metadata: WorkspaceMetadata) {
+    return this.cache
+      .watch(WORKSPACE_PROFILE_CACHE_KEY + workspaceMetadataKey(metadata))
+      .pipe(
+        map(data => {
+          if (!data || typeof data !== 'object') {
+            return null;
+          }
 
-        const info = data as WorkspaceProfileInfo;
-        return info;
-      })
-    );
+          const info = data as WorkspaceProfileInfo;
+          return info;
+        })
+      );
   }
 
-  setProfileCache(workspaceId: string, info: WorkspaceProfileInfo) {
-    this.cache.set(WORKSPACE_PROFILE_CACHE_KEY + workspaceId, info);
+  setProfileCache(metadata: WorkspaceMetadata, info: WorkspaceProfileInfo) {
+    this.cache.set(
+      WORKSPACE_PROFILE_CACHE_KEY + workspaceMetadataKey(metadata),
+      info
+    );
   }
 }

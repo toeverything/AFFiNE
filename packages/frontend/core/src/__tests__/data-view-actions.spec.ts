@@ -1,4 +1,3 @@
-/* eslint-disable rxjs/finnish */
 import { computed, signal } from '@preact/signals-core';
 import { describe, expect, test, vi } from 'vitest';
 

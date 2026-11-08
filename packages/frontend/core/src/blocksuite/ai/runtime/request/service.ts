@@ -1,6 +1,5 @@
 import type { NbstoreService } from '@affine/core/modules/storage';
 import {
-  ContextCategories,
   type CopilotChatHistoryFragment,
   type getCopilotHistoriesQuery,
   type GraphQLQuery,
@@ -34,6 +33,20 @@ export type AIRequestActionEvent = {
 };
 
 export class AIRequestService {
+  private activeEditorFactory?: (sessionId: string) => {
+    start(): Promise<void>;
+    sync(): Promise<void>;
+    dispose(): void;
+    context(): string;
+  };
+  private activeEditor?: {
+    sessionId: string;
+    sync(): Promise<void>;
+    dispose(): void;
+    context(): string;
+  };
+  private activeEditorGeneration = 0;
+  private activeEditorActivation = Promise.resolve();
   private lastActionSessionId = '';
   private readonly actionHistory: {
     action: AIActionId;
@@ -41,7 +54,89 @@ export class AIRequestService {
   }[] = [];
   readonly actionEvents$ = new Subject<AIRequestActionEvent>();
 
-  constructor(readonly client: CopilotClientType) {}
+  constructor(
+    readonly client: CopilotClientType,
+    private readonly syncSelectedSources?: (docIds: string[]) => Promise<void>
+  ) {}
+
+  async waitForSelectedSources(docIds: string[]) {
+    if (!this.syncSelectedSources) {
+      throw new Error('Selected sources cannot be synchronized');
+    }
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.syncSelectedSources(docIds),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(new Error('Selected source synchronization timed out')),
+            15000
+          );
+        }),
+      ]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
+
+  setActiveEditorFactory(
+    factory:
+      | ((sessionId: string) => {
+          start(): Promise<void>;
+          sync(): Promise<void>;
+          dispose(): void;
+          context(): string;
+        })
+      | undefined
+  ) {
+    this.activeEditorGeneration++;
+    this.activeEditor?.dispose();
+    this.activeEditor = undefined;
+    this.activeEditorFactory = factory;
+  }
+
+  activateEditor(sessionId: string) {
+    const activation = this.activeEditorActivation.then(() =>
+      this.activateEditorNow(sessionId)
+    );
+    this.activeEditorActivation = activation.catch(() => {});
+    return activation;
+  }
+
+  getActiveEditorContext() {
+    return this.activeEditor?.context();
+  }
+
+  private async activateEditorNow(sessionId: string) {
+    if (this.activeEditor?.sessionId === sessionId) {
+      await this.activeEditor.sync();
+      return;
+    }
+    this.activeEditor?.dispose();
+    this.activeEditor = undefined;
+    const generation = this.activeEditorGeneration;
+    const host = this.activeEditorFactory?.(sessionId);
+    if (!host) {
+      return;
+    }
+    try {
+      await host.start();
+    } catch (error) {
+      host.dispose();
+      throw error;
+    }
+    if (generation !== this.activeEditorGeneration) {
+      host.dispose();
+      return;
+    }
+    this.activeEditor = {
+      sessionId,
+      sync: () => host.sync(),
+      dispose: () => host.dispose(),
+      context: () => host.context(),
+    };
+  }
 
   isReady() {
     return true;
@@ -180,132 +275,6 @@ export class AIRequestService {
     },
   };
 
-  context = {
-    createContext: (workspaceId: string, sessionId: string) =>
-      this.client.createContext(workspaceId, sessionId),
-    getContextId: (workspaceId: string, sessionId: string) =>
-      this.client.getContextId(workspaceId, sessionId),
-    addContextDoc: (options: { contextId: string; docId: string }) =>
-      this.client.addContextDoc(options),
-    removeContextDoc: (options: { contextId: string; docId: string }) =>
-      this.client.removeContextDoc(options),
-    addContextFile: (
-      file: File,
-      options: Parameters<CopilotClient['addContextFile']>[1]
-    ) => this.client.addContextFile(file, options),
-    removeContextFile: (options: { contextId: string; fileId: string }) =>
-      this.client.removeContextFile(options),
-    addContextTag: (options: {
-      contextId: string;
-      tagId: string;
-      docIds: string[];
-    }) =>
-      this.client.addContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Tag,
-        categoryId: options.tagId,
-        docs: options.docIds,
-      }),
-    removeContextTag: (options: { contextId: string; tagId: string }) =>
-      this.client.removeContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Tag,
-        categoryId: options.tagId,
-      }),
-    addContextCollection: (options: {
-      contextId: string;
-      collectionId: string;
-      docIds: string[];
-    }) =>
-      this.client.addContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Collection,
-        categoryId: options.collectionId,
-        docs: options.docIds,
-      }),
-    removeContextCollection: (options: {
-      contextId: string;
-      collectionId: string;
-    }) =>
-      this.client.removeContextCategory({
-        contextId: options.contextId,
-        type: ContextCategories.Collection,
-        categoryId: options.collectionId,
-      }),
-    getContextDocsAndFiles: (
-      workspaceId: string,
-      sessionId: string,
-      contextId: string
-    ) => this.client.getContextDocsAndFiles(workspaceId, sessionId, contextId),
-    matchContext: (
-      content: string,
-      contextId?: string,
-      workspaceId?: string,
-      limit?: number,
-      scopedThreshold?: number,
-      threshold?: number
-    ) =>
-      this.client.matchContext(
-        content,
-        contextId,
-        workspaceId,
-        limit,
-        scopedThreshold,
-        threshold
-      ),
-    addContextBlob: (options: { blobId: string; contextId: string }) =>
-      this.client.addContextBlob({
-        contextId: options.contextId,
-        blobId: options.blobId,
-      }),
-    removeContextBlob: (options: { blobId: string; contextId: string }) =>
-      this.client.removeContextBlob({
-        contextId: options.contextId,
-        blobId: options.blobId,
-      }),
-    pollContextDocsAndFiles: async (
-      workspaceId: string,
-      sessionId: string,
-      contextId: string,
-      onPoll: (
-        result: BlockSuitePresets.AIDocsAndFilesContext | undefined
-      ) => void,
-      abortSignal: AbortSignal
-    ) => {
-      let attempts = 0;
-      const minInterval = 1000;
-      const maxInterval = 30 * 1000;
-
-      while (!abortSignal.aborted) {
-        const result = await this.client.getContextDocsAndFiles(
-          workspaceId,
-          sessionId,
-          contextId
-        );
-        onPoll(result);
-        const interval = Math.min(
-          minInterval * Math.pow(1.5, attempts),
-          maxInterval
-        );
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, interval));
-      }
-    },
-    pollEmbeddingStatus: async (
-      workspaceId: string,
-      onPoll: (
-        result: Awaited<ReturnType<CopilotClientType['getEmbeddingStatus']>>
-      ) => void,
-      abortSignal: AbortSignal
-    ) => {
-      const interval = 10 * 1000;
-      while (!abortSignal.aborted) {
-        onPoll(await this.client.getEmbeddingStatus(workspaceId));
-        await new Promise(resolve => setTimeout(resolve, interval));
-      }
-    },
-  };
-
   forkChat(options: BlockSuitePresets.AIForkChatSessionOptions) {
     return this.client.forkSession(options);
   }
@@ -392,7 +361,11 @@ export function createAIRequestService(
     url: string,
     eventSourceInitDict?: EventSourceInit
   ) => EventSource,
-  realtime: Pick<NbstoreService['realtime'], 'request'>
+  realtime: Pick<NbstoreService['realtime'], 'request'>,
+  syncSelectedSources?: (docIds: string[]) => Promise<void>
 ) {
-  return new AIRequestService(new CopilotClient(gql, eventSource, realtime));
+  return new AIRequestService(
+    new CopilotClient(gql, eventSource, realtime),
+    syncSelectedSources
+  );
 }

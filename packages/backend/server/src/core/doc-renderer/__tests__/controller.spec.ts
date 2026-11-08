@@ -7,8 +7,9 @@ import { Doc as YDoc } from 'yjs';
 
 import { MockEventBus } from '../../../__tests__/mocks';
 import { createTestingApp, type TestingApp } from '../../../__tests__/utils';
-import { ConfigFactory, EventBus } from '../../../base';
-import { Flavor } from '../../../env';
+import { buildAppModule } from '../../../app.module';
+import { EventBus } from '../../../base';
+import { Env, Flavor } from '../../../env';
 import { Models } from '../../../models';
 import { DocReader, PgWorkspaceDocStorageAdapter } from '../../doc';
 
@@ -23,9 +24,10 @@ interface Context {
 const test = ava as TestFn<Context>;
 
 test.before(async t => {
-  // @ts-expect-error testing
-  env.FLAVOR = Flavor.Renderer;
+  const rendererEnv = new Env();
+  rendererEnv.FLAVOR = Flavor.Renderer;
   const app = await createTestingApp({
+    imports: [buildAppModule(rendererEnv)],
     tapModule: m => m.overrideProvider(EventBus).useClass(MockEventBus),
   });
 
@@ -39,11 +41,6 @@ let user: User;
 let workspace: Workspace;
 
 test.beforeEach(async t => {
-  t.context.app.get(ConfigFactory).override({
-    docService: {
-      endpoint: t.context.app.url(),
-    },
-  });
   await t.context.app.initTestingDB();
   user = await t.context.models.user.create({
     email: 'test@affine.pro',
@@ -59,9 +56,7 @@ test.afterEach.always(t => {
   t.context.recordDocView?.restore();
 });
 
-test.after.always(async t => {
-  await t.context.app.close();
-});
+test.after.always(async t => t.context.app.close());
 
 async function createDoc(
   adapter: PgWorkspaceDocStorageAdapter,
@@ -77,7 +72,7 @@ async function createDoc(
   });
 
   text.insert(0, content);
-  await adapter.pushDocUpdates(workspace.id, docId, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates, user.id);
   return docId;
 }
 
@@ -87,8 +82,9 @@ test('should render page success', async t => {
 
   await models.doc.publish(workspace.id, docId);
 
-  await app.GET(`/workspace/${workspace.id}/${docId}`).expect(200);
-  t.pass();
+  const res = await app.GET(`/workspace/${workspace.id}/${docId}`).expect(200);
+  t.false('x-robots-tag' in res.headers);
+  t.notRegex(res.text, /<meta name="robots"/);
 });
 
 test('should record page view when rendering shared page', async t => {
@@ -125,6 +121,7 @@ const policyCases: Array<{
   ) => Promise<{
     markdown?: Sinon.SinonStub;
     docContent?: Sinon.SinonStub;
+    workspaceContent?: Sinon.SinonStub;
     record?: Sinon.SinonStub;
   }>;
   request: (app: TestingApp, docId: string) => ReturnType<TestingApp['GET']>;
@@ -134,11 +131,80 @@ const policyCases: Array<{
     stubs: {
       markdown?: Sinon.SinonStub;
       docContent?: Sinon.SinonStub;
+      workspaceContent?: Sinon.SinonStub;
       record?: Sinon.SinonStub;
     },
     docId: string
   ) => void;
 }> = [
+  {
+    title: 'should render private workspace preview with no-index protection',
+    content: 'private workspace root preview',
+    expectedStatus: 200,
+    setup: async (models, _docId, docReader) => {
+      await models.workspace.update(workspace.id, { enableUrlPreview: true });
+      return {
+        workspaceContent: Sinon.stub(docReader, 'getWorkspaceContent').resolves(
+          {
+            id: workspace.id,
+            name: 'private-workspace',
+            avatarUrl: undefined,
+          }
+        ),
+      };
+    },
+    request: app => app.GET(`/workspace/${workspace.id}/${workspace.id}`),
+    assert: (t, res, stubs) => {
+      t.true(stubs.workspaceContent?.calledOnceWithExactly(workspace.id));
+      t.is(res.headers['x-robots-tag'], 'noindex');
+      t.regex(res.text, /<meta name="robots" content="noindex, nofollow" \/>/);
+    },
+  },
+  {
+    title: 'should render per-doc private preview with no-index protection',
+    content: 'private doc preview',
+    expectedStatus: 200,
+    setup: async (models, docId, docReader) => {
+      await models.docAccessPolicy.upsert(workspace.id, docId, {
+        urlPreviewEnabled: true,
+      });
+      return {
+        docContent: Sinon.stub(docReader, 'getDocContent').resolves({
+          title: 'private-doc',
+          summary: 'private summary',
+        }),
+      };
+    },
+    request: (app, docId) => app.GET(`/workspace/${workspace.id}/${docId}`),
+    assert: (t, res, stubs, docId) => {
+      t.true(stubs.docContent?.calledOnceWithExactly(workspace.id, docId));
+      t.is(res.headers['x-robots-tag'], 'noindex');
+      t.regex(res.text, /<meta name="robots" content="noindex, nofollow" \/>/);
+    },
+  },
+  {
+    title:
+      'should render workspace-enabled private preview with no-index protection',
+    content: 'private workspace preview',
+    expectedStatus: 200,
+    setup: async (models, _docId, docReader) => {
+      await models.workspace.update(workspace.id, {
+        enableUrlPreview: true,
+      });
+      return {
+        docContent: Sinon.stub(docReader, 'getDocContent').resolves({
+          title: 'workspace-private-doc',
+          summary: 'private summary',
+        }),
+      };
+    },
+    request: (app, docId) => app.GET(`/workspace/${workspace.id}/${docId}`),
+    assert: (t, res, stubs, docId) => {
+      t.true(stubs.docContent?.calledOnceWithExactly(workspace.id, docId));
+      t.is(res.headers['x-robots-tag'], 'noindex');
+      t.regex(res.text, /<meta name="robots" content="noindex, nofollow" \/>/);
+    },
+  },
   {
     title:
       'should return markdown content and skip page view when accept is text/markdown',
@@ -150,6 +216,7 @@ const policyCases: Array<{
         markdown: Sinon.stub(docReader, 'getDocMarkdown').resolves({
           title: 'markdown-doc',
           markdown: '# markdown-doc',
+          revision: '1',
           knownUnsupportedBlocks: [],
           unknownBlocks: [],
         }),
@@ -228,6 +295,7 @@ for (const policyCase of policyCases) {
     } finally {
       stubs.markdown?.restore();
       stubs.docContent?.restore();
+      stubs.workspaceContent?.restore();
       stubs.record?.restore();
     }
   });

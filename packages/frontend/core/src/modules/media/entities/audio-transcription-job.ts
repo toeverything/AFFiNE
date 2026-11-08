@@ -26,6 +26,14 @@ export type TranscriptionStatus =
   | { status: AiJobStatus.finished }
   | { status: 'settled'; result: TranscriptionResult };
 
+export type TranscriptionStartResult =
+  | TranscriptionStatus
+  | {
+      status: 'blocked';
+      error: 'created-by-others';
+      userId: string;
+    };
+
 const logger = new DebugLogger('audio-transcription-job');
 
 function hasSettledTranscriptResult(
@@ -71,6 +79,8 @@ export class AudioTranscriptionJob extends Entity<{
     RealtimeTopicEventOf<'copilot.transcript.task.changed'>
   >;
   private taskWaitReject?: (error: unknown) => void;
+  private startPromise?: Promise<TranscriptionStartResult>;
+  private retryFailedRequested = false;
 
   private readonly _status$ = new LiveData<TranscriptionStatus>({
     status: 'waiting-for-job',
@@ -101,45 +111,35 @@ export class AudioTranscriptionJob extends Entity<{
     return null;
   });
 
-  // check if we can kick start the transcription job
-  readonly preflightCheck = async () => {
-    // if the job id is given, check if the job exists
-    if (this.props.blockProps.jobId) {
-      const existingJob = await this.store.getTranscriptTask(
-        this.props.blobId,
-        this.props.blockProps.jobId
-      );
-
-      if (hasSettledTranscriptResult(existingJob)) {
-        // if job exists, anyone can query it
-        return;
-      }
-
-      if (
-        !existingJob &&
-        this.props.blockProps.createdBy &&
-        this.props.blockProps.createdBy !== this.currentUserId
-      ) {
-        return {
-          error: 'created-by-others',
-          userId: this.props.blockProps.createdBy,
-        };
-      }
+  start(retryFailed: boolean): Promise<TranscriptionStartResult> {
+    this.retryFailedRequested ||= retryFailed;
+    if (this.startPromise) {
+      return this.startPromise;
     }
+    const promise = this.runStart();
+    this.startPromise = promise;
+    void promise.then(
+      () => {
+        if (this.startPromise === promise) {
+          this.startPromise = undefined;
+          this.retryFailedRequested = false;
+        }
+      },
+      () => {
+        if (this.startPromise === promise) {
+          this.startPromise = undefined;
+          this.retryFailedRequested = false;
+        }
+      }
+    );
+    return promise;
+  }
 
-    // if no job id, anyone can start a new job
-    return;
-  };
-
-  async start() {
+  private async runStart(): Promise<TranscriptionStartResult> {
     if (this.disposed) {
       logger.debug('Job already disposed, cannot start');
       throw new Error('Job already disposed');
     }
-
-    this._status$.value = {
-      status: 'started',
-    };
 
     try {
       // firstly check if there is a job already
@@ -150,15 +150,38 @@ export class AudioTranscriptionJob extends Entity<{
       let job: {
         id: string;
         status: AiJobStatus;
+        normalizedTranscript?: string | null;
+        transcription?: unknown[] | null;
       } | null = await this.store.getTranscriptTask(
         this.props.blobId,
         this.props.blockProps.jobId
       );
 
+      if (
+        this.props.blockProps.jobId &&
+        !hasSettledTranscriptResult(job) &&
+        !job &&
+        this.props.blockProps.createdBy &&
+        this.props.blockProps.createdBy !== this.currentUserId
+      ) {
+        return {
+          status: 'blocked',
+          error: 'created-by-others',
+          userId: this.props.blockProps.createdBy,
+        };
+      }
+
+      this._status$.value = {
+        status: 'started',
+      };
+
       if (!job) {
         logger.debug('No existing job found, submitting new transcription job');
         job = await this.store.submitTranscriptTask();
       } else if (job.status === AiJobStatus.failed) {
+        if (!this.retryFailedRequested) {
+          throw UserFriendlyError.fromAny('Transcription job failed');
+        }
         logger.debug('Found existing failed job, retrying', {
           jobId: job.id,
         });

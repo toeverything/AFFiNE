@@ -125,6 +125,7 @@
     { "path": "./blocksuite/playground" },
     { "path": "./packages/backend/native" },
     { "path": "./packages/backend/server" },
+    { "path": "./packages/common/auth" },
     { "path": "./packages/common/debug" },
     { "path": "./packages/common/env" },
     { "path": "./packages/common/error" },

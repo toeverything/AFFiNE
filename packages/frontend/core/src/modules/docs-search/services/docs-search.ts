@@ -1,6 +1,9 @@
 import { toDocSearchParams } from '@affine/core/modules/navigation';
 import type { IndexerPreferOptions, IndexerSyncState } from '@affine/nbstore';
-import type { ReferenceParams } from '@blocksuite/affine/model';
+import {
+  type ReferenceParams,
+  ReferenceParamsSchema,
+} from '@blocksuite/affine/model';
 import { fromPromise, LiveData, Service } from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
 import {
@@ -15,6 +18,61 @@ import { z } from 'zod';
 import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { DocsService } from '../../doc/services/docs';
 import type { WorkspaceService } from '../../workspace';
+
+const IndexedReferenceSchema = ReferenceParamsSchema.extend({
+  docId: z.string().min(1),
+});
+
+function parseIndexedReferences(value: unknown) {
+  const payloads =
+    typeof value === 'string'
+      ? [value]
+      : Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === 'string')
+        : [];
+  const refs: ({ docId: string } & ReferenceParams)[] = [];
+  let malformed = Array.isArray(value)
+    ? value.length - payloads.length
+    : typeof value === 'string'
+      ? 0
+      : 1;
+
+  for (const payload of payloads) {
+    try {
+      const result = IndexedReferenceSchema.safeParse(JSON.parse(payload));
+      if (result.success) {
+        refs.push(result.data);
+      } else {
+        malformed++;
+      }
+    } catch {
+      malformed++;
+    }
+  }
+  return { refs, malformed };
+}
+
+export type IndexedDocReference = {
+  title: string;
+  docId: string;
+  params?: ReturnType<typeof toDocSearchParams>;
+};
+
+const stringField = (value: unknown) =>
+  typeof value === 'string'
+    ? value
+    : Array.isArray(value) && typeof value[0] === 'string'
+      ? value[0]
+      : null;
+
+const equalReferenceSets = (
+  previous: readonly IndexedDocReference[],
+  current: readonly IndexedDocReference[]
+) => {
+  if (previous.length !== current.length) return false;
+  const currentIds = new Set(current.map(reference => reference.docId));
+  return previous.every(reference => currentIds.has(reference.docId));
+};
 
 export class DocsSearchService extends Service {
   constructor(
@@ -176,6 +234,29 @@ export class DocsSearchService extends Service {
       return of([]);
     }
 
+    return this.watchRefsBySourceFrom(docIds).pipe(
+      map((refsBySource): IndexedDocReference[] => {
+        const refs = Array.from(refsBySource.values()).flat();
+        return Array.from(
+          new Map(
+            refs
+              .filter(ref => !docIds.includes(ref.docId))
+              .map(ref => [ref.docId, ref])
+          ).values()
+        );
+      }),
+      distinctUntilChanged((previous, current) =>
+        equalReferenceSets(previous, current)
+      )
+    );
+  }
+
+  watchRefsBySourceFrom(ids: string | string[]) {
+    const docIds = Array.isArray(ids) ? ids : [ids];
+    if (docIds.length === 0) {
+      return of(new Map<string, IndexedDocReference[]>());
+    }
+
     return this.indexer
       .search$(
         'block',
@@ -199,62 +280,71 @@ export class DocsSearchService extends Service {
           ],
         },
         {
-          fields: ['refDocId', 'ref'],
+          fields: ['docId', 'refDocId', 'ref'],
           pagination: {
-            limit: 100,
+            limit: Infinity,
           },
         }
       )
       .pipe(
         switchMap(({ nodes }) => {
           return fromPromise(async () => {
-            const refs: ({ docId: string } & ReferenceParams)[] = Array.from(
-              new Map(
-                nodes
-                  .flatMap(node => {
-                    const { ref } = node.fields;
-                    return typeof ref === 'string'
-                      ? [JSON.parse(ref)]
-                      : ref.map(item => JSON.parse(item));
-                  })
-                  .filter(ref => !docIds.includes(ref.docId))
-                  .map(ref => [ref.docId, ref])
-              ).values()
+            let malformed = 0;
+            const refsBySource = new Map<
+              string,
+              Map<string, { docId: string } & ReferenceParams>
+            >();
+            for (const node of nodes) {
+              const sourceId = stringField(node.fields.docId);
+              const parsed = parseIndexedReferences(node.fields.ref);
+              malformed += parsed.malformed;
+              if (!sourceId || !docIds.includes(sourceId)) continue;
+              let sourceRefs = refsBySource.get(sourceId);
+              if (!sourceRefs) {
+                sourceRefs = new Map();
+                refsBySource.set(sourceId, sourceRefs);
+              }
+              for (const ref of parsed.refs) {
+                if (ref.docId !== sourceId) sourceRefs.set(ref.docId, ref);
+              }
+            }
+            if (malformed > 0) {
+              console.warn('[docs-search] skipped malformed references', {
+                count: malformed,
+              });
+            }
+
+            return new Map(
+              docIds.map(sourceId => [
+                sourceId,
+                Array.from(refsBySource.get(sourceId)?.values() ?? []).flatMap(
+                  ref => {
+                    const doc = this.docsService.list.doc$(ref.docId).value;
+                    if (!doc) return [];
+                    const params = omit(ref, ['docId']);
+                    return [
+                      {
+                        title: doc.title$.value,
+                        docId: doc.id,
+                        params: isEmpty(params)
+                          ? undefined
+                          : toDocSearchParams(params),
+                      },
+                    ];
+                  }
+                ),
+              ])
             );
-
-            return refs
-              .flatMap(ref => {
-                const doc = this.docsService.list.doc$(ref.docId).value;
-                if (!doc) return null;
-
-                const title = doc.title$.value;
-                const params = omit(ref, ['docId']);
-
-                return {
-                  title,
-                  docId: doc.id,
-                  params: isEmpty(params)
-                    ? undefined
-                    : toDocSearchParams(params),
-                };
-              })
-              .filter(ref => !!ref);
           });
         }),
-        // Only propagate downstream when the actual set of linked docs
-        // changes (a link was added or removed). Without this guard,
-        // every re-index triggered by typing emits a new array (same
-        // docs, arbitrary search-engine order) and the navigation panel
-        // visibly reorders on every keystroke.
-        //
-        // Note: this compares docId sets, not order. A stable, meaningful
-        // sort order (e.g. document appearance order) requires block
-        // position data from the indexer and is tracked separately.
-        distinctUntilChanged((prev, curr) => {
-          if (prev.length !== curr.length) return false;
-          const currIds = new Set(curr.map(r => r.docId));
-          return prev.every(r => currIds.has(r.docId));
-        })
+        distinctUntilChanged((previous, current) =>
+          docIds.every(sourceId =>
+            equalReferenceSets(
+              previous.get(sourceId) ?? [],
+              current.get(sourceId) ?? []
+            )
+          )
+        )
       );
   }
 

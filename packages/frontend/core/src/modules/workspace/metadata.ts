@@ -3,3 +3,6 @@ export type WorkspaceMetadata = {
   flavour: string;
   initialized?: boolean;
 };
+
+export const workspaceMetadataKey = (metadata: WorkspaceMetadata) =>
+  `${metadata.flavour}:${metadata.id}`;

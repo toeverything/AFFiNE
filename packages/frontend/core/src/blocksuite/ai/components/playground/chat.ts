@@ -1,5 +1,7 @@
-import type { AIToolsConfigService } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
+import type {
+  AIModelService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
 import type {
   ServerService,
   SubscriptionService,
@@ -185,10 +187,10 @@ export class PlaygroundChat extends SignalWatcher(
   accessor aiToolsConfigService!: AIToolsConfigService;
 
   @property({ attribute: false })
-  accessor subscriptionService!: SubscriptionService;
+  accessor aiModelService!: AIModelService;
 
   @property({ attribute: false })
-  accessor aiModelService!: AIModelService;
+  accessor subscriptionService!: SubscriptionService;
 
   @property({ attribute: false })
   accessor onAISubscribe: (() => Promise<void>) | undefined;
@@ -323,21 +325,19 @@ export class PlaygroundChat extends SignalWatcher(
   }
 
   override render() {
-    const embeddingCount =
-      this.runtimeSnapshot?.composer.context.embeddingCount;
-    const done = embeddingCount?.finished ?? 0;
-    const total =
-      done + (embeddingCount?.processing ?? 0) + (embeddingCount?.failed ?? 0);
-    const isEmbedding = total > 0 && done < total;
+    const isSynchronizing =
+      this.runtimeSnapshot?.composer.scopeSelection.syncing ?? false;
 
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
         <div class="chat-panel-title-text">
-          ${isEmbedding
-            ? html`<span data-testid="chat-panel-embedding-progress"
-                >Embedding ${done}/${total}</span
-              >`
-            : 'AFFiNE AI'}
+          ${
+            isSynchronizing
+              ? html`<span data-testid="chat-panel-embedding-progress"
+                  >Synchronizing sources</span
+                >`
+              : 'AFFiNE AI'
+          }
         </div>
         <div class="chat-panel-add" @click=${this.addChat}>
           ${NewPageIcon()}

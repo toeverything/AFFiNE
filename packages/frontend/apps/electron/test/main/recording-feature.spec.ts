@@ -8,9 +8,7 @@ const ensureDirSync = vi.fn();
 const resolveExistingPathInBase = vi.fn(
   async (_base: string, filepath: string) => filepath
 );
-const getMainWindow = vi.fn(async () => ({
-  show: vi.fn(),
-}));
+const showMainWindow = vi.fn(async () => undefined);
 
 const storageState = new Map<string, unknown>();
 const watchSubjects = new Map<string, BehaviorSubject<unknown>>();
@@ -103,7 +101,7 @@ beforeEach(() => {
   }));
 
   vi.doMock('../../src/main/windows-manager', () => ({
-    getMainWindow,
+    showMainWindow,
   }));
 
   vi.doMock('../../src/main/windows-manager/popup', () => ({
@@ -245,6 +243,7 @@ describe('recording feature', () => {
     await stopPromise;
     subscription.unsubscribe();
 
+    expect(showMainWindow).toHaveBeenCalledOnce();
     expect(getCurrentRecordingStatus()).toMatchObject({
       id: started!.id,
       status: 'pending_import',

@@ -11,17 +11,24 @@ public struct AdminDashboardInput: InputObject {
   }
 
   public init(
+    copilotWindowDays: GraphQLNullable<Int> = nil,
     sharedLinkWindowDays: GraphQLNullable<Int> = nil,
     storageHistoryDays: GraphQLNullable<Int> = nil,
     syncHistoryHours: GraphQLNullable<Int> = nil,
     timezone: GraphQLNullable<String> = nil
   ) {
     __data = InputDict([
+      "copilotWindowDays": copilotWindowDays,
       "sharedLinkWindowDays": sharedLinkWindowDays,
       "storageHistoryDays": storageHistoryDays,
       "syncHistoryHours": syncHistoryHours,
       "timezone": timezone
     ])
+  }
+
+  public var copilotWindowDays: GraphQLNullable<Int> {
+    get { __data["copilotWindowDays"] }
+    set { __data["copilotWindowDays"] = newValue }
   }
 
   public var sharedLinkWindowDays: GraphQLNullable<Int> {

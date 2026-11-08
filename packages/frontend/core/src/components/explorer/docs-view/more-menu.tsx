@@ -167,8 +167,8 @@ const MoveToTrash = ({ docId }: DocOperationProps) => {
       confirmButtonOptions: {
         variant: 'error',
       },
-      onConfirm: () => {
-        doc.moveToTrash();
+      onConfirm: async () => {
+        await doc.moveToTrash();
       },
     });
   }, [doc, openConfirmModal, t]);

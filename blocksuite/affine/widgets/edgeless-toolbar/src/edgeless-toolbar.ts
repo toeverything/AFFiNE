@@ -1,4 +1,4 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable typescript/no-non-null-assertion */
 import {
   DefaultTool,
   EdgelessLegacySlotIdentifier,
@@ -684,25 +684,28 @@ export class EdgelessToolbarWidget extends WidgetComponent<RootBlockModel> {
           >
             <div
               class="edgeless-toolbar-container"
-              data-dense-quick=${this._denseQuickTools &&
-              this._hiddenQuickTools.length > 0}
+              data-dense-quick=${
+                this._denseQuickTools && this._hiddenQuickTools.length > 0
+              }
               data-dense-senior=${this._denseSeniorTools}
               @dblclick=${stopPropagation}
               @mousedown=${stopPropagation}
               @pointerdown=${stopPropagation}
             >
-              ${this.isPresentMode
-                ? html`<presentation-toolbar
-                    .edgeless=${this.block}
-                    .settingMenuShow=${this.presentSettingMenuShow}
-                    .frameMenuShow=${this.presentFrameMenuShow}
-                    .setSettingMenuShow=${(show: boolean) =>
-                      (this.presentSettingMenuShow = show)}
-                    .setFrameMenuShow=${(show: boolean) =>
-                      (this.presentFrameMenuShow = show)}
-                    .containerWidth=${this.containerWidth}
-                  ></presentation-toolbar>`
-                : nothing}
+              ${
+                this.isPresentMode
+                  ? html`<presentation-toolbar
+                      .edgeless=${this.block}
+                      .settingMenuShow=${this.presentSettingMenuShow}
+                      .frameMenuShow=${this.presentFrameMenuShow}
+                      .setSettingMenuShow=${(show: boolean) =>
+                        (this.presentSettingMenuShow = show)}
+                      .setFrameMenuShow=${(show: boolean) =>
+                        (this.presentFrameMenuShow = show)}
+                      .containerWidth=${this.containerWidth}
+                    ></presentation-toolbar>`
+                  : nothing
+              }
               ${this.isPresentMode ? nothing : this._renderContent()}
             </div>
           </smooth-corner>

@@ -1,77 +1,106 @@
 import serverNativeModule, {
-  type ActionEvent as NativeActionEventContract,
-  type ActionRuntimeInput as NativeActionRuntimeInputContract,
   type AssertSafeUrlRequest,
   type BackendRuntimeHealth,
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
+  type BuiltInRouteOptions,
   type CanonicalChatRequestContract,
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
   type CapabilityModelCapability,
-  type CommandResponse,
+  type CompileScopeInput,
   type ContentPolicyScanInput,
   type ContentPolicyScanResult,
+  type DocumentEmbeddingProjectionInput,
+  type EmbeddingHealth,
+  type EnsureWorkspaceBlobArtifactInput,
   type ImageInspection,
   type ImageInspectionOptions,
-  type LicenseError,
-  type LicenseHealthRequest,
-  type LicenseInfo,
-  type LicenseKeyRequest,
-  type LicenseRecurringRequest,
-  type LicenseResponse,
-  type LicenseSeatsRequest,
+  type IssueLicenseInput,
   type LlmCoreMessage,
   type LlmEmbeddingRequestContract,
   type LlmImageRequestContract,
   type LlmRequestContract,
   type LlmRerankRequestContract,
   type LlmStructuredRequestContract,
+  type MatchEmbeddingCandidatesInput,
   type ModelConditionsContract,
-  type ModelRegistryMatchResponse,
-  type ModelRegistryResolveResponse,
-  type PortalResponse,
+  type PermissionActionCatalogV1,
   type PromptMessageContract,
-  type PromptMetadataContract,
-  type PromptMetadataResult,
-  type PromptRenderContract,
   type PromptRenderResult,
-  type PromptSessionContract,
   type PromptSessionResult,
   type PromptStructuredResponseContract,
-  type PromptTokenCountContract,
-  type PromptTokenCountResult,
+  type PutWorkspaceArtifactInput,
+  type ReadEmbeddingSourceContentInput,
   type RemoteAttachmentFetchRequest,
   type RemoteAttachmentFetchResponse,
   type RemoteMimeTypeRequest,
-  type RequestedModelMatchResponse,
   type ResolvedEntitlement,
   type ResolveEntitlementInput,
-  type RuntimeBlobCleanupExecuteResult,
-  type RuntimeBlobCleanupPlanResult,
-  type RuntimeBlobCleanupResult,
-  type RuntimeBlobCompleteResult,
+  type RuntimeAggregateRequest,
   type RuntimeBlobMetadataBackfillResult,
-  type RuntimeByokLocalLeaseRecord,
   type RuntimeDocBlobRefsResult,
   type RuntimeDocCompactionResult,
-  type RuntimeMagicLinkOtpConsumeResult,
+  type RuntimeEmbeddingCandidate,
+  type RuntimeEmbeddingSourceContent,
+  type RuntimeEmbeddingWorkspaceState,
   type RuntimeMultipartUploadInit,
   type RuntimeMultipartUploadPart,
   type RuntimeObjectGetResult,
-  type RuntimeObjectListEntry,
   type RuntimeObjectMetadata,
   type RuntimeObjectStoragePutOptions,
   type RuntimePresignedObjectRequest,
-  type RuntimeVerificationTokenRecord,
+  type RuntimeRetrievalScope,
+  type RuntimeSearchQuery,
+  type RuntimeSearchRequest,
+  type RuntimeTurnScopeSnapshot,
+  type RuntimeUserQuotaState,
+  type RuntimeWorkspaceArtifact,
   type RuntimeWorkspaceInviteLinkRecord,
-  type RuntimeWorkspaceStatsDailyRecalibrationResult,
+  type RuntimeWorkspaceQuotaState,
   type SafeFetchRequest,
   type SafeFetchResponse,
   type StorageProviderCapabilities,
   type StorageRuntimeHealth,
+  type SyncEmbeddingStateInput,
   type Tokenizer,
+} from '@affine/server-native';
+
+export type {
+  AppConfigCommand,
+  BuiltInManagedTarget,
+  BuiltInManagedTargetTier,
+  BuiltInRouteOptions,
+  ByokCapabilityInput,
+  ByokCatalogModelOutput,
+  ByokCatalogOutput,
+  ByokCatalogProviderOutput,
+  ByokEndpointInput,
+  ByokLocalLeaseOutput,
+  ByokModelDeclarationInput,
+  ByokModelProbeCheckOutput,
+  ByokModelProbeOutput,
+  ByokPolicyOutput,
+  ByokProbeCheckInput,
+  ByokProbeResultOutput,
+  ByokProbeStatusOutput,
+  ByokProfileDefinitionInput,
+  ByokProfileOutput,
+  ByokValidationOutput,
+  CanonicalDocumentIdentity,
+  CopilotAccessProjection,
+  CopilotExecuteInput,
+  CopilotRouteCheckInput,
+  CopilotTargetOverrideInput,
+  CreateByokLocalLeaseInput,
+  CreateByokLocalLeaseProviderInput,
+  CreateByokProfileInput,
+  ProbeByokDraftInput,
+  ProbeByokProfileInput,
+  ReorderByokProfilesInput,
+  ReplaceByokProfileInput,
+  RotateByokCredentialInput,
 } from '@affine/server-native';
 
 export type {
@@ -79,50 +108,51 @@ export type {
   BackendRuntimeHealth,
   CapabilityAttachmentContract,
   CapabilityModelCapability,
-  CommandResponse,
+  CompileScopeInput,
   ContentPolicyScanInput,
   ContentPolicyScanResult,
+  DocumentEmbeddingProjectionInput,
+  EmbeddingHealth,
+  EnsureWorkspaceBlobArtifactInput,
   ImageInspection,
   ImageInspectionOptions,
-  LicenseError,
-  LicenseHealthRequest,
-  LicenseInfo,
-  LicenseKeyRequest,
-  LicenseRecurringRequest,
-  LicenseResponse,
-  LicenseSeatsRequest,
+  MatchEmbeddingCandidatesInput,
   ModelConditionsContract,
-  PortalResponse,
   PromptMessageContract,
   PromptStructuredResponseContract,
+  PutWorkspaceArtifactInput,
+  ReadEmbeddingSourceContentInput,
   RemoteAttachmentFetchRequest,
   RemoteAttachmentFetchResponse,
   RemoteMimeTypeRequest,
   ResolvedEntitlement,
   ResolveEntitlementInput,
-  RuntimeBlobCleanupExecuteResult,
-  RuntimeBlobCleanupPlanResult,
-  RuntimeBlobCleanupResult,
-  RuntimeBlobCompleteResult,
+  RuntimeAggregateRequest,
   RuntimeBlobMetadataBackfillResult,
-  RuntimeByokLocalLeaseRecord,
   RuntimeDocBlobRefsResult,
   RuntimeDocCompactionResult,
-  RuntimeMagicLinkOtpConsumeResult,
+  RuntimeEmbeddingCandidate,
+  RuntimeEmbeddingSourceContent,
+  RuntimeEmbeddingWorkspaceState,
   RuntimeMultipartUploadInit,
   RuntimeMultipartUploadPart,
   RuntimeObjectGetResult,
-  RuntimeObjectListEntry,
   RuntimeObjectMetadata,
   RuntimeObjectStoragePutOptions,
   RuntimePresignedObjectRequest,
-  RuntimeVerificationTokenRecord,
+  RuntimeRetrievalScope,
+  RuntimeSearchQuery,
+  RuntimeSearchRequest,
+  RuntimeTurnScopeSnapshot,
+  RuntimeUserQuotaState,
+  RuntimeWorkspaceArtifact,
   RuntimeWorkspaceInviteLinkRecord,
-  RuntimeWorkspaceStatsDailyRecalibrationResult,
+  RuntimeWorkspaceQuotaState,
   SafeFetchRequest,
   SafeFetchResponse,
   StorageProviderCapabilities,
   StorageRuntimeHealth,
+  SyncEmbeddingStateInput,
 };
 
 export type ActionEventType =
@@ -140,33 +170,50 @@ export type ActionRunStatus =
   | 'failed'
   | 'aborted';
 
-export type NativeActionEvent = Omit<
-  NativeActionEventContract,
-  'type' | 'status'
-> & {
+export type NativeActionEvent = {
   type: ActionEventType;
+  actionId: string;
+  actionVersion: string;
   status?: ActionRunStatus;
+  stepId?: string;
+  attachment?: unknown;
+  result?: unknown;
+  errorCode?: string;
+  errorMessage?: string;
+  trace?: unknown;
 };
 
-export type NativeActionRuntimeInput = Omit<
-  NativeActionRuntimeInputContract,
-  'input'
-> & {
-  input?: unknown;
+export type CopilotActionRecipe = {
+  actionId: string;
+  actionVersion: string;
+  slot: string;
+  promptRef: string;
+  responseContract: { schema: Record<string, unknown>; strict: boolean } | null;
+  outputProjection: string;
 };
 
-import type {
-  CopilotProviderModel,
-  ModelFullConditions,
-} from './plugins/copilot/providers/types';
-import type { CopilotModelBackendKind } from './plugins/copilot/runtime/contracts';
-import { parseToolLoopStreamEvent } from './plugins/copilot/runtime/contracts/shared';
+export function getCopilotActionRecipe(
+  actionId: string,
+  actionVersion?: string
+): CopilotActionRecipe {
+  return JSON.parse(
+    serverNativeModule.copilotActionRecipe(actionId, actionVersion)
+  ) as CopilotActionRecipe;
+}
+
 import type {
   ToolCallRequest,
   ToolCallResult,
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
 export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const authorizeReservedDocSubject =
+  serverNativeModule.authorizeReservedDocSubject;
+export const canonicalizeDocumentIdentity =
+  serverNativeModule.canonicalizeDocumentIdentity;
+export const buildSafeCallbackUrl = serverNativeModule.buildSafeCallbackUrl;
+export const evaluateRedirectUri = serverNativeModule.evaluateRedirectUri;
+export const evaluateLocalRedirect = serverNativeModule.evaluateLocalRedirect;
 
 export async function validateDocUpdate(
   update: Buffer,
@@ -254,33 +301,34 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
   }
 }
 
+export const splitTranscriptAudio = serverNativeModule.splitTranscriptAudio;
 export const getMime = serverNativeModule.getMime;
 export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
-export const safeFetch = serverNativeModule.safeFetch;
-export const activateLicense = serverNativeModule.activateLicense;
-export const checkLicenseHealth = serverNativeModule.checkLicenseHealth;
-export const createCustomerPortal =
-  serverNativeModule.createLicenseCustomerPortal;
-export const deactivateLicense = serverNativeModule.deactivateLicense;
-export const updateLicenseRecurring = serverNativeModule.updateLicenseRecurring;
-export const updateLicenseSeats = serverNativeModule.updateLicenseSeats;
+export const safeFetch: typeof serverNativeModule.safeFetch = (...args) =>
+  serverNativeModule.safeFetch(...args);
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
-export const parseYDocFromBinary = serverNativeModule.parseDocFromBinary;
+export const projectDocCanvasFromBinary =
+  serverNativeModule.projectDocCanvasFromBinary;
+export const projectWorkspaceRootFromBinary =
+  serverNativeModule.projectWorkspaceRootFromBinary;
+
+export const projectDocSearchFromBinary =
+  serverNativeModule.projectDocSearchFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
 export const parsePageDocFromBinary = serverNativeModule.parsePageDoc;
 export const parseWorkspaceDocFromBinary = serverNativeModule.parseWorkspaceDoc;
 export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
-export const AFFINE_PRO_LICENSE_AES_KEY =
-  serverNativeModule.AFFINE_PRO_LICENSE_AES_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const ServerConfigHandle = serverNativeModule.ServerConfigHandle;
+export type ServerConfigHandle = InstanceType<typeof ServerConfigHandle>;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
@@ -293,97 +341,183 @@ export type PermissionDocRole =
   | 'manager'
   | 'owner';
 
-export type PermissionEvaluationInputV1 = {
+export type AuthorizePermissionInputV1 = {
   version: 1;
-  legacyCompatMode?: boolean;
-  subject?: {
-    userId?: string;
-    groupIds?: string[];
-    allowLocal?: boolean;
-  };
-  runtime?: {
-    known?: boolean;
-    stale?: boolean;
-    readonly?: boolean;
-    readonlyReason?: string;
-    sharingEnabled?: boolean;
-    urlPreviewEnabled?: boolean;
-  };
-  workspace?: {
-    role?: PermissionWorkspaceRole;
-    memberState?: 'active' | 'pending' | 'waiting_review' | 'waiting_seat';
-    public?: boolean;
-    sharingEnabled?: boolean;
-    urlPreviewEnabled?: boolean;
-    local?: boolean;
-  };
+  workspaceId: string;
+  actorUserId?: string;
   workspaceActions?: string[];
   docs?: Array<{
     docId: string;
     actions?: string[];
-    explicitUserRole?: PermissionDocRole;
-    groupGrants?: Array<{ groupId: string; role: PermissionDocRole }>;
-    groupGrantsEnabled?: boolean;
-    memberDefaultRole?: PermissionDocRole;
-    publicRole?: 'external';
-    visibility?: 'private' | 'public';
-    sharingEnabled?: boolean;
-    previewEnabled?: boolean;
   }>;
 };
 
 export type PermissionDecisionV1 = {
   action: string;
   allowed: boolean;
-  sources: Array<{
-    type:
-      | 'workspace-member'
-      | 'workspace-policy'
-      | 'workspace-preview-policy'
-      | 'local-workspace'
-      | 'inherited-workspace-role'
-      | 'doc-grant'
-      | 'group-grant'
-      | 'member-default-policy'
-      | 'public-policy'
-      | 'doc-preview-policy';
-    role?: string;
-  }>;
-  restrictions: Array<{
-    type: 'runtime_unknown' | 'runtime_stale' | 'readonly' | 'sharing-disabled';
-    reason?: string;
-  }>;
 };
+
+export type DocPreviewExposure =
+  | 'denied'
+  | 'metadata_no_index'
+  | 'public_indexable';
+
+export type DocPreviewBasis =
+  | 'missing'
+  | 'sharing_disabled'
+  | 'public'
+  | 'document'
+  | 'workspace'
+  | 'disabled';
 
 export type PermissionEvaluationOutputV1 = {
   version: 1;
   workspace: {
-    resourceOwnerRole?: PermissionWorkspaceRole;
     effectiveRole?: PermissionWorkspaceRole;
+    previewExposure?: DocPreviewExposure;
+    previewBasis?: DocPreviewBasis;
     decisions: PermissionDecisionV1[];
   };
   docs: Array<{
     docId: string;
-    resourceOwnerRole?: 'owner';
     effectiveRole?: PermissionDocRole;
+    previewExposure?: DocPreviewExposure;
+    previewBasis?: DocPreviewBasis;
     decisions: PermissionDecisionV1[];
   }>;
 };
 
-export const evaluatePermissionV1 = (
-  input: PermissionEvaluationInputV1
-): PermissionEvaluationOutputV1 =>
-  serverNativeModule.evaluatePermissionV1(input);
+export type DomainCommandInputV1 =
+  | {
+      command: 'create_comment';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
+    }
+  | {
+      command: 'update_comment';
+      actorUserId: string;
+      id: string;
+      content: unknown;
+    }
+  | {
+      command: 'resolve_comment';
+      actorUserId: string;
+      id: string;
+      resolved: boolean;
+    }
+  | { command: 'delete_comment'; actorUserId: string; id: string }
+  | {
+      command: 'create_reply';
+      actorUserId: string;
+      commentId: string;
+      content: unknown;
+      docTitle: string;
+      docMode: string;
+      mentions: string[];
+    }
+  | {
+      command: 'update_reply';
+      actorUserId: string;
+      id: string;
+      content: unknown;
+    }
+  | { command: 'delete_reply'; actorUserId: string; id: string }
+  | {
+      command: 'publish_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      mode: number;
+    }
+  | {
+      command: 'unpublish_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+    }
+  | {
+      command: 'apply_doc_lifecycle';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      lifecycle: 'trash' | 'restore' | 'delete';
+    }
+  | {
+      command: 'append_root_update';
+      actorUserId: string;
+      workspaceId: string;
+      update: string;
+      assertPermission: boolean;
+      expectedPermissionGeneration?: number;
+    }
+  | {
+      command: 'recover_doc';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      timestamp: string;
+    }
+  | {
+      command: 'transition_workspace_role';
+      actorUserId: string;
+      workspaceId: string;
+      targetUserId: string;
+      newRole: 'member' | 'admin' | 'owner';
+    }
+  | {
+      command: 'transition_doc_role';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      targetUserId: string;
+      newRole?: 'reader' | 'commenter' | 'editor' | 'manager' | 'owner';
+    }
+  | {
+      command: 'grant_doc_roles';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      targetUserIds: string[];
+      newRole: 'reader' | 'commenter' | 'editor' | 'manager';
+    }
+  | {
+      command: 'set_doc_default_role';
+      actorUserId: string;
+      workspaceId: string;
+      docId: string;
+      newRole: 'none' | 'reader' | 'commenter' | 'editor' | 'manager';
+    }
+  | {
+      command: 'revoke_workspace_member';
+      actorUserId: string;
+      workspaceId: string;
+      targetUserId: string;
+    }
+  | {
+      command: 'leave_workspace';
+      actorUserId: string;
+      workspaceId: string;
+    };
 
-export const permissionActionRoleMatrixV1 = (): unknown =>
-  serverNativeModule.permissionActionRoleMatrixV1();
-
-export const permissionActionRoleMatrixV1Json =
-  serverNativeModule.permissionActionRoleMatrixV1Json;
+export type DomainCommandOutputV1 = Record<string, unknown>;
 
 export const resolveEntitlementV1 = (
   input: ResolveEntitlementInput
 ): ResolvedEntitlement => serverNativeModule.resolveEntitlementV1(input);
+
+export const issueLicenseV1 = (input: IssueLicenseInput): Buffer =>
+  serverNativeModule.issueLicenseV1(input);
+
+export const validateLicenseSeatQuantityV1 = (seatQuantity: number): void =>
+  serverNativeModule.validateLicenseSeatQuantityV1(seatQuantity);
+
+export const permissionActionCatalogV1 = (): PermissionActionCatalogV1 =>
+  serverNativeModule.permissionActionCatalogV1();
 
 // MCP write tools exports
 export const createDocWithMarkdown = serverNativeModule.createDocWithMarkdown;
@@ -395,46 +529,6 @@ export const updateDocProperties = serverNativeModule.updateDocProperties;
 export const updateRootDocMetaTitle = serverNativeModule.updateRootDocMetaTitle;
 
 const nativeLlmModule = serverNativeModule;
-
-export type LlmProtocol =
-  | 'openai_chat'
-  | 'openai_responses'
-  | 'openai_images'
-  | 'anthropic'
-  | 'gemini'
-  | 'fal_image';
-
-type LlmAttachmentReferenceMode = 'remote' | 'inline';
-
-type LlmAttachmentReferenceReason =
-  | 'non_url_source'
-  | 'unsupported_scheme'
-  | 'generic_remote_reference'
-  | 'gemini_api_file_uri'
-  | 'gemini_api_youtube_url'
-  | 'gemini_api_inline_http_url';
-
-type LlmAttachmentReferencePlan = {
-  mode: LlmAttachmentReferenceMode;
-  reason: LlmAttachmentReferenceReason;
-};
-
-type LlmRequestIntentReasoning = {
-  enabled?: boolean;
-  effort?: 'low' | 'medium' | 'high';
-  budget_tokens?: number;
-  include_reasoning?: boolean;
-};
-
-type LlmRequestIntent = {
-  include?: string[];
-  reasoning?: LlmRequestIntentReasoning;
-};
-
-type LlmResolvedRequestIntent = {
-  include?: string[];
-  reasoning?: Record<string, unknown>;
-};
 
 export type NativePromptMessageInput = Omit<
   PromptMessageContract,
@@ -501,53 +595,10 @@ export type NativePromptMessageInput = Omit<
   };
 };
 
-export type LlmBackendConfig = {
-  base_url: string;
-  auth_token: string;
-  request_layer?:
-    | 'anthropic'
-    | 'chat_completions'
-    | 'cloudflare_workers_ai'
-    | 'responses'
-    | 'openai_images'
-    | 'fal'
-    | 'vertex'
-    | 'vertex_anthropic'
-    | 'gemini_api'
-    | 'gemini_vertex';
-  headers?: Record<string, string>;
-  no_streaming?: boolean;
-  timeout_ms?: number;
-};
-
-export type LlmRoutedBackend = {
-  provider_id: string;
-  protocol: LlmProtocol;
-  model: string;
-  config: LlmBackendConfig;
-};
-
-export type LlmPreparedDispatchRoute = LlmRoutedBackend & {
-  request: LlmRequest;
-};
-
-export type LlmPreparedStructuredDispatchRoute = LlmRoutedBackend & {
-  request: LlmStructuredRequest;
-};
-
-export type LlmPreparedEmbeddingDispatchRoute = LlmRoutedBackend & {
-  request: LlmEmbeddingRequestContract;
-};
-
-export type LlmPreparedRerankDispatchRoute = LlmRoutedBackend & {
-  request: LlmRerankRequestContract;
-};
-
 export type LlmImageRequest = LlmImageRequestContract;
 
 export type LlmImageRequestBuildInput = {
   model: string;
-  protocol: LlmProtocol;
   messages: PromptMessageContract[];
   options?: {
     quality?: string;
@@ -555,10 +606,6 @@ export type LlmImageRequestBuildInput = {
     modelName?: string | null;
     loras?: unknown;
   };
-};
-
-export type LlmPreparedImageDispatchRoute = LlmRoutedBackend & {
-  request: LlmImageRequest;
 };
 
 export type LlmRequest = Omit<
@@ -637,16 +684,6 @@ export type LlmDispatchResponse = {
   reasoning_details?: unknown;
 };
 
-type LlmDispatchResult = {
-  provider_id: string;
-  response: LlmDispatchResponse;
-};
-
-type LlmRoutedDispatchResult<TResponse> = {
-  provider_id: string;
-  response: TResponse;
-};
-
 export type LlmStructuredResponse = {
   id: string;
   model: string;
@@ -655,59 +692,6 @@ export type LlmStructuredResponse = {
   usage: LlmDispatchResponse['usage'];
   finish_reason: LlmDispatchResponse['finish_reason'];
   reasoning_details?: unknown;
-};
-
-class StructuredDispatchError extends Error {
-  constructor(
-    readonly code: 'invalid_structured_output',
-    message: string,
-    override readonly cause?: unknown
-  ) {
-    super(message);
-    this.name = 'StructuredDispatchError';
-  }
-}
-
-const INVALID_STRUCTURED_OUTPUT_PREFIX = 'invalid_structured_output:';
-
-export function isInvalidStructuredOutputError(
-  error: unknown
-): error is { code: 'invalid_structured_output' } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'invalid_structured_output'
-  );
-}
-
-function mapStructuredDispatchError(error: unknown): never {
-  const message =
-    error instanceof Error ? error.message : String(error ?? 'Unknown error');
-
-  if (message.startsWith(INVALID_STRUCTURED_OUTPUT_PREFIX)) {
-    throw new StructuredDispatchError(
-      'invalid_structured_output',
-      message.slice(INVALID_STRUCTURED_OUTPUT_PREFIX.length).trim(),
-      error
-    );
-  }
-
-  throw error;
-}
-
-type LlmEmbeddingResponse = {
-  model: string;
-  embeddings: number[][];
-  usage?: {
-    prompt_tokens: number;
-    total_tokens: number;
-  };
-};
-
-type LlmRerankResponse = {
-  model: string;
-  scores: number[];
 };
 
 export type LlmToolLoopStreamEvent =
@@ -756,89 +740,8 @@ export type LlmToolLoopStreamEvent =
     }
   | { type: 'error'; message: string; code?: string; raw?: string };
 
-type LlmStreamEvent =
-  | LlmToolLoopStreamEvent
-  | {
-      type: 'tool_call_delta';
-      call_id: string;
-      name?: string;
-      arguments_delta: string;
-    };
 export type LlmToolCallbackRequest = ToolCallRequest;
 export type LlmToolCallbackResponse = ToolCallResult;
-
-const LLM_STREAM_END_MARKER = '__AFFINE_LLM_STREAM_END__';
-
-async function callLlmToolCallback(
-  requestJson: string,
-  toolCallback: (
-    request: LlmToolCallbackRequest
-  ) => LlmToolCallbackResponse | Promise<LlmToolCallbackResponse>
-) {
-  const request = llmValidateContract<ToolCallRequest>(
-    'toolCallbackRequest',
-    JSON.parse(requestJson)
-  );
-  const response = await toolCallback(request);
-  return JSON.stringify(
-    llmValidateContract<ToolCallResult>('toolCallbackResponse', response)
-  );
-}
-
-function parseLlmEventJson(eventJson: string): LlmStreamEvent {
-  return JSON.parse(eventJson) as LlmStreamEvent;
-}
-
-function parseLlmToolLoopStreamEvent(
-  eventJson: string
-): LlmToolLoopStreamEvent {
-  const event = parseLlmEventJson(eventJson);
-  if (
-    event.type === 'provider_selected' &&
-    typeof event.provider_id === 'string'
-  ) {
-    return event;
-  }
-  return parseToolLoopStreamEvent(event);
-}
-
-export function llmMatchModelCapabilities(
-  models: CopilotProviderModel[],
-  cond: ModelFullConditions
-): string | undefined {
-  if (!nativeLlmModule.llmMatchModelCapabilities) {
-    throw new Error('native llm capability matcher is not available');
-  }
-
-  const response = nativeLlmModule.llmMatchModelCapabilities({
-    models,
-    cond,
-  });
-
-  return response.modelId ?? undefined;
-}
-
-export function llmResolveModelRegistryVariant(input: {
-  backendKind?: CopilotModelBackendKind;
-  modelId: string;
-}): ModelRegistryResolveResponse {
-  if (!nativeLlmModule.llmResolveModelRegistryVariant) {
-    throw new Error('native model registry resolver is not available');
-  }
-
-  return nativeLlmModule.llmResolveModelRegistryVariant(input);
-}
-
-export function llmMatchModelRegistry(input: {
-  backendKind: CopilotModelBackendKind;
-  cond: ModelFullConditions;
-}): ModelRegistryMatchResponse {
-  if (!nativeLlmModule.llmMatchModelRegistry) {
-    throw new Error('native model registry matcher is not available');
-  }
-
-  return nativeLlmModule.llmMatchModelRegistry(input);
-}
 
 export function llmInferPromptModelConditions(
   messages: NativePromptMessageInput[]
@@ -848,204 +751,6 @@ export function llmInferPromptModelConditions(
   }
 
   return nativeLlmModule.llmInferPromptModelConditions(messages);
-}
-
-export function llmResolveRequestedModelMatch(input: {
-  providerIds: string[];
-  optionalModels: string[];
-  requestedModelId?: string;
-  defaultModel?: string;
-}): RequestedModelMatchResponse {
-  if (!nativeLlmModule.llmResolveRequestedModelMatch) {
-    throw new Error('native requested model matcher is not available');
-  }
-
-  return nativeLlmModule.llmResolveRequestedModelMatch(input);
-}
-
-async function llmDispatchPrepared(
-  routes: LlmPreparedDispatchRoute[]
-): Promise<LlmDispatchResult> {
-  if (!nativeLlmModule.llmDispatchPrepared) {
-    throw new Error('native prepared llm dispatch is not available');
-  }
-  const response = nativeLlmModule.llmDispatchPrepared(JSON.stringify(routes));
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmDispatchResult;
-}
-
-type LlmChatDispatchPlanInput = {
-  preparedRoutes: LlmPreparedDispatchRoute[];
-};
-
-export async function llmDispatchPlan(
-  input: LlmChatDispatchPlanInput
-): Promise<{
-  provider_id: string;
-  response: LlmDispatchResponse;
-}> {
-  return await llmDispatchPrepared(input.preparedRoutes);
-}
-
-export async function llmStructuredDispatch(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  request: LlmStructuredRequest
-): Promise<LlmStructuredResponse> {
-  if (!nativeLlmModule.llmStructuredDispatch) {
-    throw new Error('native llm structured dispatch is not available');
-  }
-  try {
-    const response = nativeLlmModule.llmStructuredDispatch(
-      protocol,
-      JSON.stringify(backendConfig),
-      JSON.stringify(request)
-    );
-    const responseText = await Promise.resolve(response);
-    return JSON.parse(responseText) as LlmStructuredResponse;
-  } catch (error) {
-    mapStructuredDispatchError(error);
-  }
-}
-
-async function llmStructuredDispatchPrepared(
-  routes: LlmPreparedStructuredDispatchRoute[]
-): Promise<LlmRoutedDispatchResult<LlmStructuredResponse>> {
-  if (!nativeLlmModule.llmStructuredDispatchPrepared) {
-    throw new Error('native prepared structured dispatch is not available');
-  }
-  try {
-    const response = nativeLlmModule.llmStructuredDispatchPrepared(
-      JSON.stringify(routes)
-    );
-    const responseText = await Promise.resolve(response);
-    return JSON.parse(
-      responseText
-    ) as LlmRoutedDispatchResult<LlmStructuredResponse>;
-  } catch (error) {
-    mapStructuredDispatchError(error);
-  }
-}
-
-type LlmStructuredDispatchPlanInput = {
-  preparedRoutes: LlmPreparedStructuredDispatchRoute[];
-};
-
-export async function llmStructuredDispatchPlan(
-  input: LlmStructuredDispatchPlanInput
-): Promise<{
-  provider_id: string;
-  response: LlmStructuredResponse;
-}> {
-  return await llmStructuredDispatchPrepared(input.preparedRoutes);
-}
-
-export async function llmEmbeddingDispatch(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  request: LlmEmbeddingRequestContract
-): Promise<{
-  model: string;
-  embeddings: number[][];
-  usage?: {
-    prompt_tokens: number;
-    total_tokens: number;
-  };
-}> {
-  if (!nativeLlmModule.llmEmbeddingDispatch) {
-    throw new Error('native llm embedding dispatch is not available');
-  }
-  const response = nativeLlmModule.llmEmbeddingDispatch(
-    protocol,
-    JSON.stringify(backendConfig),
-    JSON.stringify(request)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmEmbeddingResponse;
-}
-
-async function llmEmbeddingDispatchPrepared(
-  routes: LlmPreparedEmbeddingDispatchRoute[]
-): Promise<LlmRoutedDispatchResult<LlmEmbeddingResponse>> {
-  if (!nativeLlmModule.llmEmbeddingDispatchPrepared) {
-    throw new Error('native prepared embedding dispatch is not available');
-  }
-  const response = nativeLlmModule.llmEmbeddingDispatchPrepared(
-    JSON.stringify(routes)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(
-    responseText
-  ) as LlmRoutedDispatchResult<LlmEmbeddingResponse>;
-}
-
-type LlmEmbeddingDispatchPlanInput = {
-  preparedRoutes: LlmPreparedEmbeddingDispatchRoute[];
-};
-
-export async function llmEmbeddingDispatchPlan(
-  input: LlmEmbeddingDispatchPlanInput
-): Promise<{
-  provider_id: string;
-  response: {
-    model: string;
-    embeddings: number[][];
-    usage?: {
-      prompt_tokens: number;
-      total_tokens: number;
-    };
-  };
-}> {
-  return await llmEmbeddingDispatchPrepared(input.preparedRoutes);
-}
-
-export async function llmRerankDispatch(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  request: LlmRerankRequestContract
-): Promise<{
-  model: string;
-  scores: number[];
-}> {
-  if (!nativeLlmModule.llmRerankDispatch) {
-    throw new Error('native llm rerank dispatch is not available');
-  }
-  const response = nativeLlmModule.llmRerankDispatch(
-    protocol,
-    JSON.stringify(backendConfig),
-    JSON.stringify(request)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmRerankResponse;
-}
-
-async function llmRerankDispatchPrepared(
-  routes: LlmPreparedRerankDispatchRoute[]
-): Promise<LlmRoutedDispatchResult<LlmRerankResponse>> {
-  if (!nativeLlmModule.llmRerankDispatchPrepared) {
-    throw new Error('native prepared llm rerank dispatch is not available');
-  }
-  const response = nativeLlmModule.llmRerankDispatchPrepared(
-    JSON.stringify(routes)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmRoutedDispatchResult<LlmRerankResponse>;
-}
-
-type LlmRerankDispatchPlanInput = {
-  preparedRoutes: LlmPreparedRerankDispatchRoute[];
-};
-
-export async function llmRerankDispatchPlan(
-  input: LlmRerankDispatchPlanInput
-): Promise<{
-  provider_id: string;
-  response: {
-    model: string;
-    scores: number[];
-  };
-}> {
-  return await llmRerankDispatchPrepared(input.preparedRoutes);
 }
 
 export type LlmImageResponse = {
@@ -1074,121 +779,6 @@ export function buildLlmImageRequestFromMessages(
   return nativeLlmModule.llmBuildImageRequestFromMessages(request);
 }
 
-async function llmImageDispatchPrepared(
-  routes: LlmPreparedImageDispatchRoute[]
-): Promise<LlmRoutedDispatchResult<LlmImageResponse>> {
-  if (!nativeLlmModule.llmImageDispatchPrepared) {
-    throw new Error('native prepared image dispatch is not available');
-  }
-  const response = nativeLlmModule.llmImageDispatchPrepared(
-    JSON.stringify(routes)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmRoutedDispatchResult<LlmImageResponse>;
-}
-
-export async function llmImageDispatchPlan(input: {
-  preparedRoutes: LlmPreparedImageDispatchRoute[];
-}): Promise<{
-  provider_id: string;
-  response: LlmImageResponse;
-}> {
-  return await llmImageDispatchPrepared(input.preparedRoutes);
-}
-
-export async function llmPlanAttachmentReference(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  source: Record<string, unknown> | string
-): Promise<{
-  mode: 'remote' | 'inline';
-  reason:
-    | 'non_url_source'
-    | 'unsupported_scheme'
-    | 'generic_remote_reference'
-    | 'gemini_api_file_uri'
-    | 'gemini_api_youtube_url'
-    | 'gemini_api_inline_http_url';
-}> {
-  if (!nativeLlmModule.llmPlanAttachmentReference) {
-    throw new Error('native attachment reference planning is not available');
-  }
-  const response = nativeLlmModule.llmPlanAttachmentReference(
-    protocol,
-    JSON.stringify(backendConfig),
-    JSON.stringify(source)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmAttachmentReferencePlan;
-}
-
-async function llmResolveRequestIntent(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  intent: LlmRequestIntent
-): Promise<LlmResolvedRequestIntent> {
-  if (!nativeLlmModule.llmResolveRequestIntent) {
-    throw new Error('native request intent resolution is not available');
-  }
-  const response = nativeLlmModule.llmResolveRequestIntent(
-    protocol,
-    JSON.stringify(backendConfig),
-    JSON.stringify(intent)
-  );
-  const responseText = await Promise.resolve(response);
-  return JSON.parse(responseText) as LlmResolvedRequestIntent;
-}
-
-export async function llmResolveRequestIntentOptions({
-  protocol,
-  backendConfig,
-  include,
-  reasoning,
-}: {
-  protocol: LlmProtocol;
-  backendConfig: LlmBackendConfig;
-  include?: string[];
-  reasoning?: {
-    enabled?: boolean;
-    supported?: boolean;
-    effort?: 'low' | 'medium' | 'high';
-    budgetTokens?: number;
-    includeReasoning?: boolean;
-  };
-}): Promise<{
-  include?: string[];
-  reasoning?: Record<string, unknown>;
-}> {
-  const intent: LlmRequestIntent = {
-    ...(include?.length ? { include } : {}),
-    ...(reasoning?.enabled && reasoning.supported !== false
-      ? {
-          reasoning: {
-            enabled: true,
-            effort: reasoning.effort,
-            budget_tokens: reasoning.budgetTokens,
-            include_reasoning: reasoning.includeReasoning,
-          },
-        }
-      : {}),
-  };
-
-  if (!intent.include?.length && !intent.reasoning) {
-    return {};
-  }
-
-  return await llmResolveRequestIntent(protocol, backendConfig, intent);
-}
-
-export function llmRenderPrompt(
-  request: PromptRenderContract
-): PromptRenderResult {
-  if (!nativeLlmModule.llmRenderPrompt) {
-    throw new Error('native prompt render is not available');
-  }
-  return nativeLlmModule.llmRenderPrompt(request);
-}
-
 export function llmRenderBuiltInPrompt(
   request: BuiltInPromptRenderContract
 ): PromptRenderResult {
@@ -1199,15 +789,6 @@ export function llmRenderBuiltInPrompt(
   return nativeLlmModule.llmRenderBuiltInPrompt(request);
 }
 
-export function llmRenderSessionPrompt(
-  request: PromptSessionContract
-): PromptSessionResult {
-  if (!nativeLlmModule.llmRenderSessionPrompt) {
-    throw new Error('native session prompt render is not available');
-  }
-  return nativeLlmModule.llmRenderSessionPrompt(request);
-}
-
 export function llmRenderBuiltInSessionPrompt(
   request: BuiltInPromptSessionContract
 ): PromptSessionResult {
@@ -1216,24 +797,6 @@ export function llmRenderBuiltInSessionPrompt(
   }
 
   return nativeLlmModule.llmRenderBuiltInSessionPrompt(request);
-}
-
-export function llmCountPromptTokens(
-  request: PromptTokenCountContract
-): PromptTokenCountResult {
-  if (!nativeLlmModule.llmCountPromptTokens) {
-    throw new Error('native prompt token counting is not available');
-  }
-  return nativeLlmModule.llmCountPromptTokens(request);
-}
-
-export function llmCollectPromptMetadata(
-  request: PromptMetadataContract
-): PromptMetadataResult {
-  if (!nativeLlmModule.llmCollectPromptMetadata) {
-    throw new Error('native prompt metadata collection is not available');
-  }
-  return nativeLlmModule.llmCollectPromptMetadata(request);
 }
 
 export function llmListBuiltInPromptSpecs(): BuiltInPromptSpec[] {
@@ -1251,6 +814,14 @@ export function llmGetBuiltInPromptSpec(
   }
   return nativeLlmModule.llmGetBuiltInPromptSpec(name);
 }
+
+export function llmGetBuiltInRouteOptions(
+  name: string
+): BuiltInRouteOptions | null {
+  return nativeLlmModule.llmGetBuiltInRouteOptions(name);
+}
+
+export const llmGetByokCatalog = nativeLlmModule.llmGetByokCatalog;
 
 function stripLlmRequestMiddleware<
   T extends { middleware?: { request?: string[]; stream?: string[] } },
@@ -1390,10 +961,6 @@ export function llmCanonicalJsonSchemaHash(
 }
 
 export type LlmContractName =
-  | 'executionPlan'
-  | 'preparedRoutes'
-  | 'promptRenderContract'
-  | 'promptSessionContract'
   | 'toolCallbackRequest'
   | 'toolCallbackResponse'
   | 'toolLoopEvent'
@@ -1422,444 +989,11 @@ export function llmValidateContract<T = unknown>(
   return nativeLlmModule.llmValidateContract(name, value) as T;
 }
 
-export function llmCompileExecutionPlan<T = unknown>(value: unknown): T {
-  if (!nativeLlmModule.llmCompileExecutionPlan) {
-    throw new Error('native execution plan compiler is not available');
-  }
-
-  return nativeLlmModule.llmCompileExecutionPlan(value) as T;
-}
-
-export function llmNormalizePreparedRoutes<T = unknown>(value: unknown): T {
-  if (!nativeLlmModule.llmNormalizePreparedRoutes) {
-    throw new Error('native prepared route normalizer is not available');
-  }
-
-  return nativeLlmModule.llmNormalizePreparedRoutes(value) as T;
-}
-
-class NativeStreamAdapter<T> implements AsyncIterableIterator<T> {
-  readonly #queue: T[] = [];
-  readonly #waiters: ((result: IteratorResult<T>) => void)[] = [];
-  readonly #handle: { abort?: () => void } | undefined;
-  readonly #signal?: AbortSignal;
-  readonly #abortListener?: () => void;
-  #ended = false;
-
-  constructor(
-    handle: { abort?: () => void } | undefined,
-    signal?: AbortSignal
-  ) {
-    this.#handle = handle;
-    this.#signal = signal;
-
-    if (signal?.aborted) {
-      this.close(true);
-      return;
-    }
-
-    if (signal) {
-      this.#abortListener = () => {
-        this.close(true);
-      };
-      signal.addEventListener('abort', this.#abortListener, { once: true });
-    }
-  }
-
-  private close(abortHandle: boolean) {
-    if (this.#ended) {
-      return;
-    }
-
-    this.#ended = true;
-    if (this.#signal && this.#abortListener) {
-      this.#signal.removeEventListener('abort', this.#abortListener);
-    }
-    if (abortHandle) {
-      this.#handle?.abort?.();
-    }
-
-    while (this.#waiters.length) {
-      const waiter = this.#waiters.shift();
-      waiter?.({ value: undefined as T, done: true });
-    }
-  }
-
-  push(value: T | null) {
-    if (this.#ended) {
-      return;
-    }
-
-    if (value === null) {
-      this.close(false);
-      return;
-    }
-
-    const waiter = this.#waiters.shift();
-    if (waiter) {
-      waiter({ value, done: false });
-      return;
-    }
-
-    this.#queue.push(value);
-  }
-
-  [Symbol.asyncIterator]() {
-    return this;
-  }
-
-  async next(): Promise<IteratorResult<T>> {
-    if (this.#queue.length > 0) {
-      const value = this.#queue.shift() as T;
-      return { value, done: false };
-    }
-
-    if (this.#ended) {
-      return { value: undefined as T, done: true };
-    }
-
-    return await new Promise(resolve => {
-      this.#waiters.push(resolve);
-    });
-  }
-
-  async return(): Promise<IteratorResult<T>> {
-    this.close(true);
-
-    return { value: undefined as T, done: true };
-  }
-}
-
-export function runNativeActionRecipePreparedStream(
-  input: NativeActionRuntimeInput,
-  signal?: AbortSignal
-): AsyncIterableIterator<NativeActionEvent> {
-  if (!nativeLlmModule.runNativeActionRecipePreparedStream) {
-    throw new Error('native action recipe stream runtime is not available');
-  }
-
-  let adapter: NativeStreamAdapter<NativeActionEvent> | undefined;
-  const buffer: (NativeActionEvent | null)[] = [];
-  let pushFn = (event: NativeActionEvent | null) => {
-    buffer.push(event);
-  };
-  const handle = nativeLlmModule.runNativeActionRecipePreparedStream(
-    input as NativeActionRuntimeInputContract,
-    (error, eventJson) => {
-      if (error) {
-        pushFn({
-          type: 'error',
-          actionId: input.recipeId,
-          actionVersion: input.recipeVersion ?? '',
-          errorCode: 'action_stream_callback_error',
-          errorMessage: error.message,
-        });
-        return;
-      }
-      if (eventJson === LLM_STREAM_END_MARKER) {
-        pushFn(null);
-        return;
-      }
-      try {
-        pushFn(JSON.parse(eventJson) as NativeActionEvent);
-      } catch (error) {
-        pushFn({
-          type: 'error',
-          actionId: input.recipeId,
-          actionVersion: input.recipeVersion ?? '',
-          errorCode: 'action_stream_event_parse_failed',
-          errorMessage:
-            error instanceof Error
-              ? error.message
-              : 'failed to parse native action stream event',
-        });
-      }
-    }
-  );
-  adapter = new NativeStreamAdapter(handle, signal);
-  pushFn = event => {
-    adapter.push(event);
-  };
-  for (const event of buffer) {
-    adapter.push(event);
-  }
-  return adapter;
-}
-
-function llmDispatchPreparedStream(
-  routes: LlmPreparedDispatchRoute[],
-  signal?: AbortSignal
-): AsyncIterableIterator<LlmStreamEvent> {
-  if (!nativeLlmModule.llmDispatchPreparedStream) {
-    throw new Error('native prepared llm stream dispatch is not available');
-  }
-
-  let adapter: NativeStreamAdapter<LlmStreamEvent> | undefined;
-  const buffer: (LlmStreamEvent | null)[] = [];
-  let pushFn = (event: LlmStreamEvent | null) => {
-    buffer.push(event);
-  };
-  const handle = nativeLlmModule.llmDispatchPreparedStream(
-    JSON.stringify(routes),
-    (error, eventJson) => {
-      if (error) {
-        pushFn({ type: 'error', message: error.message, raw: eventJson });
-        return;
-      }
-      if (eventJson === LLM_STREAM_END_MARKER) {
-        pushFn(null);
-        return;
-      }
-      try {
-        pushFn(parseLlmEventJson(eventJson));
-      } catch (error) {
-        pushFn({
-          type: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'failed to parse native prepared stream event',
-          raw: eventJson,
-        });
-      }
-    }
-  );
-  adapter = new NativeStreamAdapter(handle, signal);
-  pushFn = event => {
-    adapter.push(event);
-  };
-  for (const event of buffer) {
-    adapter.push(event);
-  }
-  return adapter;
-}
-
-type LlmChatStreamDispatchPlanInput = {
-  preparedRoutes: LlmPreparedDispatchRoute[];
-  signal?: AbortSignal;
-};
-
-export function llmDispatchPlanStream(
-  input: LlmChatStreamDispatchPlanInput
-): AsyncIterableIterator<
-  | LlmToolLoopStreamEvent
-  | {
-      type: 'tool_call_delta';
-      call_id: string;
-      name?: string;
-      arguments_delta: string;
-    }
-> {
-  return llmDispatchPreparedStream(input.preparedRoutes, input.signal);
-}
-
-export function llmDispatchToolLoopStream(
-  protocol: LlmProtocol,
-  backendConfig: LlmBackendConfig,
-  request: LlmRequest,
-  toolCallback: (
-    request: LlmToolCallbackRequest
-  ) => LlmToolCallbackResponse | Promise<LlmToolCallbackResponse>,
-  maxSteps: number,
-  signal?: AbortSignal
-): AsyncIterableIterator<LlmToolLoopStreamEvent> {
-  if (!nativeLlmModule.llmDispatchToolLoopStream) {
-    throw new Error('native llm tool loop dispatch is not available');
-  }
-
-  let adapter: NativeStreamAdapter<LlmToolLoopStreamEvent> | undefined;
-  const buffer: (LlmToolLoopStreamEvent | null)[] = [];
-  let pushFn = (event: LlmToolLoopStreamEvent | null) => {
-    buffer.push(event);
-  };
-  const handle = nativeLlmModule.llmDispatchToolLoopStream(
-    protocol,
-    JSON.stringify(backendConfig),
-    JSON.stringify(request),
-    maxSteps,
-    (error, eventJson) => {
-      if (error) {
-        pushFn({ type: 'error', message: error.message, raw: eventJson });
-        return;
-      }
-      if (eventJson === LLM_STREAM_END_MARKER) {
-        pushFn(null);
-        return;
-      }
-      try {
-        pushFn(parseLlmToolLoopStreamEvent(eventJson));
-      } catch (error) {
-        pushFn({
-          type: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'failed to parse native tool loop stream event',
-          raw: eventJson,
-        });
-      }
-    },
-    async (error, requestJson) => {
-      if (error) {
-        throw error;
-      }
-      return await callLlmToolCallback(requestJson, toolCallback);
-    }
-  );
-  adapter = new NativeStreamAdapter(handle, signal);
-  pushFn = event => {
-    adapter.push(event);
-  };
-  for (const event of buffer) {
-    adapter.push(event);
-  }
-  return adapter;
-}
-
-export function llmDispatchToolLoopStreamRouted(
-  routes: LlmRoutedBackend[],
-  request: LlmRequest,
-  toolCallback: (
-    request: LlmToolCallbackRequest
-  ) => LlmToolCallbackResponse | Promise<LlmToolCallbackResponse>,
-  maxSteps: number,
-  signal?: AbortSignal
-): AsyncIterableIterator<LlmToolLoopStreamEvent> {
-  if (!nativeLlmModule.llmDispatchToolLoopStreamRouted) {
-    throw new Error('native routed llm tool loop dispatch is not available');
-  }
-
-  let adapter: NativeStreamAdapter<LlmToolLoopStreamEvent> | undefined;
-  const buffer: (LlmToolLoopStreamEvent | null)[] = [];
-  let pushFn = (event: LlmToolLoopStreamEvent | null) => {
-    buffer.push(event);
-  };
-  const handle = nativeLlmModule.llmDispatchToolLoopStreamRouted(
-    JSON.stringify(routes),
-    JSON.stringify(request),
-    maxSteps,
-    (error, eventJson) => {
-      if (error) {
-        pushFn({ type: 'error', message: error.message, raw: eventJson });
-        return;
-      }
-      if (eventJson === LLM_STREAM_END_MARKER) {
-        pushFn(null);
-        return;
-      }
-      try {
-        pushFn(parseLlmToolLoopStreamEvent(eventJson));
-      } catch (error) {
-        pushFn({
-          type: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'failed to parse native routed tool loop stream event',
-          raw: eventJson,
-        });
-      }
-    },
-    async (error, requestJson) => {
-      if (error) {
-        throw error;
-      }
-      return await callLlmToolCallback(requestJson, toolCallback);
-    }
-  );
-
-  const originalAbort = handle?.abort?.bind(handle);
-  if (signal) {
-    if (signal.aborted) {
-      originalAbort?.();
-    } else if (originalAbort) {
-      signal.addEventListener('abort', () => originalAbort(), { once: true });
-    }
-  }
-
-  adapter = new NativeStreamAdapter(handle, signal);
-  pushFn = event => {
-    adapter?.push(event);
-  };
-
-  for (const event of buffer) {
-    adapter.push(event);
-  }
-  return adapter;
-}
-
-export function llmDispatchToolLoopStreamPrepared(
-  routes: LlmPreparedDispatchRoute[],
-  toolCallback: (
-    request: LlmToolCallbackRequest
-  ) => LlmToolCallbackResponse | Promise<LlmToolCallbackResponse>,
-  maxSteps: number,
-  signal?: AbortSignal
-): AsyncIterableIterator<LlmToolLoopStreamEvent> {
-  if (!nativeLlmModule.llmDispatchToolLoopStreamPrepared) {
-    throw new Error('native prepared llm tool loop dispatch is not available');
-  }
-
-  let adapter: NativeStreamAdapter<LlmToolLoopStreamEvent> | undefined;
-  const buffer: (LlmToolLoopStreamEvent | null)[] = [];
-  let pushFn = (event: LlmToolLoopStreamEvent | null) => {
-    buffer.push(event);
-  };
-  const handle = nativeLlmModule.llmDispatchToolLoopStreamPrepared(
-    JSON.stringify(routes),
-    maxSteps,
-    (error, eventJson) => {
-      if (error) {
-        pushFn({ type: 'error', message: error.message, raw: eventJson });
-        return;
-      }
-      if (eventJson === LLM_STREAM_END_MARKER) {
-        pushFn(null);
-        return;
-      }
-      try {
-        pushFn(parseLlmToolLoopStreamEvent(eventJson));
-      } catch (error) {
-        pushFn({
-          type: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'failed to parse native prepared tool loop stream event',
-          raw: eventJson,
-        });
-      }
-    },
-    async (error, requestJson) => {
-      if (error) {
-        throw error;
-      }
-      return await callLlmToolCallback(requestJson, toolCallback);
-    }
-  );
-
-  adapter = new NativeStreamAdapter(handle, signal);
-  pushFn = event => {
-    adapter?.push(event);
-  };
-
-  for (const event of buffer) {
-    adapter.push(event);
-  }
-  return adapter;
-}
-
 export {
   type LlmEmbeddingRequestContract as LlmEmbeddingRequest,
   type LlmRerankRequestContract as LlmRerankRequest,
   type BuiltInPromptRenderContract as NativeBuiltInPromptRenderRequest,
   type BuiltInPromptSessionContract as NativeBuiltInPromptSessionRenderRequest,
-  type PromptTokenCountContract as NativePromptCountTokensRequest,
-  type PromptTokenCountResult as NativePromptCountTokensResponse,
-  type PromptMetadataContract as NativePromptMetadataRequest,
-  type PromptMetadataResult as NativePromptMetadataResponse,
-  type PromptRenderContract as NativePromptRenderRequest,
   type PromptRenderResult as NativePromptRenderResponse,
-  type PromptSessionContract as NativePromptSessionRenderRequest,
   type PromptSessionResult as NativePromptSessionRenderResponse,
 } from '@affine/server-native';

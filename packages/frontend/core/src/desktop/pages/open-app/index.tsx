@@ -82,7 +82,9 @@ const OpenAppSignInRedirect = () => {
           payload: next ? { code, next } : { code },
           server: location.origin,
         });
-        navigate(buildOpenAppUrlRoute(urlToOpen), { replace: true });
+        Promise.resolve(
+          navigate(buildOpenAppUrlRoute(urlToOpen), { replace: true })
+        ).catch(console.error);
       })
       .catch(console.error);
   }, [authService, navigate, next, scheme]);

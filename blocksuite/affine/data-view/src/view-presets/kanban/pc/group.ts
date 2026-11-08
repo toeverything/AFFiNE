@@ -179,16 +179,18 @@ export class KanbanGroup extends SignalWatcher(
             `;
           }
         )}
-        ${this.view.readonly$.value
-          ? nothing
-          : html`<div class="add-card" @click="${this.clickAddCard}">
-              <div
-                style="margin-right: 4px;width: 16px;height: 16px;display:flex;align-items:center;"
-              >
-                ${AddCursorIcon()}
-              </div>
-              Add
-            </div>`}
+        ${
+          this.view.readonly$.value
+            ? nothing
+            : html`<div class="add-card" @click="${this.clickAddCard}">
+                <div
+                  style="margin-right: 4px;width: 16px;height: 16px;display:flex;align-items:center;"
+                >
+                  ${AddCursorIcon()}
+                </div>
+                Add
+              </div>`
+        }
       </div>
     `;
   }

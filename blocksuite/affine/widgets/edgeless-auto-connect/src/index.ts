@@ -599,9 +599,11 @@ export class EdgelessAutoConnectWidget extends WidgetComponent<RootBlockModel> {
 
     return html`${this._PageVisibleIndexLabels(elements, counts)}
     ${this._EdgelessOnlyLabels()}
-    ${this._index >= 0 && this._index < elements.length
-      ? this._NavigatorComponent(elements)
-      : nothing} `;
+    ${
+      this._index >= 0 && this._index < elements.length
+        ? this._NavigatorComponent(elements)
+        : nothing
+    } `;
   }
 
   @state()

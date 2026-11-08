@@ -32,7 +32,7 @@ import {
   MeetingSettingsSchema,
 } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
-import { getMainWindow } from '../windows-manager';
+import { showMainWindow } from '../windows-manager';
 import { popupManager } from '../windows-manager/popup';
 import { isAppNameAllowed } from './allow-list';
 import { RecordingCoordinator } from './coordinator';
@@ -512,15 +512,9 @@ export async function startRecording(
 export async function stopRecording(id: number) {
   const job = await recordingCoordinator.stop(id);
   if (job?.phase === 'recorded') {
-    void getMainWindow()
-      .then(mainWindow => {
-        if (mainWindow) {
-          mainWindow.show();
-        }
-      })
-      .catch(err => {
-        logger.error('failed to bring up the window', err);
-      });
+    void showMainWindow().catch(err => {
+      logger.error('failed to bring up the window', err);
+    });
   }
   return serializeRecordingStatus(getCurrentRecordingStatus());
 }

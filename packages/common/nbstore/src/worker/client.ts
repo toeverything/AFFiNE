@@ -25,7 +25,10 @@ import {
   type AggregateResult,
   type AwarenessRecord,
   type BlobRecord,
+  type BlobSource,
   type BlobStorage,
+  type DocLifecycle,
+  type DocLifecycleResult,
   type DocRecord,
   type DocStorage,
   type DocUpdate,
@@ -303,6 +306,16 @@ class WorkerDocStorage implements DocStorage {
     return this.client.call('docStorage.deleteDoc', docId);
   }
 
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: DocLifecycle
+  ): Promise<DocLifecycleResult> {
+    return this.client.call('docStorage.applyDocLifecycle', {
+      docId,
+      lifecycle,
+    });
+  }
+
   subscribeDocUpdate(callback: (update: DocRecord, origin?: string) => void) {
     const subscription = this.client
       .ob$('docStorage.subscribeDocUpdate')
@@ -421,6 +434,12 @@ class WorkerBlobSync implements BlobSync {
 
   downloadBlob(blobId: string): Promise<boolean> {
     return this.client.call('blobSync.downloadBlob', blobId);
+  }
+  registerSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.registerSource', source);
+  }
+  unregisterSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.unregisterSource', source);
   }
   uploadBlob(blob: BlobRecord, force?: boolean): Promise<true> {
     return this.client.call('blobSync.uploadBlob', { blob, force });

@@ -14,11 +14,6 @@ type SkipMailOptions = {
   priority?: 'critical' | 'high' | 'normal' | 'low';
 };
 
-function recipientDomain(email: string) {
-  const parts = email.trim().toLowerCase().split('@');
-  return parts.length === 2 ? parts[1] : '';
-}
-
 function defaultPriority(mailClass: string): 'critical' | 'high' | 'normal' {
   if (mailClass === 'auth') {
     return 'critical';
@@ -111,7 +106,6 @@ export class Mailer {
         mailName: command.name as MailName,
         recipient: {
           email: command.to,
-          domain: recipientDomain(command.to),
           userId: metadata.recipientUserId,
         },
         metadata: {

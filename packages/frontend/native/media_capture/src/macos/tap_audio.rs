@@ -148,8 +148,8 @@ impl AggregateDevice {
     };
 
     // Restore the activation logic as it seems necessary for audio flow
-    // Configure the aggregate device to ensure proper handling of both input and
-    // output
+    // Configure the aggregate device to ensure proper handling of both input
+    // and output
     device.get_aggregate_device_stats()?;
 
     // Activate both the input and output devices and store their proc IDs
@@ -403,9 +403,9 @@ impl AudioTapStream {
       // Don't fail the whole stop process if this fails, just log the error and
       // continue cleanup
       if status != 0 {
-        // kAudioHardwareBadDeviceError (560227702 / 0x2166616E in hex) indicates the
-        // device is gone, which is expected in some scenarios (like device
-        // unplug). Treat this as non-existent.
+        // kAudioHardwareBadDeviceError (560227702 / 0x2166616E in hex)
+        // indicates the device is gone, which is expected in some
+        // scenarios (like device unplug). Treat this as non-existent.
         if status == kAudioHardwareBadDeviceError as i32 {
           device_exists = false; // Treat as non-existent for subsequent steps
         }
@@ -637,8 +637,9 @@ impl AggregateDeviceManager {
       let result: Result<AggregateDevice> = {
         if is_app_specific {
           if let Some(id) = app_id {
-            // For device change listener, we need to create a minimal ApplicationInfo
-            // We don't have the name here, so we'll use an empty string
+            // For device change listener, we need to create a minimal
+            // ApplicationInfo We don't have the name here, so we'll
+            // use an empty string
             let app = ApplicationInfo::new(id as i32, String::new(), id);
             AggregateDevice::new(&app)
           } else {
@@ -649,14 +650,14 @@ impl AggregateDeviceManager {
         }
       };
 
-      // If we successfully created a new device, stop the old stream and start a new
-      // one
+      // If we successfully created a new device, stop the old stream and start
+      // a new one
       match result {
         Ok(mut new_device) => {
           // Stop and drop the old stream if it exists
           if let Some(mut old_stream) = stream_guard.take() {
-            // Explicitly drop the old stream's Box before creating the new device.
-            // The drop implementation handles cleanup.
+            // Explicitly drop the old stream's Box before creating the new
+            // device. The drop implementation handles cleanup.
             // We call stop() directly.
             let stop_result = old_stream.stop();
             match stop_result {
@@ -682,7 +683,8 @@ impl AggregateDeviceManager {
       }
     });
 
-    // Create pointers to the device_changed_block that can be used in C functions
+    // Create pointers to the device_changed_block that can be used in C
+    // functions
     let block_ptr = &*device_changed_block as *const Block<dyn Fn(u32, *mut c_void)>;
     let block_ptr_cast = block_ptr.cast_mut().cast();
 
@@ -744,7 +746,8 @@ impl AggregateDeviceManager {
       unsafe {
         // Add a runtime check to ensure we're not in shutdown
         let is_system_shutting_down = std::panic::catch_unwind(|| {
-          // Try a simple CoreAudio API call to see if the system is still responsive
+          // Try a simple CoreAudio API call to see if the system is still
+          // responsive
           let mut size: u32 = 0;
           AudioObjectGetPropertyDataSize(
             kAudioObjectSystemObject,
@@ -958,7 +961,8 @@ impl AudioCaptureSession {
         .get_current_actual_sample_rate()? // Propagate CoreAudioError
         .ok_or_else(|| napi::Error::from_reason("No active audio stream to get actual sample rate from"))
     } else if let Some(cached_rate) = self.sample_rate {
-      // Return cached sample rate as the best approximation when session is stopped
+      // Return cached sample rate as the best approximation when session is
+      // stopped
       Ok(cached_rate)
     } else {
       Err(napi::Error::from_reason(

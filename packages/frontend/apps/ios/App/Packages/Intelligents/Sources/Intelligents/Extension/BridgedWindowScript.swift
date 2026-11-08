@@ -20,10 +20,13 @@ enum BridgedWindowScript: String {
   case getAiButtonFeatureFlag = "window.getAiButtonFeatureFlag();"
   case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
   case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
+  case waitForSelectedSources = "return await window.waitForSelectedSources(documentIds);"
 
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: true
+    case .getCurrentDocContentInMarkdown,
+         .createNewDocByMarkdownInCurrentWorkspace,
+         .waitForSelectedSources: true
     default: false
     }
   }

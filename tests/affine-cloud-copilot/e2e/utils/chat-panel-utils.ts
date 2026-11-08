@@ -1,4 +1,4 @@
-// eslint-disable eslint-plugin-unicorn(prefer-dom-node-dataset
+// oxlint-disable unicorn/prefer-dom-node-dataset
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 

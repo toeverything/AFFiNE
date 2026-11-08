@@ -7,20 +7,20 @@ import {
   CitationFootnoteFormatter,
   TextStreamParser,
 } from '../../providers/utils';
-import type { CopilotToolSet } from '../../tools';
+import type { DocSource } from '../../tools/types';
 import { projectRuntimeEventToStreamObject } from '../contracts/runtime-event-contract';
-import { createToolLoopBridge, type ToolLoopBackend } from './bridge';
+import {
+  type AttachmentFootnote,
+  collectAttachmentFootnotes,
+  collectDocumentFootnotes,
+  formatAttachmentFootnotes,
+  formatDocumentFootnotes,
+} from './footnotes';
 import {
   type EnrichedToolCallEvent,
   type EnrichedToolResultEvent,
   NativeRuntimeAdapter,
 } from './native-runtime-adapter';
-
-type AttachmentFootnote = {
-  blobId: string;
-  fileName: string;
-  fileType: string;
-};
 
 export type NativeProviderAdapterOptions = {
   maxSteps?: number;
@@ -35,79 +35,6 @@ export type NativeProviderAdapterOptions = {
 type NativeStreamDispatch = ConstructorParameters<
   typeof NativeRuntimeAdapter
 >[0];
-
-function pickAttachmentFootnote(value: unknown): AttachmentFootnote | null {
-  if (!value || typeof value !== 'object') {
-    return null;
-  }
-
-  const record = value as Record<string, unknown>;
-  const blobId =
-    typeof record.blobId === 'string'
-      ? record.blobId
-      : typeof record.blob_id === 'string'
-        ? record.blob_id
-        : undefined;
-  const fileName =
-    typeof record.fileName === 'string'
-      ? record.fileName
-      : typeof record.name === 'string'
-        ? record.name
-        : undefined;
-  const fileType =
-    typeof record.fileType === 'string'
-      ? record.fileType
-      : typeof record.mimeType === 'string'
-        ? record.mimeType
-        : 'application/octet-stream';
-
-  if (!blobId || !fileName) {
-    return null;
-  }
-
-  return { blobId, fileName, fileType };
-}
-
-function collectAttachmentFootnotes(
-  event: EnrichedToolResultEvent
-): AttachmentFootnote[] {
-  if (event.name === 'blob_read') {
-    const item = pickAttachmentFootnote(event.output);
-    return item ? [item] : [];
-  }
-
-  if (event.name === 'doc_semantic_search' && Array.isArray(event.output)) {
-    return event.output
-      .map(item => pickAttachmentFootnote(item))
-      .filter((item): item is AttachmentFootnote => item !== null);
-  }
-
-  return [];
-}
-
-function formatAttachmentFootnotes(
-  attachments: AttachmentFootnote[],
-  options: { includeReferences?: boolean } = {}
-) {
-  const references =
-    options.includeReferences === false
-      ? ''
-      : attachments.map((_, index) => `[^${index + 1}]`).join('');
-  const definitions = attachments
-    .map((attachment, index) => {
-      return `[^${index + 1}]: ${JSON.stringify({
-        type: 'attachment',
-        blobId: attachment.blobId,
-        fileName: attachment.fileName,
-        fileType: attachment.fileType,
-      })}`;
-    })
-    .join('\n');
-
-  return references
-    ? `\n\n${references}\n\n${definitions}`
-    : `\n\n${definitions}`;
-}
 
 export class NativeProviderAdapter {
   readonly logger = new Logger(NativeProviderAdapter.name);
@@ -182,6 +109,9 @@ export class NativeProviderAdapter {
     const citationFormatter = this.#enableCitationFootnote
       ? new CitationFootnoteFormatter()
       : null;
+    const attachmentFootnotes = new Map<string, AttachmentFootnote>();
+    const documentFootnotes = new Map<string, DocSource>();
+    let hasAttachmentFootnoteReference = false;
     let streamPartId = 0;
     const usageState: {
       model?: string;
@@ -212,6 +142,9 @@ export class NativeProviderAdapter {
         }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
+          if (textEvent.text.includes('[^attachment-')) {
+            hasAttachmentFootnoteReference = true;
+          }
           if (textParser) {
             yield textParser.parse({
               type: 'text-delta',
@@ -249,8 +182,14 @@ export class NativeProviderAdapter {
           break;
         }
         case 'tool_result': {
-          if (!textParser) break;
           const normalized = event as EnrichedToolResultEvent;
+          collectAttachmentFootnotes(normalized).forEach(attachment => {
+            attachmentFootnotes.set(attachment.artifactId, attachment);
+          });
+          collectDocumentFootnotes(normalized).forEach(document => {
+            documentFootnotes.set(JSON.stringify(document), document);
+          });
+          if (!textParser) break;
           yield textParser.parse({
             type: 'tool-result',
             toolCallId: normalized.call_id,
@@ -282,7 +221,17 @@ export class NativeProviderAdapter {
           usageState.usage = doneEvent.usage ?? usageState.usage;
           const footnotes = textParser?.end() ?? '';
           const citations = citationFormatter?.end() ?? '';
-          const tails = [citations, footnotes].filter(Boolean).join('\n');
+          const attachments = attachmentFootnotes.size
+            ? formatAttachmentFootnotes([...attachmentFootnotes.values()], {
+                includeReferences: !hasAttachmentFootnoteReference,
+              })
+            : '';
+          const documents = documentFootnotes.size
+            ? formatDocumentFootnotes([...documentFootnotes.values()])
+            : '';
+          const tails = [citations, attachments, documents, footnotes]
+            .filter(Boolean)
+            .join('\n');
           if (tails) {
             yield `\n${tails}`;
           }
@@ -312,7 +261,8 @@ export class NativeProviderAdapter {
       ? new CitationFootnoteFormatter()
       : null;
     const fallbackAttachmentFootnotes = new Map<string, AttachmentFootnote>();
-    let hasFootnoteReference = false;
+    const fallbackDocumentFootnotes = new Map<string, DocSource>();
+    let hasAttachmentFootnoteReference = false;
     const usageState: {
       model?: string;
       usage?: Extract<LlmToolLoopStreamEvent, { type: 'usage' }>['usage'];
@@ -342,8 +292,8 @@ export class NativeProviderAdapter {
         }
         case 'text_delta': {
           const textEvent = event as unknown as { text: string };
-          if (textEvent.text.includes('[^')) {
-            hasFootnoteReference = true;
+          if (textEvent.text.includes('[^attachment-')) {
+            hasAttachmentFootnoteReference = true;
           }
           yield { type: 'text-delta', textDelta: textEvent.text };
           break;
@@ -365,7 +315,10 @@ export class NativeProviderAdapter {
           const normalized = event as EnrichedToolResultEvent;
           const attachments = collectAttachmentFootnotes(normalized);
           attachments.forEach(attachment => {
-            fallbackAttachmentFootnotes.set(attachment.blobId, attachment);
+            fallbackAttachmentFootnotes.set(attachment.artifactId, attachment);
+          });
+          collectDocumentFootnotes(normalized).forEach(document => {
+            fallbackDocumentFootnotes.set(JSON.stringify(document), document);
           });
           const streamObject = projectRuntimeEventToStreamObject(
             event as LlmToolLoopStreamEvent
@@ -396,16 +349,23 @@ export class NativeProviderAdapter {
           usageState.usage = doneEvent.usage ?? usageState.usage;
           const citations = citationFormatter?.end() ?? '';
           if (citations) {
-            hasFootnoteReference = true;
             yield { type: 'text-delta', textDelta: `\n${citations}` };
           }
-          if (!citations && fallbackAttachmentFootnotes.size > 0) {
+          if (fallbackAttachmentFootnotes.size > 0) {
             yield {
               type: 'text-delta',
               textDelta: formatAttachmentFootnotes(
                 Array.from(fallbackAttachmentFootnotes.values()),
-                { includeReferences: !hasFootnoteReference }
+                { includeReferences: !hasAttachmentFootnoteReference }
               ),
+            };
+          }
+          if (fallbackDocumentFootnotes.size > 0) {
+            yield {
+              type: 'text-delta',
+              textDelta: formatDocumentFootnotes([
+                ...fallbackDocumentFootnotes.values(),
+              ]),
             };
           }
           break;
@@ -424,15 +384,4 @@ export class NativeProviderAdapter {
       }
     }
   }
-}
-
-export function createNativeToolLoopAdapter(
-  backend: ToolLoopBackend,
-  tools: CopilotToolSet,
-  options: NativeProviderAdapterOptions = {}
-) {
-  return new NativeProviderAdapter(
-    createToolLoopBridge(backend, tools, options.maxSteps),
-    options
-  );
 }

@@ -240,7 +240,7 @@ export async function enterPlaygroundWithList(
         title: new window.$blocksuite.store.Text(),
       });
       const noteId = doc.addBlock('affine:note', {}, rootId);
-      // oxlint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line typescript/prefer-for-of
       for (let i = 0; i < contents.length; i++) {
         doc.addBlock(
           'affine:list',
@@ -847,7 +847,7 @@ export async function getClipboardHTML(page: Page) {
       const indentAfter = '  '.repeat(level >= 2 ? level - 2 : 0);
       let textNode;
 
-      // oxlint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line typescript/prefer-for-of
       for (let i = 0; i < node.children.length; i++) {
         textNode = document.createTextNode('\n' + indentBefore);
         node.insertBefore(textNode, node.children[i]);

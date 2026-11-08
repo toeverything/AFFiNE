@@ -67,6 +67,11 @@ test('should be able to incr/decr number cache', async t => {
   // increase an nonexists number
   t.is(await cache.increase(key('test-incr2')), 1);
   t.is(await cache.increase(key('test-incr2')), 2);
+
+  const expiringKey = key('test-incr-with-ttl');
+  t.is(await cache.increaseWithTtl(expiringKey, 1000), 1);
+  t.is(await cache.increaseWithTtl(expiringKey, 1000), 2);
+  t.true((await cache.ttl(expiringKey)) > 0);
 });
 
 test('should be able to manipulate list cache', async t => {

@@ -110,7 +110,7 @@ function isImageAction(actionId: string) {
 }
 
 function resolveProjector(actionId: string): ActionResultProjector | null {
-  if (actionId.startsWith('transcript.audio.')) {
+  if (actionId === 'transcript.audio') {
     return null;
   }
   if (isImageAction(actionId)) {

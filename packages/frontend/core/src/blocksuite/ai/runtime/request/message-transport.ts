@@ -24,7 +24,9 @@ export type TextToTextOptions = {
   runId?: string;
   isRootSession?: boolean;
   reasoning?: boolean;
+  profileId?: string;
   modelId?: string;
+  routeTargetId?: string;
   toolsConfig?: AIToolsConfig;
 };
 
@@ -63,6 +65,11 @@ async function resizeImage(blob: Blob | File): Promise<Blob | null> {
   return null;
 }
 
+function jpegFileName(name: string) {
+  const stem = name.replace(/\.[^./\\]+$/, '');
+  return `${stem || 'image'}.jpg`;
+}
+
 interface CreateMessageOptions {
   client: CopilotClient;
   sessionId: string;
@@ -97,12 +104,21 @@ async function createMessage({
     options.attachments = stringAttachments;
     options.blobs = (
       await Promise.all(
-        blobs.map(resizeImage).map(async blob => {
-          const file = await blob;
+        blobs.map(async blob => {
+          const file = blob.type.startsWith('image/')
+            ? await resizeImage(blob)
+            : blob;
           if (!file) return null;
-          return new File([file], sessionId, {
-            type: file.type,
-          });
+          const resized = file !== blob;
+          return new File(
+            [file],
+            resized
+              ? jpegFileName(blob instanceof File ? blob.name : sessionId)
+              : blob instanceof File
+                ? blob.name
+                : sessionId,
+            { type: file.type }
+          );
         })
       )
     ).filter(Boolean) as File[];
@@ -127,7 +143,9 @@ export function textToText({
   actionVersion,
   runId,
   reasoning,
+  profileId,
   modelId,
+  routeTargetId,
   toolsConfig,
 }: TextToTextOptions) {
   let messageId: string | undefined;
@@ -161,7 +179,9 @@ export function textToText({
             sessionId,
             messageId,
             reasoning,
+            profileId,
             modelId,
+            routeTargetId,
             toolsConfig,
             actionId,
             actionVersion,
@@ -229,7 +249,9 @@ export function textToText({
           sessionId,
           messageId,
           reasoning,
+          profileId,
           modelId,
+          routeTargetId,
           toolsConfig,
           actionId,
           actionVersion,

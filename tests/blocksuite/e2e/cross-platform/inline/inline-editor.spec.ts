@@ -449,7 +449,6 @@ test('readonly mode', async ({ page }) => {
       throw new Error('Cannot find editor');
     }
 
-    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
     (richTextA as any).inlineEditor.setReadonly(true);
   });
 
@@ -1044,13 +1043,11 @@ test('yText should not contain \r', async ({ page }) => {
       throw new Error('Cannot find test-rich-text');
     }
 
-    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
     const editor = (richText as any).inlineEditor as InlineEditor;
 
     try {
       editor.insertText({ index: 0, length: 0 }, 'abc\r');
     } catch (e) {
-      // oxlint-disable-next-line @typescript-eslint/no-explicit-any
       return (e as any).message;
     }
   });

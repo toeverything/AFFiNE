@@ -18,8 +18,6 @@ export interface BaseChip {
 
 export interface DocChip extends BaseChip {
   docId: string;
-  markdown?: Signal<string> | null;
-  tokenCount?: number | null;
 }
 
 export interface FileChip extends BaseChip {
@@ -85,5 +83,6 @@ export interface DocDisplayConfig {
     signal: Signal<{ id: string; name: string }[]>;
     cleanup: () => void;
   };
+  getCollectionTitle: (collectionId: string) => string;
   getCollectionPageIds: (collectionId: string) => string[];
 }

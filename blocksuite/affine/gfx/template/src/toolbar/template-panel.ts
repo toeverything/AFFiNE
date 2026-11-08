@@ -406,9 +406,9 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
             cate => cate,
             cate => {
               return html`<div
-                class="category-entry ${_currentCategory === cate
-                  ? 'selected'
-                  : ''}"
+                class="category-entry ${
+                  _currentCategory === cate ? 'selected' : ''
+                }"
                 @click=${() => {
                   this._currentCategory = cate;
                   this._updateTemplates();
@@ -422,73 +422,81 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
         <div class="template-viewport">
           <div class="template-scrollcontent" data-scrollable>
             <div class="template-list">
-              ${this._loading
-                ? html`<affine-template-loading
-                    style=${styleMap({
-                      position: 'absolute',
-                      left: '50%',
-                      top: '50%',
-                    })}
-                  ></affine-template-loading>`
-                : repeat(
-                    _templates,
-                    template => template.name,
-                    template => {
-                      const preview = template.preview
-                        ? template.preview.startsWith('<svg')
-                          ? html`<img
-                              src="${toSvgPreviewDataUrl(template.preview)}"
-                              class="template-preview"
-                              loading="lazy"
-                            />`
-                          : html`<img
-                              src="${template.preview}"
-                              class="template-preview"
-                              loading="lazy"
-                            />`
-                        : defaultPreview;
+              ${
+                this._loading
+                  ? html`<affine-template-loading
+                      style=${styleMap({
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                      })}
+                    ></affine-template-loading>`
+                  : repeat(
+                      _templates,
+                      template => template.name,
+                      template => {
+                        const preview = template.preview
+                          ? template.preview.startsWith('<svg')
+                            ? html`<img
+                                src="${toSvgPreviewDataUrl(template.preview)}"
+                                class="template-preview"
+                                loading="lazy"
+                              />`
+                            : html`<img
+                                src="${template.preview}"
+                                class="template-preview"
+                                loading="lazy"
+                              />`
+                          : defaultPreview;
 
-                      const isBeingDragged =
-                        draggingElement &&
-                        draggingElement.data.name === template.name;
-                      return html`
-                        <div
-                          class=${`template-item ${
-                            template === this._loadingTemplate ? 'loading' : ''
-                          }`}
-                          style=${styleMap({
-                            opacity: isBeingDragged ? '0' : '1',
-                          })}
-                          data-hover-text="Add"
-                          @mousedown=${(e: MouseEvent) =>
-                            this.draggableController.onMouseDown(e, {
-                              data: template,
-                              preview,
+                        const isBeingDragged =
+                          draggingElement &&
+                          draggingElement.data.name === template.name;
+                        return html`
+                          <div
+                            class=${`template-item ${
+                              template === this._loadingTemplate
+                                ? 'loading'
+                                : ''
+                            }`}
+                            style=${styleMap({
+                              opacity: isBeingDragged ? '0' : '1',
                             })}
-                          @touchstart=${(e: TouchEvent) => {
-                            this.draggableController.onTouchStart(e, {
-                              data: template,
-                              preview,
-                            });
-                          }}
-                        >
-                          ${preview}
-                          ${template === this._loadingTemplate
-                            ? html`<affine-template-loading></affine-template-loading>`
-                            : nothing}
-                          ${template.name
-                            ? html`<affine-tooltip
-                                .offset=${12}
-                                .autoHide=${true}
-                                tip-position="top"
-                              >
-                                ${template.name}
-                              </affine-tooltip>`
-                            : nothing}
-                        </div>
-                      `;
-                    }
-                  )}
+                            data-hover-text="Add"
+                            @mousedown=${(e: MouseEvent) =>
+                              this.draggableController.onMouseDown(e, {
+                                data: template,
+                                preview,
+                              })}
+                            @touchstart=${(e: TouchEvent) => {
+                              this.draggableController.onTouchStart(e, {
+                                data: template,
+                                preview,
+                              });
+                            }}
+                          >
+                            ${preview}
+                            ${
+                              template === this._loadingTemplate
+                                ? html`<affine-template-loading></affine-template-loading>`
+                                : nothing
+                            }
+                            ${
+                              template.name
+                                ? html`<affine-tooltip
+                                    .offset=${12}
+                                    .autoHide=${true}
+                                    tip-position="top"
+                                  >
+                                    ${template.name}
+                                  </affine-tooltip>`
+                                : nothing
+                            }
+                          </div>
+                        `;
+                      }
+                    )
+              }
             </div>
           </div>
           <overlay-scrollbar></overlay-scrollbar>

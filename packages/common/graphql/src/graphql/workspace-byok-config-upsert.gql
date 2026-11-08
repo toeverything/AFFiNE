@@ -1,5 +1,11 @@
-mutation upsertWorkspaceByokConfig($input: UpsertWorkspaceByokConfigInput!) {
-  upsertWorkspaceByokConfig(input: $input) {
-    id
-  }
+mutation createWorkspaceByokProfile($input: CreateWorkspaceByokProfileInput!) {
+  createWorkspaceByokProfile(input: $input) { profileId }
+}
+
+mutation replaceWorkspaceByokProfile($input: ReplaceWorkspaceByokProfileInput!) {
+  replaceWorkspaceByokProfile(input: $input) { profileId }
+}
+
+mutation rotateWorkspaceByokCredential($input: RotateWorkspaceByokCredentialInput!) {
+  rotateWorkspaceByokCredential(input: $input) { profileId }
 }

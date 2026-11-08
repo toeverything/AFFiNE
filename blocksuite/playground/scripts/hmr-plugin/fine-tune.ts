@@ -1,4 +1,4 @@
-/* eslint-disable import-x/no-extraneous-dependencies */
+/* oxlint-disable import-x-js/no-extraneous-dependencies */
 import path from 'node:path';
 
 import { init, parse } from 'es-module-lexer';

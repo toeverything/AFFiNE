@@ -412,11 +412,13 @@ export class OutlinePanelBody extends SignalWatcher(
           index=${index}
           .note=${note}
           .activeHeadingId=${this._activeHeadingId$.value}
-          .status=${this._allSelectedNotes$.value.includes(note)
-            ? this._dragging$.value
-              ? 'dragging'
-              : 'selected'
-            : 'normal'}
+          .status=${
+            this._allSelectedNotes$.value.includes(note)
+              ? this._dragging$.value
+                ? 'dragging'
+                : 'selected'
+              : 'normal'
+          }
           @fitview=${this._fitToElement}
           @select=${this._selectNote}
           @displaymodechange=${this._handleDisplayModeChange}

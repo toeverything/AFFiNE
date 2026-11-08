@@ -1,4 +1,6 @@
-export { CopilotEmbeddingClientService, MockEmbeddingClient } from './client';
-export { CopilotEmbeddingJob } from './job';
-export type { Chunk, DocFragment } from './types';
-export { EmbeddingClient } from './types';
+export { NativeEmbeddingService } from './native';
+export { CopilotRerankService } from './rerank';
+export {
+  EMBEDDING_RERANK_RUNTIME,
+  type EmbeddingRerankRuntime,
+} from './route-context';

@@ -13,7 +13,7 @@
     {
       "rangeStrategy": "replace",
       "groupName": "linter",
-      "matchPackageNames": ["/^eslint/", "/^@typescript-eslint/"]
+      "matchPackageNames": ["/^eslint-plugin/"]
     },
     {
       "matchDepNames": ["oxlint"],

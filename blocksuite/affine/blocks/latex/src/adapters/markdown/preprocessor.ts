@@ -44,18 +44,22 @@ function preprocessLatex(content: string) {
     }
   );
 
-  // Protect existing LaTeX expressions
+  // Protect existing LaTeX expressions. Inline delimiters use Pandoc's
+  // whitespace and digit rules, with backslash parity preserved.
   const latexExpressions: string[] = [];
   preprocessedContent = preprocessedContent.replace(
-    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\))/g,
+    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|(?<!\\)(?:\\\\)*\$(?!\s)(?:[^\n$\\]|\\.)*?(?<!\s)\$(?!\d))/g,
     match => {
       latexExpressions.push(match);
       return `<<LATEX_${latexExpressions.length - 1}>>`;
     }
   );
 
-  // Escape dollar signs that are likely currency indicators
-  preprocessedContent = preprocessedContent.replace(/\$(?=\d)/g, '\\$');
+  // An odd backslash run already escapes the dollar sign.
+  preprocessedContent = preprocessedContent.replace(
+    /(?<!\\)((?:\\\\)*)\$(?=\d)/g,
+    '$1\\$'
+  );
 
   // Restore LaTeX expressions
   preprocessedContent = preprocessedContent.replace(

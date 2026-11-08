@@ -3,27 +3,30 @@ import './config';
 import { Module } from '@nestjs/common';
 
 import { BackendRuntimeModule } from '../backend-runtime';
+import { EntitlementModule } from '../entitlement';
 import { FeatureModule } from '../features';
 import { MailModule } from '../mail';
 import { QuotaModule } from '../quota';
 import { UserModule } from '../user';
-import { AuthChallengeStore } from './challenge-store';
+import { AccessTokenService } from './access-token';
+import { AuthSessionService } from './auth-session';
 import { AuthController } from './controller';
 import { AuthGuard, AuthWebsocketOptionsProvider } from './guard';
 import { AuthCronJob } from './job';
-import { JwtSessionService } from './jwt-session';
 import { MagicLinkAuthService } from './magic-link';
-import { AuthMethodsService } from './methods';
-import { SessionExchangeService } from './native-exchange';
 import { OpenAppAuthService } from './open-app';
 import { AuthResolver } from './resolver';
 import { AuthService } from './service';
+import { SessionExchangeService } from './session-exchange';
 import { SessionIssuer } from './session-issuer';
+import { AuthSigningKeyRing } from './signing-key';
+import { AuthSigningKeyResolver } from './signing-key-resolver';
 
 @Module({
   imports: [
     BackendRuntimeModule,
     FeatureModule,
+    EntitlementModule,
     UserModule,
     QuotaModule,
     MailModule,
@@ -32,40 +35,46 @@ import { SessionIssuer } from './session-issuer';
     AuthService,
     AuthResolver,
     AuthGuard,
-    JwtSessionService,
+    AccessTokenService,
     SessionIssuer,
-    AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
-    AuthMethodsService,
     SessionExchangeService,
-    AuthCronJob,
+    AuthSessionService,
+    AuthSigningKeyRing,
+    AuthSigningKeyResolver,
     AuthWebsocketOptionsProvider,
   ],
   exports: [
     AuthService,
     AuthGuard,
-    JwtSessionService,
+    AccessTokenService,
     SessionIssuer,
-    AuthChallengeStore,
     MagicLinkAuthService,
     OpenAppAuthService,
-    AuthMethodsService,
     SessionExchangeService,
+    AuthSessionService,
+    AuthSigningKeyRing,
     AuthWebsocketOptionsProvider,
   ],
   controllers: [AuthController],
 })
 export class AuthModule {}
 
-export { AuthChallengeStore } from './challenge-store';
+@Module({
+  imports: [BackendRuntimeModule],
+  providers: [AuthCronJob],
+})
+export class AuthWorkerModule {}
+
 export * from './guard';
-export * from './identity';
 export * from './input';
 export { MagicLinkAuthService } from './magic-link';
-export * from './methods';
 export { SessionExchangeService };
+export * from './access-token';
+export { AuthSessionService } from './auth-session';
 export { OpenAppAuthService } from './open-app';
 export { ClientTokenType } from './resolver';
-export { AuthService, JwtSessionService, SessionIssuer };
+export { AuthService, SessionIssuer };
 export * from './session';
+export { AuthSigningKeyRing } from './signing-key';

@@ -1,0 +1,199 @@
+use serde::Deserialize;
+
+use super::{
+  PaymentProviderError, RuntimeError, RuntimeResult, StripeClient,
+  stripe_client::{StripeCheckoutSession, StripeExpandedId, StripeList, StripePrice, encode_segment},
+};
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeInvoice {
+  pub id: String,
+  pub customer: StripeExpandedId,
+  pub status: Option<String>,
+  pub currency: String,
+  pub total: i64,
+  #[serde(default)]
+  pub total_discount_amounts: Vec<StripeInvoiceDiscount>,
+  pub billing_reason: Option<String>,
+  pub hosted_invoice_url: Option<String>,
+  pub created: i64,
+  pub lines: StripeList<StripeInvoiceLine>,
+  pub parent: Option<StripeInvoiceParent>,
+  pub subscription: Option<StripeExpandedId>,
+  pub charge: Option<StripeExpandedId>,
+  pub payment_intent: Option<StripeExpandedId>,
+  pub last_finalization_error: Option<StripeErrorDetail>,
+  #[serde(default)]
+  pub status_transitions: StripeInvoiceStatusTransitions,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeInvoiceDiscount {
+  pub amount: i64,
+  pub discount: serde_json::Value,
+}
+
+impl StripeInvoice {
+  pub(super) fn subscription_id(&self) -> Option<&str> {
+    self
+      .parent
+      .as_ref()
+      .and_then(|parent| parent.subscription_details.as_ref())
+      .and_then(|details| details.subscription.as_ref())
+      .or(self.subscription.as_ref())
+      .map(StripeExpandedId::id)
+  }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeInvoiceLine {
+  pub price: Option<StripePrice>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeInvoiceParent {
+  pub subscription_details: Option<StripeSubscriptionDetails>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeSubscriptionDetails {
+  pub subscription: Option<StripeExpandedId>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeErrorDetail {
+  pub message: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(super) struct StripeInvoiceStatusTransitions {
+  pub finalized_at: Option<i64>,
+  pub paid_at: Option<i64>,
+  pub voided_at: Option<i64>,
+  pub marked_uncollectible_at: Option<i64>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeCharge {
+  pub invoice: Option<StripeExpandedId>,
+  pub refunds: Option<StripeList<StripeRefund>>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeRefund {
+  pub id: String,
+  pub charge: Option<StripeExpandedId>,
+  pub payment_intent: Option<StripeExpandedId>,
+  pub amount: i64,
+  pub currency: String,
+  pub status: Option<String>,
+  pub created: i64,
+  #[serde(default)]
+  pub metadata: serde_json::Map<String, serde_json::Value>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(super) struct StripeDispute {
+  pub id: String,
+  pub charge: StripeExpandedId,
+  pub payment_intent: Option<StripeExpandedId>,
+  pub amount: i64,
+  pub currency: String,
+  pub status: String,
+  pub created: i64,
+  #[serde(default)]
+  pub payment_method_details: serde_json::Value,
+  #[serde(default)]
+  pub metadata: serde_json::Map<String, serde_json::Value>,
+}
+
+impl StripeClient {
+  pub(super) async fn invoice(&self, id: &str) -> Result<StripeInvoice, PaymentProviderError> {
+    self
+      .get(
+        &format!("v1/invoices/{}", encode_segment(id)),
+        &[
+          ("expand[]", "lines.data.price"),
+          ("expand[]", "subscription"),
+          ("expand[]", "total_discount_amounts.discount"),
+        ],
+      )
+      .await
+  }
+
+  pub(super) async fn charge(&self, id: &str) -> Result<StripeCharge, PaymentProviderError> {
+    self
+      .get(
+        &format!("v1/charges/{}", encode_segment(id)),
+        &[("expand[]", "invoice"), ("expand[]", "refunds")],
+      )
+      .await
+  }
+
+  pub(super) async fn refund(&self, id: &str) -> Result<StripeRefund, PaymentProviderError> {
+    self.get(&format!("v1/refunds/{}", encode_segment(id)), &[]).await
+  }
+
+  pub(super) async fn dispute(&self, id: &str) -> Result<StripeDispute, PaymentProviderError> {
+    self.get(&format!("v1/disputes/{}", encode_segment(id)), &[]).await
+  }
+}
+
+pub(super) async fn stripe_checkout_termination(
+  connection: &mut sqlx::PgConnection,
+  client: &StripeClient,
+  namespace: &str,
+  session: &StripeCheckoutSession,
+  invoice_observation: Option<&StripeInvoice>,
+) -> RuntimeResult<Option<(&'static str, String)>> {
+  match (session.status.as_deref(), session.payment_status.as_deref()) {
+    (Some("expired"), _) => return Ok(Some(("expired", session.id.clone()))),
+    (Some("complete"), Some("unpaid")) => {}
+    _ => return Ok(None),
+  }
+  let receipt: Option<String> = sqlx::query_scalar(
+    "SELECT external_event_id FROM payment_events WHERE provider_namespace=$1
+     AND event_type='checkout.session.async_payment_failed' AND metadata #>> '{data,object,id}'=$2
+     ORDER BY external_event_id LIMIT 1",
+  )
+  .bind(namespace)
+  .bind(&session.id)
+  .fetch_optional(connection)
+  .await
+  .map_err(|error| RuntimeError::database("verify asynchronous checkout failure", error))?;
+  if let Some(receipt) = receipt {
+    return Ok(Some(("async_payment_failed", receipt)));
+  }
+  if let Some(invoice) = session.invoice.as_ref() {
+    let fetched;
+    let observation = if let Some(observed) = invoice_observation {
+      observed
+    } else {
+      fetched = client
+        .invoice(invoice.id())
+        .await
+        .map_err(|error| RuntimeError::invalid_state(error.code))?;
+      &fetched
+    };
+    if observation.status.as_deref() == Some("void") {
+      return Ok(Some(("async_payment_failed", observation.id.clone())));
+    }
+  } else if let Some(intent) = session
+    .payment_intent
+    .as_ref()
+    .filter(|_| session.subscription.is_none())
+  {
+    #[derive(Deserialize)]
+    struct PaymentIntentStatus {
+      status: String,
+    }
+    let payment = client
+      .get::<PaymentIntentStatus>(&format!("v1/payment_intents/{}", encode_segment(intent.id())), &[])
+      .await
+      .map_err(|error| RuntimeError::invalid_state(error.code))?;
+    if payment.status == "canceled" {
+      return Ok(Some(("async_payment_failed", intent.id().to_string())));
+    }
+  }
+  Ok(None)
+}

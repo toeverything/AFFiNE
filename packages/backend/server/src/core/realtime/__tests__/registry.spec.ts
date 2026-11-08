@@ -1,16 +1,15 @@
-import {
-  getRealtimeInputKey,
-  type WorkspaceQuotaStateSnapshot,
-} from '@affine/realtime';
+import { getRealtimeInputKey } from '@affine/realtime';
 import test from 'ava';
 import { z } from 'zod';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
 import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
-import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/context';
-import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript';
-import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript';
+import type { CopilotAccessService } from '../../../plugins/copilot/access';
+import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/embedding/realtime';
+import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript/reader';
+import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript/realtime';
+import type { CopilotTranscriptionRetryService } from '../../../plugins/copilot/transcript/retry';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
@@ -40,7 +39,6 @@ import {
   realtimeDocShareStateRoom,
   realtimeNotificationRoom,
   realtimeTranscriptTaskRoom,
-  realtimeUserAccessTokensRoom,
   realtimeUserProfileRoom,
   realtimeUserSettingsRoom,
   realtimeWorkspaceAccessRoom,
@@ -298,7 +296,6 @@ test('room helpers produce stable realtime room names', t => {
   t.is(realtimeDocGrantsRoom('space', 'doc'), 'workspace:space:doc:doc:grants');
   t.is(realtimeUserProfileRoom('u1'), 'user:u1:profile');
   t.is(realtimeUserSettingsRoom('u1'), 'user:u1:settings');
-  t.is(realtimeUserAccessTokensRoom('u1'), 'user:u1:access-tokens');
   t.is(
     realtimeTranscriptTaskRoom('space', 'task'),
     'copilot:transcript:space:task'
@@ -447,13 +444,11 @@ test('front and sync realtime gateway required handlers are registered by lightw
   new CopilotTranscriptRealtimeProvider(
     {} as never,
     {} as never,
-    registry
-  ).onModuleInit();
-  new QuotaStateRealtimeProvider(
     {} as never,
-    {} as never,
-    registry
+    registry,
+    {} as never
   ).onModuleInit();
+  new QuotaStateRealtimeProvider({} as never, registry).onModuleInit();
 
   t.deepEqual(
     REALTIME_GATEWAY_REQUIRED_REQUESTS.filter(
@@ -520,7 +515,7 @@ test('workspace realtime providers register access, config, members and invite l
     },
   };
   const quotaState = {
-    getWorkspaceQuotaState: async () => ({ known: true, plan: 'team' }),
+    getWorkspaceQuotaStateV1: async () => ({ known: true, plan: 'team' }),
     reconcileWorkspaceQuotaState: async () => {
       throw new Error('workspace.access.get should not reconcile quota state');
     },
@@ -656,7 +651,7 @@ test('doc realtime providers register share state and grants handlers', async t 
   } as unknown as PermissionAccess;
   const models = {
     doc: {
-      getDocInfo: async () => ({
+      getMeta: async () => ({
         public: true,
         mode: PublicDocMode.Page,
         defaultRole: DocRole.Reader,
@@ -775,16 +770,6 @@ test('user realtime provider snapshots private profile settings and access token
     userFeature: {
       list: async () => ['administrator'],
     },
-    accessToken: {
-      list: async () => [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: new Date('2026-01-01T00:00:00.000Z'),
-          expiresAt: null,
-        },
-      ],
-    },
   };
 
   new UserRealtimeProvider(models as never, registry).onModuleInit();
@@ -814,10 +799,6 @@ test('user realtime provider snapshots private profile settings and access token
     registry.getTopic('user.settings.changed').room(user, {}),
     realtimeUserSettingsRoom('u1')
   );
-  t.is(
-    registry.getTopic('user.access-tokens.changed').room(user, {}),
-    realtimeUserAccessTokensRoom('u1')
-  );
   t.deepEqual(await registry.getRequest('user.settings.get').handle(user, {}), {
     settings: {
       receiveInvitationEmail: true,
@@ -825,19 +806,6 @@ test('user realtime provider snapshots private profile settings and access token
       receiveCommentEmail: true,
     },
   });
-  t.deepEqual(
-    await registry.getRequest('user.access-tokens.get').handle(user, {}),
-    {
-      tokens: [
-        {
-          id: 'token',
-          name: 'Token',
-          createdAt: '2026-01-01T00:00:00.000Z',
-          expiresAt: null,
-        },
-      ],
-    }
-  );
 });
 
 test('new realtime providers publish changed events from domain events', t => {
@@ -854,6 +822,18 @@ test('new realtime providers publish changed events from domain events', t => {
     publisher
   );
   workspaceAccess.onMembersUpdated({ workspaceId: 'space' });
+  const quota = new QuotaStateRealtimeProvider(
+    {} as never,
+    undefined,
+    publisher
+  );
+  for (const invalidation of [
+    { version: 1, kind: 'quotaEntitlement', subject: 'workspace:space' },
+    { version: 1, kind: 'quotaSeatUsage', workspaceId: 'space' },
+  ] as const) {
+    workspaceAccess.onRuntimeInvalidation(invalidation);
+    quota.onRuntimeInvalidation(invalidation);
+  }
 
   const workspaceConfig = new WorkspaceConfigRealtimeProvider(
     {} as never,
@@ -894,74 +874,58 @@ test('new realtime providers publish changed events from domain events', t => {
     userId: 'u2',
   });
 
-  const userProvider = new UserRealtimeProvider(
-    {} as never,
-    undefined,
-    publisher
-  );
-  userProvider.onUserAccessTokenCreated({ userId: 'u1' });
-
   t.deepEqual(
     published.map(args => args[0]),
     [
       'workspace.access.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
       'workspace.config.changed',
       'workspace.invite-link.changed',
       'doc.share-state.changed',
       'doc.grants.changed',
-      'user.access-tokens.changed',
     ]
   );
 });
 
-test('quota realtime provider exposes effective quota state snapshots', async t => {
+test('quota realtime provider exposes canonical quota state snapshots', async t => {
   const registry = new RealtimeRegistry();
+  const authorizations: unknown[] = [];
   const provider = new QuotaStateRealtimeProvider(
     {
-      workspaceUser: {
-        getActive: async () => ({ role: 'admin' }),
+      authorizePermissionV1: async (input: unknown) => {
+        authorizations.push(input);
+        return {
+          workspace: {
+            decisions: [{ action: 'Workspace.Read', allowed: true }],
+          },
+        };
       },
-    } as never,
-    {
-      reconcileUserQuotaState: async () => ({
-        userId: 'u1',
+      getUserQuotaStateV1: async () => ({
         plan: 'pro',
-        sourceEntitlementId: null,
-        blobLimit: 1n,
-        storageQuota: 2n,
-        usedStorageQuota: 3n,
+        blobLimit: 1,
+        storageQuota: 2,
+        usedStorageQuota: 3,
         historyPeriodSeconds: 4,
-        copilotActionLimit: null,
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
+        copilotActionLimit: undefined,
+        unlimitedCopilot: false,
       }),
-      reconcileWorkspaceQuotaState: async () => ({
-        workspaceId: 'space',
+      getWorkspaceQuotaStateV1: async () => ({
         plan: 'team',
-        sourceEntitlementId: null,
         ownerUserId: 'u1',
         usesOwnerQuota: false,
         seatLimit: 5,
         memberCount: 4,
         overcapacityMemberCount: 0,
-        blobLimit: 6n,
-        storageQuota: 7n,
-        usedStorageQuota: 8n,
+        blobLimit: 6,
+        storageQuota: 7,
+        usedStorageQuota: 8,
         historyPeriodSeconds: 9,
         readonly: false,
         readonlyReasons: [],
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
+        unlimitedCopilot: false,
       }),
     } as never,
     registry
@@ -969,34 +933,23 @@ test('quota realtime provider exposes effective quota state snapshots', async t 
 
   provider.onModuleInit();
 
-  t.deepEqual(
-    await registry.getRequest('user.quota-state.get').handle(user, {}),
-    {
-      state: {
-        userId: 'u1',
-        plan: 'pro',
-        sourceEntitlementId: null,
-        blobLimit: 1,
-        storageQuota: 2,
-        usedStorageQuota: 3,
-        historyPeriodSeconds: 4,
-        copilotActionLimit: null,
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
-      },
-    }
-  );
-  const workspaceQuotaState = (await registry
+  const userQuotaState = await registry
+    .getRequest('user.quota-state.get')
+    .handle(user, {});
+  const workspaceQuotaState = await registry
     .getRequest('workspace.quota-state.get')
-    .handle(user, { workspaceId: 'space' })) as {
-    state: WorkspaceQuotaStateSnapshot;
-  };
-  t.is(workspaceQuotaState.state.memberCount, 4);
+    .handle(user, { workspaceId: 'space' });
+
+  t.snapshot({ userQuotaState, workspaceQuotaState });
+  t.deepEqual(authorizations, [
+    {
+      version: 1,
+      workspaceId: 'space',
+      actorUserId: user.id,
+      workspaceActions: ['Workspace.Read'],
+      docs: [],
+    },
+  ]);
   t.is(
     registry
       .getTopic('workspace.quota-state.changed')
@@ -1005,18 +958,14 @@ test('quota realtime provider exposes effective quota state snapshots', async t 
   );
 });
 
-test('copilot embedding realtime provider uses lightweight model reads', async t => {
+test('copilot embedding realtime provider uses native health and progress', async t => {
   const registry = new RealtimeRegistry();
-  const published: unknown[][] = [];
   const assertions: unknown[] = [];
   const ac = {
     user(userId: string) {
       return {
         workspace(workspaceId: string) {
           return {
-            allowLocal() {
-              return this;
-            },
             async assert(action: string) {
               assertions.push({ userId, workspaceId, action });
             },
@@ -1025,24 +974,18 @@ test('copilot embedding realtime provider uses lightweight model reads', async t
       };
     },
   } as unknown as PermissionAccess;
-  const models = {
-    copilotWorkspace: {
-      checkEmbeddingAvailable: async () => true,
-      getEmbeddingStatus: async () => ({ total: 5, embedded: 3 }),
-    },
-    copilotContext: {
-      getConfig: async () => ({ workspaceId: 'space' }),
-    },
+  const embedding = {
+    health: async () => ({ enabled: true }),
+    progress: async () => ({ total: 5, embedded: 3 }),
   };
-  const publisher = {
-    publish: (...args: unknown[]) => published.push(args),
-  } as unknown as RealtimePublisher;
+  let enabled = true;
+  const runtime = { copilotEnabled: () => enabled };
 
   const provider = new CopilotEmbeddingRealtimeProvider(
     ac,
-    models as never,
+    embedding as never,
     registry,
-    publisher
+    runtime as never
   );
   provider.onModuleInit();
 
@@ -1055,61 +998,75 @@ test('copilot embedding realtime provider uses lightweight model reads', async t
       embedded: 3,
     }
   );
+  enabled = false;
+  await t.throwsAsync(
+    registry
+      .getRequest('workspace.embedding.progress.get')
+      .handle(user, { workspaceId: 'space' }),
+    { message: 'Copilot is disabled.' }
+  );
   t.is(
     registry
       .getTopic('workspace.embedding.progress.changed')
       .room(user, { workspaceId: 'space' }),
     realtimeWorkspaceEmbeddingProgressRoom('space')
   );
-
-  await provider.onDocEmbedFinished({ contextId: 'context', docId: 'doc' });
-
   t.deepEqual(assertions, [
     { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
-  ]);
-  t.deepEqual(published[0], [
-    'workspace.embedding.progress.changed',
-    { workspaceId: 'space' },
-    { reason: 'finished' },
-    { room: realtimeWorkspaceEmbeddingProgressRoom('space') },
   ]);
 });
 
 test('copilot transcript realtime provider registers task live query handlers', async t => {
   const registry = new RealtimeRegistry();
   const assertions: unknown[] = [];
-  const ac = {
-    user(userId: string) {
+  const access = {
+    async transcriptResource(
+      userId: string,
+      workspaceId: string,
+      resource: { taskId?: string; blobId?: string }
+    ) {
+      assertions.push({
+        userId,
+        workspaceId,
+        action: 'Workspace.Copilot',
+        ...resource,
+      });
+      return 'canonical' as const;
+    },
+  } as unknown as CopilotAccessService;
+  const transcript = {
+    async queryTaskInScope(input: {
+      userId: string;
+      workspaceId: string;
+      taskId?: string;
+      blobId?: string;
+    }) {
+      if (input.userId !== 'u1') return null;
       return {
-        workspace(workspaceId: string) {
-          return {
-            allowLocal() {
-              return this;
-            },
-            async assert(action: string) {
-              assertions.push({ userId, workspaceId, action });
-            },
-          };
-        },
+        id: input.taskId ?? input.blobId,
+        status: 'finished',
+        userId: input.userId,
+        workspaceId: input.workspaceId,
       };
     },
-  } as unknown as PermissionAccess;
-  const transcript = {
     async queryTask(
       userId: string,
       workspaceId: string,
       taskId?: string,
       blobId?: string
     ) {
+      if (userId !== 'u1') return null;
       return { id: taskId ?? blobId, status: 'finished', userId, workspaceId };
     },
   } as unknown as CopilotTranscriptionReader;
-
-  new CopilotTranscriptRealtimeProvider(
-    ac,
-    transcript,
-    registry
-  ).onModuleInit();
+  const retry = {
+    async retryTask(userId: string, workspaceId: string, taskId: string) {
+      return { id: taskId, status: 'running', userId, workspaceId };
+    },
+  } as unknown as CopilotTranscriptionRetryService;
+  new CopilotTranscriptRealtimeProvider(access, transcript, retry, registry, {
+    copilotEnabled: () => true,
+  } as never).onModuleInit();
 
   t.deepEqual(
     await registry.getRequest('copilot.transcript.task.get').handle(user, {
@@ -1125,8 +1082,59 @@ test('copilot transcript realtime provider registers task live query handlers', 
       },
     }
   );
+  t.deepEqual(
+    await registry.getRequest('copilot.transcript.task.retry').handle(user, {
+      workspaceId: 'space',
+      taskId: 'task',
+    }),
+    {
+      task: {
+        id: 'task',
+        status: 'running',
+        userId: 'u1',
+        workspaceId: 'space',
+      },
+    }
+  );
+  await registry
+    .getTopic('copilot.transcript.task.changed')
+    .authorize(user, { workspaceId: 'space', taskId: 'task' });
+  await t.throwsAsync(
+    registry.getTopic('copilot.transcript.task.changed').authorize(
+      { ...user, id: 'u2' },
+      {
+        workspaceId: 'space',
+        taskId: 'task',
+      }
+    ),
+    { message: /not found/i }
+  );
   t.deepEqual(assertions, [
-    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+      blobId: undefined,
+    },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
+    {
+      userId: 'u2',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
   ]);
 });
 

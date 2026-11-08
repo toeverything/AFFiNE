@@ -5,11 +5,4 @@ import ApolloAPI
 
 public enum FeatureType: String, EnumType {
   case admin = "Admin"
-  case freePlan = "FreePlan"
-  case lifetimeProPlan = "LifetimeProPlan"
-  case proPlan = "ProPlan"
-  case quotaExceededReadonlyWorkspace = "QuotaExceededReadonlyWorkspace"
-  case teamPlan = "TeamPlan"
-  case unlimitedCopilot = "UnlimitedCopilot"
-  case unlimitedWorkspace = "UnlimitedWorkspace"
 }

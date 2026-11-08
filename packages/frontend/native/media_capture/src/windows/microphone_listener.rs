@@ -238,8 +238,8 @@ impl SessionNotifier {
     if unsafe { ctrl.GetState()? } == AudioSessionStateActive {
       let mut should_notify = false;
       if let Ok(mut optional_ctrl) = self.ctrl.lock() {
-        // Increment the active session counter. If this was the first, flip is_running
-        // to true.
+        // Increment the active session counter. If this was the first, flip
+        // is_running to true.
         let prev = self.active_sessions.fetch_add(1, Ordering::SeqCst);
         if prev == 0 {
           self.is_running.store(true, Ordering::Relaxed);

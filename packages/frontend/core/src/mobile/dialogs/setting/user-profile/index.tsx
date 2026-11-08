@@ -9,6 +9,7 @@ import { type ReactNode } from 'react';
 
 import { UserPlanTag } from '../../../components';
 import { SettingGroup } from '../group';
+import { RowLayout } from '../row.layout';
 import * as styles from './style.css';
 
 export const UserProfile = () => {
@@ -26,15 +27,17 @@ const BaseLayout = ({
   avatar,
   title,
   caption,
+  sectionTitle,
   onClick,
 }: {
   avatar: ReactNode;
   title: ReactNode;
   caption: ReactNode;
+  sectionTitle: string;
   onClick?: () => void;
 }) => {
   return (
-    <SettingGroup contentStyle={{ padding: '10px 8px 10px 10px' }}>
+    <SettingGroup title={sectionTitle} contentStyle={{ padding: '12px 14px' }}>
       <div className={styles.profile} onClick={onClick}>
         <div className={styles.avatarWrapper}>{avatar}</div>
         <div className={styles.content}>
@@ -51,9 +54,11 @@ const AuthorizedUserProfile = () => {
   const session = useService(AuthService).session;
   const account = useLiveData(session.account$);
   const confirmSignOut = useSignOut();
+  const t = useI18n();
 
   return (
     <BaseLayout
+      sectionTitle={t['com.affine.mobile.setting.account.title']()}
       avatar={
         <Avatar
           size={48}
@@ -75,15 +80,15 @@ const AuthorizedUserProfile = () => {
 };
 
 const UnauthorizedUserProfile = () => {
-  const { t } = useI18n();
+  const t = useI18n();
   const globalDialogService = useService(GlobalDialogService);
 
   return (
-    <BaseLayout
-      onClick={() => globalDialogService.open('sign-in', {})}
-      avatar={<Avatar size={48} rounded={4} />}
-      title={t(`com.affine.settings.sign`)}
-      caption={t(`com.affine.setting.sign.message`)}
-    />
+    <SettingGroup title={t['com.affine.mobile.setting.account.title']()}>
+      <RowLayout
+        label={t['com.affine.mobile.setting.account.sign-in']()}
+        onClick={() => globalDialogService.open('sign-in', {})}
+      />
+    </SettingGroup>
   );
 };

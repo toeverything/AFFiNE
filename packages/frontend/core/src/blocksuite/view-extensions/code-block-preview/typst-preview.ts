@@ -194,8 +194,7 @@ export class TypstPreview extends SignalWatcher(
             tabindex="0"
             aria-label="Typst error message"
           >
-${this.errorMessage}</pre
-          >
+${this.errorMessage}</pre>
           <div class="typst-copy-row">
             <button class="typst-copy-button" @click=${this._copyError}>
               ${this._copyButtonLabel}
@@ -257,9 +256,11 @@ ${this.errorMessage}</pre
               transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
             })}
           >
-            ${this.svgContent
-              ? html`<div .innerHTML=${this.svgContent}></div>`
-              : nothing}
+            ${
+              this.svgContent
+                ? html`<div .innerHTML=${this.svgContent}></div>`
+                : nothing
+            }
           </div>
         `
       : nothing;

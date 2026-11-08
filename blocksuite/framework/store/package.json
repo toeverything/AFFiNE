@@ -3,7 +3,7 @@
   "description": "BlockSuite data store built for general purpose state management.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -17,7 +17,7 @@
     "file-type": "^21.0.0",
     "lib0": "^0.2.114",
     "lodash.ismatch": "^4.4.0",
-    "minimatch": "^10.2.5",
+    "minimatch": "^11.0.4",
     "nanoid": "^5.1.6",
     "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6",
@@ -25,7 +25,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -38,5 +38,5 @@
     "!dist/__tests__",
     "shim.d.ts"
   ],
-  "version": "0.27.0"
+  "version": "0.27.5"
 }

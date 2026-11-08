@@ -226,15 +226,20 @@ test(scoped`basic paired undo/redo`, async ({ page }) => {
 });
 
 test(scoped`undo/redo with keyboard`, async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'platform', {
+      get: () => 'Linux x86_64',
+    });
+  });
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
   await type(page, 'hello');
 
   await assertText(page, 'hello');
-  await undoByKeyboard(page);
+  await page.keyboard.press('Control+z');
   await assertEmpty(page);
-  await redoByClick(page);
+  await page.keyboard.press('Control+y');
   await assertText(page, 'hello');
 });
 

@@ -1,8 +1,8 @@
 import type {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import type { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import type {
   ServerService,
   SubscriptionService,
@@ -433,29 +433,33 @@ export class AIChatBlockPeekView extends LitElement {
             .textRendererOptions=${this._textRendererOptions}
           ></ai-chat-block-message>
           ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
-          ${shouldRenderCopyMore
-            ? html` <chat-copy-more
-                .host=${host}
-                .session=${this.forkSession}
-                .actions=${actions}
-                .content=${markdown}
-                .isLast=${isLastReply}
-                .messageId=${message.id ?? undefined}
-                .retry=${() => this.retry()}
-                .notificationService=${notificationService}
-              ></chat-copy-more>`
-            : nothing}
-          ${shouldRenderActions
-            ? html`<chat-action-list
-                .host=${host}
-                .session=${this.forkSession}
-                .actions=${actions}
-                .content=${markdown}
-                .messageId=${message.id ?? undefined}
-                .layoutDirection=${'horizontal'}
-                .notificationService=${notificationService}
-              ></chat-action-list>`
-            : nothing}
+          ${
+            shouldRenderCopyMore
+              ? html` <chat-copy-more
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .isLast=${isLastReply}
+                  .messageId=${message.id ?? undefined}
+                  .retry=${() => this.retry()}
+                  .notificationService=${notificationService}
+                ></chat-copy-more>`
+              : nothing
+          }
+          ${
+            shouldRenderActions
+              ? html`<chat-action-list
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .messageId=${message.id ?? undefined}
+                  .layoutDirection=${'horizontal'}
+                  .notificationService=${notificationService}
+                ></chat-action-list>`
+              : nothing
+          }
         </div>`;
       }
     )}`;
@@ -584,6 +588,7 @@ export class AIChatBlockPeekView extends LitElement {
         .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .notificationService=${notificationService}
         .aiToolsConfigService=${this.aiToolsConfigService}
+        .aiModelService=${this.aiModelService}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
@@ -594,7 +599,6 @@ export class AIChatBlockPeekView extends LitElement {
         .reasoningConfig=${this.reasoningConfig}
         .serverService=${this.serverService}
         .subscriptionService=${this.subscriptionService}
-        .aiModelService=${this.aiModelService}
         .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div> `;
@@ -681,8 +685,8 @@ export const AIChatBlockPeekViewTemplate = (
   affineWorkspaceDialogService: WorkspaceDialogService,
   aiDraftService: AIDraftService,
   aiToolsConfigService: AIToolsConfigService,
-  subscriptionService: SubscriptionService,
   aiModelService: AIModelService,
+  subscriptionService: SubscriptionService,
   onAISubscribe: (() => Promise<void>) | undefined
 ) => {
   return html`<ai-chat-block-peek-view
@@ -696,8 +700,8 @@ export const AIChatBlockPeekViewTemplate = (
     .affineWorkspaceDialogService=${affineWorkspaceDialogService}
     .aiDraftService=${aiDraftService}
     .aiToolsConfigService=${aiToolsConfigService}
-    .subscriptionService=${subscriptionService}
     .aiModelService=${aiModelService}
+    .subscriptionService=${subscriptionService}
     .onAISubscribe=${onAISubscribe}
   ></ai-chat-block-peek-view>`;
 };

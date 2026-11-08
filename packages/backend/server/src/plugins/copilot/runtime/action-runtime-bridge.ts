@@ -1,15 +1,10 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { Models } from '../../../models';
 import type { AiActionRunStatus } from '../../../models/copilot-action-run';
-import {
-  type NativeActionEvent,
-  type NativeActionRuntimeInput,
-  runNativeActionRecipePreparedStream,
-} from '../../../native';
+import { type NativeActionEvent } from '../../../native';
 import type {
   CopilotImageOptions,
-  CopilotProviderType,
   CopilotStructuredOptions,
   PromptMessage,
 } from '../providers/types';
@@ -18,17 +13,9 @@ import {
   projectActionResultToAssistantTurn,
   summarizeActionResult,
 } from './action-output-projector';
-import {
-  buildStructuredResponseFromSchemaJson,
-  type RequiredStructuredOutputContract,
-} from './contracts';
-import { ExecutionPlanBuilder } from './execution-plan';
+import { CapabilityRuntime } from './capability-runtime';
+import { type RequiredStructuredOutputContract } from './contracts';
 import { TurnPersistence } from './hosts/turn-persistence';
-
-type ActionRuntimeBridgeNativeInput = Omit<
-  NativeActionRuntimeInput,
-  'recipeId' | 'recipeVersion'
->;
 
 export type ActionRuntimeBridgeInput = {
   userId: string;
@@ -42,25 +29,17 @@ export type ActionRuntimeBridgeInput = {
   attempt?: number;
   retryOf?: string | null;
   inputSnapshot?: unknown;
-  nativeInput?: ActionRuntimeBridgeNativeInput;
   onRunCreated?: (
     context: ActionRuntimeBridgeRunContext
   ) => Promise<void> | void;
-  prepareStructuredRoutes?: {
-    stepId?: string;
+  step: {
+    slot: string;
+    builtInRouteId: string;
+    profileId?: string;
     modelId?: string;
     messages: PromptMessage[];
-    options?: CopilotStructuredOptions;
-    prefer?: CopilotProviderType;
-    responseSchemaJson?: Record<string, unknown>;
+    options?: CopilotStructuredOptions | CopilotImageOptions;
     responseContract?: RequiredStructuredOutputContract;
-  };
-  prepareImageRoutes?: {
-    stepId?: string;
-    modelId?: string;
-    messages: PromptMessage[];
-    options?: CopilotImageOptions;
-    prefer?: CopilotProviderType;
   };
   persistAttachment?: (attachment: unknown) => Promise<unknown> | unknown;
   signal?: AbortSignal;
@@ -69,6 +48,15 @@ export type ActionRuntimeBridgeInput = {
 export type ActionRuntimeBridgeEvent = NativeActionEvent & {
   runId: string;
 };
+
+export type ActionRuntimeBridgeOutput = {
+  result: unknown;
+  attachments?: unknown[];
+};
+
+export type ActionRuntimeBridgeExecutor = (
+  input: ActionRuntimeBridgeInput
+) => Promise<ActionRuntimeBridgeOutput>;
 
 export type ActionRuntimeBridgeRunContext = {
   runId: string;
@@ -107,94 +95,41 @@ export class ActionRuntimeBridge {
   constructor(
     private readonly models: Models,
     private readonly turnPersistence: TurnPersistence,
-    @Optional() private readonly plans?: ExecutionPlanBuilder
+    private readonly runtime: CapabilityRuntime
   ) {}
 
-  protected runNativeStream(
-    input: NativeActionRuntimeInput,
-    signal?: AbortSignal
-  ) {
-    return runNativeActionRecipePreparedStream(input, signal);
-  }
-
-  private async prepareNativeInput(
-    input: ActionRuntimeBridgeInput
-  ): Promise<ActionRuntimeBridgeNativeInput & { input: unknown }> {
-    const nativeInput = {
-      ...input.nativeInput,
-      input: input.nativeInput?.input ?? {},
-    };
-    const structured = input.prepareStructuredRoutes;
-    const image = input.prepareImageRoutes;
-    if (!structured && !image) {
-      return nativeInput;
-    }
-    if (!this.plans) {
-      throw new Error('Action route preparation is not available');
-    }
-    const state =
-      nativeInput.input && typeof nativeInput.input === 'object'
-        ? { ...(nativeInput.input as Record<string, unknown>) }
-        : {};
-
-    if (structured) {
-      const responseContract =
-        structured.responseContract ??
-        (buildStructuredResponseFromSchemaJson(
-          structured.responseSchemaJson ?? { type: 'object' }
-        ) as RequiredStructuredOutputContract);
-      const plan = await this.plans.buildStructuredPlan(
-        { modelId: structured.modelId },
-        structured.messages,
-        structured.options,
-        structured.prefer ? { prefer: structured.prefer } : undefined,
-        responseContract
+  private async execute(input: ActionRuntimeBridgeInput) {
+    const step = input.step;
+    if (step.responseContract) {
+      const output = await this.runtime.generateStructuredValue(
+        { profileId: step.profileId, modelId: step.modelId },
+        step.messages,
+        {
+          ...(step.options as CopilotStructuredOptions | undefined),
+          builtInRouteId: step.builtInRouteId,
+        },
+        step.responseContract,
+        undefined,
+        step.slot
       );
-      const preparedRoutes = plan.nativeDispatch?.structured?.routes;
-      if (!preparedRoutes?.length) {
-        throw new Error('No native structured provider route prepared');
-      }
-
-      const existingPreparedRoutes =
-        state.preparedRoutes &&
-        typeof state.preparedRoutes === 'object' &&
-        !Array.isArray(state.preparedRoutes)
-          ? (state.preparedRoutes as Record<string, unknown>)
-          : {};
-      state.preparedRoutes = {
-        ...existingPreparedRoutes,
-        [structured.stepId ?? 'generate']: preparedRoutes,
-      };
+      return { result: output.value, attachments: [] };
     }
-
-    if (image) {
-      const plan = await this.plans.buildImagePlan(
-        { modelId: image.modelId },
-        image.messages,
-        image.options,
-        image.prefer ? { prefer: image.prefer } : undefined
-      );
-      const preparedRoutes = plan.nativeDispatch?.image?.routes;
-      if (!preparedRoutes?.length) {
-        throw new Error('No native image provider route prepared');
-      }
-
-      const existingPreparedRoutes =
-        state.preparedRoutes &&
-        typeof state.preparedRoutes === 'object' &&
-        !Array.isArray(state.preparedRoutes)
-          ? (state.preparedRoutes as Record<string, unknown>)
-          : {};
-      state.preparedRoutes = {
-        ...existingPreparedRoutes,
-        [image.stepId ?? 'generate-image']: preparedRoutes,
-      };
+    const images = [];
+    for await (const image of this.runtime.streamImageArtifacts(
+      { profileId: step.profileId, modelId: step.modelId },
+      step.messages,
+      {
+        ...(step.options as CopilotImageOptions | undefined),
+        builtInRouteId: step.builtInRouteId,
+      },
+      undefined,
+      step.slot
+    )) {
+      images.push(image);
     }
-
-    return {
-      ...nativeInput,
-      input: state,
-    };
+    const result = images[0];
+    if (!result) throw new Error('Action image generation produced no image');
+    return { result, attachments: [result] };
   }
 
   private async projectAssistantResult(
@@ -247,7 +182,8 @@ export class ActionRuntimeBridge {
   }
 
   async *runStream(
-    input: ActionRuntimeBridgeInput
+    input: ActionRuntimeBridgeInput,
+    executor?: ActionRuntimeBridgeExecutor
   ): AsyncIterableIterator<ActionRuntimeBridgeEvent> {
     const attempt = await this.resolveAttempt(input);
     const run = await this.models.copilotActionRun.create({
@@ -273,28 +209,38 @@ export class ActionRuntimeBridge {
     let finalEvent: NativeActionEvent | undefined;
     const attachments: unknown[] = [];
     try {
-      const nativeInput = await this.prepareNativeInput({
-        ...inputWithBillingUnit,
-      });
-      for await (const event of this.runNativeStream(
-        {
-          ...nativeInput,
-          recipeId: inputWithBillingUnit.actionId,
-          recipeVersion: inputWithBillingUnit.actionVersion,
-        },
-        inputWithBillingUnit.signal
-      )) {
-        finalEvent = event;
-        let projectedEvent = event;
-        if (event.type === 'attachment') {
-          const attachment = input.persistAttachment
-            ? await input.persistAttachment(event.attachment)
-            : event.attachment;
-          attachments.push(attachment);
-          projectedEvent = { ...event, attachment };
-        }
-        yield { ...projectedEvent, runId: run.id };
+      const actionStart: NativeActionEvent = {
+        type: 'action_start',
+        actionId: input.actionId,
+        actionVersion: input.actionVersion,
+        status: 'running',
+      };
+      yield { ...actionStart, runId: run.id };
+      const output = executor
+        ? await executor(inputWithBillingUnit)
+        : await this.execute(inputWithBillingUnit);
+      for (const artifact of output.attachments ?? []) {
+        const attachment = input.persistAttachment
+          ? await input.persistAttachment(artifact)
+          : artifact;
+        attachments.push(attachment);
+        yield {
+          type: 'attachment',
+          actionId: input.actionId,
+          actionVersion: input.actionVersion,
+          status: 'running',
+          attachment,
+          runId: run.id,
+        };
       }
+      finalEvent = {
+        type: 'action_done',
+        actionId: input.actionId,
+        actionVersion: input.actionVersion,
+        status: 'succeeded',
+        result: output.result,
+      };
+      yield { ...finalEvent, runId: run.id };
     } catch (error) {
       finalEvent = {
         type: 'error',
@@ -351,33 +297,14 @@ export class ActionRuntimeBridge {
   ): ActionRuntimeBridgeInput {
     return {
       ...input,
-      prepareStructuredRoutes: input.prepareStructuredRoutes
-        ? {
-            ...input.prepareStructuredRoutes,
-            options: {
-              ...input.prepareStructuredRoutes.options,
-              actionId:
-                input.prepareStructuredRoutes.options?.actionId ??
-                input.actionId,
-              billingUnitId:
-                input.prepareStructuredRoutes.options?.billingUnitId ??
-                billingUnitId,
-            },
-          }
-        : undefined,
-      prepareImageRoutes: input.prepareImageRoutes
-        ? {
-            ...input.prepareImageRoutes,
-            options: {
-              ...input.prepareImageRoutes.options,
-              actionId:
-                input.prepareImageRoutes.options?.actionId ?? input.actionId,
-              billingUnitId:
-                input.prepareImageRoutes.options?.billingUnitId ??
-                billingUnitId,
-            },
-          }
-        : undefined,
+      step: {
+        ...input.step,
+        options: {
+          ...input.step.options,
+          actionId: input.step.options?.actionId ?? input.actionId,
+          billingUnitId: input.step.options?.billingUnitId ?? billingUnitId,
+        },
+      },
     };
   }
 }

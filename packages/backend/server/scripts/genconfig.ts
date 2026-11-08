@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* oxlint-disable */
 import '../src/prelude';
 import '../src/app.module';
 
@@ -11,11 +11,21 @@ import {
 } from '../src/base/config/register';
 
 const IGNORED_MODULES = new Set(['db', 'redis', 'graphql']);
+const SELFHOSTED_IGNORED_MODULES = new Set([
+  'payment',
+  'telemetry',
+  'captcha',
+  'metrics',
+]);
+const SELFHOSTED_IGNORED_KEYS = new Set(['auth.trustedCloudflareHeaders']);
 
 function getDescriptors() {
-  return getAllDescriptors().filter(
-    ({ module }) => !IGNORED_MODULES.has(module)
-  );
+  return getAllDescriptors()
+    .filter(({ module }) => !IGNORED_MODULES.has(module))
+    .map(({ module, descriptors }) => ({
+      module,
+      descriptors: descriptors.filter(({ descriptor }) => !descriptor.internal),
+    }));
 }
 
 interface PropertySchema {
@@ -46,18 +56,23 @@ function generateJsonSchema(outputPath: string) {
     properties: {},
   };
 
-  getDescriptors().forEach(({ module, descriptors }) => {
-    schema.properties[module] = {
-      type: 'object',
-      description: `Configuration for ${module} module`,
-      properties: {},
-    };
+  getDescriptors()
+    .filter(({ module }) => !SELFHOSTED_IGNORED_MODULES.has(module))
+    .forEach(({ module, descriptors }) => {
+      schema.properties[module] = {
+        type: 'object',
+        description: `Configuration for ${module} module`,
+        properties: {},
+      };
 
-    descriptors.forEach(({ key, descriptor }) => {
-      schema.properties[module].properties[key] =
-        convertDescriptorToSchemaProperty(descriptor);
+      descriptors.forEach(({ key, descriptor }) => {
+        if (SELFHOSTED_IGNORED_KEYS.has(`${module}.${key}`)) {
+          return;
+        }
+        schema.properties[module].properties[key] =
+          convertDescriptorToSchemaProperty(descriptor);
+      });
     });
-  });
 
   fs.writeFileSync(outputPath, JSON.stringify(schema, null, 2));
 
@@ -73,6 +88,7 @@ function generateAdminConfigJson(outputPath: string) {
       let type: string;
       switch (descriptor.schema?.type) {
         case 'number':
+        case 'integer':
           type = 'Number';
           break;
         case 'boolean':

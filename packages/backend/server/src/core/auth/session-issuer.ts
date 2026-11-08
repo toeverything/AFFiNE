@@ -4,70 +4,60 @@ import { Injectable } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import { getClientVersionFromRequest, getRequestCookie } from '../../base';
-import type { VerifiedIdentity } from './identity';
 import { isNativeClientRequest } from './input';
-import { SessionExchangeService } from './native-exchange';
 import { AuthService } from './service';
+import type { CurrentUser } from './session';
 
-export type IssuedSession = {
-  userId: string;
-  sessionId: string;
+export type SessionIssueInput =
+  | { type: 'native'; clientVersion?: string }
+  | { type: 'cookie'; sessionId?: string; clientVersion?: string };
+
+export type NativeLoginResult = {
+  user: CurrentUser;
+  sessionId?: string;
+  sessionExpiresAt?: string;
   exchangeCode?: string;
+  created?: boolean;
 };
 
 @Injectable()
 export class SessionIssuer {
-  constructor(
-    private readonly auth: AuthService,
-    private readonly sessionExchange: SessionExchangeService
-  ) {}
+  constructor(private readonly auth: AuthService) {}
 
-  async issue(
-    req: Request,
-    res: Response,
-    identity: VerifiedIdentity
-  ): Promise<IssuedSession> {
-    const nativeClient = isNativeClientRequest(req);
-    const sessionId =
-      req.authType === 'jwt'
-        ? req.session?.sessionId
-        : getRequestCookie(req, AuthService.sessionCookieName);
-    const signInClientVersion =
-      identity.clientVersion ?? getClientVersionFromRequest(req);
-    const userSession = await this.auth.createUserSession(
-      identity.userId,
-      sessionId,
-      undefined,
-      signInClientVersion
-    );
-
-    if (nativeClient) {
-      this.auth.clearCookies(res);
-    } else {
-      res.cookie(AuthService.sessionCookieName, userSession.sessionId, {
-        ...this.auth.cookieOptions,
-        expires: userSession.expiresAt ?? void 0,
-      });
-
-      res.cookie(AuthService.csrfCookieName, randomUUID(), {
-        ...this.auth.cookieOptions,
-        httpOnly: false,
-        expires: userSession.expiresAt ?? void 0,
-      });
-
-      this.auth.setUserCookie(res, identity.userId);
+  target(req: Request, clientVersion?: string): SessionIssueInput {
+    const version =
+      clientVersion ?? getClientVersionFromRequest(req) ?? undefined;
+    if (isNativeClientRequest(req)) {
+      return { type: 'native', clientVersion: version };
     }
-
-    const exchangeCode = await this.sessionExchange.createCode(
-      req,
-      identity.userId,
-      userSession.sessionId
-    );
-
     return {
-      userId: identity.userId,
-      sessionId: userSession.sessionId,
-      exchangeCode,
+      type: 'cookie',
+      sessionId:
+        req.authType === 'jwt'
+          ? req.session?.sessionId
+          : getRequestCookie(req, AuthService.sessionCookieName),
+      clientVersion: version,
     };
+  }
+
+  apply(res: Response, result: NativeLoginResult) {
+    if (result.exchangeCode) {
+      this.auth.clearCookies(res);
+      return;
+    }
+    if (!result.sessionId || !result.sessionExpiresAt) {
+      throw new Error('Native login result did not include a cookie session.');
+    }
+    const expires = new Date(result.sessionExpiresAt);
+    res.cookie(AuthService.sessionCookieName, result.sessionId, {
+      ...this.auth.cookieOptions,
+      expires,
+    });
+    res.cookie(AuthService.csrfCookieName, randomUUID(), {
+      ...this.auth.cookieOptions,
+      httpOnly: false,
+      expires,
+    });
+    this.auth.setUserCookie(res, result.user.id);
   }
 }

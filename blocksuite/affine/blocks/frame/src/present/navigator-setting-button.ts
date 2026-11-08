@@ -150,17 +150,19 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
           </toggle-switch>
         </div>
 
-        ${this.includeFrameOrder
-          ? html` <div class="divider"></div>
-              <div class="item-container header">
-                <div class="text title">Frame Order</div>
-              </div>
+        ${
+          this.includeFrameOrder
+            ? html` <div class="divider"></div>
+                <div class="item-container header">
+                  <div class="text title">Frame Order</div>
+                </div>
 
-              <edgeless-frame-order-menu
-                .edgeless=${this.edgeless}
-                .embed=${true}
-              ></edgeless-frame-order-menu>`
-          : nothing}
+                <edgeless-frame-order-menu
+                  .edgeless=${this.edgeless}
+                  .embed=${true}
+                ></edgeless-frame-order-menu>`
+            : nothing
+        }
       </div>
     `;
   }

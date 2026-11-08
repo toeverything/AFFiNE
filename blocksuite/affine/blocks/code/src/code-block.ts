@@ -8,6 +8,7 @@ import {
 import {
   BlockElementCommentManager,
   DocModeProvider,
+  EditorSettingProvider,
   NotificationProvider,
 } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
@@ -38,6 +39,8 @@ import { codeBlockStyles } from './styles.js';
 
 export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
   static override styles = codeBlockStyles;
+
+  private _highlightRequestId = 0;
 
   private _inlineRangeProvider: InlineRangeProvider | null = null;
 
@@ -97,6 +100,16 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     return this.std.get(CodeBlockHighlighter);
   }
 
+  /** Whether line numbers are currently shown for this block, accounting for the global setting and feature flags. */
+  get showLineNumbers(): boolean {
+    // Feature flag: mobile (or any other consumer) can hard-disable via CodeBlockConfigExtension.
+    const featureEnabled =
+      this.std.getOptional(CodeBlockConfigExtension.identifier)
+        ?.showLineNumbers ?? true;
+    if (!featureEnabled) return false;
+    // Per-block prop overrides the global default; global defaults to true.
+    return this.model.props.lineNumber ?? this._showLineNumbersGlobal$.value;
+  }
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
       return this.closest<BlockComponent>(
@@ -107,6 +120,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   private _updateHighlightTokens() {
+    const requestId = ++this._highlightRequestId;
     const modelLang = this.model.props.language$.value;
     if (modelLang === null) {
       this.highlightTokens$.value = [];
@@ -137,9 +151,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
       const loadedLanguages = highlighter.getLoadedLanguages();
       if (!loadedLanguages.includes(lang)) {
-        highlighter
-          .loadLanguage(langImport)
+        this.highlighter
+          .loadLanguage(lang, langImport)
           .then(() => {
+            if (requestId !== this._highlightRequestId) return;
             this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
               lang,
               theme,
@@ -159,8 +174,31 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     }
   }
 
+  /**
+   * Stable signal: true when the global editor setting enables line numbers.
+   * Defaults to true. Updated reactively by an effect in connectedCallback.
+   * Using a writable signal (not reassigned to computed) keeps the reference
+   * stable so any downstream computed/effect that captures it stays correct.
+   */
+  private readonly _showLineNumbersGlobal$: Signal<boolean> = signal(true);
+
   override connectedCallback() {
     super.connectedCallback();
+
+    // Reactively sync the global line-number preference from EditorSettingProvider
+    // into the stable _showLineNumbersGlobal$ signal. Using effect() keeps the
+    // signal reference constant (no identity change) while still tracking updates.
+    const editorSetting = this.std.getOptional(EditorSettingProvider);
+    if (editorSetting) {
+      this.disposables.add(
+        effect(() => {
+          const val = (
+            editorSetting.setting$.value as Record<string, unknown>
+          )?.['codeBlockLineNumbers'];
+          this._showLineNumbersGlobal$.value = val !== false;
+        })
+      );
+    }
 
     // set highlight options getter used by "exportToHtml"
     this.disposables.add(
@@ -410,11 +448,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   override renderBlock(): TemplateResult<1> {
-    const showLineNumbers =
-      (this.std.getOptional(CodeBlockConfigExtension.identifier)
-        ?.showLineNumbers ??
-        true) &&
-      (this.model.props.lineNumber ?? true);
+    const showLineNumbers = this.showLineNumbers;
 
     const preview = this.preview$.value;
     const previewContext = this.std.getOptional(
@@ -459,9 +493,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           }}
         >
         </rich-text>
-        ${collapsed
-          ? html`<div class="code-collapsed-fade" aria-hidden="true"></div>`
-          : nothing}
+        ${
+          collapsed
+            ? html`<div class="code-collapsed-fade" aria-hidden="true"></div>`
+            : nothing
+        }
         <div
           style=${styleMap({
             display: shouldRenderPreview && !collapsed ? undefined : 'none',

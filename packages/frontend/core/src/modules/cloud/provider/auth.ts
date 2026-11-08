@@ -33,6 +33,8 @@ export interface AuthProvider {
   signInOpenAppSignInCode(code: string): Promise<void>;
 
   signOut(): Promise<void>;
+
+  clearSession(): Promise<void>;
 }
 
 export const AuthProvider = createIdentifier<AuthProvider>('AuthProvider');

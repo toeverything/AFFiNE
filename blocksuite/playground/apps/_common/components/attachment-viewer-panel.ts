@@ -272,9 +272,11 @@ export class AttachmentViewerPanel extends SignalWatcher(
             </h5>
           </header>
           <main class="body">
-            ${isPDF
-              ? html`<canvas class="page"></canvas>`
-              : html`<p class="error">This file format is not supported.</p>`}
+            ${
+              isPDF
+                ? html`<canvas class="page"></canvas>`
+                : html`<p class="error">This file format is not supported.</p>`
+            }
             <div class="controls">
               <icon-button
                 .disabled=${isEmpty || cursor === 0}

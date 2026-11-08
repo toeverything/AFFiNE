@@ -25,7 +25,12 @@ export function isOriginAllowed(origin: string, allowedOrigin: OriginRules) {
 
 export function isRefererAllowed(referer: string, allowedOrigin: OriginRules) {
   try {
-    const origin = new URL(referer).origin;
+    const url = new URL(referer);
+    // URL.origin is the opaque "null" for non-special schemes such as
+    // assets:// (desktop), capacitor:// (mobile) and file://. Build the origin
+    // the way a browser serializes it in an Origin header.
+    const origin =
+      url.origin === 'null' ? `${url.protocol}//${url.host}` : url.origin;
     return isOriginAllowed(origin, allowedOrigin);
   } catch {
     return false;
@@ -33,12 +38,16 @@ export function isRefererAllowed(referer: string, allowedOrigin: OriginRules) {
 }
 
 const headerFilters = [/^Sec-/i, /^Accept/i, /^User-Agent$/i];
+const headerExcludes = [/^Accept-Encoding$/i];
 
 export function cloneHeader(source: IncomingHttpHeaders) {
   const headers: Record<string, string> = {};
 
   Object.entries(source).forEach(([key, value]) => {
-    if (headerFilters.some(filter => filter.test(key))) {
+    if (
+      headerFilters.some(filter => filter.test(key)) &&
+      !headerExcludes.some(filter => filter.test(key))
+    ) {
       if (Array.isArray(value)) {
         headers[key] = value.join(',');
       } else if (value) {

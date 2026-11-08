@@ -11,7 +11,10 @@ import { BaseExtensionProvider } from '@blocksuite/affine-ext-loader';
 import { z } from 'zod';
 
 // Create a custom provider with options
-class MyProvider extends BaseExtensionProvider<'my-scope', { enabled: boolean }> {
+class MyProvider extends BaseExtensionProvider<
+  'my-scope',
+  { enabled: boolean }
+> {
   name = 'MyProvider';
 
   schema = z.object({
@@ -28,7 +31,10 @@ class MyProvider extends BaseExtensionProvider<'my-scope', { enabled: boolean }>
 ### Store Extensions
 
 ```typescript
-import { StoreExtensionProvider, StoreExtensionManager } from '@blocksuite/affine-ext-loader';
+import {
+  StoreExtensionProvider,
+  StoreExtensionManager,
+} from '@blocksuite/affine-ext-loader';
 import { z } from 'zod';
 
 // Create a store provider with custom options
@@ -39,7 +45,10 @@ class MyStoreProvider extends StoreExtensionProvider<{ cacheSize: number }> {
     cacheSize: z.number().min(0),
   });
 
-  override setup(context: StoreExtensionContext, options?: { cacheSize: number }) {
+  override setup(
+    context: StoreExtensionContext,
+    options?: { cacheSize: number }
+  ) {
     super.setup(context, options);
     context.register([Ext1, Ext2, Ext3]);
   }
@@ -54,7 +63,10 @@ const extensions = manager.get('store');
 ### View Extensions
 
 ```typescript
-import { ViewExtensionProvider, ViewExtensionManager } from '@blocksuite/affine-ext-loader';
+import {
+  ViewExtensionProvider,
+  ViewExtensionManager,
+} from '@blocksuite/affine-ext-loader';
 import { z } from 'zod';
 
 // Create a view provider with custom options

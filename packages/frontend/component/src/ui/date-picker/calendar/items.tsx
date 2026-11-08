@@ -45,7 +45,7 @@ const HeaderLayout = memo(function HeaderLayout({
           const isRight = index === length - 1;
           return (
             <div
-              // eslint-disable-next-line react/no-array-index-key
+              // oxlint-disable-next-line react/no-array-index-key
               key={index}
               data-length={length}
               data-is-left={isLeft}

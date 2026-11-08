@@ -1,4 +1,5 @@
 import type { PromptMessage, StreamObject } from '../providers/types';
+import { promptAttachmentMimeType } from '../providers/utils';
 import {
   streamObjectToToolEvent,
   toolEventToStreamObject,
@@ -82,6 +83,7 @@ export const turnFromChatMessage = (
     renderTrace: trace.renderTrace,
     toolEvents: trace.toolEvents,
     metadata: message.params ?? {},
+    scopeSnapshot: message.scopeSnapshot,
     createdAt: message.createdAt,
   });
 };
@@ -95,14 +97,22 @@ export const chatMessageFromTurn = (turn: Turn): ChatMessage => {
     content: turn.content,
     attachments: turn.attachments.length ? turn.attachments : undefined,
     params: turn.metadata,
+    scopeSnapshot: turn.scopeSnapshot,
     streamObjects: renderTrace.length ? renderTrace : undefined,
     createdAt: turn.createdAt,
   };
 };
 
-export const promptMessageFromTurn = (turn: Turn): PromptMessage => ({
-  role: turn.role,
-  content: turn.content,
-  attachments: turn.attachments.length ? turn.attachments : undefined,
-  params: Object.keys(turn.metadata).length ? turn.metadata : undefined,
-});
+export const promptMessageFromTurn = (turn: Turn): PromptMessage => {
+  const attachments = turn.attachments.filter(attachment => {
+    const mimeType = promptAttachmentMimeType(attachment);
+    return !mimeType || mimeType.startsWith('image/');
+  });
+
+  return {
+    role: turn.role,
+    content: turn.content,
+    attachments: attachments.length ? attachments : undefined,
+    params: Object.keys(turn.metadata).length ? turn.metadata : undefined,
+  };
+};

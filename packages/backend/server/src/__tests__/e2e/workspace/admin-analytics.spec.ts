@@ -298,9 +298,9 @@ e2e(
 
     await db.$executeRaw`
     INSERT INTO workspace_admin_stats (
-      workspace_id, snapshot_count, snapshot_size, blob_count, blob_size, member_count, public_page_count, features, updated_at
+      workspace_id, snapshot_count, snapshot_size, blob_count, blob_size, member_count, public_page_count, updated_at
     )
-    VALUES (${workspace.id}, 1, 100, 1, 50, 1, 1, ARRAY[]::text[], NOW())
+    VALUES (${workspace.id}, 1, 100, 1, 50, 1, 1, NOW())
     ON CONFLICT (workspace_id)
     DO UPDATE SET
       snapshot_count = EXCLUDED.snapshot_count,
@@ -309,7 +309,6 @@ e2e(
       blob_size = EXCLUDED.blob_size,
       member_count = EXCLUDED.member_count,
       public_page_count = EXCLUDED.public_page_count,
-      features = EXCLUDED.features,
       updated_at = EXCLUDED.updated_at
   `;
 
@@ -479,9 +478,9 @@ e2e(
 
       await db.$executeRaw`
       INSERT INTO workspace_admin_stats (
-        workspace_id, snapshot_count, snapshot_size, blob_count, blob_size, member_count, public_page_count, features, updated_at
+        workspace_id, snapshot_count, snapshot_size, blob_count, blob_size, member_count, public_page_count, updated_at
       )
-      VALUES (${workspace.id}, 1, 130, 1, 70, 1, 0, ARRAY[]::text[], NOW())
+      VALUES (${workspace.id}, 1, 130, 1, 70, 1, 0, NOW())
       ON CONFLICT (workspace_id)
       DO UPDATE SET
         snapshot_count = EXCLUDED.snapshot_count,
@@ -490,7 +489,6 @@ e2e(
         blob_size = EXCLUDED.blob_size,
         member_count = EXCLUDED.member_count,
         public_page_count = EXCLUDED.public_page_count,
-        features = EXCLUDED.features,
         updated_at = EXCLUDED.updated_at
     `;
 
@@ -676,6 +674,7 @@ e2e(
     const workspace = await app.create(Mockers.Workspace, {
       owner: { id: owner.id },
     });
+    await app.create(Mockers.TeamWorkspace, { id: workspace.id });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,
       userId: member.id,
@@ -771,11 +770,11 @@ e2e(
     });
 
     t.falsy(ownerResult.errors);
-    t.is(ownerResult.data!.workspace.doc.analytics.window.effectiveSize, 7);
+    t.is(ownerResult.data!.workspace.doc.analytics.window.effectiveSize, 90);
     t.true(ownerResult.data!.workspace.doc.analytics.series.length > 0);
-    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.totalCount, 2);
-    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.edges.length, 2);
-    t.false(
+    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.totalCount, 3);
+    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.edges.length, 3);
+    t.true(
       ownerResult.data!.workspace.doc.lastAccessedMembers.edges.some(
         (edge: { node: { user: { id: string } } }) =>
           edge.node.user.id === staleMember.id
@@ -882,6 +881,6 @@ e2e(
       errors?: Array<{ extensions: Record<string, unknown> }>;
     };
     t.truthy(memberDenied.errors?.length);
-    t.is(memberDenied.errors![0].extensions.name, 'SPACE_ACCESS_DENIED');
+    t.is(memberDenied.errors![0].extensions.name, 'DOC_ACTION_DENIED');
   }
 );

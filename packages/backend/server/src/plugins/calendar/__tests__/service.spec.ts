@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
-import test from 'ava';
+import { PrismaClient } from '@prisma/client';
+import ava from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
@@ -19,7 +20,7 @@ import type {
 } from '../../../models';
 import { Models } from '../../../models';
 import { CalendarCronJobs } from '../cron';
-import { CalendarModule } from '../index';
+import { CalendarModule, CalendarWorkerModule } from '../index';
 import {
   CalendarProvider,
   CalendarProviderFactory,
@@ -33,6 +34,8 @@ import type {
   CalendarProviderWatchParams,
 } from '../providers/def';
 import { CalendarService } from '../service';
+
+const test = ava.serial;
 
 class MockCalendarProvider extends CalendarProvider {
   override provider = CalendarProviderName.Google;
@@ -77,6 +80,7 @@ const module = await createModule({
   imports: [
     ServerConfigModule,
     CalendarModule,
+    CalendarWorkerModule,
     ConfigModule.override({
       calendar: {
         google: {
@@ -94,6 +98,7 @@ const calendarService = module.get(CalendarService);
 const calendarCronJobs = module.get(CalendarCronJobs);
 const providerFactory = module.get(CalendarProviderFactory);
 const models = module.get(Models);
+const db = module.get(PrismaClient);
 const config = module.get(Config);
 module.get(CryptoHelper).onConfigInit();
 
@@ -176,8 +181,6 @@ const createSubscription = async (
 test.afterEach.always(() => {
   config.calendar.google.allowNewAccounts = true;
   mock.reset();
-  module.queue.add.resetHistory();
-  module.queue.remove.resetHistory();
 });
 
 test.after.always(async () => {
@@ -209,77 +212,56 @@ test('listAccounts includes calendars count', async t => {
   t.is(counts.get(accountB.id), 1);
 });
 
-test.serial(
-  'assertCanLinkProvider blocks new google calendar accounts when disabled',
-  async t => {
-    config.calendar.google.allowNewAccounts = false;
-    const user = await module.create(Mockers.User);
+test('assertCanLinkProvider blocks new google calendar accounts when disabled', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const user = await module.create(Mockers.User);
 
-    const error = await t.throwsAsync(
-      calendarService.assertCanLinkProvider(
-        user.id,
-        CalendarProviderName.Google
-      )
-    );
-    t.true(error instanceof GraphqlBadRequest);
-    t.is(
-      (error as GraphqlBadRequest).data?.code,
-      'calendar_provider_link_disabled'
-    );
-  }
-);
+  const error = await t.throwsAsync(
+    calendarService.assertCanLinkProvider(user.id, CalendarProviderName.Google)
+  );
+  t.true(error instanceof GraphqlBadRequest);
+  t.is(
+    (error as GraphqlBadRequest).data?.code,
+    'calendar_provider_link_disabled'
+  );
+});
 
-test.serial(
-  'assertCanLinkProvider allows users with an existing google calendar account',
-  async t => {
-    config.calendar.google.allowNewAccounts = false;
-    const user = await module.create(Mockers.User);
-    await createAccount(user.id);
+test('assertCanLinkProvider allows users with an existing google calendar account', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const user = await module.create(Mockers.User);
+  await createAccount(user.id);
 
-    await t.notThrowsAsync(
-      calendarService.assertCanLinkProvider(
-        user.id,
-        CalendarProviderName.Google
-      )
-    );
-  }
-);
+  await t.notThrowsAsync(
+    calendarService.assertCanLinkProvider(user.id, CalendarProviderName.Google)
+  );
+});
 
-test.serial(
-  'handleOAuthCallback does not persist new google account when linking is disabled',
-  async t => {
-    config.calendar.google.allowNewAccounts = false;
-    const provider = new MockCalendarProvider();
-    mock.method(providerFactory, 'get', () => provider);
-    const user = await module.create(Mockers.User);
+test('handleOAuthCallback does not persist new google account when linking is disabled', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const provider = new MockCalendarProvider();
+  mock.method(providerFactory, 'get', () => provider);
+  const user = await module.create(Mockers.User);
 
-    const error = await t.throwsAsync(
-      calendarService.handleOAuthCallback({
-        provider: CalendarProviderName.Google,
-        code: 'code',
-        redirectUri: 'https://example.com/callback',
-        userId: user.id,
-      })
-    );
-    t.true(error instanceof GraphqlBadRequest);
-    t.is((await models.calendarAccount.listByUser(user.id)).length, 0);
-  }
-);
+  const error = await t.throwsAsync(
+    calendarService.handleOAuthCallback({
+      provider: CalendarProviderName.Google,
+      code: 'code',
+      redirectUri: 'https://example.com/callback',
+      userId: user.id,
+    })
+  );
+  t.true(error instanceof GraphqlBadRequest);
+  t.is((await models.calendarAccount.listByUser(user.id)).length, 0);
+});
 
-test.serial(
-  'canLinkProvider returns false for new google calendar accounts when disabled',
-  async t => {
-    config.calendar.google.allowNewAccounts = false;
-    const user = await module.create(Mockers.User);
+test('canLinkProvider returns false for new google calendar accounts when disabled', async t => {
+  config.calendar.google.allowNewAccounts = false;
+  const user = await module.create(Mockers.User);
 
-    t.false(
-      await calendarService.canLinkProvider(
-        user.id,
-        CalendarProviderName.Google
-      )
-    );
-  }
-);
+  t.false(
+    await calendarService.canLinkProvider(user.id, CalendarProviderName.Google)
+  );
+});
 
 test('syncSubscription resets invalid sync token and maps events', async t => {
   const user = await module.create(Mockers.User);
@@ -479,6 +461,32 @@ test('syncSubscription invalidates account when refresh token is invalid', async
   t.is(events.length, 0);
 });
 
+test('syncSubscription does not disable a calendar when token refresh returns 404', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id, {
+    accessToken: 'expired-access-token',
+    expiresAt: new Date(Date.now() - 5 * 60 * 1000),
+  });
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'refreshTokens', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: 'Token endpoint not found',
+    });
+  });
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  const updated = await models.calendarSubscription.get(subscription.id);
+  t.is(updated?.enabled, true);
+  t.is(updated?.syncRetryCount, 1);
+});
+
 test('syncSubscription disables subscription on provider 404', async t => {
   const user = await module.create(Mockers.User);
   const account = await createAccount(user.id);
@@ -673,6 +681,44 @@ test('syncSubscription renews webhook channel when expiring', async t => {
   t.truthy(updated?.channelExpiration);
 });
 
+test('syncSubscription replaces a webhook channel that is already gone', async t => {
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const subscription = await createSubscription(account.id, {
+    syncToken: 'sync-token',
+    customChannelId: 'missing-channel',
+    customResourceId: 'missing-resource',
+    channelExpiration: new Date(Date.now() + 60 * 60 * 1000),
+  });
+
+  const provider = new MockCalendarProvider();
+  mock.method(provider, 'listEvents', async () => ({
+    events: [],
+    nextSyncToken: 'next-sync',
+  }));
+  const stopMock = mock.method(provider, 'stopChannel', async () => {
+    throw new CalendarProviderRequestError({
+      status: 404,
+      message: 'Channel not found',
+    });
+  });
+  const watchMock = mock.method(provider, 'watchCalendar', async () => ({
+    channelId: 'replacement-channel',
+    resourceId: 'replacement-resource',
+    expiration: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  }));
+  mock.method(providerFactory, 'get', () => provider);
+
+  await calendarService.syncSubscription(subscription.id);
+
+  t.is(stopMock.mock.callCount(), 1);
+  t.is(watchMock.mock.callCount(), 1);
+  const updated = await models.calendarSubscription.get(subscription.id);
+  t.is(updated?.customChannelId, 'replacement-channel');
+  t.is(updated?.customResourceId, 'replacement-resource');
+  t.is(updated?.syncRetryCount, 0);
+});
+
 test('syncSubscription falls back to polling when push is unsupported', async t => {
   const user = await module.create(Mockers.User);
   const account = await createAccount(user.id);
@@ -760,37 +806,167 @@ test('syncSubscription keeps schedule moving when webhook renewal fails', async 
 });
 
 test('pollAccounts skips when nothing is due', async t => {
-  mock.method(models.calendarSubscription, 'listDueForSync', async () => []);
+  mock.method(models.calendarSubscription, 'claimDueForSync', async () => []);
+  const sync = mock.method(calendarService, 'syncSubscription', async () => {});
 
   await calendarCronJobs.pollAccounts();
 
-  t.is(module.queue.count('calendar.syncSubscription'), 0);
+  t.is(sync.mock.callCount(), 0);
 });
 
-test('pollAccounts enqueues due subscriptions only', async t => {
-  mock.method(models.calendarSubscription, 'listDueForSync', async () => [
-    { id: 'due-subscription-a' },
-    { id: 'due-subscription-b' },
-  ]);
+for (const outcome of ['success', 404, 401, 503] as const) {
+  test(`syncSubscription fences an expired worker's ${outcome} result`, async t => {
+    let now = Date.now();
+    mock.method(Date, 'now', () => now);
+    const user = await module.create(Mockers.User);
+    const account = await createAccount(user.id);
+    const subscription = await createSubscription(account.id, {
+      syncToken: 'initial-token',
+    });
+    const started = [
+      Promise.withResolvers<void>(),
+      Promise.withResolvers<void>(),
+    ];
+    const release = [
+      Promise.withResolvers<void>(),
+      Promise.withResolvers<void>(),
+    ];
+    const provider = new MockCalendarProvider();
+    let calls = 0;
+    mock.method(provider, 'listEvents', async () => {
+      const index = calls++;
+      started[index].resolve();
+      await release[index].promise;
+      if (index === 0 && outcome !== 'success') {
+        throw new CalendarProviderRequestError({
+          status: outcome,
+          message: 'late failure',
+        });
+      }
+      return {
+        nextSyncToken: index === 0 ? 'stale-token' : 'current-token',
+        events: [
+          {
+            id: 'event',
+            raw: {},
+            summary: index === 0 ? 'stale' : 'current',
+            start: { dateTime: '2026-01-02T00:00:00Z' },
+            end: { dateTime: '2026-01-02T01:00:00Z' },
+          },
+        ],
+      };
+    });
+    mock.method(providerFactory, 'get', () => provider);
+
+    const stale = calendarService.syncSubscription(subscription.id);
+    await started[0].promise;
+    now += 31 * 60 * 1000;
+    const current = calendarService.syncSubscription(subscription.id);
+    await started[1].promise;
+    const currentClaim = (await models.calendarSubscription.get(
+      subscription.id
+    ))!.syncClaimedUntil;
+    t.truthy(currentClaim);
+    release[0].resolve();
+    await stale;
+    const afterStale = await models.calendarSubscription.get(subscription.id);
+    t.deepEqual(afterStale?.syncClaimedUntil, currentClaim);
+    t.is(afterStale?.syncToken, 'initial-token');
+    t.is(afterStale?.enabled, true);
+    t.is(afterStale?.syncRetryCount, 0);
+    t.is((await models.calendarAccount.get(account.id))?.status, 'active');
+    t.is(
+      await db.calendarEvent.count({
+        where: { subscriptionId: subscription.id },
+      }),
+      0
+    );
+
+    release[1].resolve();
+    await current;
+    t.is(
+      (await models.calendarSubscription.get(subscription.id))?.syncToken,
+      'current-token'
+    );
+    t.is(
+      (
+        await db.calendarEvent.findFirstOrThrow({
+          where: { subscriptionId: subscription.id },
+        })
+      ).title,
+      'current'
+    );
+  });
+}
+
+test('pollAccounts syncs claimed subscriptions only', async t => {
+  await db.calendarSubscription.updateMany({ data: { enabled: false } });
+  const user = await module.create(Mockers.User);
+  const account = await createAccount(user.id);
+  const first = await createSubscription(account.id, {
+    nextSyncAt: new Date(Date.now() - 2 * 60 * 1000),
+  });
+  const second = await createSubscription(account.id, {
+    nextSyncAt: new Date(Date.now() - 60 * 1000),
+  });
+  const sync = mock.method(calendarService, 'syncSubscription', async () => {});
 
   await calendarCronJobs.pollAccounts();
 
-  t.is(module.queue.count('calendar.syncSubscription'), 2);
+  t.is(sync.mock.callCount(), 2);
   t.deepEqual(
-    module.queue.add
-      .getCalls()
-      .map(call => [call.args[0], call.args[1], call.args[2]]),
+    sync.mock.calls.map(call => call.arguments[0]),
+    [first.id, second.id]
+  );
+
+  await calendarCronJobs.pollAccounts();
+  t.is(sync.mock.callCount(), 2);
+
+  await calendarService.enqueueSyncSubscription(first.id, 'webhook');
+  const claimedUntil = (await models.calendarSubscription.get(first.id))!
+    .syncClaimedUntil!;
+  await models.calendarSubscription.completeSync(first.id, claimedUntil, {
+    lastSyncAt: new Date(),
+    nextSyncAt: new Date(Date.now() + 30 * 60 * 1000),
+    syncRetryCount: 0,
+  });
+  await calendarCronJobs.pollAccounts();
+
+  t.deepEqual(
+    sync.mock.calls.map(call => [call.arguments[0], call.arguments[1]?.reason]),
     [
-      [
-        'calendar.syncSubscription',
-        { subscriptionId: 'due-subscription-a', reason: 'polling' },
-        { jobId: 'due-subscription-a' },
-      ],
-      [
-        'calendar.syncSubscription',
-        { subscriptionId: 'due-subscription-b', reason: 'polling' },
-        { jobId: 'due-subscription-b' },
-      ],
+      [first.id, 'polling'],
+      [second.id, 'polling'],
+      [first.id, 'polling'],
     ]
   );
+
+  for (let i = 0; i < 17; i++) {
+    await createSubscription(account.id, {
+      nextSyncAt: new Date(Date.now() - 1000),
+    });
+  }
+  let active = 0;
+  let maximumActive = 0;
+  const started = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  sync.mock.mockImplementation(async (id, options) => {
+    active++;
+    maximumActive = Math.max(maximumActive, active);
+    if (active === 8) started.resolve();
+    await release.promise;
+    await models.calendarSubscription.completeSync(id, options!.claimedUntil!, {
+      lastSyncAt: new Date(),
+      nextSyncAt: new Date(Date.now() + 30 * 60 * 1000),
+      syncRetryCount: 0,
+    });
+    active--;
+  });
+  const poll = calendarCronJobs.pollAccounts();
+  await started.promise;
+  t.is(active, 8);
+  release.resolve();
+  await poll;
+  t.is(maximumActive, 8);
+  t.is(sync.mock.callCount(), 20);
 });

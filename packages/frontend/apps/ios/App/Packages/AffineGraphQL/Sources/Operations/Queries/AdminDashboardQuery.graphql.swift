@@ -7,7 +7,7 @@ public class AdminDashboardQuery: GraphQLQuery {
   public static let operationName: String = "adminDashboard"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query adminDashboard($input: AdminDashboardInput) { adminDashboard(input: $input) { __typename syncActiveUsers syncActiveUsersTimeline { __typename minute activeUsers } syncWindow { __typename from to timezone bucket requestedSize effectiveSize } copilotConversations workspaceStorageBytes blobStorageBytes workspaceStorageHistory { __typename date value } blobStorageHistory { __typename date value } storageWindow { __typename from to timezone bucket requestedSize effectiveSize } topSharedLinks { __typename workspaceId docId title shareUrl publishedAt views uniqueViews guestViews lastAccessedAt } topSharedLinksWindow { __typename from to timezone bucket requestedSize effectiveSize } generatedAt } }"#
+      #"query adminDashboard($input: AdminDashboardInput) { adminDashboard(input: $input) { __typename syncActiveUsers syncActiveUsersTimeline { __typename minute activeUsers } syncWindow { __typename from to timezone bucket requestedSize effectiveSize } copilotConversations copilotWindow { __typename from to timezone bucket requestedSize effectiveSize } workspaceStorageBytes blobStorageBytes workspaceStorageHistory { __typename date value } blobStorageHistory { __typename date value } storageWindow { __typename from to timezone bucket requestedSize effectiveSize } topSharedLinks { __typename workspaceId docId title shareUrl publishedAt views uniqueViews guestViews lastAccessedAt } topSharedLinksWindow { __typename from to timezone bucket requestedSize effectiveSize } generatedAt } }"#
     ))
 
   public var input: GraphQLNullable<AdminDashboardInput>
@@ -47,6 +47,7 @@ public class AdminDashboardQuery: GraphQLQuery {
         .field("syncActiveUsersTimeline", [SyncActiveUsersTimeline].self),
         .field("syncWindow", SyncWindow.self),
         .field("copilotConversations", AffineGraphQL.SafeInt.self),
+        .field("copilotWindow", CopilotWindow.self),
         .field("workspaceStorageBytes", AffineGraphQL.SafeInt.self),
         .field("blobStorageBytes", AffineGraphQL.SafeInt.self),
         .field("workspaceStorageHistory", [WorkspaceStorageHistory].self),
@@ -64,6 +65,7 @@ public class AdminDashboardQuery: GraphQLQuery {
       public var syncActiveUsersTimeline: [SyncActiveUsersTimeline] { __data["syncActiveUsersTimeline"] }
       public var syncWindow: SyncWindow { __data["syncWindow"] }
       public var copilotConversations: AffineGraphQL.SafeInt { __data["copilotConversations"] }
+      public var copilotWindow: CopilotWindow { __data["copilotWindow"] }
       public var workspaceStorageBytes: AffineGraphQL.SafeInt { __data["workspaceStorageBytes"] }
       public var blobStorageBytes: AffineGraphQL.SafeInt { __data["blobStorageBytes"] }
       public var workspaceStorageHistory: [WorkspaceStorageHistory] { __data["workspaceStorageHistory"] }
@@ -113,6 +115,35 @@ public class AdminDashboardQuery: GraphQLQuery {
         ] }
         public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
           AdminDashboardQuery.Data.AdminDashboard.SyncWindow.self
+        ] }
+
+        public var from: AffineGraphQL.DateTime { __data["from"] }
+        public var to: AffineGraphQL.DateTime { __data["to"] }
+        public var timezone: String { __data["timezone"] }
+        public var bucket: GraphQLEnum<AffineGraphQL.TimeBucket> { __data["bucket"] }
+        public var requestedSize: Int { __data["requestedSize"] }
+        public var effectiveSize: Int { __data["effectiveSize"] }
+      }
+
+      /// AdminDashboard.CopilotWindow
+      ///
+      /// Parent Type: `TimeWindow`
+      public struct CopilotWindow: AffineGraphQL.SelectionSet {
+        public let __data: DataDict
+        public init(_dataDict: DataDict) { __data = _dataDict }
+
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.TimeWindow }
+        public static var __selections: [ApolloAPI.Selection] { [
+          .field("__typename", String.self),
+          .field("from", AffineGraphQL.DateTime.self),
+          .field("to", AffineGraphQL.DateTime.self),
+          .field("timezone", String.self),
+          .field("bucket", GraphQLEnum<AffineGraphQL.TimeBucket>.self),
+          .field("requestedSize", Int.self),
+          .field("effectiveSize", Int.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminDashboardQuery.Data.AdminDashboard.CopilotWindow.self
         ] }
 
         public var from: AffineGraphQL.DateTime { __data["from"] }

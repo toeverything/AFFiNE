@@ -95,7 +95,9 @@ const attributeRenderer: AttributeRenderer<AffineTextAttributes> = (
   selected
 ) => {
   // Generate style from delta
-  return html`<span style=${style}><v-text .str=${delta.insert}></v-text></span>`;
+  return html`<span style=${style}
+    ><v-text .str=${delta.insert}></v-text
+  ></span>`;
 };
 
 const doc = new Y.Doc();

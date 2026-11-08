@@ -1,4 +1,3 @@
-import { MobileMenu } from '@affine/component';
 import {
   type BaseNavigationPanelTreeNodeProps,
   NavigationPanelTreeContext,
@@ -6,21 +5,32 @@ import {
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { extractEmojiIcon } from '@affine/core/utils';
 import { ArrowDownSmallIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import {
-  Fragment,
+  type AriaAttributes,
+  type AriaRole,
+  type ReactNode,
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
 import { SwipeMenu } from '../../swipe-menu';
+import {
+  MobileNavigationMenuItems,
+  useMobileNavigationMenuHost,
+} from '../menu-host';
 import * as styles from './node.css';
 
-interface NavigationPanelTreeNodeProps extends BaseNavigationPanelTreeNodeProps {}
+interface NavigationPanelTreeNodeProps extends BaseNavigationPanelTreeNodeProps {
+  menuTarget?: ReactNode;
+  role?: AriaRole;
+  'aria-label'?: string;
+  'aria-level'?: number;
+  'aria-expanded'?: AriaAttributes['aria-expanded'];
+  'data-role'?: string;
+}
 
 const EMPTY_OPERATIONS: BaseNavigationPanelTreeNodeProps['operations'] = [];
 
@@ -39,6 +49,7 @@ export const NavigationPanelTreeNode = ({
   postfix,
   childrenOperations = EMPTY_OPERATIONS,
   childrenPlaceholder,
+  menuTarget,
   linkComponent: LinkComponent = WorkbenchLink,
   ...otherProps
 }: NavigationPanelTreeNodeProps) => {
@@ -47,8 +58,7 @@ export const NavigationPanelTreeNode = ({
   // If no onClick or to is provided, clicking on the node will toggle the collapse state
   const clickForCollapse = !onClick && !to && !disabled;
   const [childCount, setChildCount] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const menuHost = useMobileNavigationMenuHost();
 
   const { emoji, name } = useMemo(() => {
     if (!extractEmojiAsIcon || !rawName) {
@@ -71,6 +81,13 @@ export const NavigationPanelTreeNode = ({
       inlineOperations: sorted.filter(({ inline }) => !!inline),
     };
   }, [operations]);
+  const openMenu = useCallback(() => {
+    if (menuTarget || menuOperations.length > 0) {
+      menuHost.open(
+        menuTarget ?? <MobileNavigationMenuItems operations={menuOperations} />
+      );
+    }
+  }, [menuHost, menuOperations, menuTarget]);
 
   const contextValue = useMemo(() => {
     return {
@@ -114,22 +131,17 @@ export const NavigationPanelTreeNode = ({
       data-disabled={disabled}
     >
       <div className={styles.itemMain}>
-        {menuOperations.length > 0 ? (
+        {menuTarget || menuOperations.length > 0 ? (
           <div
             onClick={e => {
               // prevent jump to page
               e.preventDefault();
+              openMenu();
             }}
+            className={styles.iconContainer}
+            data-testid="menu-trigger"
           >
-            <MobileMenu
-              items={menuOperations.map(({ view, index }) => (
-                <Fragment key={index}>{view}</Fragment>
-              ))}
-            >
-              <div className={styles.iconContainer} data-testid="menu-trigger">
-                {emoji ?? (Icon && <Icon collapsed={collapsed} />)}
-              </div>
-            </MobileMenu>
+            {emoji ?? (Icon && <Icon collapsed={collapsed} />)}
           </div>
         ) : (
           <div className={styles.iconContainer}>
@@ -157,29 +169,23 @@ export const NavigationPanelTreeNode = ({
   );
 
   return (
-    <Collapsible.Root
-      open={!collapsed}
-      onOpenChange={setCollapsed}
+    <div
+      data-state={collapsed ? 'closed' : 'open'}
       style={assignInlineVars({
         [styles.levelIndent]: `${level * 20}px`,
       })}
-      ref={rootRef}
       {...otherProps}
     >
       <SwipeMenu
-        onExecute={useCallback(() => setMenuOpen(true), [])}
+        onExecute={openMenu}
         menu={
-          <MobileMenu
-            rootOptions={useMemo(
-              () => ({ open: menuOpen, onOpenChange: setMenuOpen }),
-              [menuOpen]
-            )}
-            items={menuOperations.map(({ view, index }) => (
-              <Fragment key={index}>{view}</Fragment>
-            ))}
+          <button
+            type="button"
+            onClick={openMenu}
+            data-testid="swipe-menu-trigger"
           >
             <MoreHorizontalIcon fontSize={24} />
-          </MobileMenu>
+          </button>
         }
       >
         <div className={styles.contentContainer} data-open={!collapsed}>
@@ -196,15 +202,17 @@ export const NavigationPanelTreeNode = ({
           )}
         </div>
       </SwipeMenu>
-      <Collapsible.Content>
-        {/* For lastInGroup check, the placeholder must be placed above all children in the dom */}
-        <div className={styles.collapseContentPlaceholder}>
-          {childCount === 0 && !collapsed && childrenPlaceholder}
+      {collapsed ? null : (
+        <div data-state="open">
+          {/* For lastInGroup check, the placeholder must be placed above all children in the dom */}
+          <div className={styles.collapseContentPlaceholder}>
+            {childCount === 0 && childrenPlaceholder}
+          </div>
+          <NavigationPanelTreeContext.Provider value={contextValue}>
+            {children}
+          </NavigationPanelTreeContext.Provider>
         </div>
-        <NavigationPanelTreeContext.Provider value={contextValue}>
-          {collapsed ? null : children}
-        </NavigationPanelTreeContext.Provider>
-      </Collapsible.Content>
-    </Collapsible.Root>
+      )}
+    </div>
   );
 };

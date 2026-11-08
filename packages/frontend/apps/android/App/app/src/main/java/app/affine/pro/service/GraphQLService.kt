@@ -3,7 +3,7 @@ package app.affine.pro.service
 import app.affine.pro.Prompt
 import app.affine.pro.utils.getCurrentServerBaseUrl
 import com.affine.pro.graphql.CreateCopilotMessageMutation
-import com.affine.pro.graphql.CreateCopilotSessionMutation
+import com.affine.pro.graphql.CreateCopilotSessionWithHistoryMutation
 import com.affine.pro.graphql.GetCopilotHistoriesQuery
 import com.affine.pro.graphql.GetCopilotHistoryIdsQuery
 import com.affine.pro.graphql.GetCopilotSessionsQuery
@@ -46,7 +46,7 @@ class GraphQLService @Inject constructor() {
         docId: String,
         prompt: Prompt = Prompt.ChatWithAFFiNEAI
     ) = mutation(
-        CreateCopilotSessionMutation(
+        CreateCopilotSessionWithHistoryMutation(
             CreateChatSessionInput(
                 docId = Optional.present(docId),
                 workspaceId = workspaceId,
@@ -54,7 +54,7 @@ class GraphQLService @Inject constructor() {
             )
         )
     ).mapCatching { data ->
-        data.createCopilotSession
+        data.createCopilotSessionWithHistory.copilotChatHistory.sessionId
     }
 
     suspend fun getCopilotHistories(

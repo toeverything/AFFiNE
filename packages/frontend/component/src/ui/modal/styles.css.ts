@@ -12,6 +12,7 @@ import { vtScopeSelector } from '../../utils/view-transition';
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
+export const keyboardInsetVar = createVar('keyboardInsetVar');
 
 export const modalVTScope = generateIdentifier('modal');
 
@@ -89,14 +90,24 @@ export const modalContentWrapper = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  boxSizing: 'border-box',
   zIndex: cssVar('zIndexModal'),
+  transition: 'padding-bottom 230ms ease-out',
+
+  '@media': {
+    '(prefers-reduced-motion: reduce)': {
+      transition: 'none',
+    },
+  },
 
   selectors: {
     '&[data-mobile]': {
       alignItems: 'flex-end',
-      paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+      paddingBottom:
+        'var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 20px))',
     },
     '&[data-full-screen="true"]': {
+      alignItems: 'flex-start',
       padding: '0 !important',
     },
     '&.anim-none': {
@@ -174,8 +185,8 @@ export const modalContent = style({
     '[data-full-screen="true"] &': {
       vars: {
         [widthVar]: '100dvw',
-        [heightVar]: '100dvh',
-        [minHeightVar]: '100dvh',
+        [heightVar]: `calc(100dvh - ${keyboardInsetVar})`,
+        [minHeightVar]: `calc(100dvh - ${keyboardInsetVar})`,
       },
       maxWidth: '100dvw',
       maxHeight: '100dvh',

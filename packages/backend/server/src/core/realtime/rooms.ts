@@ -72,7 +72,3 @@ export function realtimeUserProfileRoom(userId: string) {
 export function realtimeUserSettingsRoom(userId: string) {
   return realtimeUserRoom(userId, 'settings');
 }
-
-export function realtimeUserAccessTokensRoom(userId: string) {
-  return realtimeUserRoom(userId, 'access-tokens');
-}

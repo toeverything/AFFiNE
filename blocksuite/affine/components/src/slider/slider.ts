@@ -151,9 +151,11 @@ export class Slider extends WithDisposable(LitElement) {
       <div class="drag-handle"></div>
       <div class="bottom-line"></div>
       <div class="slider-selected-overlay"></div>
-      ${this.tooltip
-        ? html`<affine-tooltip .offset=${8}>${this.tooltip}</affine-tooltip>`
-        : nothing}
+      ${
+        this.tooltip
+          ? html`<affine-tooltip .offset=${8}>${this.tooltip}</affine-tooltip>`
+          : nothing
+      }
     </div>`;
   }
 }

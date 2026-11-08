@@ -28,14 +28,16 @@ import {
   TooManyRequest,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
-import { DocAction, PermissionAccess } from '../../core/permission';
+import { DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
+import { llmGetBuiltInRouteOptions } from '../../native';
+import { CopilotAccessService, type CopilotScopeMode } from './access';
+import { ByokEntitlementPolicy } from './byok';
 import { CompatHistoryProjector } from './compat/history-projector';
 import { ConversationInboxService } from './conversation/inbox';
-import { PromptService } from './prompt/service';
-import { CopilotProviderFactory } from './providers/factory';
-import { ModelOutputType, type StreamObject } from './providers/types';
+import { CopilotEnabled } from './feature';
+import type { StreamObject } from './providers/types';
 import { ChatSessionService } from './session';
 import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
@@ -69,7 +71,7 @@ class CreateChatSessionInput {
 @InputType()
 class UpdateChatSessionInput implements Omit<
   UpdateChatSession,
-  'userId' | 'title'
+  'userId' | 'title' | 'workspaceId' | 'personal'
 > {
   @Field(() => String)
   sessionId!: string;
@@ -235,6 +237,9 @@ class ChatMessageType implements Partial<ChatMessage> {
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | undefined;
 
+  @Field(() => GraphQLJSON, { nullable: true })
+  scopeSnapshot!: ChatMessage['scopeSnapshot'];
+
   @Field(() => Date)
   createdAt!: Date;
 }
@@ -256,12 +261,6 @@ class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
   @Field(() => String)
   promptName!: string;
 
-  @Field(() => String)
-  model!: string;
-
-  @Field(() => [String])
-  optionalModels!: string[];
-
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
@@ -273,11 +272,6 @@ class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
 
   @Field(() => String, { nullable: true })
   title!: string | null;
-
-  @Field(() => Number, {
-    description: 'The number of tokens used in the session',
-  })
-  tokens!: number;
 
   @Field(() => [ChatMessageType])
   messages!: ChatMessageType[];
@@ -304,27 +298,6 @@ class CopilotQuotaType {
 }
 
 @ObjectType()
-class CopilotModelType {
-  @Field(() => String)
-  id!: string;
-
-  @Field(() => String)
-  name!: string;
-}
-
-@ObjectType()
-export class CopilotModelsType {
-  @Field(() => String)
-  defaultModel!: string;
-
-  @Field(() => [CopilotModelType])
-  optionalModels!: CopilotModelType[];
-
-  @Field(() => [CopilotModelType])
-  proModels!: CopilotModelType[];
-}
-
-@ObjectType()
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
@@ -343,12 +316,33 @@ export class CopilotSessionType {
 
   @Field(() => String)
   promptName!: string;
+}
+
+@ObjectType('CopilotRouteTarget')
+class CopilotRouteTargetType {
+  @Field(() => String)
+  id!: string;
 
   @Field(() => String)
-  model!: string;
+  displayName!: string;
 
-  @Field(() => [String])
-  optionalModels!: string[];
+  @Field(() => String)
+  minimumTier!: string;
+
+  @Field(() => Boolean)
+  available!: boolean;
+}
+
+@ObjectType('CopilotRouteOptions')
+class CopilotRouteOptionsType {
+  @Field(() => String)
+  routeId!: string;
+
+  @Field(() => String, { nullable: true })
+  defaultTargetId!: string | null;
+
+  @Field(() => [CopilotRouteTargetType])
+  choices!: CopilotRouteTargetType[];
 }
 
 // ================== Resolver ==================
@@ -360,19 +354,46 @@ export class CopilotType {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
-  private readonly modelNames = new Map<string, string>();
-
   constructor(
-    private readonly ac: PermissionAccess,
+    private readonly access: CopilotAccessService,
     private readonly mutex: RequestMutex,
-    private readonly prompt: PromptService,
     private readonly chatSession: ChatSessionService,
     private readonly historyProjector: CompatHistoryProjector,
     private readonly inbox: ConversationInboxService,
-    private readonly providerFactory: CopilotProviderFactory
+    private readonly entitlement: ByokEntitlementPolicy
   ) {}
+
+  @ResolveField(() => CopilotRouteOptionsType, {
+    nullable: true,
+    description: 'List native built-in route choices for a prompt',
+    complexity: 2,
+  })
+  async routeOptions(
+    @CurrentUser() user: CurrentUser,
+    @Args('promptName') promptName: string
+  ): Promise<CopilotRouteOptionsType | null> {
+    const options = llmGetBuiltInRouteOptions(promptName);
+    if (!options) return null;
+    if (env.selfhosted) {
+      return { routeId: options.routeId, defaultTargetId: null, choices: [] };
+    }
+    const premium = await this.entitlement.hasAiPlan(user.id);
+    return {
+      routeId: options.routeId,
+      defaultTargetId: premium
+        ? (options.premiumDefaultTargetId ?? null)
+        : (options.standardDefaultTargetId ?? null),
+      choices: options.choices.map(choice => ({
+        id: choice.id,
+        displayName: choice.displayName,
+        minimumTier: choice.minimumTier,
+        available: premium || choice.minimumTier === 'Standard',
+      })),
+    };
+  }
 
   @ResolveField(() => CopilotQuotaType, {
     name: 'quota',
@@ -383,74 +404,35 @@ export class CopilotResolver {
     return await this.chatSession.getQuota(user.id);
   }
 
-  private async assertPermission(
+  private async withPermission<T>(
     user: CurrentUser,
     options: { workspaceId?: string | null; docId?: string | null },
-    fallbackAction?: DocAction
+    fallbackAction: DocAction | undefined,
+    sessionIds: string[] | undefined,
+    operation: (
+      scope: { userId: string; workspaceId: string; docId?: string },
+      mode: CopilotScopeMode
+    ) => Promise<T>
   ) {
     const { workspaceId, docId } = options;
     if (!workspaceId) {
       throw new NotFoundException('Workspace not found');
     }
-    if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId, docId })
-        .allowLocal()
-        .assert(fallbackAction ?? 'Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
-    }
-    return { userId: user.id, workspaceId, docId: docId || undefined };
-  }
-
-  @ResolveField(() => CopilotModelsType, {
-    description:
-      'List available models for a prompt, with human-readable names',
-    complexity: 2,
-  })
-  async models(
-    @Args('promptName') promptName: string
-  ): Promise<CopilotModelsType> {
-    const prompt = await this.prompt.get(promptName);
-    if (!prompt) {
-      throw new NotFoundException('Prompt not found');
-    }
-    const convertModels = async (ids: string[]) => {
-      const models = await Promise.all(
-        ids.map(async id => {
-          const cachedName = this.modelNames.get(id);
-          if (cachedName) return { id, name: cachedName };
-
-          const resolved = await this.providerFactory.resolveProvider({
-            modelId: id,
-            outputType: ModelOutputType.Text,
-          });
-          const name = resolved?.provider.resolveModel(
-            resolved.modelId ?? id,
-            resolved.execution
-          )?.name;
-          if (name) {
-            this.modelNames.set(id, name);
-            return { id, name };
-          }
-          return null;
-        })
-      );
-
-      return models.filter(model => !!model) as CopilotModelType[];
+    const scope = {
+      userId: user.id,
+      workspaceId,
+      docId,
+      action: fallbackAction ?? (docId ? 'Doc.Update' : 'Workspace.Copilot'),
+    } as const;
+    const resolved = {
+      userId: user.id,
+      workspaceId,
+      docId: docId || undefined,
     };
-    const proModels = prompt.config?.proModels || [];
-
-    return {
-      defaultModel: prompt.model,
-      optionalModels: await convertModels(prompt.optionalModels),
-      proModels: await convertModels(proModels),
-    };
+    const mode = sessionIds
+      ? await this.access.sessionResource(scope, sessionIds)
+      : await this.access.sessionCollection(scope);
+    return await operation(resolved, mode);
   }
 
   @ResolveField(() => CopilotSessionType, {
@@ -462,8 +444,19 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args('sessionId') sessionId: string
   ): Promise<CopilotSessionType> {
-    await this.assertPermission(user, copilot);
-    const state = await this.chatSession.getMetaState(sessionId);
+    const state = await this.withPermission(
+      user,
+      copilot,
+      undefined,
+      [sessionId],
+      ({ workspaceId }, mode) =>
+        this.chatSession.getMetaState(
+          sessionId,
+          user.id,
+          workspaceId,
+          mode === 'personal'
+        )
+    );
     if (!state) {
       throw new NotFoundException('Session not found');
     }
@@ -494,16 +487,26 @@ export class CopilotResolver {
       return [];
     }
 
-    const appendOptions = await this.assertPermission(
+    const { sessions, mode } = await this.withPermission(
       user,
-      Object.assign({}, copilot, { docId: maybeDocId })
+      Object.assign({}, copilot, { docId: maybeDocId }),
+      undefined,
+      undefined,
+      async (appendOptions, mode) => ({
+        sessions: await this.chatSession.listMetaStates(
+          Object.assign({}, options, appendOptions, {
+            personal: mode === 'personal',
+          })
+        ),
+        mode,
+      })
     );
-
-    const sessions = (
-      await this.chatSession.listMetaStates(
-        Object.assign({}, options, appendOptions)
-      )
-    )
+    const appendOptions = {
+      userId: user.id,
+      workspaceId: copilot.workspaceId,
+      docId: maybeDocId,
+    };
+    const projectedSessions = sessions
       .map(state =>
         this.historyProjector.projectSession(state, {
           requestUserId: user.id,
@@ -512,14 +515,19 @@ export class CopilotResolver {
       .filter((history): history is Omit<ChatHistory, 'messages'> => !!history);
     if (appendOptions.docId) {
       type Session = Omit<ChatHistory, 'messages'> & { docId: string };
-      const filtered = sessions.filter((s): s is Session => !!s.docId);
-      const accessible = await this.ac
-        .user(user.id)
-        .workspace(copilot.workspaceId)
-        .docs(filtered, 'Doc.Update');
+      const filtered = projectedSessions.filter((s): s is Session => !!s.docId);
+      const accessible = await this.access.filterSessionDocs(
+        {
+          userId: user.id,
+          workspaceId: copilot.workspaceId,
+          action: 'Doc.Update',
+        },
+        filtered,
+        mode
+      );
       return accessible.map(this.transformToSessionType);
     } else {
-      return sessions.map(this.transformToSessionType);
+      return projectedSessions.map(this.transformToSessionType);
     }
   }
 
@@ -536,15 +544,24 @@ export class CopilotResolver {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
       return [];
-    } else {
-      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
-    const histories = (
-      await this.chatSession.listStates(
-        Object.assign({}, options, { userId: user.id, workspaceId, docId })
-      )
-    )
+    const storedHistories = await this.withPermission(
+      user,
+      { workspaceId, docId },
+      docId ? 'Doc.Read' : undefined,
+      undefined,
+      (_, mode) =>
+        this.chatSession.listStates(
+          Object.assign({}, options, {
+            userId: user.id,
+            workspaceId,
+            docId,
+            personal: mode === 'personal',
+          })
+        )
+    );
+    const histories = storedHistories
       .map(state =>
         this.historyProjector.projectHistory(state, {
           requestUserId: user.id,
@@ -576,8 +593,6 @@ export class CopilotResolver {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
       return paginate([], 'updatedAt', pagination, 0);
-    } else {
-      await this.assertPermission(user, { workspaceId, docId }, 'Doc.Read');
     }
 
     const finalOptions = Object.assign(
@@ -586,9 +601,30 @@ export class CopilotResolver {
       { userId: user.id, workspaceId, docId },
       { skip: pagination.offset, limit: pagination.first }
     );
-    const totalCount = await this.chatSession.count(finalOptions);
+    const [totalCount, stored] = await this.withPermission(
+      user,
+      { workspaceId, docId },
+      docId ? 'Doc.Read' : undefined,
+      undefined,
+      (_, mode) =>
+        Promise.all([
+          this.chatSession.count({
+            ...finalOptions,
+            personal: mode === 'personal',
+          }),
+          options?.withMessages
+            ? this.chatSession.listStates({
+                ...finalOptions,
+                personal: mode === 'personal',
+              })
+            : this.chatSession.listMetaStates({
+                ...finalOptions,
+                personal: mode === 'personal',
+              }),
+        ])
+    );
     const histories: ChatHistory[] = options?.withMessages
-      ? (await this.chatSession.listStates(finalOptions))
+      ? (stored as Awaited<ReturnType<ChatSessionService['listStates']>>)
           .map(state =>
             this.historyProjector.projectHistory(state, {
               requestUserId: user.id,
@@ -598,7 +634,9 @@ export class CopilotResolver {
             })
           )
           .filter((history): history is ChatHistory => !!history)
-      : (await this.chatSession.listMetaStates(finalOptions)).flatMap(state => {
+      : (
+          stored as Awaited<ReturnType<ChatSessionService['listMetaStates']>>
+        ).flatMap(state => {
           const session = this.historyProjector.projectSession(state, {
             requestUserId: user.id,
           });
@@ -626,20 +664,26 @@ export class CopilotResolver {
     options: CreateChatSessionInput
   ): Promise<string> {
     // permission check based on session type
-    await this.assertPermission(user, options);
-
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
 
-    return await this.chatSession.create({
-      ...options,
-      pinned: options.pinned ?? false,
-      docId: options.docId ?? null,
-      userId: user.id,
-    });
+    return await this.withPermission(
+      user,
+      options,
+      undefined,
+      undefined,
+      (_, mode) =>
+        this.chatSession.create({
+          ...options,
+          pinned: options.pinned ?? false,
+          docId: options.docId ?? null,
+          userId: user.id,
+          personal: mode === 'personal',
+        })
+    );
   }
 
   @Mutation(() => String, {
@@ -665,7 +709,20 @@ export class CopilotResolver {
     options: CreateChatSessionInput
   ): Promise<CopilotHistoriesType> {
     const sessionId = await this.createCopilotSessionInternal(user, options);
-    const state = await this.chatSession.getState(sessionId);
+    const mode = await this.access.sessionResource(
+      {
+        userId: user.id,
+        workspaceId: options.workspaceId,
+        docId: options.docId,
+      },
+      [sessionId]
+    );
+    const state = await this.chatSession.getState(
+      sessionId,
+      user.id,
+      options.workspaceId,
+      mode === 'personal'
+    );
     if (!state) {
       throw new NotFoundException('Session not found');
     }
@@ -696,17 +753,40 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => UpdateChatSessionInput })
     options: UpdateChatSessionInput
   ): Promise<string> {
-    const session = await this.chatSession.get(options.sessionId);
-    if (!session) {
+    const scope = await this.chatSession.getOwnedScope(
+      options.sessionId,
+      user.id
+    );
+    if (!scope) {
       throw new CopilotSessionNotFound();
     }
-
-    const config = await this.assertPermission(user, session.config);
+    const initialMode = await this.access.sessionResource(
+      {
+        userId: user.id,
+        workspaceId: scope.workspaceId,
+        docId: scope.docId,
+      },
+      [options.sessionId]
+    );
+    const session = await this.chatSession.getInScope({
+      sessionId: options.sessionId,
+      userId: user.id,
+      workspaceId: scope.workspaceId,
+      personal: initialMode === 'personal',
+    });
+    if (!session) throw new CopilotSessionNotFound();
+    const config = session.config;
     const { workspaceId, docId: currentDocId } = config;
     const { docId: newDocId } = options;
     // check permission if the docId is changed
     if (newDocId !== undefined && newDocId !== currentDocId) {
-      await this.assertPermission(user, { workspaceId, docId: newDocId });
+      await this.withPermission(
+        user,
+        { workspaceId, docId: newDocId },
+        undefined,
+        undefined,
+        async config => config
+      );
     }
 
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
@@ -715,9 +795,15 @@ export class CopilotResolver {
       throw new TooManyRequest('Server is busy');
     }
 
+    const mode = await this.access.sessionResource(
+      { userId: user.id, workspaceId, docId: currentDocId },
+      [options.sessionId]
+    );
     return await this.chatSession.update({
       ...options,
       userId: user.id,
+      workspaceId,
+      personal: mode === 'personal',
     });
   }
 
@@ -730,7 +816,6 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => ForkChatSessionInput })
     options: ForkChatSessionInput
   ): Promise<string> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
@@ -742,9 +827,16 @@ export class CopilotResolver {
       throw new CopilotDocNotFound({ docId: options.docId });
     }
 
+    const mode = await this.access.sessionCollection({
+      userId: user.id,
+      workspaceId: options.workspaceId,
+      docId: options.docId,
+      action: 'Doc.Update',
+    });
     return await this.chatSession.fork({
       ...options,
       userId: user.id,
+      personal: mode === 'personal',
     });
   }
 
@@ -758,31 +850,23 @@ export class CopilotResolver {
     options: DeleteSessionInput
   ): Promise<string[]> {
     const { workspaceId, docId, sessionIds } = options;
-    if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId, docId })
-        .allowLocal()
-        .assert('Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
-    }
-    if (!sessionIds.length) {
-      throw new NotFoundException('Session not found');
-    }
+    if (!sessionIds.length) throw new NotFoundException('Session not found');
+    const mode = await this.access.sessionResource(
+      {
+        userId: user.id,
+        workspaceId,
+        docId,
+        action: docId ? 'Doc.Update' : 'Workspace.Copilot',
+      },
+      sessionIds
+    );
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
-    if (!lock) {
-      throw new TooManyRequest('Server is busy');
-    }
-
+    if (!lock) throw new TooManyRequest('Server is busy');
     return await this.chatSession.cleanup({
       ...options,
       userId: user.id,
+      personal: mode === 'personal',
     });
   }
 
@@ -801,7 +885,28 @@ export class CopilotResolver {
       throw new TooManyRequest('Server is busy');
     }
     try {
-      return await this.inbox.createMessage(user.id, options);
+      const scope = await this.chatSession.getOwnedScope(
+        options.sessionId,
+        user.id
+      );
+      if (!scope) throw new CopilotSessionNotFound();
+      const mode = await this.access.sessionResource(
+        {
+          userId: user.id,
+          workspaceId: scope.workspaceId,
+          docId: scope.docId,
+          action: scope.docId ? 'Doc.Update' : 'Workspace.Copilot',
+        },
+        [options.sessionId]
+      );
+      const resolved = await this.chatSession.getInScope({
+        sessionId: options.sessionId,
+        userId: user.id,
+        workspaceId: scope.workspaceId,
+        personal: mode === 'personal',
+      });
+      if (!resolved) throw new CopilotSessionNotFound();
+      return await this.inbox.createMessage(user.id, options, resolved, mode);
     } catch (e: any) {
       throw new CopilotFailedToCreateMessage(e.message);
     }
@@ -813,9 +918,10 @@ export class CopilotResolver {
 }
 
 @Throttle()
+@CopilotEnabled()
 @Resolver(() => UserType)
 export class UserCopilotResolver {
-  constructor(private readonly ac: PermissionAccess) {}
+  constructor(private readonly access: CopilotAccessService) {}
 
   @ResolveField(() => CopilotType)
   async copilot(
@@ -823,11 +929,8 @@ export class UserCopilotResolver {
     @Args('workspaceId', { nullable: true }) workspaceId?: string
   ): Promise<CopilotType> {
     if (workspaceId) {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+      await this.access.sessionCollection({ userId: user.id, workspaceId });
+      return { workspaceId };
     }
     return { workspaceId: workspaceId || null };
   }

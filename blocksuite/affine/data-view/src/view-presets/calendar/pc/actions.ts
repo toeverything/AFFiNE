@@ -65,20 +65,28 @@ export const openCalendarEntry = (
               <span class="calendar-event-popover-icon">${DateTimeIcon()}</span>
               <span>${formatEntryTime(entry)}</span>
             </div>
-            ${entry.location
-              ? html`<div class="calendar-event-popover-row">
-                  <span class="calendar-event-popover-icon">${PinIcon()}</span>
-                  <span>${entry.location}</span>
-                </div>`
-              : ''}
-            ${entry.description
-              ? html`<div class="calendar-event-popover-row">
-                  <span class="calendar-event-popover-icon">${TextIcon()}</span>
-                  <span class="calendar-event-popover-description"
-                    >${entry.description}</span
-                  >
-                </div>`
-              : ''}
+            ${
+              entry.location
+                ? html`<div class="calendar-event-popover-row">
+                    <span class="calendar-event-popover-icon"
+                      >${PinIcon()}</span
+                    >
+                    <span>${entry.location}</span>
+                  </div>`
+                : ''
+            }
+            ${
+              entry.description
+                ? html`<div class="calendar-event-popover-row">
+                    <span class="calendar-event-popover-icon"
+                      >${TextIcon()}</span
+                    >
+                    <span class="calendar-event-popover-description"
+                      >${entry.description}</span
+                    >
+                  </div>`
+                : ''
+            }
           </div>
         `,
       ],

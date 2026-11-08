@@ -47,23 +47,27 @@ test('should dispatch event listener', t => {
   off();
 });
 
-test('should dispatch async event listener', async t => {
-  const { eventbus, listeners } = t.context;
+for (const method of ['emitAsync', 'emitDetachedAsync'] as const) {
+  test(`should await event listeners with ${method}`, async t => {
+    const { eventbus, listeners } = t.context;
 
-  const runtimeListener = Sinon.stub().returnsArg(0);
-  const off = eventbus.on('__test__.event', runtimeListener);
+    const runtimeListener = Sinon.stub().callsFake(async payload => {
+      await new Promise<void>(resolve => setImmediate(resolve));
+      return payload;
+    });
+    const off = eventbus.on('__test__.event', runtimeListener);
+    t.teardown(off);
 
-  const payload = { count: 0 };
-  const returns = await eventbus.emitAsync('__test__.event', payload);
+    const payload = { count: 0 };
+    const returns = await eventbus[method]('__test__.event', payload);
 
-  t.true(listeners.onTestEvent.calledOnceWithExactly(payload));
-  t.true(listeners.onTestEventAndEvent2.calledOnceWithExactly(payload));
-  t.true(runtimeListener.calledOnceWithExactly(payload));
+    t.true(listeners.onTestEvent.calledOnceWithExactly(payload));
+    t.true(listeners.onTestEventAndEvent2.calledOnceWithExactly(payload));
+    t.true(runtimeListener.calledOnceWithExactly(payload));
 
-  t.deepEqual(returns, [payload, payload, payload]);
-
-  off();
-});
+    t.deepEqual(returns, [payload, payload, payload]);
+  });
+}
 
 test('should dispatch multiple event handlers with same name', async t => {
   const { eventbus, listeners } = t.context;

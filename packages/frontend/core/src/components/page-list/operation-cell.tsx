@@ -117,8 +117,8 @@ const PageOperationCellMenuItem = ({
       confirmButtonOptions: {
         variant: 'error',
       },
-      onConfirm: () => {
-        docRecord.moveToTrash();
+      onConfirm: async () => {
+        await docRecord.moveToTrash();
       },
     });
   }, [docRecord, openConfirmModal, t]);

@@ -1,8 +1,9 @@
 import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
-import { AccountChanged, type AuthService } from '../../cloud';
+import { AccountChanged } from '../../cloud/events/account-changed';
 import { ServerStarted } from '../../cloud/events/server-started';
 import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
+import type { AuthService } from '../../cloud/services/auth';
 import { ApplicationFocused } from '../../lifecycle';
 import type { NbstoreService } from '../../storage';
 import type { NotificationStore } from '../stores/notification';
@@ -19,7 +20,10 @@ export class NotificationCountService extends Service {
     super();
   }
 
-  loggedIn$ = this.authService.session.status$.map(v => v === 'authenticated');
+  loggedIn$ = LiveData.from(
+    this.authService.session.status$.map(v => v === 'authenticated'),
+    this.authService.session.status$.value === 'authenticated'
+  );
 
   readonly count$ = LiveData.from(this.store.watchNotificationCountCache(), 0);
   readonly isLoading$ = new LiveData(false);

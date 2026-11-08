@@ -23,12 +23,14 @@ export class ActionImage extends WithDisposable(ShadowlessElement) {
 
     return html`<action-wrapper .host=${this.host} .item=${this.item}>
       <div style=${styleMap({ marginBottom: '12px' })}>
-        ${images
-          ? html`<chat-content-images
-              .images=${images}
-              data-testid="original-image"
-            ></chat-content-images>`
-          : nothing}
+        ${
+          images
+            ? html`<chat-content-images
+                .images=${images}
+                data-testid="original-image"
+              ></chat-content-images>`
+            : nothing
+        }
       </div>
     </action-wrapper>`;
   }

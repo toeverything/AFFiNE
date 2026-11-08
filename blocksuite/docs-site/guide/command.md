@@ -123,7 +123,10 @@ type MyCommandOptions = {
   configA: number;
   configB: string;
 };
-export const myCommand: Command<never, never, MyCommandOptions> = (ctx, next) => {
+export const myCommand: Command<never, never, MyCommandOptions> = (
+  ctx,
+  next
+) => {
   const { configA, configB } = ctx;
 
   if (fail) {

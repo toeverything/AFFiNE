@@ -17,8 +17,10 @@ const workspaceState = vi.hoisted(() => ({
   id: 'workspace-1',
   flavour: 'affine',
 }));
+const serverFeatures = vi.hoisted(() => ({ copilot: true }));
 
 const WorkspaceServiceToken = vi.hoisted(() => class WorkspaceService {});
+const ServerServiceToken = vi.hoisted(() => class ServerService {});
 
 vi.mock('@affine/component/setting-components', () => ({
   SettingHeader: ({ title }: { title: string }) => <h1>{title}</h1>,
@@ -34,6 +36,10 @@ vi.mock('@affine/core/modules/integration', () => ({
 
 vi.mock('@affine/core/modules/workspace', () => ({
   WorkspaceService: WorkspaceServiceToken,
+}));
+
+vi.mock('@affine/core/modules/cloud', () => ({
+  ServerService: ServerServiceToken,
 }));
 
 vi.mock('@affine/i18n', () => {
@@ -70,11 +76,15 @@ vi.mock('@blocksuite/icons/rc', () => ({
 }));
 
 vi.mock('@toeverything/infra', () => ({
+  useLiveData: () => serverFeatures,
   useService: (token: unknown) => {
     if (token === WorkspaceServiceToken) {
       return {
         workspace: workspaceState,
       };
+    }
+    if (token === ServerServiceToken) {
+      return { server: { features$: serverFeatures } };
     }
     return {};
   },
@@ -111,6 +121,7 @@ describe('IntegrationSetting', () => {
       isTeam: false,
     };
     workspaceState.flavour = 'affine';
+    serverFeatures.copilot = true;
   });
 
   afterEach(() => {
@@ -152,4 +163,21 @@ describe('IntegrationSetting', () => {
       }
     });
   }
+
+  test('hides MCP Server when Copilot is disabled', () => {
+    serverFeatures.copilot = false;
+    render(<IntegrationSetting />);
+
+    expect(
+      screen.queryByText('com.affine.integration.mcp-server.name')
+    ).toBeNull();
+  });
+
+  test('shows MCP Server when Copilot is enabled', () => {
+    render(<IntegrationSetting />);
+
+    expect(
+      screen.getByText('com.affine.integration.mcp-server.name')
+    ).not.toBeNull();
+  });
 });

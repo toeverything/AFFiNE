@@ -99,19 +99,26 @@ export const registerHandlers = () => {
       return await handleIpcMessage(e, ...args);
     } catch (error) {
       logger.error(`error in ipc handler when calling ${args[0]}`, error);
-      return null;
+      throw error;
     }
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
-    if (!checkSource(e)) return;
+    if (!checkSource(e)) {
+      e.returnValue = undefined;
+      return;
+    }
 
     handleIpcMessage(e, ...args)
       .then(ret => {
         e.returnValue = ret;
       })
-      .catch(() => {
-        // never throw
+      .catch(error => {
+        logger.error(
+          `error in sync ipc handler when calling ${args[0]}`,
+          error
+        );
+        e.returnValue = undefined;
       });
   });
 };

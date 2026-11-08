@@ -6,9 +6,7 @@ import {
   WorkspaceMember,
   WorkspaceMemberSource,
   WorkspaceMemberStatus,
-  WorkspaceUserRole,
 } from '@prisma/client';
-import { groupBy } from 'lodash-es';
 
 import { WorkspaceRole, workspaceUserSelect } from './common';
 import {
@@ -17,7 +15,16 @@ import {
   workspaceStatusFromNew,
 } from './permission-write';
 
-export type WorkspaceUserCompat = WorkspaceUserRole & {
+export type WorkspaceUserCompat = {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  type: WorkspaceRole;
+  status: WorkspaceMemberStatus;
+  source: WorkspaceMemberSource;
+  inviterId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   user?: Pick<User, keyof typeof workspaceUserSelect>;
 };
 
@@ -53,7 +60,7 @@ export function workspaceMemberToCompat(
   member: WorkspaceMemberWithUser
 ): WorkspaceUserCompat {
   return {
-    id: member.legacyPermissionId ?? member.id,
+    id: member.id,
     workspaceId: member.workspaceId,
     userId: member.userId,
     type: workspaceRoleFromNew(member.role as never),
@@ -70,7 +77,7 @@ export function workspaceInvitationToCompat(
   invitation: WorkspaceInvitationWithUser
 ): WorkspaceUserCompat {
   return {
-    id: invitation.legacyPermissionId ?? invitation.id,
+    id: invitation.id,
     workspaceId: invitation.workspaceId,
     userId: invitation.inviteeUserId ?? '',
     type: workspaceRoleFromNew(invitation.requestedRole as never),
@@ -117,7 +124,7 @@ export async function queryCompatRows(
     SELECT *
     FROM (
       SELECT
-        COALESCE(wm.legacy_permission_id, wm.id) AS id,
+        wm.id AS id,
         wm.workspace_id AS "workspaceId",
         wm.user_id AS "userId",
         CASE wm.role
@@ -143,7 +150,7 @@ export async function queryCompatRows(
         AND wm.state = 'active'
       UNION ALL
       SELECT
-        COALESCE(wi.legacy_permission_id, wi.id) AS id,
+        wi.id AS id,
         wi.workspace_id AS "workspaceId",
         wi.invitee_user_id AS "userId",
         CASE wi.requested_role
@@ -192,7 +199,7 @@ export async function searchCompatRows(
     SELECT *
     FROM (
       SELECT
-        COALESCE(wm.legacy_permission_id, wm.id) AS id,
+        wm.id AS id,
         wm.workspace_id AS "workspaceId",
         wm.user_id AS "userId",
         CASE wm.role
@@ -218,7 +225,7 @@ export async function searchCompatRows(
         AND wm.state = 'active'
       UNION ALL
       SELECT
-        COALESCE(wi.legacy_permission_id, wi.id) AS id,
+        wi.id AS id,
         wi.workspace_id AS "workspaceId",
         wi.invitee_user_id AS "userId",
         CASE wi.requested_role
@@ -324,87 +331,6 @@ export async function hasSharedWorkspace(
   `;
 
   return shared.length > 0;
-}
-
-export async function allocateWorkspaceSeats(
-  db: WorkspaceUserCompatDb,
-  models: {
-    permissionProjection: { markNewWriteOrigin(): Promise<void> };
-    workspaceMember: {
-      setActive(
-        workspaceId: string,
-        userId: string,
-        role: WorkspaceRole
-      ): Promise<unknown>;
-    };
-  },
-  workspaceId: string,
-  limit: number
-) {
-  await models.permissionProjection.markNewWriteOrigin();
-  const [activeCount, pendingCount] = await Promise.all([
-    db.workspaceMember.count({
-      where: {
-        workspaceId,
-        state: 'active',
-      },
-    }),
-    db.workspaceInvitation.count({
-      where: {
-        workspaceId,
-        status: 'pending',
-      },
-    }),
-  ]);
-  const usedCount = activeCount + pendingCount;
-
-  if (limit <= usedCount) {
-    return [];
-  }
-
-  const invitationsToAllocate = await db.workspaceInvitation.findMany({
-    where: {
-      workspaceId,
-      status: 'waiting_seat',
-      inviteeUserId: {
-        not: null,
-      },
-    },
-    orderBy: { createdAt: 'asc' },
-    take: limit - usedCount,
-  });
-
-  const groups = groupBy(invitationsToAllocate, invitation =>
-    workspaceSourceFromNew(invitation.kind as never)
-  ) as Record<WorkspaceMemberSource, WorkspaceInvitation[]>;
-
-  if (groups.Email?.length > 0) {
-    await db.workspaceInvitation.updateMany({
-      where: { id: { in: groups.Email.map(invitation => invitation.id) } },
-      data: { status: 'pending' },
-    });
-  }
-
-  if (groups.Link?.length > 0) {
-    await Promise.all(
-      groups.Link.map(invitation =>
-        models.workspaceMember.setActive(
-          invitation.workspaceId,
-          invitation.inviteeUserId as string,
-          invitation.requestedRole === 'admin'
-            ? WorkspaceRole.Admin
-            : WorkspaceRole.Collaborator
-        )
-      )
-    );
-  }
-
-  return (groups.Email ?? []).map(invitation =>
-    workspaceInvitationToCompat({
-      ...invitation,
-      status: 'pending',
-    })
-  );
 }
 
 export function workspaceRoleToNewFilter(role: WorkspaceRole) {

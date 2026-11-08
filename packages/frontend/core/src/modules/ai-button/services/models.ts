@@ -1,112 +1,109 @@
-import { getPromptModelsQuery, SubscriptionStatus } from '@affine/graphql';
-import {
-  createSignalFromObservable,
-  type Signal,
-} from '@blocksuite/affine/shared/utils';
+import { getCopilotRouteOptionsQuery } from '@affine/graphql';
 import { signal } from '@preact/signals-core';
-import { LiveData, Service } from '@toeverything/infra';
+import { Service } from '@toeverything/infra';
 
 import type { GraphQLService, SubscriptionService } from '../../cloud';
 import type { GlobalStateService } from '../../storage';
 
-const AI_MODEL_ID_KEY = 'AIModelId';
+const ROUTE_TARGET_KEY = 'AIManagedRouteTarget';
 
 export interface AIModel {
-  name: string;
   id: string;
-  version: string;
+  name: string;
   category: string;
-  isPro: boolean;
-  isDefault: boolean;
+  version: string;
+  available: boolean;
 }
 
 export class AIModelService extends Service {
-  modelId: Signal<string | undefined>;
+  readonly modelId = signal<string | undefined>(undefined);
+  readonly models = signal<AIModel[]>([]);
 
-  models: Signal<AIModel[]> = signal([]);
-
-  private readonly modelId$ = LiveData.from(
-    this.globalStateService.globalState.watch<string>(AI_MODEL_ID_KEY),
-    undefined
-  );
+  private workspaceId: string | undefined;
+  private routeId: string | undefined;
+  private requestId = 0;
 
   constructor(
     private readonly globalStateService: GlobalStateService,
     private readonly gqlService: GraphQLService,
-    private readonly subscriptionService: SubscriptionService
+    subscriptionService: SubscriptionService
   ) {
     super();
-
-    const { signal: modelId, cleanup } = createSignalFromObservable<
-      string | undefined
-    >(this.modelId$, undefined);
-    this.modelId = modelId;
-    this.disposables.push(cleanup);
-
-    this.init().catch(err => {
-      console.error(err);
+    const subscription = subscriptionService.subscription.ai$.subscribe(() => {
+      if (this.workspaceId && this.routeId) {
+        this.load(this.workspaceId, this.routeId).catch(console.error);
+      }
     });
+    this.disposables.push(() => subscription.unsubscribe());
   }
 
-  resetModel = () => {
-    this.globalStateService.globalState.set(AI_MODEL_ID_KEY, undefined);
-  };
+  setScope(workspaceId: string, routeId: string) {
+    if (workspaceId === this.workspaceId && routeId === this.routeId) return;
+    this.workspaceId = workspaceId;
+    this.routeId = routeId;
+    this.models.value = [];
+    this.modelId.value = undefined;
+    this.load(workspaceId, routeId).catch(console.error);
+  }
 
-  setModel = (modelId: string) => {
-    const isSubscribed =
-      this.subscriptionService.subscription.ai$.value?.status ===
-      SubscriptionStatus.Active;
-    const model = this.models.value.find(model => model.id === modelId);
-    if (!isSubscribed && model?.isPro) {
+  resetModel() {
+    this.setModel(undefined);
+  }
+
+  setModel(modelId: string | undefined) {
+    if (!this.workspaceId || !this.routeId) return;
+    if (
+      modelId &&
+      !this.models.value.find(model => model.id === modelId)?.available
+    ) {
       return;
     }
-    this.globalStateService.globalState.set(AI_MODEL_ID_KEY, modelId);
-  };
-
-  private readonly init = async () => {
-    await this.initModels();
-
-    // subscribe to ai purchase status
-    const sub = this.subscriptionService.subscription.ai$.subscribe(
-      subscription => {
-        const isSubscribed = subscription?.status === SubscriptionStatus.Active;
-        const model = this.models.value.find(
-          model => model.id === this.modelId.value
-        );
-        if (!isSubscribed && model?.isPro) {
-          this.resetModel();
-        }
-      }
+    this.modelId.value = modelId;
+    this.globalStateService.globalState.set(
+      this.storageKey(this.workspaceId, this.routeId),
+      modelId
     );
-    this.disposables.push(() => sub.unsubscribe());
-  };
+  }
 
-  private readonly initModels = async (prompt?: string) => {
-    const promptName = prompt || 'Chat With AFFiNE AI';
-    const models = await this.getModelsByPrompt(promptName);
-    if (models) {
-      const { defaultModel, optionalModels, proModels } = models;
-      this.models.value = optionalModels.map(model => {
-        const [category] = model.name.split(' ');
-        const version = model.name.slice(category.length + 1);
-        return {
-          name: model.name,
-          id: model.id,
-          version,
-          category,
-          isPro: proModels.some(proModel => proModel.id === model.id),
-          isDefault: model.id === defaultModel,
-        };
-      });
+  private async load(workspaceId: string, routeId: string) {
+    const requestId = ++this.requestId;
+    const result = await this.gqlService.gql({
+      query: getCopilotRouteOptionsQuery,
+      variables: { promptName: routeId },
+    });
+    if (requestId !== this.requestId) return;
+    const options = result.currentUser?.copilot?.routeOptions;
+    if (!options) {
+      this.models.value = [];
+      this.modelId.value = undefined;
+      return;
     }
-  };
+    this.models.value = options.choices.map(choice => {
+      const [category] = choice.displayName.split(' ');
+      return {
+        id: choice.id,
+        name: choice.displayName,
+        category,
+        version: choice.displayName.slice(category.length + 1),
+        available: choice.available,
+      };
+    });
+    const selected = this.globalStateService.globalState.get<string>(
+      this.storageKey(workspaceId, routeId)
+    );
+    const selectedAvailable = this.models.value.some(
+      model => model.id === selected && model.available
+    );
+    this.modelId.value = selectedAvailable ? selected : undefined;
+    if (selected && !selectedAvailable) {
+      this.globalStateService.globalState.set(
+        this.storageKey(workspaceId, routeId),
+        undefined
+      );
+    }
+  }
 
-  private readonly getModelsByPrompt = async (promptName: string) => {
-    return this.gqlService
-      .gql({
-        query: getPromptModelsQuery,
-        variables: { promptName },
-      })
-      .then(res => res.currentUser?.copilot?.models);
-  };
+  private storageKey(workspaceId: string, routeId: string) {
+    return `${ROUTE_TARGET_KEY}:${workspaceId}:${routeId}`;
+  }
 }

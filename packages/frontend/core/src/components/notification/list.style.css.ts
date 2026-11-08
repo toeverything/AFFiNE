@@ -79,10 +79,21 @@ export const listEmptyDescription = style({
 });
 
 export const error = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '8px',
   color: cssVarV2('status/error'),
   fontSize: '14px',
   lineHeight: '22px',
-  padding: '4px 2px',
+  padding: '8px',
+});
+
+export const errorEmptyTitle = style({
+  color: cssVarV2('status/error'),
+  fontSize: '14px',
+  lineHeight: '22px',
+  textAlign: 'center',
 });
 
 export const itemContainer = style({

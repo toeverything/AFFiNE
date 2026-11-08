@@ -101,7 +101,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       this.transcriptionJob.status$.value.status === 'waiting-for-job' &&
       !this.hasTranscription$.value
     ) {
-      this.transcribe().catch(error => {
+      this.resumeTranscription().catch(error => {
         logger.error('Error transcribing audio:', error);
       });
     }
@@ -167,16 +167,20 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
     return job;
   }
 
-  readonly transcribe = async () => {
+  private readonly runTranscription = async (retryFailed: boolean) => {
     try {
-      // if job is already running, we should not start it again
-      if (this.transcriptionJob.status$.value.status !== 'waiting-for-job') {
+      const initialStatus = this.transcriptionJob.status$.value.status;
+      if (initialStatus !== 'waiting-for-job' && initialStatus !== 'failed') {
         return;
       }
-      const status = await this.transcriptionJob.start();
+      const status = await this.transcriptionJob.start(retryFailed);
+      if (status.status === 'blocked') {
+        return status;
+      }
       if (status.status === 'settled') {
         await this.fillTranscriptionResult(status.result);
       }
+      return status;
     } catch (error) {
       track.doc.editor.audioBlock.transcribeRecording({
         type: 'Meeting record',
@@ -186,6 +190,10 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       throw error;
     }
   };
+
+  readonly resumeTranscription = () => this.runTranscription(false);
+
+  readonly transcribe = () => this.runTranscription(true);
 
   private readonly fillTranscriptionResult = async (
     result: TranscriptionResult

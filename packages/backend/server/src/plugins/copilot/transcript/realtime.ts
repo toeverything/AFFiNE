@@ -1,21 +1,26 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { CopilotTranscriptionJobNotFound } from '../../../base';
-import { PermissionAccess } from '../../../core/permission';
+import { CopilotTranscriptionJobNotFound } from '../../../base/error/errors.gen';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import {
   RealtimeRegistry,
   realtimeTranscriptTaskRoom,
   registerRealtimeLiveQuery,
 } from '../../../core/realtime';
+import { CopilotAccessService } from '../access';
+import { assertCopilotEnabled } from '../availability';
 import { CopilotTranscriptionReader } from './reader';
+import { CopilotTranscriptionRetryService } from './retry';
 
 @Injectable()
 export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
   constructor(
-    private readonly ac: PermissionAccess,
+    private readonly access: CopilotAccessService,
     private readonly transcript: CopilotTranscriptionReader,
-    private readonly registry: RealtimeRegistry
+    private readonly retry: CopilotTranscriptionRetryService,
+    private readonly registry: RealtimeRegistry,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   onModuleInit() {
@@ -31,18 +36,48 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
       taskId: z.string(),
     });
 
+    this.registry.registerRequest({
+      name: 'copilot.transcript.task.retry',
+      input: z.object({
+        workspaceId: z.string(),
+        taskId: z.string(),
+      }),
+      handle: async (user, input) => {
+        return {
+          task: await this.withCopilot(
+            user.id,
+            input.workspaceId,
+            { taskId: input.taskId },
+            personal =>
+              this.retry.retryTask(
+                user.id,
+                input.workspaceId,
+                input.taskId,
+                personal
+              )
+          ),
+        };
+      },
+    });
+
     registerRealtimeLiveQuery(this.registry, {
       request: {
         name: 'copilot.transcript.task.get',
         input: requestInput,
         handle: async (user, input) => {
-          await this.assertCopilot(user.id, input.workspaceId);
           return {
-            task: await this.transcript.queryTask(
+            task: await this.withCopilot(
               user.id,
               input.workspaceId,
-              input.taskId,
-              input.blobId
+              { taskId: input.taskId, blobId: input.blobId },
+              personal =>
+                this.transcript.queryTaskInScope({
+                  userId: user.id,
+                  workspaceId: input.workspaceId,
+                  taskId: input.taskId,
+                  blobId: input.blobId,
+                  personal,
+                })
             ),
           };
         },
@@ -51,11 +86,17 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
         name: 'copilot.transcript.task.changed',
         input: topicInput,
         authorize: async (user, input) => {
-          await this.assertCopilot(user.id, input.workspaceId);
-          const task = await this.transcript.queryTask(
+          const task = await this.withCopilot(
             user.id,
             input.workspaceId,
-            input.taskId
+            { taskId: input.taskId },
+            personal =>
+              this.transcript.queryTaskInScope({
+                userId: user.id,
+                workspaceId: input.workspaceId,
+                taskId: input.taskId,
+                personal,
+              })
           );
           if (!task) {
             throw new CopilotTranscriptionJobNotFound();
@@ -67,11 +108,18 @@ export class CopilotTranscriptRealtimeProvider implements OnModuleInit {
     });
   }
 
-  private async assertCopilot(userId: string, workspaceId: string) {
-    await this.ac
-      .user(userId)
-      .workspace(workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
+  private async withCopilot<T>(
+    userId: string,
+    workspaceId: string,
+    resource: { taskId?: string; blobId?: string },
+    operation: (personal: boolean) => Promise<T>
+  ) {
+    assertCopilotEnabled(this.runtime.copilotEnabled());
+    const mode = await this.access.transcriptResource(
+      userId,
+      workspaceId,
+      resource
+    );
+    return await operation(mode === 'personal');
   }
 }

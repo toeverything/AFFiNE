@@ -1,3 +1,0 @@
-mutation queueWorkspaceEmbedding($workspaceId: String!, $docId: [String!]!) {
-  queueWorkspaceEmbedding(workspaceId: $workspaceId, docId: $docId)
-}

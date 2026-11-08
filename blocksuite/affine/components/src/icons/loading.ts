@@ -40,9 +40,8 @@ export const LoadingIcon = ({
       stroke="${strokeColor}"
       stroke-width="4"
       stroke-linecap="round"
-      stroke-dasharray="${2 * Math.PI * 8 * progress} ${2 *
-      Math.PI *
-      8 *
-      (1 - progress)}"
+      stroke-dasharray="${2 * Math.PI * 8 * progress} ${
+        2 * Math.PI * 8 * (1 - progress)
+      }"
     />
   </svg>`;

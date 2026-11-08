@@ -300,10 +300,14 @@ const createGroupTraitHarness = (options?: {
     return cell;
   };
 
+  const isLocked$ = signal(false);
   const view = {
     data$,
     rows$: signal(rows.map(createTestRow)),
-    isLocked$: signal(false),
+    isLocked$,
+    lockRows: vi.fn((locked: boolean) => {
+      isLocked$.value = locked;
+    }),
     manager: {
       dataSource: asDataSource(dataSource),
     },
@@ -348,6 +352,7 @@ const createGroupTraitHarness = (options?: {
     groupTrait: new GroupTrait(groupBy$, view as never, ops),
     ops,
     cells,
+    view,
   };
 };
 
@@ -382,7 +387,7 @@ describe('kanban', () => {
     });
 
     it('preserves manual group order when updating card sort', () => {
-      const { groupTrait, ops, cells } = createGroupTraitHarness({
+      const { groupTrait, ops, cells, view } = createGroupTraitHarness({
         groupProperties: [
           {
             key: 'false',
@@ -402,8 +407,21 @@ describe('kanban', () => {
         },
       });
 
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2']);
+      view.lockRows(true);
+
       groupTrait.moveCardTo('row-1', 'false', 'true', 'end');
 
+      expect(view.lockRows).toHaveBeenLastCalledWith(false);
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2', 'row-1']);
       expect(ops.changeRowSort).toHaveBeenCalledWith(
         ['false', 'true'],
         'true',

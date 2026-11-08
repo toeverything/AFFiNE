@@ -3,201 +3,89 @@ import {
   Logger,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
+  Optional,
 } from '@nestjs/common';
 
-import { wrapCallMetric } from '../../base/metrics';
-import { BackendRuntime, type BackendRuntimeHealth } from '../../native';
+import { EventBus, OnEvent } from '../../base';
+import { metrics } from '../../base/metrics';
+import {
+  type AppConfigCommand,
+  BackendRuntime,
+  type BackendRuntimeHealth,
+  ServerConfigHandle,
+} from '../../native';
+import { BackendRuntimeOperations } from './copilot-operations';
+import { recordPermissionTelemetry } from './telemetry';
 
-type RuntimeInstance = InstanceType<typeof BackendRuntime>;
-
-export type RuntimeQuotaTargetDomainInput = {
-  domain: string;
-  count: number;
-};
-
-export type RuntimeQuotaSourceInput = {
-  trusted: boolean;
-  ip?: string;
-  country?: string;
-  asn?: number;
-  rayId?: string;
-};
-
-export type RuntimeWorkspaceInviteQuotaInput = {
-  actorUserId: string;
-  workspaceId: string;
-  requestId?: string;
-  targetCount: number;
-  targetDomains: RuntimeQuotaTargetDomainInput[];
-  source?: RuntimeQuotaSourceInput;
-};
-
-export type RuntimeWorkspaceInviteQuotaUsage = {
-  targetCount: number;
-  targetDomains: RuntimeQuotaTargetDomainInput[];
-};
-
-export type RuntimeInviteAbuseAction =
-  | 'ban_actor'
-  | 'quarantine_actor'
-  | 'quarantine_workspace'
-  | 'quarantine_source_cohort';
-
-const RUNTIME_INVITE_ABUSE_ACTIONS = new Set<RuntimeInviteAbuseAction>([
-  'ban_actor',
-  'quarantine_actor',
-  'quarantine_workspace',
-  'quarantine_source_cohort',
-]);
-
-export type RuntimeInviteAbuseClaimedAction = {
-  action: RuntimeInviteAbuseAction;
-  subjectKey: string;
-  evidenceId: string;
-  actionId: string;
-  actorUserId: string;
-  workspaceId: string;
-};
-
-type NativeRuntimeInviteAbuseClaimedAction = Omit<
+export type {
+  BlobManifestEntryV1,
+  BlobManifestV1,
+  BlobSourceV1,
+  RuntimeInviteAbuseAction,
   RuntimeInviteAbuseClaimedAction,
-  'action'
-> & {
-  action: string;
-};
-
-export type RuntimeWorkspaceInviteQuotaDecision = {
-  allowed: boolean;
-  reservationId?: string;
-  retryAfterSeconds?: number;
-  reason?: string;
-  scopeKey?: string;
-  windowSeconds?: number;
-  limit?: number;
-  current?: number;
-  requested?: number;
-  actionRequired?: {
-    action: RuntimeInviteAbuseAction;
-    subjectKey: string;
-    evidenceId: string;
-    actionId: string;
-  };
-};
-
-type NativeRuntimeInviteAbuseActionRequired = Omit<
-  NonNullable<RuntimeWorkspaceInviteQuotaDecision['actionRequired']>,
-  'action'
-> & {
-  action: string;
-};
-
-type NativeRuntimeWorkspaceInviteQuotaDecision = Omit<
+  RuntimeMailDeliveryQuotaDecision,
+  RuntimeMailDeliveryQuotaInput,
+  RuntimeQuotaSourceInput,
+  RuntimeQuotaTargetDomainInput,
+  RuntimeSeatReservationDecision,
+  RuntimeStorageReservationDecision,
+  RuntimeStorageReservationInput,
+  RuntimeStorageReservationMutation,
+  RuntimeWorkspaceActionDecision,
   RuntimeWorkspaceInviteQuotaDecision,
-  'actionRequired'
-> & {
-  actionRequired?: NativeRuntimeInviteAbuseActionRequired;
-};
+  RuntimeWorkspaceInviteQuotaInput,
+  RuntimeWorkspaceInviteQuotaUsage,
+} from './contracts';
 
-export type RuntimeMailDeliveryQuotaInput = {
-  requestId?: string;
-  mailName: string;
-  recipient: {
-    email: string;
-    domain: string;
-    userId?: string;
-  };
-  metadata: {
-    actorUserId?: string;
-    workspaceId?: string;
-    notificationId?: string;
-    abuseSubjectKey?: string;
-  };
-  source?: RuntimeQuotaSourceInput;
-};
+export type RuntimeInvalidation =
+  | {
+      version: 1;
+      kind: 'quotaEntitlement' | 'quotaStorageUsage';
+      subject: string;
+    }
+  | {
+      version: 1;
+      kind: 'quotaOwnerMapping' | 'quotaSeatUsage';
+      workspaceId: string;
+    }
+  | { version: 1; kind: 'blobSource'; source: unknown };
 
-export type RuntimeMailDeliveryQuotaDecision = {
-  allowed: boolean;
-  reservationId?: string;
-  mailClass: string;
-  retryAfterSeconds?: number;
-  reason?: string;
-  scopeKey?: string;
-  windowSeconds?: number;
-  limit?: number;
-  current?: number;
-  requested?: number;
-};
-
-type RuntimeQuotaMethods = RuntimeInstance & {
-  assertWorkspaceInviteQuotaV1(
-    input: RuntimeWorkspaceInviteQuotaInput
-  ): Promise<NativeRuntimeWorkspaceInviteQuotaDecision>;
-  commitWorkspaceInviteQuotaV1(
-    reservationId: string,
-    usage: RuntimeWorkspaceInviteQuotaUsage
-  ): Promise<boolean>;
-  releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean>;
-  assertMailDeliveryQuotaV1(
-    input: RuntimeMailDeliveryQuotaInput
-  ): Promise<RuntimeMailDeliveryQuotaDecision>;
-  commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean>;
-  releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean>;
-  cleanupExpiredRollingQuota(limit: number): Promise<number>;
-  isInviteAbuseUserQuarantinedOrBanned(userId: string): Promise<boolean>;
-  isInviteAbuseWorkspaceQuarantined(workspaceId: string): Promise<boolean>;
-  claimInviteAbuseAction(actionId: string, workerId: string): Promise<boolean>;
-  claimRetryableInviteAbuseActions(
-    workerId: string,
-    limit: number
-  ): Promise<NativeRuntimeInviteAbuseClaimedAction[]>;
-  markInviteAbuseAction(
-    actionId: string,
-    workerId: string,
-    status: 'succeeded' | 'failed',
-    error?: string | null
-  ): Promise<boolean>;
-};
-
-function normalizeInviteAbuseAction(action: string): RuntimeInviteAbuseAction {
-  if (RUNTIME_INVITE_ABUSE_ACTIONS.has(action as RuntimeInviteAbuseAction)) {
-    return action as RuntimeInviteAbuseAction;
+declare global {
+  interface Events {
+    'backendRuntime.invalidation': RuntimeInvalidation;
+    'backendRuntime.configApplied': {
+      updates: DeepPartial<AppConfig>;
+    };
   }
-  throw new Error(`Unknown invite abuse action: ${action}`);
-}
-
-function normalizeWorkspaceInviteQuotaDecision(
-  decision: NativeRuntimeWorkspaceInviteQuotaDecision
-): RuntimeWorkspaceInviteQuotaDecision {
-  const { actionRequired, ...rest } = decision;
-  if (!actionRequired) {
-    return rest;
-  }
-
-  return {
-    ...rest,
-    actionRequired: {
-      ...actionRequired,
-      action: normalizeInviteAbuseAction(actionRequired.action),
-    },
-  };
-}
-
-function normalizeClaimedInviteAbuseAction(
-  action: NativeRuntimeInviteAbuseClaimedAction
-): RuntimeInviteAbuseClaimedAction {
-  return {
-    ...action,
-    action: normalizeInviteAbuseAction(action.action),
-  };
 }
 
 @Injectable()
 export class BackendRuntimeProvider
+  extends BackendRuntimeOperations
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(BackendRuntimeProvider.name);
-  private readonly runtime: RuntimeInstance = new BackendRuntime();
   private migrationsStarted = false;
+
+  constructor(
+    serverConfig: ServerConfigHandle,
+    @Optional() private readonly event?: EventBus
+  ) {
+    const runtime = new BackendRuntime(
+      serverConfig,
+      undefined,
+      (error: Error | null, event: string) =>
+        recordPermissionTelemetry(error, event),
+      (error: Error | null, value: string) => {
+        if (error || !event) return;
+        event.emit(
+          'backendRuntime.invalidation',
+          JSON.parse(value) as RuntimeInvalidation
+        );
+      }
+    );
+    super(runtime);
+  }
 
   async onApplicationBootstrap() {
     await this.start();
@@ -209,9 +97,25 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
-    await this.runMigrationsOnce();
-    const health = await this.runtime.health();
+    await this.event?.emitAsync('backendRuntime.configApplied', {
+      updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
+    });
+    const health = await this.health();
     this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+  }
+
+  async saveAppConfig(actor: string | null, commands: AppConfigCommand[]) {
+    return await this.measured('saveAppConfig', runtime =>
+      runtime.saveAppConfig(actor, commands)
+    );
+  }
+
+  /**
+   * Schema changes belong to the explicit predeploy path. Runtime startup only
+   * connects services and must not mutate the database schema.
+   */
+  async runMigrations() {
+    await this.runMigrationsOnce();
   }
 
   async stop() {
@@ -219,144 +123,52 @@ export class BackendRuntimeProvider
     this.logger.log('backend runtime stopped');
   }
 
+  @OnEvent('config.changed')
+  async onConfigChanged({ updates }: Events['config.changed']) {
+    if (
+      !updates.copilot &&
+      !updates.crypto &&
+      !updates.db &&
+      !updates.auth &&
+      !updates.oauth &&
+      !updates.payment &&
+      !updates.indexer &&
+      !updates.storages
+    ) {
+      return;
+    }
+    try {
+      await this.runtime.reloadConfig();
+      await this.event?.emitAsync('backendRuntime.configApplied', { updates });
+    } catch (error) {
+      this.logger.error(
+        `Failed to apply committed native config: ${error instanceof Error ? error.name : 'unknown'}`
+      );
+    }
+  }
+
   async health(): Promise<BackendRuntimeHealth> {
-    return await this.runtime.health();
-  }
-
-  async cleanupExpiredSnapshotHistories(limit: number) {
-    return await this.measured('cleanupExpiredSnapshotHistories', rt =>
-      rt.cleanupExpiredSnapshotHistories(limit)
-    );
-  }
-
-  async cleanupExpiredUserSessions(limit: number) {
-    return await this.measured('cleanupExpiredUserSessions', rt =>
-      rt.cleanupExpiredUserSessions(limit)
-    );
-  }
-
-  async cleanupExpiredRuntimeStates(limit: number) {
-    return await this.measured('cleanupExpiredRuntimeStates', rt =>
-      rt.cleanupExpiredRuntimeStates(limit)
-    );
-  }
-
-  async cleanupExpiredRuntimeGates(limit: number) {
-    return await this.measured('cleanupExpiredRuntimeGates', rt =>
-      rt.cleanupExpiredRuntimeGates(limit)
-    );
-  }
-
-  async assertWorkspaceInviteQuotaV1(
-    input: RuntimeWorkspaceInviteQuotaInput
-  ): Promise<RuntimeWorkspaceInviteQuotaDecision> {
-    return normalizeWorkspaceInviteQuotaDecision(
-      await this.measured('assertWorkspaceInviteQuotaV1', rt =>
-        this.quotaRuntime(rt).assertWorkspaceInviteQuotaV1(input)
-      )
-    );
-  }
-
-  async commitWorkspaceInviteQuotaV1(
-    reservationId: string,
-    usage: RuntimeWorkspaceInviteQuotaUsage
-  ): Promise<boolean> {
-    return await this.measured('commitWorkspaceInviteQuotaV1', rt =>
-      this.quotaRuntime(rt).commitWorkspaceInviteQuotaV1(reservationId, usage)
-    );
-  }
-
-  async releaseWorkspaceInviteQuotaV1(reservationId: string): Promise<boolean> {
-    return await this.measured('releaseWorkspaceInviteQuotaV1', rt =>
-      this.quotaRuntime(rt).releaseWorkspaceInviteQuotaV1(reservationId)
-    );
-  }
-
-  async assertMailDeliveryQuotaV1(
-    input: RuntimeMailDeliveryQuotaInput
-  ): Promise<RuntimeMailDeliveryQuotaDecision> {
-    return await this.measured('assertMailDeliveryQuotaV1', rt =>
-      this.quotaRuntime(rt).assertMailDeliveryQuotaV1(input)
-    );
-  }
-
-  async commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean> {
-    return await this.measured('commitMailDeliveryQuotaV1', rt =>
-      this.quotaRuntime(rt).commitMailDeliveryQuotaV1(reservationId)
-    );
-  }
-
-  async releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean> {
-    return await this.measured('releaseMailDeliveryQuotaV1', rt =>
-      this.quotaRuntime(rt).releaseMailDeliveryQuotaV1(reservationId)
-    );
-  }
-
-  async cleanupExpiredRollingQuota(limit: number) {
-    return await this.measured('cleanupExpiredRollingQuota', rt =>
-      this.quotaRuntime(rt).cleanupExpiredRollingQuota(limit)
-    );
-  }
-
-  async isInviteAbuseUserQuarantinedOrBanned(userId: string) {
-    return await this.measured('isInviteAbuseUserQuarantinedOrBanned', rt =>
-      this.quotaRuntime(rt).isInviteAbuseUserQuarantinedOrBanned(userId)
-    );
-  }
-
-  async isInviteAbuseWorkspaceQuarantined(workspaceId: string) {
-    return await this.measured('isInviteAbuseWorkspaceQuarantined', rt =>
-      this.quotaRuntime(rt).isInviteAbuseWorkspaceQuarantined(workspaceId)
-    );
-  }
-
-  async claimInviteAbuseAction(actionId: string, workerId: string) {
-    return await this.measured('claimInviteAbuseAction', rt =>
-      this.quotaRuntime(rt).claimInviteAbuseAction(actionId, workerId)
-    );
-  }
-
-  async claimRetryableInviteAbuseActions(
-    workerId: string,
-    limit: number
-  ): Promise<RuntimeInviteAbuseClaimedAction[]> {
-    return (
-      await this.measured('claimRetryableInviteAbuseActions', rt =>
-        this.quotaRuntime(rt).claimRetryableInviteAbuseActions(workerId, limit)
-      )
-    ).map(normalizeClaimedInviteAbuseAction);
-  }
-
-  async markInviteAbuseAction(
-    actionId: string,
-    workerId: string,
-    status: 'succeeded' | 'failed',
-    error?: string | null
-  ) {
-    return await this.measured('markInviteAbuseAction', rt =>
-      this.quotaRuntime(rt).markInviteAbuseAction(
-        actionId,
-        workerId,
-        status,
-        error
-      )
-    );
-  }
-
-  private async measured<T>(
-    method: string,
-    fn: (runtime: RuntimeInstance) => Promise<T>
-  ): Promise<T> {
-    return await wrapCallMetric(
-      () => fn(this.runtime),
-      'storage',
-      'backend_runtime',
-      { method }
-    )();
-  }
-
-  private quotaRuntime(runtime: RuntimeInstance): RuntimeQuotaMethods {
-    return runtime as unknown as RuntimeQuotaMethods;
+    const health = await this.runtime.health();
+    const invalidation = health.invalidation;
+    metrics.invalidation
+      .gauge('state')
+      .record(
+        invalidation.state === 'healthy'
+          ? 1
+          : invalidation.state === 'degraded'
+            ? -1
+            : 0
+      );
+    for (const [name, value] of Object.entries({
+      reconnects: invalidation.reconnects,
+      decode_failures: invalidation.decodeFailures,
+      received: invalidation.received,
+      published: invalidation.published,
+      publish_failures: invalidation.publishFailures,
+    })) {
+      metrics.invalidation.gauge(name).record(value);
+    }
+    return health;
   }
 
   private async runMigrationsOnce() {

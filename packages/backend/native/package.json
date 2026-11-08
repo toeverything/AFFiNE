@@ -1,6 +1,6 @@
 {
   "name": "@affine/server-native",
-  "version": "0.27.0",
+  "version": "0.27.5",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
@@ -29,7 +29,7 @@
   "scripts": {
     "test": "node --test ./__tests__/**/*.spec.js",
     "bench": "node ./benchmark/index.js",
-    "build": "napi build --release --strip --no-const-enum",
+    "build": "napi build --release --no-const-enum",
     "build:debug": "napi build --no-const-enum"
   },
   "devDependencies": {

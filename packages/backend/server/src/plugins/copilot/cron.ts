@@ -1,20 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JOB_SIGNAL, JobQueue, OneDay, OnJob } from '../../base';
+import { OneDay } from '../../base';
 import { Models } from '../../models';
-
-const CLEANUP_EMBEDDING_JOB_BATCH_SIZE = 100;
-
-declare global {
-  interface Jobs {
-    'copilot.session.cleanupEmptySessions': {};
-    'copilot.session.generateMissingTitles': {};
-    'copilot.workspace.cleanupTrashedDocEmbeddings': {
-      nextSid?: number;
-    };
-  }
-}
+import { ChatSessionService } from './session';
+import { CopilotTranscriptionRetryService } from './transcript/retry';
+import { CopilotTranscriptionService } from './transcript/service';
 
 @Injectable()
 export class CopilotCronJobs {
@@ -22,39 +13,30 @@ export class CopilotCronJobs {
 
   constructor(
     private readonly models: Models,
-    private readonly jobs: JobQueue
+    private readonly sessions: ChatSessionService,
+    private readonly transcript: CopilotTranscriptionService,
+    private readonly transcriptRetry: CopilotTranscriptionRetryService
   ) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async reconcileTranscriptDispatches() {
+    const dispatches = await this.transcriptRetry.collectPendingDispatches();
+    const results = await Promise.allSettled(
+      dispatches.map(dispatch => this.transcript.transcriptTask(dispatch))
+    );
+    const failed = results.filter(result => result.status === 'rejected');
+    if (failed.length) {
+      this.logger.warn(
+        `Transcript dispatch failures: ${failed.length}/${dispatches.length}`
+      );
+    }
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async dailyCleanupJob() {
-    await this.jobs.add(
-      'copilot.session.cleanupEmptySessions',
-      {},
-      { jobId: 'daily-copilot-cleanup-empty-sessions' }
-    );
-
-    await this.jobs.add(
-      'copilot.session.generateMissingTitles',
-      {},
-      { jobId: 'daily-copilot-generate-missing-titles' }
-    );
-
-    await this.jobs.add(
-      'copilot.workspace.cleanupTrashedDocEmbeddings',
-      {},
-      { jobId: 'daily-copilot-cleanup-trashed-doc-embeddings' }
-    );
+    await this.cleanupEmptySessions();
   }
 
-  async triggerGenerateMissingTitles() {
-    await this.jobs.add(
-      'copilot.session.generateMissingTitles',
-      {},
-      { jobId: 'trigger-copilot-generate-missing-titles' }
-    );
-  }
-
-  @OnJob('copilot.session.cleanupEmptySessions')
   async cleanupEmptySessions() {
     const { removed, cleaned } =
       await this.models.copilotSession.cleanupEmptySessions(
@@ -66,43 +48,21 @@ export class CopilotCronJobs {
     );
   }
 
-  @OnJob('copilot.session.generateMissingTitles')
+  @Cron('*/10 * * * *')
   async generateMissingTitles() {
     const sessions = await this.models.copilotSession.toBeGenerateTitle();
-
-    for (const session of sessions) {
-      await this.jobs.add('copilot.session.generateTitle', {
-        sessionId: session.id,
-      });
-    }
+    const results = await Promise.allSettled(
+      sessions.map(session =>
+        this.sessions.generateSessionTitle({
+          sessionId: session.id,
+          userId: session.userId,
+          workspaceId: session.workspaceId,
+        })
+      )
+    );
+    const failed = results.filter(result => result.status === 'rejected');
     this.logger.log(
-      `Scheduled title generation for ${sessions.length} sessions`
+      `Generated titles for ${sessions.length - failed.length}/${sessions.length} sessions`
     );
-  }
-
-  @OnJob('copilot.workspace.cleanupTrashedDocEmbeddings')
-  async cleanupTrashedDocEmbeddings(
-    params: Jobs['copilot.workspace.cleanupTrashedDocEmbeddings']
-  ) {
-    const nextSid = params.nextSid ?? 0;
-    // only consider workspaces that cleared their embeddings more than 24 hours ago
-    const oneDayAgo = new Date(Date.now() - OneDay);
-    const workspaces = await this.models.workspace.list(
-      { sid: { gt: nextSid }, lastCheckEmbeddings: { lt: oneDayAgo } },
-      { id: true, sid: true },
-      CLEANUP_EMBEDDING_JOB_BATCH_SIZE
-    );
-    if (!workspaces.length) {
-      return JOB_SIGNAL.Done;
-    }
-    for (const { id: workspaceId } of workspaces) {
-      await this.jobs.add(
-        'copilot.embedding.cleanupTrashedDocEmbeddings',
-        { workspaceId },
-        { jobId: `cleanup-trashed-doc-embeddings-${workspaceId}` }
-      );
-    }
-    params.nextSid = workspaces[workspaces.length - 1].sid;
-    return JOB_SIGNAL.Repeat;
   }
 }

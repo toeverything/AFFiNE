@@ -351,12 +351,16 @@ export class ChatPanelAddPopover extends SignalWatcher(
         const items = resolveSignal(group.items);
 
         const menuGroup = html`<div class="menu-group">
-          ${items.length > 0
-            ? this._renderMenuItems(items, startIndex)
-            : (group.noResult?.() ?? this._renderNoResult())}
-          ${idx < groups.length - 1
-            ? (group.divider?.() ?? this._renderDivider())
-            : ''}
+          ${
+            items.length > 0
+              ? this._renderMenuItems(items, startIndex)
+              : (group.noResult?.() ?? this._renderNoResult())
+          }
+          ${
+            idx < groups.length - 1
+              ? (group.divider?.() ?? this._renderDivider())
+              : ''
+          }
         </div>`;
         startIndex += items.length;
         return menuGroup;
@@ -487,7 +491,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       docId: meta.id,
-      state: 'processing',
+      state: 'finished',
     });
     const mode = this.docDisplayConfig.getDocPrimaryMode(meta.id);
     const method = meta.id === this.docId ? 'cur-doc' : 'doc';
@@ -498,7 +502,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       tagId: tag.id,
-      state: 'processing',
+      state: 'finished',
     });
     this._track('tags');
   };
@@ -507,7 +511,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
     await this.addChip({
       collectionId: collection.id,
-      state: 'processing',
+      state: 'finished',
     });
     this._track('collections');
   };

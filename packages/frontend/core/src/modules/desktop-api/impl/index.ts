@@ -1,4 +1,4 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
+/* oxlint-disable typescript/no-non-null-assertion */
 import { apis, appInfo, events, sharedStorage } from '@affine/electron-api';
 import { Service } from '@toeverything/infra';
 

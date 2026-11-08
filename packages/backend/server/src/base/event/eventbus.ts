@@ -109,6 +109,17 @@ export class EventBus
   }
 
   /**
+   * Await listeners without inheriting the current transaction.
+   */
+  async emitDetachedAsync<T extends EventName>(event: T, payload: Events[T]) {
+    const requestId = this.cls.getId();
+    return await this.cls.run({ ifNested: 'override' }, async () => {
+      this.cls.set(CLS_ID, requestId ?? genRequestId('event'));
+      return await this.emitAsync(event, payload);
+    });
+  }
+
+  /**
    * Broadcast event to trigger all listeners on all instance in cluster
    */
   broadcast<T extends EventName>(event: T, payload: Events[T]) {

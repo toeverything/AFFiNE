@@ -544,7 +544,7 @@ export class EdgelessClipboardController extends PageClipboard {
           }
         });
 
-        // oxlint-disable-next-line @typescript-eslint/prefer-for-of
+        // oxlint-disable-next-line typescript/prefer-for-of
         for (let i = 0; i < blocksInsideFrame.length; i++) {
           const element = blocksInsideFrame[i];
           await _drawTopLevelBlock(element, true);
@@ -645,7 +645,7 @@ export class EdgelessClipboardController extends PageClipboard {
         );
       });
     } else {
-      // oxlint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line typescript/prefer-for-of
       for (let index = 0; index < content.length; index++) {
         const blockSnapshot = content[index];
         if (blockSnapshot.flavour === 'affine:note') {

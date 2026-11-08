@@ -1,0 +1,26 @@
+diff --git a/dist/frameworks/i18next/generator/react-hooks.js b/dist/frameworks/i18next/generator/react-hooks.js
+index ae1953ca1baceb09e587eda931567c8d8c5d671e..3bc918f6ff4f378e297d1fe927dcc90cf20c821e 100644
+--- a/dist/frameworks/i18next/generator/react-hooks.js
++++ b/dist/frameworks/i18next/generator/react-hooks.js
+@@ -99,7 +99,7 @@ export function i18NextReactHooksGenerator(gen) {
+     // Codegen
+     const printedSourceFile = [
+         gen.generatorOptions?.emitTS && '// @ts-nocheck',
+-        '/* eslint-disable */',
++        '/* oxlint-disable */',
+         printer.printFile(factory.createSourceFile(statements, factory.createToken(SyntaxKind.EndOfFileToken), NodeFlags.Synthesized)),
+     ]
+         .filter(Boolean)
+diff --git a/src/frameworks/i18next/generator/react-hooks.ts b/src/frameworks/i18next/generator/react-hooks.ts
+index bbaf10a2b482e6118e786e634d15abab31c7ba32..a2dfd09ad422cb24c986d1a4ee3458197e70d5c2 100644
+--- a/src/frameworks/i18next/generator/react-hooks.ts
++++ b/src/frameworks/i18next/generator/react-hooks.ts
+@@ -203,7 +203,7 @@ export function i18NextReactHooksGenerator(gen: GenType) {
+     // Codegen
+     const printedSourceFile = [
+         gen.generatorOptions?.emitTS && '// @ts-nocheck',
+-        '/* eslint-disable */',
++        '/* oxlint-disable */',
+         printer.printFile(
+             factory.createSourceFile(statements, factory.createToken(SyntaxKind.EndOfFileToken), NodeFlags.Synthesized),
+         ),

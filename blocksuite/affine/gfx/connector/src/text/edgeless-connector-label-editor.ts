@@ -357,22 +357,26 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
         <rich-text
           .yText=${connector.text}
           .enableFormat=${false}
-          style=${isEmpty
-            ? styleMap({
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                padding: `${VERTICAL_PADDING}px ${HORIZONTAL_PADDING}px`,
-              })
-            : nothing}
+          style=${
+            isEmpty
+              ? styleMap({
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  padding: `${VERTICAL_PADDING}px ${HORIZONTAL_PADDING}px`,
+                })
+              : nothing
+          }
         ></rich-text>
-        ${isEmpty
-          ? html`
-              <span class="edgeless-connector-label-editor-placeholder">
-                Add text
-              </span>
-            `
-          : nothing}
+        ${
+          isEmpty
+            ? html`
+                <span class="edgeless-connector-label-editor-placeholder">
+                  Add text
+                </span>
+              `
+            : nothing
+        }
       </div>
     `;
   }
