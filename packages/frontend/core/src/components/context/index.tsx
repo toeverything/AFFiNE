@@ -1,5 +1,6 @@
 import { ConfirmModalProvider, PromptModalProvider } from '@affine/component';
 import { ProviderComposer } from '@affine/component/provider-composer';
+import { DirectionProvider } from '@affine/core/components/direction-provider';
 import { ThemeProvider } from '@affine/core/components/theme-provider';
 import type { createStore } from 'jotai';
 import { Provider } from 'jotai';
@@ -21,6 +22,7 @@ export function AffineContext(props: AffineContextProps) {
           [
             <Provider key="JotaiProvider" store={props.store} />,
             <ThemeProvider key="ThemeProvider" />,
+            <DirectionProvider key="DirectionProvider" />,
             <ConfirmModalProvider key="ConfirmModalProvider" />,
             <PromptModalProvider key="PromptModalProvider" />,
           ].filter(Boolean),
