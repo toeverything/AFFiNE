@@ -25,7 +25,11 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
 import { AIAppEvents, type AISendParams } from '../../provider';
-import type { AIChatRuntime, AIChatSnapshot } from '../../runtime/chat';
+import type {
+  AIChatRuntime,
+  AIChatSendOptions,
+  AIChatSnapshot,
+} from '../../runtime/chat';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
 import type { SearchMenuConfig } from '../ai-chat-add-context';
@@ -363,6 +367,11 @@ export class AIChatInput extends SignalWatcher(
   @query('.chat-panel-input')
   accessor chatPanelInput!: HTMLDivElement;
 
+  @state()
+  private accessor isPreparing = false;
+
+  private _inputVersion = 0;
+
   private _dragEnterCounter = 0;
 
   private _internalDropCleanup: (() => void) | null = null;
@@ -465,6 +474,7 @@ export class AIChatInput extends SignalWatcher(
         if (this.host !== host) return;
 
         if (input) {
+          this._inputVersion++;
           this.textarea.value = input;
           this.isInputEmpty = !this.textarea.value.trim();
         }
@@ -677,7 +687,7 @@ export class AIChatInput extends SignalWatcher(
   }
 
   private get isSendDisabled() {
-    if (this.isInputEmpty) {
+    if (this.isPreparing || this.isInputEmpty) {
       return true;
     }
 
@@ -697,6 +707,7 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _handleInput = async () => {
+    this._inputVersion++;
     const { textarea } = this;
     const value = textarea.value.trim();
     this.isInputEmpty = !value;
@@ -823,34 +834,55 @@ export class AIChatInput extends SignalWatcher(
     const value = this.textarea.value.trim();
     if (value.length === 0) return;
 
-    this.textarea.value = '';
-    this.isInputEmpty = true;
-    this.textarea.style.height = 'unset';
-
-    if (this.aiDraftService) {
-      await this.aiDraftService.setDraft({
-        input: '',
-      });
-    }
-    await this.send(value);
+    const inputVersion = this._inputVersion;
+    await this.send(value, () => {
+      if (this._inputVersion !== inputVersion) return;
+      this.textarea.value = '';
+      this.isInputEmpty = true;
+      this.textarea.style.height = 'unset';
+      this.aiDraftService?.setDraft({ input: '' }).catch(console.error);
+    });
   };
 
-  send = async (text: string) => {
-    if (!this.runtime) return;
-    const { images } = this.chatContextValue;
-    const imageAttachments = await Promise.all(
-      images?.map(image => readBlobAsURL(image))
-    );
-    const contexts = await this._getMatchedContexts();
-    const userInfo = AIAppEvents.userInfo.value;
+  send = async (text: string, onAccepted?: () => void) => {
+    const runtime = this.runtime;
+    if (!runtime || this.isPreparing || !runtime.getSnapshot().uiPolicy.canSend)
+      return;
 
-    this.updateContext({
-      images: [],
-      quote: '',
-      markdown: '',
-    });
-    await this.runtime.dispatch({
+    const { quote, markdown } = this.chatContextValue;
+    const images = [...this.chatContextValue.images];
+    this.isPreparing = true;
+    let imageAttachments: string[];
+    let contexts: AIChatSendOptions['contexts'];
+    try {
+      imageAttachments = await Promise.all(
+        images.map(image => readBlobAsURL(image))
+      );
+      contexts = await this._getMatchedContexts();
+    } finally {
+      this.isPreparing = false;
+    }
+    const userInfo = AIAppEvents.userInfo.value;
+    let accepted = false;
+    await runtime.dispatch({
       type: 'send',
+      onAccepted: () => {
+        accepted = true;
+        this.updateContext({
+          images: this.chatContextValue.images.filter(
+            image => !images.includes(image)
+          ),
+          quote:
+            this.chatContextValue.quote === quote
+              ? ''
+              : this.chatContextValue.quote,
+          markdown:
+            this.chatContextValue.markdown === markdown
+              ? ''
+              : this.chatContextValue.markdown,
+        });
+        onAccepted?.();
+      },
       input: text,
       contexts,
       attachments: images,
@@ -867,7 +899,7 @@ export class AIChatInput extends SignalWatcher(
         avatarUrl: userInfo?.avatarUrl ?? undefined,
       },
     });
-    this.onChatSuccess?.();
+    if (accepted) this.onChatSuccess?.();
   };
 
   private async _getMatchedContexts() {

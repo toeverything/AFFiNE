@@ -280,7 +280,10 @@ pub(super) fn subscription_mutation_error(error: SubscriptionMutationError) -> R
   }
 }
 
-pub(super) fn validate_target(target_type: &str, target_id: &str) -> RuntimeResult<()> {
+pub(in crate::runtime::backend_runtime::payment) fn validate_target(
+  target_type: &str,
+  target_id: &str,
+) -> RuntimeResult<()> {
   if !matches!(target_type, "user" | "workspace" | "instance") {
     return Err(RuntimeError::invalid_input("invalid payment target type"));
   }
@@ -295,7 +298,7 @@ pub(super) fn validate_intent(intent_id: &str) -> RuntimeResult<()> {
   Ok(())
 }
 
-pub(super) fn validate_identity(value: &str, label: &str) -> RuntimeResult<()> {
+pub(in crate::runtime::backend_runtime::payment) fn validate_identity(value: &str, label: &str) -> RuntimeResult<()> {
   if value.is_empty() || value != value.trim() || value.len() > 255 {
     return Err(RuntimeError::invalid_input(format!("invalid {label}")));
   }

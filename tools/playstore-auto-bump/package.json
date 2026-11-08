@@ -6,7 +6,8 @@
   "description": "Automatically bump the versionCode and versionName of an Android app from the Google Play Store versions",
   "main": "index.ts",
   "scripts": {
-    "bump": "r ./index.ts"
+    "bump": "r ./index.ts",
+    "submit": "r ./index.ts submit"
   },
   "dependencies": {
     "@affine-tools/cli": "workspace:*",

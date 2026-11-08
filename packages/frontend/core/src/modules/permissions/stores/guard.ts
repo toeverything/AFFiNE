@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import {
   type GetDocRolePermissionsQuery,
   getDocRolePermissionsQuery,
@@ -37,17 +38,24 @@ export class GuardStore extends Store {
 
   async getDocPermissions(
     docId: string
-  ): Promise<Record<DocPermissionActions, boolean>> {
+  ): Promise<Record<DocPermissionActions, boolean> | false> {
     if (!this.workspaceServerService.server) {
       throw new Error('No server');
     }
-    const data = await this.workspaceServerService.server.gql({
-      query: getDocRolePermissionsQuery,
-      variables: {
-        workspaceId: this.workspaceService.workspace.id,
-        docId,
-      },
-    });
-    return data.workspace.doc.permissions;
+    try {
+      const data = await this.workspaceServerService.server.gql({
+        query: getDocRolePermissionsQuery,
+        variables: {
+          workspaceId: this.workspaceService.workspace.id,
+          docId,
+        },
+      });
+      return data.workspace.doc.permissions;
+    } catch (error) {
+      if (UserFriendlyError.fromAny(error).is('DOC_ACTION_DENIED')) {
+        return false;
+      }
+      throw error;
+    }
   }
 }

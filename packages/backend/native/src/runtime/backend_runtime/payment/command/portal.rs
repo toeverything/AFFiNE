@@ -8,7 +8,7 @@ impl PaymentRuntime {
     validate_identity(actor_user_id, "payment actor")?;
     let stripe = self.stripe()?;
     let namespace_key = canonical_namespace(stripe.namespace())?;
-    let customer_id = load_or_adopt_stripe_customer(&self.pool, actor_user_id, &namespace_key)
+    let customer_id = load_stripe_customer(&self.pool, actor_user_id, &namespace_key)
       .await?
       .ok_or_else(|| RuntimeError::invalid_state("payment_customer_not_found"))?;
     let mut form = StripeForm::default();

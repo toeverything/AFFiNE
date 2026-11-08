@@ -94,7 +94,7 @@ runs:
       shell: bash
       if: ${{ runner.os != 'Windows' && inputs.no-build != 'true' }}
       run: |
-        if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+        if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]] || [[ "${{ inputs.target }}" == "aarch64-unknown-linux-gnu" && "$(uname -m)" == "aarch64" ]]; then
           yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }}
         else
           yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }} --use-napi-cross

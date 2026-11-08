@@ -72,6 +72,8 @@ pub struct DocumentEmbeddingProjectionInput {
   pub doc_id: String,
   pub revision: String,
   pub source_hash: String,
+  pub skip_reason: Option<String>,
+  pub root_revision: Option<String>,
   pub units: Vec<DocumentEmbeddingUnitInput>,
   pub deleted: Option<bool>,
 }

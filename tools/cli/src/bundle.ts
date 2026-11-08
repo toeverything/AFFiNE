@@ -20,10 +20,6 @@ import {
   createNodeTargetConfig as createRspackNodeTargetConfig,
   createWorkerTargetConfig as createRspackWorkerTargetConfig,
 } from './rspack';
-import {
-  shouldUploadReleaseAssets,
-  uploadDistAssetsToS3,
-} from './rspack-shared/s3-plugin.js';
 
 type WorkerConfig = { name: string };
 type CreateWorkerTargetConfig = (pkg: Package, entry: string) => WorkerConfig;
@@ -33,21 +29,6 @@ type BaseWorkerOptions = {
 
 function assertRspackSupportedPackage(pkg: Package) {
   assertRspackSupportedPackageName(pkg.name);
-}
-
-function shouldUploadAssetsForPackage(pkg: Package): boolean {
-  return (
-    !!process.env.R2_SECRET_ACCESS_KEY && shouldUploadReleaseAssets(pkg.name)
-  );
-}
-
-async function uploadAssetsForPackage(pkg: Package, logger: Logger) {
-  if (!shouldUploadAssetsForPackage(pkg)) {
-    return;
-  }
-  logger.info('Uploading dist assets to R2...');
-  await uploadDistAssetsToS3(pkg.distPath.value);
-  logger.info('Uploaded dist assets to R2.');
 }
 
 function getBaseWorkerConfigs(
@@ -268,7 +249,6 @@ export class BundleCommand extends PackageCommand {
         return;
       }
       console.log(stats.toString('minimal'));
-      await uploadAssetsForPackage(pkg, logger);
     } catch (error) {
       console.error(error);
       process.exit(1);

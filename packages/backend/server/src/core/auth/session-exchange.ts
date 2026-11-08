@@ -94,9 +94,18 @@ export class SessionExchangeService {
     return publicPair(pair);
   }
 
-  async refresh(req: Request, refreshToken: string, appVersion?: string) {
+  async refresh(
+    req: Request,
+    refreshToken: string,
+    appVersion?: string,
+    attemptId?: string
+  ) {
     if (!isNativeClientRequest(req)) throw new ActionForbidden();
-    const refreshed = await this.authSessions.refresh(refreshToken, appVersion);
+    const refreshed = await this.authSessions.refresh(
+      refreshToken,
+      appVersion,
+      attemptId
+    );
     if (refreshed.status === 'rate_limited') throw new TooManyRequest();
     if (refreshed.status !== 'rotated') {
       const status =

@@ -725,38 +725,33 @@ test('pages readable workspace sources without workspace inventory fallback', as
   );
 });
 
-test('uses the managed workspace inventory only through its typed query', async () => {
+test('paginates the managed workspace inventory', async () => {
   const storage = createStorage();
-  const gqlMock = vi.fn(async ({ query }) => {
+  const records = Array.from({ length: 1001 }, (_, index) => ({
+    key: `managed-${index.toString().padStart(4, '0')}`,
+    mime: 'text/plain',
+    size: 7,
+    createdAt: '2026-08-29T00:00:00.000Z',
+  }));
+  const gqlMock = vi.fn(async ({ query, variables }) => {
     expect(query).toBe(listBlobsQuery);
+    const start = variables.after
+      ? records.findIndex(row => row.key === variables.after) + 1
+      : 0;
     return {
-      workspace: {
-        blobs: [
-          {
-            key: 'managed',
-            mime: 'text/plain',
-            size: 7,
-            createdAt: '2026-08-29T00:00:00.000Z',
-          },
-        ],
-      },
+      workspace: { blobs: records.slice(start, start + variables.first) },
     };
   });
   vi.spyOn(storage.connection, 'gql').mockImplementation(
     gqlMock as typeof storage.connection.gql
   );
-
-  expect(await storage.listManageable()).toEqual([
-    {
-      key: 'managed',
-      mime: 'text/plain',
-      size: 7,
-      createdAt: new Date('2026-08-29T00:00:00.000Z'),
-    },
-  ]);
-  await expect(storage.list()).rejects.toThrow(
-    'Workspace blob inventory is unavailable'
+  expect(await storage.listManageable()).toEqual(
+    records.map(row => ({ ...row, createdAt: new Date(row.createdAt) }))
   );
+  expect(gqlMock.mock.calls.map(([{ variables }]) => variables)).toEqual([
+    { workspaceId: 'workspace-1', first: 1000, after: undefined },
+    { workspaceId: 'workspace-1', first: 1000, after: 'managed-0999' },
+  ]);
 });
 
 test('releases transient workspace sources and preserves owned registrations', async () => {

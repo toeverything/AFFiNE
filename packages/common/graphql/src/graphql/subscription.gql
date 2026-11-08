@@ -1,16 +1,38 @@
 query subscription {
   currentUser {
     id
-    subscriptions {
-      id
-      status
-      plan
-      recurring
-      start
-      end
-      nextBillAt
-      canceledAt
-      variant
+    subscriptionBilling {
+      subscriptions {
+        id
+        status
+        plan
+        recurring
+        start
+        end
+        nextBillAt
+        canceledAt
+        variant
+        provider
+        iapStore
+      }
+      conflicts {
+        plan
+        sources {
+          id
+          provider
+          iapStore
+          recurring
+        }
+      }
+      manageable {
+        plan
+        sources {
+          id
+          provider
+          iapStore
+          recurring
+        }
+      }
     }
   }
 }

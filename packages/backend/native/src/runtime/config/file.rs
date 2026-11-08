@@ -28,7 +28,8 @@ impl ServerConfig {
     let deployment = match baseline.pointer("/deployment/type").and_then(serde_json::Value::as_str) {
       Some("cloud") => Deployment::Cloud,
       Some("selfhosted") => Deployment::SelfHosted,
-      // TODO(0.27.5): Remove the old deployment env fallback after self-host config files are upgraded.
+      // TODO(0.27.5): Remove the old deployment env fallback after self-host
+      // config files are upgraded.
       None => match legacy_deployment_type {
         Some("cloud") => Deployment::Cloud,
         Some("selfhosted") => Deployment::SelfHosted,

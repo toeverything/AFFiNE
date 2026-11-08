@@ -18,7 +18,8 @@ struct StoredKey {
   id: String,
   secret: String,
   status: String,
-  // TODO(0.27.5): Remove old-reader serialization constraints after 0.27.4 exits.
+  // TODO(0.27.5): Remove old-reader serialization constraints after 0.27.4
+  // exits.
   #[serde(skip_serializing_if = "Option::is_none")]
   created_at: Option<DateTime<Utc>>,
   source: String,

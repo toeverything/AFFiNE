@@ -34,7 +34,8 @@ pub(super) const NATIVE_APP_CONFIG_KEYS: &[&str] = &[
   "copilot.providers.profiles",
   "copilot.storage",
   "crypto.privateKey",
-  // TODO(0.27.5): Remove legacy DB override loading after old instances exit and existing rows are cleared.
+  // TODO(0.27.5): Remove legacy DB override loading after old instances exit
+  // and existing rows are cleared.
   "db.datasourceUrl",
   "indexer.enabled",
   "indexer.provider.apiKey",
@@ -49,7 +50,8 @@ pub(super) const NATIVE_APP_CONFIG_KEYS: &[&str] = &[
   "payment.enabled",
   "payment.revenuecat",
   "payment.stripe",
-  // TODO(0.27.5): Remove legacy Redis DB override loading after old instances exit and existing rows are cleared.
+  // TODO(0.27.5): Remove legacy Redis DB override loading after old instances
+  // exit and existing rows are cleared.
   "redis.db",
   "redis.host",
   "redis.ioredis",

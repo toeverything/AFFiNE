@@ -11,6 +11,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../base';
 import {
+  BadRequest,
   BlobInvalid,
   BlobNotFound,
   BlobQuotaExceeded,
@@ -53,9 +54,18 @@ export class WorkspaceBlobResolver {
   })
   async blobs(
     @CurrentUser() user: CurrentUser,
-    @Parent() workspace: WorkspaceType
+    @Parent() workspace: WorkspaceType,
+    @Args('first', { type: () => Int, defaultValue: 1000 }) first: number,
+    @Args('after', { type: () => String, nullable: true }) after?: string
   ) {
-    return this.runtime.listManagedWorkspaceBlobsV1(user.id, workspace.id);
+    if (first < 1 || first > 1000)
+      throw new BadRequest('Blob page size must be between 1 and 1000');
+    return this.runtime.listManagedWorkspaceBlobsV1(
+      user.id,
+      workspace.id,
+      first,
+      after
+    );
   }
 
   @ResolveField(() => BlobUploadPart, {

@@ -72,9 +72,16 @@ async fn dispatch(
     AuthSessionCommand::Refresh {
       refresh_token,
       app_version,
-    } => refresh::refresh(pool, config, &refresh_token, app_version.as_deref())
-      .await
-      .and_then(json_value),
+      attempt_id,
+    } => refresh::refresh(
+      pool,
+      config,
+      &refresh_token,
+      app_version.as_deref(),
+      attempt_id.as_deref(),
+    )
+    .await
+    .and_then(json_value),
     AuthSessionCommand::RevokeRefresh { refresh_token } => refresh::revoke_by_token(pool, &refresh_token)
       .await
       .and_then(json_value),

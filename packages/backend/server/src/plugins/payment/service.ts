@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 
 import {
+  AccessDenied,
   CantUpdateOnetimePaymentSubscription,
   Config,
   CustomerPortalCreateFailed,
@@ -12,6 +13,8 @@ import {
   LicenseRevealed,
   ManagedByAppStoreOrPlay,
   OnEvent,
+  PurchaseInProgress,
+  PurchaseNeedsVerification,
   SameSubscriptionRecurring,
   SubscriptionAlreadyExists,
   SubscriptionHasBeenCanceled,
@@ -24,6 +27,7 @@ import {
 import { CurrentUser } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { ServerFeature, ServerService } from '../../core/config';
+import { type NativeSubscription, normalizeSubscription } from './model';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -54,26 +58,6 @@ type SubscriptionIdentity =
       actorUserId?: string;
     }
   | { plan: SubscriptionPlan.SelfHostedTeam; key: string };
-
-export interface Subscription {
-  stripeSubscriptionId: string | null;
-  stripeScheduleId: string | null;
-  status: string;
-  plan: string;
-  recurring: string;
-  variant: string | null;
-  quantity: number;
-  start: Date;
-  end: Date | null;
-  trialStart: Date | null;
-  trialEnd: Date | null;
-  nextBillAt: Date | null;
-  canceledAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  provider?: string | null;
-  iapStore?: string | null;
-}
 
 interface NativePrice {
   id: string;
@@ -170,6 +154,48 @@ export class SubscriptionService {
     return { id: result.sessionId, url: result.url };
   }
 
+  async checkoutAttempt(userId: string, plan: SubscriptionPlan) {
+    return this.command<string | null>({
+      action: 'checkout_attempt',
+      userId,
+      plan,
+    });
+  }
+
+  async expireCheckout(
+    userId: string,
+    plan: SubscriptionPlan,
+    attemptId: string
+  ) {
+    return this.command<boolean>({
+      action: 'expire_checkout',
+      userId,
+      plan,
+      attemptId,
+    });
+  }
+
+  async appStorePurchase(
+    userId: string,
+    input: {
+      purchaseAction: string;
+      productId: string;
+      intentId?: string;
+      attemptId?: string;
+      transactionId?: string;
+    }
+  ) {
+    return this.command<{
+      status: string;
+      attemptId?: string;
+      provider?: string;
+    }>({
+      action: 'app_store_purchase',
+      userId,
+      ...input,
+    });
+  }
+
   async cancelSubscription(
     identity: SubscriptionIdentity,
     idempotencyKey?: string
@@ -190,7 +216,7 @@ export class SubscriptionService {
     idempotencyKey?: string
   ) {
     const target = subscriptionTarget(identity);
-    const subscription = await this.command<Subscription>({
+    const subscription = await this.command<NativeSubscription>({
       action: 'update_recurring',
       actorUserId: target.actor,
       targetType: target.type,
@@ -245,7 +271,7 @@ export class SubscriptionService {
     idempotencyKey?: string
   ) {
     const target = subscriptionTarget(identity);
-    const subscription = await this.command<Subscription>({
+    const subscription = await this.command<NativeSubscription>({
       action: 'mutate_subscription',
       actorUserId: target.actor ?? target.id,
       targetType: target.type,
@@ -307,6 +333,7 @@ function mapPaymentError(error: unknown, input: Record<string, unknown>) {
   const message = error instanceof Error ? error.message : String(error);
   const plan = input.plan as SubscriptionPlan | undefined;
   const recurring = input.recurring as SubscriptionRecurring | undefined;
+  if (message.includes('workspace_payment_denied')) return new AccessDenied();
   if (message.includes('subscription_not_found')) {
     return new SubscriptionNotExists({ plan: plan ?? SubscriptionPlan.Pro });
   }
@@ -330,6 +357,18 @@ function mapPaymentError(error: unknown, input: Record<string, unknown>) {
       recurring: recurring ?? SubscriptionRecurring.Monthly,
     });
   }
+  if (
+    message.includes('purchase_in_progress') ||
+    message.includes('payment_busy')
+  ) {
+    return new PurchaseInProgress();
+  }
+  if (
+    message.includes('purchase_needs_verification') ||
+    message.includes('payment_operation_blocked')
+  ) {
+    return new PurchaseNeedsVerification();
+  }
   if (message.includes('subscription_already_exists')) {
     return new SubscriptionAlreadyExists({
       plan: plan ?? SubscriptionPlan.Pro,
@@ -343,24 +382,4 @@ function mapPaymentError(error: unknown, input: Record<string, unknown>) {
   if (message.includes('invalid checkout parameters'))
     return new InvalidCheckoutParameters();
   return error;
-}
-
-function normalizeSubscription(subscription: Subscription): Subscription {
-  return {
-    ...subscription,
-    start: new Date(subscription.start),
-    end: subscription.end ? new Date(subscription.end) : null,
-    trialStart: subscription.trialStart
-      ? new Date(subscription.trialStart)
-      : null,
-    trialEnd: subscription.trialEnd ? new Date(subscription.trialEnd) : null,
-    nextBillAt: subscription.nextBillAt
-      ? new Date(subscription.nextBillAt)
-      : null,
-    canceledAt: subscription.canceledAt
-      ? new Date(subscription.canceledAt)
-      : null,
-    createdAt: new Date(subscription.createdAt),
-    updatedAt: new Date(subscription.updatedAt),
-  };
 }

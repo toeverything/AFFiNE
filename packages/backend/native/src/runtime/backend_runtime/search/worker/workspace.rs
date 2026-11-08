@@ -718,6 +718,21 @@ mod tests {
         .unwrap();
       let doc_blob = if corrupt_update {
         affine_doc_loader::build_full_doc("title", "body", &doc_id).unwrap()
+      } else if phase_name == "source" {
+        let doc = Doc::default();
+        let mut blocks = doc.get_or_create_map("blocks").unwrap();
+        for (id, child) in [("a", "b"), ("b", "a")] {
+          let mut block = doc.create_map().unwrap();
+          let mut children = doc.create_array().unwrap();
+          children.push(child).unwrap();
+          block.insert("sys:id".into(), id).unwrap();
+          block.insert("sys:flavour".into(), "affine:paragraph").unwrap();
+          block
+            .insert("sys:children".into(), y_octo::Value::Array(children))
+            .unwrap();
+          blocks.insert(id.to_string(), y_octo::Value::Map(block)).unwrap();
+        }
+        doc.encode_update_v1().unwrap()
       } else {
         vec![0]
       };

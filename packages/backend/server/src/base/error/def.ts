@@ -656,6 +656,15 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     message: 'Failed to create checkout session.',
   },
+  purchase_in_progress: {
+    type: 'action_forbidden',
+    message: 'A purchase for this plan is still in progress.',
+  },
+  purchase_needs_verification: {
+    type: 'action_forbidden',
+    message:
+      'This plan has a purchase that needs verification. Review your subscriptions before trying again.',
+  },
   invalid_checkout_parameters: {
     type: 'invalid_input',
     message: 'Invalid checkout parameters provided.',
