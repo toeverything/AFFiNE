@@ -1,4 +1,8 @@
-import { CopilotQuotaExceeded, NetworkError } from '../../../base';
+import {
+  CopilotPromptInvalid,
+  CopilotQuotaExceeded,
+  NetworkError,
+} from '../../../base';
 
 const LLM_TIMEOUT_ERROR_PREFIX = 'llm_timeout:';
 
@@ -17,7 +21,18 @@ function nativeErrorMessage(error: unknown) {
 }
 
 export function mapNativeSemanticError(error: unknown): unknown {
-  const message = nativeErrorMessage(error);
+  const message = nativeErrorMessage(error)?.replace(
+    /^\[affine-runtime:[a-z0-9_]+\]\s*/,
+    ''
+  );
+  if (
+    message === 'managed_target_unavailable' ||
+    message === 'target_unavailable'
+  ) {
+    return new CopilotPromptInvalid(
+      'The selected AI model is unavailable. Choose an available model and try again.'
+    );
+  }
   if (message === 'access_unavailable') {
     return new CopilotQuotaExceeded();
   }

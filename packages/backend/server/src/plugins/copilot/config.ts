@@ -1,7 +1,6 @@
 import serverNativeModule from '@affine/server-native';
 
 import { defineNativeModuleConfig, StorageProviderConfig } from '../../base';
-import { CopilotProviderType } from './providers/types';
 
 export type ProviderSpecificConfig = Record<string, unknown>;
 
@@ -26,17 +25,11 @@ export type ProviderMiddlewareConfig = {
   node?: { text?: NodeTextMiddleware[] };
 };
 
-type CopilotProviderProfileCommon = {
+export type CopilotProviderProfile = {
   id: string;
-  displayName?: string;
-  priority?: number;
+  type: string;
   enabled?: boolean;
   models?: string[];
-  middleware?: ProviderMiddlewareConfig;
-};
-
-export type CopilotProviderProfile = CopilotProviderProfileCommon & {
-  type: CopilotProviderType;
   config: ProviderSpecificConfig;
 };
 

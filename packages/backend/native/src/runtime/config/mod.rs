@@ -17,10 +17,8 @@ mod store;
 mod types;
 pub use admin::{AppConfigDescriptor, app_config_descriptors, validate_app_config_value};
 use auth::{AuthConfigFile, auth_limit};
-pub(crate) use copilot::{CopilotByokRuntimeConfig, CopilotManagedProfileConfig, CopilotRuntimeConfig};
-use copilot::{
-  CopilotRuntimeConfigFile, MANAGED_PROFILE_REQUIREMENTS, SUPPORTED_BYOK_PROVIDERS, validate_copilot_config,
-};
+pub(crate) use copilot::{CopilotByokRuntimeConfig, CopilotRuntimeConfig};
+use copilot::{CopilotRuntimeConfigFile, SUPPORTED_BYOK_PROVIDERS, validate_copilot_config};
 pub(crate) use file::ServerConfig;
 #[cfg(test)]
 use file::expand_module_config_paths;
@@ -139,13 +137,13 @@ impl BackendRuntimeConfig {
     .validated()
   }
 
-  fn validated(self) -> RuntimeResult<Self> {
+  fn validated(mut self) -> RuntimeResult<Self> {
     if self.copilot.enabled && self.copilot.byok.enabled && self.private_key.is_empty() {
       return Err(RuntimeError::invalid_state(
         "stable crypto.privateKey is required when persistent BYOK is enabled",
       ));
     }
-    validate_copilot_config(&self.copilot)?;
+    self.copilot.initialize_managed_routes()?;
     self.payment.validate()?;
     if self.search.provider != "embedded" && self.search.endpoint.is_empty() {
       return Err(RuntimeError::config("remote search provider requires an endpoint"));

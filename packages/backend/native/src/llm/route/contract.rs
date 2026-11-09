@@ -1,3 +1,27 @@
+use std::sync::Arc;
+
+use llm_adapter::{
+  backend::{BackendProvider, CredentialPlan},
+  capability::{DeclaredModelCapability, declared_model_matches},
+  target::PreparedBackendTarget,
+};
+
+#[derive(Clone)]
+pub(crate) struct ResolvedManagedTarget {
+  pub(crate) profile_id: String,
+  pub(crate) provider: BackendProvider,
+  pub(crate) target: PreparedBackendTarget,
+  pub(crate) capabilities: Vec<DeclaredModelCapability>,
+  pub(crate) credential_plan: Arc<CredentialPlan>,
+  pub(crate) credential_config: Arc<serde_json::Value>,
+}
+
+impl ResolvedManagedTarget {
+  pub(crate) fn supports(&self, slot: &super::CatalogSlot) -> bool {
+    declared_model_matches(&self.capabilities, &slot.requirements)
+  }
+}
+
 #[napi_derive::napi(string_enum)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CopilotManagedTier {

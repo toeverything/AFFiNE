@@ -37,6 +37,7 @@ export declare class BackendRuntime {
   authorizePermissionV1(input: any): Promise<any>
   executeDomainCommandV1(input: any): Promise<any>
   searchStatus(): Promise<any>
+  getCopilotRouteOptions(name: string): BuiltInRouteOptions | null
   executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
   executeCopilot(input: CopilotExecuteInput): Promise<string>
   assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
@@ -725,8 +726,6 @@ export interface LlmEmbeddingRequestContract {
 
 export declare function llmGetBuiltInPromptSpec(name: string): BuiltInPromptSpec | null
 
-export declare function llmGetBuiltInRouteOptions(name: string): BuiltInRouteOptions | null
-
 export declare function llmGetByokCatalog(): ByokCatalogOutput
 
 export declare function llmGetContractSchema(name: string): any
@@ -864,7 +863,7 @@ export interface ModelConditionsContract {
 }
 
 export interface ModelRegistryMatchRequest {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   cond: ModelConditionsContract
 }
 
@@ -873,7 +872,7 @@ export interface ModelRegistryMatchResponse {
 }
 
 export interface ModelRegistryResolveRequest {
-  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   modelId: string
 }
 
@@ -883,20 +882,18 @@ export interface ModelRegistryResolveResponse {
 }
 
 export interface ModelRegistryRouteContract {
-  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayers?: Array<string>
 }
 
 export interface ModelRegistryVariantContract {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   canonicalKey: string
   rawModelId: string
   displayName?: string
   aliases: Array<string>
   legacyAliases?: Array<string>
   capabilities: Array<CapabilityModelCapability>
-  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex' | 'openai_embeddings' | 'openrouter_responses' | 'openrouter_chat_completions' | 'openrouter_anthropic' | 'perplexity_sonar'
   routeOverrides?: Record<string, ModelRegistryRouteContract>
   behaviorFlags?: Array<string>
 }

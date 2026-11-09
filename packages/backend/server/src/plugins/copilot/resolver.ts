@@ -28,10 +28,10 @@ import {
   TooManyRequest,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { DocAction } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { ListSessionOptions, UpdateChatSession } from '../../models';
-import { llmGetBuiltInRouteOptions } from '../../native';
 import { CopilotAccessService, type CopilotScopeMode } from './access';
 import { ByokEntitlementPolicy } from './byok';
 import { CompatHistoryProjector } from './compat/history-projector';
@@ -363,7 +363,8 @@ export class CopilotResolver {
     private readonly chatSession: ChatSessionService,
     private readonly historyProjector: CompatHistoryProjector,
     private readonly inbox: ConversationInboxService,
-    private readonly entitlement: ByokEntitlementPolicy
+    private readonly entitlement: ByokEntitlementPolicy,
+    private readonly backend: BackendRuntimeProvider
   ) {}
 
   @ResolveField(() => CopilotRouteOptionsType, {
@@ -375,11 +376,8 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args('promptName') promptName: string
   ): Promise<CopilotRouteOptionsType | null> {
-    const options = llmGetBuiltInRouteOptions(promptName);
+    const options = this.backend.getCopilotRouteOptions(promptName);
     if (!options) return null;
-    if (env.selfhosted) {
-      return { routeId: options.routeId, defaultTargetId: null, choices: [] };
-    }
     const premium = await this.entitlement.hasAiPlan(user.id);
     return {
       routeId: options.routeId,

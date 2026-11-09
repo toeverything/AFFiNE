@@ -1,0 +1,47 @@
+{
+  "transcript-lite": {
+    "apiShapes": ["gemini_api", "gemini_vertex"],
+    "modelId": "gemini-3.5-flash-lite"
+  },
+  "gemini": {
+    "apiShapes": ["gemini_api", "gemini_vertex"],
+    "modelId": "gemini-3.8-flash"
+  },
+  "luna": {
+    "apiShapes": ["responses", "chat_completions"],
+    "modelId": "gpt-6-luna"
+  },
+  "claude": {
+    "apiShapes": [
+      "vertex_anthropic",
+      "anthropic",
+      "responses",
+      "chat_completions"
+    ],
+    "modelId": "claude-sonnet-4.6"
+  },
+  "image": {
+    "apiShapes": ["openai_images"],
+    "modelId": "gpt-image-2.6-flare"
+  },
+  "edge-detection": {
+    "apiShapes": ["fal"],
+    "modelId": "workflowutils/teed"
+  },
+  "terra": {
+    "apiShapes": ["responses", "chat_completions"],
+    "modelId": "gpt-6.1-terra"
+  },
+  "image-filter": {
+    "apiShapes": ["fal"],
+    "modelId": "lora/image-to-image"
+  },
+  "embedding": {
+    "modelId": "gemini-embedding-001",
+    "apiShapes": ["gemini_api", "gemini_vertex"]
+  },
+  "rerank": {
+    "modelId": "gpt-4o-mini",
+    "apiShapes": ["chat_completions"]
+  }
+}
