@@ -3,7 +3,9 @@ import {
   serverConfigQuery,
   ServerFeature,
 } from '@affine/graphql';
+import { Prisma, PrismaClient } from '@prisma/client';
 
+import { InvalidAppConfigInput } from '../../../base';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { ServerService } from '../../../core/config';
 import { app, e2e } from '../test';
@@ -44,19 +46,27 @@ e2e(
   async t => {
     const user = await app.signup();
     const service = app.get(ServerService);
+    const db = app.get(PrismaClient);
     const previousProfiles = await app.models.appConfig.get(
       'copilot.providers.profiles'
     );
     const previousEnabled = await app.models.appConfig.get('copilot.enabled');
     t.teardown(async () => {
+      if (previousProfiles) {
+        await db.appConfig.upsert({
+          where: { id: 'copilot.providers.profiles' },
+          create: {
+            id: 'copilot.providers.profiles',
+            value: previousProfiles.value ?? Prisma.JsonNull,
+          },
+          update: { value: previousProfiles.value ?? Prisma.JsonNull },
+        });
+      } else {
+        await service.updateConfig(user.id, [
+          { module: 'copilot', key: 'providers.profiles', clear: true },
+        ]);
+      }
       await service.updateConfig(user.id, [
-        previousProfiles
-          ? {
-              module: 'copilot',
-              key: 'providers.profiles',
-              value: previousProfiles.value,
-            }
-          : { module: 'copilot', key: 'providers.profiles', clear: true },
         previousEnabled
           ? { module: 'copilot', key: 'enabled', value: previousEnabled.value }
           : { module: 'copilot', key: 'enabled', clear: true },
@@ -92,9 +102,21 @@ e2e(
       },
       { profiles: [], choices: [], defaultTargetId: null },
     ]) {
+      const error = await t.throwsAsync(
+        service.updateConfig(user.id, [
+          { module: 'copilot', key: 'providers.profiles', value: profiles },
+        ]),
+        { instanceOf: InvalidAppConfigInput }
+      );
+      t.regex(error.message, /deployment configuration/);
+      // Seed a pre-existing override to verify the shared configuration remains readable.
+      await db.appConfig.upsert({
+        where: { id: 'copilot.providers.profiles' },
+        create: { id: 'copilot.providers.profiles', value: profiles },
+        update: { value: profiles },
+      });
       await service.updateConfig(user.id, [
         { module: 'copilot', key: 'enabled', value: true },
-        { module: 'copilot', key: 'providers.profiles', value: profiles },
       ]);
       t.deepEqual(
         (await app.models.appConfig.get('copilot.providers.profiles'))?.value,
