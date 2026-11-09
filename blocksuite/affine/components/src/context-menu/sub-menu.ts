@@ -28,8 +28,8 @@ export type MenuSubMenuData = {
   autoHeight?: boolean;
   closeOnSelect?: boolean;
 };
-// a submenu opens beside its trigger: with a vertical gap the pointer has to
-// cross the items below to reach it, and hovering one of them closes the menu
+// A submenu opens beside its trigger. Placed below it, the pointer has to cross
+// the items underneath to reach the submenu, and hovering one of them closes it.
 export const subMenuOffset = offset({
   mainAxis: 0,
   crossAxis: 0,
@@ -37,7 +37,11 @@ export const subMenuOffset = offset({
 export const subMenuPlacements = autoPlacement({
   allowedPlacements: ['right-start', 'left-start'],
 });
-export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
+export const subMenuMiddleware = [
+  subMenuOffset,
+  subMenuPlacements,
+  shift({ crossAxis: true }),
+];
 
 export const dropdownSubMenuMiddleware = [
   autoPlacement({ allowedPlacements: ['bottom-end'] }),
