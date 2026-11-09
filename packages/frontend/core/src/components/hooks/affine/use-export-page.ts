@@ -93,7 +93,7 @@ async function exportDoc(
   const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
   if (!result || (!result.file && !result.assetsIds.length)) {
-    return;
+    return false;
   }
 
   const docTitle = doc.meta?.title || 'Untitled';
@@ -116,14 +116,15 @@ async function exportDoc(
   }
 
   download(downloadBlob, name);
+  return true;
 }
 
 async function exportToHtml(doc: Store, std?: BlockStdScope) {
   if (!std) {
     // If std is not provided, we use the default export method
-    await HtmlTransformer.exportDoc(doc);
+    return await HtmlTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
+    return await exportDoc(doc, std, {
       identifier: HtmlAdapterFactoryIdentifier,
       fileExtension: '.html',
       contentType: 'text/html',
@@ -135,9 +136,9 @@ async function exportToHtml(doc: Store, std?: BlockStdScope) {
 async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   if (!std) {
     // If std is not provided, we use the default export method
-    await MarkdownTransformer.exportDoc(doc);
+    return await MarkdownTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
+    return await exportDoc(doc, std, {
       identifier: MarkdownAdapterFactoryIdentifier,
       fileExtension: '.md',
       contentType: 'text/plain',
@@ -182,11 +183,9 @@ async function exportHandler({
   });
   switch (type) {
     case 'html':
-      await exportToHtml(page, editorRoot?.std);
-      return true;
+      return await exportToHtml(page, editorRoot?.std);
     case 'markdown':
-      await exportToMarkdown(page, editorRoot?.std);
-      return true;
+      return await exportToMarkdown(page, editorRoot?.std);
     case 'copy-markdown':
       return await copyAsMarkdown(page, editorRoot?.std);
     case 'snapshot':

@@ -57,12 +57,15 @@ async function exportDoc(doc: Store) {
   const snapshot = job.docToSnapshot(doc);
   const adapter = new HtmlAdapter(job, provider);
   if (!snapshot) {
-    return;
+    return false;
   }
   const htmlResult = await adapter.fromDocSnapshot({
     snapshot,
     assets: job.assetsManager,
   });
+  if (!htmlResult.file && !htmlResult.assetsIds.length) {
+    return false;
+  }
 
   let downloadBlob: Blob;
   const docTitle = doc.meta?.title || 'Untitled';
@@ -80,6 +83,7 @@ async function exportDoc(doc: Store) {
     name = `${docTitle}.html`;
   }
   download(downloadBlob, name);
+  return true;
 }
 
 /**
