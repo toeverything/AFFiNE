@@ -82,8 +82,8 @@ export class OutlineBlockPreview extends SignalWatcher(
           ></span
         >`;
       } else if (delta.attributes?.latex) {
-        // an inline latex keeps its source on the attribute and leaves the
-        // insert empty, so rendering the insert alone drops the formula
+        // Inline latex keeps its source on the attribute and leaves the insert
+        // empty, so rendering the insert alone drops the formula.
         return html`<span class=${styles.textSpan}
           >${unsafeHTML(
             katex.renderToString(delta.attributes.latex, {
