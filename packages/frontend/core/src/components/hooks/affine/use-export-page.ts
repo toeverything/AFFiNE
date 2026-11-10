@@ -13,6 +13,7 @@ import {
   docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   HtmlAdapterFactoryIdentifier,
+  MarkdownAdapter,
   MarkdownAdapterFactoryIdentifier,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
@@ -148,16 +149,13 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
 }
 
 async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
-  if (!std) {
-    return false;
-  }
-
   try {
     const transformer = createTransformer(doc);
-    const adapterFactory = std.store.provider.get(
-      MarkdownAdapterFactoryIdentifier
-    );
-    const adapter = adapterFactory.get(transformer);
+    const adapter = std
+      ? std.store.provider
+          .get(MarkdownAdapterFactoryIdentifier)
+          .get(transformer)
+      : new MarkdownAdapter(transformer, doc.provider);
     const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
     if (!result || result.file === undefined) {
