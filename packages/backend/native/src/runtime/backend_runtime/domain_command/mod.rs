@@ -11,12 +11,16 @@ use affine_core::access_control::{CommandAuthorizationDecision, DomainCommand};
 use chrono::{DateTime, Utc};
 use comments::{load_target, lock_target, value};
 pub(super) use execute::execute;
-pub(super) use lifecycle::workspace_root_contains_active_doc;
+pub(super) use lifecycle::{append_root_updates_in, workspace_root_contains_active_doc};
 use serde::Deserialize;
 use serde_json::Value;
 use sqlx::{Postgres, Transaction};
 
 use super::{InvalidationHintV1, SourceIdentity, load_command_quota_in, permission::PermissionAuthorizer};
+pub(super) use super::{
+  decode_doc_updates, load_current_doc_in, load_current_doc_parts_in, load_root, load_root_parts,
+  lock_permission_generation, project_root, require_complete_root, root_was_initialized,
+};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
 #[derive(Deserialize)]
@@ -152,7 +156,19 @@ pub(super) async fn authorize_domain(
   doc_id: Option<&str>,
   command: &DomainCommand,
 ) -> RuntimeResult<CommandAuthorizationDecision> {
-  lock_workspace(transaction, workspace_id).await?;
+  lock_workspace_storage_shared(transaction, workspace_id).await?;
+  authorize_domain_after_storage_lock(authorizer, transaction, actor_user_id, workspace_id, doc_id, command).await
+}
+
+pub(super) async fn authorize_domain_after_storage_lock(
+  authorizer: &PermissionAuthorizer,
+  transaction: &mut Transaction<'_, Postgres>,
+  actor_user_id: &str,
+  workspace_id: &str,
+  doc_id: Option<&str>,
+  command: &DomainCommand,
+) -> RuntimeResult<CommandAuthorizationDecision> {
+  lock_domain_workspace(transaction, workspace_id).await?;
   let quota = if command.effect().requires_quota_guard() {
     load_command_quota_in(transaction, authorizer.deployment, workspace_id).await?
   } else {
@@ -176,6 +192,10 @@ pub(super) async fn lock_workspace(
   workspace_id: &str,
 ) -> RuntimeResult<()> {
   lock_workspace_storage_shared(transaction, workspace_id).await?;
+  lock_domain_workspace(transaction, workspace_id).await
+}
+
+async fn lock_domain_workspace(transaction: &mut Transaction<'_, Postgres>, workspace_id: &str) -> RuntimeResult<()> {
   let key = format!("domain:workspace:{workspace_id}");
   loop {
     let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
@@ -190,14 +210,14 @@ pub(super) async fn lock_workspace(
   }
 }
 
-pub(super) async fn lock_workspace_storage_shared(
+pub(in crate::runtime) async fn lock_workspace_storage_shared(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
 ) -> RuntimeResult<()> {
   super::super::lock_workspace_storage_shared_transaction(transaction, workspace_id).await
 }
 
-pub(super) async fn invalidate_doc_blob_projection(
+pub(in crate::runtime) async fn invalidate_doc_blob_projection(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
@@ -233,18 +253,25 @@ pub(super) async fn invalidate_doc_blob_projection(
   Ok(())
 }
 
+pub(super) async fn try_lock_workspace_doc_update(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<bool> {
+  sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
+    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|error| RuntimeError::database("lock workspace document update", error))
+}
+
 pub(super) async fn lock_workspace_doc_update(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<()> {
-  let key = format!("workspace-doc-update:{workspace_id}/{doc_id}");
   loop {
-    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
-      .bind(&key)
-      .fetch_one(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("lock workspace document update", error))?;
+    let locked = try_lock_workspace_doc_update(transaction, workspace_id, doc_id).await?;
     if locked {
       return Ok(());
     }
@@ -252,14 +279,15 @@ pub(super) async fn lock_workspace_doc_update(
   }
 }
 
-pub(super) async fn next_workspace_doc_update_timestamp(
+pub(in crate::runtime) async fn next_workspace_doc_update_timestamp(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<DateTime<Utc>> {
   sqlx::query_scalar(
-    "SELECT GREATEST(date_trunc('milliseconds',clock_timestamp()),COALESCE(max(created_at)+interval '1 \
-     millisecond','epoch')) FROM updates WHERE workspace_id=$1 AND guid=$2",
+    "SELECT GREATEST(date_trunc('milliseconds',clock_timestamp()),COALESCE(max(timestamp)+interval '1 \
+     millisecond','epoch')) FROM (SELECT updated_at AS timestamp FROM snapshots WHERE workspace_id=$1 AND guid=$2 \
+     UNION ALL SELECT created_at AS timestamp FROM updates WHERE workspace_id=$1 AND guid=$2) source",
   )
   .bind(workspace_id)
   .bind(doc_id)
@@ -317,6 +345,7 @@ mod test_support {
 
   pub(super) async fn owner_workspace() -> Option<(PgPool, String, String)> {
     let pool = PgPool::connect(&std::env::var("DATABASE_URL").ok()?).await.unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     assert!(
       crate::runtime::migrations::migrate_embedding_tables(&pool)
         .await

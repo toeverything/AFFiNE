@@ -5,7 +5,13 @@ import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
-import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+} from 'yjs';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
@@ -16,7 +22,11 @@ import {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from '../../models';
-import { addDocToRootDoc } from '../../native';
+import {
+  addDocToRootDoc,
+  BackendRuntime,
+  ServerConfigHandle,
+} from '../../native';
 import { createTestingApp, TestingApp } from '../utils';
 
 type WebsocketError = {
@@ -1010,6 +1020,99 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
   }
 });
 
+test('approved root source repair invalidates subscribers for ordinary pull', async t => {
+  const { user, cookieHeader } = await login(app);
+  const workspace = await app.get(Models).workspace.create(user.id);
+  const db = app.get(PrismaClient);
+  const runtime = app.get(BackendRuntimeProvider);
+  const root = new Doc();
+  const pages = new YArray<{ id: string }>();
+  root.getMap('meta').set('pages', pages);
+  const prefix = Buffer.from(encodeStateAsUpdate(root));
+  const vector = encodeStateVector(root);
+  pages.push([{ id: 'repaired-doc' }]);
+  const partial = Buffer.from(encodeStateAsUpdate(root, vector));
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: workspace.id,
+    userId: user.id,
+    blob: partial,
+  });
+  await db.snapshotHistory.create({
+    data: {
+      workspaceId: workspace.id,
+      id: workspace.id,
+      blob: prefix,
+      timestamp: new Date(Date.now() - 1000),
+      expiredAt: new Date(Date.now() + 60_000),
+    },
+  });
+  const socket = createClient(url, cookieHeader);
+  const maintenance = new BackendRuntime(app.get(ServerConfigHandle));
+  try {
+    await maintenance.start();
+    await waitForConnect(socket);
+    unwrapResponse(
+      t,
+      await emitWithAck(socket, 'space:join-batch', {
+        spaces: [
+          { spaceType: 'workspace', spaceId: workspace.id },
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: workspace.id,
+          },
+        ],
+        clientVersion: '0.27.5',
+      })
+    );
+    const request = {
+      spaceType: 'workspace',
+      spaceId: workspace.id,
+      docId: workspace.id,
+    };
+    const error = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', {
+        ...request,
+        update: Buffer.from(encodeStateAsUpdate(root)).toString('base64'),
+      })
+    );
+    t.is(error.name, 'DOC_ROOT_SOURCE_INVALID');
+    t.is(error.data?.workspaceId, workspace.id);
+    t.is(error.data?.docId, workspace.id);
+    const report = await runtime.workspaceRootMaintenanceV1({
+      command: 'inspect',
+      workspaceId: workspace.id,
+    });
+    t.truthy(report.candidateDigest);
+    const received = waitForEvent<{ spaceId: string; timestamp: number }>(
+      socket,
+      'space:broadcast-doc-invalidation'
+    );
+    await maintenance.workspaceRootMaintenanceV1({ command: 'apply', report });
+    t.is((await received).spaceId, workspace.id);
+    const loaded = unwrapResponse(
+      t,
+      await emitWithAck<{ missing: string }>(socket, 'space:load-doc', request)
+    );
+    const restored = new Doc();
+    applyUpdate(restored, Buffer.from(loaded.missing, 'base64'));
+    t.deepEqual(
+      restored.getMap<YArray<{ id: string }>>('meta').get('pages')?.toJSON(),
+      [{ id: 'repaired-doc' }]
+    );
+    t.is(
+      await db.snapshotHistory.count({ where: { workspaceId: workspace.id } }),
+      1
+    );
+  } finally {
+    root.destroy();
+    socket.disconnect();
+    await maintenance.stop();
+  }
+});
+
 test('permission revocation removes an active document subscription', async t => {
   const db = app.get(PrismaClient);
   const models = app.get(Models);
@@ -1476,8 +1579,13 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
         ),
       })
     );
-    t.is(bypassError.name, 'DOC_ACTION_DENIED');
-    t.true(bypassError.message.includes('Doc.Update'));
+    t.is(bypassError.name, 'DOC_LIFECYCLE_REQUIRES_COMMAND');
+    t.is(
+      await db.update.count({
+        where: { workspaceId: workspace.id, id: workspace.id },
+      }),
+      0
+    );
 
     unwrapResponse(
       t,

@@ -1,17 +1,14 @@
 import { Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import {
-  applyUpdate,
-  diffUpdate,
-  Doc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  encodeStateVectorFromUpdate,
-  UndoManager,
-} from 'yjs';
+import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
-import { CallMetric, metrics } from '../../../base';
+import {
+  CallMetric,
+  DocUpdateInvalid,
+  DocUpdateTooLarge,
+  DocValidationUnavailable,
+} from '../../../base';
 import { validateDocUpdate } from '../../../native';
 import { applyUpdatesWithNative, mergeUpdatesWithYjs } from '../merge-updates';
 import { Connection } from './connection';
@@ -85,44 +82,24 @@ export abstract class DocStorageAdapter extends Connection {
     );
   }
 
-  protected async filterValidDocUpdates(
-    spaceId: string,
-    docId: string,
-    updates: Uint8Array[]
-  ) {
-    const valid: Uint8Array[] = [];
+  protected async assertValidDocUpdates(updates: Uint8Array[]) {
     for (const update of updates) {
-      const reason = await this.invalidDocUpdateReason(update);
-      if (reason) {
-        metrics.doc.counter('doc_update_rejected').add(1, { reason });
-        this.logger.warn(
-          `Dropped invalid doc update, spaceId: ${spaceId}, docId: ${docId}, reason: ${reason}, size: ${update.length}`
-        );
-        continue;
+      if (update.length > DOC_UPDATE_VALIDATE_MAX_BYTES) {
+        throw new DocUpdateTooLarge();
       }
-      valid.push(update);
-    }
-    return valid;
-  }
-
-  private async invalidDocUpdateReason(update: Uint8Array) {
-    if (update.length === 2 && update[0] === 0 && update[1] === 0) {
-      return null;
-    }
-    if (update.length > DOC_UPDATE_VALIDATE_MAX_BYTES) {
-      return 'oversized';
-    }
-
-    try {
-      return (await validateDocUpdate(Buffer.from(update), {
-        timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
-      }))
-        ? null
-        : 'invalid';
-    } catch (err) {
-      this.logger.warn('Doc update validation failed', err);
-      metrics.doc.counter('doc_update_validation_failed').add(1);
-      return null;
+      let valid: boolean;
+      try {
+        valid = await validateDocUpdate(Buffer.from(update), {
+          timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
+        });
+      } catch (error) {
+        const unavailable = new DocValidationUnavailable();
+        unavailable.cause = error;
+        throw unavailable;
+      }
+      if (!valid) {
+        throw new DocUpdateInvalid();
+      }
     }
   }
 
@@ -257,30 +234,6 @@ export abstract class DocStorageAdapter extends Connection {
 
   abstract deleteDoc(spaceId: string, docId: string): Promise<void>;
   abstract deleteSpace(spaceId: string): Promise<void>;
-  async rollbackDoc(
-    spaceId: string,
-    docId: string,
-    timestamp: number,
-    editorId: string
-  ): Promise<void> {
-    await using _lock = await this.lockDocForUpdate(spaceId, docId);
-    const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);
-    if (!toSnapshot) {
-      throw new Error('Can not find the version to rollback to.');
-    }
-
-    const fromSnapshot = await this.getDocSnapshot(spaceId, docId);
-
-    if (!fromSnapshot) {
-      throw new Error('Can not find the current version of the doc.');
-    }
-
-    const change = this.generateChangeUpdate(fromSnapshot.bin, toSnapshot.bin);
-    await this.pushDocUpdates(spaceId, docId, [change], editorId);
-    // force create a new history record after rollback
-    await this.createDocHistory(fromSnapshot, true);
-  }
-
   abstract getSpaceDocTimestamps(
     spaceId: string,
     after?: number
@@ -312,10 +265,7 @@ export abstract class DocStorageAdapter extends Connection {
     updates: DocUpdate[]
   ): Promise<number>;
 
-  protected abstract createDocHistory(
-    snapshot: DocRecord,
-    force?: boolean
-  ): Promise<boolean>;
+  protected abstract createDocHistory(snapshot: DocRecord): Promise<boolean>;
 
   @CallMetric('doc', 'squash')
   protected async squash(
@@ -347,25 +297,5 @@ export abstract class DocStorageAdapter extends Connection {
     docId: string
   ): Promise<AsyncDisposable> {
     return this.locker.lock(`workspace:${spaceId}:update`, docId);
-  }
-
-  protected generateChangeUpdate(newerBin: Uint8Array, olderBin: Uint8Array) {
-    const newerDoc = new Doc();
-    applyUpdate(newerDoc, newerBin);
-    const olderDoc = new Doc();
-    applyUpdate(olderDoc, olderBin);
-
-    const newerState = encodeStateVector(newerDoc);
-    const olderState = encodeStateVector(olderDoc);
-
-    const diff = encodeStateAsUpdate(newerDoc, olderState);
-
-    const undoManager = new UndoManager(Array.from(newerDoc.share.values()));
-
-    applyUpdate(olderDoc, diff);
-
-    undoManager.undo();
-
-    return encodeStateAsUpdate(olderDoc, newerState);
   }
 }

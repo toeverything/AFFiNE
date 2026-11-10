@@ -6,12 +6,14 @@ use affine_core::access_control::{
 use chrono::Duration;
 use napi::{Result, bindgen_prelude::Buffer};
 use sqlx::PgPool;
+use y_octo::Update;
 
 use super::{
-  BackendRuntime, SourceIdentity,
+  BackendRuntime, RuntimeError, RuntimeResult, SourceIdentity, blocking,
   domain_command::{
-    authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update, lock_workspace_storage_shared,
-    next_workspace_doc_update_timestamp, workspace_root_contains_active_doc,
+    append_root_updates_in, authorize_domain_after_storage_lock, invalidate_doc_blob_projection,
+    lock_workspace_doc_update, lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
+    workspace_root_contains_active_doc,
   },
   invalidation::{InvalidationHintV1, InvalidationRuntime},
   napi_error,
@@ -93,23 +95,22 @@ async fn append_authorized_updates(
   if input.updates.is_empty() {
     return Ok(0);
   }
+  let root = input.doc_id == input.workspace_id;
+  let decoded = decode_doc_updates(&input.updates, root).await?;
   let mut transaction = pool
     .begin()
     .await
     .map_err(|error| napi_error(format!("begin workspace doc update: {error}")))?;
   let permission_doc_id = input.permission_doc_id.as_deref().unwrap_or(&input.doc_id);
-  lock_workspace_storage_shared(&mut transaction, &input.workspace_id)
-    .await
-    .map_err(super::to_napi_error)?;
-  let mut locked_doc_ids = [&*input.doc_id, permission_doc_id];
+  lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
+  let mut locked_doc_ids = vec![input.doc_id.as_str(), permission_doc_id];
+  if input.write_intent == WorkspaceDocWriteIntentV1::CreateDoc {
+    locked_doc_ids.push(&input.workspace_id);
+  }
   locked_doc_ids.sort_unstable();
-  lock_workspace_doc_update(&mut transaction, &input.workspace_id, locked_doc_ids[0])
-    .await
-    .map_err(super::to_napi_error)?;
-  if locked_doc_ids[1] != locked_doc_ids[0] {
-    lock_workspace_doc_update(&mut transaction, &input.workspace_id, locked_doc_ids[1])
-      .await
-      .map_err(super::to_napi_error)?;
+  locked_doc_ids.dedup();
+  for doc_id in locked_doc_ids {
+    lock_workspace_doc_update(&mut transaction, &input.workspace_id, doc_id).await?;
   }
   let authorizer = PermissionAuthorizer::with_telemetry(pool.clone(), deployment, telemetry);
   let classification = classify_reserved_document(&input.workspace_id, &input.doc_id);
@@ -117,17 +118,23 @@ async fn append_authorized_updates(
     return Err(napi_error("domain_permission_denied"));
   }
   let reserved = input.doc_id == permission_doc_id && classification.is_valid_reserved();
-  let write_intent = if reserved {
+  let write_intent = if reserved && !root {
     WorkspaceDocWriteIntentV1::UpdateDoc
   } else {
     input.write_intent
   };
   match write_intent {
     WorkspaceDocWriteIntentV1::UpdateDoc => {
-      let command = DomainCommand::UpdateDoc {
-        doc_id: permission_doc_id.to_string(),
+      let command = if root {
+        DomainCommand::AppendRootUpdate {
+          doc_id: input.workspace_id.clone(),
+        }
+      } else {
+        DomainCommand::UpdateDoc {
+          doc_id: permission_doc_id.to_string(),
+        }
       };
-      authorize_domain(
+      authorize_domain_after_storage_lock(
         &authorizer,
         &mut transaction,
         &input.actor_user_id,
@@ -137,21 +144,23 @@ async fn append_authorized_updates(
       )
       .await
       .map_err(super::to_napi_error)?;
-      let source_exists = sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2) OR EXISTS(SELECT 1 FROM updates \
-         WHERE workspace_id=$1 AND guid=$2)",
-      )
-      .bind(&input.workspace_id)
-      .bind(permission_doc_id)
-      .fetch_one(&mut *transaction)
-      .await
-      .map_err(|error| napi_error(format!("load workspace document source: {error}")))?;
-      if !source_exists && !reserved {
-        return Err(napi_error("doc_not_found"));
+      if !root {
+        let source_exists = sqlx::query_scalar::<_, bool>(
+          "SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2) OR EXISTS(SELECT 1 FROM updates \
+           WHERE workspace_id=$1 AND guid=$2)",
+        )
+        .bind(&input.workspace_id)
+        .bind(permission_doc_id)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| napi_error(format!("load workspace document source: {error}")))?;
+        if !source_exists && !reserved {
+          return Err(napi_error("doc_not_found"));
+        }
       }
     }
     WorkspaceDocWriteIntentV1::CreateDoc => {
-      authorize_domain(
+      authorize_domain_after_storage_lock(
         &authorizer,
         &mut transaction,
         &input.actor_user_id,
@@ -176,6 +185,24 @@ async fn append_authorized_updates(
     input.expected_permission_generation,
   )
   .await?;
+  if root {
+    let timestamp = append_root_updates_in(
+      &mut transaction,
+      &input.workspace_id,
+      &input.actor_user_id,
+      input.updates,
+      decoded,
+      embedding_schema_ready,
+    )
+    .await?;
+    transaction
+      .commit()
+      .await
+      .map_err(|error| napi_error(format!("commit root update: {error}")))?;
+    publish_update(invalidation, input.workspace_id, input.doc_id).await;
+    return Ok(timestamp);
+  }
+  drop(decoded);
   append_updates_in(
     transaction,
     invalidation,
@@ -197,13 +224,19 @@ pub(super) async fn append_updates(
   updates: Vec<Buffer>,
   editor_id: Option<String>,
 ) -> Result<i64> {
+  if workspace_id == doc_id {
+    return Err(napi_error("doc_is_workspace"));
+  }
   if updates.is_empty() {
     return Ok(0);
   }
-  let transaction = pool
+  decode_doc_updates(&updates, false).await?;
+  let mut transaction = pool
     .begin()
     .await
     .map_err(|error| napi_error(format!("begin workspace doc update: {error}")))?;
+  lock_workspace_storage_shared(&mut transaction, &workspace_id).await?;
+  lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id).await?;
   append_updates_in(
     transaction,
     invalidation,
@@ -225,12 +258,6 @@ async fn append_updates_in(
   updates: Vec<Buffer>,
   editor_id: Option<String>,
 ) -> Result<i64> {
-  lock_workspace_storage_shared(&mut transaction, &workspace_id)
-    .await
-    .map_err(super::to_napi_error)?;
-  lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id)
-    .await
-    .map_err(super::to_napi_error)?;
   let now = next_workspace_doc_update_timestamp(&mut transaction, &workspace_id, &doc_id)
     .await
     .map_err(super::to_napi_error)?;
@@ -255,6 +282,11 @@ async fn append_updates_in(
     .commit()
     .await
     .map_err(|error| napi_error(format!("commit workspace doc update: {error}")))?;
+  publish_update(invalidation, workspace_id, doc_id).await;
+  Ok(timestamp)
+}
+
+async fn publish_update(invalidation: Option<Arc<InvalidationRuntime>>, workspace_id: String, doc_id: String) {
   if let Some(invalidation) = invalidation {
     invalidation
       .publish(InvalidationHintV1::BlobSource {
@@ -262,30 +294,52 @@ async fn append_updates_in(
       })
       .await;
   }
-  Ok(timestamp)
 }
 
-pub(super) async fn lock_permission_generation(
+pub(in crate::runtime) async fn decode_doc_updates(updates: &[Buffer], root: bool) -> RuntimeResult<Vec<Update>> {
+  const MAX_UPDATE_BYTES: usize = 32 * 1024 * 1024;
+  if updates.iter().any(|update| update.len() > MAX_UPDATE_BYTES)
+    || (root && updates.iter().map(|update| update.len()).sum::<usize>() > MAX_UPDATE_BYTES)
+  {
+    return Err(RuntimeError::invalid_input("doc_update_too_large"));
+  }
+  let permit = super::try_validation_slot().map_err(|_| RuntimeError::invalid_state("doc_validation_unavailable"))?;
+  let updates = updates.iter().map(|update| update.to_vec()).collect::<Vec<_>>();
+  tokio::time::timeout(
+    std::time::Duration::from_secs(1),
+    blocking::spawn(permit, move || {
+      updates
+        .into_iter()
+        .map(|update| Update::decode_v1(update).map_err(|_| RuntimeError::invalid_input("doc_update_invalid")))
+        .collect()
+    }),
+  )
+  .await
+  .map_err(|_| RuntimeError::invalid_state("doc_validation_unavailable"))?
+  .map_err(|_| RuntimeError::invalid_state("doc_validation_unavailable"))?
+}
+
+pub(in crate::runtime) async fn lock_permission_generation(
   transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
   workspace_id: &str,
   expected: Option<i64>,
-) -> Result<()> {
+) -> RuntimeResult<()> {
   sqlx::query(
     "INSERT INTO workspace_sync_permission_generations(workspace_id,generation) VALUES($1,0) ON CONFLICT DO NOTHING",
   )
   .bind(workspace_id)
   .execute(&mut **transaction)
   .await
-  .map_err(|error| napi_error(format!("initialize sync permission generation: {error}")))?;
+  .map_err(|error| RuntimeError::database("initialize sync permission generation", error))?;
   let current = sqlx::query_scalar::<_, i64>(
     "SELECT generation FROM workspace_sync_permission_generations WHERE workspace_id=$1 FOR SHARE",
   )
   .bind(workspace_id)
   .fetch_one(&mut **transaction)
   .await
-  .map_err(|error| napi_error(format!("lock sync permission generation: {error}")))?;
+  .map_err(|error| RuntimeError::database("lock sync permission generation", error))?;
   if expected.is_some_and(|expected| current != expected) {
-    return Err(napi_error("sync_permission_generation_changed"));
+    return Err(RuntimeError::invalid_state("sync_permission_generation_changed"));
   }
   Ok(())
 }
@@ -361,11 +415,30 @@ mod tests {
     invalidate_doc_blob_projection(&mut no_embedding, &workspace_id, &doc_id, false).await?;
     no_embedding.rollback().await?;
 
+    assert!(
+      runtime
+        .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
+          workspace_id: workspace_id.clone(),
+          doc_id: doc_id.clone(),
+          updates: vec![Buffer::from(vec![0, 0]), Buffer::from(vec![0xff])],
+          editor_id: None,
+        })
+        .await
+        .is_err()
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .fetch_one(&pool)
+        .await?,
+      0
+    );
     let first = runtime
       .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
         workspace_id: workspace_id.clone(),
         doc_id: doc_id.clone(),
-        updates: vec![Buffer::from(vec![1]), Buffer::from(vec![2])],
+        updates: vec![Buffer::from(vec![0, 0]), Buffer::from(vec![0, 0])],
         editor_id: None,
       })
       .await
@@ -374,7 +447,7 @@ mod tests {
       .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
         workspace_id: workspace_id.clone(),
         doc_id: doc_id.clone(),
-        updates: vec![Buffer::from(vec![3])],
+        updates: vec![Buffer::from(vec![0, 0])],
         editor_id: None,
       })
       .await
@@ -420,7 +493,7 @@ mod tests {
         AppendWorkspaceDocUpdatesInputV1 {
           workspace_id: racing_workspace_id,
           doc_id: racing_doc_id,
-          updates: vec![Buffer::from(vec![4])],
+          updates: vec![Buffer::from(vec![0, 0])],
           actor_user_id: racing_user_id,
           write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
           permission_doc_id: None,
@@ -440,7 +513,7 @@ mod tests {
       .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
         workspace_id: workspace_id.clone(),
         doc_id: doc_id.clone(),
-        updates: vec![Buffer::from(vec![5])],
+        updates: vec![Buffer::from(vec![0, 0])],
         actor_user_id: user_id.clone(),
         write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
         permission_doc_id: None,
@@ -537,7 +610,7 @@ mod tests {
         AppendWorkspaceDocUpdatesInputV1 {
           workspace_id: racing_workspace_id,
           doc_id: racing_doc_id,
-          updates: vec![Buffer::from(vec![6])],
+          updates: vec![Buffer::from(vec![0, 0])],
           actor_user_id: racing_user_id,
           write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
           permission_doc_id: None,
@@ -596,7 +669,7 @@ mod tests {
       .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
         workspace_id: workspace_id.clone(),
         doc_id: creating_doc_id,
-        updates: vec![Buffer::from(vec![7])],
+        updates: vec![Buffer::from(vec![0, 0])],
         actor_user_id: user_id.clone(),
         write_intent: WorkspaceDocWriteIntentV1::CreateDoc,
         permission_doc_id: None,
@@ -608,6 +681,84 @@ mod tests {
       "document creation must recheck root membership after a committed delete"
     );
 
+    let root_record = runtime
+      .get_current_workspace_root_v1(workspace_id.clone())
+      .await?
+      .unwrap();
+    let first_root_delta = affine_doc_loader::add_doc_to_root_doc(root_record.bin.to_vec(), "batch-a", None)?;
+    let mut merged_root = y_octo::Doc::default();
+    merged_root.apply_update_from_binary_v1(&root_record.bin)?;
+    merged_root.apply_update_from_binary_v1(&first_root_delta)?;
+    let second_root_delta = affine_doc_loader::add_doc_to_root_doc(merged_root.encode_update_v1()?, "batch-b", None)?;
+    let future_root_clock = chrono::Utc::now() + chrono::Duration::minutes(1);
+    sqlx::query("UPDATE snapshots SET updated_at=$2 WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(future_root_clock)
+      .execute(&pool)
+      .await?;
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![second_root_delta.into(), first_root_delta.into()],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        permission_doc_id: None,
+        expected_permission_generation: None,
+      })
+      .await?;
+    let root = runtime
+      .get_current_workspace_root_v1(workspace_id.clone())
+      .await?
+      .unwrap();
+    assert!(root.timestamp > future_root_clock.timestamp_millis());
+    assert_eq!(
+      affine_doc_loader::project_workspace_root(root.bin.to_vec(), true)?.doc_ids,
+      ["batch-a", "batch-b"]
+    );
+    assert!(
+      runtime
+        .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
+          workspace_id: workspace_id.clone(),
+          doc_id: workspace_id.clone(),
+          updates: vec![Buffer::from(vec![0, 0])],
+          editor_id: None,
+        })
+        .await
+        .is_err()
+    );
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: "batch-a".to_string(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::CreateDoc,
+        permission_doc_id: None,
+        expected_permission_generation: None,
+      })
+      .await?;
+    sqlx::query("DELETE FROM updates WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let missing_root = runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![root.bin],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        permission_doc_id: None,
+        expected_permission_generation: None,
+      })
+      .await
+      .unwrap_err();
+    assert!(missing_root.to_string().contains("doc_root_source_invalid"));
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
       .bind(&workspace_id)
       .execute(&pool)

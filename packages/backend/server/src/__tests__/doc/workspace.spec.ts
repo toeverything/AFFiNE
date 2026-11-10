@@ -48,19 +48,19 @@ test('should not compact from a stale update view', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdatesTrusted('2', '2', updates);
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates);
 
-  await adapter.getDoc('2', '2');
-  await adapter.pushDocUpdatesTrusted('2', '2', updates);
+  await adapter.getDoc('2', 'doc-2');
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates);
 
   const records = await db.update.findMany({
     where: {
       workspaceId: '2',
-      id: '2',
+      id: 'doc-2',
     },
   });
 
-  await adapter.pushDocUpdatesTrusted('2', '2', updates.slice(0, 1));
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates.slice(0, 1));
 
   // @ts-expect-error private method
   const stub = Sinon.stub(adapter, 'getDocUpdates').resolves(
@@ -70,13 +70,13 @@ test('should not compact from a stale update view', async t => {
     }))
   );
 
-  await adapter.getDoc('2', '2');
+  await adapter.getDoc('2', 'doc-2');
   stub.restore();
 
   t.not(await db.update.count(), 0);
 });
 
-test('should finish doc creation after retrying failed updates', async t => {
+test('should finish doc creation when the caller retries the failed request', async t => {
   const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesTrustedV1');
   t.teardown(() => stub.restore());
   let creationCompleted = false;
@@ -90,23 +90,27 @@ test('should finish doc creation after retrying failed updates', async t => {
   stub.onCall(0).rejects(new Error());
   stub.onCall(1).resolves(Date.now());
 
+  await t.throwsAsync(() =>
+    adapter.pushDocUpdatesTrusted('1', 'doc-1', [Buffer.from([0, 0])])
+  );
+  t.false(creationCompleted);
   await t.notThrowsAsync(() =>
-    adapter.pushDocUpdatesTrusted('1', '1', [Buffer.from([0, 0])])
+    adapter.pushDocUpdatesTrusted('1', 'doc-1', [Buffer.from([0, 0])])
   );
   t.is(stub.callCount, 2);
   t.true(creationCompleted);
 });
 
-test('should throw if meet max retry times', async t => {
+test('should propagate storage errors without internal retries', async t => {
   const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesTrustedV1');
 
-  stub.rejects(new Error());
+  stub.rejects(new Error('storage unavailable'));
 
   await t.throwsAsync(
-    () => adapter.pushDocUpdatesTrusted('1', '1', [Buffer.from([0, 0])]),
-    { message: 'Failed to store doc updates.' }
+    () => adapter.pushDocUpdatesTrusted('1', 'doc-1', [Buffer.from([0, 0])]),
+    { message: 'storage unavailable' }
   );
-  t.is(stub.callCount, 4);
+  t.is(stub.callCount, 1);
 
   stub.restore();
 });
@@ -127,7 +131,7 @@ test('should be able to merge updates as snapshot', async t => {
   await db.update.createMany({
     data: [
       {
-        id: '1',
+        id: 'doc-1',
         workspaceId: '1',
         blob: Buffer.from(update),
         createdAt: new Date(Date.now() + 1),
@@ -137,7 +141,7 @@ test('should be able to merge updates as snapshot', async t => {
   });
 
   t.deepEqual(
-    Buffer.from((await adapter.getDoc('1', '1'))!.bin),
+    Buffer.from((await adapter.getDoc('1', 'doc-1'))!.bin),
     Buffer.from(update)
   );
 
@@ -150,7 +154,7 @@ test('should be able to merge updates as snapshot', async t => {
   await db.update.create({
     data: {
       workspaceId: '1',
-      id: '1',
+      id: 'doc-1',
       blob: appendUpdate,
       createdAt: new Date(),
       createdBy: null,
@@ -158,7 +162,7 @@ test('should be able to merge updates as snapshot', async t => {
   });
 
   {
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const dbDoc = new YDoc();
     applyUpdate(dbDoc, bin);
 
@@ -183,9 +187,9 @@ test('should be able to merge updates into snapshot', async t => {
   }
 
   {
-    await adapter.pushDocUpdatesTrusted('1', '1', updates.slice(0, 2));
+    await adapter.pushDocUpdatesTrusted('1', 'doc-1', updates.slice(0, 2));
     // merge
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const doc = new YDoc();
     applyUpdate(doc, bin);
 
@@ -193,9 +197,9 @@ test('should be able to merge updates into snapshot', async t => {
   }
 
   {
-    await adapter.pushDocUpdatesTrusted('1', '1', updates.slice(2));
+    await adapter.pushDocUpdatesTrusted('1', 'doc-1', updates.slice(2));
     // merge
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const doc = new YDoc();
     applyUpdate(doc, bin);
 
@@ -220,15 +224,15 @@ test('should merge updates after a future-dated snapshot', async t => {
     text.insert(11, '!');
   }
 
-  await adapter.pushDocUpdatesTrusted('2', '1', updates.slice(0, 2)); // 'helloworld'
+  await adapter.pushDocUpdatesTrusted('2', 'doc-1', updates.slice(0, 2)); // 'helloworld'
   // merge
-  await adapter.getDoc('2', '1');
+  await adapter.getDoc('2', 'doc-1');
   // fake the snapshot is a lot newer
   await db.snapshot.update({
     where: {
       workspaceId_id: {
         workspaceId: '2',
-        id: '1',
+        id: 'doc-1',
       },
     },
     data: {
@@ -237,8 +241,8 @@ test('should merge updates after a future-dated snapshot', async t => {
   });
 
   {
-    await adapter.pushDocUpdatesTrusted('2', '1', updates.slice(2)); // 'hello world!'
-    const { bin } = (await adapter.getDoc('2', '1'))!;
+    await adapter.pushDocUpdatesTrusted('2', 'doc-1', updates.slice(2)); // 'hello world!'
+    const { bin } = (await adapter.getDoc('2', 'doc-1'))!;
 
     const doc = new YDoc();
     applyUpdate(doc, bin);
@@ -247,7 +251,7 @@ test('should merge updates after a future-dated snapshot', async t => {
 
   {
     const doc = new YDoc();
-    applyUpdate(doc, (await adapter.getDoc('2', '1'))!.bin);
+    applyUpdate(doc, (await adapter.getDoc('2', 'doc-1'))!.bin);
     t.is(doc.getText('content').toString(), 'hello world!');
 
     t.is(await db.update.count(), 0);

@@ -10155,6 +10155,30 @@ export function useAFFiNEI18N(): {
         docId: string;
     }>): string;
     /**
+      * `The document is missing updates. Local changes are preserved.`
+      */
+    ["error.DOC_SOURCE_INCOMPLETE"](): string;
+    /**
+      * `The workspace index needs attention. Local data is preserved; existing documents can continue syncing.`
+      */
+    ["error.DOC_ROOT_SOURCE_INVALID"](): string;
+    /**
+      * `Use the document action to trash, restore, or delete a document.`
+      */
+    ["error.DOC_LIFECYCLE_REQUIRES_COMMAND"](): string;
+    /**
+      * `The document update is invalid.`
+      */
+    ["error.DOC_UPDATE_INVALID"](): string;
+    /**
+      * `The document update exceeds the size limit.`
+      */
+    ["error.DOC_UPDATE_TOO_LARGE"](): string;
+    /**
+      * `Document validation is temporarily unavailable.`
+      */
+    ["error.DOC_VALIDATION_UNAVAILABLE"](): string;
+    /**
       * `Doc {{docId}} under Space {{spaceId}} is blocked from updating.`
       */
     ["error.DOC_UPDATE_BLOCKED"](options: Readonly<{

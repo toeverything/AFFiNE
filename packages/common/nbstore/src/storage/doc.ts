@@ -72,6 +72,7 @@ export interface DocStorageOptions {
 export interface DocStorage extends Storage {
   readonly storageType: 'doc';
   readonly isReadonly: boolean;
+  readonly reconcileRootUpdates?: boolean;
   readonly spaceId: string;
   /** Whether sync clocks can be reused across connections. Defaults to persistent. */
   readonly syncMetadataScope?: 'connection' | 'persistent';

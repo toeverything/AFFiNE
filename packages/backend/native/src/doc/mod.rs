@@ -1,6 +1,9 @@
 mod write;
 
-use std::collections::HashMap;
+use std::{
+  collections::HashMap,
+  sync::{Arc, OnceLock},
+};
 
 use affine_common::napi_utils::map_napi_err;
 use affine_doc_loader::{
@@ -10,10 +13,23 @@ use affine_doc_loader::{
 };
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore, TryAcquireError};
 pub use write::{
   DocWriteContext, add_doc_to_root_doc, build_public_root_doc, create_doc_with_markdown, update_doc_properties,
   update_doc_title, update_doc_with_markdown, update_root_doc_meta_title,
 };
+
+pub(crate) fn try_validation_slot() -> std::result::Result<OwnedSemaphorePermit, TryAcquireError> {
+  static SLOTS: OnceLock<Arc<Semaphore>> = OnceLock::new();
+  SLOTS
+    .get_or_init(|| {
+      Arc::new(Semaphore::new(
+        std::thread::available_parallelism().map_or(1, usize::from),
+      ))
+    })
+    .clone()
+    .try_acquire_owned()
+}
 
 #[napi(object)]
 pub struct NativeMarkdownResult {

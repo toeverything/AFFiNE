@@ -25,7 +25,7 @@ interface CloudDocStorageOptions extends DocStorageOptions {
 
 function createWebsocketError(error: { name: string; message: string }) {
   const err = new Error(error.message);
-  err.name = error.name;
+  Object.assign(err, error);
   return err;
 }
 
@@ -42,6 +42,7 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     return this.connection.idConverter;
   }
   readonly spaceType = this.options.type;
+  readonly reconcileRootUpdates = this.options.type === 'workspace';
 
   onServerUpdates: ServerEventsMap['space:broadcast-doc-updates'] = message => {
     if (

@@ -1,13 +1,16 @@
 use affine_core::access_control::{DocLifecycleCommand, DomainCommand};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
+use napi::bindgen_prelude::Buffer;
 use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
-use y_octo::{Any, Doc, Value as YValue};
+use y_octo::{Any, Doc, Update, Value as YValue, merge_updates_v1};
 
 use super::{
-  DocLifecycle, authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update,
-  lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
+  DocLifecycle, authorize_domain_after_storage_lock, decode_doc_updates, invalidate_doc_blob_projection,
+  load_current_doc_parts_in, load_root, load_root_parts, lock_permission_generation, lock_workspace_doc_update,
+  lock_workspace_storage_shared, next_workspace_doc_update_timestamp, project_root, require_complete_root,
+  root_was_initialized,
 };
 use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
@@ -37,7 +40,7 @@ pub(super) async fn apply(
       DocLifecycle::Delete => DocLifecycleCommand::Delete,
     },
   };
-  authorize_domain(
+  authorize_domain_after_storage_lock(
     authorizer,
     transaction,
     &actor_user_id,
@@ -47,21 +50,11 @@ pub(super) async fn apply(
   )
   .await?;
 
-  let snapshot =
-    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1 FOR UPDATE")
-      .bind(&workspace_id)
-      .fetch_optional(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("load workspace root snapshot", error))?
-      .ok_or_else(|| RuntimeError::invalid_input("workspace_root_not_found"))?;
-  let updates = sqlx::query_scalar::<_, Vec<u8>>(
-    "SELECT blob FROM updates WHERE workspace_id=$1 AND guid=$1 ORDER BY created_at FOR SHARE",
-  )
-  .bind(&workspace_id)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load workspace root updates", error))?;
-  let root_update = mutate_root(snapshot, updates, &doc_id, lifecycle)?;
+  let mut root = load_root(transaction, &workspace_id).await?;
+  if !root.exists {
+    return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
+  }
+  let root_update = mutate_loaded_root(&mut root.doc, &doc_id, lifecycle)?;
   let timestamp = next_workspace_doc_update_timestamp(transaction, &workspace_id, &workspace_id).await?;
   sqlx::query("INSERT INTO updates (workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
     .bind(&workspace_id)
@@ -98,83 +91,94 @@ pub(super) async fn append_root_update(
   expected_permission_generation: Option<i64>,
   embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
+  let update = BASE64
+    .decode(encoded_update)
+    .map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))?;
+  let updates = vec![Buffer::from(update)];
+  let decoded = decode_doc_updates(&updates, true).await?;
   lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &workspace_id).await?;
-  let command = DomainCommand::AppendRootUpdate {
-    doc_id: workspace_id.clone(),
-  };
-  authorize_domain(
+  authorize_domain_after_storage_lock(
     authorizer,
     transaction,
     &actor_user_id,
     &workspace_id,
     Some(&workspace_id),
-    &command,
+    &DomainCommand::AppendRootUpdate {
+      doc_id: workspace_id.clone(),
+    },
   )
   .await?;
-  if let Some(expected) = expected_permission_generation {
-    sqlx::query(
-      "INSERT INTO workspace_sync_permission_generations(workspace_id,generation) VALUES($1,0) ON CONFLICT DO NOTHING",
-    )
-    .bind(&workspace_id)
-    .execute(&mut **transaction)
-    .await
-    .map_err(|error| RuntimeError::database("initialize sync permission generation", error))?;
-    let current = sqlx::query_scalar::<_, i64>(
-      "SELECT generation FROM workspace_sync_permission_generations WHERE workspace_id=$1 FOR SHARE",
-    )
-    .bind(&workspace_id)
-    .fetch_one(&mut **transaction)
-    .await
-    .map_err(|error| RuntimeError::database("lock sync permission generation", error))?;
-    if current != expected {
-      return Err(RuntimeError::invalid_state("sync_permission_generation_changed"));
-    }
-  }
-  let snapshot =
-    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1 FOR UPDATE")
-      .bind(&workspace_id)
-      .fetch_optional(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("load root snapshot for append", error))?;
-  let updates = sqlx::query_scalar::<_, Vec<u8>>(
-    "SELECT blob FROM updates WHERE workspace_id=$1 AND guid=$1 ORDER BY created_at FOR SHARE",
+  lock_permission_generation(transaction, &workspace_id, expected_permission_generation).await?;
+  let timestamp = append_root_updates_in(
+    transaction,
+    &workspace_id,
+    &actor_user_id,
+    updates,
+    decoded,
+    embedding_schema_ready,
   )
-  .bind(&workspace_id)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load root updates for append", error))?;
-  let update = BASE64
-    .decode(encoded_update)
-    .map_err(|error| RuntimeError::invalid_input(format!("invalid root update: {error}")))?;
-  let initialize = snapshot.is_none();
-  let merged = validate_root_update(snapshot.unwrap_or_else(|| vec![0, 0]), updates, &update)?;
-  let timestamp = next_workspace_doc_update_timestamp(transaction, &workspace_id, &workspace_id).await?;
-  if initialize {
+  .await?;
+  Ok(json!({ "timestamp": DateTime::from_timestamp_millis(timestamp) }))
+}
+
+pub(in crate::runtime::backend_runtime) async fn append_root_updates_in(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  actor_user_id: &str,
+  updates: Vec<Buffer>,
+  decoded: Vec<Update>,
+  embedding_schema_ready: bool,
+) -> RuntimeResult<i64> {
+  let (snapshot, current_updates) = load_current_doc_parts_in(transaction, workspace_id, workspace_id).await?;
+  let mut root = load_root_parts(snapshot.as_ref(), &current_updates)?;
+  if !root.exists && root_was_initialized(transaction, workspace_id).await? {
+    return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
+  }
+  validate_loaded_root_update(&mut root.doc, decoded)?;
+  let timestamp = next_workspace_doc_update_timestamp(transaction, workspace_id, workspace_id).await?;
+  let mut last_timestamp = timestamp;
+  if !root.snapshot_exists {
+    let merged = merge_updates_v1(
+      current_updates
+        .iter()
+        .map(|update| update.blob.as_slice())
+        .chain(updates.iter().map(|update| update.as_ref())),
+    )
+    .and_then(|update| update.encode_v1())
+    .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?;
     sqlx::query(
-      "INSERT INTO snapshots (workspace_id,guid,blob,size,updated_at,created_by,updated_by) \
+      "INSERT INTO snapshots(workspace_id,guid,blob,size,updated_at,created_by,updated_by) \
        VALUES($1,$1,$2,$3,$4,$5,$5)",
     )
-    .bind(&workspace_id)
+    .bind(workspace_id)
     .bind(&merged)
     .bind(merged.len() as i64)
     .bind(timestamp)
-    .bind(&actor_user_id)
+    .bind(actor_user_id)
     .execute(&mut **transaction)
     .await
     .map_err(|error| RuntimeError::database("initialize canonical root snapshot", error))?;
-  } else {
-    sqlx::query("INSERT INTO updates (workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
-      .bind(&workspace_id)
-      .bind(&update)
-      .bind(timestamp)
-      .bind(&actor_user_id)
+    sqlx::query("DELETE FROM updates WHERE workspace_id=$1 AND guid=$1")
+      .bind(workspace_id)
       .execute(&mut **transaction)
       .await
-      .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+      .map_err(|error| RuntimeError::database("remove initialized root updates", error))?;
+  } else {
+    for (index, update) in updates.into_iter().enumerate() {
+      last_timestamp = timestamp + chrono::Duration::milliseconds(index as i64);
+      sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at,created_by) VALUES($1,$1,$2,$3,$4)")
+        .bind(workspace_id)
+        .bind(update.to_vec())
+        .bind(last_timestamp)
+        .bind(actor_user_id)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| RuntimeError::database("append canonical root update", error))?;
+    }
   }
-  invalidate_doc_blob_projection(transaction, &workspace_id, &workspace_id, embedding_schema_ready).await?;
-  Ok(json!({ "timestamp": timestamp }))
+  invalidate_doc_blob_projection(transaction, workspace_id, workspace_id, embedding_schema_ready).await?;
+  Ok(last_timestamp.timestamp_millis())
 }
 
 pub(in crate::runtime::backend_runtime) async fn workspace_root_contains_active_doc(
@@ -182,89 +186,59 @@ pub(in crate::runtime::backend_runtime) async fn workspace_root_contains_active_
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<bool> {
-  let Some(snapshot) =
-    sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1 FOR SHARE")
-      .bind(workspace_id)
-      .fetch_optional(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("load workspace root for document creation", error))?
-  else {
-    return Ok(false);
-  };
-  let updates = sqlx::query_scalar::<_, Vec<u8>>(
-    "SELECT blob FROM updates WHERE workspace_id=$1 AND guid=$1 ORDER BY created_at FOR SHARE",
-  )
-  .bind(workspace_id)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load workspace root updates for document creation", error))?;
-  let mut root = Doc::default();
-  root
-    .apply_update_from_binary_v1(&snapshot)
-    .map_err(|error| RuntimeError::invalid_state(format!("workspace root snapshot invalid: {error}")))?;
-  for update in updates {
-    root
-      .apply_update_from_binary_v1(&update)
-      .map_err(|error| RuntimeError::invalid_state(format!("workspace root update invalid: {error}")))?;
+  let root = load_root(transaction, workspace_id).await?;
+  if !root.exists {
+    return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
   }
-  let binary = root
-    .encode_update_v1()
-    .map_err(|error| RuntimeError::invalid_state(format!("encode workspace root failed: {error}")))?;
-  Ok(project_complete_root(binary, false, "before document creation")?.contains(doc_id))
+  Ok(
+    require_complete_root(&root.doc)?
+      .active_doc_ids
+      .iter()
+      .any(|id| id == doc_id),
+  )
 }
 
+fn validate_loaded_root_update(root: &mut Doc, updates: Vec<Update>) -> RuntimeResult<()> {
+  let before = require_complete_root(root)?;
+  root
+    .apply_update(Update::merge(updates))
+    .map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))?;
+  let after = project_root(root).map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))?;
+  if !after.complete {
+    return Err(RuntimeError::invalid_input("doc_source_incomplete"));
+  }
+  let old_all = before.doc_ids.iter().collect::<std::collections::BTreeSet<_>>();
+  let old_active = before.active_doc_ids.iter().collect::<std::collections::BTreeSet<_>>();
+  let new_all = after.doc_ids.iter().collect::<std::collections::BTreeSet<_>>();
+  let new_active = after.active_doc_ids.iter().collect::<std::collections::BTreeSet<_>>();
+  if !old_all.is_subset(&new_all)
+    || !old_active.is_subset(&new_active)
+    || new_active
+      .iter()
+      .any(|id| old_all.contains(id) && !old_active.contains(id))
+  {
+    return Err(RuntimeError::invalid_input("doc_lifecycle_requires_command"));
+  }
+  Ok(())
+}
+
+#[cfg(test)]
 fn validate_root_update(snapshot: Vec<u8>, updates: Vec<Vec<u8>>, incoming: &[u8]) -> RuntimeResult<Vec<u8>> {
   let mut root = Doc::default();
   root
-    .apply_update_from_binary_v1(&snapshot)
-    .map_err(|error| RuntimeError::invalid_state(format!("workspace root snapshot invalid: {error}")))?;
-  for update in updates {
-    root
-      .apply_update_from_binary_v1(&update)
-      .map_err(|error| RuntimeError::invalid_state(format!("workspace root update invalid: {error}")))?;
-  }
-  let before = root
-    .encode_update_v1()
-    .map_err(|error| RuntimeError::invalid_state(format!("encode root before append failed: {error}")))?;
-  let old_all = project_complete_root(before.clone(), true, "before append")?;
-  let old_active = project_complete_root(before, false, "before append")?;
+    .apply_update(
+      y_octo::merge_updates_v1(std::iter::once(snapshot).chain(updates))
+        .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?,
+    )
+    .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?;
+  let incoming = Update::decode_v1(incoming).map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))?;
+  validate_loaded_root_update(&mut root, vec![incoming])?;
   root
-    .apply_update_from_binary_v1(incoming)
-    .map_err(|error| RuntimeError::invalid_input(format!("invalid root update: {error}")))?;
-  let after = root
     .encode_update_v1()
-    .map_err(|error| RuntimeError::invalid_state(format!("encode root after append failed: {error}")))?;
-  let new_all = project_complete_root(after.clone(), true, "after append")?;
-  let new_active = project_complete_root(after.clone(), false, "after append")?;
-  let deletes = old_all.iter().any(|id| !new_all.contains(id));
-  let trashes = old_active.iter().any(|id| !new_active.contains(id));
-  let restores = new_active
-    .iter()
-    .any(|id| old_all.contains(id) && !old_active.contains(id));
-  if deletes || trashes || restores {
-    return Err(RuntimeError::invalid_input("doc_lifecycle_requires_command"));
-  }
-  Ok(after)
+    .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))
 }
 
-fn project_complete_root(
-  binary: Vec<u8>,
-  include_trash: bool,
-  operation: &str,
-) -> RuntimeResult<std::collections::BTreeSet<String>> {
-  if binary == [0, 0] {
-    return Ok(Default::default());
-  }
-  let projection = affine_doc_loader::project_workspace_root(binary, include_trash)
-    .map_err(|error| RuntimeError::invalid_state(format!("project root {operation} failed: {error}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::invalid_state(format!(
-      "workspace root {operation} is incomplete"
-    )));
-  }
-  Ok(projection.doc_ids.into_iter().collect())
-}
-
+#[cfg(test)]
 fn mutate_root(
   snapshot: Vec<u8>,
   updates: Vec<Vec<u8>>,
@@ -280,18 +254,14 @@ fn mutate_root(
       .apply_update_from_binary_v1(&update)
       .map_err(|error| RuntimeError::invalid_state(format!("workspace root update invalid: {error}")))?;
   }
-  let before = root
-    .encode_update_v1()
-    .map_err(|error| RuntimeError::invalid_state(format!("encode workspace root failed: {error}")))?;
-  project_complete_root(before, true, "before lifecycle command")?;
+  mutate_loaded_root(&mut root, doc_id, lifecycle)
+}
+
+fn mutate_loaded_root(root: &mut Doc, doc_id: &str, lifecycle: DocLifecycle) -> RuntimeResult<Vec<u8>> {
+  require_complete_root(root)?;
   let state = root.get_state_vector();
-  let meta = root
-    .get_map("meta")
-    .map_err(|error| RuntimeError::invalid_state(format!("workspace root meta missing: {error}")))?;
-  let mut pages = meta
-    .get("pages")
-    .and_then(|value| value.to_array())
-    .ok_or_else(|| RuntimeError::invalid_state("workspace root pages missing"))?;
+  let mut pages = affine_doc_loader::workspace_root_pages(root)
+    .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?;
   let index = pages
     .iter()
     .position(|value| {
@@ -428,6 +398,32 @@ mod tests {
       validate_root_update(dependent_delta, Vec::new(), &snapshot).is_err(),
       "a root update with missing client-clock predecessors must fail closed"
     );
+    let source = Doc::default();
+    let mut meta = source.get_or_create_map("meta").unwrap();
+    meta.insert("name".into(), Any::String("first".into())).unwrap();
+    let prefix = source.encode_update_v1().unwrap();
+    let state = source.get_state_vector();
+    meta.insert("title".into(), Any::String("second".into())).unwrap();
+    let middle = source.encode_state_as_update_v1(&state).unwrap();
+    let state = source.get_state_vector();
+    meta.insert("avatar".into(), Any::String("third".into())).unwrap();
+    let tail = source.encode_state_as_update_v1(&state).unwrap();
+    let fragments = [prefix, middle, tail];
+    for order in [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] {
+      let mut target = Doc::default();
+      let updates = order
+        .into_iter()
+        .map(|index| Update::decode_v1(&fragments[index]).unwrap())
+        .collect();
+      validate_loaded_root_update(&mut target, updates).unwrap();
+      assert!(!target.has_pending_updates());
+    }
+    let mut target = Doc::default();
+    let updates = fragments[1..]
+      .iter()
+      .map(|fragment| Update::decode_v1(fragment).unwrap())
+      .collect();
+    assert!(validate_loaded_root_update(&mut target, updates).is_err());
   }
 
   #[tokio::test]
@@ -439,6 +435,24 @@ mod tests {
     let suffix = uuid::Uuid::new_v4().simple().to_string();
     let doc_id = format!("domain-lifecycle-{suffix}");
     let root = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], &doc_id, None).unwrap();
+    let source = Doc::with_client(98232);
+    let mut hidden = source.get_or_create_map("hidden").unwrap();
+    hidden.insert("deleted".into(), "retained root payload").unwrap();
+    let prefix = source.encode_update_v1().unwrap();
+    let state = source.get_state_vector();
+    hidden.remove("deleted");
+    let deletion = source.encode_state_as_update_v1(&state).unwrap();
+    let incoming = y_octo::merge_updates_v1([root, deletion]).unwrap().encode_v1().unwrap();
+    let expected = y_octo::merge_updates_v1([prefix.clone(), incoming.clone()])
+      .unwrap()
+      .encode_v1()
+      .unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$1,$2,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(prefix)
+      .execute(&pool)
+      .await
+      .unwrap();
     let authorizer = PermissionAuthorizer::new(pool.clone(), Deployment::Cloud);
     let mut transaction = pool.begin().await.unwrap();
     append_root_update(
@@ -446,13 +460,22 @@ mod tests {
       &mut transaction,
       actor_user_id.clone(),
       workspace_id.clone(),
-      BASE64.encode(root),
+      BASE64.encode(incoming),
       None,
       true,
     )
     .await
     .unwrap();
     transaction.commit().await.unwrap();
+    let persisted: Vec<u8> = sqlx::query_scalar("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(persisted, expected);
+    let mut applied = Doc::default();
+    applied.apply_update_from_binary_v1(&persisted).unwrap();
+    assert_ne!(persisted, applied.encode_update_v1().unwrap());
 
     for index in 0..3 {
       let user_id = format!("domain-lifecycle-overflow-{index}-{suffix}");

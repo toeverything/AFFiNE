@@ -702,99 +702,110 @@ test('doc sync peer stops retrying a doc when remote denies permission', async (
   }
 });
 
-test('Markdown review pauses only its doc and resumes after source acceptance', async () => {
-  const local = new IndexedDBDocStorage({
-    id: 'ws-disk-review',
-    flavour: 'local-disk-review',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id: 'ws-disk-review',
-    flavour: 'local-disk-review',
-    type: 'workspace',
-  });
-  const remote = new TestDocStorage(
-    'ws-disk-review',
-    new Map(),
-    async () => null
-  );
-  const pushRemote = remote.pushDocUpdate.bind(remote);
-  let needsReview = true;
-  const push = vi
-    .spyOn(remote, 'pushDocUpdate')
-    .mockImplementation((update, origin) => {
-      if (update.docId === 'doc-review' && needsReview) {
-        const error = new Error('Review Markdown source candidate');
-        error.name = 'DISK_SOURCE_REVIEW_REQUIRED';
-        throw error;
-      }
-      return pushRemote(update, origin);
+test.each(['DISK_SOURCE_REVIEW_REQUIRED', 'DOC_SOURCE_INCOMPLETE'])(
+  'source %s pauses only its doc and resumes after source acceptance',
+  async errorName => {
+    const local = new IndexedDBDocStorage({
+      id: 'ws-disk-review',
+      flavour: 'local-disk-review',
+      type: 'workspace',
     });
-  const peer = new DocSyncPeer('disk-review', local, syncMetadata, remote);
-  const abort = new AbortController();
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  await Promise.all([
-    local.connection.waitForConnected(),
-    syncMetadata.connection.waitForConnected(),
-  ]);
-  const doc = new YDoc();
-  doc.getMap('test').set('value', 1);
-  for (const docId of ['doc-review', 'doc-healthy']) {
-    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
-  }
-
-  const running = peer.mainLoop(abort.signal);
-  try {
-    await vi.waitFor(async () => {
-      expect(await remote.getDocTimestamp('doc-healthy')).not.toBeNull();
-      let state: { errorMessage: string | null; retrying: boolean } | undefined;
-      const dispose = peer.docState$('doc-review').subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-      expect(state?.errorMessage).toContain('Review Markdown source candidate');
-      expect(state?.retrying).toBe(false);
+    const syncMetadata = new IndexedDBDocSyncStorage({
+      id: 'ws-disk-review',
+      flavour: 'local-disk-review',
+      type: 'workspace',
     });
-
-    const attempts = push.mock.calls.filter(
-      ([update]) => update.docId === 'doc-review'
-    ).length;
-    doc.getMap('test').set('value', 2);
-    await local.pushDocUpdate({
-      docId: 'doc-review',
-      bin: encodeStateAsUpdate(doc),
-    });
-    await vi.waitFor(() => {
-      expect(
-        push.mock.calls.filter(([update]) => update.docId === 'doc-review')
-          .length
-      ).toBeGreaterThan(attempts);
-    });
-
-    needsReview = false;
-    await pushRemote(
-      { docId: 'doc-review', bin: new Uint8Array([0, 0]) },
-      'disk:source-discovered'
+    const remote = new TestDocStorage(
+      'ws-disk-review',
+      new Map(),
+      async () => null
     );
-    await vi.waitFor(async () => {
-      expect(await remote.getDocTimestamp('doc-review')).not.toBeNull();
-      let state: { errorMessage: string | null; synced: boolean } | undefined;
-      const dispose = peer.docState$('doc-review').subscribe(next => {
-        state = next;
+    const pushRemote = remote.pushDocUpdate.bind(remote);
+    let needsReview = true;
+    const push = vi
+      .spyOn(remote, 'pushDocUpdate')
+      .mockImplementation((update, origin) => {
+        if (update.docId === 'doc-review' && needsReview) {
+          const error = new Error('Review Markdown source candidate');
+          error.name = errorName;
+          throw error;
+        }
+        return pushRemote(update, origin);
       });
-      dispose.unsubscribe();
-      expect(state).toMatchObject({ errorMessage: null, synced: true });
-    });
-  } finally {
-    abort.abort();
-    await running;
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-    doc.destroy();
+    const peer = new DocSyncPeer('disk-review', local, syncMetadata, remote);
+    const abort = new AbortController();
+
+    local.connection.connect();
+    syncMetadata.connection.connect();
+    await Promise.all([
+      local.connection.waitForConnected(),
+      syncMetadata.connection.waitForConnected(),
+    ]);
+    const doc = new YDoc();
+    doc.getMap('test').set('value', 1);
+    for (const docId of ['doc-review', 'doc-healthy']) {
+      await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
+    }
+
+    const running = peer.mainLoop(abort.signal);
+    try {
+      await vi.waitFor(async () => {
+        expect(await remote.getDocTimestamp('doc-healthy')).not.toBeNull();
+        let state:
+          | { errorMessage: string | null; retrying: boolean }
+          | undefined;
+        const dispose = peer.docState$('doc-review').subscribe(next => {
+          state = next;
+        });
+        dispose.unsubscribe();
+        expect(state?.errorMessage).toContain(
+          'Review Markdown source candidate'
+        );
+        expect(state?.retrying).toBe(false);
+      });
+
+      expect((await firstValueFrom(peer.peerState$)).error).toMatchObject({
+        docId: 'doc-review',
+        name: errorName,
+      });
+      const attempts = push.mock.calls.filter(
+        ([update]) => update.docId === 'doc-review'
+      ).length;
+      doc.getMap('test').set('value', 2);
+      await local.pushDocUpdate({
+        docId: 'doc-review',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(() => {
+        expect(
+          push.mock.calls.filter(([update]) => update.docId === 'doc-review')
+            .length
+        ).toBeGreaterThan(attempts);
+      });
+
+      needsReview = false;
+      await pushRemote(
+        { docId: 'doc-review', bin: new Uint8Array([0, 0]) },
+        'disk:source-discovered'
+      );
+      await vi.waitFor(async () => {
+        expect(await remote.getDocTimestamp('doc-review')).not.toBeNull();
+        let state: { errorMessage: string | null; synced: boolean } | undefined;
+        const dispose = peer.docState$('doc-review').subscribe(next => {
+          state = next;
+        });
+        dispose.unsubscribe();
+        expect(state).toMatchObject({ errorMessage: null, synced: true });
+      });
+    } finally {
+      abort.abort();
+      await running;
+      local.connection.disconnect();
+      syncMetadata.connection.disconnect();
+      doc.destroy();
+    }
   }
-});
+);
 
 test('doc sync peer stops retrying when remote connection denies permission', async () => {
   const local = new IndexedDBDocStorage({
@@ -1363,3 +1374,269 @@ test('store opens serialize A to B to A, propagate failures and drain before clo
     }
   }
 });
+
+test.each(['none', 'local', 'remote', 'root-repaired'])(
+  'cloud root reconciles durable updates and retains %s evidence during a failed upload',
+  async evidence => {
+    const options = {
+      id: `root-notification-order-${evidence}`,
+      type: 'workspace' as const,
+    };
+    const local = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'root-order-local',
+    });
+    const remote = Object.assign(
+      new IndexedDBDocStorage({ ...options, flavour: 'root-order-remote' }),
+      {
+        reconcileRootUpdates: true,
+      }
+    );
+    const metadata = new IndexedDBDocSyncStorage({
+      ...options,
+      flavour: 'root-order-metadata',
+    });
+    let notify: Parameters<DocStorage['subscribeDocUpdate']>[0] | undefined;
+    vi.spyOn(local, 'subscribeDocUpdate').mockImplementation(callback => {
+      notify = callback;
+      return () => {};
+    });
+    for (const storage of [local, remote, metadata])
+      storage.connection.connect();
+    await Promise.all(
+      [local, remote, metadata].map(storage =>
+        storage.connection.waitForConnected()
+      )
+    );
+    const doc = new YDoc();
+    doc.getMap('meta').set('name', 'base');
+    await local.pushDocUpdate({
+      docId: options.id,
+      bin: encodeStateAsUpdate(doc),
+    });
+    const peer = new DocSyncPeer('root-order', local, metadata, remote);
+    const abort = new AbortController();
+    const running = peer.mainLoop(abort.signal);
+    try {
+      await vi.waitFor(async () => {
+        expectYjsEqual((await remote.getDoc(options.id))!.bin, {
+          meta: { name: 'base' },
+        });
+      });
+      await vi.waitFor(async () =>
+        expect(
+          await metadata.getPeerPushedClock('root-order', options.id)
+        ).not.toBeNull()
+      );
+      const uploading = deferred();
+      const fail = deferred();
+      const push = remote.pushDocUpdate.bind(remote);
+      if (evidence !== 'none') {
+        vi.spyOn(remote, 'pushDocUpdate').mockImplementationOnce(async () => {
+          uploading.resolve();
+          await fail.promise;
+          const error = new Error('source changed during upload');
+          error.name =
+            evidence === 'root-repaired'
+              ? 'DOC_ROOT_SOURCE_INVALID'
+              : 'DOC_SOURCE_INCOMPLETE';
+          throw error;
+        });
+      }
+      let state = encodeStateVector(doc);
+      doc.getMap('meta').set('name', 'A');
+      await local.pushDocUpdate({
+        docId: options.id,
+        bin: encodeStateAsUpdate(doc, state),
+      });
+      state = encodeStateVector(doc);
+      doc.getMap('meta').set('avatar', 'B');
+      const update = encodeStateAsUpdate(doc, state);
+      const clock = await local.pushDocUpdate({
+        docId: options.id,
+        bin: update,
+      });
+      notify!({ docId: options.id, bin: update, timestamp: clock.timestamp });
+      if (evidence !== 'none') {
+        await uploading.promise;
+        doc.getMap('meta').set('duringFlight', evidence);
+        if (evidence === 'local') {
+          const bin = encodeStateAsUpdate(doc);
+          const next = await local.pushDocUpdate({ docId: options.id, bin });
+          notify!({ docId: options.id, bin, timestamp: next.timestamp });
+        } else {
+          await push(
+            { docId: options.id, bin: encodeStateAsUpdate(doc) },
+            'other-source'
+          );
+        }
+        fail.resolve();
+      }
+      await vi.waitFor(async () => {
+        expectYjsEqual((await remote.getDoc(options.id))!.bin, {
+          meta: {
+            name: 'A',
+            avatar: 'B',
+            ...(evidence === 'none' ? {} : { duringFlight: evidence }),
+          },
+        });
+        expectYjsEqual((await local.getDoc(options.id))!.bin, {
+          meta: {
+            name: 'A',
+            avatar: 'B',
+            ...(evidence === 'none' ? {} : { duringFlight: evidence }),
+          },
+        });
+        let synced = false;
+        const state = peer.docState$(options.id).subscribe(value => {
+          synced = value.synced;
+        });
+        state.unsubscribe();
+        expect(synced).toBe(true);
+      });
+    } finally {
+      abort.abort();
+      await running;
+      for (const storage of [local, remote, metadata])
+        storage.connection.disconnect();
+    }
+  }
+);
+
+test.each(['same-millisecond', 'clock-backwards', 'transaction-abort'])(
+  'IDB preserves %s writes after compaction',
+  async mode => {
+    const storage = new IndexedDBDocStorage({
+      id: `clock-${mode}`,
+      flavour: 'clock-regression',
+      type: 'workspace',
+    });
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    const doc = new YDoc();
+    const now = new Date('2026-11-10T00:00:00.000Z');
+    vi.setSystemTime(now);
+    try {
+      doc.getMap('meta').set('value', 'first');
+      const first = await storage.pushDocUpdate({
+        docId: 'doc',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await storage.getDoc('doc');
+      if (mode === 'clock-backwards')
+        vi.setSystemTime(new Date(now.getTime() - 1000));
+      doc.getMap('meta').set('value', 'second');
+      if (mode === 'transaction-abort') {
+        const transaction = storage.db.transaction('updates', 'readwrite');
+        await transaction.store.add({
+          docId: 'doc',
+          bin: encodeStateAsUpdate(doc),
+          createdAt: new Date(first.timestamp.getTime() + 1),
+        });
+        transaction.commit();
+        await transaction.done;
+        const listener = vi.fn();
+        const unsubscribe = storage.subscribeDocUpdate(listener);
+        try {
+          await expect(
+            storage.pushDocUpdate({
+              docId: 'doc',
+              bin: encodeStateAsUpdate(doc),
+            })
+          ).rejects.toMatchObject({ name: 'ConstraintError' });
+          expect(listener).not.toHaveBeenCalled();
+          expect((await storage.getDocTimestamp('doc'))?.timestamp).toEqual(
+            first.timestamp
+          );
+        } finally {
+          unsubscribe();
+        }
+        return;
+      }
+      const second = await storage.pushDocUpdate({
+        docId: 'doc',
+        bin: encodeStateAsUpdate(doc),
+      });
+      expect(second.timestamp.getTime()).toBe(first.timestamp.getTime() + 1);
+      expect((await storage.getDocTimestamp('doc'))?.timestamp).toEqual(
+        second.timestamp
+      );
+      expectYjsEqual((await storage.getDoc('doc'))!.bin, {
+        meta: { value: 'second' },
+      });
+      expectYjsEqual((await storage.getDoc('doc'))!.bin, {
+        meta: { value: 'second' },
+      });
+    } finally {
+      vi.useRealTimers();
+      storage.connection.disconnect();
+      doc.destroy();
+    }
+  }
+);
+
+test('a recovered connection clears its transient message without masking a subsequent doc error', async () => {
+  const options = {
+    id: 'reconnect-error-message',
+    flavour: 'reconnect-error-message',
+    type: 'workspace' as const,
+  };
+  const local = new IndexedDBDocStorage(options);
+  const metadata = new IndexedDBDocSyncStorage(options);
+  const remote = new PermissionDeniedRemoteDocStorage(options.id);
+  vi.spyOn(remote.connection, 'waitForConnected').mockRejectedValueOnce(
+    new Error('temporary connection error')
+  );
+  local.connection.connect();
+  metadata.connection.connect();
+  await Promise.all([
+    local.connection.waitForConnected(),
+    metadata.connection.waitForConnected(),
+  ]);
+  const doc = new YDoc();
+  doc.getMap('test').set('value', 'kept');
+  const peer = new DocSyncPeer(
+    'reconnect-error-message',
+    local,
+    metadata,
+    remote
+  );
+  const abort = new AbortController();
+  const running = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(async () => {
+      expect((await firstValueFrom(peer.peerState$)).errorMessage).toContain(
+        'temporary connection error'
+      );
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.retrying).toBe(false);
+        expect(state.errorMessage).toBeNull();
+        expect(state.error).toBeUndefined();
+      },
+      { timeout: 6500 }
+    );
+    await local.pushDocUpdate({
+      docId: 'doc-denied-after-reconnect',
+      bin: encodeStateAsUpdate(doc),
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.errorMessage).toContain('No permission to update doc');
+        expect(state.errorMessage).not.toContain('temporary connection error');
+        expect(state.retrying).toBe(false);
+        expect(state.error?.name).toBe('DOC_ACTION_DENIED');
+      },
+      { timeout: 6500 }
+    );
+  } finally {
+    abort.abort();
+    await running;
+    local.connection.disconnect();
+    metadata.connection.disconnect();
+    doc.destroy();
+  }
+}, 10000);

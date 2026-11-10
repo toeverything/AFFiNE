@@ -12,6 +12,7 @@ import {
   type WorkspaceProfileInfo,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
+import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
@@ -31,7 +32,7 @@ import {
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, MouseEvent } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAsyncCallback } from '../../hooks/affine-async-hooks';
@@ -56,15 +57,6 @@ const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
     <>
       <Loading progress={progress} speed={0} />
       Syncing...
-    </>
-  );
-};
-
-const UnSyncWorkspaceStatus = () => {
-  return (
-    <>
-      <UnsyncIcon />
-      Wait for upload
     </>
   );
 };
@@ -122,7 +114,30 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
 
   const progress =
     (engineState.total - engineState.syncing) / engineState.total;
-  const syncing = engineState.syncing > 0 || engineState.syncRetrying;
+  const paused = !!engineState.syncErrorMessage && !engineState.syncRetrying;
+  const syncing =
+    !paused && (engineState.syncing > 0 || engineState.syncRetrying);
+  const error = engineState.syncError;
+  const data = error?.data;
+  const sourceRevision =
+    data && typeof data === 'object' && 'sourceRevision' in data
+      ? data.sourceRevision
+      : undefined;
+  const diagnostics = engineState.syncErrorMessage
+    ? JSON.stringify(
+        {
+          workspaceId: workspace.id,
+          docId: error?.docId,
+          code: error?.name,
+          ...(typeof sourceRevision === 'string' ||
+          typeof sourceRevision === 'number'
+            ? { sourceRevision }
+            : {}),
+        },
+        null,
+        2
+      )
+    : undefined;
 
   let content;
   // TODO(@eyhn): add i18n
@@ -134,6 +149,11 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
     }
   } else if (!isOnline) {
     content = 'Disconnected, please check your network connection';
+  } else if (paused) {
+    content =
+      error?.name === 'DOC_ROOT_SOURCE_INVALID'
+        ? 'The workspace index needs attention. Your local data is preserved, and existing documents can continue syncing.'
+        : 'Some changes could not be uploaded. Your local data is preserved.';
   } else if (engineState.syncRetrying && engineState.syncErrorMessage) {
     content = `${engineState.syncErrorMessage}, reconnecting.`;
   } else if (engineState.syncRetrying) {
@@ -146,26 +166,28 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
     content = `Synced with ${syncTarget}`;
   }
 
-  const CloudWorkspaceSyncStatus = () => {
-    if (syncing) {
-      return SyncingWorkspaceStatus({
-        progress: progress ? Math.max(progress, 0.2) : undefined,
-      });
-    } else if (engineState.syncRetrying) {
-      return UnSyncWorkspaceStatus();
-    } else {
-      return <RemoteWorkspaceStatus selfHosted={isSelfHostedServer} />;
-    }
-  };
+  const cloudIcon = paused ? (
+    <>
+      <UnsyncIcon />
+      Upload paused
+    </>
+  ) : syncing ? (
+    <SyncingWorkspaceStatus
+      progress={progress ? Math.max(progress, 0.2) : undefined}
+    />
+  ) : (
+    <RemoteWorkspaceStatus selfHosted={isSelfHostedServer} />
+  );
 
   return {
     message: content,
+    diagnostics,
     icon:
       workspace.flavour !== 'local' ? (
         !isOnline ? (
           <OfflineStatus />
         ) : (
-          <CloudWorkspaceSyncStatus />
+          cloudIcon
         )
       ) : (
         <LocalWorkspaceStatus />
@@ -173,7 +195,9 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
     progress,
     active:
       workspace.flavour !== 'local' &&
-      ((syncing && progress !== undefined) || engineState.syncRetrying), // active if syncing or retrying,
+      (paused ||
+        (syncing && progress !== undefined) ||
+        engineState.syncRetrying), // active if syncing or retrying,
   };
 };
 
@@ -204,6 +228,26 @@ const WorkspaceSyncInfo = ({
   dense?: boolean;
 }) => {
   const syncStatus = useSyncEngineSyncProgress(workspaceMetadata);
+  const navigate = useNavigateHelper();
+  const copyDiagnostics = useAsyncCallback(
+    async (event: MouseEvent) => {
+      event.stopPropagation();
+      if (!syncStatus?.diagnostics) return;
+      const copied = await copyTextToClipboard(syncStatus.diagnostics);
+      if (copied) notify.success({ title: 'Diagnostics copied' });
+      else notify.error({ title: 'Could not copy diagnostics' });
+    },
+    [syncStatus?.diagnostics]
+  );
+  const openExport = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation();
+      navigate.jumpToWorkspaceSettings(workspaceMetadata.id, {
+        tab: 'workspace:storage',
+      });
+    },
+    [navigate, workspaceMetadata.id]
+  );
   const isCloud = workspaceMetadata.flavour !== 'local';
   const serversService = useService(ServersService);
   const server = useLiveData(
@@ -272,11 +316,27 @@ const WorkspaceSyncInfo = ({
         {syncStatus && (
           <div className={styles.workspaceInfo} data-type="events">
             <Tooltip
-              content={syncStatus.message}
+              content={
+                <>
+                  <div>{syncStatus.message}</div>
+                  {syncStatus.diagnostics && (
+                    <>
+                      <Button variant="plain" onClick={copyDiagnostics}>
+                        Copy diagnostics
+                      </Button>
+                      {BUILD_CONFIG.isElectron && (
+                        <Button variant="plain" onClick={openExport}>
+                          Open Quick Export
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              }
               options={{ className: styles.workspaceInfoTooltip }}
             >
               <div className={styles.workspaceActiveStatus}>
-                <SyncingWorkspaceStatus progress={syncStatus.progress} />
+                {syncStatus.icon}
               </div>
             </Tooltip>
           </div>

@@ -22,7 +22,7 @@ import {
 } from 'yjs';
 
 import type { DocRecord, DocStorage } from '../storage';
-import type { DocSync } from '../sync/doc';
+import type { DocSync, DocSyncState } from '../sync/doc';
 import { AsyncPriorityQueue } from '../utils/async-priority-queue';
 import { isEmptyUpdate } from '../utils/is-empty-update';
 import { takeUntilAbort } from '../utils/take-until-abort';
@@ -110,6 +110,7 @@ export type DocFrontendState = {
    * the error message when syncing with remote peers
    */
   syncErrorMessage: string | null;
+  syncError?: DocSyncState['error'];
 };
 
 export class DocFrontend {
@@ -211,6 +212,7 @@ export class DocFrontend {
       synced: sync.synced,
       syncRetrying: sync.retrying,
       syncErrorMessage: sync.errorMessage,
+      syncError: sync.error,
     })),
     share({
       connector: () => new ReplaySubject(1),

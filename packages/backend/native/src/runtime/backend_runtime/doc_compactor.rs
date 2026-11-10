@@ -2,7 +2,9 @@ use chrono::{DateTime, Duration, Utc};
 use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
 use y_octo::Doc;
 
-use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, types::RuntimeDocCompactionResult};
+use super::{
+  BackendRuntime, RuntimeError, RuntimeResult, napi_error, try_lock_current_doc_read, types::RuntimeDocCompactionResult,
+};
 
 #[derive(FromRow)]
 struct SnapshotRow {
@@ -285,13 +287,7 @@ async fn compact_doc(
     .await
     .map_err(|err| RuntimeError::database("DocCompactor begin transaction failed", err))?;
 
-  super::domain_command::lock_workspace_storage_shared(&mut tx, workspace_id).await?;
-
-  let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0))")
-    .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|err| RuntimeError::database("DocCompactor acquire document transaction lock failed", err))?;
+  let locked = try_lock_current_doc_read(&mut tx, workspace_id, doc_id).await?;
   if !locked {
     tx.rollback()
       .await

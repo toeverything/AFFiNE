@@ -877,6 +877,17 @@ export class SpaceSyncGateway
     );
   }
 
+  @OnEvent('backendRuntime.invalidation')
+  onRuntimeInvalidation(hint: Events['backendRuntime.invalidation']) {
+    if (hint.kind !== 'workspaceRootChanged' || !this.server) return;
+    const room = `${SpaceType.Workspace}:${Room(hint.workspaceId, 'sync-027')}`;
+    this.server.local.to(room).emit('space:broadcast-doc-invalidation', {
+      spaceType: SpaceType.Workspace,
+      spaceId: hint.workspaceId,
+      timestamp: hint.timestampMs,
+    });
+  }
+
   @OnEvent('doc.updates.pushed')
   onDocUpdatesPushed({
     spaceType,
@@ -1467,43 +1478,13 @@ export class SpaceSyncGateway
     if (permissionGeneration === undefined) {
       throw new NotInSpace({ spaceId });
     }
-    const canonicalRoot =
-      spaceType === SpaceType.Workspace && docId === spaceId;
-    let timestamp: number;
-    if (canonicalRoot) {
-      let output: Record<string, unknown>;
-      try {
-        output = await this.runtime.executeDomainCommandV1({
-          command: 'append_root_update',
-          actorUserId: user.id,
-          workspaceId: spaceId,
-          update,
-          assertPermission: true,
-          expectedPermissionGeneration: permissionGeneration,
-        });
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message.includes('doc_lifecycle_requires_command')
-        ) {
-          throw new DocActionDenied({
-            action: 'Doc.Update',
-            docId,
-            spaceId,
-          });
-        }
-        throw error;
-      }
-      timestamp = new Date(output.timestamp as string).getTime();
-    } else {
-      timestamp = await adapter.push(
-        spaceId,
-        docId,
-        [Buffer.from(update, 'base64')],
-        user.id,
-        permissionGeneration
-      );
-    }
+    const timestamp = await adapter.push(
+      spaceId,
+      docId,
+      [Buffer.from(update, 'base64')],
+      user.id,
+      permissionGeneration
+    );
 
     this.publishDocUpdate(
       {

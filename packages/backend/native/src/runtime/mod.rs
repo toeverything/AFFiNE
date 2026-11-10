@@ -1,4 +1,5 @@
 pub mod backend_runtime;
+pub(in crate::runtime) use backend_runtime::lock_current_doc_read;
 pub mod storage_runtime;
 
 pub(crate) mod config;
@@ -7,8 +8,11 @@ pub(crate) mod error;
 mod http;
 pub(crate) mod migrations;
 pub(crate) mod object_storage;
+mod root_doc;
 mod storage_lifecycle;
-use storage_lifecycle::{StorageOperation, lock_workspace_storage_shared_transaction};
+use storage_lifecycle::{
+  StorageOperation, lock_workspace_storage_shared_transaction, try_lock_workspace_storage_shared_transaction,
+};
 pub(crate) mod types;
 
 pub(super) use affine_doc_loader::blob_refs::{BlobRefProjectionError, extract_blob_refs};
@@ -41,5 +45,10 @@ fn blob_ref_projection_error_code(error: BlobRefProjectionError) -> &'static str
     BlobRefProjectionError::RefCountTooLarge => "blob_ref_count_too_large",
   }
 }
+
+pub(in crate::runtime) use root_doc::{
+  load_root, load_root_parts, project_root, require_complete_root, root_was_initialized,
+};
+pub(in crate::runtime) use storage_runtime::{CurrentDoc, CurrentDocUpdate, load_current_doc_parts_in};
 
 pub(super) use crate::entitlement::{entitlement_input_error, parse_quantity, parse_target_type};

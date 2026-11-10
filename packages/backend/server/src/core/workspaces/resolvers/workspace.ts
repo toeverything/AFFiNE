@@ -19,6 +19,7 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { BackendRuntimeProvider } from '../../backend-runtime';
 import type { DotToUnderline } from '../../permission';
 import {
   mapPermissionsToGraphqlPermissions,
@@ -69,6 +70,7 @@ export class WorkspaceResolver {
     private readonly quota: QuotaService,
     private readonly models: Models,
     private readonly workspaceService: WorkspaceService,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly logger: AFFiNELogger
   ) {
     logger.setContext(WorkspaceResolver.name);
@@ -228,12 +230,12 @@ export class WorkspaceResolver {
       const buffer = chunks.length ? Buffer.concat(chunks) : null;
 
       if (buffer) {
-        await this.models.doc.upsert({
-          spaceId: workspace.id,
+        await this.runtime.appendWorkspaceDocUpdatesV1({
+          workspaceId: workspace.id,
           docId: workspace.id,
-          blob: buffer,
-          timestamp: Date.now(),
-          editorId: user.id,
+          updates: [buffer],
+          actorUserId: user.id,
+          writeIntent: 'update_doc',
         });
       }
     }

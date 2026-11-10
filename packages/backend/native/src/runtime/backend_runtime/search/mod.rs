@@ -9,6 +9,7 @@ mod types;
 mod worker;
 
 use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, fail, load_active};
+#[cfg(test)]
 pub(super) use projection::project_current_doc;
 use projection::{ProjectionInput, project_document};
 use provider::{SearchChange, SearchProvider, projection_external_id};
@@ -20,8 +21,9 @@ pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 use worker::{reconcile_workspace, sweep_generation_orphans};
 
 use super::{
+  blocking, load_root, lock_current_doc_read,
   permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
-  webpki_tls_config,
+  require_complete_root, webpki_tls_config,
 };
 
 const SCHEMA_FINGERPRINT: i32 = 1;

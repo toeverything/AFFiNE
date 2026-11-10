@@ -2,6 +2,7 @@
 
 mod audio_slice;
 mod auth_session;
+mod blocking;
 pub mod content_policy;
 pub mod doc;
 pub mod doc_loader;
@@ -34,6 +35,9 @@ extern crate napi_derive;
 
 /// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
 /// result binary.
+///
+/// Do not use this for snapshots that will be sent back to yjs clients until
+/// the y-octo/yjs round-trip compatibility issue is resolved.
 #[napi(catch_unwind)]
 pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   let mut doc = Doc::default();
@@ -50,10 +54,11 @@ pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
 /// document state.
 #[napi(catch_unwind)]
 pub async fn validate_doc_update(update: Buffer) -> Result<bool> {
+  let permit = doc::try_validation_slot().map_err(|_| napi::Error::from_reason("doc_validation_unavailable"))?;
   let update = update.to_vec();
-  tokio::task::spawn_blocking(move || Update::decode_v1(update).is_ok())
+  blocking::spawn(permit, move || Update::decode_v1(update).is_ok())
     .await
-    .map_err(|err| napi::Error::from_reason(format!("Doc update validation task failed: {err}")))
+    .map_err(|_| napi::Error::from_reason("doc_validation_unavailable"))
 }
 
 #[napi(catch_unwind)]

@@ -31,34 +31,23 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
   override locker = new IndexedDBLocker(this.connection);
 
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
-    let timestamp = new Date();
-
-    let retry = 0;
-
-    while (true) {
-      const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
-      try {
-        await trx.objectStore('updates').add({
-          ...update,
-          createdAt: timestamp,
-        });
-
-        await trx.objectStore('clocks').put({ docId: update.docId, timestamp });
-
-        trx.commit();
-        await trx.done;
-      } catch (e) {
-        await trx.done.catch(() => {});
-        if (e instanceof Error && e.name === 'ConstraintError') {
-          retry++;
-          if (retry < 10) {
-            timestamp = new Date(timestamp.getTime() + 1);
-            continue;
-          }
-        }
-        throw e;
-      }
-      break;
+    const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
+    let timestamp: Date;
+    try {
+      const previous = await trx.objectStore('clocks').get(update.docId);
+      timestamp = new Date(
+        Math.max(Date.now(), (previous?.timestamp.getTime() ?? 0) + 1)
+      );
+      await trx.objectStore('updates').add({
+        ...update,
+        createdAt: timestamp,
+      });
+      await trx.objectStore('clocks').put({ docId: update.docId, timestamp });
+      trx.commit();
+      await trx.done;
+    } catch (error) {
+      await trx.done.catch(() => {});
+      throw error;
     }
 
     this.emit(

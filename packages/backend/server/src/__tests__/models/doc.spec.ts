@@ -229,6 +229,11 @@ test('should upsert a doc', async t => {
   t.truthy(updatedSnapshot);
   t.deepEqual(updatedSnapshot!.blob, snapshot.blob);
   t.is(updatedSnapshot!.editorId, otherUser.id);
+  await t.throwsAsync(
+    t.context.doc.upsert({ ...snapshot, docId: workspace.id }),
+    { message: 'Workspace indexes must use the root update writer.' }
+  );
+  t.is(await t.context.doc.get(workspace.id, workspace.id), null);
 });
 
 test('should get a doc authors', async t => {

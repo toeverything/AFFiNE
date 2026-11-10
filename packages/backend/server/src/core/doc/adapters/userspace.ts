@@ -37,10 +37,6 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     return false;
   }
 
-  override async rollbackDoc() {
-    return;
-  }
-
   override async getDoc(spaceId: string, docId: string) {
     return await this.getDocSnapshot(spaceId, docId);
   }
@@ -58,8 +54,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
       return 0;
     }
 
-    updates = await this.filterValidDocUpdates(userId, docId, updates);
-    if (!updates.length) return 0;
+    await this.assertValidDocUpdates(updates);
 
     await using _lock = await this.lockDocForUpdate(userId, docId);
     const snapshot = await this.getDocSnapshot(userId, docId);

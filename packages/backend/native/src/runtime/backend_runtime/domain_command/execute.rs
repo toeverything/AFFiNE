@@ -46,12 +46,6 @@ impl DomainCommandInputV1 {
         workspace_id: workspace_id.clone(),
         doc_id: workspace_id.clone(),
       }),
-      Self::RecoverDoc {
-        workspace_id, doc_id, ..
-      } => Some(SourceIdentity::CurrentDoc {
-        workspace_id: workspace_id.clone(),
-        doc_id: doc_id.clone(),
-      }),
       _ => None,
     };
     source
@@ -238,7 +232,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         timestamp,
-        embedding_schema_ready,
       )
       .await?
     }
@@ -447,12 +440,7 @@ mod tests {
       ),
       (
         serde_json::json!({"command":"recover_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","timestamp":timestamp}),
-        vec![InvalidationHintV1::BlobSource {
-          source: SourceIdentity::CurrentDoc {
-            workspace_id: "workspace".to_string(),
-            doc_id: "doc".to_string(),
-          },
-        }],
+        Vec::new(),
       ),
     ];
     for (input, expected) in cases {

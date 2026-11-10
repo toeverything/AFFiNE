@@ -2,7 +2,7 @@ use affine_core::access_control::classify_reserved_document;
 use chrono::{DateTime, Utc};
 use sqlx::{PgPool, Postgres, Transaction};
 
-use super::{CurrentDoc, CurrentDocUpdate, DocumentCleanupCandidate, RuntimeError, RuntimeResult, merge_current_doc};
+use super::{DocumentCleanupCandidate, RuntimeError, RuntimeResult, load_root, require_complete_root};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum DocumentCleanupOutcome {
@@ -11,29 +11,6 @@ pub(super) enum DocumentCleanupOutcome {
   Reset,
   Failed,
   Busy,
-}
-
-async fn load_current_doc_for_update(
-  tx: &mut Transaction<'_, Postgres>,
-  workspace_id: &str,
-  doc_id: &str,
-) -> RuntimeResult<Option<CurrentDoc>> {
-  let snapshot =
-    sqlx::query_as::<_, CurrentDoc>("SELECT blob, updated_at FROM snapshots WHERE workspace_id = $1 AND guid = $2")
-      .bind(workspace_id)
-      .bind(doc_id)
-      .fetch_optional(&mut **tx)
-      .await
-      .map_err(|err| RuntimeError::database("Document cleanup current snapshot load failed", err))?;
-  let updates = sqlx::query_as::<_, CurrentDocUpdate>(
-    "SELECT blob, created_at FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC",
-  )
-  .bind(workspace_id)
-  .bind(doc_id)
-  .fetch_all(&mut **tx)
-  .await
-  .map_err(|err| RuntimeError::database("Document cleanup current updates load failed", err))?;
-  merge_current_doc(snapshot, updates)
 }
 
 async fn current_activity(
@@ -56,15 +33,6 @@ async fn current_activity(
   .fetch_one(&mut **tx)
   .await
   .map_err(|err| RuntimeError::database("Document cleanup activity load failed", err))
-}
-
-fn root_contains(root: CurrentDoc, doc_id: &str) -> RuntimeResult<bool> {
-  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
-    .map_err(|err| RuntimeError::invalid_state(format!("Document cleanup root parse failed: {err}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::invalid_state("Document cleanup root doc is incomplete"));
-  }
-  Ok(projection.doc_ids.iter().any(|id| id == doc_id))
 }
 
 async fn delete_doc_rows(
@@ -208,35 +176,21 @@ pub(super) async fn execute_document_cleanup_candidate(
     return Ok(Some((candidate, DocumentCleanupOutcome::Recovered)));
   }
 
-  let root = match load_current_doc_for_update(&mut tx, &candidate.workspace_id, &candidate.workspace_id).await {
-    Ok(Some(root)) => root,
-    Ok(None) => {
-      mark_candidate_failed(
-        &mut tx,
-        &candidate,
-        "Workspace root doc is missing during document cleanup execute".to_string(),
-      )
-      .await?;
-      tx.commit()
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
+  let membership = async {
+    let root = load_root(&mut tx, &candidate.workspace_id).await?;
+    if !root.exists {
+      return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
     }
-    Err(err) => {
-      mark_candidate_failed(&mut tx, &candidate, err.to_string()).await?;
-      tx.commit()
-        .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
-      return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
-    }
-  };
-  let contains = match root_contains(root, &candidate.doc_id) {
+    Ok(require_complete_root(&root.doc)?.doc_ids.contains(&candidate.doc_id))
+  }
+  .await;
+  let contains = match membership {
     Ok(contains) => contains,
-    Err(err) => {
-      mark_candidate_failed(&mut tx, &candidate, err.to_string()).await?;
+    Err(error) => {
+      mark_candidate_failed(&mut tx, &candidate, error.to_string()).await?;
       tx.commit()
         .await
-        .map_err(|err| RuntimeError::database("Document cleanup failed candidate commit failed", err))?;
+        .map_err(|error| RuntimeError::database("Document cleanup failed candidate commit failed", error))?;
       return Ok(Some((candidate, DocumentCleanupOutcome::Failed)));
     }
   };

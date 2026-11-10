@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { Config, metrics } from '../../base';
-import { QuotaService } from '../quota';
+import { QuotaService } from '../quota/service';
 import { compareCodecResult } from './codec-compare';
 import { applyUpdatesWithNative, applyUpdatesWithYjs } from './merge-updates';
 import { DocStorageOptions as IDocStorageOptions } from './storage';

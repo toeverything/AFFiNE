@@ -18,7 +18,10 @@ use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
 use types::*;
 
-use super::{RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider};
+use super::{
+  RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider, load_root, lock_current_doc_read,
+  require_complete_root,
+};
 use crate::runtime::object_storage::ObjectStorageService;
 
 fn extraction_file_name(mime_type: &str) -> String {
