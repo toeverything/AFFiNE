@@ -179,7 +179,7 @@ pub(super) async fn delete_orphan_storage_rows(connection: &mut PgConnection, wo
   }
   let checkpoints = sqlx::query(
     "DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1 AND kind IN ('doc_blob_refs', \
-     'document_cleanup', 'blob_cleanup', 'blob_metadata_backfill')",
+     'document_cleanup', 'blob_cleanup', 'blob_metadata_backfill', 'workspace_root_source')",
   )
   .bind(workspace_id)
   .execute(&mut *connection)

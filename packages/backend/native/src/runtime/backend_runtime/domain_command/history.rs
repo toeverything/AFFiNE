@@ -1,20 +1,12 @@
 use affine_core::access_control::DomainCommand;
 use chrono::{DateTime, Utc};
 use serde_json::{Value, json};
-use sqlx::{FromRow, Postgres, Row, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 
-use super::{authorize_domain, invalidate_doc_blob_projection, lock_workspace_doc_update};
-use crate::runtime::{
-  RuntimeError, RuntimeResult,
-  backend_runtime::permission::PermissionAuthorizer,
-  storage_runtime::{CurrentDoc, CurrentDocUpdate, merge_current_doc},
+use super::{
+  authorize_domain_after_storage_lock, load_current_doc_in, lock_workspace_doc_update, lock_workspace_storage_shared,
 };
-
-#[derive(FromRow)]
-struct LockedSnapshot {
-  blob: Vec<u8>,
-  updated_at: DateTime<Utc>,
-}
+use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
 pub(super) async fn recover(
   authorizer: &PermissionAuthorizer,
@@ -23,10 +15,14 @@ pub(super) async fn recover(
   workspace_id: String,
   doc_id: String,
   timestamp: DateTime<Utc>,
-  embedding_schema_ready: bool,
 ) -> RuntimeResult<Value> {
+  if workspace_id == doc_id {
+    return Err(RuntimeError::invalid_input("doc_is_workspace"));
+  }
+  lock_workspace_storage_shared(transaction, &workspace_id).await?;
+  lock_workspace_doc_update(transaction, &workspace_id, &doc_id).await?;
   let command = DomainCommand::RecoverDoc { doc_id: doc_id.clone() };
-  authorize_domain(
+  authorize_domain_after_storage_lock(
     authorizer,
     transaction,
     &actor_user_id,
@@ -36,34 +32,9 @@ pub(super) async fn recover(
   )
   .await?;
 
-  lock_workspace_doc_update(transaction, &workspace_id, &doc_id).await?;
-  invalidate_doc_blob_projection(transaction, &workspace_id, &doc_id, embedding_schema_ready).await?;
-
-  let snapshot = sqlx::query_as::<_, LockedSnapshot>(
-    "SELECT blob, updated_at FROM snapshots WHERE workspace_id=$1 AND guid=$2 FOR UPDATE",
-  )
-  .bind(&workspace_id)
-  .bind(&doc_id)
-  .fetch_optional(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load recovery current snapshot", error))?
-  .ok_or_else(|| RuntimeError::invalid_input("doc_not_found"))?;
-  let updates = sqlx::query_as::<_, CurrentDocUpdate>(
-    "SELECT blob, created_at FROM updates WHERE workspace_id=$1 AND guid=$2 ORDER BY created_at FOR UPDATE",
-  )
-  .bind(&workspace_id)
-  .bind(&doc_id)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("load recovery pending updates", error))?;
-  let current = merge_current_doc(
-    Some(CurrentDoc {
-      blob: snapshot.blob,
-      updated_at: snapshot.updated_at,
-    }),
-    updates,
-  )?
-  .ok_or_else(|| RuntimeError::invalid_input("doc_not_found"))?;
+  let current = load_current_doc_in(transaction, &workspace_id, &doc_id)
+    .await?
+    .ok_or_else(|| RuntimeError::invalid_input("doc_not_found"))?;
   let history = sqlx::query(
     "SELECT blob, state, EXTRACT(EPOCH FROM expired_at - timestamp)::bigint AS retention FROM snapshot_histories \
      WHERE workspace_id=$1 AND guid=$2 AND timestamp=$3 FOR UPDATE",
@@ -94,47 +65,19 @@ pub(super) async fn recover(
   .execute(&mut **transaction)
   .await
   .map_err(|error| RuntimeError::database("record fixed recovery", error))?;
-  sqlx::query("DELETE FROM updates WHERE workspace_id=$1 AND guid=$2")
-    .bind(&workspace_id)
-    .bind(&doc_id)
-    .execute(&mut **transaction)
-    .await
-    .map_err(|error| RuntimeError::database("clear recovered pending updates", error))?;
-  let recovered = sqlx::query(
-    r#"UPDATE snapshots SET blob=$3, state=$4, updated_at=clock_timestamp(), updated_by=$5
-       WHERE workspace_id=$1 AND guid=$2
-       RETURNING updated_at"#,
-  )
-  .bind(&workspace_id)
-  .bind(&doc_id)
-  .bind(
-    history
-      .try_get::<Vec<u8>, _>("blob")
-      .map_err(|error| RuntimeError::database("decode recovery history blob", error))?,
-  )
-  .bind(
-    history
-      .try_get::<Option<Vec<u8>>, _>("state")
-      .map_err(|error| RuntimeError::database("decode recovery history state", error))?,
-  )
-  .bind(&actor_user_id)
-  .fetch_one(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("restore recovery snapshot", error))?;
-  Ok(json!({
-    "timestamp": timestamp,
-    "updatedAt": recovered.try_get::<DateTime<Utc>, _>("updated_at")
-      .map_err(|error| RuntimeError::database("decode recovered timestamp", error))?,
-  }))
+  Ok(json!({ "timestamp": timestamp }))
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::runtime::Deployment;
+  use crate::runtime::{
+    Deployment,
+    storage_runtime::{CurrentDoc, CurrentDocUpdate, merge_current_doc_updates},
+  };
 
   #[tokio::test]
-  async fn recovery_archives_current_content_and_restores_target_content() {
+  async fn recovery_archives_current_content_without_replacing_source() {
     let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
     let Some((pool, workspace_id, actor_user_id)) = super::super::test_support::owner_workspace().await else {
       return;
@@ -145,7 +88,7 @@ mod tests {
     let current_blob = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "current", None).unwrap();
     let pending_blob = affine_doc_loader::add_doc_to_root_doc(current_blob.clone(), "pending", None).unwrap();
     let target_blob = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "target", None).unwrap();
-    let expected_current = merge_current_doc(
+    let expected_current = merge_current_doc_updates(
       Some(CurrentDoc {
         blob: current_blob.clone(),
         updated_at: current_timestamp,
@@ -205,7 +148,6 @@ mod tests {
       workspace_id.clone(),
       doc_id.clone(),
       target_timestamp,
-      true,
     )
     .await
     .unwrap();
@@ -217,16 +159,16 @@ mod tests {
       .fetch_one(&pool)
       .await
       .unwrap();
-    assert_eq!(restored.get::<Vec<u8>, _>("blob"), target_blob);
-    assert_eq!(restored.get::<Vec<u8>, _>("state"), b"target-state");
-    assert!(restored.get::<DateTime<Utc>, _>("updated_at") > current_timestamp);
+    assert_eq!(restored.get::<Vec<u8>, _>("blob"), current_blob);
+    assert_eq!(restored.get::<Vec<u8>, _>("state"), b"current-state");
+    assert_eq!(restored.get::<DateTime<Utc>, _>("updated_at"), current_timestamp);
     let pending_count = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
       .bind(&workspace_id)
       .bind(&doc_id)
       .fetch_one(&pool)
       .await
       .unwrap();
-    assert_eq!(pending_count, 0);
+    assert_eq!(pending_count, 1);
     let archived = sqlx::query_scalar::<_, Vec<u8>>(
       "SELECT blob FROM snapshot_histories WHERE workspace_id=$1 AND guid=$2 AND timestamp=$3",
     )
@@ -237,5 +179,18 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(archived, expected_current.blob);
+    let mut rejected = pool.begin().await.unwrap();
+    let error = recover(
+      &authorizer,
+      &mut rejected,
+      "actor".to_string(),
+      workspace_id.clone(),
+      workspace_id.clone(),
+      target_timestamp,
+    )
+    .await
+    .unwrap_err();
+    assert!(error.to_string().contains("doc_is_workspace"));
+    rejected.rollback().await.unwrap();
   }
 }

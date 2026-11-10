@@ -4,7 +4,7 @@ import type { Update, WorkspaceDoc } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 import { EventBus, PaginationInput } from '../base';
-import { DocIsNotPublic } from '../base/error';
+import { BadRequest, DocIsNotPublic } from '../base/error';
 import { BaseModel } from './base';
 import { Doc, DocRole, PublicDocMode, publicUserSelect } from './common';
 
@@ -183,6 +183,11 @@ export class DocModel extends BaseModel {
    */
   async upsert(doc: Doc) {
     const { spaceId, docId, blob, timestamp, editorId } = doc;
+    if (spaceId === docId) {
+      throw new BadRequest(
+        'Workspace indexes must use the root update writer.'
+      );
+    }
     const updatedAt = new Date(timestamp);
     const size = blob.byteLength ?? blob.length;
     // CONCERNS:

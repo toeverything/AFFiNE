@@ -9,6 +9,7 @@ import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
 import { ClockMap } from '../../utils/clock';
 import { isEmptyUpdate } from '../../utils/is-empty-update';
 import { throwIfAborted } from '../../utils/throw-if-aborted';
+import type { DocSyncState } from './index';
 
 type Job =
   | {
@@ -24,6 +25,7 @@ type Job =
   | {
       type: 'pull';
       docId: string;
+      remoteClock?: Date;
     }
   | {
       type: 'pullAndPush';
@@ -39,7 +41,7 @@ type Job =
 interface Status {
   docs: Set<string>;
   connectedDocs: Set<string>;
-  docErrors: Map<string, string>;
+  docErrors: Map<string, Error>;
   retryOnLocalUpdate: Set<string>;
   jobDocQueue: AsyncPriorityQueue;
   jobMap: Map<string, Job[]>;
@@ -56,6 +58,7 @@ interface PeerState {
   retrying: boolean;
   synced: boolean;
   errorMessage: string | null;
+  error?: DocSyncState['error'];
 }
 
 interface PeerDocState {
@@ -84,6 +87,7 @@ function createJobErrorCatcher<
               const wrapped = new Error(
                 `Error in job "${k}": ${err.stack || err.message}`
               );
+              Object.assign(wrapped, err);
               wrapped.name = err.name;
               (wrapped as Error & { cause?: unknown }).cause = err;
               throw wrapped;
@@ -109,7 +113,14 @@ function isDocScopedError(error: unknown) {
   return (
     isRemotePermissionError(error) ||
     (error instanceof Error &&
-      (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+      ([
+        'DOC_SOURCE_INCOMPLETE',
+        'DOC_ROOT_SOURCE_INVALID',
+        'DOC_LIFECYCLE_REQUIRES_COMMAND',
+        'DOC_UPDATE_INVALID',
+        'DOC_UPDATE_TOO_LARGE',
+      ].includes(error.name) ||
+        error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
         error.name === 'DISK_SOURCE_REVIEW_REQUIRED'))
   );
 }
@@ -185,7 +196,7 @@ export class DocSyncPeer {
   private status: Status = {
     docs: new Set<string>(),
     connectedDocs: new Set<string>(),
-    docErrors: new Map<string, string>(),
+    docErrors: new Map<string, Error>(),
     retryOnLocalUpdate: new Set<string>(),
     jobDocQueue: new AsyncPriorityQueue(),
     jobMap: new Map(),
@@ -223,9 +234,23 @@ export class DocSyncPeer {
   private get currentErrorMessage() {
     return (
       this.status.errorMessage ??
-      this.status.docErrors.values().next().value ??
+      this.status.docErrors.values().next().value?.message ??
       null
     );
+  }
+
+  private get currentError(): DocSyncState['error'] {
+    const rootError = this.status.docErrors.get(this.local.spaceId);
+    const entry = rootError
+      ? ([this.local.spaceId, rootError] as const)
+      : this.status.docErrors.entries().next().value;
+    if (!entry) return undefined;
+    const [docId, error] = entry;
+    return {
+      docId,
+      name: error.name,
+      data: 'data' in error ? error.data : undefined,
+    };
   }
 
   peerState$ = new Observable<PeerState>(subscribe => {
@@ -246,6 +271,7 @@ export class DocSyncPeer {
           synced: false,
           retrying: this.status.retrying,
           errorMessage: this.currentErrorMessage,
+          error: this.currentError,
         });
       } else {
         const syncing = this.status.jobMap.size;
@@ -254,6 +280,7 @@ export class DocSyncPeer {
           syncing: syncing,
           retrying: this.status.retrying,
           errorMessage: this.currentErrorMessage,
+          error: this.currentError,
           synced: syncing === 0 && this.status.docErrors.size === 0,
         });
       }
@@ -274,7 +301,8 @@ export class DocSyncPeer {
   docState$(docId: string) {
     return new Observable<PeerDocState>(subscribe => {
       const next = () => {
-        const docErrorMessage = this.status.docErrors.get(docId) ?? null;
+        const docErrorMessage =
+          this.status.docErrors.get(docId)?.message ?? null;
         if (this.status.skipped) {
           subscribe.next({
             syncing: false,
@@ -380,7 +408,7 @@ export class DocSyncPeer {
       }
     },
     pullAndPush: async (docId: string, signal?: AbortSignal) => {
-      const localDocRecord = await this.local.getDoc(docId);
+      let localDocRecord = await this.local.getDoc(docId);
 
       const stateVector =
         localDocRecord && !isEmptyUpdate(localDocRecord.bin)
@@ -408,11 +436,14 @@ export class DocSyncPeer {
           docId,
           timestamp: remoteClock,
         });
+        if (this.reconcilesRoot(docId)) {
+          localDocRecord = await this.local.getDoc(docId);
+        }
         const diff =
           localDocRecord && serverStateVector && serverStateVector.length > 0
             ? docDiffUpdate(
                 localDocRecord.bin,
-                stateVector,
+                encodeStateVectorFromUpdate(localDocRecord.bin),
                 newData,
                 serverStateVector
               )
@@ -433,11 +464,14 @@ export class DocSyncPeer {
           });
         }
         throwIfAborted(signal);
-        this.schedule({
-          type: 'push',
-          docId,
-          clock: localClock,
-        });
+        if (this.reconcilesRoot(docId) && localDocRecord) {
+          await this.syncMetadata.setPeerPushedClock(this.peerId, {
+            docId,
+            timestamp: localDocRecord.timestamp,
+          });
+        } else {
+          this.schedule({ type: 'push', docId, clock: localClock });
+        }
       } else {
         if (localDocRecord) {
           await this.acknowledgeRemoteSourceUpdate(docId);
@@ -456,15 +490,26 @@ export class DocSyncPeer {
               remoteClock,
             });
           }
-          this.schedule({
-            type: 'push',
-            docId,
-            clock: localDocRecord.timestamp,
-          });
+          if (!this.reconcilesRoot(docId)) {
+            this.schedule({
+              type: 'push',
+              docId,
+              clock: localDocRecord.timestamp,
+            });
+          }
           await this.syncMetadata.setPeerPushedClock(this.peerId, {
             docId,
             timestamp: localDocRecord.timestamp,
           });
+        }
+      }
+      this.status.connectedDocs.add(docId);
+      if (this.reconcilesRoot(docId)) {
+        for (const [dependentId, error] of this.status.docErrors) {
+          if (error.name === 'DOC_ROOT_SOURCE_INVALID') {
+            this.status.docErrors.delete(dependentId);
+            this.schedule({ type: 'connect', docId: dependentId });
+          }
         }
       }
     },
@@ -496,11 +541,9 @@ export class DocSyncPeer {
         docId,
         timestamp: remoteClock,
       });
-      this.schedule({
-        type: 'push',
-        docId,
-        clock: timestamp,
-      });
+      if (!this.reconcilesRoot(docId)) {
+        this.schedule({ type: 'push', docId, clock: timestamp });
+      }
     },
     save: async (
       docId: string,
@@ -511,7 +554,7 @@ export class DocSyncPeer {
         (a, b) => (a.getTime() > b.remoteClock.getTime() ? a : b.remoteClock),
         new Date(0)
       );
-      if (this.status.connectedDocs.has(docId)) {
+      if (this.status.docs.has(docId)) {
         const data = jobs
           .map(j => j.update)
           .filter((update): update is Uint8Array =>
@@ -532,11 +575,9 @@ export class DocSyncPeer {
           await this.acknowledgeRemoteSourceUpdate(docId);
 
           // schedule push job to mark the timestamp as pushed timestamp
-          this.schedule({
-            type: 'push',
-            docId,
-            clock: timestamp,
-          });
+          if (!this.reconcilesRoot(docId)) {
+            this.schedule({ type: 'push', docId, clock: timestamp });
+          }
         }
         throwIfAborted(signal);
 
@@ -587,7 +628,10 @@ export class DocSyncPeer {
       // try add doc for new doc
       this.actions.addDoc(docId);
 
-      // schedule push job
+      if (this.reconcilesRoot(docId)) {
+        this.schedule({ type: 'pullAndPush', docId });
+        return;
+      }
       this.schedule({
         type: 'push',
         docId,
@@ -614,16 +658,28 @@ export class DocSyncPeer {
         this.schedule({ type: 'connect', docId });
         return;
       }
-      if (this.status.docErrors.has(docId)) {
+      const error = this.status.docErrors.get(docId);
+      const newer =
+        remoteClock.getTime() > this.status.remoteClocks.get(docId).getTime();
+      if (
+        error &&
+        (error.name === 'DOC_SOURCE_INCOMPLETE' ||
+          (error.name === 'DOC_ROOT_SOURCE_INVALID' &&
+            this.reconcilesRoot(docId))) &&
+        newer
+      ) {
+        this.status.docErrors.delete(docId);
+        this.status.retryOnLocalUpdate.delete(docId);
+        this.schedule({ type: 'connect', docId });
+      } else if (error && isRemotePermissionError(error)) {
         return;
       }
 
-      // try add doc for new doc
       this.actions.addDoc(docId);
-      this.actions.updateRemoteClock(docId, remoteClock);
+      this.status.remoteClocks.setIfBigger(docId, remoteClock);
 
       if (isEmptyUpdate(update)) {
-        this.schedule({ type: 'pull', docId });
+        this.schedule({ type: 'pull', docId, remoteClock });
       } else {
         this.schedule({
           type: 'save',
@@ -850,6 +906,27 @@ export class DocSyncPeer {
             break;
           }
 
+          const save = remove(jobs, j => j.type === 'save');
+          if (save && save.length > 0) {
+            await this.jobs.save(
+              docId,
+              save as (Job & { type: 'save' })[],
+              signal
+            );
+            continue;
+          }
+          const pull = remove(jobs, j => j.type === 'pull');
+          if (pull && pull.length > 0) {
+            if (
+              !(await this.runRemoteDocJob(docId, () =>
+                this.jobs.pull(docId, signal)
+              ))
+            ) {
+              break;
+            }
+            continue;
+          }
+
           const connect = remove(jobs, j => j.type === 'connect');
           if (connect && connect.length > 0) {
             if (
@@ -874,18 +951,6 @@ export class DocSyncPeer {
             continue;
           }
 
-          const pull = remove(jobs, j => j.type === 'pull');
-          if (pull && pull.length > 0) {
-            if (
-              !(await this.runRemoteDocJob(docId, () =>
-                this.jobs.pull(docId, signal)
-              ))
-            ) {
-              break;
-            }
-            continue;
-          }
-
           const push = remove(jobs, j => j.type === 'push');
           if (push && push.length > 0) {
             if (
@@ -901,16 +966,6 @@ export class DocSyncPeer {
             }
             continue;
           }
-
-          const save = remove(jobs, j => j.type === 'save');
-          if (save && save.length > 0) {
-            await this.jobs.save(
-              docId,
-              save as (Job & { type: 'save' })[],
-              signal
-            );
-            continue;
-          }
         }
       }
     } finally {
@@ -923,6 +978,7 @@ export class DocSyncPeer {
   }
 
   private async runRemoteDocJob(docId: string, job: () => Promise<void>) {
+    const remoteClock = this.status.remoteClocks.get(docId).getTime();
     try {
       await job();
       return true;
@@ -936,16 +992,44 @@ export class DocSyncPeer {
         docId,
         error,
       });
-      this.status.docErrors.set(docId, message);
+      this.status.docErrors.set(
+        docId,
+        error instanceof Error ? error : new Error(message)
+      );
       if (
         error instanceof Error &&
-        (error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
+        (error.name === 'DOC_SOURCE_INCOMPLETE' ||
+          error.name === 'DISK_SOURCE_EXPORT_FAILED' ||
           error.name === 'DISK_SOURCE_REVIEW_REQUIRED')
       ) {
         this.status.retryOnLocalUpdate.add(docId);
       }
+      const pending = this.status.jobMap.get(docId) ?? [];
+      const localChanged = pending.some(
+        job =>
+          job.type === 'pullAndPush' ||
+          (job.type === 'push' && job.update && !isEmptyUpdate(job.update))
+      );
+      const remoteChanged = pending.some(
+        job =>
+          (job.type === 'pull' || job.type === 'save') &&
+          job.remoteClock &&
+          job.remoteClock.getTime() > remoteClock
+      );
+      remove(pending, job => job.type !== 'pull' && job.type !== 'save');
       this.status.connectedDocs.delete(docId);
-      this.status.jobMap.delete(docId);
+      if (
+        error instanceof Error &&
+        ((error.name === 'DOC_SOURCE_INCOMPLETE' &&
+          (localChanged || remoteChanged)) ||
+          (error.name === 'DOC_ROOT_SOURCE_INVALID' &&
+            remoteChanged &&
+            this.reconcilesRoot(docId)))
+      ) {
+        this.status.docErrors.delete(docId);
+        this.status.retryOnLocalUpdate.delete(docId);
+        this.schedule({ type: 'pullAndPush', docId });
+      }
       this.statusUpdatedSubject$.next(docId);
       this.statusUpdatedSubject$.next(true);
       return false;
@@ -957,7 +1041,6 @@ export class DocSyncPeer {
       this.status.docErrors.has(job.docId) &&
       (job.type === 'connect' ||
         job.type === 'push' ||
-        job.type === 'pull' ||
         job.type === 'pullAndPush')
     ) {
       return;
@@ -970,6 +1053,12 @@ export class DocSyncPeer {
     existingJobs.push(job);
     this.status.jobMap.set(job.docId, existingJobs);
     this.statusUpdatedSubject$.next(job.docId);
+  }
+
+  private reconcilesRoot(docId: string) {
+    return (
+      this.remote.reconcileRootUpdates === true && docId === this.local.spaceId
+    );
   }
 
   private getJobPriority(docId: string) {

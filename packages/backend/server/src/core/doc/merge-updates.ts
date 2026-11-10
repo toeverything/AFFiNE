@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises';
+
 import type { Logger } from '@nestjs/common';
 import { chunk } from 'lodash-es';
 import * as Y from 'yjs';
@@ -9,7 +11,7 @@ import { mergeUpdatesInApplyWay as nativeMergeUpdatesInApplyWay } from '../../na
 const SLOW_DOC_UPDATE_CODEC_MS = 250;
 
 type CodecEngine = 'native' | 'yjs';
-type MetricStatus = 'ok' | 'error' | 'partial_error';
+type MetricStatus = 'ok' | 'error';
 type CodecLogger = Pick<Logger, 'warn' | 'error'>;
 
 function recordCodecMetrics(
@@ -148,72 +150,6 @@ export function mergeUpdatesWithYjs(
   );
 }
 
-async function recoverDocWithYjs(
-  updates: Uint8Array[],
-  caller: string,
-  logger?: CodecLogger
-): Promise<Y.Doc> {
-  const doc = new Y.Doc();
-  const chunks = chunk(updates, 10);
-  let i = 0;
-  let failedUpdates = 0;
-  const start = performance.now();
-
-  try {
-    await new Promise<void>(resolve => {
-      Y.transact(doc, () => {
-        const next = () => {
-          const nextUpdates = chunks.at(i++);
-
-          if (nextUpdates?.length) {
-            nextUpdates.forEach(update => {
-              try {
-                Y.applyUpdate(doc, update);
-              } catch (error) {
-                failedUpdates += 1;
-                metrics.doc.counter('apply_update_failures').add(1, {
-                  engine: 'yjs',
-                  caller,
-                });
-                logger?.error('Failed to apply update', error);
-              }
-            });
-
-            // avoid applying too many updates in single round which will take the whole cpu time like dead lock
-            setImmediate(() => {
-              next();
-            });
-          } else {
-            resolve();
-          }
-        };
-
-        next();
-      });
-    });
-  } catch (error) {
-    const duration = performance.now() - start;
-
-    recordCodecMetrics('apply_updates', 'yjs', caller, 'error', duration);
-    throw error;
-  }
-
-  const duration = performance.now() - start;
-  const status = failedUpdates > 0 ? 'partial_error' : 'ok';
-
-  recordCodecMetrics('apply_updates', 'yjs', caller, status, duration);
-  warnSlowCodecOperation(
-    'apply_updates',
-    'yjs',
-    caller,
-    duration,
-    updates.length,
-    logger
-  );
-
-  return doc;
-}
-
 export async function applyUpdatesWithYjs(
   updates: Uint8Array[],
   caller: string,
@@ -226,8 +162,18 @@ export async function applyUpdatesWithYjs(
     caller,
     logger,
     async () => {
-      const doc = await recoverDocWithYjs(updates, caller, logger);
-      return Buffer.from(Y.encodeStateAsUpdate(doc));
+      const doc = new Y.Doc();
+      try {
+        for (const batch of chunk(updates, 10)) {
+          Y.transact(doc, () => {
+            for (const update of batch) Y.applyUpdate(doc, update);
+          });
+          await setImmediate();
+        }
+        return Buffer.from(Y.encodeStateAsUpdate(doc));
+      } finally {
+        doc.destroy();
+      }
     }
   );
 }

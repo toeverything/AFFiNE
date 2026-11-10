@@ -15,7 +15,10 @@ pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
 pub(in crate::runtime) use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-pub(in crate::runtime) use current_doc::{CurrentDoc, CurrentDocUpdate, load_current_doc_parts, merge_current_doc};
+pub(in crate::runtime) use current_doc::{
+  CurrentDoc, CurrentDocUpdate, load_current_doc_in, load_current_doc_parts, load_current_doc_parts_in,
+  merge_current_doc, merge_current_doc_updates,
+};
 use current_doc::{load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids};
 use napi::bindgen_prelude::Buffer;
 use serde_json::Value;
@@ -23,9 +26,10 @@ use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use tokio::sync::Mutex;
 
 pub(super) use super::{
-  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs,
+  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs, load_root,
+  lock_current_doc_read,
   migrations::migrate_runtime_tables,
-  napi_error, to_napi_error,
+  napi_error, require_complete_root, to_napi_error,
   types::{
     RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult,
     RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit,

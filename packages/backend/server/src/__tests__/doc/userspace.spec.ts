@@ -7,6 +7,7 @@ import {
   DocStorageModule,
   PgUserspaceDocStorageAdapter as Adapter,
 } from '../../core/doc';
+import { applyUpdatesWithYjs } from '../../core/doc/merge-updates';
 import { Models, type User } from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
 
@@ -67,6 +68,23 @@ test('should push user doc updates work', async t => {
   applyUpdate(newDoc, record!.bin);
 
   t.is(newDoc.getText('content').toString(), 'hello world');
+  await t.throwsAsync(
+    t.context.adapter.pushDocUpdates(user.id, docId, [
+      updates[0],
+      new Uint8Array([255]),
+    ]),
+    { name: 'doc_update_invalid' }
+  );
+  const unchanged = await t.context.adapter.getDoc(user.id, docId);
+  t.deepEqual(Buffer.from(unchanged!.bin), Buffer.from(record!.bin));
+  t.is(unchanged!.timestamp, record!.timestamp);
+  await t.throwsAsync(
+    applyUpdatesWithYjs(
+      [...Array.from({ length: 10 }, () => updates[0]), new Uint8Array([255])],
+      'userspace.invalid_later_batch'
+    )
+  );
+
   // find all timestamps
   const timestamps = await t.context.adapter.getSpaceDocTimestamps(user.id);
   t.deepEqual(timestamps, {

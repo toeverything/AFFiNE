@@ -5,13 +5,13 @@ use affine_core::access_control::{
   userdata_document_id,
 };
 use affine_doc_loader::{
-  apply_favorites, apply_workspace_db, evaluate_collection, project_orm_records, project_workspace_root_facts,
+  apply_favorites, apply_workspace_db, evaluate_collection, project_orm_records, project_workspace_root_facts_doc,
 };
 use chrono::Utc;
 use sqlx::{PgPool, Row};
 
 use super::{
-  RuntimeError, RuntimeResult,
+  RuntimeError, RuntimeResult, load_root, lock_current_doc_read,
   permission::{PermissionAuthorizer, PermissionTelemetry},
   types,
 };
@@ -50,14 +50,25 @@ impl ScopeCompiler {
         input.preferred_source_ids.unwrap_or_default(),
       ));
     }
-    let root = load_current_doc(&self.pool, &input.workspace_id, &input.workspace_id)
-      .await?
-      .ok_or_else(|| RuntimeError::invalid_state("workspace root doc is missing"))?;
-    let mut facts = project_workspace_root_facts(&root.blob)
-      .map_err(|error| RuntimeError::invalid_state(format!("workspace scope projection failed: {error}")))?;
-    if !facts.complete {
-      return Err(RuntimeError::invalid_state("workspace root projection is incomplete"));
+    let mut transaction = self
+      .pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin workspace scope root read", error))?;
+    lock_current_doc_read(&mut transaction, &input.workspace_id, &input.workspace_id).await?;
+    let root = load_root(&mut transaction, &input.workspace_id).await?;
+    if !root.exists {
+      return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
     }
+    let mut facts = project_workspace_root_facts_doc(&root.doc)
+      .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?;
+    if !facts.complete {
+      return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
+    }
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit workspace scope root read", error))?;
 
     let properties_id = format!("db${}$docProperties", input.workspace_id);
     if classify_reserved_document(&input.workspace_id, &properties_id)

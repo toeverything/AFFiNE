@@ -9,6 +9,7 @@ import { CliAppModule } from './data/app';
 import { CreateCommand } from './data/commands/create';
 import { CutoverCommand } from './data/commands/cutover';
 import { ImportConfigCommand } from './data/commands/import';
+import { RootSourceCommand } from './data/commands/root-source';
 import { RevertCommand, RunCommand } from './data/commands/run';
 
 function getProgramName() {
@@ -110,6 +111,44 @@ function buildProgram(logger: Logger) {
           'Config imported; changes take effect on the next server start.'
         );
       });
+    });
+
+  const rootSource = program
+    .command('root-source')
+    .description('Inspect and repair workspace root sources');
+  rootSource
+    .command('inspect')
+    .requiredOption('--workspace <id>')
+    .requiredOption('--output <file>')
+    .option('--history <timestamps...>')
+    .option('--backup <files...>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app
+          .get(RootSourceCommand)
+          .inspect(
+            options.workspace,
+            options.output,
+            options.history,
+            options.backup
+          )
+      );
+    });
+  rootSource
+    .command('apply')
+    .requiredOption('--report <file>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app.get(RootSourceCommand).apply(options.report)
+      );
+    });
+  rootSource
+    .command('notify')
+    .requiredOption('--workspace <id>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app.get(RootSourceCommand).notify(options.workspace)
+      );
     });
 
   return program;

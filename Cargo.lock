@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "affine_core"
-version = "0.0.11"
+version = "0.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5061001e55555388ecbe1c614daa401188441e54c38e8b085b7f94f2bac01563"
+checksum = "aba09ec4e1be2644de0efe8e8044732335848c33469176eaa6fd083027a80d4e"
 dependencies = [
  "base64 0.23.1",
  "chrono",
@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.1.11"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52f78576f0d8862c41e56a15ecc63b5424630b126a41160e7fcd3fdbb441f4ff"
+checksum = "bf12ace9ba0aff7f070f8734533eff46de9aaacff8124b0af4d8d439b9fc7419"
 dependencies = [
  "affine_merge",
  "chrono",
@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "affine_importer"
-version = "0.1.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b1cf38c45c12d6e981adc554264d5c3318cabde658719d138b497e87d8bbf49"
+checksum = "907e52a22fb81129174c9033036c4dd8050017d798b1b18e0016b69742588c8f"
 dependencies = [
  "affine_doc_loader",
  "bytes",
@@ -11362,9 +11362,9 @@ checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y-octo"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b067d00433f8ea8e07988706e8664d137dd35e262bf8a6f5ea82afe8d3ee920"
+checksum = "9824fcf34ec7e80f09d7fd5bfeeeff168bbf80b3085e58f23a85b2e875bb8a31"
 dependencies = [
  "ahash",
  "arbitrary",

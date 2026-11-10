@@ -328,8 +328,18 @@ impl BlobAccessService {
 impl InvalidationTarget for BlobAccessService {
   fn invalidate<'a>(&'a self, hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
     Box::pin(async move {
-      if let InvalidationHintV1::BlobSource { source } = hint {
-        self.cache.invalidate(source).await;
+      match hint {
+        InvalidationHintV1::BlobSource { source } => self.cache.invalidate(source).await,
+        InvalidationHintV1::WorkspaceRootChanged { workspace_id, .. } => {
+          self
+            .cache
+            .invalidate(&SourceIdentity::CurrentDoc {
+              workspace_id: workspace_id.clone(),
+              doc_id: workspace_id.clone(),
+            })
+            .await;
+        }
+        _ => {}
       }
     })
   }

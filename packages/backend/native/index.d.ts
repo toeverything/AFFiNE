@@ -51,6 +51,7 @@ export declare class BackendRuntime {
    * this workspace. The compactor does not make quota decisions.
    */
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
+  getCurrentWorkspaceRootV1(workspaceId: string): Promise<RuntimeDocRootRecord | null>
   upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
   appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<number>
@@ -109,6 +110,7 @@ export declare class BackendRuntime {
   commitMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
   releaseMailDeliveryQuotaV1(reservationId: string): Promise<boolean>
   cleanupExpiredRollingQuota(limit: number): Promise<number>
+  workspaceRootMaintenanceV1(input: any): Promise<any>
   createAuthCaptchaChallengeV1(): Promise<CaptchaChallenge>
   verifyAuthCaptchaV1(input: CaptchaVerificationInput): Promise<boolean>
   createWorkspaceInviteLink(workspaceId: string, inviteId: string, inviterUserId: string, ttlMs: number): Promise<RuntimeWorkspaceInviteLinkRecord>
@@ -848,6 +850,9 @@ export interface MatchEmbeddingCandidatesInput {
 /**
  * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
  * result binary.
+ *
+ * Do not use this for snapshots that will be sent back to yjs clients until
+ * the y-octo/yjs round-trip compatibility issue is resolved.
  */
 export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
@@ -1318,6 +1323,11 @@ export interface RuntimeDocHistoryInput {
   force: boolean
   historyMinIntervalMs: number
   historyMaxAgeMs: number
+}
+
+export interface RuntimeDocRootRecord {
+  bin: Buffer
+  timestamp: number
 }
 
 export interface RuntimeDocumentCleanupExecuteResult {

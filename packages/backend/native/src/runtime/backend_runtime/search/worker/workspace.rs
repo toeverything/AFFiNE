@@ -81,14 +81,16 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
     return Ok(true);
   }
 
-  let root_document_ids = match load_root_document_ids(pool, workspace_id).await {
-    Ok(doc_ids) => doc_ids,
-    Err(error) if error.is_permanent_search_source() => {
-      mark_workspace_failed(pool, generation.id, workspace_id, claim.fence).await?;
-      return Ok(true);
+  if matches!(claim.progress.phase, WorkspacePhase::Stale { .. }) {
+    match load_root_document_ids(pool, workspace_id).await {
+      Ok(_) => {}
+      Err(error) if error.is_permanent_search_source() => {
+        mark_workspace_failed(pool, generation.id, workspace_id, claim.fence).await?;
+        return Ok(true);
+      }
+      Err(error) => return Err(error),
     }
-    Err(error) => return Err(error),
-  };
+  }
 
   if let WorkspacePhase::Stale { table, cursor } = claim.progress.phase.clone() {
     match reconcile_stale_provider_rows(&context, table, cursor).await? {
@@ -121,14 +123,13 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
   if let WorkspacePhase::Source { after_doc_id } = claim.progress.phase.clone() {
     match reconcile_root_documents(
       &context,
-      &root_document_ids,
       claim.progress.captured_permission_version,
       after_doc_id,
       RootReconcilePhase::Source,
     )
-    .await?
+    .await
     {
-      WorkspaceStep::Continue(progress) => {
+      Ok(WorkspaceStep::Continue(progress)) => {
         checkpoint_workspace(
           pool,
           generation.id,
@@ -139,8 +140,13 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
         .await?;
         return Ok(true);
       }
-      WorkspaceStep::Quiet(_) => unreachable!("source reconciliation does not schedule a quiet period"),
-      WorkspaceStep::Complete => {}
+      Ok(WorkspaceStep::Quiet(_)) => unreachable!("source reconciliation does not schedule a quiet period"),
+      Ok(WorkspaceStep::Complete) => {}
+      Err(error) if error.is_permanent_search_source() => {
+        mark_workspace_failed(pool, generation.id, workspace_id, claim.fence).await?;
+        return Ok(true);
+      }
+      Err(error) => return Err(error),
     }
     checkpoint_workspace(
       pool,
@@ -258,14 +264,13 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
 
   match reconcile_root_documents(
     &context,
-    &root_document_ids,
     claim.progress.captured_permission_version,
     after_doc_id,
     RootReconcilePhase::Documents,
   )
-  .await?
+  .await
   {
-    WorkspaceStep::Continue(progress) => {
+    Ok(WorkspaceStep::Continue(progress)) => {
       checkpoint_workspace(
         pool,
         generation.id,
@@ -276,10 +281,14 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
       .await?;
       return Ok(true);
     }
-    WorkspaceStep::Complete => {}
-    WorkspaceStep::Quiet(_) => unreachable!("root document reconcile does not schedule a quiet period"),
+    Ok(WorkspaceStep::Complete) => {}
+    Ok(WorkspaceStep::Quiet(_)) => unreachable!("root document reconcile does not schedule a quiet period"),
+    Err(error) if error.is_permanent_search_source() => {
+      mark_workspace_failed(pool, generation.id, workspace_id, claim.fence).await?;
+      return Ok(true);
+    }
+    Err(error) => return Err(error),
   }
-
   checkpoint_workspace(
     pool,
     generation.id,
@@ -923,89 +932,152 @@ mod tests {
         .unwrap();
     }
 
-    let generation_id = Uuid::new_v4();
-    let workspace_id = format!("missing-root-{}", Uuid::new_v4().simple());
-    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
+    let partial_root = Doc::default();
+    let mut partial_meta = partial_root.get_or_create_map("meta").unwrap();
+    partial_meta.insert("name".into(), "before").unwrap();
+    let prefix_state = partial_root.get_state_vector();
+    partial_meta.insert("name".into(), "after").unwrap();
+    let partial = partial_root.encode_state_as_update_v1(&prefix_state).unwrap();
+    let invalid_shape = Doc::default();
+    invalid_shape
+      .get_or_create_map("meta")
+      .unwrap()
+      .insert("pages".into(), "invalid")
       .unwrap();
-    sqlx::query(
-      r#"INSERT INTO search_projection.generations(id,provider,state,config_hash,schema_version,manifest)
-         VALUES($1,'embedded','building',decode(repeat('00',32),'hex'),1,'{}')"#,
-    )
-    .bind(generation_id)
-    .execute(&pool)
-    .await
-    .unwrap();
-    sqlx::query("INSERT INTO search_projection.workspace_states(generation_id,workspace_id) VALUES($1,$2)")
-      .bind(generation_id)
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    let embedded = EmbeddedSearchIndex::default();
-    embedded.prepare_generation(generation_id).await;
-    let generation = ActiveGeneration {
-      id: generation_id,
-      manifest: json!({}),
-    };
-    assert!(
-      reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
+    let invalid_shape = invalid_shape.encode_update_v1().unwrap();
+    for (phase_name, phase) in [
+      ("documents", WorkspacePhase::Documents { after_doc_id: None }),
+      ("source", WorkspacePhase::Source { after_doc_id: None }),
+      (
+        "stale",
+        WorkspacePhase::Stale {
+          table: SearchTable::Doc,
+          cursor: None,
+        },
+      ),
+    ] {
+      for (failure_name, root_blob) in [
+        ("missing", None),
+        ("partial", Some(partial.clone())),
+        ("invalid_shape", Some(invalid_shape.clone())),
+        ("invalid_encoding", Some(vec![0xff])),
+      ] {
+        let generation_id = Uuid::new_v4();
+        let workspace_id = format!("root-{phase_name}-{failure_name}-{}", Uuid::new_v4().simple());
+        sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+          .bind(&workspace_id)
+          .execute(&pool)
+          .await
+          .unwrap();
+        if let Some(blob) = root_blob {
+          sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
+            .bind(&workspace_id)
+            .bind(blob)
+            .execute(&pool)
+            .await
+            .unwrap();
+        }
+        sqlx::query(
+          "INSERT INTO search_projection.generations(id,provider,state,config_hash,schema_version,manifest) \
+           VALUES($1,'embedded','building',decode(repeat('00',32),'hex'),1,'{}')",
+        )
+        .bind(generation_id)
+        .execute(&pool)
         .await
-        .unwrap()
-    );
-    let root_failure: Option<String> = sqlx::query_scalar(
-      "SELECT last_error FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
-    )
-    .bind(generation_id)
-    .bind(&workspace_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(root_failure.as_deref(), Some("search_workspace_reconcile_failed"));
+        .unwrap();
+        sqlx::query(
+          "INSERT INTO search_projection.workspace_states(generation_id,workspace_id,pending_scope,progress) \
+           VALUES($1,$2,'workspace',$3)",
+        )
+        .bind(generation_id)
+        .bind(&workspace_id)
+        .bind(WorkspaceProgress::new(0, 0, phase.clone()).value())
+        .execute(&pool)
+        .await
+        .unwrap();
+        let embedded = EmbeddedSearchIndex::default();
+        embedded.prepare_generation(generation_id).await;
+        let generation = ActiveGeneration {
+          id: generation_id,
+          manifest: json!({}),
+        };
+        assert!(
+          reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
+            .await
+            .unwrap(),
+          "{phase_name}/{failure_name}"
+        );
+        let root_failure: (bool, bool, Option<String>) = sqlx::query_as(
+          "SELECT covered,lease_owner IS NULL AND lease_expires_at IS NULL,last_error FROM \
+           search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
+        )
+        .bind(generation_id)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(
+          root_failure,
+          (false, true, Some("search_workspace_reconcile_failed".into())),
+          "{phase_name}/{failure_name}"
+        );
+        assert!(
+          !reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
+            .await
+            .unwrap(),
+          "{phase_name}/{failure_name} must remain unclaimed"
+        );
 
-    let unrelated_doc = format!("unrelated-{}", Uuid::new_v4().simple());
-    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),now())")
-      .bind(&workspace_id)
-      .bind(unrelated_doc)
-      .execute(&pool)
-      .await
-      .unwrap();
-    let still_failed: Option<String> = sqlx::query_scalar(
-      "SELECT last_error FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
-    )
-    .bind(generation_id)
-    .bind(&workspace_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(still_failed.as_deref(), Some("search_workspace_reconcile_failed"));
-
-    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
-      .bind(&workspace_id)
-      .bind(affine_doc_loader::add_doc_to_root_doc(Vec::new(), "recovered", None).unwrap())
-      .execute(&pool)
-      .await
-      .unwrap();
-    let reopened: Option<String> = sqlx::query_scalar(
-      "SELECT last_error FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
-    )
-    .bind(generation_id)
-    .bind(&workspace_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(reopened, None);
-    sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
-      .bind(generation_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    sqlx::query("DELETE FROM workspaces WHERE id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
+        let unrelated_doc = format!("unrelated-{}", Uuid::new_v4().simple());
+        sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('00','hex'),now())")
+          .bind(&workspace_id)
+          .bind(unrelated_doc)
+          .execute(&pool)
+          .await
+          .unwrap();
+        assert!(
+          claim_workspace(&pool, generation_id, &workspace_id)
+            .await
+            .unwrap()
+            .is_none(),
+          "{phase_name}/{failure_name} must wait for root mutation"
+        );
+        sqlx::query(
+          "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,clock_timestamp()) ON \
+           CONFLICT(workspace_id,guid) DO UPDATE SET blob=excluded.blob,updated_at=excluded.updated_at",
+        )
+        .bind(&workspace_id)
+        .bind(affine_doc_loader::add_doc_to_root_doc(Vec::new(), "recovered", None).unwrap())
+        .execute(&pool)
+        .await
+        .unwrap();
+        let reopened: Option<String> = sqlx::query_scalar(
+          "SELECT last_error FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2",
+        )
+        .bind(generation_id)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(reopened, None, "{phase_name}/{failure_name}");
+        assert!(
+          claim_workspace(&pool, generation_id, &workspace_id)
+            .await
+            .unwrap()
+            .is_some(),
+          "{phase_name}/{failure_name} must reactivate after root mutation"
+        );
+        sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
+          .bind(generation_id)
+          .execute(&pool)
+          .await
+          .unwrap();
+        sqlx::query("DELETE FROM workspaces WHERE id=$1")
+          .bind(&workspace_id)
+          .execute(&pool)
+          .await
+          .unwrap();
+      }
+    }
   }
 }

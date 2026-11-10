@@ -13,7 +13,7 @@ import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { i18nTime } from '@affine/i18n';
 import type { Workspace } from '@blocksuite/affine/store';
 import { useService } from '@toeverything/infra';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import {
   applyUpdate,
@@ -293,8 +293,10 @@ export function revertUpdate(
 
 export const useRestorePage = (docCollection: Workspace, pageId: string) => {
   const page = useDocCollectionPage(docCollection, pageId);
+  const workspaceService = useService(WorkspaceService);
   const mutateQueryResource = useMutateQueryResource();
-  const { trigger: recover, isMutating } = useMutation({
+  const [isMutating, setIsMutating] = useState(false);
+  const { trigger: recover } = useMutation({
     mutation: recoverDocMutation,
   });
   const { getDocMeta, setDocTitle } = useDocMetaHelper();
@@ -305,33 +307,44 @@ export const useRestorePage = (docCollection: Workspace, pageId: string) => {
         return;
       }
       const pageDocId = page.spaceDoc.guid;
-      revertUpdate(page.spaceDoc, update, key => {
-        if (key !== 'blocks') {
-          throw new Error('Only expect this value is "blocks"');
+      const before = encodeStateAsUpdate(page.spaceDoc);
+      const prepared = new YDoc();
+      setIsMutating(true);
+      try {
+        applyUpdate(prepared, before);
+        const beforeState = encodeStateVector(prepared);
+        revertUpdate(prepared, update, key => {
+          if (key !== 'blocks') {
+            throw new Error('Only expect this value is "blocks"');
+          }
+          return 'Map';
+        });
+
+        const compensation = encodeStateAsUpdate(prepared, beforeState);
+        await workspaceService.workspace.engine.doc.waitForSynced(pageDocId);
+        await recover({
+          docId: pageDocId,
+          timestamp: version,
+          workspaceId: docCollection.id,
+        });
+        applyUpdate(page.spaceDoc, compensation);
+        const title = page.meta?.title ?? '';
+        if (getDocMeta(pageId)?.title !== title) {
+          setDocTitle(pageId, title);
         }
-        return 'Map';
-      });
 
-      // should also update the page title, since it may be changed in the history
-      const title = page.meta?.title ?? '';
+        await mutateQueryResource(listHistoryQuery, vars => {
+          return (
+            vars.pageDocId === pageDocId &&
+            vars.workspaceId === docCollection.id
+          );
+        });
 
-      if (getDocMeta(pageId)?.title !== title) {
-        setDocTitle(pageId, title);
+        logger.info('Page restored', pageDocId, version);
+      } finally {
+        prepared.destroy();
+        setIsMutating(false);
       }
-
-      await recover({
-        docId: pageDocId,
-        timestamp: version,
-        workspaceId: docCollection.id,
-      });
-
-      await mutateQueryResource(listHistoryQuery, vars => {
-        return (
-          vars.pageDocId === pageDocId && vars.workspaceId === docCollection.id
-        );
-      });
-
-      logger.info('Page restored', pageDocId, version);
     };
   }, [
     getDocMeta,
@@ -341,6 +354,7 @@ export const useRestorePage = (docCollection: Workspace, pageId: string) => {
     recover,
     setDocTitle,
     docCollection.id,
+    workspaceService,
   ]);
 
   return {

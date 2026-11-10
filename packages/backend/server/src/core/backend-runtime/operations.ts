@@ -1,4 +1,17 @@
-import { AccessDenied, BadRequest, NotFound } from '../../base/error';
+import { Logger } from '@nestjs/common';
+
+import {
+  AccessDenied,
+  BadRequest,
+  DocLifecycleRequiresCommand,
+  DocRootSourceInvalid,
+  DocSourceIncomplete,
+  DocUpdateInvalid,
+  DocUpdateTooLarge,
+  DocValidationUnavailable,
+  NotFound,
+  UserFriendlyError,
+} from '../../base/error';
 import { wrapCallMetric } from '../../base/metrics';
 import type {
   RuntimeUserQuotaState,
@@ -24,6 +37,18 @@ import {
 
 const runtimeErrorPattern = /\[affine-runtime:([a-z0-9_]+)\]\s*/;
 
+const documentErrors: Record<
+  string,
+  (new () => UserFriendlyError) | undefined
+> = {
+  doc_source_incomplete: DocSourceIncomplete,
+  doc_root_source_invalid: DocRootSourceInvalid,
+  doc_lifecycle_requires_command: DocLifecycleRequiresCommand,
+  doc_update_invalid: DocUpdateInvalid,
+  doc_update_too_large: DocUpdateTooLarge,
+  doc_validation_unavailable: DocValidationUnavailable,
+};
+
 export class BackendRuntimeError extends Error {
   constructor(
     readonly code: string,
@@ -40,6 +65,9 @@ export function backendRuntimeErrorCode(error: unknown) {
 }
 
 export class BackendRuntimeCoreOperations {
+  private readonly operationLogger = new Logger(
+    BackendRuntimeCoreOperations.name
+  );
   constructor(protected readonly runtime: RuntimeInstance) {}
 
   stripeEnabled() {
@@ -255,8 +283,10 @@ export class BackendRuntimeCoreOperations {
     permissionDocId?: string;
     expectedPermissionGeneration?: number;
   }): Promise<number> {
-    return await this.measured('appendWorkspaceDocUpdatesV1', runtime =>
-      runtime.appendWorkspaceDocUpdatesV1(input)
+    return await this.measured(
+      'appendWorkspaceDocUpdatesV1',
+      runtime => runtime.appendWorkspaceDocUpdatesV1(input),
+      { workspaceId: input.workspaceId, docId: input.docId }
     );
   }
 
@@ -268,6 +298,20 @@ export class BackendRuntimeCoreOperations {
   }): Promise<number> {
     return await this.measured('appendWorkspaceDocUpdatesTrustedV1', runtime =>
       runtime.appendWorkspaceDocUpdatesTrustedV1(input)
+    );
+  }
+
+  workspaceRootMaintenanceV1(input: Record<string, unknown>) {
+    return this.measured('workspaceRootMaintenanceV1', runtime =>
+      runtime.workspaceRootMaintenanceV1(input)
+    );
+  }
+
+  getCurrentWorkspaceRootV1(workspaceId: string) {
+    return this.measured(
+      'getCurrentWorkspaceRootV1',
+      runtime => runtime.getCurrentWorkspaceRootV1(workspaceId),
+      { workspaceId, docId: workspaceId }
     );
   }
 
@@ -593,7 +637,8 @@ export class BackendRuntimeCoreOperations {
 
   protected async measured<T>(
     method: string,
-    fn: (runtime: RuntimeInstance) => Promise<T>
+    fn: (runtime: RuntimeInstance) => Promise<T>,
+    context?: { workspaceId: string; docId?: string; sourceRevision?: string }
   ): Promise<T> {
     try {
       return await wrapCallMetric(
@@ -606,7 +651,31 @@ export class BackendRuntimeCoreOperations {
       const message = error instanceof Error ? error.message : String(error);
       const match = runtimeErrorPattern.exec(message);
       if (!match) throw error;
+      const DocumentError = documentErrors[match[1]];
+      if (DocumentError) {
+        if (match[1] === 'doc_root_source_invalid' && context) {
+          try {
+            await this.runtime.workspaceRootMaintenanceV1({
+              command: 'register',
+              workspaceId: context.workspaceId,
+            });
+          } catch (observationError) {
+            this.operationLogger.error(
+              'Could not record workspace root source observation',
+              observationError
+            );
+          }
+        }
+        const mapped = new DocumentError();
+        mapped.cause = error;
+        mapped.data = context;
+        throw mapped;
+      }
       switch (match[1]) {
+        case 'doc_is_workspace':
+          throw new BadRequest(
+            'Workspace indexes cannot be restored through document history.'
+          );
         case 'blob_source_access_denied':
           throw new AccessDenied('Blob source access denied');
         case 'blob_source_not_found':

@@ -33,6 +33,7 @@ export class DocJobRunner {
   @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
   async run() {
     await Promise.allSettled([
+      this.runtime.workspaceRootMaintenanceV1({ command: 'tick' }),
       this.compactPendingDocUpdates(),
       this.syncEmbeddingDocuments(),
       this.recordPendingDocUpdatesCount(),

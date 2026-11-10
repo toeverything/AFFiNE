@@ -2,7 +2,10 @@ use chrono::{DateTime, Duration, Utc};
 use napi::bindgen_prelude::Buffer;
 use sqlx::{Postgres, Row, Transaction};
 
-use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, types::RuntimeDocHistoryInput};
+use super::{
+  BackendRuntime, RuntimeError, RuntimeResult, load_current_doc_parts_in, lock_current_doc_read,
+  merge_current_doc_updates, napi_error, types::RuntimeDocHistoryInput,
+};
 
 fn is_empty_doc(bin: &[u8]) -> bool {
   bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
@@ -30,8 +33,39 @@ async fn latest_history_timestamp(
   .map_err(|err| RuntimeError::database("DocStorage load latest history failed", err))
 }
 
+#[napi_derive::napi(object)]
+pub struct RuntimeDocRootRecord {
+  pub bin: Buffer,
+  pub timestamp: i64,
+}
+
 #[napi_derive::napi]
 impl BackendRuntime {
+  #[napi]
+  pub async fn get_current_workspace_root_v1(
+    &self,
+    workspace_id: String,
+  ) -> napi::Result<Option<RuntimeDocRootRecord>> {
+    let pool = self.pool().await?;
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin root read", error))?;
+    lock_current_doc_read(&mut transaction, &workspace_id, &workspace_id).await?;
+    let (snapshot, updates) = load_current_doc_parts_in(&mut transaction, &workspace_id, &workspace_id).await?;
+    let result = merge_current_doc_updates(snapshot, updates)
+      .map_err(|_| RuntimeError::invalid_state("doc_root_source_invalid"))?
+      .map(|root| RuntimeDocRootRecord {
+        bin: root.blob.into(),
+        timestamp: root.updated_at.timestamp_millis(),
+      });
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit root read", error))?;
+    Ok(result)
+  }
+
   #[napi]
   pub async fn upsert_doc_snapshot(
     &self,
@@ -41,6 +75,9 @@ impl BackendRuntime {
     timestamp_ms: i64,
     editor_id: Option<String>,
   ) -> napi::Result<bool> {
+    if workspace_id == doc_id {
+      return Err(napi_error("doc_is_workspace"));
+    }
     if is_empty_doc(blob.as_ref()) {
       return Ok(false);
     }
@@ -116,13 +153,6 @@ impl BackendRuntime {
       .map_err(|err| RuntimeError::database("DocStorage begin history transaction failed", err))?;
     super::domain_command::lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
     super::domain_command::lock_workspace_doc_update(&mut transaction, &input.workspace_id, &input.doc_id).await?;
-    super::domain_command::invalidate_doc_blob_projection(
-      &mut transaction,
-      &input.workspace_id,
-      &input.doc_id,
-      self.embedding_schema_ready()?,
-    )
-    .await?;
     let should_create = match latest_history_timestamp(&mut transaction, &input.workspace_id, &input.doc_id).await? {
       None => true,
       Some(last_timestamp) if last_timestamp == timestamp => false,
@@ -192,16 +222,30 @@ mod tests {
           timestamp,
           None
         )
+        .await
+        .is_err()
+    );
+    let doc_id = "snapshot-doc".to_string();
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          doc_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None
+        )
         .await?
     );
     for delta in [-1, 0, 1] {
       sqlx::query(
         "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,source_revision,parser_version,status,indexed_at) \
-         VALUES($1,$1,to_timestamp($2::bigint::double precision/1000),1,'fresh',now()) ON \
+         VALUES($1,$3,to_timestamp($2::bigint::double precision/1000),1,'fresh',now()) ON \
          CONFLICT(workspace_id,doc_id) DO UPDATE SET status='fresh',indexed_at=now()",
       )
       .bind(&workspace_id)
       .bind(timestamp)
+      .bind(&doc_id)
       .execute(&pool)
       .await?;
       sqlx::query(
@@ -214,7 +258,7 @@ mod tests {
       let accepted = runtime
         .upsert_doc_snapshot(
           workspace_id.clone(),
-          workspace_id.clone(),
+          doc_id.clone(),
           blob.clone().into(),
           timestamp + delta,
           None,
@@ -222,8 +266,9 @@ mod tests {
         .await?;
       assert_eq!(accepted, delta >= 0);
       let status: String =
-        sqlx::query_scalar("SELECT status FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$1")
+        sqlx::query_scalar("SELECT status FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$2")
           .bind(&workspace_id)
+          .bind(&doc_id)
           .fetch_one(&pool)
           .await?;
       assert_eq!(status, if accepted { "pending" } else { "fresh" });
@@ -231,7 +276,7 @@ mod tests {
         .bind(&workspace_id)
         .fetch_one(&pool)
         .await?;
-      assert_eq!(checked_at.timestamp_millis(), if accepted { 0 } else { timestamp });
+      assert_eq!(checked_at.timestamp_millis(), timestamp);
     }
     sqlx::query("DELETE FROM doc_blob_ref_projections WHERE workspace_id=$1")
       .bind(&workspace_id)

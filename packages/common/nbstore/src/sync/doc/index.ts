@@ -27,6 +27,7 @@ export interface DocSyncState {
   synced: boolean;
   retrying: boolean;
   errorMessage: string | null;
+  error?: { docId: string; name: string; data?: unknown };
 }
 
 export interface DocSyncDocState {
@@ -90,6 +91,7 @@ export class DocSyncImpl implements DocSync {
             retrying: allPeers.some(peer => peer.retrying),
             errorMessage:
               allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
+            error: allPeers.find(peer => peer.error)?.error,
           }
     ),
     share({

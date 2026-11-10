@@ -2,7 +2,8 @@ use sqlx::{PgPool, Row};
 
 use super::{
   DOCUMENT_PROJECTION_FAILED, ProjectionExpectation, RECONCILE_BATCH, WorkspacePhase, WorkspaceReconcileContext,
-  WorkspaceStep, project_current_doc, provider_projection_matches, renew_workspace_lease, upsert_document,
+  WorkspaceStep, load_root, lock_current_doc_read, provider_projection_matches, renew_workspace_lease,
+  require_complete_root, upsert_document,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -44,25 +45,40 @@ impl RootReconcilePhase {
 }
 
 pub(super) async fn load_root_document_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  project_current_doc(pool, workspace_id, workspace_id, |root| {
-    let projection = affine_doc_loader::project_workspace_root(root.blob, false)
-      .map_err(|error| RuntimeError::SearchSourceInvalid(format!("workspace root projection failed: {error}")))?;
-    if !projection.complete {
-      return Err(RuntimeError::SearchSourceInvalid(
-        "workspace root projection is incomplete".to_string(),
-      ));
+  let mut transaction = pool
+    .begin()
+    .await
+    .map_err(|error| RuntimeError::database("begin search root read", error))?;
+  lock_current_doc_read(&mut transaction, workspace_id, workspace_id).await?;
+  let ids = root_document_ids(&mut transaction, workspace_id).await?;
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("commit search root read", error))?;
+  Ok(ids)
+}
+
+async fn root_document_ids(connection: &mut sqlx::PgConnection, workspace_id: &str) -> RuntimeResult<Vec<String>> {
+  let root = load_root(connection, workspace_id).await.map_err(|error| match error {
+    RuntimeError::InvalidState(reason) if reason == "doc_root_source_invalid" => {
+      RuntimeError::SearchSourceInvalid(reason)
     }
-    let mut doc_ids = projection.doc_ids;
-    doc_ids.sort();
-    doc_ids.dedup();
-    Ok(doc_ids)
-  })
-  .await?
-  .ok_or_else(|| RuntimeError::SearchSourceInvalid("workspace root doc is missing".to_string()))
+    error => error,
+  })?;
+  if !root.exists {
+    return Err(RuntimeError::SearchSourceInvalid(
+      "workspace root doc is missing".into(),
+    ));
+  }
+  let mut ids = require_complete_root(&root.doc)
+    .map_err(|error| RuntimeError::SearchSourceInvalid(error.to_string()))?
+    .active_doc_ids;
+  ids.sort();
+  Ok(ids)
 }
 
 async fn converge_document_membership(
-  pool: &PgPool,
+  connection: &mut sqlx::PgConnection,
   generation_id: uuid::Uuid,
   workspace_id: &str,
   doc_id: &str,
@@ -112,7 +128,7 @@ async fn converge_document_membership(
     .bind(generation_id)
     .bind(workspace_id)
     .bind(doc_id)
-    .fetch_one(pool)
+    .fetch_one(&mut *connection)
     .await
     .map_err(|error| RuntimeError::database("converge live search document membership", error))?;
     return decode_target(row);
@@ -135,7 +151,7 @@ async fn converge_document_membership(
   .bind(generation_id)
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_one(pool)
+  .fetch_one(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("converge removed search document membership", error))?;
   decode_target(row)
@@ -161,40 +177,54 @@ fn decode_target(row: sqlx::postgres::PgRow) -> RuntimeResult<DocumentTarget> {
 
 pub(super) async fn reconcile_root_documents(
   context: &WorkspaceReconcileContext<'_>,
-  root_document_ids: &[String],
   permission_version: i64,
   after_doc_id: Option<String>,
   phase: RootReconcilePhase,
 ) -> RuntimeResult<WorkspaceStep> {
+  let mut transaction = context
+    .pool
+    .begin()
+    .await
+    .map_err(|error| RuntimeError::database("begin root membership reconciliation", error))?;
+  lock_current_doc_read(&mut transaction, context.workspace_id, context.workspace_id).await?;
+  let root_document_ids = root_document_ids(&mut transaction, context.workspace_id).await?;
   let rows = sqlx::query(ROOT_DOCUMENT_BATCH_SQL)
     .bind(context.workspace_id)
     .bind(context.generation.id)
     .bind(&after_doc_id)
     .bind(RECONCILE_BATCH + 1)
-    .bind(root_document_ids)
-    .fetch_all(context.pool)
+    .bind(&root_document_ids)
+    .fetch_all(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("load canonical root search document batch", error))?;
   let complete = rows.len() <= RECONCILE_BATCH as usize;
   let mut after_doc_id = after_doc_id;
+  let mut targets = Vec::with_capacity(rows.len());
   for row in rows.into_iter().take(RECONCILE_BATCH as usize) {
     let doc_id: String = row
       .try_get("doc_id")
       .map_err(|error| RuntimeError::database("decode canonical root search document", error))?;
     let root_member: bool = row
       .try_get("root_member")
-      .map_err(|error| RuntimeError::database("decode canonical root document membership", error))?;
-    if !renew_workspace_lease(context.pool, context.generation.id, context.workspace_id, context.fence).await? {
-      return Ok(WorkspaceStep::Continue(phase.progress(after_doc_id)));
-    }
+      .map_err(|error| RuntimeError::database("decode canonical root membership", error))?;
     let target = converge_document_membership(
-      context.pool,
+      &mut transaction,
       context.generation.id,
       context.workspace_id,
       &doc_id,
       root_member,
     )
     .await?;
+    targets.push((doc_id, target));
+  }
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("commit root membership reconciliation", error))?;
+  for (doc_id, target) in targets {
+    if !renew_workspace_lease(context.pool, context.generation.id, context.workspace_id, context.fence).await? {
+      return Ok(WorkspaceStep::Continue(phase.progress(after_doc_id)));
+    }
     if target.failed {
       after_doc_id = Some(doc_id);
       continue;

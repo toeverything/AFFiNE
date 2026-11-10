@@ -316,7 +316,7 @@ mod tests {
   use super::{super::claim_projection, *};
 
   #[tokio::test]
-  async fn leases_fence_stale_commits_and_gc_old_tokens_and_indexes() {
+  async fn source_reconciliation_fences_leases_and_gc_preserves_current_facts() {
     let Ok(database_url) = std::env::var("DATABASE_URL") else {
       return;
     };
@@ -617,6 +617,130 @@ mod tests {
     let repaired_claim = claim_projection(&pool, "repaired-worker").await.unwrap().unwrap();
     assert_eq!(repaired_claim.content_revision, "content-4");
     assert_eq!(repaired_claim.source_id, source_id);
+
+    let root_base = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "doc", None).unwrap();
+    let mut root = y_octo::Doc::default();
+    root.apply_update_from_binary_v1(&root_base).unwrap();
+    let mut meta = root.get_map("meta").unwrap();
+    meta.insert("name".into(), "before").unwrap();
+    let prefix = root.encode_update_v1().unwrap();
+    let prefix_state = root.get_state_vector();
+    meta.insert("name".into(), "after").unwrap();
+    let partial = root.encode_state_as_update_v1(&prefix_state).unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
+      .bind(&workspace_id)
+      .bind(&partial)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$1,$2,now())")
+      .bind(&workspace_id)
+      .bind(&prefix)
+      .execute(&pool)
+      .await
+      .unwrap();
+    super::super::source::reconcile_documents(&pool, &workspace_id)
+      .await
+      .unwrap();
+    assert!(
+      !sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    sqlx::query("DELETE FROM updates WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let invalid_shape = y_octo::Doc::default();
+    invalid_shape
+      .get_or_create_map("meta")
+      .unwrap()
+      .insert("pages".into(), "invalid")
+      .unwrap();
+    for blob in [partial, invalid_shape.encode_update_v1().unwrap(), vec![0xff]] {
+      sqlx::query("UPDATE snapshots SET blob=$2,updated_at=clock_timestamp() WHERE workspace_id=$1 AND guid=$1")
+        .bind(&workspace_id)
+        .bind(blob)
+        .execute(&pool)
+        .await
+        .unwrap();
+      assert!(
+        super::super::source::reconcile_documents(&pool, &workspace_id)
+          .await
+          .is_err()
+      );
+      assert!(
+        !sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+          .bind(source_id)
+          .fetch_one(&pool)
+          .await
+          .unwrap()
+      );
+    }
+    let empty = y_octo::Doc::default();
+    empty
+      .get_or_create_map("meta")
+      .unwrap()
+      .insert("pages".into(), y_octo::Value::Array(empty.create_array().unwrap()))
+      .unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$2,updated_at=clock_timestamp() WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(empty.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    let mut source_blocker = pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM embedding_sources WHERE id=$1 FOR UPDATE")
+      .bind(source_id)
+      .execute(&mut *source_blocker)
+      .await
+      .unwrap();
+    let source_pool = pool.clone();
+    let source_workspace = workspace_id.clone();
+    let reconcile =
+      tokio::spawn(async move { super::super::source::reconcile_documents(&source_pool, &source_workspace).await });
+    tokio::time::timeout(std::time::Duration::from_secs(4), async {
+      loop {
+        let blocked: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' \
+           AND query LIKE '%UPDATE embedding_sources SET deleted_at=now()%')",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if blocked {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("reconciliation must reach the source mutation while holding its root lock");
+    let mut root_writer = pool.begin().await.unwrap();
+    assert!(
+      !super::super::super::try_lock_current_doc_read(&mut root_writer, &workspace_id, &workspace_id)
+        .await
+        .unwrap(),
+      "root mutation must wait until the captured membership is committed"
+    );
+    root_writer.rollback().await.unwrap();
+    source_blocker.commit().await.unwrap();
+    reconcile.await.unwrap().unwrap();
+    assert!(
+      sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
     sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id=$1")
       .bind(&workspace_id)

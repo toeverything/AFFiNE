@@ -37,5 +37,6 @@ use workspace_state::{
 
 use super::{
   ActiveGeneration, DOCUMENT_PROJECTION_FAILED, ProjectionInput, SearchChange, SearchProvider, SearchTable,
-  WORKSPACE_RECONCILE_FAILED, project_current_doc, project_document, projection_external_id, provider_payload,
+  WORKSPACE_RECONCILE_FAILED, load_root, lock_current_doc_read, project_document, projection_external_id,
+  provider_payload, require_complete_root,
 };

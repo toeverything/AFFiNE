@@ -545,6 +545,31 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ docId, action }) =>
       `You do not have permission to perform ${action} action on doc ${docId}.`,
   },
+  doc_source_incomplete: {
+    type: 'invalid_input',
+    message: 'The document is missing updates. Local changes are preserved.',
+  },
+  doc_root_source_invalid: {
+    type: 'invalid_input',
+    message:
+      'The workspace index needs attention. Local data is preserved; existing documents can continue syncing.',
+  },
+  doc_lifecycle_requires_command: {
+    type: 'action_forbidden',
+    message: 'Use the document action to trash, restore, or delete a document.',
+  },
+  doc_update_invalid: {
+    type: 'invalid_input',
+    message: 'The document update is invalid.',
+  },
+  doc_update_too_large: {
+    type: 'invalid_input',
+    message: 'The document update exceeds the size limit.',
+  },
+  doc_validation_unavailable: {
+    type: 'service_unavailable',
+    message: 'Document validation is temporarily unavailable.',
+  },
   doc_update_blocked: {
     type: 'action_forbidden',
     args: { spaceId: 'string', docId: 'string' },

@@ -1,11 +1,10 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult, extraction_file_name};
-use crate::runtime::{
-  storage_runtime::load_current_doc,
-  types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact},
+use super::{
+  RuntimeError, RuntimeResult, extraction_file_name, load_root, lock_current_doc_read, require_complete_root,
 };
+use crate::runtime::types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact};
 
 const DOCUMENT_RECIPE: &str = "document-projection-v1";
 const ARTIFACT_RECIPE: &str = "artifact-extraction-v1";
@@ -17,15 +16,15 @@ pub(super) async fn sync_documents(
   reconcile: bool,
   priority: i32,
 ) -> RuntimeResult<()> {
-  let live_doc_ids = if reconcile {
-    Some(load_live_doc_ids(pool, workspace_id).await?)
-  } else {
-    None
-  };
   let mut transaction = pool
     .begin()
     .await
     .map_err(|error| RuntimeError::database("sync document sources transaction failed", error))?;
+  let live_doc_ids = if reconcile {
+    Some(load_live_doc_ids(&mut transaction, workspace_id).await?)
+  } else {
+    None
+  };
   for document in documents {
     if document.deleted.unwrap_or(false) {
       sqlx::query(
@@ -127,11 +126,11 @@ pub(super) async fn document_readiness(
 }
 
 pub(super) async fn reconcile_documents(pool: &PgPool, workspace_id: &str) -> RuntimeResult<()> {
-  let live_doc_ids = load_live_doc_ids(pool, workspace_id).await?;
   let mut transaction = pool
     .begin()
     .await
     .map_err(|error| RuntimeError::database("reconcile document sources transaction failed", error))?;
+  let live_doc_ids = load_live_doc_ids(&mut transaction, workspace_id).await?;
   reconcile_document_sources(&mut transaction, workspace_id, &live_doc_ids).await?;
   transaction
     .commit()
@@ -140,16 +139,16 @@ pub(super) async fn reconcile_documents(pool: &PgPool, workspace_id: &str) -> Ru
   Ok(())
 }
 
-async fn load_live_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let root = load_current_doc(pool, workspace_id, workspace_id)
-    .await?
-    .ok_or_else(|| RuntimeError::invalid_state("workspace root doc is missing"))?;
-  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
-    .map_err(|error| RuntimeError::invalid_state(format!("workspace root projection failed: {error}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::invalid_state("workspace root projection is incomplete"));
+async fn load_live_doc_ids(
+  connection: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  workspace_id: &str,
+) -> RuntimeResult<Vec<String>> {
+  lock_current_doc_read(connection, workspace_id, workspace_id).await?;
+  let root = load_root(connection, workspace_id).await?;
+  if !root.exists {
+    return Err(RuntimeError::invalid_state("doc_root_source_invalid"));
   }
-  Ok(projection.doc_ids)
+  Ok(require_complete_root(&root.doc)?.doc_ids)
 }
 
 async fn reconcile_document_sources(

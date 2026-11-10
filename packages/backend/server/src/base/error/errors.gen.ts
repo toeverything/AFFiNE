@@ -458,6 +458,42 @@ export class DocActionDenied extends UserFriendlyError {
     super('no_permission', 'doc_action_denied', message, args);
   }
 }
+
+export class DocSourceIncomplete extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_source_incomplete', message);
+  }
+}
+
+export class DocRootSourceInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_root_source_invalid', message);
+  }
+}
+
+export class DocLifecycleRequiresCommand extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'doc_lifecycle_requires_command', message);
+  }
+}
+
+export class DocUpdateInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_update_invalid', message);
+  }
+}
+
+export class DocUpdateTooLarge extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_update_too_large', message);
+  }
+}
+
+export class DocValidationUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('service_unavailable', 'doc_validation_unavailable', message);
+  }
+}
 @ObjectType()
 class DocUpdateBlockedDataType {
   @Field() spaceId!: string
@@ -1293,6 +1329,12 @@ export enum ErrorNames {
   CAN_NOT_REVOKE_YOURSELF,
   DOC_NOT_FOUND,
   DOC_ACTION_DENIED,
+  DOC_SOURCE_INCOMPLETE,
+  DOC_ROOT_SOURCE_INVALID,
+  DOC_LIFECYCLE_REQUIRES_COMMAND,
+  DOC_UPDATE_INVALID,
+  DOC_UPDATE_TOO_LARGE,
+  DOC_VALIDATION_UNAVAILABLE,
   DOC_UPDATE_BLOCKED,
   VERSION_REJECTED,
   INVALID_HISTORY_TIMESTAMP,

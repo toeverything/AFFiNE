@@ -6,18 +6,24 @@ use super::{RuntimeError, RuntimeResult};
 
 const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 
+pub(super) async fn try_lock_workspace_storage_shared_transaction(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+) -> RuntimeResult<bool> {
+  sqlx::query_scalar("SELECT pg_try_advisory_xact_lock_shared(hashtextextended($1, 0))")
+    .bind(format!("storage-workspace:{workspace_id}"))
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|error| RuntimeError::database("lock workspace storage source", error))
+}
+
 pub(super) async fn lock_workspace_storage_shared_transaction(
   transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
 ) -> RuntimeResult<()> {
-  let key = format!("storage-workspace:{workspace_id}");
   tokio::time::timeout(LOCK_TIMEOUT, async {
     loop {
-      let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock_shared(hashtextextended($1, 0))")
-        .bind(&key)
-        .fetch_one(&mut **transaction)
-        .await
-        .map_err(|error| RuntimeError::database("lock workspace storage source", error))?;
+      let locked = try_lock_workspace_storage_shared_transaction(transaction, workspace_id).await?;
       if locked {
         return Ok(());
       }

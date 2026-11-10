@@ -34,6 +34,9 @@ extern crate napi_derive;
 
 /// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
 /// result binary.
+///
+/// Do not use this for snapshots that will be sent back to yjs clients until
+/// the y-octo/yjs round-trip compatibility issue is resolved.
 #[napi(catch_unwind)]
 pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
   let mut doc = Doc::default();
