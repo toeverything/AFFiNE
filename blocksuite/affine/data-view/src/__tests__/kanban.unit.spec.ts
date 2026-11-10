@@ -243,6 +243,7 @@ const createGroupTraitHarness = (options?: {
   }>;
   rowIds?: string[];
   values?: Record<string, boolean>;
+  readonly?: boolean;
 }) => {
   const dataSource = createMockDataSource([
     {
@@ -310,7 +311,9 @@ const createGroupTraitHarness = (options?: {
   };
 
   const isLocked$ = signal(false);
+  const readonly$ = signal(options?.readonly ?? false);
   const view = {
+    readonly$,
     data$,
     rows$: signal(rows.map(createTestRow)),
     isLocked$,
@@ -371,6 +374,7 @@ const createSelectGroupTraitHarness = (options?: {
   allRowIds?: string[];
   values?: Record<string, unknown>;
   multiSelect?: boolean;
+  readonly?: boolean;
 }) => {
   const selectOptions = options?.options ?? [
     { id: 'opt-1', value: 'Todo', color: '#ff0000' },
@@ -458,7 +462,9 @@ const createSelectGroupTraitHarness = (options?: {
   };
 
   const isLocked$ = signal(false);
+  const readonly$ = signal(options?.readonly ?? false);
   const view = {
+    readonly$,
     data$,
     rows$: signal(rows.map(createTestRow)),
     isLocked$,
@@ -662,6 +668,25 @@ describe('kanban', () => {
       expect(view.data$.value.groupProperties.map(g => g.key)).toEqual([
         'opt-2',
       ]);
+    });
+
+    it('does not allow deleting a group when view is readonly', () => {
+      const { groupTrait, cells } = createSelectGroupTraitHarness({
+        readonly: true,
+        rowIds: ['row-1'],
+        values: {
+          'row-1': 'opt-1',
+        },
+      });
+
+      const opt1Group = groupTrait.groupsDataList$.value?.find(
+        g => g.key === 'opt-1'
+      );
+      expect(opt1Group).toBeDefined();
+      expect(groupTrait.canDeleteGroup(opt1Group!)).toBe(false);
+
+      groupTrait.deleteGroupByKey(opt1Group!);
+      expect(cells.get('row-1:status')?.valueSet).not.toHaveBeenCalled();
     });
   });
 
@@ -1043,6 +1068,52 @@ describe('kanban', () => {
       };
 
       KanbanSingleView.prototype['materializeGroupBy'].call(view);
+
+      expect(dataUpdate).not.toHaveBeenCalled();
+    });
+
+    it('does not persist fallback groupBy in microtask if view became readonly before it runs', async () => {
+      const dataSource = createMockDataSource([
+        { id: 'text', type: textPropertyModelConfig.type },
+        { id: 'select', type: selectPropertyModelConfig.type },
+      ]);
+      const dataUpdate = vi.fn();
+      const readonly$ = signal(false);
+      const data$ = signal({
+        groupBy: {
+          type: 'groupBy' as const,
+          columnId: 'text',
+          name: 'text',
+        },
+      });
+
+      const groupBy = data$.value?.groupBy;
+      const isReadonly = readonly$.value;
+      if (
+        groupBy?.columnId &&
+        !canGroupable(asDataSource(dataSource), groupBy.columnId)
+      ) {
+        const fallback = resolveKanbanGroupBy(
+          asDataSource(dataSource),
+          groupBy,
+          isReadonly
+        );
+        if (!isReadonly && fallback && fallback.columnId !== groupBy.columnId) {
+          queueMicrotask(() => {
+            const current = data$.value?.groupBy;
+            if (
+              !readonly$.value &&
+              current?.columnId === groupBy.columnId &&
+              !canGroupable(asDataSource(dataSource), current.columnId)
+            ) {
+              dataUpdate(() => ({ groupBy: fallback }));
+            }
+          });
+        }
+      }
+
+      readonly$.value = true;
+      await new Promise<void>(resolve => queueMicrotask(() => resolve()));
 
       expect(dataUpdate).not.toHaveBeenCalled();
     });

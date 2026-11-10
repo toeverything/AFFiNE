@@ -138,6 +138,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
         queueMicrotask(() => {
           const current = this.data$.value?.groupBy;
           if (
+            !this.readonly$.value &&
             current?.columnId === groupBy.columnId &&
             !canGroupable(this.dataSource, current.columnId)
           ) {

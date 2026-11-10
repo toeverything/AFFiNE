@@ -438,7 +438,7 @@ export class GroupTrait {
   }
 
   canDeleteGroup(group: Group): boolean {
-    if (group.value == null) {
+    if (this.view.readonly$.value || group.value == null) {
       return false;
     }
     return !!this.deleteGroup;
@@ -463,7 +463,11 @@ export class GroupTrait {
         (g: GroupProperty) => g.key !== group.key
       );
       if (nextGroupProperties.length !== groupProperties.length) {
-        this.view.dataUpdate(() => ({
+        (
+          this.view as {
+            dataUpdate?: (updater: (data: unknown) => unknown) => void;
+          }
+        ).dataUpdate?.(() => ({
           groupProperties: nextGroupProperties,
         }));
       }
