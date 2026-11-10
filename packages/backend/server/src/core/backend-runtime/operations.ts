@@ -54,6 +54,10 @@ export class BackendRuntimeCoreOperations {
     return this.runtime.copilotEnabled();
   }
 
+  getCopilotRouteOptions(promptName: string) {
+    return this.runtime.getCopilotRouteOptions(promptName);
+  }
+
   nodeCryptoPrivateKey() {
     return this.runtime.nodeCryptoPrivateKey();
   }

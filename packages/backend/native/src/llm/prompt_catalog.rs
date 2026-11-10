@@ -8,6 +8,11 @@ use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
+mod managed;
+use managed::{BuiltInManagedRouteSpec, resolve_managed_models, valid_managed_route};
+pub(crate) use managed::{BuiltInManagedTargetSpec, ManagedTarget, llm_get_built_in_route_options, managed_model};
+pub use managed::{BuiltInManagedTargetTier, BuiltInRouteOptions};
+
 static PROMPT_PARTIALS_SOURCE: &str = include_str!("assets/partials/common.json");
 static PROMPT_SPECS_SOURCE: &str = include_str!("assets/prompts/built-in.json");
 
@@ -78,52 +83,6 @@ struct PromptCatalogSpec {
   messages: Vec<PromptSpecMessage>,
 }
 
-#[derive(Clone, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct BuiltInManagedRouteSpec {
-  targets: Vec<String>,
-  #[serde(default)]
-  premium_targets: Option<Vec<String>>,
-  #[serde(default)]
-  selectable_targets: Vec<BuiltInManagedTargetSpec>,
-}
-
-#[derive(Clone, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct BuiltInManagedTargetSpec {
-  id: String,
-  model_id: String,
-  display_name: String,
-  minimum_tier: BuiltInManagedTargetTier,
-}
-
-#[napi(string_enum)]
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum BuiltInManagedTargetTier {
-  Standard,
-  Premium,
-}
-
-#[napi(object)]
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BuiltInManagedTarget {
-  pub id: String,
-  pub display_name: String,
-  pub minimum_tier: BuiltInManagedTargetTier,
-}
-
-#[napi(object)]
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BuiltInRouteOptions {
-  pub route_id: String,
-  pub standard_default_target_id: Option<String>,
-  pub premium_default_target_id: Option<String>,
-  pub choices: Vec<BuiltInManagedTarget>,
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BuiltInPromptMessage {
@@ -139,21 +98,15 @@ pub(crate) struct BuiltInPrompt {
   pub(crate) name: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) action: Option<String>,
-  pub(crate) managed_targets: Vec<String>,
-  pub(crate) managed_premium_targets: Option<Vec<String>>,
   #[serde(skip)]
-  pub(crate) managed_selectable_targets: Vec<BuiltInManagedTargetDefinition>,
+  pub(crate) managed_operations: Vec<llm_adapter::target::BackendOperation>,
+  pub(crate) managed_targets: Vec<ManagedTarget>,
+  pub(crate) managed_premium_targets: Option<Vec<ManagedTarget>>,
+  #[serde(skip)]
+  pub(crate) managed_selectable_targets: Vec<BuiltInManagedTargetSpec<ManagedTarget>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub(crate) config: Option<Value>,
   pub(crate) messages: Vec<BuiltInPromptMessage>,
-}
-
-#[derive(Clone)]
-pub(crate) struct BuiltInManagedTargetDefinition {
-  pub(crate) id: String,
-  pub(crate) model_id: String,
-  pub(crate) display_name: String,
-  pub(crate) minimum_tier: BuiltInManagedTargetTier,
 }
 
 struct PromptCatalog {
@@ -181,7 +134,31 @@ pub(crate) fn built_in_prompt(name: &str) -> Option<&'static BuiltInPrompt> {
     .and_then(|index| BUILTIN_PROMPT_CATALOG.prompts.get(*index))
 }
 
-pub(crate) fn built_in_managed_targets(name: &str, premium: bool) -> Option<&'static [String]> {
+pub(crate) fn built_in_managed_operations(name: &str) -> Option<&'static [llm_adapter::target::BackendOperation]> {
+  built_in_prompt(name).map(|prompt| prompt.managed_operations.as_slice())
+}
+
+pub(crate) fn built_in_managed_catalog() -> Vec<(ManagedTarget, llm_adapter::target::BackendOperation)> {
+  BUILTIN_PROMPT_CATALOG
+    .prompts
+    .iter()
+    .flat_map(|prompt| {
+      prompt
+        .managed_targets
+        .iter()
+        .chain(prompt.managed_premium_targets.iter().flatten())
+        .chain(prompt.managed_selectable_targets.iter().map(|choice| &choice.target))
+        .flat_map(|target| {
+          prompt
+            .managed_operations
+            .iter()
+            .map(move |operation| (target.clone(), *operation))
+        })
+    })
+    .collect()
+}
+
+pub(crate) fn built_in_managed_targets(name: &str, premium: bool) -> Option<&'static [ManagedTarget]> {
   built_in_prompt(name).and_then(|prompt| {
     let targets = if premium {
       prompt
@@ -199,48 +176,11 @@ pub(crate) fn built_in_managed_target(
   name: &str,
   target_id: &str,
   premium: bool,
-) -> Option<&'static BuiltInManagedTargetDefinition> {
+) -> Option<&'static BuiltInManagedTargetSpec<ManagedTarget>> {
   built_in_prompt(name)?
     .managed_selectable_targets
     .iter()
     .find(|target| target.id == target_id && (premium || target.minimum_tier == BuiltInManagedTargetTier::Standard))
-}
-
-#[napi(catch_unwind)]
-pub fn llm_get_built_in_route_options(name: String) -> Option<BuiltInRouteOptions> {
-  let prompt = built_in_prompt(&name)?;
-  if prompt.managed_selectable_targets.is_empty() {
-    return None;
-  }
-  let target_id_for_model = |model: Option<&String>| {
-    model.and_then(|model| {
-      prompt
-        .managed_selectable_targets
-        .iter()
-        .find(|target| &target.model_id == model)
-        .map(|target| target.id.clone())
-    })
-  };
-  Some(BuiltInRouteOptions {
-    route_id: prompt.name.clone(),
-    standard_default_target_id: target_id_for_model(prompt.managed_targets.first()),
-    premium_default_target_id: target_id_for_model(
-      prompt
-        .managed_premium_targets
-        .as_ref()
-        .and_then(|targets| targets.first())
-        .or_else(|| prompt.managed_targets.first()),
-    ),
-    choices: prompt
-      .managed_selectable_targets
-      .iter()
-      .map(|target| BuiltInManagedTarget {
-        id: target.id.clone(),
-        display_name: target.display_name.clone(),
-        minimum_tier: target.minimum_tier,
-      })
-      .collect(),
-  })
 }
 
 impl PromptCatalog {
@@ -338,15 +278,23 @@ fn compile_prompt_spec(spec: &PromptCatalogSpec, partials: &BTreeMap<String, Str
   Ok(BuiltInPrompt {
     name: spec.name.clone(),
     action: spec.action.clone(),
+    managed_operations: spec
+      .managed_route
+      .as_ref()
+      .map(|route| route.operations.iter().copied().map(Into::into).collect())
+      .unwrap_or_default(),
     managed_targets: spec
       .managed_route
       .as_ref()
-      .map(|route| route.targets.clone())
+      .map(|route| resolve_managed_models(&route.targets))
+      .transpose()?
       .unwrap_or_default(),
     managed_premium_targets: spec
       .managed_route
       .as_ref()
-      .and_then(|route| route.premium_targets.clone()),
+      .and_then(|route| route.premium_targets.as_deref())
+      .map(resolve_managed_models)
+      .transpose()?,
     managed_selectable_targets: spec
       .managed_route
       .as_ref()
@@ -354,53 +302,23 @@ fn compile_prompt_spec(spec: &PromptCatalogSpec, partials: &BTreeMap<String, Str
         route
           .selectable_targets
           .iter()
-          .map(|target| BuiltInManagedTargetDefinition {
-            id: target.id.clone(),
-            model_id: target.model_id.clone(),
-            display_name: target.display_name.clone(),
-            minimum_tier: target.minimum_tier,
+          .map(|choice| {
+            let target =
+              managed_model(&choice.target).ok_or_else(|| format!("Unknown managed model route: {}", choice.target))?;
+            Ok(BuiltInManagedTargetSpec {
+              id: choice.id.clone(),
+              target: target.clone(),
+              display_name: choice.display_name.clone(),
+              minimum_tier: choice.minimum_tier,
+            })
           })
-          .collect()
+          .collect::<Result<Vec<_>, String>>()
       })
+      .transpose()?
       .unwrap_or_default(),
     config: spec.config.clone().filter(|value| !value.is_null()),
     messages,
   })
-}
-
-fn valid_managed_route(route: &BuiltInManagedRouteSpec) -> bool {
-  if route.targets.is_empty()
-    || route.targets.iter().any(|target| target.trim().is_empty())
-    || route
-      .premium_targets
-      .as_ref()
-      .is_some_and(|targets| targets.is_empty() || targets.iter().any(|target| target.trim().is_empty()))
-  {
-    return false;
-  }
-  let ids = route
-    .selectable_targets
-    .iter()
-    .map(|target| target.id.as_str())
-    .collect::<BTreeSet<_>>();
-  let models = route
-    .selectable_targets
-    .iter()
-    .map(|target| target.model_id.as_str())
-    .collect::<BTreeSet<_>>();
-  if route.selectable_targets.iter().any(|target| {
-    target.id.trim().is_empty() || target.model_id.trim().is_empty() || target.display_name.trim().is_empty()
-  }) || ids.len() != route.selectable_targets.len()
-    || models.len() != route.selectable_targets.len()
-  {
-    return false;
-  }
-  route.selectable_targets.is_empty()
-    || route
-      .targets
-      .iter()
-      .chain(route.premium_targets.iter().flatten())
-      .all(|model| models.contains(model.as_str()))
 }
 
 fn normalize_prompt_param(spec: &PromptParamSpec) -> Value {
@@ -575,12 +493,21 @@ mod tests {
     assert!(chat_tools.iter().any(|tool| tool == "artifactSearch"));
     assert!(!chat_tools.iter().any(|tool| tool == "contextSearch"));
     assert!(!chat_tools.iter().any(|tool| tool == "blobRead"));
-    assert_eq!(chat.managed_targets, ["gpt-6-luna"]);
     assert_eq!(
-      chat
-        .managed_premium_targets
-        .as_deref()
-        .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
+      chat.managed_targets,
+      [ManagedTarget {
+        api_shapes: vec![
+          llm_adapter::backend::ApiShape::Responses,
+          llm_adapter::backend::ApiShape::ChatCompletions
+        ],
+        model_id: "gpt-6-luna".into()
+      }]
+    );
+    assert_eq!(
+      chat.managed_premium_targets.as_deref().map(|targets| targets
+        .iter()
+        .map(|target| target.model_id.as_str())
+        .collect::<Vec<_>>()),
       Some(vec!["gpt-6-luna"])
     );
     let options = llm_get_built_in_route_options(chat.name.clone()).expect("chat route options");
@@ -588,21 +515,30 @@ mod tests {
     assert_eq!(options.premium_default_target_id.as_deref(), Some("luna"));
     assert_eq!(options.choices.len(), 4);
     assert_eq!(
-      built_in_managed_target(&chat.name, "terra", false).map(|target| target.model_id.as_str()),
+      built_in_managed_target(&chat.name, "terra", false).map(|target| target.target.model_id.as_str()),
       None
     );
     assert_eq!(
-      built_in_managed_target(&chat.name, "terra", true).map(|target| target.model_id.as_str()),
+      built_in_managed_target(&chat.name, "terra", true).map(|target| target.target.model_id.as_str()),
       Some("gpt-6.1-terra")
     );
 
     let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
-    assert_eq!(transcript.managed_targets, ["gemini-3.5-flash-lite"]);
     assert_eq!(
-      transcript
-        .managed_premium_targets
-        .as_deref()
-        .map(|targets| targets.iter().map(String::as_str).collect::<Vec<_>>()),
+      transcript.managed_targets,
+      [ManagedTarget {
+        api_shapes: vec![
+          llm_adapter::backend::ApiShape::GeminiApi,
+          llm_adapter::backend::ApiShape::GeminiVertex
+        ],
+        model_id: "gemini-3.5-flash-lite".into()
+      }]
+    );
+    assert_eq!(
+      transcript.managed_premium_targets.as_deref().map(|targets| targets
+        .iter()
+        .map(|target| target.model_id.as_str())
+        .collect::<Vec<_>>()),
       Some(vec!["gemini-3.8-flash"])
     );
   }

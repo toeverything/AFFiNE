@@ -53,6 +53,7 @@ import {
 import { ActionStreamHost } from '../../plugins/copilot/runtime/hosts/action-stream-host';
 import { AttachmentAdmissionHost } from '../../plugins/copilot/runtime/hosts/attachment-admission';
 import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-result-host';
+import { mapNativeSemanticError } from '../../plugins/copilot/runtime/native-errors';
 import {
   collectAttachmentFootnotes,
   collectDocumentFootnotes,
@@ -1860,6 +1861,25 @@ test('controller projects successful streams and preparation failures to SSE eve
     ),
     { type: 'message', id: 'message-1', data: 'hello' }
   );
+  for (const message of [
+    'managed_target_unavailable',
+    '[affine-runtime:invalid_input] target_unavailable',
+  ]) {
+    orchestrator.streamText = async () => {
+      throw mapNativeSemanticError(new Error(message));
+    };
+    t.like(
+      await firstValueFrom(
+        await controller.chatStream(
+          { id: 'user-1' } as never,
+          request,
+          'session-1',
+          {}
+        )
+      ),
+      { type: 'error', data: { status: 400, name: 'COPILOT_PROMPT_INVALID' } }
+    );
+  }
   t.like(
     await firstValueFrom(
       await controller.actionStream(

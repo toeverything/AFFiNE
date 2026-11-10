@@ -16,9 +16,9 @@ pub(super) use affine_doc_loader::blob_refs::{BlobRefProjectionError, extract_bl
 pub(crate) use config::AuthRuntimeConfig;
 pub use config::{AppConfigDescriptor, app_config_descriptors, validate_app_config_value};
 pub(crate) use config::{
-  BackendRuntimeConfig, CopilotManagedProfileConfig, CopilotRuntimeConfig, Deployment, InviteQuotaConfig,
-  OAuthProviderRuntimeConfig, PaymentProductConfig, PaymentRuntimeConfig, RedisRuntimeConfig, RevenueCatRuntimeConfig,
-  SearchRuntimeConfig, StripeRuntimeConfig,
+  BackendRuntimeConfig, CopilotRuntimeConfig, Deployment, InviteQuotaConfig, OAuthProviderRuntimeConfig,
+  PaymentProductConfig, PaymentRuntimeConfig, RedisRuntimeConfig, RevenueCatRuntimeConfig, SearchRuntimeConfig,
+  StripeRuntimeConfig,
 };
 pub(crate) use error::{RuntimeError, RuntimeResult, napi_error, to_napi_error};
 pub(in crate::runtime) use http::webpki_tls_config;

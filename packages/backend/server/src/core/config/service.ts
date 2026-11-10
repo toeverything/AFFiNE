@@ -18,7 +18,10 @@ import { NODE_SECRET_CONFIG_KEYS } from '../../base/config/secrets';
 import { SocketIoRedis } from '../../base/redis';
 import { Models } from '../../models';
 import { ServerConfigHandle } from '../../native';
-import { BackendRuntimeProvider } from '../backend-runtime';
+import {
+  BackendRuntimeError,
+  BackendRuntimeProvider,
+} from '../backend-runtime';
 import { ServerFeature } from './types';
 
 function isConfigured(value: unknown): boolean {
@@ -282,15 +285,27 @@ export class ServerService
 
     const nativeKeys = new Set(this.serverConfig.nativeAppConfigKeys());
     const keys = updates.map(update => `${update.module}.${update.key}`);
-    await this.runtime.saveAppConfig(
-      user,
-      updates.map((update, index) => ({
-        key: keys[index],
-        owner: nativeKeys.has(keys[index]) ? 'native' : 'node',
-        operation: update.clear ? 'clear' : 'set',
-        valueJson: update.clear ? undefined : JSON.stringify(update.value),
-      }))
-    );
+    try {
+      await this.runtime.saveAppConfig(
+        user,
+        updates.map((update, index) => ({
+          key: keys[index],
+          owner: nativeKeys.has(keys[index]) ? 'native' : 'node',
+          operation: update.clear ? 'clear' : 'set',
+          valueJson: update.clear ? undefined : JSON.stringify(update.value),
+        }))
+      );
+    } catch (error) {
+      if (
+        error instanceof BackendRuntimeError &&
+        error.code === 'config_error'
+      ) {
+        throw new InvalidAppConfigInput({
+          message: error.message,
+        });
+      }
+      throw error;
+    }
 
     if (!notify) {
       return {};

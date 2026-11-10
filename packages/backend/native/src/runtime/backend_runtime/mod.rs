@@ -36,7 +36,6 @@ use std::{
 };
 
 use byok::LocalLeasePayload;
-use copilot::{backend_provider, executable_protocol};
 use embedding::register_artifact_source;
 use napi::{Result, Status, bindgen_prelude::Buffer, threadsafe_function::ThreadsafeFunction};
 #[cfg(test)]

@@ -4,7 +4,6 @@ import serverNativeModule, {
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
-  type BuiltInRouteOptions,
   type CanonicalChatRequestContract,
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
@@ -813,12 +812,6 @@ export function llmGetBuiltInPromptSpec(
     throw new Error('native built-in prompt spec lookup is not available');
   }
   return nativeLlmModule.llmGetBuiltInPromptSpec(name);
-}
-
-export function llmGetBuiltInRouteOptions(
-  name: string
-): BuiltInRouteOptions | null {
-  return nativeLlmModule.llmGetBuiltInRouteOptions(name);
 }
 
 export const llmGetByokCatalog = nativeLlmModule.llmGetByokCatalog;
