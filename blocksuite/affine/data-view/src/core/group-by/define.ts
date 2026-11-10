@@ -214,7 +214,9 @@ export const groupByMatchers: GroupByConfig[] = [
       return Array.isArray(old) ? [...old, value] : [value];
     },
     removeFromGroup: (value, old) =>
-      Array.isArray(old) ? old.filter(v => v !== value) : old,
+      value != null && Array.isArray(old) && old.includes(value)
+        ? old.filter(v => v !== value)
+        : old,
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
 

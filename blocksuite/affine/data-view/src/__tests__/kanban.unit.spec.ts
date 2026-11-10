@@ -369,18 +369,27 @@ const createSelectGroupTraitHarness = (options?: {
   options?: Array<{ id: string; value: string; color: string }>;
   rowIds?: string[];
   allRowIds?: string[];
-  values?: Record<string, string | null>;
+  values?: Record<string, unknown>;
+  multiSelect?: boolean;
 }) => {
   const selectOptions = options?.options ?? [
     { id: 'opt-1', value: 'Todo', color: '#ff0000' },
     { id: 'opt-2', value: 'Done', color: '#00ff00' },
   ];
   const allRowIds = options?.allRowIds ?? options?.rowIds ?? [];
+  const modelConfig = options?.multiSelect
+    ? multiSelectPropertyModelConfig
+    : selectPropertyModelConfig;
+  const dataType = options?.multiSelect
+    ? t.array.instance(t.tag.instance(selectOptions))
+    : t.tag.instance(selectOptions);
+  const groupByName = options?.multiSelect ? 'multi-select' : 'select';
+
   const dataSource = createMockDataSource(
     [
       {
         id: 'status',
-        type: selectPropertyModelConfig.type,
+        type: modelConfig.type,
         data: { options: selectOptions },
       },
     ],
@@ -390,12 +399,12 @@ const createSelectGroupTraitHarness = (options?: {
   const propertyData$ = signal({ options: selectOptions });
   const property = {
     id: 'status',
-    dataType$: signal(t.tag.instance(selectOptions)),
+    dataType$: signal(dataType),
     data$: propertyData$,
     meta$: signal({
       config: {
-        addGroup: selectPropertyModelConfig.config.addGroup,
-        deleteGroup: selectPropertyModelConfig.config.deleteGroup,
+        addGroup: modelConfig.config.addGroup,
+        deleteGroup: modelConfig.config.deleteGroup,
       },
     }),
     dataUpdate: vi.fn((updater: (data: unknown) => unknown) => {
@@ -421,7 +430,7 @@ const createSelectGroupTraitHarness = (options?: {
   const cells = new Map<
     string,
     {
-      jsonValue$: ReturnType<typeof signal<string | null | undefined>>;
+      jsonValue$: ReturnType<typeof signal<unknown>>;
       jsonValueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
       valueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
     }
@@ -436,8 +445,8 @@ const createSelectGroupTraitHarness = (options?: {
 
     const jsonValue$ = signal(cellValues.get(key));
     const update = (value: unknown) => {
-      jsonValue$.value = value as string | null | undefined;
-      cellValues.set(key, value as string | null);
+      jsonValue$.value = value;
+      cellValues.set(key, value);
     };
     const cell = {
       jsonValue$,
@@ -472,7 +481,7 @@ const createSelectGroupTraitHarness = (options?: {
   const groupBy$ = signal<GroupBy | undefined>({
     type: 'groupBy',
     columnId: 'status',
-    name: 'select',
+    name: groupByName,
     hideEmpty: false,
     sort: { desc: false },
   });
@@ -487,7 +496,7 @@ const createSelectGroupTraitHarness = (options?: {
       );
       return asc === false ? sorted.reverse() : sorted;
     },
-    sortRow: (groupKey: string, groupedRows: Row[]) => groupedRows,
+    sortRow: (_groupKey: string, groupedRows: Row[]) => groupedRows,
     changeGroupSort: vi.fn(),
     changeRowSort: vi.fn(),
     changeGroupHide: vi.fn(),
@@ -610,6 +619,42 @@ describe('kanban', () => {
       expect(cells.get('row-1:status')?.valueSet).toHaveBeenCalledWith(null);
       expect(cells.get('row-3:status')?.valueSet).toHaveBeenCalledWith(null);
       // Unrelated row with opt-2 is untouched
+      expect(cells.get('row-2:status')?.valueSet).not.toHaveBeenCalled();
+      // Option is deleted from property data
+      expect(propertyData$.value.options.map(o => o.id)).toEqual(['opt-2']);
+      // Group properties updated in view
+      expect(view.data$.value.groupProperties.map(g => g.key)).toEqual([
+        'opt-2',
+      ]);
+    });
+
+    it('allows deleting a multi-select group, removes option from rows containing it, and does not touch rows without the option', () => {
+      const { groupTrait, propertyData$, cells, view } =
+        createSelectGroupTraitHarness({
+          multiSelect: true,
+          rowIds: ['row-1', 'row-2'],
+          allRowIds: ['row-1', 'row-2', 'row-3'],
+          values: {
+            'row-1': ['opt-1', 'opt-2'],
+            'row-2': ['opt-2'],
+            'row-3': ['opt-1'],
+          },
+        });
+
+      const opt1Group = groupTrait.groupsDataList$.value?.find(
+        g => g.key === 'opt-1'
+      );
+      expect(opt1Group).toBeDefined();
+      expect(groupTrait.canDeleteGroup(opt1Group!)).toBe(true);
+
+      groupTrait.deleteGroupByKey(opt1Group!);
+
+      // Rows containing opt-1 have it filtered out
+      expect(cells.get('row-1:status')?.valueSet).toHaveBeenCalledWith([
+        'opt-2',
+      ]);
+      expect(cells.get('row-3:status')?.valueSet).toHaveBeenCalledWith([]);
+      // Unrelated row with ['opt-2'] is untouched (no no-op write)
       expect(cells.get('row-2:status')?.valueSet).not.toHaveBeenCalled();
       // Option is deleted from property data
       expect(propertyData$.value.options.map(o => o.id)).toEqual(['opt-2']);
@@ -973,9 +1018,9 @@ describe('kanban', () => {
       KanbanSingleView.prototype['materializeGroupBy'].call(view);
 
       expect(dataUpdate).toHaveBeenCalledWith(expect.any(Function));
-      const updater = dataUpdate.mock.calls[0][0];
-      const result = updater();
-      expect(result.groupBy.columnId).toBe('select');
+      const updater = dataUpdate.mock.calls[0]?.[0];
+      const result = updater?.();
+      expect(result?.groupBy.columnId).toBe('select');
     });
 
     it('does not persist fallback groupBy when view is readonly', () => {
