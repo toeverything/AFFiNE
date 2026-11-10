@@ -40,7 +40,7 @@ use projection::{BindingSettlement, entitlement_subject, reconcile_cloud_binding
 pub(super) use read::has_paid_ai_subscription;
 use read::{
   ReceiptDisposition, StoredSubscription, decide_stored_subscription, discover_payment_scopes, load_collection_pauses,
-  lock_receipts_and_operation, lock_subscription_rows, stored_subscription_decision,
+  lock_receipts_and_operation, lock_subscription_rows, parse_stored_plan, stored_subscription_decision,
 };
 use reconcile::reconcile_one_source;
 use revenuecat_client::{RevenueCatClient, RevenueCatSubscription};

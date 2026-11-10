@@ -47,6 +47,13 @@ pub(super) enum ReceiptDisposition {
   AlreadyProcessed,
 }
 
+pub(super) fn parse_stored_plan(value: &str) -> Option<Plan> {
+  match value {
+    "selfhostedteam" => Some(Plan::SelfHostedTeam),
+    _ => Plan::parse(value),
+  }
+}
+
 pub(super) async fn discover_payment_scopes(
   connection: &mut PaymentConnection,
   snapshot: &PaymentSnapshot,
@@ -119,7 +126,7 @@ pub(super) async fn discover_payment_scopes(
       "team" => {
         discovered_team_targets.insert(target_id);
       }
-      "selfhost_team" => {}
+      "selfhost_team" | "selfhostedteam" => {}
       _ => return Err(RuntimeError::invalid_state("unknown stored payment plan")),
     }
   }
@@ -152,7 +159,7 @@ pub(super) async fn discover_payment_scopes(
     if let Some(customer) = row.get::<Option<String>, _>("external_customer_id") {
       scopes.push(PaymentScope::customer(&row_namespace, &customer)?);
     }
-    let plan = affine_core::access_control::Plan::parse(row.get::<String, _>("plan").as_str())
+    let plan = parse_stored_plan(row.get::<String, _>("plan").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment plan"))?;
     if plan == affine_core::access_control::Plan::SelfHostedTeam {
       scopes.push(PaymentScope::billing_target(
@@ -418,7 +425,7 @@ pub(super) fn decide_stored_subscription(
     provider: Provider::parse(row.get::<String, _>("provider").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown provider"))?,
     source_id: row.get("source_identity"),
-    plan: Plan::parse(row.get::<String, _>("plan").as_str())
+    plan: parse_stored_plan(row.get::<String, _>("plan").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown plan"))?,
     recurring: SubscriptionRecurring::parse(row.get::<String, _>("recurring").as_str())
       .ok_or_else(|| RuntimeError::invalid_state("unknown recurring"))?,

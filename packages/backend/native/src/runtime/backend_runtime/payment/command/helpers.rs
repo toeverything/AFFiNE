@@ -142,7 +142,8 @@ impl PaymentRuntime {
     let discovery = sqlx::query(
       r#"SELECT source_identity,external_customer_id
          FROM provider_subscriptions
-         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3 AND plan=$4
+         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
+           AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
            AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
          ORDER BY updated_at DESC LIMIT 1"#,
     )
@@ -173,7 +174,8 @@ impl PaymentRuntime {
       r#"SELECT source_identity,external_customer_id,external_subscription_id,recurring,canceled_at,
                 period_start,metadata,quantity
          FROM provider_subscriptions
-         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3 AND plan=$4
+         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
+           AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
            AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
          ORDER BY updated_at DESC LIMIT 1"#,
     )

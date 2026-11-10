@@ -97,7 +97,11 @@ pub(super) async fn stripe_subscription_snapshot_from_observation(
       ),
       Plan::SelfHostedTeam => (
         "instance".to_string(),
-        required_metadata(&subscription, "licenseKey")?.to_string(),
+        if subscription.metadata.get("licenseKey").is_some() {
+          required_metadata(&subscription, "licenseKey")?.to_string()
+        } else {
+          uuid::Uuid::new_v4().to_string()
+        },
       ),
       Plan::Pro | Plan::Ai => {
         let customer =

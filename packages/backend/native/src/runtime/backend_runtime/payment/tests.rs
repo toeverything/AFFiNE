@@ -2217,6 +2217,41 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     let license_key = format!("rfc12-{license_marker}-{legacy}");
     let license_source = format!("sub-{license_marker}-{legacy}");
     let license_customer = format!("cus-{license_marker}-{legacy}");
+    let observation: stripe_client::StripeSubscription = serde_json::from_value(json!({
+      "id": license_source,
+      "created": now - 3600,
+      "customer": license_customer,
+      "status": "active",
+      "cancel_at_period_end": false,
+      "current_period_start": now - 3600,
+      "current_period_end": now + 86400,
+      "items": {"data": [{
+        "id": format!("si-{license_marker}-{legacy}"),
+        "quantity": 5,
+        "price": {
+          "id": format!("price-{license_marker}"),
+          "active": false,
+          "lookup_key": "selfhostedteam_yearly",
+          "unit_amount": 12000,
+          "currency": "usd",
+          "recurring": {"interval": "year", "interval_count": 1},
+          "product": format!("prod-{license_marker}")
+        }
+      }], "has_more": false},
+      "metadata": {}
+    }))
+    .unwrap();
+    let stale_snapshot = super::snapshot::stripe_subscription_snapshot(
+      &pool,
+      license_runtime.stripe.as_deref().unwrap(),
+      observation.clone(),
+      Vec::new(),
+      None,
+    )
+    .await
+    .unwrap();
+    let discarded_key = stale_snapshot.subscriptions[0].target_id.clone();
+    assert!(uuid::Uuid::parse_str(&discarded_key).is_ok());
     sqlx::query("INSERT INTO licenses(key) VALUES($1)")
       .bind(&license_key)
       .execute(&pool)
@@ -2226,7 +2261,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       r#"INSERT INTO provider_subscriptions(
            id,provider,provider_namespace,source_identity,target_type,target_id,plan,recurring,status,
            quantity,external_customer_id,external_subscription_id,period_end,metadata)
-         VALUES($1,'stripe',$2,$3,'instance',$4,'selfhost_team','yearly','active',5,$5,$3,
+         VALUES($1,'stripe',$2,$3,'instance',$4,$6,'yearly','active',5,$5,$3,
                 clock_timestamp()+INTERVAL '30 days','{}')"#,
     )
     .bind(uuid::Uuid::new_v4().to_string())
@@ -2234,36 +2269,26 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .bind(&license_source)
     .bind(&license_key)
     .bind(&license_customer)
+    .bind(if legacy { "selfhostedteam" } else { "selfhost_team" })
     .execute(&pool)
     .await
     .unwrap();
+    let stale_error = license_runtime.apply_snapshot(stale_snapshot).await.err().unwrap();
+    assert!(
+      stale_error
+        .to_string()
+        .contains("payment ownership transfer evidence does not match")
+    );
+    let discarded_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM licenses WHERE key=$1)")
+      .bind(&discarded_key)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert!(!discarded_exists);
     let snapshot = super::snapshot::stripe_subscription_snapshot(
       &pool,
       license_runtime.stripe.as_deref().unwrap(),
-      serde_json::from_value(json!({
-        "id": license_source,
-        "created": now - 3600,
-        "customer": license_customer,
-        "status": "active",
-        "cancel_at_period_end": false,
-        "current_period_start": now - 3600,
-        "current_period_end": now + 86400,
-        "items": {"data": [{
-          "id": format!("si-{license_marker}-{legacy}"),
-          "quantity": 5,
-          "price": {
-            "id": format!("price-{license_marker}"),
-            "active": false,
-            "lookup_key": "selfhostedteam_yearly",
-            "unit_amount": 12000,
-            "currency": "usd",
-            "recurring": {"interval": "year", "interval_count": 1},
-            "product": format!("prod-{license_marker}")
-          }
-        }], "has_more": false},
-        "metadata": {}
-      }))
-      .unwrap(),
+      observation,
       Vec::new(),
       None,
     )
@@ -2271,6 +2296,13 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .unwrap();
     assert_eq!(snapshot.subscriptions[0].target_id, license_key);
     assert_eq!(snapshot.subscriptions[0].quantity, Some(5.0));
+    license_runtime.apply_snapshot(snapshot).await.unwrap();
+    sqlx::query("UPDATE provider_subscriptions SET plan=$2 WHERE source_identity=$1")
+      .bind(&license_source)
+      .bind(if legacy { "selfhostedteam" } else { "selfhost_team" })
+      .execute(&pool)
+      .await
+      .unwrap();
     let operation_id = uuid::Uuid::new_v4().to_string();
     let activated = license_runtime.execute_for_test(if legacy {
       json!({"action":"activate_legacy_license","licenseKey":license_key})
