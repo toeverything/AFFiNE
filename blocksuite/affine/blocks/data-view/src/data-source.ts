@@ -221,9 +221,13 @@ export class BlockQueryDataSource extends DataSourceBase {
   }
 
   propertyDelete(_id: string): void {
+    const doc = this.block.store;
+    doc.captureSync();
     const index = this.block.props.columns.findIndex(v => v.id === _id);
     if (index >= 0) {
-      this.block.props.columns.splice(index, 1);
+      doc.transact(() => {
+        this.block.props.columns.splice(index, 1);
+      });
     }
   }
 

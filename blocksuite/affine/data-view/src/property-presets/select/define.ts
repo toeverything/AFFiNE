@@ -74,4 +74,9 @@ export const selectPropertyModelConfig = selectPropertyType.modelConfig({
       ],
     };
   },
+  deleteGroup: ({ value, oldData }) => {
+    return {
+      options: (oldData.options ?? []).filter(v => v.id !== value),
+    };
+  },
 });

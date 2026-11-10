@@ -90,6 +90,13 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
       oldData: Data;
     }>
   ) => Data;
+  deleteGroup?: (
+    config: WithCommonPropertyConfig<{
+      key: string;
+      value: unknown;
+      oldData: Data;
+    }>
+  ) => Data;
 };
 
 export type DVJSON =

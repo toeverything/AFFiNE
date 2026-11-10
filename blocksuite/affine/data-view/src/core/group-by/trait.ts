@@ -433,6 +433,55 @@ export class GroupTrait {
     return this.property$.value?.meta$.value?.config.addGroup;
   }
 
+  get deleteGroup() {
+    return this.property$.value?.meta$.value?.config.deleteGroup;
+  }
+
+  canDeleteGroup(group: Group): boolean {
+    if (group.value == null) {
+      return false;
+    }
+    return !!this.deleteGroup;
+  }
+
+  deleteGroupByKey(group: Group) {
+    if (!this.canDeleteGroup(group)) {
+      return;
+    }
+    this.view.lockRows(false);
+    const column = this.property$.value;
+    if (!column) return;
+
+    const allRowIds = this.view.manager.dataSource.rows$.value;
+    allRowIds.forEach(rowId => {
+      this.removeFromGroup(rowId, group.key);
+    });
+
+    const groupProperties = this.view.data$.value?.groupProperties;
+    if (Array.isArray(groupProperties)) {
+      const nextGroupProperties = groupProperties.filter(
+        (g: GroupProperty) => g.key !== group.key
+      );
+      if (nextGroupProperties.length !== groupProperties.length) {
+        this.view.dataUpdate(() => ({
+          groupProperties: nextGroupProperties,
+        }));
+      }
+    }
+
+    const deleteGroupFn = this.deleteGroup;
+    if (deleteGroupFn) {
+      column.dataUpdate(() =>
+        deleteGroupFn({
+          key: group.key,
+          value: group.value,
+          oldData: column.data$.value,
+          dataSource: this.view.manager.dataSource,
+        })
+      );
+    }
+  }
+
   updateData = (data: NonNullable<unknown>) => {
     const prop = this.property$.value;
     if (!prop) return;
@@ -519,12 +568,15 @@ export class GroupTrait {
       return;
     }
     const remove =
-      this.groupInfo$.value?.config.removeFromGroup ?? (() => undefined);
-    const newValue = remove(
-      groupMap[key]?.value ?? null,
-      this.view.cellGetOrCreate(rowId, propertyId).jsonValue$.value
-    );
-    this.view.cellGetOrCreate(rowId, propertyId).valueSet(newValue);
+      this.groupInfo$.value?.config.removeFromGroup ??
+      ((value, old) => (old === value ? null : old));
+    const targetVal = groupMap[key]?.value ?? null;
+    const currentVal = this.view.cellGetOrCreate(rowId, propertyId).jsonValue$
+      .value;
+    const newValue = remove(targetVal, currentVal);
+    if (newValue !== currentVal) {
+      this.view.cellGetOrCreate(rowId, propertyId).valueSet(newValue);
+    }
   }
 
   updateValue(rows: string[], value: unknown) {
