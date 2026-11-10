@@ -1,6 +1,8 @@
 import '../../plugins/copilot';
 
 import { createHash, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   createCopilotMessageMutation,
@@ -16,8 +18,10 @@ import ava from 'ava';
 
 import { ServerFeature, ServerService } from '../../core';
 import { Models } from '../../models';
+import { processImage } from '../../native';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
 import { WorkspaceMcpProvider } from '../../plugins/copilot/mcp/provider';
+import { CopilotStorage } from '../../plugins/copilot/storage';
 import { installMockCopilotRuntime } from '../mocks';
 import { createTestingApp, createWorkspace, type TestingApp } from '../utils';
 import {
@@ -195,6 +199,60 @@ test('session, message, local context restriction and durable history share one 
       cacheControl: attachmentRead.headers['cache-control'],
     },
   });
+
+  const webp = await processImage(
+    readFileSync(resolve(process.cwd(), '../../../tests/fixtures/blue.png')),
+    1536,
+    true
+  );
+  const normalized = await processImage(webp, 1536, true);
+  const { createCopilotMessage: imageMessage } = await app.gql({
+    query: createCopilotMessageMutation,
+    variables: {
+      options: {
+        sessionId,
+        content: 'Translate the document containing this image.',
+        blobs: [
+          new File([new Uint8Array(webp)], 'image.webp', {
+            type: 'image/webp',
+          }),
+        ],
+      },
+    },
+  });
+  t.truthy(imageMessage);
+  const imageKey = createHash('sha256').update(normalized).digest('base64url');
+  const imageRead = await app
+    .GET(
+      app
+        .get(CopilotStorage)
+        .sessionAttachmentUrl(sessionId, workspace.id, imageKey, 'image.webp')
+    )
+    .expect(200);
+  t.is(imageRead.headers['content-type'], 'image/webp');
+  t.deepEqual(imageRead.body, normalized);
+
+  const invalidImage = await app
+    .POST('/graphql')
+    .set('x-operation-name', createCopilotMessageMutation.op)
+    .field(
+      'operations',
+      JSON.stringify({
+        query: createCopilotMessageMutation.query,
+        variables: {
+          options: { sessionId, content: 'Invalid image', blobs: [null] },
+        },
+      })
+    )
+    .field('map', JSON.stringify({ '0': ['variables.options.blobs.0'] }))
+    .attach('0', Buffer.from('RIFF\u0000\u0000\u0000\u0000WEBPbroken'), {
+      filename: 'invalid.webp',
+      contentType: 'image/webp',
+    })
+    .expect(200);
+  t.is(invalidImage.body.errors?.[0]?.extensions.status, 400);
+  t.is(invalidImage.body.errors?.[0]?.extensions.name, 'BAD_REQUEST');
+  t.regex(invalidImage.body.errors?.[0]?.message, /^Invalid image:/);
 
   const localWorkspaceId = randomUUID();
   const localSessionId = await createCopilotSession(

@@ -219,7 +219,7 @@ mod tests {
       });
       assert_eq!(matches!(decision, RouteDecision::Ready(_)), ready);
     }
-    let profiles = vec![profile("vendor/opaque", ModelOutput::Text)];
+    let profiles = [profile("vendor/opaque", ModelOutput::Text)];
     for (profiles, expected_byok) in [(&profiles[..], true), (&[][..], false)] {
       let decision = decide(RoutePolicyInput {
         slot: &slot,
