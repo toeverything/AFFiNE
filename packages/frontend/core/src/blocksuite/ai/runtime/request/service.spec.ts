@@ -120,7 +120,7 @@ async function drainActionResult(
   await drain(stream as AsyncIterable<unknown>);
 }
 
-describe('runtime request transport BYOK local lease handling', () => {
+describe('runtime request transport preparation and cancellation', () => {
   beforeEach(() => {
     vi.stubGlobal('BUILD_CONFIG', { isElectron: true });
     electronApis.byokStorage = {
@@ -139,21 +139,55 @@ describe('runtime request transport BYOK local lease handling', () => {
     };
   });
 
-  test('fails closed when local BYOK providers exist but lease creation fails', async () => {
+  test.each([
+    { failure: 'local BYOK lease', image: false },
+    { failure: 'image decoding', image: true },
+  ])('does not generate when $failure fails', async ({ image }) => {
     const client = createClient({
       gql: vi.fn().mockRejectedValue(new Error('mutation failed')),
     });
-
-    const result = textToText({
-      client,
-      sessionId: 'session-1',
-      workspaceId: 'workspace-1',
-      content: 'hello',
-    }) as Promise<string>;
-
-    await expect(result).rejects.toThrow('mutation failed');
-    await expect(result).rejects.toBeInstanceOf(UserFriendlyError);
-    expect(client.chatTextStream).not.toHaveBeenCalled();
+    const originalImage = globalThis.Image;
+    const objectUrl = image
+      ? vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:invalid-image')
+      : undefined;
+    const revokeUrl = image ? vi.spyOn(URL, 'revokeObjectURL') : undefined;
+    if (image) {
+      vi.stubGlobal(
+        'Image',
+        class {
+          onerror?: () => void;
+          set src(_value: string) {
+            this.onerror?.();
+          }
+        }
+      );
+    }
+    try {
+      const result = textToText({
+        client,
+        sessionId: 'session-1',
+        workspaceId: 'workspace-1',
+        content: 'hello',
+        attachments: image
+          ? [new File(['broken'], 'invalid.webp', { type: 'image/webp' })]
+          : undefined,
+      }) as Promise<string>;
+      await expect(result).rejects.toThrow(
+        image ? 'Unable to load image attachment.' : 'mutation failed'
+      );
+      if (image) {
+        expect(client.createMessage).not.toHaveBeenCalled();
+        expect(client.gql).not.toHaveBeenCalled();
+        expect(revokeUrl).toHaveBeenCalledWith('blob:invalid-image');
+      } else {
+        await expect(result).rejects.toBeInstanceOf(UserFriendlyError);
+      }
+      expect(client.chatTextStream).not.toHaveBeenCalled();
+    } finally {
+      if (image) vi.stubGlobal('Image', originalImage);
+      objectUrl?.mockRestore();
+      revokeUrl?.mockRestore();
+    }
   });
 
   test('does not create stream local BYOK lease after cancellation', async () => {

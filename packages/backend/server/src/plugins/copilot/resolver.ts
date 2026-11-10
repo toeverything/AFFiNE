@@ -17,7 +17,6 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import {
   CallMetric,
   CopilotDocNotFound,
-  CopilotFailedToCreateMessage,
   CopilotSessionNotFound,
   type FileUpload,
   paginate,
@@ -882,32 +881,28 @@ export class CopilotResolver {
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
-    try {
-      const scope = await this.chatSession.getOwnedScope(
-        options.sessionId,
-        user.id
-      );
-      if (!scope) throw new CopilotSessionNotFound();
-      const mode = await this.access.sessionResource(
-        {
-          userId: user.id,
-          workspaceId: scope.workspaceId,
-          docId: scope.docId,
-          action: scope.docId ? 'Doc.Update' : 'Workspace.Copilot',
-        },
-        [options.sessionId]
-      );
-      const resolved = await this.chatSession.getInScope({
-        sessionId: options.sessionId,
+    const scope = await this.chatSession.getOwnedScope(
+      options.sessionId,
+      user.id
+    );
+    if (!scope) throw new CopilotSessionNotFound();
+    const mode = await this.access.sessionResource(
+      {
         userId: user.id,
         workspaceId: scope.workspaceId,
-        personal: mode === 'personal',
-      });
-      if (!resolved) throw new CopilotSessionNotFound();
-      return await this.inbox.createMessage(user.id, options, resolved, mode);
-    } catch (e: any) {
-      throw new CopilotFailedToCreateMessage(e.message);
-    }
+        docId: scope.docId,
+        action: scope.docId ? 'Doc.Update' : 'Workspace.Copilot',
+      },
+      [options.sessionId]
+    );
+    const resolved = await this.chatSession.getInScope({
+      sessionId: options.sessionId,
+      userId: user.id,
+      workspaceId: scope.workspaceId,
+      personal: mode === 'personal',
+    });
+    if (!resolved) throw new CopilotSessionNotFound();
+    return await this.inbox.createMessage(user.id, options, resolved, mode);
   }
 
   private transformToSessionType(session: Omit<ChatHistory, 'messages'>) {

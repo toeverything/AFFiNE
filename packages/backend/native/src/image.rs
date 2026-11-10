@@ -35,7 +35,6 @@ impl Task for AsyncProcessImageTask {
 
   fn compute(&mut self) -> Result<Self::Output> {
     process_image_inner(&self.input, self.max_edge, self.keep_exif)
-      .map_err(|error| Error::new(Status::InvalidArg, error.to_string()))
   }
 
   fn resolve(&mut self, _: Env, output: Self::Output) -> Result<Self::JsValue> {
@@ -52,26 +51,30 @@ pub fn process_image(input: Buffer, max_edge: u32, keep_exif: bool) -> AsyncTask
   })
 }
 
-fn process_image_inner(input: &[u8], max_edge: u32, keep_exif: bool) -> AnyResult<Vec<u8>> {
+fn process_image_inner(input: &[u8], max_edge: u32, keep_exif: bool) -> Result<Vec<u8>> {
   if max_edge == 0 {
-    bail!("max_edge must be greater than 0");
+    return Err(Error::new(Status::InvalidArg, "max_edge must be greater than 0"));
   }
 
-  let format = image::guess_format(input).context("unsupported image format")?;
-  let (width, height) = read_dimensions(input, format)?;
-  validate_dimensions(width, height)?;
-  let mut image = decode_image(input, format)?;
-  let orientation = read_orientation(input, format)?;
+  let invalid_input = |error: anyhow::Error| Error::new(Status::InvalidArg, error.to_string());
+  let format = image::guess_format(input)
+    .context("unsupported image format")
+    .map_err(invalid_input)?;
+  let (width, height) = read_dimensions(input, format).map_err(invalid_input)?;
+  validate_dimensions(width, height).map_err(invalid_input)?;
+  let mut image = decode_image(input, format).map_err(invalid_input)?;
+  let orientation = read_orientation(input, format).map_err(invalid_input)?;
   image.apply_orientation(orientation);
 
   if image.width().max(image.height()) > max_edge {
     image = image.resize(max_edge, max_edge, FilterType::Lanczos3);
   }
 
-  let mut output = encode_webp_lossy(&image.into_rgba8())?;
+  let mut output =
+    encode_webp_lossy(&image.into_rgba8()).map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
 
   if keep_exif {
-    preserve_exif(input, format, &mut output)?;
+    preserve_exif(input, format, &mut output).map_err(|error| Error::new(Status::GenericFailure, error.to_string()))?;
   }
 
   Ok(output)
@@ -129,13 +132,17 @@ fn decode_image(input: &[u8], format: ImageFormat) -> AnyResult<DynamicImage> {
     }
     ImageFormat::WebP => {
       let decoder = WebPDecoder::new(Cursor::new(input)).context("failed to decode image")?;
-      let frame = decoder
-        .into_frames()
-        .next()
-        .transpose()
-        .context("failed to decode image")?
-        .context("image does not contain any frames")?;
-      DynamicImage::ImageRgba8(frame.into_buffer())
+      if decoder.has_animation() {
+        let frame = decoder
+          .into_frames()
+          .next()
+          .transpose()
+          .context("failed to decode image")?
+          .context("image does not contain any frames")?;
+        DynamicImage::ImageRgba8(frame.into_buffer())
+      } else {
+        DynamicImage::from_decoder(decoder).context("failed to decode image")?
+      }
     }
     _ => {
       let reader = ImageReader::with_format(Cursor::new(input), format);
@@ -254,12 +261,15 @@ fn map_exif_file_type(format: ImageFormat) -> Option<FileExtension> {
 
 #[cfg(test)]
 mod tests {
-  use image::{ExtendedColorType, GenericImageView, ImageEncoder, codecs::png::PngEncoder};
+  use image::{
+    ExtendedColorType, GenericImageView, ImageEncoder,
+    codecs::{png::PngEncoder, webp::WebPEncoder},
+  };
 
   use super::*;
 
-  fn encode_png(width: u32, height: u32) -> Vec<u8> {
-    let image = image::RgbaImage::from_pixel(width, height, image::Rgba([255, 0, 0, 255]));
+  fn encode_png(width: u32, height: u32, alpha: u8) -> Vec<u8> {
+    let image = image::RgbaImage::from_pixel(width, height, image::Rgba([255, 0, 0, alpha]));
     let mut encoded = Vec::new();
     PngEncoder::new(&mut encoded)
       .write_image(image.as_raw(), width, height, ExtendedColorType::Rgba8)
@@ -289,65 +299,112 @@ mod tests {
   }
 
   #[test]
-  fn process_image_keeps_small_dimensions() {
-    let png = encode_png(8, 6);
-    let output = process_image_inner(&png, 512, false).unwrap();
+  fn process_image_decodes_and_resizes_images() {
+    // Two lossless 2x2 frames (red, blue), generated locally with img2webp.
+    let animated_webp = vec![
+      0x52, 0x49, 0x46, 0x46, 0x84, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x58, 0x0a, 0x00, 0x00,
+      0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x41, 0x4e, 0x49, 0x4d, 0x06, 0x00, 0x00, 0x00,
+      0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x41, 0x4e, 0x4d, 0x46, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x64, 0x00, 0x00, 0x02, 0x56, 0x50, 0x38, 0x4c, 0x0f, 0x00, 0x00, 0x00,
+      0x2f, 0x01, 0x40, 0x00, 0x00, 0x07, 0x10, 0xfd, 0x8f, 0xfe, 0x07, 0x22, 0xa2, 0xff, 0x01, 0x00, 0x41, 0x4e, 0x4d,
+      0x46, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x64, 0x00,
+      0x00, 0x00, 0x56, 0x50, 0x38, 0x4c, 0x0f, 0x00, 0x00, 0x00, 0x2f, 0x01, 0x40, 0x00, 0x00, 0x07, 0x10, 0xd1, 0xff,
+      0xfe, 0x07, 0x22, 0xa2, 0xff, 0x01, 0x00,
+    ];
+    assert!(WebPDecoder::new(Cursor::new(&animated_webp)).unwrap().has_animation());
+    let mut inputs = vec![("animated WebP", animated_webp, (2, 2), 255)];
+    for (width, height) in [(8, 6), (32, 8)] {
+      for alpha in [255, 96] {
+        let png = encode_png(width, height, alpha);
+        let rgba = image::load_from_memory(&png).unwrap().into_rgba8();
+        let mut lossless = Vec::new();
+        WebPEncoder::new_lossless(&mut lossless)
+          .write_image(rgba.as_raw(), width, height, ExtendedColorType::Rgba8)
+          .unwrap();
+        let lossy = process_image_inner(&png, 1536, true).unwrap();
+        for (name, input) in [("PNG", png), ("lossless WebP", lossless), ("lossy WebP", lossy)] {
+          inputs.push((name, input, (width, height), alpha));
+        }
+      }
+    }
 
-    let format = image::guess_format(&output).unwrap();
-    assert_eq!(format, ImageFormat::WebP);
-
-    let decoded = image::load_from_memory(&output).unwrap();
-    assert_eq!(decoded.dimensions(), (8, 6));
-  }
-
-  #[test]
-  fn process_image_scales_down_large_dimensions() {
-    let png = encode_png(1024, 256);
-    let output = process_image_inner(&png, 512, false).unwrap();
-    let decoded = image::load_from_memory(&output).unwrap();
-
-    assert_eq!(decoded.dimensions(), (512, 128));
+    for (name, input, (width, height), alpha) in inputs {
+      let resized = if width > 4 {
+        (4, 4 * height / width)
+      } else {
+        (width, height)
+      };
+      for (max_edge, dimensions) in [(512, (width, height)), (4, resized)] {
+        for keep_exif in [false, true] {
+          let mut output = input.clone();
+          for _ in 0..2 {
+            output = process_image_inner(&output, max_edge, keep_exif)
+              .unwrap_or_else(|error| panic!("{name}, max_edge={max_edge}, keep_exif={keep_exif}: {error}"));
+            assert_eq!(image::guess_format(&output).unwrap(), ImageFormat::WebP);
+            let decoded = image::load_from_memory(&output).unwrap();
+            assert_eq!(decoded.dimensions(), dimensions);
+            let pixel = decoded.to_rgba8()[(0, 0)];
+            assert_eq!(pixel[3], alpha);
+            assert!(pixel[0] > pixel[2], "expected the red first frame");
+          }
+        }
+      }
+    }
   }
 
   #[test]
   fn process_image_preserves_exif_without_orientation() {
-    let png = encode_png(8, 8);
-    let mut png_with_exif = png.clone();
-    let mut metadata = Metadata::new();
-    metadata.set_tag(ExifTag::ImageDescription("copilot".to_string()));
-    metadata.set_tag(ExifTag::Orientation(vec![6]));
-    metadata
-      .write_to_vec(&mut png_with_exif, FileExtension::PNG { as_zTXt_chunk: true })
-      .unwrap();
+    let png = encode_png(8, 8, 255);
+    let webp = process_image_inner(&encode_png(8, 6, 96), 512, false).unwrap();
+    for (mut output, format, dimensions) in [
+      (png, FileExtension::PNG { as_zTXt_chunk: true }, (8, 8)),
+      (webp, FileExtension::WEBP, (6, 8)),
+    ] {
+      let mut metadata = Metadata::new();
+      metadata.set_tag(ExifTag::ImageDescription("copilot".to_string()));
+      metadata.set_tag(ExifTag::Orientation(vec![6]));
+      metadata.write_to_vec(&mut output, format).unwrap();
 
-    let output = process_image_inner(&png_with_exif, 512, true).unwrap();
-    let decoded_metadata = Metadata::new_from_vec(&output, FileExtension::WEBP).unwrap();
+      for _ in 0..2 {
+        output = process_image_inner(&output, 512, true).unwrap();
+        assert_eq!(image::load_from_memory(&output).unwrap().dimensions(), dimensions);
+        let decoded_metadata = Metadata::new_from_vec(&output, FileExtension::WEBP).unwrap();
 
-    assert!(
-      decoded_metadata
-        .get_tag(&ExifTag::ImageDescription(String::new()))
-        .next()
-        .is_some()
-    );
-    assert!(
-      decoded_metadata
-        .get_tag(&ExifTag::Orientation(vec![1]))
-        .next()
-        .is_none()
-    );
+        assert!(
+          decoded_metadata
+            .get_tag(&ExifTag::ImageDescription(String::new()))
+            .next()
+            .is_some()
+        );
+        assert!(
+          decoded_metadata
+            .get_tag(&ExifTag::Orientation(vec![1]))
+            .next()
+            .is_none()
+        );
+      }
+    }
   }
 
   #[test]
   fn process_image_rejects_invalid_input() {
-    let error = process_image_inner(b"not-an-image", 512, false).unwrap_err();
-    assert_eq!(error.to_string(), "unsupported image format");
-  }
-
-  #[test]
-  fn process_image_rejects_images_over_dimension_limit_before_decode() {
-    let bmp = encode_bmp_header(MAX_IMAGE_DIMENSION + 1, 1);
-    let error = process_image_inner(&bmp, 512, false).unwrap_err();
-
-    assert_eq!(error.to_string(), "image dimensions exceed limit");
+    let png = encode_png(8, 6, 255);
+    for (input, max_edge, message) in [
+      (b"not-an-image".to_vec(), 512, "unsupported image format"),
+      (png.clone(), 0, "max_edge must be greater than 0"),
+      (png[..40].to_vec(), 512, "failed to decode image"),
+      (
+        encode_bmp_header(MAX_IMAGE_DIMENSION + 1, 1),
+        512,
+        "image dimensions exceed limit",
+      ),
+      (encode_bmp_header(10_000, 4_001), 512, "image pixel count exceeds limit"),
+    ] {
+      let error = process_image_inner(&input, max_edge, false).unwrap_err();
+      assert_eq!(error.status, Status::InvalidArg);
+      assert_eq!(error.reason, message);
+    }
+    assert!(validate_dimensions(MAX_IMAGE_DIMENSION, 1).is_ok());
+    assert!(validate_dimensions(8_000, 5_000).is_ok());
   }
 }
