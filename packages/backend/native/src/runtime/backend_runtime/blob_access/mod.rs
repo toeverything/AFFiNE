@@ -29,7 +29,7 @@ use self::{
   },
 };
 use super::{
-  BackendRuntime,
+  BackendRuntime, blocking,
   invalidation::{InvalidationHintV1, InvalidationTarget},
   permission::{PermissionAuthorizer, PermissionTelemetry},
 };

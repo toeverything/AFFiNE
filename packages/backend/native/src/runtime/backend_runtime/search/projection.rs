@@ -2,6 +2,7 @@ use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 use tokio::sync::Semaphore;
 
+use super::blocking;
 use crate::{
   permission::doc_role_allows,
   runtime::{
@@ -30,8 +31,7 @@ pub(in crate::runtime::backend_runtime) async fn project_current_doc<T: Send + '
     .acquire()
     .await
     .map_err(|error| RuntimeError::invalid_state(format!("search projection admission failed: {error}")))?;
-  tokio::task::spawn_blocking(move || {
-    let _permit = permit;
+  blocking::spawn(permit, move || {
     let current = merge_current_doc(snapshot, updates).map_err(|error| match error {
       RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
       error => error,

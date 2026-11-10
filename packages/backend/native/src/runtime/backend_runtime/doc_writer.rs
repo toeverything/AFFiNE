@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use y_octo::Update;
 
 use super::{
-  BackendRuntime, RuntimeError, RuntimeResult, SourceIdentity,
+  BackendRuntime, RuntimeError, RuntimeResult, SourceIdentity, blocking,
   domain_command::{
     append_root_updates_in, authorize_domain_after_storage_lock, invalidate_doc_blob_projection,
     lock_workspace_doc_update, lock_workspace_storage_shared, next_workspace_doc_update_timestamp,
@@ -303,10 +303,11 @@ pub(in crate::runtime) async fn decode_doc_updates(updates: &[Buffer], root: boo
   {
     return Err(RuntimeError::invalid_input("doc_update_too_large"));
   }
+  let permit = super::try_validation_slot().map_err(|_| RuntimeError::invalid_state("doc_validation_unavailable"))?;
   let updates = updates.iter().map(|update| update.to_vec()).collect::<Vec<_>>();
   tokio::time::timeout(
     std::time::Duration::from_secs(1),
-    tokio::task::spawn_blocking(move || {
+    blocking::spawn(permit, move || {
       updates
         .into_iter()
         .map(|update| Update::decode_v1(update).map_err(|_| RuntimeError::invalid_input("doc_update_invalid")))

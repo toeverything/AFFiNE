@@ -1574,3 +1574,69 @@ test.each(['same-millisecond', 'clock-backwards', 'transaction-abort'])(
     }
   }
 );
+
+test('a recovered connection clears its transient message without masking a subsequent doc error', async () => {
+  const options = {
+    id: 'reconnect-error-message',
+    flavour: 'reconnect-error-message',
+    type: 'workspace' as const,
+  };
+  const local = new IndexedDBDocStorage(options);
+  const metadata = new IndexedDBDocSyncStorage(options);
+  const remote = new PermissionDeniedRemoteDocStorage(options.id);
+  vi.spyOn(remote.connection, 'waitForConnected').mockRejectedValueOnce(
+    new Error('temporary connection error')
+  );
+  local.connection.connect();
+  metadata.connection.connect();
+  await Promise.all([
+    local.connection.waitForConnected(),
+    metadata.connection.waitForConnected(),
+  ]);
+  const doc = new YDoc();
+  doc.getMap('test').set('value', 'kept');
+  const peer = new DocSyncPeer(
+    'reconnect-error-message',
+    local,
+    metadata,
+    remote
+  );
+  const abort = new AbortController();
+  const running = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(async () => {
+      expect((await firstValueFrom(peer.peerState$)).errorMessage).toContain(
+        'temporary connection error'
+      );
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.retrying).toBe(false);
+        expect(state.errorMessage).toBeNull();
+        expect(state.error).toBeUndefined();
+      },
+      { timeout: 6500 }
+    );
+    await local.pushDocUpdate({
+      docId: 'doc-denied-after-reconnect',
+      bin: encodeStateAsUpdate(doc),
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.errorMessage).toContain('No permission to update doc');
+        expect(state.errorMessage).not.toContain('temporary connection error');
+        expect(state.retrying).toBe(false);
+        expect(state.error?.name).toBe('DOC_ACTION_DENIED');
+      },
+      { timeout: 6500 }
+    );
+  } finally {
+    abort.abort();
+    await running;
+    local.connection.disconnect();
+    metadata.connection.disconnect();
+    doc.destroy();
+  }
+}, 10000);

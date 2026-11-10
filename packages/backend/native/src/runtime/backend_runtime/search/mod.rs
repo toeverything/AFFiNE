@@ -21,7 +21,7 @@ pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 use worker::{reconcile_workspace, sweep_generation_orphans};
 
 use super::{
-  load_root, lock_current_doc_read,
+  blocking, load_root, lock_current_doc_read,
   permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
   require_complete_root, webpki_tls_config,
 };

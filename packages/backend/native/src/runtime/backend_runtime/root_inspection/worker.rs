@@ -169,7 +169,23 @@ async fn inspect_pending(
   if status != "pending" {
     return Ok(false);
   }
-  let source = load_source(&mut transaction, workspace_id).await?;
+  let source = match load_source(&mut transaction, workspace_id).await {
+    Ok(source) => source,
+    Err(RuntimeError::InvalidInput(reason)) if reason == "workspace_not_found" => {
+      sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE kind=$1 AND scope=$2")
+        .bind(KIND)
+        .bind(workspace_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| RuntimeError::database("remove deleted workspace root inspection", error))?;
+      transaction
+        .commit()
+        .await
+        .map_err(|error| RuntimeError::database("commit deleted workspace root inspection", error))?;
+      return Ok(true);
+    }
+    Err(error) => return Err(error),
+  };
   if source.reason == "healthy" || source.reason == "uninitialized" {
     let timestamp = source.timestamp_ms();
     let changed = previous["reason"]
@@ -501,7 +517,7 @@ mod tests {
       .bind(&workspace_id)
       .execute(&pool)
       .await?;
-    sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE kind=$1 AND scope=$2")
+    sqlx::query("UPDATE storage_reconciliation_checkpoints SET status='pending' WHERE kind=$1 AND scope=$2")
       .bind(KIND)
       .bind(&workspace_id)
       .execute(&pool)
@@ -510,6 +526,26 @@ mod tests {
       .bind(&workspace_id)
       .execute(&pool)
       .await?;
+    for _ in 0..2 {
+      let result = tick(&runtime, &pool).await?;
+      assert!(
+        result["failures"]
+          .as_array()
+          .unwrap()
+          .iter()
+          .all(|failure| failure["workspaceId"] != workspace_id)
+      );
+      assert_eq!(
+        sqlx::query_scalar::<_, i64>(
+          "SELECT count(*) FROM storage_reconciliation_checkpoints WHERE kind=$1 AND scope=$2"
+        )
+        .bind(KIND)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?,
+        0
+      );
+    }
     Ok(())
   }
 }
