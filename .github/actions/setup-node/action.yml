@@ -42,6 +42,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install Linux CI tools
+      if: ${{ runner.os == 'Linux' && runner.environment == 'self-hosted' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends gnupg
     - name: Output workspace path
       id: workspace-path
       shell: bash
@@ -67,6 +73,10 @@ runs:
       shell: bash
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       run: corepack enable
+
+    - name: Report Node.js heap limit
+      shell: bash
+      run: node -e 'console.log("Node heap limit:", Math.round(require("node:v8").getHeapStatistics().heap_size_limit / 1024 / 1024), "MiB")'
 
     - name: Set nmMode
       if: ${{ inputs.hard-link-nm == 'false' }}
