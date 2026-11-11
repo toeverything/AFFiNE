@@ -2,6 +2,11 @@ name: Copilot Cron Test
 
 on:
   workflow_dispatch:
+    inputs:
+      notify:
+        description: Post the test result to Slack
+        type: boolean
+        default: true
 
 jobs:
   build-server-native:
@@ -157,7 +162,7 @@ jobs:
     needs:
       - copilot-api-test
       - copilot-e2e-test
-    if: always()
+    if: ${{ always() && inputs.notify }}
     runs-on: l4es-fast
     name: Post test result message
     steps:
