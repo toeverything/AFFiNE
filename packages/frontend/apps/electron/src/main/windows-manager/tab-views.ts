@@ -24,7 +24,7 @@ import {
   type Unsubscribable,
 } from 'rxjs';
 
-import { mainWindowOrigin, shellViewUrl } from '../../shared/internal-origin';
+import { shellViewUrl } from '../../shared/internal-origin';
 import { isMacOS } from '../../shared/utils';
 import { beforeAppQuit, onTabClose } from '../cleanup';
 import { ensureHelperProcess } from '../helper-process';
@@ -41,6 +41,7 @@ import {
 import { globalStateStorage } from '../shared-storage/storage';
 import { buildWebPreferences } from '../web-preferences';
 import { getMainWindow, MainWindowManager } from './main-window';
+import { buildWorkbenchViewUrl } from './workbench-view-url';
 
 async function getAdditionalArguments() {
   const { getExposedMeta } = await import('../exposed');
@@ -551,12 +552,7 @@ export class WebContentViewsManager {
     const workbench = this.tabViewsMeta.workbenches.find(w => w.id === id);
     const viewMeta = workbench?.views[workbench.activeViewIndex];
     if (workbench && viewMeta) {
-      const url = new URL(
-        workbench.basename + (viewMeta.path?.pathname ?? ''),
-        mainWindowOrigin
-      );
-      url.hash = viewMeta.path?.hash ?? '';
-      url.search = viewMeta.path?.search ?? '';
+      const url = buildWorkbenchViewUrl(workbench.basename, viewMeta.path);
       logger.info(`loading tab ${id} at ${url.href}`);
       view.webContents.loadURL(url.href).catch(err => logger.error(err));
     }
