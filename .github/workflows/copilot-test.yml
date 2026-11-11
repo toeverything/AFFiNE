@@ -1,107 +1,202 @@
-name: Frontend release builds (highcpu, 4GiB heap)
+name: Copilot Cron Test (highcpu, 4GiB heap, reused native)
+
 on:
   workflow_dispatch:
     inputs:
-      app-version:
-        type: string
-        default: '0.27.5'
-      build-type:
-        type: string
-        default: canary
+      notify:
+        description: Post the test result to Slack
+        type: boolean
+        default: true
+
 permissions:
   contents: read
+  actions: read
+
 env:
   NODE_OPTIONS: --max-old-space-size=4096
 
 jobs:
-  build-web:
-    name: Build @affine/web
-    runs-on: ${{ matrix.runner }}
+  build-server-native:
+    name: Reuse measured server native
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          run-id: 42981296914
+          github-token: ${{ github.token }}
+          path: packages/backend/native
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-native.node
+          path: packages/backend/native/server-native.node
+          if-no-files-found: error
+
+  copilot-api-test:
+    name: Server Copilot Api Test
+    runs-on: l4es-highcpu
+    needs:
+      - build-server-native
+    env:
+      NODE_ENV: test
+      DISTRIBUTION: web
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mailer:
+        image: mailhog/mailhog
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          playwright-install: true
+          electron-install: false
+          full-cache: true
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
+        env:
+          SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
+        uses: ./.github/actions/server-test-env
+
+      - name: Run server tests
+        run: yarn affine @affine/server test:copilot:coverage --forbid-only
+        env:
+          CARGO_TARGET_DIR: '${{ github.workspace }}/target'
+
+      - name: Upload server test coverage results
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/backend/server/.coverage/lcov.info
+          flags: server-test
+          name: affine
+          fail_ci_if_error: false
+
+  copilot-e2e-test:
+    name: Frontend Copilot E2E Test
+    runs-on: l4es-highcpu
+    env:
+      DISTRIBUTION: web
+      DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
+      REDIS_SERVER_HOST: localhost
+      IN_CI_TEST: true
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, l4es-highcpu]
+        shardIndex: [6]
+        shardTotal: [10]
+    needs:
+      - build-server-native
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: affine
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v7
+
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
         with:
-          app-version: ${{ inputs.app-version }}
-      - name: Build Core
-        run: yarn affine @affine/web build
+          playwright-install: true
+          electron-install: false
+          hard-link-nm: false
+
+      - name: Download server-native.node
+        uses: actions/download-artifact@v4
+        with:
+          name: server-native.node
+          path: ./packages/backend/native
+
+      - name: Prepare Server Test Environment
         env:
-          BUILD_TYPE: ${{ inputs.build-type }}
-          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: affine-web
-          SENTRY_RELEASE: ${{ inputs.app-version }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+          SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
+        uses: ./.github/actions/server-test-env
+
+      - name: Run Copilot E2E Test ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        uses: ./.github/actions/copilot-test
         with:
-          overwrite: true
-          name: ${{ matrix.runner }}-web
-          path: ./packages/frontend/apps/web/dist
-          if-no-files-found: error
-  build-admin:
-    name: Build @affine/admin
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [ubuntu-24.04, l4es-highcpu]
+          script: yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+  test-done:
+    needs:
+      - copilot-api-test
+      - copilot-e2e-test
+    if: ${{ always() && inputs.notify }}
+    runs-on: l4es-fast
+    name: Post test result message
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
         with:
-          app-version: ${{ inputs.app-version }}
-      - name: Build Admin
-        run: yarn affine @affine/admin build
+          extra-flags: 'workspaces focus @affine/copilot-result'
+          electron-install: false
+      - name: Post Success event to a Slack channel
+        if: ${{ always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+        run: node ./tools/copilot-result/index.js
         env:
-          BUILD_TYPE: ${{ inputs.build-type }}
-          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: affine-admin
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      - name: Upload admin artifact
-        uses: actions/upload-artifact@v4
-        with:
-          overwrite: true
-          name: ${{ matrix.runner }}-admin
-          path: ./packages/frontend/admin/dist
-          if-no-files-found: error
-  build-mobile:
-    name: Build @affine/mobile
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [ubuntu-24.04, l4es-highcpu]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
-        with:
-          app-version: ${{ inputs.app-version }}
-      - name: Build Mobile
-        run: yarn affine @affine/mobile build
+          CHANNEL_ID: ${{ secrets.RELEASE_SLACK_CHNNEL_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          BRANCH_SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref }}
+          COPILOT_RESULT: success
+      - name: Post Failed event to a Slack channel
+        id: failed-slack
+        if: ${{ always() && contains(needs.*.result, 'failure') }}
+        run: node ./tools/copilot-result/index.js
         env:
-          BUILD_TYPE: ${{ inputs.build-type }}
-          RELEASE_ASSET_PREFIX: releases/${{ inputs.app-version }}/
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: affine-mobile
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      - name: Upload mobile artifact
-        uses: actions/upload-artifact@v4
-        with:
-          overwrite: true
-          name: ${{ matrix.runner }}-mobile
-          path: ./packages/frontend/apps/mobile/dist
-          if-no-files-found: error
+          CHANNEL_ID: ${{ secrets.RELEASE_SLACK_CHNNEL_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          BRANCH_SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref }}
+          COPILOT_RESULT: failed
+      - name: Post Cancel event to a Slack channel
+        id: cancel-slack
+        if: ${{ always() && contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'failure') }}
+        run: node ./tools/copilot-result/index.js
+        env:
+          CHANNEL_ID: ${{ secrets.RELEASE_SLACK_CHNNEL_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          BRANCH_SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.ref }}
+          COPILOT_RESULT: canceled
