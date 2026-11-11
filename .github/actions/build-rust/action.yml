@@ -19,6 +19,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install Linux build dependencies
+      if: ${{ runner.os == 'Linux' && runner.environment == 'self-hosted' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends clang libclang-dev cmake pkg-config
     - name: Print rustup toolchain version
       shell: bash
       id: rustup-version

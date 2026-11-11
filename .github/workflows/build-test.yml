@@ -1288,6 +1288,12 @@ jobs:
         with:
           tool: nextest@0.9.98
 
+      - name: Install PostgreSQL client
+        if: ${{ runner.environment == 'self-hosted' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
       - name: Initialize server-native test database
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE affine;"
@@ -1684,8 +1690,8 @@ jobs:
 
       - name: Make Bundle (Linux)
         run: |
-          sudo add-apt-repository universe
-          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 elfutils flatpak flatpak-builder fakeroot
           flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           flatpak update
           # some flatpak deps need git protocol.file.allow
