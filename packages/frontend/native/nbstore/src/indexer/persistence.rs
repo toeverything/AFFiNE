@@ -129,6 +129,8 @@ impl SqliteDocStorage {
     Ok(())
   }
 
+  /// Search a ready table with the requested result window and mapped native hits.
+  /// Keep the index read-locked across cursor pages so large windows see a single snapshot.
   pub async fn index_search(
     &self,
     table: &str,

@@ -52,6 +52,7 @@ mod tests {
   use memory_indexer::{Document, FieldOptions, Schema, Sort, SortOrder};
 
   #[test]
+  /// Reproduce the native unlimited-window rejection and verify complete, duplicate-free paging.
   fn reproduces_original_limit_and_returns_all_25005_without_duplicates() {
     let schema = Schema::builder().build().unwrap();
     let mut index = MemoryIndex::new(schema);
@@ -72,6 +73,7 @@ mod tests {
   }
 
   #[test]
+  /// Compare bounded and deep windows with the expected filtered order, including ties and stored fields.
   fn offsets_limits_counts_fields_and_tie_breaking_match_full_order() {
     let mut builder = Schema::builder();
     let rank = builder.i64("rank", FieldOptions::indexed_stored().sortable());
