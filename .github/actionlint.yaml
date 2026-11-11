@@ -5,6 +5,7 @@ self-hosted-runner:
     - l4es-fast
     - l4es-normal
     - l4es-highmem
+    - l4es-highcpu
 
 # Configuration variables in array of strings defined in your repository or
 # organization. `null` means disabling configuration variables check.
