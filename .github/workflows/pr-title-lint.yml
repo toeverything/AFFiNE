@@ -15,7 +15,8 @@ permissions:
 jobs:
   check-pull-request-title:
     name: Check pull request title
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ github.event.pull_request.head.repo.full_name == github.repository && 'l4es-fast' || 'ubuntu-latest' }}
     if: ${{ github.event.action != 'edited' || github.event.changes.title != null }}
     steps:
       - uses: actions/checkout@v7

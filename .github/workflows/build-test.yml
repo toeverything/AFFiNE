@@ -29,7 +29,8 @@ concurrency:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     permissions:
@@ -64,7 +65,8 @@ jobs:
         uses: github/codeql-action/analyze@v3
   lint:
     name: Lint
-    runs-on: ubuntu-24.04-arm
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04-arm' }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Go (for actionlint)
@@ -100,7 +102,8 @@ jobs:
 
   typecheck:
     name: Typecheck
-    runs-on: ubuntu-24.04-arm
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04-arm' }}
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
@@ -134,7 +137,8 @@ jobs:
 
   mobile-native-build-filter:
     name: Mobile native build filter
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     outputs:
       run-android: ${{ steps.mobile-native-filter.outputs.android }}
       run-ios: ${{ steps.mobile-native-filter.outputs.ios }}
@@ -398,7 +402,8 @@ jobs:
 
   rust-test-filter:
     name: Rust test filter
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     outputs:
       run-rust: ${{ steps.rust-filter.outputs.rust }}
     steps:
@@ -420,7 +425,8 @@ jobs:
   lint-rust:
     name: Lint Rust
     if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - rust-test-filter
     steps:
@@ -444,7 +450,8 @@ jobs:
 
   check-git-status:
     name: Check Git Status
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     steps:
@@ -476,7 +483,8 @@ jobs:
 
   check-yarn-binary:
     name: Check yarn binary
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
       - name: Run check
@@ -488,7 +496,8 @@ jobs:
 
   e2e-blocksuite-test:
     name: E2E BlockSuite Test
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -520,7 +529,8 @@ jobs:
 
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -553,7 +563,8 @@ jobs:
 
   e2e-test:
     name: E2E Test
-    runs-on: ubuntu-24.04-arm
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04-arm' }}
     env:
       DISTRIBUTION: web
       IN_CI_TEST: true
@@ -586,7 +597,8 @@ jobs:
 
   e2e-mobile-test:
     name: E2E Mobile Test
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     env:
       DISTRIBUTION: mobile
       IN_CI_TEST: true
@@ -617,7 +629,8 @@ jobs:
 
   unit-test:
     name: Unit Test
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     needs:
       - build-native-linux
     env:
@@ -656,7 +669,8 @@ jobs:
 
   build-native-linux:
     name: Build AFFiNE native (x86_64-unknown-linux-gnu)
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -782,7 +796,8 @@ jobs:
 
   build-server-native:
     name: Build Server native
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     env:
       AFFINE_PRO_PUBLIC_KEY: |
         -----BEGIN PUBLIC KEY-----
@@ -814,7 +829,8 @@ jobs:
 
   build-electron-renderer:
     name: Build @affine/electron renderer
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -839,7 +855,8 @@ jobs:
 
   native-unit-test:
     name: Native Unit Test
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-normal' || 'ubuntu-latest' }}
     needs:
       - build-native-linux
     steps:
@@ -859,7 +876,8 @@ jobs:
 
   server-test:
     name: Server Test
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     strategy:
@@ -929,7 +947,8 @@ jobs:
 
   server-test-elasticsearch:
     name: Server Test with Elasticsearch
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     env:
@@ -1008,7 +1027,8 @@ jobs:
 
   server-test-embedded:
     name: Server Test with Embedded Search
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     env:
@@ -1074,7 +1094,8 @@ jobs:
 
   server-test-manticoresearch:
     name: Server Test with Manticore Search
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     env:
@@ -1152,7 +1173,8 @@ jobs:
   server-e2e-test:
     # the new version of server e2e test should be super fast, so sharding testing is not needed
     name: Server E2E Test
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
     env:
@@ -1211,7 +1233,8 @@ jobs:
   rust-test:
     name: Run native tests
     if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - rust-test-filter
     env:
@@ -1274,7 +1297,8 @@ jobs:
 
   copilot-test-filter:
     name: Copilot test filter
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     outputs:
       run-api: ${{ steps.decision.outputs.run_api }}
       run-e2e: ${{ steps.decision.outputs.run_e2e }}
@@ -1313,7 +1337,8 @@ jobs:
   copilot-api-test:
     name: Server Copilot Api Test
     if: ${{ needs.copilot-test-filter.outputs.run-api == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-latest' }}
     needs:
       - build-server-native
       - copilot-test-filter
@@ -1381,7 +1406,8 @@ jobs:
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
     if: ${{ needs.copilot-test-filter.outputs.run-e2e == 'true' }}
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1442,7 +1468,8 @@ jobs:
 
   cloud-e2e-test:
     name: ${{ matrix.tests.name }}
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || 'ubuntu-24.04' }}
     needs:
       - build-server-native
       - build-native-linux
@@ -1534,7 +1561,8 @@ jobs:
 
   desktop-test:
     name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
-    runs-on: ${{ matrix.spec.os }}
+    runs-on: >-
+      ${{ matrix.spec.platform == 'linux' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-highmem' || matrix.spec.os }}
     needs:
       - build-electron-renderer
       - build-native-linux
@@ -1706,7 +1734,8 @@ jobs:
       - desktop-test
       - cloud-e2e-test
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     name: 3, 2, 1 Launch
     steps:
       - run: exit 1

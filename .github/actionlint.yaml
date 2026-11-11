@@ -2,6 +2,9 @@ self-hosted-runner:
   # Labels of self-hosted runner in array of strings.
   labels:
     - win-signer
+    - l4es-fast
+    - l4es-normal
+    - l4es-highmem
 
 # Configuration variables in array of strings defined in your repository or
 # organization. `null` means disabling configuration variables check.
