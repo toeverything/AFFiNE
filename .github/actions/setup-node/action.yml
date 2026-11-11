@@ -24,7 +24,7 @@ inputs:
   corepack-install:
     description: 'Install CorePack'
     required: false
-    default: 'false'
+    default: 'true'
   hard-link-nm:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false

@@ -48,6 +48,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -487,6 +492,12 @@ jobs:
       ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'l4es-fast' || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+      - name: Enable Corepack
+        run: corepack enable
       - name: Run check
         run: |
           set -euo pipefail
