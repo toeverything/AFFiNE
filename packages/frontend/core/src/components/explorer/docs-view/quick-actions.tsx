@@ -14,6 +14,7 @@ import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import {
   DeleteIcon,
+  DeletePermanentlyIcon,
   OpenInNewIcon,
   ResetIcon,
   SplitViewIcon,
@@ -292,7 +293,7 @@ export const QuickDeletePermanently = memo(function QuickDeletePermanently({
     <IconButton
       data-testid="delete-page-button"
       onClick={handleConfirmDeletePermanently}
-      icon={<DeleteIcon />}
+      icon={<DeletePermanentlyIcon />}
       variant="danger"
       {...iconButtonProps}
     />
