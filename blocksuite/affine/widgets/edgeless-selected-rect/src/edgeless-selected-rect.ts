@@ -745,11 +745,15 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
 
   private _renderAutoComplete() {
     const { store, selection, block, _selectedRect } = this;
+    const hasConnector = selection.selectedElements.some(
+      element => element instanceof ConnectorElementModel
+    );
 
     return !store.readonly &&
       !selection.inoperable &&
       !this.autoCompleteOff &&
-      !this._isResizing
+      !this._isResizing &&
+      !hasConnector
       ? html`<edgeless-auto-complete
           .current=${selection.selectedElements[0]}
           .edgeless=${block}

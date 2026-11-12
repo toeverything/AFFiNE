@@ -44,3 +44,16 @@ export enum ShapeStyle {
   General = 'General',
   Scribbled = 'Scribbled',
 }
+
+export const GRADIENT_DIRECTIONS = [
+  'S',
+  'W',
+  'N',
+  'E',
+  'SE',
+  'SW',
+  'NE',
+  'NW',
+] as const;
+
+export type GradientDirection = (typeof GRADIENT_DIRECTIONS)[number];
