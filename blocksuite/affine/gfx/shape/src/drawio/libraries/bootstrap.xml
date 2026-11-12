@@ -1,0 +1,123 @@
+<shapes name="mxGraph.bootstrap">
+<shape aspect="variable" h="612" name="logo" strokewidth="inherit" w="612">
+    <connections/>
+    <background>
+        <path>
+            <move x="612" y="510"/>
+            <curve x1="612" x2="566.1" x3="510" y1="566.1" y2="612" y3="612"/>
+            <line x="102" y="612"/>
+            <curve x1="45.9" x2="0" x3="0" y1="612" y2="566.1" y3="510"/>
+            <line x="0" y="102"/>
+            <curve x1="0" x2="45.9" x3="102" y1="45.9" y2="0" y3="0"/>
+            <line x="510" y="0"/>
+            <curve x1="566.1" x2="612" x3="612" y1="0" y2="45.9" y3="102"/>
+            <line x="612" y="510"/>
+            <close/>
+        </path>
+    </background>
+    <foreground>
+        <fillstroke/>
+        <fillcolor color="#ffffff"/>
+        <path>
+            <move x="166.3" y="133"/>
+            <line x="339.8" y="133"/>
+            <curve x1="371.8" x2="397.5" x3="416.8" y1="133" y2="140.3" y3="155"/>
+            <curve x1="436.1" x2="445.8" x3="445.8" y1="169.7" y2="191.8" y3="221.5"/>
+            <curve x1="445.8" x2="441.4" x3="432.6" y1="239.5" y2="254.9" y3="267.7"/>
+            <curve x1="423.8" x2="411.2" x3="394.8" y1="280.5" y2="290.5" y3="297.5"/>
+            <line x="394.8" y="298.5"/>
+            <curve x1="416.8" x2="433.5" x3="444.8" y1="303.2" y2="313.6" y3="329.7"/>
+            <curve x1="456.1" x2="461.8" x3="461.8" y1="345.9" y2="366.1" y3="390.5"/>
+            <curve x1="461.8" x2="459.3" x3="454.3" y1="404.5" y2="417.6" y3="429.7"/>
+            <curve x1="449.3" x2="441.5" x3="430.8" y1="441.9" y2="452.4" y3="461.2"/>
+            <curve x1="420.1" x2="406.5" x3="389.8" y1="470" y2="477" y3="482.2"/>
+            <curve x1="373.1" x2="353.3" x3="330.3" y1="487.4" y2="490" y3="490"/>
+            <line x="166.3" y="490"/>
+            <line x="166.3" y="133"/>
+            <close/>
+            <move x="228.8" y="282.5"/>
+            <line x="330.8" y="282.5"/>
+            <curve x1="345.8" x2="358.3" x3="368.3" y1="282.5" y2="278.3" y3="269.7"/>
+            <curve x1="378.3" x2="383.3" x3="383.3" y1="261.1" y2="248.9" y3="232.9"/>
+            <curve x1="383.3" x2="378.8" x3="369.8" y1="214.9" y2="202.2" y3="194.9"/>
+            <curve x1="360.8" x2="347.8" x3="330.8" y1="187.6" y2="183.9" y3="183.9"/>
+            <line x="228.8" y="183.9"/>
+            <line x="228.8" y="282.5"/>
+            <close/>
+            <move x="228.8" y="439"/>
+            <line x="339.3" y="439"/>
+            <curve x1="358.3" x2="373.1" x3="383.5" y1="439" y2="434.1" y3="424.2"/>
+            <curve x1="394" x2="399.3" x3="399.3" y1="414.4" y2="400.4" y3="382.4"/>
+            <curve x1="399.3" x2="394.1" x3="383.5" y1="364.7" y2="351.2" y3="341.6"/>
+            <curve x1="372.9" x2="358.3" x3="339.3" y1="332" y2="327.4" y3="327.4"/>
+            <line x="228.8" y="327.4"/>
+            <line x="228.8" y="439"/>
+            <close/>
+        </path>
+        <fill/>
+    </foreground>
+</shape>
+<shape aspect="variable" h="100" name="password" strokewidth="inherit" w="100">
+    <connections/>
+    <background>
+        <path>
+            <move x="50" y="0"/>
+            <line x="50" y="100"/>
+        </path>
+    </background>
+    <foreground>
+        <fillstroke/>
+        <path>
+            <move x="0" y="50"/>
+            <line x="100" y="50"/>
+        </path>
+        <fillstroke/>
+        <path>
+            <move x="14.5" y="14.5"/>
+            <line x="85.5" y="85.5"/>
+        </path>
+        <fillstroke/>
+        <path>
+            <move x="85.5" y="14.5"/>
+            <line x="14.5" y="85.5"/>
+        </path>
+        <fillstroke/>
+    </foreground>
+</shape>
+<shape aspect="variable" h="100" name="rect" strokewidth="inherit" w="100">
+    <connections/>
+    <background>
+        <rect h="100" w="100" x="0" y="0"/>
+    </background>
+    <foreground>
+        <fillstroke/>
+    </foreground>
+</shape>
+<shape aspect="variable" h="90.96" name="user" strokewidth="inherit" w="99.29">
+    <connections/>
+    <background>
+        <path>
+            <move x="0" y="90.96"/>
+            <arc large-arc-flag="0" rx="30" ry="30" sweep-flag="1" x="1.7" x-axis-rotation="0" y="82.76"/>
+            <arc large-arc-flag="0" rx="10" ry="10" sweep-flag="1" x="7.7" x-axis-rotation="0" y="76.96"/>
+            <arc large-arc-flag="0" rx="300" ry="300" sweep-flag="1" x="28.7" x-axis-rotation="0" y="68.96"/>
+            <arc large-arc-flag="0" rx="15" ry="15" sweep-flag="0" x="38.2" x-axis-rotation="0" y="56.46"/>
+            <arc large-arc-flag="0" rx="11" ry="11" sweep-flag="0" x="35.2" x-axis-rotation="0" y="48.76"/>
+            <arc large-arc-flag="0" rx="30" ry="30" sweep-flag="1" x="30.2" x-axis-rotation="0" y="39.76"/>
+            <arc large-arc-flag="0" rx="33" ry="38" sweep-flag="1" x="30.9" x-axis-rotation="0" y="10.76"/>
+            <arc large-arc-flag="0" rx="21.8" ry="21.8" sweep-flag="1" x="68.5" x-axis-rotation="0" y="10.76"/>
+            <arc large-arc-flag="0" rx="33" ry="38" sweep-flag="1" x="69" x-axis-rotation="0" y="39.76"/>
+            <arc large-arc-flag="0" rx="25" ry="25" sweep-flag="1" x="64.2" x-axis-rotation="0" y="48.76"/>
+            <arc large-arc-flag="0" rx="10" ry="10" sweep-flag="0" x="60.9" x-axis-rotation="0" y="55.76"/>
+            <arc large-arc-flag="0" rx="15" ry="15" sweep-flag="0" x="69.7" x-axis-rotation="0" y="68.36"/>
+            <arc large-arc-flag="0" rx="300" ry="300" sweep-flag="1" x="91.7" x-axis-rotation="0" y="76.96"/>
+            <arc large-arc-flag="0" rx="10" ry="10" sweep-flag="1" x="97.5" x-axis-rotation="0" y="82.26"/>
+            <arc large-arc-flag="0" rx="20" ry="20" sweep-flag="1" x="99.2" x-axis-rotation="0" y="90.96"/>
+            <close/>
+        </path>
+    </background>
+    <foreground>
+        <fillstroke/>
+    </foreground>
+</shape>
+</shapes>

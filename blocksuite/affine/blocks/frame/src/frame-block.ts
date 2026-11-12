@@ -131,6 +131,11 @@ export const FrameBlockInteraction =
         const { model, std } = context;
 
         return {
+          beforeResize(context): void {
+            context.set({
+              lockRatio: Boolean(model.props.frameAspectLock),
+            });
+          },
           onResizeStart(context): void {
             context.default(context);
             model.stash('childElementIds');
