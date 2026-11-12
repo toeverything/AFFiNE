@@ -4,6 +4,7 @@ import { CalloutStoreExtension } from '@blocksuite/affine-block-callout/store';
 import { CodeStoreExtension } from '@blocksuite/affine-block-code/store';
 import { DataViewStoreExtension } from '@blocksuite/affine-block-data-view/store';
 import { DatabaseStoreExtension } from '@blocksuite/affine-block-database/store';
+import { DatabaseRefStoreExtension } from '@blocksuite/affine-block-database-ref/store';
 import { DividerStoreExtension } from '@blocksuite/affine-block-divider/store';
 import { EdgelessTextStoreExtension } from '@blocksuite/affine-block-edgeless-text/store';
 import { EmbedStoreExtension } from '@blocksuite/affine-block-embed/store';
@@ -13,6 +14,7 @@ import { ImageStoreExtension } from '@blocksuite/affine-block-image/store';
 import { LatexStoreExtension } from '@blocksuite/affine-block-latex/store';
 import { ListStoreExtension } from '@blocksuite/affine-block-list/store';
 import { NoteStoreExtension } from '@blocksuite/affine-block-note/store';
+import { NoteRefStoreExtension } from '@blocksuite/affine-block-note-ref/store';
 import { ParagraphStoreExtension } from '@blocksuite/affine-block-paragraph/store';
 import { RootStoreExtension } from '@blocksuite/affine-block-root/store';
 import { SurfaceStoreExtension } from '@blocksuite/affine-block-surface/store';
@@ -41,6 +43,7 @@ export function getInternalStoreExtensions() {
     CodeStoreExtension,
     DataViewStoreExtension,
     DatabaseStoreExtension,
+    DatabaseRefStoreExtension,
     DividerStoreExtension,
     EdgelessTextStoreExtension,
     EmbedStoreExtension,
@@ -50,6 +53,7 @@ export function getInternalStoreExtensions() {
     LatexStoreExtension,
     ListStoreExtension,
     NoteStoreExtension,
+    NoteRefStoreExtension,
     ParagraphStoreExtension,
     SurfaceRefStoreExtension,
     TableStoreExtension,

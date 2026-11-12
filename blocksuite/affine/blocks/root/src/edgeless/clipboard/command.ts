@@ -1,4 +1,5 @@
 import {
+  CanvasElementType,
   type ClipboardConfigCreationContext,
   EdgelessClipboardConfigIdentifier,
   EdgelessCRUDIdentifier,
@@ -51,8 +52,15 @@ export const createElementsFromClipboardDataCommand: Command<Input, Output> = (
   const runner = async (): Promise<CreatedElements> => {
     let oldCommonBound, pasteX, pasteY;
     {
-      const lastMousePos = toolManager.lastMousePos$.peek();
-      pasteCenter = pasteCenter ?? [lastMousePos.x, lastMousePos.y];
+      if (!pasteCenter) {
+        const lastMousePos = toolManager?.lastMousePos$?.peek();
+        if (lastMousePos) {
+          pasteCenter = [lastMousePos.x, lastMousePos.y];
+        } else {
+          const center = gfx.viewport.center;
+          pasteCenter = [center.x, center.y];
+        }
+      }
       const [modelX, modelY] = pasteCenter;
       oldCommonBound = edgelessElementsBoundFromRawData(elementsRawData);
 
@@ -84,6 +92,8 @@ export const createElementsFromClipboardDataCommand: Command<Input, Output> = (
     const blockModels: GfxBlockElementModel[] = [];
     const canvasElements: GfxPrimitiveElementModel[] = [];
     const allElements: GfxModel[] = [];
+
+    const deferredConnectors: SerializedElement[] = [];
 
     for (const data of elementsRawData) {
       const { data: blockSnapshot } = BlockSnapshotSchema.safeParse(data);
@@ -126,6 +136,10 @@ export const createElementsFromClipboardDataCommand: Command<Input, Output> = (
         context.originalIndexes.set(oldId, originalIndex);
       } else {
         assertType<SerializedElement>(data);
+        if (data.type === CanvasElementType.CONNECTOR) {
+          deferredConnectors.push(data);
+          continue;
+        }
         const oldId = data.id;
 
         const element = createCanvasElement(
@@ -143,6 +157,24 @@ export const createElementsFromClipboardDataCommand: Command<Input, Output> = (
         context.oldToNewIdMap.set(oldId, element.id);
         context.originalIndexes.set(oldId, element.index);
       }
+    }
+
+    for (const data of deferredConnectors) {
+      const oldId = data.id;
+      const element = createCanvasElement(
+        std,
+        data,
+        context,
+        getNewXYWH(data.xywh)
+      );
+
+      if (!element) continue;
+
+      canvasElements.push(element);
+      allElements.push(element);
+
+      context.oldToNewIdMap.set(oldId, element.id);
+      context.originalIndexes.set(oldId, element.index);
     }
 
     // remap old id to new id for the original index

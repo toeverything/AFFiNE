@@ -522,16 +522,42 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     const range = selection.getRangeAt(0);
-    if (!range.intersectsNode(rootElement)) {
-      const isContainerSelected =
-        range.endContainer.contains(rootElement) &&
-        Array.from(range.endContainer.childNodes).filter(
-          node => node instanceof HTMLElement
-        ).length === 1 &&
-        range.startContainer.contains(rootElement) &&
-        Array.from(range.startContainer.childNodes).filter(
-          node => node instanceof HTMLElement
-        ).length === 1;
+
+    // The selection's range containers can end up pointing at a node whose
+    // realm was torn down mid-teardown (e.g. the doc holding this editor was
+    // just deleted/relocated out from under an in-flight `selectionchange`).
+    // Reading `.contains`/`.intersectsNode` on such a node throws
+    // "Permission denied to access property" instead of returning a normal
+    // boolean — tolerate it the same way we'd tolerate "not this editor".
+    let intersects: boolean;
+    try {
+      intersects = range.intersectsNode(rootElement);
+    } catch {
+      if (previousInlineRange !== null) {
+        this.editor.setInlineRange(null);
+      }
+      return;
+    }
+
+    if (!intersects) {
+      let isContainerSelected: boolean;
+      try {
+        isContainerSelected =
+          range.endContainer.contains(rootElement) &&
+          Array.from(range.endContainer.childNodes).filter(
+            node => node instanceof HTMLElement
+          ).length === 1 &&
+          range.startContainer.contains(rootElement) &&
+          Array.from(range.startContainer.childNodes).filter(
+            node => node instanceof HTMLElement
+          ).length === 1;
+      } catch {
+        if (previousInlineRange !== null) {
+          this.editor.setInlineRange(null);
+        }
+        return;
+      }
+
       if (isContainerSelected) {
         this.editor.focusEnd();
         return;

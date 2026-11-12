@@ -10,6 +10,7 @@ import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import { RefNodeSlotsProvider } from '@blocksuite/affine-inline-reference';
 import {
   FrameBlockModel,
+  NoteBlockModel,
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
@@ -22,7 +23,10 @@ import {
   ViewportElementExtension,
 } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
+import {
+  ensureDocLoaded,
+  requestConnectedFrame,
+} from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { Bound, type SerializedXYWH } from '@blocksuite/global/gfx';
@@ -215,10 +219,31 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         return [null, doc.id];
       };
 
+      // `refDocId` fast path: populated at creation time by the cross-doc
+      // picker, so if it's set we already know exactly which doc to check —
+      // no need to fall through to the brute-force scan below at all.
+      // Existing surface-ref blocks (created before this field existed, or
+      // via the same-doc-only slash-menu item) simply don't have it set,
+      // so this is skipped for them entirely, preserving current behavior.
+      const refDocId = this.model.props.refDocId;
+      if (refDocId) {
+        const refDoc = this.std.workspace.getDoc(refDocId);
+        if (refDoc) {
+          const result = find(refDoc.getStore());
+          if (result[0]) return result;
+        }
+      }
+
       // find current doc first
       let result = find(this.store);
       if (result[0]) return result;
 
+      // Legacy fallback: brute-force scan every loaded doc in the
+      // workspace. Kept for backward compatibility with any surface-ref
+      // blocks that predate `refDocId` (or whose `refDocId` didn't
+      // resolve, e.g. a stale/incorrect value) — O(n) over every doc,
+      // unindexed, relying entirely on `referenceId` being globally
+      // unique. Not something new code should depend on.
       for (const doc of this.std.workspace.docs.values()) {
         result = find(doc.getStore());
         if (result[0]) return result;
@@ -227,17 +252,80 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       return [null, this.store.id];
     };
 
+    // Cross-doc reference: `refDoc.load()` flips `doc.ready` synchronously,
+    // but the doc's actual Yjs content still streams in asynchronously
+    // afterward (from local storage, or a real remote peer) — a doc that
+    // hasn't been opened recently can take several seconds. Without this,
+    // `init()` below can run before the target doc's content has arrived,
+    // permanently conclude "not found," and never re-check — exactly the
+    // "reference shows unavailable after reload, but the target is right
+    // there once it finishes loading" symptom this retry closes.
+    let clearPendingRetry: (() => void) | null = null;
+    // Bounded: a target that's genuinely gone (deleted, wrong id) would
+    // otherwise re-run full resolution on every single Yjs update to a
+    // chatty doc, forever. Resets whenever resolution succeeds; only counts
+    // attempts made while still unresolved.
+    const MAX_RETRY_ATTEMPTS = 20;
+    let retryAttempts = 0;
+
     const init = () => {
+      clearPendingRetry?.();
+      clearPendingRetry = null;
+
       const [referencedModel, docId] = findReferencedModel();
 
       this._referencedModel =
         referencedModel && referencedModel.xywh ? referencedModel : null;
+      if (this._referencedModel) retryAttempts = 0;
       // TODO(@L-Sun): clear query cache
       const doc = this.store.workspace.getDoc(docId);
       this._previewDoc = doc?.getStore({ readonly: true }) ?? null;
+
+      // `_initViewport` only ever reads `referenceModel` once, synchronously,
+      // right after the first `init()` call — it has no way to notice
+      // `_referencedModel` changing later (e.g. via this retry, or via any
+      // of the other `init()` triggers below). Keep the viewport signal in
+      // sync here so a later-arriving reference actually renders at the
+      // right size instead of the viewport staying stuck at its original
+      // (likely null) value forever.
+      this._referenceXYWH$.value = this._referencedModel?.xywh ?? null;
+
+      const refDocId = this.model.props.refDocId;
+      if (
+        !this._referencedModel &&
+        refDocId &&
+        retryAttempts < MAX_RETRY_ATTEMPTS
+      ) {
+        const refDoc = this.std.workspace.getDoc(refDocId);
+        if (refDoc) {
+          ensureDocLoaded(refDoc);
+          // Debounced like `database-ref`'s own equivalent watcher — a doc
+          // still streaming in from local storage can emit many `update`
+          // events in quick succession, and each retry re-runs the full
+          // (possibly brute-force-scanning) resolver.
+          let debounce: ReturnType<typeof setTimeout> | null = null;
+          const onUpdate = () => {
+            if (debounce) clearTimeout(debounce);
+            debounce = setTimeout(() => {
+              refDoc.spaceDoc.off('update', onUpdate);
+              clearPendingRetry = null;
+              retryAttempts++;
+              init();
+            }, 300);
+          };
+          refDoc.spaceDoc.on('update', onUpdate);
+          clearPendingRetry = () => {
+            if (debounce) clearTimeout(debounce);
+            refDoc.spaceDoc.off('update', onUpdate);
+          };
+        }
+      }
+
+      this.requestUpdate();
     };
 
     init();
+    this._disposables.add(() => clearPendingRetry?.());
 
     this._disposables.add(
       this.model.propsUpdated.subscribe(payload => {
@@ -292,6 +380,97 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     const referenceId = this.model.props.reference;
     const referenceXYWH$ = this._referenceXYWH$;
+    const getRenderOptions = () => {
+      const options =
+        (this.referenceModel instanceof FrameBlockModel
+          ? this.referenceModel.props.frameRenderOptions
+          : undefined) ?? this.model.props.frameRenderOptions;
+      return {
+        showInnerFrames: options?.showInnerFrames ?? false,
+        showGrid: options?.showGrid ?? false,
+        showNotes: options?.showNotes ?? true,
+      };
+    };
+
+    const applyRenderOptions = (
+      host: HTMLElement,
+      surfaceModels: readonly GfxPrimitiveElementModel[],
+      referenceElement: GfxModel
+    ) => {
+      const { showInnerFrames, showGrid, showNotes } = getRenderOptions();
+      const hiddenFrameIds = new Set<string>();
+      const hiddenNoteIds = new Set<string>();
+      const referencedFrame =
+        referenceElement instanceof FrameBlockModel ? referenceElement : null;
+
+      if (referencedFrame) {
+        const frameBound = referencedFrame.elementBound;
+        const queue = [...referencedFrame.childElements];
+        while (queue.length) {
+          const element = queue.shift();
+          if (!element) continue;
+
+          if (element instanceof FrameBlockModel) {
+            if (!showInnerFrames) {
+              hiddenFrameIds.add(element.id);
+            }
+            queue.push(...element.childElements);
+            continue;
+          }
+
+          if (element instanceof NoteBlockModel && !showNotes) {
+            hiddenNoteIds.add(element.id);
+          }
+        }
+
+        for (const element of surfaceModels) {
+          if (element.id === referencedFrame.id) continue;
+
+          if (
+            element instanceof FrameBlockModel &&
+            !showInnerFrames &&
+            frameBound.isOverlapWithBound(element.elementBound)
+          ) {
+            hiddenFrameIds.add(element.id);
+            continue;
+          }
+
+          if (
+            element instanceof NoteBlockModel &&
+            !showNotes &&
+            frameBound.isOverlapWithBound(element.elementBound)
+          ) {
+            hiddenNoteIds.add(element.id);
+          }
+        }
+      }
+
+      host
+        .querySelectorAll<FrameBlockComponent>('affine-frame')
+        .forEach(view => {
+          const hidden = hiddenFrameIds.has(view.dataset.blockId ?? '');
+          view.style.display = hidden ? 'none' : '';
+          view.showBorder = showInnerFrames;
+        });
+
+      host
+        .querySelectorAll<HTMLElement>('affine-edgeless-note')
+        .forEach(view => {
+          const hidden = hiddenNoteIds.has(view.dataset.blockId ?? '');
+          view.style.display = hidden ? 'none' : '';
+        });
+
+      host
+        .querySelectorAll<HTMLElement>('affine-edgeless-root-preview')
+        .forEach(view => {
+          (
+            view as HTMLElement & { overrideBackground?: string }
+          ).overrideBackground = showGrid
+            ? undefined
+            : 'var(--affine-background-primary-color)';
+        });
+    };
+
     class SurfaceRefViewportWatcher extends LifeCycleWatcher {
       static override readonly key = 'surface-ref-viewport-watcher';
 
@@ -334,6 +513,29 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
             })
           );
         }
+
+        applyRenderOptions(
+          this.std.host,
+          surface.elementModels,
+          referenceElement
+        );
+
+        _disposable.add(
+          this.std.store.slots.blockUpdated.subscribe(payload => {
+            if (
+              payload.id !== referenceId ||
+              payload.type !== 'update' ||
+              payload.props.key !== 'frameRenderOptions'
+            ) {
+              return;
+            }
+            applyRenderOptions(
+              this.std.host,
+              surface.elementModels,
+              referenceElement
+            );
+          })
+        );
 
         const subscription = this.std.view.viewUpdated.subscribe(
           ({ id, type, method, view }) => {
@@ -382,19 +584,27 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     this._disposables.add(dispose);
   }
 
-  private _renderRefContent() {
+  private _renderRefContent(useLegacyWidth: boolean) {
     if (!this._referenceXYWH$.value) return nothing;
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
+    const sizeScale = normalizePositiveNumber(
+      this.model.props.pageSizeScale,
+      1
+    );
+    const adjustedAspectRatio =
+      sizeScale === 1 ? aspectRatio : aspectRatio / sizeScale;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
     const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
+
+    const viewportStyle = useLegacyWidth
+      ? { aspectRatio: `${adjustedAspectRatio}` }
+      : { aspectRatio: `${adjustedAspectRatio}`, width: '100%' };
 
     return html`<div class="ref-content">
       <div
         class="ref-viewport"
-        style=${styleMap({
-          aspectRatio: `${aspectRatio}`,
-        })}
+        style=${styleMap(viewportStyle)}
         data-theme=${edgelessTheme}
       >
         ${guard(this._previewDoc, () => {
@@ -456,13 +666,38 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
     const theme = this.std.get(ThemeProvider).theme$.value;
+    const widthScale = normalizePositiveNumber(
+      this.model.props.pageWidthScale,
+      1
+    );
+    const widthMode = this.model.props.pageWidthMode ?? 'page';
+    const useLegacyWidth =
+      widthMode === 'page' || (widthMode === 'scale' && widthScale === 1);
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
           .refFlavour=${model.props.refFlavour$.value}
           .theme=${theme}
         ></surface-ref-placeholder>`
-      : this._renderRefContent();
+      : this._renderRefContent(useLegacyWidth);
+
+    const baseWidth =
+      widthMode === 'full'
+        ? 'calc(100vw - (var(--affine-editor-side-padding, 0px) * 2))'
+        : widthMode === 'scale'
+          ? `calc(var(--affine-editor-width) * ${widthScale})`
+          : 'var(--affine-editor-width)';
+    const containerStyle = useLegacyWidth
+      ? {}
+      : {
+          width: baseWidth,
+          maxWidth: baseWidth,
+          marginLeft: widthMode === 'full' ? '0' : 'auto',
+          marginRight: widthMode === 'full' ? '0' : 'auto',
+          position: 'relative',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        };
 
     return html`
       <div
@@ -471,6 +706,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
           focused: this.selected$.value,
           'comment-highlighted': this.isCommentHighlighted,
         })}
+        style=${styleMap(containerStyle)}
         @click=${this._handleClick}
       >
         ${content}
@@ -502,6 +738,13 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   @query('editor-host')
   accessor previewEditor!: EditorHost | null;
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
 }
 
 declare global {

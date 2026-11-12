@@ -60,6 +60,12 @@ export class EdgelessNoteStylePanel extends SignalWatcher(
       align-items: stretch;
     }
 
+    .edgeless-note-page-border-row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
     .edgeless-note-style-section-title {
       display: flex;
       flex-direction: row;
@@ -151,6 +157,15 @@ export class EdgelessNoteStylePanel extends SignalWatcher(
     return this.notes[0].props.background;
   }
 
+  // Page-mode display style (step 1 of the reusable-note rollout) —
+  // distinct from `_background` above, which is this note's *edgeless*
+  // canvas box color. `undefined` (`hasTransparent`, no swatch selected)
+  // means no override, letting the page's own background show through.
+  private get _pageBackgroundOverride() {
+    const value = this.notes[0].props.pageBackgroundOverride;
+    return value ? resolveColor(value, this._theme) : 'transparent';
+  }
+
   private get _shadow() {
     return this.notes[0].props.edgeless.style.shadowType;
   }
@@ -182,6 +197,37 @@ export class EdgelessNoteStylePanel extends SignalWatcher(
     this.notes.forEach(note => {
       crud.updateElement(note.id, {
         background: color,
+      } satisfies Partial<NoteProps>);
+    });
+  };
+
+  private readonly _selectPageBackgroundColor = (e: ColorEvent) => {
+    this._beforeChange();
+    const color = e.detail.value;
+    const crud = this.std.get(EdgelessCRUDIdentifier);
+    this.notes.forEach(note => {
+      crud.updateElement(note.id, {
+        pageBackgroundOverride: color === 'transparent' ? undefined : color,
+      } satisfies Partial<NoteProps>);
+    });
+  };
+
+  // Whether *any* selected note currently shows a border in page flow —
+  // used only to decide which way the toggle should flip next; each note
+  // still gets its own independent `pageBorder` value (mirrors the
+  // multi-select semantics `_selectPageBackgroundColor` above already has).
+  private get _pageBorder() {
+    return this.notes.some(
+      note => note.props.pageBorder ?? !note.isPageBlock()
+    );
+  }
+
+  private readonly _togglePageBorder = (on: boolean) => {
+    this._beforeChange();
+    const crud = this.std.get(EdgelessCRUDIdentifier);
+    this.notes.forEach(note => {
+      crud.updateElement(note.id, {
+        pageBorder: on,
       } satisfies Partial<NoteProps>);
     });
   };
@@ -307,6 +353,33 @@ export class EdgelessNoteStylePanel extends SignalWatcher(
             @click=${this._switchToCustomColorTab}
           ></edgeless-color-custom-button>
         </edgeless-color-panel>
+      </div>
+      <div
+        class="edgeless-note-style-section"
+        data-testid="affine-note-page-background-panel"
+      >
+        <div class="edgeless-note-style-section-title">
+          In-page background color
+        </div>
+        <edgeless-color-panel
+          role="listbox"
+          .value=${this._pageBackgroundOverride}
+          .theme=${this._theme}
+          .palettes=${DefaultTheme.NoteBackgroundColorPalettes}
+          .hasTransparent=${true}
+          .columns=${DefaultTheme.NoteBackgroundColorPalettes.length + 1}
+          @select=${this._selectPageBackgroundColor}
+        ></edgeless-color-panel>
+      </div>
+      <div
+        class="edgeless-note-style-section edgeless-note-page-border-row"
+        data-testid="affine-note-page-border-toggle"
+      >
+        <div class="edgeless-note-style-section-title">In-page border</div>
+        <toggle-switch
+          .on=${this._pageBorder}
+          .onChange=${this._togglePageBorder}
+        ></toggle-switch>
       </div>
       <div class="edgeless-note-style-section">
         <div class="edgeless-note-style-section-title">Shadow</div>

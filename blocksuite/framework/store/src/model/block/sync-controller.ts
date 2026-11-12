@@ -1,5 +1,6 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { effect, signal } from '@preact/signals-core';
+import { equalityDeep } from 'lib0/function.js';
 import { createMutex } from 'lib0/mutex.js';
 import * as Y from 'yjs';
 
@@ -15,6 +16,29 @@ import type { Store } from '../store/store.js';
 import { BlockModel } from './block-model.js';
 import type { YBlock } from './types.js';
 import { internalPrimitives } from './zod.js';
+
+/**
+ * Every `SyncController` constructed for the same underlying `yBlock` (e.g.
+ * one per reference, once a block is rendered through 2+ simultaneous
+ * `Store`s) registers itself here. This is what lets a change observed by
+ * *any one* of them reach *all* of their own, separate `props.<name>$`
+ * signals — without it, a change nested more than one level deep inside an
+ * object/array-valued prop (e.g. `cells[rowId][columnId] = ...`, as Kanban's
+ * own drag-and-drop uses) only ever reached whichever `SyncController`
+ * happened to construct that specific nested Y-structure's reactive wrapper
+ * first (see `reactive/proxy.ts`'s `addChangeListener` fix for the
+ * *top-level* cache-hit case — that fix does not recursively propagate a
+ * newly-added listener down into already-existing nested wrappers, since
+ * there is no general mechanism for it to do so). Confirmed live: a Kanban
+ * card's group-by cell write landed correctly in Yjs and updated one
+ * `SyncController`'s own `cells$` signal, but a second `SyncController` for
+ * the exact same block (a different reference to the same table) never saw
+ * it — its own `cells$.value` stayed on the pre-drag content forever,
+ * because its own listener was only ever registered on the outer `cells`
+ * wrapper, not on the already-existing, already-owned-by-the-first-
+ * `SyncController` row-level sub-map beneath it.
+ */
+const syncControllersByYBlock = new WeakMap<YBlock, Set<SyncController>>();
 
 /**
  * @internal
@@ -56,14 +80,8 @@ export class SyncController {
           this._byPassUpdate(() => {
             // @ts-expect-error allow magic props
             this.model.props[keyName] = proxy;
-            const signalKey = `${keyName}$`;
-            this._mutex(() => {
-              if (signalKey in this.model.props) {
-                // @ts-expect-error allow magic props
-                this.model.props[signalKey].value = y2Native(value);
-              }
-            });
           });
+          this._syncSiblingSignals(keyName, y2Native(value));
           this.onChange?.(keyName, isLocal);
           return;
         }
@@ -122,8 +140,83 @@ export class SyncController {
     this.version = version;
 
     this.model = this._createModel(props);
+    this._registerForSiblingSync();
 
     this._observeYBlockChanges();
+  }
+
+  /**
+   * Registers `this` alongside every other `SyncController` already
+   * wrapping the same `yBlock`, and unregisters on model deletion. See the
+   * module-level `syncControllersByYBlock` doc comment for why this exists.
+   */
+  private _registerForSiblingSync() {
+    let siblings = syncControllersByYBlock.get(this.yBlock);
+    if (!siblings) {
+      siblings = new Set();
+      syncControllersByYBlock.set(this.yBlock, siblings);
+    }
+    siblings.add(this);
+    const subscription = this.model.deleted.subscribe(() => {
+      subscription.unsubscribe();
+      siblings?.delete(this);
+    });
+  }
+
+  /**
+   * Pushes `fresh` (an already-`y2Native`-converted value) into the
+   * `${keyName}$` signal of *every* `SyncController` registered for this
+   * same `yBlock` (including `this`) — not just whichever one happened to
+   * observe the underlying change. Each sibling's own `_mutex` still guards
+   * that specific sibling's own reentrant write-back effect (see
+   * `_createModel`), so this is safe to call unconditionally regardless of
+   * how many siblings exist.
+   */
+  private _syncSiblingSignals(keyName: string, fresh: unknown) {
+    const signalKey = `${keyName}$`;
+    const siblings = syncControllersByYBlock.get(this.yBlock);
+    siblings?.forEach(sibling => {
+      if (signalKey in sibling.model.props) {
+        // Deferred to the next microtask rather than written synchronously
+        // here. This observer callback runs *inside* the very Yjs
+        // transaction/observer chain that a `SyncController`'s own
+        // `_createModel` `effect()` triggers when it writes `data.value`
+        // (this exact `${keyName}$` signal) into `model.props[key]` ->
+        // Yjs — for the *originating* `SyncController` (always included
+        // in `siblings`, see the constructor), writing back into that
+        // same signal here is still inside that same effect's own
+        // synchronous callback, which Preact Signals' own cycle detection
+        // correctly refuses (confirmed live: a "Cycle detected" throw,
+        // initiating an inline LaTeX equation).
+        //
+        // A first attempt compared values with `equalityDeep` and skipped
+        // only when unchanged, on the theory this was a redundant-write
+        // problem — it wasn't: the throw still happened on an actual,
+        // intentional value change, because Preact's cycle detection
+        // cares about still being inside this signal's own notification,
+        // not about whether the value differs. A second attempt skipped
+        // the originating sibling unconditionally instead — also wrong:
+        // that signal genuinely does need to reflect the confirmed value
+        // (this method exists precisely to propagate a Yjs-observed
+        // change, whichever origin, into *every* sibling's signal — see
+        // this class's own header comment), so skipping it left any
+        // `SignalWatcher`-based UI reading it directly stuck on stale
+        // data indefinitely (confirmed live: inline equations stopped
+        // updating anywhere on a page with a nested reference present,
+        // not just inside the reference).
+        //
+        // Deferring the write to the next microtask — after the current
+        // synchronous notification has fully unwound — keeps the update
+        // for every sibling, including the originating one, while still
+        // avoiding the same-tick reentrancy Preact objects to.
+        queueMicrotask(() => {
+          sibling._mutex(() => {
+            // @ts-expect-error allow magic props
+            sibling.model.props[signalKey].value = fresh;
+          });
+        });
+      }
+    });
   }
 
   private _createModel(props: UnRecord) {
@@ -188,6 +281,45 @@ export class SyncController {
             return result;
           }
 
+          // `native2Y` always mints a brand-new Y structure for object/array
+          // values (never reuses an existing one, even for identical
+          // content), so the reference-equality check just below can never
+          // short-circuit a genuinely no-op write for such props — only for
+          // primitives, which `native2Y` returns unchanged. Round-tripping
+          // through Yjs is exactly as lossy in the other direction: whenever
+          // this block's own Yjs observer sees *any* 'update'/'add' event for
+          // a key, it unconditionally re-deserializes via `y2Native` (also
+          // always a fresh object) and assigns it to this prop's signal —
+          // regardless of whether the content actually changed — which is
+          // what routes back into this very setter via this class's own
+          // write-back `effect()` (see `_createModel`). With a single
+          // `SyncController` for a block, `_mutex`/`_byPassProxy` guard
+          // against that effect's write cascading into itself. But every
+          // additional `SyncController` wrapping the *same* underlying
+          // block (e.g. the same table rendered through more than one
+          // reference at once — each gets its own full `Block`/model/effect
+          // graph, see `block.ts`) reacts to the others' writes with no
+          // such protection between them: A's redundant write triggers B's
+          // own redundant write-back, which triggers A's again, forever —
+          // a real, reproduced infinite loop that tripped signals' hard
+          // "Cycle detected" re-entrancy guard after 100+ synchronous
+          // re-entrant writes, confirmed by an actual live capture showing
+          // byte-identical `views` content across dozens of consecutive
+          // writes. A value-based check stops these known-no-op writes
+          // before they ever reach Yjs, for however many independent
+          // `SyncController`s exist.
+          //
+          // Compared against the *actual current Yjs value* (re-deserialized
+          // via `y2Native`), not `target[p]` — `target[p]` is deliberately
+          // out of sync with Yjs while a prop is stashed (see `stash`/`pop`
+          // below: stashed writes update `target[p]` only, precisely so
+          // `pop` can later flush the accumulated value through for the
+          // first time), so comparing against it would wrongly treat that
+          // flush as a no-op and silently drop it.
+          if (equalityDeep(y2Native(this.yBlock.get(`prop:${p}`)), value)) {
+            return Reflect.set(target, p, value, receiver);
+          }
+
           const yValue = native2Y(value);
           if (this.yBlock.get(`prop:${p}`) === yValue) {
             return Reflect.set(target, p, value, receiver);
@@ -227,19 +359,41 @@ export class SyncController {
     return model;
   }
 
+  // `createYProxy` caches one reactive wrapper per underlying Y structure
+  // and registers *additional* listeners for later callers wrapping the
+  // same structure (see `addChangeListener` — needed so a second
+  // independent `SyncController` sharing this block gets notified of
+  // in-place mutations too). But `_getPropsProxy` itself can legitimately
+  // be called more than once *for this same `SyncController`* against the
+  // very same Y structure — e.g. the top-level proxy `set` trap below
+  // calls it directly right after `this.yBlock.set(...)`, which
+  // synchronously triggers `_observeYBlockChanges`'s handler, which also
+  // calls it. Without memoizing the handler per prop name, each call would
+  // mint a distinct closure, and this SyncController's own listener would
+  // get registered twice — double-firing `onChange`/the prop signal for
+  // every local write. Reading the current Y value fresh (rather than
+  // closing over the `value` parameter, which is only ever correct until
+  // the next wholesale reassignment of this prop) keeps the memoized
+  // handler correct across the only case where the underlying object
+  // actually changes identity.
+  private readonly _propsProxyOnChange = new Map<
+    string,
+    (data: unknown, isLocal: boolean) => void
+  >();
+
   private _getPropsProxy(name: string, value: unknown) {
-    return createYProxy(value, {
-      onChange: (_, isLocal) => {
+    let onChange = this._propsProxyOnChange.get(name);
+    if (!onChange) {
+      onChange = (_data: unknown, isLocal: boolean) => {
         this.onChange?.(name, isLocal);
-        const signalKey = `${name}$`;
-        if (signalKey in this.model.props) {
-          this._mutex(() => {
-            // @ts-expect-error allow magic props
-            this.model.props[signalKey].value = y2Native(value);
-          });
-        }
-      },
-    });
+        this._syncSiblingSignals(
+          name,
+          y2Native(this.yBlock.get(`prop:${name}`))
+        );
+      };
+      this._propsProxyOnChange.set(name, onChange);
+    }
+    return createYProxy(value, { onChange });
   }
 
   private _parseYBlock() {
