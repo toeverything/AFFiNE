@@ -128,33 +128,11 @@ export class TableCell extends SignalWatcher(
         items: [
           menu.group({
             items: [
-              menu.subMenu({
-                name: 'Background color',
-                prefix: ColorPickerIcon(),
-                options: {
-                  items: [
-                    { name: 'Default', color: undefined },
-                    ...colorList,
-                  ].map(item =>
-                    menu.action({
-                      prefix: html`<div
-                        style="color: ${
-                          item.color ?? cssVarV2.layer.background.primary
-                        };display: flex;align-items: center;justify-content: center;"
-                      >
-                        ${TextBackgroundDuotoneIcon}
-                      </div>`,
-                      name: item.name,
-                      isSelected: column.backgroundColor === item.color,
-                      select: () => {
-                        this.dataManager.setColumnBackgroundColor(
-                          column.columnId,
-                          item.color
-                        );
-                      },
-                    })
-                  ),
-                },
+              this.createColorPickerMenu(column.backgroundColor, color => {
+                this.dataManager.setColumnBackgroundColor(
+                  column.columnId,
+                  color
+                );
               }),
               ...(column.backgroundColor
                 ? [
@@ -254,33 +232,8 @@ export class TableCell extends SignalWatcher(
         items: [
           menu.group({
             items: [
-              menu.subMenu({
-                name: 'Background color',
-                prefix: ColorPickerIcon(),
-                options: {
-                  items: [
-                    { name: 'Default', color: undefined },
-                    ...colorList,
-                  ].map(item =>
-                    menu.action({
-                      prefix: html`<div
-                        style="color: ${
-                          item.color ?? cssVarV2.layer.background.primary
-                        };display: flex;align-items: center;justify-content: center;"
-                      >
-                        ${TextBackgroundDuotoneIcon}
-                      </div>`,
-                      name: item.name,
-                      isSelected: row.backgroundColor === item.color,
-                      select: () => {
-                        this.dataManager.setRowBackgroundColor(
-                          row.rowId,
-                          item.color
-                        );
-                      },
-                    })
-                  ),
-                },
+              this.createColorPickerMenu(row.backgroundColor, color => {
+                this.dataManager.setRowBackgroundColor(row.rowId, color);
               }),
               ...(row.backgroundColor
                 ? [
