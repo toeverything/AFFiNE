@@ -23,6 +23,7 @@ import type { TemplateResult } from 'lit';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { DEFAULT_DRAWIO_EMBED_URL, isDrawioAttachment } from './drawio/utils';
 import { getAttachmentBlob } from './utils';
 
 export type AttachmentEmbedConfig = {
@@ -71,6 +72,56 @@ export function AttachmentEmbedConfigExtension(
       configs.forEach(option => {
         di.addImpl(AttachmentEmbedConfigIdentifier(option.name), () => option);
       });
+    },
+  };
+}
+
+/**
+ * Embed config for draw.io attachments. `embedUrl` is the draw.io server
+ * that renders the diagram.
+ */
+export function createDrawioEmbedConfig(
+  embedUrl = DEFAULT_DRAWIO_EMBED_URL
+): AttachmentEmbedConfig {
+  return {
+    name: 'drawio',
+    shouldShowStatus: true,
+    check: (model, maxFileSize) =>
+      isDrawioAttachment(model) && model.props.size <= maxFileSize,
+    action: model => {
+      // Same size as other iframe embeds.
+      const bound = Bound.deserialize(model.props.xywh);
+      bound.w = EMBED_CARD_WIDTH.figma;
+      bound.h = EMBED_CARD_HEIGHT.figma;
+      model.store.updateBlock(model, {
+        embed: true,
+        style: 'figma',
+        xywh: bound.serialize(),
+      });
+    },
+    render: (model, blobUrl) =>
+      html`<affine-attachment-drawio-viewer
+        .blobUrl=${blobUrl}
+        .embedUrl=${embedUrl}
+        .name=${model.props.name}
+      ></affine-attachment-drawio-viewer>`,
+  };
+}
+
+/**
+ * Points the draw.io embed at another draw.io server, e.g. a self-hosted one.
+ * Register it after `AttachmentEmbedConfigExtension`, since it replaces the
+ * built-in `drawio` config.
+ */
+export function AttachmentDrawioEmbedUrlExtension(
+  embedUrl: string
+): ExtensionType {
+  return {
+    setup: di => {
+      di.override(
+        AttachmentEmbedConfigIdentifier('drawio'),
+        createDrawioEmbedConfig(embedUrl)
+      );
     },
   };
 }
@@ -250,6 +301,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
         controls
       ></audio>`,
   },
+  createDrawioEmbedConfig(),
 ];
 
 /**
