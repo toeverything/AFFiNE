@@ -60,6 +60,7 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-drag-handle": "workspace:*",
     "@blocksuite/affine-widget-edgeless-auto-connect": "workspace:*",
+    "@blocksuite/affine-widget-edgeless-connector-anchors": "workspace:*",
     "@blocksuite/affine-widget-edgeless-dragging-area": "workspace:*",
     "@blocksuite/affine-widget-edgeless-selected-rect": "workspace:*",
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*",
