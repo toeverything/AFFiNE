@@ -10,12 +10,14 @@ import type {
 } from '@blocksuite/affine-model';
 import { DocDisplayMetaProvider } from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { LinkedPageIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { BlockModel, DeltaInsert } from '@blocksuite/store';
 import { consume } from '@lit/context';
+import katex from 'katex';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -78,6 +80,19 @@ export class OutlineBlockPreview extends SignalWatcher(
             })}
             >${title.length ? title : 'Untitled'}</span
           ></span
+        >`;
+      } else if (delta.attributes?.latex) {
+        // Inline latex keeps its source on the attribute and leaves the insert
+        // empty, so rendering the insert alone drops the formula.
+        return html`<span class=${styles.textSpan}
+          >${unsafeHTML(
+            katex.renderToString(delta.attributes.latex, {
+              displayMode: false,
+              output: 'mathml',
+              throwOnError: false,
+            }),
+            { USE_PROFILES: { html: true, mathMl: true } }
+          )}</span
         >`;
       } else {
         // If not linked doc, render the text.

@@ -2443,6 +2443,7 @@ __metadata:
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.23"
     "@vanilla-extract/css": "npm:^1.21.3"
+    katex: "npm:^0.18.10"
     lit: "npm:^3.2.0"
   languageName: unknown
   linkType: soft

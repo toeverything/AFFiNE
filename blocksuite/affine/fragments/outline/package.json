@@ -23,6 +23,7 @@
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.23",
     "@vanilla-extract/css": "^1.21.3",
+    "katex": "^0.18.10",
     "lit": "^3.2.0"
   },
   "exports": {
