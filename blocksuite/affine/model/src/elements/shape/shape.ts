@@ -20,6 +20,7 @@ import {
   FontFamily,
   FontStyle,
   FontWeight,
+  type GradientDirection,
   ShapeStyle,
   ShapeTextFontSize,
   ShapeType,
@@ -32,17 +33,81 @@ import {
 import { type Color, DefaultTheme } from '../../themes/index.js';
 import { shapeMethods } from './api/index.js';
 
+// Mirrors `StencilShapeData` in
+// blocksuite/affine/gfx/shape/src/drawio/stencil-utils.ts structurally.
+// Cannot import that type directly: @blocksuite/affine-gfx-shape depends on
+// @blocksuite/affine-model, not the other way around.
+export type ShapeStencilCommand =
+  | { cmd: 'M'; x: number; y: number }
+  | { cmd: 'L'; x: number; y: number }
+  | {
+      cmd: 'C';
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      x: number;
+      y: number;
+    }
+  | { cmd: 'Q'; x1: number; y1: number; x: number; y: number }
+  | {
+      cmd: 'A';
+      rx: number;
+      ry: number;
+      xAxisRotation: number;
+      largeArcFlag: number;
+      sweepFlag: number;
+      x: number;
+      y: number;
+    }
+  | { cmd: 'Z' };
+
+export type ShapeStencilData = {
+  width: number;
+  height: number;
+  paths: ReadonlyArray<ReadonlyArray<ShapeStencilCommand>>;
+  strokes: ReadonlyArray<ReadonlyArray<ShapeStencilCommand>>;
+  constraints: ReadonlyArray<{
+    x: number;
+    y: number;
+    perimeter: string;
+    name: string;
+  }>;
+};
+
 export type ShapeProps = BaseElementProps & {
   shapeType: ShapeType;
   radius: number;
   filled: boolean;
   fillColor: Color;
+  gradientFinal?: Color;
+  gradientDirection?: GradientDirection;
+  flipX?: boolean;
+  flipY?: boolean;
+  lockAspectRatio?: boolean;
+  textRotate?: number;
+  textFlipX?: boolean;
+  textFlipY?: boolean;
   strokeWidth: number;
   strokeColor: Color;
   strokeStyle: StrokeStyle;
   shapeStyle: ShapeStyle;
   // https://github.com/rough-stuff/rough/wiki#roughness
   roughness?: number;
+  stencilName?: string;
+  // Resolved geometry for a library shape, embedded at insertion time so
+  // rendering never has to load the (large, lazily-loaded) drawio library.
+  // Absent on legacy shapes created before this field existed — those fall
+  // back to a lazy library lookup by stencilName and get backfilled here on
+  // first successful load. See stencilData accessor below and the render
+  // path in @blocksuite/affine-gfx-shape's element-renderer for how this is
+  // consumed.
+  stencilData?: ShapeStencilData;
+  collapsed?: boolean;
+  collapsedSize?: [number, number];
+  expandedSize?: [number, number];
+  collapseProxyId?: string | null;
+  mindmapNextPaletteIndex?: number;
 
   text?: Y.Text;
   textHorizontalAlign?: TextAlign;
@@ -102,6 +167,30 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   accessor fillColor: Color = DefaultTheme.shapeFillColor;
 
   @field()
+  accessor gradientFinal: Color | undefined = undefined;
+
+  @field()
+  accessor gradientDirection: GradientDirection | undefined = undefined;
+
+  @field()
+  accessor flipX: boolean = false;
+
+  @field()
+  accessor flipY: boolean = false;
+
+  @field()
+  accessor lockAspectRatio: boolean = false;
+
+  @field()
+  accessor textRotate: number = 0;
+
+  @field()
+  accessor textFlipX: boolean = false;
+
+  @field()
+  accessor textFlipY: boolean = false;
+
+  @field()
   accessor filled: boolean = false;
 
   @field(FontFamily.Inter as string)
@@ -155,6 +244,12 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   accessor shapeType: ShapeType = ShapeType.Rect;
 
   @field()
+  accessor stencilName: string | undefined = undefined;
+
+  @field()
+  accessor stencilData: ShapeStencilData | undefined = undefined;
+
+  @field()
   accessor strokeColor: Color = DefaultTheme.shapeStrokeColor;
 
   @field()
@@ -162,6 +257,15 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @field()
   accessor strokeWidth: number = 4;
+
+  @field(false)
+  accessor collapsed: boolean = false;
+
+  @field()
+  accessor collapsedSize: [number, number] | undefined = undefined;
+
+  @field()
+  accessor expandedSize: [number, number] | undefined = undefined;
 
   @field()
   accessor text: Y.Text | undefined = undefined;
@@ -171,6 +275,12 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @local()
   accessor textDisplay: boolean = true;
+
+  @field()
+  accessor collapseProxyId: string | null = null;
+
+  @field()
+  accessor mindmapNextPaletteIndex: number | undefined = undefined;
 
   @field(TextAlign.Center as TextAlign)
   accessor textHorizontalAlign!: TextAlign;
@@ -204,6 +314,12 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor filled: boolean = false;
+
+  @prop()
+  accessor flipX: boolean = false;
+
+  @prop()
+  accessor flipY: boolean = false;
 
   @prop()
   accessor fontFamily: string = FontFamily.Inter;
@@ -248,6 +364,18 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor strokeWidth: number = 4;
+
+  @prop()
+  accessor lockAspectRatio: boolean = false;
+
+  @prop()
+  accessor textRotate: number = 0;
+
+  @prop()
+  accessor textFlipX: boolean = false;
+
+  @prop()
+  accessor textFlipY: boolean = false;
 
   @prop()
   accessor text: string = '';

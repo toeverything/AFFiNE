@@ -1,0 +1,1214 @@
+[
+  {
+    "id": "alibaba_cloud",
+    "label": "Alibaba Cloud",
+    "source": "src/main/webapp/stencils/alibaba_cloud.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/alibaba_cloud.xml"
+  },
+  {
+    "id": "android/android",
+    "label": "Android / Android",
+    "source": "src/main/webapp/stencils/android/android.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/android/android.xml"
+  },
+  {
+    "id": "arrows",
+    "label": "Arrows",
+    "source": "src/main/webapp/stencils/arrows.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/arrows.xml"
+  },
+  {
+    "id": "atlassian",
+    "label": "Atlassian",
+    "source": "src/main/webapp/stencils/atlassian.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/atlassian.xml"
+  },
+  {
+    "id": "aws/compute",
+    "label": "Aws / Compute",
+    "source": "src/main/webapp/stencils/aws/compute.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/compute.xml"
+  },
+  {
+    "id": "aws/content_delivery",
+    "label": "Aws / Content Delivery",
+    "source": "src/main/webapp/stencils/aws/content_delivery.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/content_delivery.xml"
+  },
+  {
+    "id": "aws/database",
+    "label": "Aws / Database",
+    "source": "src/main/webapp/stencils/aws/database.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/database.xml"
+  },
+  {
+    "id": "aws/deployment_management",
+    "label": "Aws / Deployment Management",
+    "source": "src/main/webapp/stencils/aws/deployment_management.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/deployment_management.xml"
+  },
+  {
+    "id": "aws/groups",
+    "label": "Aws / Groups",
+    "source": "src/main/webapp/stencils/aws/groups.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/groups.xml"
+  },
+  {
+    "id": "aws/messaging",
+    "label": "Aws / Messaging",
+    "source": "src/main/webapp/stencils/aws/messaging.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/messaging.xml"
+  },
+  {
+    "id": "aws/misc",
+    "label": "Aws / Misc",
+    "source": "src/main/webapp/stencils/aws/misc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/misc.xml"
+  },
+  {
+    "id": "aws/networking",
+    "label": "Aws / Networking",
+    "source": "src/main/webapp/stencils/aws/networking.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/networking.xml"
+  },
+  {
+    "id": "aws/non_service_specific",
+    "label": "Aws / Non Service Specific",
+    "source": "src/main/webapp/stencils/aws/non_service_specific.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/non_service_specific.xml"
+  },
+  {
+    "id": "aws/on_demand_workforce",
+    "label": "Aws / ON Demand Workforce",
+    "source": "src/main/webapp/stencils/aws/on_demand_workforce.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/on_demand_workforce.xml"
+  },
+  {
+    "id": "aws/storage",
+    "label": "Aws / Storage",
+    "source": "src/main/webapp/stencils/aws/storage.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws/storage.xml"
+  },
+  {
+    "id": "aws2/administration_and_security",
+    "label": "aws2 / Administration And Security",
+    "source": "src/main/webapp/stencils/aws2/administration_and_security.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/administration_and_security.xml"
+  },
+  {
+    "id": "aws2/analytics",
+    "label": "aws2 / Analytics",
+    "source": "src/main/webapp/stencils/aws2/analytics.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/analytics.xml"
+  },
+  {
+    "id": "aws2/app_services",
+    "label": "aws2 / App Services",
+    "source": "src/main/webapp/stencils/aws2/app_services.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/app_services.xml"
+  },
+  {
+    "id": "aws2/compute_and_networking",
+    "label": "aws2 / Compute And Networking",
+    "source": "src/main/webapp/stencils/aws2/compute_and_networking.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/compute_and_networking.xml"
+  },
+  {
+    "id": "aws2/database",
+    "label": "aws2 / Database",
+    "source": "src/main/webapp/stencils/aws2/database.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/database.xml"
+  },
+  {
+    "id": "aws2/deployment_and_management",
+    "label": "aws2 / Deployment And Management",
+    "source": "src/main/webapp/stencils/aws2/deployment_and_management.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/deployment_and_management.xml"
+  },
+  {
+    "id": "aws2/developer_tools",
+    "label": "aws2 / Developer Tools",
+    "source": "src/main/webapp/stencils/aws2/developer_tools.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/developer_tools.xml"
+  },
+  {
+    "id": "aws2/enterprise_applications",
+    "label": "aws2 / Enterprise Applications",
+    "source": "src/main/webapp/stencils/aws2/enterprise_applications.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/enterprise_applications.xml"
+  },
+  {
+    "id": "aws2/game_development",
+    "label": "aws2 / Game Development",
+    "source": "src/main/webapp/stencils/aws2/game_development.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/game_development.xml"
+  },
+  {
+    "id": "aws2/internet_of_things",
+    "label": "aws2 / Internet OF Things",
+    "source": "src/main/webapp/stencils/aws2/internet_of_things.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/internet_of_things.xml"
+  },
+  {
+    "id": "aws2/management_tools",
+    "label": "aws2 / Management Tools",
+    "source": "src/main/webapp/stencils/aws2/management_tools.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/management_tools.xml"
+  },
+  {
+    "id": "aws2/mobile_services",
+    "label": "aws2 / Mobile Services",
+    "source": "src/main/webapp/stencils/aws2/mobile_services.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/mobile_services.xml"
+  },
+  {
+    "id": "aws2/networking",
+    "label": "aws2 / Networking",
+    "source": "src/main/webapp/stencils/aws2/networking.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/networking.xml"
+  },
+  {
+    "id": "aws2/non-service_specific",
+    "label": "aws2 / Non Service Specific",
+    "source": "src/main/webapp/stencils/aws2/non-service_specific.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/non-service_specific.xml"
+  },
+  {
+    "id": "aws2/on-demand_workforce",
+    "label": "aws2 / ON Demand Workforce",
+    "source": "src/main/webapp/stencils/aws2/on-demand_workforce.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/on-demand_workforce.xml"
+  },
+  {
+    "id": "aws2/sdks",
+    "label": "aws2 / Sdks",
+    "source": "src/main/webapp/stencils/aws2/sdks.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/sdks.xml"
+  },
+  {
+    "id": "aws2/security_and_identity",
+    "label": "aws2 / Security And Identity",
+    "source": "src/main/webapp/stencils/aws2/security_and_identity.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/security_and_identity.xml"
+  },
+  {
+    "id": "aws2/storage_and_content_delivery",
+    "label": "aws2 / Storage And Content Delivery",
+    "source": "src/main/webapp/stencils/aws2/storage_and_content_delivery.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws2/storage_and_content_delivery.xml"
+  },
+  {
+    "id": "aws3",
+    "label": "aws3",
+    "source": "src/main/webapp/stencils/aws3.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws3.xml"
+  },
+  {
+    "id": "aws3d",
+    "label": "aws3d",
+    "source": "src/main/webapp/stencils/aws3d.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws3d.xml"
+  },
+  {
+    "id": "aws4",
+    "label": "aws4",
+    "source": "src/main/webapp/stencils/aws4.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/aws4.xml"
+  },
+  {
+    "id": "azure",
+    "label": "Azure",
+    "source": "src/main/webapp/stencils/azure.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/azure.xml"
+  },
+  {
+    "id": "basic",
+    "label": "Basic",
+    "source": "src/main/webapp/stencils/basic.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/basic.xml"
+  },
+  {
+    "id": "bootstrap",
+    "label": "Bootstrap",
+    "source": "src/main/webapp/stencils/bootstrap.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/bootstrap.xml"
+  },
+  {
+    "id": "bpmn",
+    "label": "Bpmn",
+    "source": "src/main/webapp/stencils/bpmn.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/bpmn.xml"
+  },
+  {
+    "id": "cabinets",
+    "label": "Cabinets",
+    "source": "src/main/webapp/stencils/cabinets.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cabinets.xml"
+  },
+  {
+    "id": "cisco_safe/architecture",
+    "label": "Cisco Safe / Architecture",
+    "source": "src/main/webapp/stencils/cisco_safe/architecture.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/architecture.xml"
+  },
+  {
+    "id": "cisco_safe/business_icons",
+    "label": "Cisco Safe / Business Icons",
+    "source": "src/main/webapp/stencils/cisco_safe/business_icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/business_icons.xml"
+  },
+  {
+    "id": "cisco_safe/capability",
+    "label": "Cisco Safe / Capability",
+    "source": "src/main/webapp/stencils/cisco_safe/capability.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/capability.xml"
+  },
+  {
+    "id": "cisco_safe/design",
+    "label": "Cisco Safe / Design",
+    "source": "src/main/webapp/stencils/cisco_safe/design.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/design.xml"
+  },
+  {
+    "id": "cisco_safe/iot_things_icons",
+    "label": "Cisco Safe / Iot Things Icons",
+    "source": "src/main/webapp/stencils/cisco_safe/iot_things_icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/iot_things_icons.xml"
+  },
+  {
+    "id": "cisco_safe/people_places_things_icons",
+    "label": "Cisco Safe / People Places Things Icons",
+    "source": "src/main/webapp/stencils/cisco_safe/people_places_things_icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/people_places_things_icons.xml"
+  },
+  {
+    "id": "cisco_safe/security_icons",
+    "label": "Cisco Safe / Security Icons",
+    "source": "src/main/webapp/stencils/cisco_safe/security_icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/security_icons.xml"
+  },
+  {
+    "id": "cisco_safe/technology_icons",
+    "label": "Cisco Safe / Technology Icons",
+    "source": "src/main/webapp/stencils/cisco_safe/technology_icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/technology_icons.xml"
+  },
+  {
+    "id": "cisco_safe/threat",
+    "label": "Cisco Safe / Threat",
+    "source": "src/main/webapp/stencils/cisco_safe/threat.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco_safe/threat.xml"
+  },
+  {
+    "id": "cisco/buildings",
+    "label": "Cisco / Buildings",
+    "source": "src/main/webapp/stencils/cisco/buildings.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/buildings.xml"
+  },
+  {
+    "id": "cisco/computers_and_peripherals",
+    "label": "Cisco / Computers And Peripherals",
+    "source": "src/main/webapp/stencils/cisco/computers_and_peripherals.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/computers_and_peripherals.xml"
+  },
+  {
+    "id": "cisco/controllers_and_modules",
+    "label": "Cisco / Controllers And Modules",
+    "source": "src/main/webapp/stencils/cisco/controllers_and_modules.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/controllers_and_modules.xml"
+  },
+  {
+    "id": "cisco/directors",
+    "label": "Cisco / Directors",
+    "source": "src/main/webapp/stencils/cisco/directors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/directors.xml"
+  },
+  {
+    "id": "cisco/hubs_and_gateways",
+    "label": "Cisco / Hubs And Gateways",
+    "source": "src/main/webapp/stencils/cisco/hubs_and_gateways.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/hubs_and_gateways.xml"
+  },
+  {
+    "id": "cisco/misc",
+    "label": "Cisco / Misc",
+    "source": "src/main/webapp/stencils/cisco/misc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/misc.xml"
+  },
+  {
+    "id": "cisco/modems_and_phones",
+    "label": "Cisco / Modems And Phones",
+    "source": "src/main/webapp/stencils/cisco/modems_and_phones.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/modems_and_phones.xml"
+  },
+  {
+    "id": "cisco/people",
+    "label": "Cisco / People",
+    "source": "src/main/webapp/stencils/cisco/people.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/people.xml"
+  },
+  {
+    "id": "cisco/routers",
+    "label": "Cisco / Routers",
+    "source": "src/main/webapp/stencils/cisco/routers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/routers.xml"
+  },
+  {
+    "id": "cisco/security",
+    "label": "Cisco / Security",
+    "source": "src/main/webapp/stencils/cisco/security.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/security.xml"
+  },
+  {
+    "id": "cisco/servers",
+    "label": "Cisco / Servers",
+    "source": "src/main/webapp/stencils/cisco/servers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/servers.xml"
+  },
+  {
+    "id": "cisco/storage",
+    "label": "Cisco / Storage",
+    "source": "src/main/webapp/stencils/cisco/storage.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/storage.xml"
+  },
+  {
+    "id": "cisco/switches",
+    "label": "Cisco / Switches",
+    "source": "src/main/webapp/stencils/cisco/switches.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/switches.xml"
+  },
+  {
+    "id": "cisco/wireless",
+    "label": "Cisco / Wireless",
+    "source": "src/main/webapp/stencils/cisco/wireless.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco/wireless.xml"
+  },
+  {
+    "id": "cisco19",
+    "label": "cisco19",
+    "source": "src/main/webapp/stencils/cisco19.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/cisco19.xml"
+  },
+  {
+    "id": "citrix",
+    "label": "Citrix",
+    "source": "src/main/webapp/stencils/citrix.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/citrix.xml"
+  },
+  {
+    "id": "citrix2",
+    "label": "citrix2",
+    "source": "src/main/webapp/stencils/citrix2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/citrix2.xml"
+  },
+  {
+    "id": "eip",
+    "label": "Eip",
+    "source": "src/main/webapp/stencils/eip.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/eip.xml"
+  },
+  {
+    "id": "electrical/abstract",
+    "label": "Electrical / Abstract",
+    "source": "src/main/webapp/stencils/electrical/abstract.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/abstract.xml"
+  },
+  {
+    "id": "electrical/capacitors",
+    "label": "Electrical / Capacitors",
+    "source": "src/main/webapp/stencils/electrical/capacitors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/capacitors.xml"
+  },
+  {
+    "id": "electrical/diodes",
+    "label": "Electrical / Diodes",
+    "source": "src/main/webapp/stencils/electrical/diodes.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/diodes.xml"
+  },
+  {
+    "id": "electrical/electro-mechanical",
+    "label": "Electrical / Electro Mechanical",
+    "source": "src/main/webapp/stencils/electrical/electro-mechanical.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/electro-mechanical.xml"
+  },
+  {
+    "id": "electrical/iec_logic_gates",
+    "label": "Electrical / Iec Logic Gates",
+    "source": "src/main/webapp/stencils/electrical/iec_logic_gates.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/iec_logic_gates.xml"
+  },
+  {
+    "id": "electrical/iec417",
+    "label": "Electrical / iec417",
+    "source": "src/main/webapp/stencils/electrical/iec417.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/iec417.xml"
+  },
+  {
+    "id": "electrical/inductors",
+    "label": "Electrical / Inductors",
+    "source": "src/main/webapp/stencils/electrical/inductors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/inductors.xml"
+  },
+  {
+    "id": "electrical/instruments",
+    "label": "Electrical / Instruments",
+    "source": "src/main/webapp/stencils/electrical/instruments.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/instruments.xml"
+  },
+  {
+    "id": "electrical/logic_gates",
+    "label": "Electrical / Logic Gates",
+    "source": "src/main/webapp/stencils/electrical/logic_gates.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/logic_gates.xml"
+  },
+  {
+    "id": "electrical/miscellaneous",
+    "label": "Electrical / Miscellaneous",
+    "source": "src/main/webapp/stencils/electrical/miscellaneous.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/miscellaneous.xml"
+  },
+  {
+    "id": "electrical/mosfets1",
+    "label": "Electrical / mosfets1",
+    "source": "src/main/webapp/stencils/electrical/mosfets1.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/mosfets1.xml"
+  },
+  {
+    "id": "electrical/mosfets2",
+    "label": "Electrical / mosfets2",
+    "source": "src/main/webapp/stencils/electrical/mosfets2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/mosfets2.xml"
+  },
+  {
+    "id": "electrical/op_amps",
+    "label": "Electrical / OP Amps",
+    "source": "src/main/webapp/stencils/electrical/op_amps.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/op_amps.xml"
+  },
+  {
+    "id": "electrical/opto_electronics",
+    "label": "Electrical / Opto Electronics",
+    "source": "src/main/webapp/stencils/electrical/opto_electronics.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/opto_electronics.xml"
+  },
+  {
+    "id": "electrical/plc_ladder",
+    "label": "Electrical / Plc Ladder",
+    "source": "src/main/webapp/stencils/electrical/plc_ladder.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/plc_ladder.xml"
+  },
+  {
+    "id": "electrical/power_semiconductors",
+    "label": "Electrical / Power Semiconductors",
+    "source": "src/main/webapp/stencils/electrical/power_semiconductors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/power_semiconductors.xml"
+  },
+  {
+    "id": "electrical/radio",
+    "label": "Electrical / Radio",
+    "source": "src/main/webapp/stencils/electrical/radio.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/radio.xml"
+  },
+  {
+    "id": "electrical/resistors",
+    "label": "Electrical / Resistors",
+    "source": "src/main/webapp/stencils/electrical/resistors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/resistors.xml"
+  },
+  {
+    "id": "electrical/rot_mech",
+    "label": "Electrical / Rot Mech",
+    "source": "src/main/webapp/stencils/electrical/rot_mech.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/rot_mech.xml"
+  },
+  {
+    "id": "electrical/signal_sources",
+    "label": "Electrical / Signal Sources",
+    "source": "src/main/webapp/stencils/electrical/signal_sources.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/signal_sources.xml"
+  },
+  {
+    "id": "electrical/thermionic_devices",
+    "label": "Electrical / Thermionic Devices",
+    "source": "src/main/webapp/stencils/electrical/thermionic_devices.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/thermionic_devices.xml"
+  },
+  {
+    "id": "electrical/transistors",
+    "label": "Electrical / Transistors",
+    "source": "src/main/webapp/stencils/electrical/transistors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/transistors.xml"
+  },
+  {
+    "id": "electrical/transmission",
+    "label": "Electrical / Transmission",
+    "source": "src/main/webapp/stencils/electrical/transmission.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/transmission.xml"
+  },
+  {
+    "id": "electrical/waveforms",
+    "label": "Electrical / Waveforms",
+    "source": "src/main/webapp/stencils/electrical/waveforms.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/electrical/waveforms.xml"
+  },
+  {
+    "id": "floorplan",
+    "label": "Floorplan",
+    "source": "src/main/webapp/stencils/floorplan.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/floorplan.xml"
+  },
+  {
+    "id": "flowchart",
+    "label": "Flowchart",
+    "source": "src/main/webapp/stencils/flowchart.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/flowchart.xml"
+  },
+  {
+    "id": "fluid_power",
+    "label": "Fluid Power",
+    "source": "src/main/webapp/stencils/fluid_power.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/fluid_power.xml"
+  },
+  {
+    "id": "gcp/big_data",
+    "label": "Gcp / Big Data",
+    "source": "src/main/webapp/stencils/gcp/big_data.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/big_data.xml"
+  },
+  {
+    "id": "gcp/compute",
+    "label": "Gcp / Compute",
+    "source": "src/main/webapp/stencils/gcp/compute.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/compute.xml"
+  },
+  {
+    "id": "gcp/developer_tools",
+    "label": "Gcp / Developer Tools",
+    "source": "src/main/webapp/stencils/gcp/developer_tools.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/developer_tools.xml"
+  },
+  {
+    "id": "gcp/extras",
+    "label": "Gcp / Extras",
+    "source": "src/main/webapp/stencils/gcp/extras.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/extras.xml"
+  },
+  {
+    "id": "gcp/identity_and_security",
+    "label": "Gcp / Identity And Security",
+    "source": "src/main/webapp/stencils/gcp/identity_and_security.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/identity_and_security.xml"
+  },
+  {
+    "id": "gcp/machine_learning",
+    "label": "Gcp / Machine Learning",
+    "source": "src/main/webapp/stencils/gcp/machine_learning.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/machine_learning.xml"
+  },
+  {
+    "id": "gcp/management_tools",
+    "label": "Gcp / Management Tools",
+    "source": "src/main/webapp/stencils/gcp/management_tools.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/management_tools.xml"
+  },
+  {
+    "id": "gcp/networking",
+    "label": "Gcp / Networking",
+    "source": "src/main/webapp/stencils/gcp/networking.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/networking.xml"
+  },
+  {
+    "id": "gcp/product_cards",
+    "label": "Gcp / Product Cards",
+    "source": "src/main/webapp/stencils/gcp/product_cards.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/product_cards.xml"
+  },
+  {
+    "id": "gcp/storage_databases",
+    "label": "Gcp / Storage Databases",
+    "source": "src/main/webapp/stencils/gcp/storage_databases.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp/storage_databases.xml"
+  },
+  {
+    "id": "gcp2",
+    "label": "gcp2",
+    "source": "src/main/webapp/stencils/gcp2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gcp2.xml"
+  },
+  {
+    "id": "gmdl",
+    "label": "Gmdl",
+    "source": "src/main/webapp/stencils/gmdl.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/gmdl.xml"
+  },
+  {
+    "id": "ibm",
+    "label": "Ibm",
+    "source": "src/main/webapp/stencils/ibm.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/ibm.xml"
+  },
+  {
+    "id": "ibm_cloud",
+    "label": "Ibm Cloud",
+    "source": "src/main/webapp/stencils/ibm_cloud.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/ibm_cloud.xml"
+  },
+  {
+    "id": "ios7/icons",
+    "label": "ios7 / Icons",
+    "source": "src/main/webapp/stencils/ios7/icons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/ios7/icons.xml"
+  },
+  {
+    "id": "ios7/misc",
+    "label": "ios7 / Misc",
+    "source": "src/main/webapp/stencils/ios7/misc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/ios7/misc.xml"
+  },
+  {
+    "id": "kubernetes",
+    "label": "Kubernetes",
+    "source": "src/main/webapp/stencils/kubernetes.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/kubernetes.xml"
+  },
+  {
+    "id": "kubernetes2",
+    "label": "kubernetes2",
+    "source": "src/main/webapp/stencils/kubernetes2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/kubernetes2.xml"
+  },
+  {
+    "id": "lean_mapping",
+    "label": "Lean Mapping",
+    "source": "src/main/webapp/stencils/lean_mapping.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/lean_mapping.xml"
+  },
+  {
+    "id": "mockup/advertising",
+    "label": "Mockup / Advertising",
+    "source": "src/main/webapp/stencils/mockup/advertising.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/advertising.xml"
+  },
+  {
+    "id": "mockup/calendars",
+    "label": "Mockup / Calendars",
+    "source": "src/main/webapp/stencils/mockup/calendars.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/calendars.xml"
+  },
+  {
+    "id": "mockup/carousel",
+    "label": "Mockup / Carousel",
+    "source": "src/main/webapp/stencils/mockup/carousel.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/carousel.xml"
+  },
+  {
+    "id": "mockup/charts_and_tables",
+    "label": "Mockup / Charts And Tables",
+    "source": "src/main/webapp/stencils/mockup/charts_and_tables.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/charts_and_tables.xml"
+  },
+  {
+    "id": "mockup/controls",
+    "label": "Mockup / Controls",
+    "source": "src/main/webapp/stencils/mockup/controls.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/controls.xml"
+  },
+  {
+    "id": "mockup/form_elements",
+    "label": "Mockup / Form Elements",
+    "source": "src/main/webapp/stencils/mockup/form_elements.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/form_elements.xml"
+  },
+  {
+    "id": "mockup/menus_and_buttons",
+    "label": "Mockup / Menus And Buttons",
+    "source": "src/main/webapp/stencils/mockup/menus_and_buttons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/menus_and_buttons.xml"
+  },
+  {
+    "id": "mockup/misc",
+    "label": "Mockup / Misc",
+    "source": "src/main/webapp/stencils/mockup/misc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/misc.xml"
+  },
+  {
+    "id": "mockup/tabs",
+    "label": "Mockup / Tabs",
+    "source": "src/main/webapp/stencils/mockup/tabs.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mockup/tabs.xml"
+  },
+  {
+    "id": "mscae/cloud",
+    "label": "Mscae / Cloud",
+    "source": "src/main/webapp/stencils/mscae/cloud.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/cloud.xml"
+  },
+  {
+    "id": "mscae/deprecated",
+    "label": "Mscae / Deprecated",
+    "source": "src/main/webapp/stencils/mscae/deprecated.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/deprecated.xml"
+  },
+  {
+    "id": "mscae/enterprise",
+    "label": "Mscae / Enterprise",
+    "source": "src/main/webapp/stencils/mscae/enterprise.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/enterprise.xml"
+  },
+  {
+    "id": "mscae/general",
+    "label": "Mscae / General",
+    "source": "src/main/webapp/stencils/mscae/general.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/general.xml"
+  },
+  {
+    "id": "mscae/general_symbols",
+    "label": "Mscae / General Symbols",
+    "source": "src/main/webapp/stencils/mscae/general_symbols.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/general_symbols.xml"
+  },
+  {
+    "id": "mscae/intune",
+    "label": "Mscae / Intune",
+    "source": "src/main/webapp/stencils/mscae/intune.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/intune.xml"
+  },
+  {
+    "id": "mscae/oms",
+    "label": "Mscae / Oms",
+    "source": "src/main/webapp/stencils/mscae/oms.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/oms.xml"
+  },
+  {
+    "id": "mscae/opsmanager",
+    "label": "Mscae / Opsmanager",
+    "source": "src/main/webapp/stencils/mscae/opsmanager.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/opsmanager.xml"
+  },
+  {
+    "id": "mscae/other",
+    "label": "Mscae / Other",
+    "source": "src/main/webapp/stencils/mscae/other.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/other.xml"
+  },
+  {
+    "id": "mscae/system_center",
+    "label": "Mscae / System Center",
+    "source": "src/main/webapp/stencils/mscae/system_center.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/system_center.xml"
+  },
+  {
+    "id": "mscae/vm",
+    "label": "Mscae / VM",
+    "source": "src/main/webapp/stencils/mscae/vm.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/mscae/vm.xml"
+  },
+  {
+    "id": "networks",
+    "label": "Networks",
+    "source": "src/main/webapp/stencils/networks.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/networks.xml"
+  },
+  {
+    "id": "networks2",
+    "label": "networks2",
+    "source": "src/main/webapp/stencils/networks2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/networks2.xml"
+  },
+  {
+    "id": "office/clouds",
+    "label": "Office / Clouds",
+    "source": "src/main/webapp/stencils/office/clouds.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/clouds.xml"
+  },
+  {
+    "id": "office/communications",
+    "label": "Office / Communications",
+    "source": "src/main/webapp/stencils/office/communications.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/communications.xml"
+  },
+  {
+    "id": "office/concepts",
+    "label": "Office / Concepts",
+    "source": "src/main/webapp/stencils/office/concepts.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/concepts.xml"
+  },
+  {
+    "id": "office/databases",
+    "label": "Office / Databases",
+    "source": "src/main/webapp/stencils/office/databases.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/databases.xml"
+  },
+  {
+    "id": "office/devices",
+    "label": "Office / Devices",
+    "source": "src/main/webapp/stencils/office/devices.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/devices.xml"
+  },
+  {
+    "id": "office/security",
+    "label": "Office / Security",
+    "source": "src/main/webapp/stencils/office/security.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/security.xml"
+  },
+  {
+    "id": "office/servers",
+    "label": "Office / Servers",
+    "source": "src/main/webapp/stencils/office/servers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/servers.xml"
+  },
+  {
+    "id": "office/services",
+    "label": "Office / Services",
+    "source": "src/main/webapp/stencils/office/services.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/services.xml"
+  },
+  {
+    "id": "office/sites",
+    "label": "Office / Sites",
+    "source": "src/main/webapp/stencils/office/sites.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/sites.xml"
+  },
+  {
+    "id": "office/users",
+    "label": "Office / Users",
+    "source": "src/main/webapp/stencils/office/users.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/office/users.xml"
+  },
+  {
+    "id": "openstack",
+    "label": "Openstack",
+    "source": "src/main/webapp/stencils/openstack.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/openstack.xml"
+  },
+  {
+    "id": "pid/agitators",
+    "label": "Pid / Agitators",
+    "source": "src/main/webapp/stencils/pid/agitators.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/agitators.xml"
+  },
+  {
+    "id": "pid/apparatus_elements",
+    "label": "Pid / Apparatus Elements",
+    "source": "src/main/webapp/stencils/pid/apparatus_elements.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/apparatus_elements.xml"
+  },
+  {
+    "id": "pid/centrifuges",
+    "label": "Pid / Centrifuges",
+    "source": "src/main/webapp/stencils/pid/centrifuges.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/centrifuges.xml"
+  },
+  {
+    "id": "pid/compressors",
+    "label": "Pid / Compressors",
+    "source": "src/main/webapp/stencils/pid/compressors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/compressors.xml"
+  },
+  {
+    "id": "pid/compressors_iso",
+    "label": "Pid / Compressors Iso",
+    "source": "src/main/webapp/stencils/pid/compressors_iso.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/compressors_iso.xml"
+  },
+  {
+    "id": "pid/crushers_grinding",
+    "label": "Pid / Crushers Grinding",
+    "source": "src/main/webapp/stencils/pid/crushers_grinding.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/crushers_grinding.xml"
+  },
+  {
+    "id": "pid/driers",
+    "label": "Pid / Driers",
+    "source": "src/main/webapp/stencils/pid/driers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/driers.xml"
+  },
+  {
+    "id": "pid/engines",
+    "label": "Pid / Engines",
+    "source": "src/main/webapp/stencils/pid/engines.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/engines.xml"
+  },
+  {
+    "id": "pid/feeders",
+    "label": "Pid / Feeders",
+    "source": "src/main/webapp/stencils/pid/feeders.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/feeders.xml"
+  },
+  {
+    "id": "pid/filters",
+    "label": "Pid / Filters",
+    "source": "src/main/webapp/stencils/pid/filters.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/filters.xml"
+  },
+  {
+    "id": "pid/fittings",
+    "label": "Pid / Fittings",
+    "source": "src/main/webapp/stencils/pid/fittings.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/fittings.xml"
+  },
+  {
+    "id": "pid/flow_sensors",
+    "label": "Pid / Flow Sensors",
+    "source": "src/main/webapp/stencils/pid/flow_sensors.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/flow_sensors.xml"
+  },
+  {
+    "id": "pid/heat_exchangers",
+    "label": "Pid / Heat Exchangers",
+    "source": "src/main/webapp/stencils/pid/heat_exchangers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/heat_exchangers.xml"
+  },
+  {
+    "id": "pid/instruments",
+    "label": "Pid / Instruments",
+    "source": "src/main/webapp/stencils/pid/instruments.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/instruments.xml"
+  },
+  {
+    "id": "pid/misc",
+    "label": "Pid / Misc",
+    "source": "src/main/webapp/stencils/pid/misc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/misc.xml"
+  },
+  {
+    "id": "pid/mixers",
+    "label": "Pid / Mixers",
+    "source": "src/main/webapp/stencils/pid/mixers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/mixers.xml"
+  },
+  {
+    "id": "pid/piping",
+    "label": "Pid / Piping",
+    "source": "src/main/webapp/stencils/pid/piping.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/piping.xml"
+  },
+  {
+    "id": "pid/pumps",
+    "label": "Pid / Pumps",
+    "source": "src/main/webapp/stencils/pid/pumps.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/pumps.xml"
+  },
+  {
+    "id": "pid/pumps_din",
+    "label": "Pid / Pumps Din",
+    "source": "src/main/webapp/stencils/pid/pumps_din.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/pumps_din.xml"
+  },
+  {
+    "id": "pid/pumps_iso",
+    "label": "Pid / Pumps Iso",
+    "source": "src/main/webapp/stencils/pid/pumps_iso.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/pumps_iso.xml"
+  },
+  {
+    "id": "pid/separators",
+    "label": "Pid / Separators",
+    "source": "src/main/webapp/stencils/pid/separators.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/separators.xml"
+  },
+  {
+    "id": "pid/shaping_machines",
+    "label": "Pid / Shaping Machines",
+    "source": "src/main/webapp/stencils/pid/shaping_machines.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/shaping_machines.xml"
+  },
+  {
+    "id": "pid/valves",
+    "label": "Pid / Valves",
+    "source": "src/main/webapp/stencils/pid/valves.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/valves.xml"
+  },
+  {
+    "id": "pid/vessels",
+    "label": "Pid / Vessels",
+    "source": "src/main/webapp/stencils/pid/vessels.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/pid/vessels.xml"
+  },
+  {
+    "id": "rack/apc",
+    "label": "Rack / Apc",
+    "source": "src/main/webapp/stencils/rack/apc.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/apc.xml"
+  },
+  {
+    "id": "rack/cisco",
+    "label": "Rack / Cisco",
+    "source": "src/main/webapp/stencils/rack/cisco.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/cisco.xml"
+  },
+  {
+    "id": "rack/dell",
+    "label": "Rack / Dell",
+    "source": "src/main/webapp/stencils/rack/dell.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/dell.xml"
+  },
+  {
+    "id": "rack/f5",
+    "label": "Rack / F5",
+    "source": "src/main/webapp/stencils/rack/f5.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/f5.xml"
+  },
+  {
+    "id": "rack/general",
+    "label": "Rack / General",
+    "source": "src/main/webapp/stencils/rack/general.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/general.xml"
+  },
+  {
+    "id": "rack/hp",
+    "label": "Rack / HP",
+    "source": "src/main/webapp/stencils/rack/hp.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/hp.xml"
+  },
+  {
+    "id": "rack/hpe_aruba/gateways_controllers",
+    "label": "Rack / Hpe Aruba / Gateways Controllers",
+    "source": "src/main/webapp/stencils/rack/hpe_aruba/gateways_controllers.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/hpe_aruba/gateways_controllers.xml"
+  },
+  {
+    "id": "rack/hpe_aruba/security",
+    "label": "Rack / Hpe Aruba / Security",
+    "source": "src/main/webapp/stencils/rack/hpe_aruba/security.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/hpe_aruba/security.xml"
+  },
+  {
+    "id": "rack/hpe_aruba/switches",
+    "label": "Rack / Hpe Aruba / Switches",
+    "source": "src/main/webapp/stencils/rack/hpe_aruba/switches.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/hpe_aruba/switches.xml"
+  },
+  {
+    "id": "rack/ibm",
+    "label": "Rack / Ibm",
+    "source": "src/main/webapp/stencils/rack/ibm.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/ibm.xml"
+  },
+  {
+    "id": "rack/oracle",
+    "label": "Rack / Oracle",
+    "source": "src/main/webapp/stencils/rack/oracle.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/rack/oracle.xml"
+  },
+  {
+    "id": "salesforce",
+    "label": "Salesforce",
+    "source": "src/main/webapp/stencils/salesforce.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/salesforce.xml"
+  },
+  {
+    "id": "signs/animals",
+    "label": "Signs / Animals",
+    "source": "src/main/webapp/stencils/signs/animals.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/animals.xml"
+  },
+  {
+    "id": "signs/food",
+    "label": "Signs / Food",
+    "source": "src/main/webapp/stencils/signs/food.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/food.xml"
+  },
+  {
+    "id": "signs/healthcare",
+    "label": "Signs / Healthcare",
+    "source": "src/main/webapp/stencils/signs/healthcare.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/healthcare.xml"
+  },
+  {
+    "id": "signs/nature",
+    "label": "Signs / Nature",
+    "source": "src/main/webapp/stencils/signs/nature.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/nature.xml"
+  },
+  {
+    "id": "signs/people",
+    "label": "Signs / People",
+    "source": "src/main/webapp/stencils/signs/people.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/people.xml"
+  },
+  {
+    "id": "signs/safety",
+    "label": "Signs / Safety",
+    "source": "src/main/webapp/stencils/signs/safety.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/safety.xml"
+  },
+  {
+    "id": "signs/science",
+    "label": "Signs / Science",
+    "source": "src/main/webapp/stencils/signs/science.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/science.xml"
+  },
+  {
+    "id": "signs/sports",
+    "label": "Signs / Sports",
+    "source": "src/main/webapp/stencils/signs/sports.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/sports.xml"
+  },
+  {
+    "id": "signs/tech",
+    "label": "Signs / Tech",
+    "source": "src/main/webapp/stencils/signs/tech.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/tech.xml"
+  },
+  {
+    "id": "signs/transportation",
+    "label": "Signs / Transportation",
+    "source": "src/main/webapp/stencils/signs/transportation.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/transportation.xml"
+  },
+  {
+    "id": "signs/travel",
+    "label": "Signs / Travel",
+    "source": "src/main/webapp/stencils/signs/travel.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/signs/travel.xml"
+  },
+  {
+    "id": "sitemap",
+    "label": "Sitemap",
+    "source": "src/main/webapp/stencils/sitemap.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/sitemap.xml"
+  },
+  {
+    "id": "veeam/2d",
+    "label": "Veeam / 2D",
+    "source": "src/main/webapp/stencils/veeam/2d.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/veeam/2d.xml"
+  },
+  {
+    "id": "veeam/3d",
+    "label": "Veeam / 3D",
+    "source": "src/main/webapp/stencils/veeam/3d.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/veeam/3d.xml"
+  },
+  {
+    "id": "veeam/veeam",
+    "label": "Veeam / Veeam",
+    "source": "src/main/webapp/stencils/veeam/veeam.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/veeam/veeam.xml"
+  },
+  {
+    "id": "veeam/veeam2",
+    "label": "Veeam / veeam2",
+    "source": "src/main/webapp/stencils/veeam/veeam2.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/veeam/veeam2.xml"
+  },
+  {
+    "id": "vvd",
+    "label": "Vvd",
+    "source": "src/main/webapp/stencils/vvd.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/vvd.xml"
+  },
+  {
+    "id": "webicons",
+    "label": "Webicons",
+    "source": "src/main/webapp/stencils/webicons.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/webicons.xml"
+  },
+  {
+    "id": "weblogos",
+    "label": "Weblogos",
+    "source": "src/main/webapp/stencils/weblogos.xml",
+    "dest": "blocksuite/affine/gfx/shape/src/drawio/libraries/weblogos.xml"
+  }
+]
