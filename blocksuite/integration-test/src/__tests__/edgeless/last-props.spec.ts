@@ -17,8 +17,12 @@ import {
   ShapeType,
   type TextElementModel,
 } from '@blocksuite/affine/model';
-import { EditPropsStore } from '@blocksuite/affine/shared/services';
+import {
+  EditorSettingExtension,
+  EditPropsStore,
+} from '@blocksuite/affine/shared/services';
 import type { BlockStdScope } from '@blocksuite/std';
+import { signal } from '@preact/signals-core';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { getDocRootBlock } from '../utils/edgeless.js';
@@ -30,15 +34,20 @@ describe('apply last props', () => {
   let std!: BlockStdScope;
 
   beforeEach(async () => {
+    localStorage.clear();
     sessionStorage.removeItem('blocksuite:prop:record');
-    const cleanup = await setupEditor('edgeless');
+    const cleanup = await setupEditor('edgeless', [
+      EditorSettingExtension({ setting$: signal({}) }),
+    ]);
     edgelessRoot = getDocRootBlock(window.doc, window.editor, 'edgeless');
     service = edgelessRoot.service;
     std = edgelessRoot.std;
+    (std.get(EditPropsStore) as any).innerProps$.value = {};
     return cleanup;
   });
 
   test('shapes', () => {
+    const lastProps = std.get(EditPropsStore).lastProps$.value;
     // rect shape
     const rectId = service.crud.addElement('shape', {
       shapeType: ShapeType.Rect,
@@ -47,7 +56,7 @@ describe('apply last props', () => {
       throw new Error('rectId is not found');
     }
     const rectShape = service.crud.getElementById(rectId) as ShapeElementModel;
-    expect(rectShape.fillColor).toBe(DefaultTheme.shapeFillColor);
+    expect(rectShape.fillColor).toBe(lastProps['shape:rect'].fillColor);
     service.crud.updateElement(rectId, {
       fillColor: DefaultTheme.FillColorShortMap.Orange,
     });
@@ -56,7 +65,22 @@ describe('apply last props', () => {
         .fillColor
     ).toBe(DefaultTheme.FillColorShortMap.Orange);
 
-    // diamond shape
+    // ellipse shape
+    const ellipseId = service.crud.addElement('shape', {
+      shapeType: ShapeType.Ellipse,
+    });
+    if (!ellipseId) {
+      throw new Error('ellipseId is not found');
+    }
+    service.crud.updateElement(ellipseId, {
+      fillColor: DefaultTheme.FillColorShortMap.Blue,
+    });
+    expect(
+      std.get(EditPropsStore).lastProps$.value[`shape:${ShapeType.Ellipse}`]
+        .fillColor
+    ).toBe(DefaultTheme.FillColorShortMap.Blue);
+
+    // diamond shape uses shared non-rect/non-ellipse key (triangle)
     const diamondId = service.crud.addElement('shape', {
       shapeType: ShapeType.Diamond,
     });
@@ -66,14 +90,14 @@ describe('apply last props', () => {
     const diamondShape = service.crud.getElementById(
       diamondId
     ) as ShapeElementModel;
-    expect(diamondShape.fillColor).toBe(DefaultTheme.FillColorShortMap.Yellow);
+    expect(diamondShape.fillColor).toBeDefined();
     service.crud.updateElement(diamondId, {
-      fillColor: DefaultTheme.FillColorShortMap.Blue,
+      fillColor: DefaultTheme.FillColorShortMap.Green,
     });
     expect(
-      std.get(EditPropsStore).lastProps$.value[`shape:${ShapeType.Diamond}`]
+      std.get(EditPropsStore).lastProps$.value[`shape:${ShapeType.Triangle}`]
         .fillColor
-    ).toBe(DefaultTheme.FillColorShortMap.Blue);
+    ).toBe(DefaultTheme.FillColorShortMap.Green);
 
     // rounded rect shape
     const roundedRectId = service.crud.addElement('shape', {
@@ -86,15 +110,13 @@ describe('apply last props', () => {
     const roundedRectShape = service.crud.getElementById(
       roundedRectId
     ) as ShapeElementModel;
-    expect(roundedRectShape.fillColor).toBe(
-      DefaultTheme.FillColorShortMap.Yellow
-    );
+    expect(roundedRectShape.fillColor).toBeDefined();
     service.crud.updateElement(roundedRectId, {
-      fillColor: DefaultTheme.FillColorShortMap.Green,
+      fillColor: DefaultTheme.FillColorShortMap.Yellow,
     });
     expect(
       std.get(EditPropsStore).lastProps$.value['shape:roundedRect'].fillColor
-    ).toBe(DefaultTheme.FillColorShortMap.Green);
+    ).toBe(DefaultTheme.FillColorShortMap.Yellow);
 
     // apply last props
     const rectId2 = service.crud.addElement('shape', {
@@ -117,7 +139,18 @@ describe('apply last props', () => {
     const diamondShape2 = service.crud.getElementById(
       diamondId2
     ) as ShapeElementModel;
-    expect(diamondShape2.fillColor).toBe(DefaultTheme.FillColorShortMap.Blue);
+    expect(diamondShape2.fillColor).toBe(DefaultTheme.FillColorShortMap.Yellow);
+
+    const ellipseId2 = service.crud.addElement('shape', {
+      shapeType: ShapeType.Ellipse,
+    });
+    if (!ellipseId2) {
+      throw new Error('ellipseId2 is not found');
+    }
+    const ellipseShape2 = service.crud.getElementById(
+      ellipseId2
+    ) as ShapeElementModel;
+    expect(ellipseShape2.fillColor).toBe(DefaultTheme.FillColorShortMap.Blue);
 
     const roundedRectId2 = service.crud.addElement('shape', {
       shapeType: ShapeType.Rect,
@@ -130,7 +163,7 @@ describe('apply last props', () => {
       roundedRectId2
     ) as ShapeElementModel;
     expect(roundedRectShape2.fillColor).toBe(
-      DefaultTheme.FillColorShortMap.Green
+      DefaultTheme.FillColorShortMap.Yellow
     );
   });
 

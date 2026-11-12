@@ -1,4 +1,9 @@
-import { getShapeName, type ShapeProps } from '@blocksuite/affine-model';
+import {
+  getShapeName,
+  type ShapeName,
+  type ShapeProps,
+  ShapeType,
+} from '@blocksuite/affine-model';
 import type {
   LastProps,
   LastPropsKey,
@@ -14,7 +19,7 @@ export function getLastPropsKey(
   if (modelType === 'shape') {
     const { shapeType, radius } = modelProps as ShapeProps;
     const shapeName = getShapeName(shapeType, radius);
-    return `${modelType}:${shapeName}`;
+    return `${modelType}:${normalizeShapeLastPropsName(shapeName)}`;
   }
 
   if (isLastPropsKey(modelType)) {
@@ -22,6 +27,18 @@ export function getLastPropsKey(
   }
 
   return null;
+}
+
+function normalizeShapeLastPropsName(shapeName: ShapeName): ShapeName {
+  if (
+    shapeName === ShapeType.Rect ||
+    shapeName === ShapeType.Ellipse ||
+    shapeName === 'roundedRect'
+  ) {
+    return shapeName;
+  }
+
+  return ShapeType.Triangle;
 }
 
 function isLastPropsKey(key: string): key is LastPropsKey {

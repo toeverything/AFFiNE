@@ -1,4 +1,4 @@
-import type { Palette, Theme } from './types';
+import type { Palette, ShapePalette, ShapePaletteStyle, Theme } from './types';
 import { buildPalettes, getColorByKey, pureBlack, pureWhite } from './utils';
 
 const Transparent = 'transparent';
@@ -109,6 +109,144 @@ const ShapeTextColorPalettes: Palette[] = [
   { key: 'Black', value: pureBlack },
 ] as const;
 
+const shapePaletteTail: ShapePaletteStyle[] = [
+  {
+    fill: White,
+    stroke: White,
+    ringColor: Medium.Grey,
+  },
+  {
+    fill: Black,
+    stroke: Black,
+    ringColor: White,
+  },
+  {
+    fill: Transparent,
+    stroke: Medium.Grey,
+    ringColor: Medium.Grey,
+  },
+];
+
+const withShapePaletteTail = (styles: ShapePaletteStyle[]) => [
+  ...styles,
+  ...shapePaletteTail,
+];
+
+const ShapePalettes: ShapePalette[] = [
+  {
+    id: 'affine',
+    showInLine: true,
+    showInFill: true,
+    styles: withShapePaletteTail(
+      FillColorShortPalettes.slice(0, 8).map((palette, index) => ({
+        fill: palette.value,
+        stroke:
+          StrokeColorShortPalettes[index]?.value ?? StrokeColorShortMap.Grey,
+      }))
+    ),
+  },
+  {
+    id: 'material-light',
+    showInLine: true,
+    showInFill: true,
+    styles: withShapePaletteTail([
+      { fill: '#f8cecc', stroke: '#b85450' },
+      { fill: '#ffe6cc', stroke: '#d79b00' },
+      { fill: '#fff2cc', stroke: '#d6b656' },
+      { fill: '#d5e8d4', stroke: '#82b366' },
+      { fill: '#dae8fc', stroke: '#6c8ebf' },
+      { fill: '#e1d5e7', stroke: '#9673a6' },
+      { fill: '#e6d0de', stroke: '#996185' },
+      { fill: '#f5f5f5', stroke: '#666666' },
+    ]),
+  },
+  {
+    id: 'material-gradient',
+    showInLine: false,
+    showInFill: true,
+    styles: withShapePaletteTail([
+      {
+        fill: '#f8cecc',
+        stroke: '#b85450',
+        gradientFinal: '#e36863',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#FFE6CC',
+        stroke: '#d79b00',
+        gradientFinal: '#FFB940',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#FFF2CC',
+        stroke: '#d6b656',
+        gradientFinal: '#FADD4B',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#d5e8d4',
+        stroke: '#82b366',
+        gradientFinal: '#97d077',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#dae8fc',
+        stroke: '#6c8ebf',
+        gradientFinal: '#88B4F2',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#e6d0de',
+        stroke: '#996185',
+        gradientFinal: '#D5739D',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#F5DFF5',
+        stroke: '#994D96',
+        gradientFinal: '#FAA0F4',
+        gradientDirection: 'S',
+      },
+      {
+        fill: '#f5f5f5',
+        stroke: '#666666',
+        gradientFinal: '#b3b3b3',
+        gradientDirection: 'S',
+      },
+    ]),
+  },
+  {
+    id: 'bold',
+    showInLine: true,
+    showInFill: true,
+    styles: withShapePaletteTail([
+      { fill: '#a20025', stroke: '#6f0000' },
+      { fill: '#d80073', stroke: '#a50040' },
+      { fill: '#6a00ff', stroke: '#3700cc' },
+      { fill: '#0050ef', stroke: '#001dbc' },
+      { fill: '#1ba1e2', stroke: '#006eaf' },
+      { fill: '#008a00', stroke: '#005700' },
+      { fill: '#60a917', stroke: '#2d7600' },
+      { fill: '#FFDE3B', stroke: '#B09929' },
+    ]),
+  },
+  {
+    id: 'muted',
+    showInLine: true,
+    showInFill: true,
+    styles: withShapePaletteTail([
+      { fill: '#e51400', stroke: '#b20000' },
+      { fill: '#fa6800', stroke: '#c73500' },
+      { fill: '#f0a30a', stroke: '#bd7000' },
+      { fill: '#e3c800', stroke: '#b09500' },
+      { fill: '#6d8764', stroke: '#3a5431' },
+      { fill: '#647687', stroke: '#314354' },
+      { fill: '#76608a', stroke: '#432d57' },
+      { fill: '#A0522D', stroke: '#6D1F00' },
+    ]),
+  },
+];
+
 export const DefaultTheme: Theme = {
   pureBlack,
   pureWhite,
@@ -133,4 +271,5 @@ export const DefaultTheme: Theme = {
   FillColorShortPalettes,
   ShapeTextColorShortMap,
   ShapeTextColorShortPalettes,
+  ShapePalettes,
 } as const;

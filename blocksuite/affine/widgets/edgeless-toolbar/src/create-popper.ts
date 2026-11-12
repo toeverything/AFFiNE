@@ -76,8 +76,8 @@ export function createPopper<T extends keyof HTMLElementTagNameMap>(
 
   Object.assign(menu.style, {
     width: '100%',
-    marginLeft: '30px',
-    maxWidth: 'calc(100% - 60px)',
+    marginLeft: '16px',
+    maxWidth: 'calc(100% - 32px)',
     bottom: '0%',
     pointerEvents: 'auto',
   });
