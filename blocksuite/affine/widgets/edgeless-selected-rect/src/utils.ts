@@ -6,7 +6,6 @@ import {
 } from '@blocksuite/affine-block-surface';
 import { type Shape, ShapeFactory } from '@blocksuite/affine-gfx-shape';
 import {
-  type Connection,
   getShapeRadius,
   getShapeType,
   GroupElementModel,
@@ -16,7 +15,12 @@ import {
   type ShapeStyle,
 } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { Bound, normalizeDegAngle, type XYWH } from '@blocksuite/global/gfx';
+import {
+  Bound,
+  type IVec,
+  normalizeDegAngle,
+  type XYWH,
+} from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
 import type { BlockComponent } from '@blocksuite/std';
 import type {
@@ -243,8 +247,8 @@ export function nextBound(
 }
 
 export function getPosition(type: Direction) {
-  let startPosition: Connection['position'];
-  let endPosition: Connection['position'];
+  let startPosition: IVec;
+  let endPosition: IVec;
 
   switch (type) {
     case Direction.Right:

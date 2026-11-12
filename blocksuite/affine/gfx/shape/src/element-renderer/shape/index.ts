@@ -128,6 +128,16 @@ function renderText(
     lineGap / 2;
   let maxLineWidth = 0;
 
+  ctx.save();
+
+  // Shape renderers apply flip transforms to the whole element. Apply the same
+  // flip again for text to cancel mirroring so labels stay readable.
+  if (model.flipX || model.flipY) {
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(model.flipX ? -1 : 1, model.flipY ? -1 : 1);
+    ctx.translate(-w / 2, -h / 2);
+  }
+
   ctx.font = font;
   ctx.fillStyle = color;
   ctx.textAlign = textAlign;
@@ -170,6 +180,8 @@ function renderText(
         ? horOffset
         : horOffset - maxLineWidth;
   const offsetY = vertOffset - lineHeight + verticalPadding / 2;
+
+  ctx.restore();
 
   const bound = new Bound(
     x + offsetX,
