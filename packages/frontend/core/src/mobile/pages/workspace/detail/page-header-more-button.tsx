@@ -26,7 +26,7 @@ import {
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import { useCallback, useEffect, useState } from 'react';
+import { type PointerEvent, useCallback, useEffect, useState } from 'react';
 
 import { MobileBackCoordinator } from '../../../modules/back-coordinator';
 import { JournalConflictsMenuItem } from './menu/journal-conflicts';
@@ -34,7 +34,11 @@ import { JournalTodayActivityMenuItem } from './menu/journal-today-activity';
 import { EditorModeSwitch } from './menu/mode-switch';
 import * as styles from './page-header-more-button.css';
 
-export const PageHeaderMenuButton = () => {
+export const PageHeaderMenuButton = ({
+  onOpenChange,
+}: {
+  onOpenChange?: (open: boolean) => void;
+}) => {
   const t = useI18n();
 
   const doc = useService(DocService).doc;
@@ -52,7 +56,6 @@ export const PageHeaderMenuButton = () => {
   );
   const primaryMode = useLiveData(editorService.editor.doc.primaryMode$);
   const title = useLiveData(editorService.editor.doc.title$);
-
   const { favorite, toggleFavorite } = useFavorite(docId);
   const { openConfirmModal } = useConfirmModal();
   const backCoordinator = useService(MobileBackCoordinator);
@@ -77,12 +80,17 @@ export const PageHeaderMenuButton = () => {
     });
   }, [primaryMode, editorService, t]);
 
-  const handleMenuOpenChange = useCallback((open: boolean) => {
-    if (open) {
-      track.$.header.docOptions.open();
-    }
-    setOpen(open);
-  }, []);
+  const handleMenuOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        track.$.header.docOptions.open();
+      }
+      setOpen(open);
+      onOpenChange?.(open);
+    },
+    [onOpenChange]
+  );
+
   useEffect(() => {
     // when the location is changed, close the menu
     handleMenuOpenChange(false);
@@ -119,6 +127,18 @@ export const PageHeaderMenuButton = () => {
       },
     });
   }, [backCoordinator, doc, openConfirmModal, t]);
+
+  const handleMorePointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      // MobileMenu owns Pencil activation. Keep this handler focused on
+      // preventing the editor beneath the header from receiving focus.
+      event.stopPropagation();
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    },
+    []
+  );
 
   const EditMenu = (
     <>
@@ -184,6 +204,7 @@ export const PageHeaderMenuButton = () => {
   if (isInTrash) {
     return null;
   }
+
   return (
     <MobileMenu
       items={EditMenu}
@@ -199,6 +220,7 @@ export const PageHeaderMenuButton = () => {
         size={24}
         data-testid="detail-page-header-more-button"
         className={styles.iconButton}
+        onPointerDown={handleMorePointerDown}
       >
         <MoreHorizontalIcon />
       </IconButton>
