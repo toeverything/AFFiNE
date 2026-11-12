@@ -54,7 +54,8 @@ export class NumberPropertyFilterProvider
         map(o => {
           const match = new Set<string>();
           for (const [id, value] of o) {
-            const numValue = Number(value);
+            // a cleared number is stored as '', which Number() turns into 0
+            const numValue = value ? Number(value) : NaN;
             switch (method) {
               case '=':
                 if (Math.abs(numValue - filterValue) < Number.EPSILON) {
