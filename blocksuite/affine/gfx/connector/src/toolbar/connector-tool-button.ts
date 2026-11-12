@@ -11,11 +11,13 @@ import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 
 import { ConnectorTool } from '../connector-tool';
+import { ConnectorRIcon } from './icons';
 
 const IcomMap = {
   [ConnectorMode.Straight]: ConnectorLIcon(),
   [ConnectorMode.Orthogonal]: ConnectorEIcon(),
   [ConnectorMode.Curve]: ConnectorCIcon(),
+  [ConnectorMode.Rounded]: ConnectorRIcon(),
 };
 
 export class EdgelessConnectorToolButton extends QuickToolMixin(

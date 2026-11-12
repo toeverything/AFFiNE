@@ -9,6 +9,7 @@ import {
 } from '@blocksuite/icons/lit';
 
 import { ConnectorTool } from '../connector-tool';
+import { ConnectorRIcon } from './icons';
 
 export const buildConnectorDenseMenu: DenseMenuBuilder = (edgeless, gfx) => {
   const prevMode =
@@ -45,6 +46,12 @@ export const buildConnectorDenseMenu: DenseMenuBuilder = (edgeless, gfx) => {
           prefix: ConnectorEIcon(iconSize),
           select: createSelect(ConnectorMode.Orthogonal),
           isSelected: isSelected && prevMode === ConnectorMode.Orthogonal,
+        }),
+        menu.action({
+          name: 'Rounded',
+          prefix: ConnectorRIcon(iconSize),
+          select: createSelect(ConnectorMode.Rounded),
+          isSelected: isSelected && prevMode === ConnectorMode.Rounded,
         }),
         menu.action({
           name: 'Straight',

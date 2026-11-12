@@ -583,7 +583,6 @@ export class InteractivityManager extends GfxExtension {
     const elements = Array.from(viewConfigMap.values()).map(
       config => config.view.model
     ) as GfxModel[];
-
     handler.startRotate({
       ...options,
       elements,

@@ -57,6 +57,7 @@
     { "path": "../shared" },
     { "path": "../widgets/drag-handle" },
     { "path": "../widgets/edgeless-auto-connect" },
+    { "path": "../widgets/edgeless-connector-anchors" },
     { "path": "../widgets/edgeless-dragging-area" },
     { "path": "../widgets/edgeless-selected-rect" },
     { "path": "../widgets/edgeless-toolbar" },
