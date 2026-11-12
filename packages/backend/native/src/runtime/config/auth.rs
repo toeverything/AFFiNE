@@ -81,7 +81,7 @@ pub(super) fn auth_limit(key: &str) -> Option<(i64, i64)> {
     "token.accessTokenTtl" => Some((60, 60 * 60)),
     "token.refreshIdleTtl" => Some((60 * 60, 60 * 60 * 24 * 365)),
     "token.refreshAbsoluteTtl" => Some((60 * 60, 60 * 60 * 24 * 730)),
-    "token.refreshGracePeriod" => Some((0, 60)),
+    "token.refreshGracePeriod" => Some((0, 60 * 60 * 24)),
     "token.refreshRetention" => Some((60 * 60, 60 * 60 * 24 * 365)),
     _ => None,
   }
