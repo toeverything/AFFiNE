@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 
 import { AffineIconRenderer } from './renderer/affine-icon';
 import { type IconData, IconType } from './type';
@@ -10,7 +10,7 @@ export const IconRenderer = ({
 }: {
   data?: IconData;
   fallback?: ReactNode;
-}) => {
+} & SVGProps<SVGSVGElement>) => {
   if (!data) {
     return fallback ?? null;
   }
@@ -23,10 +23,8 @@ export const IconRenderer = ({
       <AffineIconRenderer name={data.name} color={data.color} {...props} />
     );
   }
-  if (data.type === IconType.Blob) {
-    // Not supported yet
-    return null;
-  }
-
+  // IconType.Blob is rendered by the blob-aware `ExplorerIcon` in @affine/core,
+  // which has access to the workspace blob engine. This component (in
+  // @affine/component) cannot fetch blobs, so it falls back here.
   return fallback ?? null;
 };
