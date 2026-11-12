@@ -145,6 +145,7 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
         labelElement.id = `#${this.model.id}-label`;
         labelElement.creator = this.model;
         labelElement.fillColor = 'transparent';
+        labelElement.filled = true;
         labelElement.strokeColor = 'transparent';
         labelElement.strokeWidth = 0;
 
