@@ -25,6 +25,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
 import {
+  afterPropertyTypeChange,
   inputConfig,
   typeConfig,
 } from '../../../../core/common/property-menu.js';
@@ -90,6 +91,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
             prefix: renderUniLit(config.renderer.icon),
             select: () => {
               this.column.typeSet?.(config.type);
+              afterPropertyTypeChange(this.column, config.type, this);
             },
           });
         }),
