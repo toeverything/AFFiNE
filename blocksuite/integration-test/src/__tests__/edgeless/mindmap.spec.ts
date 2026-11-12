@@ -1,5 +1,6 @@
 import type { MindMapView } from '@blocksuite/affine/gfx/mindmap';
 import { mountShapeTextEditor } from '@blocksuite/affine/gfx/shape';
+import type { CanvasRenderer } from '@blocksuite/affine-block-surface';
 import {
   LayoutType,
   type MindmapElementModel,
@@ -10,7 +11,7 @@ import type { GfxController } from '@blocksuite/std/gfx';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { click, pointermove, wait } from '../utils/common.js';
-import { getDocRootBlock } from '../utils/edgeless.js';
+import { getDocRootBlock, getSurface } from '../utils/edgeless.js';
 import { setupEditor } from '../utils/setup.js';
 
 describe('mindmap', () => {
@@ -142,6 +143,29 @@ describe('mindmap', () => {
 
     shapeEditor!.inlineEditorContainer?.dispatchEvent(compositionEnd);
     await wait();
+  });
+
+  test('should regenerate a missing connector path on canvas redraw', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const mindmapId = surfaceView.model.addElement({
+      type: 'mindmap',
+      children: { text: 'root', children: [{ text: 'child' }] },
+    });
+    const mindmap = surfaceView.model.getElementById(
+      mindmapId
+    ) as MindmapElementModel;
+
+    await wait();
+
+    const [result] = mindmap.getConnectors(mindmap.tree)!;
+    expect(result.connector.path.length).toBeGreaterThanOrEqual(2);
+
+    // Simulate a path lost during an early render while the geometry cache is current.
+    result.connector.path = [];
+    (surfaceView.renderer as CanvasRenderer).refresh({ type: 'all' });
+    await wait();
+
+    expect(result.connector.path.length).toBeGreaterThanOrEqual(2);
   });
 
   test('should wrap long mindmap editor content by max width instead of viewport', async () => {
