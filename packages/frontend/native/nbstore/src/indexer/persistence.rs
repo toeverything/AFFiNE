@@ -129,6 +129,8 @@ impl SqliteDocStorage {
     Ok(())
   }
 
+  /// Search a ready table with the requested result window and mapped native hits.
+  /// Keep the index read-locked across cursor pages so large windows see a single snapshot.
   pub async fn index_search(
     &self,
     table: &str,
@@ -138,11 +140,8 @@ impl SqliteDocStorage {
     self.indexes.ensure_ready()?;
     let table = self.indexes.table(table)?;
     let query = table.compile_query(query)?;
-    let result = table
-      .index
-      .read()
-      .await
-      .search(&query, table.compile_options(options)?)?;
+    let index = table.index.read().await;
+    let result = super::search_window::search_window(&index, &query, table.compile_options(options)?)?;
     Ok(NativeIndexSearchResult {
       total: result.total as u32,
       hits: result.hits.into_iter().map(|hit| table.hit(hit)).collect(),
