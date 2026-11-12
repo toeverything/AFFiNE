@@ -31,6 +31,10 @@ export class LitTranscriptionBlock extends BlockComponent<TranscriptionBlockMode
 
     // to allow text selection across paragraphs in the callout block
     this.contentEditable = 'true';
+
+    // Disable macOS text replacement to prevent aggressive autocorrect
+    this.setAttribute('autocorrect', 'off');
+    this.setAttribute('autocapitalize', 'off');
   }
 
   override firstUpdated(changedProperties: PropertyValues) {
