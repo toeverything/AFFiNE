@@ -30,9 +30,15 @@ export const edgelessSurfaceBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMat
     toBlockSnapshot: {},
     fromBlockSnapshot: {
       enter: (o, context) => {
-        const { walkerContext, provider } = context;
+        const { walkerContext, provider, configs } = context;
         if (!provider) {
           context.walkerContext.skipAllChildren();
+          return;
+        }
+
+        const exportFramesOnly =
+          configs.get('surface:exportFramesAsImages') === 'true';
+        if (exportFramesOnly) {
           return;
         }
 

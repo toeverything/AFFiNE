@@ -55,7 +55,12 @@ export class EdgelessNoteBackground extends SignalWatcher(
       borderRadius: borderRadius + 'px',
       backgroundColor: backgroundColor,
       borderWidth: `${borderSize}px`,
-      borderStyle: borderStyle === StrokeStyle.Dash ? 'dashed' : borderStyle,
+      borderStyle:
+        borderStyle === StrokeStyle.Dash
+          ? 'dashed'
+          : borderStyle === StrokeStyle.Dot
+            ? 'dotted'
+            : borderStyle,
       boxShadow: !shadowType ? 'none' : `var(${shadowType})`,
     };
   });
