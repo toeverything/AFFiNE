@@ -1,0 +1,199 @@
+name: BlockSuite Publish
+
+# Publishes the @blocksuite/* packages to npm.
+#
+# - stable:  push a `blocksuite@X.Y.Z` tag on a commit whose packages are at X.Y.Z
+#            (the version PR opened by `BlockSuite Version` gets them there).
+# - canary:  nightly snapshot of `canary`, only when blocksuite/ changed in the last 24h.
+# - manual:  `workflow_dispatch`, dry-run by default.
+#
+# All three run through the same job so a single npm trusted publisher
+# (this workflow file) covers every package. See blocksuite/RELEASING.md.
+
+on:
+  push:
+    tags:
+      - 'blocksuite@*'
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        type: choice
+        options:
+          - canary
+          - stable
+        default: canary
+      dry-run:
+        description: 'Run everything except the final npm publish'
+        type: boolean
+        default: true
+      force:
+        description: 'Publish a canary even if blocksuite/ has not changed in the last 24h'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blocksuite-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.plan.outputs.channel }}
+      version: ${{ steps.plan.outputs.version }}
+      dry-run: ${{ steps.plan.outputs.dry-run }}
+      skip: ${{ steps.plan.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 300
+      - name: Decide what to publish
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+          INPUT_DRY_RUN: ${{ inputs.dry-run }}
+          INPUT_FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          channel=canary
+          version=''
+          dry_run=false
+          skip=false
+
+          changed_recently() {
+            [ -n "$(git log --since='24 hours ago' --format=%h -- blocksuite .changeset scripts/blocksuite)" ]
+          }
+
+          case "$EVENT_NAME" in
+            push)
+              channel=stable
+              version="${REF_NAME#blocksuite@}"
+              ;;
+            schedule)
+              if ! changed_recently; then skip=true; fi
+              ;;
+            workflow_dispatch)
+              channel="$INPUT_CHANNEL"
+              dry_run="$INPUT_DRY_RUN"
+              if [ "$channel" = stable ]; then
+                if [[ "$REF_NAME" != blocksuite@* ]]; then
+                  echo "::error::Stable releases must be dispatched from a blocksuite@X.Y.Z tag (got $REF_NAME)"
+                  exit 1
+                fi
+                version="${REF_NAME#blocksuite@}"
+              elif [ "$INPUT_FORCE" != true ] && ! changed_recently; then
+                skip=true
+              fi
+              ;;
+          esac
+
+          {
+            echo "channel=$channel"
+            echo "version=$version"
+            echo "dry-run=$dry_run"
+            echo "skip=$skip"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$skip" = true ]; then
+            echo "No BlockSuite changes in the last 24h, nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Channel: **$channel**, version: \`${version:-snapshot}\`, dry run: $dry_run" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    name: Publish (${{ needs.plan.outputs.channel }})
+    needs: plan
+    if: needs.plan.outputs.skip != 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine/monorepo @blocksuite/affine @blocksuite/integration-test
+          playwright-install: true
+          playwright-platform: chromium
+          electron-install: false
+          full-cache: true
+
+      - name: Update npm (trusted publishing needs npm >= 11.5.1)
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - name: Version canary snapshot
+        if: needs.plan.outputs.channel == 'canary'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > .changeset/nightly-canary.md <<'EOF'
+          ---
+          '@blocksuite/affine': patch
+          ---
+
+          Nightly canary snapshot.
+          EOF
+          yarn changeset version --snapshot canary
+          echo "Snapshot version: $(node -p "require('./blocksuite/affine/all/package.json').version")"
+
+      - name: Check that the tag matches the package versions
+        if: needs.plan.outputs.channel == 'stable'
+        env:
+          EXPECTED: ${{ needs.plan.outputs.version }}
+        run: |
+          actual="$(node -p "require('./blocksuite/affine/all/package.json').version")"
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::Tag says $EXPECTED but @blocksuite/affine is at $actual. Merge the version PR first, then tag its merge commit."
+            exit 1
+          fi
+
+      - name: Build
+        run: yarn blocksuite:build
+
+      - name: Pack
+        run: yarn blocksuite:pack
+
+      - name: Validate packages (publint + arethetypeswrong)
+        run: yarn blocksuite:validate
+
+      - name: Smoke-install the packed tarballs
+        run: yarn blocksuite:smoke
+
+      - name: Publish to npm
+        env:
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          DRY_RUN: ${{ needs.plan.outputs.dry-run }}
+        run: |
+          args=()
+          if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+          if [ "$CHANNEL" = canary ]; then args+=(--tag canary); fi
+          if [ -n "$VERSION" ]; then args+=(--expect-version "$VERSION"); fi
+          yarn blocksuite:publish "${args[@]}"
+
+      - name: Upload tarballs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blocksuite-release-${{ needs.plan.outputs.channel }}-${{ github.run_id }}
+          path: |
+            tmp/blocksuite-release/packs/*.tgz
+            tmp/blocksuite-release/packs/manifest.json
+            tmp/blocksuite-release/*.md
+          retention-days: 7
+          if-no-files-found: ignore
