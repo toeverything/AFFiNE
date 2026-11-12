@@ -29,6 +29,7 @@ import {
   CONNECTOR_LABEL_MAX_WIDTH,
   ConnectorLabelOffsetAnchor,
   ConnectorMode,
+  DEFAULT_CONNECTOR_CORNER_RADIUS,
   DEFAULT_CONNECTOR_MODE,
   DEFAULT_ROUGHNESS,
   FontFamily,
@@ -40,6 +41,8 @@ import {
   type TextStyleProps,
 } from '../../consts/index';
 import { type Color, DefaultTheme } from '../../themes/index';
+
+export type JumpStyle = 'none' | 'arc' | 'gap' | 'sharp' | 'line';
 
 export type SerializedConnection = {
   id?: string;
@@ -58,6 +61,7 @@ export const getConnectorModeName = (mode: ConnectorMode) => {
     [ConnectorMode.Straight]: 'Straight',
     [ConnectorMode.Orthogonal]: 'Elbowed',
     [ConnectorMode.Curve]: 'Curve',
+    [ConnectorMode.Rounded]: 'Rounded',
   }[mode];
 };
 
@@ -98,9 +102,17 @@ export type ConnectorElementProps = BaseElementProps & {
   rough?: boolean;
   source: Connection;
   target: Connection;
+  cornerRadius?: number;
 
   frontEndpointStyle?: PointStyle;
   rearEndpointStyle?: PointStyle;
+
+  // Waypoints for connector routing
+  waypoints?: IVec[];
+
+  // Jump styles for connector intersections
+  jumpStyle?: JumpStyle;
+  jumpSize?: number;
 } & ConnectorLabelProps;
 
 export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorElementProps> {
@@ -176,10 +188,8 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    */
   override getNearestPoint(point: IVec): IVec {
     const { mode, absolutePath: path } = this;
-
-    if (path.length === 0) {
-      const { x, y } = this;
-      return [x, y];
+    if (path.length < 2) {
+      return [this.x + this.w / 2, this.y + this.h / 2];
     }
 
     if (mode === ConnectorMode.Straight) {
@@ -188,7 +198,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       return Vec.nearestPointOnLineSegment(first, last, point, true);
     }
 
-    if (mode === ConnectorMode.Orthogonal) {
+    if (mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Rounded) {
       const points = path.map<IVec>(p => [p[0], p[1]]);
       return Polyline.nearestPoint(points, point);
     }
@@ -209,6 +219,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    */
   getOffsetDistanceByPoint(point: IVec, bounds?: Bound) {
     const { mode, absolutePath: path } = this;
+    if (path.length < 2) {
+      return 0.5;
+    }
 
     let { x, y, w, h } = this;
     if (bounds) {
@@ -216,10 +229,6 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       y = bounds.y;
       w = bounds.w;
       h = bounds.h;
-    }
-
-    if (path.length === 0) {
-      return 0.5;
     }
 
     point[0] = Vec.clamp(point[0], x, x + w);
@@ -233,7 +242,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       return pl / fl;
     }
 
-    if (mode === ConnectorMode.Orthogonal) {
+    if (mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Rounded) {
       const points = path.map<IVec>(p => [p[0], p[1]]);
       const p = Polyline.nearestPoint(points, point);
       const pl = Polyline.lenAtPoint(points, p);
@@ -252,6 +261,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    */
   getPointByOffsetDistance(offsetDistance = 0.5, bounds?: Bound): IVec {
     const { mode, absolutePath: path } = this;
+    if (path.length < 2) {
+      return [this.x + this.w / 2, this.y + this.h / 2];
+    }
 
     if (mode === ConnectorMode.Straight) {
       const first = path[0];
@@ -267,11 +279,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       h = bounds.h;
     }
 
-    if (path.length === 0) {
-      return [x + w / 2, y + h / 2];
-    }
-
-    if (mode === ConnectorMode.Orthogonal) {
+    if (mode === ConnectorMode.Orthogonal || mode === ConnectorMode.Rounded) {
       const points = path.map<IVec>(p => [p[0], p[1]]);
       const point = Polyline.pointAt(points, offsetDistance);
       if (point) return point;
@@ -312,10 +320,6 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
 
     const { mode, strokeWidth, absolutePath: path } = this;
-
-    if (path.length === 0) {
-      return false;
-    }
 
     const point =
       mode === ConnectorMode.Curve
@@ -359,6 +363,11 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     if (this.hasLabel()) {
       const [x, y, w, h] = this.labelXYWH!;
       this.labelXYWH = [x + offset[0], y + offset[1], w, h];
+    }
+
+    // Keep manual waypoints aligned when moving selected connectors.
+    if (this.waypoints && this.waypoints.length > 0) {
+      this.waypoints = this.waypoints.map(wp => Vec.add(wp, offset) as IVec);
     }
   }
 
@@ -422,6 +431,15 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   @local()
   accessor absolutePath: PointLocation[] = [];
 
+  /**
+   * Routed points with jump markers for rendering.
+   * Calculated during path updates based on intersections with other connectors.
+   * Not persisted - recalculated on each path update.
+   */
+  @local()
+  accessor routedPoints: Array<{ type: 0 | 1; x: number; y: number }> | null =
+    null;
+
   @field('None' as PointStyle)
   accessor frontEndpointStyle!: PointStyle;
 
@@ -478,6 +496,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   @field()
   accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;
 
+  @field()
+  accessor cornerRadius: number = DEFAULT_CONNECTOR_CORNER_RADIUS;
+
   @derive((path: PointLocation[], instance) => {
     const { x, y } = instance;
 
@@ -524,6 +545,26 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    */
   @field()
   accessor text: Y.Text | undefined = undefined;
+
+  /**
+   * User-defined waypoints for connector routing.
+   * These are intermediate control points that the connector path passes through.
+   */
+  @field()
+  accessor waypoints: IVec[] | undefined = undefined;
+
+  /**
+   * Jump style for rendering connector intersections.
+   * Options: 'none', 'arc', 'gap', 'sharp', 'line'
+   */
+  @field('none' as JumpStyle)
+  accessor jumpStyle!: JumpStyle;
+
+  /**
+   * Jump size in pixels for rendering jumps at intersections.
+   */
+  @field(10)
+  accessor jumpSize!: number;
 
   @local()
   accessor xywh: SerializedXYWH = '[0,0,0,0]';

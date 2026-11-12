@@ -80,6 +80,8 @@ export class ShapeTool extends BaseTool<ShapeToolOption> {
       shapeType: getShapeType(shapeName),
       xywh: bound.serialize(),
       radius: attributes.radius,
+      gradientFinal: attributes.gradientFinal,
+      gradientDirection: attributes.gradientDirection,
     });
 
     this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {

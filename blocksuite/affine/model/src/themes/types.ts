@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { GRADIENT_DIRECTIONS, StrokeStyle } from '../consts/index';
 import { ColorSchema } from './color';
 
 export const PaletteSchema = z.object({
@@ -8,6 +9,27 @@ export const PaletteSchema = z.object({
 });
 
 export type Palette = z.infer<typeof PaletteSchema>;
+
+export const ShapePaletteStyleSchema = z.object({
+  fill: ColorSchema,
+  stroke: ColorSchema,
+  strokeWidth: z.number().optional(),
+  strokeStyle: z.nativeEnum(StrokeStyle).optional(),
+  ringColor: ColorSchema.optional(),
+  gradientFinal: ColorSchema.optional(),
+  gradientDirection: z.enum(GRADIENT_DIRECTIONS).optional(),
+});
+
+export type ShapePaletteStyle = z.infer<typeof ShapePaletteStyleSchema>;
+
+export const ShapePaletteSchema = z.object({
+  id: z.string(),
+  showInLine: z.boolean().optional(),
+  showInFill: z.boolean().optional(),
+  styles: z.array(ShapePaletteStyleSchema),
+});
+
+export type ShapePalette = z.infer<typeof ShapePaletteSchema>;
 
 export const ThemeSchema = z.object({
   pureBlack: z.string(),
@@ -36,6 +58,9 @@ export const ThemeSchema = z.object({
   FillColorShortPalettes: z.array(PaletteSchema),
   ShapeTextColorShortMap: z.record(z.string(), ColorSchema),
   ShapeTextColorShortPalettes: z.array(PaletteSchema),
+
+  // Shape/pen/connector palette presets
+  ShapePalettes: z.array(ShapePaletteSchema),
 });
 
 export type Theme = z.infer<typeof ThemeSchema>;
