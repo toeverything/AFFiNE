@@ -837,11 +837,13 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
   .unwrap();
   assert!(runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
 
-  sqlx::query("UPDATE entitlements SET expires_at=statement_timestamp() WHERE subject_id=$1")
-    .bind(&subscription)
-    .execute(&pool)
-    .await
-    .unwrap();
+  sqlx::query(
+    "UPDATE entitlements SET expires_at=date_trunc('milliseconds',statement_timestamp()) WHERE subject_id=$1",
+  )
+  .bind(&subscription)
+  .execute(&pool)
+  .await
+  .unwrap();
   assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
   sqlx::query("UPDATE entitlements SET expires_at=NULL WHERE subject_id=$1")
     .bind(&subscription)
