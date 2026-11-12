@@ -7,7 +7,7 @@ import type {
   ShapeElementModel,
 } from '@blocksuite/affine-model';
 
-import { type Colors, drawGeneralShape } from './utils.js';
+import { type Colors, drawGeneralShape, getStrokeLineDash } from './utils.js';
 
 export function diamond(
   model: ShapeElementModel | LocalShapeElementModel,
@@ -21,6 +21,8 @@ export function diamond(
     seed,
     strokeWidth,
     filled,
+    flipX,
+    flipY,
     strokeStyle,
     roughness,
     rotate,
@@ -39,6 +41,7 @@ export function diamond(
     matrix
       .translateSelf(renderOffset, renderOffset)
       .translateSelf(cx, cy)
+      .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy)
   );
@@ -56,7 +59,7 @@ export function diamond(
       {
         seed,
         roughness: shapeStyle === 'Scribbled' ? roughness : 0,
-        strokeLineDash: strokeStyle === 'dash' ? [12, 12] : undefined,
+        strokeLineDash: getStrokeLineDash(strokeStyle, strokeWidth),
         stroke: strokeStyle === 'none' ? 'none' : strokeColor,
         strokeWidth,
         fill: filled ? fillColor : undefined,

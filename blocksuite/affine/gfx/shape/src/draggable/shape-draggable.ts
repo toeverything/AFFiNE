@@ -289,7 +289,7 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
           const isBeingDragged = draggingShape?.name === shape.name;
           const { fillColor, strokeColor } =
             this.edgeless.std.get(EditPropsStore).lastProps$.value[
-              `shape:${shape.name}`
+              'shape:rect'
             ] || {};
           const color = this.edgeless.std
             .get(ThemeProvider)
