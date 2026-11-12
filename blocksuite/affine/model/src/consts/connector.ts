@@ -11,6 +11,30 @@ export enum PointStyle {
   Diamond = 'Diamond',
   None = 'None',
   Triangle = 'Triangle',
+  Classic = 'classic',
+  ClassicThin = 'classicThin',
+  Open = 'open',
+  OpenThin = 'openThin',
+  Block = 'block',
+  BlockThin = 'blockThin',
+  Oval = 'oval',
+  DiamondThin = 'diamondThin',
+  DoubleBlock = 'doubleBlock',
+  Box = 'box',
+  HalfCircle = 'halfCircle',
+  OpenAsync = 'openAsync',
+  Async = 'async',
+  Dash = 'dash',
+  BaseDash = 'baseDash',
+  Cross = 'cross',
+  CircleOutline = 'circle',
+  CirclePlus = 'circlePlus',
+  EROne = 'ERone',
+  ERMandOne = 'ERmandOne',
+  ERMany = 'ERmany',
+  EROneToMany = 'ERoneToMany',
+  ERZeroToOne = 'ERzeroToOne',
+  ERZeroToMany = 'ERzeroToMany',
 }
 
 export const PointStyleMap = createEnumMap(PointStyle);
@@ -31,6 +55,10 @@ export enum ConnectorMode {
   Straight,
   Orthogonal,
   Curve,
+  Rounded,
 }
 
 export const DEFAULT_CONNECTOR_MODE = ConnectorMode.Curve;
+
+// Default radius used for rounded connectors.
+export const DEFAULT_CONNECTOR_CORNER_RADIUS = 20;

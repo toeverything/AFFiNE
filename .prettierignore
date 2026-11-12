@@ -45,3 +45,9 @@ blocksuite/docs-site/api/**
 packages/frontend/admin/src/config.json
 **/test-docs.json
 **/test-blocks.json
+
+blocksuite/affine/gfx/shape/src/drawio/library-catalog.ts
+blocksuite/affine/gfx/shape/src/drawio/library-stencils.ts
+blocksuite/affine/gfx/shape/src/drawio/library-stencils-a.ts
+blocksuite/affine/gfx/shape/src/drawio/library-stencils-bm.ts
+blocksuite/affine/gfx/shape/src/drawio/library-stencils-nz.ts
