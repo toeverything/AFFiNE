@@ -44,6 +44,27 @@ const LocalPropsSchema = z.object({
   presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
+
+  // Grid settings
+  edgelessShowGrid: z.boolean(),
+  edgelessGridSize: z.number(),
+  edgelessGridSnapAnchor: z
+    .enum([
+      'top-left',
+      'top-center',
+      'top-right',
+      'center-left',
+      'center',
+      'center-right',
+      'bottom-left',
+      'bottom-center',
+      'bottom-right',
+    ])
+    .default('top-left'),
+  // Snap settings
+  edgelessSnapToGuides: z.boolean(),
+  edgelessSnapToGrid: z.boolean(),
+  edgelessConnectorSnapToGrid: z.boolean(),
 });
 
 type SessionProps = z.infer<typeof SessionPropsSchema>;
@@ -137,6 +158,18 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:' + id + ':showBidirectional';
       case 'autoHideEmbedHTMLFullScreenToolbar':
         return 'blocksuite:embedHTML:autoHideFullScreenToolbar';
+      case 'edgelessShowGrid':
+        return 'blocksuite:edgeless:showGrid';
+      case 'edgelessGridSize':
+        return 'blocksuite:edgeless:gridSize';
+      case 'edgelessGridSnapAnchor':
+        return 'blocksuite:edgeless:gridSnapAnchor';
+      case 'edgelessSnapToGuides':
+        return 'blocksuite:edgeless:snapToGuides';
+      case 'edgelessSnapToGrid':
+        return 'blocksuite:edgeless:snapToGrid';
+      case 'edgelessConnectorSnapToGrid':
+        return 'blocksuite:edgeless:connectorSnapToGrid';
       default:
         return key;
     }
