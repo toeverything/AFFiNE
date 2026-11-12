@@ -77,4 +77,9 @@ export const multiSelectPropertyModelConfig =
         ],
       };
     },
+    deleteGroup: ({ value, oldData }) => {
+      return {
+        options: (oldData.options ?? []).filter(v => v.id !== value),
+      };
+    },
   });
