@@ -2559,12 +2559,6 @@ bbb
         },
         columns: [
           {
-            type: 'title',
-            name: 'Title',
-            data: {},
-            id: 'block:2VfUaitjf9',
-          },
-          {
             type: 'select',
             name: 'Status',
             data: {
@@ -2593,6 +2587,12 @@ bbb
             name: 'Date',
             data: {},
             id: 'block:5cglrBmAr3',
+          },
+          {
+            type: 'title',
+            name: 'Title',
+            data: {},
+            id: 'block:2VfUaitjf9',
           },
           {
             type: 'number',
@@ -2686,10 +2686,118 @@ bbb
     };
 
     const md = `\
-| Title  | Status      | Date       | Number | Progress | MultiSelect | RichText                    | Link               | Checkbox |
-| ------ | ----------- | ---------- | ------ | -------- | ----------- | --------------------------- | ------------------ | -------- |
-| Task 1 | TODO        | 2023-12-15 | 1      | 65       | test1,test2 | [test2](https://google.com) | https://google.com | True     |
-| Task 2 | In Progress | 2023-12-20 |        |          |             | test1                       |                    |          |
+| Title | Status | Date | Number | Progress | MultiSelect | RichText | Link | Checkbox |
+| - | - | - | - | - | - | - | - | - |
+| Task 1 | TODO | 2023-12-15 | 1 | 65 | test1,test2 | [test2](https://google.com) | https://google.com | True |
+| Task 2 | In Progress | 2023-12-20 | | | | test1 | | |
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(md);
+  });
+
+  test('table without a title column', async () => {
+    // A link cell that exists with no value stringifies to undefined,
+    // which is not a throw, and a row can hold a real newline. Neither
+    // used to survive the export.
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:8Wb7CSJ9Qe',
+      flavour: 'affine:database',
+      props: {
+        cells: {
+          'block:P_-Wg7Rg9O': {
+            'block:U8lPD59MkF': {
+              columnId: 'block:U8lPD59MkF',
+              value: undefined,
+            },
+          },
+        },
+        columns: [
+          {
+            type: 'link',
+            name: 'Link',
+            data: {},
+            id: 'block:U8lPD59MkF',
+          },
+        ],
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:P_-Wg7Rg9O',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'first\nsecond',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const md = `\
+| Title | Link |
+| - | - |
+| first second | |
+`;
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toBe(md);
+  });
+
+  test('table keeps a blank title column name', async () => {
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:8Wb7CSJ9Qe',
+      flavour: 'affine:database',
+      props: {
+        cells: {},
+        columns: [
+          {
+            type: 'title',
+            name: '',
+            data: {},
+            id: 'block:2VfUaitjf9',
+          },
+        ],
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:P_-Wg7Rg9O',
+          flavour: 'affine:paragraph',
+          props: {
+            type: 'text',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'Task 1',
+                },
+              ],
+            },
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const md = `\
+| |
+| - |
+| Task 1 |
 `;
     const mdAdapter = new MarkdownAdapter(createJob(), provider);
     const target = await mdAdapter.fromBlockSnapshot({
@@ -2923,13 +3031,13 @@ bbb
 
 &#x20;   bbb
 
-[untitled](https://example.com/4T5ObMgEIMII-4Bexyta1?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)
+[untitled](https://example.com/4T5ObMgEIMII-4Bexyta1?mode=page&blockIds=abc%2C123&elementIds=def%2C456&databaseId=deadbeef&databaseRowId=123)
 
 &#x20;   ccc
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456\\&databaseId=deadbeef\\&databaseRowId=123)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page&blockIds=abc%2C123&elementIds=def%2C456&databaseId=deadbeef&databaseRowId=123)[](https://example.com/foobar)
 
 &#x20;       fff
 
@@ -5154,7 +5262,7 @@ aaa
 
 &#x20;       ddd
 
-&#x20;       eee[test](https://example.com/deadbeef?mode=page\\&blockIds=abc%2C123\\&elementIds=def%2C456)[](https://example.com/foobar)
+&#x20;       eee[test](https://example.com/deadbeef?mode=page&blockIds=abc%2C123&elementIds=def%2C456)[](https://example.com/foobar)
 
 &#x20;       fff
 
