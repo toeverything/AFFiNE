@@ -618,11 +618,117 @@ mod tests {
     assert_eq!(repaired_claim.content_revision, "content-4");
     assert_eq!(repaired_claim.source_id, source_id);
 
-    sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+    let cleanup_claim = repaired_claim;
+    let commit_pool = sqlx::postgres::PgPoolOptions::new()
+      .max_connections(1)
+      .connect(&database_url)
       .await
       .unwrap();
+    let commit_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+      .fetch_one(&commit_pool)
+      .await
+      .unwrap();
+    let mut state_blocker = pool.begin().await.unwrap();
+    sqlx::query("SELECT workspace_id FROM embedding_workspace_states WHERE workspace_id=$1 FOR UPDATE")
+      .bind(&workspace_id)
+      .execute(&mut *state_blocker)
+      .await
+      .unwrap();
+    let claim = cleanup_claim.clone();
+    let committing = tokio::spawn(async move {
+      let result = commit_token(&commit_pool, &claim, &[chunk("finishing during workspace cleanup")]).await;
+      commit_pool.close().await;
+      result
+    });
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar("SELECT cardinality(pg_blocking_pids($1)) > 0")
+          .bind(commit_pid)
+          .fetch_one(&pool)
+          .await
+          .unwrap();
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("embedding commit must reach its state fence after inserting chunks");
+    let config_dir = tempfile::tempdir().unwrap();
+    let config_path = config_dir.path().join("config.json");
+    let storage = |bucket: &str| {
+      serde_json::json!({
+        "provider": "fs", "bucket": bucket, "config": { "path": config_dir.path() }
+      })
+    };
+    std::fs::write(
+      &config_path,
+      serde_json::to_vec(&serde_json::json!({
+        "deployment": { "type": "cloud" },
+        "db": { "datasourceUrl": database_url },
+        "storages": { "blob.storage": storage("blobs"), "avatar.storage": storage("avatars") },
+        "copilot": { "storage": storage("copilot") }
+      }))
+      .unwrap(),
+    )
+    .unwrap();
+    let config =
+      crate::runtime::config::ServerConfigHandle::new(config_path.to_string_lossy().into_owned(), None).unwrap();
+    let runtime = crate::runtime::storage_runtime::StorageRuntime::new(&config).unwrap();
+    runtime.start().await.unwrap();
+    let cleanup_workspace = workspace_id.clone();
+    let deleting = tokio::spawn(async move { runtime.delete_workspace_objects(cleanup_workspace, None).await });
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE query LIKE 'DELETE FROM embedding_sources%' AND \
+           $1=ANY(pg_blocking_pids(pid)))",
+        )
+        .bind(commit_pid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("workspace cleanup must wait for the in-flight generation's source reference");
+    state_blocker.rollback().await.unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      committing.await.unwrap().unwrap();
+      deleting.await.unwrap().unwrap();
+    })
+    .await
+    .expect("workspace cleanup and embedding commit must complete without a lock cycle");
+    assert!(
+      commit_token(&pool, &cleanup_claim, &[chunk("must not resurrect")])
+        .await
+        .is_err()
+    );
+    for table in [
+      "embedding_sources",
+      "embedding_projections",
+      "embedding_chunks",
+      "embedding_indexes",
+      "embedding_workspace_states",
+    ] {
+      let (column, value) = if table == "embedding_projections" {
+        ("source_id::text", source_id.to_string())
+      } else {
+        ("workspace_id", workspace_id.clone())
+      };
+      let count: i64 = sqlx::query_scalar(&format!("SELECT count(*) FROM {table} WHERE {column}=$1"))
+        .bind(value)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+      assert_eq!(count, 0, "workspace cleanup left rows in {table}");
+    }
     let unavailable = [crate::runtime::types::DocumentEmbeddingProjectionInput {
       revision: "content-2".to_string(),
       ..requested[0].clone()
@@ -633,15 +739,5 @@ mod tests {
         .unwrap(),
       (0, 0)
     );
-    sqlx::query("DELETE FROM embedding_sources WHERE workspace_id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    sqlx::query("DELETE FROM embedding_indexes WHERE workspace_id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
   }
 }

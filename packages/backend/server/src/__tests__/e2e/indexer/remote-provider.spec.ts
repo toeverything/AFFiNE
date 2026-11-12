@@ -1,8 +1,10 @@
 import {
+  deleteWorkspaceMutation,
   indexerAggregateQuery,
   SearchQueryType,
   SearchTable,
 } from '@affine/graphql';
+import { PrismaClient } from '@prisma/client';
 
 import { ServerService } from '../../../core/config';
 import { createDocWithMarkdown } from '../../../native';
@@ -39,7 +41,7 @@ async function indexDocument(
 }
 
 remoteE2e(
-  'exposes remote aggregation through the GraphQL contract',
+  'aggregates remote documents and removes workspace projections after deletion',
   async t => {
     const owner = await app.signup();
     const workspace = await app.create(Mockers.Workspace, {
@@ -82,5 +84,50 @@ remoteE2e(
     t.is(result.workspace.aggregate.buckets.length, 2);
     t.is(result.workspace.aggregate.pagination.count, 2);
     t.true(result.workspace.aggregate.pagination.hasMore);
+
+    const [generation] = await app.get(PrismaClient).$queryRaw<
+      { manifest: Record<string, string> }[]
+    >`SELECT manifest FROM search_projection.generations WHERE state = 'active'`;
+    const provider = indexer!.provider!;
+    const countWorkspaceRows = async () => {
+      return await Promise.all(
+        ['doc', 'block'].map(async table => {
+          const response = await fetch(
+            new URL(
+              `${generation.manifest[table]}/_count`,
+              `${provider.endpoint}/`
+            ),
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(provider.apiKey
+                  ? { Authorization: `ApiKey ${provider.apiKey}` }
+                  : provider.username
+                    ? {
+                        Authorization: `Basic ${Buffer.from(
+                          `${provider.username}:${provider.password}`
+                        ).toString('base64')}`,
+                      }
+                    : {}),
+              },
+              body: JSON.stringify({
+                query: { term: { workspace_id: workspace.id } },
+              }),
+            }
+          );
+          t.is(response.status, 200);
+          const body = (await response.json()) as { count: number };
+          return body.count;
+        })
+      );
+    };
+    t.true((await countWorkspaceRows()).every(count => count > 0));
+    await app.gql({
+      query: deleteWorkspaceMutation,
+      variables: { id: workspace.id },
+    });
+    await reconcileSearchProjection();
+    t.deepEqual(await countWorkspaceRows(), [0, 0]);
   }
 );
