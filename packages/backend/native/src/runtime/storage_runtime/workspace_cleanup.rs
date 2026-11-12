@@ -4,9 +4,9 @@ use sqlx::{PgPool, Row};
 
 use super::{
   NAMESPACE_SHARDS, NamespaceKind, NamespaceShard, RuntimeError, RuntimeWorkspaceStorageReconcileResult,
-  StorageOperation, StorageRuntime, comment_object_identity, delete_orphan_storage_rows, load_integer_cursor,
-  load_object_cursor, mark_checkpoint_failed, reconcile_orphan_storage_rows, save_integer_cursor, save_object_cursor,
-  workspace_id_from_prefix,
+  StorageOperation, StorageRuntime, comment_object_identity, delete_orphan_storage_rows, embedding_tables_exist,
+  load_integer_cursor, load_object_cursor, mark_checkpoint_failed, reconcile_orphan_storage_rows, save_integer_cursor,
+  save_object_cursor, workspace_id_from_prefix,
 };
 use crate::runtime::object_storage::types::{ObjectListEntry, StorageScope, is_id_segment};
 
@@ -28,15 +28,18 @@ impl StorageRuntime {
     }
     let pool = self.pool().await?;
     let mut operation = StorageOperation::acquire(&pool, &workspace_id, None).await?;
-    let workspace_exists = sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)")
-      .bind(&workspace_id)
-      .fetch_one(operation.connection())
-      .await
-      .map_err(|error| RuntimeError::database("recheck workspace before targeted storage deletion", error))?;
+    let (workspace_exists, embedding_tables) = sqlx::query_as::<_, (bool, bool)>(
+      "SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1), to_regclass('embedding_sources') IS NOT NULL",
+    )
+    .bind(&workspace_id)
+    .fetch_one(operation.connection())
+    .await
+    .map_err(|error| RuntimeError::database("recheck workspace before targeted storage deletion", error))?;
     if workspace_exists {
       operation.release().await?;
       return Ok(0);
     }
+    delete_orphan_storage_rows(operation.connection(), &workspace_id, embedding_tables).await?;
     let result = self
       .delete_workspace_objects_for_users(&workspace_id, user_ids.as_deref().unwrap_or_default())
       .await;
@@ -59,6 +62,7 @@ impl StorageRuntime {
       return Err(RuntimeError::invalid_input("workspace storage reconciliation limit must be positive").into());
     }
     let pool = self.pool().await?;
+    let embedding_tables = embedding_tables_exist(&pool).await?;
     let mut result = RuntimeWorkspaceStorageReconcileResult {
       scanned_workspaces: 0,
       deleted_workspaces: 0,
@@ -71,10 +75,13 @@ impl StorageRuntime {
       unknown_prefix_samples: Vec::new(),
     };
 
-    if let Err(error) = self.reconcile_ownerless_workspaces(&pool, limit, &mut result).await {
+    if let Err(error) = self
+      .reconcile_ownerless_workspaces(&pool, limit, embedding_tables, &mut result)
+      .await
+    {
       record_failure(&mut result, "ownerless-workspaces", error);
     }
-    if let Err(error) = reconcile_orphan_storage_rows(&pool, limit, &mut result).await {
+    if let Err(error) = reconcile_orphan_storage_rows(&pool, limit, embedding_tables, &mut result).await {
       record_failure(&mut result, "orphan-storage-rows", error);
     }
     for shard in NAMESPACE_SHARDS {
@@ -159,6 +166,7 @@ impl StorageRuntime {
     &self,
     pool: &PgPool,
     limit: i32,
+    embedding_tables: bool,
     result: &mut RuntimeWorkspaceStorageReconcileResult,
   ) -> napi::Result<()> {
     let last_sid = load_integer_cursor(pool, "workspace_storage_ownerless", "workspaces").await?;
@@ -222,7 +230,7 @@ impl StorageRuntime {
         result.deleted_workspaces = result.deleted_workspaces.saturating_add(1);
         result.deleted_orphan_rows = result
           .deleted_orphan_rows
-          .saturating_add(delete_orphan_storage_rows(operation.connection(), &workspace_id).await?);
+          .saturating_add(delete_orphan_storage_rows(operation.connection(), &workspace_id, embedding_tables).await?);
         result.deleted_objects = result.deleted_objects.saturating_add(
           self
             .delete_workspace_objects_for_users(&workspace_id, &user_ids)
@@ -534,7 +542,10 @@ mod tests {
   use std::{fs::write, sync::Arc};
 
   use super::*;
-  use crate::runtime::object_storage::types::{ObjectKey, ObjectLocator, ObjectPutMetadata};
+  use crate::runtime::{
+    migrations::{DATABASE_TEST_LOCK, migrate_all_tables},
+    object_storage::types::{ObjectKey, ObjectLocator, ObjectPutMetadata},
+  };
 
   fn runtime(root: &std::path::Path) -> StorageRuntime {
     let root = serde_json::to_string(root).unwrap();
@@ -560,6 +571,72 @@ mod tests {
       .put(&locator, b"x".to_vec(), ObjectPutMetadata::default())
       .await
       .unwrap();
+  }
+
+  const WORKSPACE_ROW_TABLES: &[&str] = &[
+    "embedding_chunks",
+    "embedding_projections",
+    "embedding_sources",
+    "embedding_workspace_states",
+    "embedding_indexes",
+    "doc_blob_refs",
+    "doc_blob_ref_projections",
+    "document_cleanup_candidates",
+    "blob_cleanup_candidates",
+    "storage_reconciliation_runs",
+  ];
+
+  async fn seed_workspace_rows(pool: &PgPool, workspace_id: &str) {
+    for statement in [
+      "INSERT INTO \
+       embedding_indexes(id,workspace_id,fingerprint,route_source,provider,model_id,endpoint_fingerprint,\
+       contract_version,health_status) VALUES(gen_random_uuid(),$1,'test','managed','test','test','test',1,'ready')",
+      "INSERT INTO embedding_workspace_states(workspace_id,active_index_id,runtime_state) SELECT $1,id,'active' FROM \
+       embedding_indexes WHERE workspace_id=$1",
+      "INSERT INTO \
+       embedding_sources(id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,recipe_revision,\
+       document_projection) VALUES(gen_random_uuid(),$1,'document','doc','1','1','1','{}')",
+      "INSERT INTO \
+       embedding_projections(source_id,index_id,status,active_generation_token,lease_owner,lease_token,lease_until) \
+       SELECT source.id,index_fact.id,'running',gen_random_uuid(),'test',1,now()+interval '5 minutes' FROM \
+       embedding_sources source JOIN embedding_indexes index_fact USING(workspace_id) WHERE source.workspace_id=$1",
+      "INSERT INTO \
+       embedding_chunks(generation_token,workspace_id,index_id,source_id,chunk_index,content,embedding,source_kind,\
+       doc_id) SELECT \
+       projection.active_generation_token,$1,projection.index_id,source.id,0,'test',array_fill(1::real,\
+       ARRAY[1024])::vector,'document','doc' FROM embedding_sources source JOIN embedding_projections projection ON \
+       projection.source_id=source.id WHERE source.workspace_id=$1",
+      "INSERT INTO doc_blob_refs(workspace_id,doc_id,blob_key,block_id,flavour,snapshot_updated_at,parser_version) \
+       VALUES($1,'doc','blob','block','affine:attachment',now(),1)",
+      "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,parser_version,status) VALUES($1,'doc',1,'pending')",
+      "INSERT INTO document_cleanup_candidates(workspace_id,doc_id,status,missing_since,last_observed_missing_at) \
+       VALUES($1,'doc','marked',now(),now())",
+      "INSERT INTO blob_cleanup_candidates(workspace_id,blob_key,reason,status,object_size,run_id) \
+       VALUES($1,'blob','test','planned',1,gen_random_uuid())",
+      "INSERT INTO storage_reconciliation_runs(workspace_id,kind,mode,status) \
+       VALUES($1,'blob_cleanup','test','running')",
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) VALUES('blob_cleanup',$1,'running')",
+    ] {
+      sqlx::query(statement).bind(workspace_id).execute(pool).await.unwrap();
+    }
+  }
+
+  async fn assert_workspace_rows(pool: &PgPool, workspace_id: &str, count: i64) {
+    for table in WORKSPACE_ROW_TABLES {
+      let query = if *table == "embedding_projections" {
+        "SELECT count(*) FROM embedding_projections WHERE source_id IN (SELECT id FROM embedding_sources WHERE \
+         workspace_id=$1)"
+          .to_string()
+      } else {
+        format!("SELECT count(*) FROM {table} WHERE workspace_id=$1")
+      };
+      let actual: i64 = sqlx::query_scalar(&query)
+        .bind(workspace_id)
+        .fetch_one(pool)
+        .await
+        .unwrap();
+      assert_eq!(actual, count, "{table} rows for {workspace_id}");
+    }
   }
 
   #[tokio::test]
@@ -654,7 +731,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn reports_partial_delete_failure() {
+  async fn workspace_cleanup_reconciles_runtime_rows_despite_object_failure() {
     let temp = tempfile::tempdir().unwrap();
     let runtime = runtime(temp.path());
     let workspace_id = "workspace-cleanup-failure";
@@ -680,5 +757,158 @@ mod tests {
       .unwrap_err();
     assert!(error.to_string().contains("Workspace object delete failed"));
     assert!(error.to_string().contains(&key));
+    std::fs::remove_dir(&metadata).unwrap();
+    put(&runtime, key.clone()).await;
+    std::fs::remove_file(&metadata).unwrap();
+    std::fs::create_dir(&metadata).unwrap();
+
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let _guard = DATABASE_TEST_LOCK.lock().await;
+    let pool = sqlx::postgres::PgPoolOptions::new()
+      .max_connections(1)
+      .connect(&database_url)
+      .await
+      .unwrap();
+    assert!(migrate_all_tables(&pool).await.unwrap().enabled);
+    *runtime.pool.lock().await = Some(pool.clone());
+    let live_workspace = format!("workspace-cleanup-live-{}", uuid::Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces(id,created_at) VALUES($1,now())")
+      .bind(&live_workspace)
+      .execute(&pool)
+      .await
+      .unwrap();
+    for id in [workspace_id, live_workspace.as_str()] {
+      seed_workspace_rows(&pool, id).await;
+    }
+    assert_eq!(
+      runtime
+        .delete_workspace_objects(live_workspace.clone(), None)
+        .await
+        .unwrap(),
+      0
+    );
+    assert_workspace_rows(&pool, &live_workspace, 1).await;
+    assert!(
+      runtime
+        .delete_workspace_objects(workspace_id.to_string(), None)
+        .await
+        .is_err()
+    );
+    assert_workspace_rows(&pool, workspace_id, 0).await;
+    std::fs::remove_dir(&metadata).unwrap();
+    put(&runtime, key).await;
+    assert_eq!(
+      runtime
+        .delete_workspace_objects(workspace_id.to_string(), None)
+        .await
+        .unwrap(),
+      1
+    );
+    assert_eq!(
+      runtime
+        .delete_workspace_objects(workspace_id.to_string(), None)
+        .await
+        .unwrap(),
+      0
+    );
+    assert_workspace_rows(&pool, workspace_id, 0).await;
+
+    let global_checkpoint_inserted = sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('blob_metadata_backfill','__all__','running') ON CONFLICT(kind,scope) DO NOTHING",
+    )
+    .execute(&pool)
+    .await
+    .unwrap()
+    .rows_affected()
+      > 0;
+    let global_run: uuid::Uuid = sqlx::query_scalar(
+      "INSERT INTO storage_reconciliation_runs(kind,mode,status) VALUES('test-global','test','running') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let mut orphan_ids = Vec::new();
+    for remaining in [
+      "embedding_sources",
+      "embedding_workspace_states",
+      "embedding_indexes",
+      "blob_cleanup_candidates",
+      "storage_reconciliation_runs",
+      "storage_reconciliation_checkpoints",
+    ] {
+      let id = format!("workspace-cleanup-orphan-{}", uuid::Uuid::new_v4());
+      seed_workspace_rows(&pool, &id).await;
+      for table in WORKSPACE_ROW_TABLES.iter().filter(|table| **table != remaining) {
+        let query = if *table == "embedding_projections" {
+          "DELETE FROM embedding_projections WHERE source_id IN (SELECT id FROM embedding_sources WHERE \
+           workspace_id=$1)"
+            .to_string()
+        } else {
+          format!("DELETE FROM {table} WHERE workspace_id=$1")
+        };
+        sqlx::query(&query).bind(&id).execute(&pool).await.unwrap();
+      }
+      if remaining != "storage_reconciliation_checkpoints" {
+        sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope=$1")
+          .bind(&id)
+          .execute(&pool)
+          .await
+          .unwrap();
+      }
+      orphan_ids.push(id);
+    }
+    for _ in 0..2 {
+      runtime.reconcile_workspace_storage_inner(1_000).await.unwrap();
+      for id in &orphan_ids {
+        assert_workspace_rows(&pool, id, 0).await;
+        assert_eq!(
+          sqlx::query_scalar::<_, i64>("SELECT count(*) FROM storage_reconciliation_checkpoints WHERE scope=$1")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+          0
+        );
+      }
+      assert_workspace_rows(&pool, &live_workspace, 1).await;
+      assert!(
+        sqlx::query_scalar::<_, bool>(
+          "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='blob_metadata_backfill' AND \
+           scope='__all__')"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+      );
+      assert!(
+        sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM storage_reconciliation_runs WHERE id=$1)")
+          .bind(global_run)
+          .fetch_one(&pool)
+          .await
+          .unwrap()
+      );
+    }
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&live_workspace)
+      .execute(&pool)
+      .await
+      .unwrap();
+    runtime.delete_workspace_objects(live_workspace, None).await.unwrap();
+    if global_checkpoint_inserted {
+      sqlx::query(
+        "DELETE FROM storage_reconciliation_checkpoints WHERE kind='blob_metadata_backfill' AND scope='__all__'",
+      )
+      .execute(&pool)
+      .await
+      .unwrap();
+    }
+    sqlx::query("DELETE FROM storage_reconciliation_runs WHERE id=$1")
+      .bind(global_run)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

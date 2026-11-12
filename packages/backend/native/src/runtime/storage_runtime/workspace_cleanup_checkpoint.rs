@@ -108,21 +108,50 @@ pub(super) async fn mark_checkpoint_failed(pool: &PgPool, kind: &str, scope: &st
   Ok(())
 }
 
+const WORKSPACE_STORAGE_TABLES: &[&str] = &[
+  "snapshots",
+  "updates",
+  "snapshot_histories",
+  "doc_blob_refs",
+  "doc_blob_ref_projections",
+  "document_cleanup_candidates",
+  "blob_cleanup_candidates",
+  "storage_reconciliation_runs",
+];
+const EMBEDDING_TABLES: &[&str] = &["embedding_sources", "embedding_workspace_states", "embedding_indexes"];
+const WORKSPACE_CHECKPOINT_KINDS: &[&str] = &[
+  "doc_blob_refs",
+  "document_cleanup",
+  "blob_cleanup",
+  "blob_cleanup_plan",
+  "blob_metadata_backfill",
+];
+
+pub(super) async fn embedding_tables_exist(pool: &PgPool) -> napi::Result<bool> {
+  sqlx::query_scalar("SELECT to_regclass('embedding_sources') IS NOT NULL")
+    .fetch_one(pool)
+    .await
+    .map_err(|error| RuntimeError::database("check workspace embedding tables", error).into())
+}
+
 pub(super) async fn reconcile_orphan_storage_rows(
   pool: &PgPool,
   limit: i32,
+  embedding_tables: bool,
   result: &mut RuntimeWorkspaceStorageReconcileResult,
 ) -> napi::Result<()> {
   let last_id = load_string_cursor(pool, "workspace_storage_orphan_rows", "storage").await?;
-  let ids = sqlx::query_scalar::<_, String>(
+  let tables = WORKSPACE_STORAGE_TABLES
+    .iter()
+    .chain(EMBEDDING_TABLES.iter().filter(|_| embedding_tables))
+    .map(|table| format!("SELECT workspace_id FROM {table}"))
+    .collect::<Vec<_>>()
+    .join(" UNION ");
+  let ids = sqlx::query_scalar::<_, String>(&format!(
     r#"
     WITH storage_workspace_ids AS (
-      SELECT workspace_id FROM doc_blob_refs
-      UNION SELECT workspace_id FROM doc_blob_ref_projections
-      UNION SELECT workspace_id FROM document_cleanup_candidates
-      UNION SELECT workspace_id FROM snapshots
-      UNION SELECT workspace_id FROM updates
-      UNION SELECT workspace_id FROM snapshot_histories
+      {tables}
+      UNION SELECT scope FROM storage_reconciliation_checkpoints WHERE kind = ANY($3) AND scope <> '__all__'
     )
     SELECT storage.workspace_id
     FROM storage_workspace_ids storage
@@ -131,9 +160,10 @@ pub(super) async fn reconcile_orphan_storage_rows(
     ORDER BY storage.workspace_id
     LIMIT $2
     "#,
-  )
+  ))
   .bind(&last_id)
   .bind(limit)
+  .bind(WORKSPACE_CHECKPOINT_KINDS)
   .fetch_all(pool)
   .await
   .map_err(|error| RuntimeError::database("list orphan storage rows", error))?;
@@ -141,7 +171,7 @@ pub(super) async fn reconcile_orphan_storage_rows(
     let mut operation = StorageOperation::acquire(pool, workspace_id, None).await?;
     result.deleted_orphan_rows = result
       .deleted_orphan_rows
-      .saturating_add(delete_orphan_storage_rows(operation.connection(), workspace_id).await?);
+      .saturating_add(delete_orphan_storage_rows(operation.connection(), workspace_id, embedding_tables).await?);
     operation.release().await?;
   }
   let completed = ids.len() < limit as usize;
@@ -160,16 +190,17 @@ pub(super) async fn reconcile_orphan_storage_rows(
   Ok(())
 }
 
-pub(super) async fn delete_orphan_storage_rows(connection: &mut PgConnection, workspace_id: &str) -> napi::Result<i64> {
+pub(super) async fn delete_orphan_storage_rows(
+  connection: &mut PgConnection,
+  workspace_id: &str,
+  embedding_tables: bool,
+) -> napi::Result<i64> {
   let mut deleted = 0_i64;
-  for table in [
-    "snapshots",
-    "updates",
-    "snapshot_histories",
-    "doc_blob_refs",
-    "doc_blob_ref_projections",
-    "document_cleanup_candidates",
-  ] {
+  for table in EMBEDDING_TABLES
+    .iter()
+    .filter(|_| embedding_tables)
+    .chain(WORKSPACE_STORAGE_TABLES)
+  {
     let outcome = sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id = $1"))
       .bind(workspace_id)
       .execute(&mut *connection)
@@ -178,10 +209,10 @@ pub(super) async fn delete_orphan_storage_rows(connection: &mut PgConnection, wo
     deleted = deleted.saturating_add(i64::try_from(outcome.rows_affected()).unwrap_or(i64::MAX));
   }
   let checkpoints = sqlx::query(
-    "DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1 AND kind IN ('doc_blob_refs', \
-     'document_cleanup', 'blob_cleanup', 'blob_metadata_backfill')",
+    "DELETE FROM storage_reconciliation_checkpoints WHERE scope = $1 AND kind = ANY($2) AND scope <> '__all__'",
   )
   .bind(workspace_id)
+  .bind(WORKSPACE_CHECKPOINT_KINDS)
   .execute(&mut *connection)
   .await
   .map_err(|error| RuntimeError::database("delete orphan storage checkpoints", error))?;
