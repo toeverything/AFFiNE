@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::{
   ActiveGeneration, DOCUMENT_LEASE_SECONDS, DOCUMENT_PROJECTION_FAILED, ProjectionInput, SearchChange, SearchProvider,
-  SearchTable as ProviderTable, project_document, projection_external_id, provider_payload,
+  SearchTable as ProviderTable, is_ordinary_workspace_doc, project_document, projection_external_id, provider_payload,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult},
@@ -31,6 +31,7 @@ pub(super) async fn upsert_document(
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<()> {
+  let ordinary = is_ordinary_workspace_doc(workspace_id, doc_id);
   let mut transaction = pool
     .begin()
     .await
@@ -41,7 +42,7 @@ pub(super) async fn upsert_document(
     .map_err(|error| RuntimeError::database("lock search document enqueue", error))?;
   let updated = sqlx::query(
     r#"UPDATE search_projection.document_states state
-       SET target_permission_version=GREATEST(state.target_permission_version,workspace.required_permission_version),
+       SET target_source_exists=state.target_source_exists AND $4, target_permission_version=GREATEST(state.target_permission_version,workspace.required_permission_version),
            available_at=CASE WHEN state.last_error IS NULL THEN now() ELSE state.available_at END, updated_at=now()
        FROM search_projection.workspace_states workspace
        WHERE state.generation_id=$1 AND state.workspace_id=$2 AND state.doc_id=$3
@@ -50,6 +51,7 @@ pub(super) async fn upsert_document(
   .bind(generation.id)
   .bind(workspace_id)
   .bind(doc_id)
+  .bind(ordinary)
   .execute(&mut *transaction)
   .await
   .map_err(|error| RuntimeError::database("refresh search document target", error))?
@@ -59,7 +61,7 @@ pub(super) async fn upsert_document(
       r#"INSERT INTO search_projection.document_states
          (generation_id,workspace_id,doc_id,target_source_version,target_source_exists,target_permission_version)
          SELECT $1,$2,$3,nextval('search_projection.source_mutation_version'),
-                EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$2 AND guid=$3),
+                $4 AND (EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$2 AND guid=$3) OR EXISTS(SELECT 1 FROM updates WHERE workspace_id=$2 AND guid=$3)),
                 required_permission_version
          FROM search_projection.workspace_states
          WHERE generation_id=$1 AND workspace_id=$2"#,
@@ -67,6 +69,7 @@ pub(super) async fn upsert_document(
     .bind(generation.id)
     .bind(workspace_id)
     .bind(doc_id)
+    .bind(ordinary)
     .execute(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("enqueue search document", error))?;
@@ -133,7 +136,7 @@ async fn projection_changes(
   }
   let Some((document, blocks)) = project_document(pool, workspace_id, doc_id).await? else {
     return Err(RuntimeError::SearchSourceInvalid(
-      "document declared by workspace root is missing".to_string(),
+      "document source is unavailable".to_string(),
     ));
   };
   let mut changes = Vec::with_capacity(blocks.len() + 1);

@@ -1,8 +1,12 @@
 import EventEmitter2 from 'eventemitter2';
-import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
 import type { Connection } from '../connection';
 import { isEmptyUpdate } from '../utils/is-empty-update';
+import {
+  diffUpdate,
+  encodeStateVectorFromUpdate,
+  mergeUpdates,
+} from '../utils/yjs-codec';
 import type { Locker } from './lock';
 import { SingletonLocker } from './lock';
 import { type Storage } from './storage';
@@ -34,6 +38,7 @@ export type DocClocks = Record<string, Date>;
 export interface DocRecord extends DocClock {
   bin: Uint8Array;
   editor?: string;
+  createForPeer?: string;
 }
 
 export interface DocDiff extends DocClock {
@@ -45,12 +50,31 @@ export interface DocUpdate {
   docId: string;
   bin: Uint8Array;
   editor?: string;
+  intent?: 'create' | 'update';
+  createForPeer?: string;
+}
+
+export interface WorkspaceDoc {
+  docId: string;
+  timestamp: number;
+  lifecycle: 'trashed' | null;
+  lifecycleChangedAt: number | null;
+  pendingCreate?: boolean;
+}
+
+export interface WorkspaceState {
+  docs: WorkspaceDoc[];
+  clocks: Record<string, number>;
+}
+
+export interface PeerWorkspaceState extends WorkspaceState {
+  ready: boolean;
+  cacheToken: number;
 }
 
 export type DocLifecycle = 'trash' | 'restore' | 'delete';
 
 export interface DocLifecycleResult {
-  rootUpdate: Uint8Array;
   timestamp: Date;
 }
 
@@ -67,11 +91,16 @@ export interface DocStorageOptions {
    * open as readonly mode.
    */
   readonlyMode?: boolean;
+  creationPeer?: string;
 }
 
 export interface DocStorage extends Storage {
   readonly storageType: 'doc';
   readonly isReadonly: boolean;
+  readonly workspaceStateScope?: string;
+  readonly localReservedDocIds?: readonly string[];
+  getWorkspaceState?(): Promise<WorkspaceState>;
+  subscribeWorkspaceStateInvalidation?(callback: () => void): () => void;
   readonly spaceId: string;
   /** Whether sync clocks can be reused across connections. Defaults to persistent. */
   readonly syncMetadataScope?: 'connection' | 'persistent';
@@ -219,9 +248,10 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
   }
 
   protected mergeUpdates(updates: Uint8Array[]) {
-    const merge = this.options?.mergeUpdates ?? mergeUpdates;
-
-    return merge(updates.filter(bin => !isEmptyUpdate(bin)));
+    return mergeUpdates(
+      updates.filter(bin => !isEmptyUpdate(bin)),
+      this.options?.mergeUpdates
+    );
   }
 
   protected async lockDocForUpdate(docId: string): Promise<AsyncDisposable> {

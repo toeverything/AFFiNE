@@ -243,7 +243,8 @@ export class DatabaseDocReader extends DocReader {
     guid: string,
     fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docBinary = await this.workspace.getDocBinNative(workspaceId, guid);
+    const record = await this.workspace.getDoc(workspaceId, guid);
+    const docBinary = record?.bin;
     if (!docBinary) return null;
     return this.parseDocContent(docBinary, fullContent ? -1 : 150);
   }

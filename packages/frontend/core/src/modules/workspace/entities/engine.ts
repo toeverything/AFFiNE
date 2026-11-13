@@ -58,9 +58,19 @@ export class WorkspaceEngine extends Entity<{
     }
     this.started = true;
 
+    const accountScope = Object.values(
+      this.props.engineWorkerInitOptions.remotes
+    )
+      .map(remote =>
+        remote.doc?.name === 'CloudDocStorage' && 'accountId' in remote.doc.opts
+          ? remote.doc.opts.accountId
+          : ''
+      )
+      .filter(Boolean)
+      .join(':');
     const { store, dispose } = this.nbstoreService.openStore(
       (this.props.isSharedMode ? 'shared:' : '') +
-        `workspace:${this.workspaceService.workspace.flavour}:${this.workspaceService.workspace.id}`,
+        `workspace:${this.workspaceService.workspace.flavour}:${this.workspaceService.workspace.id}:${accountScope}`,
       this.props.engineWorkerInitOptions
     );
     if (

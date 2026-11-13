@@ -904,6 +904,29 @@ mod tests {
         {"id":"missing","_source":{"doc_id":"missing","source_version":2,"permission_version":3}}
       ]
     });
+    let reserved = format!("userdata$other${workspace_id}$favorite");
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,decode('0000','hex'),now())")
+      .bind(&workspace_id)
+      .bind(&reserved)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO \
+       search_projection.document_states(generation_id,workspace_id,doc_id,target_source_version,target_source_exists,\
+       target_permission_version,published_source_version,published_source_exists,published_permission_version) \
+       VALUES($1,$2,$3,2,true,3,2,true,3) ON CONFLICT(generation_id,workspace_id,doc_id) DO UPDATE SET \
+       published_source_version=2,published_source_exists=true,published_permission_version=3,last_error=NULL",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .bind(&reserved)
+    .execute(&pool)
+    .await
+    .unwrap();
+    result["nodes"].as_array_mut().unwrap().push(
+      serde_json::json!({"id":"reserved", "_source":{"doc_id":reserved,"source_version":2,"permission_version":3}}),
+    );
     let all_scope_result = result.clone();
     let scope = runtime
       .authorizer
@@ -932,7 +955,7 @@ mod tests {
     assert_eq!(result["total"], 1);
     assert_eq!(result["nodes"][0]["id"], "allowed");
 
-    let mut result = all_scope_result;
+    let mut result = all_scope_result.clone();
     runtime
       .retain_canonically_visible(
         &ActiveGeneration {
@@ -950,6 +973,44 @@ mod tests {
     assert_eq!(result["nodes"][0]["id"], "allowed");
     assert_eq!(result["nodes"][1]["id"], "hidden");
     assert_eq!(result["nodes"][2]["id"], "pending");
+
+    sqlx::query(
+      "INSERT INTO workspace_pages(workspace_id,page_id,lifecycle_state,lifecycle_changed_at) \
+       VALUES($1,'allowed','trashed',now())",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let mut trashed = all_scope_result.clone();
+    runtime
+      .retain_canonically_visible(
+        &ActiveGeneration {
+          id: generation_id,
+          manifest: serde_json::json!({}),
+        },
+        &workspace_id,
+        &user_id,
+        &DocReadScope::All,
+        &mut trashed,
+      )
+      .await
+      .unwrap();
+    assert!(
+      !trashed["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|node| node["id"] == "allowed")
+    );
+    sqlx::query(
+      "UPDATE workspace_pages SET lifecycle_state=NULL,lifecycle_changed_at=now() WHERE workspace_id=$1 AND \
+       page_id='allowed'",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let mut aggregate = serde_json::json!({
       "total":2,

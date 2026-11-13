@@ -284,22 +284,6 @@ export class StorageRuntimeProvider
     );
   }
 
-  async reconcileWorkspaceDocuments(workspaceId: string) {
-    return await this.measured('reconcileWorkspaceDocuments', rt =>
-      rt.reconcileWorkspaceDocuments(workspaceId)
-    );
-  }
-
-  async executeDocumentCleanupCandidates(
-    workspaceId: string | null | undefined,
-    gracePeriodDays: number,
-    limit: number
-  ) {
-    return await this.measured('executeDocumentCleanupCandidates', rt =>
-      rt.executeDocumentCleanupCandidates(workspaceId, gracePeriodDays, limit)
-    );
-  }
-
   async cleanupUnreferencedWorkspaceBlobs(
     workspaceId: string,
     gracePeriodDays: number,

@@ -9,10 +9,7 @@ import {
   metrics,
 } from '../../base';
 import { Models } from '../../models';
-import {
-  type DocumentEmbeddingProjectionInput,
-  projectWorkspaceRootFromBinary,
-} from '../../native';
+import { type DocumentEmbeddingProjectionInput } from '../../native';
 import { projectDocSearch } from '../utils/blocksuite';
 import { BackendRuntimeProvider } from './provider';
 
@@ -32,44 +29,8 @@ export class BackendRuntimeEmbeddingService {
     private readonly models: Models
   ) {}
 
-  async inspectWorkspaceRoot(workspaceId: string) {
-    const snapshot = await this.models.doc.getSnapshot(
-      workspaceId,
-      workspaceId
-    );
-    const revision = snapshot?.updatedAt.getTime().toString() ?? 'missing';
-    if (!snapshot)
-      return { revision, complete: false, docIds: new Set<string>() };
-    try {
-      const projection = projectWorkspaceRootFromBinary(
-        Buffer.from(snapshot.blob)
-      );
-      return {
-        revision,
-        complete: projection.complete,
-        docIds: new Set(projection.docIds),
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message !== 'invalid_binary') throw error;
-      return { revision, complete: false, docIds: new Set<string>() };
-    }
-  }
-
-  async syncDocument(
-    workspaceId: string,
-    docId: string,
-    root?: Awaited<
-      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
-    >
-  ) {
-    await this.syncDocuments(
-      workspaceId,
-      [docId],
-      false,
-      undefined,
-      root ?? (await this.inspectWorkspaceRoot(workspaceId))
-    );
+  async syncDocument(workspaceId: string, docId: string) {
+    await this.syncDocuments(workspaceId, [docId]);
   }
 
   async prepareSelectedDocuments(workspaceId: string, docIds: string[]) {
@@ -78,7 +39,7 @@ export class BackendRuntimeEmbeddingService {
       throw new CopilotSelectedSourcesLimitExceeded();
     }
     try {
-      await this.syncDocuments(workspaceId, selectedDocIds, false, {
+      await this.syncDocuments(workspaceId, selectedDocIds, {
         priority: SELECTED_DOCUMENT_PRIORITY,
         waitForReadyMs: SELECTED_DOCUMENT_WAIT_MS,
       });
@@ -104,11 +65,7 @@ export class BackendRuntimeEmbeddingService {
   private async syncDocuments(
     workspaceId: string,
     docIds: string[],
-    reconcileDocuments: boolean,
-    scheduling?: { priority: number; waitForReadyMs: number },
-    root?: Awaited<
-      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
-    >
+    scheduling?: { priority: number; waitForReadyMs: number }
   ) {
     if (!(await this.rt.embeddingHealth()).enabled) {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
@@ -135,16 +92,6 @@ export class BackendRuntimeEmbeddingService {
         sourceHash: revision,
         units: [],
       };
-      if (root && (!root.complete || !root.docIds.has(docId))) {
-        documents.push({
-          ...skipped,
-          skipReason: root.complete
-            ? 'document_not_in_root'
-            : 'workspace_root_incomplete',
-          rootRevision: root.revision,
-        });
-        continue;
-      }
       if (
         !snapshot.blob.length ||
         (snapshot.blob.length === 2 &&
@@ -216,22 +163,12 @@ export class BackendRuntimeEmbeddingService {
         })),
       });
     }
-    if (!documents.length && !reconcileDocuments) return;
+    if (!documents.length) return;
     await this.rt.syncEmbeddingState({
       workspaceId,
       enabled,
-      reconcileDocuments,
       documents,
       ...scheduling,
-    });
-  }
-
-  async reconcileDocuments(workspaceId: string) {
-    if (!(await this.rt.embeddingHealth()).enabled) return;
-    await this.rt.syncEmbeddingState({
-      workspaceId,
-      enabled: await this.models.workspace.allowEmbedding(workspaceId),
-      reconcileDocuments: true,
     });
   }
 }

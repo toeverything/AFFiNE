@@ -10,7 +10,9 @@ use std::{
   sync::Arc,
 };
 
-use affine_core::access_control::{DocAction, WorkspaceAction};
+use affine_core::access_control::{
+  DocAction, ReservedDocumentAccessDecision, WorkspaceAction, authorize_reserved_document, classify_reserved_document,
+};
 pub(super) use affine_core::blob_access::SourceIdentity;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde_json::Value;
@@ -29,8 +31,9 @@ use self::{
   },
 };
 use super::{
-  BackendRuntime,
+  BackendRuntime, blocking,
   invalidation::{InvalidationHintV1, InvalidationTarget},
+  load_workspace_doc_states_page_in,
   permission::{PermissionAuthorizer, PermissionTelemetry},
 };
 use crate::runtime::{Deployment, RuntimeError, RuntimeResult, napi_error, object_storage::ObjectStorageService};
@@ -147,6 +150,16 @@ impl BlobAccessService {
         break;
       }
       let next_source_cursor = doc_ids.last().cloned();
+      let doc_ids = doc_ids
+        .into_iter()
+        .filter(|doc_id| {
+          doc_id == &request.workspace_id
+            || authorize_reserved_document(
+              &request.actor_user_id,
+              classify_reserved_document(&request.workspace_id, doc_id),
+            ) != ReservedDocumentAccessDecision::Denied
+        })
+        .collect::<Vec<_>>();
       let readable_docs = self
         .authorizer
         .authorize_doc_action_batch_in(
@@ -328,8 +341,18 @@ impl BlobAccessService {
 impl InvalidationTarget for BlobAccessService {
   fn invalidate<'a>(&'a self, hint: &'a InvalidationHintV1) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
     Box::pin(async move {
-      if let InvalidationHintV1::BlobSource { source } = hint {
-        self.cache.invalidate(source).await;
+      match hint {
+        InvalidationHintV1::BlobSource { source } => self.cache.invalidate(source).await,
+        InvalidationHintV1::WorkspaceRootChanged { workspace_id, .. } => {
+          self
+            .cache
+            .invalidate(&SourceIdentity::CurrentDoc {
+              workspace_id: workspace_id.clone(),
+              doc_id: workspace_id.clone(),
+            })
+            .await;
+        }
+        _ => {}
       }
     })
   }

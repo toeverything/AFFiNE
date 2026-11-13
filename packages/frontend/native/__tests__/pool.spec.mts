@@ -34,6 +34,85 @@ test('can batch read/write pool', async t => {
     blobs.every((blob, i) => blob!.data.at(0) === i % 255),
     true
   );
+
+  await pool.setSpaceId('test', 'root');
+  await pool.pushUpdate('test', 'pending', new Uint8Array([0, 0]), 'account-a');
+  const pending = await pool.getPeerWorkspaceState('test', 'account-a', 'root');
+  t.false(pending.ready);
+  t.is(pending.cacheToken, 1);
+  t.deepEqual(pending.docs, [
+    {
+      docId: 'pending',
+      timestamp: 0,
+      lifecycle: null,
+      lifecycleChangedAt: null,
+      pendingCreate: true,
+    },
+  ]);
+  await pool.invalidatePeerWorkspaceState('test', 'account-a', 'root');
+  t.false(
+    await pool.installPeerWorkspaceState('test', 'account-a', 'root', 0, [], {})
+  );
+  const installs = await Promise.all(
+    ['a', 'b'].map(docId =>
+      pool.installPeerWorkspaceState(
+        'test',
+        'account-a',
+        'root',
+        pending.cacheToken + 1,
+        [
+          {
+            docId,
+            timestamp: 1000,
+            lifecycle: 'trashed',
+            lifecycleChangedAt: 1200,
+            pendingCreate: false,
+          },
+        ],
+        { root: 900 }
+      )
+    )
+  );
+  t.is(installs.filter(Boolean).length, 1);
+  const state = await pool.getPeerWorkspaceState('test', 'account-a', 'root');
+  t.true(state.ready);
+  t.is(state.docs.length, 2);
+  t.deepEqual(state.clocks, { root: 900 });
+  const winner = state.docs.find(doc => !doc.pendingCreate)!;
+  const ack = new Date(2000);
+  await pool.setPeerPushedClock('test', 'account-a', winner.docId, ack);
+  await pool.setPeerPulledRemoteClock('test', 'account-a', winner.docId, ack);
+  t.true(
+    await pool.installPeerWorkspaceState(
+      'test',
+      'account-a',
+      'root',
+      state.cacheToken,
+      [],
+      { root: 900 }
+    )
+  );
+  t.deepEqual(
+    (await pool.getPeerPushedClock('test', 'account-a', winner.docId))
+      ?.timestamp,
+    ack
+  );
+  t.deepEqual(
+    (await pool.getPeerWorkspaceState('test', 'account-b', 'root')).docs,
+    []
+  );
+  await pool.clearClocks('test');
+  t.true(
+    (await pool.getPeerWorkspaceState('test', 'account-a', 'root')).docs[0]
+      ?.pendingCreate
+  );
+  await pool.confirmPeerDocCreate('test', 'account-a', 'pending');
+  t.deepEqual(
+    (await pool.getPeerWorkspaceState('test', 'account-a', 'root')).docs,
+    []
+  );
+  t.truthy(await pool.getDoc('test', 'pending'));
+  await pool.disconnect('test');
 });
 
 test('getDoc matches Yjs updates and preserves incomplete inputs', async t => {
@@ -109,9 +188,11 @@ test('getDoc matches Yjs updates and preserves incomplete inputs', async t => {
 
   await pool.connect('partial', ':memory:');
   await pool.pushUpdate('partial', 'partial', second);
-  await t.throwsAsync(pool.getDoc('partial', 'partial'), {
-    message: /missing dependencies/,
-  });
+  const partialRecord = await pool.getDoc('partial', 'partial');
+  t.truthy(partialRecord);
+  const partialDoc = new Y.Doc();
+  Y.applyUpdate(partialDoc, partialRecord!.bin);
+  t.truthy(partialDoc.store.pendingStructs);
   await pool.pushUpdate('partial', 'partial', first);
   const recovered = await pool.getDoc('partial', 'partial');
   t.truthy(recovered);

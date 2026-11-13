@@ -30,7 +30,6 @@ test.beforeEach(t => {
       failedScopes: [],
       unknownPrefixSamples: [],
     }),
-    reconcileWorkspaceDocuments: Sinon.stub().resolves({}),
     backfillMissingBlobMetadata: Sinon.stub().resolves({
       workspaceIds: [],
       upsertedMetadata: 0,
@@ -51,11 +50,6 @@ test.beforeEach(t => {
       protectedByOtherRefs: 0,
       failed: 0,
     }),
-    executeDocumentCleanupCandidates: Sinon.stub().resolves({
-      serializationRetries: 0,
-      failed: 0,
-      effects: [],
-    }),
   };
   t.context.event = { emitAsync: Sinon.stub().resolves(undefined) };
   t.context.db = {
@@ -75,14 +69,14 @@ test('workspace sweep advances past failed workspaces and wraps for retry', asyn
     { id: 'workspace-1', sid: 1 },
     { id: 'workspace-2', sid: 2 },
   ]);
-  t.context.runtime.reconcileWorkspaceDocuments
+  t.context.runtime.rebuildWorkspaceDocBlobRefs
     .onFirstCall()
     .rejects(new Error('broken workspace'));
 
   const result = await t.context.job.reconcileWorkspaceBatch();
 
   t.deepEqual(result, { scanned: 2, failures: 1, completed: false });
-  t.is(t.context.runtime.reconcileWorkspaceDocuments.callCount, 2);
+  t.is(t.context.runtime.rebuildWorkspaceDocBlobRefs.callCount, 2);
   t.true(t.context.runtime.cleanupUnreferencedWorkspaceBlobs.calledOnce);
   t.true(t.context.db.$executeRaw.calledOnce);
   t.deepEqual(JSON.parse(t.context.db.$executeRaw.lastCall.args[3]), {
@@ -122,23 +116,4 @@ test('metadata sweep skips provider work when object storage is unavailable', as
 
   t.false(t.context.db.workspace.findMany.called);
   t.false(t.context.runtime.backfillMissingBlobMetadata.called);
-});
-
-test('document cleanup records execution health without payload effects', async t => {
-  t.context.runtime.executeDocumentCleanupCandidates.resolves({
-    serializationRetries: 0,
-    failed: 0,
-  });
-  t.context.db.$queryRaw.resolves([
-    {
-      marked: 0n,
-      failed: 0n,
-      failedWorkspaceCheckpoints: 0n,
-      oldestFailedSeconds: null,
-    },
-  ]);
-
-  await t.context.job.executeDocumentCleanup();
-
-  t.false(t.context.event.emitAsync.called);
 });

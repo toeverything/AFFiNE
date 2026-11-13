@@ -10155,6 +10155,22 @@ export function useAFFiNEI18N(): {
         docId: string;
     }>): string;
     /**
+      * `The document update is invalid.`
+      */
+    ["error.DOC_UPDATE_INVALID"](): string;
+    /**
+      * `The document update exceeds the size limit.`
+      */
+    ["error.DOC_UPDATE_TOO_LARGE"](): string;
+    /**
+      * `Workspace synchronization is temporarily unavailable.`
+      */
+    ["error.WORKSPACE_SYNC_UNAVAILABLE"](): string;
+    /**
+      * `Document validation is temporarily unavailable.`
+      */
+    ["error.DOC_VALIDATION_UNAVAILABLE"](): string;
+    /**
       * `Doc {{docId}} under Space {{spaceId}} is blocked from updating.`
       */
     ["error.DOC_UPDATE_BLOCKED"](options: Readonly<{

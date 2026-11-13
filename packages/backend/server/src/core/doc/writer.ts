@@ -3,12 +3,11 @@ import { nanoid } from 'nanoid';
 
 import { EventBus } from '../../base';
 import {
-  addDocToRootDoc,
   createDocWithMarkdown,
+  isOrdinaryWorkspaceDoc,
   updateDocProperties,
   updateDocTitle,
   updateDocWithMarkdown,
-  updateRootDocMetaTitle,
 } from '../../native';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
@@ -57,23 +56,6 @@ export class DocWriter {
     markdown: string,
     editorId: string
   ): Promise<CreateDocResult> {
-    // Fetch workspace root doc first - reject if not found
-    // The root doc (docId = workspaceId) contains meta.pages array
-    const rootDoc = await this.storage.getDoc(workspaceId, workspaceId);
-    if (!rootDoc?.bin) {
-      throw new NotFoundException(
-        `Workspace ${workspaceId} not found or has no root document`
-      );
-    }
-
-    const rootDocBin = Buffer.isBuffer(rootDoc.bin)
-      ? rootDoc.bin
-      : Buffer.from(
-          rootDoc.bin.buffer,
-          rootDoc.bin.byteOffset,
-          rootDoc.bin.byteLength
-        );
-
     const docId = nanoid();
 
     this.logger.debug(
@@ -86,27 +68,7 @@ export class DocWriter {
       timestampMs: Date.now(),
     });
 
-    // Prepare root doc update to register the new document
-    const rootDocUpdate = addDocToRootDoc(rootDocBin, docId, title);
-
-    // Push both updates together - root doc first, then the new doc
-    const rootTimestamp = await this.storage.pushDocUpdates(
-      workspaceId,
-      workspaceId,
-      [rootDocUpdate],
-      editorId,
-      undefined,
-      'create_doc'
-    );
-    this.emitDocUpdatesPushed({
-      spaceId: workspaceId,
-      docId: workspaceId,
-      updates: [rootDocUpdate],
-      timestamp: rootTimestamp,
-      editor: editorId,
-    });
-
-    const docTimestamp = await this.storage.pushDocUpdates(
+    const { timestamp: docTimestamp } = await this.storage.pushDocUpdates(
       workspaceId,
       docId,
       [binary],
@@ -132,9 +94,7 @@ export class DocWriter {
       editorId
     );
 
-    this.logger.debug(
-      `Created and registered doc ${docId} in workspace ${workspaceId}`
-    );
+    this.logger.debug(`Created doc ${docId} in workspace ${workspaceId}`);
 
     return { docId };
   }
@@ -184,7 +144,7 @@ export class DocWriter {
     });
 
     // Push only the delta changes
-    const timestamp = await this.storage.pushDocUpdates(
+    const { timestamp } = await this.storage.pushDocUpdates(
       workspaceId,
       docId,
       [delta],
@@ -233,13 +193,6 @@ export class DocWriter {
       throw new NotFoundException(`Document ${docId} not found`);
     }
 
-    const rootDoc = await this.storage.getDoc(workspaceId, workspaceId);
-    if (!rootDoc?.bin) {
-      throw new NotFoundException(
-        `Workspace ${workspaceId} not found or has no root document`
-      );
-    }
-
     const existingBinary = Buffer.isBuffer(existingDoc.bin)
       ? existingDoc.bin
       : Buffer.from(
@@ -247,39 +200,8 @@ export class DocWriter {
           existingDoc.bin.byteOffset,
           existingDoc.bin.byteLength
         );
-    const rootDocBin = Buffer.isBuffer(rootDoc.bin)
-      ? rootDoc.bin
-      : Buffer.from(
-          rootDoc.bin.buffer,
-          rootDoc.bin.byteOffset,
-          rootDoc.bin.byteLength
-        );
-
     const titleUpdate = updateDocTitle(existingBinary, meta.title, docId);
-    const rootMetaUpdate = updateRootDocMetaTitle(
-      rootDocBin,
-      docId,
-      meta.title
-    );
-
-    const rootTimestamp = await this.storage.pushDocUpdates(
-      workspaceId,
-      workspaceId,
-      [rootMetaUpdate],
-      editorId,
-      undefined,
-      'update_doc',
-      docId
-    );
-    this.emitDocUpdatesPushed({
-      spaceId: workspaceId,
-      docId: workspaceId,
-      updates: [rootMetaUpdate],
-      timestamp: rootTimestamp,
-      editor: editorId,
-    });
-
-    const docTimestamp = await this.storage.pushDocUpdates(
+    const { timestamp: docTimestamp } = await this.storage.pushDocUpdates(
       workspaceId,
       docId,
       [titleUpdate],
@@ -326,11 +248,7 @@ export class DocWriter {
     props: { createdBy?: string; updatedBy?: string },
     editorId: string
   ) {
-    if (
-      workspaceId === docId ||
-      docId.startsWith('db$') ||
-      docId.startsWith('userdata$')
-    ) {
+    if (!isOrdinaryWorkspaceDoc(workspaceId, docId)) {
       return;
     }
     if (!props.createdBy && !props.updatedBy) {
@@ -360,14 +278,11 @@ export class DocWriter {
       return;
     }
 
-    const timestamp = await this.storage.pushDocUpdates(
+    const timestamp = await this.storage.pushDocUpdatesTrusted(
       workspaceId,
       propertiesDocId,
       [update],
-      editorId,
-      undefined,
-      'update_doc',
-      docId
+      editorId
     );
     this.emitDocUpdatesPushed({
       spaceId: workspaceId,

@@ -13,7 +13,7 @@ import { WorkspacesController } from '../../core/workspaces/controller';
 import { Models, PublicDocMode } from '../../models';
 import {
   addDocToRootDoc,
-  mergeUpdatesInApplyWay,
+  mergeUpdates,
   readAllDocIdsFromRootDoc,
 } from '../../native';
 import { createTestingApp, TestingApp, TestUser } from '../utils';
@@ -359,7 +359,7 @@ test('should expose filtered public root doc for shared page', async t => {
 
   let root = addDocToRootDoc(Buffer.from([0, 0]), 'public', 'Public Doc');
   const privateUpdate = addDocToRootDoc(root, 'private-page', 'Private Doc');
-  root = mergeUpdatesInApplyWay([root, privateUpdate]);
+  root = mergeUpdates([root, privateUpdate]);
 
   doc.getDoc.resolves({
     spaceId: 'private',

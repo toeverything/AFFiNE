@@ -37,10 +37,6 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     return false;
   }
 
-  override async rollbackDoc() {
-    return;
-  }
-
   override async getDoc(spaceId: string, docId: string) {
     return await this.getDocSnapshot(spaceId, docId);
   }
@@ -52,14 +48,13 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     editorId = userId,
     _expectedPermissionGeneration?: number,
     _writeIntent?: 'update_doc' | 'create_doc',
-    _permissionDocId?: string
+    _protocolVersion?: number
   ) {
     if (!updates.length) {
-      return 0;
+      return { timestamp: 0, created: false };
     }
 
-    updates = await this.filterValidDocUpdates(userId, docId, updates);
-    if (!updates.length) return 0;
+    await this.assertValidDocUpdates(updates);
 
     await using _lock = await this.lockDocForUpdate(userId, docId);
     const snapshot = await this.getDocSnapshot(userId, docId);
@@ -81,7 +76,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
       editor: editorId,
     });
 
-    return timestamp;
+    return { timestamp, created: snapshot === null };
   }
 
   async pushDocUpdatesTrusted(
@@ -90,7 +85,8 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     updates: Uint8Array[],
     editorId = userId
   ) {
-    return await this.pushDocUpdates(userId, docId, updates, editorId);
+    return (await this.pushDocUpdates(userId, docId, updates, editorId))
+      .timestamp;
   }
 
   async deleteDoc(userId: string, docId: string) {

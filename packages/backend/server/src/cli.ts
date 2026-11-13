@@ -9,6 +9,7 @@ import { CliAppModule } from './data/app';
 import { CreateCommand } from './data/commands/create';
 import { CutoverCommand } from './data/commands/cutover';
 import { ImportConfigCommand } from './data/commands/import';
+import { RootSourceCommand } from './data/commands/root-source';
 import { RevertCommand, RunCommand } from './data/commands/run';
 
 function getProgramName() {
@@ -69,6 +70,24 @@ function buildProgram(logger: Logger) {
     });
 
   program
+    .command('activate-workspace-lifecycle')
+    .description(
+      'Activate workspace lifecycle synchronization after all old writers and in-flight transactions have drained'
+    )
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const activated = await app
+          .get(BackendRuntimeProvider)
+          .activateWorkspaceLifecycleV1();
+        logger.log(
+          activated
+            ? 'Workspace lifecycle synchronization activated.'
+            : 'Workspace lifecycle synchronization is already active.'
+        );
+      });
+    });
+
+  program
     .command('validate-cutover')
     .description('Validate canonical authority data before server startup')
     .action(async () => {
@@ -110,6 +129,19 @@ function buildProgram(logger: Logger) {
           'Config imported; changes take effect on the next server start.'
         );
       });
+    });
+
+  const rootSource = program
+    .command('root-source')
+    .description('Export original workspace root material');
+  rootSource
+    .command('inspect')
+    .requiredOption('--workspace <id>')
+    .requiredOption('--output <file>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app.get(RootSourceCommand).inspect(options.workspace, options.output)
+      );
     });
 
   return program;

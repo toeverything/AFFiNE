@@ -21,6 +21,10 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "deleteBlob", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "releaseBlobs", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "listBlobs", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getPeerWorkspaceState", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "invalidatePeerWorkspaceState", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "installPeerWorkspaceState", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "confirmPeerDocCreate", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getPeerRemoteClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getPeerRemoteClock", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setPeerRemoteClock", returnType: CAPPluginReturnPromise),
@@ -106,7 +110,7 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         let id = try call.getStringEnsure("id")
         let docId = try call.getStringEnsure("docId")
         let data = try call.getStringEnsure("data")
-        let timestamp = try await docStoragePool.pushUpdate(universalId: id, docId: docId, update: data)
+        let timestamp = try await docStoragePool.pushUpdate(universalId: id, docId: docId, update: data, createForPeer: call.getString("createForPeer"))
         call.resolve(["timestamp": timestamp])
       } catch {
         call.reject("Failed to push update, \(error)", nil, error)
@@ -128,6 +132,8 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         } else {
           call.resolve()
         }
+      } catch UniffiError.Err(let message) where message == "invalid_binary" {
+        call.reject("invalid_binary")
       } catch {
         call.reject("Failed to get doc, \(error)", nil, error)
       }
@@ -265,6 +271,50 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(["blobs": mapped])
       } catch {
         call.reject("Failed to list blobs, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func getPeerWorkspaceState(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let value = try await docStoragePool.getPeerWorkspaceState(universalId: try call.getStringEnsure("id"), peer: try call.getStringEnsure("peer"), rootDocId: try call.getStringEnsure("rootDocId"))
+        call.resolve(["state": value])
+      } catch {
+        call.reject("Failed to getPeerWorkspaceState, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func invalidatePeerWorkspaceState(_ call: CAPPluginCall) {
+    Task {
+      do {
+        try await docStoragePool.invalidatePeerWorkspaceState(universalId: try call.getStringEnsure("id"), peer: try call.getStringEnsure("peer"), rootDocId: try call.getStringEnsure("rootDocId"))
+        call.resolve()
+      } catch {
+        call.reject("Failed to invalidatePeerWorkspaceState, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func installPeerWorkspaceState(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let value = try await docStoragePool.installPeerWorkspaceState(universalId: try call.getStringEnsure("id"), peer: try call.getStringEnsure("peer"), rootDocId: try call.getStringEnsure("rootDocId"), cacheToken: try call.getInt64Ensure("cacheToken"), docs: try call.getStringEnsure("docs"), clocks: try call.getStringEnsure("clocks"))
+        call.resolve(["installed": value])
+      } catch {
+        call.reject("Failed to installPeerWorkspaceState, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func confirmPeerDocCreate(_ call: CAPPluginCall) {
+    Task {
+      do {
+        try await docStoragePool.confirmPeerDocCreate(universalId: try call.getStringEnsure("id"), peer: try call.getStringEnsure("peer"), docId: try call.getStringEnsure("docId"))
+        call.resolve()
+      } catch {
+        call.reject("Failed to confirmPeerDocCreate, \(error)", nil, error)
       }
     }
   }

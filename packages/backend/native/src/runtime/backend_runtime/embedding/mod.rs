@@ -18,7 +18,12 @@ use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
 use types::*;
 
-use super::{RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider};
+use super::{
+  RuntimeError, RuntimeResult,
+  copilot::BackgroundEmbeddingProvider,
+  domain_command::{lock_workspace_doc_update, lock_workspace_storage_shared},
+  is_ordinary_workspace_doc, load_doc_states_in,
+};
 use crate::runtime::object_storage::ObjectStorageService;
 
 fn extraction_file_name(mime_type: &str) -> String {
@@ -97,10 +102,9 @@ impl EmbeddingService {
     &self,
     workspace_id: &str,
     documents: &[crate::runtime::types::DocumentEmbeddingProjectionInput],
-    reconcile: bool,
     priority: i32,
   ) -> RuntimeResult<()> {
-    source::sync_documents(&self.pool, workspace_id, documents, reconcile, priority).await?;
+    source::sync_documents(&self.pool, workspace_id, documents, priority).await?;
     self.wake();
     Ok(())
   }
@@ -128,12 +132,6 @@ impl EmbeddingService {
       }
       tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
-  }
-
-  pub(super) async fn reconcile_documents(&self, workspace_id: &str) -> RuntimeResult<()> {
-    source::reconcile_documents(&self.pool, workspace_id).await?;
-    self.wake();
-    Ok(())
   }
 
   pub(super) async fn health_counts(&self) -> RuntimeResult<EmbeddingQueueCounts> {

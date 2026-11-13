@@ -111,16 +111,6 @@ impl RuntimeError {
     }
   }
 
-  pub(crate) fn is_serialization_failure(&self) -> bool {
-    matches!(
-      self,
-      Self::Database {
-        source: sqlx::Error::Database(source),
-        ..
-      } if source.code().as_deref() == Some("40001")
-    )
-  }
-
   pub(crate) fn is_permanent_search_source(&self) -> bool {
     matches!(self, Self::SearchSourceInvalid(_))
   }

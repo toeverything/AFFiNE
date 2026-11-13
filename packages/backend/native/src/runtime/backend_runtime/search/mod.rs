@@ -9,6 +9,7 @@ mod types;
 mod worker;
 
 use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, fail, load_active};
+#[cfg(test)]
 pub(super) use projection::project_current_doc;
 use projection::{ProjectionInput, project_document};
 use provider::{SearchChange, SearchProvider, projection_external_id};
@@ -20,6 +21,7 @@ pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 use worker::{reconcile_workspace, sweep_generation_orphans};
 
 use super::{
+  blocking, is_ordinary_workspace_doc, load_workspace_doc_states_in,
   permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
   webpki_tls_config,
 };

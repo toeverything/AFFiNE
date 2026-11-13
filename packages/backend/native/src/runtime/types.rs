@@ -73,9 +73,7 @@ pub struct DocumentEmbeddingProjectionInput {
   pub revision: String,
   pub source_hash: String,
   pub skip_reason: Option<String>,
-  pub root_revision: Option<String>,
   pub units: Vec<DocumentEmbeddingUnitInput>,
-  pub deleted: Option<bool>,
 }
 
 #[napi_derive::napi(object)]
@@ -83,7 +81,6 @@ pub struct SyncEmbeddingStateInput {
   pub workspace_id: String,
   pub enabled: bool,
   pub documents: Option<Vec<DocumentEmbeddingProjectionInput>>,
-  pub reconcile_documents: Option<bool>,
   pub priority: Option<i32>,
   pub wait_for_ready_ms: Option<u32>,
 }
@@ -546,25 +543,6 @@ pub struct RuntimeDocBlobRefsResult {
   pub refs_deleted: i64,
   pub failed_docs: i64,
   pub next_cursor: Option<String>,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeDocumentCleanupReconcileResult {
-  pub scanned_docs: i64,
-  pub marked: i64,
-  pub reset: i64,
-  pub recovered: i64,
-}
-
-#[napi_derive::napi(object)]
-pub struct RuntimeDocumentCleanupExecuteResult {
-  pub scanned_candidates: i64,
-  pub serialization_retries: i64,
-  pub executed: i64,
-  pub recovered: i64,
-  pub reset: i64,
-  pub failed: i64,
-  pub deleted_rows: i64,
 }
 
 #[napi_derive::napi(object)]

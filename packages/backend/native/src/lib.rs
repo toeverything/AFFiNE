@@ -2,6 +2,7 @@
 
 mod audio_slice;
 mod auth_session;
+mod blocking;
 pub mod content_policy;
 pub mod doc;
 pub mod doc_loader;
@@ -23,7 +24,7 @@ mod utils;
 
 use affine_common::napi_utils::map_napi_err;
 use napi::{Result, Status, bindgen_prelude::*};
-use y_octo::{Doc, Update};
+use y_octo::Update;
 
 #[cfg(not(target_arch = "arm"))]
 #[global_allocator]
@@ -32,28 +33,21 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[macro_use]
 extern crate napi_derive;
 
-/// Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
-/// result binary.
 #[napi(catch_unwind)]
-pub fn merge_updates_in_apply_way(updates: Vec<Buffer>) -> Result<Buffer> {
-  let mut doc = Doc::default();
-  for update in updates {
-    map_napi_err(doc.apply_update_from_binary_v1(update.as_ref()), Status::GenericFailure)?;
-  }
-
-  let buf = map_napi_err(doc.encode_update_v1(), Status::GenericFailure)?;
-
-  Ok(buf.into())
+pub fn merge_updates(updates: Vec<Buffer>) -> Result<Buffer> {
+  let merged = map_napi_err(y_octo::merge_updates_v1(&updates), Status::GenericFailure)?;
+  Ok(map_napi_err(merged.encode_v1(), Status::GenericFailure)?.into())
 }
 
 /// Check whether a Yjs update binary can be decoded without applying it to a
 /// document state.
 #[napi(catch_unwind)]
 pub async fn validate_doc_update(update: Buffer) -> Result<bool> {
+  let permit = doc::try_validation_slot().map_err(|_| napi::Error::from_reason("doc_validation_unavailable"))?;
   let update = update.to_vec();
-  tokio::task::spawn_blocking(move || Update::decode_v1(update).is_ok())
+  blocking::spawn(permit, move || Update::decode_v1(update).is_ok())
     .await
-    .map_err(|err| napi::Error::from_reason(format!("Doc update validation task failed: {err}")))
+    .map_err(|_| napi::Error::from_reason("doc_validation_unavailable"))
 }
 
 #[napi(catch_unwind)]
@@ -88,7 +82,7 @@ mod tests {
 
   #[test]
   fn merge_updates_reports_generic_failure() {
-    let err = match merge_updates_in_apply_way(vec![Buffer::from(vec![0])]) {
+    let err = match merge_updates(vec![Buffer::from(vec![0])]) {
       Ok(_) => panic!("expected error"),
       Err(err) => err,
     };

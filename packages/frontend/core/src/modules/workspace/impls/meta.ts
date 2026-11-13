@@ -1,3 +1,4 @@
+import type { WorkspaceDoc } from '@affine/nbstore';
 import {
   createYProxy,
   type DocMeta,
@@ -23,22 +24,25 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   private readonly _handleDocCollectionMetaEvents = (
     events: Y.YEvent<Y.Array<unknown> | Y.Text | Y.Map<unknown>>[]
   ) => {
-    events.forEach(e => {
-      const hasKey = (k: string) =>
-        e.target === this._yMap && e.changes.keys.has(k);
-
-      if (
-        e.target === this.yDocs ||
-        e.target.parent === this.yDocs ||
-        hasKey('pages')
-      ) {
-        this._handleDocMetaEvent();
-      }
-
-      if (hasKey('name') || hasKey('avatar')) {
-        this._handleCommonFieldsEvent();
-      }
-    });
+    if (
+      events.some(
+        e =>
+          e.target === this.yDocs ||
+          e.target.parent === this.yDocs ||
+          (e.target === this._yMap && e.changes.keys.has('pages'))
+      )
+    ) {
+      this._handleDocMetaEvent();
+    }
+    if (
+      events.some(
+        e =>
+          e.target === this._yMap &&
+          (e.changes.keys.has('name') || e.changes.keys.has('avatar'))
+      )
+    ) {
+      this._handleCommonFieldsEvent();
+    }
   };
 
   private readonly _id: string = 'meta';
@@ -46,6 +50,20 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   private readonly _proxy: MetaState;
   private readonly _yMap: Y.Map<MetaState[keyof MetaState]>;
   private _prevDocs = new Set<string>();
+  private _docMetas: DocMeta[] = [];
+  private _docMetasById = new Map<string, DocMeta>();
+  private inventory: WorkspaceDoc[] = [];
+  private projectedTitles = new Map<string, string>();
+
+  setProjectedTitles(titles: Record<string, string>) {
+    this.projectedTitles = new Map(Object.entries(titles));
+    this._handleDocMetaEvent();
+  }
+
+  setInventory(docs: WorkspaceDoc[]) {
+    this.inventory = docs;
+    this._handleDocMetaEvent();
+  }
 
   get avatar() {
     return this._proxy.avatar;
@@ -84,11 +102,43 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     this.docMetaUpdated.next();
   }
 
-  get docMetas() {
-    if (!this._proxy.pages) {
-      return [] as DocMeta[];
-    }
-    return this._proxy.pages as DocMeta[];
+  get docMetas(): DocMeta[] {
+    return this._docMetas;
+  }
+
+  private projectDocMetas(): DocMeta[] {
+    const pages = this.usesWorkspaceState
+      ? this._yMap.toJSON().pages
+      : this._proxy.pages;
+    const metadata: unknown[] = Array.isArray(pages) ? pages : [];
+    if (!this.usesWorkspaceState) return metadata as DocMeta[];
+    const byId = new Map(
+      metadata
+        .filter(
+          (meta): meta is DocMeta =>
+            !!meta &&
+            typeof meta === 'object' &&
+            'id' in meta &&
+            typeof meta.id === 'string'
+        )
+        .map(meta => [meta.id, meta])
+    );
+    return this.inventory.map(doc => {
+      const metadata = byId.get(doc.docId);
+      const title = typeof metadata?.title === 'string' ? metadata.title : '';
+      return {
+        createDate: doc.timestamp,
+        tags: [],
+        ...metadata,
+        id: doc.docId,
+        title: title || this.projectedTitles.get(doc.docId) || '',
+        trash: doc.lifecycle === 'trashed',
+        trashDate:
+          doc.lifecycle === 'trashed'
+            ? (doc.lifecycleChangedAt ?? undefined)
+            : undefined,
+      };
+    });
   }
 
   get docs() {
@@ -99,11 +149,15 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     return this._yMap.get('pages') as unknown as Y.Array<unknown>;
   }
 
-  constructor(doc: Y.Doc) {
+  constructor(
+    doc: Y.Doc,
+    private readonly usesWorkspaceState = false
+  ) {
     this._doc = doc;
     const map = doc.getMap(this._id) as Y.Map<MetaState[keyof MetaState]>;
     this._yMap = map;
     this._proxy = createYProxy(map);
+    this.refreshDocMetas();
     this._yMap.observeDeep(this._handleDocCollectionMetaEvents);
   }
 
@@ -111,7 +165,13 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     this.commonFieldsUpdated.next();
   }
 
+  private refreshDocMetas() {
+    this._docMetas = this.projectDocMetas();
+    this._docMetasById = new Map(this._docMetas.map(meta => [meta.id, meta]));
+  }
+
   private _handleDocMetaEvent() {
+    this.refreshDocMetas();
     const { docMetas, _prevDocs } = this;
 
     const newDocs = new Set<string>();
@@ -157,12 +217,17 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   }
 
   getDocMeta(id: string) {
-    return this.docMetas.find(doc => doc.id === id);
+    return this._docMetasById.get(id);
   }
 
   initialize() {
-    if (!this._proxy.pages) {
-      this._proxy.pages = [];
+    if (
+      !this._proxy.pages ||
+      (this.usesWorkspaceState && !Array.isArray(this._proxy.pages))
+    ) {
+      this._doc.transact(() => {
+        this._proxy.pages = [];
+      }, this._doc.clientID);
     }
   }
 
@@ -172,8 +237,11 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
       return;
     }
 
-    const docMeta = this.docMetas;
-    const index = docMeta.findIndex((doc: DocMeta) => id === doc.id);
+    const docs = this.docs;
+    if (!Array.isArray(docs)) return;
+    const index = docs.findIndex(
+      doc => !!doc && typeof doc === 'object' && 'id' in doc && doc.id === id
+    );
     if (index === -1) {
       return;
     }
@@ -187,6 +255,15 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
 
   setDocMeta(id: string, props: Partial<DocMeta>) {
     this._assertValidDocTitle(props);
+    if (this.usesWorkspaceState && !this.getDocMeta(id)) return;
+    if (
+      this.usesWorkspaceState &&
+      (!Array.isArray(this.docs) ||
+        !(this.docs as DocMeta[]).some(doc => doc?.id === id))
+    ) {
+      this.initialize();
+      this.addDocMeta({ id, title: '', createDate: Date.now(), tags: [] });
+    }
     const docs = (this.docs as DocMeta[]) ?? [];
     const index = docs.findIndex((doc: DocMeta) => id === doc.id);
 

@@ -1,6 +1,6 @@
 mod anti_entropy;
 mod document;
-mod root;
+mod inventory;
 mod workspace;
 mod workspace_state;
 
@@ -28,7 +28,7 @@ use anti_entropy::{
   ProjectionExpectation, provider_projection_matches, reconcile_stale_provider_rows, sweep_deleted_workspace,
 };
 use document::upsert_document;
-use root::{RootReconcilePhase, load_root_document_ids, reconcile_root_documents};
+use inventory::{DocumentReconcilePhase, reconcile_documents};
 pub(super) use workspace::reconcile_workspace;
 use workspace_state::{
   WorkspacePhase, checkpoint_workspace, checkpoint_workspace_after, claim_workspace, complete_workspace,
@@ -37,5 +37,6 @@ use workspace_state::{
 
 use super::{
   ActiveGeneration, DOCUMENT_PROJECTION_FAILED, ProjectionInput, SearchChange, SearchProvider, SearchTable,
-  WORKSPACE_RECONCILE_FAILED, project_current_doc, project_document, projection_external_id, provider_payload,
+  WORKSPACE_RECONCILE_FAILED, is_ordinary_workspace_doc, load_workspace_doc_states_in, project_document,
+  projection_external_id, provider_payload,
 };

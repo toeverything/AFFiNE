@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 
 import { expect, test, vitest } from 'vitest';
 import { Awareness } from 'y-protocols/awareness.js';
-import { Doc as YDoc } from 'yjs';
+import { Doc as YDoc, mergeUpdates } from 'yjs';
 
 import { AwarenessFrontend } from '../frontend/awareness';
 import { DocFrontend } from '../frontend/doc';
@@ -12,7 +12,10 @@ import { AwarenessSyncImpl } from '../sync/awareness';
 import { DocSyncImpl } from '../sync/doc';
 import { expectYjsEqual } from './utils';
 
-test('doc', async () => {
+test.each([false, true])('doc with custom merge: %s', async customMerge => {
+  const merge = customMerge
+    ? vitest.fn(async (updates: Uint8Array[]) => mergeUpdates(updates))
+    : undefined;
   const doc1 = new YDoc({
     guid: 'test-doc',
   });
@@ -20,15 +23,18 @@ test('doc', async () => {
 
   const docStorage = new IndexedDBDocStorage({
     id: 'ws1',
-    flavour: 'a',
+    flavour: `a-${customMerge}`,
     type: 'workspace',
+    mergeUpdates: merge,
   });
 
   docStorage.connection.connect();
 
   await docStorage.connection.waitForConnected();
 
-  const frontend1 = new DocFrontend(docStorage, DocSyncImpl.dummy);
+  const frontend1 = new DocFrontend(docStorage, DocSyncImpl.dummy, {
+    mergeUpdates: merge,
+  });
   frontend1.start();
   frontend1.connectDoc(doc1);
   await vitest.waitFor(async () => {
@@ -43,7 +49,9 @@ test('doc', async () => {
   const doc2 = new YDoc({
     guid: 'test-doc',
   });
-  const frontend2 = new DocFrontend(docStorage, DocSyncImpl.dummy);
+  const frontend2 = new DocFrontend(docStorage, DocSyncImpl.dummy, {
+    mergeUpdates: merge,
+  });
   frontend2.start();
   frontend2.connectDoc(doc2);
 
@@ -54,6 +62,7 @@ test('doc', async () => {
       },
     });
   });
+  if (merge) expect(merge).toHaveBeenCalled();
 });
 
 test('awareness', async () => {
