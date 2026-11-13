@@ -1,23 +1,40 @@
 // @vitest-environment happy-dom
 
 import type { BlobSource } from '@blocksuite/affine/sync';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import type * as Infra from '@toeverything/infra';
 import { afterEach, expect, test, vi } from 'vitest';
-import { Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import * as WorkspaceModule from '../../../modules/workspace/impls/workspace';
-import { useSnapshotPage } from './data';
+import { useRestorePage, useSnapshotPage } from './data';
 
 const historyMocks = vi.hoisted(() => ({
   services: new Map<string, unknown>(),
   sources: [] as BlobSource[],
+  page: undefined as { spaceDoc: YDoc; meta: { title: string } } | undefined,
+  recover: vi.fn(),
+  mutate: vi.fn(),
 }));
 
 vi.mock('@toeverything/infra', async importOriginal => ({
   ...(await importOriginal<typeof Infra>()),
   useService: (token: { name: string }) =>
     historyMocks.services.get(token.name),
+}));
+
+vi.mock('@affine/core/components/hooks/use-block-suite-workspace-page', () => ({
+  useDocCollectionPage: () => historyMocks.page,
+}));
+vi.mock('@affine/core/components/hooks/use-block-suite-page-meta', () => ({
+  useDocMetaHelper: () => ({
+    getDocMeta: () => ({ title: '' }),
+    setDocTitle: vi.fn(),
+  }),
+}));
+vi.mock('../../../components/hooks/use-mutation', () => ({
+  useMutation: () => ({ trigger: historyMocks.recover, isMutating: false }),
+  useMutateQueryResource: () => historyMocks.mutate,
 }));
 
 vi.mock('swr/immutable', () => ({ default: () => ({ data: undefined }) }));
@@ -43,6 +60,9 @@ vi.mock(
 afterEach(() => {
   historyMocks.services.clear();
   historyMocks.sources.length = 0;
+  historyMocks.page = undefined;
+  historyMocks.recover.mockReset();
+  historyMocks.mutate.mockReset();
 });
 
 test.each(['present', 'null', 'missing', 'no-session', 'error'])(
@@ -114,5 +134,79 @@ test.each(['present', 'null', 'missing', 'no-session', 'error'])(
       collection.dispose();
     }
     expect(close).toHaveBeenCalledTimes(mode === 'no-session' ? 0 : 1);
+  }
+);
+
+test.each([false, true])(
+  'history checkpoint failure=%s preserves live edits until fixed compensation can apply',
+  async fails => {
+    const historical = new YDoc();
+    historical.getMap('blocks').set('value', 'old');
+    const snapshot = encodeStateAsUpdate(historical);
+    const live = new YDoc();
+    applyUpdate(live, snapshot);
+    live.getMap('blocks').set('value', 'before');
+    historyMocks.page = { spaceDoc: live, meta: { title: '' } };
+    let sync!: () => void;
+    const synced = new Promise<void>(resolve => {
+      sync = resolve;
+    });
+    let checkpoint!: () => void;
+    let rejectCheckpoint!: (error: Error) => void;
+    historyMocks.recover.mockImplementation(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          checkpoint = resolve;
+          rejectCheckpoint = reject;
+        })
+    );
+    historyMocks.services.set('WorkspaceService', {
+      workspace: { engine: { doc: { waitForSynced: () => synced } } },
+    });
+    const collection = new WorkspaceModule.WorkspaceImpl({
+      id: 'workspace-restore',
+      rootDoc: new YDoc(),
+    });
+    const view = renderHook(() => useRestorePage(collection, live.guid));
+    let restoring!: Promise<void>;
+    act(() => {
+      restoring = view.result.current.onRestore(
+        '2026-11-10T00:00:00Z',
+        snapshot
+      );
+    });
+    expect(view.result.current.isMutating).toBe(true);
+    const outcome = restoring.then(
+      () => undefined,
+      error => error
+    );
+    try {
+      expect(live.getMap('blocks').get('value')).toBe('before');
+      expect(historyMocks.recover).not.toHaveBeenCalled();
+      live.getMap('blocks').set('concurrent', 'kept');
+      sync();
+      await vi.waitFor(() =>
+        expect(historyMocks.recover).toHaveBeenCalledTimes(1)
+      );
+      expect(live.getMap('blocks').get('value')).toBe('before');
+      expect(view.result.current.isMutating).toBe(true);
+      if (fails) rejectCheckpoint(new Error('checkpoint unavailable'));
+      else checkpoint();
+      let error: unknown;
+      await act(async () => {
+        error = await outcome;
+      });
+      expect(view.result.current.isMutating).toBe(false);
+      expect(error instanceof Error).toBe(fails);
+      expect(live.getMap('blocks').toJSON()).toEqual({
+        value: fails ? 'before' : 'old',
+        concurrent: 'kept',
+      });
+    } finally {
+      view.unmount();
+      collection.dispose();
+      historical.destroy();
+      live.destroy();
+    }
   }
 );

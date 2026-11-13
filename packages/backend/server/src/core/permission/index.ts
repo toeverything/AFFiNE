@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 
 import { AccessControllerBuilder } from './builder';
-import { EventsListener } from './event';
 import { PermissionService } from './service';
 
 @Module({
-  providers: [AccessControllerBuilder, EventsListener, PermissionService],
+  providers: [AccessControllerBuilder, PermissionService],
   exports: [AccessControllerBuilder, PermissionService],
 })
 export class PermissionModule {}

@@ -5,8 +5,7 @@ import {
   type Map as YMap,
 } from 'yjs';
 
-type PromiseResult<T> = T extends Promise<infer R> ? R : never;
-export type IdConverter = PromiseResult<ReturnType<typeof getIdConverter>>;
+export type IdConverter = ReturnType<typeof createIdConverter>;
 
 export async function getIdConverter(
   storage: {
@@ -14,8 +13,8 @@ export async function getIdConverter(
   },
   spaceId: string
 ) {
-  const oldIdToNewId = { [spaceId]: spaceId };
-  const newIdToOldId = { [spaceId]: spaceId };
+  const oldIdToNewId = new Map([[spaceId, spaceId]]);
+  const newIdToOldId = new Map([[spaceId, spaceId]]);
 
   const rootDocBuffer = await storage.getDocBuffer(spaceId);
   if (rootDocBuffer) {
@@ -37,12 +36,20 @@ export async function getIdConverter(
     for (const pageId of normalizedDocIds ?? []) {
       const subdoc = spaces?.get(pageId);
       if (subdoc && subdoc instanceof YDoc) {
-        oldIdToNewId[subdoc.guid] = pageId;
-        newIdToOldId[pageId] = subdoc.guid;
+        oldIdToNewId.set(subdoc.guid, pageId);
+        newIdToOldId.set(pageId, subdoc.guid);
       }
     }
   }
 
+  return createIdConverter(spaceId, oldIdToNewId, newIdToOldId);
+}
+
+export function createIdConverter(
+  spaceId: string,
+  oldIds: ReadonlyMap<string, string> = new Map(),
+  newIds: ReadonlyMap<string, string> = new Map()
+) {
   return {
     newIdToOldId(newId: string) {
       if (newId.startsWith(`db$`)) {
@@ -56,7 +63,7 @@ export async function getIdConverter(
           (_, p1, p2) => `${p1}$${spaceId}$${p2}`
         );
       }
-      return newIdToOldId[newId] ?? newId;
+      return newIds.get(newId) ?? newId;
     },
     oldIdToNewId(oldId: string) {
       // db$${spaceId}$docId -> db$docId
@@ -67,7 +74,7 @@ export async function getIdConverter(
       if (oldId.match(new RegExp(`^userdata\\$[\\w-]+\\$${spaceId}\\$`))) {
         return oldId.replace(`$${spaceId}$`, '$');
       }
-      return oldIdToNewId[oldId] ?? oldId;
+      return oldIds.get(oldId) ?? oldId;
     },
   };
 }

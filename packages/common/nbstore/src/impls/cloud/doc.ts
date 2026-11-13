@@ -7,7 +7,7 @@ import {
   type DocUpdate,
   SnapshotDocStorageBase,
 } from '../../storage';
-import { getIdConverter, type IdConverter } from '../../utils/id-converter';
+import { createIdConverter } from '../../utils/id-converter';
 import type { SpaceType } from '../../utils/universal-id';
 import {
   base64ToUint8Array,
@@ -15,17 +15,20 @@ import {
   SocketConnection,
   SPACE_JOIN_BATCH_LIMIT,
   uint8ArrayToBase64,
+  WORKSPACE_SYNC_PROTOCOL_VERSION,
 } from './socket';
 
 interface CloudDocStorageOptions extends DocStorageOptions {
   serverBaseUrl: string;
   isSelfHosted: boolean;
   type: SpaceType;
+  accountId: string;
+  localReservedDocIds?: string[];
 }
 
 function createWebsocketError(error: { name: string; message: string }) {
   const err = new Error(error.message);
-  err.name = error.name;
+  Object.assign(err, error);
   return err;
 }
 
@@ -36,12 +39,49 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     return this.connection.inner.socket;
   }
   get idConverter() {
-    if (!this.connection.idConverter) {
-      throw new Error('Id converter not initialized');
-    }
     return this.connection.idConverter;
   }
   readonly spaceType = this.options.type;
+  readonly workspaceStateScope =
+    this.options.type === 'workspace'
+      ? JSON.stringify([
+          this.options.serverBaseUrl,
+          this.options.id,
+          this.options.accountId,
+        ])
+      : undefined;
+
+  readonly localReservedDocIds = this.options.localReservedDocIds ?? [];
+
+  private readonly inventoryListeners = new Set<() => void>();
+
+  subscribeWorkspaceStateInvalidation(callback: () => void) {
+    this.inventoryListeners.add(callback);
+    return () => this.inventoryListeners.delete(callback);
+  }
+
+  async getWorkspaceState() {
+    const response = await this.socket.emitWithAck(
+      'space:load-workspace-state',
+      {
+        spaceType: this.spaceType,
+        spaceId: this.spaceId,
+      }
+    );
+    if ('error' in response) throw createWebsocketError(response.error);
+    return {
+      docs: response.data.docs.map(doc => ({
+        ...doc,
+        docId: this.idConverter.oldIdToNewId(doc.docId),
+      })),
+      clocks: Object.fromEntries(
+        Object.entries(response.data.clocks).map(([id, clock]) => [
+          this.idConverter.oldIdToNewId(id),
+          clock,
+        ])
+      ),
+    };
+  }
 
   onServerUpdates: ServerEventsMap['space:broadcast-doc-updates'] = message => {
     if (
@@ -72,6 +112,10 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
         return;
       }
 
+      if (message.inventoryChanged) {
+        for (const listener of this.inventoryListeners) listener();
+        return;
+      }
       this.invalidationPending = true;
       this.scheduleInvalidationRepair();
     };
@@ -182,10 +226,14 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     const response = await this.socket.emitWithAck('space:push-doc-update', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
-      docId: await this.connection.joinDoc(
-        this.idConverter.newIdToOldId(update.docId)
-      ),
+      docId:
+        update.intent === 'create'
+          ? this.idConverter.newIdToOldId(update.docId)
+          : await this.connection.joinDoc(
+              this.idConverter.newIdToOldId(update.docId)
+            ),
       update: await uint8ArrayToBase64(update.bin),
+      intent: update.intent ?? 'update',
     });
 
     if ('error' in response) {
@@ -270,7 +318,6 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
       throw createWebsocketError(response.error);
     }
     return {
-      rootUpdate: base64ToUint8Array(response.data.rootUpdate),
       timestamp: new Date(response.data.timestamp),
     };
   }
@@ -295,7 +342,7 @@ class CloudDocStorageConnection extends SocketConnection {
     super(options.serverBaseUrl, options.isSelfHosted);
   }
 
-  idConverter: IdConverter | null = null;
+  readonly idConverter = createIdConverter(this.options.id);
   private readonly joinedDocIds = new Set<string>();
 
   async joinDoc(docId: string, socket: Socket = this.inner.socket) {
@@ -304,9 +351,14 @@ class CloudDocStorageConnection extends SocketConnection {
         { spaceType: this.options.type, spaceId: this.options.id, docId },
       ],
       clientVersion: BUILD_CONFIG.appVersion,
+      protocolVersion: WORKSPACE_SYNC_PROTOCOL_VERSION,
     });
     if ('error' in res) throw createWebsocketError(res.error);
-    if (!res.data.success) throw new Error('Space join was rejected');
+    if (
+      !res.data.success ||
+      res.data.protocolVersion !== WORKSPACE_SYNC_PROTOCOL_VERSION
+    )
+      throw new Error('Space join was rejected');
     this.joinedDocIds.add(docId);
     return docId;
   }
@@ -316,10 +368,6 @@ class CloudDocStorageConnection extends SocketConnection {
 
     try {
       await this.joinDoc(this.options.id, socket);
-
-      if (!this.idConverter) {
-        this.idConverter = await this.getIdConverter(socket);
-      }
 
       socket.on('space:broadcast-doc-updates', this.onServerUpdates);
       socket.on('space:broadcast-doc-invalidation', this.onServerInvalidation);
@@ -359,30 +407,5 @@ class CloudDocStorageConnection extends SocketConnection {
     socket.off('space:broadcast-doc-updates', this.onServerUpdates);
     socket.off('space:broadcast-doc-invalidation', this.onServerInvalidation);
     super.doDisconnect({ socket, disconnect });
-  }
-
-  async getIdConverter(socket: Socket) {
-    return getIdConverter(
-      {
-        getDocBuffer: async id => {
-          const response = await socket.emitWithAck('space:load-doc', {
-            spaceType: this.options.type,
-            spaceId: this.options.id,
-            docId: id,
-          });
-
-          if ('error' in response) {
-            if (response.error.name === 'DOC_NOT_FOUND') {
-              return null;
-            }
-            // TODO: use [UserFriendlyError]
-            throw createWebsocketError(response.error);
-          }
-
-          return base64ToUint8Array(response.data.missing);
-        },
-      },
-      this.options.id
-    );
   }
 }

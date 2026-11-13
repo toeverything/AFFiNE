@@ -24,7 +24,7 @@ export class DocImpl implements Doc {
   private readonly _storeContainer: StoreContainer;
 
   private readonly _initSpaceDoc = () => {
-    {
+    if (!this.workspace.usesWorkspaceState) {
       // This is a piece of old version compatible code. The old version relies on the subdoc instance on `spaces`.
       // So if there is no subdoc on spaces, we will create it.
       // new version no longer needs subdoc on `spaces`.
@@ -98,13 +98,13 @@ export class DocImpl implements Doc {
   }
 
   constructor({ id, collection, doc }: DocOptions) {
+    this._collection = collection;
     this.id = id;
     this.rootDoc = doc;
     this._ySpaceDoc = this._initSpaceDoc() as Y.Doc;
     this.awarenessStore = new AwarenessStore(new Awareness(this._ySpaceDoc));
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
-    this._collection = collection;
     this._storeContainer = new StoreContainer(this);
   }
 
@@ -177,6 +177,7 @@ export class DocImpl implements Doc {
 
   remove() {
     this._destroy();
-    this.rootDoc.getMap('spaces').delete(this.id);
+    if (!this.workspace.usesWorkspaceState)
+      this.rootDoc.getMap('spaces').delete(this.id);
   }
 }

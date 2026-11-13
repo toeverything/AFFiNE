@@ -63,13 +63,12 @@ impl BackendRuntime {
       .sync_workspace(&input.workspace_id, input.enabled, target)
       .await
       .map_err(to_napi_error)?;
-    let reconcile_documents = input.reconcile_documents.unwrap_or(false);
     if let Some(documents) = input.documents {
       if input.wait_for_ready_ms.is_some() && state.active_index_id.is_none() {
         return Err(napi_error("embedding_selected_sources_unavailable"));
       }
       embedding
-        .sync_documents(&input.workspace_id, &documents, reconcile_documents, priority)
+        .sync_documents(&input.workspace_id, &documents, priority)
         .await
         .map_err(to_napi_error)?;
       if let Some(wait_ms) = input.wait_for_ready_ms {
@@ -82,12 +81,8 @@ impl BackendRuntime {
           .await
           .map_err(to_napi_error)?;
       }
-    } else if reconcile_documents {
-      embedding
-        .reconcile_documents(&input.workspace_id)
-        .await
-        .map_err(to_napi_error)?;
     }
+
     Ok(types::RuntimeEmbeddingWorkspaceState {
       workspace_id: state.workspace_id,
       active_index_id: state.active_index_id.map(|id| id.to_string()),

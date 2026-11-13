@@ -2,6 +2,7 @@ use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
 use tokio::sync::Semaphore;
 
+use super::blocking;
 use crate::{
   permission::doc_role_allows,
   runtime::{
@@ -30,8 +31,7 @@ pub(in crate::runtime::backend_runtime) async fn project_current_doc<T: Send + '
     .acquire()
     .await
     .map_err(|error| RuntimeError::invalid_state(format!("search projection admission failed: {error}")))?;
-  tokio::task::spawn_blocking(move || {
-    let _permit = permit;
+  blocking::spawn(permit, move || {
     let current = merge_current_doc(snapshot, updates).map_err(|error| match error {
       RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
       error => error,
@@ -58,15 +58,20 @@ pub(super) async fn project_document(
     return Ok(None);
   };
   let Some(metadata) = sqlx::query(
-    r#"SELECT snapshot.created_at,snapshot.updated_at,snapshot.created_by,snapshot.updated_by,
-       coalesce(doc_policy.visibility,'private') AS visibility,
-       doc_policy.public_role,
-       coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role,'manager') AS member_default_role
-       FROM snapshots snapshot
-       LEFT JOIN workspace_access_policies workspace_policy ON workspace_policy.workspace_id=snapshot.workspace_id
-       LEFT JOIN doc_access_policies doc_policy
-         ON doc_policy.workspace_id=snapshot.workspace_id AND doc_policy.doc_id=snapshot.guid
-       WHERE snapshot.workspace_id=$1 AND snapshot.guid=$2"#,
+    r#"WITH records AS (
+         SELECT created_at,updated_at,created_by,updated_by FROM snapshots WHERE workspace_id=$1 AND guid=$2
+         UNION ALL SELECT created_at,created_at,created_by,created_by FROM updates WHERE workspace_id=$1 AND guid=$2
+       ), source AS (
+         SELECT min(created_at) AS created_at,max(updated_at) AS updated_at,
+           (array_agg(created_by ORDER BY created_at))[1] AS created_by,
+           (array_agg(updated_by ORDER BY updated_at DESC))[1] AS updated_by
+         FROM records HAVING count(*) > 0
+       )
+       SELECT source.*,coalesce(doc_policy.visibility,'private') AS visibility,doc_policy.public_role,
+         coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role,'manager') AS member_default_role
+       FROM source
+       LEFT JOIN workspace_access_policies workspace_policy ON workspace_policy.workspace_id=$1
+       LEFT JOIN doc_access_policies doc_policy ON doc_policy.workspace_id=$1 AND doc_policy.doc_id=$2"#,
   )
   .bind(workspace_id)
   .bind(doc_id)

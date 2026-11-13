@@ -1,18 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Transactional } from '@nestjs-cls/transactional';
-import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { chunk } from 'lodash-es';
 
 import {
-  DocHistoryNotFound,
-  DocNotFound,
   EventBus,
-  FailedToSaveUpdates,
   FailedToUpsertSnapshot,
   metrics,
   Mutex,
 } from '../../../base';
-import { retryable } from '../../../base/utils/promise';
 import { Models } from '../../../models';
 import { BackendRuntimeProvider } from '../../backend-runtime';
 import { DocStorageOptions } from '../options';
@@ -57,22 +50,16 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     workspaceId: string,
     docId: string
   ): Promise<DocRecord | null> {
-    await using _lock = await this.lockDocForUpdate(workspaceId, docId);
-    const result = await this.getDocInTransaction(workspaceId, docId);
-    if (result.snapshotUpdated && result.doc) {
-      this.event.emitDetached('doc.snapshot.updated', {
-        workspaceId,
-        docId,
-        blob: Buffer.from(result.doc.bin),
-      });
-    }
-    return result.doc;
-  }
-
-  @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
-  private async getDocInTransaction(workspaceId: string, docId: string) {
-    await this.models.doc.lockDocContent(workspaceId, docId);
-    return await this.getDocUnderLock(workspaceId, docId);
+    const doc = await this.runtime.getCurrentWorkspaceDocV1(workspaceId, docId);
+    return doc
+      ? {
+          spaceId: workspaceId,
+          docId,
+          bin: doc.bin,
+          timestamp: doc.timestamp,
+          editor: doc.editor ?? undefined,
+        }
+      : null;
   }
 
   async pushDocUpdates(
@@ -82,7 +69,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     editorId: string,
     expectedPermissionGeneration?: number,
     writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
-    permissionDocId?: string
+    protocolVersion = 2
   ) {
     return await this.pushDocUpdatesWithContract(
       workspaceId,
@@ -92,8 +79,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       {
         actorUserId: editorId,
         writeIntent,
-        permissionDocId,
         expectedPermissionGeneration,
+        protocolVersion,
       }
     );
   }
@@ -104,13 +91,15 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     updates: Uint8Array[],
     editorId?: string
   ) {
-    return await this.pushDocUpdatesWithContract(
-      workspaceId,
-      docId,
-      updates,
-      editorId,
-      { trusted: true }
-    );
+    return (
+      await this.pushDocUpdatesWithContract(
+        workspaceId,
+        docId,
+        updates,
+        editorId,
+        { trusted: true }
+      )
+    ).timestamp;
   }
 
   private async pushDocUpdatesWithContract(
@@ -122,76 +111,43 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       | {
           actorUserId: string;
           writeIntent: 'update_doc' | 'create_doc';
-          permissionDocId?: string;
+
           expectedPermissionGeneration?: number;
+          protocolVersion: number;
         }
       | { trusted: true }
   ) {
     if (!updates.length) {
-      return 0;
+      return { timestamp: 0, created: false };
     }
 
-    updates = await this.filterValidDocUpdates(workspaceId, docId, updates);
-    if (!updates.length) return 0;
+    const input = {
+      workspaceId,
+      docId,
+      updates: updates.map(update => Buffer.from(update)),
+    };
+    const result =
+      'trusted' in contract
+        ? {
+            timestamp: await this.runtime.appendWorkspaceDocUpdatesTrustedV1({
+              ...input,
+              editorId,
+            }),
+            created: false,
+          }
+        : await this.runtime.appendWorkspaceDocUpdatesV1({
+            ...input,
+            ...contract,
+          });
 
-    const isNewDoc = !(await this.models.doc.exists(workspaceId, docId));
-
-    let pendings = updates;
-    let done = 0;
-    let timestamp = Date.now();
-    try {
-      await retryable(async () => {
-        if (done !== 0) {
-          pendings = pendings.slice(done);
-        }
-
-        const batchCount = 10;
-        for (const batch of chunk(pendings, batchCount)) {
-          const input = {
-            workspaceId,
-            docId,
-            updates: batch.map(update => Buffer.from(update)),
-          };
-          timestamp =
-            'trusted' in contract
-              ? await this.runtime.appendWorkspaceDocUpdatesTrustedV1({
-                  ...input,
-                  editorId,
-                })
-              : await this.runtime.appendWorkspaceDocUpdatesV1({
-                  ...input,
-                  ...contract,
-                });
-          done += batch.length;
-        }
-      });
-
-      if (isNewDoc) {
-        await this.event.emitDetachedAsync('doc.created', {
-          workspaceId,
-          docId,
-          editor: editorId,
-        });
-      }
-    } catch (e) {
-      this.logger.error('Failed to insert doc updates', {
+    if (result.created) {
+      await this.event.emitDetachedAsync('doc.created', {
         workspaceId,
         docId,
-        actorUserId: editorId,
-        writeIntent: 'trusted' in contract ? 'trusted' : contract.writeIntent,
-        permissionDocId:
-          'trusted' in contract ? docId : (contract.permissionDocId ?? docId),
-        expectedPermissionGeneration:
-          'trusted' in contract
-            ? undefined
-            : contract.expectedPermissionGeneration,
-        updateCount: updates.length,
-        error: e,
+        editor: editorId,
       });
-      metrics.doc.counter('doc_update_insert_failed').add(1);
-      throw new FailedToSaveUpdates();
     }
-    return timestamp;
+    return result;
   }
 
   protected async getDocUpdates(workspaceId: string, docId: string) {
@@ -262,48 +218,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     };
   }
 
-  override async rollbackDoc(
-    spaceId: string,
-    docId: string,
-    timestamp: number,
-    editorId?: string
-  ): Promise<void> {
-    await using _lock = await this.lockDocForUpdate(spaceId, docId);
-    const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);
-    if (!toSnapshot) {
-      throw new DocHistoryNotFound({ spaceId, docId, timestamp });
-    }
-
-    const fromSnapshot = await this.getDocSnapshot(spaceId, docId);
-
-    if (!fromSnapshot) {
-      throw new DocNotFound({ spaceId, docId });
-    }
-
-    // force create a new history record after rollback
-    await this.createDocHistory(
-      {
-        ...fromSnapshot,
-        // override the editor to the one who requested the rollback
-        editor: editorId,
-      },
-      true
-    );
-    // WARN:
-    //  we should never do the snapshot updating in recovering,
-    //  which is not the solution in CRDT.
-    //  let user revert in client and update the data in sync system
-    //    const change = this.generateChangeUpdate(fromSnapshot.bin, toSnapshot.bin);
-    //    await this.pushDocUpdates(spaceId, docId, [change]);
-
-    metrics.doc
-      .counter('history_recovered_counter', {
-        description: 'How many times history recovered request happened',
-      })
-      .add(1);
-  }
-
-  protected async createDocHistory(snapshot: DocRecord, force = false) {
+  protected async createDocHistory(snapshot: DocRecord) {
     const last = await this.lastDocHistory(snapshot.spaceId, snapshot.docId);
 
     let shouldCreateHistory = false;
@@ -317,11 +232,9 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         // no change
         shouldCreateHistory = false;
       } else if (
-        // force
-        force ||
         // last history created before interval in configs
         lastHistoryTimestamp <
-          snapshot.timestamp - this.options.historyMinInterval(snapshot.spaceId)
+        snapshot.timestamp - this.options.historyMinInterval(snapshot.spaceId)
       ) {
         shouldCreateHistory = true;
       }
@@ -389,21 +302,14 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   protected async setDocSnapshot(snapshot: DocRecord) {
-    if (this.isEmptyBin(snapshot.bin)) {
-      return false;
-    }
-
     try {
-      const blob = Buffer.from(snapshot.bin);
-      const updatedSnapshot = await this.models.doc.upsert({
-        spaceId: snapshot.spaceId,
-        docId: snapshot.docId,
-        blob,
-        timestamp: snapshot.timestamp,
-        editorId: snapshot.editor,
-      });
-
-      return !!updatedSnapshot;
+      return await this.runtime.upsertDocSnapshot(
+        snapshot.spaceId,
+        snapshot.docId,
+        Buffer.from(snapshot.bin),
+        snapshot.timestamp,
+        snapshot.editor
+      );
     } catch (e) {
       metrics.doc.counter('snapshot_upsert_failed').add(1);
       this.logger.error('Failed to upsert snapshot', e);

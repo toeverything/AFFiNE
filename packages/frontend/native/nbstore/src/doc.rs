@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use chrono::{DateTime, NaiveDateTime};
 use sqlx::{QueryBuilder, Row};
-use y_octo::{DocOptions, merge_updates_v1};
+use y_octo::merge_updates_v1;
 
 use super::{
   DocClock, DocRecord, DocUpdate, ReadonlyDocRecords,
@@ -93,13 +93,22 @@ impl SqliteDocStorage {
   }
 
   pub async fn push_update<Update: AsRef<[u8]>>(&self, doc_id: String, update: Update) -> Result<NaiveDateTime> {
+    self.push_update_with_peer(doc_id, update, None).await
+  }
+
+  pub async fn push_update_with_peer<Update: AsRef<[u8]>>(
+    &self,
+    doc_id: String,
+    update: Update,
+    create_for_peer: Option<String>,
+  ) -> Result<NaiveDateTime> {
     let mut timestamp = DateTime::from_timestamp_millis(chrono::Utc::now().timestamp_millis())
       .unwrap()
       .naive_utc();
 
     for attempt in 0..12 {
       match self
-        .try_insert_update_with_timestamp(&doc_id, update.as_ref(), timestamp)
+        .try_insert_update_with_timestamp(&doc_id, update.as_ref(), timestamp, create_for_peer.as_deref())
         .await
       {
         Ok(true) => return Ok(timestamp),
@@ -122,6 +131,7 @@ impl SqliteDocStorage {
     doc_id: &str,
     update: &[u8],
     timestamp: NaiveDateTime,
+    create_for_peer: Option<&str>,
   ) -> sqlx::Result<bool> {
     let mut tx = self.pool.begin().await?;
 
@@ -150,6 +160,23 @@ impl SqliteDocStorage {
     .execute(&mut *tx)
     .await?;
 
+    if let Some(peer) = create_for_peer {
+      sqlx::query(
+        "INSERT INTO peer_clocks (peer, doc_id, pending_create) VALUES ($1, $2, TRUE) ON CONFLICT(peer,doc_id) DO \
+         UPDATE SET pending_create = TRUE",
+      )
+      .bind(peer)
+      .bind(doc_id)
+      .execute(&mut *tx)
+      .await?;
+      sqlx::query(
+        "INSERT INTO peer_clocks (peer, doc_id, cache_token) SELECT $1, space_id, 1 FROM meta WHERE TRUE ON \
+         CONFLICT(peer,doc_id) DO UPDATE SET cache_token = cache_token + 1",
+      )
+      .bind(peer)
+      .execute(&mut *tx)
+      .await?;
+    }
     tx.commit().await?;
 
     Ok(true)
@@ -201,21 +228,10 @@ impl SqliteDocStorage {
         segments.push(record.bin.to_vec());
       }
       segments.extend(updates.iter().map(|update| update.bin.to_vec()));
-      let bin = if segments.len() == 1 {
-        segments.pop().expect("one segment")
-      } else {
-        merge_updates_v1(segments)
-          .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
-          .encode_v1()
-          .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
-      };
-      let mut doc = DocOptions::new().with_guid(doc_id.clone()).build();
-      doc
-        .apply_update_from_binary_v1(&bin)
+      let bin = merge_updates_v1(segments)
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
+        .encode_v1()
         .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
-      if doc.has_pending_updates() {
-        return Err(Error::IncompleteDoc);
-      }
 
       let mut tx = self.pool.begin().await?;
       let installed = if let Some(previous) = &snapshot {
@@ -404,7 +420,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn get_doc_compacts_updates_and_preserves_recovery() {
+  async fn get_doc_compacts_updates_losslessly_and_preserves_partial_data() {
     let storage = get_storage().await;
     assert!(storage.get_doc("doc".to_string()).await.unwrap().is_none());
     let (first, second) = text_updates();
@@ -420,6 +436,58 @@ mod tests {
     doc.apply_update_from_binary_v1(&record.bin).unwrap();
     assert_eq!(doc.get_or_create_text("content").unwrap().to_string(), "hello world");
     assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+
+    for with_snapshot in [false, true] {
+      let storage = get_storage().await;
+      let source = DocOptions::new().with_client_id(542).build();
+      let mut text = source.get_or_create_text("content").unwrap();
+      text.insert(0, "hello").unwrap();
+      let prefix = source.encode_update_v1().unwrap();
+      let state = source.get_state_vector();
+      text.insert(5, " world").unwrap();
+      text.remove(0, 1).unwrap();
+      let partial = source.encode_state_as_update_v1(&state).unwrap();
+      if with_snapshot {
+        storage
+          .set_doc_snapshot(DocRecord {
+            doc_id: "partial".into(),
+            bin: partial.clone().into(),
+            timestamp: Utc::now().naive_utc(),
+          })
+          .await
+          .unwrap();
+      } else {
+        storage.push_update("partial".into(), &partial).await.unwrap();
+      }
+      storage.push_update("partial".into(), [0, 0]).await.unwrap();
+      let record = storage.get_doc("partial".into()).await.unwrap().unwrap();
+      let expected = merge_updates_v1([partial.clone(), vec![0, 0]])
+        .unwrap()
+        .encode_v1()
+        .unwrap();
+      assert_eq!(record.bin.deref(), expected);
+      let mut pending = DocOptions::new().build();
+      pending.apply_update_from_binary_v1(&record.bin).unwrap();
+      assert!(pending.has_pending_updates());
+      assert!(storage.get_doc_updates("partial".into()).await.unwrap().is_empty());
+      assert_eq!(
+        storage.get_doc("partial".into()).await.unwrap().unwrap().bin.deref(),
+        expected
+      );
+      storage.push_update("partial".into(), &prefix).await.unwrap();
+      let record = storage.get_doc("partial".into()).await.unwrap().unwrap();
+      assert_eq!(
+        record.bin.deref(),
+        merge_updates_v1([partial, prefix]).unwrap().encode_v1().unwrap()
+      );
+      let mut completed = DocOptions::new().build();
+      completed.apply_update_from_binary_v1(&record.bin).unwrap();
+      assert!(!completed.has_pending_updates());
+      assert_eq!(
+        completed.get_or_create_text("content").unwrap().to_string(),
+        "ello world"
+      );
+    }
   }
 
   #[tokio::test]

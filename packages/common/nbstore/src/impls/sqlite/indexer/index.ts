@@ -23,7 +23,7 @@ import {
 } from '../db';
 import { createNode } from './node-builder';
 
-const SQLITE_INDEXER_VERSION_OFFSET = 1;
+const SQLITE_INDEXER_VERSION_OFFSET = 2;
 const NATIVE_INDEXER_MAX_LIMIT = 0xffffffff;
 
 export class SqliteIndexerStorage extends IndexerStorageBase {

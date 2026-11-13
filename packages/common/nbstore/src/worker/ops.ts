@@ -23,6 +23,7 @@ import type {
   DocRecord,
   DocUpdate,
   ListedBlobRecord,
+  PeerWorkspaceState,
   Query,
   SearchResult,
   StorageType,
@@ -93,6 +94,9 @@ interface GroupedWorkerOps {
   };
 
   docSync: {
+    workspaceState: [void, PeerWorkspaceState | null];
+    createDoc: [string, DocClock];
+    refreshWorkspaceState: [void, void];
     state: [void, DocSyncState];
     docState: [string, DocSyncDocState];
     waitForSynced: [string | null, void];
@@ -127,6 +131,7 @@ interface GroupedWorkerOps {
   };
 
   indexerSync: {
+    docTitles: [void, Record<string, string>];
     state: [void, IndexerSyncState];
     docState: [string, IndexerDocSyncState];
     addPriority: [{ docId: string; priority: number }, boolean];

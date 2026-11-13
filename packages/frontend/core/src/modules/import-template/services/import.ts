@@ -61,6 +61,7 @@ export class ImportTemplateService extends Service {
         await docStorage.pushDocUpdate({
           docId: doc.spaceDoc.guid,
           bin: docBinary,
+          intent: 'create',
         });
       }
     );

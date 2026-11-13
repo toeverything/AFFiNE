@@ -9,6 +9,10 @@ import type { IndexerPreferOptions, IndexerSync } from '../sync/indexer';
 export class IndexerFrontend {
   constructor(public readonly sync: IndexerSync) {}
 
+  get docTitles$() {
+    return this.sync.docTitles$;
+  }
+
   get state$() {
     return this.sync.state$;
   }

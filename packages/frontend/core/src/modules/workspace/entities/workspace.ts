@@ -1,7 +1,6 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
-import type { Workspace as WorkspaceInterface } from '@blocksuite/affine/store';
 import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
 import type { Observable } from 'rxjs';
 import { Doc as YDoc, transact } from 'yjs';
@@ -32,7 +31,7 @@ export class Workspace extends Entity {
 
   readonly rootYDoc = new YDoc({ guid: this.openOptions.metadata.id });
 
-  _docCollection: WorkspaceInterface | null = null;
+  _docCollection: WorkspaceImpl | null = null;
 
   private readonly blobSourceUpdateCleanups = new WeakMap<YDoc, () => void>();
 
@@ -80,6 +79,12 @@ export class Workspace extends Entity {
       this._docCollection = new WorkspaceImpl({
         id: this.openOptions.metadata.id,
         rootDoc: this.rootYDoc,
+        inventory$:
+          this.flavour === 'local'
+            ? undefined
+            : this.engine.doc.workspaceState$,
+        projectedTitles$:
+          this.flavour === 'local' ? undefined : this.engine.indexer.docTitles$,
         featureFlagService: this.featureFlagService,
         blobSource: {
           get: async key => {

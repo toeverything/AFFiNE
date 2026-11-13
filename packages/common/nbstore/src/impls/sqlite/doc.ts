@@ -21,7 +21,14 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
   }
 
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
-    const timestamp = await this.db.pushUpdate(update.docId, update.bin);
+    const createForPeer =
+      update.createForPeer ??
+      (update.intent === 'create' ? this.options.creationPeer : undefined);
+    const timestamp = await this.db.pushUpdate(
+      update.docId,
+      update.bin,
+      createForPeer
+    );
 
     this.emit(
       'update',
@@ -30,6 +37,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
         bin: update.bin,
         timestamp,
         editor: update.editor,
+        createForPeer: createForPeer,
       },
       origin
     );

@@ -80,7 +80,8 @@ export class Sync {
           ])
         ),
       },
-      indexerSync
+      indexerSync,
+      this.doc.workspaceState$
     );
 
     this.state$ = this.doc.state$.pipe(map(doc => ({ doc })));

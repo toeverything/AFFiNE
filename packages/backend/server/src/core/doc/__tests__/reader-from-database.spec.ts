@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
 import test from 'ava';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
@@ -52,11 +52,13 @@ test('should return doc when found', async t => {
 
   const docId = randomUUID();
   const timestamp = Date.now();
+  const source = new YDoc();
+  source.getText('content').insert(0, 'blob1 data');
   await models.doc.createUpdates([
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob1 data'),
+      blob: Buffer.from(encodeStateAsUpdate(source)),
       timestamp,
       editorId: user.id,
     },
@@ -64,7 +66,9 @@ test('should return doc when found', async t => {
 
   const doc = await docReader.getDoc(workspace.id, docId);
   t.truthy(doc);
-  t.is(Buffer.from(doc!.bin).toString('utf8'), 'blob1 data');
+  const loaded = new YDoc();
+  applyUpdate(loaded, doc!.bin);
+  t.is(loaded.getText('content').toString(), 'blob1 data');
   t.is(doc!.timestamp, timestamp);
   t.is(doc!.editor, user.id);
 });

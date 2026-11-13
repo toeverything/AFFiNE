@@ -117,6 +117,12 @@ export interface DocStorageSchema extends DBSchema {
       clock: Date;
       pulledClock: Date;
       pushedClock: Date;
+      inventoryKind?: 'doc' | 'reserved';
+      lifecycle?: 'trashed' | null;
+      lifecycleChangedAt?: number | null;
+      pendingCreate?: boolean;
+      inventoryReady?: boolean;
+      cacheToken?: number;
     };
     indexes: {
       peer: string;
@@ -277,3 +283,16 @@ export const migrator = {
   version: migrations.length,
   migrate,
 };
+
+export function createPeerClock(
+  peer: string,
+  docId: string
+): DocStorageSchema['peerClocks']['value'] {
+  return {
+    peer,
+    docId,
+    clock: new Date(0),
+    pulledClock: new Date(0),
+    pushedClock: new Date(0),
+  };
+}

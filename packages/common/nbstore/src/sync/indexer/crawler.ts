@@ -17,6 +17,7 @@ export async function crawlingDocData({
   | {
       blocks: IndexerDocument<'block'>[];
       preview?: string;
+      title?: string;
     }
   | undefined
 > {
@@ -49,5 +50,6 @@ export async function crawlingDocData({
       })
     ),
     preview: result.summary,
+    title: result.title,
   };
 }

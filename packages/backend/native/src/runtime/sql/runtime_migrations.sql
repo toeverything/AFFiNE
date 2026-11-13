@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS doc_blob_ref_projections (
   workspace_id TEXT NOT NULL,
   doc_id TEXT NOT NULL,
   source_revision TIMESTAMPTZ(3),
+  source_fingerprint TEXT,
   parser_version INTEGER NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'fresh', 'failed', 'missing')),
   indexed_at TIMESTAMPTZ(3),
@@ -128,6 +129,8 @@ CREATE TABLE IF NOT EXISTS doc_blob_ref_projections (
   CHECK (status <> 'fresh' OR (source_revision IS NOT NULL AND indexed_at IS NOT NULL)),
   CHECK (error_summary IS NULL OR octet_length(error_summary) <= 512)
 );
+
+ALTER TABLE doc_blob_ref_projections ADD COLUMN IF NOT EXISTS source_fingerprint TEXT;
 
 CREATE INDEX IF NOT EXISTS doc_blob_ref_projections_workspace_status_idx
   ON doc_blob_ref_projections (workspace_id, status, updated_at DESC);

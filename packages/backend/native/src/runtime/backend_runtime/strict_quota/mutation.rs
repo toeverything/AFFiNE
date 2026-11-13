@@ -25,6 +25,7 @@ pub(in crate::runtime::backend_runtime) async fn load_command_quota_in(
   tx: &mut Transaction<'_, Postgres>,
   deployment: Deployment,
   workspace_id: &str,
+  exclusive: bool,
 ) -> RuntimeResult<Option<CommandQuotaSnapshot>> {
   let Some(owner_id) = sqlx::query_scalar::<_, String>(
     "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
@@ -36,17 +37,25 @@ pub(in crate::runtime::backend_runtime) async fn load_command_quota_in(
   else {
     return Ok(None);
   };
-  sqlx::query("SELECT id FROM users WHERE id=$1 FOR UPDATE")
-    .bind(&owner_id)
-    .fetch_one(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("lock command quota owner", error))?;
-  let workspace_exists = sqlx::query("SELECT id FROM workspaces WHERE id=$1 FOR UPDATE")
-    .bind(workspace_id)
-    .fetch_optional(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("lock command quota workspace", error))?
-    .is_some();
+  sqlx::query(if exclusive {
+    "SELECT id FROM users WHERE id=$1 FOR UPDATE"
+  } else {
+    "SELECT id FROM users WHERE id=$1 FOR SHARE"
+  })
+  .bind(&owner_id)
+  .fetch_one(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("lock command quota owner", error))?;
+  let workspace_exists = sqlx::query(if exclusive {
+    "SELECT id FROM workspaces WHERE id=$1 FOR UPDATE"
+  } else {
+    "SELECT id FROM workspaces WHERE id=$1 FOR SHARE"
+  })
+  .bind(workspace_id)
+  .fetch_optional(&mut **tx)
+  .await
+  .map_err(|error| RuntimeError::database("lock command quota workspace", error))?
+  .is_some();
   if !workspace_exists {
     return Ok(None);
   }

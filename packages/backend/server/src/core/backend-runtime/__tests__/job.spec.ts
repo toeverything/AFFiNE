@@ -144,12 +144,11 @@ test.after.always(async t => {
 
 test('backend-runtime jobs ingest documents and clean runtime state', async t => {
   await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
-  t.is(t.context.getSnapshot.callCount, 2);
+  t.is(t.context.getSnapshot.callCount, 1);
   t.is(t.context.runtime.syncEmbeddingState.callCount, 1);
   t.like(t.context.runtime.syncEmbeddingState.firstCall.args[0], {
     workspaceId: 'workspace-1',
     enabled: true,
-    reconcileDocuments: false,
   });
   t.is(
     t.context.runtime.syncEmbeddingState.firstCall.args[0].documents[0].docId,
@@ -160,26 +159,18 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
       .length > 0
   );
 
-  await t.context.embeddingService.reconcileDocuments('workspace-1');
-  t.like(t.context.runtime.syncEmbeddingState.secondCall.args[0], {
-    workspaceId: 'workspace-1',
-    enabled: true,
-    reconcileDocuments: true,
-  });
-
   await t.context.embeddingService.prepareSelectedDocuments('workspace-1', [
     'doc-1',
     'doc-1',
   ]);
-  t.like(t.context.runtime.syncEmbeddingState.thirdCall.args[0], {
+  t.like(t.context.runtime.syncEmbeddingState.secondCall.args[0], {
     workspaceId: 'workspace-1',
     enabled: true,
-    reconcileDocuments: false,
     priority: 1000,
     waitForReadyMs: 90_000,
   });
   t.is(
-    t.context.runtime.syncEmbeddingState.thirdCall.args[0].documents.length,
+    t.context.runtime.syncEmbeddingState.secondCall.args[0].documents.length,
     1
   );
 
@@ -225,18 +216,11 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
     ...healthyRoot,
     blob: Buffer.from(encodeStateAsUpdate(partialRoot, priorState)),
   });
-  t.false(
-    (await t.context.embeddingService.inspectWorkspaceRoot('workspace-1'))
-      .complete
+  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
+  t.true(
+    t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0].units
+      .length > 0
   );
-  t.context.getSnapshot.withArgs('workspace-1', 'workspace-1').resolves({
-    ...healthyRoot,
-    blob: Buffer.from(encodeStateAsUpdate(partialRoot)),
-  });
-  const repairedRoot =
-    await t.context.embeddingService.inspectWorkspaceRoot('workspace-1');
-  t.true(repairedRoot.complete);
-  t.true(repairedRoot.docIds.has('doc-1'));
   partialRoot.destroy();
   t.context.getSnapshot
     .withArgs('workspace-1', 'workspace-1')
@@ -272,21 +256,7 @@ test('backend-runtime jobs ingest documents and clean runtime state', async t =>
   t.context.getSnapshot
     .withArgs('workspace-1', 'doc-1')
     .resolves(healthySnapshot);
-  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1', {
-    complete: false,
-    revision: 'root-1',
-    docIds: new Set(),
-  });
-  t.like(t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0], {
-    skipReason: 'workspace_root_incomplete',
-    rootRevision: 'root-1',
-    units: [],
-  });
-  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1', {
-    complete: true,
-    revision: 'root-2',
-    docIds: new Set(['doc-1']),
-  });
+  await t.context.embeddingService.syncDocument('workspace-1', 'doc-1');
   t.true(
     t.context.runtime.syncEmbeddingState.lastCall.args[0].documents[0].units
       .length > 0

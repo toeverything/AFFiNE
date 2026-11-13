@@ -1,11 +1,11 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult, extraction_file_name};
-use crate::runtime::{
-  storage_runtime::load_current_doc,
-  types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact},
+use super::{
+  RuntimeError, RuntimeResult, extraction_file_name, is_ordinary_workspace_doc, load_doc_states_in,
+  lock_workspace_doc_update, lock_workspace_storage_shared,
 };
+use crate::runtime::types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact};
 
 const DOCUMENT_RECIPE: &str = "document-projection-v1";
 const ARTIFACT_RECIPE: &str = "artifact-extraction-v1";
@@ -14,29 +14,30 @@ pub(super) async fn sync_documents(
   pool: &PgPool,
   workspace_id: &str,
   documents: &[DocumentEmbeddingProjectionInput],
-  reconcile: bool,
   priority: i32,
 ) -> RuntimeResult<()> {
-  let live_doc_ids = if reconcile {
-    Some(load_live_doc_ids(pool, workspace_id).await?)
-  } else {
-    None
-  };
   let mut transaction = pool
     .begin()
     .await
     .map_err(|error| RuntimeError::database("sync document sources transaction failed", error))?;
+  lock_workspace_storage_shared(&mut transaction, workspace_id).await?;
+  let mut doc_ids = documents.iter().map(|doc| doc.doc_id.clone()).collect::<Vec<_>>();
+  doc_ids.sort_unstable();
+  doc_ids.dedup();
+  for doc_id in &doc_ids {
+    lock_workspace_doc_update(&mut transaction, workspace_id, doc_id).await?;
+  }
+  let states = load_doc_states_in(&mut transaction, workspace_id, &doc_ids)
+    .await?
+    .into_iter()
+    .filter(|doc| doc.lifecycle.is_none() && is_ordinary_workspace_doc(workspace_id, &doc.doc_id))
+    .map(|doc| (doc.doc_id.clone(), doc))
+    .collect::<std::collections::BTreeMap<_, _>>();
   for document in documents {
-    if document.deleted.unwrap_or(false) {
-      sqlx::query(
-        "UPDATE embedding_sources SET deleted_at=now(),updated_at=now() WHERE workspace_id=$1 AND \
-         source_kind='document' AND source_key=$2",
-      )
-      .bind(workspace_id)
-      .bind(&document.doc_id)
-      .execute(&mut *transaction)
-      .await
-      .map_err(|error| RuntimeError::database("delete document embedding source failed", error))?;
+    if !states
+      .get(&document.doc_id)
+      .is_some_and(|state| state.timestamp.timestamp_millis().to_string() == document.revision)
+    {
       continue;
     }
     let projection =
@@ -78,9 +79,6 @@ pub(super) async fn sync_documents(
       .await
       .map_err(|error| RuntimeError::database("record skipped document projection failed", error))?;
     }
-  }
-  if let Some(live_doc_ids) = live_doc_ids {
-    reconcile_document_sources(&mut transaction, workspace_id, &live_doc_ids).await?;
   }
   transaction
     .commit()
@@ -124,72 +122,6 @@ pub(super) async fn document_readiness(
   .fetch_one(pool)
   .await
   .map_err(|error| RuntimeError::database("load document embedding readiness failed", error))
-}
-
-pub(super) async fn reconcile_documents(pool: &PgPool, workspace_id: &str) -> RuntimeResult<()> {
-  let live_doc_ids = load_live_doc_ids(pool, workspace_id).await?;
-  let mut transaction = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("reconcile document sources transaction failed", error))?;
-  reconcile_document_sources(&mut transaction, workspace_id, &live_doc_ids).await?;
-  transaction
-    .commit()
-    .await
-    .map_err(|error| RuntimeError::database("reconcile document sources commit failed", error))?;
-  Ok(())
-}
-
-async fn load_live_doc_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Vec<String>> {
-  let root = load_current_doc(pool, workspace_id, workspace_id)
-    .await?
-    .ok_or_else(|| RuntimeError::invalid_state("workspace root doc is missing"))?;
-  let projection = affine_doc_loader::project_workspace_root(root.blob, true)
-    .map_err(|error| RuntimeError::invalid_state(format!("workspace root projection failed: {error}")))?;
-  if !projection.complete {
-    return Err(RuntimeError::invalid_state("workspace root projection is incomplete"));
-  }
-  Ok(projection.doc_ids)
-}
-
-async fn reconcile_document_sources(
-  transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-  workspace_id: &str,
-  live_doc_ids: &[String],
-) -> RuntimeResult<()> {
-  let deleted = sqlx::query_scalar::<_, Uuid>(
-    r#"UPDATE embedding_sources SET deleted_at=now(),updated_at=now()
-    WHERE workspace_id=$1 AND source_kind='document' AND deleted_at IS NULL
-      AND NOT(source_key=ANY($2::text[]))
-    RETURNING id"#,
-  )
-  .bind(workspace_id)
-  .bind(live_doc_ids)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("reconcile deleted document sources failed", error))?;
-  if !deleted.is_empty() {
-    sqlx::query("DELETE FROM embedding_projections WHERE source_id=ANY($1::uuid[])")
-      .bind(&deleted)
-      .execute(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("remove deleted document projections failed", error))?;
-  }
-  let restored = sqlx::query_scalar::<_, Uuid>(
-    r#"UPDATE embedding_sources SET deleted_at=NULL,updated_at=now()
-    WHERE workspace_id=$1 AND source_kind='document' AND deleted_at IS NOT NULL
-      AND source_key=ANY($2::text[])
-    RETURNING id"#,
-  )
-  .bind(workspace_id)
-  .bind(live_doc_ids)
-  .fetch_all(&mut **transaction)
-  .await
-  .map_err(|error| RuntimeError::database("reconcile restored document sources failed", error))?;
-  for source_id in restored {
-    queue_active_projection(transaction, workspace_id, source_id, 100).await?;
-  }
-  Ok(())
 }
 
 pub(super) async fn register_artifact(pool: &PgPool, artifact: &RuntimeWorkspaceArtifact) -> RuntimeResult<()> {

@@ -1,5 +1,10 @@
 import type { Connection } from '../connection';
-import type { DocClock, DocClocks } from './doc';
+import type {
+  DocClock,
+  DocClocks,
+  PeerWorkspaceState,
+  WorkspaceState,
+} from './doc';
 import { type Storage } from './storage';
 
 export interface DocSyncStorage extends Storage {
@@ -18,6 +23,19 @@ export interface DocSyncStorage extends Storage {
   getPeerPushedClocks(peer: string): Promise<DocClocks>;
   setPeerPushedClock(peer: string, clock: DocClock): Promise<void>;
   clearClocks(): Promise<void>;
+
+  getPeerWorkspaceState(
+    peer: string,
+    rootDocId: string
+  ): Promise<PeerWorkspaceState>;
+  invalidatePeerWorkspaceState(peer: string, rootDocId: string): Promise<void>;
+  installPeerWorkspaceState(
+    peer: string,
+    rootDocId: string,
+    cacheToken: number,
+    state: WorkspaceState
+  ): Promise<boolean>;
+  confirmPeerDocCreate(peer: string, docId: string): Promise<void>;
 }
 
 export abstract class DocSyncStorageBase implements DocSyncStorage {
@@ -46,4 +64,20 @@ export abstract class DocSyncStorageBase implements DocSyncStorage {
   abstract getPeerPushedClocks(peer: string): Promise<DocClocks>;
   abstract setPeerPushedClock(peer: string, clock: DocClock): Promise<void>;
   abstract clearClocks(): Promise<void>;
+
+  abstract getPeerWorkspaceState(
+    peer: string,
+    rootDocId: string
+  ): Promise<PeerWorkspaceState>;
+  abstract invalidatePeerWorkspaceState(
+    peer: string,
+    rootDocId: string
+  ): Promise<void>;
+  abstract installPeerWorkspaceState(
+    peer: string,
+    rootDocId: string,
+    cacheToken: number,
+    state: WorkspaceState
+  ): Promise<boolean>;
+  abstract confirmPeerDocCreate(peer: string, docId: string): Promise<void>;
 }
