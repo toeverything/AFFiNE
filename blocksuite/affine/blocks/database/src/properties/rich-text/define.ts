@@ -6,7 +6,7 @@ import * as Y from 'yjs';
 import zod from 'zod';
 
 import { EditorHostKey } from '../../context/host-context.js';
-import { isLinkedDoc } from '../../utils/title-doc.js';
+import { getDisplayText, isLinkedDoc } from '../../utils/title-doc.js';
 
 export const richTextColumnType = propertyType('rich-text');
 export type RichTextCellType = Text | Text['yText'];
@@ -35,7 +35,15 @@ export const richTextPropertyModelConfig = richTextColumnType.modelConfig({
       )
       .optional(),
     default: () => undefined,
-    toString: ({ value }) => value?.toString() ?? '',
+    toString: ({ value, dataSource }) => {
+      if (!value) return '';
+      return (
+        getDisplayText(
+          toYText(value)?.toDelta() ?? [],
+          dataSource?.serviceGet(EditorHostKey)
+        ) ?? value.toString()
+      );
+    },
     fromString: ({ value }) => {
       return {
         value: new Text(value),
