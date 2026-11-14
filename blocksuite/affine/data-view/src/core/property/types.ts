@@ -27,7 +27,12 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   rawValue: {
     schema: ZodType<RawValue>;
     default: () => RawValue;
-    toString: (config: { value: RawValue; data: Data }) => string;
+    toString: (config: {
+      value: RawValue;
+      data: Data;
+      // Missing when the value is read without a view, as the adapters do.
+      dataSource?: DataSource;
+    }) => string;
     fromString: (
       config: WithCommonPropertyConfig<{
         value: string;
