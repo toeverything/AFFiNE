@@ -1,4 +1,4 @@
-import { Button, notify, Skeleton, Tooltip } from '@affine/component';
+import { Button, notify, Popover, Skeleton, Tooltip } from '@affine/component';
 import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
@@ -315,7 +315,7 @@ const WorkspaceSyncInfo = ({
         {/* when syncing/offline/... */}
         {syncStatus && (
           <div className={styles.workspaceInfo} data-type="events">
-            <Tooltip
+            <Popover
               content={
                 <>
                   <div>{syncStatus.message}</div>
@@ -333,12 +333,17 @@ const WorkspaceSyncInfo = ({
                   )}
                 </>
               }
-              options={{ className: styles.workspaceInfoTooltip }}
+              contentOptions={{ className: styles.workspaceInfoTooltip }}
             >
-              <div className={styles.workspaceActiveStatus}>
+              <Button
+                variant="plain"
+                aria-label="Sync status"
+                className={styles.workspaceActiveStatus}
+                onClick={event => event.stopPropagation()}
+              >
                 {syncStatus.icon}
-              </div>
-            </Tooltip>
+              </Button>
+            </Popover>
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ use super::{
   WorkspacePhase, WorkspaceReconcileContext, WorkspaceStep, checkpoint_workspace, checkpoint_workspace_after,
   claim_workspace, complete_workspace, delete_workspace_state, mark_workspace_failed, reconcile_documents,
   reconcile_stale_provider_rows, renew_workspace_lease, sweep_deleted_workspace, upsert_document,
+  workspace_lifecycle_completed,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult},
@@ -28,6 +29,19 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
   generation: &ActiveGeneration,
   workspace_id: &str,
 ) -> RuntimeResult<bool> {
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
+  let workspace_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id=$1)")
+    .bind(workspace_id)
+    .fetch_one(&mut *connection)
+    .await
+    .map_err(|error| RuntimeError::database("load search workspace existence", error))?;
+  if workspace_exists && !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
+    return Ok(false);
+  }
+  drop(connection);
   sqlx::query(
     r#"INSERT INTO search_projection.workspace_states(generation_id,workspace_id)
        VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
@@ -713,6 +727,14 @@ mod tests {
         .execute(&pool)
         .await
         .unwrap();
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+         VALUES('workspace_doc_lifecycle',$1,'completed')",
+      )
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
       let doc_blob = if corrupt_update {
         affine_doc_loader::build_full_doc("title", "body", &doc_id).unwrap()
       } else if phase_name == "source" {
@@ -801,6 +823,78 @@ mod tests {
         id: generation_id,
         manifest: json!({}),
       };
+
+      sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=$1")
+        .bind(&workspace_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      assert!(
+        !reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
+          .await
+          .unwrap()
+      );
+      sqlx::query(
+        "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+         VALUES('workspace_doc_lifecycle',$1,'completed')",
+      )
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      let old_claim = claim_workspace(&pool, generation_id, &workspace_id)
+        .await
+        .unwrap()
+        .unwrap();
+      sqlx::query(
+        "UPDATE search_projection.workspace_states SET claim_fence=nextval('search_projection.claim_fence') WHERE \
+         generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+      let count_before: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+      let stale_context = WorkspaceReconcileContext {
+        pool: &pool,
+        embedded: &embedded,
+        remote: None,
+        generation: &generation,
+        workspace_id: &workspace_id,
+        fence: old_claim.fence,
+      };
+      reconcile_documents(&stale_context, 0, None, DocumentReconcilePhase::Documents)
+        .await
+        .unwrap();
+      let count_after: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM search_projection.document_states WHERE generation_id=$1 AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+      assert_eq!(
+        count_before, count_after,
+        "stale membership worker must not create targets"
+      );
+      sqlx::query(
+        "UPDATE search_projection.workspace_states SET lease_expires_at=NULL,lease_owner=NULL WHERE generation_id=$1 \
+         AND workspace_id=$2",
+      )
+      .bind(generation_id)
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
       assert!(
         reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
@@ -990,6 +1084,14 @@ mod tests {
           .execute(&pool)
           .await
           .unwrap();
+        sqlx::query(
+          "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+           VALUES('workspace_doc_lifecycle',$1,'completed')",
+        )
+        .bind(&workspace_id)
+        .execute(&pool)
+        .await
+        .unwrap();
         if let Some(blob) = root_blob {
           sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
             .bind(&workspace_id)

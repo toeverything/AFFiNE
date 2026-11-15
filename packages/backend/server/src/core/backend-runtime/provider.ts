@@ -104,7 +104,7 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
-    this.startWorkspaceLifecycleMigrations();
+    if (!env.flavors.script) this.startWorkspaceLifecycleMigrations();
     await this.event?.emitAsync('backendRuntime.configApplied', {
       updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
     });

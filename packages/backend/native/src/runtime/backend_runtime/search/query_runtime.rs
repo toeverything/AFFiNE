@@ -9,6 +9,7 @@ use tokio::time::Instant;
 use super::{
   ActiveGeneration, DocReadScope, RuntimeAggregateRequest, RuntimeSearchRequest, SearchActor, SearchRuntime,
   SearchTable, candidates, compile, compile_aggregate, is_ordinary_workspace_doc, retain_visible_nodes,
+  workspace_lifecycle_completed,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -320,6 +321,15 @@ impl SearchRuntime {
   }
 
   async fn query_gate(&self, workspace_id: &str) -> RuntimeResult<(ActiveGeneration, i64)> {
+    let mut connection = self
+      .pool
+      .acquire()
+      .await
+      .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
+    if !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
+      return Err(RuntimeError::SearchIndexNotReady);
+    }
+    drop(connection);
     let generation = self.active_generation().await?;
     let row = sqlx::query(
       r#"SELECT covered,required_permission_version,applied_permission_version,last_error

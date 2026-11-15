@@ -987,6 +987,10 @@ export class DocSyncPeer {
           } else changed();
         })
       );
+      const unsubscribeDelete = this.local.subscribeDocDelete?.(() => {
+        this.readWorkspaceState().catch(error => abort.abort(error));
+      });
+      if (unsubscribeDelete) disposes.push(unsubscribeDelete);
       // subscribe remote doc updates
       disposes.push(
         this.remote.subscribeDocUpdate(({ bin, docId, timestamp }, origin) => {

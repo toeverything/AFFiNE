@@ -355,6 +355,19 @@ impl SqliteDocStorage {
       .execute(&mut *tx)
       .await?;
 
+    sqlx::query(
+      "INSERT INTO peer_clocks (peer, doc_id, cache_token) SELECT peer, meta.space_id, 1 FROM peer_clocks CROSS JOIN \
+       meta WHERE doc_id = $1 AND pending_create = TRUE ON CONFLICT(peer,doc_id) DO UPDATE SET cache_token = \
+       cache_token + 1",
+    )
+    .bind(&doc_id)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("UPDATE peer_clocks SET pending_create = FALSE WHERE doc_id = $1 AND pending_create = TRUE")
+      .bind(&doc_id)
+      .execute(&mut *tx)
+      .await?;
+
     tx.commit().await?;
 
     Ok(())

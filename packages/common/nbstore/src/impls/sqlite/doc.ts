@@ -47,6 +47,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   override async deleteDoc(docId: string) {
     await this.db.deleteDoc(docId);
+    this.emit('delete');
   }
 
   override async getDocTimestamps(after?: Date) {

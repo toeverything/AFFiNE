@@ -1235,6 +1235,7 @@ test.each([
   'partial',
   'malformed',
   'reader-error',
+  'empty',
   'storage-error',
   'root-read-error',
 ] as const)(
@@ -1318,6 +1319,7 @@ test.each([
           await releaseFailedParse.promise;
           throw new Error('Unreadable blocks');
         }
+        if (mode === 'empty') return undefined;
         return { blocks: [], title: 'Doc 1', summary: 'Fallback summary' };
       });
     const indexer = new TrackingIndexerStorage(calls, 0);
@@ -2407,6 +2409,22 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
       )
     ).toBe(true);
     expect(await local.getDoc('offline-created')).not.toBeNull();
+    const beforeDelete = await metadata.getPeerWorkspaceState(
+      'account-a',
+      options.id
+    );
+    await local.deleteDoc('offline-created');
+    await vi.waitFor(() =>
+      expect(
+        view.value?.docs.some(doc => doc.docId === 'offline-created')
+      ).toBe(false)
+    );
+    const afterDelete = await metadata.getPeerWorkspaceState(
+      'account-a',
+      options.id
+    );
+    expect(afterDelete.cacheToken).toBeGreaterThan(beforeDelete.cacheToken);
+    expect(await local.getDoc('offline-created')).toBeNull();
   } finally {
     frontend.stop();
     expect(view.value?.docs).toEqual([]);

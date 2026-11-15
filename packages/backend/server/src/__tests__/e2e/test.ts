@@ -35,6 +35,7 @@ export async function addDocumentToRoot(workspaceId: string, docId: string) {
 
 export async function reconcileSearchProjection() {
   const runtime = app.get(BackendRuntimeProvider);
+  await runtime.runWorkspaceLifecycleMigrationsV1();
   for (let attempt = 0; attempt < 50; attempt++) {
     const reconciled = await runtime.reconcileSearchProjection(1000);
     const status = (await runtime.searchStatus()) as {

@@ -48,7 +48,7 @@ fn source_revision(snapshot: &Option<CurrentDoc>, updates: &[CurrentDocUpdate]) 
   hex::encode(hash.finalize())
 }
 
-async fn completed(connection: &mut PgConnection, workspace_id: &str) -> RuntimeResult<bool> {
+pub(in crate::runtime) async fn completed(connection: &mut PgConnection, workspace_id: &str) -> RuntimeResult<bool> {
   sqlx::query_scalar(
     "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=$1 \
      AND status='completed')",
@@ -89,13 +89,18 @@ impl BackendRuntime {
   }
 
   #[napi]
-  pub async fn list_workspace_lifecycle_migration_candidates_v1(&self) -> Result<Vec<String>> {
+  pub async fn list_workspace_lifecycle_migration_candidates_v1(
+    &self,
+    after_workspace_id: Option<String>,
+  ) -> Result<Vec<String>> {
     sqlx::query_scalar(
       "SELECT id FROM workspaces workspace WHERE EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE \
        kind='workspace_doc_lifecycle_activation' AND scope='global' AND status='active') AND NOT EXISTS(SELECT 1 FROM \
        storage_reconciliation_checkpoints checkpoint WHERE checkpoint.kind='workspace_doc_lifecycle' AND \
-       checkpoint.scope=workspace.id AND checkpoint.status='completed') ORDER BY workspace.sid LIMIT 100",
+       checkpoint.scope=workspace.id AND checkpoint.status='completed') AND ($1::text IS NULL OR workspace.id > $1) \
+       ORDER BY workspace.id LIMIT 100",
     )
+    .bind(after_workspace_id)
     .fetch_all(&self.pool().await?)
     .await
     .map_err(|error| RuntimeError::database("list workspace lifecycle migrations", error).into())

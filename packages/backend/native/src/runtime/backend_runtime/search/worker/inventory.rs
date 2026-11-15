@@ -1,9 +1,9 @@
 use sqlx::Row;
 
 use super::{
-  DOCUMENT_PROJECTION_FAILED, ProjectionExpectation, RECONCILE_BATCH, WorkspacePhase, WorkspaceReconcileContext,
-  WorkspaceStep, is_ordinary_workspace_doc, load_workspace_doc_states_in, provider_projection_matches,
-  renew_workspace_lease, upsert_document,
+  DOCUMENT_PROJECTION_FAILED, LEASE_SECONDS, ProjectionExpectation, RECONCILE_BATCH, WorkspacePhase,
+  WorkspaceReconcileContext, WorkspaceStep, is_ordinary_workspace_doc, load_workspace_doc_states_in,
+  provider_projection_matches, renew_workspace_lease, upsert_document,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -164,6 +164,20 @@ pub(super) async fn reconcile_documents(
     .begin()
     .await
     .map_err(|error| RuntimeError::database("begin document membership reconciliation", error))?;
+  let claimed = sqlx::query(
+    "UPDATE search_projection.workspace_states SET lease_expires_at=clock_timestamp()+make_interval(secs=>$4) WHERE \
+     generation_id=$1 AND workspace_id=$2 AND claim_fence=$3 AND lease_expires_at > clock_timestamp()",
+  )
+  .bind(context.generation.id)
+  .bind(context.workspace_id)
+  .bind(context.fence)
+  .bind(LEASE_SECONDS)
+  .execute(&mut *transaction)
+  .await
+  .map_err(|error| RuntimeError::database("fence document membership reconciliation", error))?;
+  if claimed.rows_affected() == 0 {
+    return Ok(WorkspaceStep::Continue(phase.progress(after_doc_id)));
+  }
   let active_doc_ids = active_document_ids(&mut transaction, context.workspace_id).await?;
   let rows = sqlx::query(DOCUMENT_BATCH_SQL)
     .bind(context.workspace_id)

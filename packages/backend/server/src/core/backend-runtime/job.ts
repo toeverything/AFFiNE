@@ -76,16 +76,20 @@ export class BackendRuntimeEmbeddingService {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
       return;
     }
+    if (scheduling) await this.rt.ensureWorkspaceLifecycleV1(workspaceId);
     const documents: DocumentEmbeddingProjectionInput[] = [];
     let unitCount = 0;
     let textBytes = 0;
     for (const docId of docIds) {
-      const snapshot = await this.models.doc.getSnapshot(workspaceId, docId);
+      const snapshot = await this.rt.getCurrentWorkspaceDocV1(
+        workspaceId,
+        docId
+      );
       if (!snapshot) {
         if (scheduling) throw new CopilotSelectedSourcesUnavailable();
         continue;
       }
-      const revision = snapshot.updatedAt.getTime().toString();
+      const revision = snapshot.timestamp.toString();
       const skipped: DocumentEmbeddingProjectionInput = {
         docId,
         revision,
@@ -93,10 +97,10 @@ export class BackendRuntimeEmbeddingService {
         units: [],
       };
       if (
-        !snapshot.blob.length ||
-        (snapshot.blob.length === 2 &&
-          snapshot.blob[0] === 0 &&
-          snapshot.blob[1] === 0)
+        !snapshot.bin.length ||
+        (snapshot.bin.length === 2 &&
+          snapshot.bin[0] === 0 &&
+          snapshot.bin[1] === 0)
       ) {
         if (scheduling) throw new CopilotSelectedSourcesUnavailable();
         documents.push({ ...skipped, skipReason: 'empty_document' });
@@ -104,7 +108,7 @@ export class BackendRuntimeEmbeddingService {
       }
       let projection;
       try {
-        projection = projectDocSearch(snapshot.blob, docId, revision);
+        projection = projectDocSearch(snapshot.bin, docId, revision);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (

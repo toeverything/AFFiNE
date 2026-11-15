@@ -100,13 +100,14 @@ pub(super) async fn document_readiness(
     .iter()
     .map(|document| document.revision.as_str())
     .collect::<Vec<_>>();
-  sqlx::query_as(
+  let (ready, failed, missing): (i64, i64, i64) = sqlx::query_as(
     r#"WITH requested AS(
       SELECT * FROM unnest($2::text[],$3::text[]) AS item(doc_id,revision)
     ) SELECT
       count(*) FILTER(WHERE projection.status='ready'
         AND projection.applied_content_revision=requested.revision)::bigint AS ready,
-      count(*) FILTER(WHERE projection.status='failed')::bigint AS failed
+      count(*) FILTER(WHERE projection.status='failed')::bigint AS failed,
+      count(*) FILTER(WHERE source.id IS NULL)::bigint AS missing
     FROM requested
     LEFT JOIN embedding_sources source ON source.workspace_id=$1
       AND source.source_kind='document' AND source.source_key=requested.doc_id
@@ -121,7 +122,11 @@ pub(super) async fn document_readiness(
   .bind(revisions)
   .fetch_one(pool)
   .await
-  .map_err(|error| RuntimeError::database("load document embedding readiness failed", error))
+  .map_err(|error| RuntimeError::database("load document embedding readiness failed", error))?;
+  if missing > 0 {
+    return Err(RuntimeError::invalid_state("embedding_selected_sources_processing"));
+  }
+  Ok((ready, failed))
 }
 
 pub(super) async fn register_artifact(pool: &PgPool, artifact: &RuntimeWorkspaceArtifact) -> RuntimeResult<()> {

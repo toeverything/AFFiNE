@@ -58,8 +58,16 @@ export class DocJobRunner {
     const documents = await this.prisma.$queryRaw<
       { workspaceId: string; docId: string }[]
     >`
+      WITH current_sources AS (
+        SELECT workspace_id, guid, max(timestamp) AS updated_at
+        FROM (
+          SELECT workspace_id, guid, updated_at AS timestamp FROM snapshots
+          UNION ALL
+          SELECT workspace_id, guid, created_at AS timestamp FROM updates
+        ) sources GROUP BY workspace_id, guid
+      )
       SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId"
-      FROM snapshots snapshot
+      FROM current_sources snapshot
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
       LEFT JOIN workspace_pages page ON page.workspace_id = snapshot.workspace_id AND page.page_id = snapshot.guid
       LEFT JOIN embedding_sources source
@@ -67,6 +75,11 @@ export class DocJobRunner {
         AND source.source_kind = 'document'
         AND source.source_key = snapshot.guid
       WHERE workspace.enable_doc_embedding
+        AND EXISTS (
+          SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
+          WHERE checkpoint.kind = 'workspace_doc_lifecycle'
+            AND checkpoint.scope = snapshot.workspace_id AND checkpoint.status = 'completed'
+        )
         AND page.lifecycle_state IS NULL
         AND snapshot.guid <> snapshot.workspace_id
         AND snapshot.guid NOT LIKE 'db$%'

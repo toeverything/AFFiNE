@@ -1,6 +1,6 @@
 use affine_doc_loader as doc_loader;
 use chrono::{DateTime, Utc};
-use sqlx::{Executor, PgConnection, Postgres};
+use sqlx::PgConnection;
 
 use super::{
   CurrentDoc, CurrentDocUpdate, RuntimeDocBlobRefsResult, RuntimeError, RuntimeResult, StorageOperation,
@@ -8,7 +8,6 @@ use super::{
 };
 
 pub(super) const PARSER_VERSION: i32 = 3;
-const ERROR_SUMMARY_LIMIT: usize = 512;
 
 type ExtractedRef = doc_loader::BlobRef;
 
@@ -64,27 +63,14 @@ pub(super) const SOURCE_FINGERPRINT_SQL: &str = r#"
   ),''),'UTF8')),'hex')
 "#;
 
-fn truncate_error_summary(error: &str) -> String {
-  let mut end = error.len().min(ERROR_SUMMARY_LIMIT);
-  while end > 0 && !error.is_char_boundary(end) {
-    end -= 1;
-  }
-  error[..end].to_string()
-}
-
-async fn upsert_projection_state<'e, E>(
-  executor: E,
+async fn upsert_projection_state(
+  connection: &mut PgConnection,
   workspace_id: &str,
   doc_id: &str,
   source_revision: Option<DateTime<Utc>>,
   source_fingerprint: &str,
-  status: &str,
   error_code: Option<&str>,
-  error_summary: Option<&str>,
-) -> RuntimeResult<()>
-where
-  E: Executor<'e, Database = Postgres>,
-{
+) -> RuntimeResult<()> {
   sqlx::query(
     r#"
     INSERT INTO doc_blob_ref_projections
@@ -109,11 +95,11 @@ where
   .bind(doc_id)
   .bind(source_revision)
   .bind(PARSER_VERSION)
-  .bind(status)
+  .bind(if error_code.is_some() { "failed" } else { "fresh" })
   .bind(error_code)
-  .bind(error_summary.map(truncate_error_summary))
+  .bind(error_code)
   .bind(source_fingerprint)
-  .execute(executor)
+  .execute(connection)
   .await
   .map_err(|err| RuntimeError::database("Doc blob refs projection state write failed", err))?;
   Ok(())
@@ -269,13 +255,11 @@ pub(super) async fn replace_doc_refs(
     .rows_affected() as i64;
   }
   upsert_projection_state(
-    &mut *tx,
+    &mut tx,
     workspace_id,
     doc_id,
     Some(source_revision),
     source_fingerprint,
-    "fresh",
-    None,
     None,
   )
   .await?;
@@ -328,9 +312,24 @@ async fn rebuild_doc_blob_refs_inner(
       _ => histories.push(blob),
     }
   }
-  let current = merge_current_doc(snapshot, updates)?;
   let Some(revision) = revision else {
     return Ok(stats);
+  };
+  let current = match merge_current_doc(snapshot, updates) {
+    Ok(current) => current,
+    Err(_) => {
+      upsert_projection_state(
+        connection,
+        workspace_id,
+        doc_id,
+        Some(revision),
+        &source_fingerprint,
+        Some("invalid_binary_corrupt"),
+      )
+      .await?;
+      stats.result.failed_docs = 1;
+      return Ok(stats);
+    }
   };
   if expected_source_revision.is_some_and(|expected| {
     current
@@ -347,13 +346,11 @@ async fn rebuild_doc_blob_refs_inner(
       Err(error) => {
         let code = super::blob_ref_projection_error_code(error);
         upsert_projection_state(
-          &mut *connection,
+          connection,
           workspace_id,
           doc_id,
           Some(revision),
           &source_fingerprint,
-          "failed",
-          Some(code),
           Some(code),
         )
         .await?;
@@ -376,17 +373,6 @@ async fn rebuild_doc_blob_refs_inner(
   stats.result.refs_written = written;
   stats.result.refs_deleted = deleted;
   Ok(stats)
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn error_summary_is_bounded() {
-    let error = "x".repeat(ERROR_SUMMARY_LIMIT + 20);
-    assert_eq!(truncate_error_summary(&error).len(), ERROR_SUMMARY_LIMIT);
-  }
 }
 
 #[napi_derive::napi]

@@ -77,15 +77,18 @@ pub(super) async fn apply(
   .await
   .map_err(|error| RuntimeError::database("set document lifecycle", error))?;
   if embedding_schema_ready {
-    sqlx::query(
+    let statement = if matches!(lifecycle, DocLifecycle::Delete) {
+      "DELETE FROM embedding_sources WHERE workspace_id=$1 AND source_kind='document' AND source_key=$2"
+    } else {
       "UPDATE embedding_sources SET deleted_at=clock_timestamp(),updated_at=clock_timestamp() WHERE workspace_id=$1 \
-       AND source_kind='document' AND source_key=$2",
-    )
-    .bind(&workspace_id)
-    .bind(&doc_id)
-    .execute(&mut **transaction)
-    .await
-    .map_err(|error| RuntimeError::database("invalidate deleted document embedding", error))?;
+       AND source_kind='document' AND source_key=$2"
+    };
+    sqlx::query(statement)
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .execute(&mut **transaction)
+      .await
+      .map_err(|error| RuntimeError::database("invalidate deleted document embedding", error))?;
   }
   invalidate_workspace_inventory_in(transaction, &workspace_id).await?;
   Ok(json!({"workspaceId": workspace_id, "docId": doc_id, "timestamp": timestamp.timestamp_millis()}))

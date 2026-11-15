@@ -125,7 +125,7 @@ export declare class BackendRuntime {
   reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
   reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
   activateWorkspaceLifecycleV1(): Promise<boolean>
-  listWorkspaceLifecycleMigrationCandidatesV1(): Promise<Array<string>>
+  listWorkspaceLifecycleMigrationCandidatesV1(afterWorkspaceId?: string | undefined | null): Promise<Array<string>>
   prepareWorkspaceLifecycleMigrationV1(workspaceId: string): Promise<WorkspaceLifecycleMigrationSourceV1>
   migrateWorkspaceLifecycleV1(input: WorkspaceLifecycleMigrationInputV1): Promise<boolean>
   getWorkspaceStateV1(workspaceId: string, actorUserId: string): Promise<any>

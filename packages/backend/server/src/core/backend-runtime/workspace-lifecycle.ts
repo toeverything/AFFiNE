@@ -9,16 +9,25 @@ export class WorkspaceLifecycleMigration {
   private sweep?: Promise<void>;
   private stopped = false;
 
-  constructor(private readonly runtime: RuntimeInstance) {}
+  constructor(
+    private readonly runtime: Pick<
+      RuntimeInstance,
+      | 'listWorkspaceLifecycleMigrationCandidatesV1'
+      | 'prepareWorkspaceLifecycleMigrationV1'
+      | 'migrateWorkspaceLifecycleV1'
+    >
+  ) {}
 
   start() {
     this.stopped = false;
-    this.scheduleSweep();
+    void this.run().catch((error: unknown) => {
+      this.logger.error('Workspace lifecycle migration sweep stopped', error);
+    });
   }
 
   async stop() {
     this.stopped = true;
-    await this.sweep;
+    await this.sweep?.catch(() => {});
     await Promise.all(this.pending.values());
   }
 
@@ -32,30 +41,45 @@ export class WorkspaceLifecycleMigration {
     return migration;
   }
 
-  run() {
-    this.scheduleSweep();
-    return this.sweep;
+  run(): Promise<void> {
+    if (this.sweep) return this.sweep;
+    if (this.stopped) return Promise.resolve();
+    const sweep = this.sweepWorkspaces().finally(() => {
+      this.sweep = undefined;
+    });
+    this.sweep = sweep;
+    return sweep;
   }
 
-  private scheduleSweep() {
-    if (this.sweep || this.stopped) return;
-    this.sweep = (async () => {
-      while (!this.stopped) {
-        const workspaces =
-          await this.runtime.listWorkspaceLifecycleMigrationCandidatesV1();
-        if (!workspaces.length) return;
-        for (const workspaceId of workspaces) {
-          if (this.stopped) return;
+  private async sweepWorkspaces() {
+    let afterWorkspaceId: string | undefined;
+    const failures: Error[] = [];
+    while (!this.stopped) {
+      const workspaces =
+        await this.runtime.listWorkspaceLifecycleMigrationCandidatesV1(
+          afterWorkspaceId
+        );
+      if (!workspaces.length) break;
+      for (const workspaceId of workspaces) {
+        if (this.stopped) break;
+        afterWorkspaceId = workspaceId;
+        try {
           await this.ensure(workspaceId);
+        } catch (cause) {
+          failures.push(
+            new Error(`Workspace lifecycle migration failed: ${workspaceId}`, {
+              cause,
+            })
+          );
         }
       }
-    })()
-      .catch((error: unknown) => {
-        this.logger.error('Workspace lifecycle migration sweep stopped', error);
-      })
-      .finally(() => {
-        this.sweep = undefined;
-      });
+    }
+    if (failures.length) {
+      throw new AggregateError(
+        failures,
+        'Workspace lifecycle migrations failed'
+      );
+    }
   }
 
   private async migrate(workspaceId: string) {
@@ -63,7 +87,6 @@ export class WorkspaceLifecycleMigration {
       const source =
         await this.runtime.prepareWorkspaceLifecycleMigrationV1(workspaceId);
       if (source.completed) {
-        this.scheduleSweep();
         return;
       }
       let rootStatus = source.rootStatus;
@@ -102,7 +125,6 @@ export class WorkspaceLifecycleMigration {
         docs,
       });
       if (completed) {
-        this.scheduleSweep();
         return;
       }
     }

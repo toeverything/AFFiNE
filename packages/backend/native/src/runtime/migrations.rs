@@ -612,7 +612,7 @@ mod tests {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(versions, vec![1, 2, 3]);
+    assert_eq!(versions, vec![1, 2, 3, 4]);
   }
 
   #[tokio::test]

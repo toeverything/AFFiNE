@@ -519,11 +519,12 @@ mod tests {
       revision: "not-current".to_string(),
       ..requested[0].clone()
     }];
-    assert_eq!(
+    assert!(
       super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
         .await
-        .unwrap(),
-      (0, 0)
+        .unwrap_err()
+        .to_string()
+        .contains("embedding_selected_sources_processing")
     );
 
     sqlx::query("UPDATE embedding_sources SET content_revision=content_revision WHERE id=$1")
@@ -714,6 +715,11 @@ mod tests {
     );
 
     crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
     let cleanup_claim = repaired_claim;
     let commit_pool = sqlx::postgres::PgPoolOptions::new()
       .max_connections(1)
@@ -828,11 +834,12 @@ mod tests {
       revision: "2000".to_string(),
       ..requested[0].clone()
     }];
-    assert_eq!(
+    assert!(
       super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
         .await
-        .unwrap(),
-      (0, 0)
+        .unwrap_err()
+        .to_string()
+        .contains("embedding_selected_sources_processing")
     );
   }
 }

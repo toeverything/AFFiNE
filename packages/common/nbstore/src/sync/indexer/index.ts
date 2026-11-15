@@ -490,12 +490,12 @@ export class IndexerSyncImpl implements IndexerSync {
                   spaceId: this.status.rootDocId,
                   docId,
                 });
-                if (!result) {
+                if (!result && docYDoc.getMap('blocks').size > 0) {
                   throw new Error('Document has no readable root block');
                 }
-                blocks = result.blocks;
-                preview = result.preview;
-                bodyTitle = result.title;
+                blocks = result?.blocks ?? [];
+                preview = result?.preview ?? '';
+                bodyTitle = result?.title ?? '';
                 docClock = doc;
               } catch (error) {
                 this.status.docErrors.set(docId, String(error));

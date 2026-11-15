@@ -97,7 +97,13 @@ test.each([undefined, 'server-revision'])(
     );
     try {
       expect(await screen.findByText('Upload paused')).toBeTruthy();
-      expect(screen.getByText(/workspace index needs attention/)).toBeTruthy();
+      const status = screen.getByRole('button', { name: 'Sync status' });
+      status.focus();
+      expect(document.activeElement).toBe(status);
+      fireEvent.click(status);
+      expect(
+        await screen.findByText(/workspace index needs attention/)
+      ).toBeTruthy();
       expect(screen.queryByText(/Synced with/)).toBeNull();
       fireEvent.click(screen.getByText('Copy diagnostics'));
       await waitFor(() => expect(mocks.copy).toHaveBeenCalledTimes(1));

@@ -10,11 +10,13 @@ import { IDBConnection, type IDBConnectionOptions } from './db';
 import { IndexedDBLocker } from './lock';
 import { createPeerClock } from './schema';
 
-interface ChannelMessage {
-  type: 'update';
-  update: DocRecord;
-  origin?: string;
-}
+type ChannelMessage =
+  | { type: 'delete' }
+  | {
+      type: 'update';
+      update: DocRecord;
+      origin?: string;
+    };
 
 export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOptions> {
   static readonly identifier = 'IndexedDBDocStorage';
@@ -112,7 +114,7 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
 
   override async deleteDoc(docId: string) {
     const trx = this.db.transaction(
-      ['snapshots', 'updates', 'clocks'],
+      ['snapshots', 'updates', 'clocks', 'peerClocks'],
       'readwrite'
     );
 
@@ -125,6 +127,18 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
 
     await trx.objectStore('snapshots').delete(docId);
     await trx.objectStore('clocks').delete(docId);
+    const peers = trx.objectStore('peerClocks');
+    for (const record of await peers.getAll()) {
+      if (record.docId !== docId || !record.pendingCreate) continue;
+      await peers.put({ ...record, pendingCreate: false });
+      const root =
+        (await peers.get([record.peer, this.spaceId])) ??
+        createPeerClock(record.peer, this.spaceId);
+      await peers.put({ ...root, cacheToken: (root.cacheToken ?? 0) + 1 });
+    }
+    await trx.done;
+    this.emit('delete');
+    this.channel.postMessage({ type: 'delete' } satisfies ChannelMessage);
   }
 
   override async getDocTimestamps(after: Date = new Date(0)) {
@@ -212,7 +226,9 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
   }
 
   handleChannelMessage = (event: MessageEvent<ChannelMessage>) => {
-    if (event.data.type === 'update') {
+    if (event.data.type === 'delete') {
+      this.emit('delete');
+    } else if (event.data.type === 'update') {
       this.emit('update', event.data.update, event.data.origin);
     }
   };

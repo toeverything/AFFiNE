@@ -1,6 +1,11 @@
+use std::time::{Duration as StdDuration, Instant};
+
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{FromRow, PgConnection};
 use uuid::Uuid;
+
+const DELETE_BATCH_SIZE: usize = 16;
+const DELETE_BATCH_BUDGET: StdDuration = StdDuration::from_millis(200);
 
 use super::{
   RuntimeBlobCleanupResult, RuntimeError, RuntimeResult, StorageOperation, StorageRuntime,
@@ -253,45 +258,96 @@ impl StorageRuntime {
       next_cursor: None,
       workspace_ids: Vec::new(),
     };
-    let mut operation = StorageOperation::acquire(&pool, &workspace_id, None).await?;
-    let cursor = load_cursor(operation.connection(), &workspace_id).await?;
-    if !checkpoint_completed(operation.connection(), "blob_metadata_backfill", &workspace_id).await?
-      || projection_is_stale(operation.connection(), &workspace_id).await?
-    {
-      result.protected_by_metadata = load_live(operation.connection(), &workspace_id, cursor.as_deref(), limit)
-        .await?
-        .len() as i64;
-      operation.release().await?;
-      return Ok(result);
-    }
-
-    let denied = load_denied(operation.connection(), &workspace_id, limit).await?;
+    let mut connection = pool
+      .acquire()
+      .await
+      .map_err(|error| RuntimeError::database("load blob cleanup candidates", error))?;
+    let cursor = load_cursor(&mut connection, &workspace_id).await?;
+    let denied = load_denied(&mut connection, &workspace_id, limit).await?;
     let recovering = !denied.is_empty();
     let rows = if recovering {
       denied
     } else {
-      load_live(operation.connection(), &workspace_id, cursor.as_deref(), limit).await?
+      load_live(&mut connection, &workspace_id, cursor.as_deref(), limit).await?
     };
-    result.scanned_blobs = rows.len() as i64;
+    drop(connection);
     let has_more = recovering || rows.len() == limit as usize;
-    let last_key = rows.last().map(|row| row.key.clone());
     let minimum_modified = Utc::now() - Duration::days(grace_period_days);
-    for row in rows {
-      if self
-        .cleanup_blob_row(operation.connection(), &row, minimum_modified, &mut result)
-        .await
-        .is_err()
+    let mut offset = 0;
+    while offset < rows.len() {
+      let mut operation = StorageOperation::acquire(&pool, &workspace_id, None).await?;
+      let started = Instant::now();
+      if !checkpoint_completed(operation.connection(), "blob_metadata_backfill", &workspace_id).await?
+        || projection_is_stale(operation.connection(), &workspace_id).await?
       {
-        result.failed += 1;
+        result.protected_by_metadata += (rows.len() - offset) as i64;
+        operation.release().await?;
+        return Ok(result);
+      }
+      let end = (offset + DELETE_BATCH_SIZE).min(rows.len());
+      while offset < end {
+        let row = &rows[offset];
+        // Candidate enumeration precedes this lock. An upload or another pass
+        // may have replaced the ledger row while the workspace was unlocked.
+        let unchanged: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM blobs WHERE workspace_id=$1 AND key=$2 AND status='completed' AND size=$3 AND \
+           reservation_id IS NOT DISTINCT FROM $4 AND deleted_at IS NOT DISTINCT FROM $5)",
+        )
+        .bind(&row.workspace_id)
+        .bind(&row.key)
+        .bind(row.size)
+        .bind(row.reservation_id)
+        .bind(row.deleted_at)
+        .fetch_one(operation.connection())
+        .await
+        .map_err(|error| RuntimeError::database("recheck blob cleanup candidate", error))?;
+        result.scanned_blobs += 1;
+        if unchanged
+          && self
+            .cleanup_blob_row(operation.connection(), row, minimum_modified, &mut result)
+            .await
+            .is_err()
+        {
+          result.failed += 1;
+        }
+        offset += 1;
+        // Yield only after the object request settles; cancellation does not
+        // prove that a remote DELETE stopped executing.
+        if started.elapsed() >= DELETE_BATCH_BUDGET {
+          break;
+        }
+      }
+      if !recovering {
+        let last_key = rows[offset - 1].key.as_str();
+        result.next_cursor = if offset < rows.len() || has_more {
+          Some(last_key.to_string())
+        } else {
+          None
+        };
+        save_cursor(
+          operation.connection(),
+          &workspace_id,
+          Some(last_key),
+          result.next_cursor.is_none(),
+        )
+        .await?;
+      }
+      operation.release().await?;
+      if offset < rows.len() {
+        // Writers acquire the shared lock by polling every 25ms. Leave a
+        // polling window instead of immediately reclaiming the exclusive lock.
+        tokio::time::sleep(StdDuration::from_millis(50)).await;
       }
     }
     if recovering {
       result.next_cursor = cursor;
-    } else {
-      result.next_cursor = has_more.then_some(last_key.clone()).flatten();
-      save_cursor(operation.connection(), &workspace_id, last_key.as_deref(), !has_more).await?;
+    } else if rows.is_empty() {
+      let mut connection = pool
+        .acquire()
+        .await
+        .map_err(|error| RuntimeError::database("complete blob cleanup scan", error))?;
+      save_cursor(&mut connection, &workspace_id, cursor.as_deref(), true).await?;
     }
-    operation.release().await?;
     Ok(result)
   }
 }
@@ -307,9 +363,8 @@ impl StorageRuntime {
     let object_key = format!("{}/{}", row.workspace_id, row.key);
     let doc_ref = has_doc_ref(&mut *connection, &row.workspace_id, &row.key).await?;
     let other_ref = has_other_ref(&mut *connection, &row.workspace_id, &row.key).await?;
-    let metadata = self.object_storage_head(object_key.clone()).await?;
     if doc_ref || other_ref {
-      if row.deleted_at.is_some() && metadata.is_some() {
+      if row.deleted_at.is_some() && self.object_storage_head(object_key.clone()).await?.is_some() {
         sqlx::query(
           "UPDATE blobs SET deleted_at = NULL WHERE workspace_id = $1 AND key = $2 AND reservation_id IS NOT DISTINCT \
            FROM $3 AND deleted_at IS NOT NULL",
@@ -329,6 +384,7 @@ impl StorageRuntime {
       }
       return Ok(());
     }
+    let metadata = self.object_storage_head(object_key.clone()).await?;
     if row.deleted_at.is_none() {
       let Some(metadata) = metadata.as_ref() else {
         result.protected_by_metadata += 1;
@@ -957,6 +1013,77 @@ mod tests {
     );
 
     cleanup_blob_fixture(&fixture).await?;
+    let fixture = blob_cleanup_fixture(true).await?;
+    fixture
+      .runtime
+      .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+      .await?;
+    complete_cleanup_checkpoints(&fixture.pool, &fixture.workspace_id).await?;
+    sqlx::query(
+      "INSERT INTO blobs(workspace_id,key,size,mime,status) SELECT $1,'retained-'||i,10,'image/png','completed' FROM \
+       generate_series(1,1000) i",
+    )
+    .bind(&fixture.workspace_id)
+    .execute(&fixture.pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO \
+       doc_blob_refs(workspace_id,doc_id,blob_key,block_id,flavour,snapshot_updated_at,parser_version,status) SELECT \
+       workspace_id,doc_id,'retained-'||i,'block-'||i,flavour,snapshot_updated_at,parser_version,status FROM \
+       doc_blob_refs CROSS JOIN generate_series(1,1000) i WHERE workspace_id=$1 AND blob_key=$2",
+    )
+    .bind(&fixture.workspace_id)
+    .bind(&fixture.blob_key)
+    .execute(&fixture.pool)
+    .await?;
+    let finished = std::sync::atomic::AtomicBool::new(false);
+    let cleaning = async {
+      let result = fixture
+        .runtime
+        .cleanup_unreferenced_workspace_blobs(fixture.workspace_id.clone(), 0, 1001)
+        .await;
+      finished.store(true, std::sync::atomic::Ordering::SeqCst);
+      result.map_err(|error| anyhow::anyhow!(error.to_string()))
+    };
+    let writing = async {
+      tokio::time::timeout(StdDuration::from_secs(5), async {
+        loop {
+          let progress: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='blob_cleanup' AND scope=$1 \
+             AND status='running')",
+          )
+          .bind(&fixture.workspace_id)
+          .fetch_one(&fixture.pool)
+          .await?;
+          if progress {
+            break;
+          }
+          assert!(
+            !finished.load(std::sync::atomic::Ordering::SeqCst),
+            "cleanup must yield before completing the scan"
+          );
+          tokio::time::sleep(StdDuration::from_millis(5)).await;
+        }
+        let mut transaction = fixture.pool.begin().await?;
+        crate::runtime::storage_lifecycle::lock_workspace_storage_shared_transaction(
+          &mut transaction,
+          &fixture.workspace_id,
+        )
+        .await
+        .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+        assert!(
+          !finished.load(std::sync::atomic::Ordering::SeqCst),
+          "a foreground writer must enter between cleanup batches"
+        );
+        transaction.rollback().await?;
+        Ok::<_, anyhow::Error>(())
+      })
+      .await??;
+      Ok::<_, anyhow::Error>(())
+    };
+    let (cleaned, ()) = tokio::try_join!(cleaning, writing)?;
+    assert_eq!((cleaned.protected_by_doc_refs, cleaned.failed), (1001, 0));
+    cleanup_blob_fixture(&fixture).await?;
     Ok(())
   }
 
@@ -964,7 +1091,14 @@ mod tests {
   #[ignore = "requires DATABASE_URL and a migrated PostgreSQL database"]
   async fn blob_cleanup_projection_outdated_pending_and_failed_projections_fail_closed() -> AnyResult<()> {
     let _guard = EMBEDDING_TEST_LOCK.lock().await;
-    for status in ["fresh", "pending", "failed", "partial"] {
+    for status in [
+      "fresh",
+      "pending",
+      "failed",
+      "partial",
+      "invalid_snapshot",
+      "invalid_update",
+    ] {
       let fixture = blob_cleanup_fixture(false).await?;
       let _object_root = &fixture.object_root;
       fixture
@@ -991,12 +1125,55 @@ mod tests {
           .await?;
         assert_eq!(projection.failed_docs, 1);
       }
+      if matches!(status, "invalid_snapshot" | "invalid_update") {
+        if status == "invalid_snapshot" {
+          sqlx::query(
+            "UPDATE snapshots SET blob=decode('ff','hex'),updated_at=clock_timestamp() WHERE workspace_id=$1 AND \
+             guid=$2",
+          )
+          .bind(&fixture.workspace_id)
+          .bind(&fixture.doc_id)
+          .execute(&fixture.pool)
+          .await?;
+        } else {
+          sqlx::query(
+            "INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,decode('ff','hex'),clock_timestamp())",
+          )
+          .bind(&fixture.workspace_id)
+          .bind(&fixture.doc_id)
+          .execute(&fixture.pool)
+          .await?;
+        }
+        let later_doc = format!("{}-later", fixture.doc_id);
+        sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,clock_timestamp())")
+          .bind(&fixture.workspace_id)
+          .bind(&later_doc)
+          .bind(attachment_doc(None))
+          .execute(&fixture.pool)
+          .await?;
+        let projection = fixture
+          .runtime
+          .rebuild_workspace_doc_blob_refs(fixture.workspace_id.clone(), 100)
+          .await?;
+        assert_eq!(projection.failed_docs, 1);
+        let fresh: bool =
+          sqlx::query_scalar("SELECT status='fresh' FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$2")
+            .bind(&fixture.workspace_id)
+            .bind(later_doc)
+            .fetch_one(&fixture.pool)
+            .await?;
+        assert!(fresh);
+      }
       sqlx::query(
         "UPDATE doc_blob_ref_projections SET parser_version = 1, status = $3 WHERE workspace_id = $1 AND doc_id = $2",
       )
       .bind(&fixture.workspace_id)
       .bind(&fixture.doc_id)
-      .bind(if status == "partial" { "failed" } else { status })
+      .bind(if matches!(status, "partial" | "invalid_snapshot" | "invalid_update") {
+        "failed"
+      } else {
+        status
+      })
       .execute(&fixture.pool)
       .await?;
 
@@ -1010,11 +1187,18 @@ mod tests {
         (0, 1)
       );
 
-      if status == "partial" {
+      if matches!(status, "partial" | "invalid_snapshot" | "invalid_update") {
         sqlx::query("UPDATE snapshots SET blob=$3,updated_at=clock_timestamp() WHERE workspace_id=$1 AND guid=$2")
           .bind(&fixture.workspace_id)
           .bind(&fixture.doc_id)
           .bind(attachment_doc(None))
+          .execute(&fixture.pool)
+          .await?;
+      }
+      if status == "invalid_update" {
+        sqlx::query("DELETE FROM updates WHERE workspace_id=$1 AND guid=$2")
+          .bind(&fixture.workspace_id)
+          .bind(&fixture.doc_id)
           .execute(&fixture.pool)
           .await?;
       }

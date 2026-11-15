@@ -47,6 +47,7 @@ use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use tokio::sync::Mutex;
+pub(super) use workspace_state::completed as workspace_lifecycle_completed;
 use zeroize::Zeroizing;
 
 use self::{

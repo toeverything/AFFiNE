@@ -577,6 +577,21 @@ mod tests {
         .is_empty()
     );
     assert!(storage.get_doc("pending".into()).await.unwrap().is_some());
+    storage
+      .push_update_with_peer("deleted-pending".into(), [0, 0], Some("account-a".into()))
+      .await
+      .unwrap();
+    let before_delete = storage
+      .get_peer_workspace_state("account-a".into(), "workspace".into())
+      .await
+      .unwrap();
+    storage.delete_doc("deleted-pending".into()).await.unwrap();
+    let after_delete = storage
+      .get_peer_workspace_state("account-a".into(), "workspace".into())
+      .await
+      .unwrap();
+    assert!(after_delete.cache_token > before_delete.cache_token);
+    assert!(after_delete.docs.iter().all(|doc| doc.doc_id != "deleted-pending"));
 
     sqlx::query(
       "CREATE TRIGGER reject_pending BEFORE INSERT ON peer_clocks WHEN NEW.peer = 'rejected' BEGIN SELECT \

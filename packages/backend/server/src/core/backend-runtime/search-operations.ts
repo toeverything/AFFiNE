@@ -110,6 +110,7 @@ export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations
   async compileTurnScope(
     input: CompileScopeInput
   ): Promise<RuntimeTurnScopeSnapshot> {
+    await this.ensureWorkspaceLifecycleV1(input.workspaceId);
     return await this.measured('compileTurnScope', runtime =>
       runtime.compileTurnScope(input)
     );

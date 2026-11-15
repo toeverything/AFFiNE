@@ -23,7 +23,7 @@ use worker::{reconcile_workspace, sweep_generation_orphans};
 use super::{
   blocking, is_ordinary_workspace_doc, load_workspace_doc_states_in,
   permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
-  webpki_tls_config,
+  webpki_tls_config, workspace_lifecycle_completed,
 };
 
 const SCHEMA_FINGERPRINT: i32 = 1;

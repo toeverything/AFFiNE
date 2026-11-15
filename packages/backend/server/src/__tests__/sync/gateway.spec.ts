@@ -1292,10 +1292,12 @@ test('permission revocation removes an active document subscription', async t =>
   });
 
   const ownerSocket = createClient(url, ownerCookie);
+  const otherOwnerSocket = createClient(url, ownerCookie);
   const collaboratorSocket = createClient(url, collaboratorCookie);
   try {
     await Promise.all([
       waitForConnect(ownerSocket),
+      waitForConnect(otherOwnerSocket),
       waitForConnect(collaboratorSocket),
     ]);
 
@@ -1316,6 +1318,10 @@ test('permission revocation removes an active document subscription', async t =>
       )
     );
     t.true(ownerJoin.success);
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:join-batch', join)
+    );
 
     const runtime = app.get(BackendRuntimeProvider);
     const loadGeneration = runtime.getSyncPermissionGenerationV1.bind(runtime);
@@ -1390,7 +1396,7 @@ test('permission revocation removes an active document subscription', async t =>
     const batchPermissions =
       permissionService.batchDocPermissions.bind(permissionService);
     const changed = { workspaceId: workspace.id, docId };
-    for (const olderFirst of [false, true]) {
+    for (const burstSize of [1, 20]) {
       await models.docUser.set(
         workspace.id,
         docId,
@@ -1410,11 +1416,19 @@ test('permission revocation removes an active document subscription', async t =>
         Promise.withResolvers<void>(),
       ];
       let reads = 0;
+      let ownerReads = 0;
       const permissionStub = Sinon.stub(
         permissionService,
         'batchDocPermissions'
       ).callsFake(async input => {
         const result = await batchPermissions(input);
+        if (input.userId === owner.id) {
+          ownerReads += 1;
+          t.deepEqual(
+            input.docs.map(doc => doc.docId),
+            [docId]
+          );
+        }
         if (input.userId === collaborator.id) {
           const index = reads++;
           captured[index].resolve();
@@ -1434,16 +1448,44 @@ test('permission revocation removes an active document subscription', async t =>
           principalId: collaborator.id,
         },
       });
-      const newRevalidation = app
-        .get(EventBus)
-        .emitAsync('doc.grants.changed', changed);
-      await captured[1].promise;
+      const newRevalidation = Promise.all(
+        Array.from({ length: burstSize }, () =>
+          app.get(EventBus).emitAsync('doc.grants.changed', changed)
+        )
+      );
+      const noEarlyUpdate = expectNoEvent(
+        ownerSocket,
+        'space:broadcast-doc-updates'
+      );
+      await app.get(EventBus).emitAsync('doc.updates.pushed', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+        updates: [Buffer.from(createYjsUpdateBase64(), 'base64')],
+        timestamp: Date.now(),
+      });
       try {
-        const first = olderFirst ? 0 : 1;
-        resume[first].resolve();
-        await (olderFirst ? oldRevalidation : newRevalidation);
-        resume[1 - first].resolve();
-        await (olderFirst ? newRevalidation : oldRevalidation);
+        await noEarlyUpdate;
+        t.is(reads, 1);
+        resume[0].resolve();
+        await captured[1].promise;
+        const deliveredUpdate = waitForEvent(
+          ownerSocket,
+          'space:broadcast-doc-updates'
+        );
+        const noRevokedUpdate = expectNoEvent(
+          collaboratorSocket,
+          'space:broadcast-doc-updates'
+        );
+        resume[1].resolve();
+        await Promise.all([
+          oldRevalidation,
+          newRevalidation,
+          deliveredUpdate,
+          noRevokedUpdate,
+        ]);
+        t.is(reads, 2);
+        t.is(ownerReads, 2);
       } finally {
         for (const pending of resume) pending.resolve();
         await Promise.all([oldRevalidation, newRevalidation]);
@@ -1520,6 +1562,7 @@ test('permission revocation removes an active document subscription', async t =>
     await noRevokedUpdate;
   } finally {
     ownerSocket.disconnect();
+    otherOwnerSocket.disconnect();
     collaboratorSocket.disconnect();
   }
 });

@@ -759,6 +759,51 @@ mod tests {
       "previous-owner"
     );
 
+    let embedding_health = crate::runtime::migrations::migrate_all_tables(&pool).await?;
+    *runtime.embedding_health.write().unwrap() = embedding_health;
+    assert!(runtime.embedding_schema_ready()?);
+    let embedding_source = Uuid::new_v4();
+    let embedding_index = Uuid::new_v4();
+    let embedding_token = Uuid::new_v4();
+    sqlx::query(
+      "INSERT INTO \
+       embedding_indexes(id,workspace_id,fingerprint,route_source,provider,model_id,endpoint_fingerprint,\
+       contract_version,health_status) VALUES($1,$2,'lifecycle','byok','openai','test','test',1,'ready')",
+    )
+    .bind(embedding_index)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO \
+       embedding_sources(id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,recipe_revision,\
+       document_projection) VALUES($1,$2,'document',$3,'1','1','1','{}')",
+    )
+    .bind(embedding_source)
+    .bind(&workspace_id)
+    .bind(&creating_doc_id)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO embedding_projections(source_id,index_id,status,active_generation_token) VALUES($1,$2,'ready',$3)",
+    )
+    .bind(embedding_source)
+    .bind(embedding_index)
+    .bind(embedding_token)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO \
+       embedding_chunks(generation_token,workspace_id,index_id,source_id,chunk_index,content,embedding,source_kind,\
+       doc_id) VALUES($1,$2,$3,$4,0,'deleted content',array_fill(0::real,ARRAY[1024])::vector,'document',$5)",
+    )
+    .bind(embedding_token)
+    .bind(&workspace_id)
+    .bind(embedding_index)
+    .bind(embedding_source)
+    .bind(&creating_doc_id)
+    .execute(&pool)
+    .await?;
     for lifecycle in ["trash", "restore", "trash", "delete"] {
       let output = runtime.execute_domain_command_v1(serde_json::json!({"command":"apply_doc_lifecycle","actorUserId":user_id,"workspaceId":workspace_id,"docId":creating_doc_id,"lifecycle":lifecycle})).await?;
       assert!(output.get("rootUpdate").is_none());
@@ -772,6 +817,34 @@ mod tests {
         );
       }
     }
+    for (table, column) in [
+      ("embedding_sources", "id"),
+      ("embedding_projections", "source_id"),
+      ("embedding_chunks", "source_id"),
+    ] {
+      let count: i64 = sqlx::query_scalar(&format!("SELECT count(*) FROM {table} WHERE {column}=$1"))
+        .bind(embedding_source)
+        .fetch_one(&pool)
+        .await?;
+      assert_eq!(count, 0, "permanent deletion left {table}");
+    }
+    let late_chunk = sqlx::query(
+      "INSERT INTO \
+       embedding_chunks(generation_token,workspace_id,index_id,source_id,chunk_index,content,embedding,source_kind,\
+       doc_id) VALUES($1,$2,$3,$4,0,'late content',array_fill(0::real,ARRAY[1024])::vector,'document',$5)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(&workspace_id)
+    .bind(embedding_index)
+    .bind(embedding_source)
+    .bind(&creating_doc_id)
+    .execute(&pool)
+    .await;
+    assert!(late_chunk.is_err());
+    sqlx::query("DELETE FROM embedding_indexes WHERE id=$1")
+      .bind(embedding_index)
+      .execute(&pool)
+      .await?;
     for intent in [
       WorkspaceDocWriteIntentV1::CreateDoc,
       WorkspaceDocWriteIntentV1::UpdateDoc,
@@ -827,7 +900,7 @@ mod tests {
     .await?;
     assert!(
       runtime
-        .list_workspace_lifecycle_migration_candidates_v1()
+        .list_workspace_lifecycle_migration_candidates_v1(None)
         .await?
         .is_empty()
     );
@@ -950,7 +1023,7 @@ mod tests {
       .await?;
     assert!(
       runtime
-        .list_workspace_lifecycle_migration_candidates_v1()
+        .list_workspace_lifecycle_migration_candidates_v1(None)
         .await?
         .contains(&second_workspace)
     );
