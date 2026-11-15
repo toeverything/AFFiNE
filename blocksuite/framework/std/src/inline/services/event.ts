@@ -180,7 +180,8 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       if (!inlineRange) return;
     }
 
-    let ifHandleTargetRange = true;
+    // Keep a non-collapsed selection: Firefox may start the target range at the inline root.
+    let ifHandleTargetRange = inlineRange.length === 0;
 
     if (
       event.inputType.startsWith('delete') &&
