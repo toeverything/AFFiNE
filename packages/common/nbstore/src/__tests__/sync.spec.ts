@@ -7,6 +7,7 @@ import { OpConsumer } from '@toeverything/infra/op';
 import { BehaviorSubject, firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
 import {
+  applyUpdate,
   Array as YArray,
   Doc as YDoc,
   encodeStateAsUpdate,
@@ -636,101 +637,116 @@ test('blob', async () => {
   expect((await a.get('retry'))?.data).toEqual(new Uint8Array([1, 2, 3]));
 });
 
-test.each(['permission', 'invalid_binary', 'snapshot'] as const)(
-  'doc sync peer isolates %s errors to their document',
+test.each([
+  'permission',
+  'local',
+  'remote',
+  'snapshot',
+  'readonly',
+  'partial',
+] as const)(
+  'doc sync peer isolates errors and recovers %s sources',
   async mode => {
+    const options = { id: `ws-recovery-${mode}`, type: 'workspace' as const };
     const local = new IndexedDBDocStorage({
-      id: `ws-denied-${mode}`,
-      flavour: 'local-denied',
-      type: 'workspace',
+      ...options,
+      flavour: 'recovery-local',
     });
     const syncMetadata = new IndexedDBDocSyncStorage({
-      id: `ws-denied-${mode}`,
-      flavour: 'local-denied',
-      type: 'workspace',
+      ...options,
+      flavour: 'recovery-local',
     });
-    const remote = new PermissionDeniedRemoteDocStorage(`ws-denied-${mode}`);
-    const peer = new DocSyncPeer('remote-denied', local, syncMetadata, remote);
-    const push = remote.pushDocUpdate.bind(remote);
-    const pushes = vi
-      .spyOn(remote, 'pushDocUpdate')
-      .mockImplementation(update =>
-        update.docId === 'doc-good'
-          ? Promise.resolve({ docId: update.docId, timestamp: new Date() })
-          : push(update)
-      );
+    const remote = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'recovery-remote',
+      readonlyMode: mode === 'readonly',
+    });
+    const peer = new DocSyncPeer('remote', local, syncMetadata, remote);
     const abort = new AbortController();
-
-    local.connection.connect();
-    syncMetadata.connection.connect();
-    await local.connection.waitForConnected();
-    await syncMetadata.connection.waitForConnected();
-
     const doc = new YDoc();
-    doc.getMap('test').set('hello', 'world');
-    await local.pushDocUpdate({
-      docId: 'doc-denied',
-      bin: encodeStateAsUpdate(doc),
-    });
+    const remoteEditor = new YDoc();
+    const pending = new YDoc();
+    const entered = deferred();
+    const release = deferred();
+    let hold = false;
+    let broken = mode !== 'permission' && mode !== 'snapshot';
+    let running: Promise<void> | undefined;
 
-    if (mode === 'snapshot') {
-      const transaction = local.db.transaction(
-        ['snapshots', 'updates'],
-        'readwrite'
-      );
-      await transaction.objectStore('snapshots').put({
-        docId: 'doc-denied',
-        bin: new Uint8Array([255]),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      for (const update of await transaction
-        .objectStore('updates')
-        .index('docId')
-        .getAll('doc-denied')) {
-        await transaction
-          .objectStore('updates')
-          .delete([update.docId, update.createdAt]);
-      }
-      await transaction.done;
-    }
-    await local.pushDocUpdate({
-      docId: 'doc-good',
-      bin: encodeStateAsUpdate(doc),
-    });
-    let invalidReads = 0;
-    if (mode !== 'permission') {
-      const get = local.getDoc.bind(local);
-      vi.spyOn(local, 'getDoc').mockImplementation(async id => {
-        if (id === 'doc-denied') {
-          invalidReads++;
-          if (mode === 'invalid_binary') throw new Error('invalid_binary');
+    for (const storage of [local, syncMetadata, remote])
+      storage.connection.connect();
+    await Promise.all(
+      [local, syncMetadata, remote].map(storage =>
+        storage.connection.waitForConnected()
+      )
+    );
+    const publish = remote.pushDocUpdate.bind(remote);
+    const pushes = vi.spyOn(remote, 'pushDocUpdate');
+    const getRemote = remote.getDocDiff.bind(remote);
+    vi.spyOn(remote, 'getDocDiff').mockImplementation(async (id, state) => {
+      if (id === 'doc-recover') {
+        if (mode === 'permission') {
+          throw Object.assign(new Error('No permission'), {
+            name: 'DOC_ACTION_DENIED',
+          });
         }
-        return get(id);
-      });
-    }
+        if (hold) {
+          hold = false;
+          entered.resolve();
+          await release.promise;
+        }
+      }
+      return getRemote(id, state);
+    });
+    const getLocal = local.getDoc.bind(local);
+    const localReads = vi.spyOn(local, 'getDoc').mockImplementation(id => {
+      if (id === 'doc-recover' && broken) throw new Error('invalid_binary');
+      return getLocal(id);
+    });
+
     try {
-      void peer.mainLoop(abort.signal);
-
-      await vi.waitFor(() => {
-        expect(mode === 'permission' ? remote.pushCount : invalidReads).toBe(1);
-      });
-
-      await vi.waitFor(() => {
-        let state:
-          | {
-              syncing: boolean;
-              synced: boolean;
-              retrying: boolean;
-              errorMessage: string | null;
-            }
-          | undefined;
-        const dispose = peer.docState$('doc-denied').subscribe(next => {
-          state = next;
+      doc.getMap('test').set('hello', 'world');
+      const initial = encodeStateAsUpdate(doc);
+      applyUpdate(remoteEditor, initial);
+      await local.pushDocUpdate({ docId: 'doc-recover', bin: initial });
+      await local.pushDocUpdate({ docId: 'doc-good', bin: initial });
+      await publish({ docId: 'doc-recover', bin: initial });
+      await publish({ docId: 'doc-good', bin: initial });
+      if (mode === 'snapshot') {
+        const transaction = local.db.transaction(
+          ['snapshots', 'updates'],
+          'readwrite'
+        );
+        await transaction.objectStore('snapshots').put({
+          docId: 'doc-recover',
+          bin: new Uint8Array([255]),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
-        dispose.unsubscribe();
-
-        expect(state).toMatchObject({
+        for (const update of await transaction
+          .objectStore('updates')
+          .index('docId')
+          .getAll('doc-recover')) {
+          await transaction
+            .objectStore('updates')
+            .delete([update.docId, update.createdAt]);
+        }
+        await transaction.done;
+      }
+      if (mode === 'partial') {
+        pending.getMap('pending').set('prefix', true);
+        const state = encodeStateVector(pending);
+        pending.getMap('pending').set('tail', true);
+        pending.getMap('pending').delete('prefix');
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(pending, state),
+        });
+      }
+      running = peer.mainLoop(abort.signal);
+      await vi.waitFor(async () => {
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
           syncing: false,
           synced: false,
           retrying: false,
@@ -738,39 +754,159 @@ test.each(['permission', 'invalid_binary', 'snapshot'] as const)(
             mode === 'permission' ? 'No permission' : 'invalid_binary'
           ),
         });
+        expect(await firstValueFrom(peer.docState$('doc-good'))).toMatchObject({
+          synced: true,
+        });
+      });
+      expect(await firstValueFrom(peer.peerState$)).toMatchObject({
+        synced: false,
       });
 
-      await vi.waitFor(() => {
-        let state:
-          | {
-              synced: boolean;
-              errorMessage: string | null;
-            }
-          | undefined;
-        const dispose = peer.peerState$.subscribe(next => {
-          state = next;
+      if (mode === 'readonly') {
+        // Empty client state takes the raw remote path; its state vector alone
+        // cannot detect this truncated delete set.
+        for (const storage of [local, remote]) {
+          const transaction = storage.db.transaction(
+            ['snapshots', 'updates'],
+            'readwrite'
+          );
+          await transaction.objectStore('snapshots').delete('doc-recover');
+          for (const update of await transaction
+            .objectStore('updates')
+            .index('docId')
+            .getAll('doc-recover')) {
+            await transaction
+              .objectStore('updates')
+              .delete([update.docId, update.createdAt]);
+          }
+          await transaction.done;
+        }
+        await remote.db.put('snapshots', {
+          docId: 'doc-recover',
+          bin: new Uint8Array([0, 1]),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
-        dispose.unsubscribe();
+        broken = false;
+        await publish({ docId: 'doc-recover', bin: new Uint8Array([0, 0]) });
+        await vi.waitFor(async () => {
+          expect((await getLocal('doc-recover'))?.bin).toEqual(
+            new Uint8Array([0, 1])
+          );
+          expect(
+            await firstValueFrom(peer.docState$('doc-recover'))
+          ).toMatchObject({
+            syncing: false,
+            synced: false,
+            errorMessage: 'invalid_binary',
+          });
+        });
+        broken = true;
+        await local.db.delete('snapshots', 'doc-recover');
+        await remote.db.delete('snapshots', 'doc-recover');
+      }
 
-        expect(state).toMatchObject({
+      const readsBeforeRetry = localReads.mock.calls.filter(
+        ([id]) => id === 'doc-recover'
+      ).length;
+      doc.getMap('test').set('duringError', true);
+      await local.pushDocUpdate({
+        docId: 'doc-recover',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(async () => {
+        if (mode !== 'permission') {
+          expect(
+            localReads.mock.calls.filter(([id]) => id === 'doc-recover').length
+          ).toBeGreaterThan(readsBeforeRetry);
+        }
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
+          syncing: false,
           synced: false,
           errorMessage: expect.stringContaining(
             mode === 'permission' ? 'No permission' : 'invalid_binary'
           ),
         });
       });
-
-      await vi.waitFor(() => {
+      if (mode === 'permission') {
+        await publish({ docId: 'doc-recover', bin: initial });
         expect(
-          pushes.mock.calls.some(([update]) => update.docId === 'doc-good')
-        ).toBe(true);
+          pushes.mock.calls.filter(([update]) => update.docId === 'doc-recover')
+        ).toHaveLength(0);
+        return;
+      }
+      if (mode === 'snapshot') {
+        // Preserve edits made while paused; remove only the injected corrupt snapshot.
+        await local.db.delete('snapshots', 'doc-recover');
+      }
+      broken = false;
+      if (mode === 'local') {
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(doc),
+        });
+      } else {
+        hold = true;
+        remoteEditor.getMap('test').set('remoteRepair', true);
+        await publish({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(remoteEditor),
+        });
+        await entered.promise;
+        doc.getMap('test').set('duringRecovery', true);
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(doc),
+        });
+        release.resolve();
+      }
+      await vi.waitFor(async () => {
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
+          synced: true,
+          errorMessage: null,
+        });
       });
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      expect(mode === 'permission' ? remote.pushCount : invalidReads).toBe(1);
+      doc.getMap('test').set('afterRecovery', true);
+      await local.pushDocUpdate({
+        docId: 'doc-recover',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(async () => {
+        const actual = new YDoc();
+        try {
+          applyUpdate(actual, (await remote.getDoc('doc-recover'))!.bin);
+          expect(actual.getMap('test').get('duringError')).toBe(
+            mode === 'readonly' ? undefined : true
+          );
+          expect(actual.getMap('test').get('afterRecovery')).toBe(
+            mode === 'readonly' ? undefined : true
+          );
+          if (mode !== 'local' && mode !== 'readonly')
+            expect(actual.getMap('test').get('duringRecovery')).toBe(true);
+          if (mode === 'partial') {
+            expect(actual.store.pendingStructs).not.toBeNull();
+            expect(actual.store.pendingDs).not.toBeNull();
+          }
+        } finally {
+          actual.destroy();
+        }
+      });
+      if (mode === 'readonly') {
+        expect(pushes).not.toHaveBeenCalled();
+      }
     } finally {
+      release.resolve();
       abort.abort();
-      local.connection.disconnect();
-      syncMetadata.connection.disconnect();
+      await running;
+      doc.destroy();
+      remoteEditor.destroy();
+      pending.destroy();
+      for (const storage of [local, syncMetadata, remote])
+        storage.connection.disconnect();
     }
   }
 );

@@ -631,36 +631,24 @@ export class DocSyncPeer {
           docId,
           timestamp: remoteClock,
         });
-        const diff =
-          localDocRecord && serverStateVector && serverStateVector.length > 0
-            ? docDiffUpdate(
-                localDocRecord.bin,
-                encodeStateVectorFromUpdate(localDocRecord.bin),
-                newData,
-                serverStateVector
-              )
-            : localDocRecord?.bin;
-        if (diff && !isEmptyUpdate(diff)) {
-          throwIfAborted(signal);
-          const { timestamp: remoteClock } = await this.pushRemote({
-            bin: diff,
-            docId,
-          });
-          this.schedule({
-            type: 'save',
-            docId,
-            remoteClock,
-          });
-        }
-        throwIfAborted(signal);
-        this.schedule({ type: 'push', docId, clock: localClock });
-      } else {
-        if (localDocRecord) {
-          await this.acknowledgeRemoteSourceUpdate(docId);
-          if (!isEmptyUpdate(localDocRecord.bin)) {
+        if (
+          !this.remote.isReadonly &&
+          localDocRecord &&
+          !isEmptyUpdate(localDocRecord.bin)
+        ) {
+          const diff =
+            serverStateVector && serverStateVector.length > 0
+              ? docDiffUpdate(
+                  localDocRecord.bin,
+                  encodeStateVectorFromUpdate(localDocRecord.bin),
+                  newData,
+                  serverStateVector
+                )
+              : diffUpdate(localDocRecord.bin, new Uint8Array([0]));
+          if (diff && !isEmptyUpdate(diff)) {
             throwIfAborted(signal);
             const { timestamp: remoteClock } = await this.pushRemote({
-              bin: localDocRecord.bin,
+              bin: diff,
               docId,
             });
             this.schedule({
@@ -669,15 +657,37 @@ export class DocSyncPeer {
               remoteClock,
             });
           }
-          this.schedule({
-            type: 'push',
-            docId,
-            clock: localDocRecord.timestamp,
-          });
-          await this.syncMetadata.setPeerPushedClock(this.metadataPeer, {
-            docId,
-            timestamp: localDocRecord.timestamp,
-          });
+        }
+        throwIfAborted(signal);
+        if (!this.remote.isReadonly) {
+          this.schedule({ type: 'push', docId, clock: localClock });
+        }
+      } else {
+        if (localDocRecord) {
+          await this.acknowledgeRemoteSourceUpdate(docId);
+          if (!this.remote.isReadonly && !isEmptyUpdate(localDocRecord.bin)) {
+            throwIfAborted(signal);
+            const { timestamp: remoteClock } = await this.pushRemote({
+              bin: diffUpdate(localDocRecord.bin, new Uint8Array([0])),
+              docId,
+            });
+            this.schedule({
+              type: 'save',
+              docId,
+              remoteClock,
+            });
+          }
+          if (!this.remote.isReadonly) {
+            this.schedule({
+              type: 'push',
+              docId,
+              clock: localDocRecord.timestamp,
+            });
+            await this.syncMetadata.setPeerPushedClock(this.metadataPeer, {
+              docId,
+              timestamp: localDocRecord.timestamp,
+            });
+          }
         }
       }
       this.status.connectedDocs.add(docId);
@@ -787,7 +797,11 @@ export class DocSyncPeer {
         this.schedule({ type: 'connect', docId });
         return;
       }
-      if (this.status.docErrors.has(docId)) {
+      if (
+        this.status.docErrors.get(docId)?.message === 'invalid_binary' &&
+        this.status.currentDocId !== docId
+      ) {
+        this.schedule({ type: 'pull', docId });
         return;
       }
 
@@ -1098,7 +1112,7 @@ export class DocSyncPeer {
           const save = remove(jobs, j => j.type === 'save');
           if (save && save.length > 0) {
             if (
-              !(await this.runRemoteDocJob(docId, () =>
+              !(await this.runRemoteDocJob(docId, signal, () =>
                 this.jobs.save(
                   docId,
                   save as (Job & { type: 'save' })[],
@@ -1112,7 +1126,7 @@ export class DocSyncPeer {
           const pull = remove(jobs, j => j.type === 'pull');
           if (pull && pull.length > 0) {
             if (
-              !(await this.runRemoteDocJob(docId, () =>
+              !(await this.runRemoteDocJob(docId, signal, () =>
                 this.jobs.pull(docId, signal)
               ))
             ) {
@@ -1124,7 +1138,7 @@ export class DocSyncPeer {
           const connect = remove(jobs, j => j.type === 'connect');
           if (connect && connect.length > 0) {
             if (
-              !(await this.runRemoteDocJob(docId, () =>
+              !(await this.runRemoteDocJob(docId, signal, () =>
                 this.jobs.connect(docId, signal)
               ))
             ) {
@@ -1136,7 +1150,7 @@ export class DocSyncPeer {
           const pullAndPush = remove(jobs, j => j.type === 'pullAndPush');
           if (pullAndPush && pullAndPush.length > 0) {
             if (
-              !(await this.runRemoteDocJob(docId, () =>
+              !(await this.runRemoteDocJob(docId, signal, () =>
                 this.jobs.pullAndPush(docId, signal)
               ))
             ) {
@@ -1148,7 +1162,7 @@ export class DocSyncPeer {
           const push = remove(jobs, j => j.type === 'push');
           if (push && push.length > 0) {
             if (
-              !(await this.runRemoteDocJob(docId, () =>
+              !(await this.runRemoteDocJob(docId, signal, () =>
                 this.jobs.push(
                   docId,
                   push as (Job & { type: 'push' })[],
@@ -1171,11 +1185,27 @@ export class DocSyncPeer {
     }
   }
 
-  private async runRemoteDocJob(docId: string, job: () => Promise<void>) {
+  private async runRemoteDocJob(
+    docId: string,
+    signal: AbortSignal | undefined,
+    job: () => Promise<void>
+  ) {
     this.status.currentDocId = docId;
     this.statusUpdatedSubject$.next(docId);
     try {
-      await job();
+      if (this.status.docErrors.get(docId)?.message === 'invalid_binary') {
+        await this.prepareRemoteDoc(docId);
+        await this.jobs.pullAndPush(docId, signal);
+        const current = await this.local.getDoc(docId);
+        // Raw appends and state-vector reads do not validate the delete set.
+        if (current && !isEmptyUpdate(current.bin)) {
+          diffUpdate(current.bin, new Uint8Array([0]));
+        }
+        throwIfAborted(signal);
+        this.status.docErrors.delete(docId);
+      } else {
+        await job();
+      }
       return true;
     } catch (error) {
       if (!isDocScopedError(error)) {
@@ -1216,11 +1246,17 @@ export class DocSyncPeer {
 
   private schedule(job: Job) {
     if (!this.eligible(job.docId)) return;
+    const error = this.status.docErrors.get(job.docId);
     if (
-      this.status.docErrors.has(job.docId) &&
+      error &&
       (job.type === 'connect' ||
         job.type === 'push' ||
-        job.type === 'pullAndPush')
+        job.type === 'pullAndPush') &&
+      !(
+        job.type === 'push' &&
+        error.message === 'invalid_binary' &&
+        this.status.currentDocId === job.docId
+      )
     ) {
       return;
     }
