@@ -24,6 +24,7 @@ impl DomainCommandInputV1 {
       } => vec![
         InvalidationHintV1::WorkspaceInventoryChanged {
           workspace_id: workspace_id.clone(),
+          doc_id: Some(doc_id.clone()),
         },
         InvalidationHintV1::BlobSource {
           source: SourceIdentity::CurrentDoc {
@@ -44,15 +45,30 @@ impl DomainCommandInputV1 {
         },
         InvalidationHintV1::WorkspaceInventoryChanged {
           workspace_id: workspace_id.clone(),
+          doc_id: None,
         },
       ],
-      Self::PublishDoc { workspace_id, .. }
-      | Self::UnpublishDoc { workspace_id, .. }
-      | Self::TransitionWorkspaceRole { workspace_id, .. }
-      | Self::TransitionDocRole { workspace_id, .. }
-      | Self::GrantDocRoles { workspace_id, .. }
-      | Self::SetDocDefaultRole { workspace_id, .. } => vec![InvalidationHintV1::WorkspaceInventoryChanged {
+      Self::PublishDoc {
+        workspace_id, doc_id, ..
+      }
+      | Self::UnpublishDoc {
+        workspace_id, doc_id, ..
+      }
+      | Self::TransitionDocRole {
+        workspace_id, doc_id, ..
+      }
+      | Self::GrantDocRoles {
+        workspace_id, doc_id, ..
+      }
+      | Self::SetDocDefaultRole {
+        workspace_id, doc_id, ..
+      } => vec![InvalidationHintV1::WorkspaceInventoryChanged {
         workspace_id: workspace_id.clone(),
+        doc_id: Some(doc_id.clone()),
+      }],
+      Self::TransitionWorkspaceRole { workspace_id, .. } => vec![InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.clone(),
+        doc_id: None,
       }],
       _ => Vec::new(),
     }
@@ -404,6 +420,7 @@ mod tests {
         serde_json::json!({"command":"transition_workspace_role","actorUserId":"actor","workspaceId":"workspace","targetUserId":"target","newRole":"owner"}),
         vec![InvalidationHintV1::WorkspaceInventoryChanged {
           workspace_id: "workspace".into(),
+          doc_id: None,
         }],
       ),
       (
@@ -414,6 +431,7 @@ mod tests {
           },
           InvalidationHintV1::WorkspaceInventoryChanged {
             workspace_id: "workspace".into(),
+            doc_id: None,
           },
         ],
       ),
@@ -425,6 +443,7 @@ mod tests {
           },
           InvalidationHintV1::WorkspaceInventoryChanged {
             workspace_id: "workspace".into(),
+            doc_id: None,
           },
         ],
       ),
@@ -433,6 +452,7 @@ mod tests {
         vec![
           InvalidationHintV1::WorkspaceInventoryChanged {
             workspace_id: "workspace".into(),
+            doc_id: Some("doc".into()),
           },
           InvalidationHintV1::BlobSource {
             source: SourceIdentity::CurrentDoc {
@@ -456,6 +476,22 @@ mod tests {
         Vec::new(),
       ),
     ];
+    for command in [
+      serde_json::json!({"command":"publish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","mode":0}),
+      serde_json::json!({"command":"unpublish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc"}),
+      serde_json::json!({"command":"transition_doc_role","actorUserId":"actor","workspaceId":"workspace","docId":"doc","targetUserId":"target","newRole":"reader"}),
+      serde_json::json!({"command":"grant_doc_roles","actorUserId":"actor","workspaceId":"workspace","docId":"doc","targetUserIds":["target"],"newRole":"reader"}),
+      serde_json::json!({"command":"set_doc_default_role","actorUserId":"actor","workspaceId":"workspace","docId":"doc","newRole":"reader"}),
+    ] {
+      let input = serde_json::from_value::<DomainCommandInputV1>(command).unwrap();
+      assert_eq!(
+        input.invalidations(),
+        vec![InvalidationHintV1::WorkspaceInventoryChanged {
+          workspace_id: "workspace".into(),
+          doc_id: Some("doc".into()),
+        }]
+      );
+    }
     for (input, expected) in cases {
       let input = serde_json::from_value::<DomainCommandInputV1>(input).unwrap();
       assert_eq!(input.invalidations(), expected);
@@ -563,7 +599,8 @@ mod tests {
     assert_eq!(
       outcome.invalidations,
       vec![InvalidationHintV1::WorkspaceInventoryChanged {
-        workspace_id: workspace_id.clone()
+        workspace_id: workspace_id.clone(),
+        doc_id: Some(doc_id.clone()),
       }]
     );
     assert!(

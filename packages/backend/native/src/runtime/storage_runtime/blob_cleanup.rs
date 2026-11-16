@@ -4,7 +4,6 @@ use chrono::{DateTime, Duration, Utc};
 use sqlx::{FromRow, PgConnection};
 use uuid::Uuid;
 
-const DELETE_BATCH_SIZE: usize = 16;
 const DELETE_BATCH_BUDGET: StdDuration = StdDuration::from_millis(200);
 
 use super::{
@@ -284,8 +283,7 @@ impl StorageRuntime {
         operation.release().await?;
         return Ok(result);
       }
-      let end = (offset + DELETE_BATCH_SIZE).min(rows.len());
-      while offset < end {
+      while offset < rows.len() {
         let row = &rows[offset];
         // Candidate enumeration precedes this lock. An upload or another pass
         // may have replaced the ledger row while the workspace was unlocked.

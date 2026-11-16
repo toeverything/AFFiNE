@@ -56,7 +56,7 @@ export class DocJobRunner {
     }
 
     const documents = await this.prisma.$queryRaw<
-      { workspaceId: string; docId: string }[]
+      { workspaceId: string; docId: string; revision: string }[]
     >`
       WITH current_sources AS (
         SELECT workspace_id, guid, max(timestamp) AS updated_at
@@ -66,7 +66,8 @@ export class DocJobRunner {
           SELECT workspace_id, guid, created_at AS timestamp FROM updates
         ) sources GROUP BY workspace_id, guid
       )
-      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId"
+      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId",
+        ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text AS revision
       FROM current_sources snapshot
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
       LEFT JOIN workspace_pages page ON page.workspace_id = snapshot.workspace_id AND page.page_id = snapshot.guid
@@ -95,7 +96,11 @@ export class DocJobRunner {
     let syncedDocuments = 0;
     for (const document of documents) {
       try {
-        await this.embedding.syncDocument(document.workspaceId, document.docId);
+        await this.embedding.syncDocument(
+          document.workspaceId,
+          document.docId,
+          document.revision
+        );
         syncedDocuments++;
       } catch (error) {
         this.logger.error('document embedding sync failed', {

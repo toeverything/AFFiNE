@@ -28,7 +28,7 @@ export class WorkspaceLifecycleMigration {
   async stop() {
     this.stopped = true;
     await this.sweep?.catch(() => {});
-    await Promise.all(this.pending.values());
+    await Promise.allSettled(this.pending.values());
   }
 
   async ensure(workspaceId: string): Promise<void> {

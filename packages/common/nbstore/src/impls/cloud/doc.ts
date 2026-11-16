@@ -126,14 +126,11 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
   private invalidationPending = false;
 
   private scheduleInvalidationRepair() {
-    if (this.invalidationTimer) {
-      clearTimeout(this.invalidationTimer);
+    if (this.invalidationTimer || this.invalidationRepair) {
+      return;
     }
     this.invalidationTimer = setTimeout(() => {
       this.invalidationTimer = undefined;
-      if (this.invalidationRepair) {
-        return;
-      }
       this.invalidationPending = false;
       this.invalidationRepair = this.repairInvalidatedDocs()
         .catch(error => {

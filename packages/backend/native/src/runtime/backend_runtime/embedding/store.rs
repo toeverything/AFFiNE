@@ -636,6 +636,22 @@ mod tests {
     super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
       .await
       .unwrap();
+    let stale_failure = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      skip_reason: Some("invalid_document".into()),
+      ..skipped[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &stale_failure, i32::MAX)
+      .await
+      .unwrap();
+    let current: (String, Option<String>) = sqlx::query_as(
+      "SELECT source.content_revision,projection.last_error_code FROM embedding_sources source JOIN \
+       embedding_projections projection ON projection.source_id=source.id WHERE source.id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(current, ("4000".into(), Some("document_contains_nul".into())));
     let repaired_claim = claim_projection(&pool, "repaired-worker").await.unwrap().unwrap();
     assert_eq!(repaired_claim.content_revision, "4000");
     assert_eq!(repaired_claim.source_id, source_id);

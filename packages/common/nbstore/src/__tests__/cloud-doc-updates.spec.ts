@@ -146,54 +146,69 @@ describe('CloudDocStorage broadcast updates', () => {
   });
 
   test('repairs strict invalidation through readable timestamps', async () => {
-    const storage = new CloudDocStorage({
-      accountId: 'account-1',
-      id: 'space-1',
-      serverBaseUrl: 'http://localhost',
-      isSelfHosted: true,
-      type: 'workspace',
-      readonlyMode: true,
-    });
+    vi.useFakeTimers();
+    try {
+      const storage = new CloudDocStorage({
+        accountId: 'account-1',
+        id: 'space-1',
+        serverBaseUrl: 'http://localhost',
+        isSelfHosted: true,
+        type: 'workspace',
+        readonlyMode: true,
+      });
 
-    (storage as any).connection.idConverter = {
-      oldIdToNewId: (id: string) => id,
-      newIdToOldId: (id: string) => id,
-    };
+      (storage as any).connection.idConverter = {
+        oldIdToNewId: (id: string) => id,
+        newIdToOldId: (id: string) => id,
+      };
 
-    const getDocTimestamps = vi
-      .spyOn(storage, 'getDocTimestamps')
-      .mockResolvedValue({ 'doc-a': new Date(1_000) });
-    const received: Array<{ docId: string; bin: Uint8Array }> = [];
-    storage.subscribeDocUpdate(update => {
-      received.push({ docId: update.docId, bin: update.bin });
-    });
+      const getDocTimestamps = vi
+        .spyOn(storage, 'getDocTimestamps')
+        .mockResolvedValue({ 'doc-a': new Date(1_000) });
+      const received: Array<{ docId: string; bin: Uint8Array }> = [];
+      storage.subscribeDocUpdate(update => {
+        received.push({ docId: update.docId, bin: update.bin });
+      });
 
-    storage.onServerInvalidation({
-      spaceType: 'workspace',
-      spaceId: 'space-1',
-      timestamp: 1_000,
-    });
-    storage.onServerInvalidation({
-      spaceType: 'workspace',
-      spaceId: 'space-1',
-      timestamp: 1_001,
-    });
+      storage.onServerInvalidation({
+        spaceType: 'workspace',
+        spaceId: 'space-1',
+        timestamp: 1_000,
+      });
+      storage.onServerInvalidation({
+        spaceType: 'workspace',
+        spaceId: 'space-1',
+        timestamp: 1_001,
+      });
 
-    await vi.waitFor(() => expect(received).toHaveLength(1));
-    expect(getDocTimestamps).toHaveBeenCalledOnce();
-    expect(received[0]).toMatchObject({ docId: 'doc-a' });
-    expect(received[0]?.bin).toEqual(new Uint8Array());
-    const inventoryChanged = vi.fn();
-    const unsubscribe =
-      storage.subscribeWorkspaceStateInvalidation(inventoryChanged);
-    storage.onServerInvalidation({
-      spaceType: 'workspace',
-      spaceId: 'space-1',
-      inventoryChanged: true,
-    });
-    expect(inventoryChanged).toHaveBeenCalledOnce();
-    expect(getDocTimestamps).toHaveBeenCalledOnce();
-    unsubscribe();
+      for (let i = 0; i < 3; i++) {
+        await vi.advanceTimersByTimeAsync(20);
+        storage.onServerInvalidation({
+          spaceType: 'workspace',
+          spaceId: 'space-1',
+          timestamp: 1_002 + i,
+        });
+      }
+      expect(received).toHaveLength(1);
+      expect(getDocTimestamps).toHaveBeenCalledOnce();
+      expect(received[0]).toMatchObject({ docId: 'doc-a' });
+      expect(received[0]?.bin).toEqual(new Uint8Array());
+      const inventoryChanged = vi.fn();
+      const unsubscribe =
+        storage.subscribeWorkspaceStateInvalidation(inventoryChanged);
+      storage.onServerInvalidation({
+        spaceType: 'workspace',
+        spaceId: 'space-1',
+        inventoryChanged: true,
+      });
+      expect(inventoryChanged).toHaveBeenCalledOnce();
+      expect(getDocTimestamps).toHaveBeenCalledOnce();
+      unsubscribe();
+      await vi.advanceTimersByTimeAsync(50);
+      expect(getDocTimestamps).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('batch route joins the workspace and applies lifecycle commands', async () => {

@@ -298,6 +298,7 @@ test('workspace lifecycle sweep reports failures and continues beyond a failed p
   const completed = new Set<string>();
   let failing = true;
   const attempted: string[] = [];
+  let blocked: Promise<never> | undefined;
   const migration = new WorkspaceLifecycleMigration({
     async listWorkspaceLifecycleMigrationCandidatesV1(after) {
       return ids
@@ -305,6 +306,7 @@ test('workspace lifecycle sweep reports failures and continues beyond a failed p
         .slice(0, 100);
     },
     async prepareWorkspaceLifecycleMigrationV1(id) {
+      if (blocked) return blocked;
       attempted.push(id);
       if (id === ids[0] && failing) throw new Error('source unavailable');
       return { completed: false, revision: '1', rootStatus: 'missing' };
@@ -321,4 +323,21 @@ test('workspace lifecycle sweep reports failures and continues beyond a failed p
   await migration.run();
   t.is(completed.size, 101);
   await migration.stop();
+
+  const failure = Promise.withResolvers<never>();
+  blocked = failure.promise;
+  const foreground = migration.ensure('foreground');
+  const rejected = t.throwsAsync(foreground, { message: 'foreground failed' });
+  const provider = new BackendRuntimeProvider(serverConfig);
+  const nativeStop = Sinon.stub().resolves();
+  Object.assign(provider, {
+    workspaceLifecycle: migration,
+    runtime: { stop: nativeStop },
+  });
+  const stopping = provider.stop();
+  await Promise.resolve();
+  failure.reject(new Error('foreground failed'));
+  await rejected;
+  await stopping;
+  t.true(nativeStop.calledOnce);
 });

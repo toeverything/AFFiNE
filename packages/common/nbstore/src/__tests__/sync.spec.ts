@@ -1,5 +1,7 @@
 import 'fake-indexeddb/auto';
 
+import { readFileSync } from 'node:fs';
+
 import * as reader from '@affine/reader';
 import { OpConsumer } from '@toeverything/infra/op';
 import { BehaviorSubject, firstValueFrom, NEVER } from 'rxjs';
@@ -1236,11 +1238,13 @@ test.each([
   'malformed',
   'reader-error',
   'empty',
+  'rootless',
   'storage-error',
   'root-read-error',
 ] as const)(
   'indexer completion waits for the current job and preserves failed %s sources',
   async mode => {
+    const readAllBlocksFromDoc = reader.readAllBlocksFromDoc;
     const docsInRootDoc = new Map([
       ['doc1', { title: 'Doc 1' }],
       ['doc2', { title: 'Doc 2' }],
@@ -1282,6 +1286,11 @@ test.each([
     const prefixClock = encodeStateVector(prefix);
     prefix.getMap('test').set('tail', true);
     const pendingBin = encodeStateAsUpdate(prefix, prefixClock);
+    const rootless = new YDoc();
+    const image = new YMap();
+    image.set('sys:flavour', 'affine:image');
+    image.set('prop:sourceId', 'blob-1');
+    rootless.getMap('blocks').set('image', image);
     const getDoc = vi
       .spyOn(docStorage, 'getDoc')
       .mockImplementation(async docId => {
@@ -1305,15 +1314,24 @@ test.each([
           ...doc,
           bin:
             mode === 'partial'
-              ? pendingBin
+              ? mergeUpdates([
+                  readFileSync(
+                    `${process.cwd()}/packages/common/reader/__tests__/__fixtures__/test-doc.snapshot.bin`
+                  ),
+                  pendingBin,
+                ])
               : mode === 'malformed'
                 ? new Uint8Array([255])
-                : doc.bin,
+                : mode === 'rootless'
+                  ? encodeStateAsUpdate(rootless)
+                  : doc.bin,
         };
       });
     const crawl = vi
       .spyOn(reader, 'readAllBlocksFromDoc')
-      .mockImplementation(async () => {
+      .mockImplementation(async options => {
+        if (mode === 'partial' || mode === 'rootless')
+          return readAllBlocksFromDoc(options);
         if (mode === 'reader-error' && !recovered) {
           failedParseStarted.resolve();
           await releaseFailedParse.promise;
@@ -1389,11 +1407,7 @@ test.each([
         });
         releaseFailedParse.resolve();
       }
-      if (
-        mode === 'partial' ||
-        mode === 'malformed' ||
-        mode === 'storage-error'
-      ) {
+      if (mode === 'malformed' || mode === 'storage-error') {
         await sync.waitForDocCompleted('doc2');
         expect(completed).toBe(false);
         expect(docCompleted).toBe(false);
@@ -1425,6 +1439,22 @@ test.each([
       await waitForCompleted;
       await waitForDocCompleted;
       expect((await firstValueFrom(sync.state$)).errorMessage).toBeNull();
+      if (mode === 'partial') {
+        expect(crawl).toHaveBeenCalled();
+        expect(
+          calls.filter(call => call.startsWith('insert:block:doc1:'))
+        ).toHaveLength(42);
+      }
+      if (mode === 'rootless') {
+        expect(deleteBlocks).toHaveBeenCalledWith('block', {
+          type: 'match',
+          field: 'docId',
+          match: 'doc1',
+        });
+        expect(
+          calls.filter(call => call.startsWith('insert:block:doc1:'))
+        ).toHaveLength(0);
+      }
       if (mode === 'native')
         expect(getDoc.mock.calls.map(([id]) => id)).toEqual(['workspace-id']);
       expect(await metadata.getDocIndexedClock('doc1')).toMatchObject({

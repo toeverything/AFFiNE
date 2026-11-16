@@ -49,7 +49,12 @@ export type RuntimeInvalidation =
       workspaceId: string;
     }
   | { version: 1; kind: 'blobSource'; source: unknown }
-  | { version: 1; kind: 'workspaceInventoryChanged'; workspaceId: string }
+  | {
+      version: 1;
+      kind: 'workspaceInventoryChanged';
+      workspaceId: string;
+      docId?: string;
+    }
   | {
       version: 1;
       kind: 'workspaceRootChanged';

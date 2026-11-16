@@ -624,17 +624,6 @@ export class SpaceSyncGateway
     sourceSocketId?: string,
     broadcastPayload?: BroadcastDocUpdatesMessage
   ) {
-    const revalidation = this.subscriptionRevalidations.get(
-      `${payload.spaceType}:${payload.spaceId}`
-    );
-    if (revalidation) {
-      void revalidation.promise
-        .then(() =>
-          this.emitActiveDocUpdate(payload, sourceSocketId, broadcastPayload)
-        )
-        .catch(error => this.logger.error(error));
-      return;
-    }
     const sockets = this.activeDocSockets.get(
       this.activeDocKey(payload.spaceType, payload.spaceId, payload.docId)
     );
@@ -660,15 +649,6 @@ export class SpaceSyncGateway
   }
 
   private emitActiveAwarenessCollect(event: SyncAwarenessEvent) {
-    const revalidation = this.subscriptionRevalidations.get(
-      `${event.spaceType}:${event.spaceId}`
-    );
-    if (revalidation) {
-      void revalidation.promise
-        .then(() => this.emitActiveAwarenessCollect(event))
-        .catch(error => this.logger.error(error));
-      return;
-    }
     const sockets = this.activeDocSockets.get(
       this.activeDocKey(event.spaceType, event.spaceId, event.docId)
     );
@@ -690,15 +670,6 @@ export class SpaceSyncGateway
   private emitActiveAwarenessUpdate(
     event: SyncAwarenessEvent & { awarenessUpdate: string }
   ) {
-    const revalidation = this.subscriptionRevalidations.get(
-      `${event.spaceType}:${event.spaceId}`
-    );
-    if (revalidation) {
-      void revalidation.promise
-        .then(() => this.emitActiveAwarenessUpdate(event))
-        .catch(error => this.logger.error(error));
-      return;
-    }
     const sockets = this.activeDocSockets.get(
       this.activeDocKey(event.spaceType, event.spaceId, event.docId)
     );
@@ -918,6 +889,7 @@ export class SpaceSyncGateway
     await this.revalidateActiveDocSubscriptions({
       spaceType: SpaceType.Workspace,
       spaceId: hint.workspaceId,
+      docId: hint.docId,
     });
   }
 
@@ -960,10 +932,6 @@ export class SpaceSyncGateway
     this.emitActiveAwarenessUpdate(event);
   }
 
-  @OnEvent('doc.grants.changed')
-  @OnEvent('doc.owner.changed')
-  @OnEvent('doc.default_role.changed')
-  @OnEvent('doc.public_state.changed')
   @OnEvent('workspace.members.updated')
   @OnEvent('workspace.members.roleChanged')
   @OnEvent('workspace.members.removed')
@@ -1020,47 +988,57 @@ export class SpaceSyncGateway
     const spaceKey = `${event.spaceType}:${event.spaceId}`;
     let revalidation = this.subscriptionRevalidations.get(spaceKey);
     const pending = revalidation?.pending ?? new Set<string>();
-    for (const [key, sockets] of this.activeDocSockets) {
-      if (key !== exactKey && (exactKey || !key.startsWith(spacePrefix)))
-        continue;
-      pending.add(key);
-      for (const socket of sockets) {
-        const authorizations = this.activeSocketDocActions.get(socket.id);
-        if (!authorizations) continue;
+    for (const [socketId, docs] of this.activeSocketDocs) {
+      const socket = this.server.sockets.sockets.get(socketId);
+      const authorizations = this.activeSocketDocActions.get(socketId);
+      if (!socket || !authorizations) continue;
+      for (const key of docs) {
+        if (key !== exactKey && (exactKey || !key.startsWith(spacePrefix)))
+          continue;
+        pending.add(key);
         const actions = authorizations.get(key);
         if (actions) authorizations.set(key, new Set(actions));
+        const sockets = this.activeDocSockets.get(key);
+        sockets?.delete(socket);
+        if (sockets?.size === 0) this.activeDocSockets.delete(key);
       }
     }
     if (!revalidation) {
-      // Start after registration so overlapping hints share this worker.
-      const promise = Promise.resolve().then(async () => {
+      revalidation = {
+        pending,
+        promise: Promise.resolve(),
+      };
+      this.subscriptionRevalidations.set(spaceKey, revalidation);
+      const work = revalidation;
+      work.promise = Promise.resolve().then(async () => {
         try {
           while (pending.size) {
             const keys = [...pending];
             pending.clear();
-            await this.revalidateDocSubscriptions(event, keys);
+            await this.revalidateDocSubscriptions(event, keys, pending);
           }
         } finally {
           this.subscriptionRevalidations.delete(spaceKey);
         }
       });
-      revalidation = { pending, promise };
-      this.subscriptionRevalidations.set(spaceKey, revalidation);
     }
     await revalidation.promise;
   }
 
   private async revalidateDocSubscriptions(
     event: Events['sync.permissions.changed'],
-    keys: string[]
+    keys: string[],
+    pending: Set<string>
   ) {
-    const subscriptions = keys.flatMap(key =>
-      [...(this.activeDocSockets.get(key) ?? [])].flatMap(socket => {
-        const actions = this.activeSocketDocActions.get(socket.id)?.get(key);
-        return actions
-          ? [{ key, socket, actions, docId: key.split(':')[2] }]
-          : [];
-      })
+    const docKeys = new Set(keys);
+    const subscriptions = [...this.server.sockets.sockets.values()].flatMap(
+      socket =>
+        [...(this.activeSocketDocActions.get(socket.id) ?? [])].flatMap(
+          ([key, actions]) =>
+            docKeys.has(key)
+              ? [{ key, socket, actions, docId: key.split(':')[2] }]
+              : []
+        )
     );
     const users = Map.groupBy(subscriptions, ({ socket }) =>
       this.resolvePresenceUserId(socket)
@@ -1134,10 +1112,18 @@ export class SpaceSyncGateway
       for (const { key, socket, actions, docId } of subscriptions) {
         if (this.activeSocketDocActions.get(socket.id)?.get(key) !== actions)
           continue;
+        if (
+          event.spaceType === SpaceType.Workspace &&
+          before !== undefined &&
+          before !== generation
+        ) {
+          pending.add(key);
+          continue;
+        }
         const nextActions = allowed.get(docId);
         if (
           nextActions?.has('Doc.Read') &&
-          (event.spaceType === SpaceType.Userspace || before === generation)
+          (event.spaceType === SpaceType.Userspace || before !== undefined)
         ) {
           this.addActiveDocSubscription(
             socket,

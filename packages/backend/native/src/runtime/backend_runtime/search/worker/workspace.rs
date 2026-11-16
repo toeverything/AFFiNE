@@ -5,7 +5,6 @@ use super::{
   WorkspacePhase, WorkspaceReconcileContext, WorkspaceStep, checkpoint_workspace, checkpoint_workspace_after,
   claim_workspace, complete_workspace, delete_workspace_state, mark_workspace_failed, reconcile_documents,
   reconcile_stale_provider_rows, renew_workspace_lease, sweep_deleted_workspace, upsert_document,
-  workspace_lifecycle_completed,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult},
@@ -29,19 +28,6 @@ pub(in crate::runtime::backend_runtime::search) async fn reconcile_workspace(
   generation: &ActiveGeneration,
   workspace_id: &str,
 ) -> RuntimeResult<bool> {
-  let mut connection = pool
-    .acquire()
-    .await
-    .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
-  let workspace_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id=$1)")
-    .bind(workspace_id)
-    .fetch_one(&mut *connection)
-    .await
-    .map_err(|error| RuntimeError::database("load search workspace existence", error))?;
-  if workspace_exists && !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
-    return Ok(false);
-  }
-  drop(connection);
   sqlx::query(
     r#"INSERT INTO search_projection.workspace_states(generation_id,workspace_id)
        VALUES ($1,$2) ON CONFLICT DO NOTHING"#,
@@ -824,24 +810,6 @@ mod tests {
         manifest: json!({}),
       };
 
-      sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=$1")
-        .bind(&workspace_id)
-        .execute(&pool)
-        .await
-        .unwrap();
-      assert!(
-        !reconcile_workspace(&pool, &embedded, None, &generation, &workspace_id)
-          .await
-          .unwrap()
-      );
-      sqlx::query(
-        "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
-         VALUES('workspace_doc_lifecycle',$1,'completed')",
-      )
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
       let old_claim = claim_workspace(&pool, generation_id, &workspace_id)
         .await
         .unwrap()

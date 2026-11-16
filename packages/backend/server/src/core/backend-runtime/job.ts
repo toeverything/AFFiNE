@@ -6,6 +6,7 @@ import {
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
   CopilotSelectedSourcesUnavailable,
+  DocUpdateInvalid,
   metrics,
 } from '../../base';
 import { Models } from '../../models';
@@ -29,8 +30,25 @@ export class BackendRuntimeEmbeddingService {
     private readonly models: Models
   ) {}
 
-  async syncDocument(workspaceId: string, docId: string) {
-    await this.syncDocuments(workspaceId, [docId]);
+  async syncDocument(workspaceId: string, docId: string, revision: string) {
+    try {
+      await this.syncDocuments(workspaceId, [docId]);
+    } catch (error) {
+      if (!(error instanceof DocUpdateInvalid)) throw error;
+      await this.rt.syncEmbeddingState({
+        workspaceId,
+        enabled: true,
+        documents: [
+          {
+            docId,
+            revision,
+            sourceHash: revision,
+            units: [],
+            skipReason: 'invalid_document',
+          },
+        ],
+      });
+    }
   }
 
   async prepareSelectedDocuments(workspaceId: string, docIds: string[]) {
@@ -49,6 +67,8 @@ export class BackendRuntimeEmbeddingService {
   }
 
   private mapSelectedSourceError(error: unknown) {
+    if (error instanceof DocUpdateInvalid)
+      return new CopilotSelectedSourcesFailed();
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('embedding_selected_sources_processing')) {
       return new CopilotSelectedSourcesProcessing();

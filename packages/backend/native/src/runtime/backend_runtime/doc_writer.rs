@@ -292,6 +292,7 @@ async fn publish_update(
       invalidation
         .publish(InvalidationHintV1::WorkspaceInventoryChanged {
           workspace_id: workspace_id.clone(),
+          doc_id: Some(doc_id.clone()),
         })
         .await;
     }

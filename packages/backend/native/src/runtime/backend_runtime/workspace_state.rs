@@ -265,6 +265,7 @@ impl BackendRuntime {
     self
       .publish_invalidation(InvalidationHintV1::WorkspaceInventoryChanged {
         workspace_id: input.workspace_id,
+        doc_id: None,
       })
       .await;
     Ok(true)

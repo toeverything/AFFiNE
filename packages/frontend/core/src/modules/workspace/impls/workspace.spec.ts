@@ -1,9 +1,63 @@
 import type { PeerWorkspaceState } from '@affine/nbstore';
+import { Framework } from '@toeverything/infra';
 import { BehaviorSubject } from 'rxjs';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
+import { FeatureFlagService } from '../../feature-flag';
+import { Workspace } from '../entities/workspace';
+import { WorkspaceScope } from '../scopes/workspace';
+import { WorkspaceEngineService } from '../services/engine';
 import { WorkspaceImpl } from './workspace';
+
+test.each([true, false])(
+  'workspace public mode %s selects its document identity source',
+  isSharedMode => {
+    const framework = new Framework();
+    framework
+      .service(FeatureFlagService, {} as FeatureFlagService)
+      .scope(WorkspaceScope)
+      .service(WorkspaceEngineService, {
+        engine: {
+          doc: {
+            workspaceState$: new BehaviorSubject(null),
+            connectDoc: vi.fn(),
+          },
+          indexer: { docTitles$: new BehaviorSubject({}) },
+          blob: { registerSource: vi.fn().mockResolvedValue(undefined) },
+        },
+      } as unknown as WorkspaceEngineService)
+      .entity(Workspace, [WorkspaceScope, FeatureFlagService]);
+    const scope = framework.provider().createScope(WorkspaceScope, {
+      openOptions: {
+        metadata: { id: 'public-workspace', flavour: 'affine-cloud' },
+        isSharedMode,
+      },
+      engineWorkerInitOptions: {
+        local: {
+          doc: {
+            name: 'StaticCloudDocStorage',
+            opts: {
+              id: 'public-workspace',
+              publicRootDocId: 'public-doc',
+              serverBaseUrl: 'https://example.com',
+            },
+          },
+        },
+        remotes: {},
+      },
+    });
+    const workspace = scope.framework.createEntity(Workspace);
+    const pages = new YArray<YMap<unknown>>();
+    workspace.rootYDoc.getMap('meta').set('pages', pages);
+    pages.push([new YMap<unknown>([['id', 'public-doc']])]);
+    expect(workspace.docCollection.meta.docMetas.map(doc => doc.id)).toEqual(
+      isSharedMode ? ['public-doc'] : []
+    );
+    expect(!!workspace.docCollection.getDoc('public-doc')).toBe(isSharedMode);
+    scope.dispose();
+  }
+);
 
 test('cloud documents use inventory identity and preserve editors through raw metadata changes', () => {
   const root = new YDoc({ guid: 'cloud-workspace' });

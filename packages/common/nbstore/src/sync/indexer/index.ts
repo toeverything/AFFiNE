@@ -481,18 +481,12 @@ export class IndexerSyncImpl implements IndexerSync {
               const docYDoc = new YDoc({ guid: docId });
               try {
                 applyUpdate(docYDoc, doc.bin);
-                if (docYDoc.store.pendingStructs || docYDoc.store.pendingDs) {
-                  throw new Error('Document source is incomplete');
-                }
                 const result = await crawlingDocData({
                   ydoc: docYDoc,
                   rootYDoc: this.status.rootDoc,
                   spaceId: this.status.rootDocId,
                   docId,
                 });
-                if (!result && docYDoc.getMap('blocks').size > 0) {
-                  throw new Error('Document has no readable root block');
-                }
                 blocks = result?.blocks ?? [];
                 preview = result?.preview ?? '';
                 bodyTitle = result?.title ?? '';

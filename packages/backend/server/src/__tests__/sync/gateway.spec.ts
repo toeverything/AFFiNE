@@ -150,10 +150,19 @@ function emitWithAck<T>(socket: SocketIOClient, event: string, data: unknown) {
   );
 }
 
-function waitForEvent<T>(socket: SocketIOClient, event: string) {
+function waitForEvent<T>(
+  socket: SocketIOClient,
+  event: string,
+  accept: (payload: T) => boolean = () => true
+) {
   return withTimeout(
     new Promise<T>(resolve => {
-      socket.once(event, (payload: T) => resolve(payload));
+      const listener = (payload: T) => {
+        if (!accept(payload)) return;
+        socket.off(event, listener);
+        resolve(payload);
+      };
+      socket.on(event, listener);
     }),
     WS_TIMEOUT_MS,
     `event ${event}`
@@ -1395,6 +1404,44 @@ test('permission revocation removes an active document subscription', async t =>
     const permissionService = app.get(PermissionService);
     const batchPermissions =
       permissionService.batchDocPermissions.bind(permissionService);
+    const inventoryPermissions = Sinon.spy(
+      permissionService,
+      'batchDocPermissions'
+    );
+    try {
+      for (let i = 0; i < 100; i++) {
+        await app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+          version: 1,
+          kind: 'workspaceInventoryChanged',
+          workspaceId: workspace.id,
+          docId: `new-document-${i}`,
+        });
+      }
+      t.is(inventoryPermissions.callCount, 0);
+    } finally {
+      inventoryPermissions.restore();
+    }
+    const unrelatedDocId = 'unrelated-doc';
+    await createSnapshot(db, {
+      workspaceId: workspace.id,
+      docId: unrelatedDocId,
+      userId: owner.id,
+      blob: Buffer.from(encodeStateAsUpdate(new Doc())),
+      state: Buffer.from(encodeStateVector(new Doc())),
+    });
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:join-batch', {
+        ...join,
+        spaces: [
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: unrelatedDocId,
+          },
+        ],
+      })
+    );
     const changed = { workspaceId: workspace.id, docId };
     for (const burstSize of [1, 20]) {
       await models.docUser.set(
@@ -1438,8 +1485,25 @@ test('permission revocation removes an active document subscription', async t =>
       });
       const oldRevalidation = app
         .get(EventBus)
-        .emitAsync('doc.grants.changed', changed);
+        .emitAsync('backendRuntime.invalidation', {
+          version: 1,
+          kind: 'workspaceInventoryChanged',
+          ...changed,
+        });
       await captured[0].promise;
+      const unrelatedUpdate = waitForEvent<{ docId: string }>(
+        otherOwnerSocket,
+        'space:broadcast-doc-updates',
+        message => message.docId === unrelatedDocId
+      );
+      await app.get(EventBus).emitAsync('doc.updates.pushed', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: unrelatedDocId,
+        updates: [Buffer.from(createYjsUpdateBase64(), 'base64')],
+        timestamp: Date.now(),
+      });
+      t.is((await unrelatedUpdate).docId, unrelatedDocId);
       await db.docGrant.deleteMany({
         where: {
           workspaceId: workspace.id,
@@ -1450,18 +1514,32 @@ test('permission revocation removes an active document subscription', async t =>
       });
       const newRevalidation = Promise.all(
         Array.from({ length: burstSize }, () =>
-          app.get(EventBus).emitAsync('doc.grants.changed', changed)
+          app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+            version: 1,
+            kind: 'workspaceInventoryChanged',
+            ...changed,
+          })
         )
       );
       const noEarlyUpdate = expectNoEvent(
         ownerSocket,
         'space:broadcast-doc-updates'
       );
+      const invalidation = waitForEvent<{ inventoryChanged?: boolean }>(
+        ownerSocket,
+        'space:broadcast-doc-invalidation',
+        message => !message.inventoryChanged
+      );
+      const update = Buffer.from(createYjsUpdateBase64(), 'base64');
+      await db.snapshot.update({
+        where: { workspaceId_id: { workspaceId: workspace.id, id: docId } },
+        data: { blob: update, updatedAt: new Date() },
+      });
       await app.get(EventBus).emitAsync('doc.updates.pushed', {
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId,
-        updates: [Buffer.from(createYjsUpdateBase64(), 'base64')],
+        updates: [update],
         timestamp: Date.now(),
       });
       try {
@@ -1469,23 +1547,35 @@ test('permission revocation removes an active document subscription', async t =>
         t.is(reads, 1);
         resume[0].resolve();
         await captured[1].promise;
-        const deliveredUpdate = waitForEvent(
-          ownerSocket,
-          'space:broadcast-doc-updates'
+        t.not((await invalidation).inventoryChanged, true);
+        unwrapResponse(
+          t,
+          await emitWithAck(ownerSocket, 'space:join-batch', join)
         );
+        const repaired = unwrapResponse(
+          t,
+          await emitWithAck<{ missing: string }>(
+            ownerSocket,
+            'space:load-doc',
+            {
+              spaceType: 'workspace',
+              spaceId: workspace.id,
+              docId,
+            }
+          )
+        );
+        const repairedDoc = new Doc();
+        applyUpdate(repairedDoc, Buffer.from(repaired.missing, 'base64'));
+        t.is(repairedDoc.getMap('m').get('k'), 'v');
+        repairedDoc.destroy();
         const noRevokedUpdate = expectNoEvent(
           collaboratorSocket,
           'space:broadcast-doc-updates'
         );
         resume[1].resolve();
-        await Promise.all([
-          oldRevalidation,
-          newRevalidation,
-          deliveredUpdate,
-          noRevokedUpdate,
-        ]);
+        await Promise.all([oldRevalidation, newRevalidation, noRevokedUpdate]);
         t.is(reads, 2);
-        t.is(ownerReads, 2);
+        t.is(ownerReads, 3);
       } finally {
         for (const pending of resume) pending.resolve();
         await Promise.all([oldRevalidation, newRevalidation]);
@@ -1510,7 +1600,9 @@ test('permission revocation removes an active document subscription', async t =>
       })
     );
     t.snapshot(stableError(staleGenerationLoad, workspace.id));
-    await app.get(EventBus).emitAsync('doc.grants.changed', {
+    await app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+      version: 1,
+      kind: 'workspaceInventoryChanged',
       workspaceId: workspace.id,
       docId,
     });
@@ -1560,6 +1652,86 @@ test('permission revocation removes an active document subscription', async t =>
       })
     );
     await noRevokedUpdate;
+
+    const otherDocId = 'generation-race-unrelated-doc';
+    await createSnapshot(db, {
+      workspaceId: workspace.id,
+      docId: otherDocId,
+      userId: owner.id,
+    });
+    const otherDocJoin = {
+      ...join,
+      spaces: [
+        ...join.spaces,
+        { spaceType: 'workspace', spaceId: workspace.id, docId: otherDocId },
+      ],
+    };
+    for (const socket of [ownerSocket, otherOwnerSocket]) {
+      unwrapResponse(
+        t,
+        await emitWithAck(socket, 'space:join-batch', otherDocJoin)
+      );
+    }
+    const captured = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const checkedDocs: string[][] = [];
+    const permissionStub = Sinon.stub(
+      permissionService,
+      'batchDocPermissions'
+    ).callsFake(async input => {
+      const result = await batchPermissions(input);
+      if (input.userId === owner.id) {
+        checkedDocs.push(input.docs.map(doc => doc.docId).sort());
+        if (checkedDocs.length === 1) {
+          captured.resolve();
+          await resume.promise;
+        }
+      }
+      return result;
+    });
+    const workspaceCheck = app
+      .get(EventBus)
+      .emitAsync('workspace.updated', updatedWorkspace);
+    await captured.promise;
+    await db.$executeRaw`
+      UPDATE workspace_sync_permission_generations
+      SET generation = generation + 1
+      WHERE workspace_id = ${workspace.id}
+    `;
+    const docCheck = app
+      .get(EventBus)
+      .emitAsync('backendRuntime.invalidation', {
+        version: 1,
+        kind: 'workspaceInventoryChanged',
+        ...changed,
+      });
+    try {
+      resume.resolve();
+      await Promise.all([workspaceCheck, docCheck]);
+    } finally {
+      resume.resolve();
+      await Promise.all([workspaceCheck, docCheck]);
+      permissionStub.restore();
+    }
+    t.deepEqual(checkedDocs, [
+      [docId, otherDocId, unrelatedDocId].sort(),
+      [docId, otherDocId, unrelatedDocId].sort(),
+    ]);
+    const receivedAfterRace = waitForEvent<{ docId: string }>(
+      ownerSocket,
+      'space:broadcast-doc-updates'
+    );
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: otherDocId,
+        intent: 'update',
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.is((await receivedAfterRace).docId, otherDocId);
   } finally {
     ownerSocket.disconnect();
     otherOwnerSocket.disconnect();

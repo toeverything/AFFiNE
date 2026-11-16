@@ -182,6 +182,10 @@ impl SearchRuntime {
       r#"SELECT workspace_id FROM search_projection.workspace_states
          WHERE generation_id=$1
            AND last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
+           AND (NOT EXISTS(SELECT 1 FROM workspaces workspace WHERE workspace.id=workspace_states.workspace_id)
+             OR EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
+               WHERE checkpoint.kind='workspace_doc_lifecycle' AND checkpoint.scope=workspace_states.workspace_id
+                 AND checkpoint.status='completed'))
            AND (
            available_at <= now()
            OR EXISTS (SELECT 1 FROM search_projection.document_states document
