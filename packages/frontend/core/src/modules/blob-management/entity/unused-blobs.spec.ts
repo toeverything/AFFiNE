@@ -217,6 +217,46 @@ test.each([
         'userdata$user$settings',
         ...(mode === 'absent-root' ? [] : ['workspace']),
       ]);
+      if (mode === 'cloud') {
+        const expected = await entity.getUnusedBlobs();
+        const scan = vi.spyOn(entity, 'getUnusedBlobs');
+        scan.mockRejectedValueOnce(new Error('Document sources changed'));
+        entity.unusedBlobs$.setValue(expected);
+        entity.revalidate();
+        expect(entity.isLoading$.value).toBe(true);
+        expect(entity.unusedBlobs$.value).toEqual([]);
+        await vi.waitFor(() => expect(entity.isLoading$.value).toBe(false));
+        expect(entity.unusedBlobs$.value).toEqual([]);
+        expect(scan).toHaveBeenCalledTimes(1);
+
+        entity.revalidate();
+        await vi.waitFor(() =>
+          expect(entity.unusedBlobs$.value).toEqual(expected)
+        );
+        expect(entity.isLoading$.value).toBe(false);
+
+        const pending =
+          Promise.withResolvers<
+            Awaited<ReturnType<typeof entity.getUnusedBlobs>>
+          >();
+        let cancelled: AbortSignal | undefined;
+        scan.mockImplementationOnce(signal => {
+          cancelled = signal;
+          return pending.promise;
+        });
+        entity.revalidate();
+        entity.revalidate();
+        expect(cancelled?.aborted).toBe(true);
+        expect(entity.isLoading$.value).toBe(true);
+        await vi.waitFor(() =>
+          expect(entity.unusedBlobs$.value).toEqual(expected)
+        );
+        pending.resolve([]);
+        await pending.promise;
+        expect(entity.unusedBlobs$.value).toEqual(expected);
+        expect(entity.isLoading$.value).toBe(false);
+        entity.revalidate.unsubscribe();
+      }
     } else {
       await expect(entity.getUnusedBlobs()).rejects.toThrow();
     }

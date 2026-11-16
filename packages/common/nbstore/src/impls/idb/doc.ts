@@ -1,13 +1,14 @@
+import { isEqual } from 'lodash-es';
+
 import { share } from '../../connection';
 import {
   type DocClock,
   type DocClocks,
   type DocRecord,
+  DocStorageBase,
   type DocUpdate,
-  SnapshotDocStorageBase,
 } from '../../storage';
 import { IDBConnection, type IDBConnectionOptions } from './db';
-import { IndexedDBLocker } from './lock';
 import { createPeerClock } from './schema';
 
 type ChannelMessage =
@@ -18,7 +19,7 @@ type ChannelMessage =
       origin?: string;
     };
 
-export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOptions> {
+export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
   static readonly identifier = 'IndexedDBDocStorage';
 
   readonly connection = share(new IDBConnection(this.options));
@@ -30,8 +31,6 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
   get channel() {
     return this.connection.inner.channel;
   }
-
-  override locker = new IndexedDBLocker(this.connection);
 
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
     const createForPeer =
@@ -97,19 +96,66 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
     return { docId: update.docId, timestamp };
   }
 
-  protected override async getDocSnapshot(docId: string) {
-    const trx = this.db.transaction('snapshots', 'readonly');
-    const record = await trx.store.get(docId);
-
-    if (!record) {
-      return null;
+  override async getDoc(docId: string): Promise<DocRecord | null> {
+    const read = this.db.transaction(['snapshots', 'updates'], 'readonly');
+    const [snapshot, updates] = await Promise.all([
+      read.objectStore('snapshots').get(docId),
+      read.objectStore('updates').index('docId').getAll(docId),
+    ]);
+    await read.done;
+    if (updates.length === 0) {
+      return snapshot
+        ? { docId, bin: snapshot.bin, timestamp: snapshot.updatedAt }
+        : null;
     }
 
-    return {
+    const sources = [
+      ...(snapshot ? [snapshot.bin] : []),
+      ...updates.map(update => update.bin),
+    ];
+    const record = {
       docId,
-      bin: record.bin,
-      timestamp: record.updatedAt,
+      bin: sources.length === 1 ? sources[0] : await this.mergeUpdates(sources),
+      timestamp: new Date(
+        Math.max(
+          snapshot?.updatedAt.getTime() ?? 0,
+          updates[updates.length - 1].createdAt.getTime()
+        )
+      ),
     };
+    if (this.isReadonly) return record;
+
+    const write = this.db.transaction(['snapshots', 'updates'], 'readwrite');
+    const [currentSnapshot, currentUpdates] = await Promise.all([
+      write.objectStore('snapshots').get(docId),
+      Promise.all(
+        updates.map(update =>
+          write.objectStore('updates').get([docId, update.createdAt])
+        )
+      ),
+    ]);
+    if (
+      currentSnapshot?.updatedAt.getTime() === snapshot?.updatedAt.getTime() &&
+      isEqual(currentSnapshot?.bin, snapshot?.bin) &&
+      updates.every((update, index) =>
+        isEqual(currentUpdates[index]?.bin, update.bin)
+      )
+    ) {
+      await write.objectStore('snapshots').put({
+        docId,
+        bin: record.bin,
+        createdAt: currentSnapshot?.createdAt ?? record.timestamp,
+        updatedAt: record.timestamp,
+      });
+      await Promise.all(
+        updates.map(update =>
+          write.objectStore('updates').delete([docId, update.createdAt])
+        )
+      );
+    }
+    await write.done;
+    // A concurrent mutation can prevent compaction without invalidating the captured read.
+    return record;
   }
 
   override async deleteDoc(docId: string) {
@@ -158,50 +204,6 @@ export class IndexedDBDocStorage extends SnapshotDocStorageBase<IDBConnectionOpt
     const trx = this.db.transaction('clocks', 'readonly');
 
     return (await trx.store.get(docId)) ?? null;
-  }
-
-  protected override async setDocSnapshot(
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    const trx = this.db.transaction('snapshots', 'readwrite');
-    const record = await trx.store.get(snapshot.docId);
-
-    if (!record || record.updatedAt < snapshot.timestamp) {
-      await trx.store.put({
-        docId: snapshot.docId,
-        bin: snapshot.bin,
-        createdAt: record?.createdAt ?? snapshot.timestamp,
-        updatedAt: snapshot.timestamp,
-      });
-    }
-
-    trx.commit();
-    return true;
-  }
-
-  protected override async getDocUpdates(docId: string): Promise<DocRecord[]> {
-    const trx = this.db.transaction('updates', 'readonly');
-    const updates = await trx.store.index('docId').getAll(docId);
-
-    return updates.map(update => ({
-      docId,
-      bin: update.bin,
-      timestamp: update.createdAt,
-    }));
-  }
-
-  protected override async markUpdatesMerged(
-    docId: string,
-    updates: DocRecord[]
-  ): Promise<number> {
-    const trx = this.db.transaction('updates', 'readwrite');
-
-    await Promise.all(
-      updates.map(update => trx.store.delete([docId, update.timestamp]))
-    );
-
-    trx.commit();
-    return updates.length;
   }
 
   private docUpdateListener = 0;

@@ -471,7 +471,7 @@ mod tests {
     let sweep_embedded = Arc::clone(&embedded);
     let sweep_generation = generation.clone();
     let sweep_workspace_id = race_workspace_id.clone();
-    let sweep = tokio::spawn(async move {
+    let mut sweep = tokio::spawn(async move {
       reconcile_workspace(
         &sweep_pool,
         &sweep_embedded,
@@ -482,31 +482,23 @@ mod tests {
       .await
       .unwrap()
     });
-    for _ in 0..100 {
-      let claimed: bool = sqlx::query_scalar(
-        "SELECT COALESCE(lease_expires_at > now(),false) FROM search_projection.workspace_states WHERE \
-         generation_id=$1 AND workspace_id=$2",
-      )
-      .bind(generation_id)
-      .bind(&race_workspace_id)
-      .fetch_one(&pool)
+    // Recreate only after the sweep reaches the held GC fence.
+    let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+      .fetch_one(&mut *blocker)
       .await
       .unwrap();
-      if claimed {
-        break;
+    loop {
+      tokio::select! {
+        result = &mut sweep => panic!("workspace sweep finished before the GC fence: {result:?}"),
+        blocked = sqlx::query_scalar::<_, bool>(
+          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))",
+        ).bind(blocker_pid).fetch_one(&pool) => {
+          if blocked.unwrap() {
+            break;
+          }
+        }
       }
-      tokio::task::yield_now().await;
     }
-    let claimed: bool = sqlx::query_scalar(
-      "SELECT COALESCE(lease_expires_at > now(),false) FROM search_projection.workspace_states WHERE generation_id=$1 \
-       AND workspace_id=$2",
-    )
-    .bind(generation_id)
-    .bind(&race_workspace_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert!(claimed);
     sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
       .bind(&race_workspace_id)
       .execute(&pool)
@@ -684,6 +676,7 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     sqlx::query("DELETE FROM search_projection.generations")
       .execute(&pool)

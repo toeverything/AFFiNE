@@ -60,6 +60,7 @@ interface Status {
   retryOnLocalUpdate: Set<string>;
   jobDocQueue: AsyncPriorityQueue;
   jobMap: Map<string, Job[]>;
+  currentDocId: string | null;
   remoteClocks: ClockMap;
   remoteStateVectors: Map<string, Uint8Array>;
   syncing: boolean;
@@ -350,6 +351,7 @@ export class DocSyncPeer {
     retryOnLocalUpdate: new Set<string>(),
     jobDocQueue: new AsyncPriorityQueue(),
     jobMap: new Map(),
+    currentDocId: null,
     remoteClocks: new ClockMap(new Map()),
     remoteStateVectors: new Map(),
     syncing: false,
@@ -425,7 +427,12 @@ export class DocSyncPeer {
           error: this.currentError,
         });
       } else {
-        const syncing = this.status.jobMap.size;
+        const syncing =
+          this.status.jobMap.size +
+          (this.status.currentDocId !== null &&
+          !this.status.jobMap.has(this.status.currentDocId)
+            ? 1
+            : 0);
         subscribe.next({
           total: this.status.docs.size,
           syncing: syncing,
@@ -463,17 +470,23 @@ export class DocSyncPeer {
           });
           return;
         }
+        const pending =
+          this.status.currentDocId === docId || this.status.jobMap.has(docId);
+        const removed =
+          this.workspaceState$.value?.ready === true && !this.eligible(docId);
         subscribe.next({
           syncing:
-            !docErrorMessage &&
-            (!this.status.connectedDocs.has(docId) ||
-              this.status.jobMap.has(docId)),
+            this.status.currentDocId === docId ||
+            (!docErrorMessage &&
+              (pending || (!removed && !this.status.connectedDocs.has(docId)))),
           synced:
-            !docErrorMessage &&
-            this.status.connectedDocs.has(docId) &&
-            !this.status.jobMap.has(docId),
-          retrying: this.status.retrying,
-          errorMessage: docErrorMessage ?? this.status.errorMessage,
+            !pending &&
+            (removed ||
+              (!docErrorMessage && this.status.connectedDocs.has(docId))),
+          retrying: !removed && this.status.retrying,
+          errorMessage: removed
+            ? null
+            : (docErrorMessage ?? this.status.errorMessage),
         });
       };
       next();
@@ -868,6 +881,7 @@ export class DocSyncPeer {
           retryOnLocalUpdate: new Set(),
           jobDocQueue: new AsyncPriorityQueue(),
           jobMap: new Map(),
+          currentDocId: null,
           remoteClocks: new ClockMap(new Map()),
           remoteStateVectors: new Map(),
           syncing: false,
@@ -1158,6 +1172,8 @@ export class DocSyncPeer {
   }
 
   private async runRemoteDocJob(docId: string, job: () => Promise<void>) {
+    this.status.currentDocId = docId;
+    this.statusUpdatedSubject$.next(docId);
     try {
       await job();
       return true;
@@ -1188,6 +1204,13 @@ export class DocSyncPeer {
       this.statusUpdatedSubject$.next(docId);
       this.statusUpdatedSubject$.next(true);
       return false;
+    } finally {
+      this.status.currentDocId = null;
+      if (!this.status.docs.has(docId)) {
+        this.status.connectedDocs.delete(docId);
+        this.status.docErrors.delete(docId);
+      }
+      this.statusUpdatedSubject$.next(docId);
     }
   }
 

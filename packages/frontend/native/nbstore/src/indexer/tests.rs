@@ -212,6 +212,33 @@ async fn index_tables_support_terminal_queries_and_restart() {
   assert_eq!(aggregate.total, 2);
   assert_eq!(aggregate.buckets.len(), 2);
 
+  for id in 2..=10_001 {
+    let id = format!("doc-{id}");
+    storage
+      .index_upsert("doc", document(&id, &[("docId", &[&id]), ("title", &["title"])]))
+      .await
+      .unwrap();
+  }
+  let mut all_options = options(&["docId", "title"], &[]);
+  all_options.limit = u32::MAX;
+  let all = storage
+    .index_search("doc", query("all", None, None), all_options.clone())
+    .await
+    .unwrap();
+  assert_eq!(all.total, 10_001);
+  assert_eq!(all.hits.len(), 10_001);
+  assert!(all.hits.iter().all(|hit| hit.fields.len() == 2));
+  all_options.offset = 10_000;
+  assert_eq!(
+    storage
+      .index_search("doc", query("all", None, None), all_options)
+      .await
+      .unwrap()
+      .hits
+      .len(),
+    1
+  );
+
   let clock = DocIndexedClock {
     doc_id: "doc-1".into(),
     timestamp: Utc::now().naive_utc(),

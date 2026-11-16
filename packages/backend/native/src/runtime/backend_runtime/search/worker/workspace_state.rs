@@ -449,6 +449,7 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     let generation_id = Uuid::new_v4();
     let workspace_id = format!("claim-workspace-{}", Uuid::new_v4().simple());

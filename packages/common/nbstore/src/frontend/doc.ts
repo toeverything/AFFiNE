@@ -190,11 +190,19 @@ export class DocFrontend {
     return this.sync.refreshWorkspaceState();
   }
 
-  applyDocLifecycle(docId: string, lifecycle: 'trash' | 'restore' | 'delete') {
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
     if (!this.storage.applyDocLifecycle) {
       throw new Error('Document lifecycle is unavailable');
     }
-    return this.storage.applyDocLifecycle(docId, lifecycle);
+    const result = await this.storage.applyDocLifecycle(docId, lifecycle);
+    if (lifecycle === 'delete') {
+      await this.waitForSynced(docId, this.abort.signal);
+      await this.storage.deleteDoc(docId);
+    }
+    return result;
   }
 
   private _docState$(docId: string): Observable<DocFrontendDocState> {

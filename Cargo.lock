@@ -5227,9 +5227,9 @@ dependencies = [
 
 [[package]]
 name = "memory-indexer"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff94e8411d369f3197d3bf8b57414651cbfe01353959f91dbc3bfb1f903ef9d3"
+checksum = "f45462f191bf7caaad842af042646f6570178bfe0f17e799d1b781120768f624"
 dependencies = [
  "bincode 2.0.1",
  "crc32fast",

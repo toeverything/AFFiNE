@@ -1,18 +1,27 @@
+import { DebugLogger } from '@affine/debug';
 import type { ListedBlobRecord } from '@affine/nbstore';
 import {
   effect,
   Entity,
   fromPromise,
   LiveData,
-  onComplete,
   onStart,
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { firstValueFrom, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  EMPTY,
+  finalize,
+  firstValueFrom,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceFlavoursService } from '../../workspace/services/flavours';
+
+const logger = new DebugLogger('unused-blobs');
 
 export class UnusedBlobs extends Entity {
   constructor(
@@ -33,8 +42,15 @@ export class UnusedBlobs extends Entity {
         tap(data => {
           this.unusedBlobs$.setValue(data);
         }),
-        onStart(() => this.isLoading$.setValue(true)),
-        onComplete(() => this.isLoading$.setValue(false))
+        catchError(error => {
+          logger.error(error);
+          return EMPTY;
+        }),
+        onStart(() => {
+          this.unusedBlobs$.setValue([]);
+          this.isLoading$.setValue(true);
+        }),
+        finalize(() => this.isLoading$.setValue(false))
       )
     )
   );

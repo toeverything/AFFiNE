@@ -2162,6 +2162,8 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
   const peer = new DocSyncPeer('cloud', local, metadata, remote);
   const abort = new AbortController();
   const running = peer.mainLoop(abort.signal);
+  const pullFetched = deferred();
+  const releasePull = deferred();
   try {
     await vi.waitFor(async () => {
       expect(peer.workspaceState$.value?.ready).toBe(true);
@@ -2209,6 +2211,20 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
         .intent
     ).toBe('create');
 
+    await vi.waitFor(async () =>
+      expect((await firstValueFrom(peer.peerState$)).synced).toBe(true)
+    );
+    const getDiff = remote.getDocDiff.bind(remote);
+    vi.spyOn(remote, 'getDocDiff').mockImplementationOnce(async (...args) => {
+      expect(args[0]).toBe('live');
+      const result = await getDiff(...args);
+      pullFetched.resolve();
+      await releasePull.promise;
+      return result;
+    });
+    await originalPush({ docId: 'live', bin: new Uint8Array([0, 0]) });
+    await pullFetched.promise;
+
     const fetched = deferred();
     const release = deferred();
     getState.mockImplementationOnce(async () => {
@@ -2249,6 +2265,12 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
       'created',
     ]);
     expect(peer.workspaceState$.value?.docs[0].lifecycle).toBe('trashed');
+    expect((await firstValueFrom(peer.peerState$)).synced).toBe(false);
+    expect((await firstValueFrom(peer.docState$('live'))).synced).toBe(false);
+    releasePull.resolve();
+    await vi.waitFor(async () =>
+      expect((await firstValueFrom(peer.docState$('live'))).synced).toBe(true)
+    );
     expect(await local.getDoc('live')).not.toBeNull();
     expect(
       await metadata.getPeerPulledRemoteClock('account-a', 'live')
@@ -2258,11 +2280,10 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
     ).toEqual([]);
     await originalPush({ docId: 'live', bin: encodeStateAsUpdate(body) });
     invalidated?.();
-    await vi.waitFor(() =>
-      expect(peer.workspaceState$.value?.docs.map(doc => doc.docId)).toEqual([
-        'created',
-      ])
-    );
+    await peer.refreshWorkspaceState();
+    expect(peer.workspaceState$.value?.docs.map(doc => doc.docId)).toEqual([
+      'created',
+    ]);
     const denied = Object.assign(new Error('Workspace access revoked'), {
       name: 'SPACE_ACCESS_DENIED',
     });
@@ -2271,7 +2292,10 @@ test('cloud inventory replaces membership, fences stale installs and preserves e
     expect(peer.workspaceState$.value?.docs).toEqual([]);
     expect(await local.getDoc('live')).not.toBeNull();
     await peer.refreshWorkspaceState();
+    await local.deleteDoc('live');
+    expect(await local.getDoc('live')).toBeNull();
   } finally {
+    releasePull.resolve();
     abort.abort();
     await running;
   }
