@@ -6,6 +6,7 @@ exports[`CloudDocStorage broadcast updates > awareness joins active documents th
     "event": "space:join-batch",
     "payload": {
       "clientVersion": "0.27.5",
+      "protocolVersion": 2,
       "spaces": [
         {
           "docId": "doc-a",
@@ -46,6 +47,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "space-1",
@@ -56,17 +58,10 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       },
     },
     {
-      "event": "space:load-doc",
-      "payload": {
-        "docId": "space-1",
-        "spaceId": "space-1",
-        "spaceType": "workspace",
-      },
-    },
-    {
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "doc-1",
@@ -88,6 +83,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "doc-2",
@@ -110,6 +106,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "doc-3",
@@ -131,6 +128,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "doc-4",
@@ -144,9 +142,27 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:push-doc-update",
       "payload": {
         "docId": "doc-4",
+        "intent": "update",
         "spaceId": "space-1",
         "spaceType": "workspace",
         "update": "AAA=",
+      },
+    },
+    {
+      "event": "space:push-doc-update",
+      "payload": {
+        "docId": "new-doc",
+        "intent": "create",
+        "spaceId": "space-1",
+        "spaceType": "workspace",
+        "update": "AAA=",
+      },
+    },
+    {
+      "event": "space:load-workspace-state",
+      "payload": {
+        "spaceId": "space-1",
+        "spaceType": "workspace",
       },
     },
     {
@@ -162,6 +178,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "denied",
@@ -175,6 +192,7 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
       "event": "space:join-batch",
       "payload": {
         "clientVersion": "0.27.5",
+        "protocolVersion": 2,
         "spaces": [
           {
             "docId": "doc-1",
@@ -217,7 +235,6 @@ exports[`CloudDocStorage broadcast updates > batch route joins the workspace and
     },
   ],
   "lifecycle": {
-    "rootUpdate": Any<Uint8Array>,
     "timestamp": Any<Date>,
   },
 }

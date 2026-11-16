@@ -8,8 +8,8 @@ import {
   yjsObservePath,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { distinctUntilChanged, map, switchMap } from 'rxjs';
-import { applyUpdate, Array as YArray, Map as YMap, transact } from 'yjs';
+import { distinctUntilChanged, map, Observable, switchMap } from 'rxjs';
+import { Array as YArray, Map as YMap, transact } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { DocPropertiesStore } from './doc-properties';
@@ -36,6 +36,15 @@ export class DocsStore extends Store {
 
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
+    const workspace = this.workspaceService.workspace;
+    if (workspace.flavour !== 'local') {
+      workspace.engine.doc
+        .createDoc(id)
+        .catch(error =>
+          console.error('Failed to save document creation', error)
+        );
+      return id;
+    }
 
     transact(
       this.workspaceService.workspace.rootYDoc,
@@ -63,7 +72,23 @@ export class DocsStore extends Store {
     return id;
   }
 
+  private watchEffectiveDocMetas() {
+    const meta = this.workspaceService.workspace.docCollection.meta;
+    return new Observable<DocMeta[]>(subscriber => {
+      subscriber.next(meta.docMetas);
+      const subscription = meta.docMetaUpdated.subscribe(() =>
+        subscriber.next(meta.docMetas)
+      );
+      return () => subscription.unsubscribe();
+    });
+  }
+
   watchDocIds() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => doc.id))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -80,6 +105,13 @@ export class DocsStore extends Store {
   }
 
   watchAllDocUpdatedDate() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, updatedDate: doc.updatedDate }))
+        )
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -99,6 +131,11 @@ export class DocsStore extends Store {
   }
 
   watchAllDocTagIds() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, tags: doc.tags ?? [] })))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -124,6 +161,13 @@ export class DocsStore extends Store {
   }
 
   watchAllDocCreateDate() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, createDate: doc.createDate ?? 0 }))
+        )
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -143,6 +187,11 @@ export class DocsStore extends Store {
   }
 
   watchAllDocTitle() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, title: doc.title ?? '' })))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -162,6 +211,11 @@ export class DocsStore extends Store {
   }
 
   watchNonTrashDocIds() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => !doc.trash).map(doc => doc.id))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -180,6 +234,11 @@ export class DocsStore extends Store {
   }
 
   watchTrashDocIds() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => doc.trash).map(doc => doc.id))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -198,6 +257,11 @@ export class DocsStore extends Store {
   }
 
   watchDocMeta(id: string) {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.find(doc => doc.id === id) ?? {})
+      );
+    }
     let docMetaIndexCache = -1;
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
@@ -239,6 +303,11 @@ export class DocsStore extends Store {
   }
 
   watchDocListReady() {
+    if (this.workspaceService.workspace.flavour !== 'local') {
+      return this.workspaceService.workspace.engine.doc.workspaceState$.pipe(
+        map(state => state?.ready ?? false)
+      );
+    }
     return this.workspaceService.workspace.engine.doc
       .docState$(this.workspaceService.workspace.id)
       .pipe(map(state => state.synced));
@@ -266,11 +335,7 @@ export class DocsStore extends Store {
       }
       return;
     }
-    const result = await workspace.engine.doc.applyDocLifecycle(id, lifecycle);
-    applyUpdate(workspace.rootYDoc, result.rootUpdate, 'server-lifecycle');
-    if (lifecycle === 'delete') {
-      await workspace.engine.doc.storage.deleteDoc(id);
-    }
+    await workspace.engine.doc.applyDocLifecycle(id, lifecycle);
   }
 
   setDocPrimaryModeSetting(id: string, mode: DocMode) {

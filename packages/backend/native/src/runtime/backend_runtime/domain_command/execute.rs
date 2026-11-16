@@ -18,46 +18,60 @@ pub(in crate::runtime::backend_runtime) struct DomainCommandOutcome {
 
 impl DomainCommandInputV1 {
   fn invalidations(&self) -> Vec<InvalidationHintV1> {
-    if let Self::RevokeWorkspaceMember { workspace_id, .. } | Self::LeaveWorkspace { workspace_id, .. } = self {
-      return vec![InvalidationHintV1::QuotaSeatUsage {
-        workspace_id: workspace_id.clone(),
-      }];
-    }
-    let source = match self {
+    match self {
       Self::ApplyDocLifecycle {
         workspace_id, doc_id, ..
-      } => {
-        return vec![
-          InvalidationHintV1::BlobSource {
-            source: SourceIdentity::CurrentDoc {
-              workspace_id: workspace_id.clone(),
-              doc_id: workspace_id.clone(),
-            },
+      } => vec![
+        InvalidationHintV1::WorkspaceInventoryChanged {
+          workspace_id: workspace_id.clone(),
+          doc_id: Some(doc_id.clone()),
+        },
+        InvalidationHintV1::BlobSource {
+          source: SourceIdentity::CurrentDoc {
+            workspace_id: workspace_id.clone(),
+            doc_id: doc_id.clone(),
           },
-          InvalidationHintV1::BlobSource {
-            source: SourceIdentity::CurrentDoc {
-              workspace_id: workspace_id.clone(),
-              doc_id: doc_id.clone(),
-            },
-          },
-        ];
-      }
-      Self::AppendRootUpdate { workspace_id, .. } => Some(SourceIdentity::CurrentDoc {
-        workspace_id: workspace_id.clone(),
-        doc_id: workspace_id.clone(),
-      }),
-      Self::RecoverDoc {
+        },
+      ],
+      Self::AppendRootUpdate { workspace_id, .. } => vec![InvalidationHintV1::BlobSource {
+        source: SourceIdentity::CurrentDoc {
+          workspace_id: workspace_id.clone(),
+          doc_id: workspace_id.clone(),
+        },
+      }],
+      Self::RevokeWorkspaceMember { workspace_id, .. } | Self::LeaveWorkspace { workspace_id, .. } => vec![
+        InvalidationHintV1::QuotaSeatUsage {
+          workspace_id: workspace_id.clone(),
+        },
+        InvalidationHintV1::WorkspaceInventoryChanged {
+          workspace_id: workspace_id.clone(),
+          doc_id: None,
+        },
+      ],
+      Self::PublishDoc {
         workspace_id, doc_id, ..
-      } => Some(SourceIdentity::CurrentDoc {
+      }
+      | Self::UnpublishDoc {
+        workspace_id, doc_id, ..
+      }
+      | Self::TransitionDocRole {
+        workspace_id, doc_id, ..
+      }
+      | Self::GrantDocRoles {
+        workspace_id, doc_id, ..
+      }
+      | Self::SetDocDefaultRole {
+        workspace_id, doc_id, ..
+      } => vec![InvalidationHintV1::WorkspaceInventoryChanged {
         workspace_id: workspace_id.clone(),
-        doc_id: doc_id.clone(),
-      }),
-      _ => None,
-    };
-    source
-      .map(|source| InvalidationHintV1::BlobSource { source })
-      .into_iter()
-      .collect()
+        doc_id: Some(doc_id.clone()),
+      }],
+      Self::TransitionWorkspaceRole { workspace_id, .. } => vec![InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.clone(),
+        doc_id: None,
+      }],
+      _ => Vec::new(),
+    }
   }
 }
 
@@ -238,7 +252,6 @@ pub(in crate::runtime::backend_runtime) async fn execute(
         workspace_id,
         doc_id,
         timestamp,
-        embedding_schema_ready,
       )
       .await?
     }
@@ -405,28 +418,41 @@ mod tests {
     let cases = [
       (
         serde_json::json!({"command":"transition_workspace_role","actorUserId":"actor","workspaceId":"workspace","targetUserId":"target","newRole":"owner"}),
-        Vec::new(),
+        vec![InvalidationHintV1::WorkspaceInventoryChanged {
+          workspace_id: "workspace".into(),
+          doc_id: None,
+        }],
       ),
       (
         serde_json::json!({"command":"revoke_workspace_member","actorUserId":"actor","workspaceId":"workspace","targetUserId":"target"}),
-        vec![InvalidationHintV1::QuotaSeatUsage {
-          workspace_id: "workspace".to_string(),
-        }],
+        vec![
+          InvalidationHintV1::QuotaSeatUsage {
+            workspace_id: "workspace".to_string(),
+          },
+          InvalidationHintV1::WorkspaceInventoryChanged {
+            workspace_id: "workspace".into(),
+            doc_id: None,
+          },
+        ],
       ),
       (
         serde_json::json!({"command":"leave_workspace","actorUserId":"actor","workspaceId":"workspace"}),
-        vec![InvalidationHintV1::QuotaSeatUsage {
-          workspace_id: "workspace".to_string(),
-        }],
+        vec![
+          InvalidationHintV1::QuotaSeatUsage {
+            workspace_id: "workspace".to_string(),
+          },
+          InvalidationHintV1::WorkspaceInventoryChanged {
+            workspace_id: "workspace".into(),
+            doc_id: None,
+          },
+        ],
       ),
       (
         serde_json::json!({"command":"apply_doc_lifecycle","actorUserId":"actor","workspaceId":"workspace","docId":"doc","lifecycle":"delete"}),
         vec![
-          InvalidationHintV1::BlobSource {
-            source: SourceIdentity::CurrentDoc {
-              workspace_id: "workspace".to_string(),
-              doc_id: "workspace".to_string(),
-            },
+          InvalidationHintV1::WorkspaceInventoryChanged {
+            workspace_id: "workspace".into(),
+            doc_id: Some("doc".into()),
           },
           InvalidationHintV1::BlobSource {
             source: SourceIdentity::CurrentDoc {
@@ -447,14 +473,25 @@ mod tests {
       ),
       (
         serde_json::json!({"command":"recover_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","timestamp":timestamp}),
-        vec![InvalidationHintV1::BlobSource {
-          source: SourceIdentity::CurrentDoc {
-            workspace_id: "workspace".to_string(),
-            doc_id: "doc".to_string(),
-          },
-        }],
+        Vec::new(),
       ),
     ];
+    for command in [
+      serde_json::json!({"command":"publish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc","mode":0}),
+      serde_json::json!({"command":"unpublish_doc","actorUserId":"actor","workspaceId":"workspace","docId":"doc"}),
+      serde_json::json!({"command":"transition_doc_role","actorUserId":"actor","workspaceId":"workspace","docId":"doc","targetUserId":"target","newRole":"reader"}),
+      serde_json::json!({"command":"grant_doc_roles","actorUserId":"actor","workspaceId":"workspace","docId":"doc","targetUserIds":["target"],"newRole":"reader"}),
+      serde_json::json!({"command":"set_doc_default_role","actorUserId":"actor","workspaceId":"workspace","docId":"doc","newRole":"reader"}),
+    ] {
+      let input = serde_json::from_value::<DomainCommandInputV1>(command).unwrap();
+      assert_eq!(
+        input.invalidations(),
+        vec![InvalidationHintV1::WorkspaceInventoryChanged {
+          workspace_id: "workspace".into(),
+          doc_id: Some("doc".into()),
+        }]
+      );
+    }
     for (input, expected) in cases {
       let input = serde_json::from_value::<DomainCommandInputV1>(input).unwrap();
       assert_eq!(input.invalidations(), expected);
@@ -559,7 +596,13 @@ mod tests {
     .await
     .unwrap();
     assert_eq!(outcome.value["public"], true);
-    assert!(outcome.invalidations.is_empty());
+    assert_eq!(
+      outcome.invalidations,
+      vec![InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.clone(),
+        doc_id: Some(doc_id.clone()),
+      }]
+    );
     assert!(
       sqlx::query_scalar::<_, bool>(
         "SELECT EXISTS(SELECT 1 FROM doc_access_policies WHERE workspace_id=$1 AND doc_id=$2 AND visibility='public') \

@@ -249,7 +249,9 @@ export class StoreConsumer {
         if (!remote?.applyDocLifecycle) {
           throw new Error('Document lifecycle is unavailable');
         }
-        return await remote.applyDocLifecycle(docId, lifecycle);
+        const result = await remote.applyDocLifecycle(docId, lifecycle);
+        await this.docSync.refreshWorkspaceState();
+        return result;
       },
       'docStorage.subscribeDocUpdate': () =>
         new Observable(subscriber => {
@@ -296,6 +298,10 @@ export class StoreConsumer {
         collectJobs.get(collectId)?.(awareness),
       'awarenessStorage.waitForConnected': (_, ctx) =>
         this.awarenessStorage.connection.waitForConnected(ctx.signal),
+      'docSync.workspaceState': () => this.docSync.workspaceState$,
+      'docSync.createDoc': docId => this.docSync.createDoc(docId),
+      'docSync.refreshWorkspaceState': () =>
+        this.docSync.refreshWorkspaceState(),
       'docSync.state': () => this.docSync.state$,
       'docSync.docState': docId =>
         new Observable(subscriber => {
@@ -367,6 +373,7 @@ export class StoreConsumer {
         }),
       'awarenessSync.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
+      'indexerSync.docTitles': () => this.indexerSync.docTitles$,
       'indexerSync.state': () => this.indexerSync.state$,
       'indexerSync.docState': (docId: string) =>
         this.indexerSync.docState$(docId),
@@ -390,7 +397,10 @@ export class StoreConsumer {
       'sync.enableBatterySaveMode': () => this.enableBatterySaveMode(),
       'sync.disableBatterySaveMode': () => this.disableBatterySaveMode(),
       'sync.pauseSync': () => this.pauseSync(),
-      'sync.resumeSync': () => this.resumeSync(),
+      'sync.resumeSync': async () => {
+        this.resumeSync();
+        await this.docSync.refreshWorkspaceState();
+      },
     });
   }
 }

@@ -1,10 +1,7 @@
 use anyhow::{Context, Result as AnyResult, anyhow, ensure};
 use sqlx::{Row, postgres::PgPoolOptions};
 
-use super::{
-  super::migrations::{RUNTIME_MIGRATIONS, migrate_runtime_tables},
-  *,
-};
+use super::{super::migrations::RUNTIME_MIGRATIONS, *};
 
 pub(super) fn pg_test_lock() -> &'static tokio::sync::Mutex<()> {
   &crate::runtime::migrations::DATABASE_TEST_LOCK
@@ -338,7 +335,7 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
     .connect(&database_url)
     .await
     .context("connect postgres for backend runtime tests")?;
-  migrate_runtime_tables(&pool)
+  crate::runtime::migrations::migrate_all_tables(&pool)
     .await
     .map_err(|err| anyhow!(err.to_string()))?;
   sqlx::query(

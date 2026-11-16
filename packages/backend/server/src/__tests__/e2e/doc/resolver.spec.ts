@@ -6,6 +6,7 @@ import {
   type GraphQLQuery,
   publishPageMutation,
 } from '@affine/graphql';
+import { GraphQLError } from 'graphql';
 
 import { DocRole, WorkspaceRole } from '../../../models';
 import { Mockers } from '../../mocks';
@@ -136,22 +137,26 @@ e2e('should reject publishing when doc snapshot does not exist', async t => {
 
   const docId = randomUUID();
 
-  const result1 = await app.gql({
-    query: getWorkspacePageByIdQuery,
-    variables: { workspaceId: workspace.id, pageId: docId },
-  });
-
-  t.is(result1.workspace.doc.public, false);
-
   await t.throwsAsync(
+    app.gql({
+      query: getWorkspacePageByIdQuery,
+      variables: { workspaceId: workspace.id, pageId: docId },
+    }),
+    { message: `Doc ${docId} under Space ${workspace.id} not found.` }
+  );
+
+  const error = await t.throwsAsync<GraphQLError>(
     app.gql({
       query: publishPageMutation,
       variables: { workspaceId: workspace.id, pageId: docId },
     }),
-    {
-      message: `Doc ${docId} under Space ${workspace.id} not found.`,
-    }
+    { instanceOf: GraphQLError }
   );
+  t.like(error?.extensions, {
+    status: 404,
+    code: 'Not Found',
+    name: 'NOT_FOUND',
+  });
 });
 
 e2e('should get doc with title and summary', async t => {

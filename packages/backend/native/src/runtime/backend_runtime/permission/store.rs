@@ -1,7 +1,8 @@
 use affine_core::access_control::{
   AccessContext, AclFacts, AuthorizationRequest, Deployment as CoreDeployment, DocAclFacts, DocAuthorizationRequest,
-  DocRole, EntitlementFact as CoreEntitlementFact, RequestedDocAction, RequestedWorkspaceAction, TargetType,
-  WorkspaceRole, resolve_entitlements,
+  DocRole, EntitlementFact as CoreEntitlementFact, RequestedDocAction, RequestedWorkspaceAction,
+  ReservedDocumentAccessDecision, TargetType, WorkspaceRole, authorize_reserved_document, classify_reserved_document,
+  resolve_entitlements,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
@@ -30,6 +31,7 @@ struct SnapshotRow {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct DocFact {
+  deleted: bool,
   doc_id: String,
   visibility: Option<String>,
   public_role: Option<String>,
@@ -167,6 +169,16 @@ impl PermissionStore {
       .iter()
       .map(|doc| doc.doc_id.clone())
       .collect::<Vec<_>>();
+    let subject_denied_docs = doc_ids
+      .iter()
+      .filter(|doc_id| {
+        authorize_reserved_document(
+          actor_user_id.unwrap_or_default(),
+          classify_reserved_document(workspace_id, doc_id),
+        ) == ReservedDocumentAccessDecision::Denied
+      })
+      .cloned()
+      .collect();
     let row = sqlx::query(
       r#"SELECT jsonb_build_object(
         'visibility', policy.visibility,
@@ -179,6 +191,7 @@ impl PermissionStore {
         'docs', coalesce((
           SELECT jsonb_agg(jsonb_build_object(
             'docId', candidate.doc_id,
+            'deleted', EXISTS(SELECT 1 FROM workspace_pages page WHERE page.workspace_id=workspace.id AND page.page_id=candidate.doc_id AND page.lifecycle_state='deleted'),
             'visibility', doc_policy.visibility,
             'publicRole', CASE WHEN doc_policy.published_at IS NOT NULL AND EXISTS(
               SELECT 1 FROM workspace_pages page
@@ -241,6 +254,8 @@ impl PermissionStore {
         })
         .collect();
       return Ok(PermissionSnapshot {
+        subject_denied_docs,
+        deleted_docs: Vec::new(),
         request: core_request,
         facts: AclFacts {
           workspace_exists: false,
@@ -341,6 +356,12 @@ impl PermissionStore {
       && matches!(facts.role.as_deref(), Some("member" | "admin" | "owner"));
     let assigned_workspace_role = facts.role.clone().filter(|_| active_member);
     let sharing_enabled = facts.sharing_enabled;
+    let deleted_docs = facts
+      .docs
+      .iter()
+      .filter(|doc| doc.deleted)
+      .map(|doc| doc.doc_id.clone())
+      .collect();
     let docs = core_request
       .doc_actions
       .iter()
@@ -358,6 +379,8 @@ impl PermissionStore {
       })
       .collect::<RuntimeResult<Vec<_>>>()?;
     Ok(PermissionSnapshot {
+      subject_denied_docs,
+      deleted_docs,
       request: core_request,
       facts: AclFacts {
         workspace_exists: true,

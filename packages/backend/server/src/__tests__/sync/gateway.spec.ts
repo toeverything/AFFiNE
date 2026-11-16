@@ -5,10 +5,18 @@ import { PrismaClient } from '@prisma/client';
 import test, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
-import { applyUpdate, Doc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  Map as YMap,
+} from 'yjs';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS, EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { DocReader } from '../../core/doc';
 import { PermissionService } from '../../core/permission';
 import {
   DocRole,
@@ -142,10 +150,19 @@ function emitWithAck<T>(socket: SocketIOClient, event: string, data: unknown) {
   );
 }
 
-function waitForEvent<T>(socket: SocketIOClient, event: string) {
+function waitForEvent<T>(
+  socket: SocketIOClient,
+  event: string,
+  accept: (payload: T) => boolean = () => true
+) {
   return withTimeout(
     new Promise<T>(resolve => {
-      socket.once(event, (payload: T) => resolve(payload));
+      const listener = (payload: T) => {
+        if (!accept(payload)) return;
+        socket.off(event, listener);
+        resolve(payload);
+      };
+      socket.on(event, listener);
     }),
     WS_TIMEOUT_MS,
     `event ${event}`
@@ -233,8 +250,8 @@ async function createSnapshot(
     data: {
       id: input.docId,
       workspaceId: input.workspaceId,
-      blob: input.blob ?? Buffer.from([1, 1]),
-      state: input.state ?? Buffer.from([1, 1]),
+      blob: input.blob ?? Buffer.from([0, 0]),
+      state: input.state ?? Buffer.from([0]),
       createdAt: input.updatedAt ?? new Date(),
       updatedAt: input.updatedAt ?? new Date(),
       createdBy: input.userId,
@@ -291,6 +308,7 @@ test.before(async () => {
 
 test.beforeEach(async () => {
   await app.initTestingDB();
+  await app.get(BackendRuntimeProvider).activateWorkspaceLifecycleV1();
 });
 
 test.after.always(async () => {
@@ -356,6 +374,7 @@ test('push requires an authorized document subscription', async t => {
 
     const batch = {
       spaces: [{ spaceType: 'userspace', spaceId }],
+      protocolVersion: 2,
       clientVersion: '0.27.5',
     };
     for (const socket of [sender, receiver]) {
@@ -369,6 +388,7 @@ test('push requires an authorized document subscription', async t => {
         spaceType: 'userspace',
         spaceId,
         docId: 'doc-2',
+        intent: 'update',
         update,
       })
     );
@@ -407,6 +427,7 @@ test('canary date clientVersion should use sync-027 in canary namespace', async 
               { spaceType: 'userspace', spaceId },
               { spaceType: 'userspace', spaceId, docId: 'doc-canary' },
             ],
+            protocolVersion: 2,
             clientVersion: canaryVersion,
           }
         )
@@ -423,6 +444,7 @@ test('canary date clientVersion should use sync-027 in canary namespace', async 
               { spaceType: 'userspace', spaceId },
               { spaceType: 'userspace', spaceId, docId: 'doc-canary' },
             ],
+            protocolVersion: 2,
             clientVersion: canaryVersion,
           }
         )
@@ -443,6 +465,7 @@ test('canary date clientVersion should use sync-027 in canary namespace', async 
           spaceType: 'userspace',
           spaceId,
           docId: 'doc-canary',
+          intent: 'update',
           update,
         }
       );
@@ -488,6 +511,7 @@ test('old canary date clientVersion should be rejected and disconnected in canar
           'space:join-batch',
           {
             spaces: [{ spaceType: 'userspace', spaceId }],
+            protocolVersion: 2,
             clientVersion: makeCanaryDateVersion(old, '015'),
           }
         )
@@ -524,6 +548,7 @@ test('canary date clientVersion should be rejected outside canary namespace', as
           'space:join-batch',
           {
             spaces: [{ spaceType: 'userspace', spaceId }],
+            protocolVersion: 2,
             clientVersion: makeCanaryDateVersion(new Date(), '15'),
           }
         )
@@ -564,6 +589,7 @@ test('space:join-batch should validate entries before joining', async t => {
             { spaceType: 'userspace', spaceId },
             { spaceType: 'userspace', spaceId: `${spaceId}-other` },
           ],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         },
       },
@@ -574,6 +600,7 @@ test('space:join-batch should validate entries before joining', async t => {
             { spaceType: 'userspace', spaceId, docId: 'doc-1' },
             { spaceType: 'userspace', spaceId, docId: 'doc-1' },
           ],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         },
       },
@@ -581,6 +608,7 @@ test('space:join-batch should validate entries before joining', async t => {
         label: 'invalid entry',
         payload: {
           spaces: [{ spaceType: 'invalid', spaceId }],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         },
       },
@@ -592,6 +620,7 @@ test('space:join-batch should validate entries before joining', async t => {
             spaceId,
             docId: `doc-${index}`,
           })),
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         },
       },
@@ -632,6 +661,7 @@ test('space:join-batch rejects old clients and accepts the current web build', a
           'space:join-batch',
           {
             spaces: [{ spaceType: 'userspace', spaceId: user.id }],
+            protocolVersion: 2,
             clientVersion,
           }
         )
@@ -672,8 +702,38 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
           docId: `db$${workspace.id}$docProperties`,
         },
       ],
+      protocolVersion: 2,
       clientVersion: '0.27.5',
     };
+
+    const db = app.get(PrismaClient);
+    const runtime = app.get(BackendRuntimeProvider);
+    await db.$executeRaw`DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND scope='global'`;
+    const inactive = getErrorResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:join-batch', batch)
+    );
+    t.is(inactive.name, 'WORKSPACE_SYNC_UNAVAILABLE');
+    t.is(inactive.status, 503);
+    const [checkpoint] = await db.$queryRaw<
+      { count: bigint }[]
+    >`SELECT count(*) AS count FROM storage_reconciliation_checkpoints WHERE kind IN ('workspace_doc_lifecycle_activation','workspace_doc_lifecycle') AND (scope='global' OR scope=${workspace.id})`;
+    t.is(Number(checkpoint.count), 0);
+    t.is(await db.update.count({ where: { workspaceId: workspace.id } }), 0);
+    t.is(
+      await db.workspaceDoc.count({ where: { workspaceId: workspace.id } }),
+      0
+    );
+    const legacy = getErrorResponse(
+      t,
+      await emitWithAck(ownerSocket, 'space:join-batch', {
+        ...batch,
+        protocolVersion: 1,
+      })
+    );
+    t.is(legacy.name, 'BAD_REQUEST');
+    t.true(await runtime.activateWorkspaceLifecycleV1());
+    t.false(await runtime.activateWorkspaceLifecycleV1());
 
     for (const socket of [ownerSocket, receiverSocket]) {
       const result = unwrapResponse(
@@ -700,6 +760,7 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
               docId: 'doc-c',
             },
           ],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -792,6 +853,7 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
             docId: workspace.id,
           },
         ],
+        protocolVersion: 2,
         clientVersion: '0.27.5',
       })
     );
@@ -802,6 +864,7 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId: workspace.id,
+        intent: 'update',
         update: Buffer.from(root).toString('base64'),
       })
     );
@@ -825,6 +888,7 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
           spaceType: 'workspace',
           spaceId: workspace.id,
           docId,
+          intent: docId === 'doc-a' ? 'create' : 'update',
           update: createYjsUpdateBase64(),
         })
       );
@@ -873,6 +937,7 @@ test('batch doc entries require Doc.Read atomically', async t => {
             docId: `space:${docId}`,
           },
         ],
+        protocolVersion: 2,
         clientVersion: '0.27.5',
       })
     );
@@ -910,6 +975,7 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
         { spaceType: 'userspace', spaceId },
         { spaceType: 'userspace', spaceId, docId: 'some-doc' },
       ],
+      protocolVersion: 2,
       clientVersion: '0.27.5',
     };
     for (const socket of [sender, receiver]) {
@@ -930,6 +996,7 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
         'space:join-batch',
         {
           spaces: [{ spaceType: 'userspace', spaceId }],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -958,6 +1025,7 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
         spaceType: 'userspace',
         spaceId,
         docId: 'some-doc',
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
@@ -999,6 +1067,7 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
         spaceType: 'userspace',
         spaceId,
         docId: 'some-doc',
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
@@ -1007,6 +1076,197 @@ test('batch sync routes active updates and only broadcasts invalidation to contr
     sender.disconnect();
     receiver.disconnect();
     passive.disconnect();
+  }
+});
+
+test('partial roots accept edits and ordinary creation uses persisted identity', async t => {
+  const { user, cookieHeader } = await login(app);
+  const workspace = await app.get(Models).workspace.create(user.id);
+  const db = app.get(PrismaClient);
+  const root = new Doc();
+  const pages = new YArray<{ id: string }>();
+  root.getMap('meta').set('pages', pages);
+  const vector = encodeStateVector(root);
+  pages.push([{ id: 'missing-prefix-doc' }]);
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: workspace.id,
+    userId: user.id,
+    blob: Buffer.from(encodeStateAsUpdate(root, vector)),
+  });
+  const legacyCases: {
+    workspaceId: string;
+    docId: string;
+    duplicateId: string;
+  }[] = [];
+  for (let shape = 0; shape < 4; shape++) {
+    const legacyWorkspace = await app.get(Models).workspace.create(user.id);
+    const legacyRoot = new Doc();
+    const docId = `legacy-shape-${shape}`;
+    const duplicateId = `duplicate-${shape}`;
+    const entry = (id: string, shared: boolean) =>
+      shared
+        ? new YMap<unknown>([
+            ['id', id],
+            ['trash', true],
+          ])
+        : { id, trash: true };
+    if (shape === 0)
+      legacyRoot
+        .getMap('meta')
+        .set('pages', [
+          entry(docId, false),
+          entry(duplicateId, false),
+          entry(duplicateId, false),
+        ]);
+    else {
+      const legacyPages = new YArray();
+      legacyRoot.getMap('meta').set('pages', legacyPages);
+      legacyPages.push([
+        entry(docId, shape >= 2),
+        entry(duplicateId, shape >= 2),
+        entry(duplicateId, shape === 2),
+      ]);
+    }
+    await createSnapshot(db, {
+      workspaceId: legacyWorkspace.id,
+      docId: legacyWorkspace.id,
+      userId: user.id,
+      blob: Buffer.from(encodeStateAsUpdate(legacyRoot)),
+    });
+    legacyCases.push({ workspaceId: legacyWorkspace.id, docId, duplicateId });
+    legacyRoot.destroy();
+  }
+  const socket = createClient(url, cookieHeader);
+  try {
+    await waitForConnect(socket);
+    const joined = unwrapResponse(
+      t,
+      await emitWithAck<{ protocolVersion: number }>(
+        socket,
+        'space:join-batch',
+        {
+          spaces: [
+            { spaceType: 'workspace', spaceId: workspace.id },
+            {
+              spaceType: 'workspace',
+              spaceId: workspace.id,
+              docId: workspace.id,
+            },
+          ],
+          clientVersion: '0.27.5',
+          protocolVersion: 2,
+        }
+      )
+    );
+    t.is(joined.protocolVersion, 2);
+    const independent = new Doc();
+    independent.getMap('meta').set('name', 'saved while partial');
+    unwrapResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: workspace.id,
+        intent: 'update',
+        update: Buffer.from(encodeStateAsUpdate(independent)).toString(
+          'base64'
+        ),
+      })
+    );
+    const loaded = unwrapResponse(
+      t,
+      await emitWithAck<{ missing: string }>(socket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: workspace.id,
+      })
+    );
+    const projected = new Doc();
+    applyUpdate(projected, Buffer.from(loaded.missing, 'base64'));
+    t.is(projected.getMap('meta').get('name'), 'saved while partial');
+
+    const docId = 'new-without-root-entry';
+    const push = {
+      spaceType: 'workspace',
+      spaceId: workspace.id,
+      docId,
+      intent: 'create',
+      update: Buffer.from([0, 0]).toString('base64'),
+    };
+    const created = unwrapResponse(
+      t,
+      await emitWithAck<{ created: boolean }>(
+        socket,
+        'space:push-doc-update',
+        push
+      )
+    );
+    t.true(created.created);
+    const retried = unwrapResponse(
+      t,
+      await emitWithAck<{ created: boolean }>(
+        socket,
+        'space:push-doc-update',
+        push
+      )
+    );
+    t.false(retried.created);
+    const state = unwrapResponse(
+      t,
+      await emitWithAck<{
+        docs: { docId: string }[];
+        clocks: Record<string, number>;
+      }>(socket, 'space:load-workspace-state', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+      })
+    );
+    t.true(state.docs.some(doc => doc.docId === docId));
+    t.true(workspace.id in state.clocks);
+    const deleted = unwrapResponse(
+      t,
+      await emitWithAck<{ timestamp: number; rootUpdate?: string }>(
+        socket,
+        'space:doc-lifecycle',
+        {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId,
+          lifecycle: 'delete',
+        }
+      )
+    );
+    t.true(deleted.timestamp > 0);
+    t.is(deleted.rootUpdate, undefined);
+    const rejected = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:push-doc-update', push)
+    );
+    t.is(rejected.name, 'NOT_FOUND');
+    for (const legacy of legacyCases) {
+      await app
+        .get(BackendRuntimeProvider)
+        .ensureWorkspaceLifecycleV1(legacy.workspaceId);
+      const state = await app
+        .get(BackendRuntimeProvider)
+        .getWorkspaceStateV1(legacy.workspaceId, user.id);
+      t.true(
+        state.docs.some(
+          doc => doc.docId === legacy.docId && doc.lifecycle === 'trashed'
+        )
+      );
+      t.false(state.docs.some(doc => doc.docId === legacy.duplicateId));
+      t.is(
+        await db.docGrant.count({
+          where: { workspaceId: legacy.workspaceId, docId: legacy.docId },
+        }),
+        0
+      );
+    }
+  } finally {
+    socket.disconnect();
+    root.destroy();
   }
 });
 
@@ -1041,10 +1301,12 @@ test('permission revocation removes an active document subscription', async t =>
   });
 
   const ownerSocket = createClient(url, ownerCookie);
+  const otherOwnerSocket = createClient(url, ownerCookie);
   const collaboratorSocket = createClient(url, collaboratorCookie);
   try {
     await Promise.all([
       waitForConnect(ownerSocket),
+      waitForConnect(otherOwnerSocket),
       waitForConnect(collaboratorSocket),
     ]);
 
@@ -1053,6 +1315,7 @@ test('permission revocation removes an active document subscription', async t =>
         { spaceType: 'workspace', spaceId: workspace.id },
         { spaceType: 'workspace', spaceId: workspace.id, docId },
       ],
+      protocolVersion: 2,
       clientVersion: '0.27.5',
     };
     const ownerJoin = unwrapResponse(
@@ -1064,6 +1327,10 @@ test('permission revocation removes an active document subscription', async t =>
       )
     );
     t.true(ownerJoin.success);
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:join-batch', join)
+    );
 
     const runtime = app.get(BackendRuntimeProvider);
     const loadGeneration = runtime.getSyncPermissionGenerationV1.bind(runtime);
@@ -1137,8 +1404,46 @@ test('permission revocation removes an active document subscription', async t =>
     const permissionService = app.get(PermissionService);
     const batchPermissions =
       permissionService.batchDocPermissions.bind(permissionService);
+    const inventoryPermissions = Sinon.spy(
+      permissionService,
+      'batchDocPermissions'
+    );
+    try {
+      for (let i = 0; i < 100; i++) {
+        await app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+          version: 1,
+          kind: 'workspaceInventoryChanged',
+          workspaceId: workspace.id,
+          docId: `new-document-${i}`,
+        });
+      }
+      t.is(inventoryPermissions.callCount, 0);
+    } finally {
+      inventoryPermissions.restore();
+    }
+    const unrelatedDocId = 'unrelated-doc';
+    await createSnapshot(db, {
+      workspaceId: workspace.id,
+      docId: unrelatedDocId,
+      userId: owner.id,
+      blob: Buffer.from(encodeStateAsUpdate(new Doc())),
+      state: Buffer.from(encodeStateVector(new Doc())),
+    });
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:join-batch', {
+        ...join,
+        spaces: [
+          {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId: unrelatedDocId,
+          },
+        ],
+      })
+    );
     const changed = { workspaceId: workspace.id, docId };
-    for (const olderFirst of [false, true]) {
+    for (const burstSize of [1, 20]) {
       await models.docUser.set(
         workspace.id,
         docId,
@@ -1158,11 +1463,19 @@ test('permission revocation removes an active document subscription', async t =>
         Promise.withResolvers<void>(),
       ];
       let reads = 0;
+      let ownerReads = 0;
       const permissionStub = Sinon.stub(
         permissionService,
         'batchDocPermissions'
       ).callsFake(async input => {
         const result = await batchPermissions(input);
+        if (input.userId === owner.id) {
+          ownerReads += 1;
+          t.deepEqual(
+            input.docs.map(doc => doc.docId),
+            [docId]
+          );
+        }
         if (input.userId === collaborator.id) {
           const index = reads++;
           captured[index].resolve();
@@ -1172,8 +1485,25 @@ test('permission revocation removes an active document subscription', async t =>
       });
       const oldRevalidation = app
         .get(EventBus)
-        .emitAsync('doc.grants.changed', changed);
+        .emitAsync('backendRuntime.invalidation', {
+          version: 1,
+          kind: 'workspaceInventoryChanged',
+          ...changed,
+        });
       await captured[0].promise;
+      const unrelatedUpdate = waitForEvent<{ docId: string }>(
+        otherOwnerSocket,
+        'space:broadcast-doc-updates',
+        message => message.docId === unrelatedDocId
+      );
+      await app.get(EventBus).emitAsync('doc.updates.pushed', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: unrelatedDocId,
+        updates: [Buffer.from(createYjsUpdateBase64(), 'base64')],
+        timestamp: Date.now(),
+      });
+      t.is((await unrelatedUpdate).docId, unrelatedDocId);
       await db.docGrant.deleteMany({
         where: {
           workspaceId: workspace.id,
@@ -1182,16 +1512,70 @@ test('permission revocation removes an active document subscription', async t =>
           principalId: collaborator.id,
         },
       });
-      const newRevalidation = app
-        .get(EventBus)
-        .emitAsync('doc.grants.changed', changed);
-      await captured[1].promise;
+      const newRevalidation = Promise.all(
+        Array.from({ length: burstSize }, () =>
+          app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+            version: 1,
+            kind: 'workspaceInventoryChanged',
+            ...changed,
+          })
+        )
+      );
+      const noEarlyUpdate = expectNoEvent(
+        ownerSocket,
+        'space:broadcast-doc-updates'
+      );
+      const invalidation = waitForEvent<{ inventoryChanged?: boolean }>(
+        ownerSocket,
+        'space:broadcast-doc-invalidation',
+        message => !message.inventoryChanged
+      );
+      const update = Buffer.from(createYjsUpdateBase64(), 'base64');
+      await db.snapshot.update({
+        where: { workspaceId_id: { workspaceId: workspace.id, id: docId } },
+        data: { blob: update, updatedAt: new Date() },
+      });
+      await app.get(EventBus).emitAsync('doc.updates.pushed', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId,
+        updates: [update],
+        timestamp: Date.now(),
+      });
       try {
-        const first = olderFirst ? 0 : 1;
-        resume[first].resolve();
-        await (olderFirst ? oldRevalidation : newRevalidation);
-        resume[1 - first].resolve();
-        await (olderFirst ? newRevalidation : oldRevalidation);
+        await noEarlyUpdate;
+        t.is(reads, 1);
+        resume[0].resolve();
+        await captured[1].promise;
+        t.not((await invalidation).inventoryChanged, true);
+        unwrapResponse(
+          t,
+          await emitWithAck(ownerSocket, 'space:join-batch', join)
+        );
+        const repaired = unwrapResponse(
+          t,
+          await emitWithAck<{ missing: string }>(
+            ownerSocket,
+            'space:load-doc',
+            {
+              spaceType: 'workspace',
+              spaceId: workspace.id,
+              docId,
+            }
+          )
+        );
+        const repairedDoc = new Doc();
+        applyUpdate(repairedDoc, Buffer.from(repaired.missing, 'base64'));
+        t.is(repairedDoc.getMap('m').get('k'), 'v');
+        repairedDoc.destroy();
+        const noRevokedUpdate = expectNoEvent(
+          collaboratorSocket,
+          'space:broadcast-doc-updates'
+        );
+        resume[1].resolve();
+        await Promise.all([oldRevalidation, newRevalidation, noRevokedUpdate]);
+        t.is(reads, 2);
+        t.is(ownerReads, 3);
       } finally {
         for (const pending of resume) pending.resolve();
         await Promise.all([oldRevalidation, newRevalidation]);
@@ -1216,7 +1600,9 @@ test('permission revocation removes an active document subscription', async t =>
       })
     );
     t.snapshot(stableError(staleGenerationLoad, workspace.id));
-    await app.get(EventBus).emitAsync('doc.grants.changed', {
+    await app.get(EventBus).emitAsync('backendRuntime.invalidation', {
+      version: 1,
+      kind: 'workspaceInventoryChanged',
       workspaceId: workspace.id,
       docId,
     });
@@ -1227,6 +1613,7 @@ test('permission revocation removes an active document subscription', async t =>
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId,
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
@@ -1245,6 +1632,7 @@ test('permission revocation removes an active document subscription', async t =>
           { spaceType: 'workspace', spaceId: workspace.id },
           { spaceType: 'workspace', spaceId: workspace.id, docId },
         ],
+        protocolVersion: 2,
         clientVersion: '0.27.5',
       })
     );
@@ -1259,12 +1647,94 @@ test('permission revocation removes an active document subscription', async t =>
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId,
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
     await noRevokedUpdate;
+
+    const otherDocId = 'generation-race-unrelated-doc';
+    await createSnapshot(db, {
+      workspaceId: workspace.id,
+      docId: otherDocId,
+      userId: owner.id,
+    });
+    const otherDocJoin = {
+      ...join,
+      spaces: [
+        ...join.spaces,
+        { spaceType: 'workspace', spaceId: workspace.id, docId: otherDocId },
+      ],
+    };
+    for (const socket of [ownerSocket, otherOwnerSocket]) {
+      unwrapResponse(
+        t,
+        await emitWithAck(socket, 'space:join-batch', otherDocJoin)
+      );
+    }
+    const captured = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    const checkedDocs: string[][] = [];
+    const permissionStub = Sinon.stub(
+      permissionService,
+      'batchDocPermissions'
+    ).callsFake(async input => {
+      const result = await batchPermissions(input);
+      if (input.userId === owner.id) {
+        checkedDocs.push(input.docs.map(doc => doc.docId).sort());
+        if (checkedDocs.length === 1) {
+          captured.resolve();
+          await resume.promise;
+        }
+      }
+      return result;
+    });
+    const workspaceCheck = app
+      .get(EventBus)
+      .emitAsync('workspace.updated', updatedWorkspace);
+    await captured.promise;
+    await db.$executeRaw`
+      UPDATE workspace_sync_permission_generations
+      SET generation = generation + 1
+      WHERE workspace_id = ${workspace.id}
+    `;
+    const docCheck = app
+      .get(EventBus)
+      .emitAsync('backendRuntime.invalidation', {
+        version: 1,
+        kind: 'workspaceInventoryChanged',
+        ...changed,
+      });
+    try {
+      resume.resolve();
+      await Promise.all([workspaceCheck, docCheck]);
+    } finally {
+      resume.resolve();
+      await Promise.all([workspaceCheck, docCheck]);
+      permissionStub.restore();
+    }
+    t.deepEqual(checkedDocs, [
+      [docId, otherDocId, unrelatedDocId].sort(),
+      [docId, otherDocId, unrelatedDocId].sort(),
+    ]);
+    const receivedAfterRace = waitForEvent<{ docId: string }>(
+      ownerSocket,
+      'space:broadcast-doc-updates'
+    );
+    unwrapResponse(
+      t,
+      await emitWithAck(otherOwnerSocket, 'space:push-doc-update', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: otherDocId,
+        intent: 'update',
+        update: createYjsUpdateBase64(),
+      })
+    );
+    t.is((await receivedAfterRace).docId, otherDocId);
   } finally {
     ownerSocket.disconnect();
+    otherOwnerSocket.disconnect();
     collaboratorSocket.disconnect();
   }
 });
@@ -1310,6 +1780,7 @@ test('awareness requires Doc.Read but not Doc.Update', async t => {
               { spaceType: 'workspace', spaceId: workspace.id },
               { spaceType: 'workspace', spaceId: workspace.id, docId },
             ],
+            protocolVersion: 2,
             clientVersion: '0.27.5',
           }
         )
@@ -1340,6 +1811,7 @@ test('awareness requires Doc.Read but not Doc.Update', async t => {
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId,
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
@@ -1412,6 +1884,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
         'space:join-batch',
         {
           spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -1436,7 +1909,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
         docId: `userdata$${owner.id}$${workspace.id}$docIntegrationRef`,
       })
     );
-    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
+    t.is(userdataError.name, 'DOC_ACTION_DENIED');
 
     const ownerJoin = unwrapResponse(
       t,
@@ -1452,6 +1925,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
               docId: workspace.id,
             },
           ],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -1465,19 +1939,27 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       get(index: number): { set(key: string, value: unknown): void };
     };
     pages.get(0).set('trash', true);
-    const bypassError = getErrorResponse(
+    const rootReceipt = unwrapResponse(
       t,
       await emitWithAck(ownerSocket, 'space:push-doc-update', {
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId: workspace.id,
+        intent: 'update',
         update: Buffer.from(encodeStateAsUpdate(staleRoot, state)).toString(
           'base64'
         ),
       })
     );
-    t.is(bypassError.name, 'DOC_ACTION_DENIED');
-    t.true(bypassError.message.includes('Doc.Update'));
+    t.truthy(rootReceipt);
+    t.is(
+      (
+        await db.workspaceDoc.findUnique({
+          where: { workspaceId_docId: { workspaceId: workspace.id, docId } },
+        })
+      )?.lifecycleState ?? null,
+      null
+    );
 
     unwrapResponse(
       t,
@@ -1540,6 +2022,7 @@ test('workspace sync load-doc requires an active document subscription', async t
         'space:join-batch',
         {
           spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -1564,7 +2047,64 @@ test('workspace sync load-doc requires an active document subscription', async t
         docId: `userdata$${owner.id}$${workspace.id}$favorite`,
       })
     );
-    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
+    t.is(userdataError.name, 'NOT_IN_SPACE');
+    const joinDoc = () =>
+      emitWithAck(socket, 'space:join-batch', {
+        spaces: [{ spaceType: 'workspace', spaceId: workspace.id, docId }],
+        protocolVersion: 2,
+        clientVersion: '0.27.5',
+      });
+    for (const renewed of [false, true]) {
+      await models.docUser.set(
+        workspace.id,
+        docId,
+        collaborator.id,
+        DocRole.Reader
+      );
+      unwrapResponse(t, await joinDoc());
+      const reader = app.get(DocReader);
+      const load = reader.getDocDiff.bind(reader);
+      const race = Sinon.stub(reader, 'getDocDiff').callsFake(
+        async (...args) => {
+          const result = await load(...args);
+          const where = {
+            workspaceId: workspace.id,
+            docId,
+            principalType: 'user',
+            principalId: collaborator.id,
+          };
+          if (renewed) {
+            await db.docGrant.updateMany({ where, data: { role: 'editor' } });
+            unwrapResponse(t, await joinDoc());
+          } else {
+            await db.docGrant.deleteMany({ where });
+          }
+          return result;
+        }
+      );
+      try {
+        const raced = getErrorResponse(
+          t,
+          await emitWithAck(socket, 'space:load-doc', {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId,
+          })
+        );
+        t.is(raced.name, 'NOT_IN_SPACE');
+      } finally {
+        race.restore();
+      }
+      if (renewed)
+        unwrapResponse(
+          t,
+          await emitWithAck(socket, 'space:load-doc', {
+            spaceType: 'workspace',
+            spaceId: workspace.id,
+            docId,
+          })
+        );
+    }
   } finally {
     socket.disconnect();
   }
@@ -1614,6 +2154,7 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
             { spaceType: 'workspace', spaceId: workspace.id },
             { spaceType: 'workspace', spaceId: workspace.id, docId },
           ],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -1626,6 +2167,7 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId,
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
@@ -1637,10 +2179,11 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId: `userdata$${owner.id}$${workspace.id}$settings`,
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
-    t.is(userdataError.name, 'SPACE_ACCESS_DENIED');
+    t.is(userdataError.name, 'NOT_IN_SPACE');
 
     const malformedDatabaseError = getErrorResponse(
       t,
@@ -1648,10 +2191,11 @@ test('workspace sync push-doc-update should enforce doc update permissions', asy
         spaceType: 'workspace',
         spaceId: workspace.id,
         docId: 'db$docProperties',
+        intent: 'update',
         update: createYjsUpdateBase64(),
       })
     );
-    t.is(malformedDatabaseError.name, 'SPACE_ACCESS_DENIED');
+    t.is(malformedDatabaseError.name, 'NOT_IN_SPACE');
 
     const updates = await db.update.count({
       where: {
@@ -1715,6 +2259,7 @@ test('workspace sync load-doc-timestamps should filter unreadable docs', async t
         'space:join-batch',
         {
           spaces: [{ spaceType: 'workspace', spaceId: workspace.id }],
+          protocolVersion: 2,
           clientVersion: '0.27.5',
         }
       )
@@ -1735,6 +2280,19 @@ test('workspace sync load-doc-timestamps should filter unreadable docs', async t
 
     t.false(privateDocId in timestamps);
     t.true(readableDocId in timestamps);
+    await models.doc.publish(workspace.id, readableDocId);
+    await db.workspaceMember.updateMany({
+      where: { workspaceId: workspace.id, userId: collaborator.id },
+      data: { state: 'suspended' },
+    });
+    const denied = getErrorResponse(
+      t,
+      await emitWithAck(socket, 'space:load-doc-timestamps', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+      })
+    );
+    t.is(denied.name, 'SPACE_ACCESS_DENIED');
   } finally {
     socket.disconnect();
   }

@@ -17,6 +17,7 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 
 import { ServerFeature, ServerService } from '../../core';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Models } from '../../models';
 import { processImage } from '../../native';
 import { McpCredentialService } from '../../plugins/copilot/mcp/credential';
@@ -51,6 +52,9 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   await t.context.app.initTestingDB();
+  await t.context.app
+    .get(BackendRuntimeProvider)
+    .activateWorkspaceLifecycleV1();
 });
 
 test.after.always(async t => {

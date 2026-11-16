@@ -20,6 +20,7 @@ import semver from 'semver';
 import { type Server, Socket } from 'socket.io';
 
 import {
+  AccessDenied,
   BadRequest,
   CallMetric,
   checkCanaryDateClientVersion,
@@ -35,10 +36,7 @@ import {
   SyncPermissionGenerationChanged,
 } from '../../base';
 import { Models } from '../../models';
-import {
-  authorizeReservedDocSubject,
-  canonicalizeDocumentIdentity,
-} from '../../native';
+import { canonicalizeDocumentIdentity } from '../../native';
 import { CurrentUser } from '../auth';
 import {
   backendRuntimeErrorCode,
@@ -50,7 +48,7 @@ import {
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,
 } from '../doc';
-import { applyUpdatesWithNative } from '../doc/merge-updates';
+import { mergeUpdatesWithNative } from '../doc/merge-updates';
 import {
   type DocAction,
   PermissionAccess,
@@ -120,6 +118,7 @@ interface JoinSpaceBatchEntry {
 interface JoinSpaceBatchMessage {
   spaces: [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
   clientVersion: string;
+  protocolVersion: 2;
 }
 
 interface LeaveSpaceMessage {
@@ -136,6 +135,7 @@ interface PushDocUpdateMessage {
   spaceId: string;
   docId: string;
   update: string;
+  intent: 'create' | 'update';
 }
 
 interface BroadcastDocUpdatesMessage {
@@ -238,7 +238,9 @@ function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
     throw new BadRequest('Invalid space join batch payload.');
   }
 
-  const { spaces, clientVersion } = message;
+  const { spaces, clientVersion, protocolVersion } = message;
+  if (protocolVersion !== 2)
+    throw new BadRequest('Sync protocol upgrade required.');
   if (!Array.isArray(spaces) || spaces.length === 0) {
     throw new BadRequest('Space join batch must not be empty.');
   }
@@ -298,7 +300,7 @@ function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
     duplicateKeys.add(key);
   }
 
-  return { spaces: entries, clientVersion };
+  return { spaces: entries, clientVersion, protocolVersion };
 }
 
 function parseLeaveSpaceBatchMessage(message: unknown): LeaveSpaceBatchMessage {
@@ -347,6 +349,15 @@ export class SpaceSyncGateway
   private activeUsersFlushInFlight = false;
   private activeUsersFlushQueued = false;
   private readonly activeDocSockets = new Map<string, Set<Socket>>();
+  private readonly subscriptionRevalidations = new Map<
+    string,
+    { pending: Set<string>; promise: Promise<void> }
+  >();
+  private readonly socketProtocolVersions = new Map<string, number>();
+  private readonly socketAdapters = new WeakMap<
+    Socket,
+    Record<SpaceType, SyncSocketAdapter>
+  >();
   private readonly activeSocketDocs = new Map<string, Set<string>>();
   private readonly activeSocketDocActions = new Map<
     string,
@@ -413,7 +424,7 @@ export class SpaceSyncGateway
     }
 
     try {
-      const merged = applyUpdatesWithNative(
+      const merged = mergeUpdatesWithNative(
         updates,
         'socketio.broadcast',
         this.logger
@@ -464,20 +475,6 @@ export class SpaceSyncGateway
     }
 
     await this.ac.user(userId).doc(spaceId, docId).assert(action);
-  }
-
-  private assertReservedDocSubject(
-    spaceType: SpaceType,
-    userId: string,
-    workspaceId: string,
-    docId: string
-  ) {
-    if (
-      spaceType === SpaceType.Workspace &&
-      !authorizeReservedDocSubject(userId, workspaceId, docId)
-    ) {
-      throw new SpaceAccessDenied({ spaceId: workspaceId });
-    }
   }
 
   private activeDocKey(spaceType: SpaceType, spaceId: string, docId: string) {
@@ -702,6 +699,7 @@ export class SpaceSyncGateway
   }
 
   handleDisconnect(client: Socket) {
+    this.socketProtocolVersions.delete(client.id);
     this.removeAllActiveDocSubscriptions(client);
     this.connectionCount = Math.max(0, this.connectionCount - 1);
     this.trackDisconnectedSocket(client.id);
@@ -877,6 +875,24 @@ export class SpaceSyncGateway
     );
   }
 
+  @OnEvent('backendRuntime.invalidation')
+  async onRuntimeInvalidation(hint: Events['backendRuntime.invalidation']) {
+    if (hint.kind !== 'workspaceInventoryChanged' || !this.server) return;
+    const room = `${SpaceType.Workspace}:${Room(hint.workspaceId, 'sync-027')}`;
+    for (const client of this.server.sockets.sockets.values()) {
+      if (
+        client.rooms.has(room) &&
+        this.socketProtocolVersions.get(client.id) !== 2
+      )
+        client.disconnect(true);
+    }
+    await this.revalidateActiveDocSubscriptions({
+      spaceType: SpaceType.Workspace,
+      spaceId: hint.workspaceId,
+      docId: hint.docId,
+    });
+  }
+
   @OnEvent('doc.updates.pushed')
   onDocUpdatesPushed({
     spaceType,
@@ -916,10 +932,6 @@ export class SpaceSyncGateway
     this.emitActiveAwarenessUpdate(event);
   }
 
-  @OnEvent('doc.grants.changed')
-  @OnEvent('doc.owner.changed')
-  @OnEvent('doc.default_role.changed')
-  @OnEvent('doc.public_state.changed')
   @OnEvent('workspace.members.updated')
   @OnEvent('workspace.members.roleChanged')
   @OnEvent('workspace.members.removed')
@@ -962,75 +974,170 @@ export class SpaceSyncGateway
   private async revalidateActiveDocSubscriptions(
     event: Events['sync.permissions.changed']
   ) {
+    this.server?.local
+      .to(`${event.spaceType}:${Room(event.spaceId, 'sync-027')}`)
+      .emit('space:broadcast-doc-invalidation', {
+        spaceType: event.spaceType,
+        spaceId: event.spaceId,
+        inventoryChanged: true,
+      });
     const spacePrefix = `${event.spaceType}:${event.spaceId}:`;
     const exactKey = event.docId
       ? this.activeDocKey(event.spaceType, event.spaceId, event.docId)
       : undefined;
-    const candidates = [...this.activeDocSockets.entries()].filter(
-      ([key]) => key === exactKey || (!exactKey && key.startsWith(spacePrefix))
-    );
+    const spaceKey = `${event.spaceType}:${event.spaceId}`;
+    let revalidation = this.subscriptionRevalidations.get(spaceKey);
+    const pending = revalidation?.pending ?? new Set<string>();
+    for (const [socketId, docs] of this.activeSocketDocs) {
+      const socket = this.server.sockets.sockets.get(socketId);
+      const authorizations = this.activeSocketDocActions.get(socketId);
+      if (!socket || !authorizations) continue;
+      for (const key of docs) {
+        if (key !== exactKey && (exactKey || !key.startsWith(spacePrefix)))
+          continue;
+        pending.add(key);
+        const actions = authorizations.get(key);
+        if (actions) authorizations.set(key, new Set(actions));
+        const sockets = this.activeDocSockets.get(key);
+        sockets?.delete(socket);
+        if (sockets?.size === 0) this.activeDocSockets.delete(key);
+      }
+    }
+    if (!revalidation) {
+      revalidation = {
+        pending,
+        promise: Promise.resolve(),
+      };
+      this.subscriptionRevalidations.set(spaceKey, revalidation);
+      const work = revalidation;
+      work.promise = Promise.resolve().then(async () => {
+        try {
+          while (pending.size) {
+            const keys = [...pending];
+            pending.clear();
+            await this.revalidateDocSubscriptions(event, keys, pending);
+          }
+        } finally {
+          this.subscriptionRevalidations.delete(spaceKey);
+        }
+      });
+    }
+    await revalidation.promise;
+  }
 
-    for (const [key, sockets] of candidates) {
-      const [, spaceId, docId] = key.split(':');
-      for (const socket of Array.from(sockets)) {
-        const authorizations = this.activeSocketDocActions.get(socket.id);
-        const currentActions = authorizations?.get(key);
-        if (!authorizations || !currentActions) continue;
-        // Claim this check before awaiting so later permission events supersede it.
-        const previousActions = new Set(currentActions);
-        authorizations.set(key, previousActions);
-        const stillCurrent = () =>
-          this.activeSocketDocActions.get(socket.id)?.get(key) ===
-          previousActions;
-        const userId = this.resolvePresenceUserId(socket);
+  private async revalidateDocSubscriptions(
+    event: Events['sync.permissions.changed'],
+    keys: string[],
+    pending: Set<string>
+  ) {
+    const docKeys = new Set(keys);
+    const subscriptions = [...this.server.sockets.sockets.values()].flatMap(
+      socket =>
+        [...(this.activeSocketDocActions.get(socket.id) ?? [])].flatMap(
+          ([key, actions]) =>
+            docKeys.has(key)
+              ? [{ key, socket, actions, docId: key.split(':')[2] }]
+              : []
+        )
+    );
+    const users = Map.groupBy(subscriptions, ({ socket }) =>
+      this.resolvePresenceUserId(socket)
+    );
+    let before: number | undefined;
+    if (event.spaceType === SpaceType.Workspace) {
+      try {
+        before = await this.runtime.getSyncPermissionGenerationV1(
+          event.spaceId
+        );
+      } catch {
+        // Failed generation reads invalidate this round's subscriptions.
+      }
+    }
+    const authorizations = await Promise.all(
+      [...users].map(async ([userId, subscriptions]) => {
+        let allowed = new Map<string, Set<DocAction>>();
         try {
           if (!userId) throw new Error('socket user is unavailable');
           if (event.spaceType === SpaceType.Userspace) {
-            if (spaceId !== userId) throw new Error('userspace access changed');
-            this.addActiveDocSubscription(
-              socket,
-              event.spaceType,
-              spaceId,
-              docId,
-              new Set(['Doc.Read', 'Doc.Update']),
-              0
+            if (event.spaceId !== userId)
+              throw new Error('userspace access changed');
+            allowed = new Map(
+              subscriptions.map(({ docId }) => [
+                docId,
+                new Set<DocAction>(['Doc.Read', 'Doc.Update']),
+              ])
             );
-            continue;
+          } else if (before !== undefined) {
+            await this.ac
+              .user(userId)
+              .workspace(event.spaceId)
+              .assert('Workspace.Sync');
+            const permissions = await this.ac
+              .user(userId)
+              .workspace(event.spaceId)
+              .docPermissions(
+                [...new Set(subscriptions.map(({ docId }) => docId))].map(
+                  docId => ({ docId })
+                ),
+                ['Doc.Read', 'Doc.Update']
+              );
+            allowed = new Map(
+              permissions.map(permission => [
+                permission.docId,
+                new Set(
+                  permission.decisions
+                    .filter(decision => decision.allowed)
+                    .map(decision => decision.action as DocAction)
+                ),
+              ])
+            );
           }
-          const before =
-            await this.runtime.getSyncPermissionGenerationV1(spaceId);
-          const [permission] = await this.ac
-            .user(userId)
-            .workspace(spaceId)
-            .docPermissions([{ docId }], ['Doc.Read', 'Doc.Update']);
-          const after =
-            await this.runtime.getSyncPermissionGenerationV1(spaceId);
-          if (!stillCurrent()) continue;
-          if (before !== after) {
-            throw new SyncPermissionGenerationChanged({ spaceId });
-          }
-          const actions = new Set(
-            permission?.decisions
-              .filter(decision => decision.allowed)
-              .map(decision => decision.action as DocAction) ?? []
-          );
-          if (!actions.has('Doc.Read')) {
-            throw new Error('document read access changed');
-          }
+        } catch {
+          // Failed authorization removes only subscriptions from this check.
+        }
+        return { subscriptions, allowed };
+      })
+    );
+    let generation = 0;
+    if (event.spaceType === SpaceType.Workspace) {
+      try {
+        generation = await this.runtime.getSyncPermissionGenerationV1(
+          event.spaceId
+        );
+      } catch {
+        before = undefined;
+      }
+    }
+    for (const { subscriptions, allowed } of authorizations) {
+      for (const { key, socket, actions, docId } of subscriptions) {
+        if (this.activeSocketDocActions.get(socket.id)?.get(key) !== actions)
+          continue;
+        if (
+          event.spaceType === SpaceType.Workspace &&
+          before !== undefined &&
+          before !== generation
+        ) {
+          pending.add(key);
+          continue;
+        }
+        const nextActions = allowed.get(docId);
+        if (
+          nextActions?.has('Doc.Read') &&
+          (event.spaceType === SpaceType.Userspace || before !== undefined)
+        ) {
           this.addActiveDocSubscription(
             socket,
             event.spaceType,
-            spaceId,
+            event.spaceId,
             docId,
-            actions,
-            after
+            nextActions,
+            generation
           );
-        } catch {
-          if (!stillCurrent()) continue;
+        } else {
           this.removeActiveDocSubscription(
             socket,
             event.spaceType,
-            spaceId,
+            event.spaceId,
             docId
           );
         }
@@ -1086,8 +1193,7 @@ export class SpaceSyncGateway
   }
 
   selectAdapter(client: Socket, spaceType: SpaceType): SyncSocketAdapter {
-    let adapters: Record<SpaceType, SyncSocketAdapter> = (client as any)
-      .affineSyncAdapters;
+    let adapters = this.socketAdapters.get(client);
 
     if (!adapters) {
       const workspace = new WorkspaceSyncAdapter(
@@ -1095,12 +1201,17 @@ export class SpaceSyncGateway
         this.workspace,
         this.ac,
         this.docReader,
-        this.models
+        this.models,
+        () => this.socketProtocolVersions.get(client.id) ?? 0
       );
-      const userspace = new UserspaceSyncAdapter(client, this.userspace);
+      const userspace = new UserspaceSyncAdapter(
+        client,
+        this.userspace,
+        () => this.socketProtocolVersions.get(client.id) ?? 0
+      );
 
       adapters = { workspace, userspace };
-      (client as any).affineSyncAdapters = adapters;
+      this.socketAdapters.set(client, adapters);
     }
 
     return adapters[spaceType];
@@ -1111,30 +1222,28 @@ export class SpaceSyncGateway
     @CurrentUser() user: CurrentUser,
     @ConnectedSocket() client: Socket,
     @MessageBody() message: unknown
-  ): Promise<EventResponse<{ clientId: string; success: boolean }>> {
-    const { spaces, clientVersion } = parseJoinSpaceBatchMessage(message);
+  ): Promise<
+    EventResponse<{ clientId: string; success: boolean; protocolVersion: 2 }>
+  > {
+    const { spaces, clientVersion, protocolVersion } =
+      parseJoinSpaceBatchMessage(message);
     if (!isBatchWsClientVersion(clientVersion)) {
       this.rejectJoin(client);
-      return { data: { clientId: client.id, success: false } };
+      return { data: { clientId: client.id, success: false, protocolVersion } };
     }
 
     const [first] = spaces;
     const adapter = this.selectAdapter(client, first.spaceType);
 
     await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');
+    if (first.spaceType === SpaceType.Workspace)
+      await this.runtime.ensureWorkspaceLifecycleV1(first.spaceId);
+    this.socketProtocolVersions.set(client.id, protocolVersion);
 
     const docSpaces = spaces.filter(
       (space): space is JoinSpaceBatchEntry & { docId: string } =>
         space.docId !== undefined
     );
-    for (const space of docSpaces) {
-      this.assertReservedDocSubject(
-        space.spaceType,
-        user.id,
-        space.spaceId,
-        space.docId
-      );
-    }
     const docActions = new Map<string, Set<DocAction>>();
     let permissionGeneration = 0;
     const rooms = new Set<string>();
@@ -1239,7 +1348,7 @@ export class SpaceSyncGateway
       throw error;
     }
 
-    return { data: { clientId: client.id, success: true } };
+    return { data: { clientId: client.id, success: true, protocolVersion } };
   }
 
   @SubscribeMessage('space:leave-batch')
@@ -1281,7 +1390,6 @@ export class SpaceSyncGateway
   @SubscribeMessage('space:load-doc')
   async onLoadSpaceDoc(
     @ConnectedSocket() client: Socket,
-    @CurrentUser() user: CurrentUser,
     @MessageBody()
     { spaceType, spaceId, docId, stateVector }: LoadDocMessage
   ): Promise<
@@ -1290,7 +1398,6 @@ export class SpaceSyncGateway
     const canonicalId = canonicalDocId(docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
-    this.assertReservedDocSubject(spaceType, user.id, spaceId, canonicalId);
     if (
       !this.hasActiveDocSubscription(client, spaceType, spaceId, canonicalId)
     ) {
@@ -1302,15 +1409,6 @@ export class SpaceSyncGateway
       spaceId,
       canonicalId
     );
-    if (
-      permissionGeneration === undefined ||
-      (spaceType === SpaceType.Workspace &&
-        permissionGeneration !==
-          (await this.runtime.getSyncPermissionGenerationV1(spaceId)))
-    ) {
-      this.removeActiveDocSubscription(client, spaceType, spaceId, canonicalId);
-      throw new NotInSpace({ spaceId });
-    }
 
     const doc = await adapter.diff(
       spaceId,
@@ -1318,6 +1416,28 @@ export class SpaceSyncGateway
       stateVector ? Buffer.from(stateVector, 'base64') : undefined
     );
 
+    const currentGeneration =
+      spaceType === SpaceType.Workspace
+        ? await this.runtime.getSyncPermissionGenerationV1(spaceId)
+        : permissionGeneration;
+    if (
+      permissionGeneration === undefined ||
+      this.activeDocGeneration(client, spaceType, spaceId, canonicalId) !==
+        permissionGeneration ||
+      permissionGeneration !== currentGeneration
+    ) {
+      if (
+        this.activeDocGeneration(client, spaceType, spaceId, canonicalId) ===
+        permissionGeneration
+      )
+        this.removeActiveDocSubscription(
+          client,
+          spaceType,
+          spaceId,
+          canonicalId
+        );
+      throw new NotInSpace({ spaceId });
+    }
     if (!doc) {
       throw new DocNotFound({ spaceId, docId });
     }
@@ -1338,7 +1458,6 @@ export class SpaceSyncGateway
     @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage
   ): Promise<EventResponse<{ success: true }>> {
     docId = canonicalDocId(docId, spaceId);
-    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
     if (spaceType === SpaceType.Workspace) {
       await this.applyDocLifecycle(client, user.id, spaceId, docId, 'delete');
     } else {
@@ -1360,12 +1479,11 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @CurrentUser() user: CurrentUser,
     @MessageBody() { spaceType, spaceId, docId, lifecycle }: DocLifecycleMessage
-  ): Promise<EventResponse<{ rootUpdate: string; timestamp: number }>> {
+  ): Promise<EventResponse<{ timestamp: number }>> {
     if (!['trash', 'restore', 'delete'].includes(lifecycle)) {
       throw new BadRequest('Invalid document lifecycle');
     }
     docId = canonicalDocId(docId, spaceId);
-    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
     if (spaceType !== SpaceType.Workspace) {
       throw new DocActionDenied({
         action: lifecycle === 'delete' ? 'Doc.Delete' : 'Doc.Update',
@@ -1391,6 +1509,7 @@ export class SpaceSyncGateway
     docId: string,
     lifecycle: 'trash' | 'restore' | 'delete'
   ) {
+    this.selectAdapter(client, SpaceType.Workspace).assertIn(workspaceId);
     const action =
       lifecycle === 'trash'
         ? 'Doc.Trash'
@@ -1412,20 +1531,8 @@ export class SpaceSyncGateway
       }
       throw error;
     }
-    const rootUpdate = output.rootUpdate as string;
-    const timestamp = new Date(output.timestamp as string).getTime();
-    this.publishDocUpdate(
-      {
-        spaceType: SpaceType.Workspace,
-        spaceId: workspaceId,
-        docId: workspaceId,
-        updates: [Buffer.from(rootUpdate, 'base64')],
-        timestamp,
-        editor: actorUserId,
-      },
-      client
-    );
-    return { rootUpdate, timestamp };
+    const timestamp = Number(output.timestamp);
+    return { timestamp };
   }
 
   /**
@@ -1437,73 +1544,57 @@ export class SpaceSyncGateway
     @CurrentUser() user: CurrentUser,
     @MessageBody()
     message: PushDocUpdateMessage
-  ): Promise<EventResponse<{ accepted: true; timestamp?: number }>> {
+  ): Promise<
+    EventResponse<{ accepted: true; timestamp: number; created: boolean }>
+  > {
     const { spaceType, spaceId, update } = message;
     const docId = canonicalDocId(message.docId, spaceId);
     const adapter = this.selectAdapter(client, spaceType);
 
     // Quota recovery mode is intentionally not applied to sync.
-    this.assertReservedDocSubject(spaceType, user.id, spaceId, docId);
-    const active = this.hasActiveDocSubscription(
-      client,
-      spaceType,
-      spaceId,
-      docId
-    );
-    if (!active) {
-      throw new NotInSpace({ spaceId });
+    adapter.assertIn(spaceId);
+    if (message.intent !== 'create' && message.intent !== 'update')
+      throw new BadRequest('Document update intent is required.');
+    let permissionGeneration: number | undefined;
+    if (message.intent === 'update') {
+      if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId))
+        throw new NotInSpace({ spaceId });
+      if (
+        !this.hasActiveDocAction(
+          client,
+          spaceType,
+          spaceId,
+          docId,
+          'Doc.Update'
+        )
+      )
+        throw new DocActionDenied({ action: 'Doc.Update', docId, spaceId });
+      permissionGeneration = this.activeDocGeneration(
+        client,
+        spaceType,
+        spaceId,
+        docId
+      );
+      if (permissionGeneration === undefined) throw new NotInSpace({ spaceId });
     }
-    if (
-      !this.hasActiveDocAction(client, spaceType, spaceId, docId, 'Doc.Update')
-    ) {
-      throw new DocActionDenied({ action: 'Doc.Update', docId, spaceId });
-    }
-    const permissionGeneration = this.activeDocGeneration(
-      client,
-      spaceType,
-      spaceId,
-      docId
-    );
-    if (permissionGeneration === undefined) {
-      throw new NotInSpace({ spaceId });
-    }
-    const canonicalRoot =
-      spaceType === SpaceType.Workspace && docId === spaceId;
-    let timestamp: number;
-    if (canonicalRoot) {
-      let output: Record<string, unknown>;
-      try {
-        output = await this.runtime.executeDomainCommandV1({
-          command: 'append_root_update',
-          actorUserId: user.id,
-          workspaceId: spaceId,
-          update,
-          assertPermission: true,
-          expectedPermissionGeneration: permissionGeneration,
-        });
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message.includes('doc_lifecycle_requires_command')
-        ) {
-          throw new DocActionDenied({
-            action: 'Doc.Update',
-            docId,
-            spaceId,
-          });
-        }
-        throw error;
-      }
-      timestamp = new Date(output.timestamp as string).getTime();
-    } else {
-      timestamp = await adapter.push(
+    const { timestamp, created } = await adapter
+      .push(
         spaceId,
         docId,
         [Buffer.from(update, 'base64')],
         user.id,
-        permissionGeneration
-      );
-    }
+        permissionGeneration,
+        message.intent === 'create' ? 'create_doc' : 'update_doc',
+        this.socketProtocolVersions.get(client.id) ?? 0
+      )
+      .catch((error: unknown) => {
+        const code = backendRuntimeErrorCode(error);
+        if (code === 'domain_permission_denied')
+          throw new AccessDenied('Document write access denied');
+        if (code === 'sync_permission_generation_changed')
+          throw new SyncPermissionGenerationChanged({ spaceId });
+        throw error;
+      });
 
     this.publishDocUpdate(
       {
@@ -1521,8 +1612,24 @@ export class SpaceSyncGateway
       data: {
         accepted: true,
         timestamp,
+        created,
       },
     };
+  }
+
+  @SubscribeMessage('space:load-workspace-state')
+  async onLoadWorkspaceState(
+    @ConnectedSocket() client: Socket,
+    @CurrentUser() user: CurrentUser,
+    @MessageBody() {
+      spaceType,
+      spaceId,
+    }: { spaceType: SpaceType; spaceId: string }
+  ) {
+    if (spaceType !== SpaceType.Workspace)
+      throw new BadRequest('Workspace state requires a workspace.');
+    this.selectAdapter(client, spaceType).assertIn(spaceId);
+    return { data: await this.runtime.getWorkspaceStateV1(spaceId, user.id) };
   }
 
   @SubscribeMessage('space:load-doc-timestamps')
@@ -1534,25 +1641,19 @@ export class SpaceSyncGateway
   ): Promise<EventResponse<Record<string, number>>> {
     const adapter = this.selectAdapter(client, spaceType);
 
-    const stats = await adapter.getTimestamps(spaceId, timestamp);
-    if (!stats || spaceType === SpaceType.Userspace) {
-      return {
-        data: stats ?? {},
-      };
-    }
-
-    const readableDocs = await this.ac
-      .user(user.id)
-      .workspace(spaceId)
-      .docs(
-        Object.keys(stats).map(docId => ({ docId })),
-        'Doc.Read'
-      );
-    const readableDocIds = new Set(readableDocs.map(doc => doc.docId));
-
+    adapter.assertIn(spaceId);
+    if (spaceType === SpaceType.Userspace)
+      return { data: (await adapter.getTimestamps(spaceId, timestamp)) ?? {} };
+    const state = await this.runtime.getWorkspaceStateV1(spaceId, user.id);
+    const clocks = {
+      ...state.clocks,
+      ...Object.fromEntries(state.docs.map(doc => [doc.docId, doc.timestamp])),
+    };
     return {
       data: Object.fromEntries(
-        Object.entries(stats).filter(([docId]) => readableDocIds.has(docId))
+        Object.entries(clocks).filter(
+          ([, value]) => timestamp === undefined || value > timestamp
+        )
       ),
     };
   }
@@ -1603,7 +1704,8 @@ abstract class SyncSocketAdapter {
   constructor(
     private readonly spaceType: SpaceType,
     public readonly client: Socket,
-    public readonly storage: DocStorageAdapter
+    public readonly storage: DocStorageAdapter,
+    private readonly protocolVersion: () => number
   ) {}
 
   room(spaceId: string, roomType: RoomType = 'sync') {
@@ -1625,6 +1727,8 @@ abstract class SyncSocketAdapter {
     if (!this.client.rooms.has(this.room(spaceId, roomType))) {
       throw new NotInSpace({ spaceId });
     }
+    if (this.protocolVersion() !== 2)
+      throw new BadRequest('Sync protocol upgrade required.');
   }
 
   abstract assertAccessible(
@@ -1639,7 +1743,8 @@ abstract class SyncSocketAdapter {
     updates: Buffer[],
     editorId: string,
     expectedPermissionGeneration?: number,
-    writeIntent: 'update_doc' | 'create_doc' = 'update_doc'
+    writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
+    protocolVersion = 0
   ) {
     this.assertIn(spaceId);
     return await this.storage.pushDocUpdates(
@@ -1648,7 +1753,8 @@ abstract class SyncSocketAdapter {
       updates,
       editorId,
       expectedPermissionGeneration,
-      writeIntent
+      writeIntent,
+      protocolVersion
     );
   }
 
@@ -1674,9 +1780,10 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     storage: DocStorageAdapter,
     private readonly ac: PermissionAccess,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    protocolVersion: () => number
   ) {
-    super(SpaceType.Workspace, client, storage);
+    super(SpaceType.Workspace, client, storage, protocolVersion);
   }
 
   override async push(
@@ -1684,25 +1791,22 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     docId: string,
     updates: Buffer[],
     editorId: string,
-    expectedPermissionGeneration?: number
+    expectedPermissionGeneration?: number,
+    writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
+    protocolVersion = 0
   ) {
     const docMeta = await this.models.doc.getMeta(spaceId, docId, {
-      select: {
-        blocked: true,
-      },
+      select: { blocked: true },
     });
-    if (docMeta?.blocked) {
-      throw new DocUpdateBlocked({ spaceId, docId });
-    }
-    return await super.push(
+    if (docMeta?.blocked) throw new DocUpdateBlocked({ spaceId, docId });
+    return super.push(
       spaceId,
       docId,
       updates,
       editorId,
       expectedPermissionGeneration,
-      (await this.models.doc.exists(spaceId, docId))
-        ? 'update_doc'
-        : 'create_doc'
+      writeIntent,
+      protocolVersion
     );
   }
 
@@ -1724,8 +1828,12 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
 }
 
 class UserspaceSyncAdapter extends SyncSocketAdapter {
-  constructor(client: Socket, storage: DocStorageAdapter) {
-    super(SpaceType.Userspace, client, storage);
+  constructor(
+    client: Socket,
+    storage: DocStorageAdapter,
+    protocolVersion: () => number
+  ) {
+    super(SpaceType.Userspace, client, storage, protocolVersion);
   }
 
   async assertAccessible(

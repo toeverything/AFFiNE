@@ -14,6 +14,7 @@ import {
   type DocRecord,
   type ListedBlobRecord,
   parseUniversalId,
+  type PeerWorkspaceState,
 } from '@affine/nbstore';
 import { type NativeDBApis } from '@affine/nbstore/sqlite';
 import { registerPlugin } from '@capacitor/core';
@@ -35,12 +36,14 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   pushUpdate: async function (
     id: string,
     docId: string,
-    update: Uint8Array
+    update: Uint8Array,
+    createForPeer?: string
   ): Promise<Date> {
     const { timestamp } = await NbStore.pushUpdate({
       id,
       docId,
       data: await uint8ArrayToBase64(update),
+      createForPeer,
     });
     return new Date(timestamp);
   },
@@ -154,6 +157,36 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       createdAt: new Date(b.createdAt),
     }));
   },
+  getPeerWorkspaceState: async (id, peer, rootDocId) => {
+    const { state } = await NbStore.getPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+    });
+    return JSON.parse(state) as PeerWorkspaceState;
+  },
+  invalidatePeerWorkspaceState: (id, peer, rootDocId) =>
+    NbStore.invalidatePeerWorkspaceState({ id, peer, rootDocId }),
+  installPeerWorkspaceState: async (
+    id,
+    peer,
+    rootDocId,
+    cacheToken,
+    docs,
+    clocks
+  ) => {
+    const { installed } = await NbStore.installPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+      cacheToken,
+      docs: JSON.stringify(docs),
+      clocks: JSON.stringify(clocks),
+    });
+    return installed;
+  },
+  confirmPeerDocCreate: (id, peer, docId) =>
+    NbStore.confirmPeerDocCreate({ id, peer, docId }),
   getPeerRemoteClocks: async function (
     id: string,
     peer: string

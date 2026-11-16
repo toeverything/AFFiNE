@@ -8,7 +8,8 @@ use tokio::time::Instant;
 
 use super::{
   ActiveGeneration, DocReadScope, RuntimeAggregateRequest, RuntimeSearchRequest, SearchActor, SearchRuntime,
-  SearchTable, candidates, compile, compile_aggregate, retain_visible_nodes,
+  SearchTable, candidates, compile, compile_aggregate, is_ordinary_workspace_doc, retain_visible_nodes,
+  workspace_lifecycle_completed,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -115,6 +116,7 @@ impl SearchRuntime {
     let candidate_tuples = candidates(result)?;
     let doc_ids = candidate_tuples
       .iter()
+      .filter(|candidate| is_ordinary_workspace_doc(workspace_id, &candidate.doc_id))
       .map(|candidate| candidate.doc_id.clone())
       .collect::<BTreeSet<_>>()
       .into_iter()
@@ -125,10 +127,13 @@ impl SearchRuntime {
     let rows = sqlx::query(
       r#"SELECT state.doc_id,state.published_source_version,state.published_permission_version
          FROM search_projection.document_states state
-         JOIN snapshots source
-           ON source.workspace_id=state.workspace_id AND source.guid=state.doc_id
+         LEFT JOIN workspace_pages page
+           ON page.workspace_id=state.workspace_id AND page.page_id=state.doc_id
          WHERE state.generation_id=$1 AND state.workspace_id=$2
            AND state.doc_id=ANY($3) AND state.published_source_exists
+           AND page.lifecycle_state IS NULL
+           AND (EXISTS(SELECT 1 FROM snapshots source WHERE source.workspace_id=state.workspace_id AND source.guid=state.doc_id)
+             OR EXISTS(SELECT 1 FROM updates source WHERE source.workspace_id=state.workspace_id AND source.guid=state.doc_id))
            AND state.last_error IS NULL"#,
     )
     .bind(generation.id)
@@ -316,6 +321,15 @@ impl SearchRuntime {
   }
 
   async fn query_gate(&self, workspace_id: &str) -> RuntimeResult<(ActiveGeneration, i64)> {
+    let mut connection = self
+      .pool
+      .acquire()
+      .await
+      .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
+    if !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
+      return Err(RuntimeError::SearchIndexNotReady);
+    }
+    drop(connection);
     let generation = self.active_generation().await?;
     let row = sqlx::query(
       r#"SELECT covered,required_permission_version,applied_permission_version,last_error

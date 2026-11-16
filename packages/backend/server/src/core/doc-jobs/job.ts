@@ -33,6 +33,7 @@ export class DocJobRunner {
   @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
   async run() {
     await Promise.allSettled([
+      this.runtime.runWorkspaceLifecycleMigrationsV1(),
       this.compactPendingDocUpdates(),
       this.syncEmbeddingDocuments(),
       this.recordPendingDocUpdatesCount(),
@@ -49,84 +50,44 @@ export class DocJobRunner {
   async syncEmbeddingDocuments() {
     if (!(await this.runtime.embeddingHealth()).enabled) {
       return {
-        reconciledWorkspaces: 0,
         scannedDocuments: 0,
         syncedDocuments: 0,
       };
     }
 
-    const roots = await this.prisma.$queryRaw<
-      { id: string; lastCheckEmbeddings: Date }[]
-    >`
-      SELECT workspace.id, workspace.last_check_embeddings AS "lastCheckEmbeddings"
-      FROM workspaces workspace
-      JOIN snapshots root
-        ON root.workspace_id = workspace.id AND root.guid = workspace.id
-      WHERE workspace.last_check_embeddings <= root.updated_at
-      ORDER BY workspace.last_check_embeddings, workspace.sid
-      LIMIT ${WORKSPACE_BATCH_SIZE}
-    `;
-    const rootsByWorkspace = new Map<
-      string,
-      Awaited<
-        ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
-      >
-    >();
-    const inspectRoot = async (workspaceId: string) => {
-      let root = rootsByWorkspace.get(workspaceId);
-      if (!root) {
-        root = await this.embedding.inspectWorkspaceRoot(workspaceId);
-        rootsByWorkspace.set(workspaceId, root);
-      }
-      return root;
-    };
-    let reconciledWorkspaces = 0;
-    for (const workspace of roots) {
-      const claimedAt = new Date();
-      const claimed = await this.prisma.workspace.updateMany({
-        where: {
-          id: workspace.id,
-          lastCheckEmbeddings: workspace.lastCheckEmbeddings,
-        },
-        data: { lastCheckEmbeddings: claimedAt },
-      });
-      if (!claimed.count) continue;
-      try {
-        const root = await inspectRoot(workspace.id);
-        if (!root.complete) continue;
-        await this.embedding.reconcileDocuments(workspace.id);
-        reconciledWorkspaces++;
-      } catch (error) {
-        await this.prisma.workspace.updateMany({
-          where: { id: workspace.id, lastCheckEmbeddings: claimedAt },
-          data: { lastCheckEmbeddings: new Date(0) },
-        });
-        this.logger.error('embedding workspace reconciliation failed', {
-          workspaceId: workspace.id,
-          error,
-        });
-      }
-    }
-
     const documents = await this.prisma.$queryRaw<
-      { workspaceId: string; docId: string }[]
+      { workspaceId: string; docId: string; revision: string }[]
     >`
-      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId"
-      FROM snapshots snapshot
+      WITH current_sources AS (
+        SELECT workspace_id, guid, max(timestamp) AS updated_at
+        FROM (
+          SELECT workspace_id, guid, updated_at AS timestamp FROM snapshots
+          UNION ALL
+          SELECT workspace_id, guid, created_at AS timestamp FROM updates
+        ) sources GROUP BY workspace_id, guid
+      )
+      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId",
+        ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text AS revision
+      FROM current_sources snapshot
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
-      LEFT JOIN snapshots root ON root.workspace_id = snapshot.workspace_id AND root.guid = snapshot.workspace_id
+      LEFT JOIN workspace_pages page ON page.workspace_id = snapshot.workspace_id AND page.page_id = snapshot.guid
       LEFT JOIN embedding_sources source
         ON source.workspace_id = snapshot.workspace_id
         AND source.source_kind = 'document'
         AND source.source_key = snapshot.guid
       WHERE workspace.enable_doc_embedding
+        AND EXISTS (
+          SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
+          WHERE checkpoint.kind = 'workspace_doc_lifecycle'
+            AND checkpoint.scope = snapshot.workspace_id AND checkpoint.status = 'completed'
+        )
+        AND page.lifecycle_state IS NULL
         AND snapshot.guid <> snapshot.workspace_id
         AND snapshot.guid NOT LIKE 'db$%'
         AND snapshot.guid NOT LIKE 'userdata$%'
         AND (
           source.id IS NULL
-          OR (source.document_projection->>'rootRevision' IS NOT NULL
-            AND source.document_projection->>'rootRevision' <> COALESCE(((extract(epoch FROM root.updated_at) * 1000)::bigint)::text, 'missing'))
+          OR source.deleted_at IS NOT NULL
           OR source.content_revision <> ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text
         )
       ORDER BY snapshot.updated_at, snapshot.workspace_id, snapshot.guid
@@ -138,7 +99,7 @@ export class DocJobRunner {
         await this.embedding.syncDocument(
           document.workspaceId,
           document.docId,
-          await inspectRoot(document.workspaceId)
+          document.revision
         );
         syncedDocuments++;
       } catch (error) {
@@ -149,7 +110,6 @@ export class DocJobRunner {
       }
     }
     return {
-      reconciledWorkspaces,
       scannedDocuments: documents.length,
       syncedDocuments,
     };

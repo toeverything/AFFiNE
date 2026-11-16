@@ -545,6 +545,22 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ docId, action }) =>
       `You do not have permission to perform ${action} action on doc ${docId}.`,
   },
+  doc_update_invalid: {
+    type: 'invalid_input',
+    message: 'The document update is invalid.',
+  },
+  doc_update_too_large: {
+    type: 'invalid_input',
+    message: 'The document update exceeds the size limit.',
+  },
+  workspace_sync_unavailable: {
+    type: 'service_unavailable',
+    message: 'Workspace synchronization is temporarily unavailable.',
+  },
+  doc_validation_unavailable: {
+    type: 'service_unavailable',
+    message: 'Document validation is temporarily unavailable.',
+  },
   doc_update_blocked: {
     type: 'action_forbidden',
     args: { spaceId: 'string', docId: 'string' },

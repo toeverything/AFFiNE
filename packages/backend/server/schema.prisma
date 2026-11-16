@@ -466,6 +466,11 @@ model DocGrant {
 //   We won't make sure every page has a corresponding record in this table.
 //   Only the ones that have ever changed will have records here,
 //   and for others we will make sure it's has a default value return in our business logic.
+enum DocLifecycleState {
+  trashed
+  deleted
+}
+
 model WorkspaceDoc {
   workspaceId String    @map("workspace_id") @db.VarChar
   docId       String    @map("page_id") @db.VarChar
@@ -476,6 +481,8 @@ model WorkspaceDoc {
   title       String?   @db.VarChar
   summary     String?   @db.VarChar
   publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
+  lifecycleState DocLifecycleState? @map("lifecycle_state")
+  lifecycleChangedAt DateTime? @map("lifecycle_changed_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

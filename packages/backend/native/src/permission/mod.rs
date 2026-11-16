@@ -27,6 +27,11 @@ pub fn canonicalize_document_identity(
   })
 }
 
+#[napi]
+pub fn is_ordinary_workspace_doc(workspace_id: String, doc_id: String) -> bool {
+  affine_core::access_control::is_ordinary_workspace_doc(&workspace_id, &doc_id)
+}
+
 pub(crate) fn permission_evaluation_output(
   decision: affine_core::access_control::AuthorizationDecision,
 ) -> PermissionEvaluationOutputV1 {

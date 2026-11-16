@@ -9,6 +9,7 @@ import Sinon from 'sinon';
 import { AccessDenied, type EventBus, NotFound } from '../../../base';
 import { ServerConfigHandle } from '../../../native';
 import { BackendRuntimeProvider } from '../provider';
+import { WorkspaceLifecycleMigration } from '../workspace-lifecycle';
 
 const privateKey = generateKeyPairSync('ec', {
   namedCurve: 'P-256',
@@ -26,67 +27,90 @@ writeFileSync(
 const serverConfig = new ServerConfigHandle(configPath);
 test.after.always(() => rmSync(directory, { recursive: true, force: true }));
 
-test('backend-runtime provider starts without migrations and exposes explicit migration', async t => {
-  const event = {
-    emitAsync: Sinon.stub().resolves(),
-  };
-  const provider = new BackendRuntimeProvider(
-    serverConfig,
-    event as unknown as EventBus
-  );
-  const runtime = {
-    start: Sinon.stub().resolves(),
-    stop: Sinon.stub().resolves(),
-    runMigrations: Sinon.stub().resolves(),
-    reloadConfig: Sinon.stub().resolves(),
-    health: Sinon.stub().resolves({
-      started: true,
-      databaseConnected: true,
-      invalidation: {
-        state: 'disabled',
-        reconnects: 0,
-        decodeFailures: 0,
-        received: 0,
-        published: 0,
-        publishFailures: 0,
-      },
-    }),
-  };
-  (provider as unknown as { runtime: typeof runtime }).runtime = runtime;
+test.serial(
+  'backend-runtime provider starts without migrations and exposes explicit migration',
+  async t => {
+    const event = {
+      emitAsync: Sinon.stub().resolves(),
+    };
+    const provider = new BackendRuntimeProvider(
+      serverConfig,
+      event as unknown as EventBus
+    );
+    const runtime = {
+      start: Sinon.stub().resolves(),
+      stop: Sinon.stub().resolves(),
+      runMigrations: Sinon.stub().resolves(),
+      reloadConfig: Sinon.stub().resolves(),
+      health: Sinon.stub().resolves({
+        started: true,
+        databaseConnected: true,
+        invalidation: {
+          state: 'disabled',
+          reconnects: 0,
+          decodeFailures: 0,
+          received: 0,
+          published: 0,
+          publishFailures: 0,
+        },
+      }),
+    };
+    (provider as unknown as { runtime: typeof runtime }).runtime = runtime;
+    const lifecycle = (
+      provider as unknown as { workspaceLifecycle: WorkspaceLifecycleMigration }
+    ).workspaceLifecycle;
+    const startSweep = Sinon.stub(lifecycle, 'start');
+    const runSweep = Sinon.stub(lifecycle, 'run').resolves();
+    t.teardown(() => {
+      startSweep.restore();
+      runSweep.restore();
+    });
 
-  await provider.start();
-  await provider.start();
-  await provider.runMigrations();
-  await provider.onConfigChanged({ updates: { mailer: {} } });
-  await provider.onConfigChanged({ updates: { copilot: {} } });
-  await provider.onConfigChanged({ updates: { storages: {} } });
-  await provider.onConfigChanged({ updates: { oauth: {} } });
-  const health = await provider.health();
-  t.is(runtime.reloadConfig.callCount, 3);
-  t.true(runtime.reloadConfig.alwaysCalledWithExactly());
-  t.is(event.emitAsync.callCount, 5);
-  t.true(
-    event.emitAsync.calledWith('backendRuntime.configApplied', {
-      updates: { copilot: {} },
-    })
-  );
-  t.true(
-    event.emitAsync.calledWith('backendRuntime.configApplied', {
-      updates: { oauth: {} },
-    })
-  );
+    await provider.start();
+    await provider.start();
+    await provider.runMigrations();
+    await provider.onConfigChanged({ updates: { mailer: {} } });
+    await provider.onConfigChanged({ updates: { copilot: {} } });
+    await provider.onConfigChanged({ updates: { storages: {} } });
+    await provider.onConfigChanged({ updates: { oauth: {} } });
+    const health = await provider.health();
+    t.is(runtime.reloadConfig.callCount, 3);
+    t.true(runtime.reloadConfig.alwaysCalledWithExactly());
+    t.is(event.emitAsync.callCount, 5);
+    t.true(
+      event.emitAsync.calledWith('backendRuntime.configApplied', {
+        updates: { copilot: {} },
+      })
+    );
+    t.true(
+      event.emitAsync.calledWith('backendRuntime.configApplied', {
+        updates: { oauth: {} },
+      })
+    );
 
-  runtime.reloadConfig.rejects(new Error('sensitive native credential'));
-  await provider.onConfigChanged({ updates: { copilot: {} } });
-  await provider.stop();
+    runtime.reloadConfig.rejects(new Error('sensitive native credential'));
+    await provider.onConfigChanged({ updates: { copilot: {} } });
+    await provider.stop();
 
-  t.is(runtime.start.callCount, 2);
-  t.is(runtime.runMigrations.callCount, 1);
-  t.is(runtime.reloadConfig.callCount, 4);
-  t.is(event.emitAsync.callCount, 5);
-  t.true(health.databaseConnected);
-  t.is(runtime.stop.callCount, 1);
-});
+    t.is(startSweep.callCount, 2);
+    const flavors = Sinon.stub(env, 'flavors').get(() => ({ script: true }));
+    try {
+      await provider.start();
+      t.is(startSweep.callCount, 2);
+      await provider.runWorkspaceLifecycleMigrationsV1();
+      t.true(runSweep.calledOnce);
+    } finally {
+      flavors.restore();
+      await provider.stop();
+    }
+    t.is(runtime.start.callCount, 3);
+    t.is(runtime.runMigrations.callCount, 1);
+    t.is(runtime.reloadConfig.callCount, 4);
+    t.is(event.emitAsync.callCount, 6);
+    t.true(health.databaseConnected);
+    t.is(runtime.stop.callCount, 2);
+  }
+);
 
 test('backend-runtime provider measures explicit typed methods', async t => {
   const provider = new BackendRuntimeProvider(serverConfig);
@@ -264,4 +288,56 @@ test('backend-runtime provider aborts a stream handle that resolves after iterat
   await Promise.resolve();
 
   t.true(abort.calledOnce);
+});
+
+test('workspace lifecycle sweep reports failures and continues beyond a failed page', async t => {
+  const ids = Array.from(
+    { length: 101 },
+    (_, index) => `workspace-${String(index).padStart(3, '0')}`
+  );
+  const completed = new Set<string>();
+  let failing = true;
+  const attempted: string[] = [];
+  let blocked: Promise<never> | undefined;
+  const migration = new WorkspaceLifecycleMigration({
+    async listWorkspaceLifecycleMigrationCandidatesV1(after) {
+      return ids
+        .filter(id => !completed.has(id) && (!after || id > after))
+        .slice(0, 100);
+    },
+    async prepareWorkspaceLifecycleMigrationV1(id) {
+      if (blocked) return blocked;
+      attempted.push(id);
+      if (id === ids[0] && failing) throw new Error('source unavailable');
+      return { completed: false, revision: '1', rootStatus: 'missing' };
+    },
+    async migrateWorkspaceLifecycleV1(input) {
+      completed.add(input.workspaceId);
+      return true;
+    },
+  });
+  await t.throwsAsync(() => migration.run(), { instanceOf: AggregateError });
+  t.deepEqual(attempted, ids);
+  t.is(completed.size, 100);
+  failing = false;
+  await migration.run();
+  t.is(completed.size, 101);
+  await migration.stop();
+
+  const failure = Promise.withResolvers<never>();
+  blocked = failure.promise;
+  const foreground = migration.ensure('foreground');
+  const rejected = t.throwsAsync(foreground, { message: 'foreground failed' });
+  const provider = new BackendRuntimeProvider(serverConfig);
+  const nativeStop = Sinon.stub().resolves();
+  Object.assign(provider, {
+    workspaceLifecycle: migration,
+    runtime: { stop: nativeStop },
+  });
+  const stopping = provider.stop();
+  await Promise.resolve();
+  failure.reject(new Error('foreground failed'));
+  await rejected;
+  await stopping;
+  t.true(nativeStop.calledOnce);
 });

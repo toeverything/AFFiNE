@@ -6,6 +6,8 @@ import type {
   DocIndexedClock,
   DocRecord,
   ListedBlobRecord,
+  PeerWorkspaceState,
+  WorkspaceDoc,
 } from '../../storage';
 import { type SpaceType, universalId } from '../../utils/universal-id';
 
@@ -54,7 +56,35 @@ export interface NativeIndexSearchResult {
 export interface NativeDBApis {
   connect: (id: string) => Promise<void>;
   disconnect: (id: string) => Promise<void>;
-  pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
+  pushUpdate: (
+    id: string,
+    docId: string,
+    update: Uint8Array,
+    createForPeer?: string
+  ) => Promise<Date>;
+  getPeerWorkspaceState: (
+    id: string,
+    peer: string,
+    rootDocId: string
+  ) => Promise<PeerWorkspaceState>;
+  invalidatePeerWorkspaceState: (
+    id: string,
+    peer: string,
+    rootDocId: string
+  ) => Promise<void>;
+  installPeerWorkspaceState: (
+    id: string,
+    peer: string,
+    rootDocId: string,
+    cacheToken: number,
+    docs: Array<WorkspaceDoc & { pendingCreate: boolean }>,
+    clocks: Record<string, number>
+  ) => Promise<boolean>;
+  confirmPeerDocCreate: (
+    id: string,
+    peer: string,
+    docId: string
+  ) => Promise<void>;
   getDoc: (id: string, docId: string) => Promise<DocRecord | null>;
   deleteDoc: (id: string, docId: string) => Promise<void>;
   getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;

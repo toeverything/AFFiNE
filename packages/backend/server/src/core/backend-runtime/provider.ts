@@ -48,7 +48,19 @@ export type RuntimeInvalidation =
       kind: 'quotaOwnerMapping' | 'quotaSeatUsage';
       workspaceId: string;
     }
-  | { version: 1; kind: 'blobSource'; source: unknown };
+  | { version: 1; kind: 'blobSource'; source: unknown }
+  | {
+      version: 1;
+      kind: 'workspaceInventoryChanged';
+      workspaceId: string;
+      docId?: string;
+    }
+  | {
+      version: 1;
+      kind: 'workspaceRootChanged';
+      workspaceId: string;
+      timestampMs: number;
+    };
 
 declare global {
   interface Events {
@@ -97,6 +109,7 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
+    if (!env.flavors.script) this.startWorkspaceLifecycleMigrations();
     await this.event?.emitAsync('backendRuntime.configApplied', {
       updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
     });
@@ -119,6 +132,7 @@ export class BackendRuntimeProvider
   }
 
   async stop() {
+    await this.stopWorkspaceLifecycleMigrations();
     await this.runtime.stop();
     this.logger.log('backend runtime stopped');
   }

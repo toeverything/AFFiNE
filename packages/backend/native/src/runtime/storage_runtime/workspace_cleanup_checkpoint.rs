@@ -125,6 +125,7 @@ const WORKSPACE_CHECKPOINT_KINDS: &[&str] = &[
   "blob_cleanup",
   "blob_cleanup_plan",
   "blob_metadata_backfill",
+  "workspace_root_source",
 ];
 
 pub(super) async fn embedding_tables_exist(pool: &PgPool) -> napi::Result<bool> {

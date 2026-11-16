@@ -6,13 +6,11 @@ import {
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
   CopilotSelectedSourcesUnavailable,
+  DocUpdateInvalid,
   metrics,
 } from '../../base';
 import { Models } from '../../models';
-import {
-  type DocumentEmbeddingProjectionInput,
-  projectWorkspaceRootFromBinary,
-} from '../../native';
+import { type DocumentEmbeddingProjectionInput } from '../../native';
 import { projectDocSearch } from '../utils/blocksuite';
 import { BackendRuntimeProvider } from './provider';
 
@@ -32,44 +30,25 @@ export class BackendRuntimeEmbeddingService {
     private readonly models: Models
   ) {}
 
-  async inspectWorkspaceRoot(workspaceId: string) {
-    const snapshot = await this.models.doc.getSnapshot(
-      workspaceId,
-      workspaceId
-    );
-    const revision = snapshot?.updatedAt.getTime().toString() ?? 'missing';
-    if (!snapshot)
-      return { revision, complete: false, docIds: new Set<string>() };
+  async syncDocument(workspaceId: string, docId: string, revision: string) {
     try {
-      const projection = projectWorkspaceRootFromBinary(
-        Buffer.from(snapshot.blob)
-      );
-      return {
-        revision,
-        complete: projection.complete,
-        docIds: new Set(projection.docIds),
-      };
+      await this.syncDocuments(workspaceId, [docId]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message !== 'invalid_binary') throw error;
-      return { revision, complete: false, docIds: new Set<string>() };
+      if (!(error instanceof DocUpdateInvalid)) throw error;
+      await this.rt.syncEmbeddingState({
+        workspaceId,
+        enabled: true,
+        documents: [
+          {
+            docId,
+            revision,
+            sourceHash: revision,
+            units: [],
+            skipReason: 'invalid_document',
+          },
+        ],
+      });
     }
-  }
-
-  async syncDocument(
-    workspaceId: string,
-    docId: string,
-    root?: Awaited<
-      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
-    >
-  ) {
-    await this.syncDocuments(
-      workspaceId,
-      [docId],
-      false,
-      undefined,
-      root ?? (await this.inspectWorkspaceRoot(workspaceId))
-    );
   }
 
   async prepareSelectedDocuments(workspaceId: string, docIds: string[]) {
@@ -78,7 +57,7 @@ export class BackendRuntimeEmbeddingService {
       throw new CopilotSelectedSourcesLimitExceeded();
     }
     try {
-      await this.syncDocuments(workspaceId, selectedDocIds, false, {
+      await this.syncDocuments(workspaceId, selectedDocIds, {
         priority: SELECTED_DOCUMENT_PRIORITY,
         waitForReadyMs: SELECTED_DOCUMENT_WAIT_MS,
       });
@@ -88,6 +67,8 @@ export class BackendRuntimeEmbeddingService {
   }
 
   private mapSelectedSourceError(error: unknown) {
+    if (error instanceof DocUpdateInvalid)
+      return new CopilotSelectedSourcesFailed();
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('embedding_selected_sources_processing')) {
       return new CopilotSelectedSourcesProcessing();
@@ -104,11 +85,7 @@ export class BackendRuntimeEmbeddingService {
   private async syncDocuments(
     workspaceId: string,
     docIds: string[],
-    reconcileDocuments: boolean,
-    scheduling?: { priority: number; waitForReadyMs: number },
-    root?: Awaited<
-      ReturnType<BackendRuntimeEmbeddingService['inspectWorkspaceRoot']>
-    >
+    scheduling?: { priority: number; waitForReadyMs: number }
   ) {
     if (!(await this.rt.embeddingHealth()).enabled) {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
@@ -119,37 +96,31 @@ export class BackendRuntimeEmbeddingService {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
       return;
     }
+    if (scheduling) await this.rt.ensureWorkspaceLifecycleV1(workspaceId);
     const documents: DocumentEmbeddingProjectionInput[] = [];
     let unitCount = 0;
     let textBytes = 0;
     for (const docId of docIds) {
-      const snapshot = await this.models.doc.getSnapshot(workspaceId, docId);
+      const snapshot = await this.rt.getCurrentWorkspaceDocV1(
+        workspaceId,
+        docId
+      );
       if (!snapshot) {
         if (scheduling) throw new CopilotSelectedSourcesUnavailable();
         continue;
       }
-      const revision = snapshot.updatedAt.getTime().toString();
+      const revision = snapshot.timestamp.toString();
       const skipped: DocumentEmbeddingProjectionInput = {
         docId,
         revision,
         sourceHash: revision,
         units: [],
       };
-      if (root && (!root.complete || !root.docIds.has(docId))) {
-        documents.push({
-          ...skipped,
-          skipReason: root.complete
-            ? 'document_not_in_root'
-            : 'workspace_root_incomplete',
-          rootRevision: root.revision,
-        });
-        continue;
-      }
       if (
-        !snapshot.blob.length ||
-        (snapshot.blob.length === 2 &&
-          snapshot.blob[0] === 0 &&
-          snapshot.blob[1] === 0)
+        !snapshot.bin.length ||
+        (snapshot.bin.length === 2 &&
+          snapshot.bin[0] === 0 &&
+          snapshot.bin[1] === 0)
       ) {
         if (scheduling) throw new CopilotSelectedSourcesUnavailable();
         documents.push({ ...skipped, skipReason: 'empty_document' });
@@ -157,7 +128,7 @@ export class BackendRuntimeEmbeddingService {
       }
       let projection;
       try {
-        projection = projectDocSearch(snapshot.blob, docId, revision);
+        projection = projectDocSearch(snapshot.bin, docId, revision);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (
@@ -216,22 +187,12 @@ export class BackendRuntimeEmbeddingService {
         })),
       });
     }
-    if (!documents.length && !reconcileDocuments) return;
+    if (!documents.length) return;
     await this.rt.syncEmbeddingState({
       workspaceId,
       enabled,
-      reconcileDocuments,
       documents,
       ...scheduling,
-    });
-  }
-
-  async reconcileDocuments(workspaceId: string) {
-    if (!(await this.rt.embeddingHealth()).enabled) return;
-    await this.rt.syncEmbeddingState({
-      workspaceId,
-      enabled: await this.models.workspace.allowEmbedding(workspaceId),
-      reconcileDocuments: true,
     });
   }
 }

@@ -4,8 +4,6 @@ mod capabilities;
 mod config;
 mod current_doc;
 mod doc_blob_refs;
-mod document_cleanup;
-mod document_cleanup_execution;
 mod workspace_cleanup;
 mod workspace_cleanup_checkpoint;
 mod workspace_cleanup_namespace;
@@ -15,20 +13,22 @@ pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
 pub(in crate::runtime) use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-pub(in crate::runtime) use current_doc::{CurrentDoc, CurrentDocUpdate, load_current_doc_parts, merge_current_doc};
-use current_doc::{load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids};
+pub(in crate::runtime) use current_doc::{
+  CurrentDoc, CurrentDocUpdate, load_current_doc_in, load_current_doc_parts, load_current_doc_parts_in,
+  merge_current_doc,
+};
 use napi::bindgen_prelude::Buffer;
 use serde_json::Value;
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use tokio::sync::Mutex;
 
 pub(super) use super::{
-  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs,
+  RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs, load_workspace_doc_states_in,
+  lock_current_doc_read,
   migrations::migrate_runtime_tables,
   napi_error, to_napi_error,
   types::{
-    RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult,
-    RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit,
+    RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult, RuntimeMultipartUploadInit,
     RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectMetadata, RuntimeObjectStoragePutOptions,
     RuntimePresignedObjectRequest, RuntimeWorkspaceStorageReconcileResult,
   },
@@ -44,14 +44,6 @@ use crate::runtime::config::{ServerConfig, ServerConfigHandle};
 
 type Result<T> = RuntimeResult<T>;
 
-#[derive(sqlx::FromRow)]
-pub(super) struct DocumentCleanupCandidate {
-  pub(super) workspace_id: String,
-  pub(super) doc_id: String,
-  pub(super) last_doc_activity_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-use document_cleanup_execution::{DocumentCleanupOutcome, execute_document_cleanup_candidate};
 use workspace_cleanup_checkpoint::{
   delete_orphan_storage_rows, embedding_tables_exist, load_integer_cursor, load_object_cursor, mark_checkpoint_failed,
   reconcile_orphan_storage_rows, save_integer_cursor, save_object_cursor,

@@ -449,6 +449,7 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     let generation_id = Uuid::new_v4();
     let workspace_id = format!("claim-workspace-{}", Uuid::new_v4().simple());
@@ -590,6 +591,58 @@ mod tests {
       "active"
     );
     assert_eq!(runtime.status().await.unwrap()["metrics"]["pendingPublications"], 0);
+
+    let pending_workspace = format!("!a-unmigrated-{generation_id}");
+    let ready_workspace = format!("!b-migrated-{generation_id}");
+    for id in [&pending_workspace, &ready_workspace] {
+      sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      sqlx::query("INSERT INTO search_projection.workspace_states(generation_id,workspace_id) VALUES($1,$2)")
+        .bind(generation_id)
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle',$1,'completed')",
+    )
+    .bind(&ready_workspace)
+    .execute(&pool)
+    .await
+    .unwrap();
+    for _ in 0..4 {
+      assert_eq!(runtime.reconcile_pending(1).await.unwrap(), 1);
+    }
+    let coverage: Vec<(String, bool)> = sqlx::query_as(
+      "SELECT workspace_id,covered FROM search_projection.workspace_states WHERE generation_id=$1 AND \
+       workspace_id=ANY($2) ORDER BY workspace_id",
+    )
+    .bind(generation_id)
+    .bind([pending_workspace.clone(), ready_workspace.clone()])
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      coverage,
+      vec![(pending_workspace.clone(), false), (ready_workspace.clone(), true)]
+    );
+    for id in [&pending_workspace, &ready_workspace] {
+      sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope=$1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      sqlx::query("DELETE FROM workspaces WHERE id=$1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
 
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)

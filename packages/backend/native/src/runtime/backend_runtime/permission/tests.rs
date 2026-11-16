@@ -175,6 +175,89 @@ async fn canonical_doc_acl_facts_are_evaluated_without_search_state() {
     readable,
     ["doc".to_string(), "hidden".to_string()].into_iter().collect()
   );
+  sqlx::query("UPDATE workspace_members SET role='owner' WHERE workspace_id=$1 AND user_id=$2")
+    .bind(&workspace_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  use affine_core::access_control::{DocAction, DomainCommand};
+  for (doc_id, allowed) in [
+    (format!("userdata${user_id}${workspace_id}$settings"), true),
+    (format!("userdata$someone-else${workspace_id}$settings"), false),
+    (format!("db${workspace_id}$docProperties"), true),
+    (format!("db${workspace_id}$unknown"), false),
+  ] {
+    let mut transaction = pool.begin().await.unwrap();
+    for action in [DocAction::Read, DocAction::Update, DocAction::HistoryRead] {
+      assert_eq!(
+        authorizer
+          .authorize_doc_action_in(&mut transaction, &workspace_id, Some(&user_id), &doc_id, action)
+          .await
+          .unwrap()
+          .allowed,
+        allowed,
+        "{doc_id} {action:?}"
+      );
+    }
+    let quota = super::super::load_command_quota_in(&mut transaction, Deployment::Cloud, &workspace_id, false)
+      .await
+      .unwrap()
+      .unwrap();
+    let command = authorizer
+      .authorize_command_in(
+        &mut transaction,
+        &user_id,
+        &workspace_id,
+        Some(&doc_id),
+        &DomainCommand::RecoverDoc { doc_id: doc_id.clone() },
+        Some(quota.facts()),
+      )
+      .await;
+    assert_eq!(command.is_ok(), allowed, "{doc_id}: {command:?}");
+    transaction.rollback().await.unwrap();
+  }
+  sqlx::query("INSERT INTO workspace_pages(workspace_id,page_id,published_at) VALUES($1,'public',now())")
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO doc_access_policies(workspace_id,doc_id,visibility,public_role,published_at) \
+     VALUES($1,'public','public','external',now())",
+  )
+  .bind(&workspace_id)
+  .execute(&pool)
+  .await
+  .unwrap();
+  sqlx::query("UPDATE workspace_members SET state='suspended' WHERE workspace_id=$1 AND user_id=$2")
+    .bind(&workspace_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+  let mut transaction = pool.begin().await.unwrap();
+  assert!(
+    authorizer
+      .authorize_doc_action_in(
+        &mut transaction,
+        &workspace_id,
+        Some(&user_id),
+        "public",
+        DocAction::Read
+      )
+      .await
+      .unwrap()
+      .allowed
+  );
+  assert!(
+    authorizer
+      .authorize_workspace_sync_docs_in(&mut transaction, &workspace_id, &user_id, &["public".into()])
+      .await
+      .unwrap_err()
+      .to_string()
+      .contains("space_access_denied")
+  );
 }
 
 #[tokio::test]
