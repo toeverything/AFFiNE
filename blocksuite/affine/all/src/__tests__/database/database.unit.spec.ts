@@ -1,8 +1,10 @@
 import {
   addProperty,
   copyCellsByProperty,
+  DatabaseBlockDataSource,
   databaseBlockProperties,
   deleteColumn,
+  EditorHostKey,
   getCell,
   getProperty,
   updateCell,
@@ -16,7 +18,10 @@ import {
   ParagraphBlockSchemaExtension,
   RootBlockSchemaExtension,
 } from '@blocksuite/affine-model';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type { SingleViewBase } from '@blocksuite/data-view';
 import { propertyModelPresets } from '@blocksuite/data-view/property-pure-presets';
+import type { EditorHost } from '@blocksuite/std';
 import type { BlockModel, Store } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import {
@@ -232,5 +237,66 @@ describe('DatabaseManager', () => {
       columnId: newColId,
       value: [selection[1]],
     });
+  });
+});
+
+describe('database search', () => {
+  test('finds rows by the title of a linked doc', () => {
+    const doc = createTestDoc();
+    doc.workspace.createDoc('planning');
+    doc.workspace.meta.setDocMeta('planning', { title: 'Planning notes' });
+    // A linked doc is stored as a single space with a reference.
+    const linkedDoc = () =>
+      new Text<AffineTextAttributes>([
+        {
+          insert: ' ',
+          attributes: { reference: { type: 'LinkedPage', pageId: 'planning' } },
+        },
+      ]);
+
+    const rootId = doc.addBlock('affine:page', {
+      title: new Text('database test'),
+    });
+    const noteId = doc.addBlock('affine:note', {}, rootId);
+    const databaseId = doc.addBlock(
+      'affine:database',
+      { columns: [], titleColumn: 'Title' },
+      noteId
+    );
+    const db = doc.getModelById(databaseId) as DatabaseBlockModel;
+    const textColumn = addProperty(
+      db,
+      'end',
+      databaseBlockProperties.richTextColumnConfig.create('Notes')
+    );
+    const linkedTitleRow = doc.addBlock(
+      'affine:paragraph',
+      { text: linkedDoc() },
+      databaseId
+    );
+    const linkedTextRow = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('Weekly sync') },
+      databaseId
+    );
+    updateCell(db, linkedTextRow, { columnId: textColumn, value: linkedDoc() });
+    doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('Unrelated') },
+      databaseId
+    );
+
+    const source = new DatabaseBlockDataSource(db);
+    source.serviceSet(EditorHostKey, {
+      std: { workspace: doc.workspace },
+    } as unknown as EditorHost);
+    source.viewManager.viewAdd('table');
+    const view = source.viewManager.currentView$.value as SingleViewBase;
+    view.setSearch('planning');
+
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([
+      linkedTitleRow,
+      linkedTextRow,
+    ]);
   });
 });
