@@ -35,7 +35,8 @@ export const listBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
 
       const listNumber =
         typeof parentList.properties.start === 'number'
-          ? parentList.properties.start + parentList.children.indexOf(o.node)
+          ? parentList.properties.start +
+            HastUtils.getElementChildren(parentList).indexOf(o.node)
           : null;
       const firstElementChild = HastUtils.getElementChildren(o.node)[0];
       o.node = HastUtils.flatNodes(
