@@ -93,11 +93,10 @@ export class UnusedBlobs extends Entity {
     const workspace = this.workspaceService.workspace;
     const frontend = workspace.engine.doc;
     const storage = frontend.storage;
-    const inventory =
-      workspace.flavour === 'local'
-        ? null
-        : await firstValueFrom(frontend.workspaceState$);
-    if (workspace.flavour !== 'local' && !inventory?.ready) {
+    const inventory = workspace.engine.usesWorkspaceState
+      ? await firstValueFrom(frontend.workspaceState$)
+      : null;
+    if (workspace.engine.usesWorkspaceState && !inventory?.ready) {
       throw new Error('Document inventory is not ready');
     }
     const clocks = await storage.getDocTimestamps();

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { ServerConfigModule } from '../config';
+import { DocStorageModule } from '../doc';
 import { NotificationModule } from '../notification';
 import { PermissionModule } from '../permission';
 import { QuotaServiceModule } from '../quota';
@@ -11,6 +12,7 @@ import { CommentResolver } from './resolver';
 @Module({
   imports: [
     PermissionModule,
+    DocStorageModule,
     QuotaServiceModule,
     StorageModule,
     ServerConfigModule,

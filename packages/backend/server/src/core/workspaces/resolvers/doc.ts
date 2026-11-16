@@ -38,6 +38,7 @@ import {
   BackendRuntimeProvider,
 } from '../../backend-runtime';
 import { Editor } from '../../doc';
+import { DocReader } from '../../doc/reader';
 import {
   DOC_ACTIONS,
   DocAction,
@@ -309,7 +310,8 @@ export class WorkspaceDocResolver {
     private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly event: EventBus,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => WorkspaceDocMeta, {
@@ -322,6 +324,7 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
+    pageId = await this.docReader.resolveStorageDocId(workspace.id, pageId);
     await this.ac.user(me.id).doc(workspace.id, pageId).assert('Doc.Read');
 
     const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
@@ -402,6 +405,7 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
+    docId = await this.docReader.resolveStorageDocId(workspace.id, docId);
     await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
     const doc = await this.models.doc.getDocInfo(workspace.id, docId);
     if (!doc) throw new DocNotFound({ spaceId: workspace.id, docId });
@@ -421,6 +425,7 @@ export class WorkspaceDocResolver {
     })
     mode: PublicDocMode
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     if (workspaceId === docId) {
       this.logger.error('Expect to publish doc, but it is a workspace', {
         workspaceId,
@@ -473,6 +478,7 @@ export class WorkspaceDocResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     if (workspaceId === docId) {
       this.logger.error('Expect to revoke public doc, but it is a workspace', {
         workspaceId,
@@ -526,7 +532,8 @@ export class DocResolver {
     private readonly models: Models,
     private readonly grants: DocGrantsService,
     private readonly event: EventBus,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => PublicUserType, {
@@ -660,6 +667,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: GrantDocUserRolesInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -717,6 +731,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: RevokeDocUserRoleInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -766,6 +787,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: UpdateDocUserRoleInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -832,6 +860,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: UpdateDocDefaultRoleInput
   ) {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     if (input.role === DocRole.Owner) {
       this.logger.debug(
         `Doc default role can not be owner (${JSON.stringify(input)})`

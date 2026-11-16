@@ -3,6 +3,9 @@ import { isEqual } from 'lodash-es';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
+import { CloudAwarenessStorage } from '../impls/cloud/awareness';
+import { CloudBlobStorage } from '../impls/cloud/blob';
+import { CloudDocStorage } from '../impls/cloud/doc';
 import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
@@ -14,6 +17,7 @@ export class StoreConsumer {
   private storages: PeerStorageOptions<SpaceStorage> | null = null;
   private sync: Sync | null = null;
   private initOptions: StoreInitOptions;
+  private readonly docWrites = new Map<Promise<unknown>, string>();
 
   get ensureLocal() {
     if (!this.storages) {
@@ -88,6 +92,26 @@ export class StoreConsumer {
     return new Storage(opt.opts);
   }
 
+  private createRemote(options: StoreInitOptions['local']) {
+    const remote = new SpaceStorage(
+      Object.fromEntries(
+        Object.entries(options).map(([type, opt]) => [
+          type,
+          this.createStorage(opt),
+        ])
+      )
+    );
+    const doc = remote.get('doc');
+    if (doc instanceof CloudDocStorage) {
+      const blob = remote.get('blob');
+      const awareness = remote.get('awareness');
+      if (blob instanceof CloudBlobStorage) blob.bindDocStorage(doc);
+      if (awareness instanceof CloudAwarenessStorage)
+        awareness.bindDocStorage(doc);
+    }
+    return remote;
+  }
+
   private initWithOptions(init: StoreInitOptions) {
     this.storages = {
       local: new SpaceStorage(
@@ -99,16 +123,7 @@ export class StoreConsumer {
       ),
       remotes: Object.fromEntries(
         Object.entries(init.remotes).map(([peer, opts]) => {
-          return [
-            peer,
-            new SpaceStorage(
-              Object.fromEntries(
-                Object.entries(opts).map(([type, opt]) => {
-                  return [type, this.createStorage(opt)];
-                })
-              )
-            ),
-          ];
+          return [peer, this.createRemote(opts)];
         })
       ),
     };
@@ -141,14 +156,7 @@ export class StoreConsumer {
         if (isEqual(this.initOptions.remotes[id], options)) {
           remotes[id] = storages.remotes[id];
         } else {
-          const remote = new SpaceStorage(
-            Object.fromEntries(
-              Object.entries(options).map(([type, opt]) => [
-                type,
-                this.createStorage(opt),
-              ])
-            )
-          );
+          const remote = this.createRemote(options);
           created.push(remote);
           remotes[id] = remote;
           remote.connect();
@@ -234,8 +242,20 @@ export class StoreConsumer {
       'docStorage.getDoc': (docId: string) => this.docStorage.getDoc(docId),
       'docStorage.getDocDiff': ({ docId, state }) =>
         this.docStorage.getDocDiff(docId, state),
-      'docStorage.pushDocUpdate': ({ update, origin }) =>
-        this.docStorage.pushDocUpdate(update, origin),
+      'docStorage.pushDocUpdate': async ({ update, origin }) => {
+        if (this.docSync.isDeleted(update.docId)) {
+          throw Object.assign(new Error('Document was deleted'), {
+            name: 'DOC_DELETED',
+          });
+        }
+        const write = this.docStorage.pushDocUpdate(update, origin);
+        this.docWrites.set(write, update.docId);
+        try {
+          return await write;
+        } finally {
+          this.docWrites.delete(write);
+        }
+      },
       'docStorage.getDocTimestamps': after =>
         this.docStorage.getDocTimestamps(after ?? undefined),
       'docStorage.getDocTimestamp': docId =>
@@ -246,13 +266,41 @@ export class StoreConsumer {
         const remote = Object.values(this.storages?.remotes ?? {})
           .map(storage => storage.get('doc'))
           .find(storage => storage.applyDocLifecycle);
-        if (!remote?.applyDocLifecycle) {
+        const localOptions = this.initOptions.local.doc?.opts;
+        const localWorkspace =
+          localOptions &&
+          'flavour' in localOptions &&
+          localOptions.flavour === 'local';
+        if (
+          !remote?.applyDocLifecycle &&
+          (lifecycle !== 'delete' || !localWorkspace)
+        ) {
           throw new Error('Document lifecycle is unavailable');
         }
-        const result = await remote.applyDocLifecycle(docId, lifecycle);
+        const result = remote?.applyDocLifecycle
+          ? await remote.applyDocLifecycle(docId, lifecycle)
+          : { timestamp: new Date(), deletedDocIds: [docId] };
+        if (result.deletedDocIds) {
+          const drained = this.docSync.removeDocs(result.deletedDocIds);
+          const ids = result.deletedDocIds;
+          await Promise.all([
+            drained,
+            Promise.allSettled(
+              Array.from(this.docWrites)
+                .filter(([, id]) => ids.includes(id))
+                .map(([write]) => write)
+            ),
+          ]);
+          for (const id of result.deletedDocIds)
+            await this.docStorage.deleteDoc(id);
+        }
         await this.docSync.refreshWorkspaceState();
         return result;
       },
+      'docStorage.subscribeDocDelete': () =>
+        new Observable(subscriber =>
+          this.docStorage.subscribeDocDelete?.(id => subscriber.next(id))
+        ),
       'docStorage.subscribeDocUpdate': () =>
         new Observable(subscriber => {
           return this.docStorage.subscribeDocUpdate((update, origin) => {

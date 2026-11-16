@@ -17,7 +17,8 @@ use sqlx::{Postgres, Transaction};
 
 use super::{InvalidationHintV1, SourceIdentity, load_command_quota_in, permission::PermissionAuthorizer};
 pub(super) use super::{
-  append_updates_in, is_ordinary_workspace_doc, load_current_doc_in, lock_permission_generation, validate_doc_updates,
+  append_updates_in, ensure_migration_active, is_ordinary_workspace_doc, load_current_doc_in,
+  lock_permission_generation, validate_doc_updates,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -83,10 +84,8 @@ pub(super) enum DomainCommandInputV1 {
     doc_id: String,
   },
   ApplyDocLifecycle {
-    actor_user_id: String,
-    workspace_id: String,
-    doc_id: String,
-    lifecycle: DocLifecycle,
+    #[serde(flatten)]
+    input: DocLifecycleInput,
   },
   AppendRootUpdate {
     actor_user_id: String,
@@ -136,6 +135,18 @@ pub(super) enum DomainCommandInputV1 {
     actor_user_id: String,
     workspace_id: String,
   },
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct DocLifecycleInput {
+  actor_user_id: String,
+  workspace_id: String,
+  doc_id: String,
+  lifecycle: DocLifecycle,
+  logical_doc_id: Option<String>,
+  #[serde(default)]
+  require_deleted: bool,
 }
 
 #[derive(Clone, Copy, Deserialize)]
@@ -355,23 +366,33 @@ async fn lock_permission_facts(
     .await
     .map_err(|error| RuntimeError::database("lock actor workspace membership", error))?;
   if let Some(doc_id) = doc_id {
-    sqlx::query("SELECT doc_id FROM doc_access_policies WHERE workspace_id=$1 AND doc_id=$2 FOR UPDATE")
-      .bind(workspace_id)
-      .bind(doc_id)
-      .execute(&mut **transaction)
-      .await
-      .map_err(|error| RuntimeError::database("lock doc access policy", error))?;
-    sqlx::query(
-      "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND \
-       principal_id=$3 FOR UPDATE",
-    )
+    lock_doc_permission_facts(transaction, actor_user_id, workspace_id, doc_id).await?;
+  }
+  Ok(())
+}
+
+async fn lock_doc_permission_facts(
+  transaction: &mut Transaction<'_, Postgres>,
+  actor_user_id: &str,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<()> {
+  sqlx::query("SELECT doc_id FROM doc_access_policies WHERE workspace_id=$1 AND doc_id=$2 FOR UPDATE")
     .bind(workspace_id)
     .bind(doc_id)
-    .bind(actor_user_id)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| RuntimeError::database("lock actor doc grant", error))?;
-  }
+    .map_err(|error| RuntimeError::database("lock doc access policy", error))?;
+  sqlx::query(
+    "SELECT principal_id FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_type='user' AND \
+     principal_id=$3 FOR UPDATE",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .bind(actor_user_id)
+  .execute(&mut **transaction)
+  .await
+  .map_err(|error| RuntimeError::database("lock actor doc grant", error))?;
   Ok(())
 }
 

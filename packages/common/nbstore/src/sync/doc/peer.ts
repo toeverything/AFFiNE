@@ -86,6 +86,7 @@ interface PeerDocState {
 }
 
 interface DocSyncPeerOptions {
+  isDeleted?: (docId: string) => boolean;
   mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
 }
 
@@ -180,6 +181,7 @@ export class DocSyncPeer {
   private signal?: AbortSignal;
 
   private eligible(docId: string) {
+    if (this.options.isDeleted?.(docId)) return false;
     const state = this.workspaceState$.value;
     return (
       !this.remote.workspaceStateScope ||
@@ -473,7 +475,8 @@ export class DocSyncPeer {
         const pending =
           this.status.currentDocId === docId || this.status.jobMap.has(docId);
         const removed =
-          this.workspaceState$.value?.ready === true && !this.eligible(docId);
+          this.options.isDeleted?.(docId) ||
+          (this.workspaceState$.value?.ready === true && !this.eligible(docId));
         subscribe.next({
           syncing:
             this.status.currentDocId === docId ||
@@ -1242,6 +1245,30 @@ export class DocSyncPeer {
       }
       this.statusUpdatedSubject$.next(docId);
     }
+  }
+
+  async removeDocs(docIds: readonly string[]) {
+    for (const docId of docIds) {
+      this.status.docs.delete(docId);
+      this.status.connectedDocs.delete(docId);
+      this.status.jobDocQueue.remove(docId);
+      this.status.jobMap.delete(docId);
+      this.status.docErrors.delete(docId);
+      this.status.retryOnLocalUpdate.delete(docId);
+      this.statusUpdatedSubject$.next(docId);
+    }
+    await new Promise<void>(resolve => {
+      const idle = () =>
+        this.status.currentDocId === null ||
+        !docIds.includes(this.status.currentDocId);
+      if (idle()) return resolve();
+      const subscription = this.statusUpdatedSubject$.subscribe(() => {
+        if (idle()) {
+          subscription.unsubscribe();
+          resolve();
+        }
+      });
+    });
   }
 
   private schedule(job: Job) {

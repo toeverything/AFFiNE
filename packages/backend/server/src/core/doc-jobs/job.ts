@@ -58,7 +58,12 @@ export class DocJobRunner {
     const documents = await this.prisma.$queryRaw<
       { workspaceId: string; docId: string; revision: string }[]
     >`
-      WITH current_sources AS (
+      WITH lifecycle_mode AS (
+        SELECT EXISTS (
+          SELECT 1 FROM storage_reconciliation_checkpoints
+          WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global' AND status = 'active'
+        ) AS active
+      ), current_sources AS (
         SELECT workspace_id, guid, max(timestamp) AS updated_at
         FROM (
           SELECT workspace_id, guid, updated_at AS timestamp FROM snapshots
@@ -68,26 +73,28 @@ export class DocJobRunner {
       )
       SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId",
         ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text AS revision
-      FROM current_sources snapshot
+      FROM current_sources snapshot CROSS JOIN lifecycle_mode
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
+      LEFT JOIN current_sources root ON root.workspace_id = snapshot.workspace_id AND root.guid = snapshot.workspace_id
       LEFT JOIN workspace_pages page ON page.workspace_id = snapshot.workspace_id AND page.page_id = snapshot.guid
       LEFT JOIN embedding_sources source
         ON source.workspace_id = snapshot.workspace_id
         AND source.source_kind = 'document'
         AND source.source_key = snapshot.guid
       WHERE workspace.enable_doc_embedding
-        AND EXISTS (
+        AND (NOT lifecycle_mode.active OR EXISTS (
           SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
           WHERE checkpoint.kind = 'workspace_doc_lifecycle'
             AND checkpoint.scope = snapshot.workspace_id AND checkpoint.status = 'completed'
-        )
-        AND page.lifecycle_state IS NULL
+        ))
+        AND (NOT lifecycle_mode.active OR page.lifecycle_state IS NULL)
         AND snapshot.guid <> snapshot.workspace_id
         AND snapshot.guid NOT LIKE 'db$%'
         AND snapshot.guid NOT LIKE 'userdata$%'
         AND (
           source.id IS NULL
           OR source.deleted_at IS NOT NULL
+          OR (NOT lifecycle_mode.active AND split_part(source.descriptor_revision, ':', 1) <> COALESCE(((extract(epoch FROM root.updated_at) * 1000)::bigint)::text, '0'))
           OR source.content_revision <> ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text
         )
       ORDER BY snapshot.updated_at, snapshot.workspace_id, snapshot.guid

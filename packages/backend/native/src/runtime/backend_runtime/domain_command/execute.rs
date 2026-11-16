@@ -3,8 +3,8 @@ use serde_json::Value;
 use sqlx::PgPool;
 
 use super::{
-  DomainCommandInputV1, InvalidationHintV1, SourceIdentity, comments, history, lifecycle, members, publish, replies,
-  roles,
+  DocLifecycleInput, DomainCommandInputV1, InvalidationHintV1, SourceIdentity, comments, history, lifecycle, members,
+  publish, replies, roles,
 };
 use crate::runtime::{
   Deployment, RuntimeError, RuntimeResult,
@@ -20,19 +20,38 @@ impl DomainCommandInputV1 {
   fn invalidations(&self) -> Vec<InvalidationHintV1> {
     match self {
       Self::ApplyDocLifecycle {
-        workspace_id, doc_id, ..
-      } => vec![
-        InvalidationHintV1::WorkspaceInventoryChanged {
-          workspace_id: workspace_id.clone(),
-          doc_id: Some(doc_id.clone()),
-        },
-        InvalidationHintV1::BlobSource {
-          source: SourceIdentity::CurrentDoc {
-            workspace_id: workspace_id.clone(),
-            doc_id: doc_id.clone(),
+        input:
+          DocLifecycleInput {
+            workspace_id,
+            doc_id,
+            logical_doc_id,
+            ..
           },
-        },
-      ],
+      } => {
+        let mut ids = vec![doc_id];
+        if let Some(logical_id) = logical_doc_id
+          && logical_id != doc_id
+        {
+          ids.push(logical_id);
+        }
+        ids
+          .into_iter()
+          .flat_map(|doc_id| {
+            [
+              InvalidationHintV1::WorkspaceInventoryChanged {
+                workspace_id: workspace_id.clone(),
+                doc_id: Some(doc_id.clone()),
+              },
+              InvalidationHintV1::BlobSource {
+                source: SourceIdentity::CurrentDoc {
+                  workspace_id: workspace_id.clone(),
+                  doc_id: doc_id.clone(),
+                },
+              },
+            ]
+          })
+          .collect()
+      }
       Self::AppendRootUpdate { workspace_id, .. } => vec![InvalidationHintV1::BlobSource {
         source: SourceIdentity::CurrentDoc {
           workspace_id: workspace_id.clone(),
@@ -201,22 +220,8 @@ pub(in crate::runtime::backend_runtime) async fn execute(
       )
       .await?
     }
-    DomainCommandInputV1::ApplyDocLifecycle {
-      actor_user_id,
-      workspace_id,
-      doc_id,
-      lifecycle,
-    } => {
-      lifecycle::apply(
-        &authorizer,
-        &mut transaction,
-        actor_user_id,
-        workspace_id,
-        doc_id,
-        lifecycle,
-        embedding_schema_ready,
-      )
-      .await?
+    DomainCommandInputV1::ApplyDocLifecycle { input } => {
+      lifecycle::apply(&authorizer, &mut transaction, input, embedding_schema_ready).await?
     }
     DomainCommandInputV1::AppendRootUpdate {
       actor_user_id,

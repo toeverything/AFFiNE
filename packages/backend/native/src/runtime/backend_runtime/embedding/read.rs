@@ -4,7 +4,7 @@ use doc_extractor::Doc;
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-use super::{RuntimeError, RuntimeResult, extraction_file_name};
+use super::{RuntimeError, RuntimeResult, extraction_file_name, legacy_document_ids};
 use crate::runtime::{
   object_storage::{
     ObjectStorageService,
@@ -31,6 +31,13 @@ pub(super) async fn read_source_content(
   input: &ReadEmbeddingSourceContentInput,
 ) -> RuntimeResult<RuntimeEmbeddingSourceContent> {
   authorize_scope(input)?;
+  if input.source_kind == "document"
+    && legacy_document_ids(pool, &input.workspace_id)
+      .await?
+      .is_some_and(|ids| !ids.contains(&input.source_key))
+  {
+    return Err(RuntimeError::invalid_input("embedding_source_not_found"));
+  }
   let source = sqlx::query_as::<_, SourceRow>(
     r#"SELECT source.content_revision,source.storage_scope,source.storage_key,
       source.file_name,source.mime_type,projection.active_generation_token

@@ -64,6 +64,7 @@ interface GroupedWorkerOps {
       DocLifecycleResult,
     ];
     subscribeDocUpdate: [void, { update: DocRecord; origin?: string }];
+    subscribeDocDelete: [void, string];
     waitForConnected: [void, void];
   };
 

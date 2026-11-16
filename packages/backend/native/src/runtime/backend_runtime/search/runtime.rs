@@ -182,7 +182,8 @@ impl SearchRuntime {
       r#"SELECT workspace_id FROM search_projection.workspace_states
          WHERE generation_id=$1
            AND last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
-           AND (NOT EXISTS(SELECT 1 FROM workspaces workspace WHERE workspace.id=workspace_states.workspace_id)
+           AND (NOT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints activation WHERE activation.kind='workspace_doc_lifecycle_activation' AND activation.scope='global' AND activation.status='active')
+             OR NOT EXISTS(SELECT 1 FROM workspaces workspace WHERE workspace.id=workspace_states.workspace_id)
              OR EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
                WHERE checkpoint.kind='workspace_doc_lifecycle' AND checkpoint.scope=workspace_states.workspace_id
                  AND checkpoint.status='completed'))
@@ -446,7 +447,7 @@ mod tests {
   use crate::runtime::{
     SearchRuntimeConfig,
     backend_runtime::{
-      permission::{DocReadScope, SearchActor},
+      permission::{AuthorizedSearchScope, DocReadScope, SearchActor},
       search::{ActiveGeneration, SEARCH_TEST_LOCK, SearchTable, config_hash},
     },
     migrations::migrate_search_tables,
@@ -531,9 +532,12 @@ mod tests {
           id: generation_id,
           manifest: json!({}),
         },
-        &workspace_id,
         "user",
-        &DocReadScope::All,
+        &AuthorizedSearchScope {
+          workspace_id: workspace_id.clone(),
+          docs: DocReadScope::All,
+        },
+        None,
         SearchTable::Doc,
         json!({
           "query":{"term":{"workspace_id":{"value":workspace_id}}},
@@ -562,9 +566,12 @@ mod tests {
           id: generation_id,
           manifest: json!({}),
         },
-        &workspace_id,
         "user",
-        &DocReadScope::All,
+        &AuthorizedSearchScope {
+          workspace_id: workspace_id.clone(),
+          docs: DocReadScope::All,
+        },
+        None,
         SearchTable::Doc,
         json!({
           "query":{"term":{"workspace_id":{"value":workspace_id}}},
@@ -576,6 +583,164 @@ mod tests {
       .unwrap();
     assert_eq!(filtered["total"], 1);
     assert_eq!(filtered["nodes"][0]["fields"]["doc_id"], json!(["f"]));
+
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let user_id = format!("candidate-owner-{suffix}");
+    sqlx::query(
+      "INSERT INTO users(id,name,email,registered,email_verified,disabled) VALUES($1,'Candidate \
+       Owner',$2,true,now(),false)",
+    )
+    .bind(&user_id)
+    .bind(format!("{suffix}@candidate.example.com"))
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')")
+      .bind(&workspace_id)
+      .bind(&user_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let root_bytes = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "page-e", None).unwrap();
+    let mut root = y_octo::Doc::new();
+    root.apply_update_from_binary_v1(&root_bytes).unwrap();
+    root
+      .get_or_create_map("spaces")
+      .unwrap()
+      .insert(
+        "page-e".to_string(),
+        y_octo::Value::Doc(y_octo::DocOptions::new().with_guid("e".into()).build()),
+      )
+      .unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
+      .bind(&workspace_id)
+      .bind(root.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "UPDATE search_projection.document_states SET last_error=NULL WHERE generation_id=$1 AND workspace_id=$2",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "UPDATE search_projection.workspace_states SET \
+       covered=true,required_permission_version=1,applied_permission_version=1 WHERE generation_id=$1 AND \
+       workspace_id=$2",
+    )
+    .bind(generation_id)
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE search_projection.generations SET state='draining' WHERE state='active'")
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "UPDATE search_projection.generations SET \
+       state='building',config_hash=$2,scan_high_water_sid=0,scan_cursor_sid=0 WHERE id=$1",
+    )
+    .bind(generation_id)
+    .bind(config_hash(&SearchRuntimeConfig::default()))
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE search_projection.generations SET state='active' WHERE id=$1")
+      .bind(generation_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let request = super::super::types::RuntimeSearchRequest {
+      table: SearchTable::Doc,
+      queries: vec![super::super::types::RuntimeSearchQuery {
+        query_type: "match".into(),
+        field: Some("docId".into()),
+        match_value: Some("page-e".into()),
+        query: None,
+        queries: None,
+        occur: None,
+        boost: None,
+      }],
+      root_query: 0,
+      options: super::super::types::SearchOptions {
+        fields: vec!["docId".into()],
+        highlights: vec![],
+        pagination: Default::default(),
+      },
+    };
+    let legacy_result = runtime
+      .search_authorized(&user_id, &workspace_id, request.clone())
+      .await
+      .unwrap();
+    assert_eq!(legacy_result["total"], 1);
+    assert_eq!(legacy_result["nodes"][0]["fields"]["doc_id"], json!(["e"]));
+    let aggregate = runtime
+      .aggregate_authorized(
+        &user_id,
+        &workspace_id,
+        super::super::types::RuntimeAggregateRequest {
+          table: SearchTable::Doc,
+          queries: request.queries.clone(),
+          root_query: 0,
+          field: "docId".into(),
+          options: super::super::types::AggregateOptions {
+            hits: super::super::types::AggregateHitsOptions {
+              fields: vec!["docId".into()],
+              highlights: vec![],
+              pagination: Default::default(),
+            },
+            pagination: Default::default(),
+          },
+        },
+      )
+      .await
+      .unwrap();
+    assert_eq!(aggregate["buckets"][0]["key"], "e");
+    assert_eq!(
+      aggregate["buckets"][0]["hits"]["nodes"][0]["fields"]["doc_id"],
+      json!(["e"])
+    );
+    let pages = root.get_map("meta").unwrap().get("pages").unwrap().to_array().unwrap();
+    let mut page = pages.get(0).unwrap().to_map().unwrap();
+    page.insert("trash".into(), y_octo::Any::True).unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$2,updated_at=clock_timestamp() WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(root.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    let trashed = runtime
+      .search_authorized(&user_id, &workspace_id, request.clone())
+      .await
+      .unwrap();
+    assert_eq!(trashed["total"], 0);
+    page.insert("trash".into(), y_octo::Any::False).unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$2,updated_at=clock_timestamp() WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(root.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    let restored = runtime
+      .search_authorized(&user_id, &workspace_id, request)
+      .await
+      .unwrap();
+    assert_eq!(restored["total"], 1);
+    sqlx::query("DELETE FROM users WHERE id=$1")
+      .bind(&user_id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
       .bind(&workspace_id)
@@ -949,9 +1114,9 @@ mod tests {
           id: generation_id,
           manifest: serde_json::json!({}),
         },
-        &workspace_id,
         &user_id,
-        &scope.docs,
+        &scope,
+        None,
         &mut result,
       )
       .await
@@ -966,9 +1131,12 @@ mod tests {
           id: generation_id,
           manifest: serde_json::json!({}),
         },
-        &workspace_id,
         &user_id,
-        &DocReadScope::All,
+        &AuthorizedSearchScope {
+          workspace_id: workspace_id.clone(),
+          docs: DocReadScope::All,
+        },
+        None,
         &mut result,
       )
       .await
@@ -993,9 +1161,12 @@ mod tests {
           id: generation_id,
           manifest: serde_json::json!({}),
         },
-        &workspace_id,
         &user_id,
-        &DocReadScope::All,
+        &AuthorizedSearchScope {
+          workspace_id: workspace_id.clone(),
+          docs: DocReadScope::All,
+        },
+        None,
         &mut trashed,
       )
       .await
@@ -1033,9 +1204,12 @@ mod tests {
           id: generation_id,
           manifest: serde_json::json!({}),
         },
-        &workspace_id,
         &user_id,
-        &DocReadScope::All,
+        &AuthorizedSearchScope {
+          workspace_id: workspace_id.clone(),
+          docs: DocReadScope::All,
+        },
+        None,
         &mut aggregate,
       )
       .await

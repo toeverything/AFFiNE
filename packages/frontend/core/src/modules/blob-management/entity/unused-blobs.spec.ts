@@ -21,6 +21,8 @@ import { UnusedBlobs } from './unused-blobs';
 test.each([
   'local',
   'cloud',
+  'legacy-cloud',
+  'legacy-clock-change',
   'absent-root',
   'pending',
   'pending-delete',
@@ -141,7 +143,7 @@ test.each([
         .fn()
         .mockResolvedValueOnce(clocks)
         .mockResolvedValue(
-          mode === 'clock-change'
+          mode === 'clock-change' || mode === 'legacy-clock-change'
             ? { ...clocks, doc1: new Date(2000) }
             : mode === 'root-clock-change'
               ? { ...clocks, workspace: new Date(2000) }
@@ -187,9 +189,16 @@ test.each([
           id: 'workspace',
           flavour,
           engine: {
+            usesWorkspaceState:
+              mode !== 'local' &&
+              mode !== 'legacy-cloud' &&
+              mode !== 'legacy-clock-change',
             doc: {
               waitForSynced: vi.fn(),
-              workspaceState$: inventory,
+              workspaceState$:
+                mode === 'legacy-cloud' || mode === 'legacy-clock-change'
+                  ? new BehaviorSubject(null)
+                  : inventory,
               storage,
             },
           },
@@ -200,6 +209,7 @@ test.each([
     if (
       mode === 'local' ||
       mode === 'cloud' ||
+      mode === 'legacy-cloud' ||
       mode === 'absent-root' ||
       mode === 'rootless' ||
       mode === 'missing-child' ||

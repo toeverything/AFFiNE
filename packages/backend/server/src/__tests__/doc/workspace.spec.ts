@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
-import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
 import { EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
@@ -10,6 +16,7 @@ import {
   PgWorkspaceDocStorageAdapter as Adapter,
 } from '../../core/doc';
 import { DocWriter } from '../../core/doc/writer';
+import { createDocWithMarkdown } from '../../native';
 import { createTestingModule, type TestingModule } from '../utils';
 
 let m: TestingModule;
@@ -110,7 +117,11 @@ test('should emit creation only from the committed creation receipt', async t =>
     trusted.restore();
     read.restore();
   });
-  const writer = new DocWriter(adapter, m.get(EventBus));
+  const mode = Sinon.stub(runtime, 'getWorkspaceLifecycleActiveV1').resolves(
+    true
+  );
+  t.teardown(() => mode.restore());
+  const writer = new DocWriter(adapter, m.get(EventBus), runtime);
   stub.onCall(3).rejects(new Error('permission denied'));
   await t.throwsAsync(() => writer.createDoc('1', 'title', 'body', 'actor'), {
     message: 'permission denied',
@@ -131,6 +142,56 @@ test('should emit creation only from the committed creation receipt', async t =>
     updatedBy: 'actor',
   });
   t.deepEqual([...properties.share.keys()], [created.docId]);
+
+  mode.resolves(false);
+  stub.resolves({ timestamp: 42, created: true });
+  const legacy = await writer.createDoc('1', 'legacy title', 'body', 'actor');
+  const rootPush = stub.lastCall.args[0];
+  t.is(rootPush.docId, '1');
+  const root = new YDoc();
+  for (const update of rootPush.updates) applyUpdate(root, update);
+  t.like(root.getMap('meta').toJSON().pages, [
+    { id: legacy.docId, title: 'legacy title' },
+  ]);
+  const physicalId = 'legacy-physical-guid';
+  root.getMap('spaces').set(legacy.docId, new YDoc({ guid: physicalId }));
+  const rootPages = root.getMap('meta').get('pages');
+  t.true(rootPages instanceof YArray);
+  if (!(rootPages instanceof YArray)) throw new Error('Missing root pages');
+  const originalPage = rootPages.get(0);
+  t.true(originalPage instanceof YMap);
+  if (!(originalPage instanceof YMap)) throw new Error('Missing root metadata');
+  read.withArgs('1', '1').resolves({
+    spaceId: '1',
+    docId: '1',
+    bin: encodeStateAsUpdate(root),
+    timestamp: 42,
+  });
+  read.withArgs('1', physicalId).resolves({
+    spaceId: '1',
+    docId: physicalId,
+    timestamp: 42,
+    bin: createDocWithMarkdown('legacy title', 'body', physicalId),
+  });
+  originalPage.set('offline-field', 'preserved');
+  await writer.updateDocMeta('1', physicalId, { title: 'renamed' }, 'actor');
+  const titlePush = stub.lastCall.args[0];
+  t.is(titlePush.docId, '1');
+  for (const update of titlePush.updates) applyUpdate(root, update);
+  t.is(rootPages.get(0), originalPage);
+  t.is(originalPage.get('title'), 'renamed');
+  t.is(originalPage.get('offline-field'), 'preserved');
+  t.is(rootPages.length, 1);
+  mode.resolves(true);
+  await writer.updateDocMeta(
+    '1',
+    physicalId,
+    { title: 'active title' },
+    'actor'
+  );
+  t.is(stub.lastCall.args[0].docId, physicalId);
+  root.destroy();
+  properties.destroy();
 });
 
 test('should propagate storage errors without internal retries', async t => {

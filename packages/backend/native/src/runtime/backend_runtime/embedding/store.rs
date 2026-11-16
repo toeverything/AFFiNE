@@ -322,6 +322,14 @@ mod tests {
     };
     let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     assert!(
       crate::runtime::migrations::migrate_embedding_tables(&pool)
         .await
@@ -676,6 +684,77 @@ mod tests {
         .unwrap();
       assert!(!deleted);
     }
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    let skipped_legacy: (String, Option<String>) = sqlx::query_as(
+      "SELECT descriptor_revision,document_projection->>'skipReason' FROM embedding_sources WHERE id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(skipped_legacy.1.as_deref(), Some("legacy_inactive"));
+    let needs_membership_refresh = "SELECT split_part(source.descriptor_revision,':',1) <> ((extract(epoch FROM \
+                                    root.updated_at)*1000)::bigint)::text FROM embedding_sources source JOIN \
+                                    snapshots root ON root.workspace_id=source.workspace_id AND \
+                                    root.guid=root.workspace_id WHERE source.id=$1";
+    assert!(
+      !sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    let restored_root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "doc", None).unwrap();
+    sqlx::query(
+      "UPDATE snapshots SET blob=$2,updated_at=updated_at+interval '1 second' WHERE workspace_id=$1 AND guid=$1",
+    )
+    .bind(&workspace_id)
+    .bind(restored_root)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(
+      sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    let restored_legacy: (String, Option<String>) = sqlx::query_as(
+      "SELECT descriptor_revision,document_projection->>'skipReason' FROM embedding_sources WHERE id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_ne!(skipped_legacy.0, restored_legacy.0);
+    assert_eq!(restored_legacy.1, None);
+    assert!(
+      !sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active')",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     let mut trash = pool.begin().await.unwrap();
     sqlx::query(
       "INSERT INTO workspace_pages(workspace_id,page_id,lifecycle_state,lifecycle_changed_at) \
@@ -729,6 +808,9 @@ mod tests {
         .await
         .unwrap()
     );
+
+    let repaired_claim = claim_projection(&pool, "cleanup-worker").await.unwrap().unwrap();
+    assert_eq!(repaired_claim.source_id, source_id);
 
     crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
@@ -857,5 +939,12 @@ mod tests {
         .to_string()
         .contains("embedding_selected_sources_processing")
     );
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

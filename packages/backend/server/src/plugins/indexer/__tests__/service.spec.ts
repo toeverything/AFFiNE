@@ -1,5 +1,11 @@
 import test from 'ava';
 import Sinon from 'sinon';
+import {
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
 import {
   InternalServerError,
@@ -14,6 +20,7 @@ import {
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { BackendRuntimeSearchJob } from '../../../core/backend-runtime/job';
 import { ServerFeature, ServerService } from '../../../core/config';
+import { DatabaseDocReader } from '../../../core/doc/reader';
 import { Models } from '../../../models';
 import { IndexerResolver } from '../resolver';
 import { IndexerService } from '../service';
@@ -143,32 +150,98 @@ test('maps native search results and typed errors at the Node boundary', async t
     markdownPreview: ['<b>hello</b>'],
   });
 
-  const resolver = new IndexerResolver(service, {
-    user: Sinon.stub().returns({
-      workspace: Sinon.stub().returns({ assert: Sinon.stub().resolves() }),
-    }),
-  } as never);
+  const root = new YDoc();
+  const pages = new YArray();
+  root.getMap('meta').set('pages', pages);
+  pages.push([new YMap([['id', 'logical-doc']])]);
+  root.getMap('spaces').set('logical-doc', new YDoc({ guid: 'doc' }));
+  const loadRoot = Sinon.stub().resolves({ bin: encodeStateAsUpdate(root) });
+  const lifecycleActive = Sinon.stub().resolves(false);
+  const reader = new DatabaseDocReader(
+    {} as never,
+    {} as never,
+    {} as never,
+    { getDoc: loadRoot } as never,
+    { getWorkspaceLifecycleActiveV1: lifecycleActive } as never
+  );
+  t.is(await reader.resolveStorageDocId('workspace', 'logical-doc'), 'doc');
+  loadRoot.resetHistory();
+  const resolver = new IndexerResolver(
+    service,
+    {
+      user: Sinon.stub().returns({
+        workspace: Sinon.stub().returns({ assert: Sinon.stub().resolves() }),
+      }),
+    } as never,
+    reader
+  );
   const searchResult = await resolver.search(
     { id: 'actor' } as never,
     { id: 'workspace' } as never,
     input
   );
   t.is(searchResult.pagination.count, 1);
+  t.deepEqual(searchResult.nodes[0].fields, {
+    workspaceId: ['workspace'],
+    docId: ['logical-doc'],
+    createdAt: [new Date(2000)],
+  });
+  t.true(loadRoot.calledOnce);
+  t.is(result.nodes[0]._source.docId, 'doc');
+  loadRoot.resetHistory();
 
   runtime.aggregateAuthorized.resolves({
     ok: true,
     value: {
       total: 99,
       hasMore: true,
-      buckets: [{ key: 'doc', count: 1, hits: { nodes: [] } }],
+      buckets: [
+        {
+          key: 'doc',
+          count: 1,
+          hits: {
+            nodes: [
+              {
+                id: 'node',
+                score: 1,
+                fields: { doc_id: ['doc'], workspace_id: ['workspace'] },
+              },
+            ],
+          },
+        },
+      ],
     },
   });
   const aggregateResult = await resolver.aggregate(
     { id: 'actor' } as never,
     { id: 'workspace' } as never,
-    {} as never
+    { field: 'docId' } as never
   );
   t.is(aggregateResult.pagination.count, 1);
+  t.is(aggregateResult.buckets[0].key, 'logical-doc');
+  t.deepEqual(aggregateResult.buckets[0].hits.nodes[0].fields, {
+    docId: ['logical-doc'],
+    workspaceId: ['workspace'],
+  });
+  t.true(loadRoot.calledOnce);
+  loadRoot.resetHistory();
+  Sinon.stub(service, 'searchDocsByKeyword').resolves([
+    { docId: 'doc' } as never,
+  ]);
+  t.deepEqual(
+    await resolver.searchDocs(
+      { id: 'actor' } as never,
+      { id: 'workspace' } as never,
+      { keyword: 'hello' }
+    ),
+    [{ docId: 'logical-doc' }]
+  );
+  t.true(loadRoot.calledOnce);
+  lifecycleActive.resolves(true);
+  loadRoot.resetHistory();
+  t.deepEqual(await reader.getDocIdAliases('workspace'), new Map());
+  t.false(loadRoot.called);
+  root.destroy();
 
   const mappings = [];
   for (const [errorCode, expected] of [

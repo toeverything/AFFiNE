@@ -58,6 +58,16 @@ export interface DocSync {
 export class DocSyncImpl implements DocSync {
   private readonly peers$ = new BehaviorSubject<DocSyncPeer[]>([]);
   private usesWorkspaceState = false;
+  private readonly deletedDocs = new Set<string>();
+
+  isDeleted(docId: string) {
+    return this.deletedDocs.has(docId);
+  }
+
+  async removeDocs(docIds: readonly string[]) {
+    for (const docId of docIds) this.deletedDocs.add(docId);
+    await Promise.all(this.peers.map(peer => peer.removeDocs(docIds)));
+  }
   private get peers() {
     return this.peers$.value;
   }
@@ -72,7 +82,10 @@ export class DocSyncImpl implements DocSync {
         ([id, remote]) =>
           this.peers.find(
             peer => peer.peerId === id && peer.remote === remote
-          ) ?? new DocSyncPeer(id, this.storages.local, this.sync, remote)
+          ) ??
+          new DocSyncPeer(id, this.storages.local, this.sync, remote, {
+            isDeleted: docId => this.isDeleted(docId),
+          })
       )
     );
   }

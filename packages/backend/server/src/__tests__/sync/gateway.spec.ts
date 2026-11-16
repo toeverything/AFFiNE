@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
-import test, { type ExecutionContext } from 'ava';
+import ava, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import {
@@ -38,6 +38,8 @@ type WebsocketError = {
 };
 
 type WebsocketResponse<T> = { error: WebsocketError } | { data: T };
+
+const test = ava.serial;
 
 const WS_TIMEOUT_MS = 5_000;
 
@@ -724,14 +726,14 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
       await db.workspaceDoc.count({ where: { workspaceId: workspace.id } }),
       0
     );
-    const legacy = getErrorResponse(
+    const legacy = unwrapResponse(
       t,
-      await emitWithAck(ownerSocket, 'space:join-batch', {
+      await emitWithAck<{ success: boolean }>(ownerSocket, 'space:join-batch', {
         ...batch,
         protocolVersion: 1,
       })
     );
-    t.is(legacy.name, 'BAD_REQUEST');
+    t.true(legacy.success);
     t.true(await runtime.activateWorkspaceLifecycleV1());
     t.false(await runtime.activateWorkspaceLifecycleV1());
 
@@ -1137,9 +1139,136 @@ test('partial roots accept edits and ordinary creation uses persisted identity',
     legacyCases.push({ workspaceId: legacyWorkspace.id, docId, duplicateId });
     legacyRoot.destroy();
   }
+  const runtime = app.get(BackendRuntimeProvider);
+  const models = app.get(Models);
+  const { user: collaborator, cookieHeader: collaboratorCookie } =
+    await login(app);
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  const existingReaderDoc = 'legacy-existing-reader-doc';
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: existingReaderDoc,
+    userId: user.id,
+  });
+  await models.doc.setDefaultRole(
+    workspace.id,
+    existingReaderDoc,
+    DocRole.None
+  );
+  await models.docUser.set(
+    workspace.id,
+    existingReaderDoc,
+    collaborator.id,
+    DocRole.Reader
+  );
+  await db.$executeRaw`DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND scope='global'`;
+  await runtime.ensureWorkspaceLifecycleV1(workspace.id);
+  const [checkpoint] = await db.$queryRaw<
+    { count: bigint }[]
+  >`SELECT count(*) AS count FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=${workspace.id}`;
+  t.is(Number(checkpoint.count), 0);
+  const legacySocket = createClient(url, collaboratorCookie);
+  const legacyDocId = 'legacy-new-default-manager-doc';
+  const legacyBatch = {
+    spaces: [
+      { spaceType: 'workspace', spaceId: workspace.id },
+      { spaceType: 'workspace', spaceId: workspace.id, docId: legacyDocId },
+      {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: existingReaderDoc,
+      },
+    ],
+    protocolVersion: 1,
+    clientVersion: '0.27.5',
+  };
   const socket = createClient(url, cookieHeader);
   try {
     await waitForConnect(socket);
+    await waitForConnect(legacySocket);
+    unwrapResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:join-batch', legacyBatch)
+    );
+    const missing = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: legacyDocId,
+      })
+    );
+    t.is(missing.name, 'DOC_NOT_FOUND');
+    const legacyPush = {
+      spaceType: 'workspace',
+      spaceId: workspace.id,
+      docId: legacyDocId,
+      intent: 'create',
+      update: Buffer.from([0, 0]).toString('base64'),
+    };
+    const legacyCreated = unwrapResponse(
+      t,
+      await emitWithAck<{ created: boolean }>(
+        legacySocket,
+        'space:push-doc-update',
+        legacyPush
+      )
+    );
+    t.true(legacyCreated.created);
+    const beforeDenied = await db.update.count({
+      where: { workspaceId: workspace.id, id: existingReaderDoc },
+    });
+    const deniedCreate = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:push-doc-update', {
+        ...legacyPush,
+        docId: existingReaderDoc,
+      })
+    );
+    t.is(deniedCreate.name, 'ACCESS_DENIED');
+    t.is(
+      await db.update.count({
+        where: { workspaceId: workspace.id, id: existingReaderDoc },
+      }),
+      beforeDenied
+    );
+    for (const lifecycle of ['trash', 'restore']) {
+      const denied = getErrorResponse(
+        t,
+        await emitWithAck(legacySocket, 'space:doc-lifecycle', {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId: legacyDocId,
+          lifecycle,
+        })
+      );
+      t.is(denied.name, 'WORKSPACE_SYNC_UNAVAILABLE');
+    }
+    t.is(
+      await db.workspaceDoc.count({
+        where: { workspaceId: workspace.id, docId: legacyDocId },
+      }),
+      0
+    );
+    t.true(await runtime.activateWorkspaceLifecycleV1());
+    const crossed = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:push-doc-update', legacyPush)
+    );
+    t.is(crossed.name, 'BAD_REQUEST');
+    const rejoin = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:join-batch', legacyBatch)
+    );
+    t.is(rejoin.name, 'WORKSPACE_SYNC_UNAVAILABLE');
+    legacySocket.disconnect();
     const joined = unwrapResponse(
       t,
       await emitWithAck<{ protocolVersion: number }>(
@@ -1265,6 +1394,7 @@ test('partial roots accept edits and ordinary creation uses persisted identity',
       );
     }
   } finally {
+    legacySocket.disconnect();
     socket.disconnect();
     root.destroy();
   }
@@ -1975,6 +2105,277 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       }),
       0
     );
+
+    await db.$executeRaw`DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND scope='global'`;
+    const legacyWorkspace = await models.workspace.create(owner.id);
+    await models.workspaceUser.set(
+      legacyWorkspace.id,
+      collaborator.id,
+      WorkspaceRole.Collaborator,
+      { status: WorkspaceMemberStatus.Accepted }
+    );
+    const logicalId = 'legacy-delete-page';
+    const physicalId = 'legacy-delete-guid';
+    const otherLogicalId = 'other-page-using-logical-id';
+    const legacyRoot = new Doc();
+    const legacyPages = new YArray<YMap<unknown>>();
+    legacyRoot.getMap('meta').set('pages', legacyPages);
+    legacyPages.push([new YMap([['id', logicalId]])]);
+    legacyRoot.getMap('spaces').set(logicalId, new Doc({ guid: physicalId }));
+    for (const id of [logicalId, physicalId, legacyWorkspace.id]) {
+      await createSnapshot(db, {
+        workspaceId: legacyWorkspace.id,
+        docId: id,
+        userId: owner.id,
+        ...(id === legacyWorkspace.id
+          ? { blob: Buffer.from(encodeStateAsUpdate(legacyRoot)) }
+          : {}),
+      });
+    }
+    const saveRoot = () =>
+      db.snapshot.update({
+        where: {
+          workspaceId_id: {
+            workspaceId: legacyWorkspace.id,
+            id: legacyWorkspace.id,
+          },
+        },
+        data: {
+          blob: Buffer.from(encodeStateAsUpdate(legacyRoot)),
+          updatedAt: new Date(),
+        },
+      });
+    await models.doc.setDefaultRole(
+      legacyWorkspace.id,
+      logicalId,
+      DocRole.None
+    );
+    await models.doc.setDefaultRole(
+      legacyWorkspace.id,
+      physicalId,
+      DocRole.Manager
+    );
+    for (const id of [logicalId, physicalId]) {
+      await app.get(BackendRuntimeProvider).executeDomainCommandV1({
+        command: 'publish_doc',
+        actorUserId: owner.id,
+        workspaceId: legacyWorkspace.id,
+        docId: id,
+        mode: 0,
+      });
+    }
+    for (const id of [logicalId, physicalId]) {
+      await app
+        .GET(`/api/workspaces/${legacyWorkspace.id}/public-docs/${id}`)
+        .expect(200);
+    }
+    const legacySocket = createClient(url, cookieHeader);
+    try {
+      await waitForConnect(legacySocket);
+      unwrapResponse(
+        t,
+        await emitWithAck(legacySocket, 'space:join-batch', {
+          spaces: [{ spaceType: 'workspace', spaceId: legacyWorkspace.id }],
+          protocolVersion: 1,
+          clientVersion: '0.27.5',
+        })
+      );
+      const request = {
+        spaceType: 'workspace',
+        spaceId: legacyWorkspace.id,
+        docId: logicalId,
+        physicalDocId: physicalId,
+        lifecycle: 'delete',
+      };
+      t.is(
+        getErrorResponse(
+          t,
+          await emitWithAck(legacySocket, 'space:doc-lifecycle', request)
+        ).name,
+        'DOC_ACTION_DENIED'
+      );
+      t.is(
+        await db.snapshot.count({
+          where: {
+            workspaceId: legacyWorkspace.id,
+            id: { in: [logicalId, physicalId] },
+          },
+        }),
+        2
+      );
+      t.is(
+        await db.workspaceDoc.count({
+          where: { workspaceId: legacyWorkspace.id, lifecycleState: 'deleted' },
+        }),
+        0
+      );
+      await models.doc.setDefaultRole(
+        legacyWorkspace.id,
+        logicalId,
+        DocRole.Manager
+      );
+      legacyPages.push([new YMap([['id', otherLogicalId]])]);
+      legacyRoot
+        .getMap('spaces')
+        .set(otherLogicalId, new Doc({ guid: logicalId }));
+      await saveRoot();
+      t.is(
+        getErrorResponse(
+          t,
+          await emitWithAck(legacySocket, 'space:doc-lifecycle', request)
+        ).name,
+        'BAD_REQUEST'
+      );
+      t.is(
+        await db.snapshot.count({
+          where: {
+            workspaceId: legacyWorkspace.id,
+            id: { in: [logicalId, physicalId] },
+          },
+        }),
+        2
+      );
+      legacyPages.delete(1);
+      legacyRoot.getMap('spaces').delete(otherLogicalId);
+      await saveRoot();
+      const deleted = unwrapResponse(
+        t,
+        await emitWithAck<{ timestamp: number; deletedDocIds: string[] }>(
+          legacySocket,
+          'space:doc-lifecycle',
+          request
+        )
+      );
+      t.deepEqual(deleted.deletedDocIds.sort(), [logicalId, physicalId].sort());
+      t.is(
+        await db.snapshot.count({
+          where: {
+            workspaceId: legacyWorkspace.id,
+            id: { in: [logicalId, physicalId] },
+          },
+        }),
+        0
+      );
+      const tombstones = await db.workspaceDoc.findMany({
+        where: { workspaceId: legacyWorkspace.id, lifecycleState: 'deleted' },
+        orderBy: { docId: 'asc' },
+      });
+      t.is(tombstones.length, 2);
+      legacyPages.delete(0);
+      legacyRoot.getMap('spaces').delete(logicalId);
+      await saveRoot();
+      const confirmed = unwrapResponse(
+        t,
+        await emitWithAck<{ timestamp: number; deletedDocIds: string[] }>(
+          legacySocket,
+          'space:doc-lifecycle',
+          request
+        )
+      );
+      t.deepEqual(confirmed, deleted);
+      t.deepEqual(
+        await db.workspaceDoc.findMany({
+          where: { workspaceId: legacyWorkspace.id, lifecycleState: 'deleted' },
+          orderBy: { docId: 'asc' },
+        }),
+        tombstones
+      );
+      getErrorResponse(
+        t,
+        await emitWithAck(legacySocket, 'space:push-doc-update', {
+          spaceType: 'workspace',
+          spaceId: legacyWorkspace.id,
+          docId: physicalId,
+          intent: 'create',
+          update: Buffer.from([0, 0]).toString('base64'),
+        })
+      );
+      for (const id of [logicalId, physicalId])
+        await app
+          .GET(`/api/workspaces/${legacyWorkspace.id}/public-docs/${id}`)
+          .expect(403);
+      await createSnapshot(db, {
+        workspaceId: legacyWorkspace.id,
+        docId: physicalId,
+        userId: owner.id,
+      });
+      for (const id of [logicalId, physicalId])
+        await app
+          .GET(`/api/workspaces/${legacyWorkspace.id}/public-docs/${id}`)
+          .expect(403);
+      legacyPages.push([new YMap([['id', otherLogicalId]])]);
+      legacyRoot
+        .getMap('spaces')
+        .set(otherLogicalId, new Doc({ guid: logicalId }));
+      await saveRoot();
+      t.deepEqual(
+        unwrapResponse(
+          t,
+          await emitWithAck(legacySocket, 'space:doc-lifecycle', request)
+        ),
+        deleted
+      );
+      t.deepEqual(
+        await db.workspaceDoc.findMany({
+          where: { workspaceId: legacyWorkspace.id, lifecycleState: 'deleted' },
+          orderBy: { docId: 'asc' },
+        }),
+        tombstones
+      );
+      const freshPhysicalId = 'fresh-source-after-delete';
+      await createSnapshot(db, {
+        workspaceId: legacyWorkspace.id,
+        docId: freshPhysicalId,
+        userId: owner.id,
+      });
+      getErrorResponse(
+        t,
+        await emitWithAck(legacySocket, 'space:doc-lifecycle', {
+          ...request,
+          physicalDocId: freshPhysicalId,
+        })
+      );
+      t.is(
+        await db.snapshot.count({
+          where: { workspaceId: legacyWorkspace.id, id: freshPhysicalId },
+        }),
+        1
+      );
+      const absentLogicalId = 'absent-logical-namespace';
+      legacyPages.push([new YMap([['id', absentLogicalId]])]);
+      legacyRoot
+        .getMap('spaces')
+        .set(absentLogicalId, new Doc({ guid: freshPhysicalId }));
+      await saveRoot();
+      const absentDeleted = unwrapResponse(
+        t,
+        await emitWithAck<{ deletedDocIds: string[] }>(
+          legacySocket,
+          'space:doc-lifecycle',
+          { ...request, docId: absentLogicalId, physicalDocId: freshPhysicalId }
+        )
+      );
+      t.deepEqual(
+        absentDeleted.deletedDocIds.sort(),
+        [absentLogicalId, freshPhysicalId].sort()
+      );
+      t.is(
+        (
+          await db.workspaceDoc.findUnique({
+            where: {
+              workspaceId_docId: {
+                workspaceId: legacyWorkspace.id,
+                docId: absentLogicalId,
+              },
+            },
+          })
+        )?.lifecycleState,
+        'deleted'
+      );
+    } finally {
+      legacySocket.disconnect();
+      legacyRoot.destroy();
+    }
   } finally {
     socket.disconnect();
     ownerSocket.disconnect();

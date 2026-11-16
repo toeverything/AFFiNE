@@ -70,9 +70,9 @@ interface ClientEvents {
         docId?: string;
       }>;
       clientVersion: string;
-      protocolVersion: number;
+      protocolVersion: 1 | 2;
     },
-    { clientId: string; success: boolean; protocolVersion: number },
+    { clientId: string; success: boolean; protocolVersion: 1 | 2 },
   ];
   'space:leave-batch': {
     spaceType: string;
@@ -137,8 +137,9 @@ interface ClientEvents {
       spaceId: string;
       docId: string;
       lifecycle: 'trash' | 'restore' | 'delete';
+      physicalDocId?: string;
     },
-    { timestamp: number },
+    { timestamp: number; deletedDocIds?: string[] },
   ];
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
@@ -149,7 +150,7 @@ interface ClientEvents {
 }
 
 export const SPACE_JOIN_BATCH_LIMIT = 100;
-export const WORKSPACE_SYNC_PROTOCOL_VERSION = 2;
+export const WORKSPACE_SYNC_PROTOCOL_VERSION: 1 | 2 = 1;
 
 export type ServerEventsMap = {
   [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;

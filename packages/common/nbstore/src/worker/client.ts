@@ -327,6 +327,13 @@ class WorkerDocStorage implements DocStorage {
     };
   }
 
+  subscribeDocDelete(callback: (docId: string) => void) {
+    const subscription = this.client
+      .ob$('docStorage.subscribeDocDelete')
+      .subscribe(callback);
+    return () => subscription.unsubscribe();
+  }
+
   connection = new WorkerDocConnection(this.client);
 }
 

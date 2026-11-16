@@ -18,6 +18,7 @@ mod entitlement;
 mod gate;
 mod housekeeping;
 mod invalidation;
+mod legacy_workspace;
 mod lifecycle;
 mod payment;
 mod permission;
@@ -40,6 +41,7 @@ use byok::LocalLeasePayload;
 use doc_writer::append_updates_in;
 pub(super) use doc_writer::{lock_permission_generation, validate_doc_updates};
 use embedding::register_artifact_source;
+pub(super) use legacy_workspace::{LegacyWorkspace, load_legacy_workspace_in};
 use napi::{Result, Status, bindgen_prelude::Buffer, threadsafe_function::ThreadsafeFunction};
 #[cfg(test)]
 pub(crate) use search::SEARCH_TEST_LOCK;
@@ -47,7 +49,7 @@ use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use tokio::sync::Mutex;
-pub(super) use workspace_state::completed as workspace_lifecycle_completed;
+pub(super) use workspace_state::{completed as workspace_lifecycle_completed, ensure_migration_active};
 use zeroize::Zeroizing;
 
 use self::{
@@ -68,7 +70,7 @@ pub(super) use super::{
   ensure_doc_not_deleted_in, ensure_workspace_sync_protocol_in, is_ordinary_workspace_doc, load_doc_states_in,
   load_workspace_doc_states_in, load_workspace_doc_states_page_in,
   migrations::{embedding_schema_health, migrate_all_tables},
-  napi_error, to_napi_error, webpki_tls_config,
+  napi_error, to_napi_error, webpki_tls_config, workspace_lifecycle_active_in,
 };
 pub(super) use crate::runtime::storage_runtime::{load_current_doc_in, load_current_doc_parts_in, merge_current_doc};
 use crate::{

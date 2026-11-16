@@ -10,6 +10,7 @@ const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sq
 const SEARCH_PROJECTION_V2_MIGRATION: &str = include_str!("sql/search_projection_v2.sql");
 const SEARCH_PROJECTION_V3_MIGRATION: &str = include_str!("sql/search_projection_v3.sql");
 const SEARCH_PROJECTION_V4_MIGRATION: &str = include_str!("sql/search_projection_v4.sql");
+const SEARCH_PROJECTION_V5_MIGRATION: &str = include_str!("sql/search_projection_v5.sql");
 const EMBEDDING_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0046;
 const SEARCH_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0053;
 #[cfg(test)]
@@ -95,6 +96,7 @@ pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
       (2, &[SEARCH_PROJECTION_V2_MIGRATION]),
       (3, &[SEARCH_PROJECTION_V3_MIGRATION]),
       (4, &[SEARCH_PROJECTION_V4_MIGRATION]),
+      (5, &[SEARCH_PROJECTION_V5_MIGRATION]),
     ],
   )
   .await?;
@@ -612,7 +614,7 @@ mod tests {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(versions, vec![1, 2, 3, 4]);
+    assert_eq!(versions, vec![1, 2, 3, 4, 5]);
   }
 
   #[tokio::test]

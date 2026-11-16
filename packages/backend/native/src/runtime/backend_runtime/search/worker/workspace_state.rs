@@ -449,6 +449,14 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     let generation_id = Uuid::new_v4();
@@ -631,6 +639,26 @@ mod tests {
       coverage,
       vec![(pending_workspace.clone(), false), (ready_workspace.clone(), true)]
     );
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    for _ in 0..4 {
+      runtime.reconcile_pending(1).await.unwrap();
+    }
+    assert!(
+      sqlx::query_scalar::<_, bool>(
+        "SELECT covered FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2"
+      )
+      .bind(generation_id)
+      .bind(&pending_workspace)
+      .fetch_one(&pool)
+      .await
+      .unwrap()
+    );
     for id in [&pending_workspace, &ready_workspace] {
       sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope=$1")
         .bind(id)
@@ -654,5 +682,12 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

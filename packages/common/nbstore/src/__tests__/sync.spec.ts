@@ -3,7 +3,7 @@ import 'fake-indexeddb/auto';
 import { readFileSync } from 'node:fs';
 
 import * as reader from '@affine/reader';
-import { OpConsumer } from '@toeverything/infra/op';
+import { OpClient, OpConsumer } from '@toeverything/infra/op';
 import { BehaviorSubject, firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
 import {
@@ -25,6 +25,7 @@ import {
   IndexedDBDocSyncStorage,
   IndexedDBIndexerStorage,
 } from '../impls/idb';
+import { IndexedDBV1DocStorage } from '../impls/idb/v1';
 import {
   type AggregateOptions,
   type AggregateResult,
@@ -57,8 +58,13 @@ import { BlobSyncPeer } from '../sync/blob/peer';
 import { DocSyncImpl } from '../sync/doc';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
+import { StoreClient } from '../worker/client';
 import { StoreManagerConsumer } from '../worker/consumer';
-import type { StoreInitOptions, WorkerManagerOps } from '../worker/ops';
+import type {
+  StoreInitOptions,
+  WorkerManagerOps,
+  WorkerOps,
+} from '../worker/ops';
 import { StoreConsumer } from '../worker/store';
 import { expectYjsEqual } from './utils';
 
@@ -1871,7 +1877,7 @@ test('remote replacement preserves subscriptions, priorities, sources and sync i
   }
 });
 
-test('store opens serialize A to B to A, propagate failures and drain before close', async () => {
+test('store opens serialize changes and drain writes before deletion and close', async () => {
   const channel = new MessageChannel();
   const consumer = new OpConsumer<WorkerManagerOps>(channel.port1);
   const register = vi.spyOn(consumer, 'registerAll');
@@ -1934,6 +1940,215 @@ test('store opens serialize A to B to A, propagate failures and drain before clo
     await handlers.close('a2', context);
     await handlers.close('recovered', context);
     expect(destroyed).toHaveBeenCalledTimes(1);
+
+    const store = new StoreConsumer([IndexedDBDocStorage], {
+      local: {
+        doc: {
+          name: 'IndexedDBDocStorage',
+          opts: { id: 'delete-drain', flavour: 'local', type: 'workspace' },
+        },
+      },
+      remotes: {
+        cloud: {
+          doc: {
+            name: 'IndexedDBDocStorage',
+            opts: { id: 'delete-drain', flavour: 'remote', type: 'workspace' },
+          },
+        },
+      },
+    });
+    const clients = [0, 1].map(() => {
+      const ports = new MessageChannel();
+      channels.push(ports);
+      store.bindConsumer(new OpConsumer<WorkerOps>(ports.port1));
+      const client = new StoreClient(new OpClient<WorkerOps>(ports.port2));
+      client.docFrontend.start();
+      return client;
+    });
+    const disconnects = clients.map(client =>
+      vi.spyOn(client.docFrontend, 'disconnectDoc')
+    );
+    const local = store.docStorage;
+    const remote = store.docSync.storages.remotes.cloud;
+    const docs = clients.map(() => new YDoc({ guid: 'P' }));
+    const rpcEntered = deferred();
+    const rpcRelease = deferred();
+    const readEntered = deferred();
+    const readRelease = deferred();
+    const mergeEntered = deferred();
+    const mergeRelease = deferred();
+    let holdMerge = false;
+    const lateFrontend = new DocFrontend(
+      clients[1].docFrontend.storage,
+      DocSyncImpl.dummy,
+      {
+        mergeUpdates: async updates => {
+          if (holdMerge) {
+            holdMerge = false;
+            mergeEntered.resolve();
+            await mergeRelease.promise;
+          }
+          return mergeUpdates(updates);
+        },
+      }
+    );
+    const lateDoc = new YDoc({ guid: 'P' });
+    const otherDoc = new YDoc({ guid: 'other-ui' });
+    lateFrontend.start();
+    try {
+      await local.connection.waitForConnected();
+      await remote.connection.waitForConnected();
+      const source = new YDoc();
+      source.getMap('test').set('content', 'retained');
+      await remote.pushDocUpdate({
+        docId: 'P',
+        bin: encodeStateAsUpdate(source),
+      });
+      await remote.pushDocUpdate({
+        docId: 'G',
+        bin: encodeStateAsUpdate(source),
+      });
+      clients.forEach((client, i) => client.docFrontend.connectDoc(docs[i]));
+      await vi.waitFor(async () =>
+        expect(await local.getDoc('G')).not.toBeNull()
+      );
+      await store.docSync.waitForSynced('P');
+      await Promise.all(
+        clients.map(client => client.docFrontend.waitForUpdated('P'))
+      );
+      lateFrontend.connectDoc(lateDoc);
+      await lateFrontend.waitForDocReady('P');
+      await lateFrontend.waitForUpdated('P');
+      holdMerge = true;
+      lateDoc.getMap('test').set('editing', true);
+      await mergeEntered.promise;
+      const getDiff = remote.getDocDiff.bind(remote);
+      vi.spyOn(remote, 'getDocDiff').mockImplementationOnce(async (...args) => {
+        const captured = await getDiff(...args);
+        readEntered.resolve();
+        await readRelease.promise;
+        return captured;
+      });
+      await remote.pushDocUpdate({ docId: 'P', bin: new Uint8Array() });
+      await readEntered.promise;
+      const append = local.pushDocUpdate.bind(local);
+      vi.spyOn(local, 'pushDocUpdate').mockImplementation(
+        async (update, origin) => {
+          if (origin === 'held-rpc') {
+            rpcEntered.resolve();
+            await rpcRelease.promise;
+          }
+          return append(update, origin);
+        }
+      );
+      const writing = clients[1].docFrontend.storage.pushDocUpdate(
+        { docId: 'P', bin: encodeStateAsUpdate(source) },
+        'held-rpc'
+      );
+      await rpcEntered.promise;
+      Object.assign(remote, {
+        applyDocLifecycle: vi.fn(async () => ({
+          timestamp: new Date(),
+          deletedDocIds: ['P', 'G'],
+        })),
+      });
+      const purge = vi.spyOn(local, 'deleteDoc');
+      const deleting = clients[0].docFrontend.applyDocLifecycle('P', 'delete');
+      await vi.waitFor(() => expect(store.docSync.isDeleted('P')).toBe(true));
+      await expect(
+        clients[1].docFrontend.storage.pushDocUpdate({
+          docId: 'P',
+          bin: encodeStateAsUpdate(source),
+        })
+      ).rejects.toMatchObject({ name: 'DOC_DELETED' });
+      expect(purge).not.toHaveBeenCalled();
+      rpcRelease.resolve();
+      await writing;
+      expect(purge).not.toHaveBeenCalled();
+      readRelease.resolve();
+      await deleting;
+      mergeRelease.resolve();
+      await lateFrontend.waitForUpdated('P');
+      otherDoc.getMap('test').set('still-saving', true);
+      lateFrontend.connectDoc(otherDoc);
+      await lateFrontend.waitForUpdated('other-ui');
+      expectYjsEqual((await local.getDoc('other-ui'))!.bin, {
+        test: { 'still-saving': true },
+      });
+      expect(await local.getDoc('P')).toBeNull();
+      expect(await local.getDoc('G')).toBeNull();
+      await vi.waitFor(() => {
+        disconnects.forEach((disconnect, i) =>
+          expect(disconnect).toHaveBeenCalledWith(docs[i])
+        );
+      });
+      docs.forEach(doc => doc.getMap('test').set('late', true));
+      await clients[1].docFrontend.storage.pushDocUpdate({
+        docId: 'other',
+        bin: encodeStateAsUpdate(source),
+      });
+      expect(await local.getDoc('P')).toBeNull();
+      expect(await local.getDoc('other')).not.toBeNull();
+      source.destroy();
+    } finally {
+      rpcRelease.resolve();
+      readRelease.resolve();
+      mergeRelease.resolve();
+      lateFrontend.stop();
+      lateDoc.destroy();
+      otherDoc.destroy();
+      clients.forEach(client => client.docFrontend.stop());
+      docs.forEach(doc => doc.destroy());
+      await store.destroy();
+    }
+    for (const flavour of ['affine-cloud', 'local']) {
+      const legacyStore = new StoreConsumer(
+        [IndexedDBDocStorage, IndexedDBV1DocStorage],
+        {
+          local: {
+            doc: {
+              name: 'IndexedDBDocStorage',
+              opts: { id: `delete-v1-${flavour}`, flavour, type: 'workspace' },
+            },
+          },
+          remotes: {
+            v1: {
+              doc: {
+                name: 'IndexedDBV1DocStorage',
+                opts: { id: `delete-v1-${flavour}`, type: 'workspace' },
+              },
+            },
+          },
+        }
+      );
+      const ports = new MessageChannel();
+      channels.push(ports);
+      legacyStore.bindConsumer(new OpConsumer<WorkerOps>(ports.port1));
+      const client = new StoreClient(new OpClient<WorkerOps>(ports.port2));
+      const source = new YDoc({ guid: 'local-doc' });
+      source.getMap('test').set('content', 'local');
+      try {
+        await legacyStore.docStorage.connection.waitForConnected();
+        await client.docFrontend.storage.pushDocUpdate({
+          docId: source.guid,
+          bin: encodeStateAsUpdate(source),
+        });
+        if (flavour === 'local') {
+          await client.docFrontend.applyDocLifecycle(source.guid, 'delete');
+          expect(await legacyStore.docStorage.getDoc(source.guid)).toBeNull();
+        } else {
+          await expect(
+            client.docFrontend.applyDocLifecycle(source.guid, 'delete')
+          ).rejects.toThrow('Document lifecycle is unavailable');
+          expect(
+            await legacyStore.docStorage.getDoc(source.guid)
+          ).not.toBeNull();
+        }
+      } finally {
+        source.destroy();
+        await legacyStore.destroy();
+      }
+    }
   } finally {
     gate.resolve();
     channel.port1.close();

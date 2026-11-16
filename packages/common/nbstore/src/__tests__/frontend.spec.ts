@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 
+import { firstValueFrom } from 'rxjs';
 import { expect, test, vitest } from 'vitest';
 import { Awareness } from 'y-protocols/awareness.js';
 import { Doc as YDoc, encodeStateAsUpdate, mergeUpdates } from 'yjs';
@@ -69,7 +70,11 @@ test.each([false, true])(
     doc2.destroy();
     frontend2.stop();
     const lifecycle = vitest.fn(async (_id: string, action: string) => {
-      if (action === 'delete') doc1.destroy();
+      if (action === 'delete') {
+        doc1.destroy();
+        await frontend1.waitForUpdated('test-doc');
+        await docStorage.deleteDoc('test-doc');
+      }
       return { timestamp: new Date(1000) };
     });
     Object.assign(docStorage, { applyDocLifecycle: lifecycle });
@@ -297,7 +302,7 @@ test('awareness', async () => {
   });
 });
 
-test('doc priority requests accumulate', async () => {
+test('doc priority requests accumulate and deletion discards a late load', async () => {
   const docStorage = new IndexedDBDocStorage({
     id: 'ws-priority',
     flavour: 'a',
@@ -318,8 +323,10 @@ test('doc priority requests accumulate', async () => {
   frontend.addPriority('low', 5);
 
   const loadOrder: string[] = [];
+  const releaseLoad = Promise.withResolvers<void>();
   vitest.spyOn(docStorage, 'getDoc').mockImplementation(async docId => {
     loadOrder.push(docId);
+    if (docId === 'low') await releaseLoad.promise;
     return null;
   });
 
@@ -337,5 +344,9 @@ test('doc priority requests accumulate', async () => {
     { timeout: 2000 }
   );
 
+  await docStorage.deleteDoc('low');
+  releaseLoad.resolve();
+  await frontend.waitForUpdated('low');
+  expect((await firstValueFrom(frontend.docState$('low'))).loaded).toBe(false);
   frontend.stop();
 });

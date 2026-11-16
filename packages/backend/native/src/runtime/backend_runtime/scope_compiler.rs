@@ -11,9 +11,9 @@ use sqlx::{PgPool, Row};
 
 use super::{
   RuntimeError, RuntimeResult, is_ordinary_workspace_doc, load_current_doc_in, load_doc_states_in,
-  load_workspace_doc_states_in,
+  load_legacy_workspace_in, load_workspace_doc_states_in,
   permission::{PermissionAuthorizer, PermissionTelemetry},
-  types,
+  types, workspace_lifecycle_active_in,
 };
 use crate::runtime::{Deployment, storage_runtime::load_current_doc};
 
@@ -62,53 +62,64 @@ impl ScopeCompiler {
     let collection = input.selectors.iter().any(|selector| selector.kind == "collection");
     let favorite = collection || input.selectors.iter().any(|selector| selector.kind == "favorite");
     let metadata = collection || input.selectors.iter().any(|selector| selector.kind == "tag");
-    let states = if metadata || favorite {
-      load_workspace_doc_states_in(&mut transaction, &input.workspace_id).await?
+    let inventory_active = workspace_lifecycle_active_in(&mut transaction).await?;
+    let (mut facts, aliases) = if inventory_active {
+      (
+        affine_doc_loader::WorkspaceFacts {
+          complete: false,
+          documents: Vec::new(),
+          tags: Vec::new(),
+          collections: Vec::new(),
+        },
+        std::collections::BTreeMap::new(),
+      )
     } else {
-      let doc_ids = input
-        .selectors
-        .iter()
-        .filter(|selector| selector.kind == "document")
-        .map(|selector| selector.id.clone())
-        .collect::<Vec<_>>();
-      load_doc_states_in(&mut transaction, &input.workspace_id, &doc_ids).await?
+      let legacy = load_legacy_workspace_in(&mut transaction, &input.workspace_id).await?;
+      (legacy.facts, legacy.aliases)
     };
-    let mut facts = affine_doc_loader::WorkspaceFacts {
-      complete: false,
-      documents: Vec::new(),
-      tags: Vec::new(),
-      collections: Vec::new(),
-    };
-    if metadata {
-      match load_current_doc_in(&mut transaction, &input.workspace_id, &input.workspace_id).await {
-        Ok(Some(root)) => {
-          if let Ok(projected) = project_workspace_root_facts(&root.blob) {
-            facts = projected;
+    if inventory_active {
+      let states = if metadata || favorite {
+        load_workspace_doc_states_in(&mut transaction, &input.workspace_id).await?
+      } else {
+        let doc_ids = input
+          .selectors
+          .iter()
+          .filter(|selector| selector.kind == "document")
+          .map(|selector| selector.id.clone())
+          .collect::<Vec<_>>();
+        load_doc_states_in(&mut transaction, &input.workspace_id, &doc_ids).await?
+      };
+      if metadata {
+        match load_current_doc_in(&mut transaction, &input.workspace_id, &input.workspace_id).await {
+          Ok(Some(root)) => {
+            if let Ok(projected) = project_workspace_root_facts(&root.blob) {
+              facts = projected;
+            }
           }
+          Ok(None) | Err(RuntimeError::InvalidState(_)) => {}
+          Err(error) => return Err(error),
         }
-        Ok(None) | Err(RuntimeError::InvalidState(_)) => {}
-        Err(error) => return Err(error),
       }
+      let mut metadata = facts
+        .documents
+        .into_iter()
+        .map(|doc| (doc.id.clone(), doc))
+        .collect::<std::collections::BTreeMap<_, _>>();
+      facts.documents = states
+        .into_iter()
+        .filter(|doc| is_ordinary_workspace_doc(&input.workspace_id, &doc.doc_id))
+        .map(|state| {
+          let mut doc = metadata
+            .remove(&state.doc_id)
+            .unwrap_or_else(|| affine_doc_loader::DocumentFacts {
+              id: state.doc_id,
+              ..Default::default()
+            });
+          doc.trash = state.lifecycle.as_deref() == Some("trashed");
+          doc
+        })
+        .collect();
     }
-    let mut metadata = facts
-      .documents
-      .into_iter()
-      .map(|doc| (doc.id.clone(), doc))
-      .collect::<std::collections::BTreeMap<_, _>>();
-    facts.documents = states
-      .into_iter()
-      .filter(|doc| is_ordinary_workspace_doc(&input.workspace_id, &doc.doc_id))
-      .map(|state| {
-        let mut doc = metadata
-          .remove(&state.doc_id)
-          .unwrap_or_else(|| affine_doc_loader::DocumentFacts {
-            id: state.doc_id,
-            ..Default::default()
-          });
-        doc.trash = state.lifecycle.as_deref() == Some("trashed");
-        doc
-      })
-      .collect();
     transaction
       .commit()
       .await
@@ -140,9 +151,19 @@ impl ScopeCompiler {
       .filter_readable_docs(
         &input.workspace_id,
         &input.user_id,
-        facts.documents.iter().map(|doc| doc.id.clone()).collect(),
+        facts
+          .documents
+          .iter()
+          .map(|doc| aliases.get(&doc.id).cloned().unwrap_or_else(|| doc.id.clone()))
+          .collect(),
       )
       .await?;
+    let readable = facts
+      .documents
+      .iter()
+      .filter(|doc| readable.contains(aliases.get(&doc.id).unwrap_or(&doc.id)))
+      .map(|doc| doc.id.clone())
+      .collect::<BTreeSet<_>>();
     let active = facts
       .documents
       .iter()
@@ -201,9 +222,17 @@ impl ScopeCompiler {
     }
     Ok(snapshot(
       input.selectors,
-      required_docs.into_iter().collect(),
+      required_docs
+        .into_iter()
+        .map(|id| aliases.get(&id).cloned().unwrap_or(id))
+        .collect(),
       required_artifacts.into_iter().collect(),
-      input.preferred_source_ids.unwrap_or_default(),
+      input
+        .preferred_source_ids
+        .unwrap_or_default()
+        .into_iter()
+        .map(|id| aliases.get(&id).cloned().unwrap_or(id))
+        .collect(),
     ))
   }
 
@@ -335,6 +364,13 @@ mod tests {
     let _guard = crate::runtime::backend_runtime::SEARCH_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
     crate::runtime::migrations::migrate_search_tables(&pool).await.unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     let legacy_relations: Vec<Option<String>> = sqlx::query_scalar(
       "SELECT to_regclass(name) FROM \
        unnest(ARRAY['workspace_permission_revisions','workspace_permission_changes','search_runtime_generations']) \
@@ -455,6 +491,61 @@ mod tests {
       std::slice::from_ref(&doc_id)
     );
 
+    let physical_id = format!("scope-legacy-{suffix}");
+    let mut legacy_root = y_octo::Doc::new();
+    legacy_root
+      .apply_update_from_binary_v1(
+        sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+          .bind(&workspace_id)
+          .fetch_one(&pool)
+          .await
+          .unwrap(),
+      )
+      .unwrap();
+    legacy_root
+      .get_or_create_map("spaces")
+      .unwrap()
+      .insert(
+        doc_id.clone(),
+        Value::Doc(DocOptions::new().with_guid(physical_id.clone()).build()),
+      )
+      .unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$2 WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(legacy_root.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(&physical_id)
+      .bind(&[0u8, 0][..])
+      .execute(&pool)
+      .await
+      .unwrap();
+    let aliased = compiler
+      .compile(types::CompileScopeInput {
+        workspace_id: workspace_id.clone(),
+        user_id: user_id.clone(),
+        selectors: vec![types::ScopeSelectorInput {
+          kind: "document".into(),
+          id: doc_id.clone(),
+          name: None,
+          source: "draft".into(),
+        }],
+        preferred_source_ids: Some(vec![doc_id.clone()]),
+      })
+      .await
+      .unwrap();
+    assert_eq!(aliased.required_doc_ids, vec![physical_id]);
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     let retained_sources: Vec<(String, Vec<u8>)> =
       sqlx::query_as("SELECT guid,blob FROM snapshots WHERE workspace_id=$1 AND guid<>$2")
         .bind(&workspace_id)
@@ -615,5 +706,12 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

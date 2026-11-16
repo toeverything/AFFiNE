@@ -1,8 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  diffUpdate,
+  Doc as YDoc,
+  encodeStateVectorFromUpdate,
+  Map as YMap,
+} from 'yjs';
 
 import { Cache } from '../../base';
 import { Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { WorkspaceBlobStorage } from '../storage';
 import {
   type CanvasProjectionV1,
@@ -51,6 +59,16 @@ export abstract class DocReader {
   parseWorkspaceContent(bin: Uint8Array) {
     return parseWorkspaceDoc(bin);
   }
+
+  abstract getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>>;
+
+  abstract resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string>;
 
   abstract getDoc(
     workspaceId: string,
@@ -171,9 +189,47 @@ export class DatabaseDocReader extends DocReader {
     protected override readonly cache: Cache,
     protected override readonly models: Models,
     protected override readonly blobStorage: WorkspaceBlobStorage,
-    protected readonly workspace: PgWorkspaceDocStorageAdapter
+    protected readonly workspace: PgWorkspaceDocStorageAdapter,
+    private readonly runtime: BackendRuntimeProvider
   ) {
     super(cache, models, blobStorage);
+  }
+
+  async getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>> {
+    const aliases = new Map<string, string>();
+    if (await this.runtime.getWorkspaceLifecycleActiveV1()) return aliases;
+    const root =
+      rootDoc === undefined
+        ? await this.workspace.getDoc(workspaceId, workspaceId)
+        : rootDoc;
+    if (!root) return aliases;
+    const doc = new YDoc();
+    try {
+      applyUpdate(doc, root.bin);
+      const pages = doc.getMap('meta').get('pages');
+      if (!(pages instanceof YArray)) return aliases;
+      const spaces = doc.getMap('spaces');
+      for (const page of pages) {
+        const id: unknown = page instanceof YMap ? page.get('id') : undefined;
+        if (typeof id !== 'string') continue;
+        const subdoc = spaces.get(id);
+        if (subdoc instanceof YDoc) aliases.set(id, subdoc.guid);
+      }
+      return aliases;
+    } finally {
+      doc.destroy();
+    }
+  }
+
+  async resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string> {
+    if (docId === workspaceId) return docId;
+    return (await this.getDocIdAliases(workspaceId)).get(docId) ?? docId;
   }
 
   async getDoc(workspaceId: string, docId: string): Promise<DocRecord | null> {

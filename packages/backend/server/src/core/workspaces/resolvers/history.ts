@@ -14,7 +14,7 @@ import type { SnapshotHistory } from '@prisma/client';
 import { canonicalizeDocumentIdentity } from '../../../native';
 import { CurrentUser } from '../../auth';
 import { BackendRuntimeProvider } from '../../backend-runtime';
-import { PgWorkspaceDocStorageAdapter } from '../../doc';
+import { DocReader, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { PermissionAccess } from '../../permission';
 import { WorkspaceType } from '../types';
 import { EditorType } from './doc';
@@ -39,7 +39,8 @@ export class DocHistoryResolver {
   constructor(
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly ac: PermissionAccess,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => [DocHistoryType])
@@ -52,7 +53,11 @@ export class DocHistoryResolver {
     @Args({ name: 'take', type: () => Int, nullable: true })
     take?: number
   ): Promise<DocHistoryType[]> {
-    const docId = canonicalizeDocumentIdentity(guid, workspace.id);
+    const identity = canonicalizeDocumentIdentity(guid, workspace.id);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(workspace.id, identity.docId),
+      workspace.id
+    );
 
     await this.ac.user(user.id).doc(docId).assert('Doc.History.Read');
 
@@ -77,9 +82,14 @@ export class DocHistoryResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('guid') guid: string,
-    @Args({ name: 'timestamp', type: () => GraphQLISODateTime }) timestamp: Date
+    @Args({ name: 'timestamp', type: () => GraphQLISODateTime })
+    timestamp: Date
   ): Promise<Date> {
-    const docId = canonicalizeDocumentIdentity(guid, workspaceId);
+    const identity = canonicalizeDocumentIdentity(guid, workspaceId);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(workspaceId, identity.docId),
+      workspaceId
+    );
 
     await this.runtime.executeDomainCommandV1({
       command: 'recover_doc',

@@ -15,7 +15,9 @@ import { afterEach, expect, test, vi } from 'vitest';
 
 import { CloudBlobStorage } from '../impls/cloud/blob';
 import { BlobSourceRegistry } from '../impls/cloud/blob-source-registry';
+import { CloudDocStorage } from '../impls/cloud/doc';
 import { OverSizeError } from '../storage';
+import { createIdConverter } from '../utils/id-converter';
 
 const originalBuildConfig = globalThis.BUILD_CONFIG;
 const quotaResponse = {
@@ -373,6 +375,22 @@ test.each(['success', 'failure', 'abort', 'pre-abort', 'timeout'])(
 
 test('downloads only through registered source-scoped V1 entries', async () => {
   const storage = createStorage();
+  const docStorage = new CloudDocStorage({
+    id: 'workspace-1',
+    accountId: 'account-1',
+    serverBaseUrl: 'https://example.com',
+    isSelfHosted: false,
+    type: 'workspace',
+  });
+  docStorage.connection.idConverter = createIdConverter(
+    'workspace-1',
+    new Map([['legacy-doc-1', 'doc-1']]),
+    new Map([['doc-1', 'legacy-doc-1']])
+  );
+  vi.spyOn(docStorage.connection, 'waitForConnected').mockResolvedValue(
+    undefined
+  );
+  storage.bindDocStorage(docStorage);
   await expect(storage.get('blob-key')).rejects.toThrow(
     'Blob source context is required'
   );
@@ -394,7 +412,12 @@ test('downloads only through registered source-scoped V1 entries', async () => {
         JSON.stringify({
           version: 1,
           entries: [
-            { key: 'blob-key', mime: 'text/plain', size: 9, source: first },
+            {
+              key: 'blob-key',
+              mime: 'text/plain',
+              size: 9,
+              source: { ...first, docId: 'legacy-doc-1' },
+            },
           ],
         }),
         {
@@ -450,9 +473,9 @@ test('downloads only through registered source-scoped V1 entries', async () => {
   const urls = fetchMock.mock.calls.map(call => call[0]?.toString());
   expect(urls).toMatchInlineSnapshot(`
     [
-      "https://example.com/api/workspaces/workspace-1/blob-manifest/v1?sourceType=currentDoc&docId=doc-1",
+      "https://example.com/api/workspaces/workspace-1/blob-manifest/v1?sourceType=currentDoc&docId=legacy-doc-1",
       "https://example.com/api/workspaces/workspace-1/blob-manifest/v1?sourceType=history&docId=doc-2&timestampMs=1720000000000",
-      "https://example.com/api/workspaces/workspace-1/blobs/v1/blob-key?sourceType=currentDoc&docId=doc-1",
+      "https://example.com/api/workspaces/workspace-1/blobs/v1/blob-key?sourceType=currentDoc&docId=legacy-doc-1",
       "https://example.com/api/workspaces/workspace-1/blobs/v1/blob-key?sourceType=history&docId=doc-2&timestampMs=1720000000000",
       "https://example.com/api/workspaces/workspace-1/blobs/v1/blob-key?sourceType=history&docId=doc-2&timestampMs=1720000000000",
     ]

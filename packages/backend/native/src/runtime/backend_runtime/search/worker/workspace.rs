@@ -676,6 +676,14 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     sqlx::query("DELETE FROM search_projection.generations")
@@ -1170,5 +1178,12 @@ mod tests {
           .unwrap();
       }
     }
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

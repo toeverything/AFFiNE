@@ -1,3 +1,4 @@
+import { WORKSPACE_SYNC_PROTOCOL_VERSION } from '@affine/nbstore/cloud';
 import type {
   StoreClient,
   WorkerInitOptions,
@@ -22,6 +23,16 @@ export class WorkspaceEngine extends Entity<{
     private readonly featureFlagService: FeatureFlagService
   ) {
     super();
+  }
+
+  get usesWorkspaceState() {
+    return Object.values(this.props.engineWorkerInitOptions.remotes).some(
+      remote =>
+        remote.doc?.name === 'CloudDocStorage' &&
+        (('protocolVersion' in remote.doc.opts
+          ? remote.doc.opts.protocolVersion
+          : undefined) ?? WORKSPACE_SYNC_PROTOCOL_VERSION) === 2
+    );
   }
 
   get doc() {

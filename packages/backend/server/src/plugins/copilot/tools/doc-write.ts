@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
-import { DocWriter } from '../../../core/doc';
+import { DocReader, DocWriter } from '../../../core/doc';
 import { PermissionAccess } from '../../../core/permission';
 import { toolError } from './error';
 import { defineTool } from './tool';
@@ -57,7 +57,8 @@ export const buildDocCreateHandler = (
 
 export const buildDocUpdateHandler = (
   writer: DocWriter,
-  ac: PermissionAccess
+  ac: PermissionAccess,
+  reader: DocReader
 ) => {
   return async (
     options: CopilotChatOptions,
@@ -73,6 +74,7 @@ export const buildDocUpdateHandler = (
       return notFound;
     }
 
+    docId = await reader.resolveStorageDocId(options.workspace, docId);
     await ac
       .user(options.user)
       .workspace(options.workspace)
@@ -94,7 +96,8 @@ export const buildDocUpdateHandler = (
 
 export const buildDocUpdateMetaHandler = (
   writer: DocWriter,
-  ac: PermissionAccess
+  ac: PermissionAccess,
+  reader: DocReader
 ) => {
   return async (options: CopilotChatOptions, docId: string, title: string) => {
     const notFound = toolError(
@@ -111,6 +114,7 @@ export const buildDocUpdateMetaHandler = (
       return toolError('Doc Meta Update Failed', 'Title cannot be empty');
     }
 
+    docId = await reader.resolveStorageDocId(options.workspace, docId);
     await ac
       .user(options.user)
       .workspace(options.workspace)

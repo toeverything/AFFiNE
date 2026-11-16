@@ -80,7 +80,7 @@ export class Workspace extends Entity {
         id: this.openOptions.metadata.id,
         rootDoc: this.rootYDoc,
         inventory$:
-          this.flavour === 'local' || this.openOptions.isSharedMode
+          !this.engine.usesWorkspaceState || this.openOptions.isSharedMode
             ? undefined
             : this.engine.doc.workspaceState$,
         projectedTitles$:

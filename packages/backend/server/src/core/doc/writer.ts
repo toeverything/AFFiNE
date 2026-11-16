@@ -1,14 +1,24 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { nanoid } from 'nanoid';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  Map as YMap,
+} from 'yjs';
 
 import { EventBus } from '../../base';
 import {
+  addDocToRootDoc,
   createDocWithMarkdown,
   isOrdinaryWorkspaceDoc,
   updateDocProperties,
   updateDocTitle,
   updateDocWithMarkdown,
 } from '../../native';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 export interface CreateDocResult {
@@ -38,7 +48,8 @@ export class DocWriter {
 
   constructor(
     private readonly storage: PgWorkspaceDocStorageAdapter,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   /**
@@ -93,6 +104,28 @@ export class DocWriter {
       },
       editorId
     );
+
+    if (!(await this.runtime.getWorkspaceLifecycleActiveV1())) {
+      const root = await this.storage.getDoc(workspaceId, workspaceId);
+      const update = addDocToRootDoc(
+        Buffer.from(root?.bin ?? [0, 0]),
+        docId,
+        title
+      );
+      const { timestamp } = await this.storage.pushDocUpdates(
+        workspaceId,
+        workspaceId,
+        [update],
+        editorId
+      );
+      this.emitDocUpdatesPushed({
+        spaceId: workspaceId,
+        docId: workspaceId,
+        updates: [update],
+        timestamp,
+        editor: editorId,
+      });
+    }
 
     this.logger.debug(`Created doc ${docId} in workspace ${workspaceId}`);
 
@@ -221,6 +254,51 @@ export class DocWriter {
       { updatedBy: editorId },
       editorId
     );
+
+    if (!(await this.runtime.getWorkspaceLifecycleActiveV1())) {
+      const root = await this.storage.getDoc(workspaceId, workspaceId);
+      if (root) {
+        const doc = new YDoc();
+        try {
+          applyUpdate(doc, root.bin);
+          const pages = doc.getMap('meta').get('pages');
+          const spaces = doc.getMap('spaces');
+          const page =
+            pages instanceof YArray
+              ? pages.toArray().find(page => {
+                  if (!(page instanceof YMap)) return false;
+                  const id = page.get('id');
+                  const subdoc =
+                    typeof id === 'string' ? spaces.get(id) : undefined;
+                  return (
+                    id === docId ||
+                    (subdoc instanceof YDoc && subdoc.guid === docId)
+                  );
+                })
+              : undefined;
+          if (page instanceof YMap) {
+            const state = encodeStateVector(doc);
+            page.set('title', meta.title);
+            const update = encodeStateAsUpdate(doc, state);
+            const { timestamp } = await this.storage.pushDocUpdates(
+              workspaceId,
+              workspaceId,
+              [update],
+              editorId
+            );
+            this.emitDocUpdatesPushed({
+              spaceId: workspaceId,
+              docId: workspaceId,
+              updates: [update],
+              timestamp,
+              editor: editorId,
+            });
+          }
+        } finally {
+          doc.destroy();
+        }
+      }
+    }
 
     return { success: true };
   }

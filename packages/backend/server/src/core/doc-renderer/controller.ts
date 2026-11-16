@@ -100,9 +100,10 @@ export class DocRendererController {
       req.accepts().some(t => markdownType.has(t.toLowerCase()))
     ) {
       try {
+        const docId = await this.doc.resolveStorageDocId(workspaceId, sub);
         const canReadMarkdown = await this.permission.canDoc({
           workspaceId,
-          docId: sub,
+          docId,
           action: 'Doc.Read',
         });
         if (!canReadMarkdown) {
@@ -110,7 +111,11 @@ export class DocRendererController {
           return;
         }
 
-        const markdown = await this.doc.getDocMarkdown(workspaceId, sub, false);
+        const markdown = await this.doc.getDocMarkdown(
+          workspaceId,
+          docId,
+          false
+        );
         if (markdown) {
           res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
           res.send(markdown.markdown);
@@ -171,6 +176,7 @@ export class DocRendererController {
     workspaceId: string,
     docId: string
   ): Promise<{ options: RenderOptions | null; exposure: DocPreviewExposure }> {
+    docId = await this.doc.resolveStorageDocId(workspaceId, docId);
     const exposure = await this.permission.docPreviewExposure({
       workspaceId,
       docId,

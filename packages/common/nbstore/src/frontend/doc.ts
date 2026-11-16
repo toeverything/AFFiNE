@@ -197,12 +197,7 @@ export class DocFrontend {
     if (!this.storage.applyDocLifecycle) {
       throw new Error('Document lifecycle is unavailable');
     }
-    const result = await this.storage.applyDocLifecycle(docId, lifecycle);
-    if (lifecycle === 'delete') {
-      await this.waitForSynced(docId, this.abort.signal);
-      await this.storage.deleteDoc(docId);
-    }
-    return result;
+    return this.storage.applyDocLifecycle(docId, lifecycle);
   }
 
   private _docState$(docId: string): Observable<DocFrontendDocState> {
@@ -306,6 +301,10 @@ export class DocFrontend {
     const dispose = this.storage.subscribeDocUpdate((record, origin) => {
       this.event.onStorageUpdate(record, origin);
     });
+    const disposeDelete = this.storage.subscribeDocDelete?.(docId => {
+      const doc = this.status.docs.get(docId);
+      if (doc) this.disconnectDoc(doc);
+    });
     try {
       // wait for storage to connect
       await Promise.race([
@@ -345,7 +344,14 @@ export class DocFrontend {
         }
 
         if (save?.length) {
-          await this.jobs.save(docId, save as any, signal);
+          try {
+            await this.jobs.save(docId, save as any, signal);
+          } catch (error) {
+            if (!(error instanceof Error) || error.name !== 'DOC_DELETED')
+              throw error;
+            const doc = this.status.docs.get(docId);
+            if (doc) this.disconnectDoc(doc);
+          }
         }
 
         this.status.currentJob = null;
@@ -353,6 +359,7 @@ export class DocFrontend {
       }
     } finally {
       dispose();
+      disposeDelete?.();
     }
   }
 
@@ -385,6 +392,7 @@ export class DocFrontend {
 
       const docRecord = await this.storage.getDoc(job.docId);
       throwIfAborted(signal);
+      if (this.status.docs.get(job.docId) !== doc) return;
 
       if (docRecord && !isEmptyUpdate(docRecord.bin)) {
         this.applyUpdate(job.docId, docRecord.bin);

@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import supertest from 'supertest';
-import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { PgWorkspaceDocStorageAdapter } from '../../core/doc';
@@ -18,7 +18,7 @@ import {
 } from '../../native';
 import { createTestingApp, TestingApp, TestUser } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   db: PrismaClient;
   app: TestingApp;
   u1: TestUser;
@@ -44,7 +44,9 @@ test.before(async t => {
 });
 
 test.beforeEach(async t => {
-  const { app, db } = t.context;
+  const { app, db, workspace } = t.context;
+  workspace.getDoc.resetBehavior();
+  workspace.getDoc.resolves(null);
   await app.initTestingDB();
   t.context.u1 = await app.signupV1('u1@affine.pro');
 
@@ -332,9 +334,9 @@ test('should not be able to get private workspace with private page', async t =>
 test('should be able to get doc', async t => {
   const { app, workspace: doc } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });
@@ -365,39 +367,59 @@ test('should expose filtered public root doc for shared page', async t => {
     },
   });
 
-  let root = addDocToRootDoc(Buffer.from([0, 0]), 'public', 'Public Doc');
+  let root = addDocToRootDoc(
+    Buffer.from([0, 0]),
+    'logical-public',
+    'Public Doc'
+  );
   const privateUpdate = addDocToRootDoc(root, 'private-page', 'Private Doc');
   root = mergeUpdates([root, privateUpdate]);
 
-  doc.getDoc.resolves({
+  const source = new YDoc();
+  applyUpdate(source, root);
+  source.getMap('spaces').set('logical-public', new YDoc({ guid: 'public' }));
+  root = Buffer.from(encodeStateAsUpdate(source));
+  source.destroy();
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
+    bin: Buffer.from([1, 2, 3]),
+    timestamp: Date.now(),
+  });
+  doc.getDoc.withArgs('private', 'private').resolves({
     spaceId: 'private',
     docId: 'private',
     bin: root,
     timestamp: Date.now(),
   });
 
-  const res = await app.GET(
-    '/api/workspaces/private/public-docs/public/root-doc'
-  );
+  for (const requestedId of ['logical-public', 'public']) {
+    doc.getDoc.resetHistory();
+    const res = await app.GET(
+      `/api/workspaces/private/public-docs/${requestedId}/root-doc`
+    );
 
-  t.is(res.status, HttpStatus.OK);
-  const body = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body);
-  t.deepEqual(readAllDocIdsFromRootDoc(body, false), ['public']);
+    t.is(res.status, HttpStatus.OK);
+    t.true(doc.getDoc.calledOnceWithExactly('private', 'private'));
+    const body = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body);
+    t.deepEqual(readAllDocIdsFromRootDoc(body, false), [requestedId]);
 
-  const ydoc = new YDoc({ guid: 'private' });
-  t.notThrows(() =>
-    applyUpdate(
-      ydoc,
-      new Uint8Array(body.buffer, body.byteOffset, body.byteLength)
-    )
-  );
-  const pages = (ydoc.getMap('meta') as YMap<unknown>).get('pages') as
-    | { toArray: () => Array<{ get: (key: string) => unknown }> }
-    | undefined;
-  t.deepEqual(
-    pages?.toArray().map(page => page.get('id')),
-    ['public']
-  );
+    const ydoc = new YDoc({ guid: 'private' });
+    applyUpdate(ydoc, body);
+    const pages = ydoc.getMap('meta').toJSON().pages;
+    t.deepEqual(
+      pages.map((page: { id: string }) => page.id),
+      [requestedId]
+    );
+    t.is(ydoc.getMap('spaces').size, 0);
+    ydoc.destroy();
+
+    const content = await app.GET(
+      `/api/workspaces/private/public-docs/${requestedId}`
+    );
+    t.is(content.status, HttpStatus.OK);
+    t.deepEqual(content.body, Buffer.from([1, 2, 3]));
+  }
 });
 
 test('should expose public doc publish mode through HEAD route', async t => {
@@ -414,7 +436,7 @@ test('should expose public doc publish mode through HEAD route', async t => {
 test('should expose public doc binary through public route', async t => {
   const { app, workspace: doc } = t.context;
 
-  doc.getDoc.resolves({
+  doc.getDoc.withArgs('private', 'public').resolves({
     spaceId: 'private',
     docId: 'public',
     bin: Buffer.from([1, 2, 3]),
@@ -432,9 +454,9 @@ test('should expose public doc binary through public route', async t => {
 test('should record doc view when reading doc', async t => {
   const { app, workspace: doc, models } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });
@@ -461,9 +483,9 @@ test('should record doc view when reading doc', async t => {
 test('should be able to change page publish mode', async t => {
   const { app, workspace: doc, models } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });

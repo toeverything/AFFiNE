@@ -74,6 +74,7 @@ pub struct AggregateOptions {
 }
 
 #[napi_derive::napi(object)]
+#[derive(Clone)]
 pub struct RuntimeSearchQuery {
   pub query_type: String,
   pub field: Option<String>,
@@ -85,6 +86,7 @@ pub struct RuntimeSearchQuery {
 }
 
 #[napi_derive::napi(object)]
+#[derive(Clone)]
 pub struct RuntimeSearchRequest {
   pub table: SearchTable,
   pub queries: Vec<RuntimeSearchQuery>,
@@ -93,6 +95,7 @@ pub struct RuntimeSearchRequest {
 }
 
 #[napi_derive::napi(object)]
+#[derive(Clone)]
 pub struct RuntimeAggregateRequest {
   pub table: SearchTable,
   pub queries: Vec<RuntimeSearchQuery>,

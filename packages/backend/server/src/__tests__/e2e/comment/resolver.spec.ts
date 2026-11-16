@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { mock } from 'node:test';
 
 import {
   CommentChangeAction,
@@ -12,8 +13,20 @@ import {
   resolveCommentMutation,
   updateCommentMutation,
   updateReplyMutation,
+  uploadCommentAttachmentMutation,
 } from '@affine/graphql';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { CommentService } from '../../../core/comment/service';
+import { DocReader } from '../../../core/doc/reader';
+import { RealtimePublisher } from '../../../core/realtime';
 import {
   type CommentNotification,
   DocRole,
@@ -120,6 +133,159 @@ e2e('should create comment work', async t => {
   t.truthy(result2.createComment.id);
   t.false(result2.createComment.resolved);
   t.is(result2.createComment.replies.length, 0);
+
+  const logicalId = randomUUID();
+  for (const [id, defaultRole] of [
+    [docId, DocRole.None],
+    [logicalId, DocRole.Manager],
+  ] as const) {
+    await app.create(Mockers.DocSnapshot, {
+      workspaceId: workspace.id,
+      user: owner,
+      docId: id,
+      blob: Buffer.from([0, 0]),
+    });
+    await app.create(Mockers.DocMeta, {
+      workspaceId: workspace.id,
+      docId: id,
+      defaultRole,
+    });
+  }
+  const root = new YDoc();
+  const rootSnapshot = await app
+    .get(DocReader)
+    .getDoc(workspace.id, workspace.id);
+  if (rootSnapshot) applyUpdate(root, rootSnapshot.bin);
+  const existingPages = root.getMap('meta').get('pages');
+  const pages =
+    existingPages instanceof YArray
+      ? existingPages
+      : new YArray<YMap<unknown>>();
+  if (!(existingPages instanceof YArray))
+    root.getMap('meta').set('pages', pages);
+  pages.push([new YMap([['id', logicalId]])]);
+  root.getMap('spaces').set(logicalId, new YDoc({ guid: docId }));
+  await app.models.doc.createUpdates([
+    {
+      spaceId: workspace.id,
+      docId: workspace.id,
+      blob: Buffer.from(encodeStateAsUpdate(root)),
+      timestamp: Date.now(),
+      editorId: owner.id,
+    },
+  ]);
+  root.destroy();
+  const activation = mock.method(
+    app.get(BackendRuntimeProvider),
+    'getWorkspaceLifecycleActiveV1',
+    async () => false
+  );
+  const publisher = mock.method(app.get(RealtimePublisher), 'publish');
+  t.teardown(() => {
+    activation.mock.restore();
+    publisher.mock.restore();
+  });
+  const list = {
+    query: listCommentsQuery,
+    variables: {
+      workspaceId: workspace.id,
+      docId: logicalId,
+      pagination: { after: '' },
+    },
+  };
+  const create = {
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: workspace.id,
+        docId: logicalId,
+        docMode: DocMode.page,
+        docTitle: 'legacy',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'through logical ID' }],
+        },
+      },
+    },
+  };
+  const upload = () =>
+    app
+      .POST('/graphql')
+      .field(
+        'operations',
+        JSON.stringify({
+          query: uploadCommentAttachmentMutation.query,
+          operationName: uploadCommentAttachmentMutation.op,
+          variables: {
+            workspaceId: workspace.id,
+            docId: logicalId,
+            attachment: null,
+          },
+        })
+      )
+      .field('map', JSON.stringify({ '0': ['variables.attachment'] }))
+      .attach('0', Buffer.from('legacy attachment'), 'legacy.txt');
+  await t.throwsAsync(app.gql(list));
+  await t.throwsAsync(app.gql(create));
+  t.truthy((await upload()).body.errors);
+  await app.models.docAccessPolicy.upsert(workspace.id, docId, {
+    defaultRole: DocRole.Commenter,
+  });
+  await app.models.docAccessPolicy.upsert(workspace.id, logicalId, {
+    defaultRole: DocRole.None,
+  });
+  const listed = await app.gql(list);
+  t.deepEqual(
+    listed.workspace.comments.edges.map(edge => edge.node.id).sort(),
+    [result.createComment.id, result2.createComment.id].sort()
+  );
+  const created = await app.gql(create);
+  t.is(
+    (await app.get(CommentService).getComment(created.createComment.id))?.docId,
+    docId
+  );
+  for (const notifiedId of [logicalId, docId]) {
+    t.true(
+      publisher.mock.calls.some(
+        ({ arguments: args }) =>
+          args[0] === 'comment.changed' &&
+          'docId' in args[1] &&
+          args[1].docId === notifiedId
+      )
+    );
+  }
+  const changes = await app.gql({
+    query: listCommentChangesQuery,
+    variables: {
+      workspaceId: workspace.id,
+      docId: logicalId,
+      pagination: { after: '', first: 10 },
+    },
+  });
+  t.true(
+    changes.workspace.commentChanges.edges.some(
+      edge => edge.node.id === created.createComment.id
+    )
+  );
+  const uploaded = await upload();
+  t.falsy(uploaded.body.errors);
+  const url = new URL(uploaded.body.data.uploadCommentAttachment);
+  t.true(url.pathname.includes(`/docs/${docId}/`));
+  for (const requestedId of [logicalId, docId]) {
+    const response = await app
+      .GET(url.pathname.replace(`/docs/${docId}/`, `/docs/${requestedId}/`))
+      .expect(200);
+    t.is(response.text, 'legacy attachment');
+  }
+  await app.models.docAccessPolicy.upsert(workspace.id, docId, {
+    defaultRole: DocRole.None,
+  });
+  await app.models.docAccessPolicy.upsert(workspace.id, logicalId, {
+    defaultRole: DocRole.Manager,
+  });
+  await app
+    .GET(url.pathname.replace(`/docs/${docId}/`, `/docs/${logicalId}/`))
+    .expect(403);
 });
 
 e2e('should create comment with mentions work', async t => {

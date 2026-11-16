@@ -12,7 +12,7 @@ import { IDBConnection, type IDBConnectionOptions } from './db';
 import { createPeerClock } from './schema';
 
 type ChannelMessage =
-  | { type: 'delete' }
+  | { type: 'delete'; docId: string }
   | {
       type: 'update';
       update: DocRecord;
@@ -183,8 +183,11 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
       await peers.put({ ...root, cacheToken: (root.cacheToken ?? 0) + 1 });
     }
     await trx.done;
-    this.emit('delete');
-    this.channel.postMessage({ type: 'delete' } satisfies ChannelMessage);
+    this.emit('delete', docId);
+    this.channel.postMessage({
+      type: 'delete',
+      docId,
+    } satisfies ChannelMessage);
   }
 
   override async getDocTimestamps(after: Date = new Date(0)) {
@@ -229,7 +232,7 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
 
   handleChannelMessage = (event: MessageEvent<ChannelMessage>) => {
     if (event.data.type === 'delete') {
-      this.emit('delete');
+      this.emit('delete', event.data.docId);
     } else if (event.data.type === 'update') {
       this.emit('update', event.data.update, event.data.origin);
     }

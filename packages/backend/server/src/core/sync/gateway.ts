@@ -30,6 +30,7 @@ import {
   EventBus,
   GatewayErrorWrapper,
   metrics,
+  NotFound,
   NotInSpace,
   OnEvent,
   SpaceAccessDenied,
@@ -118,7 +119,7 @@ interface JoinSpaceBatchEntry {
 interface JoinSpaceBatchMessage {
   spaces: [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
   clientVersion: string;
-  protocolVersion: 2;
+  protocolVersion: 1 | 2;
 }
 
 interface LeaveSpaceMessage {
@@ -162,6 +163,7 @@ interface DeleteDocMessage {
 }
 
 interface DocLifecycleMessage extends DeleteDocMessage {
+  physicalDocId?: string;
   lifecycle: 'trash' | 'restore' | 'delete';
 }
 
@@ -239,7 +241,7 @@ function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
   }
 
   const { spaces, clientVersion, protocolVersion } = message;
-  if (protocolVersion !== 2)
+  if (protocolVersion !== 1 && protocolVersion !== 2)
     throw new BadRequest('Sync protocol upgrade required.');
   if (!Array.isArray(spaces) || spaces.length === 0) {
     throw new BadRequest('Space join batch must not be empty.');
@@ -880,10 +882,7 @@ export class SpaceSyncGateway
     if (hint.kind !== 'workspaceInventoryChanged' || !this.server) return;
     const room = `${SpaceType.Workspace}:${Room(hint.workspaceId, 'sync-027')}`;
     for (const client of this.server.sockets.sockets.values()) {
-      if (
-        client.rooms.has(room) &&
-        this.socketProtocolVersions.get(client.id) !== 2
-      )
+      if (client.rooms.has(room) && !this.socketProtocolVersions.has(client.id))
         client.disconnect(true);
     }
     await this.revalidateActiveDocSubscriptions({
@@ -1223,7 +1222,11 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() message: unknown
   ): Promise<
-    EventResponse<{ clientId: string; success: boolean; protocolVersion: 2 }>
+    EventResponse<{
+      clientId: string;
+      success: boolean;
+      protocolVersion: 1 | 2;
+    }>
   > {
     const { spaces, clientVersion, protocolVersion } =
       parseJoinSpaceBatchMessage(message);
@@ -1237,7 +1240,10 @@ export class SpaceSyncGateway
 
     await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');
     if (first.spaceType === SpaceType.Workspace)
-      await this.runtime.ensureWorkspaceLifecycleV1(first.spaceId);
+      await this.runtime.ensureWorkspaceLifecycleV1(
+        first.spaceId,
+        protocolVersion
+      );
     this.socketProtocolVersions.set(client.id, protocolVersion);
 
     const docSpaces = spaces.filter(
@@ -1478,8 +1484,14 @@ export class SpaceSyncGateway
   async onDocLifecycle(
     @ConnectedSocket() client: Socket,
     @CurrentUser() user: CurrentUser,
-    @MessageBody() { spaceType, spaceId, docId, lifecycle }: DocLifecycleMessage
-  ): Promise<EventResponse<{ timestamp: number }>> {
+    @MessageBody() {
+      spaceType,
+      spaceId,
+      docId,
+      lifecycle,
+      physicalDocId,
+    }: DocLifecycleMessage
+  ): Promise<EventResponse<{ timestamp: number; deletedDocIds?: string[] }>> {
     if (!['trash', 'restore', 'delete'].includes(lifecycle)) {
       throw new BadRequest('Invalid document lifecycle');
     }
@@ -1497,7 +1509,10 @@ export class SpaceSyncGateway
         user.id,
         spaceId,
         docId,
-        lifecycle
+        lifecycle,
+        physicalDocId === undefined
+          ? undefined
+          : canonicalDocId(physicalDocId, spaceId)
       ),
     };
   }
@@ -1507,7 +1522,8 @@ export class SpaceSyncGateway
     actorUserId: string,
     workspaceId: string,
     docId: string,
-    lifecycle: 'trash' | 'restore' | 'delete'
+    lifecycle: 'trash' | 'restore' | 'delete',
+    physicalDocId?: string
   ) {
     this.selectAdapter(client, SpaceType.Workspace).assertIn(workspaceId);
     const action =
@@ -1516,23 +1532,49 @@ export class SpaceSyncGateway
         : lifecycle === 'restore'
           ? 'Doc.Restore'
           : 'Doc.Delete';
+    const aliases = await this.docReader.getDocIdAliases(workspaceId);
+    const resolvedDocId = aliases.get(docId) ?? docId;
+    const storageDocId =
+      lifecycle === 'delete' ? (physicalDocId ?? resolvedDocId) : resolvedDocId;
+    const hasStorageIdentityConflict =
+      lifecycle === 'delete' &&
+      storageDocId !== docId &&
+      [...aliases].some(
+        ([logicalId, storageId]) => logicalId !== docId && storageId === docId
+      );
     let output: Record<string, unknown>;
     try {
       output = await this.runtime.executeDomainCommandV1({
         command: 'apply_doc_lifecycle',
         actorUserId,
         workspaceId,
-        docId,
+        docId: storageDocId,
         lifecycle,
+        logicalDocId:
+          lifecycle === 'delete' && storageDocId !== docId ? docId : undefined,
+        requireDeleted:
+          lifecycle === 'delete' &&
+          (hasStorageIdentityConflict ||
+            (physicalDocId !== undefined && storageDocId !== resolvedDocId)),
       });
     } catch (error) {
+      if (hasStorageIdentityConflict && error instanceof NotFound) {
+        throw new BadRequest(
+          'Deleting this document would also delete another document.'
+        );
+      }
       if (backendRuntimeErrorCode(error) === 'domain_permission_denied') {
         throw new DocActionDenied({ action, docId, spaceId: workspaceId });
       }
       throw error;
     }
     const timestamp = Number(output.timestamp);
-    return { timestamp };
+    return {
+      timestamp,
+      ...(lifecycle === 'delete'
+        ? { deletedDocIds: output.deletedDocIds as string[] }
+        : {}),
+    };
   }
 
   /**
@@ -1629,6 +1671,8 @@ export class SpaceSyncGateway
     if (spaceType !== SpaceType.Workspace)
       throw new BadRequest('Workspace state requires a workspace.');
     this.selectAdapter(client, spaceType).assertIn(spaceId);
+    if (this.socketProtocolVersions.get(client.id) !== 2)
+      throw new BadRequest('Workspace state requires sync protocol 2.');
     return { data: await this.runtime.getWorkspaceStateV1(spaceId, user.id) };
   }
 
@@ -1727,7 +1771,7 @@ abstract class SyncSocketAdapter {
     if (!this.client.rooms.has(this.room(spaceId, roomType))) {
       throw new NotInSpace({ spaceId });
     }
-    if (this.protocolVersion() !== 2)
+    if (this.protocolVersion() !== 1 && this.protocolVersion() !== 2)
       throw new BadRequest('Sync protocol upgrade required.');
   }
 

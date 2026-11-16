@@ -21,9 +21,9 @@ pub(super) use types::{RuntimeAggregateRequest, RuntimeSearchRequest};
 use worker::{reconcile_workspace, sweep_generation_orphans};
 
 use super::{
-  blocking, is_ordinary_workspace_doc, load_workspace_doc_states_in,
+  LegacyWorkspace, blocking, is_ordinary_workspace_doc, load_legacy_workspace_in, load_workspace_doc_states_in,
   permission::{AuthorizedSearchScope, DocReadScope, PermissionAuthorizer, PermissionTelemetry, SearchActor},
-  webpki_tls_config, workspace_lifecycle_completed,
+  webpki_tls_config, workspace_lifecycle_active_in, workspace_lifecycle_completed,
 };
 
 const SCHEMA_FINGERPRINT: i32 = 1;

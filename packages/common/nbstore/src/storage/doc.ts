@@ -76,6 +76,7 @@ export type DocLifecycle = 'trash' | 'restore' | 'delete';
 
 export interface DocLifecycleResult {
   timestamp: Date;
+  deletedDocIds?: string[];
 }
 
 export interface Editor {
@@ -101,7 +102,7 @@ export interface DocStorage extends Storage {
   readonly localReservedDocIds?: readonly string[];
   getWorkspaceState?(): Promise<WorkspaceState>;
   subscribeWorkspaceStateInvalidation?(callback: () => void): () => void;
-  subscribeDocDelete?(callback: () => void): () => void;
+  subscribeDocDelete?(callback: (docId: string) => void): () => void;
   readonly spaceId: string;
   /** Whether sync clocks can be reused across connections. Defaults to persistent. */
   readonly syncMetadataScope?: 'connection' | 'persistent';
@@ -214,7 +215,7 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
     };
   }
 
-  subscribeDocDelete(callback: () => void) {
+  subscribeDocDelete(callback: (docId: string) => void) {
     this.event.on('delete', callback);
     return () => {
       this.event.off('delete', callback);
@@ -241,7 +242,7 @@ export abstract class DocStorageBase<Opts = {}> implements DocStorage {
     };
   }
 
-  protected emit(event: 'delete'): void;
+  protected emit(event: 'delete', docId: string): void;
   protected emit(event: 'update', update: DocRecord, origin?: string): void;
   protected emit(
     event: 'snapshot',

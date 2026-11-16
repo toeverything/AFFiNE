@@ -297,11 +297,7 @@ export class BackendRuntimeCoreOperations {
   }): Promise<{ timestamp: number; created: boolean }> {
     return await this.measured(
       'appendWorkspaceDocUpdatesV1',
-      runtime =>
-        runtime.appendWorkspaceDocUpdatesV1({
-          ...input,
-          protocolVersion: input.protocolVersion ?? 2,
-        }),
+      runtime => runtime.appendWorkspaceDocUpdatesV1(input),
       { workspaceId: input.workspaceId, docId: input.docId }
     );
   }
@@ -335,10 +331,25 @@ export class BackendRuntimeCoreOperations {
     );
   }
 
-  ensureWorkspaceLifecycleV1(workspaceId: string) {
+  getWorkspaceLifecycleActiveV1() {
+    return this.measured('getWorkspaceLifecycleActiveV1', runtime =>
+      runtime.getWorkspaceLifecycleActiveV1()
+    );
+  }
+
+  ensureWorkspaceLifecycleV1(workspaceId: string, protocolVersion?: 1 | 2) {
     return this.measured(
       'ensureWorkspaceLifecycleV1',
-      () => this.workspaceLifecycle.ensure(workspaceId),
+      async () => {
+        const active = await this.getWorkspaceLifecycleActiveV1();
+        if (
+          protocolVersion !== undefined &&
+          active !== (protocolVersion === 2)
+        ) {
+          throw new WorkspaceSyncUnavailable();
+        }
+        if (active) await this.workspaceLifecycle.ensure(workspaceId);
+      },
       { workspaceId }
     );
   }

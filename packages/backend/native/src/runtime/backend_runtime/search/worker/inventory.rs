@@ -2,8 +2,9 @@ use sqlx::Row;
 
 use super::{
   DOCUMENT_PROJECTION_FAILED, LEASE_SECONDS, ProjectionExpectation, RECONCILE_BATCH, WorkspacePhase,
-  WorkspaceReconcileContext, WorkspaceStep, is_ordinary_workspace_doc, load_workspace_doc_states_in,
-  provider_projection_matches, renew_workspace_lease, upsert_document,
+  WorkspaceReconcileContext, WorkspaceStep, is_ordinary_workspace_doc, load_legacy_workspace_in,
+  load_workspace_doc_states_in, provider_projection_matches, renew_workspace_lease, upsert_document,
+  workspace_lifecycle_active_in,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 
@@ -45,6 +46,16 @@ impl DocumentReconcilePhase {
 }
 
 async fn active_document_ids(connection: &mut sqlx::PgConnection, workspace_id: &str) -> RuntimeResult<Vec<String>> {
+  if !workspace_lifecycle_active_in(connection).await? {
+    let legacy = load_legacy_workspace_in(connection, workspace_id).await?;
+    return Ok(
+      legacy
+        .active_doc_ids()
+        .into_iter()
+        .filter(|id| is_ordinary_workspace_doc(workspace_id, id))
+        .collect(),
+    );
+  }
   Ok(
     load_workspace_doc_states_in(connection, workspace_id)
       .await?

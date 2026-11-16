@@ -69,7 +69,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     editorId: string,
     expectedPermissionGeneration?: number,
     writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
-    protocolVersion = 2
+    protocolVersion?: number
   ) {
     return await this.pushDocUpdatesWithContract(
       workspaceId,
@@ -113,7 +113,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
           writeIntent: 'update_doc' | 'create_doc';
 
           expectedPermissionGeneration?: number;
-          protocolVersion: number;
+          protocolVersion?: number;
         }
       | { trusted: true }
   ) {

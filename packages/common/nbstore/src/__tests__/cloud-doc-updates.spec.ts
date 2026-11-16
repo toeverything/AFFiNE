@@ -1,7 +1,14 @@
 import { describe, expect, test, vi } from 'vitest';
+import {
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
 import { CloudAwarenessStorage } from '../impls/cloud/awareness';
 import { CloudDocStorage } from '../impls/cloud/doc';
+import { createIdConverter } from '../utils/id-converter';
 
 const base64UpdateA = 'AQID';
 const base64UpdateB = 'BAUG';
@@ -9,6 +16,8 @@ const base64UpdateB = 'BAUG';
 class FakeSocket {
   connected = true;
   workspaceSyncActive = true;
+  protocolVersion = 2;
+  rootUpdate = 'AAA=';
   readonly joinedDocs = new Set<string>();
   readonly emitted: Array<{ event: string; payload: unknown }> = [];
   readonly handlers = new Map<string, (...args: unknown[]) => void>();
@@ -55,10 +64,12 @@ class FakeSocket {
       docId?: string;
       spaces?: { docId?: string }[];
       intent?: 'create' | 'update';
+      protocolVersion?: number;
     }
   ) {
     this.emitted.push({ event, payload });
     if (event === 'space:join-batch') {
+      this.protocolVersion = payload.protocolVersion ?? 2;
       if (!this.workspaceSyncActive) {
         return {
           error: {
@@ -75,11 +86,14 @@ class FakeSocket {
       }
     }
     if (event === 'space:load-doc' || event === 'space:push-doc-update') {
-      if (payload.intent !== 'create')
+      if (
+        event === 'space:load-doc' ||
+        (this.protocolVersion === 2 && payload.intent !== 'create')
+      )
         expect(this.joinedDocs.has(payload.docId!)).toBe(true);
       return {
         data: {
-          missing: 'AAA=',
+          missing: payload.docId === 'space-1' ? this.rootUpdate : 'AAA=',
           state: 'AA==',
           timestamp: 1_000,
           accepted: true,
@@ -105,50 +119,21 @@ class FakeSocket {
         },
       };
     return {
-      data: { clientId: 'client-1', success: true, protocolVersion: 2 },
+      data: {
+        clientId: 'client-1',
+        success: true,
+        protocolVersion: this.protocolVersion,
+      },
     };
   }
 }
 
 describe('CloudDocStorage broadcast updates', () => {
-  test('emits updates from batch payload', () => {
-    const storage = new CloudDocStorage({
-      accountId: 'account-1',
-      id: 'space-1',
-      serverBaseUrl: 'http://localhost',
-      isSelfHosted: true,
-      type: 'workspace',
-      readonlyMode: true,
-    });
-
-    (storage as any).connection.idConverter = {
-      oldIdToNewId: (id: string) => id,
-      newIdToOldId: (id: string) => id,
-    };
-
-    const received: Uint8Array[] = [];
-    storage.subscribeDocUpdate(update => {
-      received.push(update.bin);
-    });
-
-    storage.onServerUpdates({
-      spaceType: 'workspace',
-      spaceId: 'space-1',
-      docId: 'doc-1',
-      updates: [base64UpdateA, base64UpdateB],
-      timestamp: Date.now(),
-    });
-
-    expect(received).toEqual([
-      new Uint8Array([1, 2, 3]),
-      new Uint8Array([4, 5, 6]),
-    ]);
-  });
-
-  test('repairs strict invalidation through readable timestamps', async () => {
-    vi.useFakeTimers();
-    try {
+  test.each([1, 2] as const)(
+    'protocol %s accepts updates and clocks from its physical document route',
+    async protocolVersion => {
       const storage = new CloudDocStorage({
+        protocolVersion,
         accountId: 'account-1',
         id: 'space-1',
         serverBaseUrl: 'http://localhost',
@@ -157,7 +142,153 @@ describe('CloudDocStorage broadcast updates', () => {
         readonlyMode: true,
       });
 
-      (storage as any).connection.idConverter = {
+      storage.connection.idConverter = createIdConverter(
+        'space-1',
+        protocolVersion === 1
+          ? new Map([['legacy-doc-1', 'doc-1']])
+          : undefined,
+        protocolVersion === 1 ? new Map([['doc-1', 'legacy-doc-1']]) : undefined
+      );
+
+      const received: Uint8Array[] = [];
+      storage.subscribeDocUpdate(update => {
+        received.push(update.bin);
+      });
+
+      storage.onServerUpdates({
+        spaceType: 'workspace',
+        spaceId: 'space-1',
+        docId: protocolVersion === 1 ? 'legacy-doc-1' : 'doc-1',
+        updates: [base64UpdateA, base64UpdateB],
+        timestamp: 1000,
+      });
+
+      if (protocolVersion === 1) {
+        storage.onServerUpdates({
+          spaceType: 'workspace',
+          spaceId: 'space-1',
+          docId: 'doc-1',
+          updates: [base64UpdateA],
+          timestamp: 10_000,
+        });
+      }
+
+      expect(received).toEqual([
+        new Uint8Array([1, 2, 3]),
+        new Uint8Array([4, 5, 6]),
+      ]);
+      const emitWithAck = vi.fn();
+      Object.defineProperty(storage, 'socket', { value: { emitWithAck } });
+      for (const entries of [
+        [
+          ['legacy-doc-1', 1000],
+          ['doc-1', 2000],
+        ],
+        [
+          ['doc-1', 2000],
+          ['legacy-doc-1', 1000],
+        ],
+      ]) {
+        emitWithAck.mockResolvedValueOnce({
+          data: Object.fromEntries(entries),
+        });
+        expect(await storage.getDocTimestamps()).toEqual(
+          protocolVersion === 1
+            ? { 'doc-1': new Date(1000) }
+            : { 'doc-1': new Date(2000), 'legacy-doc-1': new Date(1000) }
+        );
+      }
+      const selectedId = storage.idConverter.newIdToOldId('doc-1');
+      emitWithAck.mockRejectedValueOnce(new Error('ACK lost'));
+      await expect(
+        storage.applyDocLifecycle('doc-1', 'delete')
+      ).rejects.toThrow('ACK lost');
+      storage.connection.idConverter = createIdConverter('space-1');
+      emitWithAck.mockResolvedValueOnce({
+        data: { timestamp: 2000, deletedDocIds: ['doc-1', selectedId] },
+      });
+      const deletion = await storage.applyDocLifecycle('doc-1', 'delete');
+      expect(deletion.deletedDocIds).toEqual(['doc-1', selectedId]);
+      expect(
+        emitWithAck.mock.calls.slice(-2).map(([, request]) => request)
+      ).toEqual([
+        {
+          spaceType: 'workspace',
+          spaceId: 'space-1',
+          docId: 'doc-1',
+          physicalDocId: selectedId,
+          lifecycle: 'delete',
+        },
+        {
+          spaceType: 'workspace',
+          spaceId: 'space-1',
+          docId: 'doc-1',
+          physicalDocId: selectedId,
+          lifecycle: 'delete',
+        },
+      ]);
+      emitWithAck.mockResolvedValueOnce({
+        error: { name: 'DOC_ACTION_DENIED', message: 'denied' },
+      });
+      await expect(
+        storage.applyDocLifecycle('doc-1', 'delete')
+      ).rejects.toMatchObject({ name: 'DOC_ACTION_DENIED' });
+      storage.connection.idConverter = createIdConverter(
+        'space-1',
+        new Map([['new-body', 'doc-1']]),
+        new Map([['doc-1', 'new-body']])
+      );
+      emitWithAck.mockResolvedValueOnce({
+        error: { name: 'INTERNAL_SERVER_ERROR', message: 'uncertain' },
+      });
+      await expect(
+        storage.applyDocLifecycle('doc-1', 'delete')
+      ).rejects.toMatchObject({ name: 'INTERNAL_SERVER_ERROR' });
+      expect(emitWithAck.mock.lastCall?.[1].physicalDocId).toBe('new-body');
+      storage.connection.idConverter = createIdConverter('space-1');
+      emitWithAck.mockResolvedValueOnce({
+        data: { timestamp: 2000, deletedDocIds: ['doc-1', 'new-body'] },
+      });
+      await storage.applyDocLifecycle('doc-1', 'delete');
+      expect(emitWithAck.mock.lastCall?.[1].physicalDocId).toBe('new-body');
+      storage.connection.idConverter = createIdConverter(
+        'space-1',
+        new Map([[selectedId, 'doc-1']]),
+        new Map([['doc-1', selectedId]])
+      );
+      vi.useFakeTimers();
+      try {
+        emitWithAck.mockResolvedValueOnce({
+          data: { [protocolVersion === 1 ? 'legacy-doc-1' : 'doc-1']: 1500 },
+        });
+        storage.onServerInvalidation({
+          spaceType: 'workspace',
+          spaceId: 'space-1',
+          timestamp: 1500,
+        });
+        await vi.advanceTimersByTimeAsync(50);
+        expect(received).toHaveLength(3);
+        expect(received[2]).toEqual(new Uint8Array());
+      } finally {
+        vi.useRealTimers();
+      }
+    }
+  );
+
+  test('repairs strict invalidation through readable timestamps', async () => {
+    vi.useFakeTimers();
+    try {
+      const storage = new CloudDocStorage({
+        protocolVersion: 2,
+        accountId: 'account-1',
+        id: 'space-1',
+        serverBaseUrl: 'http://localhost',
+        isSelfHosted: true,
+        type: 'workspace',
+        readonlyMode: true,
+      });
+
+      storage.connection.idConverter = {
         oldIdToNewId: (id: string) => id,
         newIdToOldId: (id: string) => id,
       };
@@ -211,78 +342,125 @@ describe('CloudDocStorage broadcast updates', () => {
     }
   });
 
-  test('batch route joins the workspace and applies lifecycle commands', async () => {
-    vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
-    const fakeSocket = new FakeSocket();
-    const disconnect = vi.fn();
-    const storage = new CloudDocStorage({
-      accountId: 'account-1',
-      id: 'space-1',
-      serverBaseUrl: 'http://localhost',
-      isSelfHosted: true,
-      type: 'workspace',
-      readonlyMode: true,
-    });
-    const connection = storage.connection as any;
+  test.each([1, 2] as const)(
+    'protocol %s batch route joins the workspace and applies its document contract',
+    async protocolVersion => {
+      vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
+      const fakeSocket = new FakeSocket();
+      const root = new YDoc();
+      const pages = new YArray();
+      root.getMap('meta').set('pages', pages);
+      pages.push([new YMap([['id', 'doc-1']])]);
+      root.getMap('spaces').set('doc-1', new YDoc({ guid: 'legacy-doc-1' }));
+      fakeSocket.rootUpdate = Buffer.from(encodeStateAsUpdate(root)).toString(
+        'base64'
+      );
+      root.destroy();
+      const disconnect = vi.fn();
+      const storage = new CloudDocStorage({
+        protocolVersion,
+        accountId: 'account-1',
+        id: 'space-1',
+        serverBaseUrl: 'http://localhost',
+        isSelfHosted: true,
+        type: 'workspace',
+        readonlyMode: true,
+      });
+      const connection = storage.connection;
 
-    Object.defineProperty(connection, 'manager', {
-      configurable: true,
-      value: {
-        connect: () => ({ socket: fakeSocket, disconnect }),
-      },
-    });
-    const inner = await connection.doConnect();
-    connection._inner = inner;
-    await storage.getDocSnapshot('doc-1');
-    await storage.getDocDiff('doc-2');
-    await storage.getDocTimestamp('doc-3');
-    await storage.pushDocUpdate({
-      docId: 'doc-4',
-      bin: new Uint8Array([0, 0]),
-    });
-    await storage.pushDocUpdate({
-      docId: 'new-doc',
-      bin: new Uint8Array([0, 0]),
-      intent: 'create',
-    });
-    expect(fakeSocket.joinedDocs.has('new-doc')).toBe(false);
-    expect(await storage.getWorkspaceState()).toEqual({
-      docs: [
-        {
-          docId: 'doc-1',
-          timestamp: 1000,
-          lifecycle: 'trashed',
-          lifecycleChangedAt: 1200,
+      Object.defineProperty(connection, 'manager', {
+        configurable: true,
+        value: {
+          connect: () => ({ socket: fakeSocket, disconnect }),
         },
-      ],
-      clocks: { 'space-1': 900 },
-    });
-    const lifecycle = await storage.applyDocLifecycle('doc-1', 'trash');
-    await expect(storage.getDocSnapshot('denied')).rejects.toMatchObject({
-      name: 'DOC_ACTION_DENIED',
-    });
-    fakeSocket.joinedDocs.delete('doc-1');
-    await storage.getDocDiff('doc-1');
-    connection.doDisconnect(inner);
-    expect({ emitted: fakeSocket.emitted, lifecycle }).toMatchSnapshot({
-      lifecycle: {
-        timestamp: expect.any(Date),
-      },
-    });
+      });
+      const inner = await connection.doConnect();
+      Object.defineProperty(connection, '_inner', { value: inner });
+      await storage.getDocSnapshot('doc-1');
+      await storage.getDocDiff('doc-2');
+      await storage.getDocTimestamp('doc-3');
+      await storage.pushDocUpdate({
+        docId: 'doc-4',
+        bin: new Uint8Array([0, 0]),
+      });
+      await storage.pushDocUpdate({
+        docId: 'new-doc',
+        bin: new Uint8Array([0, 0]),
+        intent: 'create',
+      });
+      expect(fakeSocket.joinedDocs.has('new-doc')).toBe(false);
+      expect(
+        fakeSocket.emitted
+          .filter(entry => entry.event === 'space:push-doc-update')
+          .map(entry => entry.payload)
+      ).toEqual([
+        expect.objectContaining({
+          docId: 'doc-4',
+          intent: protocolVersion === 1 ? 'create' : 'update',
+        }),
+        expect.objectContaining({ docId: 'new-doc', intent: 'create' }),
+      ]);
+      expect(await storage.getWorkspaceState()).toEqual({
+        docs: [
+          {
+            docId: 'doc-1',
+            timestamp: 1000,
+            lifecycle: 'trashed',
+            lifecycleChangedAt: 1200,
+          },
+        ],
+        clocks: { 'space-1': 900 },
+      });
+      const lifecycle =
+        protocolVersion === 2
+          ? await storage.applyDocLifecycle('doc-1', 'trash')
+          : undefined;
+      expect(!!storage.workspaceStateScope).toBe(protocolVersion === 2);
+      expect(storage.idConverter.newIdToOldId('doc-1')).toBe(
+        protocolVersion === 1 ? 'legacy-doc-1' : 'doc-1'
+      );
+      await expect(storage.getDocSnapshot('denied')).rejects.toMatchObject({
+        name: 'DOC_ACTION_DENIED',
+      });
+      fakeSocket.joinedDocs.delete('doc-1');
+      await storage.getDocDiff('doc-1');
+      connection.doDisconnect(inner);
+      expect({ emitted: fakeSocket.emitted, lifecycle }).toMatchSnapshot(
+        lifecycle ? { lifecycle: { timestamp: expect.any(Date) } } : {}
+      );
 
-    expect(disconnect).toHaveBeenCalledOnce();
-    vi.unstubAllGlobals();
-  });
+      expect(disconnect).toHaveBeenCalledOnce();
+      vi.unstubAllGlobals();
+    }
+  );
 
   test('awareness joins active documents through the batch route', async () => {
     vi.stubGlobal('BUILD_CONFIG', { appVersion: '0.27.5' });
     const fakeSocket = new FakeSocket();
     const storage = new CloudAwarenessStorage({
+      protocolVersion: 2,
       id: 'space-1',
       serverBaseUrl: 'http://localhost',
       isSelfHosted: true,
       type: 'workspace',
     });
+
+    const docStorage = new CloudDocStorage({
+      accountId: 'account-1',
+      id: 'space-1',
+      serverBaseUrl: 'http://localhost',
+      isSelfHosted: true,
+      type: 'workspace',
+    });
+    docStorage.connection.idConverter = createIdConverter(
+      'space-1',
+      new Map([['legacy-a', 'doc-a']]),
+      new Map([['doc-a', 'legacy-a']])
+    );
+    vi.spyOn(docStorage.connection, 'waitForConnected').mockResolvedValue(
+      undefined
+    );
+    storage.bindDocStorage(docStorage);
 
     Object.defineProperty(storage, 'connection', {
       configurable: true,
@@ -321,6 +499,7 @@ describe('CloudDocStorage broadcast updates', () => {
     const recoverySocket = new FakeSocket();
     recoverySocket.workspaceSyncActive = false;
     const recovery = new CloudAwarenessStorage({
+      protocolVersion: 2,
       id: 'space-1',
       serverBaseUrl: 'http://localhost',
       isSelfHosted: true,

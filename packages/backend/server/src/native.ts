@@ -446,6 +446,8 @@ export type DomainCommandInputV1 =
       workspaceId: string;
       docId: string;
       lifecycle: 'trash' | 'restore' | 'delete';
+      logicalDocId?: string;
+      requireDeleted?: boolean;
     }
   | {
       command: 'append_root_update';

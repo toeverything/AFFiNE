@@ -10,6 +10,7 @@ use super::{
   domain_command::{invalidate_workspace_inventory_in, lock_workspace_doc_update},
   is_ordinary_workspace_doc, load_current_doc_parts_in, load_workspace_doc_states_in, merge_current_doc,
   permission::PermissionAuthorizer,
+  workspace_lifecycle_active_in,
 };
 
 #[napi_derive::napi(object)]
@@ -59,15 +60,8 @@ pub(in crate::runtime) async fn completed(connection: &mut PgConnection, workspa
   .map_err(|error| RuntimeError::database("load workspace lifecycle migration", error))
 }
 
-async fn ensure_migration_active(connection: &mut PgConnection) -> RuntimeResult<()> {
-  let active: bool = sqlx::query_scalar(
-    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' \
-     AND scope='global' AND status='active')",
-  )
-  .fetch_one(connection)
-  .await
-  .map_err(|error| RuntimeError::database("load workspace lifecycle activation", error))?;
-  if !active {
+pub(in crate::runtime) async fn ensure_migration_active(connection: &mut PgConnection) -> RuntimeResult<()> {
+  if !workspace_lifecycle_active_in(connection).await? {
     return Err(RuntimeError::invalid_state("workspace_lifecycle_not_active"));
   }
   Ok(())
@@ -75,6 +69,17 @@ async fn ensure_migration_active(connection: &mut PgConnection) -> RuntimeResult
 
 #[napi_derive::napi]
 impl BackendRuntime {
+  #[napi]
+  pub async fn get_workspace_lifecycle_active_v1(&self) -> Result<bool> {
+    let mut connection = self
+      .pool()
+      .await?
+      .acquire()
+      .await
+      .map_err(|error| RuntimeError::database("acquire workspace lifecycle connection", error))?;
+    Ok(workspace_lifecycle_active_in(&mut connection).await?)
+  }
+
   #[napi]
   pub async fn activate_workspace_lifecycle_v1(&self) -> Result<bool> {
     sqlx::query(
