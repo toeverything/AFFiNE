@@ -12,7 +12,7 @@ pub(crate) mod object_storage;
 mod storage_lifecycle;
 pub(in crate::runtime) use document_state::{
   WorkspaceDocState, ensure_doc_not_deleted_in, ensure_workspace_sync_protocol_in, is_ordinary_workspace_doc,
-  load_doc_states_in, load_workspace_doc_states_in, load_workspace_doc_states_page_in,
+  load_doc_states_in, load_workspace_doc_states_in, load_workspace_doc_states_page_in, workspace_lifecycle_active_in,
 };
 use storage_lifecycle::{
   StorageOperation, lock_workspace_storage_shared_transaction, try_lock_workspace_storage_shared_transaction,

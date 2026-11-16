@@ -10,15 +10,20 @@ import { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
 import { WorkspaceImpl } from './workspace';
 
-test.each([true, false])(
-  'workspace public mode %s selects its document identity source',
-  isSharedMode => {
+test.each([
+  [true, false],
+  [false, false],
+  [false, true],
+])(
+  'workspace public mode %s and inventory %s select its document identity source',
+  (isSharedMode, usesWorkspaceState) => {
     const framework = new Framework();
     framework
       .service(FeatureFlagService, {} as FeatureFlagService)
       .scope(WorkspaceScope)
       .service(WorkspaceEngineService, {
         engine: {
+          usesWorkspaceState,
           doc: {
             workspaceState$: new BehaviorSubject(null),
             connectDoc: vi.fn(),
@@ -52,9 +57,11 @@ test.each([true, false])(
     workspace.rootYDoc.getMap('meta').set('pages', pages);
     pages.push([new YMap<unknown>([['id', 'public-doc']])]);
     expect(workspace.docCollection.meta.docMetas.map(doc => doc.id)).toEqual(
-      isSharedMode ? ['public-doc'] : []
+      isSharedMode || !usesWorkspaceState ? ['public-doc'] : []
     );
-    expect(!!workspace.docCollection.getDoc('public-doc')).toBe(isSharedMode);
+    expect(!!workspace.docCollection.getDoc('public-doc')).toBe(
+      isSharedMode || !usesWorkspaceState
+    );
     scope.dispose();
   }
 );

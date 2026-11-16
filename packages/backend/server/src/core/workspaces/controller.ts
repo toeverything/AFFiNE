@@ -218,7 +218,11 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    const docId = canonicalizeDocumentIdentity(guid, ws);
+    const identity = canonicalizeDocumentIdentity(guid, ws);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(ws, identity.docId),
+      ws
+    );
     if (docId.isWorkspace) {
       await this.ac
         .user(user?.id ?? 'anonymous')
@@ -291,6 +295,7 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
@@ -312,6 +317,7 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
@@ -352,6 +358,7 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
@@ -363,7 +370,10 @@ export class WorkspacesController {
     const publicDocs = await this.models.doc.findPublics(workspaceId);
     const publicRootDoc = buildPublicRootDoc(
       Buffer.from(rootDoc.bin),
-      publicDocs.map(doc => ({ id: doc.docId, title: doc.title ?? undefined }))
+      publicDocs.map(doc => ({
+        id: doc.docId,
+        title: doc.title ?? undefined,
+      }))
     );
 
     res.setHeader('content-type', 'application/octet-stream');
@@ -379,7 +389,11 @@ export class WorkspacesController {
     @Param('timestamp') timestamp: string,
     @Res() res: Response
   ) {
-    const docId = canonicalizeDocumentIdentity(guid, ws);
+    const identity = canonicalizeDocumentIdentity(guid, ws);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(ws, identity.docId),
+      ws
+    );
     const ts = new Date(timestamp);
     if (Number.isNaN(ts.getTime())) {
       throw new InvalidHistoryTimestamp({ timestamp });

@@ -1303,40 +1303,50 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
     { message: 'failed' }
   );
 
-  const adapter = new NativeProviderAdapter(async function* () {
-    yield {
-      type: 'citation',
-      index: 1,
-      url: 'https://affine.pro',
-    };
-    yield {
-      type: 'tool_result',
-      call_id: 'call-1',
-      name: 'artifact_read',
-      arguments: {},
-      output: {
-        artifactId: 'artifact-1',
-        fileName: 'notes.txt',
-        fileType: 'text/plain',
-      },
-    };
-    yield {
-      type: 'tool_result',
-      call_id: 'call-2',
-      name: 'frontend_read_selection',
-      arguments: {},
-      output: {
-        text: 'live content',
-        source: {
-          type: 'document',
-          workspace_id: 'workspace-1',
-          doc_id: 'doc-1',
-          revision: 'state-1',
+  const adapter = new NativeProviderAdapter(
+    async function* () {
+      yield {
+        type: 'citation',
+        index: 1,
+        url: 'https://affine.pro',
+      };
+      yield {
+        type: 'tool_result',
+        call_id: 'call-1',
+        name: 'artifact_read',
+        arguments: {},
+        output: {
+          artifactId: 'artifact-1',
+          fileName: 'notes.txt',
+          fileType: 'text/plain',
         },
+      };
+      yield {
+        type: 'tool_result',
+        call_id: 'call-2',
+        name: 'frontend_read_selection',
+        arguments: {},
+        output: {
+          text: 'live content',
+          source: {
+            type: 'document',
+            workspace_id: 'workspace-1',
+            doc_id: 'doc-1',
+            revision: 'state-1',
+          },
+        },
+      };
+      yield { type: 'done' };
+    },
+    {
+      formatDocumentFootnotes: async documents => {
+        t.is(documents[0].doc_id, 'doc-1');
+        return formatDocumentFootnotes(
+          documents.map(document => ({ ...document, doc_id: 'logical-doc' }))
+        );
       },
-    };
-    yield { type: 'done' };
-  });
+    }
+  );
   const streamObjects = [];
   for await (const item of adapter.streamObject({
     model: 'test',
@@ -1346,7 +1356,7 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
   }
   t.deepEqual(streamObjects.at(-1), {
     type: 'text-delta',
-    textDelta: '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"doc-1"}',
+    textDelta: '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"logical-doc"}',
   });
   const streamOutput = streamObjects
     .filter(item => item.type === 'text-delta')
@@ -1355,6 +1365,11 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
   t.true(streamOutput.includes('"url":"https%3A%2F%2Faffine.pro"'));
   t.true(streamOutput.includes('[^attachment-1]'));
   t.true(streamOutput.includes('"artifactId":"artifact-1"'));
+
+  let mappedText = '';
+  for await (const chunk of adapter.streamText({ model: 'test', messages: [] }))
+    mappedText += chunk;
+  t.true(mappedText.includes('[^doc-1]: {"type":"doc","docId":"logical-doc"}'));
 
   const textAdapter = new NativeProviderAdapter(async function* () {
     yield {

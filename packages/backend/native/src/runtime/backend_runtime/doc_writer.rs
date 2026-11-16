@@ -668,9 +668,41 @@ mod tests {
       actor_user_id: user_id.clone(),
       write_intent: intent,
 
-      protocol_version: Some(2),
+      protocol_version: None,
       expected_permission_generation: None,
     };
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await?;
+    assert!(!runtime.get_workspace_lifecycle_active_v1().await?);
+    let legacy_protocol_id = format!("legacy-protocol-{suffix}");
+    let mut legacy_input = input(&legacy_protocol_id, WorkspaceDocWriteIntentV1::CreateDoc);
+    legacy_input.protocol_version = Some(1);
+    assert!(runtime.append_workspace_doc_updates_v1(legacy_input).await?.created);
+    let mut inactive_input = input(&legacy_protocol_id, WorkspaceDocWriteIntentV1::UpdateDoc);
+    inactive_input.protocol_version = Some(2);
+    assert!(
+      runtime
+        .append_workspace_doc_updates_v1(inactive_input)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("workspace_lifecycle_not_active")
+    );
+    for lifecycle in ["trash", "restore", "delete"] {
+      assert!(runtime.execute_domain_command_v1(serde_json::json!({"command":"apply_doc_lifecycle","actorUserId":user_id,"workspaceId":workspace_id,"docId":legacy_protocol_id,"lifecycle":lifecycle})).await.unwrap_err().to_string().contains("workspace_lifecycle_not_active"));
+    }
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM workspace_pages WHERE workspace_id=$1 AND page_id=$2")
+        .bind(&workspace_id)
+        .bind(&legacy_protocol_id)
+        .fetch_one(&pool)
+        .await?,
+      0
+    );
     let (first, retry) = tokio::join!(
       runtime.append_workspace_doc_updates_v1(input(&creating_doc_id, WorkspaceDocWriteIntentV1::CreateDoc)),
       runtime.append_workspace_doc_updates_v1(input(&creating_doc_id, WorkspaceDocWriteIntentV1::CreateDoc))
@@ -805,6 +837,28 @@ mod tests {
     .bind(&creating_doc_id)
     .execute(&pool)
     .await?;
+    assert!(runtime.activate_workspace_lifecycle_v1().await?);
+    assert!(runtime.get_workspace_lifecycle_active_v1().await?);
+    let mut legacy_input = input(&legacy_protocol_id, WorkspaceDocWriteIntentV1::UpdateDoc);
+    legacy_input.protocol_version = Some(1);
+    assert!(
+      runtime
+        .append_workspace_doc_updates_v1(legacy_input)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("sync_protocol_upgrade_required")
+    );
+    let mut unmigrated_input = input(&legacy_protocol_id, WorkspaceDocWriteIntentV1::UpdateDoc);
+    unmigrated_input.protocol_version = Some(2);
+    assert!(
+      runtime
+        .append_workspace_doc_updates_v1(unmigrated_input)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("workspace_lifecycle_not_active")
+    );
     for lifecycle in ["trash", "restore", "trash", "delete"] {
       let output = runtime.execute_domain_command_v1(serde_json::json!({"command":"apply_doc_lifecycle","actorUserId":user_id,"workspaceId":workspace_id,"docId":creating_doc_id,"lifecycle":lifecycle})).await?;
       assert!(output.get("rootUpdate").is_none());
@@ -1067,8 +1121,17 @@ mod tests {
         .any(|doc| doc["docId"] == bound_id && doc["lifecycle"].is_null())
     );
     assert!(!docs.iter().any(|doc| doc["docId"] == creating_doc_id));
+    let mut current = input(&bound_id, WorkspaceDocWriteIntentV1::UpdateDoc);
+    current.protocol_version = Some(2);
+    assert!(!runtime.append_workspace_doc_updates_v1(current).await?.created);
+    assert!(
+      !runtime
+        .append_workspace_doc_updates_v1(input(&bound_id, WorkspaceDocWriteIntentV1::UpdateDoc))
+        .await?
+        .created
+    );
     let mut old = input(&bound_id, WorkspaceDocWriteIntentV1::UpdateDoc);
-    old.protocol_version = None;
+    old.protocol_version = Some(1);
     assert!(
       runtime
         .append_workspace_doc_updates_v1(old)

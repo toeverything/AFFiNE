@@ -17,7 +17,8 @@ use sqlx::{Postgres, Transaction};
 
 use super::{InvalidationHintV1, SourceIdentity, load_command_quota_in, permission::PermissionAuthorizer};
 pub(super) use super::{
-  append_updates_in, is_ordinary_workspace_doc, load_current_doc_in, lock_permission_generation, validate_doc_updates,
+  append_updates_in, ensure_migration_active, is_ordinary_workspace_doc, load_current_doc_in,
+  lock_permission_generation, validate_doc_updates,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
 

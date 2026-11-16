@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::{
   RuntimeError, RuntimeResult, extraction_file_name, is_ordinary_workspace_doc, load_doc_states_in,
-  lock_workspace_doc_update, lock_workspace_storage_shared,
+  load_legacy_workspace_in, lock_workspace_doc_update, lock_workspace_storage_shared, workspace_lifecycle_active_in,
 };
 use crate::runtime::types::{DocumentEmbeddingProjectionInput, RuntimeWorkspaceArtifact};
 
@@ -27,13 +27,29 @@ pub(super) async fn sync_documents(
   for doc_id in &doc_ids {
     lock_workspace_doc_update(&mut transaction, workspace_id, doc_id).await?;
   }
+  let legacy_active = if workspace_lifecycle_active_in(&mut transaction).await? {
+    None
+  } else {
+    let legacy = load_legacy_workspace_in(&mut transaction, workspace_id).await?;
+    Some((legacy.active_doc_ids(), legacy.revision))
+  };
   let states = load_doc_states_in(&mut transaction, workspace_id, &doc_ids)
     .await?
     .into_iter()
-    .filter(|doc| doc.lifecycle.is_none() && is_ordinary_workspace_doc(workspace_id, &doc.doc_id))
+    .filter(|doc| {
+      is_ordinary_workspace_doc(workspace_id, &doc.doc_id) && (legacy_active.is_some() || doc.lifecycle.is_none())
+    })
     .map(|doc| (doc.doc_id.clone(), doc))
     .collect::<std::collections::BTreeMap<_, _>>();
-  for document in documents {
+  for original in documents {
+    let mut document = original.clone();
+    if legacy_active
+      .as_ref()
+      .is_some_and(|(ids, _)| !ids.contains(&document.doc_id))
+    {
+      document.units.clear();
+      document.skip_reason = Some("legacy_inactive".into());
+    }
     if !states
       .get(&document.doc_id)
       .is_some_and(|state| state.timestamp.timestamp_millis().to_string() == document.revision)
@@ -41,7 +57,7 @@ pub(super) async fn sync_documents(
       continue;
     }
     let projection =
-      serde_json::to_value(document).map_err(|_| RuntimeError::invalid_input("document_projection_invalid"))?;
+      serde_json::to_value(&document).map_err(|_| RuntimeError::invalid_input("document_projection_invalid"))?;
     let source_id = sqlx::query_scalar::<_, Uuid>(
       r#"INSERT INTO embedding_sources(
         id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,
@@ -60,7 +76,10 @@ pub(super) async fn sync_documents(
     .bind(workspace_id)
     .bind(&document.doc_id)
     .bind(&document.revision)
-    .bind(&document.source_hash)
+    .bind(legacy_active.as_ref().map_or_else(
+      || document.source_hash.clone(),
+      |(_, revision)| format!("{revision}:{}", document.source_hash),
+    ))
     .bind(DOCUMENT_RECIPE)
     .bind(projection)
     .fetch_one(&mut *transaction)

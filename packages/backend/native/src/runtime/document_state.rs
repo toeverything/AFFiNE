@@ -83,24 +83,37 @@ pub(in crate::runtime) async fn ensure_doc_not_deleted_in(
   Ok(())
 }
 
+pub(in crate::runtime) async fn workspace_lifecycle_active_in(connection: &mut PgConnection) -> RuntimeResult<bool> {
+  sqlx::query_scalar(
+    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' \
+     AND scope='global' AND status='active')",
+  )
+  .fetch_one(connection)
+  .await
+  .map_err(|error| RuntimeError::database("load workspace lifecycle activation", error))
+}
+
 pub(in crate::runtime) async fn ensure_workspace_sync_protocol_in(
   connection: &mut PgConnection,
   workspace_id: &str,
   protocol_version: Option<u32>,
 ) -> RuntimeResult<()> {
-  if protocol_version == Some(2) {
+  if protocol_version.is_none() {
     return Ok(());
   }
-  let migrated: bool = sqlx::query_scalar(
-    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=$1 \
-     AND status='completed')",
+  let (active, migrated): (bool, bool) = sqlx::query_as(
+    "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' \
+     AND scope='global' AND status='active'), EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE \
+     kind='workspace_doc_lifecycle' AND scope=$1 AND status='completed')",
   )
   .bind(workspace_id)
   .fetch_one(connection)
   .await
   .map_err(|error| RuntimeError::database("load workspace sync protocol", error))?;
-  if migrated {
-    return Err(RuntimeError::invalid_input("sync_protocol_upgrade_required"));
+  match protocol_version {
+    Some(1) if !active => Ok(()),
+    Some(2) if active && migrated => Ok(()),
+    Some(2) => Err(RuntimeError::invalid_state("workspace_lifecycle_not_active")),
+    _ => Err(RuntimeError::invalid_input("sync_protocol_upgrade_required")),
   }
-  Ok(())
 }

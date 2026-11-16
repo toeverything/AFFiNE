@@ -7,8 +7,9 @@ use sqlx::Row;
 use tokio::time::Instant;
 
 use super::{
-  ActiveGeneration, DocReadScope, RuntimeAggregateRequest, RuntimeSearchRequest, SearchActor, SearchRuntime,
-  SearchTable, candidates, compile, compile_aggregate, is_ordinary_workspace_doc, retain_visible_nodes,
+  ActiveGeneration, AuthorizedSearchScope, DocReadScope, LegacyWorkspace, RuntimeAggregateRequest,
+  RuntimeSearchRequest, SearchActor, SearchRuntime, SearchTable, candidates, compile, compile_aggregate,
+  is_ordinary_workspace_doc, load_legacy_workspace_in, retain_visible_nodes, workspace_lifecycle_active_in,
   workspace_lifecycle_completed,
 };
 use crate::runtime::{RuntimeError, RuntimeResult};
@@ -22,7 +23,6 @@ impl SearchRuntime {
     workspace_id: &str,
     request: RuntimeSearchRequest,
   ) -> RuntimeResult<serde_json::Value> {
-    let request = request.into_search_request()?;
     for attempt in 0..=1 {
       let scope = self
         .authorizer
@@ -33,17 +33,16 @@ impl SearchRuntime {
           workspace_id,
         )
         .await?;
-      let (generation, required_permission_version) = self.query_gate(workspace_id).await?;
+      let legacy = self.legacy_query_view(workspace_id).await?;
+      let mut request = request.clone();
+      if let Some(legacy) = &legacy {
+        translate_legacy_query_ids(legacy, &mut request.queries);
+      }
+      let request = request.into_search_request()?;
+      let (generation, required_permission_version) = self.query_gate(workspace_id, legacy.is_none()).await?;
       let dsl = compile(&request, &scope)?;
       let result = self
-        .execute_visible_search(
-          &generation,
-          workspace_id,
-          actor_user_id,
-          &scope.docs,
-          request.table,
-          dsl,
-        )
+        .execute_visible_search(&generation, actor_user_id, &scope, legacy.as_ref(), request.table, dsl)
         .await?;
       if self
         .query_snapshot_is_current(workspace_id, generation.id, required_permission_version)
@@ -61,9 +60,9 @@ impl SearchRuntime {
   pub(super) async fn execute_visible_search(
     &self,
     generation: &ActiveGeneration,
-    workspace_id: &str,
     actor_user_id: &str,
-    scope: &DocReadScope,
+    scope: &AuthorizedSearchScope,
+    legacy: Option<&LegacyWorkspace>,
     table: SearchTable,
     mut dsl: serde_json::Value,
   ) -> RuntimeResult<serde_json::Value> {
@@ -72,7 +71,7 @@ impl SearchRuntime {
     for _ in 0..SEARCH_CANDIDATE_PAGE_BUDGET {
       let mut page = self.execute_search(generation, table, dsl.clone()).await?;
       self
-        .retain_canonically_visible(generation, workspace_id, actor_user_id, scope, &mut page)
+        .retain_canonically_visible(generation, actor_user_id, scope, legacy, &mut page)
         .await?;
       let next_cursor = page.get("nextCursor").cloned().unwrap_or(serde_json::Value::Null);
       let nodes = page
@@ -108,11 +107,12 @@ impl SearchRuntime {
   pub(super) async fn retain_canonically_visible(
     &self,
     generation: &ActiveGeneration,
-    workspace_id: &str,
     actor_user_id: &str,
-    scope: &DocReadScope,
+    scope: &AuthorizedSearchScope,
+    legacy: Option<&LegacyWorkspace>,
     result: &mut serde_json::Value,
   ) -> RuntimeResult<()> {
+    let workspace_id = &scope.workspace_id;
     let candidate_tuples = candidates(result)?;
     let doc_ids = candidate_tuples
       .iter()
@@ -124,6 +124,7 @@ impl SearchRuntime {
     if doc_ids.is_empty() {
       return retain_visible_nodes(result, &BTreeSet::new());
     }
+    let legacy_visible = legacy.map(LegacyWorkspace::active_doc_ids);
     let rows = sqlx::query(
       r#"SELECT state.doc_id,state.published_source_version,state.published_permission_version
          FROM search_projection.document_states state
@@ -131,7 +132,7 @@ impl SearchRuntime {
            ON page.workspace_id=state.workspace_id AND page.page_id=state.doc_id
          WHERE state.generation_id=$1 AND state.workspace_id=$2
            AND state.doc_id=ANY($3) AND state.published_source_exists
-           AND page.lifecycle_state IS NULL
+           AND ($4 OR page.lifecycle_state IS NULL)
            AND (EXISTS(SELECT 1 FROM snapshots source WHERE source.workspace_id=state.workspace_id AND source.guid=state.doc_id)
              OR EXISTS(SELECT 1 FROM updates source WHERE source.workspace_id=state.workspace_id AND source.guid=state.doc_id))
            AND state.last_error IS NULL"#,
@@ -139,10 +140,11 @@ impl SearchRuntime {
     .bind(generation.id)
     .bind(workspace_id)
     .bind(&doc_ids)
+    .bind(legacy.is_some())
     .fetch_all(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("load published search document states", error))?;
-    let published = rows
+    let mut published = rows
       .into_iter()
       .map(|row| {
         let doc_id: String = row
@@ -157,6 +159,9 @@ impl SearchRuntime {
         Ok((doc_id, (source_version, permission_version)))
       })
       .collect::<RuntimeResult<BTreeMap<_, _>>>()?;
+    if let Some(ids) = &legacy_visible {
+      published.retain(|id, _| ids.contains(id));
+    }
     let current_doc_ids = candidate_tuples
       .iter()
       .filter(|candidate| {
@@ -176,7 +181,7 @@ impl SearchRuntime {
           .is_some_and(|tuple| *tuple != (candidate.source_version, candidate.permission_version))
       })
       .count() as u64;
-    let readable = if matches!(scope, DocReadScope::ProjectedAcl(_)) {
+    let readable = if matches!(scope.docs, DocReadScope::ProjectedAcl(_)) {
       self
         .authorizer
         .filter_readable_docs(workspace_id, actor_user_id, current_doc_ids.iter().cloned().collect())
@@ -203,7 +208,8 @@ impl SearchRuntime {
           && published.get(&candidate.doc_id) == Some(&(candidate.source_version, candidate.permission_version))
       })
       .collect::<BTreeSet<_>>();
-    retain_visible_nodes(result, &visible)
+    retain_visible_nodes(result, &visible)?;
+    Ok(())
   }
 
   pub(in crate::runtime::backend_runtime) async fn aggregate_authorized(
@@ -212,7 +218,6 @@ impl SearchRuntime {
     workspace_id: &str,
     request: RuntimeAggregateRequest,
   ) -> RuntimeResult<serde_json::Value> {
-    let request = request.into_aggregate_request()?;
     for attempt in 0..=1 {
       let scope = self
         .authorizer
@@ -223,11 +228,17 @@ impl SearchRuntime {
           workspace_id,
         )
         .await?;
-      let (generation, required_permission_version) = self.query_gate(workspace_id).await?;
+      let legacy = self.legacy_query_view(workspace_id).await?;
+      let mut request = request.clone();
+      if let Some(legacy) = &legacy {
+        translate_legacy_query_ids(legacy, &mut request.queries);
+      }
+      let request = request.into_aggregate_request()?;
+      let (generation, required_permission_version) = self.query_gate(workspace_id, legacy.is_none()).await?;
       let dsl = compile_aggregate(&request, &scope)?;
       let mut result = self.execute_aggregate(&generation, request.table, dsl).await?;
       self
-        .retain_canonically_visible(&generation, workspace_id, actor_user_id, &scope.docs, &mut result)
+        .retain_canonically_visible(&generation, actor_user_id, &scope, legacy.as_ref(), &mut result)
         .await?;
       if self
         .query_snapshot_is_current(workspace_id, generation.id, required_permission_version)
@@ -240,6 +251,19 @@ impl SearchRuntime {
       }
     }
     unreachable!()
+  }
+
+  async fn legacy_query_view(&self, workspace_id: &str) -> RuntimeResult<Option<LegacyWorkspace>> {
+    let mut connection = self
+      .pool
+      .acquire()
+      .await
+      .map_err(|error| RuntimeError::database("load legacy search view", error))?;
+    if workspace_lifecycle_active_in(&mut connection).await? {
+      Ok(None)
+    } else {
+      Ok(Some(load_legacy_workspace_in(&mut connection, workspace_id).await?))
+    }
   }
 
   async fn execute_search(
@@ -320,16 +344,17 @@ impl SearchRuntime {
     );
   }
 
-  async fn query_gate(&self, workspace_id: &str) -> RuntimeResult<(ActiveGeneration, i64)> {
-    let mut connection = self
-      .pool
-      .acquire()
-      .await
-      .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
-    if !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
-      return Err(RuntimeError::SearchIndexNotReady);
+  async fn query_gate(&self, workspace_id: &str, inventory_active: bool) -> RuntimeResult<(ActiveGeneration, i64)> {
+    if inventory_active {
+      let mut connection = self
+        .pool
+        .acquire()
+        .await
+        .map_err(|error| RuntimeError::database("load search migration boundary", error))?;
+      if !workspace_lifecycle_completed(&mut connection, workspace_id).await? {
+        return Err(RuntimeError::SearchIndexNotReady);
+      }
     }
-    drop(connection);
     let generation = self.active_generation().await?;
     let row = sqlx::query(
       r#"SELECT covered,required_permission_version,applied_permission_version,last_error
@@ -387,5 +412,16 @@ impl SearchRuntime {
     .fetch_one(&self.pool)
     .await
     .map_err(|error| RuntimeError::database("recheck search query snapshot", error))
+  }
+}
+
+fn translate_legacy_query_ids(legacy: &LegacyWorkspace, queries: &mut [super::types::RuntimeSearchQuery]) {
+  for query in queries {
+    if matches!(query.field.as_deref(), Some("doc_id" | "docId"))
+      && let Some(id) = query.match_value.as_mut()
+      && let Some(physical) = legacy.aliases.get(id)
+    {
+      *id = physical.clone();
+    }
   }
 }

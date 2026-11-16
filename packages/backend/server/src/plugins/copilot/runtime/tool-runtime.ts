@@ -207,14 +207,19 @@ export class ToolRuntime {
           break;
         }
         case 'docUpdate': {
-          const updateDoc = buildDocUpdateHandler(this.docWriter, this.ac);
+          const updateDoc = buildDocUpdateHandler(
+            this.docWriter,
+            this.ac,
+            this.docReader
+          );
           tools.doc_update = createDocUpdateTool(updateDoc.bind(null, options));
           break;
         }
         case 'docUpdateMeta': {
           const updateDocMeta = buildDocUpdateMetaHandler(
             this.docWriter,
-            this.ac
+            this.ac,
+            this.docReader
           );
           tools.doc_update_meta = createDocUpdateMetaTool(
             updateDocMeta.bind(null, options)

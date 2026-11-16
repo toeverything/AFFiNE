@@ -54,4 +54,3 @@ runs:
         yarn affine @affine/server prisma generate
         yarn affine @affine/server prisma migrate deploy
         yarn affine @affine/server data-migration run
-        yarn affine @affine/server data-migration activate-workspace-lifecycle

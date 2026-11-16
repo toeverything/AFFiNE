@@ -37,7 +37,7 @@ export class DocsStore extends Store {
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
     const workspace = this.workspaceService.workspace;
-    if (workspace.flavour !== 'local') {
+    if (workspace.engine.usesWorkspaceState) {
       workspace.engine.doc
         .createDoc(id)
         .catch(error =>
@@ -84,7 +84,7 @@ export class DocsStore extends Store {
   }
 
   watchDocIds() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.map(doc => doc.id))
       );
@@ -105,7 +105,7 @@ export class DocsStore extends Store {
   }
 
   watchAllDocUpdatedDate() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs =>
           docs.map(doc => ({ id: doc.id, updatedDate: doc.updatedDate }))
@@ -131,7 +131,7 @@ export class DocsStore extends Store {
   }
 
   watchAllDocTagIds() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.map(doc => ({ id: doc.id, tags: doc.tags ?? [] })))
       );
@@ -161,7 +161,7 @@ export class DocsStore extends Store {
   }
 
   watchAllDocCreateDate() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs =>
           docs.map(doc => ({ id: doc.id, createDate: doc.createDate ?? 0 }))
@@ -187,7 +187,7 @@ export class DocsStore extends Store {
   }
 
   watchAllDocTitle() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.map(doc => ({ id: doc.id, title: doc.title ?? '' })))
       );
@@ -211,7 +211,7 @@ export class DocsStore extends Store {
   }
 
   watchNonTrashDocIds() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.filter(doc => !doc.trash).map(doc => doc.id))
       );
@@ -234,7 +234,7 @@ export class DocsStore extends Store {
   }
 
   watchTrashDocIds() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.filter(doc => doc.trash).map(doc => doc.id))
       );
@@ -257,7 +257,7 @@ export class DocsStore extends Store {
   }
 
   watchDocMeta(id: string) {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.watchEffectiveDocMetas().pipe(
         map(docs => docs.find(doc => doc.id === id) ?? {})
       );
@@ -303,7 +303,7 @@ export class DocsStore extends Store {
   }
 
   watchDocListReady() {
-    if (this.workspaceService.workspace.flavour !== 'local') {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
       return this.workspaceService.workspace.engine.doc.workspaceState$.pipe(
         map(state => state?.ready ?? false)
       );
@@ -322,7 +322,7 @@ export class DocsStore extends Store {
     lifecycle: 'trash' | 'restore' | 'delete'
   ) {
     const workspace = this.workspaceService.workspace;
-    if (workspace.flavour === 'local') {
+    if (!workspace.engine.usesWorkspaceState) {
       if (lifecycle === 'delete') {
         workspace.docCollection.removeDoc(id);
       } else {

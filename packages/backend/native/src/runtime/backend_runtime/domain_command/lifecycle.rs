@@ -6,9 +6,9 @@ use serde_json::{Value, json};
 use sqlx::{Postgres, Transaction};
 
 use super::{
-  DocLifecycle, append_updates_in, authorize_domain_after_storage_lock, invalidate_workspace_inventory_in,
-  is_ordinary_workspace_doc, lock_permission_generation, lock_workspace_doc_update, lock_workspace_storage_shared,
-  validate_doc_updates,
+  DocLifecycle, append_updates_in, authorize_domain_after_storage_lock, ensure_migration_active,
+  invalidate_workspace_inventory_in, is_ordinary_workspace_doc, lock_permission_generation, lock_workspace_doc_update,
+  lock_workspace_storage_shared, validate_doc_updates,
 };
 use crate::runtime::{RuntimeError, RuntimeResult, backend_runtime::permission::PermissionAuthorizer};
 
@@ -26,6 +26,7 @@ pub(super) async fn apply(
   }
   lock_workspace_storage_shared(transaction, &workspace_id).await?;
   lock_workspace_doc_update(transaction, &workspace_id, &doc_id).await?;
+  ensure_migration_active(transaction).await?;
   let command = DomainCommand::ApplyDocLifecycle {
     doc_id: doc_id.clone(),
     lifecycle: match lifecycle {

@@ -18,7 +18,7 @@ import {
 } from '../../native';
 import { createTestingApp, TestingApp, TestUser } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   db: PrismaClient;
   app: TestingApp;
   u1: TestUser;
@@ -44,7 +44,9 @@ test.before(async t => {
 });
 
 test.beforeEach(async t => {
-  const { app, db } = t.context;
+  const { app, db, workspace } = t.context;
+  workspace.getDoc.resetBehavior();
+  workspace.getDoc.resolves(null);
   await app.initTestingDB();
   t.context.u1 = await app.signupV1('u1@affine.pro');
 
@@ -332,9 +334,9 @@ test('should not be able to get private workspace with private page', async t =>
 test('should be able to get doc', async t => {
   const { app, workspace: doc } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });
@@ -369,7 +371,7 @@ test('should expose filtered public root doc for shared page', async t => {
   const privateUpdate = addDocToRootDoc(root, 'private-page', 'Private Doc');
   root = mergeUpdates([root, privateUpdate]);
 
-  doc.getDoc.resolves({
+  doc.getDoc.withArgs('private', 'private').resolves({
     spaceId: 'private',
     docId: 'private',
     bin: root,
@@ -414,7 +416,7 @@ test('should expose public doc publish mode through HEAD route', async t => {
 test('should expose public doc binary through public route', async t => {
   const { app, workspace: doc } = t.context;
 
-  doc.getDoc.resolves({
+  doc.getDoc.withArgs('private', 'public').resolves({
     spaceId: 'private',
     docId: 'public',
     bin: Buffer.from([1, 2, 3]),
@@ -432,9 +434,9 @@ test('should expose public doc binary through public route', async t => {
 test('should record doc view when reading doc', async t => {
   const { app, workspace: doc, models } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });
@@ -461,9 +463,9 @@ test('should record doc view when reading doc', async t => {
 test('should be able to change page publish mode', async t => {
   const { app, workspace: doc, models } = t.context;
 
-  doc.getDoc.resolves({
-    spaceId: '',
-    docId: '',
+  doc.getDoc.withArgs('private', 'public').resolves({
+    spaceId: 'private',
+    docId: 'public',
     bin: Buffer.from([0, 0]),
     timestamp: Date.now(),
   });

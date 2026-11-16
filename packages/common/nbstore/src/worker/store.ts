@@ -3,6 +3,9 @@ import { isEqual } from 'lodash-es';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
+import { CloudAwarenessStorage } from '../impls/cloud/awareness';
+import { CloudBlobStorage } from '../impls/cloud/blob';
+import { CloudDocStorage } from '../impls/cloud/doc';
 import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
@@ -88,6 +91,26 @@ export class StoreConsumer {
     return new Storage(opt.opts);
   }
 
+  private createRemote(options: StoreInitOptions['local']) {
+    const remote = new SpaceStorage(
+      Object.fromEntries(
+        Object.entries(options).map(([type, opt]) => [
+          type,
+          this.createStorage(opt),
+        ])
+      )
+    );
+    const doc = remote.get('doc');
+    if (doc instanceof CloudDocStorage) {
+      const blob = remote.get('blob');
+      const awareness = remote.get('awareness');
+      if (blob instanceof CloudBlobStorage) blob.bindDocStorage(doc);
+      if (awareness instanceof CloudAwarenessStorage)
+        awareness.bindDocStorage(doc);
+    }
+    return remote;
+  }
+
   private initWithOptions(init: StoreInitOptions) {
     this.storages = {
       local: new SpaceStorage(
@@ -99,16 +122,7 @@ export class StoreConsumer {
       ),
       remotes: Object.fromEntries(
         Object.entries(init.remotes).map(([peer, opts]) => {
-          return [
-            peer,
-            new SpaceStorage(
-              Object.fromEntries(
-                Object.entries(opts).map(([type, opt]) => {
-                  return [type, this.createStorage(opt)];
-                })
-              )
-            ),
-          ];
+          return [peer, this.createRemote(opts)];
         })
       ),
     };
@@ -141,14 +155,7 @@ export class StoreConsumer {
         if (isEqual(this.initOptions.remotes[id], options)) {
           remotes[id] = storages.remotes[id];
         } else {
-          const remote = new SpaceStorage(
-            Object.fromEntries(
-              Object.entries(options).map(([type, opt]) => [
-                type,
-                this.createStorage(opt),
-              ])
-            )
-          );
+          const remote = this.createRemote(options);
           created.push(remote);
           remotes[id] = remote;
           remote.connect();

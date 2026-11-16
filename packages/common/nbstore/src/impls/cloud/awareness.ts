@@ -4,7 +4,9 @@ import {
   type AwarenessRecord,
   AwarenessStorageBase,
 } from '../../storage/awareness';
+import { createIdConverter } from '../../utils/id-converter';
 import type { SpaceType } from '../../utils/universal-id';
+import type { CloudDocStorage } from './doc';
 import {
   base64ToUint8Array,
   SocketConnection,
@@ -18,6 +20,7 @@ interface CloudAwarenessStorageOptions {
   serverBaseUrl: string;
   type: SpaceType;
   id: string;
+  protocolVersion?: 1 | 2;
 }
 
 export class CloudAwarenessStorage extends AwarenessStorageBase {
@@ -27,9 +30,29 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
     super();
   }
 
+  private docStorage?: CloudDocStorage;
+  private readonly defaultIdConverter = createIdConverter(this.options.id);
+
+  bindDocStorage(storage: CloudDocStorage) {
+    this.docStorage = storage;
+  }
+
+  private get idConverter() {
+    return this.docStorage?.idConverter ?? this.defaultIdConverter;
+  }
+
+  private get protocolVersion() {
+    return (
+      this.docStorage?.protocolVersion ??
+      this.options.protocolVersion ??
+      WORKSPACE_SYNC_PROTOCOL_VERSION
+    );
+  }
+
   connection = new CloudAwarenessConnection(
     this.options,
-    () => this.activeAwarenessIds.size > 0
+    () => this.activeAwarenessIds.size > 0,
+    () => this.protocolVersion
   );
 
   private get socket() {
@@ -50,6 +73,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
     }
 
     const batchPromise = Promise.resolve().then(async () => {
+      await this.docStorage?.connection.waitForConnected();
       while (socket.connected && this.joinPromise === sharedPromise) {
         const pendingIds = [...this.activeAwarenessIds].filter(
           docId => !this.joinedAwarenessIds.has(docId)
@@ -68,12 +92,12 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
             .map(docId => ({
               spaceType: this.options.type,
               spaceId: this.options.id,
-              docId,
+              docId: this.idConverter.newIdToOldId(docId),
             }));
           const response = await socket.emitWithAck('space:join-batch', {
             spaces,
             clientVersion: BUILD_CONFIG.appVersion,
-            protocolVersion: WORKSPACE_SYNC_PROTOCOL_VERSION,
+            protocolVersion: this.protocolVersion,
           });
 
           if (this.joinPromise !== sharedPromise) return;
@@ -84,7 +108,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
           }
           if (
             !response.data.success ||
-            response.data.protocolVersion !== WORKSPACE_SYNC_PROTOCOL_VERSION
+            response.data.protocolVersion !== this.protocolVersion
           ) {
             throw new Error('Awareness join was rejected');
           }
@@ -106,11 +130,12 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
   }
 
   override async update(record: AwarenessRecord): Promise<void> {
+    await this.docStorage?.connection.waitForConnected();
     const encodedUpdate = await uint8ArrayToBase64(record.bin);
     this.socket.emit('space:update-awareness', {
       spaceType: this.options.type,
       spaceId: this.options.id,
-      docId: record.docId,
+      docId: this.idConverter.newIdToOldId(record.docId),
       awarenessUpdate: encodedUpdate,
     });
   }
@@ -144,7 +169,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
       this.socket.emit('space:leave-batch', {
         spaceType: this.options.type,
         spaceId: this.options.id,
-        docIds: [id],
+        docIds: [this.idConverter.newIdToOldId(id)],
       });
     };
 
@@ -170,7 +195,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
       socket.emit('space:load-awarenesses', {
         spaceType: this.options.type,
         spaceId: this.options.id,
-        docId: id,
+        docId: this.idConverter.newIdToOldId(id),
       });
     };
 
@@ -186,7 +211,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
       if (
         spaceId === this.options.id &&
         spaceType === this.options.type &&
-        docId === id
+        this.idConverter.oldIdToNewId(docId) === id
       ) {
         (async () => {
           const socket = listeningSocket;
@@ -197,7 +222,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
             socket.emit('space:update-awareness', {
               spaceType: this.options.type,
               spaceId: this.options.id,
-              docId: record.docId,
+              docId: this.idConverter.newIdToOldId(record.docId),
               awarenessUpdate: encodedUpdate,
             });
           }
@@ -219,7 +244,7 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
       if (
         spaceId === this.options.id &&
         spaceType === this.options.type &&
-        docId === id
+        this.idConverter.oldIdToNewId(docId) === id
       ) {
         onUpdate({
           bin: base64ToUint8Array(awarenessUpdate),
@@ -258,7 +283,8 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
 class CloudAwarenessConnection extends SocketConnection {
   constructor(
     private readonly options: CloudAwarenessStorageOptions,
-    private readonly hasActiveAwareness: () => boolean
+    private readonly hasActiveAwareness: () => boolean,
+    private readonly protocolVersion: () => 1 | 2
   ) {
     super(options.serverBaseUrl, options.isSelfHosted);
   }
@@ -285,7 +311,7 @@ class CloudAwarenessConnection extends SocketConnection {
               { spaceType: this.options.type, spaceId: this.options.id },
             ],
             clientVersion: BUILD_CONFIG.appVersion,
-            protocolVersion: WORKSPACE_SYNC_PROTOCOL_VERSION,
+            protocolVersion: this.protocolVersion(),
           }
         );
         if ('error' in response) {
@@ -295,7 +321,7 @@ class CloudAwarenessConnection extends SocketConnection {
         }
         if (
           !response.data.success ||
-          response.data.protocolVersion !== WORKSPACE_SYNC_PROTOCOL_VERSION
+          response.data.protocolVersion !== this.protocolVersion()
         ) {
           throw new Error('Awareness join was rejected');
         }

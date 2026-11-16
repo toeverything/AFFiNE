@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
-import test, { type ExecutionContext } from 'ava';
+import ava, { type ExecutionContext } from 'ava';
 import Sinon from 'sinon';
 import { io, type Socket as SocketIOClient } from 'socket.io-client';
 import {
@@ -38,6 +38,8 @@ type WebsocketError = {
 };
 
 type WebsocketResponse<T> = { error: WebsocketError } | { data: T };
+
+const test = ava.serial;
 
 const WS_TIMEOUT_MS = 5_000;
 
@@ -724,14 +726,14 @@ test('space:join-batch joins rooms and initializes workspace documents', async t
       await db.workspaceDoc.count({ where: { workspaceId: workspace.id } }),
       0
     );
-    const legacy = getErrorResponse(
+    const legacy = unwrapResponse(
       t,
-      await emitWithAck(ownerSocket, 'space:join-batch', {
+      await emitWithAck<{ success: boolean }>(ownerSocket, 'space:join-batch', {
         ...batch,
         protocolVersion: 1,
       })
     );
-    t.is(legacy.name, 'BAD_REQUEST');
+    t.true(legacy.success);
     t.true(await runtime.activateWorkspaceLifecycleV1());
     t.false(await runtime.activateWorkspaceLifecycleV1());
 
@@ -1137,9 +1139,136 @@ test('partial roots accept edits and ordinary creation uses persisted identity',
     legacyCases.push({ workspaceId: legacyWorkspace.id, docId, duplicateId });
     legacyRoot.destroy();
   }
+  const runtime = app.get(BackendRuntimeProvider);
+  const models = app.get(Models);
+  const { user: collaborator, cookieHeader: collaboratorCookie } =
+    await login(app);
+  await models.workspaceUser.set(
+    workspace.id,
+    collaborator.id,
+    WorkspaceRole.Collaborator,
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
+  );
+  const existingReaderDoc = 'legacy-existing-reader-doc';
+  await createSnapshot(db, {
+    workspaceId: workspace.id,
+    docId: existingReaderDoc,
+    userId: user.id,
+  });
+  await models.doc.setDefaultRole(
+    workspace.id,
+    existingReaderDoc,
+    DocRole.None
+  );
+  await models.docUser.set(
+    workspace.id,
+    existingReaderDoc,
+    collaborator.id,
+    DocRole.Reader
+  );
+  await db.$executeRaw`DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND scope='global'`;
+  await runtime.ensureWorkspaceLifecycleV1(workspace.id);
+  const [checkpoint] = await db.$queryRaw<
+    { count: bigint }[]
+  >`SELECT count(*) AS count FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle' AND scope=${workspace.id}`;
+  t.is(Number(checkpoint.count), 0);
+  const legacySocket = createClient(url, collaboratorCookie);
+  const legacyDocId = 'legacy-new-default-manager-doc';
+  const legacyBatch = {
+    spaces: [
+      { spaceType: 'workspace', spaceId: workspace.id },
+      { spaceType: 'workspace', spaceId: workspace.id, docId: legacyDocId },
+      {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: existingReaderDoc,
+      },
+    ],
+    protocolVersion: 1,
+    clientVersion: '0.27.5',
+  };
   const socket = createClient(url, cookieHeader);
   try {
     await waitForConnect(socket);
+    await waitForConnect(legacySocket);
+    unwrapResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:join-batch', legacyBatch)
+    );
+    const missing = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:load-doc', {
+        spaceType: 'workspace',
+        spaceId: workspace.id,
+        docId: legacyDocId,
+      })
+    );
+    t.is(missing.name, 'DOC_NOT_FOUND');
+    const legacyPush = {
+      spaceType: 'workspace',
+      spaceId: workspace.id,
+      docId: legacyDocId,
+      intent: 'create',
+      update: Buffer.from([0, 0]).toString('base64'),
+    };
+    const legacyCreated = unwrapResponse(
+      t,
+      await emitWithAck<{ created: boolean }>(
+        legacySocket,
+        'space:push-doc-update',
+        legacyPush
+      )
+    );
+    t.true(legacyCreated.created);
+    const beforeDenied = await db.update.count({
+      where: { workspaceId: workspace.id, id: existingReaderDoc },
+    });
+    const deniedCreate = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:push-doc-update', {
+        ...legacyPush,
+        docId: existingReaderDoc,
+      })
+    );
+    t.is(deniedCreate.name, 'ACCESS_DENIED');
+    t.is(
+      await db.update.count({
+        where: { workspaceId: workspace.id, id: existingReaderDoc },
+      }),
+      beforeDenied
+    );
+    for (const lifecycle of ['trash', 'restore', 'delete']) {
+      const denied = getErrorResponse(
+        t,
+        await emitWithAck(legacySocket, 'space:doc-lifecycle', {
+          spaceType: 'workspace',
+          spaceId: workspace.id,
+          docId: legacyDocId,
+          lifecycle,
+        })
+      );
+      t.is(denied.name, 'WORKSPACE_SYNC_UNAVAILABLE');
+    }
+    t.is(
+      await db.workspaceDoc.count({
+        where: { workspaceId: workspace.id, docId: legacyDocId },
+      }),
+      0
+    );
+    t.true(await runtime.activateWorkspaceLifecycleV1());
+    const crossed = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:push-doc-update', legacyPush)
+    );
+    t.is(crossed.name, 'BAD_REQUEST');
+    const rejoin = getErrorResponse(
+      t,
+      await emitWithAck(legacySocket, 'space:join-batch', legacyBatch)
+    );
+    t.is(rejoin.name, 'WORKSPACE_SYNC_UNAVAILABLE');
+    legacySocket.disconnect();
     const joined = unwrapResponse(
       t,
       await emitWithAck<{ protocolVersion: number }>(
@@ -1265,6 +1394,7 @@ test('partial roots accept edits and ordinary creation uses persisted identity',
       );
     }
   } finally {
+    legacySocket.disconnect();
     socket.disconnect();
     root.destroy();
   }

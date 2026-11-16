@@ -118,7 +118,7 @@ interface JoinSpaceBatchEntry {
 interface JoinSpaceBatchMessage {
   spaces: [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];
   clientVersion: string;
-  protocolVersion: 2;
+  protocolVersion: 1 | 2;
 }
 
 interface LeaveSpaceMessage {
@@ -239,7 +239,7 @@ function parseJoinSpaceBatchMessage(message: unknown): JoinSpaceBatchMessage {
   }
 
   const { spaces, clientVersion, protocolVersion } = message;
-  if (protocolVersion !== 2)
+  if (protocolVersion !== 1 && protocolVersion !== 2)
     throw new BadRequest('Sync protocol upgrade required.');
   if (!Array.isArray(spaces) || spaces.length === 0) {
     throw new BadRequest('Space join batch must not be empty.');
@@ -880,10 +880,7 @@ export class SpaceSyncGateway
     if (hint.kind !== 'workspaceInventoryChanged' || !this.server) return;
     const room = `${SpaceType.Workspace}:${Room(hint.workspaceId, 'sync-027')}`;
     for (const client of this.server.sockets.sockets.values()) {
-      if (
-        client.rooms.has(room) &&
-        this.socketProtocolVersions.get(client.id) !== 2
-      )
+      if (client.rooms.has(room) && !this.socketProtocolVersions.has(client.id))
         client.disconnect(true);
     }
     await this.revalidateActiveDocSubscriptions({
@@ -1223,7 +1220,11 @@ export class SpaceSyncGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() message: unknown
   ): Promise<
-    EventResponse<{ clientId: string; success: boolean; protocolVersion: 2 }>
+    EventResponse<{
+      clientId: string;
+      success: boolean;
+      protocolVersion: 1 | 2;
+    }>
   > {
     const { spaces, clientVersion, protocolVersion } =
       parseJoinSpaceBatchMessage(message);
@@ -1237,7 +1238,10 @@ export class SpaceSyncGateway
 
     await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');
     if (first.spaceType === SpaceType.Workspace)
-      await this.runtime.ensureWorkspaceLifecycleV1(first.spaceId);
+      await this.runtime.ensureWorkspaceLifecycleV1(
+        first.spaceId,
+        protocolVersion
+      );
     this.socketProtocolVersions.set(client.id, protocolVersion);
 
     const docSpaces = spaces.filter(
@@ -1629,6 +1633,8 @@ export class SpaceSyncGateway
     if (spaceType !== SpaceType.Workspace)
       throw new BadRequest('Workspace state requires a workspace.');
     this.selectAdapter(client, spaceType).assertIn(spaceId);
+    if (this.socketProtocolVersions.get(client.id) !== 2)
+      throw new BadRequest('Workspace state requires sync protocol 2.');
     return { data: await this.runtime.getWorkspaceStateV1(spaceId, user.id) };
   }
 
@@ -1727,7 +1733,7 @@ abstract class SyncSocketAdapter {
     if (!this.client.rooms.has(this.room(spaceId, roomType))) {
       throw new NotInSpace({ spaceId });
     }
-    if (this.protocolVersion() !== 2)
+    if (this.protocolVersion() !== 1 && this.protocolVersion() !== 2)
       throw new BadRequest('Sync protocol upgrade required.');
   }
 

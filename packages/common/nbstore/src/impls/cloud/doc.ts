@@ -7,7 +7,7 @@ import {
   type DocUpdate,
   SnapshotDocStorageBase,
 } from '../../storage';
-import { createIdConverter } from '../../utils/id-converter';
+import { createIdConverter, getIdConverter } from '../../utils/id-converter';
 import type { SpaceType } from '../../utils/universal-id';
 import {
   base64ToUint8Array,
@@ -23,6 +23,7 @@ interface CloudDocStorageOptions extends DocStorageOptions {
   isSelfHosted: boolean;
   type: SpaceType;
   accountId: string;
+  protocolVersion?: 1 | 2;
   localReservedDocIds?: string[];
 }
 
@@ -42,8 +43,10 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     return this.connection.idConverter;
   }
   readonly spaceType = this.options.type;
+  readonly protocolVersion =
+    this.options.protocolVersion ?? WORKSPACE_SYNC_PROTOCOL_VERSION;
   readonly workspaceStateScope =
-    this.options.type === 'workspace'
+    this.options.type === 'workspace' && this.protocolVersion === 2
       ? JSON.stringify([
           this.options.serverBaseUrl,
           this.options.id,
@@ -92,6 +95,7 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     }
 
     const docId = this.idConverter.oldIdToNewId(message.docId);
+    if (this.idConverter.newIdToOldId(docId) !== message.docId) return;
     this.serverDocTimestamps.set(docId, message.timestamp);
     for (const update of message.updates) {
       this.emit('update', {
@@ -224,13 +228,14 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
       spaceType: this.spaceType,
       spaceId: this.spaceId,
       docId:
-        update.intent === 'create'
+        this.protocolVersion === 1 || update.intent === 'create'
           ? this.idConverter.newIdToOldId(update.docId)
           : await this.connection.joinDoc(
               this.idConverter.newIdToOldId(update.docId)
             ),
       update: await uint8ArrayToBase64(update.bin),
-      intent: update.intent ?? 'update',
+      intent:
+        this.protocolVersion === 1 ? 'create' : (update.intent ?? 'update'),
     });
 
     if ('error' in response) {
@@ -283,7 +288,10 @@ export class CloudDocStorage extends SnapshotDocStorageBase<CloudDocStorageOptio
     }
 
     return Object.entries(response.data).reduce((ret, [docId, timestamp]) => {
-      ret[this.idConverter.oldIdToNewId(docId)] = new Date(timestamp);
+      const normalizedId = this.idConverter.oldIdToNewId(docId);
+      if (this.idConverter.newIdToOldId(normalizedId) === docId) {
+        ret[normalizedId] = new Date(timestamp);
+      }
       return ret;
     }, {} as DocClocks);
   }
@@ -339,7 +347,9 @@ class CloudDocStorageConnection extends SocketConnection {
     super(options.serverBaseUrl, options.isSelfHosted);
   }
 
-  readonly idConverter = createIdConverter(this.options.id);
+  idConverter = createIdConverter(this.options.id);
+  readonly protocolVersion =
+    this.options.protocolVersion ?? WORKSPACE_SYNC_PROTOCOL_VERSION;
   private readonly joinedDocIds = new Set<string>();
 
   async joinDoc(docId: string, socket: Socket = this.inner.socket) {
@@ -348,13 +358,10 @@ class CloudDocStorageConnection extends SocketConnection {
         { spaceType: this.options.type, spaceId: this.options.id, docId },
       ],
       clientVersion: BUILD_CONFIG.appVersion,
-      protocolVersion: WORKSPACE_SYNC_PROTOCOL_VERSION,
+      protocolVersion: this.protocolVersion,
     });
     if ('error' in res) throw createWebsocketError(res.error);
-    if (
-      !res.data.success ||
-      res.data.protocolVersion !== WORKSPACE_SYNC_PROTOCOL_VERSION
-    )
+    if (!res.data.success || res.data.protocolVersion !== this.protocolVersion)
       throw new Error('Space join was rejected');
     this.joinedDocIds.add(docId);
     return docId;
@@ -365,6 +372,25 @@ class CloudDocStorageConnection extends SocketConnection {
 
     try {
       await this.joinDoc(this.options.id, socket);
+      if (this.protocolVersion === 1) {
+        this.idConverter = await getIdConverter(
+          {
+            getDocBuffer: async docId => {
+              const response = await socket.emitWithAck('space:load-doc', {
+                spaceType: this.options.type,
+                spaceId: this.options.id,
+                docId,
+              });
+              if ('error' in response) {
+                if (response.error.name === 'DOC_NOT_FOUND') return null;
+                throw createWebsocketError(response.error);
+              }
+              return base64ToUint8Array(response.data.missing);
+            },
+          },
+          this.options.id
+        );
+      }
 
       socket.on('space:broadcast-doc-updates', this.onServerUpdates);
       socket.on('space:broadcast-doc-invalidation', this.onServerInvalidation);
