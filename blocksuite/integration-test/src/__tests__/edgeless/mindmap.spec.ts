@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/affine-model';
 import { Bound, deserializeXYWH } from '@blocksuite/global/gfx';
 import type { GfxController } from '@blocksuite/std/gfx';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest';
 
 import { click, pointermove, wait } from '../utils/common.js';
 import { getDocRootBlock } from '../utils/edgeless.js';
@@ -42,14 +42,13 @@ describe('mindmap', () => {
         marginTop: '32px',
       },
     });
+    onTestFinished(cleanup);
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
     const hostRect = editor.host!.getBoundingClientRect();
     expect({
       viewport: [gfx.viewport.left, gfx.viewport.top],
       host: [hostRect.left, hostRect.top],
     }).toEqual({ viewport: [48, 32], host: [48, 32] });
-
-    return cleanup;
   });
 
   test('should update mindmap node size during IME composition', async () => {
