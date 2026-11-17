@@ -56,7 +56,6 @@ export const NotificationButton = () => {
       <MenuItem
         icon={<NotificationIcon />}
         postfix={<Badge count={notificationCount} />}
-        active={notificationListOpen}
         postfixDisplay="always"
       >
         <span data-testid="notification-button">
