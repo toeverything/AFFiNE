@@ -47,6 +47,28 @@ export interface AffineEditorContainer extends HTMLElement {
   std: BlockStdScope;
 }
 
+/**
+ * Whether a middle-click (button 1) on the editor should have its default,
+ * native browser behavior (X11 PRIMARY-selection paste, on Linux) blocked.
+ *
+ * Regression guard: this used to be inlined directly in the event handler,
+ * and a refactor once deleted the whole condition (keeping only the
+ * unrelated reference/link early-return), silently turning native
+ * middle-click paste permanently on regardless of the user's
+ * `enableMiddleClickPaste` setting. Native middle-click paste inserts at
+ * whatever the raw DOM caret happens to be, bypassing BlockSuite's own
+ * cursor-position-aware paste routing entirely — e.g. landing in the main
+ * page document instead of a Note on the edgeless canvas that was merely
+ * selected (not yet caret-focused) when the middle click happened.
+ */
+export function shouldSuppressMiddleClickPaste(
+  enableMiddleClickPaste: boolean,
+  isLinux: boolean,
+  button: number
+): boolean {
+  return !enableMiddleClickPaste && isLinux && button === 1;
+}
+
 export interface EditorProps extends HTMLAttributes<HTMLDivElement> {
   page: Store;
   mode: DocMode;
@@ -186,7 +208,13 @@ const BlockSuiteEditorImpl = ({
         ) {
           return;
         }
-        if (!enableMiddleClickPaste && IS_LINUX && e.button === 1) {
+        if (
+          shouldSuppressMiddleClickPaste(
+            enableMiddleClickPaste,
+            IS_LINUX,
+            e.button
+          )
+        ) {
           e.preventDefault();
         }
       };
@@ -196,6 +224,7 @@ const BlockSuiteEditorImpl = ({
       editorContainer.addEventListener('auxclick', handleMiddleClick, {
         capture: true,
       });
+
       return () => {
         editorContainer?.removeEventListener('pointerup', handleMiddleClick, {
           capture: true,
