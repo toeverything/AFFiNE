@@ -18,6 +18,11 @@ import { z } from 'zod';
 import { normalizeSearchText } from '../../../utils/normalize-search-text';
 import type { DocsService } from '../../doc/services/docs';
 import type { WorkspaceService } from '../../workspace';
+import {
+  DOC_SEARCH_LIMIT,
+  type DocSearchResult,
+  searchLinkedRows$,
+} from './linked-row-search';
 
 const IndexedReferenceSchema = ReferenceParamsSchema.extend({
   docId: z.string().min(1),
@@ -117,15 +122,7 @@ export class DocsSearchService extends Service {
   search$(
     query: string,
     prefer: IndexerPreferOptions = 'remote'
-  ): Observable<
-    {
-      docId: string;
-      title: string;
-      score: number;
-      blockId?: string;
-      blockContent?: string;
-    }[]
-  > {
+  ): Observable<DocSearchResult[]> {
     return this.indexer
       .aggregate$(
         'block',
@@ -163,7 +160,7 @@ export class DocsSearchService extends Service {
         'docId',
         {
           pagination: {
-            limit: 50,
+            limit: DOC_SEARCH_LIMIT,
             skip: 0,
           },
           hits: {
@@ -224,7 +221,16 @@ export class DocsSearchService extends Service {
           }
 
           return result;
-        })
+        }),
+        switchMap(results =>
+          searchLinkedRows$(
+            this.indexer,
+            query,
+            prefer,
+            results,
+            docId => this.docsService.list.doc$(docId).value?.title$.value ?? ''
+          )
+        )
       );
   }
 

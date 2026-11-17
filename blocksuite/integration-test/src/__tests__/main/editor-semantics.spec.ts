@@ -1,6 +1,7 @@
 import {
   DatabaseBlockDataSource,
   databaseBlockProperties,
+  EditorHostKey,
 } from '@blocksuite/affine-block-database';
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
@@ -13,6 +14,7 @@ import type {
 } from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
 import type { SingleViewBase } from '@blocksuite/data-view';
 import { SurfaceSelection, TextSelection } from '@blocksuite/std';
@@ -241,16 +243,27 @@ test.each(
     property => !['title', 'created-time'].includes(property.type)
   )
 )(
-  'database isolates malformed $type cells without changing persisted values',
+  'database searches plain and linked titles despite malformed $type cells',
   async property => {
     const noteId = addNote(doc);
     const id = doc.addBlock('affine:database', {}, noteId);
     const model = doc.getModelById(id) as DatabaseBlockModel;
-    const source = new DatabaseBlockDataSource(model);
+    const source = new DatabaseBlockDataSource(model, source => {
+      source.serviceSet(EditorHostKey, editor.host!);
+    });
     source.viewManager.viewAdd('table');
     const propertyId = source.propertyAdd('end', { type: property.type })!;
     const malformedRow = source.rowAdd('end');
     const normalRow = source.rowAdd('end');
+    const linkedDoc = createDefaultDoc(collection, { title: 'Planning notes' });
+    const linkedRow = source.rowAdd('end');
+    const linkedText = new Text<AffineTextAttributes>([
+      {
+        insert: ' ',
+        attributes: { reference: { type: 'LinkedPage', pageId: linkedDoc.id } },
+      },
+    ]);
+    doc.updateBlock(doc.getModelById(linkedRow)!, { text: linkedText });
     await wait();
     const database = editor.host!.view.getBlock(id)!;
     await database.updateComplete;
@@ -280,6 +293,44 @@ test.each(
     const view = source.viewManager.currentView$.value as SingleViewBase;
     view.setSearch('needle');
     expect(view.rows$.value.map(row => row.rowId)).toEqual([normalRow]);
+    view.setSearch('Planning');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    collection.meta.setDocMeta(linkedDoc.id, { title: 'Updated agenda' });
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([]);
+    view.setSearch('Updated');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    expect(linkedText.toString()).toBe(' ');
+    const titleCell = view.cellGetOrCreate(
+      linkedRow,
+      view.mainProperties$.value.titleColumn!
+    );
+    expect(titleCell.stringValue$.value).toBe('Updated agenda');
+    expect(titleCell.jsonValue$.value).toBe('Updated agenda');
+    linkedText.format(0, 1, {
+      reference: {
+        type: 'LinkedPage',
+        pageId: linkedDoc.id,
+        title: 'Roadmap alias',
+      },
+    });
+    view.setSearch('Roadmap');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    collection.meta.setDocMeta(linkedDoc.id, { title: 'Renamed again' });
+    expect(titleCell.stringValue$.value).toBe('Roadmap alias');
+    linkedText.insert('Topic: ', 0);
+    view.setSearch('Topic: Roadmap');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    linkedText.format(7, 1, {
+      reference: { type: 'LinkedPage', pageId: 'missing-document' },
+    });
+    view.setSearch('Topic: Deleted doc');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    expect(
+      databaseBlockProperties.titleColumnConfig.config.rawValue.toString({
+        value: linkedText,
+        data: {},
+      })
+    ).toBe('Topic:  ');
     await wait();
     expect(model.props.cells[malformedRow][propertyId].value).toEqual(
       invalidValue
