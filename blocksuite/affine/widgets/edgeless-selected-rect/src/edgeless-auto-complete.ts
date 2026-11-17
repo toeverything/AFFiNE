@@ -11,6 +11,7 @@ import {
 import {
   type ConnectionOverlay,
   ConnectorPathGenerator,
+  getConnectableRelativePosition,
 } from '@blocksuite/affine-gfx-connector';
 import { mountShapeTextEditor } from '@blocksuite/affine-gfx-shape';
 import type {
@@ -20,6 +21,7 @@ import type {
   ShapeType,
 } from '@blocksuite/affine-model';
 import {
+  ConnectorMode,
   DEFAULT_NOTE_HEIGHT,
   DefaultTheme,
   LayoutType,
@@ -27,12 +29,15 @@ import {
   ShapeElementModel,
   shapeMethods,
 } from '@blocksuite/affine-model';
-import { ToolbarRegistryIdentifier } from '@blocksuite/affine-shared/services';
+import {
+  EditPropsStore,
+  ToolbarRegistryIdentifier,
+} from '@blocksuite/affine-shared/services';
 import type { SelectedRect } from '@blocksuite/affine-shared/types';
 import { handleNativeRangeAtPoint } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { Bound, IVec } from '@blocksuite/global/gfx';
-import { PointLocation, Vec } from '@blocksuite/global/gfx';
+import { Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
   ArrowUpBigIcon,
@@ -53,6 +58,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { EdgelessAutoCompletePanel } from './auto-complete-panel.js';
+import { EdgelessFlowchartShapePanel } from './flowchart-shape-panel.js';
 import {
   createEdgelessElement,
   Direction,
@@ -156,6 +162,29 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
       background: var(--affine-primary-color);
     }
 
+    .edgeless-auto-complete-arrow-wrapper.flowchart {
+      width: 26px;
+      height: 26px;
+    }
+
+    .edgeless-auto-complete-arrow-wrapper.flowchart
+      > .edgeless-auto-complete-arrow {
+      border: 1px solid var(--affine-border-color);
+      box-shadow: var(--affine-shadow-1);
+      background: var(--affine-white);
+
+      transition:
+        background 0.3s linear,
+        color 0.2s linear;
+    }
+
+    .edgeless-auto-complete-arrow-wrapper.flowchart
+      > .edgeless-auto-complete-arrow:hover {
+      border: 1px solid var(--affine-white-10);
+      box-shadow: var(--affine-shadow-1);
+      background: var(--affine-primary-color);
+    }
+
     .edgeless-auto-complete-arrow svg {
       fill: #77757d;
       color: #77757d;
@@ -244,6 +273,24 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
 
   private _timer: ReturnType<typeof setTimeout> | null = null;
 
+  private _isFlowchartShape(element: ShapeElementModel) {
+    return String(element.shapeType).startsWith('flowchart');
+  }
+
+  private _removeFlowchartPanel() {
+    this.edgeless?.querySelector('edgeless-flowchart-shape-panel')?.remove();
+  }
+
+  private _openFlowchartPanel(direction: Direction) {
+    if (!(this.current instanceof ShapeElementModel)) return;
+    this._removeFlowchartPanel();
+    const panel = new EdgelessFlowchartShapePanel();
+    panel.edgeless = this.edgeless;
+    panel.current = this.current;
+    panel.direction = direction;
+    this.edgeless.append(panel);
+  }
+
   get canShowAutoComplete() {
     const { current } = this;
     return isShape(current) || isNoteBlock(current);
@@ -262,7 +309,11 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   }
 
   private _addConnector(source: Connection, target: Connection) {
+    const connectorMode =
+      this.std.get(EditPropsStore).lastProps$.value.connector.mode ??
+      ConnectorMode.Rounded;
     const id = this.crud.addElement(CanvasElementType.CONNECTOR, {
+      mode: connectorMode,
       source,
       target,
     });
@@ -338,11 +389,13 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
       endPosition,
       nextShape
     );
-    const startPoint = PointLocation.fromVec(
-      startBound.getRelativePoint(startConnectionPosition)
+    const startPoint = getConnectableRelativePosition(
+      curShape,
+      startConnectionPosition
     );
-    const endPoint = PointLocation.fromVec(
-      nextBound.getRelativePoint(endConnectionPosition)
+    const endPoint = getConnectableRelativePosition(
+      nextShape,
+      endConnectionPosition
     );
 
     return this._pathGenerator.generateOrthogonalConnectorPath({
@@ -705,6 +758,71 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
     });
   }
 
+  private _renderFlowchartButtons() {
+    const { selectedRect } = this;
+    const { zoom } = this.gfx.viewport;
+    const size = 26;
+    const buttonMargin = size / 2 + 6;
+    const verticalMargin = size / 2 + 6;
+    const directions = [
+      Direction.Right,
+      Direction.Bottom,
+      Direction.Left,
+      Direction.Top,
+    ];
+
+    return directions.map(type => {
+      let transform = '';
+      const icon = PlusIcon({ width: '16px', height: '16px' });
+
+      switch (type) {
+        case Direction.Top:
+          transform += `translate(${selectedRect.width / 2}px, ${-verticalMargin}px)`;
+          break;
+        case Direction.Right:
+          transform += `translate(${selectedRect.width + buttonMargin}px, ${
+            selectedRect.height / 2
+          }px)`;
+          break;
+        case Direction.Bottom:
+          transform += `translate(${selectedRect.width / 2}px, ${
+            selectedRect.height + verticalMargin
+          }px)`;
+          break;
+        case Direction.Left:
+          transform += `translate(${-buttonMargin}px, ${
+            selectedRect.height / 2
+          }px)`;
+          break;
+      }
+
+      transform += `translate(${-size / 2}px, ${-size / 2}px)`;
+
+      const arrowWrapperClasses = classMap({
+        'edgeless-auto-complete-arrow-wrapper': true,
+        hidden: type === Direction.Left && zoom >= 1.5,
+        flowchart: true,
+      });
+
+      return html`<div
+        class=${arrowWrapperClasses}
+        style=${styleMap({
+          transform,
+          transformOrigin: 'left top',
+        })}
+      >
+        <div
+          class="edgeless-auto-complete-arrow"
+          @pointerdown=${() => {
+            this._openFlowchartPanel(type);
+          }}
+        >
+          ${icon}
+        </div>
+      </div>`;
+    });
+  }
+
   private _showNextShape(
     current: ShapeElementModel,
     bound: Bound,
@@ -741,6 +859,7 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
       this.gfx.selection.slots.updated.subscribe(() => {
         this._autoCompleteOverlay.linePoints = [];
         this._autoCompleteOverlay.renderShape = null;
+        this._removeFlowchartPanel();
       })
     );
 
@@ -792,8 +911,16 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   }
 
   override render() {
+    // Don't show auto-complete for connectors or invalid types
+    if (!this.canShowAutoComplete) {
+      this.removeOverlay();
+      return nothing;
+    }
+
     const isShape = this.current instanceof ShapeElementModel;
     const isMindMap = this.current.group instanceof MindmapElementModel;
+    const isFlowchart =
+      isShape && this._isFlowchartShape(this.current as ShapeElementModel);
 
     if (
       this._isMoving ||
@@ -814,7 +941,11 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
         transform: `rotate(${selectedRect.rotate}deg)`,
       })}
     >
-      ${isMindMap ? this._renderMindMapButtons() : this._renderArrow()}
+      ${isMindMap
+        ? this._renderMindMapButtons()
+        : isFlowchart
+          ? this._renderFlowchartButtons()
+          : this._renderArrow()}
     </div>`;
   }
 

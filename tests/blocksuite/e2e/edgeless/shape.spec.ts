@@ -566,6 +566,105 @@ test('flip horizontal on rotated diamond keeps connector attached and mirrored',
   );
 });
 
+test('flip horizontal mirrors extended asymmetric shapes', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const shapeIds = await page.evaluate(() => {
+    const root = document.querySelector('affine-edgeless-root') as any;
+    const defs = [
+      {
+        shapeType: 'parallelogram',
+        xywh: [100, 120, 180, 120],
+      },
+      {
+        shapeType: 'triangleRight',
+        xywh: [340, 120, 180, 120],
+      },
+      {
+        shapeType: 'flowchartAnnotation1',
+        xywh: [100, 320, 220, 140],
+      },
+      {
+        shapeType: 'arrowBentLeft',
+        xywh: [380, 320, 220, 140],
+      },
+    ];
+
+    return defs.map(def =>
+      root.service.crud.addElement('shape', {
+        shapeType: def.shapeType,
+        xywh: JSON.stringify(def.xywh),
+        filled: true,
+        fillColor: '#1f6feb',
+        strokeStyle: 'none',
+        strokeWidth: 2,
+      })
+    );
+  });
+
+  const samplePair = async (id: string) => {
+    return page.evaluate(shapeId => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      const viewport = root.service.viewport;
+      const shape = root.service.crud.getElementById(shapeId);
+      if (!shape) throw new Error('shape not found');
+      const [x, y, w, h] = JSON.parse(shape.xywh);
+      const points: [number, number][] = [
+        [x + w * 0.2, y + h * 0.5],
+        [x + w * 0.8, y + h * 0.5],
+      ];
+
+      const canvases = Array.from(
+        document.querySelectorAll(
+          '.affine-edgeless-surface-block-container canvas'
+        )
+      ) as HTMLCanvasElement[];
+      const sorted = canvases.sort((a, b) => {
+        const za = Number(getComputedStyle(a).zIndex || 0);
+        const zb = Number(getComputedStyle(b).zIndex || 0);
+        return zb - za;
+      });
+
+      const pickAlpha = (mx: number, my: number) => {
+        const [vx, vy] = viewport.toViewCoord(mx, my);
+        for (const canvas of sorted) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const px = Math.round((vx - rect.left) * scaleX);
+          const py = Math.round((vy - rect.top) * scaleY);
+          if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) {
+            continue;
+          }
+          const data = canvas
+            .getContext('2d', { willReadFrequently: true })
+            ?.getImageData(px, py, 1, 1).data;
+          if (!data) continue;
+          if (data[3] > 0) return data[3];
+        }
+        return 0;
+      };
+
+      return points.map(([mx, my]) => pickAlpha(mx, my));
+    }, id) as Promise<number[]>;
+  };
+
+  for (const id of shapeIds) {
+    const before = await samplePair(id);
+
+    await page.evaluate(shapeId => {
+      const root = document.querySelector('affine-edgeless-root') as any;
+      root.service.crud.updateElement(shapeId, { flipX: true, flipY: false });
+    }, id);
+
+    const after = await samplePair(id);
+    expect(after[0]).toBe(before[1]);
+    expect(after[1]).toBe(before[0]);
+  }
+});
+
 //FIXME: need a way to test hand-drawn-like style
 test.skip('change shape fill color', async ({ page }) => {
   await enterPlaygroundRoom(page);

@@ -24,6 +24,7 @@ import {
   StrokeStyle,
 } from '@blocksuite/affine-model';
 import {
+  EditPropsStore,
   type ToolbarGenericAction,
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
@@ -207,6 +208,17 @@ export const shapeToolbarConfig = {
             }
           };
 
+        const recordShapeLastProps = (
+          props: Parameters<EditPropsStore['recordLastProps']>[1]
+        ) => {
+          const first = models[0];
+          if (!first) return;
+          const shapeName = getShapeName(first.shapeType, first.radius);
+          const propsStore = ctx.std.get(EditPropsStore);
+          propsStore.recordLastProps(`shape:${shapeName}`, props);
+          propsStore.recordLastProps('shape:rect', props);
+        };
+
         const onPickFillColor = pickColorWrapper('fillColor', palette => {
           const value = palette.value;
           const filled = isTransparent(value);
@@ -219,6 +231,7 @@ export const shapeToolbarConfig = {
             }
             crud.updateElement(model.id, props);
           });
+          recordShapeLastProps(props);
         });
 
         const onPickStrokeColor = pickColorWrapper('strokeColor', palette => {
@@ -228,18 +241,27 @@ export const shapeToolbarConfig = {
           models.forEach(model => {
             crud.updateElement(model.id, props);
           });
+          recordShapeLastProps(props);
         });
 
         const onPickGradientFinalColor = pickColorWrapper(
           'gradientFinal',
           palette => {
             const value = palette.value;
+            const currentDirection =
+              (models[0]?.gradientDirection as
+                | ShapeElementModel['gradientDirection']
+                | undefined) ?? 'S';
             const crud = ctx.std.get(EdgelessCRUDIdentifier);
             models.forEach(model => {
               crud.updateElement(model.id, {
                 gradientFinal: value,
-                gradientDirection: model.gradientDirection ?? 'S',
+                gradientDirection: model.gradientDirection ?? currentDirection,
               });
+            });
+            recordShapeLastProps({
+              gradientFinal: value,
+              gradientDirection: currentDirection,
             });
           }
         );
@@ -250,6 +272,8 @@ export const shapeToolbarConfig = {
           const normalized =
             direction === 'none' ? undefined : direction.toUpperCase();
 
+          const baselineGradientFinal = models[0]?.gradientFinal;
+          const fallbackGradientFinal = models[0]?.fillColor;
           for (const model of models) {
             ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
               gradientDirection: normalized as
@@ -261,6 +285,15 @@ export const shapeToolbarConfig = {
                   : model.gradientFinal,
             });
           }
+          recordShapeLastProps({
+            gradientDirection: normalized as
+              | ShapeElementModel['gradientDirection']
+              | undefined,
+            gradientFinal:
+              normalized && !baselineGradientFinal
+                ? fallbackGradientFinal
+                : baselineGradientFinal,
+          });
         };
 
         const onPickStrokeStyle = (e: CustomEvent<LineDetailType>) => {
@@ -275,6 +308,7 @@ export const shapeToolbarConfig = {
                 .get(EdgelessCRUDIdentifier)
                 .updateElement(model.id, { strokeWidth });
             }
+            recordShapeLastProps({ strokeWidth });
             return;
           }
 
@@ -284,6 +318,7 @@ export const shapeToolbarConfig = {
               .get(EdgelessCRUDIdentifier)
               .updateElement(model.id, { strokeStyle });
           }
+          recordShapeLastProps({ strokeStyle });
         };
 
         return html`
