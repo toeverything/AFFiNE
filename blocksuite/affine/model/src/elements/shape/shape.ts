@@ -117,6 +117,12 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   accessor gradientDirection: GradientDirection | undefined = undefined;
 
   @field()
+  accessor flipX: boolean = false;
+
+  @field()
+  accessor flipY: boolean = false;
+
+  @field()
   accessor filled: boolean = false;
 
   @field(FontFamily.Inter as string)
@@ -216,6 +222,12 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor fillColor: Color = DefaultTheme.shapeFillColor;
+
+  @prop()
+  accessor flipX: boolean = false;
+
+  @prop()
+  accessor flipY: boolean = false;
 
   @prop()
   accessor filled: boolean = false;

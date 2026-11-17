@@ -21,6 +21,8 @@ export function diamond(
     seed,
     strokeWidth,
     filled,
+    flipX,
+    flipY,
     strokeStyle,
     roughness,
     rotate,
@@ -39,6 +41,7 @@ export function diamond(
     matrix
       .translateSelf(renderOffset, renderOffset)
       .translateSelf(cx, cy)
+      .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .rotateSelf(rotate)
       .translateSelf(-cx, -cy)
   );

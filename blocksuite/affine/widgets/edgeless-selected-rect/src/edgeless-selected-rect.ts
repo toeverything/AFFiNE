@@ -484,8 +484,14 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     const height = (rect.height * zoom) / viewScale;
 
     let rotate = 0;
+    let flipX = false;
+    let flipY = false;
     if (elements.length === 1 && elements[0].rotate) {
       rotate = elements[0].rotate;
+    }
+    if (elements.length === 1) {
+      flipX = 'flipX' in elements[0] && Boolean(elements[0].flipX);
+      flipY = 'flipY' in elements[0] && Boolean(elements[0].flipY);
     }
 
     this._selectedRect = {
@@ -494,6 +500,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
       left,
       top,
       rotate,
+      flipX,
+      flipY,
       borderStyle: 'solid',
       borderWidth: 2,
     };
@@ -769,6 +777,17 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     if (!this._shouldRenderSelection(elements)) return nothing;
 
     const { _selectedRect } = this;
+    const scaleX = _selectedRect.flipX ? -1 : 1;
+    const scaleY = _selectedRect.flipY ? -1 : 1;
+    const centerX = _selectedRect.width / 2;
+    const centerY = _selectedRect.height / 2;
+    const matrix = new DOMMatrix()
+      .translateSelf(_selectedRect.left, _selectedRect.top)
+      .translateSelf(centerX, centerY)
+      .scaleSelf(scaleX, scaleY)
+      .rotateSelf(_selectedRect.rotate)
+      .translateSelf(-centerX, -centerY);
+    const transformValue = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`;
     const hasElementLocked = elements.some(element => element.isLocked());
     const handlers = this._renderHandles();
 
@@ -811,7 +830,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
           height: `${_selectedRect.height}px`,
           borderWidth: `${_selectedRect.borderWidth}px`,
           borderStyle: isConnector ? 'none' : _selectedRect.borderStyle,
-          transform: `translate(${_selectedRect.left}px, ${_selectedRect.top}px) rotate(${_selectedRect.rotate}deg)`,
+          transform: transformValue,
+          transformOrigin: '0 0',
         })}
         disabled="true"
         data-mode=${this._mode}
