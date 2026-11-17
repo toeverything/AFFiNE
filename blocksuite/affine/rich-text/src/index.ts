@@ -11,5 +11,5 @@ export {
   onModelTextUpdated,
   selectTextModel,
 } from './dom';
-export { RichText } from './rich-text';
+export { RichText, suppressingRichTextAutoScroll } from './rich-text';
 export * from './utils';

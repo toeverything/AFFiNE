@@ -71,7 +71,6 @@ import {
 import { BlockRenderer } from './detail-panel/block-renderer.js';
 import { NoteRenderer } from './detail-panel/note-renderer.js';
 import { DatabaseSelection } from './selection.js';
-import { currentViewStorage } from './utils/current-view.js';
 import { getSingleDocIdFromText } from './utils/title-doc.js';
 import type { DatabaseViewExtensionOptions } from './view';
 
@@ -160,9 +159,22 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
           );
         });
     });
-    const id = currentViewStorage.getCurrentView(this.model.id);
-    if (id && dataSource.viewManager.viewGet(id)) {
-      dataSource.viewManager.setCurrentView(id);
+    // Skip when rendered nested inside a `database-ref` wrapper: `this.model`
+    // there is the *shared* canonical table, the same object for every
+    // reference to it, so applying/persisting a "last used view" through it
+    // here would let one reference's tab choice leak into every other
+    // reference (and, on the next remount, get stamped back onto all of
+    // them, discarding their own distinct choices — confirmed live via a
+    // `setCurrentView` call trace: a reference's construction-time default
+    // apply was picking up whatever view another reference's tab click had
+    // last written into this exact shared prop). `database-ref-block.ts`'s
+    // own `_syncCurrentView` is the sole source of truth for the nested
+    // case, persisting to each reference's own model instead.
+    if (!this.closest('affine-database-ref')) {
+      const id = this.model.props.currentViewId;
+      if (id && dataSource.viewManager.viewGet(id)) {
+        dataSource.viewManager.setCurrentView(id);
+      }
     }
     return dataSource;
   });
@@ -217,7 +229,9 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
               ${renderUniLit(widgetPresets.viewBar, {
                 ...props,
                 onChangeView: id => {
-                  currentViewStorage.setCurrentView(this.blockId, id);
+                  if (!this.closest('affine-database-ref')) {
+                    this.model.props.currentViewId = id;
+                  }
                 },
               })}
             </div>

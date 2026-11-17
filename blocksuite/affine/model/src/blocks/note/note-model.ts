@@ -38,6 +38,26 @@ export const NoteZodSchema = z
         shadowType: NoteShadowsSchema,
       }),
     }),
+    // Workspace-level defaults for freshly created notes (Settings ->
+    // Editor -> Note) — distinct from the per-instance override on the
+    // note itself (`NoteProps.pageBorder`/`pageBackgroundOverride`), which
+    // always wins once set. `pageBorder` defaults `true` here (matching
+    // the same default a note with no explicit override already resolves
+    // to, per `NoteBlockComponent._showBorder`) so the setting reads as
+    // "on" out of the box rather than looking already-overridden to off.
+    //
+    // Both need a *field-level* `.default(...)`, not just the whole
+    // object's own `.default({...})` below — that outer default only
+    // covers the case where the entire `'affine:note'` settings value is
+    // itself `undefined`. Any already-persisted settings object from
+    // before these two fields existed is a *partial* object (has
+    // `background`/`displayMode`/`edgeless`, missing these two) — zod
+    // requires every non-optional field on a present object, so parsing
+    // that old data would otherwise throw outright, breaking the entire
+    // per-flavour settings/last-used-style persistence for `affine:note`
+    // (not just these two new fields) the moment it was read back.
+    pageBorder: z.boolean().default(true),
+    pageBackgroundOverride: ColorSchema.optional(),
   })
   .default({
     background: DefaultTheme.noteBackgrounColor,
@@ -50,6 +70,8 @@ export const NoteZodSchema = z
         shadowType: DEFAULT_NOTE_SHADOW,
       },
     },
+    pageBorder: true,
+    pageBackgroundOverride: undefined,
   });
 
 export const NoteBlockSchema = defineBlockSchema({
@@ -70,6 +92,9 @@ export const NoteBlockSchema = defineBlockSchema({
       },
     },
     comments: undefined,
+    name: undefined,
+    pageBorder: undefined,
+    pageBackgroundOverride: undefined,
   }),
   metadata: {
     version: 1,
@@ -93,6 +118,27 @@ export type NoteProps = {
   displayMode: NoteDisplayMode;
   edgeless: NoteEdgelessProps;
   comments?: Record<string, boolean>;
+  // Optional, user-set label — added for Story 0.6's reusable-note-reference
+  // picker/toolbar, since a Note otherwise has no identifying title/name
+  // property at all (unlike Frame or Database). Set from either the note's
+  // own edgeless toolbar or a `note-ref` pointing at it — both edit this
+  // same underlying prop, so renaming from either place stays in sync.
+  name?: string;
+  // Page-mode display style — deliberately distinct from `background`
+  // above, which is this note's *edgeless* canvas box color. `undefined`
+  // (the default for every note, including the doc's own primary one) means
+  // "use the derived default": no border for the primary page note (it IS
+  // the page), a border for any other note shown in page flow, so it reads
+  // as a distinct block rather than blending invisibly into surrounding
+  // text (`NoteBlockComponent._showBorder`, `note-block.ts`). Explicitly
+  // set `true`/`false` to override that default either way.
+  pageBorder?: boolean;
+  // Theme-aware, same `Color` type/palette `background` above uses (edited
+  // via the same "Note Style" panel, `edgeless-note-style-panel.ts`'s new
+  // "In-page background color" row, right after "Fill color") —
+  // `undefined` means no override, letting the page's own background
+  // (white, ordinarily) show through.
+  pageBackgroundOverride?: Color;
   /**
    * @deprecated
    * use `displayMode` instead

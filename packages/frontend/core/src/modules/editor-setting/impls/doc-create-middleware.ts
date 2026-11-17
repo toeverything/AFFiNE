@@ -47,7 +47,24 @@ export class EditorSettingDocCreateMiddleware
 
     docCreateOptions.docProps = {
       ...docCreateOptions.docProps,
-      note: this.editorSettingService.editorSetting.get('affine:note'),
+      // A brand-new doc's own primary note still inherits every other
+      // configured note default (edgeless background/border/shadow/corner
+      // radius) exactly as before — but `pageBorder`/`pageBackgroundOverride`
+      // (the *page-mode* display style, Story 0.6) are explicitly reset
+      // here rather than inherited from the global setting: a fresh page
+      // should never start out looking like it has a border around its
+      // own main content, and "no override" (not a literal hardcoded
+      // color) is what actually stays theme-safe in both light and dark
+      // mode, since it just lets the app's own (already theme-aware) page
+      // background show through instead of painting over it. The setting
+      // itself still applies normally to any *other* note a user creates
+      // afterward (`/note`, or "Display in Page" from edgeless) — this
+      // override is specific to the one note every doc starts with.
+      note: {
+        ...this.editorSettingService.editorSetting.get('affine:note'),
+        pageBorder: false,
+        pageBackgroundOverride: undefined,
+      },
     };
 
     return docCreateOptions;

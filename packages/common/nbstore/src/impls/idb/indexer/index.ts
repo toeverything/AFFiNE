@@ -221,7 +221,15 @@ export class IndexedDBIndexerStorage extends IndexerStorageBase {
 
   // Get the current indexer version
   // increase this number to re-index all docs
+  //
+  // Bumped 3 -> 4: a doc whose `affine:page` block lacks a `prop:title`
+  // Y.Text throws uncaught inside the crawl (`reader.ts`), which the
+  // indexer sync loop's own try/catch swallows — but it still marks that
+  // doc "indexed" at the current version regardless, permanently hiding
+  // every block in it from search with no retry. Docs already stuck in
+  // that state at version 3 need a real version bump to get another
+  // attempt; the underlying throw itself is also fixed in `reader.ts`.
   async indexVersion(): Promise<number> {
-    return 1;
+    return 4;
   }
 }

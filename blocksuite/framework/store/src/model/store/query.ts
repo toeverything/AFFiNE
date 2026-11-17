@@ -6,6 +6,26 @@ export type QueryMatch = {
   id?: string;
   flavour?: string;
   props?: Record<string, unknown>;
+  /**
+   * Matches any block whose ancestor chain includes the block with this
+   * id — i.e. "this block, and everything under it, forever," rather
+   * than a fixed snapshot of ids collected once. Unlike `id`/`flavour`/
+   * `props` (all evaluated against the block itself), this walks
+   * `store.getParent(...)` up from the block being matched.
+   *
+   * Exists specifically so a consumer that wants "a stable subtree" (a
+   * cross-doc reference rendering a whole note, for example) can express
+   * that once, at query-construction time, instead of having to
+   * re-enumerate every descendant id and rebuild the entire `Query`
+   * (and therefore the `Store` — see `getStore`'s own cache-by-query-
+   * identity behavior) every single time a new block is added anywhere
+   * inside that subtree. `runQuery` already re-evaluates on every block
+   * add (`Store._onBlockAdded`), so a newly-created descendant is
+   * classified correctly the *first* time it's ever seen — no
+   * incremental query update, no new `Store`, no full re-render of
+   * already-mounted content required at all.
+   */
+  ancestor?: string;
   viewType: BlockViewType;
 };
 
@@ -52,6 +72,7 @@ function getBlockViewType(query: Query, block: Block): BlockViewType {
       id: queryId,
       flavour: queryFlavour,
       props: queryProps,
+      ancestor: queryAncestor,
       viewType,
     } = queryObject;
     const matchQueryId = queryId == null ? true : queryId === id;
@@ -59,7 +80,14 @@ function getBlockViewType(query: Query, block: Block): BlockViewType {
       queryFlavour == null ? true : queryFlavour === flavour;
     const matchQueryProps =
       queryProps == null ? true : isMatch(props, queryProps);
-    if (matchQueryId && matchQueryFlavour && matchQueryProps) {
+    const matchQueryAncestor =
+      queryAncestor == null ? true : hasAncestor(block, queryAncestor);
+    if (
+      matchQueryId &&
+      matchQueryFlavour &&
+      matchQueryProps &&
+      matchQueryAncestor
+    ) {
       blockViewType = viewType;
       return true;
     }
@@ -67,6 +95,16 @@ function getBlockViewType(query: Query, block: Block): BlockViewType {
   });
 
   return blockViewType;
+}
+
+function hasAncestor(block: Block, ancestorId: string): boolean {
+  const doc = block.model.store;
+  let parent = doc.getParent(block.model);
+  while (parent) {
+    if (parent.id === ancestorId) return true;
+    parent = doc.getParent(parent);
+  }
+  return false;
 }
 
 function setAncestorsToDisplayIfHidden(mode: QueryMode, block: Block) {

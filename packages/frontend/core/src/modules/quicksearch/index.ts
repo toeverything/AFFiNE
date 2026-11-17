@@ -20,6 +20,7 @@ import { QuickSearch } from './entities/quick-search';
 import { CollectionsQuickSearchSession } from './impls/collections';
 import { CommandsQuickSearchSession } from './impls/commands';
 import { CreationQuickSearchSession } from './impls/creation';
+import { CrossDocReferenceQuickSearchSession } from './impls/cross-doc-reference-candidates';
 import { DocsQuickSearchSession } from './impls/docs';
 import { ExternalLinksQuickSearchSession } from './impls/external-links';
 import { JournalsQuickSearchSession } from './impls/journals';
@@ -35,6 +36,7 @@ export { QuickSearchService, RecentDocsService };
 export { CollectionsQuickSearchSession } from './impls/collections';
 export { CommandsQuickSearchSession } from './impls/commands';
 export { CreationQuickSearchSession } from './impls/creation';
+export { CrossDocReferenceQuickSearchSession } from './impls/cross-doc-reference-candidates';
 export { DocsQuickSearchSession } from './impls/docs';
 export { ExternalLinksQuickSearchSession } from './impls/external-links';
 export { LinksQuickSearchSession } from './impls/links';
@@ -66,6 +68,11 @@ export function configureQuickSearchModule(framework: Framework) {
     ])
     .entity(LinksQuickSearchSession, [
       WorkspaceService,
+      DocsService,
+      DocDisplayMetaService,
+    ])
+    .entity(CrossDocReferenceQuickSearchSession, [
+      DocsSearchService,
       DocsService,
       DocDisplayMetaService,
     ])

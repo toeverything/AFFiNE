@@ -28,6 +28,22 @@ interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;
 }
 
+/**
+ * Lets a caller that's about to make a *structural* inline edit (inserting
+ * a new inline embed node, e.g. an inline LaTeX equation) temporarily
+ * suppress this component's own "keep caret in view" auto-scroll below —
+ * mirrors `note-ref-block.ts`'s own `suppressingScrollIntoView`, for the
+ * identical underlying reason: inserting a new inline node changes
+ * `inlineRange`'s identity, re-triggering the auto-scroll effect, and if
+ * the new node's own layout hasn't stabilized yet when its position gets
+ * measured, that measurement can be transiently wrong enough to produce a
+ * visible page jump even though the caret never actually left the
+ * viewport (confirmed live: initiating an inline equation, not `/equation`
+ * — creating the node and opening its editor popup happens fast enough
+ * for exactly that timing window).
+ */
+export const suppressingRichTextAutoScroll = new WeakSet<RichText>();
+
 export class RichText extends WithDisposable(ShadowlessElement) {
   static override styles = css`
     rich-text {
@@ -260,6 +276,10 @@ export class RichText extends WithDisposable(ShadowlessElement) {
           .waitForUpdate()
           .then(() => {
             if (!inlineEditor.mounted || inlineEditor.rendering) return;
+            // Populated from @blocksuite/affine-inlines-latex's command.ts,
+            // outside this file's static-analysis scope.
+            // oxlint-disable-next-line sonarjs/no-empty-collection
+            if (suppressingRichTextAutoScroll.has(this)) return;
 
             const range = inlineEditor.toDomRange(inlineRange);
             if (!range) return;

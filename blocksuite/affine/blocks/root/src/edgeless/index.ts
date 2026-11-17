@@ -1,6 +1,7 @@
 export { EdgelessRootPreviewBlockComponent } from '../preview/edgeless-root-preview-block';
 export * from './clipboard/clipboard';
 export * from './clipboard/command';
+export { createLinkedDocFromNote } from './configs/toolbar/render-linked-doc.js';
 export * from './edgeless-root-block.js';
 export { EdgelessRootService } from './edgeless-root-service.js';
 export * from './utils/clipboard-utils.js';

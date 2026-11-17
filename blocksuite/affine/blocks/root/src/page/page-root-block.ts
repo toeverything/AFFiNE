@@ -19,7 +19,6 @@ import {
   getScrollContainer,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
-import { IS_ANDROID } from '@blocksuite/global/env';
 import { Point } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
 import { BlockComponent, BlockSelection, TextSelection } from '@blocksuite/std';
@@ -414,10 +413,18 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       return !(isNote && displayOnEdgeless);
     });
 
-    // Android IMEs can target this outer editable root instead of a block's
-    // inline editor, leaving composition text in the DOM without committing it
-    // to the document model. Keep only the block editors editable on Android.
-    this.contentEditable = String(!this.store.readonly$.value && !IS_ANDROID);
+    // Always non-editable, regardless of readonly state or platform.
+    // `NoteBlockComponent` owns the single `contenteditable="true"` boundary
+    // now (see its `connectedCallback()` doc comment) -- having BOTH this page
+    // root AND each descendant note/rich-text independently `true` was the
+    // original MOBILE-14 bug (native tap hit-testing could briefly resolve
+    // focus to THIS element instead of the tapped block). Moving the `false`
+    // up here, instead of pushing `false` boundaries down between every
+    // block, removes the ambiguous target at its source without turning
+    // sibling blocks into isolated, cross-selection-blocking editable
+    // islands. It also covers upstream's Android fix: IMEs can no longer
+    // target this outer root and leave composition text uncommitted.
+    this.contentEditable = 'false';
 
     return html`
       <div class="affine-page-root-block-container">${children} ${widgets}</div>

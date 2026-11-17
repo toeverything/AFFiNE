@@ -8,7 +8,6 @@ import {
 import {
   clearAndSelectFirstModelCommand,
   deleteSelectedModelsCommand,
-  getBlockIndexCommand,
   getBlockSelectionsCommand,
   getImageSelectionsCommand,
   getSelectedModelsCommand,
@@ -140,19 +139,22 @@ export class PageClipboard extends ReadOnlyClipboard {
           next({ currentSelectionPath: imageSelection.blockId });
         }),
       ])
-      .pipe(getBlockIndexCommand)
       .pipe((ctx, next) => {
-        if (!ctx.parentBlock) {
+        // Resolve the insertion point from the model, not the view: a
+        // referenced note's blocks render inside this host while the
+        // (edgeless-only) canonical note itself has no block component, so
+        // `getBlockIndexCommand`'s `std.view.getBlock(parent)` found nothing
+        // and paste fell back to the top of the page.
+        const parentModel = this.std.store.getParent(ctx.currentSelectionPath);
+        if (!parentModel) {
           return;
         }
+        const blockIndex = parentModel.children.findIndex(
+          child => child.id === ctx.currentSelectionPath
+        );
         hasPasteTarget = true;
         this.std.clipboard
-          .paste(
-            e,
-            this.std.store,
-            ctx.parentBlock.model.id,
-            ctx.blockIndex !== undefined ? ctx.blockIndex + 1 : 1
-          )
+          .paste(e, this.std.store, parentModel.id, blockIndex + 1)
           .catch(console.error);
 
         return next();

@@ -16,10 +16,12 @@ import type { TemplateResult } from 'lit';
 import { z } from 'zod';
 
 import { patchForAudioEmbedView } from './audio/audio-view';
+import { patchCrossDocReferenceService } from './cross-doc-reference-service';
 import { buildDocDisplayMetaExtension } from './display-meta';
 import { patchDocModeService } from './doc-mode-service';
 import { patchDocUrlExtensions } from './doc-url';
 import { patchFileSizeLimitExtension } from './file-size-limit';
+import { patchNoteMoveService } from './note-move-service';
 import { patchNotificationService } from './notification-service';
 import { patchOpenDocExtension } from './open-doc';
 import { patchQuickSearchService } from './quick-search-service';
@@ -110,7 +112,9 @@ export class AffineEditorViewExtension extends ViewExtensionProvider<AffineEdito
         patchForAudioEmbedView(reactToLit),
       ])
       .register(patchDocUrlExtensions(framework))
-      .register(patchQuickSearchService(framework));
+      .register(patchQuickSearchService(framework))
+      .register(patchCrossDocReferenceService(framework))
+      .register(patchNoteMoveService(framework));
 
     if (scope === 'doc') {
       const docService = framework.get(DocService);

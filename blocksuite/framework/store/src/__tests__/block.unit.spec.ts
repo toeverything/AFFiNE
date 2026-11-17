@@ -93,6 +93,160 @@ function createTestDoc(docId = defaultDocId) {
   return store;
 }
 
+test('two independent Block wrappers over the same yBlock settle on an object-valued prop write, without looping', () => {
+  // Regression: `native2Y`/`y2Native` always mint a brand-new Y/JS
+  // structure on every round-trip, even for identical content, so the
+  // write-back `effect()` in `SyncController._createModel` could never
+  // detect "this incoming value is already what's stored" for object or
+  // array-valued props using reference equality alone — only primitives,
+  // which `native2Y` returns unchanged, benefited from that check. A
+  // single `SyncController` masks this (its own `_mutex`/`_byPassProxy`
+  // guard against its own write-back effect cascading into itself), but
+  // two independent `SyncController`s wrapping the *same* underlying block
+  // (exactly what happens when the same block is rendered through 2+
+  // simultaneous `Store` views at once, e.g. a table appearing more than
+  // once on a page) have no such protection *between* them: A's
+  // "redundant" write triggers B's own write-back, which triggers A's
+  // again, forever — confirmed live as an actual "Cycle detected" crash
+  // after 100+ synchronous re-entrant writes, with byte-identical content
+  // captured across dozens of consecutive writes right before it. The
+  // fix is a value-based (not reference-based) check before ever minting
+  // a new Y structure or writing.
+  const doc = createTestDoc();
+  const yDoc = new Y.Doc();
+  const yBlock = yDoc.getMap('yBlock') as YBlock;
+  yBlock.set('sys:id', '0');
+  yBlock.set('sys:flavour', 'table');
+  yBlock.set('sys:children', new Y.Array());
+
+  const blockA = new Block(doc.schema, yBlock, doc);
+  const blockB = new Block(doc.schema, yBlock, doc);
+  const modelA = blockA.model as TableModel;
+  const modelB = blockB.model as TableModel;
+
+  let writeCount = 0;
+  yBlock.observe(event => {
+    if (event.keysChanged.has('prop:cols')) writeCount++;
+  });
+
+  modelA.props.cols = { a: { color: 'red' } };
+
+  // A healthy settle is a small, bounded handful of writes (the initial
+  // write plus each side syncing its own local copy once) — not hundreds.
+  expect(writeCount).toBeLessThan(10);
+  expect(modelA.props.cols).toEqual({ a: { color: 'red' } });
+  expect(modelB.props.cols).toEqual({ a: { color: 'red' } });
+});
+
+test('two independent Block wrappers with per-instance materialize-style write-back effects settle without looping', () => {
+  // Same regression as above, but reproducing the actual shape of the real
+  // bug: Kanban/Table's `materializeColumns` is a *reactive* consumer that,
+  // on every change to the shared prop, recomputes a "normalized" value and
+  // writes it back — exactly like each of the two independent effects
+  // installed below. Without a value-based dedup in the write-back path,
+  // this pair keeps re-triggering each other indefinitely, since neither
+  // ever produces a byte-identical *object* to what's already stored, only
+  // byte-identical *content*.
+  const doc = createTestDoc();
+  const yDoc = new Y.Doc();
+  const yBlock = yDoc.getMap('yBlock') as YBlock;
+  yBlock.set('sys:id', '0');
+  yBlock.set('sys:flavour', 'table');
+  yBlock.set('sys:children', new Y.Array());
+
+  const blockA = new Block(doc.schema, yBlock, doc);
+  const blockB = new Block(doc.schema, yBlock, doc);
+  const modelA = blockA.model as TableModel;
+  const modelB = blockB.model as TableModel;
+
+  let writeCount = 0;
+  yBlock.observe(event => {
+    if (event.keysChanged.has('prop:cols')) writeCount++;
+  });
+
+  const installMaterializer = (model: TableModel) => {
+    effect(() => {
+      const current = model.props.cols$.value;
+      // Deliberately rebuilds a fresh object every time it reacts —
+      // mirroring `materializeColumnsByPropertyIds`, which always
+      // constructs a new array/object even when the *content* it produces
+      // is identical to what's already there.
+      model.props.cols = Object.fromEntries(Object.entries(current));
+    });
+  };
+  installMaterializer(modelA);
+  installMaterializer(modelB);
+
+  modelA.props.cols = { a: { color: 'red' } };
+
+  expect(writeCount).toBeLessThan(20);
+  expect(modelA.props.cols).toEqual({ a: { color: 'red' } });
+  expect(modelB.props.cols).toEqual({ a: { color: 'red' } });
+});
+
+test('an in-place mutation (splice) on a shared array-valued prop notifies every independent Block wrapper', () => {
+  // Regression: `createYProxy` (`reactive/proxy.ts`) caches one reactive
+  // wrapper per underlying Y structure (`proxies` WeakMap,
+  // `reactive/memory.ts`) — the first `SyncController` to wrap a given
+  // array/map "wins" and gets its `onChange` baked in at construction;
+  // every other `SyncController` wrapping the *same* structure (e.g. a
+  // second, independent `Block`/model for the same underlying block —
+  // exactly what happens when a block is rendered through 2+ simultaneous
+  // `Store` views, as with a table appearing more than once on a page) got
+  // back the same proxy object but had its own `onChange` silently
+  // dropped. In-place mutations on that structure — `.splice()`, `.push()`,
+  // etc., which never touch the *top-level* prop key at all, only its
+  // nested Y content — are exactly how `addProperty`
+  // (`blocks/database/src/utils/block-utils.ts`) adds a new database
+  // column: `model.props.columns.splice(index, 0, col)`. Only the
+  // `SyncController` that won the cache race ever saw such a mutation;
+  // every other one's own `columns$` signal (hence anything reactively
+  // derived from it, like a Table view's header list) silently stayed
+  // stale until an unrelated *wholesale* reassignment of the same prop (a
+  // different, correctly-broadcasting path) happened to drag it along —
+  // matching the exact live symptom this was diagnosed from: a new
+  // Kanban-created column not appearing in a simultaneously-rendered Table
+  // view until some other edit or a reload.
+  const doc = createTestDoc();
+  const yDoc = new Y.Doc();
+  const yBlock = yDoc.getMap('yBlock') as YBlock;
+  yBlock.set('sys:id', '0');
+  yBlock.set('sys:flavour', 'table');
+  yBlock.set('sys:children', new Y.Array());
+
+  const blockA = new Block(doc.schema, yBlock, doc);
+  const blockB = new Block(doc.schema, yBlock, doc);
+  const modelA = blockA.model as TableModel;
+  const modelB = blockB.model as TableModel;
+
+  // Establish a real value first (an empty array's `.splice()` insert is
+  // exercised either way, but this mirrors the live repro more closely:
+  // there's already a "title" row before a new one gets appended).
+  modelA.props.rows = [{ color: 'white' }];
+
+  const rowsUpdatesOnA: unknown[] = [];
+  const rowsUpdatesOnB: unknown[] = [];
+  effect(() => {
+    rowsUpdatesOnA.push(modelA.props.rows$.value);
+  });
+  effect(() => {
+    rowsUpdatesOnB.push(modelB.props.rows$.value);
+  });
+  const countBeforeA = rowsUpdatesOnA.length;
+  const countBeforeB = rowsUpdatesOnB.length;
+
+  // The in-place mutation `addProperty` actually uses — never reassigns
+  // `model.props.rows` wholesale, just splices the existing array proxy.
+  modelB.props.rows.splice(1, 0, { color: 'blue' });
+
+  expect(modelA.props.rows).toEqual([{ color: 'white' }, { color: 'blue' }]);
+  expect(modelB.props.rows).toEqual([{ color: 'white' }, { color: 'blue' }]);
+  // Both sides' own signal must have actually re-fired — not just the one
+  // that happened to own the underlying reactive wrapper.
+  expect(rowsUpdatesOnA.length).toBeGreaterThan(countBeforeA);
+  expect(rowsUpdatesOnB.length).toBeGreaterThan(countBeforeB);
+});
+
 test('init block without props should add default props', () => {
   const doc = createTestDoc();
   const yDoc = new Y.Doc();

@@ -1,5 +1,9 @@
 import { toDocSearchParams } from '@affine/core/modules/navigation';
-import type { IndexerPreferOptions, IndexerSyncState } from '@affine/nbstore';
+import type {
+  IndexerPreferOptions,
+  IndexerSyncState,
+  Query,
+} from '@affine/nbstore';
 import {
   type ReferenceParams,
   ReferenceParamsSchema,
@@ -412,6 +416,182 @@ export class DocsSearchService extends Service {
             .filter((item): item is NonNullable<typeof item> => item !== null);
         })
       );
+  }
+
+  /**
+   * Forward search for cross-doc reference candidates: every Frame or
+   * Database block in the workspace except the ones living in `excludeDocId`
+   * (the doc currently being edited — referencing a block from itself isn't
+   * a cross-doc reference). Powers the cross-doc picker (Story 0.3): unlike
+   * `watchDatabasesTo`, which looks for existing *references pointing at* a
+   * doc, this looks for *referenceable source blocks* themselves, so it
+   * queries by the block's own `flavour` rather than by `refDocId`.
+   *
+   * `query` matches EITHER the block's own name (frame title / database
+   * name, folded into its indexed `content`) OR the title of the doc it
+   * lives in — a block's own content doesn't include its containing doc's
+   * title, so that's resolved via a separate `doc`-title lookup first and
+   * folded into the block query as an additional `docId` match, rather than
+   * denormalizing the page title into every block (which would need a
+   * re-crawl of every block in a doc whenever the doc itself is renamed).
+   */
+  watchCrossDocReferenceCandidates(
+    excludeDocId: string,
+    query?: string,
+    allowedFlavours: ('affine:frame' | 'affine:database' | 'affine:note')[] = [
+      'affine:frame',
+      'affine:database',
+      'affine:note',
+    ]
+  ) {
+    const DatabaseAdditionalSchema = z.object({
+      databaseName: z.string().optional(),
+      frameTitle: z.string().optional(),
+      noteTitle: z.string().optional(),
+    });
+
+    const flavourQuery: Query<'block'> = {
+      type: 'boolean',
+      occur: 'should',
+      queries: allowedFlavours.map(flavour => ({
+        type: 'match',
+        field: 'flavour',
+        match: flavour,
+      })),
+    };
+
+    const matchingDocIds$ = query
+      ? this.indexer
+          .search$(
+            'doc',
+            { type: 'match', field: 'title', match: query },
+            { fields: ['docId'], pagination: { limit: 50 } }
+          )
+          .pipe(
+            map(({ nodes }) =>
+              nodes.map(node =>
+                typeof node.fields.docId === 'string'
+                  ? node.fields.docId
+                  : node.fields.docId[0]
+              )
+            )
+          )
+      : of([]);
+
+    return matchingDocIds$.pipe(
+      switchMap(matchingDocIds => {
+        const textQuery: Query<'block'> | undefined = query
+          ? {
+              type: 'boolean',
+              occur: 'should',
+              queries: [
+                { type: 'match', field: 'content', match: query },
+                // Boosted well above a loose content-token match: living
+                // in a doc whose own *title* matched the query is a much
+                // stronger signal than a block merely containing one of
+                // the query's words somewhere in its content — without
+                // this, a block in a doc titled exactly "2026-07-30" (a
+                // journal) ranked no higher than any other block that
+                // happened to share a single word with the query.
+                ...matchingDocIds.map(
+                  (docId): Query<'block'> => ({
+                    type: 'boost',
+                    boost: 3,
+                    query: { type: 'match', field: 'docId', match: docId },
+                  })
+                ),
+              ],
+            }
+          : undefined;
+
+        return this.indexer.search$(
+          'block',
+          {
+            type: 'boolean',
+            occur: 'must',
+            queries: textQuery ? [flavourQuery, textQuery] : [flavourQuery],
+          },
+          {
+            fields: ['docId', 'blockId', 'flavour', 'additional'],
+            pagination: {
+              limit: 100,
+            },
+          }
+        );
+      }),
+      map(({ nodes }) => {
+        return nodes
+          .map(node => {
+            const docId =
+              typeof node.fields.docId === 'string'
+                ? node.fields.docId
+                : node.fields.docId[0];
+            if (docId === excludeDocId) {
+              // Referencing a block from the doc currently being edited
+              // isn't a cross-doc reference — the same-page picker/slash
+              // menu already covers that case.
+              return null;
+            }
+
+            const blockId =
+              typeof node.fields.blockId === 'string'
+                ? node.fields.blockId
+                : node.fields.blockId[0];
+            const flavour =
+              typeof node.fields.flavour === 'string'
+                ? node.fields.flavour
+                : node.fields.flavour[0];
+            const additional =
+              typeof node.fields.additional === 'string'
+                ? node.fields.additional
+                : node.fields.additional[0];
+            // A single malformed `additional` blob shouldn't take down every
+            // other candidate in this batch — `.map()` aborts entirely on
+            // an uncaught throw, so this one node degrades to "no label"
+            // instead of discarding the whole result set.
+            let parsedAdditional: unknown;
+            if (additional) {
+              try {
+                parsedAdditional = JSON.parse(additional);
+              } catch (error) {
+                console.warn(
+                  '[docs-search] failed to parse indexer `additional` field',
+                  error
+                );
+              }
+            }
+            const parsed =
+              DatabaseAdditionalSchema.safeParse(parsedAdditional).data;
+
+            const doc = this.docsService.list.doc$(docId).value;
+            if (!doc) return null;
+
+            const label =
+              flavour === 'affine:database'
+                ? parsed?.databaseName
+                : flavour === 'affine:frame'
+                  ? parsed?.frameTitle
+                  : parsed?.noteTitle;
+
+            return {
+              docId,
+              docTitle: doc.title$.value,
+              blockId,
+              flavour: flavour as
+                | 'affine:frame'
+                | 'affine:database'
+                | 'affine:note',
+              label: label || undefined,
+              // The indexer's own relevance score (BM25-based, boosted
+              // above for exact containing-doc-title matches) — consumers
+              // should sort by this instead of alphabetically, so an exact
+              // or near-exact match actually ranks first.
+              score: node.score,
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null);
+      })
+    );
   }
 
   watchDocSummary(docId: string) {

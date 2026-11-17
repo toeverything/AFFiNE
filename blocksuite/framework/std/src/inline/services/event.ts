@@ -522,7 +522,23 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     }
 
     const range = selection.getRangeAt(0);
-    if (!range.intersectsNode(rootElement)) {
+    // The selection's range containers can end up pointing at a node whose
+    // realm was torn down mid-teardown (e.g. the doc holding this editor was
+    // just deleted/relocated out from under an in-flight `selectionchange`).
+    // Reading `.contains`/`.intersectsNode` on such a node throws
+    // "Permission denied to access property" instead of returning a normal
+    // boolean — tolerate it the same way we'd tolerate "not this editor".
+    let intersects: boolean;
+    try {
+      intersects = range.intersectsNode(rootElement);
+    } catch {
+      if (previousInlineRange !== null) {
+        this.editor.setInlineRange(null);
+      }
+      return;
+    }
+
+    if (!intersects) {
       // A container wrapping only this editor (e.g. its padding was
       // clicked) is treated as selecting the editor. A container holding
       // other inline editors too is not: otherwise every editor in it (for
@@ -536,9 +552,18 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         ).length === 1 &&
         (!(container instanceof Element) ||
           container.querySelectorAll(`[${INLINE_ROOT_ATTR}]`).length <= 1);
-      const isContainerSelected =
-        wrapsOnlyThisEditor(range.endContainer) &&
-        wrapsOnlyThisEditor(range.startContainer);
+      let isContainerSelected: boolean;
+      try {
+        isContainerSelected =
+          wrapsOnlyThisEditor(range.endContainer) &&
+          wrapsOnlyThisEditor(range.startContainer);
+      } catch {
+        if (previousInlineRange !== null) {
+          this.editor.setInlineRange(null);
+        }
+        return;
+      }
+
       if (isContainerSelected) {
         this.editor.focusEnd();
         return;

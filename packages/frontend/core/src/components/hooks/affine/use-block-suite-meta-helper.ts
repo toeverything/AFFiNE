@@ -35,11 +35,15 @@ export function useBlockSuiteMetaHelper() {
   );
 
   const permanentlyDeletePage = useCallback(
-    (pageId: string) => {
+    async (pageId: string) => {
+      // Move any databases and notes other pages reference out of this page before it
+      // is deleted, then delete it the upstream way (callers await this).
+      await docsService.rescueReferencedDatabasesBeforeDelete(pageId);
+      await docsService.rescueReferencedNotesBeforeDelete(pageId);
       const docRecord = docRecordList.doc$(pageId).value;
       return docRecord?.deletePermanently();
     },
-    [docRecordList]
+    [docsService, docRecordList]
   );
 
   const duplicate = useAsyncCallback(
