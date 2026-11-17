@@ -337,8 +337,10 @@ const WorkspaceSyncInfo = ({
             >
               <Button
                 variant="plain"
+                size="custom"
                 aria-label="Sync status"
                 className={styles.workspaceActiveStatus}
+                contentClassName={styles.workspaceActiveStatusContent}
                 onClick={event => event.stopPropagation()}
               >
                 {syncStatus.icon}
