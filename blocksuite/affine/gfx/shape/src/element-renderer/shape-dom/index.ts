@@ -8,34 +8,6 @@ import { manageClassNames, setStyles } from './utils';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-const gradientDirectionMap: Record<
-  NonNullable<ShapeElementModel['gradientDirection']>,
-  { x1: number; y1: number; x2: number; y2: number }
-> = {
-  S: { x1: 0, y1: 0, x2: 0, y2: 1 },
-  W: { x1: 1, y1: 0, x2: 0, y2: 0 },
-  N: { x1: 0, y1: 1, x2: 0, y2: 0 },
-  E: { x1: 0, y1: 0, x2: 1, y2: 0 },
-  SE: { x1: 0, y1: 0, x2: 1, y2: 1 },
-  SW: { x1: 1, y1: 0, x2: 0, y2: 1 },
-  NE: { x1: 0, y1: 1, x2: 1, y2: 0 },
-  NW: { x1: 1, y1: 1, x2: 0, y2: 0 },
-};
-
-const cssGradientDirectionMap: Record<
-  NonNullable<ShapeElementModel['gradientDirection']>,
-  string
-> = {
-  S: 'to bottom',
-  W: 'to left',
-  N: 'to top',
-  E: 'to right',
-  SE: 'to bottom right',
-  SW: 'to bottom left',
-  NE: 'to top right',
-  NW: 'to top left',
-};
-
 type RetainedShapeDom = {
   polygon: SVGPolygonElement | null;
   svg: SVGSVGElement | null;
@@ -129,35 +101,6 @@ function removeSvg(retained: RetainedShapeDom) {
   retained.polygon = null;
 }
 
-const appendGradientDefs = (
-  svg: SVGSVGElement,
-  gradientId: string,
-  fillColor: string,
-  gradientFinal: string,
-  gradientDirection: NonNullable<ShapeElementModel['gradientDirection']>,
-  width: number,
-  height: number
-) => {
-  const defs = document.createElementNS(SVG_NS, 'defs');
-  const gradient = document.createElementNS(SVG_NS, 'linearGradient');
-  const coords = gradientDirectionMap[gradientDirection];
-  gradient.setAttribute('id', gradientId);
-  gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
-  gradient.setAttribute('x1', String(coords.x1 * width));
-  gradient.setAttribute('y1', String(coords.y1 * height));
-  gradient.setAttribute('x2', String(coords.x2 * width));
-  gradient.setAttribute('y2', String(coords.y2 * height));
-  const start = document.createElementNS(SVG_NS, 'stop');
-  start.setAttribute('offset', '0%');
-  start.setAttribute('stop-color', fillColor);
-  const end = document.createElementNS(SVG_NS, 'stop');
-  end.setAttribute('offset', '100%');
-  end.setAttribute('stop-color', gradientFinal);
-  gradient.append(start, end);
-  defs.append(gradient);
-  svg.append(defs);
-};
-
 function getOrCreateText(retained: RetainedShapeDom, element: HTMLElement) {
   if (retained.text) {
     return retained.text;
@@ -182,18 +125,8 @@ function applyBorderStyles(
 ) {
   element.style.border =
     model.strokeStyle !== 'none'
-      ? `${model.strokeWidth * zoom}px ${
-          model.strokeStyle === 'dash'
-            ? 'dashed'
-            : model.strokeStyle === 'dot'
-              ? 'dotted'
-              : 'solid'
-        } ${strokeColor}`
+      ? `${model.strokeWidth * zoom}px ${model.strokeStyle === 'dash' ? 'dashed' : 'solid'} ${strokeColor}`
       : 'none';
-  if (model.strokeStyle === 'dot') {
-    element.style.borderStyle = 'dotted';
-    element.style.borderColor = strokeColor;
-  }
 }
 
 function applyTransformStyles(model: ShapeElementModel, element: HTMLElement) {
@@ -266,12 +199,6 @@ export const shapeDomRenderer = (
     DefaultTheme.shapeStrokeColor,
     true
   );
-  const gradientFinal = model.gradientFinal
-    ? renderer.getColorValue(model.gradientFinal, fillColor, true)
-    : undefined;
-  const gradientDirection = model.gradientDirection ?? 'S';
-  const hasGradient =
-    Boolean(gradientFinal) && model.filled && gradientFinal !== fillColor;
 
   element.style.width = `${unscaledWidth * zoom}px`;
   element.style.height = `${unscaledHeight * zoom}px`;
@@ -284,7 +211,6 @@ export const shapeDomRenderer = (
     // For diamond and triangle, fill and border are handled by inline SVG
     element.style.border = 'none'; // Ensure no standard CSS border interferes
     element.style.backgroundColor = 'transparent'; // Host element is transparent
-    element.style.backgroundImage = 'none';
     const { polygon, svg } = getOrCreateSvg(retained, element);
 
     const strokeW = model.strokeWidth;
@@ -313,32 +239,11 @@ export const shapeDomRenderer = (
     const finalStrokeDasharray =
       model.strokeStyle === 'dash' && finalStrokeColor !== 'transparent'
         ? '12, 12'
-        : model.strokeStyle === 'dot' && finalStrokeColor !== 'transparent'
-          ? `${Math.max(1, strokeW)}, ${strokeW * 2.5}`
-          : 'none';
+        : 'none';
     // Determine fill color
-    const finalFillColor = model.filled
-      ? hasGradient
-        ? `url(#shape-grad-${model.id})`
-        : fillColor
-      : 'transparent';
+    const finalFillColor = model.filled ? fillColor : 'transparent';
 
     svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
-    while (svg.firstChild) {
-      svg.firstChild.remove();
-    }
-    if (hasGradient && gradientFinal) {
-      appendGradientDefs(
-        svg,
-        `shape-grad-${model.id}`,
-        fillColor,
-        gradientFinal,
-        gradientDirection,
-        unscaledWidth,
-        unscaledHeight
-      );
-    }
-    svg.append(polygon);
     polygon.setAttribute('points', svgPoints);
     polygon.setAttribute('fill', finalFillColor);
     polygon.setAttribute('stroke', finalStrokeColor);
@@ -348,20 +253,10 @@ export const shapeDomRenderer = (
     } else {
       polygon.removeAttribute('stroke-dasharray');
     }
-    polygon.setAttribute(
-      'stroke-linecap',
-      model.strokeStyle === 'dot' ? 'round' : 'butt'
-    );
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     removeSvg(retained);
     element.style.backgroundColor = model.filled ? fillColor : 'transparent';
-    if (hasGradient && gradientFinal) {
-      const direction = cssGradientDirectionMap[gradientDirection];
-      element.style.backgroundImage = `linear-gradient(${direction}, ${fillColor}, ${gradientFinal})`;
-    } else {
-      element.style.backgroundImage = 'none';
-    }
     applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
   }
 

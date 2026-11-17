@@ -6,6 +6,7 @@ import {
   type ConnectorElementModel,
   ConnectorMode,
 } from '@blocksuite/affine-model';
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IVec } from '@blocksuite/global/gfx';
 import { getBoundFromPoints, PointLocation, Vec } from '@blocksuite/global/gfx';
@@ -91,8 +92,21 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
   /** Starting mouse position when segment drag began */
   private _dragStartPos: IVec = [0, 0];
 
+  /** Original mouse position for snap calculations */
+  private _dragOriginPos: IVec = [0, 0];
+
+  /** Last snapped delta (model coords) */
+  private _lastSnappedDelta: IVec = [0, 0];
+
+  /** Absolute segment anchor position when segment dragging begins */
+  private _dragOriginSegmentPos: IVec = [0, 0];
+
   /** Cached z-order map used during drag to avoid resorting every move */
   private _jumpOrderMap: Map<string, number> | null = null;
+
+  private _snapToGrid = false;
+
+  private _gridSize = 20;
 
   get connectionOverlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
@@ -142,6 +156,19 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
 
     this._draggingSegmentIndex = segmentIndex;
     this._dragStartPos = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
+    this._dragOriginPos = [...this._dragStartPos];
+    this._dragOriginSegmentPos = [
+      connector.x + segment.start[0],
+      connector.y + segment.start[1],
+    ];
+    this._lastSnappedDelta = [0, 0];
+
+    const editPropsStore = this.std.get(EditPropsStore);
+    this._snapToGrid =
+      editPropsStore.getStorage('edgelessConnectorSnapToGrid') ??
+      editPropsStore.getStorage('edgelessSnapToGrid') ??
+      false;
+    this._gridSize = editPropsStore.getStorage('edgelessGridSize') ?? 20;
 
     // Capture state for undo BEFORE making any changes
     this.doc.captureSync();
@@ -166,11 +193,39 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
       if (!currentSegment) return;
 
       // Constrain delta based on segment orientation
-      const constrainedDelta = constrainDrag(
+      let constrainedDelta = constrainDrag(
         currentSegment,
         rawDeltaX,
         rawDeltaY
       );
+
+      if (this._snapToGrid && this._gridSize > 0) {
+        const axis = currentSegment.orientation === 'horizontal' ? 'y' : 'x';
+        const origin =
+          axis === 'x'
+            ? this._dragOriginSegmentPos[0]
+            : this._dragOriginSegmentPos[1];
+        const rawTotal =
+          axis === 'x'
+            ? currentPos[0] - this._dragOriginPos[0]
+            : currentPos[1] - this._dragOriginPos[1];
+        const snappedTotal =
+          Math.round((origin + rawTotal) / this._gridSize) * this._gridSize -
+          origin;
+        const lastTotal =
+          axis === 'x' ? this._lastSnappedDelta[0] : this._lastSnappedDelta[1];
+        const applyDelta = snappedTotal - lastTotal;
+
+        constrainedDelta = [
+          axis === 'x' ? applyDelta : 0,
+          axis === 'y' ? applyDelta : 0,
+        ];
+
+        this._lastSnappedDelta = [
+          axis === 'x' ? snappedTotal : this._lastSnappedDelta[0],
+          axis === 'y' ? snappedTotal : this._lastSnappedDelta[1],
+        ];
+      }
 
       let updatedSegments: ConnectorSegment[];
 
@@ -426,8 +481,26 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
   private _capPointerDown(e: PointerEvent, connection: 'target' | 'source') {
     const { gfx, connector, slots, _disposables } = this;
     e.stopPropagation();
+    const editPropsStore = this.std.get(EditPropsStore);
+    const snapToGrid =
+      editPropsStore.getStorage('edgelessConnectorSnapToGrid') ??
+      editPropsStore.getStorage('edgelessSnapToGrid') ??
+      false;
+    const gridSize = editPropsStore.getStorage('edgelessGridSize') ?? 20;
+    const origin = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
+
     _disposables.addFromEvent(document, 'pointermove', e => {
-      const point = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
+      let point = gfx.viewport.toModelCoordFromClientCoord([e.x, e.y]);
+      if (snapToGrid && gridSize > 0) {
+        const rawTotal: IVec = [point[0] - origin[0], point[1] - origin[1]];
+        const snappedTotal: IVec = [
+          Math.round((origin[0] + rawTotal[0]) / gridSize) * gridSize -
+            origin[0],
+          Math.round((origin[1] + rawTotal[1]) / gridSize) * gridSize -
+            origin[1],
+        ];
+        point = [origin[0] + snappedTotal[0], origin[1] + snappedTotal[1]];
+      }
       const isStartPointer = connection === 'source';
       const otherSideId = connector[isStartPointer ? 'target' : 'source'].id;
 
