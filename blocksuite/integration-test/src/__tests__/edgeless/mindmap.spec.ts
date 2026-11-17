@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/affine-model';
 import { Bound, deserializeXYWH } from '@blocksuite/global/gfx';
 import type { GfxController } from '@blocksuite/std/gfx';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest';
 
 import { click, pointermove, wait } from '../utils/common.js';
 import { getDocRootBlock } from '../utils/edgeless.js';
@@ -15,30 +15,44 @@ import { setupEditor } from '../utils/setup.js';
 
 describe('mindmap', () => {
   let gfx: GfxController;
-  const moveAndClick = ({ x, y, w, h }: Bound) => {
-    const { left, top } = gfx.viewport;
-    x += left;
-    y += top;
-
-    // trigger enter event
-    pointermove(editor.host!, { x: x + w / 2, y: y + h / 2 });
-    // trigger move event
-    pointermove(editor.host!, { x: x + w / 2 + 1, y: y + h / 2 + 1 });
-    click(editor.host!, { x: x + w / 2, y: y + h / 2 });
+  const centerInHost = ({ x, y, w, h }: Bound) => {
+    const { left, top } = editor.host!.getBoundingClientRect();
+    return {
+      x: x + w / 2 + gfx.viewport.left - left,
+      y: y + h / 2 + gfx.viewport.top - top,
+    };
   };
 
-  const move = ({ x, y, w, h }: Bound) => {
-    x += gfx.viewport.left;
-    y += gfx.viewport.top;
+  const moveAndClick = (bound: Bound) => {
+    const point = centerInHost(bound);
+    pointermove(editor.host!, point);
+    pointermove(editor.host!, { x: point.x + 1, y: point.y + 1 });
+    click(editor.host!, point);
+  };
 
-    pointermove(editor.host!, { x: x + w / 2, y: y + h / 2 });
+  const move = (bound: Bound) => {
+    pointermove(editor.host!, centerInHost(bound));
   };
 
   beforeEach(async () => {
-    const cleanup = await setupEditor('edgeless');
+    const cleanup = await setupEditor('edgeless', [], {
+      editorStyle: {
+        display: 'block',
+        marginLeft: '48px',
+        marginTop: '32px',
+      },
+    });
+    onTestFinished(cleanup);
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
-
-    return cleanup;
+    const hostRect = editor.host!.getBoundingClientRect();
+    const appRect = editor.parentElement!.getBoundingClientRect();
+    expect([gfx.viewport.left, gfx.viewport.top]).toEqual([
+      hostRect.left,
+      hostRect.top,
+    ]);
+    expect([hostRect.left - appRect.left, hostRect.top - appRect.top]).toEqual([
+      48, 32,
+    ]);
   });
 
   test('should update mindmap node size during IME composition', async () => {

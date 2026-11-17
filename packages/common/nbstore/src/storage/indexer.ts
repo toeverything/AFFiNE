@@ -83,7 +83,7 @@ type HighlightAbleField<T extends keyof IndexerSchema> = {
 }[keyof IndexerSchema[T]];
 
 export type SearchOptions<T extends keyof IndexerSchema> = {
-  pagination?: PaginationOption;
+  pagination?: PaginationOption & { cursor?: string };
   highlights?: { field: HighlightAbleField<T>; before: string; end: string }[];
   fields?: (keyof IndexerSchema[T])[];
 };
@@ -92,7 +92,7 @@ export type SearchResult<
   T extends keyof IndexerSchema,
   O extends SearchOptions<T>,
 > = {
-  pagination: ResultPagination;
+  pagination: ResultPagination & { nextCursor?: string | null };
   nodes: ({ id: string; score: number } & (O['fields'] extends any[]
     ? { fields: { [key in O['fields'][number]]: string | string[] } }
     : unknown) &
