@@ -15,6 +15,7 @@ import {
   FontWeight,
   FontWeightSchema,
   FrameZodSchema,
+  GRADIENT_DIRECTIONS,
   HIGHLIGHTER_LINE_WIDTHS,
   LayoutType,
   LineWidth,
@@ -107,6 +108,8 @@ export const HighlighterSchema = z
 const DEFAULT_SHAPE = {
   color: DefaultTheme.shapeTextColor,
   fillColor: DefaultTheme.shapeFillColor,
+  gradientFinal: undefined,
+  gradientDirection: undefined,
   strokeColor: DefaultTheme.shapeStrokeColor,
   strokeStyle: StrokeStyle.Solid,
   strokeWidth: LineWidth.Two,
@@ -124,6 +127,8 @@ const DEFAULT_SHAPE = {
 const ShapeObject = {
   color: ColorSchema,
   fillColor: ColorSchema,
+  gradientFinal: ColorSchema.optional(),
+  gradientDirection: z.enum(GRADIENT_DIRECTIONS).optional(),
   strokeColor: ColorSchema,
   strokeStyle: StrokeStyleSchema,
   strokeWidth: z.number(),
