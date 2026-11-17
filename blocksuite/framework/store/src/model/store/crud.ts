@@ -7,25 +7,127 @@ import type { BlockModel } from '../block/block-model.js';
 import type { YBlock } from '../block/types.js';
 import { internalPrimitives } from '../block/zod.js';
 
+/**
+ * Child id -> parent id for every block, shared by all `DocCRUD`s over the
+ * same Yjs block map and rebuilt lazily after any structural change.
+ *
+ * `getParent` used to search the whole block tree from the root (and `root`
+ * scanned every block) on every call. Both run several times per keystroke
+ * and once per paragraph render, so on long pages typing spent about a third
+ * of its time here and re-rendering the page was quadratic (999.18).
+ */
+interface ParentIndex {
+  parents: Map<string, string> | null;
+  /** False while the block map has no Y.Doc to watch: never cache then. */
+  watched: boolean;
+}
+
+const parentIndexes = new WeakMap<Y.Map<YBlock>, ParentIndex>();
+
+const isStructuralChange = (
+  yBlocks: Y.Map<YBlock>,
+  changed: Y.Transaction['changed']
+) => {
+  for (const [type, keys] of changed) {
+    if ((type as unknown) === yBlocks) return true;
+    if (keys.has('sys:children')) return true;
+    if (type instanceof Y.Array && type._item?.parentSub === 'sys:children') {
+      return true;
+    }
+  }
+  return false;
+};
+
+function getParentIndex(yBlocks: Y.Map<YBlock>): ParentIndex {
+  const existing = parentIndexes.get(yBlocks);
+  if (existing?.watched) return existing;
+  const index: ParentIndex = existing ?? { parents: null, watched: false };
+  parentIndexes.set(yBlocks, index);
+  // Any transaction that changes the structure (including remote updates
+  // and undo, which bypass DocCRUD) invalidates the index before any
+  // observer can read it.
+  const doc = yBlocks.doc;
+  if (doc) {
+    doc.on('beforeObserverCalls', (transaction: Y.Transaction) => {
+      if (isStructuralChange(yBlocks, transaction.changed)) {
+        index.parents = null;
+      }
+    });
+    index.watched = true;
+  }
+  return index;
+}
+
 export class DocCRUD {
+  private _rootId: string | null = null;
+
+  private readonly _parentIndex: ParentIndex;
+
   get root(): string | null {
+    const cached = this._rootId;
+    if (cached && this._isRoot(this._yBlocks.get(cached))) return cached;
+
     let rootId: string | null = null;
     this._yBlocks.forEach(yBlock => {
-      const flavour = yBlock.get('sys:flavour') as string;
-      const schema = this._schema.flavourSchemaMap.get(flavour);
-      if (!schema) return;
-
-      if (schema.model.role === 'root') {
+      if (this._isRoot(yBlock)) {
         rootId = yBlock.get('sys:id') as string;
       }
     });
+    this._rootId = rootId;
     return rootId;
   }
 
   constructor(
     private readonly _yBlocks: Y.Map<YBlock>,
     private readonly _schema: Schema
-  ) {}
+  ) {
+    this._parentIndex = getParentIndex(_yBlocks);
+    // Structural edits made through this class invalidate the index both
+    // before and after they run, so a lookup made part-way through (e.g.
+    // `addBlock` resolving `root`) can never leave a stale index behind.
+    for (const key of [
+      'addBlock',
+      'deleteBlock',
+      'moveBlocks',
+      'updateBlockChildren',
+    ] as const) {
+      const run = this[key].bind(this) as (...args: unknown[]) => unknown;
+      (this as Record<string, unknown>)[key] = (...args: unknown[]) => {
+        this._parentIndex.parents = null;
+        try {
+          return run(...args);
+        } finally {
+          this._parentIndex.parents = null;
+        }
+      };
+    }
+  }
+
+  private _isRoot(yBlock: YBlock | undefined) {
+    if (!yBlock) return false;
+    const flavour = yBlock.get('sys:flavour') as string;
+    return this._schema.flavourSchemaMap.get(flavour)?.model.role === 'root';
+  }
+
+  private _parents() {
+    const index = this._parentIndex.watched
+      ? this._parentIndex
+      : getParentIndex(this._yBlocks);
+    let parents = index.watched ? index.parents : null;
+    if (!parents) {
+      const built = new Map<string, string>();
+      this._yBlocks.forEach((yBlock, id) => {
+        const children = yBlock.get('sys:children');
+        if (!(children instanceof Y.Array)) return;
+        for (const childId of children.toArray()) {
+          built.set(childId, id);
+        }
+      });
+      parents = built;
+      if (index.watched) index.parents = built;
+    }
+    return parents;
+  }
 
   private _getSiblings<T>(
     id: string,
@@ -243,23 +345,7 @@ export class DocCRUD {
     const root = this.root;
     if (!root || root === targetId) return null;
 
-    const findParent = (parentId: string): string | null => {
-      const parentYBlock = this._yBlocks.get(parentId);
-      if (!parentYBlock) return null;
-
-      const children = parentYBlock.get('sys:children');
-
-      for (const childId of children.toArray()) {
-        if (childId === targetId) return parentId;
-
-        const parent = findParent(childId);
-        if (parent != null) return parent;
-      }
-
-      return null;
-    };
-
-    return findParent(root);
+    return this._parents().get(targetId) ?? null;
   }
 
   getPrev(id: string) {
