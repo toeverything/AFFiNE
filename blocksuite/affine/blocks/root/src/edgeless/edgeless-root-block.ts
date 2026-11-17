@@ -1,6 +1,7 @@
 import { NoteConfigExtension } from '@blocksuite/affine-block-note';
 import {
   DefaultTool,
+  getBgGridGap,
   normalizeWheelDeltaY,
   OverlayIdentifier,
   type SurfaceBlockComponent,
@@ -102,19 +103,12 @@ export class EdgelessRootBlockComponent extends BlockComponent<
   private readonly _refreshLayerViewport = requestThrottledConnectedFrame(
     () => {
       const { zoom, translateX, translateY } = this.gfx.viewport;
-      const gap = this._gridSize * zoom;
+      const gap = getBgGridGap(zoom, this._gridSize);
 
       if (this.backgroundElm) {
-        const offsetX = gap
-          ? ((((translateX % gap) + gap) % gap) + gap / 2) % gap
-          : 0;
-        const offsetY = gap
-          ? ((((translateY % gap) + gap) % gap) + gap / 2) % gap
-          : 0;
-
         this.backgroundElm.style.setProperty(
           'background-position',
-          `${offsetX}px ${offsetY}px`
+          `${translateX}px ${translateY}px`
         );
         this.backgroundElm.style.setProperty(
           'background-size',
@@ -428,15 +422,6 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   private _initGridSettings() {
     const store = this.std.get(EditPropsStore);
-    const getSnapOverlay = () =>
-      this.std.getOptional(OverlayIdentifier('snap-manager')) as
-        | {
-            setEnabled?: (enabled: boolean) => void;
-            setSnapToGrid?: (enabled: boolean) => void;
-            setGridSize?: (size: number) => void;
-            setGridSnapAnchor?: (anchor: string) => void;
-          }
-        | undefined;
 
     // Load initial settings
     this._gridVisible = store.getStorage('edgelessShowGrid') ?? true;
@@ -465,34 +450,36 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       'snap-to-guides-changed',
       (e: Event) => {
         const customEvent = e as CustomEvent<{ enabled: boolean }>;
-        const snapOverlay = getSnapOverlay();
-        snapOverlay?.setEnabled?.(customEvent.detail.enabled);
+        const snapOverlay = this.std.getOptional(
+          OverlayIdentifier('snap-manager')
+        );
+        if (snapOverlay && 'setEnabled' in snapOverlay) {
+          (snapOverlay as any).setEnabled(customEvent.detail.enabled);
+        }
       }
     );
 
     // Wire snap to grid toggle
     this._disposables.addFromEvent(this, 'snap-to-grid-changed', (e: Event) => {
       const customEvent = e as CustomEvent<{ enabled: boolean }>;
-      const snapOverlay = getSnapOverlay();
-      snapOverlay?.setSnapToGrid?.(customEvent.detail.enabled);
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
+      if (snapOverlay && 'setSnapToGrid' in snapOverlay) {
+        (snapOverlay as any).setSnapToGrid(customEvent.detail.enabled);
+      }
     });
 
     // Update snap overlay grid size when grid size changes
     this._disposables.addFromEvent(this, 'grid-size-changed', (e: Event) => {
       const customEvent = e as CustomEvent<{ size: number }>;
-      const snapOverlay = getSnapOverlay();
-      snapOverlay?.setGridSize?.(customEvent.detail.size);
-    });
-
-    this._disposables.addFromEvent(
-      this,
-      'grid-snap-anchor-changed',
-      (e: Event) => {
-        const customEvent = e as CustomEvent<{ anchor: string }>;
-        const snapOverlay = getSnapOverlay();
-        snapOverlay?.setGridSnapAnchor?.(customEvent.detail.anchor);
+      const snapOverlay = this.std.getOptional(
+        OverlayIdentifier('snap-manager')
+      );
+      if (snapOverlay && 'setGridSize' in snapOverlay) {
+        (snapOverlay as any).setGridSize(customEvent.detail.size);
       }
-    );
+    });
   }
 
   override connectedCallback() {
@@ -504,13 +491,79 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     this.keyboardManager = new EdgelessPageKeyboardManager(this);
 
     this.handleEvent('selectionChange', () => {
+      console.log('[DEBUG] selectionChange event fired');
+      console.log('[DEBUG] host.selection.value:', this.host.selection.value);
+
       const surface = this.host.selection.value.find(
         (sel): sel is SurfaceSelection => sel.is(SurfaceSelection)
       );
-      if (!surface) return;
+
+      console.log('[DEBUG] surface selection:', surface);
+      if (!surface) {
+        console.log('[DEBUG] No surface selection found');
+        return;
+      }
+
+      console.log('[DEBUG] surface.elements:', surface.elements);
+      if (surface.elements.length === 0) {
+        console.log('[DEBUG] No elements in selection');
+        return;
+      }
 
       const el = this.gfx.getElementById(surface.elements[0]);
+      console.log('[DEBUG] Retrieved element:', el);
+      console.log('[DEBUG] isCanvasElement check:', isCanvasElement(el));
+
       if (isCanvasElement(el)) {
+        // Log all properties of the selected element
+        console.group('🔍 Selected Element Properties');
+        console.log('Element Type:', el.type);
+        console.log('Element ID:', el.id);
+        console.log('Full Element Object:', el);
+
+        // Log specific common properties
+        if ('xywh' in el) console.log('Position/Size (xywh):', el.xywh);
+        if ('x' in el) console.log('X:', el.x);
+        if ('y' in el) console.log('Y:', el.y);
+        if ('w' in el) console.log('Width:', el.w);
+        if ('h' in el) console.log('Height:', el.h);
+
+        // Shape-specific properties
+        if ('shapeType' in el) console.log('Shape Type:', el.shapeType);
+        if ('strokeColor' in el) console.log('Stroke Color:', el.strokeColor);
+        if ('strokeWidth' in el) console.log('Stroke Width:', el.strokeWidth);
+        if ('strokeStyle' in el) console.log('Stroke Style:', el.strokeStyle);
+        if ('fillColor' in el) console.log('Fill Color:', el.fillColor);
+        if ('filled' in el) console.log('Filled:', el.filled);
+        if ('radius' in el) console.log('Radius:', el.radius);
+        if ('roughness' in el) console.log('Roughness:', el.roughness);
+
+        // Connector-specific properties
+        if ('source' in el) console.log('Source:', el.source);
+        if ('target' in el) console.log('Target:', el.target);
+        if ('mode' in el) console.log('Mode:', el.mode);
+        if ('controllers' in el) console.log('Controllers:', el.controllers);
+        if ('frontEndpointStyle' in el)
+          console.log('Front Endpoint:', el.frontEndpointStyle);
+        if ('rearEndpointStyle' in el)
+          console.log('Rear Endpoint:', el.rearEndpointStyle);
+
+        // Text properties
+        if ('text' in el) console.log('Text:', el.text);
+        if ('fontFamily' in el) console.log('Font Family:', el.fontFamily);
+        if ('fontSize' in el) console.log('Font Size:', el.fontSize);
+        if ('fontWeight' in el) console.log('Font Weight:', el.fontWeight);
+        if ('fontStyle' in el) console.log('Font Style:', el.fontStyle);
+        if ('textAlign' in el) console.log('Text Align:', el.textAlign);
+        if ('color' in el) console.log('Color:', el.color);
+
+        // Rotation
+        if ('rotate' in el) console.log('Rotation:', el.rotate);
+
+        // Log all enumerable properties
+        console.log('All Properties:', Object.keys(el));
+        console.groupEnd();
+
         return true;
       }
 
@@ -565,18 +618,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     const snapToGuides = store.getStorage('edgelessSnapToGuides') ?? true;
     const snapToGrid = store.getStorage('edgelessSnapToGrid') ?? false;
     const gridSize = store.getStorage('edgelessGridSize') ?? 20;
-    const gridSnapAnchor =
-      store.getStorage('edgelessGridSnapAnchor') ?? 'top-left';
-    const snapOverlay = this.std.getOptional(
-      OverlayIdentifier('snap-manager')
-    ) as
-      | {
-          setEnabled?: (enabled: boolean) => void;
-          setSnapToGrid?: (enabled: boolean) => void;
-          setGridSize?: (size: number) => void;
-          setGridSnapAnchor?: (anchor: string) => void;
-        }
-      | undefined;
+    const snapOverlay = this.std.getOptional(OverlayIdentifier('snap-manager'));
     if (snapOverlay) {
       if ('setEnabled' in snapOverlay) {
         (snapOverlay as any).setEnabled(snapToGuides);
@@ -586,9 +628,6 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       }
       if ('setGridSize' in snapOverlay) {
         (snapOverlay as any).setGridSize(gridSize);
-      }
-      if ('setGridSnapAnchor' in snapOverlay) {
-        (snapOverlay as any).setGridSnapAnchor(gridSnapAnchor);
       }
     }
   }

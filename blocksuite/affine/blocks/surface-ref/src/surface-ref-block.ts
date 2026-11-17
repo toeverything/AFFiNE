@@ -49,8 +49,6 @@ import { classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-const FRAME_ZOOM_BASELINE_SCALE = 0.5;
-
 @Peekable({
   enableOn: (block: SurfaceRefBlockComponent) => !!block.referenceModel,
 })
@@ -93,6 +91,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     .ref-content {
       position: relative;
       background-color: var(--affine-background-primary-color);
+      background: radial-gradient(
+        var(--affine-edgeless-grid-color) 1px,
+        var(--affine-background-primary-color) 1px
+      );
     }
 
     .ref-viewport {
@@ -449,27 +451,15 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         );
 
         const subscription = this.std.view.viewUpdated.subscribe(
-          ({ type, method, view }) => {
+          ({ id, type, method, view }) => {
             if (
-              view instanceof HTMLElement &&
-              view.tagName === 'AFFINE-EDGELESS-ROOT-PREVIEW'
-            ) {
-              applyRenderOptions(
-                this.std.host,
-                surface.elementModels,
-                referenceElement
-              );
-            }
-            if (
+              id === referenceElement.id &&
               type === 'block' &&
               method === 'add' &&
               view instanceof FrameBlockComponent
             ) {
-              applyRenderOptions(
-                this.std.host,
-                surface.elementModels,
-                referenceElement
-              );
+              view.showBorder = false;
+              subscription.unsubscribe();
             }
           }
         );
@@ -511,16 +501,18 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     if (!this._referenceXYWH$.value) return nothing;
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
-    const frameAspectRatio = parseAspectRatio(
-      this.model.props.frameAspectRatio
+    const sizeScale = normalizePositiveNumber(
+      this.model.props.pageSizeScale,
+      1
     );
-    const effectiveAspectRatio = frameAspectRatio ?? aspectRatio;
+    const adjustedAspectRatio =
+      sizeScale === 1 ? aspectRatio : aspectRatio / sizeScale;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
     const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     const viewportStyle = useLegacyWidth
-      ? { aspectRatio: `${effectiveAspectRatio}` }
-      : { aspectRatio: `${effectiveAspectRatio}`, width: '100%' };
+      ? { aspectRatio: `${adjustedAspectRatio}` }
+      : { aspectRatio: `${adjustedAspectRatio}`, width: '100%' };
 
     return html`<div class="ref-content">
       <div
@@ -587,25 +579,13 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
     const theme = this.std.get(ThemeProvider).theme$.value;
-    const scaleMode = this.model.props.frameScaleMode ?? 'none';
-    const widthMode =
-      this.model.props.frameWidthMode ??
-      this.model.props.pageWidthMode ??
-      'page';
-    const zoomScale = normalizePositiveNumber(
-      this.model.props.frameZoomScale ?? this.model.props.pageSizeScale,
-      FRAME_ZOOM_BASELINE_SCALE
-    );
     const widthScale = normalizePositiveNumber(
-      this.model.props.frameWidthScale ?? this.model.props.pageWidthScale,
+      this.model.props.pageWidthScale,
       1
     );
-    const appliedWidthMode = scaleMode === 'none' ? 'page' : widthMode;
+    const widthMode = this.model.props.pageWidthMode ?? 'page';
     const useLegacyWidth =
-      scaleMode === 'none' ||
-      (scaleMode === 'width' &&
-        appliedWidthMode === 'page' &&
-        widthScale === 1);
+      widthMode === 'page' || (widthMode === 'scale' && widthScale === 1);
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
@@ -614,35 +594,23 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         ></surface-ref-placeholder>`
       : this._renderRefContent(useLegacyWidth);
 
-    const fullWidth =
-      'calc(100vw - (var(--affine-editor-side-padding, 0px) * 2) - 8px)';
-    const frameWidth = this._referenceXYWH$.value
-      ? Bound.deserialize(this._referenceXYWH$.value).w
-      : 0;
-    const targetWidth =
-      scaleMode === 'zoom'
-        ? frameWidth > 0
-          ? `${frameWidth * zoomScale}px`
-          : `calc(var(--affine-editor-width) * ${zoomScale / FRAME_ZOOM_BASELINE_SCALE})`
-        : appliedWidthMode === 'full'
-          ? fullWidth
-          : `calc(var(--affine-editor-width) * ${widthScale})`;
-    const clampedWidth = `min(${targetWidth}, ${fullWidth})`;
+    const baseWidth =
+      widthMode === 'full'
+        ? 'calc(100vw - (var(--affine-editor-side-padding, 0px) * 2))'
+        : widthMode === 'scale'
+          ? `calc(var(--affine-editor-width) * ${widthScale})`
+          : 'var(--affine-editor-width)';
     const containerStyle = useLegacyWidth
       ? {}
       : {
-          width: clampedWidth,
-          maxWidth: fullWidth,
-          marginLeft: '0',
-          marginRight: '0',
+          width: baseWidth,
+          maxWidth: baseWidth,
+          marginLeft: widthMode === 'full' ? '0' : 'auto',
+          marginRight: widthMode === 'full' ? '0' : 'auto',
           position: 'relative',
           left: '50%',
           transform: 'translateX(-50%)',
         };
-    const frameStyle = {
-      ...containerStyle,
-      '--affine-edgeless-grid-color': 'transparent',
-    };
 
     return html`
       <div
@@ -651,7 +619,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
           focused: this.selected$.value,
           'comment-highlighted': this.isCommentHighlighted,
         })}
-        style=${styleMap(frameStyle)}
+        style=${styleMap(containerStyle)}
         @click=${this._handleClick}
       >
         ${content}
@@ -690,18 +658,6 @@ function normalizePositiveNumber(value: number | undefined, fallback: number) {
     return fallback;
   }
   return value;
-}
-
-function parseAspectRatio(value: string | undefined) {
-  if (!value) return null;
-  const match = value.match(/^(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)$/);
-  if (!match) return null;
-  const x = Number(match[1]);
-  const y = Number(match[2]);
-  if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0) {
-    return null;
-  }
-  return x / y;
 }
 
 declare global {
