@@ -85,7 +85,13 @@ export const EdgelessSnapshot = (props: Props) => {
 
   const renderEditor = useCallback(async () => {
     if (!wrapperRef.current) return;
-    const doc = await getDocByName(docName);
+    const doc = await getDocByName(docName).catch(error => {
+      console.error('[settings] Failed to load edgeless preview document', {
+        docName,
+        error,
+      });
+      return undefined;
+    });
     if (!doc) return;
 
     const editorHost = new BlockStdScope({

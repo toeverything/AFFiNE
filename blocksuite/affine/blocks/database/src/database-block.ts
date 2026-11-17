@@ -12,12 +12,18 @@ import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared
 import {
   BlockElementCommentManager,
   CommentProviderIdentifier,
+  DatabaseMoveProvider,
   DocModeProvider,
   FeatureFlagService,
+  JournalTodoDatabaseProvider,
   NotificationProvider,
   type TelemetryEventMap,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import {
+  TASK_INTEROP_UPDATED_EVENT,
+  type TaskInteropUpdatedDetail,
+} from '@blocksuite/affine-shared/utils';
 import { getDropResult } from '@blocksuite/affine-widget-drag-handle';
 import {
   createRecordDetail,
@@ -43,8 +49,14 @@ import {
   CopyIcon,
   DeleteIcon,
   MoreHorizontalIcon,
+  MoveToIcon,
+  SettingsIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent, BlockSelection } from '@blocksuite/std';
+import {
+  type BlockComponent,
+  BlockSelection,
+  type EditorHost,
+} from '@blocksuite/std';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { Slice } from '@blocksuite/store';
 import { autoUpdate } from '@floating-ui/dom';
@@ -55,7 +67,9 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { popSideDetail } from './components/layout.js';
 import { DatabaseConfigExtension } from './config.js';
-import { EditorHostKey } from './context/host-context.js';
+import { EditorHostKey, RowHostKey } from './context/host-context.js';
+import type { DatabaseViewLocalOverride } from './context/view-local-override-context.js';
+import { DatabaseViewLocalOverrideProvider } from './context/view-local-override-context.js';
 import { DatabaseBlockDataSource } from './data-source.js';
 import {
   databaseBlockStyles,
@@ -74,8 +88,22 @@ import { DatabaseSelection } from './selection.js';
 import { getSingleDocIdFromText } from './utils/title-doc.js';
 import type { DatabaseViewExtensionOptions } from './view';
 
+export function resolveTaskInteropTargetRow(
+  rowLookup: ReturnType<DatabaseBlockDataSource['findRowByTaskIdentity']>,
+  fallbackRowId?: string
+) {
+  if (rowLookup.status === 'unique') {
+    return rowLookup.rowId;
+  }
+  if (rowLookup.status === 'missing') {
+    return fallbackRowId;
+  }
+  return null;
+}
+
 export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBlockModel> {
   private readonly clickDatabaseOps = (e: MouseEvent) => {
+    const dataSource = this.dataSource.value;
     const options = this.optionsConfig.configure(this.model, {
       items: [
         menu.input({
@@ -114,6 +142,100 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
               .catch(console.error);
           },
         }),
+        menu.action({
+          name: 'Settings',
+          prefix: SettingsIcon(),
+          closeOnSelect: false,
+          select: ele => {
+            const currentInheritance = dataSource.getTaskStatusInheritance?.();
+            popMenu(popupTargetFromElement(ele), {
+              options: {
+                items: [
+                  menu.group({
+                    name: 'Parent status behavior',
+                    items: [
+                      menu.toggleSwitch({
+                        name: 'Done when all children are done',
+                        on:
+                          currentInheritance?.done ===
+                          'require-all-subtasks-complete',
+                        onChange: on => {
+                          dataSource.setTaskStatusInheritance?.({
+                            done: on
+                              ? 'require-all-subtasks-complete'
+                              : 'disabled',
+                          });
+                        },
+                      }),
+                      menu.toggleSwitch({
+                        name: 'In progress when any child starts',
+                        on:
+                          currentInheritance?.inProgress ===
+                          'start-when-any-subtask-starts',
+                        onChange: on => {
+                          dataSource.setTaskStatusInheritance?.({
+                            inProgress: on
+                              ? 'start-when-any-subtask-starts'
+                              : 'disabled',
+                          });
+                        },
+                      }),
+                      menu.toggleSwitch({
+                        name: 'Auto-demote auto-derived Done',
+                        on: currentInheritance?.autoDemoteAutoDone ?? true,
+                        onChange: on => {
+                          dataSource.setTaskStatusInheritance?.({
+                            autoDemoteAutoDone: on,
+                          });
+                        },
+                      }),
+                      menu.toggleSwitch({
+                        name: 'Manual Done cascades to descendants',
+                        on:
+                          currentInheritance?.cascadeManualDoneToDescendants ??
+                          true,
+                        onChange: on => {
+                          dataSource.setTaskStatusInheritance?.({
+                            cascadeManualDoneToDescendants: on,
+                          });
+                        },
+                      }),
+                    ],
+                  }),
+                ],
+              },
+            });
+          },
+        }),
+        menu.action({
+          prefix: MoveToIcon(),
+          name: 'Move to page...',
+          // Only offered on the database's own real, primary render
+          // location — never when rendered nested inside a `database-ref`/
+          // `database-view-ref` preview scope (moving the canonical out
+          // from under a reference actively rendering it is not a
+          // supported interaction surface here). Mirrors the exact same
+          // two-flavour `closest()` gate `dataSource`'s own lazy getter
+          // above already uses for the same reasoning.
+          hide: () =>
+            !this.std.getOptional(DatabaseMoveProvider) ||
+            !!this.closest('affine-database-ref') ||
+            !!this.closest('affine-database-view-ref'),
+          select: () => {
+            const databaseMove = this.std.getOptional(DatabaseMoveProvider);
+            if (!databaseMove) return;
+
+            databaseMove
+              .moveDatabaseToAnotherDoc(this.model.id, this.store.id)
+              .catch(e => {
+                console.error(
+                  '[database] failed to move database to another doc',
+                  e
+                );
+                toast(this.host, 'Could not move this database.');
+              });
+          },
+        }),
         menu.group({
           items: [
             menu.action({
@@ -141,7 +263,37 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
 
   private readonly dataSource = lazy(() => {
     const dataSource = new DatabaseBlockDataSource(this.model, dataSource => {
-      dataSource.serviceSet(EditorHostKey, this.host);
+      // `this.host` is the OUTER page's real host for a natively-rendered
+      // `affine-database` — but when this component is instead rendered
+      // *nested*, inside a `database-view-ref`/`database-ref` reference's
+      // own preview `BlockStdScope` (a fresh scope over the canonical's own,
+      // often cross-doc, backing document — see `_maybeRefreshPreview`),
+      // `this.host` is that NESTED preview's own host, not the real page
+      // the user is looking at. Cell renderers/row actions that insert new
+      // blocks "on the current page" (Story 2.6's note-linking button, in
+      // particular) need the real outer host — resolved the same
+      // duck-typed way `viewLocalOverride` already is below, via whichever
+      // reference wrapper's own `outerStd` getter is present (confirmed
+      // live: without this, a note-ref was being created silently inside
+      // the canonical's own filtered preview doc, invisible on the actual
+      // page).
+      const outerHostHolder = this.closest(
+        'affine-database-view-ref, affine-database-ref'
+      ) as Element & { outerStd?: { host: EditorHost } };
+      dataSource.serviceSet(
+        EditorHostKey,
+        outerHostHolder?.outerStd?.host ?? this.host
+      );
+      // ...but `this.host` is still the only host whose `store` actually
+      // owns this database's row blocks (for a nested reference render it
+      // is the preview scope over the canonical's own backing document;
+      // for a native render it is simply the same host again). Anything
+      // that resolves a row's `BlockModel`, or runs a block command against
+      // it, must go through this key instead — reading rows off the outer
+      // host returns `undefined` for every row in the cross-doc case, which
+      // is what made list-view Enter treat every row as empty and unindent
+      // it rather than split it.
+      dataSource.serviceSet(RowHostKey, this.host);
       this.std.provider
         .getAll(ExternalGroupByConfigProvider)
         .forEach(config => {
@@ -158,7 +310,40 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
             source
           );
         });
+      // `affine:database-view-ref` (a reference block needing its own
+      // independent view/filter configuration, separate from the canonical
+      // table's shared `views`) exposes a ready-made `viewLocalOverride` on
+      // its own custom element for exactly this seam — duck-typed, not a
+      // real import, so this foundational package never depends on that
+      // block's package (mirrors the existing, already-accepted duck-typing
+      // `database-ref-block.ts` itself does in the other direction, reaching
+      // into this component's own `virtualPadding$`/`dataSource`). Must be
+      // set inside this `init` callback (before the constructed instance is
+      // ever used), not after — `viewDataList$`/etc. are read the moment
+      // anything renders, and there's no reactive re-check afterward.
+      const overrideHost = this.closest('affine-database-view-ref') as
+        | (Element & { viewLocalOverride?: DatabaseViewLocalOverride })
+        | null;
+      if (overrideHost?.viewLocalOverride) {
+        dataSource.serviceSet(
+          DatabaseViewLocalOverrideProvider,
+          overrideHost.viewLocalOverride
+        );
+      }
     });
+    // Must run AFTER the `init` callback above, not inside it: the
+    // `DatabaseViewLocalOverrideProvider` set in there is what makes
+    // `viewDataList$` resolve to *this reference's own* per-instance views
+    // rather than the canonical's shared ones, and this invariant has to be
+    // enforced against the former. See
+    // `enforceAlwaysHiddenPlumbingColumns`'s own comment for why a
+    // creation-time hide is not sufficient — in short, `Note color` is
+    // created lazily on the first note-colour attach anywhere, so every
+    // reference that already existed at that moment would otherwise render
+    // it as a visible field forever. Self-correcting here means any such
+    // reference fixes itself the next time it renders. No-ops entirely when
+    // nothing needs changing, so this is not a write on every mount.
+    dataSource.enforceAlwaysHiddenPlumbingColumns();
     // Skip when rendered nested inside a `database-ref` wrapper: `this.model`
     // there is the *shared* canonical table, the same object for every
     // reference to it, so applying/persisting a "last used view" through it
@@ -169,8 +354,15 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     // apply was picking up whatever view another reference's tab click had
     // last written into this exact shared prop). `database-ref-block.ts`'s
     // own `_syncCurrentView` is the sole source of truth for the nested
-    // case, persisting to each reference's own model instead.
-    if (!this.closest('affine-database-ref')) {
+    // case, persisting to each reference's own model instead. Same
+    // reasoning applies to `affine-database-view-ref` — its own local
+    // `views`/`currentViewId` are unrelated to the canonical's, so applying
+    // the canonical's `currentViewId` here would resolve against the wrong
+    // view list entirely (its own component owns that instead).
+    if (
+      !this.closest('affine-database-ref') &&
+      !this.closest('affine-database-view-ref')
+    ) {
       const id = this.model.props.currentViewId;
       if (id && dataSource.viewManager.viewGet(id)) {
         dataSource.viewManager.setCurrentView(id);
@@ -322,6 +514,12 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       widgetPresets.tools.viewOptions,
       widgetPresets.tools.tableAddRow,
     ],
+    list: [
+      widgetPresets.tools.filter,
+      widgetPresets.tools.search,
+      widgetPresets.tools.viewOptions,
+      widgetPresets.tools.tableAddRow,
+    ],
   });
 
   private readonly viewSelection$ = computed(() => {
@@ -382,6 +580,43 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     this.classList.add(databaseBlockStyles);
     this.listenFullWidthChange();
     this.handleMobileEditing();
+    this.handleTaskInteropUpdates();
+  }
+
+  private handleTaskInteropUpdates() {
+    this.disposables.addFromEvent(
+      this.host,
+      TASK_INTEROP_UPDATED_EVENT,
+      (event: Event) => {
+        const customEvent = event as CustomEvent<TaskInteropUpdatedDetail>;
+        const detail = customEvent.detail;
+        if (!detail?.link) {
+          return;
+        }
+
+        const dataSource = this.dataSource.value;
+        const rowLookup = dataSource.findRowByTaskIdentity(
+          detail.link.taskIdentity
+        );
+        const rowId = resolveTaskInteropTargetRow(
+          rowLookup,
+          detail.link.databaseRowId
+        );
+
+        if (!rowId) {
+          return;
+        }
+
+        dataSource.setTaskInteropLink(rowId, {
+          taskIdentity: detail.link.taskIdentity,
+          docId: detail.link.docId,
+          blockId: detail.link.blockId,
+          sourceFlavor: detail.link.sourceFlavor,
+          databaseId: this.blockId,
+          databaseRowId: rowId,
+        });
+      }
+    );
   }
 
   listenFullWidthChange() {
@@ -487,6 +722,52 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
                   target: this,
                 });
               };
+              // Story 2.7 (Task 4): a calendar view showing the current
+              // workspace-wide "journal todo" canonical (any calendar view
+              // of it, however it was added — the generic view-switcher,
+              // not a special insert command) navigates to the row's
+              // journal-page appearance instead of the generic row detail
+              // panel — see `resolveJournalTodoNavigationDate`'s own
+              // comment. Falls through to the generic behavior below if the
+              // target journal page doesn't exist yet (never silently
+              // no-ops, never auto-creates a page as a click side effect).
+              //
+              // Live bug: `data.isNewRow` skips this entirely — a row the
+              // calendar's own "New row" button just created has no Done
+              // date yet, so `resolveJournalTodoNavigationDate` always
+              // resolves it to *today*, regardless of which day was
+              // actually clicked on the calendar. Following that
+              // navigation for a brand-new row peeked today's journal
+              // page — which has no title field for the new row at all —
+              // instead of the row detail panel the user actually needs
+              // to fill it in, leaving the row permanently "Untitled"
+              // once that peek is closed.
+              if (data.view.type === 'calendar' && !data.isNewRow) {
+                const journalTodo = this.std.getOptional(
+                  JournalTodoDatabaseProvider
+                );
+                const journalTodoRef = journalTodo?.getJournalTodoDatabaseRef();
+                const isJournalTodoCanonical =
+                  journalTodoRef?.refBlockId === this.model.id &&
+                  journalTodoRef?.refDocId === this.model.store.id;
+                if (isJournalTodoCanonical) {
+                  const targetDate =
+                    this.dataSource.value.resolveJournalTodoNavigationDate(
+                      data.rowId
+                    );
+                  const targetDocId = journalTodo?.getJournalDocId(targetDate);
+                  // `getJournalDocId` resolves against core workspace
+                  // metadata (`DocsService.list.docs$`), a different source
+                  // of truth than this block's own `std.workspace` doc
+                  // collection — confirm the doc is actually loadable here
+                  // before navigating, so a stale/out-of-sync id falls
+                  // through to the generic row-detail behavior below
+                  // instead of peeking a doc that can't render.
+                  if (targetDocId && this.std.workspace.getDoc(targetDocId)) {
+                    return openDoc(targetDocId);
+                  }
+                }
+              }
               const doc = getSingleDocIdFromText(
                 this.model.store.getBlock(data.rowId)?.model?.text
               );
@@ -527,9 +808,11 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       ([_, widget]) => widget
     )}`;
 
+    const dataViewContent = this.dataViewRootLogic.value.render();
+
     return html`
       <div contenteditable="false" class="${databaseContentStyles}">
-        ${this.dataViewRootLogic.value.render()} ${widgets}
+        ${dataViewContent} ${widgets}
       </div>
     `;
   }

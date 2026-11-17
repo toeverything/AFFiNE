@@ -171,6 +171,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
       this.root.openDetailPanel({
         view: this.view,
         rowId,
+        isNewRow: true,
       });
     }
     return rowId;
@@ -243,6 +244,7 @@ export class CalendarViewUILogic extends DataViewUILogicBase<CalendarSingleView>
       this.root.openDetailPanel({
         view: this.view,
         rowId,
+        isNewRow: true,
       });
     }
   }

@@ -2,6 +2,7 @@ import { toast } from '@blocksuite/affine-components/toast';
 import { ViewExtensionManagerIdentifier } from '@blocksuite/affine-ext-loader';
 import type { DatabaseRefBlockModel } from '@blocksuite/affine-model';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
+import type { EditorHost } from '@blocksuite/std';
 import { BlockComponent, BlockStdScope } from '@blocksuite/std';
 import { RANGE_QUERY_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import type { BlockModel, Query, Store } from '@blocksuite/store';
@@ -33,6 +34,15 @@ const patchedPreviewStores = new WeakSet<object>();
 // interaction, never freed even after the block/doc is long gone.
 export function forgetLastActiveRef(canonicalId: string) {
   lastActiveRefIdByCanonical.delete(canonicalId);
+}
+
+// Exported so `database-view-ref-block.ts` (a sibling package whose own
+// references can point at the exact same canonical, and therefore share
+// this same tracking map and the same underlying preview `Store` — see
+// `installDeleteRedirect` below) can mark itself "last active" identically,
+// without duplicating this module's private state.
+export function markActiveRef(canonicalId: string, refId: string) {
+  lastActiveRefIdByCanonical.set(canonicalId, refId);
 }
 
 /**
@@ -158,6 +168,22 @@ export class DatabaseRefBlockComponent extends BlockComponent<DatabaseRefBlockMo
       display: block;
     }
   `;
+
+  /**
+   * The REAL outer page's `std` — this component itself is never nested
+   * (unlike the `affine-database` it renders internally via its own,
+   * query-filtered `BlockStdScope` over the canonical's own backing doc —
+   * see `_previewStore`). Read by `database-block.ts`'s own lazy
+   * `dataSource` getter (duck-typed via `this.closest('affine-database-ref')`,
+   * mirroring `affine-database-view-ref`'s own identical `outerStd` getter)
+   * so cell renderers/row actions nested inside — Story 2.6's row-hover
+   * note button, in particular — insert new blocks onto the page the user
+   * is actually viewing, not into the (often cross-doc) canonical's own
+   * document.
+   */
+  get outerStd() {
+    return this.std;
+  }
 
   private _previewStore: Store | null = null;
 
@@ -332,7 +358,12 @@ export class DatabaseRefBlockComponent extends BlockComponent<DatabaseRefBlockMo
     // identical pattern (see that file's own `_maybeRefreshPreview`),
     // fixed there with this same one-line change.
     nextPreviewStore.load();
-    this._installDeleteRedirect(nextPreviewStore, targetModel.id);
+    installDeleteRedirect(
+      nextPreviewStore,
+      targetModel.id,
+      this.std.store,
+      this.std.host
+    );
     this._replacePreviewStore(nextPreviewStore, refDoc, query);
     this._resolveError = null;
   }
@@ -358,101 +389,6 @@ export class DatabaseRefBlockComponent extends BlockComponent<DatabaseRefBlockMo
     this._previewStore = store;
     this._previewRefDoc = refDoc;
     this._previewQuery = query;
-  }
-
-  /**
-   * The database's own "..." more-menu has a "Delete Database" action
-   * (`database-block.ts`) that does *two* things, both on the real
-   * canonical model since this package renders it live rather than a
-   * read-only snapshot (unlike `surface-ref`'s frame preview):
-   *
-   *   this.model.children.forEach(b => this.store.deleteBlock(b));
-   *   this.store.deleteBlock(this.model);
-   *
-   * Redirecting only the second call (as an earlier version of this fix
-   * did) missed the first: it unconditionally deletes every row *before*
-   * the self-delete we redirect ever runs, so real, still-referenced-
-   * elsewhere data was wiped regardless — this went unnoticed until tested
-   * against a table that actually had rows. But an individual row must
-   * still be deletable normally (through the table's own per-row UI) even
-   * while multiple references exist, since that's a legitimate shared
-   * edit, not a "delete the whole table" request — and nothing at the
-   * `deleteBlock` layer distinguishes the two calls in isolation.
-   *
-   * What *does* distinguish them: both calls in the more-menu action run
-   * synchronously, back to back, with no `await` between them. So a
-   * deletion of one of the canonical's own children is buffered rather
-   * than applied immediately, and only actually committed on a microtask
-   * flush — by which time a same-tick self-delete (if any) has already
-   * been observed and marks the buffered children as moot: the whole
-   * table's fate (redirect one view, or — if it's the last one — a real
-   * cascade covering its children anyway) decides theirs instead. An
-   * isolated row deletion (no self-delete follows) sees no such marker by
-   * flush time and goes through for real.
-   *
-   * Installed once per shared preview `Store` (see the module comment
-   * above on why it's shared, not per-reference).
-   */
-  private _installDeleteRedirect(previewStore: Store, canonicalId: string) {
-    if (patchedPreviewStores.has(previewStore)) return;
-    patchedPreviewStores.add(previewStore);
-
-    const outerStore = this.std.store;
-    const outerHost = this.std.host;
-    const original = previewStore.deleteBlock.bind(previewStore);
-
-    let pendingChildren: BlockModel[] = [];
-    let flushScheduled = false;
-    let selfDeleteSeen = false;
-
-    const flushPendingChildren = () => {
-      flushScheduled = false;
-      const children = pendingChildren;
-      pendingChildren = [];
-      if (selfDeleteSeen) {
-        selfDeleteSeen = false;
-        return;
-      }
-      children.forEach(child => original(child, undefined));
-    };
-
-    previewStore.deleteBlock = (model, options) => {
-      const id = typeof model === 'string' ? model : model.id;
-
-      if (id === canonicalId) {
-        selfDeleteSeen = true;
-        const currentRefId = lastActiveRefIdByCanonical.get(canonicalId);
-        const currentRefModel = currentRefId
-          ? outerStore.getBlock(currentRefId)?.model
-          : undefined;
-        if (currentRefModel) {
-          outerStore.deleteBlock(currentRefModel);
-        } else {
-          console.warn(
-            '[database-ref] refusing to delete a multiply-referenced table: could not determine which reference view initiated the request'
-          );
-          toast(
-            outerHost,
-            'Could not determine which reference to delete — try again from this view.'
-          );
-        }
-        return;
-      }
-
-      const resolvedModel =
-        typeof model === 'string' ? previewStore.getBlock(model)?.model : model;
-      const parent = resolvedModel && previewStore.getParent(resolvedModel);
-      if (resolvedModel && parent?.id === canonicalId) {
-        pendingChildren.push(resolvedModel);
-        if (!flushScheduled) {
-          flushScheduled = true;
-          queueMicrotask(flushPendingChildren);
-        }
-        return;
-      }
-
-      original(model, options);
-    };
   }
 
   // Marks `node` itself (if it's a block element) plus every block element
@@ -865,12 +801,11 @@ export class DatabaseRefBlockComponent extends BlockComponent<DatabaseRefBlockMo
     if (!this._previewStore) return nothing;
 
     return html`${guard([this._previewStore], () => {
-      return this._previewStore
-        ? new BlockStdScope({
-            store: this._previewStore,
-            extensions: this._previewSpec,
-          }).render()
-        : nothing;
+      if (!this._previewStore) return nothing;
+      return new BlockStdScope({
+        store: this._previewStore,
+        extensions: this._previewSpec,
+      }).render();
     })}`;
   }
 }
@@ -879,4 +814,110 @@ declare global {
   interface HTMLElementTagNameMap {
     'affine-database-ref': DatabaseRefBlockComponent;
   }
+}
+
+/**
+ * The database's own "..." more-menu has a "Delete Database" action
+ * (`database-block.ts`) that does *two* things, both on the real
+ * canonical model since this package renders it live rather than a
+ * read-only snapshot (unlike `surface-ref`'s frame preview):
+ *
+ *   this.model.children.forEach(b => this.store.deleteBlock(b));
+ *   this.store.deleteBlock(this.model);
+ *
+ * Redirecting only the second call (as an earlier version of this fix
+ * did) missed the first: it unconditionally deletes every row *before*
+ * the self-delete we redirect ever runs, so real, still-referenced-
+ * elsewhere data was wiped regardless — this went unnoticed until tested
+ * against a table that actually had rows. But an individual row must
+ * still be deletable normally (through the table's own per-row UI) even
+ * while multiple references exist, since that's a legitimate shared
+ * edit, not a "delete the whole table" request — and nothing at the
+ * `deleteBlock` layer distinguishes the two calls in isolation.
+ *
+ * What *does* distinguish them: both calls in the more-menu action run
+ * synchronously, back to back, with no `await` between them. So a
+ * deletion of one of the canonical's own children is buffered rather
+ * than applied immediately, and only actually committed on a microtask
+ * flush — by which time a same-tick self-delete (if any) has already
+ * been observed and marks the buffered children as moot: the whole
+ * table's fate (redirect one view, or — if it's the last one — a real
+ * cascade covering its children anyway) decides theirs instead. An
+ * isolated row deletion (no self-delete follows) sees no such marker by
+ * flush time and goes through for real.
+ *
+ * Installed once per shared preview `Store` (see the module comment
+ * above on why it's shared, not per-reference) — exported (rather than a
+ * private method) so `database-view-ref-block.ts`, whose own references
+ * can point at this exact same canonical and therefore share this exact
+ * same preview `Store` (see that file's own module comment), can install
+ * it too. `patchedPreviewStores` being module-private here means whichever
+ * flavour's reference resolves the shared store first wins the one
+ * install; both flavours funnel through `markActiveRef` for tracking, so
+ * the redirect correctly resolves to whichever reference (of either
+ * flavour) was last interacted with.
+ */
+export function installDeleteRedirect(
+  previewStore: Store,
+  canonicalId: string,
+  outerStore: Store,
+  outerHost: EditorHost
+) {
+  if (patchedPreviewStores.has(previewStore)) return;
+  patchedPreviewStores.add(previewStore);
+
+  const original = previewStore.deleteBlock.bind(previewStore);
+
+  let pendingChildren: BlockModel[] = [];
+  let flushScheduled = false;
+  let selfDeleteSeen = false;
+
+  const flushPendingChildren = () => {
+    flushScheduled = false;
+    const children = pendingChildren;
+    pendingChildren = [];
+    if (selfDeleteSeen) {
+      selfDeleteSeen = false;
+      return;
+    }
+    children.forEach(child => original(child, undefined));
+  };
+
+  previewStore.deleteBlock = (model, options) => {
+    const id = typeof model === 'string' ? model : model.id;
+
+    if (id === canonicalId) {
+      selfDeleteSeen = true;
+      const currentRefId = lastActiveRefIdByCanonical.get(canonicalId);
+      const currentRefModel = currentRefId
+        ? outerStore.getBlock(currentRefId)?.model
+        : undefined;
+      if (currentRefModel) {
+        outerStore.deleteBlock(currentRefModel);
+      } else {
+        console.warn(
+          '[database-ref] refusing to delete a multiply-referenced table: could not determine which reference view initiated the request'
+        );
+        toast(
+          outerHost,
+          'Could not determine which reference to delete — try again from this view.'
+        );
+      }
+      return;
+    }
+
+    const resolvedModel =
+      typeof model === 'string' ? previewStore.getBlock(model)?.model : model;
+    const parent = resolvedModel && previewStore.getParent(resolvedModel);
+    if (resolvedModel && parent?.id === canonicalId) {
+      pendingChildren.push(resolvedModel);
+      if (!flushScheduled) {
+        flushScheduled = true;
+        queueMicrotask(flushPendingChildren);
+      }
+      return;
+    }
+
+    original(model, options);
+  };
 }

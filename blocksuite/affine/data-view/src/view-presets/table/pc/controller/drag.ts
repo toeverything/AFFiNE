@@ -1,6 +1,7 @@
 // related component
 
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
+import { TASK_HIERARCHY_LEVEL_COLUMN_NAME } from '@blocksuite/affine-shared/utils';
 import type { ReactiveController } from 'lit';
 
 import { startDrag } from '../../../../core/utils/drag.js';
@@ -8,6 +9,26 @@ import { TableRowView } from '../row/row.js';
 import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class TableDragController implements ReactiveController {
+  private getHierarchyLevelByRowId(rowId: string) {
+    const hierarchyProperty = this.logic.view.propertiesRaw$.value.find(
+      property => property.name$.value === TASK_HIERARCHY_LEVEL_COLUMN_NAME
+    );
+    if (!hierarchyProperty) {
+      return 0;
+    }
+    const raw = hierarchyProperty.cellGetOrCreate(rowId).jsonValue$.value;
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return Math.max(0, Math.floor(raw));
+    }
+    if (typeof raw === 'string') {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.floor(parsed));
+      }
+    }
+    return 0;
+  }
+
   dragStart = (rowView: TableRowView, evt: PointerEvent) => {
     const eleRect = rowView.getBoundingClientRect();
     const offsetLeft = evt.x - eleRect.left;
@@ -25,6 +46,7 @@ export class TableDragController implements ReactiveController {
           type: 'self';
           groupKey?: string;
           position: InsertToPosition;
+          level: number;
         }
       | { type: 'out'; callback: () => void },
       PointerEvent
@@ -49,6 +71,7 @@ export class TableDragController implements ReactiveController {
             type: 'self',
             groupKey: result.groupKey,
             position: result.position,
+            level: result.level,
           };
         }
         return;
@@ -66,6 +89,10 @@ export class TableDragController implements ReactiveController {
           return;
         }
         if (result.type === 'self') {
+          const dataSource = this.logic.view.manager.dataSource as {
+            setPendingHierarchyLevel?: (rowId: string, level: number) => void;
+          };
+          dataSource.setPendingHierarchyLevel?.(rowView.rowId, result.level);
           const row = this.logic.view.rowGetOrCreate(rowView.rowId);
           row.move(result.position, fromGroup, result.groupKey);
         }
@@ -81,6 +108,7 @@ export class TableDragController implements ReactiveController {
     | {
         groupKey: string | undefined;
         position: InsertToPosition;
+        level: number;
         y: number;
         width: number;
         x: number;
@@ -94,20 +122,52 @@ export class TableDragController implements ReactiveController {
     if (!rows || !tableRect || y < tableRect.top) {
       return;
     }
+
+    const hoveredRow =
+      evt.target instanceof Element
+        ? (evt.target.closest('data-view-table-row') as TableRowView | null)
+        : null;
+    if (hoveredRow) {
+      const rect = hoveredRow.getBoundingClientRect();
+      const mid = (rect.top + rect.bottom) / 2;
+      const before = y < mid;
+      const hoveredRowId = hoveredRow.dataset.rowId as string;
+      const refLevel = this.getHierarchyLevelByRowId(hoveredRowId);
+      const level = refLevel;
+      return {
+        groupKey: hoveredRow.groupKey,
+        position: {
+          id: hoveredRowId,
+          before,
+        },
+        level,
+        y: before ? rect.top : rect.bottom,
+        width: Math.max(48, tableRect.width - level * 12),
+        x: tableRect.left + level * 12,
+      };
+    }
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows.item(i);
       const rect = row.getBoundingClientRect();
       const mid = (rect.top + rect.bottom) / 2;
       if (y < rect.bottom) {
+        const before = y < mid;
+        const refRow = row;
+        const refRowId = refRow.dataset.rowId as string;
+        const refLevel = this.getHierarchyLevelByRowId(refRowId);
+        const level = refLevel;
+        const x = tableRect.left + level * 12;
         return {
           groupKey: row.groupKey,
           position: {
             id: row.dataset.rowId as string,
-            before: y < mid,
+            before,
           },
-          y: y < mid ? rect.top : rect.bottom,
-          width: tableRect.width,
-          x: tableRect.left,
+          level,
+          y: before ? rect.top : rect.bottom,
+          width: Math.max(48, tableRect.width - level * 12),
+          x,
         };
       }
     }

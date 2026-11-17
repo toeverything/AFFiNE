@@ -422,7 +422,10 @@ export class DocsSearchService extends Service {
    * Forward search for cross-doc reference candidates: every Frame or
    * Database block in the workspace except the ones living in `excludeDocId`
    * (the doc currently being edited — referencing a block from itself isn't
-   * a cross-doc reference). Powers the cross-doc picker (Story 0.3): unlike
+   * a cross-doc reference). Pass `null` to exclude nothing (every doc's
+   * candidates included, current doc's own too) for callers that want one
+   * picker covering both same-doc and cross-doc candidates. Powers the
+   * cross-doc picker (Story 0.3): unlike
    * `watchDatabasesTo`, which looks for existing *references pointing at* a
    * doc, this looks for *referenceable source blocks* themselves, so it
    * queries by the block's own `flavour` rather than by `refDocId`.
@@ -436,7 +439,7 @@ export class DocsSearchService extends Service {
    * re-crawl of every block in a doc whenever the doc itself is renamed).
    */
   watchCrossDocReferenceCandidates(
-    excludeDocId: string,
+    excludeDocId: string | null,
     query?: string,
     allowedFlavours: ('affine:frame' | 'affine:database' | 'affine:note')[] = [
       'affine:frame',
@@ -526,7 +529,7 @@ export class DocsSearchService extends Service {
               typeof node.fields.docId === 'string'
                 ? node.fields.docId
                 : node.fields.docId[0];
-            if (docId === excludeDocId) {
+            if (excludeDocId !== null && docId === excludeDocId) {
               // Referencing a block from the doc currently being edited
               // isn't a cross-doc reference — the same-page picker/slash
               // menu already covers that case.

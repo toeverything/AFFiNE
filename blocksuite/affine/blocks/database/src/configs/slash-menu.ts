@@ -5,6 +5,7 @@ import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { viewPresets } from '@blocksuite/data-view/view-presets';
 import {
   DatabaseKanbanViewIcon,
+  DatabaseListViewIcon,
   DatabaseTableViewIcon,
   TodayIcon,
 } from '@blocksuite/icons/lit';
@@ -78,6 +79,35 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
     },
 
     {
+      name: 'List View',
+      description: 'Display items in a checklist.',
+      searchAlias: ['database', 'list', 'todo', 'checklist'],
+      icon: DatabaseListViewIcon(),
+      group: '7_Database@2',
+      when: ({ model }) =>
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.listViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .pipe(({ insertedDatabaseBlockId }) => {
+            if (insertedDatabaseBlockId) {
+              const telemetry = std.getOptional(TelemetryProvider);
+              telemetry?.track('BlockCreated', {
+                blockType: 'affine:database',
+              });
+            }
+          })
+          .run();
+      },
+    },
+
+    {
       name: 'Kanban View',
       description: 'Visualize data in a dashboard.',
       searchAlias: ['database'],
@@ -86,7 +116,7 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
         figure: KanbanViewTooltip,
         caption: 'Kanban View',
       },
-      group: '7_Database@2',
+      group: '7_Database@3',
       when: ({ model }) =>
         !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
       action: ({ std }) => {

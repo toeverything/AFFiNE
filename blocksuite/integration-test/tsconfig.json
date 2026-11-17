@@ -6,5 +6,8 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./src", "./src/**/*.json"],
-  "references": [{ "path": "../affine/all" }]
+  "references": [
+    { "path": "../affine/all" },
+    { "path": "../affine/blocks/database-note-property" }
+  ]
 }

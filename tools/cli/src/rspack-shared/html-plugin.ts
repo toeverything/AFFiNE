@@ -67,15 +67,32 @@ const gitShortHash = once(() => {
   if (GITHUB_SHA) {
     return GITHUB_SHA.substring(0, 9);
   }
-  const repo = new Repository(ProjectRoot.value);
-  const shortSha = repo.head().target()?.substring(0, 9);
-  if (shortSha) {
-    return shortSha;
+  // No .git directory is present in a Docker build from a plain COPY'd
+  // context (not a git clone) -- both git lookups below throw in that case.
+  // Fall back to a placeholder instead of crashing the whole frontend build;
+  // GITHUB_SHA above is the real way to get an accurate hash embedded there.
+  try {
+    const repo = new Repository(ProjectRoot.value);
+    const shortSha = repo.head().target()?.substring(0, 9);
+    if (shortSha) {
+      return shortSha;
+    }
+  } catch {
+    // fall through
   }
-  const sha = execSync(`git rev-parse --short HEAD`, {
-    encoding: 'utf-8',
-  }).trim();
-  return sha;
+  try {
+    // `stdio: 'pipe'` for all three streams -- execSync's default otherwise
+    // prints the child's stderr straight to this process's stderr even when
+    // the resulting error is caught, so git's own "fatal: not a git
+    // repository" would still show up in the build log looking like an
+    // uncaught crash.
+    return execSync(`git rev-parse --short HEAD`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    return 'unknown';
+  }
 });
 
 const currentDir = Path.dir(import.meta.url);

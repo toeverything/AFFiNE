@@ -4,6 +4,8 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { Color } from '../../themes';
+
 /**
  * A reference to a single `affine:note` block, addressed by stable id —
  * lets a reusable block of text (a "note" in the everyday sense: a
@@ -30,8 +32,16 @@ export type NoteRefProps = {
   // note purely for data storage; its own page-mode props are never
   // rendered directly). Defaults to a visible border so a reader can tell
   // where the embedded note starts and ends within the surrounding flow.
+  //
+  // Stored as a `Color` (the same theme-token type `NoteProps.
+  // pageBackgroundOverride` uses), never a resolved CSS string — a
+  // resolved value bakes in whichever light/dark scheme happened to be
+  // active at the moment it was picked, so switching themes later would
+  // leave every note-ref showing the *other* scheme's color forever.
+  // Resolve via `resolveColor(backgroundOverride, theme)` at render time
+  // instead, exactly like `note-block.ts`'s own `_pageBackgroundOverride`.
   showBorder: boolean;
-  backgroundOverride?: string;
+  backgroundOverride?: Color;
 };
 
 // Naming lives on the canonical `affine:note` itself (`NoteProps.name`), not

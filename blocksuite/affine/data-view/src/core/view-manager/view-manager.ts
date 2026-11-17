@@ -45,7 +45,11 @@ export class ViewManagerBase implements ViewManager {
   });
 
   currentViewId$ = computed(() => {
-    return this._currentViewId$.value ?? this.views$.value[0];
+    const current = this._currentViewId$.value;
+    if (current && this.views$.value.includes(current)) {
+      return current;
+    }
+    return this.views$.value[0];
   });
 
   currentView$ = computed(() => {
@@ -62,6 +66,19 @@ export class ViewManagerBase implements ViewManager {
     return this.dataSource.viewMetas;
   }
 
+  // `SingleView` constructors (e.g. `KanbanSingleView`'s `materializeColumns`
+  // write-back, `GroupTrait`'s un-disposed `effect()` subscriptions) do real,
+  // one-time side-effecting work — they were never meant to be rebuilt on
+  // every `viewGet` call. Callers that poll frequently (`database-ref-block
+  // .ts`'s `_syncCurrentView`, invoked on every render and on every nested-
+  // preview DOM mutation) previously minted a fresh, uncached instance each
+  // time, re-running that side-effecting constructor logic repeatedly and
+  // leaking a `GroupTrait`'s reactive subscriptions once per call — the same
+  // "abandoned reactive graph" hazard this codebase already guards against
+  // for abandoned preview `Store`s. Cached per view id instead; invalidated
+  // only if the view's own `mode` changes underneath it (`viewChangeType`).
+  private readonly _viewInstances = new Map<string, SingleView>();
+
   constructor(public dataSource: DataSource) {}
 
   moveTo(id: string, position: InsertToPosition): void {
@@ -74,7 +91,8 @@ export class ViewManagerBase implements ViewManager {
 
   viewAdd(type: DataViewMode): string {
     const meta = this.dataSource.viewMetaGet(type);
-    const data = meta.model.defaultData(this);
+    const data: ReturnType<typeof meta.model.defaultData> =
+      meta.model.defaultData(this);
     const id = this.dataSource.viewDataAdd({
       ...data,
       id: nanoid(),
@@ -89,7 +107,7 @@ export class ViewManagerBase implements ViewManager {
     const from = this.viewGet(id)?.type;
     const meta = this.dataSource.viewMetaGet(type);
     this.dataSource.viewDataUpdate(id, old => {
-      let data = {
+      let data: DataViewDataType = {
         ...meta.model.defaultData(this),
         id: old.id,
         name: old.name,
@@ -124,7 +142,16 @@ export class ViewManagerBase implements ViewManager {
 
   viewGet(id: string): SingleView | undefined {
     const meta = this.dataSource.viewMetaGetById(id);
-    if (!meta) return;
-    return new meta.model.dataViewManager(this, id);
+    if (!meta) {
+      this._viewInstances.delete(id);
+      return;
+    }
+    const cached = this._viewInstances.get(id);
+    if (cached && cached.type === meta.type) {
+      return cached;
+    }
+    const view = new meta.model.dataViewManager(this, id);
+    this._viewInstances.set(id, view);
+    return view;
   }
 }

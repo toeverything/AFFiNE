@@ -21,7 +21,7 @@ export function useRegisterNavigationCommands() {
         icon: 'none',
         label: 'go back',
         keyBinding: {
-          binding: '$mod+[',
+          binding: '$mod+alt+[',
         },
         run() {
           track.$.cmdk.general.goBack();
@@ -38,7 +38,7 @@ export function useRegisterNavigationCommands() {
         icon: 'none',
         label: 'go forward',
         keyBinding: {
-          binding: '$mod+]',
+          binding: '$mod+alt+]',
         },
         run() {
           track.$.cmdk.general.goForward();

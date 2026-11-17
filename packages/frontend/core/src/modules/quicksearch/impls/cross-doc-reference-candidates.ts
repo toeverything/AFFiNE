@@ -23,7 +23,7 @@ export interface CrossDocReferenceCandidatePayload {
  */
 export class CrossDocReferenceQuickSearchSession
   extends Entity<{
-    excludeDocId: string;
+    excludeDocId: string | null;
     allowedFlavours?: ('affine:frame' | 'affine:database' | 'affine:note')[];
   }>
   implements

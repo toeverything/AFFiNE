@@ -452,6 +452,8 @@
   "com.affine.cmdk.cross-doc-reference.title": "Reference a frame, table, or note",
   "com.affine.cmdk.docs.placeholder": "Search docs or paste link...",
   "com.affine.cmdk.insert-links": "Insert links",
+  "com.affine.cmdk.move-database-to-doc.placeholder": "Search for a page to move this database to...",
+  "com.affine.cmdk.move-database-to-doc.title": "Move to another page",
   "com.affine.cmdk.move-note-to-doc.placeholder": "Search for a page to move this note to...",
   "com.affine.cmdk.move-note-to-doc.title": "Move to another page",
   "com.affine.cmdk.no-results": "No results found",

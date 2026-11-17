@@ -1,4 +1,8 @@
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
+import {
+  EditorSettingProvider,
+  TaskWorkflowDefaultsSchema,
+} from '@blocksuite/affine-shared/services';
 import type { Command } from '@blocksuite/std';
 import type { BlockModel, Store } from '@blocksuite/store';
 
@@ -37,7 +41,12 @@ export const insertDatabaseBlockCommand: Command<
 
   if (string == null) return;
 
-  initDatabaseBlock(std.store, targetModel, string, viewType, false);
+  initDatabaseBlock(std.store, targetModel, string, viewType, false, {
+    taskWorkflowDefaults: TaskWorkflowDefaultsSchema.parse(
+      std.getOptional(EditorSettingProvider)?.setting$.peek()
+        .taskWorkflowDefaults ?? {}
+    ),
+  });
 
   if (removeEmptyLine && targetModel.text?.length === 0) {
     std.store.deleteBlock(targetModel);
@@ -51,7 +60,10 @@ export const initDatabaseBlock = (
   model: BlockModel,
   databaseId: string,
   viewType: string,
-  isAppendNewRow = true
+  isAppendNewRow = true,
+  options?: {
+    taskWorkflowDefaults?: ReturnType<typeof TaskWorkflowDefaultsSchema.parse>;
+  }
 ) => {
   const blockModel = doc.getBlock(databaseId)?.model as
     | DatabaseBlockModel
@@ -60,7 +72,7 @@ export const initDatabaseBlock = (
     return;
   }
   const datasource = new DatabaseBlockDataSource(blockModel);
-  databaseViewInitTemplate(datasource, viewType);
+  databaseViewInitTemplate(datasource, viewType, options);
   if (isAppendNewRow) {
     const parent = doc.getParent(model);
     if (!parent) return;

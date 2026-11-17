@@ -1,7 +1,9 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
+import { refreshJournalTodoOnDuplicateMiddleware } from '@blocksuite/affine/blocks/database-view-ref';
 import type {
   DatabaseRefBlockModel,
+  DatabaseViewRefBlockModel,
   NoteBlockModel,
   NoteRefBlockModel,
 } from '@blocksuite/affine/model';
@@ -18,6 +20,7 @@ import { ObjectPool, Service } from '@toeverything/infra';
 import { combineLatest, map } from 'rxjs';
 
 import { initDocFromProps } from '../../../blocksuite/initialization';
+import { readJournalTodoDatabaseRef } from '../../journal/store/journal-todo-database';
 import { getAFFiNEWorkspaceSchema } from '../../workspace/global-schema';
 import type { Doc } from '../entities/doc';
 import { DocRecordList } from '../entities/record-list';
@@ -277,7 +280,25 @@ export class DocsService extends Service {
           get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
           delete: (id: string) => collection.removeDoc(id),
         },
-        middlewares: [replaceIdMiddleware(collection.idGenerator)],
+        middlewares: [
+          replaceIdMiddleware(collection.idGenerator),
+          // Story 2.11: refreshes the Journal Todo grace clause's frozen
+          // `Date.now()` filter literal on every duplicated
+          // `affine:database-view-ref` block — see that middleware's own
+          // comment for the full "why". Registered here (not just inside
+          // `duplicateFromTemplate` below) so plain "Duplicate doc" gets
+          // the same fix, not only journal-template duplication.
+          refreshJournalTodoOnDuplicateMiddleware({
+            getCurrentSource: () => {
+              const ref = readJournalTodoDatabaseRef(
+                this.store.getWorkspaceRootYDoc()
+              );
+              return ref
+                ? { refDocId: ref.docId, refBlockId: ref.databaseId }
+                : undefined;
+            },
+          }),
+        ],
       });
       const slice = Slice.fromModels(sourceBsDoc, [
         ...(sourceBsDoc.root?.children ?? []),
@@ -401,13 +422,21 @@ export class DocsService extends Service {
       for (const [otherDocId, otherDoc] of collection.docs) {
         if (otherDocId === docId) continue;
         const otherStore = otherDoc.getStore({ id: otherDocId });
-        const hasRef = otherStore
-          .getBlocksByFlavour('affine:database-ref')
-          .some(
-            b =>
-              (b.model as DatabaseRefBlockModel).props.refBlockId ===
-              databaseModel.id
-          );
+        const hasRef =
+          otherStore
+            .getBlocksByFlavour('affine:database-ref')
+            .some(
+              b =>
+                (b.model as DatabaseRefBlockModel).props.refBlockId ===
+                databaseModel.id
+            ) ||
+          otherStore
+            .getBlocksByFlavour('affine:database-view-ref')
+            .some(
+              b =>
+                (b.model as DatabaseViewRefBlockModel).props.refBlockId ===
+                databaseModel.id
+            );
         if (hasRef) {
           destinationDocId = otherDocId;
           break;
@@ -491,6 +520,19 @@ export class DocsService extends Service {
             'affine:database-ref'
           )) {
             const refModel = ref.model as DatabaseRefBlockModel;
+            if (
+              refModel.props.refBlockId === databaseModel.id &&
+              refModel.props.refDocId === docId
+            ) {
+              otherStore.updateBlock(refModel, {
+                refDocId: destinationDocId,
+              });
+            }
+          }
+          for (const ref of otherStore.getBlocksByFlavour(
+            'affine:database-view-ref'
+          )) {
+            const refModel = ref.model as DatabaseViewRefBlockModel;
             if (
               refModel.props.refBlockId === databaseModel.id &&
               refModel.props.refDocId === docId
@@ -676,6 +718,191 @@ export class DocsService extends Service {
   }
 
   /**
+   * Moves a single `affine:database` block from `sourceDocId` into
+   * `destinationDocId`, repointing every existing `affine:database-ref` and
+   * `affine:database-view-ref` (in any doc) that points at it to the new
+   * location — the user-triggered "Move to another page" action (Story
+   * 2.3), mirroring `relocateNoteToAnotherDoc` (Story 0.5) with one
+   * necessary addition: a database can be pointed at by *two* independent
+   * reference flavours, not one, exactly the same dual-flavour concern
+   * `rescueReferencedDatabasesBeforeDelete` (Story 2.2) already solved for
+   * the delete-time-rescue case — this reuses that same `isHiddenNoteParent`
+   * detection and dual-flavour repoint loop rather than reinventing them.
+   *
+   * Deliberately no `replaceIdMiddleware`: every existing reference's
+   * `refBlockId` must keep resolving after the move, so the database's own
+   * id (and its rows'/children's ids) must survive unchanged.
+   *
+   * Diverges from `rescueReferencedDatabasesBeforeDelete` in one place: when
+   * the database wasn't already living in a dedicated hidden note, that
+   * method always wraps it in a *new hidden* note on arrival (correct for
+   * an automatic rescue — nothing needs to see it, only resolve it). This
+   * is a user-triggered, visible move instead, so a bare database is wrapped
+   * in a new *normal, visible* note at the destination — `affine:database`'s
+   * own schema requires `parent: ['affine:note']` (it can never sit
+   * directly at doc root, unlike Note itself), so a parent note is still
+   * required, just not a hidden one.
+   */
+  async relocateDatabaseToAnotherDoc(
+    sourceDocId: string,
+    databaseId: string,
+    destinationDocId: string
+  ): Promise<boolean> {
+    // Moving into the same doc isn't a move at all — the app-layer bridge
+    // (`patchDatabaseMoveService`) already rejects this before calling in,
+    // but the service method itself must not trust that guard is the only
+    // caller; without this check, a same-doc call would re-insert the same
+    // id into the doc it's already in, then delete the original out from
+    // under it.
+    if (sourceDocId === destinationDocId) return false;
+
+    const collection = this.store.getBlocksuiteCollection();
+
+    const sourceBsDoc = this.store.getBlockSuiteDoc(sourceDocId);
+    if (!sourceBsDoc) return false;
+
+    const databaseModel = sourceBsDoc.getBlock(databaseId)?.model;
+    if (!databaseModel) return false;
+
+    const destinationBsDoc = collection
+      .getDoc(destinationDocId)
+      ?.getStore({ id: destinationDocId });
+    if (!destinationBsDoc) return false;
+
+    // Guards against re-running a move onto a destination that already
+    // resolved this same id (e.g. a prior partial/failed move) — inserting
+    // a second block under the same id with no `replaceIdMiddleware` would
+    // produce an ambiguous same-doc collision with no detection downstream.
+    if (destinationBsDoc.getBlock(databaseId)) return false;
+
+    const parent = sourceBsDoc.getParent(databaseModel);
+    const isHiddenNoteParent =
+      parent?.flavour === 'affine:note' &&
+      (parent as NoteBlockModel).props.displayMode ===
+        NoteDisplayMode.EdgelessOnly;
+
+    try {
+      const transformer = new Transformer({
+        schema: getAFFiNEWorkspaceSchema(),
+        blobCRUD: collection.blobSync,
+        docCRUD: {
+          create: (id: string) => {
+            this.createDoc({ id });
+            const store = collection.getDoc(id)?.getStore({ id });
+            if (!store) {
+              throw new Error('Failed to create doc');
+            }
+            return store;
+          },
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+          delete: (id: string) => collection.removeDoc(id),
+        },
+        // Deliberately no `replaceIdMiddleware` — every existing
+        // `database-ref`/`database-view-ref`'s `refBlockId` must keep
+        // resolving after the move, so ids must be preserved, not
+        // regenerated.
+        middlewares: [],
+      });
+
+      const modelsToMove =
+        isHiddenNoteParent && parent ? [parent] : [databaseModel];
+      const slice = Slice.fromModels(sourceBsDoc, modelsToMove);
+      const snapshot = transformer.sliceToSnapshot(slice);
+      if (!snapshot) {
+        throw new Error('Failed to snapshot database for relocation');
+      }
+
+      let insertionParentId = destinationBsDoc.root?.id;
+      if (!isHiddenNoteParent) {
+        // A bare database was never promoted into a hidden host note — it
+        // needs a *visible* one here (not the delete-rescue path's hidden
+        // one), since this is a user-facing move, not a backup slot.
+        //
+        // Explicit `pageBorder: false`: this note exists purely to host the
+        // moved database, not to read as "a distinct note among other
+        // notes" the way a real secondary note (e.g. from `/note`) should
+        // — `NoteBlockComponent`'s `_showBorder` falls back to
+        // `!isPageBlock()` whenever `pageBorder` is left `undefined`, which
+        // is `true` for any non-primary note, so an unset value here would
+        // leave a visible border around the moved table. Mirrors the exact
+        // same "explicit `pageBorder: false` at creation time" pattern
+        // already used for a doc's own primary note
+        // (`EditorSettingDocCreateMiddleware.beforeCreate`) — see
+        // `note-model.ts`'s own comment on why the explicit value beats the
+        // `isPageBlock()` fallback.
+        if (!destinationBsDoc.root) {
+          throw new Error('Destination doc has no root block');
+        }
+        insertionParentId = destinationBsDoc.addBlock(
+          'affine:note',
+          { pageBorder: false },
+          destinationBsDoc.root.id
+        );
+      }
+
+      await transformer.snapshotToSlice(
+        snapshot,
+        destinationBsDoc,
+        insertionParentId
+      );
+
+      // Repoint every database-ref/database-view-ref across the workspace
+      // (including one in `destinationDocId` itself, which is now a
+      // same-doc reference) that pointed at this canonical in the source
+      // doc, to its new home.
+      for (const [otherDocId, otherDoc] of collection.docs) {
+        ensureDocLoaded(otherDoc);
+        const otherStore = otherDoc.getStore({ id: otherDocId });
+        for (const ref of otherStore.getBlocksByFlavour(
+          'affine:database-ref'
+        )) {
+          const refModel = ref.model as DatabaseRefBlockModel;
+          if (
+            refModel.props.refBlockId === databaseId &&
+            refModel.props.refDocId === sourceDocId
+          ) {
+            otherStore.updateBlock(refModel, {
+              refDocId: destinationDocId,
+            });
+          }
+        }
+        for (const ref of otherStore.getBlocksByFlavour(
+          'affine:database-view-ref'
+        )) {
+          const refModel = ref.model as DatabaseViewRefBlockModel;
+          if (
+            refModel.props.refBlockId === databaseId &&
+            refModel.props.refDocId === sourceDocId
+          ) {
+            otherStore.updateBlock(refModel, {
+              refDocId: destinationDocId,
+            });
+          }
+        }
+      }
+
+      // Unlike the delete-rescue path (which only runs when the source doc
+      // is about to be destroyed anyway), this is a live, in-place move —
+      // the original must be removed so it doesn't end up duplicated.
+      if (isHiddenNoteParent && parent) {
+        sourceBsDoc.deleteBlock(parent);
+      } else {
+        sourceBsDoc.deleteBlock(databaseModel);
+      }
+
+      return true;
+    } catch (e) {
+      logger.error('Failed to relocate database to another doc', {
+        sourceDocId,
+        databaseId,
+        destinationDocId,
+        error: e,
+      });
+      return false;
+    }
+  }
+
+  /**
    * Duplicate a doc from template
    * @param sourceDocId - the id of the source doc to be duplicated
    * @param _targetDocId - the id of the target doc to be duplicated, if not provided, a new doc will be created
@@ -724,7 +951,25 @@ export class DocsService extends Service {
           get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
           delete: (id: string) => collection.removeDoc(id),
         },
-        middlewares: [replaceIdMiddleware(collection.idGenerator)],
+        middlewares: [
+          replaceIdMiddleware(collection.idGenerator),
+          // Story 2.11: refreshes the Journal Todo grace clause's frozen
+          // `Date.now()` filter literal on every duplicated
+          // `affine:database-view-ref` block — see that middleware's own
+          // comment for the full "why". Also registered in `duplicate`
+          // above, so plain "Duplicate doc" gets the same fix, not just
+          // journal-template duplication.
+          refreshJournalTodoOnDuplicateMiddleware({
+            getCurrentSource: () => {
+              const ref = readJournalTodoDatabaseRef(
+                this.store.getWorkspaceRootYDoc()
+              );
+              return ref
+                ? { refDocId: ref.docId, refBlockId: ref.databaseId }
+                : undefined;
+            },
+          }),
+        ],
       });
       const slice = Slice.fromModels(sourceBsDoc, [
         ...(sourceBsDoc.root?.children ?? []),

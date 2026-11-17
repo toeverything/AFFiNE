@@ -113,6 +113,16 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
         event.preventDefault();
         return;
       }
+      // Mod-Shift-. / Mod-Shift-, indent and outdent the row; let them reach
+      // the view's hotkeys, as the title cell does. Matched on the physical
+      // key, since Shift changes `event.key` (`>` / `<` on a US layout).
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.shiftKey &&
+        (event.code === 'Period' || event.code === 'Comma')
+      ) {
+        return;
+      }
       event.stopPropagation();
     }
 

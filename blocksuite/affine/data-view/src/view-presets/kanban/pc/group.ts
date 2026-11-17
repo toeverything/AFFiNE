@@ -11,6 +11,8 @@ import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
+import { EditorHostKey } from '../../../core/context/host-context.js';
+import type { TaskWorkflowCapableDataSource } from '../../../core/data-source/task-workflow-capable.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { Group } from '../../../core/group-by/trait.js';
 import { dragHandler } from '../../../core/utils/wc-dnd/dnd-context.js';
@@ -154,8 +156,33 @@ export class KanbanGroup extends SignalWatcher(
     ]);
   };
 
+  private get taskWorkflowCapableDataSource(): TaskWorkflowCapableDataSource {
+    return this.view.manager
+      .dataSource as unknown as TaskWorkflowCapableDataSource;
+  }
+
+  /**
+   * Story 2.7 (AC5, extended to kanban view): overdue-and-undone treatment
+   * for this card — `null` if neither highlight nor hide applies. Mirrors
+   * `list/pc/renderer.ts`'s own `getRowDueDateState`.
+   */
+  private getRowDueDateState(rowId: string): 'highlight' | 'hide' | null {
+    const dataSource = this.taskWorkflowCapableDataSource;
+    if (typeof dataSource.getDueDateHighlightState !== 'function') {
+      return null;
+    }
+    const std = this.view.serviceGet(EditorHostKey)?.std;
+    if (!std) return null;
+    return dataSource.getDueDateHighlightState(std, rowId);
+  }
+
   override render() {
-    const cards = this.group.rows;
+    // Story 2.7 (AC5): a card whose resolved overdue-and-undone setting is
+    // `'hide'` is excluded from the board entirely — same rationale as
+    // the list/table views' own row filters.
+    const cards = this.group.rows.filter(
+      row => this.getRowDueDateState(row.rowId) !== 'hide'
+    );
     return html`
       <div class="group-header" ${dragHandler(this.group.key)}>
         ${GroupTitle(this.group, {
@@ -172,6 +199,10 @@ export class KanbanGroup extends SignalWatcher(
             return html`
               <affine-data-view-kanban-card
                 data-card-id="${row.rowId}"
+                data-overdue=${this.getRowDueDateState(row.rowId) ===
+                'highlight'
+                  ? 'true'
+                  : nothing}
                 .groupKey="${this.group.key}"
                 .kanbanViewLogic="${this.kanbanViewLogic}"
                 .cardId="${row.rowId}"

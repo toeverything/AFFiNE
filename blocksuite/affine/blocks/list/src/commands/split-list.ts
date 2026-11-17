@@ -12,8 +12,19 @@ import { correctNumberedListsOrderToPrev } from './utils.js';
 export const splitListCommand: Command<{
   blockId: string;
   inlineIndex: number;
+  // keyboard-enter-focus-loss (desktop, 2026-10-01): callers whose list
+  // block is NOT a registered `BlockComponent` in `std.view`'s registry
+  // (e.g. a database List view row, rendered by its own `repeat()`
+  // directive instead) must pass `skipFocus: true` and do their own
+  // focus call afterward. `focusTextModel` below resolves via
+  // `RangeBinding`, which tries to sync the native browser selection to
+  // match -- for an unregistered component it cannot find a real DOM
+  // target and calls `.clear()`, wiping out any focus the caller already
+  // established. Confirmed live via a `focusout` capture-phase listener +
+  // stack trace (see `ListViewRenderer.splitRowAtCursor`'s own comment).
+  skipFocus?: boolean;
 }> = (ctx, next) => {
-  const { blockId, inlineIndex, std } = ctx;
+  const { blockId, inlineIndex, skipFocus, std } = ctx;
   const host = std.host as EditorHost;
   const doc = host.store;
 
@@ -70,11 +81,13 @@ export const splitListCommand: Command<{
         base += 1;
       });
 
-      host.updateComplete
-        .then(() => {
-          focusTextModel(std, id);
-        })
-        .catch(console.error);
+      if (!skipFocus) {
+        host.updateComplete
+          .then(() => {
+            focusTextModel(std, id);
+          })
+          .catch(console.error);
+      }
 
       next();
       return;
@@ -238,11 +251,13 @@ export const splitListCommand: Command<{
   }
 
   if (newListId) {
-    host.updateComplete
-      .then(() => {
-        focusTextModel(std, newListId);
-      })
-      .catch(console.error);
+    if (!skipFocus) {
+      host.updateComplete
+        .then(() => {
+          focusTextModel(std, newListId);
+        })
+        .catch(console.error);
+    }
 
     next();
     return;

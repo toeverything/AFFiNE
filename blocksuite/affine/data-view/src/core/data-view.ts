@@ -49,6 +49,16 @@ export type DataViewRendererConfig = {
       data: {
         view: SingleView;
         rowId: string;
+        // Set by callers that just created `rowId` and are opening its
+        // detail purely so the user can fill it in (a calendar's "New
+        // row" button, most notably) — as opposed to a click on a row
+        // that already has real content. `database-block.ts`'s own
+        // `openDetailPanel` implementation uses this to skip its
+        // journal-todo-canonical navigation special case (jumping to the
+        // row's *journal page* instead of the generic row detail), since
+        // a brand-new row has nothing on its journal page to show and no
+        // way to set a title there.
+        isNewRow?: boolean;
       }
     ) => Promise<void>;
   };
@@ -146,6 +156,7 @@ export class DataViewRootUILogic {
     view: SingleView;
     rowId: string;
     onClose?: () => void;
+    isNewRow?: boolean;
   }) => {
     const openDetailPanel = this.config.detailPanelConfig.openDetailPanel;
     const target = this.dataViewRenderer;
@@ -153,6 +164,7 @@ export class DataViewRootUILogic {
       openDetailPanel(target, {
         view: ops.view,
         rowId: ops.rowId,
+        isNewRow: ops.isNewRow,
       })
         .catch(console.error)
         .finally(ops.onClose);
@@ -202,6 +214,7 @@ export class DataViewRootUI extends SignalWatcher(
     view: SingleView;
     rowId: string;
     onClose?: () => void;
+    isNewRow?: boolean;
   }) => {
     this.logic.openDetailPanel(ops);
   };

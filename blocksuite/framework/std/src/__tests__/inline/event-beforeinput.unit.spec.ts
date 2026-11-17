@@ -142,3 +142,87 @@ test('beforeinput ignores un-resolvable target range and still applies input', a
     await teardownInlineEditor(ctx);
   }
 });
+
+// Real reproduction, using the exact shape observed live
+// (`.planning/debug/row-index0-selection-delete.md`, re-opened 2026-09-24
+// section): the browser's `getTargetRanges()` can report a StaticRange that
+// resolves to a COLLAPSED range at the end of the text, competing with a
+// live selection that is genuinely non-collapsed and covers the whole word.
+// Before the fix, the collapsed target range unconditionally won, silently
+// turning "delete this selection" into a no-op -- reported as "select the
+// whole row, press Backspace, nothing happens."
+test('beforeinput does not let a collapsed target range downgrade a real non-collapsed selection', async () => {
+  const ctx = await setupInlineEditor('aGAIN');
+  try {
+    const selectionRange = ctx.editor.toDomRange({ index: 0, length: 5 });
+    expect(selectionRange).not.toBeNull();
+    setNativeSelection(selectionRange!);
+
+    const collapsedEndRange = ctx.editor.toDomRange({ index: 5, length: 0 });
+    expect(collapsedEndRange).not.toBeNull();
+
+    const preventDefault = vi.fn();
+    const event = {
+      inputType: 'deleteContentBackward',
+      data: null,
+      dataTransfer: null,
+      preventDefault,
+      stopPropagation: vi.fn(),
+      getTargetRanges: () => [
+        {
+          startContainer: collapsedEndRange!.startContainer,
+          startOffset: collapsedEndRange!.startOffset,
+          endContainer: collapsedEndRange!.endContainer,
+          endOffset: collapsedEndRange!.endOffset,
+        },
+      ],
+    } as unknown as InputEvent;
+
+    await (ctx.editor.eventService as any)._onBeforeInput(event);
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(ctx.editor.yTextString).toBe('');
+  } finally {
+    await teardownInlineEditor(ctx);
+  }
+});
+
+// Mirrors the OTHER half of the same observed pattern: sometimes the live
+// selection resolves to a collapsed range while `getTargetRanges()` reports
+// the real, non-collapsed one -- that correction must still be accepted, so
+// the fix above must not simply stop trusting the target range altogether.
+test('beforeinput still accepts a target range that upgrades a collapsed live selection to a real one', async () => {
+  const ctx = await setupInlineEditor('SDSA');
+  try {
+    const collapsedRange = ctx.editor.toDomRange({ index: 4, length: 0 });
+    expect(collapsedRange).not.toBeNull();
+    setNativeSelection(collapsedRange!);
+
+    const fullRange = ctx.editor.toDomRange({ index: 0, length: 4 });
+    expect(fullRange).not.toBeNull();
+
+    const preventDefault = vi.fn();
+    const event = {
+      inputType: 'deleteContentBackward',
+      data: null,
+      dataTransfer: null,
+      preventDefault,
+      stopPropagation: vi.fn(),
+      getTargetRanges: () => [
+        {
+          startContainer: fullRange!.startContainer,
+          startOffset: fullRange!.startOffset,
+          endContainer: fullRange!.endContainer,
+          endOffset: fullRange!.endOffset,
+        },
+      ],
+    } as unknown as InputEvent;
+
+    await (ctx.editor.eventService as any)._onBeforeInput(event);
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(ctx.editor.yTextString).toBe('');
+  } finally {
+    await teardownInlineEditor(ctx);
+  }
+});

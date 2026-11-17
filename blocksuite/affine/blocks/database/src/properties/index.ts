@@ -6,6 +6,7 @@ import { richTextColumnConfig } from './rich-text/cell-renderer.js';
 import { titleColumnConfig } from './title/cell-renderer.js';
 
 export * from './converts.js';
+export * from './title/tap-toggle.js';
 const {
   checkboxPropertyConfig,
   datePropertyConfig,

@@ -3,6 +3,7 @@ import type {
   ColumnDataType,
   ColumnUpdater,
   DatabaseBlockModel,
+  DatabaseBlockProps,
   ViewBasicDataType,
 } from '@blocksuite/affine-model';
 import {
@@ -109,7 +110,18 @@ export function getCell(
       value: rowId,
     };
   }
-  const yRow = model.props.cells$.value[rowId];
+  // Read `cells$` so signal consumers (computeds, `SignalWatcher` cells) stay
+  // subscribed to cell changes, but take the value from the live reactive
+  // `cells` prop. `cells$` holds a snapshot that is only refreshed once the
+  // outermost Yjs transaction closes (and for sibling Stores of the same
+  // block, a microtask after that), so right after an in-place
+  // `updateCell`, and anywhere inside an enclosing `store.transact()` (the
+  // task-status cascades read back cells they have just written), the
+  // snapshot is stale. The live prop reflects every write immediately and is
+  // shared by every Store over this block. Same reasoning as
+  // `getNormalPropertyAndIndex` reading `props.columns` in `data-source.ts`.
+  const trackedCells = model.props.cells$.value;
+  const yRow = (model.props.cells ?? trackedCells)[rowId];
   const yCell = yRow?.[columnId] ?? null;
   if (!yCell) return null;
 
@@ -163,12 +175,21 @@ export function updateCell(
       console.error('Invalid columnId');
       return;
     }
+    // Write the single cell in place. Never reassign the whole `cells` prop
+    // here: every top-level reassignment mints a brand-new Y.Map holding a
+    // full copy of the table and deletes the previous one, so each edit
+    // would add a whole-table copy to the doc history (the canonical
+    // Journal Todo table reached 2,360 copies, ~116 MB locally, and
+    // cold-loading it froze/crashed the page). `getCell` reads the live
+    // prop, so the write is visible immediately, and the Yjs observer
+    // refreshes `cells$` for signal consumers.
     if (!model.props.cells[rowId]) {
       model.props.cells[rowId] = Object.create(null);
     }
-    if (model.props.cells[rowId]) {
-      model.props.cells[rowId][columnId] = {
-        columnId: columnId,
+    const row = model.props.cells[rowId];
+    if (row) {
+      row[columnId] = {
+        columnId,
         value: cell.value,
       };
     }
@@ -189,16 +210,60 @@ export function updateCells(
       ) {
         throw new Error('Invalid rowId');
       }
+      // In place, one cell at a time — see `updateCell` for why the whole
+      // `cells` prop must not be reassigned.
       if (!model.props.cells[rowId]) {
         model.props.cells[rowId] = Object.create(null);
       }
-      if (model.props.cells[rowId]) {
-        model.props.cells[rowId][columnId] = {
+      const row = model.props.cells[rowId];
+      if (row) {
+        row[columnId] = {
           columnId,
           value,
         };
       }
     });
+  });
+}
+
+export type TaskStatusRowState = NonNullable<
+  DatabaseBlockProps['taskStatusState']
+>[string];
+
+/**
+ * Sets one row's entry in `taskStatusState` in place. Like `updateCell`, this
+ * must not reassign the whole prop: each reassignment adds a full copy of
+ * every row's state to the doc history. Only the very first write (while the
+ * prop is still absent) creates the map. Unchanged states are skipped so
+ * re-asserting a row's state does not churn its entry either.
+ */
+export function updateTaskStatusState(
+  model: DatabaseBlockModel,
+  rowId: string,
+  state: TaskStatusRowState
+) {
+  if (
+    rowId === '__proto__' ||
+    rowId === 'constructor' ||
+    rowId === 'prototype'
+  ) {
+    console.error('Invalid rowId');
+    return;
+  }
+  model.store.transact(() => {
+    const states = model.props.taskStatusState;
+    if (!states) {
+      model.props.taskStatusState = { [rowId]: { ...state } };
+      return;
+    }
+    const existing = states[rowId];
+    if (
+      existing?.provenance === state.provenance &&
+      existing.manualLock === state.manualLock
+    ) {
+      return;
+    }
+    states[rowId] = { ...state };
   });
 }
 

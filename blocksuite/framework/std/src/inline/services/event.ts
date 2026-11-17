@@ -9,7 +9,10 @@ import {
   isInEmbedGap,
   isInEmptyLine,
 } from '../utils/index.js';
-import { isMaybeInlineRangeEqual } from '../utils/inline-range.js';
+import {
+  isMaybeInlineRangeEqual,
+  shouldAcceptTargetRange,
+} from '../utils/inline-range.js';
 import { transformInput } from '../utils/transform-input.js';
 import type { BeforeinputHookCtx, CompositionEndHookCtx } from './hook.js';
 
@@ -207,10 +210,12 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         range.setEnd(staticRange.endContainer, staticRange.endOffset);
         const targetInlineRange = this.editor.toInlineRange(range);
 
-        // Ignore an un-resolvable target range to avoid swallowing the input.
+        // Ignore an un-resolvable target range to avoid swallowing the input,
+        // and never let it downgrade an already-correct non-collapsed range
+        // to a collapsed one -- see `shouldAcceptTargetRange`'s doc comment.
         if (
           targetInlineRange &&
-          !isMaybeInlineRangeEqual(inlineRange, targetInlineRange)
+          shouldAcceptTargetRange(inlineRange, targetInlineRange)
         ) {
           inlineRange = targetInlineRange;
         }

@@ -1,0 +1,22 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../database" },
+    { "path": "../note-ref" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../model" },
+    { "path": "../../shared" },
+    { "path": "../../data-view" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

@@ -572,6 +572,82 @@ describe('database (Table) appearing more than once on a page', () => {
     expect(viewsWriteCount).toBeLessThan(20);
   });
 
+  test('switching to Kanban view after referencing does not permanently hide the database', async () => {
+    // Regression (reported live, 2026-07-27): `database-ref-block.ts`'s
+    // `_syncCurrentView` calls `viewManager.viewGet(id)` on every `updated()`
+    // and every nested-preview DOM mutation — far more often than a normal,
+    // unreferenced database ever calls it. With `viewGet` uncached (see the
+    // test above — this is the same root cause, just triggered by a
+    // higher-frequency caller), every one of those calls constructed a
+    // brand-new `KanbanSingleView`, whose constructor builds a fresh
+    // `GroupTrait` with un-disposed `effect()` subscriptions and can write
+    // back to `columns` via `materializeColumns()`. Under `database-ref`'s
+    // polling frequency this accumulated enough leaked subscriptions and
+    // racy writes to eventually throw inside a render pass, which — since
+    // the nested `affine-database` is rendered inside a
+    // `guard()` block — left the reference (and the canonical it points at)
+    // silently empty, with no error surfaced to the user.
+    const { databaseId } = createOrdinaryDatabase();
+    await wait();
+    const secondNoteId = addNote(doc);
+    const secondModel = doc.getBlock(secondNoteId)!.model.children[0]!;
+
+    const [_, result] = editor.std.command.exec(insertDatabaseRefBlockCommand, {
+      refBlockId: databaseId,
+      place: 'after',
+      selectedModels: [secondModel],
+    });
+    await wait();
+
+    const { viewPresets } = await import('@blocksuite/data-view/view-presets');
+
+    // Switch through the *live* nested `affine-database`'s own data source
+    // (the one `_syncCurrentView` itself reads/writes) rather than a
+    // throwaway standalone instance — a fresh, unconnected
+    // `DatabaseBlockDataSource` never actually drives what's on screen, so
+    // switching its view wouldn't touch the real rendering path this bug
+    // lives in.
+    const refElBeforeSwitch = document.querySelector(
+      `affine-database-ref[data-block-id="${result.insertedDatabaseRefBlockId}"]`
+    ) as DatabaseRefBlockComponent;
+    const liveDatabaseEl = refElBeforeSwitch.querySelector(
+      'affine-database'
+    ) as unknown as HTMLElement & {
+      dataSource: {
+        value: {
+          viewManager: {
+            viewAdd: (t: string) => string;
+            setCurrentView: (id: string) => void;
+          };
+        };
+      };
+    };
+    const kanbanViewId = liveDatabaseEl.dataSource.value.viewManager.viewAdd(
+      viewPresets.kanbanViewMeta.type
+    );
+    liveDatabaseEl.dataSource.value.viewManager.setCurrentView(kanbanViewId);
+    await wait();
+
+    // Force many `updated()`/mutation cycles on the live reference — the
+    // exact condition that made the uncached `viewGet` accumulate enough
+    // leaked state to break.
+    for (let i = 0; i < 15; i++) {
+      doc.addBlock('affine:paragraph', {}, databaseId);
+      await wait(50);
+    }
+    await wait(300);
+
+    expect(doc.getBlock(databaseId)).toBeTruthy();
+    const refEl = document.querySelector(
+      `affine-database-ref[data-block-id="${result.insertedDatabaseRefBlockId}"]`
+    ) as DatabaseRefBlockComponent;
+    const databaseEl = refEl?.querySelector('affine-database') as HTMLElement;
+    expect(databaseEl).toBeTruthy();
+    const rect = databaseEl.getBoundingClientRect();
+    expect(rect.width).toBeGreaterThan(0);
+    expect(rect.height).toBeGreaterThan(0);
+  });
+
   test('a pointerdown inside a reference keeps its own nested dispatcher active', async () => {
     // Regression: `UIEventDispatcher` (the source of every synthetic
     // BlockSuite UI event, including Kanban drag-and-drop's `dragStart` —

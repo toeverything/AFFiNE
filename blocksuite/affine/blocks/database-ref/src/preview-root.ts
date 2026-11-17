@@ -1,3 +1,4 @@
+import { PageKeyboardManager } from '@blocksuite/affine-block-root';
 import { BlockComponent, BlockViewIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { css, html } from 'lit';
@@ -35,6 +36,28 @@ export class DatabaseRefPreviewRootBlockComponent extends BlockComponent {
       display: block;
     }
   `;
+
+  // Unlike the real `PageRootBlockComponent` this is a stand-in for, this
+  // component never wired up `PageKeyboardManager` — the same pre-existing
+  // gap `note-ref/src/preview-root.ts` already documents and fixes for its
+  // own preview root (Story 0.5), and which `database-view-ref/src/
+  // preview-root.ts` (this file's near-identical sibling) shares byte for
+  // byte. Its absence means every keybinding `PageKeyboardManager`
+  // provides for an ordinary page — most reported live: Mod-z/Shift-Mod-z
+  // (undo/redo) — silently did nothing while editing a cross-doc
+  // referenced database here, since nothing on this nested scope's own
+  // root component ever called `.undo()`/`.redo()` on its own `store`
+  // (the referenced database's preview `Store`, not the outer page's) at
+  // all. `PageKeyboardManager`'s constructor only needs a `BlockComponent`
+  // (`.bindHotKey`, `.store`, `.host.selection` — all present here, same
+  // as on the real root), so this is a direct, like-for-like port of
+  // `note-ref`'s own fix.
+  keyboardManager: PageKeyboardManager | null = null;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.keyboardManager = new PageKeyboardManager(this);
+  }
 
   override renderBlock() {
     const widgets = html`${Object.values(this.widgets)}`;

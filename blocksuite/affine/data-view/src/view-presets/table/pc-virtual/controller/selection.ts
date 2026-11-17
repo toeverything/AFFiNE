@@ -18,6 +18,11 @@ import {
   type TableViewSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
+import {
+  applyHierarchyMutation,
+  computeIndentMutation,
+  computeUnindentMutation,
+} from '../../utils.js';
 import type { DatabaseCellContainer } from '../row/cell';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic.js';
 import type { TableGridCell } from '../types.js';
@@ -550,6 +555,145 @@ export class TableSelectionController implements ReactiveController {
 
   insertRowBefore(groupKey: string | undefined, rowId: string) {
     this.insertTo(groupKey, rowId, true);
+  }
+
+  indentHierarchyRow() {
+    const selection = this.selection;
+    if (!selection) {
+      return false;
+    }
+    const groupKey =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.groupKey
+        : selection.groupKey;
+    const rowId =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.id
+        : this.rows(groupKey)?.[selection.focus.rowIndex]?.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const rows = this.rows(groupKey);
+    if (!rows) {
+      return false;
+    }
+    const docId = this.view.manager.dataSource.doc?.id;
+    if (!docId) {
+      return false;
+    }
+    const rowIds = rows.map(row => row.rowId);
+    const result = computeIndentMutation({
+      rowIds,
+      rowId,
+      docId,
+      properties: this.view.propertiesRaw$.value,
+    });
+    if (!result) {
+      return false;
+    }
+    applyHierarchyMutation(
+      {
+        rowIds,
+        rowId,
+        docId,
+        properties: this.view.propertiesRaw$.value,
+      },
+      result
+    );
+    this.logic.ui$.value?.requestUpdate();
+    return true;
+  }
+
+  unindentHierarchyRow() {
+    const selection = this.selection;
+    if (!selection) {
+      return false;
+    }
+    const groupKey =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.groupKey
+        : selection.groupKey;
+    const rowId =
+      selection.selectionType === 'row'
+        ? selection.rows[0]?.id
+        : this.rows(groupKey)?.[selection.focus.rowIndex]?.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const rows = this.rows(groupKey);
+    if (!rows) {
+      return false;
+    }
+    const docId = this.view.manager.dataSource.doc?.id;
+    if (!docId) {
+      return false;
+    }
+    const rowIds = rows.map(row => row.rowId);
+    const result = computeUnindentMutation({
+      rowIds,
+      rowId,
+      docId,
+      properties: this.view.propertiesRaw$.value,
+    });
+    if (!result) {
+      return false;
+    }
+    this.logic.ui$.value?.requestUpdate();
+    return true;
+  }
+
+  indentHierarchyRowByRowId(rowId: string, groupKey?: string) {
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex$.value, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.indentHierarchyRow();
+  }
+
+  unindentHierarchyRowByRowId(rowId: string, groupKey?: string) {
+    const row = this.getRow(groupKey, rowId) ?? this.getRow(undefined, rowId);
+    if (!row) {
+      return false;
+    }
+    this.selection = TableViewAreaSelection.create({
+      groupKey,
+      focus: { rowIndex: row.rowIndex$.value, columnIndex: 0 },
+      isEditing: false,
+    });
+    return this.unindentHierarchyRow();
+  }
+
+  indentHierarchyRowFromActiveCell() {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest(
+      'affine-database-virtual-cell-container'
+    ) as HTMLElement | null;
+    const rowId = cell?.dataset.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const groupKey =
+      cell.closest('data-view-table-row')?.dataset.groupKey ?? undefined;
+    return this.indentHierarchyRowByRowId(rowId, groupKey);
+  }
+
+  unindentHierarchyRowFromActiveCell() {
+    const active = document.activeElement as HTMLElement | null;
+    const cell = active?.closest(
+      'affine-database-virtual-cell-container'
+    ) as HTMLElement | null;
+    const rowId = cell?.dataset.rowId;
+    if (!rowId) {
+      return false;
+    }
+    const groupKey =
+      cell.closest('data-view-table-row')?.dataset.groupKey ?? undefined;
+    return this.unindentHierarchyRowByRowId(rowId, groupKey);
   }
 
   isRowSelection() {

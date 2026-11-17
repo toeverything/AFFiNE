@@ -1,5 +1,6 @@
 import type {
   DatabaseRefBlockModel,
+  DatabaseViewRefBlockModel,
   NoteBlockModel,
 } from '@blocksuite/affine-model';
 import { NoteDisplayMode } from '@blocksuite/affine-model';
@@ -45,13 +46,22 @@ export function installDatabaseRefCascadeDelete() {
     const targetModel =
       typeof model === 'string' ? this.getBlock(model)?.model : model;
 
-    if (!targetModel || targetModel.flavour !== 'affine:database-ref') {
+    if (
+      !targetModel ||
+      (targetModel.flavour !== 'affine:database-ref' &&
+        targetModel.flavour !== 'affine:database-view-ref')
+    ) {
       original.call(this, model, options);
       return;
     }
 
-    const { refBlockId, refDocId } = (targetModel as DatabaseRefBlockModel)
-      .props;
+    // `database-view-ref` shares the exact same `refBlockId`/`refDocId`
+    // pointer shape (see `database-view-ref-model.ts`) — both flavours name
+    // "a reference to a canonical table" identically, so the rest of this
+    // cascade logic treats them interchangeably.
+    const { refBlockId, refDocId } = (
+      targetModel as DatabaseRefBlockModel | DatabaseViewRefBlockModel
+    ).props;
     // Deletions can be issued through a filtered/queried preview store that
     // can't see references living elsewhere in the doc — resolve siblings
     // through the full, unfiltered store instead. `{ id: this.doc.id }`
@@ -94,13 +104,20 @@ export function installDatabaseRefCascadeDelete() {
           otherDoc.id === this.doc.id
             ? fullStore
             : otherDoc.getStore({ id: otherDoc.id });
-        return otherStore
-          .getBlocksByFlavour('affine:database-ref')
-          .some(
-            b =>
-              b.model.id !== targetModel.id &&
-              (b.model as DatabaseRefBlockModel).props.refBlockId === refBlockId
-          );
+        const matchesRef = (
+          b: ReturnType<typeof otherStore.getBlocksByFlavour>[number]
+        ) =>
+          b.model.id !== targetModel.id &&
+          (b.model as DatabaseRefBlockModel | DatabaseViewRefBlockModel).props
+            .refBlockId === refBlockId;
+        return (
+          otherStore
+            .getBlocksByFlavour('affine:database-ref')
+            .some(matchesRef) ||
+          otherStore
+            .getBlocksByFlavour('affine:database-view-ref')
+            .some(matchesRef)
+        );
       }
     );
 
