@@ -15,28 +15,31 @@ import { setupEditor } from '../utils/setup.js';
 
 describe('mindmap', () => {
   let gfx: GfxController;
-  const moveAndClick = ({ x, y, w, h }: Bound) => {
-    const { left, top } = gfx.viewport;
-    x += left;
-    y += top;
-
-    // trigger enter event
-    pointermove(editor.host!, { x: x + w / 2, y: y + h / 2 });
-    // trigger move event
-    pointermove(editor.host!, { x: x + w / 2 + 1, y: y + h / 2 + 1 });
-    click(editor.host!, { x: x + w / 2, y: y + h / 2 });
+  const centerInHost = ({ x, y, w, h }: Bound) => {
+    const { left, top } = editor.host!.getBoundingClientRect();
+    return {
+      x: x + w / 2 + gfx.viewport.left - left,
+      y: y + h / 2 + gfx.viewport.top - top,
+    };
   };
 
-  const move = ({ x, y, w, h }: Bound) => {
-    x += gfx.viewport.left;
-    y += gfx.viewport.top;
+  const moveAndClick = (bound: Bound) => {
+    const point = centerInHost(bound);
+    pointermove(editor.host!, point);
+    pointermove(editor.host!, { x: point.x + 1, y: point.y + 1 });
+    click(editor.host!, point);
+  };
 
-    pointermove(editor.host!, { x: x + w / 2, y: y + h / 2 });
+  const move = (bound: Bound) => {
+    pointermove(editor.host!, centerInHost(bound));
   };
 
   beforeEach(async () => {
     const cleanup = await setupEditor('edgeless');
+    editor.style.marginLeft = '48px';
+    editor.style.marginTop = '32px';
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
+    gfx.viewport.onResize();
 
     return cleanup;
   });
