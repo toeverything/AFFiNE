@@ -202,6 +202,21 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   }
 
   private readonly _handleKeyDown = (event: KeyboardEvent) => {
+    // In a Table view, Enter while editing the title finishes editing and
+    // leaves the cell selected, as in every other text cell (rich text,
+    // text, number); Shift+Enter is the newline. Before, the title alone
+    // took Enter as a newline.
+    if (
+      this.view.type === 'table' &&
+      event.key === 'Enter' &&
+      !event.shiftKey &&
+      !event.isComposing
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.selectCurrentCell(false);
+      return;
+    }
     if (event.key !== 'Escape') {
       if (event.key === 'Tab') {
         event.preventDefault();
