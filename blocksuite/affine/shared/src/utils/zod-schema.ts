@@ -51,6 +51,8 @@ export const ConnectorSchema = z
   .object({
     frontEndpointStyle: ConnectorEndpointSchema,
     rearEndpointStyle: ConnectorEndpointSchema,
+    frontEndpointScale: z.number(),
+    rearEndpointScale: z.number(),
     stroke: ColorSchema,
     strokeStyle: StrokeStyleSchema,
     strokeWidth: LineWidthSchema,
@@ -72,6 +74,8 @@ export const ConnectorSchema = z
   .default({
     frontEndpointStyle: DEFAULT_FRONT_ENDPOINT_STYLE,
     rearEndpointStyle: DEFAULT_REAR_ENDPOINT_STYLE,
+    frontEndpointScale: 100,
+    rearEndpointScale: 100,
     stroke: DefaultTheme.connectorColor,
     strokeStyle: StrokeStyle.Solid,
     strokeWidth: LineWidth.Two,
@@ -121,6 +125,10 @@ const DEFAULT_SHAPE = {
   gradientDirection: undefined,
   flipX: false,
   flipY: false,
+  lockAspectRatio: false,
+  textRotate: 0,
+  textFlipX: false,
+  textFlipY: false,
   strokeColor: DefaultTheme.shapeStrokeColor,
   strokeStyle: StrokeStyle.Solid,
   strokeWidth: LineWidth.Two,
@@ -133,6 +141,7 @@ const DEFAULT_SHAPE = {
   fontStyle: FontStyle.Normal,
   textAlign: TextAlign.Center,
   roughness: DEFAULT_ROUGHNESS,
+  collapsed: false,
 };
 
 const ShapeObject = {
@@ -160,6 +169,11 @@ const ShapeObject = {
   textHorizontalAlign: TextAlignSchema.optional(),
   textVerticalAlign: TextVerticalAlignSchema.optional(),
   roughness: z.number(),
+  stencilName: z.string().optional(),
+  collapsed: z.boolean().optional(),
+  collapsedSize: z.tuple([z.number(), z.number()]).optional(),
+  expandedSize: z.tuple([z.number(), z.number()]).optional(),
+  collapseProxyId: z.string().nullable().optional(),
 };
 
 export const ShapeSchema = z.object(ShapeObject).default(DEFAULT_SHAPE);
@@ -270,6 +284,17 @@ export const NodePropsSchema = z.object({
   'shape:arrowCalloutUp': ShapeSchema,
   'shape:arrowCalloutDouble': ShapeSchema,
   'shape:arrowCalloutQuad': ShapeSchema,
+  'shape:container': ShapeSchema,
+  'shape:verticalContainer': ShapeSchema,
+  'shape:horizontalContainer': ShapeSchema,
+  'shape:list': ShapeSchema,
+  'shape:mindmapCentralIdea': ShapeSchema,
+  'shape:mindmapBranch': ShapeSchema,
+  'shape:mindmapSubTopic': ShapeSchema,
+  'shape:mindmapSquare': ShapeSchema,
+  'shape:mindmapOrganization': ShapeSchema,
+  'shape:mindmapDivision': ShapeSchema,
+  'shape:drawioStencil': ShapeSchema,
   'shape:roundedRect': RoundedShapeSchema,
 });
 

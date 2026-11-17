@@ -481,6 +481,85 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
     this.abortController?.abort();
   };
 
+  private async _loadStencilShapeNames() {
+    if (this._loadingStencilNames || this._stencilShapeNames.length > 0) {
+      return;
+    }
+    this._loadingStencilNames = true;
+    try {
+      const module = await import('@blocksuite/affine-gfx-shape');
+      this._stencilShapeNames = [
+        ...((module as any).STENCIL_SHAPE_NAMES ?? []),
+      ];
+    } catch {
+      this._stencilShapeNames = [];
+    } finally {
+      this._loadingStencilNames = false;
+    }
+  }
+
+  private _renderStencilNameRow(currentStencilName: string) {
+    if (!this._stencilShapeNames.length) {
+      return html`
+        <div class="property-row">
+          <label>Stencil name</label>
+          <button
+            class="property-input"
+            type="button"
+            ?disabled=${this._loadingStencilNames}
+            @click=${() => {
+              this._loadStencilShapeNames().catch(() => {});
+            }}
+          >
+            ${this._loadingStencilNames ? 'Loading stencils...' : 'Load'}
+          </button>
+        </div>
+      `;
+    }
+
+    const query = this._stencilQuery.trim().toLowerCase();
+    const filteredNames =
+      query.length === 0
+        ? this._stencilShapeNames
+        : this._stencilShapeNames.filter(name =>
+            name.toLowerCase().includes(query)
+          );
+
+    return html`
+      <div class="property-row multiline">
+        <label class="property-label">Stencil name</label>
+        <div>
+          <input
+            type="text"
+            class="property-input"
+            placeholder="Search stencils"
+            .value=${this._stencilQuery}
+            @input=${(e: Event) => {
+              const target = e.target as HTMLInputElement;
+              this._stencilQuery = target.value;
+            }}
+          />
+          <select
+            class="property-select"
+            .value=${currentStencilName}
+            @change=${(e: Event) => {
+              const target = e.target as HTMLSelectElement;
+              this._updateProperty(
+                'stencilName',
+                target.value === 'none' ? undefined : target.value
+              );
+            }}
+          >
+            <option value="none">None</option>
+            ${filteredNames.map(
+              name => html`<option value=${name}>${name}</option>`
+            )}
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
   private readonly _updateProperty = (key: string, value: any) => {
     if (!this.model) return;
 
@@ -840,6 +919,8 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
   private _renderShapeProperties(model: ShapeElementModel) {
     const [x, y, w, h] = deserializeXYWH(model.xywh);
+    const widthToHeightRatio = w !== 0 ? h / w : null;
+    const heightToWidthRatio = h !== 0 ? w / h : null;
     const gradientColor = model.gradientFinal ?? model.fillColor;
     const textValue = model.text?.toString() ?? '';
     const shadowEnabled = Boolean(model.shadow);
@@ -915,6 +996,7 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
             value => this._updateProperty('radius', value),
             { min: 0, max: 1, step: 0.01 }
           )}
+          ${this._renderStencilNameRow(model.stencilName ?? 'none')}
         `
       )}
       ${this._renderSection(
@@ -930,7 +1012,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
                   x,
                   y,
                   value,
-                  h
+                  model.lockAspectRatio && widthToHeightRatio !== null
+                    ? value * widthToHeightRatio
+                    : h
                 )
               ),
             { step: 'any', decimals: 2 }
@@ -944,7 +1028,9 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
                 serializeXYWH(
                   x,
                   y,
-                  w,
+                  model.lockAspectRatio && heightToWidthRatio !== null
+                    ? value * heightToWidthRatio
+                    : w,
                   value
                 )
               ),
@@ -979,6 +1065,11 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
             'Flip vertical',
             model.flipY ?? false,
             value => this._updateProperty('flipY', value)
+          )}
+          ${this._renderCheckboxRow(
+            'Lock aspect ratio',
+            model.lockAspectRatio ?? false,
+            value => this._updateProperty('lockAspectRatio', value)
           )}
           ${this._renderTextRow('Z index', model.index, value =>
             this._updateProperty('index', value)
@@ -1160,6 +1251,22 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
             model.textResizing,
             TEXT_RESIZING_OPTIONS,
             value => this._updateProperty('textResizing', Number(value))
+          )}
+          ${this._renderNumberRow(
+            'Text rotate',
+            model.textRotate ?? 0,
+            value => this._updateProperty('textRotate', value),
+            { step: 1 }
+          )}
+          ${this._renderCheckboxRow(
+            'Text flip horizontal',
+            model.textFlipX ?? false,
+            value => this._updateProperty('textFlipX', value)
+          )}
+          ${this._renderCheckboxRow(
+            'Text flip vertical',
+            model.textFlipY ?? false,
+            value => this._updateProperty('textFlipY', value)
           )}
           ${this._renderCheckboxRow(
             'Max width enabled',
@@ -1699,6 +1806,15 @@ export class PropertiesModal extends SignalWatcher(WithDisposable(LitElement)) {
 
   @property({ attribute: false })
   accessor inline = false;
+
+  @state()
+  private accessor _loadingStencilNames = false;
+
+  @state()
+  private accessor _stencilShapeNames: string[] = [];
+
+  @state()
+  private accessor _stencilQuery = '';
 
   @state()
   private accessor _gridSnapAnchor: GridSnapAnchor = 'top-left';

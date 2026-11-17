@@ -2,9 +2,10 @@ import type {
   CanvasRenderer,
   RoughCanvas,
 } from '@blocksuite/affine-block-surface';
-import type {
-  LocalShapeElementModel,
-  ShapeElementModel,
+import {
+  type LocalShapeElementModel,
+  type ShapeElementModel,
+  ShapeType,
 } from '@blocksuite/affine-model';
 
 import {
@@ -51,6 +52,7 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
       flipX,
       flipY,
     } = model;
+    const isFilled = filled || model.shapeType === ShapeType.DrawioStencil;
     const [, , w, h] = model.deserializedXYWH;
     const renderOffset = Math.max(strokeWidth, 0) / 2;
     const renderWidth = w - renderOffset * 2;
@@ -81,7 +83,7 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
             roughness: shapeStyle === 'Scribbled' ? roughness : 0,
             stroke: stroke ? strokeColor : 'none',
             strokeWidth,
-            fill: fill && filled ? fillColor : undefined,
+            fill: fill && isFilled ? fillColor : undefined,
             strokeLineDash:
               strokeStyle === 'dash'
                 ? [12, 12]
@@ -106,7 +108,7 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
               )
             : 'transparent';
           applyLineStyle(ctx, strokeStyle, strokeWidth);
-          if (fill && filled) {
+          if (fill && isFilled) {
             ctx.fill(path2d);
           }
           if (stroke) {
@@ -117,10 +119,18 @@ export const createStencilShapeRenderer = (stencil: StencilShapeData) => {
       }
     };
 
-    const fillPaths =
-      stencil.paths.length > 0 ? stencil.paths : stencil.strokes;
-    drawPaths(fillPaths, true, true);
-    if (stencil.paths.length > 0 && stencil.strokes.length > 0) {
+    if (model.shapeType === ShapeType.DrawioStencil) {
+      const primaryPaths =
+        stencil.paths.length > 0 ? stencil.paths : stencil.strokes;
+      const strokePaths =
+        stencil.strokes.length > 0 ? stencil.strokes : primaryPaths;
+      drawPaths(primaryPaths, true, false);
+      drawPaths(strokePaths, false, true);
+      return;
+    }
+
+    drawPaths(stencil.paths, true, true);
+    if (stencil.strokes.length > 0) {
       drawPaths(stencil.strokes, false, true);
     }
   };
