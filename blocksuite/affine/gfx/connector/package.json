@@ -30,6 +30,9 @@
     "lodash-es": "^4.17.23",
     "yjs": "^13.6.27"
   },
+  "devDependencies": {
+    "vitest": "^4.1.8"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./view": "./src/view.ts",

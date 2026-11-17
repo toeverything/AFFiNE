@@ -11,10 +11,15 @@ import {
   EdgelessCRUDIdentifier,
   getSurfaceComponent,
 } from '@blocksuite/affine-block-surface';
+import {
+  ConnectorPathGenerator,
+  pointToSegmentDistance,
+} from '@blocksuite/affine-gfx-connector';
 import { createGroupFromSelectedCommand } from '@blocksuite/affine-gfx-group';
 import {
   AttachmentBlockModel,
   BookmarkBlockModel,
+  ConnectorElementModel,
   EmbedLinkedDocBlockSchema,
   EmbedLinkedDocModel,
   EmbedSyncedDocBlockSchema,
@@ -34,18 +39,25 @@ import {
   matchModels,
   type ReorderingType,
 } from '@blocksuite/affine-shared/utils';
-import { Bound, getCommonBoundWithRotation } from '@blocksuite/global/gfx';
+import type { IVec } from '@blocksuite/global/gfx';
+import {
+  Bound,
+  getCommonBoundWithRotation,
+  PointLocation,
+} from '@blocksuite/global/gfx';
 import {
   ArrowDownBigBottomIcon,
   ArrowDownBigIcon,
   ArrowUpBigIcon,
   ArrowUpBigTopIcon,
+  BanIcon,
   CopyIcon,
   DeleteIcon,
   DuplicateIcon,
   FrameIcon,
   GroupIcon,
   LinkedPageIcon,
+  PlusIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
 import type { BlockComponent } from '@blocksuite/std';
@@ -366,6 +378,156 @@ export const moreActions = [
           };
 
           create().catch(console.error);
+        },
+      },
+    ],
+  },
+
+  // Connector Waypoints Group
+  {
+    id: 'd.waypoints',
+    actions: [
+      {
+        id: 'a.add-waypoint',
+        label: 'Add waypoint',
+        icon: PlusIcon(),
+        when(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return false;
+          return ctx.matchModel(models[0], ConnectorElementModel);
+        },
+        run(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return;
+
+          const model = models[0];
+          if (!ctx.matchModel(model, ConnectorElementModel)) return;
+
+          const connector = model as ConnectorElementModel;
+          const { viewport } = ctx.gfx;
+
+          const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+              cleanup();
+            }
+          };
+
+          const onPointerDown = (e: PointerEvent) => {
+            cleanup();
+
+            const path = connector.absolutePath;
+            if (!path || path.length < 2) return;
+
+            const [x, y] = viewport.toModelCoordFromClientCoord([e.x, e.y]);
+
+            let minDist = Infinity;
+            let segmentIndex = -1;
+            for (let i = 0; i < path.length - 1; i++) {
+              const p0 = path[i];
+              const p1 = path[i + 1];
+              const dist = pointToSegmentDistance(
+                x,
+                y,
+                p0[0],
+                p0[1],
+                p1[0],
+                p1[1]
+              );
+              if (dist < minDist) {
+                minDist = dist;
+                segmentIndex = i;
+              }
+            }
+
+            if (segmentIndex < 0 || minDist > 8) return;
+
+            const start = path[segmentIndex];
+            const end = path[segmentIndex + 1];
+            const midpoint: IVec = [
+              (start[0] + end[0]) / 2,
+              (start[1] + end[1]) / 2,
+            ];
+
+            const newPath = path.map(p => new PointLocation([p[0], p[1]]));
+            // Insert a duplicate midpoint to create a zero-length perpendicular
+            // segment that becomes draggable once expanded.
+            newPath.splice(
+              segmentIndex + 1,
+              0,
+              new PointLocation(midpoint),
+              new PointLocation(midpoint)
+            );
+
+            const waypoints = newPath
+              .slice(1, -1)
+              .map(p => [p[0], p[1]] as IVec);
+
+            ctx.store.transact(() => {
+              ctx.store.captureSync();
+              connector.waypoints =
+                waypoints.length > 0 ? waypoints : undefined;
+            });
+
+            ConnectorPathGenerator.updatePath(
+              connector,
+              null,
+              id =>
+                ctx.gfx.surface?.getElementById(id) ??
+                (ctx.std.store.getModelById(id) as GfxModel | null)
+            );
+
+            ctx.gfx.selection.set({ elements: [], editing: false });
+            queueMicrotask(() => {
+              ctx.gfx.selection.set({
+                elements: [connector.id],
+                editing: false,
+              });
+            });
+          };
+
+          const cleanup = () => {
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('keydown', onKeyDown, true);
+          };
+
+          document.addEventListener('pointerdown', onPointerDown, true);
+          document.addEventListener('keydown', onKeyDown, true);
+        },
+      },
+      {
+        id: 'a.clear-waypoints',
+        label: 'Clear waypoints',
+        icon: BanIcon(),
+        when(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return false;
+          return ctx.matchModel(models[0], ConnectorElementModel);
+        },
+        run(ctx) {
+          const models = ctx.getSurfaceModels();
+          if (models.length !== 1) return;
+
+          const model = models[0];
+          if (!ctx.matchModel(model, ConnectorElementModel)) return;
+
+          ctx.store.transact(() => {
+            ctx.store.captureSync();
+            (model as ConnectorElementModel).waypoints = undefined;
+          });
+          ConnectorPathGenerator.updatePath(
+            model as ConnectorElementModel,
+            null,
+            id =>
+              ctx.gfx.surface?.getElementById(id) ??
+              (ctx.std.store.getModelById(id) as GfxModel | null)
+          );
+          ctx.gfx.selection.set({ elements: [], editing: false });
+          queueMicrotask(() => {
+            ctx.gfx.selection.set({
+              elements: [model.id],
+              editing: false,
+            });
+          });
         },
       },
     ],

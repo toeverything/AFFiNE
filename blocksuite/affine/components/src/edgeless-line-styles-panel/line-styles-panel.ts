@@ -1,10 +1,6 @@
-import {
-  BRUSH_LINE_WIDTHS,
-  LineWidth,
-  StrokeStyle,
-} from '@blocksuite/affine-model';
+import { LineWidth, StrokeStyle } from '@blocksuite/affine-model';
 import { WithDisposable } from '@blocksuite/global/lit';
-import { BanIcon, DashLineIcon, StraightLineIcon } from '@blocksuite/icons/lit';
+import { DashLineIcon, StraightLineIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement, svg } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -48,11 +44,6 @@ const LINE_STYLE_LIST = [
       <circle cx="17" cy="3" r="1" fill="currentColor" />
     </svg>`,
   },
-  {
-    key: 'None',
-    value: StrokeStyle.None,
-    icon: BanIcon(),
-  },
 ];
 
 export class EdgelessLineStylesPanel extends WithDisposable(LitElement) {
@@ -78,7 +69,6 @@ export class EdgelessLineStylesPanel extends WithDisposable(LitElement) {
     return html`
       <edgeless-line-width-panel
         .disabled=${lineStyle === StrokeStyle.None}
-        .lineWidths=${this.lineWidths}
         .selectedSize=${lineSize}
         @select=${(e: CustomEvent<LineWidth>) => {
           e.stopPropagation();
@@ -125,11 +115,7 @@ export class EdgelessLineStylesPanel extends WithDisposable(LitElement) {
     StrokeStyle.Solid,
     StrokeStyle.Dash,
     StrokeStyle.Dot,
-    StrokeStyle.None,
   ];
-
-  @property({ attribute: false })
-  accessor lineWidths: number[] = BRUSH_LINE_WIDTHS.slice(0, -1);
 }
 
 declare global {

@@ -23,7 +23,12 @@ import {
 import type { Store } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { useCallback, useMemo } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
@@ -44,6 +49,171 @@ enum ConnectorTextFontSize {
   '40px' = '40',
   '64px' = '64',
 }
+
+type EndpointSide = 'start' | 'end';
+type ConnectorEndpointStyle = string;
+
+const DRAWIO_MARKERS = [
+  'classic',
+  'classicThin',
+  'open',
+  'openThin',
+  'block',
+  'blockThin',
+  'oval',
+  'diamond',
+  'diamondThin',
+  'doubleBlock',
+  'box',
+  'halfCircle',
+  'openAsync',
+  'async',
+  'dash',
+  'baseDash',
+  'cross',
+  'circle',
+  'circlePlus',
+  'ERone',
+  'ERmandOne',
+  'ERmany',
+  'ERoneToMany',
+  'ERzeroToOne',
+  'ERzeroToMany',
+] as const;
+
+const labelize = (value: string) => {
+  return value
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^\w/, char => char.toUpperCase())
+    .trim();
+};
+
+const ENDPOINT_STYLE_OPTIONS: {
+  value: ConnectorEndpointStyle;
+  label: string;
+}[] = [
+  { value: PointStyle.None, label: 'None' },
+  { value: PointStyle.Arrow, label: 'Arrow' },
+  { value: PointStyle.Triangle, label: 'Triangle' },
+  { value: PointStyle.Circle, label: 'Circle' },
+  { value: PointStyle.Diamond, label: 'Diamond' },
+  ...DRAWIO_MARKERS.map(value => ({ value, label: labelize(value) })),
+];
+
+const MARKER_ICON_PATHS: Record<
+  string,
+  { path: string; strokeOnly?: boolean }
+> = {
+  None: { path: 'M 3 8 L 13 8', strokeOnly: true },
+  Arrow: { path: 'M 0 8 L 8 3 L 8 13 Z' },
+  Triangle: { path: 'M 0 8 L 7 4 L 7 12 Z' },
+  Circle: {
+    path: 'M 0 8 A 5 5 0 0 1 5 3 A 5 5 0 0 1 10 8 A 5 5 0 0 1 5 13 A 5 5 0 0 1 0 8 Z',
+    strokeOnly: true,
+  },
+  Diamond: { path: 'M 0 8 L 5 3 L 10 8 L 5 13 Z', strokeOnly: true },
+  classic: { path: 'M 0 8 L 10 2 L 5 8 L 10 14 Z' },
+  classicThin: { path: 'M 0 8 L 8 4 L 5 8 L 8 12 Z' },
+  open: { path: 'M 8 0 L 0 8 L 8 16', strokeOnly: true },
+  openThin: { path: 'M 8 4 L 0 8 L 8 12', strokeOnly: true },
+  block: { path: 'M 0 8 L 8 2 L 8 14 Z' },
+  blockThin: { path: 'M 0 8 L 8 4 L 8 12 Z' },
+  oval: {
+    path: 'M 0 8 A 5 5 0 0 1 5 3 A 5 5 0 0 1 11 8 A 5 5 0 0 1 5 13 A 5 5 0 0 1 0 8 Z',
+  },
+  diamond: { path: 'M 0 8 L 6 2 L 12 8 L 6 14 Z' },
+  diamondThin: { path: 'M 0 8 L 8 3 L 16 8 L 8 13 Z' },
+  doubleBlock: { path: 'M 0 8 L 8 2 L 8 14 Z M 8 8 L 16 2 L 16 14 Z' },
+  box: { path: 'M 0 3 L 10 3 L 10 13 L 0 13 Z' },
+  halfCircle: {
+    path: 'M 0 3 A 5 5 0 0 1 5 8 A 5 5 0 0 1 0 13',
+    strokeOnly: true,
+  },
+  openAsync: { path: 'M 8 4 L 0 8 L 24 8', strokeOnly: true },
+  async: { path: 'M 6 8 L 6 4 L 0 8 L 24 8' },
+  dash: { path: 'M 0 2 L 12 14', strokeOnly: true },
+  baseDash: { path: 'M 0 2 L 0 14', strokeOnly: true },
+  cross: { path: 'M 0 2 L 12 14 M 12 2 L 0 14', strokeOnly: true },
+  circle: {
+    path: 'M 0 8 A 6 6 0 0 1 6 2 A 6 6 0 0 1 12 8 A 6 6 0 0 1 6 14 A 6 6 0 0 1 0 8 Z',
+    strokeOnly: true,
+  },
+  circlePlus: {
+    path: 'M 0 8 A 6 6 0 0 1 6 2 A 6 6 0 0 1 12 8 A 6 6 0 0 1 6 14 A 6 6 0 0 1 0 8 Z M 6 2 L 6 14',
+    strokeOnly: true,
+  },
+  ERone: { path: 'M 5 2 L 5 14', strokeOnly: true },
+  ERmandOne: { path: 'M 6 2 L 6 14 M 9 2 L 9 14', strokeOnly: true },
+  ERmany: { path: 'M 0 2 L 12 8 L 0 14', strokeOnly: true },
+  ERoneToMany: { path: 'M 0 2 L 12 8 L 0 14 M 15 2 L 15 14', strokeOnly: true },
+  ERzeroToOne: {
+    path: 'M 8 8 A 5 5 0 0 1 13 3 A 5 5 0 0 1 18 8 A 5 5 0 0 1 13 13 A 5 5 0 0 1 8 8 Z M 4 3 L 4 13',
+    strokeOnly: true,
+  },
+  ERzeroToMany: {
+    path: 'M 8 8 A 5 5 0 0 1 13 3 A 5 5 0 0 1 18 8 A 5 5 0 0 1 13 13 A 5 5 0 0 1 8 8 Z M 0 3 L 8 8 L 0 13',
+    strokeOnly: true,
+  },
+};
+
+const getEndpointStyleLabel = (value: ConnectorEndpointStyle) => {
+  return (
+    ENDPOINT_STYLE_OPTIONS.find(option => option.value === value)?.label ??
+    labelize(value)
+  );
+};
+
+const renderEndpointMarker = (style: ConnectorEndpointStyle): ReactNode => {
+  const marker = MARKER_ICON_PATHS[style];
+  if (!marker || !marker.path) return null;
+
+  return (
+    <path
+      d={marker.path}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill={marker.strokeOnly ? 'none' : 'currentColor'}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      transform="translate(4,2)"
+    />
+  );
+};
+
+const EndpointStyleIcon = ({
+  style,
+  side,
+}: {
+  style: ConnectorEndpointStyle;
+  side: EndpointSide;
+}) => {
+  const isStart = side === 'start';
+
+  return (
+    <svg
+      width="24"
+      height="16"
+      viewBox="0 0 24 16"
+      fill="none"
+      style={isStart ? { transform: 'scaleX(-1)' } : undefined}
+    >
+      {renderEndpointMarker(style)}
+    </svg>
+  );
+};
+
+const ENDPOINT_MENU_CONTENT_STYLE: CSSProperties = {
+  maxHeight: '320px',
+  overflowY: 'auto',
+};
+
+const endpointIconPrefixStyle: CSSProperties = {
+  width: '28px',
+  display: 'inline-flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
 
 export const ConnectorSettings = () => {
   const t = useI18n();
@@ -91,13 +261,20 @@ export const ConnectorSettings = () => {
     () => [
       {
         value: ConnectorMode.Orthogonal as any,
+        testId: 'connector-shape-elbowed-trigger',
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.connecter.connector-shape.elbowed'
           ](),
       },
       {
+        value: ConnectorMode.Rounded as any,
+        testId: 'connector-shape-rounded-trigger',
+        label: 'Rounded',
+      },
+      {
         value: ConnectorMode.Curve as any,
+        testId: 'connector-shape-curve-trigger',
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.connecter.connector-shape.curve'
@@ -105,6 +282,7 @@ export const ConnectorSettings = () => {
       },
       {
         value: ConnectorMode.Straight as any,
+        testId: 'connector-shape-straight-trigger',
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.connecter.connector-shape.straight'
@@ -142,12 +320,6 @@ export const ConnectorSettings = () => {
         testId: 'connector-border-style-dot-trigger',
         label: 'Dot',
       },
-      {
-        value: StrokeStyle.None,
-        testId: 'connector-border-style-none-trigger',
-        label:
-          t['com.affine.settings.editorSettings.edgeless.note.border.none'](),
-      },
     ],
     [t]
   );
@@ -166,6 +338,16 @@ export const ConnectorSettings = () => {
     (value: number[]) => {
       editorSetting.set('connector', {
         strokeWidth: value[0],
+      });
+    },
+    [editorSetting]
+  );
+
+  const cornerRadius = settings.connector.cornerRadius;
+  const setCornerRadius = useCallback(
+    (value: number[]) => {
+      editorSetting.set('connector', {
+        cornerRadius: value[0],
       });
     },
     [editorSetting]
@@ -198,14 +380,25 @@ export const ConnectorSettings = () => {
 
   const startEndPointItems = useMemo(() => {
     const { frontEndpointStyle } = settings.connector;
-    return Object.entries(PointStyle).map(([name, value]) => {
+    return ENDPOINT_STYLE_OPTIONS.map(({ value, label }) => {
       const handler = () => {
-        editorSetting.set('connector', { frontEndpointStyle: value });
+        editorSetting.set('connector', {
+          frontEndpointStyle: value as PointStyle,
+        });
       };
       const isSelected = frontEndpointStyle === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
-          {name}
+        <MenuItem
+          key={value}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={
+            <span style={endpointIconPrefixStyle}>
+              <EndpointStyleIcon style={value} side="start" />
+            </span>
+          }
+        >
+          {label}
         </MenuItem>
       );
     });
@@ -213,14 +406,25 @@ export const ConnectorSettings = () => {
 
   const endEndPointItems = useMemo(() => {
     const { rearEndpointStyle } = settings.connector;
-    return Object.entries(PointStyle).map(([name, value]) => {
+    return ENDPOINT_STYLE_OPTIONS.map(({ value, label }) => {
       const handler = () => {
-        editorSetting.set('connector', { rearEndpointStyle: value });
+        editorSetting.set('connector', {
+          rearEndpointStyle: value as PointStyle,
+        });
       };
       const isSelected = rearEndpointStyle === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
-          {name}
+        <MenuItem
+          key={value}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={
+            <span style={endpointIconPrefixStyle}>
+              <EndpointStyleIcon style={value} side="end" />
+            </span>
+          }
+        >
+          {label}
         </MenuItem>
       );
     });
@@ -375,6 +579,11 @@ export const ConnectorSettings = () => {
     return surface?.getElementsByType('connector') || [];
   }, []);
 
+  const selectedFrontEndpointStyle = settings.connector
+    .frontEndpointStyle as ConnectorEndpointStyle;
+  const selectedRearEndpointStyle = settings.connector
+    .rearEndpointStyle as ConnectorEndpointStyle;
+
   return (
     <>
       <EdgelessSnapshot
@@ -467,9 +676,21 @@ export const ConnectorSettings = () => {
       >
         <DropdownMenu
           items={startEndPointItems}
+          contentStyle={ENDPOINT_MENU_CONTENT_STYLE}
           trigger={
-            <MenuTrigger className={menuTrigger}>
-              {String(settings.connector.frontEndpointStyle)}
+            <MenuTrigger
+              data-testid="connector-start-endpoint-trigger"
+              className={menuTrigger}
+              prefix={
+                <span style={endpointIconPrefixStyle}>
+                  <EndpointStyleIcon
+                    style={selectedFrontEndpointStyle}
+                    side="start"
+                  />
+                </span>
+              }
+            >
+              {getEndpointStyleLabel(selectedFrontEndpointStyle)}
             </MenuTrigger>
           }
         />
@@ -482,11 +703,38 @@ export const ConnectorSettings = () => {
       >
         <DropdownMenu
           items={endEndPointItems}
+          contentStyle={ENDPOINT_MENU_CONTENT_STYLE}
           trigger={
-            <MenuTrigger className={menuTrigger}>
-              {String(settings.connector.rearEndpointStyle)}
+            <MenuTrigger
+              data-testid="connector-end-endpoint-trigger"
+              className={menuTrigger}
+              prefix={
+                <span style={endpointIconPrefixStyle}>
+                  <EndpointStyleIcon
+                    style={selectedRearEndpointStyle}
+                    side="end"
+                  />
+                </span>
+              }
+            >
+              {getEndpointStyleLabel(selectedRearEndpointStyle)}
             </MenuTrigger>
           }
+        />
+      </SettingRow>
+      <SettingRow
+        name="Corner radius"
+        desc={''}
+        data-testid="connector-corner-radius-row"
+      >
+        <Slider
+          data-testid="connector-corner-radius-slider"
+          value={[cornerRadius]}
+          onValueChange={setCornerRadius}
+          min={4}
+          max={36}
+          step={4}
+          nodes={[4, 12, 20, 28, 36]}
         />
       </SettingRow>
       <SettingRow

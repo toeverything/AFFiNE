@@ -40,6 +40,12 @@ export type ShapeProps = BaseElementProps & {
   fillColor: Color;
   gradientFinal?: Color;
   gradientDirection?: GradientDirection;
+  flipX?: boolean;
+  flipY?: boolean;
+  lockAspectRatio?: boolean;
+  textRotate?: number;
+  textFlipX?: boolean;
+  textFlipY?: boolean;
   strokeWidth: number;
   strokeColor: Color;
   strokeStyle: StrokeStyle;

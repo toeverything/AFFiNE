@@ -17,6 +17,11 @@ describe('getLastPropsKey', () => {
       'shape:ellipse'
     );
 
+    // Regression guard: a rect with a nonzero corner radius is its own
+    // 'roundedRect' shape name (see getShapeName), and must keep its own
+    // last-props key distinct from plain rect — collapsing it into the
+    // triangle bucket previously broke shape placement/browser/menu
+    // behavior for any rounded-rect-shaped last-used-props lookup.
     expect(getLastPropsKey('shape', shapeModelProps(ShapeType.Rect, 0.1))).toBe(
       'shape:roundedRect'
     );
