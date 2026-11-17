@@ -35,11 +35,19 @@ describe('mindmap', () => {
   };
 
   beforeEach(async () => {
-    const cleanup = await setupEditor('edgeless');
-    editor.style.marginLeft = '48px';
-    editor.style.marginTop = '32px';
+    const cleanup = await setupEditor('edgeless', [], {
+      editorStyle: {
+        display: 'block',
+        marginLeft: '48px',
+        marginTop: '32px',
+      },
+    });
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
-    gfx.viewport.onResize();
+    const hostRect = editor.host!.getBoundingClientRect();
+    expect({
+      viewport: [gfx.viewport.left, gfx.viewport.top],
+      host: [hostRect.left, hostRect.top],
+    }).toEqual({ viewport: [48, 32], host: [48, 32] });
 
     return cleanup;
   });

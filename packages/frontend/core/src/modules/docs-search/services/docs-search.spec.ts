@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto';
 import { IndexerDocument, type IndexerStorage } from '@affine/nbstore';
 import { IndexedDBIndexerStorage } from '@affine/nbstore/idb';
 import { Framework } from '@toeverything/infra';
-import { firstValueFrom, map, of } from 'rxjs';
+import { firstValueFrom, map, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DocsSearchService } from './docs-search';
@@ -147,6 +147,8 @@ describe('DocsSearchService', () => {
         ['plain', 'Plain document'],
         ['hidden-target', 'Planning private'],
       ]);
+      let failure: 'titles' | 'page' | 'rows' | 'ordinary' | undefined;
+      const lookupError = new Error('index lookup failed');
       const framework = new Framework();
       framework.service(
         DocsSearchService,
@@ -157,24 +159,30 @@ describe('DocsSearchService', () => {
                 engine: {
                   indexer: {
                     state$: of({ indexing: 0, errorMessage: null }),
-                    search$: (...args: Parameters<IndexerStorage['search$']>) =>
-                      indexer.search$(...args).pipe(
-                        map(page => ({
-                          ...page,
-                          pagination: {
-                            ...page.pagination,
-                            nextCursor:
-                              pagination === 'cursor' && page.pagination.hasMore
-                                ? `titles:${page.nodes.length}`
-                                : undefined,
-                          },
-                        }))
-                      ),
+                    search$: (
+                      ...args: Parameters<IndexerStorage['search$']>
+                    ) =>
+                      failure === 'titles'
+                        ? throwError(() => lookupError)
+                        : indexer.search$(...args).pipe(
+                            map(page => ({
+                              ...page,
+                              pagination: {
+                                ...page.pagination,
+                                nextCursor:
+                                  pagination === 'cursor' &&
+                                  page.pagination.hasMore
+                                    ? `titles:${page.nodes.length}`
+                                    : undefined,
+                              },
+                            }))
+                          ),
                     search: async (
                       ...[table, query, options]: Parameters<
                         IndexerStorage['search']
                       >
                     ) => {
+                      if (failure === 'page') throw lookupError;
                       const pageOptions = options?.pagination;
                       if (pagination === 'cursor') {
                         expect(pageOptions?.skip).toBeUndefined();
@@ -193,8 +201,18 @@ describe('DocsSearchService', () => {
                         },
                       });
                     },
-                    aggregate$: indexer.aggregate$.bind(indexer),
-                    aggregate: indexer.aggregate.bind(indexer),
+                    aggregate$: (
+                      ...args: Parameters<IndexerStorage['aggregate$']>
+                    ) =>
+                      failure === 'ordinary'
+                        ? throwError(() => lookupError)
+                        : indexer.aggregate$(...args),
+                    aggregate: (
+                      ...args: Parameters<IndexerStorage['aggregate']>
+                    ) =>
+                      failure === 'rows'
+                        ? Promise.reject(lookupError)
+                        : indexer.aggregate(...args),
                   },
                 },
               },
@@ -254,6 +272,43 @@ describe('DocsSearchService', () => {
           blockId: 'row',
           blockContent: 'Planning notes 50',
         });
+        for (failure of ['titles', 'page', 'rows'] as const) {
+          expect(
+            await firstValueFrom(service.search$('Planning', 'local'))
+          ).toEqual([results[0]]);
+        }
+        failure = 'ordinary';
+        await expect(
+          firstValueFrom(service.search$('Planning', 'local'))
+        ).rejects.toBe(lookupError);
+
+        failure = 'page';
+        const liveResults: { docId: string }[][] = [];
+        const subscription = service
+          .search$('Planning', 'local')
+          .subscribe(result => liveResults.push(result));
+        try {
+          await vi.waitFor(() => expect(liveResults).toEqual([[results[0]]]));
+          failure = undefined;
+          await indexer.update(
+            'doc',
+            IndexerDocument.from<'doc'>('physical-title-0', {
+              docId: 'target-0',
+              title: 'Planning refreshed',
+            })
+          );
+          await indexer.refresh('doc');
+          await vi.waitFor(
+            () =>
+              expect(liveResults.at(-1)?.map(result => result.docId)).toEqual([
+                'plain',
+                'database',
+              ]),
+            { timeout: 4000 }
+          );
+        } finally {
+          subscription.unsubscribe();
+        }
         await indexer.update(
           'doc',
           IndexerDocument.from<'doc'>('physical-title-50', {

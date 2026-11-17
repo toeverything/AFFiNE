@@ -2,7 +2,7 @@ import type { IndexerPreferOptions, SearchOptions } from '@affine/nbstore';
 import type { IndexerFrontend } from '@affine/nbstore/frontend';
 import { fromPromise } from '@toeverything/infra';
 import { escape } from 'lodash-es';
-import { of, switchMap } from 'rxjs';
+import { catchError, of, switchMap } from 'rxjs';
 
 export type DocSearchResult = {
   docId: string;
@@ -104,7 +104,8 @@ export function searchLinkedRows$(
           });
         }
         return [...merged.values()];
-      })
-    )
+      }).pipe(catchError(() => of(results)))
+    ),
+    catchError(() => of(results))
   );
 }
