@@ -523,15 +523,22 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
 
     const range = selection.getRangeAt(0);
     if (!range.intersectsNode(rootElement)) {
-      const isContainerSelected =
-        range.endContainer.contains(rootElement) &&
-        Array.from(range.endContainer.childNodes).filter(
+      // A container wrapping only this editor (e.g. its padding was
+      // clicked) is treated as selecting the editor. A container holding
+      // other inline editors too is not: otherwise every editor in it (for
+      // example all the title cells of a table, after the rows holding the
+      // selection were deleted) would claim the caret, and whichever ran
+      // first would take focus and scroll the page to itself.
+      const wrapsOnlyThisEditor = (container: Node) =>
+        container.contains(rootElement) &&
+        Array.from(container.childNodes).filter(
           node => node instanceof HTMLElement
         ).length === 1 &&
-        range.startContainer.contains(rootElement) &&
-        Array.from(range.startContainer.childNodes).filter(
-          node => node instanceof HTMLElement
-        ).length === 1;
+        (!(container instanceof Element) ||
+          container.querySelectorAll(`[${INLINE_ROOT_ATTR}]`).length <= 1);
+      const isContainerSelected =
+        wrapsOnlyThisEditor(range.endContainer) &&
+        wrapsOnlyThisEditor(range.startContainer);
       if (isContainerSelected) {
         this.editor.focusEnd();
         return;
