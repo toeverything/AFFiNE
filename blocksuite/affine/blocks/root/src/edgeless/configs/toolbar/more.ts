@@ -70,6 +70,7 @@ import { duplicate } from '../../utils/clipboard-utils';
 import { getSortedCloneElements } from '../../utils/clone-utils';
 import { moveConnectors } from '../../utils/connector';
 import { deleteElements } from '../../utils/crud';
+import { PropertiesModal } from './properties-modal';
 import {
   createLinkedDocFromEdgelessElements,
   createLinkedDocFromNote,
@@ -639,6 +640,48 @@ export const moreActions = [
     ],
   },
 
+  // Properties Group
+  {
+    id: 'd.z.properties',
+    label: 'Properties',
+    icon: html`<svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M4 6h12" />
+      <path d="M4 10h12" />
+      <path d="M4 14h12" />
+      <circle cx="6" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="14" cy="14" r="1" fill="currentColor" stroke="none" />
+    </svg>`,
+    when(ctx) {
+      const models = ctx.getSurfaceModels();
+      return models.length === 1;
+    },
+    run(ctx) {
+      const models = ctx.getSurfaceModels();
+      if (models.length !== 1) return;
+
+      const model = models[0];
+
+      const modal = new PropertiesModal();
+      modal.host = ctx.host;
+      modal.model = model;
+      modal.referenceElement = getPropertiesReferenceElement(ctx, model);
+      modal.abortController = new AbortController();
+
+      getPropertiesMountRoot(ctx).append(modal);
+    },
+  },
+
   // Deleting Group
   {
     id: 'e.delete',
@@ -710,5 +753,40 @@ function isRefreshableBlock(block: BlockComponent | null) {
       block instanceof BookmarkBlockComponent ||
       block instanceof ImageBlockComponent ||
       isExternalEmbedBlockComponent(block))
+  );
+}
+
+function getPropertiesReferenceElement(ctx: ToolbarContext, model: GfxModel) {
+  const toolbarWidget = ctx.host.querySelector('affine-toolbar-widget');
+  const toolbar =
+    toolbarWidget?.shadowRoot?.querySelector('editor-toolbar[data-open]') ??
+    toolbarWidget?.shadowRoot?.querySelector('editor-toolbar');
+
+  if (toolbar) {
+    return toolbar;
+  }
+
+  const getBoundingClientRect = () => {
+    const hostRect = ctx.host.getBoundingClientRect();
+    const [x, y, w, h] = ctx.gfx.viewport
+      .toViewBound(getCommonBoundWithRotation([model]))
+      .toXYWH();
+
+    return new DOMRect(x + hostRect.x, y + hostRect.y, w, h);
+  };
+
+  return {
+    getBoundingClientRect,
+    getClientRects: () => [getBoundingClientRect()],
+    contextElement: ctx.host,
+  };
+}
+
+function getPropertiesMountRoot(ctx: ToolbarContext) {
+  return (
+    ctx.host.closest('[role="dialog"]') ??
+    ctx.host.closest('[data-peek-view-wrapper]') ??
+    ctx.host ??
+    document.body
   );
 }

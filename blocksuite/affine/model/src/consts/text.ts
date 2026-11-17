@@ -60,6 +60,8 @@ export const FontFamilyList = Object.entries(FontFamilyMap) as {
 export enum TextResizing {
   AUTO_WIDTH_AND_HEIGHT,
   AUTO_HEIGHT,
+  NONE,
+  AUTO_WIDTH,
 }
 
 export const FontFamilySchema = z.nativeEnum(FontFamily);

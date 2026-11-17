@@ -106,6 +106,8 @@ export type ConnectorElementProps = BaseElementProps & {
 
   frontEndpointStyle?: PointStyle;
   rearEndpointStyle?: PointStyle;
+  frontEndpointScale?: number;
+  rearEndpointScale?: number;
 
   // Waypoints for connector routing
   waypoints?: IVec[];
@@ -443,6 +445,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   @field('None' as PointStyle)
   accessor frontEndpointStyle!: PointStyle;
 
+  @field(100)
+  accessor frontEndpointScale: number = 100;
+
   /**
    * Defines the size constraints of the label.
    */
@@ -511,6 +516,9 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
 
   @field('Arrow' as PointStyle)
   accessor rearEndpointStyle!: PointStyle;
+
+  @field(100)
+  accessor rearEndpointScale: number = 100;
 
   @local()
   accessor rotate: number = 0;

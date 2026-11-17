@@ -434,6 +434,16 @@ export function getArrowOptions(
   strokeColor: string
 ) {
   const { seed, mode, rough, roughness, strokeWidth, path } = model;
+  // frontEndpointScale/rearEndpointScale only exist on ConnectorElementModel, not LocalConnectorElementModel
+  const endpointScale =
+    end === 'Front'
+      ? 'frontEndpointScale' in model
+        ? ((model as { frontEndpointScale?: number }).frontEndpointScale ??
+          100)
+        : 100
+      : 'rearEndpointScale' in model
+        ? ((model as { rearEndpointScale?: number }).rearEndpointScale ?? 100)
+        : 100;
 
   return {
     end,
@@ -446,6 +456,7 @@ export function getArrowOptions(
     fillColor: strokeColor,
     fillStyle: 'solid',
     bezierParameters: getBezierParameters(path),
+    scale: endpointScale / 100,
   };
 }
 
@@ -499,10 +510,10 @@ export function renderArrow(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth } =
+  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth, scale } =
     options;
   const radians = Math.PI / 4;
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * scale;
   const { points: arrowPoints } = getArrowPoints(
     points,
     size,
@@ -525,10 +536,10 @@ export function renderTriangle(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth } =
+  const { mode, end, bezierParameters, rough, strokeColor, strokeWidth, scale } =
     options;
   const radians = Math.PI / 6;
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * scale;
   const { points: trianglePoints } = getArrowPoints(
     points,
     size,
@@ -558,10 +569,10 @@ export function renderDiamond(
   rc: RoughCanvas,
   options: ArrowOptions
 ) {
-  const { mode, end, rough, bezierParameters, strokeColor, strokeWidth } =
+  const { mode, end, rough, bezierParameters, strokeColor, strokeWidth, scale } =
     options;
   const anchorPoint = getPointWithTangent(points, mode, end, bezierParameters);
-  const size = 10 * (strokeWidth / 2);
+  const size = 10 * (strokeWidth / 2) * scale;
   const { points: diamondPoints } = getDiamondPoints(anchorPoint, size, end);
 
   if (rough) {
@@ -593,8 +604,9 @@ export function renderCircle(
     strokeColor,
     strokeWidth,
     rough,
+    scale,
   } = options;
-  const radius = 5 * (strokeWidth / 2);
+  const radius = 5 * (strokeWidth / 2) * scale;
   const centerPoint = getCircleCenterPoint(
     points,
     radius,
@@ -631,20 +643,21 @@ export function renderDrawioMarker(
   const def = getDrawioMarkerDef(style);
   if (!def) return;
 
-  const { end, mode, bezierParameters, strokeColor, strokeWidth } = options;
+  const { end, mode, bezierParameters, strokeColor, strokeWidth, scale } =
+    options;
   const anchorPoint = getPointWithTangent(points, mode, end, bezierParameters);
   const direction = Vec.mul(anchorPoint.tangent, -1);
   const orient = end === 'Rear' ? direction : Vec.mul(direction, -1);
   const angle = Math.atan2(orient[1], orient[0]);
-  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
-  const scale =
+  const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2) * scale;
+  const markerScale =
     (size * DRAWIO_MARKER_SIZE_MULTIPLIER) / DRAWIO_MARKER_BASE.width;
   const path = new Path2D(def.path);
 
   ctx.save();
   ctx.translate(anchorPoint[0], anchorPoint[1]);
   ctx.rotate(angle);
-  ctx.scale(scale, scale);
+  ctx.scale(markerScale, markerScale);
   ctx.translate(-DRAWIO_MARKER_BASE.tipX, -DRAWIO_MARKER_BASE.centerY);
   ctx.translate(4, 2);
   ctx.lineWidth = Math.max(1, strokeWidth / 2);
