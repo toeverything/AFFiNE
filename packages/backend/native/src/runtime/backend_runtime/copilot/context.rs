@@ -227,7 +227,7 @@ mod tests {
         { "id": "gateway", "type": "openrouter", "config": { "apiKey": "gateway-key" } },
         { "id": "openai", "type": "openai", "models": ["stale-model"], "config": { "apiKey": "old-key" } },
         { "id": "google", "type": "gemini", "models": ["unknown-future-model"], "config": { "apiKey": "test" } },
-        { "id": "official", "type": "anthropic", "models": ["claude-sonnet-4.6"], "config": { "apiKey": "test" } },
+        { "id": "official", "type": "anthropic", "models": ["claude-sonnet-5-5"], "config": { "apiKey": "test" } },
         { "id": "vertex", "type": "anthropicVertex", "config": { "project": "test", "location": "global" } }
       ] }
     }))
@@ -236,12 +236,38 @@ mod tests {
     for (id, service, model) in [
       ("luna", "openrouter", "openai/gpt-6-luna"),
       ("terra", "openrouter", "openai/gpt-6.1-terra"),
-      ("gemini", "gemini", "gemini-3.8-flash"),
-      ("claude", "anthropicVertex", "claude-sonnet-4-6"),
+      ("gemini", "gemini", "gemini-4-hydrogen"),
+      ("claude", "anthropicVertex", "claude-sonnet-5-5"),
+      ("haiku", "anthropicVertex", "claude-haiku-5-5"),
     ] {
       let selected = load(&copilot, id);
       assert_eq!(selected.provider.as_str(), service);
       assert_eq!(selected.target.wire_model(), model);
+    }
+    for id in ["luna", "haiku"] {
+      assert!(
+        load_managed_target(
+          &copilot,
+          &route::slot("chat.default").unwrap(),
+          Some("Chat With AFFiNE AI"),
+          route::CopilotManagedTier::Standard,
+          Some(id),
+        )
+        .unwrap()
+        .is_some()
+      );
+    }
+    let mut gateway_only = copilot.clone();
+    gateway_only
+      .providers
+      .profiles
+      .retain(|profile| profile.id == "gateway");
+    gateway_only.initialize_managed_routes().unwrap();
+    for (id, model) in [
+      ("claude", "anthropic/claude-sonnet-5.5"),
+      ("haiku", "anthropic/claude-haiku-5.5"),
+    ] {
+      assert_eq!(load(&gateway_only, id).target.wire_model(), model);
     }
     for binding in &copilot.managed_routes {
       use llm_adapter::{capability::ModelOutput, target::BackendOperation};
@@ -271,7 +297,7 @@ mod tests {
       .remove("openaiDialect");
     copilot.providers.profiles.push(
       serde_json::from_value(json!({
-        "id": "vertex-alias", "type": "anthropicVertex", "models": ["claude-sonnet-4-6"],
+        "id": "vertex-alias", "type": "anthropicVertex", "models": ["claude-sonnet-5-5"],
         "config": { "project": "test", "location": "global" }
       }))
       .unwrap(),
