@@ -1185,7 +1185,20 @@ export class ConnectorPathGenerator extends PathGenerator {
     const id = connector[type].id;
 
     if (id) {
-      return this.options.getElementById(id) as Connectable;
+      const element = this.options.getElementById(id) as Connectable | null;
+      if (!element) return null;
+      if (
+        'hidden' in element &&
+        element.hidden &&
+        'collapseProxyId' in element &&
+        typeof element.collapseProxyId === 'string'
+      ) {
+        const proxy = this.options.getElementById(
+          element.collapseProxyId
+        ) as Connectable | null;
+        if (proxy) return proxy;
+      }
+      return element;
     }
 
     return null;

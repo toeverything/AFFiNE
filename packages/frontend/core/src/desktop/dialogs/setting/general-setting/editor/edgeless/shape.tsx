@@ -53,6 +53,19 @@ enum ShapeTextFontSize {
 }
 
 type LibraryShapesVisibility = 'disable' | 'searchable' | 'show';
+type MindmapNextColorMode = 'disable' | 'children' | 'depth';
+type MindmapPaletteSizeSetting =
+  | '1'
+  | '2'
+  | '3'
+  | '4'
+  | '5'
+  | '6'
+  | '7'
+  | '8'
+  | '9'
+  | '10'
+  | '11';
 
 export const ShapeSettings = () => {
   const t = useI18n();
@@ -210,6 +223,68 @@ export const ShapeSettings = () => {
     },
     [editorSetting]
   );
+
+  const mindmapNextColorModeItems = useMemo<RadioItem[]>(
+    () => [
+      {
+        value: 'disable',
+        label: 'Disabled',
+      },
+      {
+        value: 'children',
+        label: 'Children',
+      },
+      {
+        value: 'depth',
+        label: 'Depth',
+      },
+    ],
+    []
+  );
+
+  const mindmapNextColorMode = settings.edgelessMindmapNextColor ?? 'children';
+  const setMindmapNextColorMode = useCallback(
+    (value: string) => {
+      editorSetting.set(
+        'edgelessMindmapNextColor',
+        value as MindmapNextColorMode
+      );
+    },
+    [editorSetting]
+  );
+
+  const mindmapPaletteSizeItems = useMemo(() => {
+    const options: MindmapPaletteSizeSetting[] = [
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      '11',
+    ];
+
+    return options.map(option => {
+      const label = `${option} color`;
+      return (
+        <MenuItem
+          key={option}
+          onSelect={() => {
+            editorSetting.set('edgelessMindmapPaletteSize', option);
+          }}
+          selected={(settings.edgelessMindmapPaletteSize ?? '11') === option}
+        >
+          {label}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings.edgelessMindmapPaletteSize]);
+
+  const mindmapPaletteSizeLabel = `${settings.edgelessMindmapPaletteSize ?? '11'} color`;
 
   const shapes = useMemo<RadioItem[]>(
     () => [
@@ -652,6 +727,25 @@ export const ShapeSettings = () => {
           width={250}
           className={settingWrapper}
           onChange={setLibraryShapesVisibility}
+        />
+      </SettingRow>
+      <SettingRow name={'Mindmap next color'} desc={''}>
+        <RadioGroup
+          items={mindmapNextColorModeItems}
+          value={mindmapNextColorMode}
+          width={250}
+          className={settingWrapper}
+          onChange={setMindmapNextColorMode}
+        />
+      </SettingRow>
+      <SettingRow name={'Mindmap palette size'} desc={''}>
+        <DropdownMenu
+          items={mindmapPaletteSizeItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {mindmapPaletteSizeLabel}
+            </MenuTrigger>
+          }
         />
       </SettingRow>
     </>

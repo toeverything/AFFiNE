@@ -778,7 +778,6 @@ export const shapeDomRenderer = (
       textContent.style.transform = `scale(${textScaleX}, ${textScaleY}) rotate(${textRotate}deg)`;
     }
     textElement.append(textContent);
-    textElement.textContent = str;
     newChildren.push(textElement);
   }
 

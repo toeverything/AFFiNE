@@ -1,3 +1,4 @@
+/* eslint-disable import-x/no-extraneous-dependencies */
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vitest/config';
@@ -10,7 +11,7 @@ export default defineConfig({
     globalSetup: fileURLToPath(
       new URL('../../../../scripts/vitest-global.js', import.meta.url)
     ),
-    include: ['src/__tests__/**/*.unit.spec.ts'],
+    include: ['src/**/__tests__/**/*.unit.spec.ts'],
     testTimeout: 1000,
     coverage: {
       provider: 'istanbul',

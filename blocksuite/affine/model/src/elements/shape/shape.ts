@@ -107,6 +107,7 @@ export type ShapeProps = BaseElementProps & {
   collapsedSize?: [number, number];
   expandedSize?: [number, number];
   collapseProxyId?: string | null;
+  mindmapNextPaletteIndex?: number;
 
   text?: Y.Text;
   textHorizontalAlign?: TextAlign;
@@ -278,6 +279,9 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   @field()
   accessor collapseProxyId: string | null = null;
 
+  @field()
+  accessor mindmapNextPaletteIndex: number | undefined = undefined;
+
   @field(TextAlign.Center as TextAlign)
   accessor textHorizontalAlign!: TextAlign;
 
@@ -309,13 +313,13 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
   accessor fillColor: Color = DefaultTheme.shapeFillColor;
 
   @prop()
-  accessor filled: boolean = false;
-
-  @prop()
   accessor flipX: boolean = false;
 
   @prop()
   accessor flipY: boolean = false;
+
+  @prop()
+  accessor filled: boolean = false;
 
   @prop()
   accessor fontFamily: string = FontFamily.Inter;
