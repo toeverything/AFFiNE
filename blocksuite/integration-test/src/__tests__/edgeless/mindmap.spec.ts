@@ -45,10 +45,14 @@ describe('mindmap', () => {
     onTestFinished(cleanup);
     gfx = getDocRootBlock(window.doc, window.editor, 'edgeless').gfx;
     const hostRect = editor.host!.getBoundingClientRect();
-    expect({
-      viewport: [gfx.viewport.left, gfx.viewport.top],
-      host: [hostRect.left, hostRect.top],
-    }).toEqual({ viewport: [48, 32], host: [48, 32] });
+    const appRect = editor.parentElement!.getBoundingClientRect();
+    expect([gfx.viewport.left, gfx.viewport.top]).toEqual([
+      hostRect.left,
+      hostRect.top,
+    ]);
+    expect([hostRect.left - appRect.left, hostRect.top - appRect.top]).toEqual([
+      48, 32,
+    ]);
   });
 
   test('should update mindmap node size during IME composition', async () => {
