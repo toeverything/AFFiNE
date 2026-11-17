@@ -7,4 +7,5 @@ export * from './frame-render-options';
 export * from './frame-spec';
 export * from './frame-tool';
 export * from './frame-toolbar';
+export * from './metadata';
 export * from './present-tool';
