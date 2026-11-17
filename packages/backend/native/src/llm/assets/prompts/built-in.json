@@ -4,7 +4,7 @@
     "action": "Transcript audio",
     "managedRoute": {
       "targets": ["transcript-lite"],
-      "premiumTargets": ["gemini"],
+      "premiumTargets": ["transcript"],
       "operations": ["structured"]
     },
     "config": {
@@ -19,7 +19,7 @@
     "action": "Transcript audio structured",
     "managedRoute": {
       "targets": ["transcript-lite"],
-      "premiumTargets": ["gemini"],
+      "premiumTargets": ["transcript"],
       "operations": ["structured"]
     },
     "config": {
@@ -838,6 +838,12 @@
           "minimumTier": "standard"
         },
         {
+          "id": "haiku",
+          "target": "haiku",
+          "displayName": "Claude Haiku 5.5",
+          "minimumTier": "standard"
+        },
+        {
           "id": "terra",
           "target": "terra",
           "displayName": "GPT-6.1 Terra",
@@ -846,13 +852,13 @@
         {
           "id": "gemini",
           "target": "gemini",
-          "displayName": "Gemini 3.8 Flash",
+          "displayName": "Gemini 4 Hydrogen",
           "minimumTier": "premium"
         },
         {
           "id": "claude",
           "target": "claude",
-          "displayName": "Claude Sonnet 4.6",
+          "displayName": "Claude Sonnet 5.5",
           "minimumTier": "premium"
         }
       ],

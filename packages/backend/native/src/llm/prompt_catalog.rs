@@ -513,7 +513,20 @@ mod tests {
     let options = llm_get_built_in_route_options(chat.name.clone()).expect("chat route options");
     assert_eq!(options.standard_default_target_id.as_deref(), Some("luna"));
     assert_eq!(options.premium_default_target_id.as_deref(), Some("luna"));
-    assert_eq!(options.choices.len(), 4);
+    assert_eq!(options.choices.len(), 5);
+    for premium in [false, true] {
+      let luna = built_in_managed_target(&chat.name, "luna", premium).unwrap();
+      let haiku = built_in_managed_target(&chat.name, "haiku", premium).unwrap();
+      assert!(haiku.minimum_tier == luna.minimum_tier);
+      assert_eq!(haiku.target.model_id, "claude-haiku-5-5");
+    }
+    for (id, model) in [("claude", "claude-sonnet-5-5"), ("gemini", "gemini-4-hydrogen")] {
+      assert!(built_in_managed_target(&chat.name, id, false).is_none());
+      assert_eq!(
+        built_in_managed_target(&chat.name, id, true).unwrap().target.model_id,
+        model
+      );
+    }
     assert_eq!(
       built_in_managed_target(&chat.name, "terra", false).map(|target| target.target.model_id.as_str()),
       None
@@ -523,23 +536,25 @@ mod tests {
       Some("gpt-6.1-terra")
     );
 
-    let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
-    assert_eq!(
-      transcript.managed_targets,
-      [ManagedTarget {
-        api_shapes: vec![
-          llm_adapter::backend::ApiShape::GeminiApi,
-          llm_adapter::backend::ApiShape::GeminiVertex
-        ],
-        model_id: "gemini-3.5-flash-lite".into()
-      }]
-    );
-    assert_eq!(
-      transcript.managed_premium_targets.as_deref().map(|targets| targets
-        .iter()
-        .map(|target| target.model_id.as_str())
-        .collect::<Vec<_>>()),
-      Some(vec!["gemini-3.8-flash"])
-    );
+    for name in ["Transcript audio", "Transcript audio structured"] {
+      let transcript = built_in_prompt(name).expect("transcript prompt");
+      assert_eq!(
+        transcript.managed_targets,
+        [ManagedTarget {
+          api_shapes: vec![
+            llm_adapter::backend::ApiShape::GeminiApi,
+            llm_adapter::backend::ApiShape::GeminiVertex
+          ],
+          model_id: "gemini-3.5-flash-lite".into()
+        }]
+      );
+      assert_eq!(
+        transcript.managed_premium_targets.as_deref().map(|targets| targets
+          .iter()
+          .map(|target| target.model_id.as_str())
+          .collect::<Vec<_>>()),
+        Some(vec!["gemini-3.8-flash"])
+      );
+    }
   }
 }

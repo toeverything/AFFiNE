@@ -3,9 +3,13 @@
     "apiShapes": ["gemini_api", "gemini_vertex"],
     "modelId": "gemini-3.5-flash-lite"
   },
-  "gemini": {
+  "transcript": {
     "apiShapes": ["gemini_api", "gemini_vertex"],
     "modelId": "gemini-3.8-flash"
+  },
+  "gemini": {
+    "apiShapes": ["gemini_api", "gemini_vertex"],
+    "modelId": "gemini-4-hydrogen"
   },
   "luna": {
     "apiShapes": ["responses", "chat_completions"],
@@ -18,7 +22,16 @@
       "responses",
       "chat_completions"
     ],
-    "modelId": "claude-sonnet-4.6"
+    "modelId": "claude-sonnet-5-5"
+  },
+  "haiku": {
+    "apiShapes": [
+      "vertex_anthropic",
+      "anthropic",
+      "responses",
+      "chat_completions"
+    ],
+    "modelId": "claude-haiku-5-5"
   },
   "image": {
     "apiShapes": ["openai_images"],
