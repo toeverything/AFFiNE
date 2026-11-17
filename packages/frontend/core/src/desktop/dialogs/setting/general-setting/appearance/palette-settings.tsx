@@ -407,6 +407,11 @@ function SwatchStyleMenu({
       onMouseDown={event => event.stopPropagation()}
       onClick={event => event.stopPropagation()}
     >
+      <div className={styles.swatchHint}>
+        {editable
+          ? 'Same color and line controls as the shape drawing menu.'
+          : 'Standard palettes are read-only. Clone to edit.'}
+      </div>
       {createElement('edgeless-shape-color-picker', {
         ref: pickerRef,
         inline: true,

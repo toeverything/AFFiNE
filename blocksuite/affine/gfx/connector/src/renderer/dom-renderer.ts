@@ -373,6 +373,9 @@ export const connectorBaseDomRenderer = (
   path.setAttribute('stroke-width', String(strokeWidth));
   if (strokeStyle === 'dash') {
     path.setAttribute('stroke-dasharray', '12,12');
+  } else if (strokeStyle === 'dot') {
+    const gap = strokeWidth * 2.5;
+    path.setAttribute('stroke-dasharray', `0, ${gap}`);
   } else {
     path.removeAttribute('stroke-dasharray');
   }

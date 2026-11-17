@@ -244,3 +244,54 @@ test('reset keeps default line and fill visibility from theme palettes', async (
   expect(resetPaletteState?.showInLine).toBe(false);
   expect(resetPaletteState?.showInFill).toBe(true);
 });
+
+test('Editor border style options are consistent for note, shape, and connector', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openEditorSetting(page);
+
+  await expect(
+    page.getByTestId('note-border-style-solid-trigger')
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('note-border-style-dash-trigger')
+  ).toBeVisible();
+  await expect(page.getByTestId('note-border-style-dot-trigger')).toBeVisible();
+  await expect(
+    page.getByTestId('note-border-style-none-trigger')
+  ).toBeVisible();
+
+  await expect(
+    page.getByTestId('shape-border-style-solid-trigger')
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('shape-border-style-dash-trigger')
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('shape-border-style-dot-trigger')
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('shape-border-style-none-trigger')
+  ).toBeVisible();
+
+  const connectorSolid = page.getByTestId(
+    'connector-border-style-solid-trigger'
+  );
+  const connectorDash = page.getByTestId('connector-border-style-dash-trigger');
+  const connectorDot = page.getByTestId('connector-border-style-dot-trigger');
+  const connectorNone = page.getByTestId('connector-border-style-none-trigger');
+
+  await connectorSolid.scrollIntoViewIfNeeded();
+  await expect(connectorSolid).toBeVisible();
+  await expect(connectorDash).toBeVisible();
+  await expect(connectorDot).toBeVisible();
+  await expect(connectorNone).toBeVisible();
+
+  await connectorDot.click();
+  await expect(connectorDot).toHaveAttribute('data-state', 'checked');
+
+  await connectorNone.click();
+  await expect(connectorNone).toHaveAttribute('data-state', 'checked');
+});
