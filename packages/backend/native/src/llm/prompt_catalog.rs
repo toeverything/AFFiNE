@@ -536,23 +536,25 @@ mod tests {
       Some("gpt-6.1-terra")
     );
 
-    let transcript = built_in_prompt("Transcript audio structured").expect("transcript prompt");
-    assert_eq!(
-      transcript.managed_targets,
-      [ManagedTarget {
-        api_shapes: vec![
-          llm_adapter::backend::ApiShape::GeminiApi,
-          llm_adapter::backend::ApiShape::GeminiVertex
-        ],
-        model_id: "gemini-3.5-flash-lite".into()
-      }]
-    );
-    assert_eq!(
-      transcript.managed_premium_targets.as_deref().map(|targets| targets
-        .iter()
-        .map(|target| target.model_id.as_str())
-        .collect::<Vec<_>>()),
-      Some(vec!["gemini-4-hydrogen"])
-    );
+    for name in ["Transcript audio", "Transcript audio structured"] {
+      let transcript = built_in_prompt(name).expect("transcript prompt");
+      assert_eq!(
+        transcript.managed_targets,
+        [ManagedTarget {
+          api_shapes: vec![
+            llm_adapter::backend::ApiShape::GeminiApi,
+            llm_adapter::backend::ApiShape::GeminiVertex
+          ],
+          model_id: "gemini-3.5-flash-lite".into()
+        }]
+      );
+      assert_eq!(
+        transcript.managed_premium_targets.as_deref().map(|targets| targets
+          .iter()
+          .map(|target| target.model_id.as_str())
+          .collect::<Vec<_>>()),
+        Some(vec!["gemini-3.8-flash"])
+      );
+    }
   }
 }

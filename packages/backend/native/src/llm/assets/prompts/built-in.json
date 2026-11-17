@@ -4,7 +4,7 @@
     "action": "Transcript audio",
     "managedRoute": {
       "targets": ["transcript-lite"],
-      "premiumTargets": ["gemini"],
+      "premiumTargets": ["transcript"],
       "operations": ["structured"]
     },
     "config": {
@@ -19,7 +19,7 @@
     "action": "Transcript audio structured",
     "managedRoute": {
       "targets": ["transcript-lite"],
-      "premiumTargets": ["gemini"],
+      "premiumTargets": ["transcript"],
       "operations": ["structured"]
     },
     "config": {

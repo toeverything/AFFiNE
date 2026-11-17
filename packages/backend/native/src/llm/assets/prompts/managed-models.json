@@ -3,6 +3,10 @@
     "apiShapes": ["gemini_api", "gemini_vertex"],
     "modelId": "gemini-3.5-flash-lite"
   },
+  "transcript": {
+    "apiShapes": ["gemini_api", "gemini_vertex"],
+    "modelId": "gemini-3.8-flash"
+  },
   "gemini": {
     "apiShapes": ["gemini_api", "gemini_vertex"],
     "modelId": "gemini-4-hydrogen"
