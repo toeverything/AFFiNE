@@ -16,8 +16,9 @@ import { GlobalContextService } from '@affine/core/modules/global-context';
 import { createIsland, type Island } from '@affine/core/utils/island';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useTranslation } from '@affine/i18n';
-import { ContactWithUsIcon } from '@blocksuite/icons/rc';
+import { ArrowLeftSmallIcon, ContactWithUsIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import {
   Suspense,
@@ -48,6 +49,12 @@ interface SettingProps extends ModalProps {
   activeTab?: SettingTab;
   onCloseSetting: () => void;
   scrollAnchor?: string;
+  /**
+   * 999.14: 'mobile' shows the section list full-width first, then the
+   * selected section's panel full-screen with a back bar (phones cannot fit
+   * the side-by-side desktop layout). Desktop is unchanged.
+   */
+  layout?: 'desktop' | 'mobile';
 }
 
 const isWorkspaceSetting = (key: string): boolean =>
@@ -65,7 +72,10 @@ const SettingModalInner = ({
   activeTab: initialActiveTab = 'appearance',
   onCloseSetting,
   scrollAnchor: initialScrollAnchor,
+  layout = 'desktop',
 }: SettingProps) => {
+  const isMobileLayout = layout === 'mobile';
+  const [mobileShowPanel, setMobileShowPanel] = useState(false);
   const [subPageIslands, setSubPageIslands] = useState<Island[]>([]);
   const [settingState, setSettingState] = useState<SettingState>({
     activeTab: initialActiveTab,
@@ -139,6 +149,7 @@ const SettingModalInner = ({
   const onTabChange = useCallback(
     (key: SettingTab) => {
       setSettingState({ activeTab: key });
+      setMobileShowPanel(true);
     },
     [setSettingState]
   );
@@ -199,77 +210,116 @@ const SettingModalInner = ({
       key={`setting-modal-${currentServerId}-${currentLanguageKey}`}
       scope={currentServer.scope}
     >
-      <SettingSidebar
-        activeTab={settingState.activeTab}
-        onTabChange={onTabChange}
-      />
-      <SubPageContext.Provider value={contextValue}>
-        <Scrollable.Root>
-          <Scrollable.Viewport
-            data-testid="setting-modal-content"
-            className={style.wrapper}
-            ref={modalContentWrapperRef}
-            data-setting-page
-            data-open
-          >
-            <div className={style.centerContainer}>
-              <div ref={modalContentRef} className={style.content}>
-                <Suspense fallback={<WorkspaceDetailSkeleton />}>
-                  {settingState.activeTab === 'account' &&
-                  loginStatus === 'authenticated' ? (
-                    <AccountSetting onChangeSettingState={setSettingState} />
-                  ) : isWorkspaceSetting(settingState.activeTab) ? (
-                    <WorkspaceSetting
-                      activeTab={settingState.activeTab}
-                      scrollAnchor={settingState.scrollAnchor}
-                      onCloseSetting={onCloseSetting}
-                      onChangeSettingState={setSettingState}
-                    />
-                  ) : !isWorkspaceSetting(settingState.activeTab) ? (
-                    <GeneralSetting
-                      activeTab={settingState.activeTab}
-                      onChangeSettingState={setSettingState}
-                    />
-                  ) : null}
-                </Suspense>
-              </div>
-              <div className={style.footer}>
-                <ContactWithUsIcon fontSize={16} />
-                <Trans
-                  i18nKey={'com.affine.settings.suggestion-2'}
-                  components={{
-                    1: (
-                      <span
-                        className={style.link}
-                        onClick={handleOpenStarAFFiNEModal}
+      {isMobileLayout && !mobileShowPanel ? (
+        <SettingSidebar
+          activeTab={settingState.activeTab}
+          onTabChange={onTabChange}
+          className={style.mobileSidebar}
+          mobile
+        />
+      ) : null}
+      {isMobileLayout ? null : (
+        <SettingSidebar
+          activeTab={settingState.activeTab}
+          onTabChange={onTabChange}
+        />
+      )}
+      {isMobileLayout && mobileShowPanel ? (
+        <div
+          className={style.mobileBackBar}
+          onClick={() => setMobileShowPanel(false)}
+          data-testid="setting-mobile-back"
+        >
+          <ArrowLeftSmallIcon fontSize={20} />
+          {i18n.t('com.affine.settingSidebar.title')}
+        </div>
+      ) : null}
+      {isMobileLayout && !mobileShowPanel ? null : (
+        <SubPageContext.Provider value={contextValue}>
+          <Scrollable.Root>
+            <Scrollable.Viewport
+              data-testid="setting-modal-content"
+              className={clsx(
+                style.wrapper,
+                isMobileLayout && style.mobileWrapper
+              )}
+              ref={modalContentWrapperRef}
+              data-setting-page
+              data-open
+            >
+              <div className={style.centerContainer}>
+                <div ref={modalContentRef} className={style.content}>
+                  <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                    {settingState.activeTab === 'account' &&
+                    loginStatus === 'authenticated' ? (
+                      <AccountSetting onChangeSettingState={setSettingState} />
+                    ) : isWorkspaceSetting(settingState.activeTab) ? (
+                      <WorkspaceSetting
+                        activeTab={settingState.activeTab}
+                        scrollAnchor={settingState.scrollAnchor}
+                        onCloseSetting={onCloseSetting}
+                        onChangeSettingState={setSettingState}
                       />
-                    ),
-                    2: (
-                      <span
-                        className={style.link}
-                        onClick={handleOpenIssueFeedbackModal}
+                    ) : !isWorkspaceSetting(settingState.activeTab) ? (
+                      <GeneralSetting
+                        activeTab={settingState.activeTab}
+                        onChangeSettingState={setSettingState}
                       />
-                    ),
-                  }}
+                    ) : null}
+                  </Suspense>
+                </div>
+                {isMobileLayout ? null : (
+                  <div className={style.footer}>
+                    <ContactWithUsIcon fontSize={16} />
+                    <Trans
+                      i18nKey={'com.affine.settings.suggestion-2'}
+                      components={{
+                        1: (
+                          <span
+                            className={style.link}
+                            onClick={handleOpenStarAFFiNEModal}
+                          />
+                        ),
+                        2: (
+                          <span
+                            className={style.link}
+                            onClick={handleOpenIssueFeedbackModal}
+                          />
+                        ),
+                      }}
+                    />
+                  </div>
+                )}
+                <StarAFFiNEModal
+                  open={openStarAFFiNEModal}
+                  setOpen={setOpenStarAFFiNEModal}
+                />
+                <IssueFeedbackModal
+                  open={openIssueFeedbackModal}
+                  setOpen={setOpenIssueFeedbackModal}
                 />
               </div>
-              <StarAFFiNEModal
-                open={openStarAFFiNEModal}
-                setOpen={setOpenStarAFFiNEModal}
-              />
-              <IssueFeedbackModal
-                open={openIssueFeedbackModal}
-                setOpen={setOpenIssueFeedbackModal}
-              />
-            </div>
-            <Scrollable.Scrollbar />
-          </Scrollable.Viewport>
-          <SubPageTarget />
-        </Scrollable.Root>
-      </SubPageContext.Provider>
+              <Scrollable.Scrollbar />
+            </Scrollable.Viewport>
+            <SubPageTarget />
+          </Scrollable.Root>
+        </SubPageContext.Provider>
+      )}
     </FrameworkScope>
   );
 };
+
+/**
+ * 999.14: the full settings menu (sections + panels) for embedding outside
+ * the desktop modal -- the mobile app renders it with layout="mobile".
+ */
+export const SettingPanels = (props: SettingProps) => (
+  <Suspense fallback={<CenteredLoading />}>
+    <div className={props.layout === 'mobile' ? style.mobileRoot : undefined}>
+      <SettingModalInner {...props} />
+    </div>
+  </Suspense>
+);
 
 export const SettingDialog = ({
   close,
