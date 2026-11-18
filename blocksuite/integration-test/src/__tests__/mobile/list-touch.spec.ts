@@ -14,10 +14,11 @@ import { pointerdown, wait } from '../utils/common.js';
 import { addNote } from '../utils/edgeless.js';
 import { setupEditor } from '../utils/setup.js';
 import {
-  createStubVirtualKeyboardExtension,
   enableMobileDatabaseEditing,
   isVisible,
+  registerStubVirtualKeyboardProviderForAllScopes,
   touchTap,
+  unregisterStubVirtualKeyboardProviderForAllScopes,
 } from './utils.js';
 
 // Story 2.12 (MOBILE-03 + the phase's own shared mobile harness):
@@ -34,10 +35,21 @@ import {
 // desktop config -> actions remain hover-gated (unchanged).
 describe('list view mobile touch parity (Story 2.12, MOBILE-03)', () => {
   beforeEach(async () => {
-    const cleanup = await setupEditor('page', [
-      createStubVirtualKeyboardExtension(),
-    ]);
-    return cleanup;
+    // Phase 4 (MOBILE-12): this file's own `seedCanonicalDatabaseWithListRow`-
+    // style helpers below insert `affine:database-view-ref`/`affine:database-ref`
+    // blocks, whose nested preview now also builds the keyboard-toolbar
+    // widget's 'preview-page' scope registration (`view.ts`'s Task 1 fix) —
+    // that nested `BlockStdScope` needs its own `VirtualKeyboardProvider`,
+    // invisible to the plain `createStubVirtualKeyboardExtension()` +
+    // `setupEditor` extensions-array pattern this file used previously (see
+    // `mobile/utils.ts`'s own doc comment on
+    // `registerStubVirtualKeyboardProviderForAllScopes`).
+    registerStubVirtualKeyboardProviderForAllScopes();
+    const cleanup = await setupEditor('page');
+    return async () => {
+      await cleanup();
+      unregisterStubVirtualKeyboardProviderForAllScopes();
+    };
   });
 
   function createStubStd(journalDate: string) {

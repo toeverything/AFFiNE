@@ -1,5 +1,14 @@
 import { addSiblingAttachmentBlocks } from '@blocksuite/affine-block-attachment';
-import { insertDatabaseBlockCommand } from '@blocksuite/affine-block-database';
+import {
+  DatabaseBlockDataSource,
+  insertDatabaseBlockCommand,
+} from '@blocksuite/affine-block-database';
+import { insertCrossDocReference } from '@blocksuite/affine-block-database-ref';
+import {
+  canCreateJournalTodoSourceTable,
+  createJournalTodoSourceTable,
+  insertJournalTodoReference,
+} from '@blocksuite/affine-block-database-view-ref';
 import { insertEmptyEmbedIframeCommand } from '@blocksuite/affine-block-embed';
 import { insertImagesCommand } from '@blocksuite/affine-block-image';
 import { insertLatexBlockCommand } from '@blocksuite/affine-block-latex';
@@ -10,6 +19,7 @@ import {
   indentListCommand,
 } from '@blocksuite/affine-block-list';
 import { updateBlockType } from '@blocksuite/affine-block-note';
+import { createReusableNoteAndInsertRefCommand } from '@blocksuite/affine-block-note-ref';
 import {
   canDedentParagraphCommand,
   canIndentParagraphCommand,
@@ -34,7 +44,10 @@ import {
   toggleStrike,
   toggleUnderline,
 } from '@blocksuite/affine-inline-preset';
-import type { FrameBlockModel } from '@blocksuite/affine-model';
+import type {
+  DatabaseBlockModel,
+  FrameBlockModel,
+} from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
@@ -69,6 +82,7 @@ import {
   CollapseTabIcon,
   CopyIcon,
   DatabaseKanbanViewIcon,
+  DatabaseListViewIcon,
   DatabaseTableViewIcon,
   DeleteIcon,
   DividerIcon,
@@ -86,6 +100,7 @@ import {
   NewPageIcon,
   NowIcon,
   NumberedListIcon,
+  PageIcon,
   PlusIcon,
   QuoteIcon,
   RedoIcon,
@@ -107,7 +122,7 @@ import {
   ConfigExtensionFactory,
 } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
-import { computed } from '@preact/signals-core';
+import { computed, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import type { TemplateResult } from 'lit';
 
@@ -186,6 +201,93 @@ export type KeyboardToolPanelGroup = {
 export type DynamicKeyboardToolPanelGroup = (
   ctx: KeyboardToolbarContext
 ) => KeyboardToolPanelGroup | null;
+
+// Database List-view rows are rendered by data-view's own renderer
+// (`affine-data-view-list`), NOT as standard block-tree `BlockComponent`s —
+// their title cell is explicitly marked `data-not-block-text` and carries no
+// `data-block-id`, so `getSelectedModelsCommand` (which resolves selection
+// via std.selection/the block-tree DOM) can never see a focused row; a
+// database row's "focus" only ever shows up as `document.activeElement`
+// landing somewhere inside `.affine-data-view-list-row` (row-level tap
+// focus via its own `tabindex="0"`, or text-edit focus inside its title's
+// contenteditable). `.affine-data-view-list-row` is List-view-specific
+// (Table/Kanban use distinct custom elements, e.g. `data-view-table-row`),
+// so this lookup is inherently List-view-scoped without needing a separate
+// `views.some(v => v.mode === 'list')` check.
+// WR-02 (Phase 02 code review): `ensureColumns` must default to `false`.
+// This lookup is called from `disableWhen`, which the toolbar re-evaluates
+// on every render pass for any focused database row — purely as a side
+// effect of the toolbar being visible, not because the user tapped
+// anything. `dataSource.ensureTaskHierarchyColumns()` creates up to three
+// new (hidden) columns on the database via `addProperty` with no
+// `captureSync()`/undo-boundary guard, so it must only run when a mutation
+// is actually expected — i.e. from the `action` callbacks, which opt in via
+// `{ ensureColumns: true }`. `getRowHierarchyLevel` already tolerates a
+// missing hierarchy-level column (returns `0`), so the read-only path below
+// stays correct even when the columns haven't been created yet.
+// WR-03 (Phase 02 code review): `AffineKeyboardToolbar` extends
+// `SignalWatcher`, which only re-renders when a `@preact/signals-core`
+// signal read during the previous `render()` changes — it does not
+// re-render on plain DOM mutations like `document.activeElement` changing.
+// `getFocusedDatabaseListRow` (below) reads `document.activeElement`
+// directly, so without this signal, tapping from one database row straight
+// to another (no intervening text-selection/toolbar-visibility change)
+// could leave `RightTab`/`CollapseTab`'s enabled/disabled state stuck on
+// whichever row last happened to trigger an unrelated re-render.
+// `_focusedRowVersion$` is bumped on every `focusin`/`focusout` anywhere in
+// the document and read (for its dependency-tracking side effect only) at
+// the top of `getFocusedDatabaseListRow`, so `SignalWatcher` picks up the
+// dependency and re-renders whenever focus moves.
+const _focusedRowVersion$ = signal(0);
+let _focusListenerAttached = false;
+function _ensureFocusVersionListenerAttached() {
+  if (_focusListenerAttached) return;
+  _focusListenerAttached = true;
+  const bump = () => {
+    _focusedRowVersion$.value = _focusedRowVersion$.value + 1;
+  };
+  // Capture phase: focus events don't bubble, so this must listen during
+  // capture to observe focus changes anywhere in the document, including
+  // inside shadow DOM subtrees (Lit components).
+  document.addEventListener('focusin', bump, true);
+  document.addEventListener('focusout', bump, true);
+}
+
+function getFocusedDatabaseListRow(
+  std: BlockStdScope,
+  { ensureColumns = false }: { ensureColumns?: boolean } = {}
+) {
+  _ensureFocusVersionListenerAttached();
+  // Read (not used otherwise) purely so `SignalWatcher` registers this as
+  // a tracked dependency of whichever `disableWhen`/`action` call led here.
+  void _focusedRowVersion$.value;
+
+  const rowEl = document.activeElement?.closest(
+    '.affine-data-view-list-row'
+  ) as HTMLElement | null;
+  const rowId = rowEl?.dataset.rowId;
+  if (!rowId) return undefined;
+
+  const model = std.store.getModelById(rowId);
+  if (!model) return undefined;
+
+  const parent = std.store.getParent(model);
+  if (!parent || parent.flavour !== 'affine:database') return undefined;
+
+  const dataSource = new DatabaseBlockDataSource(parent as DatabaseBlockModel);
+  if (dataSource.readonly$.value) return undefined;
+
+  if (ensureColumns) dataSource.ensureTaskHierarchyColumns();
+
+  const index = parent.children.indexOf(model);
+  const level = dataSource.getRowHierarchyLevel(model.id);
+  const previousSibling = index > 0 ? parent.children[index - 1] : undefined;
+  const previousSiblingLevel = previousSibling
+    ? dataSource.getRowHierarchyLevel(previousSibling.id)
+    : undefined;
+
+  return { dataSource, rowId: model.id, level, previousSiblingLevel };
+}
 
 const textToolActionItems: KeyboardToolbarActionItem[] = [
   {
@@ -850,6 +952,87 @@ const databaseToolGroup: KeyboardToolPanelGroup = {
           .run();
       },
     },
+    {
+      name: 'Calendar view',
+      icon: TodayIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.calendarViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .run();
+      },
+    },
+    {
+      name: 'Journal Todo',
+      icon: DatabaseListViewIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database'),
+      action: ({ std }) => {
+        const [_, { selectedModels }] = std.command.exec(
+          getSelectedModelsCommand
+        );
+        const model = selectedModels?.[0];
+        if (!model) return;
+
+        insertJournalTodoReference(std, model).catch(console.error);
+      },
+    },
+    {
+      // 999.20: the desktop slash menu's "New Journal Todo Table", which is
+      // otherwise unreachable on mobile (the slash menu never mounts there).
+      name: 'New Journal Todo Table',
+      icon: DatabaseTableViewIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database') &&
+        canCreateJournalTodoSourceTable(std),
+      action: ({ std }) => {
+        const [_, { selectedModels }] = std.command.exec(
+          getSelectedModelsCommand
+        );
+        const model = selectedModels?.[0];
+        if (!model) return;
+
+        return createJournalTodoSourceTable(std, model);
+      },
+    },
+    {
+      name: 'New note',
+      icon: PageIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:note-ref'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(createReusableNoteAndInsertRefCommand, {
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .run();
+      },
+    },
+    {
+      name: 'Reference',
+      icon: LinkIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database-ref'),
+      action: ({ std }) => {
+        const [_, { selectedModels }] = std.command.exec(
+          getSelectedModelsCommand
+        );
+        const model = selectedModels?.[0];
+        if (!model) return;
+
+        insertCrossDocReference(std, model).catch(console.error);
+      },
+    },
   ],
 };
 
@@ -1138,6 +1321,9 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
       name: 'RightTab',
       icon: RightTabIcon(),
       disableWhen: ({ std }) => {
+        const row = getFocusedDatabaseListRow(std);
+        if (row) return row.previousSiblingLevel === undefined;
+
         const [success] = std.command
           .chain()
           .tryAll(chain => [
@@ -1148,6 +1334,21 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
         return !success;
       },
       action: ({ std }) => {
+        const row = getFocusedDatabaseListRow(std, { ensureColumns: true });
+        if (row) {
+          if (row.previousSiblingLevel === undefined) return;
+          const newLevel = Math.min(
+            row.level + 1,
+            row.previousSiblingLevel + 1
+          );
+          row.dataSource.setPendingHierarchyLevel(row.rowId, newLevel);
+          // Level-only fast path — must not reuse `rowMove`'s self-target
+          // trick here, since it silently no-ops whenever this row has
+          // children (see `applyPendingHierarchyLevel`'s doc comment).
+          row.dataSource.applyPendingHierarchyLevel(row.rowId);
+          return;
+        }
+
         std.command
           .chain()
           .tryAll(chain => [
@@ -1163,6 +1364,9 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
       name: 'CollapseTab',
       icon: CollapseTabIcon(),
       disableWhen: ({ std }) => {
+        const row = getFocusedDatabaseListRow(std);
+        if (row) return row.level === 0;
+
         const [success] = std.command
           .chain()
           .tryAll(chain => [
@@ -1173,6 +1377,18 @@ export const defaultKeyboardToolbarConfig: KeyboardToolbarConfig = {
         return !success;
       },
       action: ({ std }) => {
+        const row = getFocusedDatabaseListRow(std, { ensureColumns: true });
+        if (row) {
+          const newLevel = row.level - 1;
+          if (newLevel < 0) return;
+          row.dataSource.setPendingHierarchyLevel(row.rowId, newLevel);
+          // Level-only fast path — must not reuse `rowMove`'s self-target
+          // trick here, since it silently no-ops whenever this row has
+          // children (see `applyPendingHierarchyLevel`'s doc comment).
+          row.dataSource.applyPendingHierarchyLevel(row.rowId);
+          return;
+        }
+
         std.command
           .chain()
           .tryAll(chain => [

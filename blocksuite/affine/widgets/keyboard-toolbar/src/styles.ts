@@ -62,9 +62,32 @@ export const keyboardToolbarStyles = css`
 export const keyboardToolPanelStyles = css`
   affine-keyboard-tool-panel {
     display: block;
-    overflow-y: auto;
+    /* keyboard-toolbar-spacer-scroll-bug: this host's own height is set
+       dynamically to \`panelHeight\` (keyboard height while typing,
+       appTabSafeArea when idle, staticHeight$/330px only while the "+"
+       panel is genuinely open) -- but AffineKeyboardToolPanel.render()
+       always renders its full group/item content regardless of that
+       state (see keyboard-tool-panel.ts). With \`overflow-y: auto\`
+       unconditional, that full content being taller than a small
+       (keyboard-height or safe-area) host made this spacer itself
+       draggable/scrollable any time the keyboard was open, even with no
+       panel open at all -- reported directly: "I can scroll the toolbar
+       off the screen". Only the "+" panel's own real content should ever
+       be scrollable; everywhere else, zero scroll amount. */
+    overflow-y: hidden;
     box-sizing: border-box;
     background-color: ${unsafeCSSVarV2('layer/background/primary')};
+  }
+
+  affine-keyboard-toolbar[data-panel-open] affine-keyboard-tool-panel {
+    overflow-y: auto;
+    /* Defense in depth for the legitimate open-panel scroll case too:
+       without this, exhausting this element's own scroll range chains
+       the gesture to the next scrollable ancestor (the page) by default
+       on iOS -- same mechanism already guarded against elsewhere in this
+       codebase for edgeless mode (see mobile-detail-page.css.ts's
+       data-lock-document-scroll rules). */
+    overscroll-behavior: contain;
   }
 
   .affine-keyboard-tool-panel-container {

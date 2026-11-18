@@ -1,5 +1,6 @@
 import { getSelectedModelsCommand } from '@blocksuite/affine-shared/commands';
-import { type VirtualKeyboardProviderWithAction } from '@blocksuite/affine-shared/services';
+import type { VirtualKeyboardProviderWithAction } from '@blocksuite/affine-shared/services';
+import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ArrowLeftBigIcon, KeyboardIcon } from '@blocksuite/icons/lit';
 import {
@@ -28,9 +29,25 @@ import {
   isKeyboardSubToolBarConfig,
   isKeyboardToolBarActionItem,
   isKeyboardToolPanelConfig,
+  isSelectionStaleForFocus,
+  panelPaddingBottom,
+  scrollIntoViewDelta,
+  selectionKey,
+  shouldRescrollAfterKeyboardChange,
+  shouldScrollForSelectionChange,
 } from './utils';
 
 export const AFFINE_KEYBOARD_TOOLBAR = 'affine-keyboard-toolbar';
+
+// 999.11: shared by all toolbar instances -- see shouldScrollForSelectionChange.
+const lastSelectionKeyByRoot = new WeakMap<object, string>();
+
+function getCaretBottom(): number | null {
+  const selection = document.getSelection();
+  if (!selection?.rangeCount) return null;
+  const rect = selection.getRangeAt(0).getBoundingClientRect();
+  return rect.height > 0 ? rect.bottom : null;
+}
 
 @requiredProperties({
   config: PropTypes.object,
@@ -50,9 +67,19 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   }
 
   private get panelHeight() {
-    if (this.keyboard.visible$.value) {
-      return `${this.keyboard.height$.value}px`;
-    }
+    // keyboard-toolbar-panel-expand-bug: `panelOpened` must win over
+    // `keyboard.visible$`. Pressing "+"/"X" dismisses/restores the real
+    // keyboard via blur/refocus (see widget.ts's `hide`/`show`), which is
+    // asynchronous -- `keyboard.visible$` only catches up once the actual
+    // on-screen keyboard finishes animating and `visualViewport` fires, so
+    // there's a window where it still reports the pre-toggle state. Letting
+    // it win over `panelOpened` meant the explicit, deliberate "+"/"X"
+    // toggle could never actually take effect while that signal happened
+    // to say "visible" -- confirmed directly: pressing "+" with the
+    // keyboard up never expanded the panel, and closing it/selecting an
+    // item never collapsed it back down either, both for the same reason.
+    // `panelOpened` is the one thing in this check we control exactly and
+    // deliberately, so check it first.
     if (this.panelOpened) {
       return `${
         this.keyboard.staticHeight$.value !== 0
@@ -60,8 +87,20 @@ export class AffineKeyboardToolbar extends SignalWatcher(
           : 330
       }px`;
     }
+    if (this.keyboard.visible$.value) {
+      return `${this.keyboard.height$.value}px`;
+    }
     return this.keyboard.appTabSafeArea$.value;
   }
+
+  // keyboard-toolbar-hide-show-crash-bug: `this.keyboard` is always the
+  // `widget.ts`-synthesized object -- it merges a fallback `show`/`hide`
+  // (inputMode toggle + blur/refocus, see widget.ts) under the real
+  // platform provider's own fields, so `hide`/`show` are guaranteed to
+  // exist here regardless of platform. No guard needed at this call site.
+  private readonly _showKeyboard = () => this.keyboard.show();
+
+  private readonly _hideKeyboard = () => this.keyboard.hide();
 
   /**
    * Prevent flickering during keyboard opening
@@ -69,7 +108,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
   private _resetPanelIndexTimeoutId: ReturnType<typeof setTimeout> | null =
     null;
   private readonly _closeToolPanel = () => {
-    if (!this.keyboard.visible$.peek()) this.keyboard.show();
+    if (!this.keyboard.visible$.peek()) this._showKeyboard();
 
     if (this._resetPanelIndexTimeoutId) {
       clearTimeout(this._resetPanelIndexTimeoutId);
@@ -109,7 +148,7 @@ export class AffineKeyboardToolbar extends SignalWatcher(
           this._resetPanelIndexTimeoutId = null;
         }
         this._currentPanelIndex$.value = index;
-        this.keyboard.hide();
+        this._hideKeyboard();
         this._scrollCurrentBlockIntoView();
       }
     }
@@ -129,15 +168,36 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 
         const block = this.std.view.getBlock(selectedModels[0].id);
         if (!block) return;
+        // 999.1 A-2: never scroll to a selection the user has already left
+        // (e.g. focus moved into a database row) -- see utils.ts.
+        if (isSelectionStaleForFocus(block, document.activeElement)) return;
 
         const { y: y1 } = this.getBoundingClientRect();
         const { bottom: y2 } = block.getBoundingClientRect();
         const gap = 8;
+        const delta = scrollIntoViewDelta(y1, y2, getCaretBottom(), gap);
+        if (delta === 0) return;
 
-        if (y2 < y1 + gap) return;
+        // keyboard-toolbar-window-scroll-bug: this used to call the global
+        // `scrollTo()`, i.e. `window.scrollTo()` -- scrolling the WHOLE
+        // DOCUMENT instead of the actual scroll container
+        // (`getViewportElement`'s `.affine-page-viewport`). On mobile, with
+        // the keyboard open, that produced exactly the symptom reported:
+        // window.scrollY and visualViewport.offsetTop swinging by hundreds
+        // of px (confirmed live via the mobile-debug-eval channel), with the
+        // fixed-position toolbar visibly dragging along with it on every
+        // selection change this effect re-fires for -- not a one-time
+        // settle, but continuous churn. Two browser-level mitigations
+        // (locking `<html>`'s overflow, `interactive-widget=resizes-content`)
+        // were tried and both failed to help, because the real scroll was
+        // never browser-chrome-driven in the first place -- it was this
+        // line, explicitly scrolling `window`. Scrolling the correct
+        // container instead removes the window-scroll entirely.
+        const viewportEl = getViewportElement(this.std.host);
+        if (!viewportEl) return;
 
-        scrollTo({
-          top: window.scrollY + y2 - y1 + gap,
+        viewportEl.scrollTo({
+          top: viewportEl.scrollTop + delta,
           behavior: 'instant',
         });
       })
@@ -248,14 +308,23 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       <icon-button
         size="36px"
         @click=${() => {
-          if (this.keyboard.staticHeight$.value === 0) {
+          // keyboard-toggle-button-wiring: this used to gate on
+          // `keyboard.staticHeight$.value === 0` (meaning "we've never
+          // measured the real keyboard's height yet, so don't touch it"),
+          // a leftover from when `_hideKeyboard`/`_showKeyboard` had no
+          // working web implementation at all. Now that they reliably
+          // blur/refocus (see widget.ts), that guard no longer applies --
+          // this button should behave exactly like the "+" button's own
+          // toggle: close an open panel if there is one, otherwise toggle
+          // the real keyboard directly.
+          if (this.panelOpened) {
             this._closeToolPanel();
             return;
           }
           if (this.keyboard.visible$.peek()) {
-            this.keyboard.hide();
+            this._hideKeyboard();
           } else {
-            this.keyboard.show();
+            this._showKeyboard();
           }
         }}
       >
@@ -275,6 +344,35 @@ export class AffineKeyboardToolbar extends SignalWatcher(
           this.keyboard.visible$.value
         );
         this.toggleAttribute('data-panel-open', this.panelOpened);
+        // keyboard-toolbar-y-jump: do NOT set `this.style.bottom` here.
+        //
+        // The host stays at `bottom: 0` (styles.ts) and the reserved
+        // bottom offset is supplied *once*, by the always-present
+        // `<affine-keyboard-tool-panel>` spacer, whose inline `height` is
+        // `panelHeight` (== keyboard.height$ while the keyboard is visible,
+        // staticHeight$ while a panel is open, appTabSafeArea$ otherwise).
+        // That spacer is what lifts the icon bar onto the keyboard's top
+        // edge -- so the live keyboard height is already actively tracked
+        // and no `100dvh` recompute is relied upon (this element is
+        // `position: fixed`).
+        //
+        // Commit d6c2537e40 additionally wrote that same offset into
+        // `style.bottom`, which double-counted it: the icon bar rendered
+        // 2 x height$ above the viewport bottom, i.e. floating one whole
+        // keyboard-height above the keyboard. Because height$ is recomputed
+        // per un-debounced visualViewport event on iOS, the excess varied
+        // continuously, which is why the defect presented as a random
+        // Y-jump rather than a fixed gap. Geometry is asserted by
+        // keyboard-toolbar-geometry-touch.spec.ts.
+        console.debug('[MobileDebugLog] keyboard-toolbar-style-bottom', {
+          timestampMs: Date.now(),
+          keyboardVisible: this.keyboard.visible$.value,
+          keyboardHeight: this.keyboard.height$.value,
+          appTabSafeArea: this.keyboard.appTabSafeArea$.value,
+          panelOpened: this.panelOpened,
+          panelHeight: this.panelHeight,
+          hostStyleBottom: getComputedStyle(this).bottom,
+        });
       })
     );
 
@@ -283,14 +381,53 @@ export class AffineKeyboardToolbar extends SignalWatcher(
       e.preventDefault();
     });
 
+    // 999.11: only a selection that actually changed scrolls -- a touch to
+    // scroll the page re-emits the same selection, and this toolbar may be a
+    // freshly re-created instance (see shouldScrollForSelectionChange).
     this.disposables.add(
       effect(() => {
         const std = this.rootComponent.std;
-        void std.selection.value;
+        const key = selectionKey(std.selection.value);
+        if (
+          !shouldScrollForSelectionChange(
+            lastSelectionKeyByRoot,
+            this.rootComponent,
+            key
+          )
+        )
+          return;
         // wait cursor updated
         requestAnimationFrame(() => {
           this._scrollCurrentBlockIntoView();
         });
+      })
+    );
+
+    // 999.1: re-check once the toolbar has moved onto the rising keyboard
+    // (see shouldRescrollAfterKeyboardChange in utils.ts).
+    let keyboardOpenedAtMs: number | undefined;
+    // 999.11: a toolbar (re-)mounted while the keyboard is already up must
+    // not treat that as the keyboard opening.
+    let wasKeyboardVisible = this.keyboard.visible$.peek();
+    this.disposables.add(
+      effect(() => {
+        const visible = this.keyboard.visible$.value;
+        void this.keyboard.height$.value;
+        const now = performance.now();
+        if (visible && !wasKeyboardVisible) keyboardOpenedAtMs = now;
+        wasKeyboardVisible = visible;
+        if (
+          !shouldRescrollAfterKeyboardChange(visible, keyboardOpenedAtMs, now)
+        )
+          return;
+        // after the spacer re-renders at the new height
+        this.updateComplete
+          .then(() => {
+            requestAnimationFrame(() => {
+              this._scrollCurrentBlockIntoView();
+            });
+          })
+          .catch(console.error);
       })
     );
 
@@ -354,15 +491,10 @@ export class AffineKeyboardToolbar extends SignalWatcher(
     );
   }
 
-  override firstUpdated() {
-    // workaround for the virtual keyboard showing transition animation
-    const timeoutId = setTimeout(() => {
-      this._scrollCurrentBlockIntoView();
-    }, 700);
-    this.disposables.add(() => {
-      clearTimeout(timeoutId);
-    });
-  }
+  // 999.11: the former firstUpdated 700ms scroll ("workaround for the
+  // virtual keyboard showing transition animation") is gone: it re-scrolled
+  // on every toolbar re-mount, and the keyboard-open re-check above now
+  // covers the opening animation.
 
   override render() {
     return html`
@@ -376,7 +508,11 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         .context=${this._context}
         style=${styleMap({
           height: this.panelHeight,
-          paddingBottom: this.keyboard.appTabSafeArea$.value,
+          paddingBottom: panelPaddingBottom(
+            this.panelOpened,
+            this.keyboard.visible$.value,
+            this.keyboard.appTabSafeArea$.value
+          ),
         })}
       ></affine-keyboard-tool-panel>
     `;
