@@ -12,6 +12,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/integration-test"
+  },
   "dependencies": {
     "@blocksuite/affine": "workspace:*",
     "@preact/signals-core": "^1.8.0",

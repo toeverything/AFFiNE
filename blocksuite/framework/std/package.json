@@ -9,6 +9,11 @@
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toeverything/AFFiNE.git",
+    "directory": "blocksuite/framework/std"
+  },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^3.0.0",
