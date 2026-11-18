@@ -40,7 +40,8 @@
     "tailwindcss": "^4.1.17",
     "tsx": "^4.21.0",
     "typanion": "^3.14.0",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "workbox-build": "^7.4.1"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
