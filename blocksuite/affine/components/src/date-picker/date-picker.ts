@@ -122,7 +122,7 @@ export class DatePicker extends WithDisposable(LitElement) {
       'date-cell--not-curr-month': cell.notCurrentMonth,
       'date-cell--selected': !!cell.selected,
     });
-    const dateRaw = `${cell.date.getFullYear()}-${cell.date.getMonth()}-${cell.date.getDate()}(${cell.date.getDay()})`;
+    const dateRaw = `${cell.date.getFullYear()}-${cell.date.getMonth() + 1}-${cell.date.getDate()}(${cell.date.getDay()})`;
     return html`<button
       tabindex=${cell.tabIndex ?? -1}
       aria-label=${dateRaw}
