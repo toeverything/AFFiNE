@@ -20,12 +20,17 @@ export const insertTableBlockCommand: Command<
   const { selectedModels, place, removeEmptyLine, std } = ctx;
   if (!selectedModels?.length) return;
 
-  const targetModel =
+  let targetModel =
     place === 'before'
       ? selectedModels[0]
       : selectedModels[selectedModels.length - 1];
-
   if (!targetModel) return;
+
+  let parent = std.store.getParent(targetModel);
+  while (parent && parent.flavour === 'affine:list') {
+    targetModel = parent;
+    parent = std.store.getParent(targetModel);
+  }
 
   const result = std.store.addSiblingBlocks(
     targetModel,
