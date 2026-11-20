@@ -1,5 +1,10 @@
 import { ConnectorMode, getConnectorModeName } from '@blocksuite/affine-model';
 import { EditPropsStore } from '@blocksuite/affine-shared/services';
+import {
+  edgelessToolShortcutsVersion$,
+  formatEdgelessToolShortcut,
+  getEdgelessToolShortcut,
+} from '@blocksuite/affine-shared/utils';
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -48,6 +53,7 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
   }
 
   override render() {
+    void edgelessToolShortcutsVersion$.value;
     const { active } = this;
     const mode = this._mode$.value;
     return html`
@@ -58,7 +64,9 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
             ? ''
             : html`<affine-tooltip-content-with-shortcut
                 data-tip="${getConnectorModeName(mode)}"
-                data-shortcut="${'C'}"
+                data-shortcut="${formatEdgelessToolShortcut(
+                  getEdgelessToolShortcut('connector')
+                )}"
               ></affine-tooltip-content-with-shortcut>`
         }
         .tooltipOffset=${17}

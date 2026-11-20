@@ -1,0 +1,111 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+import {
+  EDGELESS_SHORTCUT_STORAGE_KEY,
+  getEdgelessToolShortcut,
+  resetEdgelessToolShortcut,
+  resetEdgelessToolShortcuts,
+  setEdgelessToolShortcut,
+  subscribeEdgelessToolShortcuts,
+} from '../utils/shortcut-settings.js';
+
+describe('edgeless tool shortcut settings', () => {
+  afterEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    localStorage.clear();
+    resetEdgelessToolShortcuts();
+  });
+
+  test.each([
+    [{ pen: 'v' }, {}],
+    [{ pen: 'S', note: 'q' }, { note: 'q' }],
+    [{ pen: 'q', note: 'Q' }, {}],
+    [{ select: 'p', pen: 't' }, {}],
+    [
+      { select: 'p', pen: 'v' },
+      { select: 'p', pen: 'v' },
+    ],
+    [
+      { select: 'p', pen: 'q' },
+      { select: 'p', pen: 'q' },
+    ],
+  ])(
+    'validates stored overrides %j on a fresh load',
+    async (stored, expected) => {
+      localStorage.setItem(
+        EDGELESS_SHORTCUT_STORAGE_KEY,
+        JSON.stringify(stored)
+      );
+      vi.resetModules();
+      const settings = await import('../utils/shortcut-settings.js');
+
+      expect(settings.getEdgelessToolShortcutOverrides()).toEqual(expected);
+      const resolved = Object.keys(settings.edgelessToolShortcutDefaults).map(
+        id =>
+          settings.getEdgelessToolShortcut(
+            id as keyof typeof settings.edgelessToolShortcutDefaults
+          )
+      );
+      expect(new Set(resolved).size).toBe(resolved.length);
+    }
+  );
+
+  test('persists a shortcut override and notifies subscribers', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeEdgelessToolShortcuts(listener);
+
+    expect(setEdgelessToolShortcut('pen', 'Q')).toBeNull();
+    expect(getEdgelessToolShortcut('pen')).toBe('q');
+    expect(
+      JSON.parse(localStorage.getItem(EDGELESS_SHORTCUT_STORAGE_KEY) ?? '{}')
+    ).toEqual({ pen: 'q' });
+    expect(listener).toHaveBeenCalledOnce();
+
+    unsubscribe();
+  });
+
+  test('rejects conflicts with another tool shortcut', () => {
+    expect(setEdgelessToolShortcut('pen', 'v')).toBe('select');
+    expect(getEdgelessToolShortcut('pen')).toBe('p');
+  });
+
+  test('keeps bindings and subscribers working when persistence fails', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage unavailable', 'QuotaExceededError');
+    });
+    const listener = vi.fn();
+    const unsubscribe = subscribeEdgelessToolShortcuts(listener);
+
+    expect(setEdgelessToolShortcut('pen', 'q')).toBeNull();
+    expect(getEdgelessToolShortcut('pen')).toBe('q');
+    expect(listener).toHaveBeenCalledOnce();
+    unsubscribe();
+  });
+
+  test('rejects shortcuts reserved by fixed edgeless tools', () => {
+    expect(setEdgelessToolShortcut('pen', 's')).toBe('reserved');
+    expect(setEdgelessToolShortcut('pen', 'k')).toBe('reserved');
+    expect(getEdgelessToolShortcut('pen')).toBe('p');
+  });
+
+  test('rejects shortcuts that are not a single letter or number', () => {
+    expect(() => setEdgelessToolShortcut('pen', 'Ctrl-P')).toThrow();
+    expect(() => setEdgelessToolShortcut('pen', 'Shift')).toThrow();
+  });
+
+  test('removes an override when reset', () => {
+    setEdgelessToolShortcut('pen', 'q');
+    resetEdgelessToolShortcut('pen');
+
+    expect(getEdgelessToolShortcut('pen')).toBe('p');
+    expect(localStorage.getItem(EDGELESS_SHORTCUT_STORAGE_KEY)).toBeNull();
+  });
+
+  test('does not reset to a shortcut currently used by another tool', () => {
+    setEdgelessToolShortcut('pen', 'q');
+    setEdgelessToolShortcut('select', 'p');
+
+    expect(resetEdgelessToolShortcut('pen')).toBe('select');
+    expect(getEdgelessToolShortcut('pen')).toBe('q');
+  });
+});
