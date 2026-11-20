@@ -6,8 +6,6 @@ import {
 import { almostEqual, Bound, type IVec, Point } from '@blocksuite/global/gfx';
 import type { GfxModel } from '@blocksuite/std/gfx';
 
-import { AdaptiveCooldownController } from './adaptive-load-controller';
-
 interface Distance {
   horiz?: {
     /**
@@ -37,13 +35,25 @@ interface Distance {
 const ALIGN_THRESHOLD = 8;
 const DISTRIBUTION_LINE_OFFSET = 1;
 const STROKE_WIDTH = 2;
-const DISTRIBUTE_ALIGN_MAX_CANDIDATES = 160;
-const DISTRIBUTE_ALIGN_MAX_COST_MS = 5;
-const DISTRIBUTE_ALIGN_COOLDOWN_FRAMES = 2;
+
+type GridSnapAnchor =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
 
 export class SnapOverlay extends Overlay {
   static override overlayName: string = 'snap-manager';
 
+  private _enabled = true;
+  private _snapToGrid = false;
+  private _gridSize = 20;
+  private _gridSnapAnchor: GridSnapAnchor = 'top-left';
   private _skippedElements: Set<GfxModel> = new Set();
 
   private _referenceBounds: {
@@ -80,11 +90,6 @@ export class SnapOverlay extends Overlay {
     vertical: [],
   };
 
-  private readonly _distributeCooldown = new AdaptiveCooldownController({
-    cooldownFrames: DISTRIBUTE_ALIGN_COOLDOWN_FRAMES,
-    maxCostMs: DISTRIBUTE_ALIGN_MAX_COST_MS,
-  });
-
   override clear() {
     this._referenceBounds = {
       vertical: [],
@@ -97,9 +102,47 @@ export class SnapOverlay extends Overlay {
     };
     this._distributedAlignLines = [];
     this._skippedElements.clear();
-    this._distributeCooldown.reset();
 
     super.clear();
+  }
+
+  setEnabled(enabled: boolean) {
+    this._enabled = enabled;
+    if (!enabled) {
+      this.clear();
+    }
+  }
+
+  getEnabled(): boolean {
+    return this._enabled;
+  }
+
+  setSnapToGrid(enabled: boolean) {
+    this._snapToGrid = enabled;
+  }
+
+  setGridSize(size: number) {
+    this._gridSize = size;
+  }
+
+  setGridSnapAnchor(anchor: GridSnapAnchor) {
+    this._gridSnapAnchor = anchor;
+  }
+
+  private _getGridAnchorOffset(bound: Bound): IVec {
+    const anchorMap: Record<GridSnapAnchor, IVec> = {
+      'top-left': [0, 0],
+      'top-center': [bound.w / 2, 0],
+      'top-right': [bound.w, 0],
+      'center-left': [0, bound.h / 2],
+      center: [bound.w / 2, bound.h / 2],
+      'center-right': [bound.w, bound.h / 2],
+      'bottom-left': [0, bound.h],
+      'bottom-center': [bound.w / 2, bound.h],
+      'bottom-right': [bound.w, bound.h],
+    };
+
+    return anchorMap[this._gridSnapAnchor];
   }
 
   private _alignDistributeHorizontally(
@@ -600,6 +643,17 @@ export class SnapOverlay extends Overlay {
   alignResize(position: IVec, direction: ('vertical' | 'horizontal')[]) {
     const rst = { dx: 0, dy: 0 };
 
+    // If both snap-to-guides and snap-to-grid are disabled, return no adjustment
+    if (!this._enabled && !this._snapToGrid) {
+      this._intraGraphicAlignLines = {
+        horizontal: [],
+        vertical: [],
+      };
+      this._distributedAlignLines = [];
+      this._renderer?.refresh();
+      return rst;
+    }
+
     const { viewport } = this.gfx;
     const threshold = ALIGN_THRESHOLD / viewport.zoom;
     const searchBound = new Bound(
@@ -622,23 +676,47 @@ export class SnapOverlay extends Overlay {
         alignBound,
         other
       );
+      const isGridBound = other.w === 0 || other.h === 0;
+      const shouldProcessBound = isGridBound ? this._snapToGrid : this._enabled;
 
       if (
+        shouldProcessBound &&
         direction.includes('horizontal') &&
         closestDistances.horiz &&
-        (!this._intraGraphicAlignLines.horizontal.length ||
+        (isGridBound ||
+          !this._intraGraphicAlignLines.horizontal.length ||
           Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx))
       ) {
-        this._updateXAlignPoint(rst, alignBound, other, closestDistances);
+        if (isGridBound) {
+          if (
+            rst.dx === 0 ||
+            Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx)
+          ) {
+            rst.dx = closestDistances.horiz.distance;
+          }
+        } else {
+          this._updateXAlignPoint(rst, alignBound, other, closestDistances);
+        }
       }
 
       if (
+        shouldProcessBound &&
         direction.includes('vertical') &&
         closestDistances.vert &&
-        (!this._intraGraphicAlignLines.vertical.length ||
+        (isGridBound ||
+          !this._intraGraphicAlignLines.vertical.length ||
           Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy))
       ) {
-        this._updateYAlignPoint(rst, alignBound, other, closestDistances);
+        if (isGridBound) {
+          if (
+            rst.dy === 0 ||
+            Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy)
+          ) {
+            rst.dy = closestDistances.vert.distance;
+          }
+        } else {
+          this._updateYAlignPoint(rst, alignBound, other, closestDistances);
+        }
       }
     }
 
@@ -653,6 +731,18 @@ export class SnapOverlay extends Overlay {
 
   align(bound: Bound): { dx: number; dy: number } {
     const rst = { dx: 0, dy: 0 };
+
+    // If both snap-to-guides and snap-to-grid are disabled, return no adjustment
+    if (!this._enabled && !this._snapToGrid) {
+      this._intraGraphicAlignLines = {
+        horizontal: [],
+        vertical: [],
+      };
+      this._distributedAlignLines = [];
+      this._renderer?.refresh();
+      return rst;
+    }
+
     const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
 
     const { viewport } = this.gfx;
@@ -666,32 +756,44 @@ export class SnapOverlay extends Overlay {
 
     for (const other of this._referenceBounds.all) {
       const closestDistances = this._calculateClosestDistances(bound, other);
+      const isGridBound = other.w === 0 || other.h === 0;
+
+      // For grid bounds, only update dx/dy without showing guide lines
+      // For object bounds, only process if snap-to-guides is enabled
+      const shouldProcessBound = isGridBound ? this._snapToGrid : this._enabled;
 
       if (
+        shouldProcessBound &&
         closestDistances.horiz &&
         (!this._intraGraphicAlignLines.horizontal.length ||
           Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx))
       ) {
-        this._updateXAlignPoint(rst, bound, other, closestDistances);
+        if (isGridBound) {
+          // For grid bounds, just update dx without creating guide lines
+          rst.dx = closestDistances.horiz.distance;
+        } else {
+          this._updateXAlignPoint(rst, bound, other, closestDistances);
+        }
       }
 
       if (
+        shouldProcessBound &&
         closestDistances.vert &&
         (!this._intraGraphicAlignLines.vertical.length ||
           Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy))
       ) {
-        this._updateYAlignPoint(rst, bound, other, closestDistances);
+        if (isGridBound) {
+          // For grid bounds, just update dy without creating guide lines
+          rst.dy = closestDistances.vert.distance;
+        } else {
+          this._updateYAlignPoint(rst, bound, other, closestDistances);
+        }
       }
     }
 
-    const shouldTryDistribute =
-      this._referenceBounds.all.length <= DISTRIBUTE_ALIGN_MAX_CANDIDATES &&
-      this._distributeCooldown.shouldRun();
-
-    if (shouldTryDistribute) {
-      const distributeStart = performance.now();
-
-      // point align priority is higher than distribute align
+    // point align priority is higher than distribute align
+    // Only do distribute alignment when snap-to-guides is enabled
+    if (this._enabled) {
       if (rst.dx === 0) {
         this._alignDistributeHorizontally(rst, bound, threshold, viewport);
       }
@@ -699,9 +801,6 @@ export class SnapOverlay extends Overlay {
       if (rst.dy === 0) {
         this._alignDistributeVertically(rst, bound, threshold, viewport);
       }
-
-      const distributeCost = performance.now() - distributeStart;
-      this._distributeCooldown.reportCost(distributeCost);
     }
 
     this._renderer?.refresh();
@@ -710,6 +809,10 @@ export class SnapOverlay extends Overlay {
   }
 
   override render(ctx: CanvasRenderingContext2D) {
+    // Don't render snap lines if both snap-to-guides and snap-to-grid are disabled
+    // Note: Grid lines are never added to _intraGraphicAlignLines, so they won't be rendered
+    if (!this._enabled && !this._snapToGrid) return;
+
     if (
       this._intraGraphicAlignLines.vertical.length === 0 &&
       this._intraGraphicAlignLines.horizontal.length === 0 &&
@@ -798,26 +901,106 @@ export class SnapOverlay extends Overlay {
     });
     const verticalBounds: Bound[] = [];
     const horizBounds: Bound[] = [];
-    const allCandidateElements = new Set<GfxModel>();
+    const allBounds: Bound[] = [];
 
     vertCandidates.forEach(candidate => {
       if (skipped.has(candidate) || this._isSkippedElement(candidate)) return;
-      const bound = candidate.elementBound;
-      verticalBounds.push(bound);
-      allCandidateElements.add(candidate);
+      verticalBounds.push(candidate.elementBound);
+      allBounds.push(candidate.elementBound);
     });
 
     horizCandidates.forEach(candidate => {
       if (skipped.has(candidate) || this._isSkippedElement(candidate)) return;
-      const bound = candidate.elementBound;
-      horizBounds.push(bound);
-      allCandidateElements.add(candidate);
+      horizBounds.push(candidate.elementBound);
+      allBounds.push(candidate.elementBound);
     });
+
+    // Add grid lines as snap targets when snap-to-grid is enabled
+    if (this._snapToGrid && this._gridSize > 0) {
+      const gridBounds = this._generateGridBounds(movingBound);
+      verticalBounds.push(...gridBounds.vertical);
+      horizBounds.push(...gridBounds.horizontal);
+      allBounds.push(...gridBounds.all);
+    }
 
     this._referenceBounds = {
       horizontal: horizBounds,
       vertical: verticalBounds,
-      all: [...allCandidateElements].map(element => element.elementBound),
+      all: allBounds,
+    };
+  }
+
+  private _generateGridBounds(movingBound: Bound): {
+    vertical: Bound[];
+    horizontal: Bound[];
+    all: Bound[];
+  } {
+    const viewportBound = this.gfx.viewport.viewportBounds;
+    const verticalBounds: Bound[] = [];
+    const horizBounds: Bound[] = [];
+    const allBounds: Bound[] = [];
+
+    // Calculate grid lines in viewport
+    const [anchorOffsetX, anchorOffsetY] =
+      this._getGridAnchorOffset(movingBound);
+
+    const startX =
+      Math.floor((viewportBound.x - anchorOffsetX) / this._gridSize) *
+        this._gridSize +
+      anchorOffsetX;
+    const endX = viewportBound.maxX;
+    const startY =
+      Math.floor((viewportBound.y - anchorOffsetY) / this._gridSize) *
+        this._gridSize +
+      anchorOffsetY;
+    const endY = viewportBound.maxY;
+
+    const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
+    const rangeX = movingBound.w / 2 + threshold * 50; // Increased range
+    const rangeY = movingBound.h / 2 + threshold * 50; // Increased range
+
+    // Create vertical grid line bounds (for x-axis snapping)
+    // These are vertical lines, so they have x position and span vertically
+    for (let x = startX; x <= endX; x += this._gridSize) {
+      // Only create bounds reasonably near the moving element
+      if (Math.abs(x - movingBound.center[0]) > rangeX) {
+        continue;
+      }
+
+      // Vertical line: fixed x, spans full height
+      const bound = new Bound(
+        x,
+        viewportBound.y,
+        0, // Zero width for vertical line
+        viewportBound.h
+      );
+      verticalBounds.push(bound);
+      allBounds.push(bound);
+    }
+
+    // Create horizontal grid line bounds (for y-axis snapping)
+    // These are horizontal lines, so they have y position and span horizontally
+    for (let y = startY; y <= endY; y += this._gridSize) {
+      // Only create bounds reasonably near the moving element
+      if (Math.abs(y - movingBound.center[1]) > rangeY) {
+        continue;
+      }
+
+      // Horizontal line: fixed y, spans full width
+      const bound = new Bound(
+        viewportBound.x,
+        y,
+        viewportBound.w,
+        0 // Zero height for horizontal line
+      );
+      horizBounds.push(bound);
+      allBounds.push(bound);
+    }
+
+    return {
+      vertical: verticalBounds,
+      horizontal: horizBounds,
+      all: allBounds,
     };
   }
 

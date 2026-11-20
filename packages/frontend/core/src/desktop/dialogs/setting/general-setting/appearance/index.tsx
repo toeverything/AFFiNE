@@ -15,6 +15,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { OpenInAppLinksMenu } from './links';
+import { PaletteSettings } from './palette-settings';
 import { settingWrapper } from './style.css';
 import { ThemeEditorSetting } from './theme-editor-setting';
 
@@ -281,6 +282,8 @@ export const AppearanceSettings = () => {
           />
         </SettingRow>
       </SettingWrapper>
+
+      <PaletteSettings />
 
       {BUILD_CONFIG.isElectron ? <MenubarSetting /> : null}
     </>

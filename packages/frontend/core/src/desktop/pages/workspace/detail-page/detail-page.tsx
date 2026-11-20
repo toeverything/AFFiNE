@@ -47,6 +47,7 @@ import {
   ExportIcon,
   FrameIcon,
   PropertyIcon,
+  SettingsIcon,
   TocIcon,
   TodayIcon,
 } from '@blocksuite/icons/rc';
@@ -71,6 +72,7 @@ import { EditorAnalyticsPanel } from './tabs/analytics';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
+import { EditorObjectPropertiesPanel } from './tabs/object-properties';
 import { EditorOutlinePanel } from './tabs/outline';
 
 const DetailPageImpl = memo(function DetailPageImpl() {
@@ -408,6 +410,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
             <EditorFramePanel editor={editorContainer?.host ?? null} />
+          </Scrollable.Viewport>
+          <Scrollable.Scrollbar />
+        </Scrollable.Root>
+      </ViewSidebarTab>
+
+      <ViewSidebarTab tabId="object-properties" icon={<SettingsIcon />}>
+        <Scrollable.Root className={styles.sidebarScrollArea}>
+          <Scrollable.Viewport>
+            <EditorObjectPropertiesPanel
+              editor={editorContainer?.host ?? null}
+            />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
