@@ -4,6 +4,7 @@ import {
   CANVAS_EXPORT_IGNORE_TAGS,
   DEFAULT_IMAGE_PROXY_ENDPOINT,
 } from '@blocksuite/affine-shared/consts';
+import { EditPropsStore } from '@blocksuite/affine-shared/services';
 import type { Viewport } from '@blocksuite/affine-shared/types';
 import {
   isInsidePageEditor,
@@ -410,7 +411,11 @@ export class ExportManager {
         backgroundColor: containerComputedStyle.getPropertyValue(
           '--affine-background-primary-color'
         ),
-        size: getBgGridGap(edgelessBackground.zoom),
+        size: getBgGridGap(
+          edgelessBackground.zoom,
+          this.editorHost.std.get(EditPropsStore).getStorage('edgelessGridSize') ??
+            20
+        ),
         gridColor: containerComputedStyle.getPropertyValue(
           '--affine-edgeless-grid-color'
         ),

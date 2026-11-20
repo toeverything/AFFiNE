@@ -6,7 +6,6 @@ import {
 } from '@blocksuite/affine-block-surface';
 import { type Shape, ShapeFactory } from '@blocksuite/affine-gfx-shape';
 import {
-  type Connection,
   getShapeRadius,
   getShapeType,
   GroupElementModel,
@@ -16,7 +15,12 @@ import {
   type ShapeStyle,
 } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { Bound, normalizeDegAngle, type XYWH } from '@blocksuite/global/gfx';
+import {
+  Bound,
+  type IVec,
+  normalizeDegAngle,
+  type XYWH,
+} from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
 import type { BlockComponent } from '@blocksuite/std';
 import type {
@@ -37,6 +41,45 @@ export enum Direction {
 
 export const PANEL_WIDTH = 136;
 export const PANEL_HEIGHT = 108;
+
+export const SHAPE_MENU_ITEM_WIDTH = 36;
+export const SHAPE_MENU_ITEM_HEIGHT = 28;
+export const SHAPE_MENU_ITEM_GAP = 6;
+export const SHAPE_MENU_PANEL_PADDING = 8;
+
+export function getShapeMenuLayout(itemCount: number, viewportWidth: number) {
+  const preferredColumns =
+    viewportWidth >= 2000
+      ? 12
+      : viewportWidth >= 1650
+        ? 10
+        : viewportWidth >= 1350
+          ? 8
+          : viewportWidth >= 1150
+            ? 7
+            : viewportWidth >= 980
+              ? 6
+              : viewportWidth >= 840
+                ? 5
+                : viewportWidth >= 720
+                  ? 4
+                  : viewportWidth >= 560
+                    ? 3
+                    : 2;
+
+  const columns = Math.min(preferredColumns, itemCount);
+  const rows = Math.ceil(itemCount / columns);
+  const width =
+    SHAPE_MENU_PANEL_PADDING * 2 +
+    columns * SHAPE_MENU_ITEM_WIDTH +
+    (columns - 1) * SHAPE_MENU_ITEM_GAP;
+  const height =
+    SHAPE_MENU_PANEL_PADDING * 2 +
+    rows * SHAPE_MENU_ITEM_HEIGHT +
+    (rows - 1) * SHAPE_MENU_ITEM_GAP;
+
+  return { columns, rows, width, height };
+}
 
 export const MAIN_GAP = 100;
 export const SECOND_GAP = 20;
@@ -243,8 +286,8 @@ export function nextBound(
 }
 
 export function getPosition(type: Direction) {
-  let startPosition: Connection['position'];
-  let endPosition: Connection['position'];
+  let startPosition: IVec;
+  let endPosition: IVec;
 
   switch (type) {
     case Direction.Right:
