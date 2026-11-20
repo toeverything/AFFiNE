@@ -1,9 +1,10 @@
-import { type ShapeName, ShapeType } from '@blocksuite/affine-model';
+import type { ShapeName } from '@blocksuite/affine-model';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import { css, html, LitElement } from 'lit';
 
 import { ShapeTool } from '../shape-tool.js';
+import type { EdgelessShapeMenu } from './shape-menu.js';
 import type { DraggableShape } from './utils.js';
 
 export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
@@ -32,19 +33,17 @@ export class EdgelessShapeToolButton extends EdgelessToolbarToolMixin(
   private readonly _handleWrapperClick = () => {
     if (this.tryDisposePopper()) return;
 
-    this.setEdgelessTool(this.type, {
-      shapeName: ShapeType.Rect,
-    });
     if (!this.popper) this._toggleMenu();
   };
 
   override type = ShapeTool;
 
   private _toggleMenu() {
-    this.createPopper('edgeless-shape-menu', this, {
+    this.createPopper('edgeless-shape-menu' as any, this, {
       setProps: ele => {
-        ele.edgeless = this.edgeless;
-        ele.onChange = (shapeName: ShapeName) => {
+        const menu = ele as EdgelessShapeMenu;
+        menu.edgeless = this.edgeless;
+        menu.onChange = (shapeName: ShapeName) => {
           this.setEdgelessTool(this.type, {
             shapeName,
           });

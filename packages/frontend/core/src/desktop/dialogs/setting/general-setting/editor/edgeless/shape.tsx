@@ -107,16 +107,24 @@ export const ShapeSettings = () => {
     () => [
       {
         value: StrokeStyle.Solid,
+        testId: 'shape-border-style-solid-trigger',
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.solid'](),
       },
       {
         value: StrokeStyle.Dash,
+        testId: 'shape-border-style-dash-trigger',
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.dash'](),
       },
       {
+        value: StrokeStyle.Dot,
+        testId: 'shape-border-style-dot-trigger',
+        label: 'Dot',
+      },
+      {
         value: StrokeStyle.None,
+        testId: 'shape-border-style-none-trigger',
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.none'](),
       },

@@ -127,13 +127,26 @@ export const ConnectorSettings = () => {
     () => [
       {
         value: StrokeStyle.Solid,
+        testId: 'connector-border-style-solid-trigger',
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.solid'](),
       },
       {
         value: StrokeStyle.Dash,
+        testId: 'connector-border-style-dash-trigger',
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.dash'](),
+      },
+      {
+        value: StrokeStyle.Dot,
+        testId: 'connector-border-style-dot-trigger',
+        label: 'Dot',
+      },
+      {
+        value: StrokeStyle.None,
+        testId: 'connector-border-style-none-trigger',
+        label:
+          t['com.affine.settings.editorSettings.edgeless.note.border.none'](),
       },
     ],
     [t]
@@ -443,6 +456,7 @@ export const ConnectorSettings = () => {
           max={12}
           step={2}
           nodes={[2, 4, 6, 8, 10, 12]}
+          disabled={borderStyle === StrokeStyle.None}
         />
       </SettingRow>
       <SettingRow
