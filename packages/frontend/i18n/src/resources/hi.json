@@ -58,7 +58,7 @@
   "com.affine.auth.sign.auth.code.continue": "कोड के साथ जारी रखें",
   "com.affine.auth.sign.auth.code.resend": "कोड फिर से भेजें",
   "com.affine.auth.sign.auth.code.resend.hint": "{{second}} सेकंड में फिर से भेजें",
-  "com.affine.auth.sent": "भेज दिया गया",
+  "com.affine.auth.sent": "भेजा गया",
   "com.affine.auth.sent.change.email.fail": "सत्यापन लिंक नहीं भेजा जा सका, कृपया बाद में फिर से कोशिश करें।",
   "com.affine.auth.sent.change.email.hint": "सत्यापन लिंक भेज दिया गया है।",
   "com.affine.auth.sent.change.password.hint": "पासवर्ड रीसेट लिंक भेज दिया गया है।",
