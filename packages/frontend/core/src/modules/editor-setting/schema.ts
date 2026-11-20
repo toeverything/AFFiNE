@@ -37,6 +37,7 @@ const AffineEditorSettingSchema = z.object({
   fullWidthLayout: z.boolean().default(false),
   displayDocInfo: z.boolean().default(true),
   displayBiDirectionalLink: z.boolean().default(true),
+  displayLinkedDocs: z.boolean().default(true),
   edgelessDefaultTheme: z
     .enum(['specified', 'dark', 'light', 'auto'])
     .default('specified'),

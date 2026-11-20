@@ -56,6 +56,12 @@ export const Page = () => {
     },
     [editorSetting]
   );
+  const handleDisplayLinkedDocsChange = useCallback(
+    (checked: boolean) => {
+      editorSetting.set('displayLinkedDocs', checked);
+    },
+    [editorSetting]
+  );
 
   return (
     <SettingWrapper title={t['com.affine.settings.editorSettings.page']()}>
@@ -101,6 +107,20 @@ export const Page = () => {
           data-testid="display-bi-link-trigger"
           checked={settings.displayBiDirectionalLink}
           onChange={handleDisplayBiDirectionalLinkChange}
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.page.display-linked-docs.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.editorSettings.page.display-linked-docs.description'
+        ]()}
+      >
+        <Switch
+          data-testid="display-linked-docs-trigger"
+          checked={settings.displayLinkedDocs}
+          onChange={handleDisplayLinkedDocsChange}
         />
       </SettingRow>
     </SettingWrapper>
