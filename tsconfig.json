@@ -101,6 +101,7 @@
     { "path": "./blocksuite/affine/shared" },
     { "path": "./blocksuite/affine/widgets/drag-handle" },
     { "path": "./blocksuite/affine/widgets/edgeless-auto-connect" },
+    { "path": "./blocksuite/affine/widgets/edgeless-connector-anchors" },
     { "path": "./blocksuite/affine/widgets/edgeless-dragging-area" },
     { "path": "./blocksuite/affine/widgets/edgeless-selected-rect" },
     { "path": "./blocksuite/affine/widgets/edgeless-toolbar" },

@@ -43,6 +43,11 @@ const svgUtilsUrl = `/@fs/${resolve(
 beforeAll(async () => {
   server = await createServer({
     logLevel: 'silent',
+    // This server only loads the two modules below. Without explicit
+    // entries, Vite's dependency scan crawls every .html in the repo,
+    // including the BlockSuite playground and with it the generated draw.io
+    // stencil tables (several million lines), which alone takes ~30 s.
+    optimizeDeps: { entries: [] },
     server: {
       host: '127.0.0.1',
       port: 0,

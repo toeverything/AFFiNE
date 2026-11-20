@@ -86,6 +86,12 @@ export function createCanvasElement(
     } else if (target.position) {
       target.position = Vec.add(target.position, offset);
     }
+
+    if (Array.isArray(clipboardData.waypoints)) {
+      clipboardData.waypoints = clipboardData.waypoints.map(wp =>
+        Vec.add(wp, offset)
+      );
+    }
   } else {
     clipboardData.xywh = newXYWH;
   }
