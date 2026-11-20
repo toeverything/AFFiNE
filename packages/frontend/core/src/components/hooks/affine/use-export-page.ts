@@ -13,6 +13,7 @@ import {
   docLinkBaseURLMiddleware,
   embedSyncedDocMiddleware,
   HtmlAdapterFactoryIdentifier,
+  MarkdownAdapter,
   MarkdownAdapterFactoryIdentifier,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
@@ -93,7 +94,7 @@ async function exportDoc(
   const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
   if (!result || (!result.file && !result.assetsIds.length)) {
-    return;
+    return false;
   }
 
   const docTitle = doc.meta?.title || 'Untitled';
@@ -116,14 +117,15 @@ async function exportDoc(
   }
 
   download(downloadBlob, name);
+  return true;
 }
 
 async function exportToHtml(doc: Store, std?: BlockStdScope) {
   if (!std) {
     // If std is not provided, we use the default export method
-    await HtmlTransformer.exportDoc(doc);
+    return await HtmlTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
+    return await exportDoc(doc, std, {
       identifier: HtmlAdapterFactoryIdentifier,
       fileExtension: '.html',
       contentType: 'text/html',
@@ -135,9 +137,9 @@ async function exportToHtml(doc: Store, std?: BlockStdScope) {
 async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
   if (!std) {
     // If std is not provided, we use the default export method
-    await MarkdownTransformer.exportDoc(doc);
+    return await MarkdownTransformer.exportDoc(doc);
   } else {
-    await exportDoc(doc, std, {
+    return await exportDoc(doc, std, {
       identifier: MarkdownAdapterFactoryIdentifier,
       fileExtension: '.md',
       contentType: 'text/plain',
@@ -147,16 +149,13 @@ async function exportToMarkdown(doc: Store, std?: BlockStdScope) {
 }
 
 async function copyAsMarkdown(doc: Store, std?: BlockStdScope) {
-  if (!std) {
-    return false;
-  }
-
   try {
     const transformer = createTransformer(doc);
-    const adapterFactory = std.store.provider.get(
-      MarkdownAdapterFactoryIdentifier
-    );
-    const adapter = adapterFactory.get(transformer);
+    const adapter = std
+      ? std.store.provider
+          .get(MarkdownAdapterFactoryIdentifier)
+          .get(transformer)
+      : new MarkdownAdapter(transformer, doc.provider);
     const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
     if (!result || result.file === undefined) {
@@ -182,11 +181,9 @@ async function exportHandler({
   });
   switch (type) {
     case 'html':
-      await exportToHtml(page, editorRoot?.std);
-      return true;
+      return await exportToHtml(page, editorRoot?.std);
     case 'markdown':
-      await exportToMarkdown(page, editorRoot?.std);
-      return true;
+      return await exportToMarkdown(page, editorRoot?.std);
     case 'copy-markdown':
       return await copyAsMarkdown(page, editorRoot?.std);
     case 'snapshot':

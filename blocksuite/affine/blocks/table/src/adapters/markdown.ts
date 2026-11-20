@@ -60,7 +60,10 @@ export const tableBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
           type: 'tableRow',
           children: v.cells.map(v => ({
             type: 'tableCell',
-            children: deltaConverter.deltaToAST(v.value.delta),
+            children:
+              typeof v.value === 'string'
+                ? [{ type: 'text', value: v.value }]
+                : deltaConverter.deltaToAST(v.value.delta),
           })),
         });
       });

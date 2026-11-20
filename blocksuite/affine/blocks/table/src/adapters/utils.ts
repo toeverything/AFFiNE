@@ -65,7 +65,7 @@ type Row = {
   cells: Cell[];
 };
 type Cell = {
-  value: { delta: DeltaInsert[] };
+  value: string | { delta: DeltaInsert[] };
 };
 export const processTable = (
   columns: Record<string, TableColumn>,
@@ -83,7 +83,7 @@ export const processTable = (
     };
     sortedColumns.forEach(col => {
       const cell = cells[`${r.rowId}:${col.columnId}`];
-      if (!cell) {
+      if (!cell || !cell.text) {
         row.cells.push({
           value: {
             delta: [],
@@ -92,7 +92,10 @@ export const processTable = (
         return;
       }
       row.cells.push({
-        value: cell.text,
+        value:
+          typeof cell.text === 'string'
+            ? { delta: [{ insert: cell.text }] }
+            : cell.text,
       });
     });
     table.rows.push(row);
