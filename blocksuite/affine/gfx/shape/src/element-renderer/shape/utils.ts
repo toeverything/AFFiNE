@@ -25,6 +25,57 @@ export type Colors = {
   strokeColor: string;
 };
 
+const gradientDirectionMap: Record<
+  NonNullable<ShapeElementModel['gradientDirection']>,
+  [number, number, number, number]
+> = {
+  S: [0, 0, 0, 1],
+  W: [1, 0, 0, 0],
+  N: [0, 1, 0, 0],
+  E: [0, 0, 1, 0],
+  SE: [0, 0, 1, 1],
+  SW: [1, 0, 0, 1],
+  NE: [0, 1, 1, 0],
+  NW: [1, 1, 0, 0],
+};
+
+export const resolveGradientFill = (
+  ctx: CanvasRenderingContext2D,
+  renderer: CanvasRenderer,
+  model: ShapeElementModel | LocalShapeElementModel,
+  fillColor: string,
+  width: number,
+  height: number
+) => {
+  const gradientFinal =
+    'gradientFinal' in model ? model.gradientFinal : undefined;
+  if (!gradientFinal) return fillColor;
+  const gradientFinalColor = renderer.getColorValue(
+    gradientFinal,
+    fillColor,
+    true
+  );
+  if (gradientFinalColor === fillColor) return fillColor;
+  const direction =
+    'gradientDirection' in model && model.gradientDirection
+      ? model.gradientDirection
+      : 'S';
+  const [x0, y0, x1, y1] = gradientDirectionMap[direction];
+  const gradient = ctx.createLinearGradient(
+    x0 * width,
+    y0 * height,
+    x1 * width,
+    y1 * height
+  );
+  try {
+    gradient.addColorStop(0, fillColor);
+    gradient.addColorStop(1, gradientFinalColor);
+  } catch {
+    return fillColor;
+  }
+  return gradient;
+};
+
 export function drawGeneralShape(
   ctx: CanvasRenderingContext2D,
   shapeModel: ShapeElementModel | LocalShapeElementModel,
@@ -53,7 +104,9 @@ export function drawGeneralShape(
 
   ctx.lineWidth = shapeModel.strokeWidth;
   ctx.strokeStyle = strokeColor;
-  ctx.fillStyle = filled ? fillColor : 'transparent';
+  ctx.fillStyle = filled
+    ? resolveGradientFill(ctx, renderer, shapeModel, fillColor, w, h)
+    : 'transparent';
 
   switch (shapeModel.strokeStyle) {
     case 'none':

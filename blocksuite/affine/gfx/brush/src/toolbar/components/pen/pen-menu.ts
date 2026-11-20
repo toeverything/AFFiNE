@@ -1,7 +1,18 @@
 import { adjustColorAlpha } from '@blocksuite/affine-components/color-picker';
 import {
+  filterShapePalettes,
+  getShapePaletteDataFrom,
+  getShapePalettesStorageKey,
+  getToolPaletteMemory,
+  readStoredShapePalettes,
+  setToolPaletteMemory,
+  SHAPE_PALETTES_STORAGE_EVENT,
+  shapePaletteKeys,
+  shapePalettes,
+} from '@blocksuite/affine-gfx-shape';
+import {
   BRUSH_LINE_WIDTHS,
-  DefaultTheme,
+  type Color,
   HIGHLIGHTER_LINE_WIDTHS,
 } from '@blocksuite/affine-model';
 import {
@@ -11,6 +22,7 @@ import {
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import { ArrowUpSmallIcon } from '@blocksuite/icons/lit';
 import {
   computed,
   type ReadonlySignal,
@@ -28,6 +40,16 @@ import type { Pen, PenMap } from './types';
 export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
   SignalWatcher(LitElement)
 ) {
+  private _palettes = filterShapePalettes(shapePalettes, 'line');
+
+  private readonly _memoryKey = 'pen';
+
+  private _paletteIndex = 0;
+
+  private _activeColorKey: string | undefined;
+
+  private _loadedWorkspaceId: string | undefined;
+
   static override styles = css`
     :host {
       display: flex;
@@ -78,6 +100,24 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
       height: 24px;
       margin: 0 9px;
     }
+
+    .color-panel-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-toggle-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+    }
+
+    .palette-toggle-button svg {
+      fill: none;
+      stroke: var(--affine-icon-color);
+    }
   `;
 
   private readonly _theme$ = computed(() => {
@@ -93,10 +133,96 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
     }
   };
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    const memory = getToolPaletteMemory(this._memoryKey);
+    this._reloadPalettes();
+    queueMicrotask(() => this._reloadPalettes());
+    this._paletteIndex = memory.index % this._paletteCount;
+    this._activeColorKey = memory.activeKey;
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener(
+        SHAPE_PALETTES_STORAGE_EVENT,
+        this._reloadPalettes
+      );
+      window.addEventListener('storage', this._onStorage);
+    }
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(
+        SHAPE_PALETTES_STORAGE_EVENT,
+        this._reloadPalettes
+      );
+      window.removeEventListener('storage', this._onStorage);
+    }
+  }
+
+  private readonly _onStorage = (event: StorageEvent) => {
+    const workspaceId = this.edgeless?.store?.workspace?.id;
+    if (!workspaceId) return;
+    if (event.key === getShapePalettesStorageKey(workspaceId)) {
+      this._reloadPalettes();
+    }
+  };
+
+  private readonly _reloadPalettes = () => {
+    const workspaceId = this.edgeless?.store?.workspace?.id;
+    if (!workspaceId) {
+      this._palettes = filterShapePalettes(shapePalettes, 'line');
+      this._paletteIndex = this._paletteIndex % this._paletteCount;
+      this.requestUpdate();
+      return;
+    }
+
+    this._loadedWorkspaceId = workspaceId;
+
+    const stored = readStoredShapePalettes(workspaceId);
+    this._palettes = filterShapePalettes(stored ?? shapePalettes, 'line');
+    this._paletteIndex = this._paletteIndex % this._paletteCount;
+    this.requestUpdate();
+  };
+
+  private _ensureWorkspacePalettesLoaded() {
+    const workspaceId = this.edgeless?.store?.workspace?.id;
+    if (workspaceId && workspaceId !== this._loadedWorkspaceId) {
+      this._reloadPalettes();
+    }
+  }
+
+  private readonly _togglePalette = () => {
+    this._paletteIndex = (this._paletteIndex + 1) % this._paletteCount;
+    this._activeColorKey = undefined;
+    setToolPaletteMemory(this._memoryKey, {
+      index: this._paletteIndex,
+      activeKey: undefined,
+    });
+    this.requestUpdate();
+  };
+
+  private _resolveActiveKey(color: Color) {
+    if (typeof color !== 'string') return undefined;
+    const { strokePalettes } = getShapePaletteDataFrom(
+      this._palettes,
+      this._paletteIndex % this._paletteCount
+    );
+    const index = strokePalettes.findIndex(p => p.value === color);
+    return index >= 0 ? shapePaletteKeys[index] : undefined;
+  }
+
   private readonly _onPickColor = (e: ColorEvent) => {
-    let color = e.detail.value;
+    this._activeColorKey = e.detail.key;
+    setToolPaletteMemory(this._memoryKey, {
+      index: this._paletteIndex,
+      activeKey: this._activeColorKey,
+    });
+
+    let color = e.detail.value as string;
     if (this.pen$.peek() === 'highlighter') {
-      color = adjustColorAlpha(color, 0.3);
+      color = adjustColorAlpha(color, 0.3) as string;
     }
     this.onChange({ color });
   };
@@ -109,6 +235,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
   override type = [BrushTool, HighlighterTool];
 
   override render() {
+    this._ensureWorkspacePalettesLoaded();
     const {
       _theme$: { value: theme },
       colors$: {
@@ -121,6 +248,11 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
         value: { type, color, lineWidth },
       },
     } = this;
+    const { strokePalettes } = getShapePaletteDataFrom(
+      this._palettes,
+      this._paletteIndex % this._paletteCount
+    );
+    const activeKey = this._activeColorKey ?? this._resolveActiveKey(color);
 
     const lineWidths =
       type === 'brush' ? BRUSH_LINE_WIDTHS : HIGHLIGHTER_LINE_WIDTHS;
@@ -175,17 +307,28 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
           >
           </edgeless-line-width-panel>
           <menu-divider .vertical=${true}></menu-divider>
-          <edgeless-color-panel
-            class="one-way"
-            @select=${this._onPickColor}
-            .value=${color}
-            .theme=${theme}
-            .palettes=${DefaultTheme.StrokeColorShortPalettes}
-            .shouldKeepColor=${true}
-            .hasTransparent=${!this.edgeless.store
-              .get(FeatureFlagService)
-              .getFlag('enable_color_picker')}
-          ></edgeless-color-panel>
+          <div class="color-panel-container">
+            <edgeless-color-panel
+              class="one-way"
+              .value=${color}
+              .theme=${theme}
+              .palettes=${strokePalettes}
+              .activeKey=${activeKey}
+              .hasTransparent=${!this.edgeless.store
+                .get(FeatureFlagService)
+                .getFlag('enable_color_picker')}
+              @select=${this._onPickColor}
+            ></edgeless-color-panel>
+            <edgeless-tool-icon-button
+              class="palette-toggle-button"
+              .tooltip=${'Next palette'}
+              .activeMode=${'background'}
+              .iconSize=${'20px'}
+              @click=${this._togglePalette}
+            >
+              ${ArrowUpSmallIcon()}
+            </edgeless-tool-icon-button>
+          </div>
         </div>
       </edgeless-slide-menu>
     `;
@@ -212,4 +355,8 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
     tip: string;
     shortcut: string;
   }>;
+
+  get _paletteCount() {
+    return Math.max(1, this._palettes.length);
+  }
 }

@@ -103,3 +103,144 @@ test('Open experimental features panel', async ({ page }) => {
   const settings = page.getByTestId('experimental-settings');
   await expect(settings).toBeVisible();
 });
+
+test('palette gradient direction is clickable in appearance settings', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openAppearancePanel(page);
+
+  await page.getByRole('button', { name: 'Add palette' }).click();
+
+  await page.locator('button[aria-label*="swatch"]').last().click();
+
+  const gradientToggle = page
+    .locator('.mode-button')
+    .filter({ hasText: 'Gradient' })
+    .first();
+  await gradientToggle.click();
+  await expect(gradientToggle).toHaveClass(/active/);
+
+  const directionButton = page.locator('[data-direction="NE"]').first();
+  if (await directionButton.count()) {
+    await directionButton.click();
+    await expect(directionButton).toHaveClass(/active/);
+  }
+});
+
+test('custom palette order persists after reload', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openAppearancePanel(page);
+
+  await page.getByRole('button', { name: 'Add palette' }).click();
+  await page.getByRole('button', { name: 'Add palette' }).click();
+
+  const customInputs = page.getByTestId('palette-name-input');
+  await customInputs.first().fill('Persisted A');
+  await customInputs.nth(1).fill('Persisted B');
+
+  const editableCards = page
+    .getByTestId('palette-card')
+    .filter({ has: page.getByTestId('palette-name-input') });
+  await editableCards.nth(1).dragTo(editableCards.first());
+
+  const storageStateBefore = await page.evaluate(() => {
+    const paletteKey = Object.keys(localStorage).find(
+      key => key.startsWith('affine:workspace:') && key.includes(':palettes:v1')
+    );
+    if (!paletteKey) {
+      throw new Error('workspace palette storage key not found');
+    }
+    return {
+      paletteKey,
+      value: localStorage.getItem(paletteKey),
+    };
+  });
+
+  await page.reload();
+  await waitForEditorLoad(page);
+
+  const storageStateAfter = await page.evaluate(key => {
+    return localStorage.getItem(key);
+  }, storageStateBefore.paletteKey);
+
+  expect(storageStateAfter).toBe(storageStateBefore.value);
+});
+
+test('custom palette persists when switching setting tabs', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openAppearancePanel(page);
+
+  await page.getByRole('button', { name: 'Add palette' }).click();
+  await page.getByTestId('palette-name-input').first().fill('Tab Persisted');
+
+  await page.getByTestId('editor-panel-trigger').click();
+  await openAppearancePanel(page);
+
+  await expect(page.getByTestId('palette-name-input').first()).toHaveValue(
+    'Tab Persisted'
+  );
+});
+
+test('reset keeps default line and fill visibility from theme palettes', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await openSettingModal(page);
+  await openAppearancePanel(page);
+
+  await page.getByRole('button', { name: 'Reset all' }).click();
+
+  const initialPaletteState = await page.evaluate(() => {
+    const paletteKey = Object.keys(localStorage).find(
+      key => key.startsWith('affine:workspace:') && key.includes(':palettes:v1')
+    );
+    if (!paletteKey) throw new Error('workspace palette key not found');
+
+    const value = JSON.parse(
+      localStorage.getItem(paletteKey) ?? '[]'
+    ) as Array<{
+      name: string;
+      showInLine?: boolean;
+      showInFill?: boolean;
+    }>;
+    const gradient = value.find(item => item.name === 'material-gradient');
+    return gradient;
+  });
+
+  expect(initialPaletteState?.showInLine).toBe(false);
+  expect(initialPaletteState?.showInFill).toBe(true);
+
+  const gradientLineLabel = page.getByTestId('line-visibility-label').nth(2);
+  await gradientLineLabel.click();
+
+  await page.getByRole('button', { name: 'Reset all' }).click();
+
+  const resetPaletteState = await page.evaluate(() => {
+    const paletteKey = Object.keys(localStorage).find(
+      key => key.startsWith('affine:workspace:') && key.includes(':palettes:v1')
+    );
+    if (!paletteKey) throw new Error('workspace palette key not found');
+
+    const value = JSON.parse(
+      localStorage.getItem(paletteKey) ?? '[]'
+    ) as Array<{
+      name: string;
+      showInLine?: boolean;
+      showInFill?: boolean;
+    }>;
+    return value.find(item => item.name === 'material-gradient');
+  });
+
+  expect(resetPaletteState?.showInLine).toBe(false);
+  expect(resetPaletteState?.showInFill).toBe(true);
+});
