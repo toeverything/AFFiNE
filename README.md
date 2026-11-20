@@ -1,4 +1,4 @@
-<div align="center">
+ <div align="center">
 
 <h1 style="border-bottom: none">
     <b><a href="https://affine.pro">AFFiNE.Pro</a></b><br />
