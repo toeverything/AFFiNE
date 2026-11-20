@@ -23,7 +23,7 @@
     "@preact/signals-core": "^1.8.0",
     "lit": "^3.2.0",
     "lit-html": "^3.2.1",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "exports": {
     ".": "./src/index.ts",

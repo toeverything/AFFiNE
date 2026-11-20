@@ -28,7 +28,7 @@
     "@types/hast": "^3.0.4",
     "collapse-white-space": "^2.1.0",
     "lit": "^3.2.0",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "exports": {
     ".": "./src/index.ts",

@@ -29,7 +29,7 @@
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
     "mammoth": "^1.11.0",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9"
