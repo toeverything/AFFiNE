@@ -187,7 +187,7 @@ pub(crate) fn is_empty_update(value: &[u8]) -> bool {
 }
 
 pub(crate) fn merge_update_binary(existing: Option<&[u8]>, update: &[u8]) -> Result<Vec<u8>, String> {
-  let mut doc = build_doc(None);
+  let mut doc = Doc::new();
   if let Some(existing) = existing.filter(|value| !is_empty_update(value)) {
     doc
       .apply_update_from_binary_v1(existing)
@@ -199,7 +199,7 @@ pub(crate) fn merge_update_binary(existing: Option<&[u8]>, update: &[u8]) -> Res
       .map_err(|err| format!("failed to merge update: {err}"))?;
   }
   doc
-    .encode_state_as_update_v1(&y_octo::StateVector::default())
+    .encode_update_v1()
     .map_err(|err| format!("failed to encode merged update: {err}"))
 }
 
@@ -216,10 +216,7 @@ pub(crate) fn merge_frontend_update_binary(existing: Option<&[u8]>, update: &[u8
   }
   if updates.len() == 1 {
     let update = updates[0];
-    let mut doc = build_doc(None);
-    doc
-      .apply_update_from_binary_v1(update)
-      .map_err(|err| format!("failed to apply frontend update: {err}"))?;
+    Doc::try_from_binary_v1(update).map_err(|err| format!("failed to apply frontend update: {err}"))?;
     return Ok(update.to_vec());
   }
   merge_updates_v1(updates)
@@ -228,14 +225,8 @@ pub(crate) fn merge_frontend_update_binary(existing: Option<&[u8]>, update: &[u8
 }
 
 pub(crate) fn same_update_state(left: &[u8], right: &[u8]) -> Result<bool, String> {
-  let mut left_doc = build_doc(None);
-  left_doc
-    .apply_update_from_binary_v1(left)
-    .map_err(|err| format!("failed to decode checkpoint update: {err}"))?;
-  let mut right_doc = build_doc(None);
-  right_doc
-    .apply_update_from_binary_v1(right)
-    .map_err(|err| format!("failed to decode local update: {err}"))?;
+  let left_doc = Doc::try_from_binary_v1(left).map_err(|err| format!("failed to decode checkpoint update: {err}"))?;
+  let right_doc = Doc::try_from_binary_v1(right).map_err(|err| format!("failed to decode local update: {err}"))?;
   Ok(
     left_doc.get_state_vector() == right_doc.get_state_vector()
       && left_doc.get_delete_sets() == right_doc.get_delete_sets(),
@@ -254,24 +245,15 @@ pub(crate) fn merge_root_update_binary(existing: &[u8], update: &[u8]) -> Result
     .map_err(|err| format!("failed to merge root update: {err}"))
 }
 
-pub(crate) fn build_doc(doc_id: Option<&str>) -> Doc {
-  let options = DocOptions::new();
-  match doc_id {
-    Some(doc_id) => options.with_guid(doc_id.to_string()).build(),
-    None => options.build(),
-  }
-}
-
 pub(crate) fn load_doc_or_new(binary: &[u8], doc_id: Option<&str>) -> Result<Doc, String> {
+  let options = match doc_id {
+    Some(id) => DocOptions::new().with_guid(id.to_owned()),
+    None => DocOptions::new(),
+  };
   if is_empty_update(binary) {
-    return Ok(build_doc(doc_id));
+    return Ok(options.build());
   }
-
-  let mut doc = build_doc(doc_id);
-  doc
-    .apply_update_from_binary_v1(binary)
-    .map_err(|err| format!("failed to decode doc binary: {}", err))?;
-  Ok(doc)
+  Doc::try_from_binary_v1_with_options(binary, options).map_err(|err| format!("failed to decode doc binary: {err}"))
 }
 
 pub(crate) fn paths_equal(lhs: &Path, rhs: &Path) -> bool {

@@ -23,33 +23,23 @@ pub(crate) fn build_root_meta_update(
     .map_err(|err| format!("failed to open root meta map: {}", err))?;
   let mut pages = ensure_pages_array(&doc, &mut meta_map)?;
 
-  let mut found = false;
-  for idx in 0..pages.len() {
-    let Some(mut page) = pages.get(idx).and_then(|value| value.to_map()) else {
-      continue;
-    };
-
-    if get_string_from_map(&page, "id").as_deref() == Some(doc_id) {
-      apply_page_meta(&doc, &mut page, doc_id, meta)?;
-      found = true;
-      break;
+  let mut page = match pages
+    .iter()
+    .filter_map(|value| value.to_map())
+    .find(|page| get_string_from_map(page, "id").as_deref() == Some(doc_id))
+  {
+    Some(page) => page,
+    None => {
+      let page = doc
+        .create_map()
+        .map_err(|err| format!("failed to create root page map: {err}"))?;
+      pages
+        .push(Value::Map(page.clone()))
+        .map_err(|err| format!("failed to insert root page map: {err}"))?;
+      page
     }
-  }
-
-  if !found {
-    let page_map = doc
-      .create_map()
-      .map_err(|err| format!("failed to create root page map: {}", err))?;
-
-    let idx = pages.len();
-    pages
-      .insert(idx, Value::Map(page_map))
-      .map_err(|err| format!("failed to insert root page map: {}", err))?;
-
-    if let Some(mut page) = pages.get(idx).and_then(|value| value.to_map()) {
-      apply_page_meta(&doc, &mut page, doc_id, meta)?;
-    }
-  }
+  };
+  apply_page_meta(&doc, &mut page, doc_id, meta)?;
 
   doc
     .encode_state_as_update_v1(&state_before)

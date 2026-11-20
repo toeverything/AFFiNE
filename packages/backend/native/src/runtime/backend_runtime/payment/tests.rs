@@ -962,7 +962,7 @@ async fn operation_intent_is_frozen_before_send_and_blocks_overlapping_work() {
          external_customer_id,external_subscription_id,period_end,metadata)
        VALUES
          ($1,'stripe',$2,$3,'user',$4,'pro','monthly','active',$5,$3,clock_timestamp()+INTERVAL '30 days','{}'),
-         ($6,'stripe',$2,$7,'user',$4,'ai','yearly','active',$5,$7,clock_timestamp()+INTERVAL '30 days','{}')"#,
+         ($6,'stripe',$2,$7,'user',$4,'ai','yearly','past_due',$5,$7,clock_timestamp()-INTERVAL '1 day','{}')"#,
   )
   .bind(uuid::Uuid::new_v4().to_string())
   .bind(&account_namespace_key)

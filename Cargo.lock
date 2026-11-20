@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da9b86987246581f2219a7e9838426669cf26187406977d3ae065f041e115dbb"
+checksum = "b76c6e41afed3a846efaa361409da555d08b4caf1338205746dadde2604bee2b"
 dependencies = [
  "affine_merge",
  "chrono",
@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "affine_importer"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "907e52a22fb81129174c9033036c4dd8050017d798b1b18e0016b69742588c8f"
+checksum = "90082593d61bd6fd8b550ca1e2de65654ac2b15da7d4396c6c1471e86d191d9d"
 dependencies = [
  "affine_doc_loader",
  "bytes",
@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "affine_merge"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97115a1f834d5aa6f1fa7ea1e5e4e17f9bbdc1078b529c0a909db8f392edbedb"
+checksum = "512fbcc04148bdb3d5193159d73a6f9b5e685b4a5a9fbc421d87abfa79d89b29"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -356,6 +356,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75"
 dependencies = [
  "cfg-if",
+ "const-random",
  "getrandom 0.3.4",
  "once_cell",
  "serde",
@@ -1529,6 +1530,26 @@ name = "const-oid"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
+name = "const-random"
+version = "0.1.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87e00182fe74b066627d63b85fd550ac2998d4b0bd86bfed477a0ae4c7c71359"
+dependencies = [
+ "const-random-macro",
+]
+
+[[package]]
+name = "const-random-macro"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9d839f2a20b0aee515dc581a6172f2321f96cab76c1a38a4c584a194955390e"
+dependencies = [
+ "getrandom 0.2.17",
+ "once_cell",
+ "tiny-keccak",
+]
 
 [[package]]
 name = "constant_time_eq"
@@ -7066,16 +7087,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
-name = "rand_distr"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d431c2703ccf129de4d45253c03f49ebb22b97d6ad79ee3ecfc7e3f4862c1d8"
-dependencies = [
- "num-traits",
- "rand 0.10.1",
-]
-
-[[package]]
 name = "rand_pcg"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11362,21 +11373,21 @@ checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y-octo"
-version = "0.1.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "befa3530e907f8e7cf681391b09f7f6110a8a6474cb1fa11157ae0e904ac7e28"
+checksum = "ce9830799db2d14bbd6b36f9e9bc6047ba01cdb6f5f30731113314dc39b7cc67"
 dependencies = [
  "ahash",
  "arbitrary",
  "async-lock",
  "byteorder",
+ "indexmap",
  "log",
  "loom",
  "nanoid",
  "nom 8.0.0",
  "ordered-float",
  "rand 0.10.1",
- "rand_distr",
  "serde",
  "serde_json",
  "smol_str",
