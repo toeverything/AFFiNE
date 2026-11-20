@@ -13,6 +13,7 @@
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
+    "@blocksuite/affine-gfx-shape": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
@@ -28,6 +29,9 @@
     "lit": "^3.2.0",
     "lodash-es": "^4.17.23",
     "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.8"
   },
   "exports": {
     ".": "./src/index.ts",

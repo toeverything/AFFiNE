@@ -518,7 +518,12 @@ export class ResizeController {
 
     const startAngle = this.getNormalizedAngle(v0.y, v0.x),
       endAngle = this.getNormalizedAngle(v1.y, v1.x);
-    const deltaDeg = endAngle - startAngle;
+    const flipped =
+      'flipX' in model &&
+      'flipY' in model &&
+      Boolean((model as { flipX?: boolean }).flipX) !==
+        Boolean((model as { flipY?: boolean }).flipY);
+    const deltaDeg = (endAngle - startAngle) * (flipped ? -1 : 1);
     const rotatedAngle = orig.rotate + deltaDeg;
     const targetRotate = this.toNormalizedAngle(
       snap

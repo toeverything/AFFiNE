@@ -1,5 +1,199 @@
 import { html } from 'lit';
 
+import { buildDocumentPath } from '../element-renderer/shape/paths.js';
+
+export const SquareIcon = () =>
+  html`<svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="2"
+      y="2"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    />
+  </svg>`;
+
+export const RectIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const ContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const VerticalContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <line x1="2" y1="7" x2="18" y2="7" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const HorizontalContainerIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="3"
+    width="16"
+    height="14"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <line x1="6" y1="3" x2="6" y2="17" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const MindmapCentralIdeaIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <ellipse
+    cx="10"
+    cy="10"
+    rx="8"
+    ry="3.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const MindmapBranchIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <line
+    x1="2"
+    y1="10"
+    x2="18"
+    y2="10"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <circle cx="2" cy="10" r="1.5" fill="currentColor" />
+  <circle cx="18" cy="10" r="1.5" fill="currentColor" />
+</svg>`;
+
+export const MindmapSubTopicIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="6.8"
+    width="16"
+    height="6.4"
+    rx="3.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const MindmapSquareIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="6.8"
+    width="16"
+    height="6.4"
+    rx="0"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const RoundedRectangleIcon = () =>
+  html`<svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="2"
+      y="3"
+      width="16"
+      height="14"
+      rx="3"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+    />
+  </svg>`;
+
 export const ScribbledSquareIcon = html`<svg
   width="20"
   height="20"
@@ -253,3 +447,887 @@ export const roundedSvg = html`<svg
     stroke="inherit"
   />
 </svg> `;
+
+export const HexagonIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="currentColor"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="5,2 15,2 19,10 15,18 5,18 1,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ParallelogramIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="currentColor"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="5,2 19,2 15,18 1,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const TrapezoidIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="currentColor"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="5,2 15,2 19,18 1,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const StepIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,4 16,4 18,10 16,16 2,16 4,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const TriangleRightIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="currentColor"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="3,2 18,10 3,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const CylinderIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 5C3 3.895 6.134 3 10 3C13.866 3 17 3.895 17 5V15C17 16.105 13.866 17 10 17C6.134 17 3 16.105 3 15V5Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M3 5C3 6.105 6.134 7 10 7C13.866 7 17 6.105 17 5"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const CloudIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6.2 16.2C4.2 16.2 2.7 14.8 2.7 13C2.7 11.2 4.1 9.7 5.9 9.6C6.4 7.6 8.2 6.2 10.4 6.2C12.2 6.2 13.8 7.2 14.6 8.6C16.3 8.7 17.7 10.1 17.7 11.8C17.7 13.6 16.2 15.1 14.4 15.1H6.8"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const DocumentIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="${buildDocumentPath(16, 14)}"
+    transform="translate(2 3)"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const NoteIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 3H13L17 7V17H3V3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M13 3V7H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const CubeIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,3 18,7 18,15 10,19 2,15 2,7"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M2 7L10 10L18 7M10 10L10 15"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const CalloutIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 3H17V12H12.5L10 17L7.5 12H3V3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ActorIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <circle cx="10" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5" />
+  <path
+    d="M10 7.5V13M6 10H14M10 13L7 17M10 13L13 17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const DataStorageIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M5 4C3 10 3 10 5 16H15C13 10 13 10 15 4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const TapeIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 6C5 4 7 8 10 6C13 4 15 8 17 6V14C15 16 13 12 10 14C7 16 5 12 3 14V6Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const InternalStorageIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="3"
+    y="3"
+    width="14"
+    height="14"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <path
+    d="M6 3V17M3 7H17"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const LogicAndIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 4H11C14.314 4 17 6.686 17 10C17 13.314 14.314 16 11 16H4V4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const LogicOrIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 4C8 4 11 6.5 12.5 10C11 13.5 8 16 4 16C6 13.5 6 6.5 4 4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartProcessIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="3"
+    y="4"
+    width="14"
+    height="12"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <path d="M6 4V16M14 4V16" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+export const FlowchartDecisionIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,2 18,10 10,18 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartDataIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,4 18,4 14,16 0,16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartDocumentIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 4H17V12C15 11 13 13 10 12C7 11 5 13 3 12V4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+export const FlowchartManualInputIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,4 18,4 14,16 2,16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartDelayIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 4H10C13.314 4 16 6.686 16 10C16 13.314 13.314 16 10 16H4V4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+export const FlowchartPredefinedProcessIcon = FlowchartProcessIcon;
+export const FlowchartStoredDataIcon = DataStorageIcon;
+export const FlowchartInternalStorageIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="3"
+    y="3"
+    width="14"
+    height="14"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <path d="M6 3V17M3 7H17" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+export const FlowchartDatabaseIcon = DataStorageIcon;
+export const FlowchartSequentialDataIcon = FlowchartDataIcon;
+export const FlowchartTerminatorIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect
+    x="2"
+    y="4"
+    width="16"
+    height="12"
+    rx="6"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartPreparationIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="6,3 14,3 18,10 14,17 6,17 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartMergeIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,16 18,4 2,4"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const FlowchartPaperTapeIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 6C5 4 7 8 10 6C13 4 15 8 17 6V14C15 16 13 12 10 14C7 16 5 12 3 14V6Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartAnnotation1Icon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H3V17H6"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartAnnotation2Icon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M17 3H10V17H17M3 10H10"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartCardIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H17V17H3V7L6 3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartCollateIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M2 4H18L10 10L18 16H2L10 10Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartDirectDataIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,4 16,4 18,10 16,16 4,16 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartDisplayIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 10A6 6 0 0 1 10 4H16A3 3 0 0 1 16 16H10A6 6 0 0 1 4 10Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartLoopLimitIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M6 3H14L17 6V17H3V6L6 3Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartManualOperationIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,4 18,4 15,16 5,16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartMultiDocumentIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 4H14V8C12.5 7.5 10.5 8.5 9 8V4Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M6 7H16V12C14.5 11.5 12.5 12.5 11 12V7Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartOffPageReferenceIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="4,3 16,3 16,10 10,17 4,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const FlowchartOrIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5" />
+  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const FlowchartSortIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,2 18,10 10,18 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+  <path d="M5 10H15" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const FlowchartSummingFunctionIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5" />
+  <path d="M10 6V14M6 10H14" stroke="currentColor" stroke-width="1.5" />
+</svg>`;
+
+export const ArrowUpIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,2 18,10 12,10 12,18 8,18 8,10 2,10"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const ArrowDownIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,10 8,10 8,2 12,2 12,10 18,10 10,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const ArrowLeftIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,10 10,2 10,8 18,8 18,12 10,12 10,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const ArrowRightIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="18,10 10,2 10,8 2,8 2,12 10,12 10,18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const ArrowTwoWayHorizontalIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="2,10 6,6 6,8 14,8 14,6 18,10 14,14 14,12 6,12 6,14"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+export const ArrowTwoWayVerticalIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <polygon
+    points="10,2 14,6 12,6 12,14 14,14 10,18 6,14 8,14 8,6 6,6"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+  />
+</svg>`;
+
+export const ArrowBentLeftIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M15 17V9H9V12L3 8L9 4V7H16V17H15Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const ArrowBentRightIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M5 17V9H11V12L17 8L11 4V7H4V17H5Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const ArrowBentUpIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 14H11V8H8L12 2L16 8H13V15H3V14Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const ArrowNotchedSignalInIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 5H13L17 10L13 15H3L6 10L3 5Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ArrowNotchedRightIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 6H12L17 10L12 14H3L6 10L3 6Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ArrowNotchedStylisedIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M2.5 6H11L17.5 10L11 14H2.5L6 10L2.5 6Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ArrowCalloutUpIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M4 15H16V9H12V5L8 9H4V15Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>`;
+
+export const ArrowCalloutDoubleIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M3 10L7 6V9H13V6L17 10L13 14V11H7V14L3 10Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;
+
+export const ArrowCalloutQuadIcon = html`<svg
+  width="20"
+  height="20"
+  viewBox="0 0 20 20"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M10 2L13 5H11V9H15V7L18 10L15 13V11H11V15H13L10 18L7 15H9V11H5V13L2 10L5 7V9H9V5H7L10 2Z"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+</svg>`;

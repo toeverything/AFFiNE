@@ -20,6 +20,7 @@ import {
   FontFamily,
   FontStyle,
   FontWeight,
+  type GradientDirection,
   ShapeStyle,
   ShapeTextFontSize,
   ShapeType,
@@ -37,6 +38,14 @@ export type ShapeProps = BaseElementProps & {
   radius: number;
   filled: boolean;
   fillColor: Color;
+  gradientFinal?: Color;
+  gradientDirection?: GradientDirection;
+  flipX?: boolean;
+  flipY?: boolean;
+  lockAspectRatio?: boolean;
+  textRotate?: number;
+  textFlipX?: boolean;
+  textFlipY?: boolean;
   strokeWidth: number;
   strokeColor: Color;
   strokeStyle: StrokeStyle;
@@ -100,6 +109,18 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   @field()
   accessor fillColor: Color = DefaultTheme.shapeFillColor;
+
+  @field()
+  accessor gradientFinal: Color | undefined = undefined;
+
+  @field()
+  accessor gradientDirection: GradientDirection | undefined = undefined;
+
+  @field()
+  accessor flipX: boolean = false;
+
+  @field()
+  accessor flipY: boolean = false;
 
   @field()
   accessor filled: boolean = false;
@@ -201,6 +222,12 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor fillColor: Color = DefaultTheme.shapeFillColor;
+
+  @prop()
+  accessor flipX: boolean = false;
+
+  @prop()
+  accessor flipY: boolean = false;
 
   @prop()
   accessor filled: boolean = false;
