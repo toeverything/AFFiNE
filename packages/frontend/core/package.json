@@ -23,6 +23,7 @@
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/affine-block-root": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-gfx-shape": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/data-view": "workspace:*",
     "@blocksuite/global": "workspace:*",
