@@ -43,6 +43,12 @@ export class EdgelessZoomToolbar extends WithDisposable(LitElement) {
       border-radius: 8px;
     }
 
+    .edgeless-zoom-toolbar-container.vertical edgeless-grid-menu {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
     .edgeless-zoom-toolbar-container[level='second'] {
       position: absolute;
       bottom: 8px;
@@ -161,6 +167,9 @@ export class EdgelessZoomToolbar extends WithDisposable(LitElement) {
         @mouseup=${stopPropagation}
         @pointerdown=${stopPropagation}
       >
+        ${this._isVerticalBar()
+          ? html`<edgeless-grid-menu .std=${this.std}></edgeless-grid-menu>`
+          : nothing}
         <edgeless-tool-icon-button
           .tooltip=${'Fit to screen'}
           .tipPosition=${this._isVerticalBar() ? 'right' : 'top-end'}
