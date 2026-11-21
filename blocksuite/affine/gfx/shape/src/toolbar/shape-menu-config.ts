@@ -34,6 +34,13 @@ export const ShapeComponentConfig: Config[] = [
     disabled: false,
   },
   {
+    name: 'roundedRect',
+    generalIcon: RoundedRectangleIcon(),
+    scribbledIcon: ScribbledRoundedRectangleIcon,
+    tooltip: 'Rounded rectangle',
+    disabled: false,
+  },
+  {
     name: ShapeType.Ellipse,
     generalIcon: EllipseIcon(),
     scribbledIcon: ScribbledEllipseIcon,
@@ -47,6 +54,10 @@ export const ShapeComponentConfig: Config[] = [
     tooltip: 'Diamond',
     disabled: false,
   },
+];
+
+// Shapes available in the shape browser (More menu)
+export const ExtendedShapeConfig: Config[] = [
   {
     name: ShapeType.Triangle,
     generalIcon: TriangleIcon(),
@@ -54,13 +65,12 @@ export const ShapeComponentConfig: Config[] = [
     tooltip: 'Triangle',
     disabled: false,
   },
-  {
-    name: 'roundedRect',
-    generalIcon: RoundedRectangleIcon(),
-    scribbledIcon: ScribbledRoundedRectangleIcon,
-    tooltip: 'Rounded rectangle',
-    disabled: false,
-  },
+];
+
+// All shapes combined (for shape browser)
+export const AllShapeConfig: Config[] = [
+  ...ShapeComponentConfig,
+  ...ExtendedShapeConfig,
 ];
 
 export const ShapeComponentConfigMap = ShapeComponentConfig.reduce(

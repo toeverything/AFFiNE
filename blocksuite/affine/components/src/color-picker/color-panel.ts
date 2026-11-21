@@ -7,9 +7,12 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import isEqual from 'lodash-es/isEqual';
 
 import { AdditionIcon } from './icons';
+
+type GradientDirection = 'S' | 'W' | 'N' | 'E' | 'SE' | 'SW' | 'NE' | 'NW';
 
 export class EdgelessColorButton extends LitElement {
   static override styles = css`
@@ -48,9 +51,12 @@ export class EdgelessColorButton extends LitElement {
       border-radius: 50%;
       box-sizing: border-box;
       overflow: hidden;
-      border-width: 0.5px;
+      border-width: 2px;
       border-style: solid;
-      border-color: ${unsafeCSSVarV2('layer/insideBorder/blackBorder')};
+      border-color: var(
+        --color-unit-border-color,
+        ${unsafeCSSVarV2('layer/insideBorder/blackBorder')}
+      );
     }
     :host(.black) .color-unit:after {
       border-color: ${unsafeCSSVarV2('layer/insideBorder/border')};
@@ -87,9 +93,59 @@ export class EdgelessColorButton extends LitElement {
   }
 
   override render() {
-    const { label, preprocessColor, hollowCircle } = this;
-    const additionIcon = AdditionIcon(preprocessColor, !!hollowCircle);
-    return html`<div class="color-unit" aria-label=${ifDefined(label)}>
+    const {
+      label,
+      preprocessColor,
+      hollowCircle,
+      ringColor,
+      gradientFinal,
+      gradientDirection,
+    } = this;
+    const resolvedFillColor = resolveColor(this.color, this.theme);
+    const normalizedFill = resolvedFillColor.replace(/\s+/g, '').toLowerCase();
+    const isWhite =
+      normalizedFill === '#fff' ||
+      normalizedFill === '#ffffff' ||
+      normalizedFill === 'white' ||
+      normalizedFill === 'rgb(255,255,255)' ||
+      normalizedFill === 'rgba(255,255,255,1)';
+    const resolvedRingColor = ringColor
+      ? resolveColor(ringColor, this.theme)
+      : undefined;
+    const normalizedRing = resolvedRingColor
+      ? resolvedRingColor.replace(/\s+/g, '').toLowerCase()
+      : undefined;
+    const ringColorValue = resolvedRingColor?.startsWith('--')
+      ? `var(${resolvedRingColor})`
+      : resolvedRingColor;
+    const adjustedRingColor =
+      isWhite &&
+      (normalizedRing === '#fff' ||
+        normalizedRing === '#ffffff' ||
+        normalizedRing === 'white' ||
+        normalizedRing === 'rgb(255,255,255)' ||
+        normalizedRing === 'rgba(255,255,255,1)')
+        ? 'var(--affine-border-color)'
+        : ringColorValue;
+    const resolvedGradientFinal = gradientFinal
+      ? resolveColor(gradientFinal, this.theme)
+      : undefined;
+    const gradientFinalValue = resolvedGradientFinal?.startsWith('--')
+      ? `var(${resolvedGradientFinal})`
+      : resolvedGradientFinal;
+    const additionIcon = AdditionIcon({
+      color: preprocessColor,
+      hollowCircle: !!hollowCircle,
+      gradientFinal: gradientFinalValue,
+      gradientDirection,
+    });
+    return html`<div
+      class="color-unit"
+      aria-label=${ifDefined(label)}
+      style=${styleMap({
+        '--color-unit-border-color': adjustedRingColor,
+      })}
+    >
       ${additionIcon}
     </div>`;
   }
@@ -105,6 +161,18 @@ export class EdgelessColorButton extends LitElement {
 
   @property({ attribute: false })
   accessor label: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor ringColor: Color | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientFinal: Color | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientDirection: GradientDirection | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor activeKey: string | undefined = undefined;
 
   @property({ attribute: false })
   accessor theme!: ColorScheme;
@@ -173,17 +241,32 @@ export class EdgelessColorPanel extends LitElement {
         palette => palette.key,
         palette => {
           const resolvedColor = resolveColor(palette.value, this.theme);
-          const activated = isEqual(resolvedColor, this.resolvedValue);
+          const activated = this.activeKey
+            ? palette.key === this.activeKey
+            : isEqual(resolvedColor, this.resolvedValue);
+          const outlinePalette = this.outlinePalettes?.find(
+            outline => outline.key === palette.key
+          );
+          const ringPalette = this.ringPalettes?.find(
+            outline => outline.key === palette.key
+          );
+          const gradientPalette = this.gradientPalettes?.find(
+            outline => outline.key === palette.key
+          );
           return html`<edgeless-color-button
             class=${classMap({ large: true })}
             .label=${palette.key}
             .color=${palette.value}
             .theme=${this.theme}
             .hollowCircle=${this.hollowCircle}
+            .ringColor=${ringPalette?.value ?? outlinePalette?.value}
+            .gradientFinal=${gradientPalette?.value}
+            .gradientDirection=${gradientPalette?.direction}
+            .activeKey=${this.activeKey}
             ?active=${activated}
             @click=${() => {
               this.select(palette);
-              this.value = resolvedColor;
+              this.value = palette.value;
             }}
           >
           </edgeless-color-button>`;
@@ -201,6 +284,20 @@ export class EdgelessColorPanel extends LitElement {
 
   @property({ type: Array })
   accessor palettes: readonly Palette[] = DefaultTheme.Palettes;
+
+  @property({ attribute: false })
+  accessor outlinePalettes: readonly Palette[] | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor ringPalettes: readonly Palette[] | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor activeKey: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor gradientPalettes:
+    | readonly { key: string; value: Color; direction?: GradientDirection }[]
+    | undefined = undefined;
 
   @property({ attribute: false })
   accessor theme!: ColorScheme;
