@@ -876,9 +876,9 @@ __metadata:
   resolution: "@affine/revert-update@workspace:tools/revert-update"
   dependencies:
     "@affine-tools/cli": "workspace:*"
+    "@affine/server-native": "workspace:*"
     "@types/node": "npm:^22.0.0"
     typescript: "npm:@typescript/typescript6@6.0.2"
-    yjs: "npm:^13.6.27"
   languageName: unknown
   linkType: soft
 

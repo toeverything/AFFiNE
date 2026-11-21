@@ -210,6 +210,7 @@ declare global {
       updates: string[];
       timestamp: number;
       editor?: string;
+      compressed?: boolean;
     };
     'sync.awareness.collect': SyncAwarenessEvent;
     'sync.awareness.updated': SyncAwarenessEvent & {
@@ -913,6 +914,31 @@ export class SpaceSyncGateway
 
   @OnEvent('sync.doc.updates.pushed')
   onClusterDocUpdatesPushed(payload: Events['sync.doc.updates.pushed']) {
+    if (payload.compressed !== undefined) {
+      const broadcastPayload: BroadcastDocUpdatesMessage = {
+        spaceType: payload.spaceType,
+        spaceId: payload.spaceId,
+        docId: payload.docId,
+        updates: payload.updates,
+        timestamp: payload.timestamp,
+        editor: payload.editor,
+        compressed: payload.compressed,
+      };
+      this.emitActiveDocUpdate(
+        {
+          spaceType: payload.spaceType,
+          spaceId: payload.spaceId,
+          docId: payload.docId,
+          updates: [],
+          timestamp: payload.timestamp,
+          editor: payload.editor,
+        },
+        undefined,
+        broadcastPayload
+      );
+      return;
+    }
+
     this.emitActiveDocUpdate({
       ...payload,
       updates: payload.updates.map(update =>
@@ -1187,7 +1213,8 @@ export class SpaceSyncGateway
       });
     this.event.broadcast('sync.doc.updates.pushed', {
       ...payload,
-      updates: this.encodeUpdates(payload.updates),
+      updates: broadcastPayload.updates,
+      compressed: broadcastPayload.compressed,
     });
   }
 

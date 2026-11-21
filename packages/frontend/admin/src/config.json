@@ -166,10 +166,6 @@
     }
   },
   "doc": {
-    "experimental.yocto": {
-      "type": "Boolean",
-      "desc": "Use `y-octo` to merge updates at the same time when merging using Yjs."
-    },
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."

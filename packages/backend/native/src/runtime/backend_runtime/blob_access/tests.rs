@@ -22,6 +22,7 @@ struct Fixture {
 async fn setup() -> Option<Fixture> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
   assert!(
     crate::runtime::migrations::migrate_embedding_tables(&pool)
       .await
@@ -125,6 +126,7 @@ async fn setup() -> Option<Fixture> {
 
 async fn teardown(fixture: &Fixture) {
   for table in [
+    "runtime_doc_creators",
     "updates",
     "snapshot_histories",
     "snapshots",
@@ -514,6 +516,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     fixture.doc_id.clone(),
     vec![redis_update.into()],
     None,
+    None,
   )
   .await
   .unwrap();
@@ -553,6 +556,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![loss_update.into()],
+    None,
     None,
   )
   .await

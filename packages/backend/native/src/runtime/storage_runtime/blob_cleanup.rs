@@ -595,6 +595,7 @@ mod tests {
       "blob_cleanup_candidates",
       "doc_blob_refs",
       "doc_blob_ref_projections",
+      "runtime_doc_creators",
       "updates",
       "snapshot_histories",
       "snapshots",

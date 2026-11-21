@@ -133,6 +133,51 @@ class NbStorePlugin : Plugin() {
   }
 
   @PluginMethod
+  fun getDocDiff(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val docId = call.getStringEnsure("docId")
+        val state = call.getString("state")
+        val diff = docStoragePool.getDocDiff(universalId = id, docId = docId, state = state)
+        diff?.let {
+          call.resolve(
+            JSObject()
+              .put("docId", it.docId)
+              .put("missing", it.missing)
+              .put("state", it.state)
+              .put("timestamp", it.timestamp)
+          )
+        } ?: call.resolve()
+      } catch (e: Exception) {
+        if (e is UniffiException.Err && e.v1 == "invalid_binary") {
+          call.reject("invalid_binary", null, e)
+        } else {
+          call.reject("Failed to get doc diff, ${e.message}", null, e)
+        }
+      }
+    }
+  }
+
+  @PluginMethod
+  fun mergeUpdates(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val values = call.getArray("updates") ?: throw IllegalArgumentException("updates is required")
+        val updates = (0 until values.length()).map { index -> values.getString(index) }
+        val merged = docStoragePool.mergeUpdates(updates = updates)
+        call.resolve(JSObject().put("bin", merged))
+      } catch (e: Exception) {
+        if (e is UniffiException.Err && e.v1 == "invalid_binary") {
+          call.reject("invalid_binary", null, e)
+        } else {
+          call.reject("Failed to merge updates, ${e.message}", null, e)
+        }
+      }
+    }
+  }
+
+  @PluginMethod
   fun deleteDoc(call: PluginCall) {
     launch(Dispatchers.IO) {
       try {

@@ -242,3 +242,22 @@ CREATE TABLE IF NOT EXISTS runtime_invite_abuse_actions (
 
 CREATE INDEX IF NOT EXISTS runtime_invite_abuse_actions_status_next_attempt_idx
   ON runtime_invite_abuse_actions (status, next_attempt_at);
+
+CREATE TABLE IF NOT EXISTS runtime_doc_creators (
+  workspace_id VARCHAR NOT NULL,
+  doc_id VARCHAR NOT NULL,
+  created_by VARCHAR REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (workspace_id, doc_id)
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'runtime_doc_creators_created_by_fkey'
+  ) THEN
+    ALTER TABLE runtime_doc_creators
+      ADD CONSTRAINT runtime_doc_creators_created_by_fkey
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

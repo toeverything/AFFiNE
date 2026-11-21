@@ -1,7 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   CallMetric,
@@ -9,16 +8,20 @@ import {
   DocUpdateTooLarge,
   DocValidationUnavailable,
 } from '../../../base';
-import { validateDocUpdate } from '../../../native';
-import { mergeUpdatesWithYjs } from '../merge-updates';
+import {
+  diffDocUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  validateDocUpdate,
+} from '../../../native';
+import { mergeUpdatesWithNative } from '../merge-updates';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
 
 const DOC_UPDATE_VALIDATE_TIMEOUT_MS = 1000;
 const DOC_UPDATE_VALIDATE_MAX_BYTES = 32 * 1024 * 1024;
 
-async function yjsMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
-  return mergeUpdatesWithYjs(updates, 'doc.storage.squash.yjs');
+async function defaultMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
+  return mergeUpdatesWithNative(updates, 'doc.storage.squash.native');
 }
 
 export interface DocRecord {
@@ -27,6 +30,7 @@ export interface DocRecord {
   bin: Uint8Array;
   timestamp: number;
   editor?: string;
+  creator?: string;
 }
 
 export interface DocDiff {
@@ -61,7 +65,7 @@ export abstract class DocStorageAdapter extends Connection {
 
   constructor(
     protected readonly options: DocStorageOptions = {
-      mergeUpdates: yjsMergeUpdates,
+      mergeUpdates: defaultMergeUpdates,
     }
   ) {
     super();
@@ -85,9 +89,12 @@ export abstract class DocStorageAdapter extends Connection {
       }
       let valid: boolean;
       try {
-        valid = await validateDocUpdate(Buffer.from(update), {
-          timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
-        });
+        valid = await validateDocUpdate(
+          Buffer.from(update.buffer, update.byteOffset, update.byteLength),
+          {
+            timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
+          }
+        );
       } catch (error) {
         const unavailable = new DocValidationUnavailable();
         unavailable.cause = error;
@@ -144,15 +151,19 @@ export abstract class DocStorageAdapter extends Connection {
     const timestamp = snapshot
       ? Math.max(finalUpdate.timestamp, snapshot.timestamp + 1)
       : finalUpdate.timestamp;
+    const fromInitialUpdates = snapshot === null;
     const newSnapshot: DocRecord = {
       spaceId,
       docId,
       bin,
       timestamp,
       editor,
+      ...(fromInitialUpdates ? { creator: updates[0]?.editor } : {}),
     };
 
-    const success = await this.setDocSnapshot(newSnapshot);
+    const success = await this.setDocSnapshot(newSnapshot, {
+      fromInitialUpdates,
+    });
 
     // if there is old snapshot, create a new history record
     if (success && snapshot) {
@@ -180,12 +191,35 @@ export abstract class DocStorageAdapter extends Connection {
       return null;
     }
 
-    const missing = stateVector ? diffUpdate(doc.bin, stateVector) : doc.bin;
-    const state = encodeStateVectorFromUpdate(doc.bin);
+    const bin = Buffer.from(
+      doc.bin.buffer,
+      doc.bin.byteOffset,
+      doc.bin.byteLength
+    );
+    const rawMissing =
+      stateVector && stateVector.length > 0
+        ? diffDocUpdateV1(
+            bin,
+            Buffer.from(
+              stateVector.buffer,
+              stateVector.byteOffset,
+              stateVector.byteLength
+            )
+          )
+        : doc.bin;
+    const rawState = encodeStateVectorFromUpdateV1(bin);
 
     return {
-      missing,
-      state,
+      missing: new Uint8Array(
+        rawMissing.buffer,
+        rawMissing.byteOffset,
+        rawMissing.byteLength
+      ),
+      state: new Uint8Array(
+        rawState.buffer,
+        rawState.byteOffset,
+        rawState.byteLength
+      ),
       timestamp: doc.timestamp,
     };
   }
@@ -197,14 +231,16 @@ export abstract class DocStorageAdapter extends Connection {
     editorId: string,
     expectedPermissionGeneration?: number,
     writeIntent?: 'update_doc' | 'create_doc',
-    protocolVersion?: number
+    protocolVersion?: number,
+    expectedCurrentTimestamp?: number
   ): Promise<{ timestamp: number; created: boolean }>;
 
   abstract pushDocUpdatesTrusted(
     spaceId: string,
     docId: string,
     updates: Uint8Array[],
-    editorId?: string
+    editorId?: string,
+    expectedCurrentTimestamp?: number
   ): Promise<number>;
 
   abstract deleteDoc(spaceId: string, docId: string): Promise<void>;
@@ -229,7 +265,10 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string
   ): Promise<DocRecord | null>;
-  protected abstract setDocSnapshot(snapshot: DocRecord): Promise<boolean>;
+  protected abstract setDocSnapshot(
+    snapshot: DocRecord,
+    options?: { fromInitialUpdates?: boolean }
+  ): Promise<boolean>;
   protected abstract getDocUpdates(
     spaceId: string,
     docId: string
@@ -247,7 +286,7 @@ export abstract class DocStorageAdapter extends Connection {
     updates: DocUpdate[],
     merge?: (updates: Uint8Array[]) => Promise<Uint8Array>
   ): Promise<DocUpdate> {
-    const mergeFn = merge ?? this.options?.mergeUpdates ?? yjsMergeUpdates;
+    const mergeFn = merge ?? this.options?.mergeUpdates ?? defaultMergeUpdates;
     const lastUpdate = updates.at(-1);
     if (!lastUpdate) {
       throw new Error('No updates to be squashed.');

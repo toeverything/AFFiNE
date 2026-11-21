@@ -573,12 +573,10 @@ export class DocSyncPeer {
         );
 
         if (jobs.some(job => job.update && !isEmptyUpdate(job.update))) {
-          const local = await this.local.getDoc(docId);
-          if (local) {
-            const remoteState = this.status.remoteStateVectors.get(docId);
-            const update = remoteState
-              ? diffUpdate(local.bin, remoteState)
-              : local.bin;
+          const remoteState = this.status.remoteStateVectors.get(docId);
+          const diff = await this.local.getDocDiff(docId, remoteState);
+          if (diff) {
+            const update = diff.missing;
             if (!isEmptyUpdate(update)) {
               const { timestamp } = await this.pushRemote({
                 docId,
@@ -586,13 +584,10 @@ export class DocSyncPeer {
               });
               this.schedule({ type: 'save', docId, remoteClock: timestamp });
             }
-            this.status.remoteStateVectors.set(
-              docId,
-              encodeStateVectorFromUpdate(local.bin)
-            );
+            this.status.remoteStateVectors.set(docId, diff.state);
             await this.syncMetadata.setPeerPushedClock(this.metadataPeer, {
               docId,
-              timestamp: local.timestamp,
+              timestamp: diff.timestamp,
             });
             return;
           }

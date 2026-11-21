@@ -22,6 +22,16 @@ pub struct DocRecord {
 }
 
 #[derive(uniffi::Record)]
+pub struct DocDiff {
+  pub doc_id: String,
+  // base64 encoded data
+  pub missing: String,
+  // base64 encoded data
+  pub state: String,
+  pub timestamp: i64,
+}
+
+#[derive(uniffi::Record)]
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: i64,

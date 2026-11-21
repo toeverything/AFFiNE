@@ -7,7 +7,11 @@ import {
   configureSocketAuthMethod,
 } from '@affine/nbstore/cloud';
 import { bindDiskSyncApis, diskStorages } from '@affine/nbstore/disk';
-import { bindNativeDBApis, sqliteStorages } from '@affine/nbstore/sqlite';
+import {
+  bindNativeDBApis,
+  getNativeMergeUpdates,
+  sqliteStorages,
+} from '@affine/nbstore/sqlite';
 import {
   bindNativeDBV1Apis,
   sqliteV1Storages,
@@ -36,13 +40,23 @@ configureSocketAuthMethod((endpoint, cb) => {
     .catch(() => cb({ error: 'AUTH_SESSION_TEMPORARILY_UNAVAILABLE' }));
 });
 
-const storeManager = new StoreManagerConsumer([
-  ...sqliteStorages,
-  ...sqliteV1Storages,
-  ...diskStorages,
-  ...broadcastChannelStorages,
-  ...cloudStorages,
-]);
+const nativeMergeUpdates = getNativeMergeUpdates();
+
+const storeManager = new StoreManagerConsumer(
+  [
+    ...sqliteStorages,
+    ...sqliteV1Storages,
+    ...diskStorages,
+    ...broadcastChannelStorages,
+    ...cloudStorages,
+  ],
+  {
+    mergeUpdates: nativeMergeUpdates
+      ? updates =>
+          updates.length === 1 ? updates[0] : nativeMergeUpdates(updates)
+      : undefined,
+  }
+);
 
 window.addEventListener('message', ev => {
   if (ev.data.type === 'electron:worker-connect') {

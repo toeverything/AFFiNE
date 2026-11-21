@@ -4,7 +4,6 @@ use affine_core::access_control::{DomainCommand, classify_reserved_document};
 use chrono::Duration;
 use napi::{Result, bindgen_prelude::Buffer};
 use sqlx::{PgPool, Postgres, Transaction};
-use y_octo::Update;
 
 use super::{
   BackendRuntime, RuntimeError, RuntimeResult, SourceIdentity, blocking,
@@ -27,6 +26,7 @@ pub struct AppendWorkspaceDocUpdatesInputV1 {
   pub write_intent: WorkspaceDocWriteIntentV1,
   pub expected_permission_generation: Option<i64>,
   pub protocol_version: Option<u32>,
+  pub expected_current_timestamp: Option<i64>,
 }
 
 #[napi_derive::napi(object)]
@@ -49,6 +49,7 @@ pub struct AppendWorkspaceDocUpdatesTrustedInputV1 {
   pub doc_id: String,
   pub updates: Vec<Buffer>,
   pub editor_id: Option<String>,
+  pub expected_current_timestamp: Option<i64>,
 }
 
 #[napi_derive::napi]
@@ -87,9 +88,35 @@ impl BackendRuntime {
       input.doc_id,
       input.updates,
       input.editor_id,
+      input.expected_current_timestamp,
     )
     .await
   }
+}
+
+async fn ensure_expected_current_timestamp_in(
+  transaction: &mut Transaction<'_, Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+  expected_current_timestamp: Option<i64>,
+) -> Result<()> {
+  let Some(expected_ts) = expected_current_timestamp else {
+    return Ok(());
+  };
+  let max_ts: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar(
+    "SELECT MAX(ts) FROM (SELECT updated_at AS ts FROM snapshots WHERE workspace_id=$1 AND guid=$2 UNION ALL SELECT \
+     created_at AS ts FROM updates WHERE workspace_id=$1 AND guid=$2) AS doc_timestamps",
+  )
+  .bind(workspace_id)
+  .bind(doc_id)
+  .fetch_one(&mut **transaction)
+  .await
+  .map_err(|error| napi_error(format!("load current workspace doc timestamp: {error}")))?;
+  let actual_ts = max_ts.map(|t| t.timestamp_millis()).unwrap_or(0);
+  if actual_ts != expected_ts {
+    return Err(napi_error("doc_revision_conflict"));
+  }
+  Ok(())
 }
 
 async fn append_authorized_updates(
@@ -114,6 +141,13 @@ async fn append_authorized_updates(
   lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
   ensure_workspace_sync_protocol_in(&mut transaction, &input.workspace_id, input.protocol_version).await?;
   lock_workspace_doc_update(&mut transaction, &input.workspace_id, &input.doc_id).await?;
+  ensure_expected_current_timestamp_in(
+    &mut transaction,
+    &input.workspace_id,
+    &input.doc_id,
+    input.expected_current_timestamp,
+  )
+  .await?;
   let classification = classify_reserved_document(&input.workspace_id, &input.doc_id);
   let reserved = input.doc_id == input.workspace_id || classification.is_valid_reserved();
   let source_exists: bool = sqlx::query_scalar(
@@ -191,6 +225,17 @@ async fn append_authorized_updates(
   )
   .await?;
   if creating {
+    sqlx::query(
+      "INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at) VALUES ($1, $2, $3, \
+       CURRENT_TIMESTAMP) ON CONFLICT (workspace_id, doc_id) DO UPDATE SET created_by = EXCLUDED.created_by, \
+       created_at = EXCLUDED.created_at",
+    )
+    .bind(&input.workspace_id)
+    .bind(&input.doc_id)
+    .bind(&input.actor_user_id)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| napi_error(format!("record document creator: {error}")))?;
     invalidate_workspace_inventory_in(&mut transaction, &input.workspace_id).await?;
   }
   transaction
@@ -204,6 +249,7 @@ async fn append_authorized_updates(
   })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn append_updates(
   pool: &PgPool,
   invalidation: Option<Arc<InvalidationRuntime>>,
@@ -212,6 +258,7 @@ pub(super) async fn append_updates(
   doc_id: String,
   updates: Vec<Buffer>,
   editor_id: Option<String>,
+  expected_current_timestamp: Option<i64>,
 ) -> Result<i64> {
   if updates.is_empty() {
     return Ok(0);
@@ -223,6 +270,7 @@ pub(super) async fn append_updates(
     .map_err(|error| napi_error(format!("begin workspace doc update: {error}")))?;
   lock_workspace_storage_shared(&mut transaction, &workspace_id).await?;
   lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id).await?;
+  ensure_expected_current_timestamp_in(&mut transaction, &workspace_id, &doc_id, expected_current_timestamp).await?;
   ensure_doc_not_deleted_in(&mut transaction, &workspace_id, &doc_id).await?;
   let source_exists: bool = sqlx::query_scalar(
     "SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2) OR EXISTS(SELECT 1 FROM updates WHERE \
@@ -244,6 +292,17 @@ pub(super) async fn append_updates(
   )
   .await?;
   if created {
+    sqlx::query(
+      "INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at) VALUES ($1, $2, $3, \
+       CURRENT_TIMESTAMP) ON CONFLICT (workspace_id, doc_id) DO UPDATE SET created_by = EXCLUDED.created_by, \
+       created_at = EXCLUDED.created_at",
+    )
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .bind(editor_id.as_deref())
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| napi_error(format!("record document creator: {error}")))?;
     invalidate_workspace_inventory_in(&mut transaction, &workspace_id).await?;
   }
   transaction
@@ -317,9 +376,7 @@ pub(in crate::runtime) async fn validate_doc_updates(updates: &[Buffer], root: b
     std::time::Duration::from_secs(1),
     blocking::spawn(permit, move || {
       updates.into_iter().try_for_each(|update| {
-        Update::decode_v1(update)
-          .map(|_| ())
-          .map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))
+        y_octo::validate_update_v1(&update).map_err(|_| RuntimeError::invalid_input("doc_update_invalid"))
       })
     }),
   )
@@ -431,6 +488,7 @@ mod tests {
           doc_id: doc_id.clone(),
           updates: vec![Buffer::from(vec![0, 0]), Buffer::from(vec![0xff])],
           editor_id: None,
+          expected_current_timestamp: None,
         })
         .await
         .is_err()
@@ -449,6 +507,7 @@ mod tests {
         doc_id: doc_id.clone(),
         updates: vec![Buffer::from(vec![0, 0]), Buffer::from(vec![0, 0])],
         editor_id: None,
+        expected_current_timestamp: None,
       })
       .await
       .map_err(|error| anyhow::anyhow!(error.to_string()))?;
@@ -458,6 +517,7 @@ mod tests {
         doc_id: doc_id.clone(),
         updates: vec![Buffer::from(vec![0, 0])],
         editor_id: None,
+        expected_current_timestamp: None,
       })
       .await
       .map_err(|error| anyhow::anyhow!(error.to_string()))?;
@@ -508,6 +568,7 @@ mod tests {
 
           protocol_version: None,
           expected_permission_generation: Some(generation),
+          expected_current_timestamp: None,
         },
       )
       .await
@@ -529,6 +590,7 @@ mod tests {
 
         protocol_version: None,
         expected_permission_generation: None,
+        expected_current_timestamp: None,
       })
       .await;
     assert!(
@@ -627,6 +689,7 @@ mod tests {
 
           protocol_version: None,
           expected_permission_generation: Some(generation),
+          expected_current_timestamp: None,
         },
       )
       .await
@@ -655,6 +718,7 @@ mod tests {
 
           protocol_version: None,
           expected_permission_generation: None,
+          expected_current_timestamp: None,
         })
         .await;
       assert_eq!(result.is_ok(), allowed, "{reserved_doc_id}: {result:?}");
@@ -670,6 +734,7 @@ mod tests {
 
       protocol_version: None,
       expected_permission_generation: None,
+      expected_current_timestamp: None,
     };
     sqlx::query(
       "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
@@ -917,7 +982,8 @@ mod tests {
           workspace_id: workspace_id.clone(),
           doc_id: creating_doc_id.clone(),
           updates: vec![Buffer::from(vec![0, 0])],
-          editor_id: Some(user_id.clone())
+          editor_id: Some(user_id.clone()),
+          expected_current_timestamp: None,
         })
         .await
         .is_err()
@@ -929,7 +995,9 @@ mod tests {
           creating_doc_id.clone(),
           Buffer::from(vec![0, 0, 0]),
           chrono::Utc::now().timestamp_millis(),
-          None
+          None,
+          None,
+          None,
         )
         .await
         .is_err()
@@ -1142,6 +1210,461 @@ mod tests {
     );
     sqlx::query("DELETE FROM workspaces WHERE id=$1")
       .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    runtime
+      .stop()
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn append_enforces_expected_current_timestamp_cas() -> anyhow::Result<()> {
+    let _guard = pg_test_lock().lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let suffix = Uuid::new_v4().simple().to_string();
+    let workspace_id = format!("doc-writer-cas-ws-{suffix}");
+    let user_id = format!("doc-writer-cas-user-{suffix}");
+    let pool = runtime
+      .pool()
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query(
+      "INSERT INTO users(id,name,email,registered,email_verified,disabled) VALUES($1,'CAS Writer',$2,true,now(),false)",
+    )
+    .bind(&user_id)
+    .bind(format!("doc-writer-cas-{suffix}@example.com"))
+    .execute(&pool)
+    .await?;
+    sqlx::query("INSERT INTO workspace_access_policies(workspace_id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("INSERT INTO workspace_members(workspace_id,user_id,role,state) VALUES($1,$2,'owner','active')")
+      .bind(&workspace_id)
+      .bind(&user_id)
+      .execute(&pool)
+      .await?;
+
+    // Empty root doc has actual timestamp 0 -> mismatch must conflict without
+    // writing.
+    let mismatch_empty = runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: Some(12345),
+      })
+      .await;
+    assert!(
+      mismatch_empty
+        .unwrap_err()
+        .to_string()
+        .contains("doc_revision_conflict")
+    );
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?,
+      0
+    );
+
+    // Matching expected_current_timestamp = 0 succeeds.
+    let first = runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: Some(0),
+      })
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    assert!(first.timestamp > 0);
+
+    // Stale expected_current_timestamp = 0 now conflicts without writing.
+    let stale = runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: Some(0),
+      })
+      .await;
+    assert!(stale.unwrap_err().to_string().contains("doc_revision_conflict"));
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?,
+      1
+    );
+
+    // Matching current timestamp succeeds.
+    let second = runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: workspace_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_id.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: Some(first.timestamp),
+      })
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    assert!(second.timestamp > first.timestamp);
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?,
+      2
+    );
+
+    // Trusted append also enforces expected_current_timestamp CAS.
+    let props_doc_id = format!("db${workspace_id}$docProperties");
+    let trusted_first = runtime
+      .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: props_doc_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        editor_id: Some(user_id.clone()),
+        expected_current_timestamp: Some(0),
+      })
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    assert!(trusted_first > 0);
+
+    let trusted_stale = runtime
+      .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: props_doc_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        editor_id: Some(user_id.clone()),
+        expected_current_timestamp: Some(0),
+      })
+      .await;
+    assert!(trusted_stale.unwrap_err().to_string().contains("doc_revision_conflict"));
+    let trusted_second = runtime
+      .append_workspace_doc_updates_trusted_v1(AppendWorkspaceDocUpdatesTrustedInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: props_doc_id.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        editor_id: Some(user_id.clone()),
+        expected_current_timestamp: Some(trusted_first),
+      })
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    assert!(trusted_second > trusted_first);
+
+    sqlx::query("DELETE FROM runtime_doc_creators WHERE workspace_id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    runtime
+      .stop()
+      .await
+      .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn doc_creator_survives_first_compaction_and_owner_transfer_and_legacy_snapshot_is_none() -> anyhow::Result<()>
+  {
+    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let pool = runtime.pool().await?;
+    let workspace_id = format!("doc-creator-ws-{}", uuid::Uuid::new_v4());
+    let user_a = format!("doc-creator-a-{}", uuid::Uuid::new_v4());
+    let user_b = format!("doc-creator-b-{}", uuid::Uuid::new_v4());
+    let user_c = format!("doc-creator-c-{}", uuid::Uuid::new_v4());
+    for user in [&user_a, &user_b, &user_c] {
+      sqlx::query(
+        "INSERT INTO users(id,name,email,registered,email_verified,disabled) VALUES($1,$1,$2,true,now(),false)",
+      )
+      .bind(user)
+      .bind(format!("{user}@example.com"))
+      .execute(&pool)
+      .await?;
+    }
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("INSERT INTO workspace_access_policies(workspace_id,member_default_doc_role) VALUES($1,'editor')")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    for (user, role) in [(&user_a, "member"), (&user_b, "member"), (&user_c, "owner")] {
+      sqlx::query("INSERT INTO workspace_members(workspace_id,user_id,role,state) VALUES($1,$2,$3,'active')")
+        .bind(&workspace_id)
+        .bind(user)
+        .bind(role)
+        .execute(&pool)
+        .await?;
+    }
+
+    // Case A1: Pre-existing uncompacted updates (no runtime_doc_creators row
+    // before compaction): A creates, B edits.
+    let pre_doc = "doc-pre-updates".to_string();
+    let now = chrono::Utc::now();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at,created_by) VALUES($1,$2,$3,$4,$5)")
+      .bind(&workspace_id)
+      .bind(&pre_doc)
+      .bind(vec![0u8, 0u8])
+      .bind(now)
+      .bind(&user_a)
+      .execute(&pool)
+      .await?;
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at,created_by) VALUES($1,$2,$3,$4,$5)")
+      .bind(&workspace_id)
+      .bind(&pre_doc)
+      .bind(vec![0u8, 0u8])
+      .bind(now + Duration::milliseconds(10))
+      .bind(&user_b)
+      .execute(&pool)
+      .await?;
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), pre_doc.clone())
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?,
+      Some(user_a.clone())
+    );
+    // Transfer owner grant to C before compaction; creator must still be A.
+    sqlx::query(
+      "INSERT INTO doc_grants(workspace_id,doc_id,principal_type,principal_id,role,granted_by) \
+       VALUES($1,$2,'user',$3,'owner',$3)",
+    )
+    .bind(&workspace_id)
+    .bind(&pre_doc)
+    .bind(&user_c)
+    .execute(&pool)
+    .await?;
+
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), pre_doc.clone(), 100, 60_000, 3600)
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+    let (snap_creator, snap_editor): (Option<String>, Option<String>) =
+      sqlx::query_as("SELECT created_by, updated_by FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&pre_doc)
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(snap_creator.as_deref(), Some(user_a.as_str()));
+    assert_eq!(snap_editor.as_deref(), Some(user_b.as_str()));
+    let current = runtime
+      .get_current_workspace_doc_v1(workspace_id.clone(), pre_doc.clone())
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?
+      .expect("doc exists");
+    assert_eq!(current.editor.as_deref(), Some(user_b.as_str()));
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), pre_doc.clone())
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?,
+      Some(user_a.clone())
+    );
+
+    // Case A2: Formal CreateDoc path -> B edit -> owner grant transfer to C ->
+    // first compaction.
+    let new_doc = "doc-formal-create".to_string();
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: new_doc.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_a.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::CreateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: None,
+      })
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: new_doc.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_b.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: None,
+      })
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    sqlx::query("DELETE FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2")
+      .bind(&workspace_id)
+      .bind(&new_doc)
+      .execute(&pool)
+      .await?;
+    sqlx::query(
+      "INSERT INTO doc_grants(workspace_id,doc_id,principal_type,principal_id,role,granted_by) \
+       VALUES($1,$2,'user',$3,'owner',$3)",
+    )
+    .bind(&workspace_id)
+    .bind(&new_doc)
+    .bind(&user_c)
+    .execute(&pool)
+    .await?;
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), new_doc.clone(), 100, 60_000, 3600)
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let (new_snap_creator, new_snap_editor): (Option<String>, Option<String>) =
+      sqlx::query_as("SELECT created_by, updated_by FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&new_doc)
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(new_snap_creator.as_deref(), Some(user_a.as_str()));
+    assert_eq!(new_snap_editor.as_deref(), Some(user_b.as_str()));
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), new_doc.clone())
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?,
+      Some(user_a.clone())
+    );
+
+    // Case B: Legacy snapshot without runtime_doc_creators row returns None
+    // even with snapshots.created_by and doc_grants.
+    let legacy_doc = "doc-legacy-snapshot".to_string();
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,size,created_at,updated_at,created_by,updated_by) \
+       VALUES($1,$2,$3,2,now(),now(),$4,$4)",
+    )
+    .bind(&workspace_id)
+    .bind(&legacy_doc)
+    .bind(vec![0u8, 0u8])
+    .bind(&user_b)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+      "INSERT INTO doc_grants(workspace_id,doc_id,principal_type,principal_id,role,granted_by) \
+       VALUES($1,$2,'user',$3,'owner',$3)",
+    )
+    .bind(&workspace_id)
+    .bind(&legacy_doc)
+    .bind(&user_c)
+    .execute(&pool)
+    .await?;
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), legacy_doc.clone())
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?,
+      None
+    );
+
+    // Case C: Author A creates doc, B edits, then A's user account is deleted
+    // before first compaction (FK ON DELETE SET NULL clears both
+    // updates.created_by and runtime_doc_creators.created_by); first compaction
+    // must succeed cleanly.
+    let deleted_author_doc = "doc-deleted-author".to_string();
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: deleted_author_doc.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_a.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::CreateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: None,
+      })
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    runtime
+      .append_workspace_doc_updates_v1(AppendWorkspaceDocUpdatesInputV1 {
+        workspace_id: workspace_id.clone(),
+        doc_id: deleted_author_doc.clone(),
+        updates: vec![Buffer::from(vec![0, 0])],
+        actor_user_id: user_b.clone(),
+        write_intent: WorkspaceDocWriteIntentV1::UpdateDoc,
+        expected_permission_generation: None,
+        protocol_version: None,
+        expected_current_timestamp: None,
+      })
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    sqlx::query("DELETE FROM users WHERE id=$1")
+      .bind(&user_a)
+      .execute(&pool)
+      .await?;
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), deleted_author_doc.clone(), 100, 60_000, 3600)
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), deleted_author_doc.clone())
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))?,
+      None
+    );
+    let deleted_author_current = runtime
+      .get_current_workspace_doc_v1(workspace_id.clone(), deleted_author_doc.clone())
+      .await
+      .map_err(|e| anyhow::anyhow!(e.to_string()))?
+      .expect("doc exists after compaction");
+    assert_eq!(deleted_author_current.editor.as_deref(), Some(user_b.as_str()));
+    let (del_snap_creator, del_snap_editor): (Option<String>, Option<String>) =
+      sqlx::query_as("SELECT created_by, updated_by FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(&deleted_author_doc)
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(del_snap_creator, None);
+    assert_eq!(del_snap_editor.as_deref(), Some(user_b.as_str()));
+
+    for table in ["runtime_doc_creators", "doc_grants", "updates", "snapshots"] {
+      sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id=$1"))
+        .bind(&workspace_id)
+        .execute(&pool)
+        .await?;
+    }
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM users WHERE id=ANY($1)")
+      .bind(vec![&user_a, &user_b, &user_c])
       .execute(&pool)
       .await?;
     runtime

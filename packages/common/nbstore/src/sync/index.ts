@@ -19,6 +19,10 @@ export interface SyncState {
   doc?: DocSyncState;
 }
 
+export interface SyncOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
+
 export class Sync {
   readonly doc: DocSyncImpl;
   readonly blob: BlobSyncImpl;
@@ -27,7 +31,10 @@ export class Sync {
 
   readonly state$: Observable<SyncState>;
 
-  constructor(readonly storages: PeerStorageOptions<SpaceStorage>) {
+  constructor(
+    readonly storages: PeerStorageOptions<SpaceStorage>,
+    options?: SyncOptions
+  ) {
     const doc = storages.local.get('doc');
     const blob = storages.local.get('blob');
     const docSync = storages.local.get('docSync');
@@ -46,7 +53,8 @@ export class Sync {
           ])
         ),
       },
-      docSync
+      docSync,
+      { mergeUpdates: options?.mergeUpdates }
     );
     this.blob = new BlobSyncImpl(
       {

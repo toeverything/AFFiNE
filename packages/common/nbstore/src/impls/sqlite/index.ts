@@ -10,6 +10,7 @@ export * from './blob';
 export * from './blob-sync';
 export {
   bindNativeDBApis,
+  getNativeMergeUpdates,
   type NativeDBApis,
   type NativeIndexField,
   type NativeIndexHit,

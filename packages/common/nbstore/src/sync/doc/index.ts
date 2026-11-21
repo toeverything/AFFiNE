@@ -85,6 +85,7 @@ export class DocSyncImpl implements DocSync {
           ) ??
           new DocSyncPeer(id, this.storages.local, this.sync, remote, {
             isDeleted: docId => this.isDeleted(docId),
+            mergeUpdates: this.options?.mergeUpdates,
           })
       )
     );
@@ -160,7 +161,12 @@ export class DocSyncImpl implements DocSync {
 
   constructor(
     readonly storages: PeerStorageOptions<DocStorage>,
-    readonly sync: DocSyncStorage
+    readonly sync: DocSyncStorage,
+    private readonly options?: {
+      mergeUpdates?: (
+        updates: Uint8Array[]
+      ) => Promise<Uint8Array> | Uint8Array;
+    }
   ) {
     this.setRemotes(storages.remotes);
   }

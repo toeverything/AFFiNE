@@ -36,13 +36,13 @@ platform :ios do
     api_key = release_api_key
     current_build_number = app_store_build_number(live: false, api_key: api_key)
     increment_build_number(xcodeproj: 'App.xcodeproj', build_number: current_build_number + 1)
-    build_app(
+    ipa_path = build_app(
       workspace: 'App.xcworkspace', scheme: 'App', configuration: 'Release',
       output_directory: 'release', output_name: 'AFFiNE.ipa',
       export_method: 'app-store', skip_profile_detection: true,
       export_options: {signingStyle: 'manual', provisioningProfiles: provisioning_profiles}
     )
-    File.write('release/store-build.json', JSON.generate({
+    File.write(File.join(File.dirname(ipa_path), 'store-build.json'), JSON.generate({
       appIdentifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
       version: get_version_number(xcodeproj: 'App.xcodeproj', target: 'AFFiNE'),
       buildNumber: (current_build_number + 1).to_s

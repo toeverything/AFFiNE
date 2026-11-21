@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b76c6e41afed3a846efaa361409da555d08b4caf1338205746dadde2604bee2b"
+checksum = "b0c5ec95b331a6d642c71c1f304435a588728363d6abd76fa42cebf6ddd37a17"
 dependencies = [
  "affine_merge",
  "chrono",
@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "affine_importer"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90082593d61bd6fd8b550ca1e2de65654ac2b15da7d4396c6c1471e86d191d9d"
+checksum = "8fa22a0e948ed16399ae98ca26c285bda6e6894cd463c4b9dd40dc8b37092b74"
 dependencies = [
  "affine_doc_loader",
  "bytes",
@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "affine_merge"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "512fbcc04148bdb3d5193159d73a6f9b5e685b4a5a9fbc421d87abfa79d89b29"
+checksum = "d7ca4a08c70cabba37e19379db35f429394c0600a16b22e2f6f25754676b1e19"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -11373,9 +11373,9 @@ checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y-octo"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce9830799db2d14bbd6b36f9e9bc6047ba01cdb6f5f30731113314dc39b7cc67"
+checksum = "e381655b2334e81e3088ff85d021c31a2ec950dac0ae96b538aea674321e7d3c"
 dependencies = [
  "ahash",
  "arbitrary",
@@ -11388,6 +11388,7 @@ dependencies = [
  "nom 8.0.0",
  "ordered-float",
  "rand 0.10.1",
+ "ryu-js",
  "serde",
  "serde_json",
  "smol_str",

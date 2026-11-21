@@ -18,7 +18,7 @@ use tokio::{sync::Mutex, task::JoinHandle};
 use super::{
   DiskDocClock, DiskDocUpdateInput, DiskSessionOptions, DiskSyncDocUpdateEvent, DiskSyncEvent,
   frontmatter::{normalize_tags, parse_frontmatter, render_frontmatter},
-  root_meta::{build_root_meta_update, extract_all_root_meta, extract_root_meta_for_doc},
+  root_meta::{RootMetaUpdateError, build_root_meta_update, extract_all_root_meta, extract_root_meta_for_doc},
   state_db::StateDb,
   types::{FrontmatterMeta, SourceCheckpoint},
   utils::{

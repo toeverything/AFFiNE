@@ -174,3 +174,25 @@ pub fn update_root_doc_meta_title(root_doc_bin: Buffer, doc_id: String, title: S
   )?;
   Ok(Buffer::from(result))
 }
+
+#[napi]
+pub fn update_existing_root_doc_meta_title(
+  root_doc_bin: Buffer,
+  doc_id: String,
+  title: String,
+) -> Result<Option<Buffer>> {
+  let result = map_napi_err(
+    doc_loader::update_existing_root_doc_meta_title(&root_doc_bin, &doc_id, &title),
+    Status::GenericFailure,
+  )?;
+  Ok(result.map(Buffer::from))
+}
+
+#[napi]
+pub fn migrate_root_doc_pages(root_doc_bin: Buffer) -> Result<Option<Buffer>> {
+  let result = map_napi_err(
+    doc_loader::migrate_root_doc_pages(&root_doc_bin),
+    Status::GenericFailure,
+  )?;
+  Ok(result.map(Buffer::from))
+}
