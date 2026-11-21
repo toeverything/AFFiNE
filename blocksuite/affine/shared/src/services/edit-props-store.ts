@@ -44,6 +44,14 @@ const LocalPropsSchema = z.object({
   presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
+
+  // Grid settings
+  edgelessShowGrid: z.boolean(),
+  edgelessGridSize: z.number(),
+  // Snap settings
+  edgelessSnapToGuides: z.boolean(),
+  edgelessSnapToGrid: z.boolean(),
+  edgelessConnectorSnapToGrid: z.boolean(),
 });
 
 type SessionProps = z.infer<typeof SessionPropsSchema>;
@@ -137,6 +145,16 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:' + id + ':showBidirectional';
       case 'autoHideEmbedHTMLFullScreenToolbar':
         return 'blocksuite:embedHTML:autoHideFullScreenToolbar';
+      case 'edgelessShowGrid':
+        return 'blocksuite:edgeless:showGrid';
+      case 'edgelessGridSize':
+        return 'blocksuite:edgeless:gridSize';
+      case 'edgelessSnapToGuides':
+        return 'blocksuite:edgeless:snapToGuides';
+      case 'edgelessSnapToGrid':
+        return 'blocksuite:edgeless:snapToGrid';
+      case 'edgelessConnectorSnapToGrid':
+        return 'blocksuite:edgeless:connectorSnapToGrid';
       default:
         return key;
     }
@@ -189,11 +207,34 @@ export class EditPropsStore extends LifeCycleWatcher {
     if (Object.keys(overrideProps).length === 0) return;
 
     const innerProps = this.innerProps$.value;
-    const nextProps = mergeWith(
-      clonedeep(innerProps),
-      { [key]: overrideProps },
-      customizer
-    );
+    const cloned = clonedeep(innerProps);
+    const nextProps = mergeWith(cloned, { [key]: overrideProps }, customizer);
+    this.innerProps$.value = OptionalPropsSchema.parse(nextProps);
+  }
+
+  recordLastPropsBatch(
+    entries: Array<{
+      key: LastPropsKey;
+      props: Partial<LastProps[LastPropsKey]>;
+    }>
+  ) {
+    if (!entries.length) return;
+    const innerProps = this.innerProps$.value;
+    let nextProps = clonedeep(innerProps);
+    let updated = false;
+    for (const entry of entries) {
+      const schema = OptionalPropsSchema._def.innerType.shape[entry.key];
+      if (!schema) continue;
+      const overrideProps = schema.parse(entry.props);
+      if (Object.keys(overrideProps).length === 0) continue;
+      nextProps = mergeWith(
+        nextProps,
+        { [entry.key]: overrideProps },
+        customizer
+      );
+      updated = true;
+    }
+    if (!updated) return;
     this.innerProps$.value = OptionalPropsSchema.parse(nextProps);
   }
 

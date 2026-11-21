@@ -148,13 +148,25 @@ export const shapeToolbarConfig = {
         const originalStrokeColor = firstModel.strokeColor;
 
         const mapped = models.map(
-          ({ filled, fillColor, strokeColor, strokeWidth, strokeStyle }) => ({
+          ({
+            filled,
+            fillColor,
+            strokeColor,
+            strokeWidth,
+            strokeStyle,
+            gradientFinal,
+            gradientDirection,
+          }) => ({
             fillColor: filled
               ? resolveColor(fillColor, theme)
               : DefaultTheme.transparent,
             strokeColor: resolveColor(strokeColor, theme),
             strokeWidth,
             strokeStyle,
+            gradientFinal: gradientFinal
+              ? resolveColor(gradientFinal, theme)
+              : undefined,
+            gradientDirection,
           })
         );
         const fillColor =
@@ -167,6 +179,9 @@ export const shapeToolbarConfig = {
           getMostCommonValue(mapped, 'strokeWidth') ?? LineWidth.Four;
         const strokeStyle =
           getMostCommonValue(mapped, 'strokeStyle') ?? StrokeStyle.Solid;
+        const gradientFinal = getMostCommonValue(mapped, 'gradientFinal');
+        const gradientDirection =
+          getMostCommonValue(mapped, 'gradientDirection') ?? undefined;
 
         const pickColorWrapper =
           (field: string, pickCallback: (palette: Palette) => void) =>
@@ -215,6 +230,39 @@ export const shapeToolbarConfig = {
           });
         });
 
+        const onPickGradientFinalColor = pickColorWrapper(
+          'gradientFinal',
+          palette => {
+            const value = palette.value;
+            const crud = ctx.std.get(EdgelessCRUDIdentifier);
+            models.forEach(model => {
+              crud.updateElement(model.id, {
+                gradientFinal: value,
+                gradientDirection: model.gradientDirection ?? 'S',
+              });
+            });
+          }
+        );
+
+        const onPickGradientDirection = (e: CustomEvent<string>) => {
+          e.stopPropagation();
+          const direction = e.detail;
+          const normalized =
+            direction === 'none' ? undefined : direction.toUpperCase();
+
+          for (const model of models) {
+            ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
+              gradientDirection: normalized as
+                | ShapeElementModel['gradientDirection']
+                | undefined,
+              gradientFinal:
+                normalized && !model.gradientFinal
+                  ? model.fillColor
+                  : model.gradientFinal,
+            });
+          }
+        };
+
         const onPickStrokeStyle = (e: CustomEvent<LineDetailType>) => {
           e.stopPropagation();
 
@@ -241,10 +289,14 @@ export const shapeToolbarConfig = {
         return html`
           <edgeless-shape-color-picker
             @pickFillColor=${onPickFillColor}
+            @pickGradientFinalColor=${onPickGradientFinalColor}
+            @pickGradientDirection=${onPickGradientDirection}
             @pickStrokeColor=${onPickStrokeColor}
             @pickStrokeStyle=${onPickStrokeStyle}
             .payload=${{
               fillColor,
+              gradientFinal,
+              gradientDirection,
               strokeColor,
               strokeWidth,
               strokeStyle,
@@ -252,6 +304,7 @@ export const shapeToolbarConfig = {
               originalStrokeColor,
               theme,
               enableCustomColor,
+              enableGradient: true,
             }}
           >
           </edgeless-shape-color-picker>
