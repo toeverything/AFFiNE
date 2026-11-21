@@ -233,6 +233,21 @@ describe('number formatter', () => {
     expect(formatNumber(value, 'currencyUSD')).toBe(expected);
   });
 
+  test('formats Israeli Shekel values with Intl currency rules', () => {
+    const value = 11451.4;
+    const expected = new Intl.NumberFormat(navigator.language, {
+      style: 'currency',
+      currency: 'ILS',
+      currencyDisplay: 'symbol',
+    }).format(value);
+
+    expect(formatNumber(value, 'currencyILS')).toBe(expected);
+    expect(NumberFormatSchema.safeParse('currencyILS').success).toBe(true);
+    expect(
+      numberFormats.some(f => f.type === 'currencyILS' && f.symbol === '₪')
+    ).toBe(true);
+  });
+
   test('parses grouped number string pasted from clipboard', () => {
     expect(parseNumber('11,451.4')).toBe(11451.4);
   });
