@@ -1,0 +1,233 @@
+name: Native Playground CI
+
+on:
+  push:
+    branches:
+      - 'darksky/native-playground'
+      - 'darksky/np/**'
+
+concurrency:
+  group: native-playground-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_ENCODED_RUSTFLAGS: ''
+  CARGO_INCREMENTAL: '0'
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-and-wasm:
+    name: Lint, Invariants & Wasm Check
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: blocksuite/native-playground
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux fontconfig headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev libfreetype-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: blocksuite/native-playground -> target
+          key: lint-wasm
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy check
+        run: cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
+
+      - name: Static invariants and link-flag check
+        run: ./scripts/check-invariants.sh
+
+      - name: Check WebAssembly target
+        run: cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+
+  headless-linux-and-perf:
+    name: Headless Linux, Web Smoke & Perf
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: blocksuite/native-playground
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Mesa Lavapipe Vulkan driver and headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 libfontconfig1-dev libfreetype-dev lld
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen CLI
+        run: |
+          WBG_VERSION=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/"/, "", $3); print $3; exit}' Cargo.lock)
+          URL="https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${WBG_VERSION}/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          if curl -fsSL "$URL" -o /tmp/wbg.tar.gz; then
+            tar -xzf /tmp/wbg.tar.gz -C /tmp
+            sudo install -m 0755 "/tmp/wasm-bindgen-${WBG_VERSION}-x86_64-unknown-linux-musl/wasm-bindgen" /usr/local/bin/wasm-bindgen
+          else
+            cargo install --locked wasm-bindgen-cli --version "$WBG_VERSION"
+          fi
+          wasm-bindgen --version
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: blocksuite/native-playground -> target
+          key: headless-linux
+
+      - name: Run workspace unit tests (default and harness)
+        run: |
+          cargo test --locked --workspace
+          cargo test --locked --workspace --features harness
+
+      - name: Build WebAssembly bundle and run headless Chromium smoke test
+        run: |
+          mkdir -p artifacts web/pkg
+          cargo build --locked -p playground --target wasm32-unknown-unknown --release
+          wasm-bindgen --target web --out-dir web/pkg target/wasm32-unknown-unknown/release/playground.wasm
+          WASM_RAW=$(wc -c < web/pkg/playground_bg.wasm | tr -d ' ')
+          WASM_GZIP=$(gzip -9 -c web/pkg/playground_bg.wasm | wc -c | tr -d ' ')
+          echo "WASM_RAW=$WASM_RAW" >> "$GITHUB_ENV"
+          echo "WASM_GZIP=$WASM_GZIP" >> "$GITHUB_ENV"
+          node scripts/web-smoke.mjs \
+            --out artifacts/wasm-chromium.png \
+            --out-edgeless artifacts/wasm-chromium-edgeless.png
+
+      - name: Deterministic headless render, audit, 4-fps check, and 30-frame bench
+        run: |
+          mkdir -p artifacts
+          cargo run --locked --bin bs-harness --features harness -- render \
+            --out artifacts/linux-run1.png \
+            --snapshot artifacts/linux-run1.json \
+            --width 1280 \
+            --height 800
+          cargo run --locked --bin bs-harness --features harness -- render \
+            --out artifacts/linux-run2.png \
+            --snapshot artifacts/linux-run2.json \
+            --width 1280 \
+            --height 800
+          sha1=$(sha256sum artifacts/linux-run1.png | awk '{print $1}')
+          sha2=$(sha256sum artifacts/linux-run2.png | awk '{print $1}')
+          echo "Run 1 SHA256: $sha1"
+          echo "Run 2 SHA256: $sha2"
+          test "$sha1" = "$sha2"
+          cargo run --locked --bin bs-harness --features harness -- audit --snapshot artifacts/linux-run1.json
+          cargo run --locked --bin bs-harness --features harness -- fps-check
+          cargo run --locked --bin bs-harness --features harness -- bench \
+            --json artifacts/perf-metrics.json \
+            --web-wasm-raw "$WASM_RAW" \
+            --web-wasm-gzip "$WASM_GZIP"
+
+      - name: Compare against rolling N-3 baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f perf/compare-n3.mjs ]; then
+            node perf/compare-n3.mjs \
+              --fetch-github \
+              --repo "${{ github.repository }}" \
+              --branch darksky/native-playground \
+              --workflow native-playground.yml \
+              --current artifacts/perf-metrics.json \
+              --json-out artifacts/perf-verdict.json \
+              --fail-on-regression >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No perf/compare-n3.mjs present; skipping N-3 comparison." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload perf metrics artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-metrics
+          path: |
+            blocksuite/native-playground/artifacts/perf-metrics.json
+            blocksuite/native-playground/artifacts/perf-verdict.json
+          if-no-files-found: ignore
+
+      - name: Upload Linux headless and Web smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-linux-artifacts
+          path: |
+            blocksuite/native-playground/artifacts/linux-run1.png
+            blocksuite/native-playground/artifacts/linux-run1.json
+            blocksuite/native-playground/artifacts/wasm-chromium.png
+            blocksuite/native-playground/artifacts/wasm-chromium-edgeless.png
+          if-no-files-found: ignore
+
+  macos-headless:
+    name: macOS Metal + CoreText Headless
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: blocksuite/native-playground
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: blocksuite/native-playground -> target
+          key: macos-headless
+
+      - name: Check workspace all targets
+        run: cargo check --locked --workspace --all-targets --features harness
+
+      - name: Run UI and playground tests (default and harness)
+        run: |
+          cargo test --locked -p ui -p playground
+          cargo test --locked -p ui -p playground --features harness
+
+      - name: Deterministic Metal headless render and audit
+        run: |
+          mkdir -p artifacts
+          cargo run --locked --bin bs-harness --features harness -- render \
+            --out artifacts/macos-run1.png \
+            --snapshot artifacts/macos-run1.json \
+            --width 1280 \
+            --height 800
+          cargo run --locked --bin bs-harness --features harness -- render \
+            --out artifacts/macos-run2.png \
+            --snapshot artifacts/macos-run2.json \
+            --width 1280 \
+            --height 800
+          sha1=$(shasum -a 256 artifacts/macos-run1.png | awk '{print $1}')
+          sha2=$(shasum -a 256 artifacts/macos-run2.png | awk '{print $1}')
+          echo "Run 1 SHA256: $sha1"
+          echo "Run 2 SHA256: $sha2"
+          test "$sha1" = "$sha2"
+          cargo run --locked --bin bs-harness --features harness -- audit --snapshot artifacts/macos-run1.json
+
+      - name: Upload macOS headless artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-macos-artifacts
+          path: |
+            blocksuite/native-playground/artifacts/macos-run1.png
+            blocksuite/native-playground/artifacts/macos-run1.json

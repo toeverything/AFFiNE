@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Native BlockSuite Playground (WebAssembly)</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import init from './pkg/playground.js';
+      window.__playgroundReady = false;
+      window.__playgroundError = null;
+      init()
+        .then(() => {
+          window.__playgroundReady = true;
+        })
+        .catch((err) => {
+          window.__playgroundError = String(err && err.stack ? err.stack : err);
+          console.error('playground wasm init failed:', err);
+        });
+    </script>
+  </body>
+</html>
