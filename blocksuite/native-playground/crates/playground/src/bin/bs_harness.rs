@@ -1,4 +1,10 @@
 use anyhow::{Context as _, Result, bail};
+use blocksuite_playground_doc::{
+    client_id_from_seed,
+    schema::{BlockSpec, ParagraphType},
+    session::PageDocSession,
+    wire::{DocMessage, RoomBinaryFrame, decode_binary_frame, encode_binary_frame},
+};
 use playground::{PlaygroundView, register_bundled_fonts};
 use serde::Serialize;
 use std::cell::RefCell;
@@ -396,6 +402,169 @@ fn timing_stat(mut samples_ms: Vec<f64>) -> TimingStat {
     }
 }
 
+fn run_doc_1k_edits_once(seed: u64) -> Result<()> {
+    let mut doc = PageDocSession::new("bench-page", client_id_from_seed(seed))?;
+    doc.add_block(
+        "page-root",
+        BlockSpec::Page {
+            title: "Bench Page".to_string(),
+        },
+        None,
+        None,
+        1_000,
+    )?;
+    doc.add_block(
+        "note-root",
+        BlockSpec::Note { xywh: None },
+        Some("page-root"),
+        None,
+        1_001,
+    )?;
+    doc.add_block(
+        "p-main",
+        BlockSpec::Paragraph {
+            paragraph_type: ParagraphType::Text,
+            text: String::new(),
+        },
+        Some("note-root"),
+        None,
+        1_002,
+    )?;
+
+    let mut now_ms = 2_000_u64;
+    // 100 block additions
+    for i in 0..100_u64 {
+        doc.add_block(
+            format!("p-{i}"),
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: format!("block {i}"),
+            },
+            Some("note-root"),
+            None,
+            now_ms,
+        )?;
+        now_ms += 600;
+    }
+
+    // 700 text insertions into p-main
+    let mut text_len = 0_u64;
+    for i in 0..700_u64 {
+        let ch = if i % 2 == 0 { "a" } else { "b" };
+        doc.insert_text("p-main", "prop:text", text_len, ch, now_ms)?;
+        text_len += 1;
+        now_ms += 600;
+    }
+
+    // 100 text removals
+    for _ in 0..100_u64 {
+        text_len -= 1;
+        doc.remove_text("p-main", "prop:text", text_len, 1, now_ms)?;
+        now_ms += 600;
+    }
+
+    // 50 undos + 50 redos
+    for _ in 0..50_u64 {
+        doc.undo()?;
+    }
+    for _ in 0..50_u64 {
+        doc.redo()?;
+    }
+
+    Ok(())
+}
+
+fn bench_doc_1k_edits_ms() -> Result<TimingStat> {
+    // 1 warmup iteration outside timing loop
+    run_doc_1k_edits_once(0)?;
+
+    let mut samples_ms = Vec::with_capacity(20);
+    for sample in 1..=20_u64 {
+        let start = ui::clock_now();
+        run_doc_1k_edits_once(sample)?;
+        samples_ms.push(start.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(timing_stat(samples_ms))
+}
+
+fn run_room_sync_1k_ops_once(seed: u64) -> Result<()> {
+    let mut peer_a = PageDocSession::new("bench-sync", client_id_from_seed(seed * 2 + 1))?;
+    let mut peer_b = PageDocSession::new("bench-sync", client_id_from_seed(seed * 2 + 2))?;
+
+    peer_a.add_block(
+        "page-root",
+        BlockSpec::Page {
+            title: "Sync Bench".to_string(),
+        },
+        None,
+        None,
+        1_000,
+    )?;
+    peer_a.add_block(
+        "note-root",
+        BlockSpec::Note { xywh: None },
+        Some("page-root"),
+        None,
+        1_001,
+    )?;
+    peer_a.add_block(
+        "p-sync",
+        BlockSpec::Paragraph {
+            paragraph_type: ParagraphType::Text,
+            text: String::new(),
+        },
+        Some("note-root"),
+        None,
+        1_002,
+    )?;
+
+    let init_update = peer_a.encode_update_v1()?;
+    peer_b.apply_remote_update_v1(&init_update)?;
+
+    let mut now_ms = 2_000_u64;
+    for i in 0..1_000_u64 {
+        let commit = peer_a
+            .insert_text(
+                "p-sync",
+                "prop:text",
+                i,
+                if i % 2 == 0 { "x" } else { "y" },
+                now_ms,
+            )?
+            .context("insert_text should emit a commit")?;
+        now_ms += 10;
+
+        let encoded = encode_binary_frame(&RoomBinaryFrame::Doc {
+            doc_id: "bench-sync".to_string(),
+            message: DocMessage::Update(commit.update),
+        })?;
+        match decode_binary_frame(&encoded)? {
+            RoomBinaryFrame::Doc {
+                message: DocMessage::Update(update),
+                ..
+            } => {
+                peer_b.apply_remote_update_v1(&update)?;
+            }
+            other => bail!("unexpected decoded room frame: {other:?}"),
+        }
+    }
+
+    Ok(())
+}
+
+fn bench_room_sync_1k_ops_ms() -> Result<TimingStat> {
+    // 1 warmup iteration outside timing loop
+    run_room_sync_1k_ops_once(0)?;
+
+    let mut samples_ms = Vec::with_capacity(20);
+    for sample in 1..=20_u64 {
+        let start = ui::clock_now();
+        run_room_sync_1k_ops_once(sample)?;
+        samples_ms.push(start.elapsed().as_secs_f64() * 1000.0);
+    }
+    Ok(timing_stat(samples_ms))
+}
+
 fn run_bench(
     out_json: PathBuf,
     explicit_commit: Option<String>,
@@ -403,6 +572,8 @@ fn run_bench(
     web_wasm_gzip: Option<u64>,
 ) -> Result<()> {
     let commit = resolve_commit_sha(explicit_commit.as_deref())?;
+    let doc_1k_edits_ms = bench_doc_1k_edits_ms()?;
+    let room_sync_1k_ops_ms = bench_room_sync_1k_ops_ms()?;
     let session = start_headless_session(1280, 800)?;
 
     // 1 warmup frame outside timing loop
@@ -448,8 +619,8 @@ fn run_bench(
             headless_bin,
         },
         benchmarks: BenchmarksV1 {
-            doc_1k_edits_ms: None,
-            room_sync_1k_ops_ms: None,
+            doc_1k_edits_ms: Some(doc_1k_edits_ms),
+            room_sync_1k_ops_ms: Some(room_sync_1k_ops_ms),
             layout_10k_blocks_cold_ms: None,
             layout_single_keystroke_ms: None,
             layout_single_keystroke_blocks_relayout: None,

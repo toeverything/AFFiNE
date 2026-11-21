@@ -2,9 +2,10 @@
 resolver = "3"
 members = [
     "crates/ui",
+    "crates/doc",
     "crates/playground",
 ]
-default-members = ["crates/ui", "crates/playground"]
+default-members = ["crates/ui", "crates/doc", "crates/playground"]
 
 [workspace.package]
 version = "0.1.0"

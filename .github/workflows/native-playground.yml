@@ -75,7 +75,9 @@ jobs:
           rm -rf /tmp/np-token-deps
 
       - name: Check WebAssembly target
-        run: cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+        run: |
+          cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+          cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
 
   headless-linux-and-perf:
     name: Headless Linux, Web Smoke & Perf
@@ -221,10 +223,10 @@ jobs:
       - name: Check workspace all targets
         run: cargo check --locked --workspace --all-targets --features harness
 
-      - name: Run UI and playground tests (default and harness)
+      - name: Run UI, doc, and playground tests (default and harness)
         run: |
-          cargo test --locked -p ui -p playground
-          cargo test --locked -p ui -p playground --features harness
+          cargo test --locked -p ui -p blocksuite-playground-doc -p playground
+          cargo test --locked -p ui -p blocksuite-playground-doc -p playground --features harness
 
       - name: Deterministic Metal headless render and audit
         run: |
@@ -253,3 +255,78 @@ jobs:
           path: |
             blocksuite/native-playground/artifacts/macos-run1.png
             blocksuite/native-playground/artifacts/macos-run1.json
+
+  js-room-coop:
+    name: JS Room Coop & Rust-JS E2E
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack and cache Yarn
+        run: corepack enable
+
+      - name: Cache Yarn
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            node_modules
+          key: ${{ runner.os }}-yarn-np-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-np-
+
+      - name: Install JS dependencies
+        run: yarn install --immutable
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: blocksuite/native-playground -> target
+          key: js-room-coop
+
+      - name: Build bs-relay and bs_doc_driver
+        working-directory: blocksuite/native-playground
+        run: cargo build --locked -p blocksuite-playground-doc --bin bs-relay --example bs_doc_driver
+
+      - name: Lint, format, and typecheck JS room sync
+        run: |
+          yarn oxlint --deny-warnings \
+            blocksuite/framework/sync/src/doc/source.ts \
+            blocksuite/framework/sync/src/doc/peer.ts \
+            blocksuite/framework/sync/src/__tests__/peer.unit.spec.ts \
+            blocksuite/playground/apps/_common/sync/blob/mock-server.ts \
+            blocksuite/playground/apps/_common/sync/room/index.ts \
+            blocksuite/playground/apps/_common/sync/room/__tests__/room-sync.spec.ts \
+            blocksuite/playground/apps/starter/utils/collection.ts \
+            blocksuite/playground/vite.config.ts \
+            blocksuite/playground/vitest.config.ts
+          yarn oxfmt --check \
+            blocksuite/framework/sync/src/doc/source.ts \
+            blocksuite/framework/sync/src/doc/peer.ts \
+            blocksuite/framework/sync/src/__tests__/peer.unit.spec.ts \
+            blocksuite/playground/apps/_common/sync/blob/mock-server.ts \
+            blocksuite/playground/apps/_common/sync/room/index.ts \
+            blocksuite/playground/apps/_common/sync/room/__tests__/room-sync.spec.ts \
+            blocksuite/playground/apps/starter/utils/collection.ts \
+            blocksuite/playground/vite.config.ts \
+            blocksuite/playground/vitest.config.ts
+          ./node_modules/.bin/tsc -b \
+            blocksuite/framework/sync/tsconfig.json \
+            blocksuite/playground/tsconfig.json
+
+      - name: Run @blocksuite/sync and @blocksuite/playground live Rust-JS E2E tests
+        env:
+          BS_RELAY_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/bs-relay
+          BS_DOC_DRIVER_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/examples/bs_doc_driver
+        run: |
+          (cd blocksuite/framework/sync && ../../../node_modules/.bin/vitest run)
+          (cd blocksuite/playground && ../../node_modules/.bin/vitest run)

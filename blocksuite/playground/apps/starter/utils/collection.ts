@@ -7,6 +7,7 @@ import {
   TestWorkspace,
 } from '@blocksuite/affine/store/test';
 import {
+  type AwarenessSource,
   type BlobSource,
   BroadcastChannelAwarenessSource,
   BroadcastChannelDocSource,
@@ -16,12 +17,50 @@ import {
 import * as Y from 'yjs';
 
 import { MockServerBlobSource } from '../../_common/sync/blob/mock-server.js';
+import {
+  hasUsablePageRoot,
+  initRoomDocWithSeed,
+  RoomWebSocketClient,
+} from '../../_common/sync/room/index.js';
 import type { InitFn } from '../data/utils.js';
 
 const params = new URLSearchParams(location.search);
 const room = params.get('room');
+const wsParam = params.get('ws');
+const envRelayUrl =
+  (import.meta as { env?: Record<string, string | undefined> }).env
+    ?.PLAYGROUND_RELAY_URL ?? null;
+const explicitRelayWs = wsParam || envRelayUrl;
 const isE2E = room?.startsWith('playwright');
 const blobSourceArgs = (params.get('blobSource') ?? '').split(',');
+const roomClients = new WeakMap<TestWorkspace, RoomWebSocketClient>();
+
+function resolveRoomWsUrl(roomName: string, explicitWs: string | null) {
+  if (explicitWs) {
+    return explicitWs;
+  }
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${location.host}/native-sync/rooms/${encodeURIComponent(roomName)}`;
+}
+
+function resolveRelayHttpOrigin(explicitWs: string | null): string {
+  if (!explicitWs) {
+    return '';
+  }
+  try {
+    const parsed = new URL(explicitWs);
+    if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
+      const httpProto = parsed.protocol === 'wss:' ? 'https:' : 'http:';
+      return `${httpProto}//${parsed.host}`;
+    }
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return `${parsed.protocol}//${parsed.host}`;
+    }
+  } catch {
+    // Fall back to relative origin if the override is not a full URL.
+  }
+  return '';
+}
 
 export function createStarterDocCollection(
   storeExtensionManager: StoreExtensionManager
@@ -31,20 +70,41 @@ export function createStarterDocCollection(
   schema.register(AffineSchemas);
   const idGenerator = isE2E ? createAutoIncrementIdGenerator() : nanoid;
 
+  const useRoomWs = Boolean(explicitRelayWs || (room && !isE2E));
+  const id = room ?? `starter-${Math.random().toString(16).slice(2, 8)}`;
+
   let docSources: DocCollectionOptions['docSources'];
-  if (room) {
+  let roomClient: RoomWebSocketClient | null = null;
+  const awarenessSources: AwarenessSource[] = [
+    new BroadcastChannelAwarenessSource(id),
+  ];
+
+  if (useRoomWs) {
+    roomClient = new RoomWebSocketClient(
+      resolveRoomWsUrl(collectionId, explicitRelayWs)
+    );
+    docSources = {
+      main: roomClient.createDocSource(),
+      shadows: [
+        new BroadcastChannelDocSource(`broadcast-channel-${collectionId}`),
+      ],
+    };
+    awarenessSources.push(roomClient.createAwarenessSource());
+  } else if (room) {
     docSources = {
       main: new BroadcastChannelDocSource(`broadcast-channel-${room}`),
     };
   }
-  const id = room ?? `starter-${Math.random().toString(16).slice(2, 8)}`;
 
   const blobSources = {
     main: new MemoryBlobSource(),
     shadows: [] as BlobSource[],
   } satisfies DocCollectionOptions['blobSources'];
-  if (blobSourceArgs.includes('mock')) {
-    blobSources.shadows.push(new MockServerBlobSource(collectionId));
+  if (useRoomWs || blobSourceArgs.includes('mock')) {
+    const relayHttpOrigin = resolveRelayHttpOrigin(explicitRelayWs);
+    blobSources.shadows.push(
+      new MockServerBlobSource(collectionId, relayHttpOrigin)
+    );
   }
   if (blobSourceArgs.includes('idb')) {
     blobSources.shadows.push(new IndexedDBBlobSource(collectionId));
@@ -53,11 +113,14 @@ export function createStarterDocCollection(
   const options: DocCollectionOptions = {
     id: collectionId,
     idGenerator,
-    awarenessSources: [new BroadcastChannelAwarenessSource(id)],
+    awarenessSources,
     docSources,
     blobSources,
   };
   const collection = new TestWorkspace(options);
+  if (roomClient) {
+    roomClients.set(collection, roomClient);
+  }
   collection.storeExtensions = storeExtensionManager.get('store');
   collection.start();
 
@@ -89,8 +152,59 @@ export async function initStarterDocCollection(collection: TestWorkspace) {
   ).forEach(fn => functionMap.set(fn.id, fn));
   const init = params.get('init') || 'preset';
   if (functionMap.has(init)) {
+    const initFn = functionMap.get(init);
+    const roomClient = roomClients.get(collection);
+    if (roomClient) {
+      await initRoomDocWithSeed({
+        collection,
+        roomClient,
+        docId: 'doc:home',
+        seedKey: 'seed:doc:home',
+        seed: async () => {
+          // If a previous winner pushed meta.pages for doc:home and disconnected
+          // before seeding doc:home's blocks, reuse the existing doc:home in-place
+          // without calling removeDoc (which would destroy spaces['doc:home'] on other peers).
+          const existing = collection.getDoc('doc:home');
+          if (existing && !hasUsablePageRoot(existing)) {
+            let claimedExisting = false;
+            const seedCollection = new Proxy(collection, {
+              get(target, prop, receiver) {
+                if (prop === 'getDoc') {
+                  return (id: string) => {
+                    if (id === 'doc:home' && !claimedExisting) {
+                      return null;
+                    }
+                    return target.getDoc(id);
+                  };
+                }
+                if (prop === 'createDoc') {
+                  return (id?: string) => {
+                    if (id === 'doc:home' && !claimedExisting) {
+                      claimedExisting = true;
+                      return existing;
+                    }
+                    return target.createDoc(id);
+                  };
+                }
+                const val = Reflect.get(target, prop, receiver);
+                return typeof val === 'function' ? val.bind(target) : val;
+              },
+            });
+            await initFn?.(seedCollection, 'doc:home');
+          } else {
+            await initFn?.(collection, 'doc:home');
+          }
+        },
+        allowOfflineFallback: !explicitRelayWs,
+        onOfflineFallback: () => {
+          collection.forceStop();
+        },
+      });
+      return;
+    }
+
     collection.meta.initialize();
-    await functionMap.get(init)?.(collection, 'doc:home');
+    await initFn?.(collection, 'doc:home');
     const doc = collection.getDoc('doc:home');
     if (!doc?.loaded) {
       doc?.load();

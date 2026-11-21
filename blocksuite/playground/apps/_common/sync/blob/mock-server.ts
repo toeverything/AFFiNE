@@ -15,15 +15,25 @@ export class MockServerBlobSource implements BlobSource {
 
   readonly = false;
 
-  constructor(readonly name: string) {}
+  constructor(
+    readonly name: string,
+    readonly baseUrl = ''
+  ) {}
+
+  private _blobUrl(key: string) {
+    return `${this.baseUrl}/api/collection/${encodeURIComponent(this.name)}/blob/${encodeURIComponent(key)}`;
+  }
 
   async delete(key: string) {
     this._cache.delete(key);
     this._states.delete(key);
 
-    await fetch(`/api/collection/${this.name}/blob/${key}`, {
+    const resp = await fetch(this._blobUrl(key), {
       method: 'DELETE',
     });
+    if (!resp.ok) {
+      throw new Error(`Failed to delete blob ${key}: ${resp.status}`);
+    }
   }
 
   async get(key: string) {
@@ -41,7 +51,7 @@ export class MockServerBlobSource implements BlobSource {
     nextState(state$, { downloading: true });
 
     try {
-      const resp = await fetch(`/api/collection/${this.name}/blob/${key}`);
+      const resp = await fetch(this._blobUrl(key));
 
       if (!resp.ok) throw new Error(`Failed to fetch blob ${key}`);
 
@@ -77,10 +87,13 @@ export class MockServerBlobSource implements BlobSource {
     nextState(state$, { uploading: true });
 
     try {
-      await fetch(`/api/collection/${this.name}/blob/${key}`, {
+      const resp = await fetch(this._blobUrl(key), {
         method: 'PUT',
         body: value,
       });
+      if (!resp.ok) {
+        throw new Error(`Failed to upload blob ${key}: ${resp.status}`);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       nextState(state$, { errorMessage });

@@ -46,9 +46,28 @@ const clearSiteDataPlugin = () =>
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, __dirname, '') };
+  const relayTarget =
+    process.env.PLAYGROUND_RELAY_URL ?? 'http://127.0.0.1:8788';
+  const roomProxy = {
+    '/native-sync': {
+      target: relayTarget,
+      ws: true,
+      changeOrigin: true,
+    },
+    '/api/collection': {
+      target: relayTarget,
+      changeOrigin: true,
+    },
+  };
 
   return {
     envDir: __dirname,
+    server: {
+      proxy: roomProxy,
+    },
+    preview: {
+      proxy: roomProxy,
+    },
     define: {
       'import.meta.env.PLAYGROUND_SERVER': JSON.stringify(
         process.env.PLAYGROUND_SERVER ?? 'http://localhost:8787'

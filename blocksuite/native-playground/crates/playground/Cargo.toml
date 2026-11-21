@@ -26,6 +26,7 @@ required-features = ["harness"]
 
 [dependencies]
 anyhow.workspace = true
+blocksuite-playground-doc = { path = "../doc", default-features = false }
 image.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -114,6 +114,7 @@ export class SyncPeer {
 
   readonly state: {
     connectedDocs: Map<string, Doc>;
+    pendingIncomingUpdates: Map<string, Uint8Array[]>;
     pushUpdatesQueue: PriorityAsyncQueue<{
       id: string;
       data: Uint8Array[];
@@ -127,6 +128,7 @@ export class SyncPeer {
     subdocsLoadQueue: PriorityAsyncQueue<{ id: string; doc: Doc }>;
   } = {
     connectedDocs: new Map(),
+    pendingIncomingUpdates: new Map(),
     pushUpdatesQueue: new PriorityAsyncQueue([], this.priorityTarget),
     pushingUpdate: false,
     pullUpdatesQueue: new PriorityAsyncQueue([], this.priorityTarget),
@@ -173,18 +175,36 @@ export class SyncPeer {
       applyUpdate(doc, docData, 'load');
     }
 
-    // diff root doc and in-storage, save updates to pendingUpdates
-    this.state.pushUpdatesQueue.push({
-      id: doc.guid,
-      data: [encodeStateAsUpdate(doc, inStorageState)],
-    });
+    // diff doc and in-storage BEFORE attaching handleYDocUpdates so pulled data is never echoed
+    const diffToStorage = encodeStateAsUpdate(doc, inStorageState);
 
     this.state.connectedDocs.set(doc.guid, doc);
-
-    // start listen root doc changes
     doc.on('update', this.handleYDocUpdates);
 
-    // mark rootDoc as loaded
+    const buffered = this.state.pendingIncomingUpdates.get(doc.guid);
+    if (buffered && buffered.length > 0) {
+      this.state.pendingIncomingUpdates.delete(doc.guid);
+      for (const update of buffered) {
+        applyUpdate(doc, update, this.name);
+      }
+    }
+
+    try {
+      if (this.source.finishPull) {
+        await this.source.finishPull(doc.guid, diffToStorage);
+        throwIfAborted(abort);
+      } else {
+        this.state.pushUpdatesQueue.push({
+          id: doc.guid,
+          data: [diffToStorage],
+        });
+      }
+    } catch (err) {
+      this.disconnectDoc(doc);
+      throw err;
+    }
+
+    // mark doc as loaded
     doc.emit('sync', [true, doc]);
 
     this.updateSyncStatus();
@@ -193,11 +213,13 @@ export class SyncPeer {
   disconnectDoc(doc: Doc) {
     doc.off('update', this.handleYDocUpdates);
     this.state.connectedDocs.delete(doc.guid);
+    this.state.pendingIncomingUpdates.delete(doc.guid);
     this.updateSyncStatus();
   }
 
   initState() {
     this.state.connectedDocs.clear();
+    this.state.pendingIncomingUpdates.clear();
     this.state.pushUpdatesQueue.clear();
     this.state.pullUpdatesQueue.clear();
     this.state.subdocsLoadQueue.clear();
@@ -285,6 +307,13 @@ export class SyncPeer {
               const subdoc = this.state.connectedDocs.get(id);
               if (subdoc) {
                 applyUpdate(subdoc, data, this.name);
+              } else {
+                const pending = this.state.pendingIncomingUpdates.get(id);
+                if (pending) {
+                  pending.push(data);
+                } else {
+                  this.state.pendingIncomingUpdates.set(id, [data]);
+                }
               }
             }
             this.updateSyncStatus();

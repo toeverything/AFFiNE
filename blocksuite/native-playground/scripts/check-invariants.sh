@@ -21,6 +21,14 @@ if grep -rniE '\b(blocksuite|affine)\b' crates/ui/src crates/ui/Cargo.toml 2>/de
   fail "crates/ui must not reference BlockSuite or AFFiNE domain terms"
 fi
 
+echo "==> Checking crates/doc GUI isolation and forbid(unsafe_code)"
+if grep -rnE '^\s*(ui|wgpu|objc2|web-sys)\b' crates/doc/Cargo.toml 2>/dev/null; then
+  fail "crates/doc must not depend on GUI/platform crates (ui, wgpu, objc2, web-sys)"
+fi
+if ! grep -q '#!\[forbid(unsafe_code)\]' crates/doc/src/lib.rs; then
+  fail "crates/doc/src/lib.rs must declare #![forbid(unsafe_code)]"
+fi
+
 echo "==> Checking no Instant::now / SystemTime::now outside crates/ui/src/platform"
 WALL_CLOCK_HITS=$(
   grep -rnE '(Instant::now|SystemTime::now)\s*\(' crates/ \

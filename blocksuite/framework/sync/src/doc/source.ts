@@ -11,6 +11,7 @@ export interface DocSource {
     | Promise<{ data: Uint8Array; state?: Uint8Array } | null>
     | { data: Uint8Array; state?: Uint8Array }
     | null;
+  finishPull?(docId: string, diffToStorage: Uint8Array): Promise<void> | void;
   push(docId: string, data: Uint8Array): Promise<void> | void;
 
   /**

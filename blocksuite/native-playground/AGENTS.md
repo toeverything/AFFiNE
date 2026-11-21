@@ -6,6 +6,7 @@ This document records the active engineering invariants enforced in CI today alo
 
 ### Workspace boundaries
 - `crates/ui`: Single fused internal GPU UI library (vendored once without upstream sync hooks, zero internal `proc-macro = true` crates, zero external UI-kit dependencies). It knows **nothing** about BlockSuite or AFFiNE (`scripts/check-invariants.sh` rejects `blocksuite` and `affine` inside `crates/ui`) and embeds zero fonts (fonts are registered by the application via `cx.text_system().add_fonts(...)`).
+- `crates/doc` (`blocksuite-playground-doc`) & `bs-relay`: Pure CRDT document engine and binary room sync relay (`#![forbid(unsafe_code)]`, zero GUI/platform dependencies — `scripts/check-invariants.sh` rejects `ui`, `wgpu`, `objc2`, and `web-sys` in `crates/doc/Cargo.toml`) built on `y-octo 0.3.0`. Preserves 53-bit `clientId` (`1..=2^53 - 1`), complete flavour schema defaults (0 JS writeback updates on initial load), top-level Awareness `color` alongside `user` and `selectionV2`, deterministic `now_ms`-driven undo/awareness clocks, WebSocket-only `seed-claim` / `seed-claim-result` single-winner arbitration (keyed by `seed:<docId>`), `?ws=` relay origin forwarding with permissive blob CORS headers, and `wasm32-unknown-unknown` compatibility under `--no-default-features`.
 - `crates/playground`: Application layer owning the shipping `PlaygroundView`, the tracked repository `Inter` base font registration, the native macOS desktop entry (`native-playground`), the WebAssembly canvas entry (`wasm_main`), and the deterministic headless verification CLI (`bs-harness`).
 - `unexpected_cfgs = "deny"` is enforced workspace-wide in `Cargo.toml`; dead upstream feature gates are forbidden.
 
@@ -30,7 +31,6 @@ This document records the active engineering invariants enforced in CI today alo
 
 ## Planned Contracts (upcoming crates & features)
 
-- **`crates/doc` & `bs-relay`**: Pure CRDT document model (`#![forbid(unsafe_code)]`, zero GUI dependencies) built on `y-octo`, preserving 53-bit `clientId` (`1..=2^53 - 1`), complete flavour schema defaults (0 JS writeback updates on initial load), and top-level Awareness `color` alongside `user` and `selectionV2`.
 - **Editor & whiteboard rendering**: `BlockFlow`, `RichParagraph`, `EditorSession`, and world-space content transforms/masks (implemented end-to-end in the GPU shaders) separating world-space document/whiteboard geometry from screen-space GPUI chrome.
 - **Variable-font slant axis**: OpenType `'slnt'` (`FontStyle::Italic`) variation-axis shaping and rasterization will be wired alongside rich inline marks.
 
@@ -40,10 +40,11 @@ Always clear inherited root rustflags:
 
 ```sh
 CARGO_ENCODED_RUSTFLAGS="" cargo fmt --all -- --check
-CARGO_ENCODED_RUSTFLAGS="" cargo clippy --workspace --all-targets --features harness -- -D warnings
-CARGO_ENCODED_RUSTFLAGS="" cargo check -p ui -p playground --target wasm32-unknown-unknown
-CARGO_ENCODED_RUSTFLAGS="" cargo test --workspace
-CARGO_ENCODED_RUSTFLAGS="" cargo test --workspace --features harness
+CARGO_ENCODED_RUSTFLAGS="" cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
+CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
+CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
+CARGO_ENCODED_RUSTFLAGS="" cargo test --locked --workspace
+CARGO_ENCODED_RUSTFLAGS="" cargo test --locked --workspace --features harness
 ./scripts/check-invariants.sh
 node --test perf/compare-n3.test.mjs
 node tokens/extract-tokens.mjs --check
