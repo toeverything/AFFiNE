@@ -1,0 +1,22 @@
+#[cfg(target_os = "macos")]
+fn main() {
+    use ui::prelude::*;
+
+    let platform = std::rc::Rc::new(ui::MacPlatform::new(false));
+    ui::Application::with_platform(platform).run(|cx| {
+        if let Err(err) = playground::register_bundled_fonts(cx) {
+            eprintln!("failed to register bundled Inter font: {err:#}");
+        }
+        let _ = cx.open_window(ui::WindowOptions::default(), |_, cx| {
+            cx.new(playground::PlaygroundView::new)
+        });
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+fn main() {
+    eprintln!(
+        "native-playground interactive desktop windowing is supported on macOS and Web (wasm32). \
+         On Linux, run headless rendering via `cargo run --bin bs-harness --features harness -- render`."
+    );
+}

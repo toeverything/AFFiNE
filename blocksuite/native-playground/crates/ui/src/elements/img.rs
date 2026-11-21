@@ -1,0 +1,710 @@
+use crate::InspectorElementId;
+use crate::{
+    AnyElement, AnyImageCache, App, Asset, AssetLogger, Bounds, DefiniteLength, Element, ElementId,
+    Entity, GlobalElementId, Hitbox, Image, ImageCache, InteractiveElement, Interactivity,
+    LayoutId, Length, ObjectFit, Pixels, RenderImage, Resource, SharedString, SharedUri,
+    StyleRefinement, Styled, Task, Window, decode_gif_image, decode_static_image,
+    decode_webp_image, px,
+};
+use anyhow::Result;
+
+use crate::gpui_util::ResultExt;
+use crate::scheduler::Instant;
+use futures::Future;
+use image::{ImageError, ImageFormat};
+use std::{
+    fs,
+    io::{self},
+    ops::{Deref, DerefMut},
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
+use thiserror::Error;
+
+use super::{Stateful, StatefulInteractiveElement};
+
+/// The delay before showing the loading state.
+pub const LOADING_DELAY: Duration = Duration::from_millis(200);
+
+/// A type alias to the resource loader that the `img()` element uses.
+///
+/// Note: that this is only for Resources, like URLs or file paths.
+/// Custom loaders, or external images will not use this asset loader
+pub type ImgResourceLoader = AssetLogger<ImageAssetLoader>;
+
+/// A source of image content.
+#[derive(Clone)]
+pub enum ImageSource {
+    /// The image content will be loaded from some resource location
+    Resource(Resource),
+    /// Cached image data
+    Render(Arc<RenderImage>),
+    /// Cached image data
+    Image(Arc<Image>),
+    /// A custom loading function to use
+    Custom(Arc<dyn Fn(&mut Window, &mut App) -> Option<Result<Arc<RenderImage>, ImageCacheError>>>),
+}
+
+fn is_uri(uri: &str) -> bool {
+    url::Url::from_str(uri).is_ok()
+}
+
+impl From<SharedUri> for ImageSource {
+    fn from(value: SharedUri) -> Self {
+        Self::Resource(Resource::Uri(value))
+    }
+}
+
+impl<'a> From<&'a str> for ImageSource {
+    fn from(s: &'a str) -> Self {
+        if is_uri(s) {
+            Self::Resource(Resource::Uri(s.to_string().into()))
+        } else {
+            Self::Resource(Resource::Embedded(s.to_string().into()))
+        }
+    }
+}
+
+impl From<String> for ImageSource {
+    fn from(s: String) -> Self {
+        if is_uri(&s) {
+            Self::Resource(Resource::Uri(s.into()))
+        } else {
+            Self::Resource(Resource::Embedded(s.into()))
+        }
+    }
+}
+
+impl From<SharedString> for ImageSource {
+    fn from(s: SharedString) -> Self {
+        s.as_ref().into()
+    }
+}
+
+impl From<&Path> for ImageSource {
+    fn from(value: &Path) -> Self {
+        Self::Resource(value.to_path_buf().into())
+    }
+}
+
+impl From<Arc<Path>> for ImageSource {
+    fn from(value: Arc<Path>) -> Self {
+        Self::Resource(value.into())
+    }
+}
+
+impl From<PathBuf> for ImageSource {
+    fn from(value: PathBuf) -> Self {
+        Self::Resource(value.into())
+    }
+}
+
+impl From<Arc<RenderImage>> for ImageSource {
+    fn from(value: Arc<RenderImage>) -> Self {
+        Self::Render(value)
+    }
+}
+
+impl From<Arc<Image>> for ImageSource {
+    fn from(value: Arc<Image>) -> Self {
+        Self::Image(value)
+    }
+}
+
+impl<F> From<F> for ImageSource
+where
+    F: Fn(&mut Window, &mut App) -> Option<Result<Arc<RenderImage>, ImageCacheError>> + 'static,
+{
+    fn from(value: F) -> Self {
+        Self::Custom(Arc::new(value))
+    }
+}
+
+/// The style of an image element.
+pub struct ImageStyle {
+    grayscale: bool,
+    object_fit: ObjectFit,
+    loading: Option<Box<dyn Fn() -> AnyElement>>,
+    fallback: Option<Box<dyn Fn() -> AnyElement>>,
+}
+
+impl Default for ImageStyle {
+    fn default() -> Self {
+        Self {
+            grayscale: false,
+            object_fit: ObjectFit::Contain,
+            loading: None,
+            fallback: None,
+        }
+    }
+}
+
+/// Style an image element.
+pub trait StyledImage: Sized {
+    /// Get a mutable [ImageStyle] from the element.
+    fn image_style(&mut self) -> &mut ImageStyle;
+
+    /// Set the image to be displayed in grayscale.
+    fn grayscale(mut self, grayscale: bool) -> Self {
+        self.image_style().grayscale = grayscale;
+        self
+    }
+
+    /// Set the object fit for the image.
+    fn object_fit(mut self, object_fit: ObjectFit) -> Self {
+        self.image_style().object_fit = object_fit;
+        self
+    }
+
+    /// Set a fallback function that will be invoked to render an error view should
+    /// the image fail to load.
+    fn with_fallback(mut self, fallback: impl Fn() -> AnyElement + 'static) -> Self {
+        self.image_style().fallback = Some(Box::new(fallback));
+        self
+    }
+
+    /// Set a fallback function that will be invoked to render a view while the image
+    /// is still being loaded.
+    fn with_loading(mut self, loading: impl Fn() -> AnyElement + 'static) -> Self {
+        self.image_style().loading = Some(Box::new(loading));
+        self
+    }
+}
+
+impl StyledImage for Img {
+    fn image_style(&mut self) -> &mut ImageStyle {
+        &mut self.style
+    }
+}
+
+impl StyledImage for Stateful<Img> {
+    fn image_style(&mut self) -> &mut ImageStyle {
+        &mut self.element.style
+    }
+}
+
+/// An image element.
+pub struct Img {
+    interactivity: Interactivity,
+    source: ImageSource,
+    style: ImageStyle,
+    image_cache: Option<AnyImageCache>,
+}
+
+/// Create a new image element.
+#[track_caller]
+pub fn img(source: impl Into<ImageSource>) -> Img {
+    Img {
+        interactivity: Interactivity::new(),
+        source: source.into(),
+        style: ImageStyle::default(),
+        image_cache: None,
+    }
+}
+
+impl Img {
+    /// A list of all format extensions currently supported by this img element
+    pub fn extensions() -> &'static [&'static str] {
+        // This is the list in [image::ImageFormat::from_extension] + `svg`
+        &[
+            "avif", "jpg", "jpeg", "png", "gif", "webp", "tif", "tiff", "tga", "dds", "bmp", "ico",
+            "hdr", "exr", "pbm", "pam", "ppm", "pgm", "ff", "farbfeld", "qoi", "svg",
+        ]
+    }
+
+    /// Sets the image cache for the current node.
+    ///
+    /// If the `image_cache` is not explicitly provided, the function will determine the image cache by:
+    ///
+    /// 1. Checking if any ancestor node of the current node contains an `ImageCacheElement`, If such a node exists, the image cache specified by that ancestor will be used.
+    /// 2. If no ancestor node contains an `ImageCacheElement`, the global image cache will be used as a fallback.
+    ///
+    /// This mechanism provides a flexible way to manage image caching, allowing precise control when needed,
+    /// while ensuring a default behavior when no cache is explicitly specified.
+    #[inline]
+    pub fn image_cache<I: ImageCache>(self, image_cache: &Entity<I>) -> Self {
+        Self {
+            image_cache: Some(image_cache.clone().into()),
+            ..self
+        }
+    }
+}
+
+impl Deref for Stateful<Img> {
+    type Target = Img;
+
+    fn deref(&self) -> &Self::Target {
+        &self.element
+    }
+}
+
+impl DerefMut for Stateful<Img> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.element
+    }
+}
+
+/// The image state between frames
+struct ImgState {
+    frame_index: usize,
+    last_frame_time: Option<Instant>,
+    started_loading: Option<(Instant, Task<()>)>,
+}
+
+/// The image layout state between frames
+pub struct ImgLayoutState {
+    frame_index: usize,
+    replacement: Option<AnyElement>,
+}
+
+impl Element for Img {
+    type RequestLayoutState = ImgLayoutState;
+    type PrepaintState = Option<Hitbox>;
+
+    fn id(&self) -> Option<ElementId> {
+        self.interactivity.element_id.clone()
+    }
+
+    fn source_location(&self) -> Option<&'static core::panic::Location<'static>> {
+        self.interactivity.source_location()
+    }
+
+    fn request_layout(
+        &mut self,
+        global_id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, Self::RequestLayoutState) {
+        let mut layout_state = ImgLayoutState {
+            frame_index: 0,
+            replacement: None,
+        };
+
+        window.with_optional_element_state(global_id, |state, window| {
+            let mut state = state.map(|state| {
+                state.unwrap_or(ImgState {
+                    frame_index: 0,
+                    last_frame_time: None,
+                    started_loading: None,
+                })
+            });
+
+            let mut frame_index = state.as_ref().map(|state| state.frame_index).unwrap_or(0);
+
+            let layout_id = self.interactivity.request_layout(
+                global_id,
+                inspector_id,
+                window,
+                cx,
+                |mut style, window, cx| {
+                    let mut replacement_id = None;
+
+                    match self.source.use_data(
+                        self.image_cache
+                            .clone()
+                            .or_else(|| window.image_cache_stack.last().cloned()),
+                        window,
+                        cx,
+                    ) {
+                        Some(Ok(data)) => {
+                            let frame_count = data.frame_count();
+                            let max_frame_index = frame_count.saturating_sub(1);
+
+                            if let Some(state) = &mut state {
+                                state.frame_index = state.frame_index.min(max_frame_index);
+                                if frame_count > 1 && !cx.reduce_motion() {
+                                    if window.is_window_active() {
+                                        let current_time = crate::platform::clock::now();
+                                        if let Some(last_frame_time) = state.last_frame_time {
+                                            let elapsed = current_time - last_frame_time;
+                                            let frame_duration =
+                                                Duration::from(data.delay(state.frame_index));
+
+                                            if elapsed >= frame_duration {
+                                                state.frame_index =
+                                                    (state.frame_index + 1) % frame_count;
+                                                state.last_frame_time =
+                                                    Some(current_time - (elapsed - frame_duration));
+                                            }
+                                        } else {
+                                            state.last_frame_time = Some(current_time);
+                                        }
+                                    } else {
+                                        state.last_frame_time = None;
+                                    }
+                                } else {
+                                    state.last_frame_time = None;
+                                }
+                                state.started_loading = None;
+                                frame_index = state.frame_index;
+                            }
+
+                            let image_size = data.render_size(frame_index);
+
+                            if style.aspect_ratio.is_none() {
+                                style.aspect_ratio = Some(image_size.width / image_size.height);
+                            }
+
+                            if let Length::Auto = style.size.width {
+                                style.size.width = match style.size.height {
+                                    Length::Definite(DefiniteLength::Absolute(abs_length)) => {
+                                        let height_px = abs_length.to_pixels(window.rem_size());
+                                        Length::Definite(
+                                            px(image_size.width.0 * height_px.0
+                                                / image_size.height.0)
+                                            .into(),
+                                        )
+                                    }
+                                    _ => Length::Definite(image_size.width.into()),
+                                };
+                            }
+
+                            if let Length::Auto = style.size.height {
+                                style.size.height = match style.size.width {
+                                    Length::Definite(DefiniteLength::Absolute(abs_length)) => {
+                                        let width_px = abs_length.to_pixels(window.rem_size());
+                                        Length::Definite(
+                                            px(image_size.height.0 * width_px.0
+                                                / image_size.width.0)
+                                            .into(),
+                                        )
+                                    }
+                                    _ => Length::Definite(image_size.height.into()),
+                                };
+                            }
+
+                            if global_id.is_some()
+                                && data.frame_count() > 1
+                                && window.is_window_active()
+                                && !cx.reduce_motion()
+                            {
+                                window.request_animation_frame();
+                            }
+                        }
+                        Some(_err) => {
+                            if let Some(fallback) = self.style.fallback.as_ref() {
+                                let mut element = fallback();
+                                replacement_id = Some(element.request_layout(window, cx));
+                                layout_state.replacement = Some(element);
+                            }
+                            if let Some(state) = &mut state {
+                                state.started_loading = None;
+                            }
+                        }
+                        None => {
+                            if let Some(state) = &mut state {
+                                if let Some((started_loading, _)) = state.started_loading {
+                                    if started_loading.elapsed() > LOADING_DELAY
+                                        && let Some(loading) = self.style.loading.as_ref()
+                                    {
+                                        let mut element = loading();
+                                        replacement_id = Some(element.request_layout(window, cx));
+                                        layout_state.replacement = Some(element);
+                                    }
+                                } else {
+                                    let current_view = window.current_view();
+                                    let task = window.spawn(cx, async move |cx| {
+                                        cx.background_executor().timer(LOADING_DELAY).await;
+                                        cx.update(move |_, cx| {
+                                            cx.notify(current_view);
+                                        })
+                                        .ok();
+                                    });
+                                    state.started_loading =
+                                        Some((crate::platform::clock::now(), task));
+                                }
+                            }
+                        }
+                    }
+
+                    window.request_layout(style, replacement_id, cx)
+                },
+            );
+
+            layout_state.frame_index = frame_index;
+
+            ((layout_id, layout_state), state)
+        })
+    }
+
+    fn prepaint(
+        &mut self,
+        global_id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Self::PrepaintState {
+        self.interactivity.prepaint(
+            global_id,
+            inspector_id,
+            bounds,
+            bounds.size,
+            window,
+            cx,
+            |_, _, hitbox, window, cx| {
+                if let Some(replacement) = &mut request_layout.replacement {
+                    replacement.prepaint(window, cx);
+                }
+
+                hitbox
+            },
+        )
+    }
+
+    fn paint(
+        &mut self,
+        global_id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        layout_state: &mut Self::RequestLayoutState,
+        hitbox: &mut Self::PrepaintState,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        let source = self.source.clone();
+        self.interactivity.paint(
+            global_id,
+            inspector_id,
+            bounds,
+            hitbox.as_ref(),
+            window,
+            cx,
+            |style, window, cx| {
+                if let Some(Ok(data)) = source.use_data(
+                    self.image_cache
+                        .clone()
+                        .or_else(|| window.image_cache_stack.last().cloned()),
+                    window,
+                    cx,
+                ) {
+                    if data.frame_count() == 0 {
+                        return;
+                    }
+                    let new_bounds = self
+                        .style
+                        .object_fit
+                        .get_bounds(bounds, data.size(layout_state.frame_index));
+                    let corner_radii = style.corner_radii.to_pixels(window.rem_size());
+                    window
+                        .paint_image(
+                            bounds,
+                            new_bounds,
+                            corner_radii,
+                            data,
+                            layout_state.frame_index,
+                            self.style.grayscale,
+                        )
+                        .log_err();
+                } else if let Some(replacement) = &mut layout_state.replacement {
+                    replacement.paint(window, cx);
+                }
+            },
+        )
+    }
+}
+
+impl Styled for Img {
+    fn style(&mut self) -> &mut StyleRefinement {
+        &mut self.interactivity.base_style
+    }
+}
+
+impl InteractiveElement for Img {
+    fn interactivity(&mut self) -> &mut Interactivity {
+        &mut self.interactivity
+    }
+}
+
+impl StatefulInteractiveElement for Img {}
+
+impl ImageSource {
+    pub(crate) fn use_data(
+        &self,
+        cache: Option<AnyImageCache>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Option<Result<Arc<RenderImage>, ImageCacheError>> {
+        match self {
+            ImageSource::Resource(resource) => {
+                if let Some(cache) = cache {
+                    cache.load(resource, window, cx)
+                } else {
+                    window.use_asset::<ImgResourceLoader>(resource, cx)
+                }
+            }
+            ImageSource::Custom(loading_fn) => loading_fn(window, cx),
+            ImageSource::Render(data) => Some(Ok(data.to_owned())),
+            ImageSource::Image(data) => window.use_asset::<AssetLogger<ImageDecoder>>(data, cx),
+        }
+    }
+
+    pub(crate) fn get_data(
+        &self,
+        cache: Option<AnyImageCache>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Option<Result<Arc<RenderImage>, ImageCacheError>> {
+        match self {
+            ImageSource::Resource(resource) => {
+                if let Some(cache) = cache {
+                    cache.load(resource, window, cx)
+                } else {
+                    window.get_asset::<ImgResourceLoader>(resource, cx)
+                }
+            }
+            ImageSource::Custom(loading_fn) => loading_fn(window, cx),
+            ImageSource::Render(data) => Some(Ok(data.to_owned())),
+            ImageSource::Image(data) => window.get_asset::<AssetLogger<ImageDecoder>>(data, cx),
+        }
+    }
+
+    /// Remove this image source from the asset system
+    pub fn remove_asset(&self, cx: &mut App) {
+        match self {
+            ImageSource::Resource(resource) => {
+                cx.remove_asset::<ImgResourceLoader>(resource);
+            }
+            ImageSource::Custom(_) | ImageSource::Render(_) => {}
+            ImageSource::Image(data) => cx.remove_asset::<AssetLogger<ImageDecoder>>(data),
+        }
+    }
+
+    /// Check whether this image source is present in the asset system (loading
+    /// or loaded), without fetching it.
+    #[cfg(any(test, feature = "harness"))]
+    pub fn is_asset_cached(&self, cx: &App) -> bool {
+        match self {
+            ImageSource::Resource(resource) => cx.has_asset::<ImgResourceLoader>(resource),
+            ImageSource::Custom(_) | ImageSource::Render(_) => false,
+            ImageSource::Image(data) => cx.has_asset::<AssetLogger<ImageDecoder>>(data),
+        }
+    }
+}
+
+#[derive(Clone)]
+enum ImageDecoder {}
+
+impl Asset for ImageDecoder {
+    type Source = Arc<Image>;
+    type Output = Result<Arc<RenderImage>, ImageCacheError>;
+
+    fn load(
+        source: Self::Source,
+        cx: &mut App,
+    ) -> impl Future<Output = Self::Output> + Send + 'static {
+        let renderer = cx.svg_renderer();
+        async move { source.to_image_data(renderer).map_err(Into::into) }
+    }
+}
+
+/// An image loader for the GPUI asset system
+#[derive(Clone)]
+pub enum ImageAssetLoader {}
+
+impl Asset for ImageAssetLoader {
+    type Source = Resource;
+    type Output = Result<Arc<RenderImage>, ImageCacheError>;
+
+    fn load(
+        source: Self::Source,
+        cx: &mut App,
+    ) -> impl Future<Output = Self::Output> + Send + 'static {
+        // TODO: Can we make SVGs always rescale?
+        // let scale_factor = cx.scale_factor();
+        let svg_renderer = cx.svg_renderer();
+        let asset_source = cx.asset_source().clone();
+        async move {
+            let bytes = match source.clone() {
+                Resource::Path(uri) => fs::read(uri.as_ref())?,
+                Resource::Uri(_uri) => {
+                    return Err(ImageCacheError::Other(Arc::new(anyhow::anyhow!(
+                        "remote HTTP image loading is disabled"
+                    ))));
+                }
+                Resource::Embedded(path) => {
+                    let data = asset_source.load(&path).ok().flatten();
+                    if let Some(data) = data {
+                        data.to_vec()
+                    } else {
+                        return Err(ImageCacheError::Asset(
+                            format!("Embedded resource not found: {}", path).into(),
+                        ));
+                    }
+                }
+            };
+
+            if let Ok(format) = image::guess_format(&bytes) {
+                let data = match format {
+                    ImageFormat::Gif => decode_gif_image(&bytes)?,
+                    ImageFormat::WebP => decode_webp_image(&bytes)?,
+                    _ => decode_static_image(&bytes, format)?,
+                };
+
+                Ok(Arc::new(RenderImage::new(data)))
+            } else {
+                svg_renderer
+                    .render_single_frame(&bytes, 1.0)
+                    .map_err(Into::into)
+            }
+        }
+    }
+}
+
+/// An error that can occur when interacting with the image cache.
+#[derive(Debug, Error, Clone)]
+pub enum ImageCacheError {
+    /// Some other kind of error occurred
+    #[error("error: {0}")]
+    Other(#[from] Arc<anyhow::Error>),
+    /// An error that occurred while reading the image from disk.
+    #[error("IO error: {0}")]
+    Io(Arc<std::io::Error>),
+    /// An error that occurred while processing an image.
+    #[error("unexpected http status for {uri}: {status}, body: {body}")]
+    BadStatus {
+        /// The URI of the image.
+        uri: SharedUri,
+        /// The HTTP status code.
+        status: u16,
+        /// The HTTP response body.
+        body: String,
+    },
+    /// An error that occurred while processing an asset.
+    #[error("asset error: {0}")]
+    Asset(SharedString),
+    /// An error that occurred while processing an image.
+    #[error("image error: {0}")]
+    Image(Arc<ImageError>),
+    /// An error that occurred while processing an SVG.
+    #[error("svg error: {0}")]
+    Usvg(Arc<usvg::Error>),
+}
+
+impl From<anyhow::Error> for ImageCacheError {
+    fn from(value: anyhow::Error) -> Self {
+        Self::Other(Arc::new(value))
+    }
+}
+
+impl From<io::Error> for ImageCacheError {
+    fn from(value: io::Error) -> Self {
+        Self::Io(Arc::new(value))
+    }
+}
+
+impl From<usvg::Error> for ImageCacheError {
+    fn from(value: usvg::Error) -> Self {
+        Self::Usvg(Arc::new(value))
+    }
+}
+
+impl From<image::ImageError> for ImageCacheError {
+    fn from(value: image::ImageError) -> Self {
+        Self::Image(Arc::new(value))
+    }
+}

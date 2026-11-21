@@ -1,0 +1,466 @@
+//! Provides a thread-safe queue with weighted random selection between priorities.
+//!
+//! Items within each priority are received in FIFO order. Receivers can be cloned
+//! to share work, and queued items remain available after the sender is dropped.
+
+use std::{
+    collections::VecDeque,
+    fmt,
+    iter::FusedIterator,
+    sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, TryLockError, atomic::AtomicUsize},
+};
+
+use rand::{Rng, SeedableRng, rngs::SmallRng};
+
+use crate::Priority;
+
+struct PriorityQueues<T> {
+    high_priority: VecDeque<T>,
+    medium_priority: VecDeque<T>,
+    low_priority: VecDeque<T>,
+}
+
+impl<T> PriorityQueues<T> {
+    fn is_empty(&self) -> bool {
+        self.high_priority.is_empty()
+            && self.medium_priority.is_empty()
+            && self.low_priority.is_empty()
+    }
+}
+
+struct PriorityQueueState<T> {
+    // std's Wasm atomic backend unlocks and notifies without acquiring another
+    // lock. parking_lot can park during those operations, even after try_lock.
+    queues: Mutex<PriorityQueues<T>>,
+    condvar: Condvar,
+    receiver_count: AtomicUsize,
+    sender_count: AtomicUsize,
+}
+
+impl<T> PriorityQueueState<T> {
+    fn send(&self, priority: Priority, item: T) -> Result<(), SendError<T>> {
+        if self
+            .receiver_count
+            .load(std::sync::atomic::Ordering::Relaxed)
+            == 0
+        {
+            return Err(SendError(item));
+        }
+
+        let mut queues = self.queues.lock().unwrap_or_else(PoisonError::into_inner);
+        Self::push(&mut queues, priority, item);
+        self.condvar.notify_one();
+        Ok(())
+    }
+
+    fn spin_send(&self, priority: Priority, item: T) -> Result<(), SendError<T>> {
+        if self
+            .receiver_count
+            .load(std::sync::atomic::Ordering::Relaxed)
+            == 0
+        {
+            return Err(SendError(item));
+        }
+
+        let mut queues = loop {
+            match self.queues.try_lock() {
+                Ok(guard) => break guard,
+                Err(TryLockError::Poisoned(error)) => break error.into_inner(),
+                Err(TryLockError::WouldBlock) => std::hint::spin_loop(),
+            }
+        };
+        Self::push(&mut queues, priority, item);
+        self.condvar.notify_one();
+        Ok(())
+    }
+
+    fn push(queues: &mut PriorityQueues<T>, priority: Priority, item: T) {
+        match priority {
+            Priority::RealtimeAudio => unreachable!(
+                "Realtime audio priority runs on a dedicated thread and is never queued"
+            ),
+            Priority::High => queues.high_priority.push_back(item),
+            Priority::Medium => queues.medium_priority.push_back(item),
+            Priority::Low => queues.low_priority.push_back(item),
+        };
+    }
+
+    fn recv<'a>(&'a self) -> Result<MutexGuard<'a, PriorityQueues<T>>, RecvError> {
+        let mut queues = self.queues.lock().unwrap_or_else(PoisonError::into_inner);
+
+        // Re-checked after every wake: dropping the last sender wakes waiting receivers
+        // so they can end instead of blocking forever on a queue nothing can fill.
+        while queues.is_empty() {
+            if self.sender_count.load(std::sync::atomic::Ordering::Acquire) == 0 {
+                return Err(crate::queue::RecvError);
+            }
+            queues = self
+                .condvar
+                .wait(queues)
+                .unwrap_or_else(PoisonError::into_inner);
+        }
+
+        Ok(queues)
+    }
+
+    fn try_recv<'a>(&'a self) -> Result<Option<MutexGuard<'a, PriorityQueues<T>>>, RecvError> {
+        let queues = self.queues.lock().unwrap_or_else(PoisonError::into_inner);
+
+        let sender_count = self.sender_count.load(std::sync::atomic::Ordering::Relaxed);
+        if queues.is_empty() && sender_count == 0 {
+            return Err(crate::queue::RecvError);
+        }
+
+        if queues.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(queues))
+        }
+    }
+
+    fn spin_try_recv<'a>(&'a self) -> Result<Option<MutexGuard<'a, PriorityQueues<T>>>, RecvError> {
+        let queues = loop {
+            match self.queues.try_lock() {
+                Ok(guard) => break guard,
+                Err(TryLockError::Poisoned(error)) => break error.into_inner(),
+                Err(TryLockError::WouldBlock) => std::hint::spin_loop(),
+            }
+        };
+
+        let sender_count = self.sender_count.load(std::sync::atomic::Ordering::Relaxed);
+        if queues.is_empty() && sender_count == 0 {
+            return Err(crate::queue::RecvError);
+        }
+
+        if queues.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(queues))
+        }
+    }
+}
+
+#[doc(hidden)]
+pub struct PriorityQueueSender<T> {
+    state: Arc<PriorityQueueState<T>>,
+}
+
+impl<T> PriorityQueueSender<T> {
+    fn new(state: Arc<PriorityQueueState<T>>) -> Self {
+        Self { state }
+    }
+
+    /// Enqueues an item at the given priority, waiting for the queue lock if necessary.
+    ///
+    /// # Errors
+    ///
+    /// Returns the item in a [`SendError<T>`] if all receivers have been dropped.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `priority` is [`Priority::RealtimeAudio`] and a receiver still exists.
+    pub fn send(&self, priority: Priority, item: T) -> Result<(), SendError<T>> {
+        self.state.send(priority, item)?;
+        Ok(())
+    }
+
+    /// Enqueues an item at the given priority, spinning until the queue lock is acquired.
+    ///
+    /// # Errors
+    ///
+    /// Returns the item in a [`SendError<T>`] if all receivers have been dropped.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `priority` is [`Priority::RealtimeAudio`] and a receiver still exists.
+    pub fn spin_send(&self, priority: Priority, item: T) -> Result<(), SendError<T>> {
+        self.state.spin_send(priority, item)?;
+        Ok(())
+    }
+}
+
+impl<T> Drop for PriorityQueueSender<T> {
+    fn drop(&mut self) {
+        let previous = self
+            .state
+            .sender_count
+            .fetch_sub(1, std::sync::atomic::Ordering::AcqRel);
+        if previous == 1 {
+            // A receiver checks the sender count and starts waiting under the queue lock,
+            // atomically. Acquiring that lock once, even with nothing to do under it,
+            // means any receiver that saw a live sender is already waiting, so the
+            // notification below reaches it; without this, a receiver between its check
+            // and its wait would miss the wake-up and block forever.
+            drop(
+                self.state
+                    .queues
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner),
+            );
+            self.state.condvar.notify_all();
+        }
+    }
+}
+
+#[doc(hidden)]
+pub struct PriorityQueueReceiver<T> {
+    state: Arc<PriorityQueueState<T>>,
+    rand: SmallRng,
+    disconnected: bool,
+}
+
+impl<T> Clone for PriorityQueueReceiver<T> {
+    fn clone(&self) -> Self {
+        self.state
+            .receiver_count
+            .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+        Self {
+            state: Arc::clone(&self.state),
+            rand: SmallRng::seed_from_u64(0),
+            disconnected: self.disconnected,
+        }
+    }
+}
+
+#[doc(hidden)]
+pub struct SendError<T>(pub T);
+
+impl<T: fmt::Debug> fmt::Debug for SendError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SendError").field(&self.0).finish()
+    }
+}
+
+#[derive(Debug)]
+#[doc(hidden)]
+pub struct RecvError;
+
+#[allow(dead_code)]
+impl<T> PriorityQueueReceiver<T> {
+    /// Creates an empty priority queue and returns its sender and receiver.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::{Priority, queue::PriorityQueueReceiver};
+    ///
+    /// let (sender, mut receiver) = PriorityQueueReceiver::new();
+    /// sender.send(Priority::Medium, 42).unwrap();
+    /// assert_eq!(receiver.pop().unwrap(), 42);
+    /// ```
+    pub fn new() -> (PriorityQueueSender<T>, Self) {
+        let state = PriorityQueueState {
+            queues: Mutex::new(PriorityQueues {
+                high_priority: VecDeque::new(),
+                medium_priority: VecDeque::new(),
+                low_priority: VecDeque::new(),
+            }),
+            condvar: Condvar::new(),
+            receiver_count: AtomicUsize::new(1),
+            sender_count: AtomicUsize::new(1),
+        };
+        let state = Arc::new(state);
+
+        let sender = PriorityQueueSender::new(Arc::clone(&state));
+
+        let receiver = PriorityQueueReceiver {
+            state,
+            rand: SmallRng::seed_from_u64(0),
+            disconnected: false,
+        };
+
+        (sender, receiver)
+    }
+
+    /// Returns whether the queue currently contains no elements.
+    pub fn is_empty(&self) -> bool {
+        self.state
+            .queues
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+    }
+
+    /// Returns the number of queued elements across all priorities.
+    pub(crate) fn len(&self) -> usize {
+        let queues = self
+            .state
+            .queues
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        queues.high_priority.len() + queues.medium_priority.len() + queues.low_priority.len()
+    }
+
+    /// Tries to pop one element from the priority queue without blocking.
+    ///
+    /// This will early return if there are no elements in the queue.
+    ///
+    /// This method is best suited if you only intend to pop one element, for better performance
+    /// on large queues see [`Self::try_iter`]
+    ///
+    /// # Errors
+    ///
+    /// If the sender was dropped
+    pub fn try_pop(&mut self) -> Result<Option<T>, RecvError> {
+        self.pop_inner(false)
+    }
+
+    /// Pops an item if available, spinning until the queue lock is acquired.
+    ///
+    /// Returns `Ok(None)` if the queue is empty and the sender still exists.
+    /// Does not wait for new items to arrive.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RecvError`] if the queue is empty and the sender has been dropped.
+    pub fn spin_try_pop(&mut self) -> Result<Option<T>, RecvError> {
+        use Priority as P;
+
+        let Some(mut queues) = self.state.spin_try_recv()? else {
+            return Ok(None);
+        };
+
+        let high = P::High.weight() * !queues.high_priority.is_empty() as u32;
+        let medium = P::Medium.weight() * !queues.medium_priority.is_empty() as u32;
+        let low = P::Low.weight() * !queues.low_priority.is_empty() as u32;
+        let mut mass = high + medium + low;
+
+        if !queues.high_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::High.weight(), mass);
+            if flip {
+                return Ok(queues.high_priority.pop_front());
+            }
+            mass -= P::High.weight();
+        }
+
+        if !queues.medium_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::Medium.weight(), mass);
+            if flip {
+                return Ok(queues.medium_priority.pop_front());
+            }
+            mass -= P::Medium.weight();
+        }
+
+        if !queues.low_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::Low.weight(), mass);
+            if flip {
+                return Ok(queues.low_priority.pop_front());
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Pops an element from the priority queue blocking if necessary.
+    ///
+    /// This method is best suited if you only intend to pop one element, for better performance
+    /// on large queues see [`Self::iter`].
+    ///
+    /// # Errors
+    ///
+    /// If the sender was dropped
+    pub fn pop(&mut self) -> Result<T, RecvError> {
+        self.pop_inner(true).map(|e| e.unwrap())
+    }
+
+    /// Returns an iterator over the elements of the queue
+    /// this iterator will end when all elements have been consumed and will not wait for new ones.
+    pub fn try_iter(self) -> TryIter<T> {
+        TryIter {
+            receiver: self,
+            ended: false,
+        }
+    }
+
+    /// Returns an iterator over the elements of the queue
+    /// this iterator will wait for new elements if the queue is empty.
+    pub fn iter(self) -> Iter<T> {
+        Iter(self)
+    }
+
+    #[inline(always)]
+    // algorithm is the loaded die from biased coin from
+    // https://www.keithschwarz.com/darts-dice-coins/
+    fn pop_inner(&mut self, block: bool) -> Result<Option<T>, RecvError> {
+        use Priority as P;
+
+        let mut queues = if !block {
+            let Some(queues) = self.state.try_recv()? else {
+                return Ok(None);
+            };
+            queues
+        } else {
+            self.state.recv()?
+        };
+
+        let high = P::High.weight() * !queues.high_priority.is_empty() as u32;
+        let medium = P::Medium.weight() * !queues.medium_priority.is_empty() as u32;
+        let low = P::Low.weight() * !queues.low_priority.is_empty() as u32;
+        let mut mass = high + medium + low; //%
+
+        if !queues.high_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::High.weight(), mass);
+            if flip {
+                return Ok(queues.high_priority.pop_front());
+            }
+            mass -= P::High.weight();
+        }
+
+        if !queues.medium_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::Medium.weight(), mass);
+            if flip {
+                return Ok(queues.medium_priority.pop_front());
+            }
+            mass -= P::Medium.weight();
+        }
+
+        if !queues.low_priority.is_empty() {
+            let flip = self.rand.random_ratio(P::Low.weight(), mass);
+            if flip {
+                return Ok(queues.low_priority.pop_front());
+            }
+        }
+
+        Ok(None)
+    }
+}
+
+impl<T> Drop for PriorityQueueReceiver<T> {
+    fn drop(&mut self) {
+        self.state
+            .receiver_count
+            .fetch_sub(1, std::sync::atomic::Ordering::AcqRel);
+    }
+}
+
+#[doc(hidden)]
+pub struct Iter<T>(PriorityQueueReceiver<T>);
+impl<T> Iterator for Iter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop().ok()
+    }
+}
+impl<T> FusedIterator for Iter<T> {}
+
+#[doc(hidden)]
+pub struct TryIter<T> {
+    receiver: PriorityQueueReceiver<T>,
+    ended: bool,
+}
+impl<T> Iterator for TryIter<T> {
+    type Item = Result<T, RecvError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.ended {
+            return None;
+        }
+
+        let res = self.receiver.try_pop();
+        self.ended = res.is_err();
+
+        res.transpose()
+    }
+}
+impl<T> FusedIterator for TryIter<T> {}

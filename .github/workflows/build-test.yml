@@ -11,6 +11,8 @@ on:
     paths-ignore:
       - README.md
   pull_request:
+    branches-ignore:
+      - 'darksky/native-playground'
   merge_group:
 
 env:

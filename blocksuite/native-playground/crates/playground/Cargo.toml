@@ -1,0 +1,40 @@
+[package]
+name = "playground"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+harness = ["ui/harness"]
+
+[[bin]]
+name = "native-playground"
+path = "src/main.rs"
+
+[[bin]]
+name = "bs-harness"
+path = "src/bin/bs_harness.rs"
+required-features = ["harness"]
+
+[dependencies]
+anyhow.workspace = true
+image.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ui = { path = "../ui" }
+
+[dev-dependencies]
+ui = { path = "../ui", features = ["harness"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+console_error_panic_hook.workspace = true
+wasm-bindgen.workspace = true
+web-sys = { workspace = true, features = ["Document", "Element", "HtmlCanvasElement", "Window"] }

@@ -1,0 +1,161 @@
+use crate::{BackgroundExecutor, Task};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::atomic::{AtomicUsize, Ordering::SeqCst},
+    task,
+    time::Duration,
+};
+
+/// A helper trait for building complex objects with imperative conditionals in a fluent style.
+pub trait FluentBuilder {
+    /// Imperatively modify self with the given closure.
+    fn map<U>(self, f: impl FnOnce(Self) -> U) -> U
+    where
+        Self: Sized,
+    {
+        f(self)
+    }
+
+    /// Conditionally modify self with the given closure.
+    fn when(self, condition: bool, then: impl FnOnce(Self) -> Self) -> Self
+    where
+        Self: Sized,
+    {
+        self.map(|this| if condition { then(this) } else { this })
+    }
+
+    /// Conditionally modify self with the given closure.
+    fn when_else(
+        self,
+        condition: bool,
+        then: impl FnOnce(Self) -> Self,
+        else_fn: impl FnOnce(Self) -> Self,
+    ) -> Self
+    where
+        Self: Sized,
+    {
+        self.map(|this| if condition { then(this) } else { else_fn(this) })
+    }
+
+    /// Conditionally unwrap and modify self with the given closure, if the given option is Some.
+    fn when_some<T>(self, option: Option<T>, then: impl FnOnce(Self, T) -> Self) -> Self
+    where
+        Self: Sized,
+    {
+        self.map(|this| {
+            if let Some(value) = option {
+                then(this, value)
+            } else {
+                this
+            }
+        })
+    }
+    /// Conditionally unwrap and modify self with the given closure, if the given option is None.
+    fn when_none<T>(self, option: &Option<T>, then: impl FnOnce(Self) -> Self) -> Self
+    where
+        Self: Sized,
+    {
+        self.map(|this| if option.is_some() { this } else { then(this) })
+    }
+}
+
+/// Extensions for Future types that provide additional combinators and utilities.
+pub trait FutureExt {
+    /// Requires a Future to complete before the specified duration has elapsed.
+    /// Similar to tokio::timeout.
+    fn with_timeout(self, timeout: Duration, executor: &BackgroundExecutor) -> WithTimeout<Self>
+    where
+        Self: Sized;
+}
+
+impl<T: Future> FutureExt for T {
+    fn with_timeout(self, timeout: Duration, executor: &BackgroundExecutor) -> WithTimeout<Self>
+    where
+        Self: Sized,
+    {
+        WithTimeout {
+            future: self,
+            timer: executor.timer(timeout),
+        }
+    }
+}
+
+#[pin_project::pin_project]
+pub struct WithTimeout<T> {
+    #[pin]
+    future: T,
+    #[pin]
+    timer: Task<()>,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Timed out before future resolved")]
+/// Error returned by with_timeout when the timeout duration elapsed before the future resolved
+pub struct Timeout;
+
+impl<T: Future> Future for WithTimeout<T> {
+    type Output = Result<T::Output, Timeout>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context) -> task::Poll<Self::Output> {
+        let this = self.project();
+
+        if let task::Poll::Ready(output) = this.future.poll(cx) {
+            task::Poll::Ready(Ok(output))
+        } else if this.timer.poll(cx).is_ready() {
+            task::Poll::Ready(Err(Timeout))
+        } else {
+            task::Poll::Pending
+        }
+    }
+}
+
+/// Increment the given atomic counter if it is not zero.
+/// Return the new value of the counter.
+pub(crate) fn atomic_incr_if_not_zero(counter: &AtomicUsize) -> usize {
+    let mut loaded = counter.load(SeqCst);
+    loop {
+        if loaded == 0 {
+            return 0;
+        }
+        match counter.compare_exchange_weak(loaded, loaded + 1, SeqCst, SeqCst) {
+            Ok(x) => return x + 1,
+            Err(actual) => loaded = actual,
+        }
+    }
+}
+
+/// Rounds to the nearest integer with 0.5 ties toward zero.
+#[inline]
+pub(crate) fn round_half_toward_zero(value: f32) -> f32 {
+    (value.abs() - 0.5).ceil().copysign(value)
+}
+
+#[inline]
+pub(crate) fn round_half_toward_zero_f64(value: f64) -> f64 {
+    (value.abs() - 0.5).ceil().copysign(value)
+}
+
+#[inline]
+pub(crate) fn round_to_device_pixel(logical: f32, scale_factor: f32) -> f32 {
+    round_half_toward_zero(logical * scale_factor)
+}
+
+#[inline]
+pub(crate) fn round_stroke_to_device_pixel(logical: f32, scale_factor: f32) -> f32 {
+    if logical == 0.0 {
+        0.0
+    } else {
+        round_to_device_pixel(logical.max(0.0), scale_factor).max(1.0)
+    }
+}
+
+#[inline]
+pub(crate) fn floor_to_device_pixel(logical: f32, scale_factor: f32) -> f32 {
+    (logical * scale_factor).floor()
+}
+
+#[inline]
+pub(crate) fn ceil_to_device_pixel(logical: f32, scale_factor: f32) -> f32 {
+    (logical * scale_factor).ceil()
+}

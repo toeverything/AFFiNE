@@ -1,0 +1,3580 @@
+use crate::scheduler::Instant;
+use std::{
+    any::{TypeId, type_name},
+    cell::{Cell, Ref, RefCell, RefMut},
+    ffi::OsString,
+    marker::PhantomData,
+    mem,
+    ops::{Deref, DerefMut},
+    path::{Path, PathBuf},
+    rc::{Rc, Weak},
+    sync::Arc,
+    time::Duration,
+};
+
+use anyhow::{Context as _, Result, anyhow};
+use derive_more::{Deref, DerefMut};
+use futures::{Future, FutureExt, channel::oneshot, future::LocalBoxFuture};
+use itertools::Itertools;
+use parking_lot::RwLock;
+use slotmap::SlotMap;
+
+use crate::collections::{FxHashMap, FxHashSet, HashMap, TypeIdHashMap, VecDeque};
+use crate::debug_panic;
+use crate::gpui_util::ResultExt;
+pub use async_context::*;
+pub use context::*;
+pub use entity_map::*;
+use smallvec::SmallVec;
+
+use crate::asset_cache::CachedLoad;
+use crate::subscription::SingleSubscriberSet;
+use crate::{
+    Action, ActionBuildError, ActionRegistry, ActivationPolicy, ActivityGuard, Any, AnyView,
+    AnyWindowHandle, AppContext, AppLifecyclePhase, Arena, ArenaBox, Asset, AssetSource,
+    BackgroundExecutor, Bounds, ClipboardItem, ClipboardReadError, CursorStyle, DispatchPhase,
+    DisplayChanges, DisplayEvent, DisplayId, EventEmitter, ExternalDragPayload, FocusHandle,
+    FocusMap, ForegroundExecutor, Global, KeyBinding, KeyContext, Keymap, Keystroke, LayoutId,
+    Menu, MenuItem, MissingGlyph, OwnedMenu, PathPromptOptions, Pixels, Platform, PlatformDisplay,
+    PlatformKeyboardLayout, PlatformKeyboardMapper, Point, PowerMode, Priority, PromptBuilder,
+    PromptButton, PromptHandle, PromptLevel, Render, RenderImage, RenderablePromptHandle,
+    Reservation, ScreenCaptureSource, SharedString, SubscriberSet, Subscription, SvgRenderer,
+    SystemNotification, SystemNotificationResponse, Task, TextRenderingMode, TextSystem,
+    ThermalState, Window, WindowAppearance, WindowBounds, WindowButtonLayout, WindowHandle,
+    WindowId, WindowInvalidator, WindowingRequest, hash, init_app_menus,
+};
+
+mod async_context;
+mod context;
+mod entity_map;
+
+/// The duration for which native applications wait for futures returned from
+/// [Context::on_app_quit] before fully quitting.
+pub const SHUTDOWN_TIMEOUT: Duration = Duration::from_millis(200);
+
+/// Temporary(?) wrapper around [`RefCell<App>`] to help us debug any double borrows.
+/// Strongly consider removing after stabilization.
+#[doc(hidden)]
+pub struct AppCell {
+    pub(crate) app: RefCell<App>,
+    borrow_origin: Cell<Option<(&'static std::panic::Location<'static>, &'static str)>>,
+}
+
+struct AppBorrowError {
+    attempted: &'static std::panic::Location<'static>,
+    kind: &'static str,
+    origin: Option<(&'static std::panic::Location<'static>, &'static str)>,
+}
+
+impl std::fmt::Display for AppBorrowError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Self {
+            attempted,
+            kind,
+            origin,
+        } = self;
+        write!(
+            formatter,
+            "RefCell already borrowed: attempted {kind} App borrow at {attempted}; "
+        )?;
+        match origin {
+            Some((origin, existing_kind)) => write!(
+                formatter,
+                "existing {existing_kind} borrow group began at {origin}"
+            ),
+            None => write!(formatter, "origin unavailable"),
+        }
+    }
+}
+
+impl std::fmt::Debug for AppBorrowError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, formatter)
+    }
+}
+
+impl std::error::Error for AppBorrowError {}
+
+impl AppCell {
+    #[doc(hidden)]
+    #[track_caller]
+    pub fn borrow(&self) -> AppRef<'_> {
+        if option_env!("TRACK_THREAD_BORROWS").is_some() {
+            let thread_id = std::thread::current().id();
+            eprintln!("borrowed {thread_id:?}");
+        }
+        // Keep the first origin across overlapping shared borrows. The old
+        // origin may remain after release; the next group replaces it.
+        let starts_borrow_group = self.app.try_borrow_mut().is_ok();
+        let attempted = std::panic::Location::caller();
+        let borrow = self
+            .app
+            .try_borrow()
+            .map_err(|_error| AppBorrowError {
+                attempted,
+                kind: "shared",
+                origin: self.borrow_origin.get(),
+            })
+            .unwrap();
+        if starts_borrow_group {
+            self.borrow_origin
+                .set(Some((std::panic::Location::caller(), "shared")));
+        }
+        AppRef(borrow)
+    }
+
+    #[doc(hidden)]
+    #[track_caller]
+    pub fn borrow_mut(&self) -> AppRefMut<'_> {
+        self.try_borrow_mut().unwrap()
+    }
+
+    #[doc(hidden)]
+    #[track_caller]
+    pub fn try_borrow_mut(&self) -> Result<AppRefMut<'_>> {
+        if option_env!("TRACK_THREAD_BORROWS").is_some() {
+            let thread_id = std::thread::current().id();
+            eprintln!("borrowed {thread_id:?}");
+        }
+        let borrow = match self.app.try_borrow_mut() {
+            Ok(borrow) => borrow,
+            Err(_error) => {
+                return Err(AppBorrowError {
+                    attempted: std::panic::Location::caller(),
+                    kind: "mutable",
+                    origin: self.borrow_origin.get(),
+                }
+                .into());
+            }
+        };
+        self.borrow_origin
+            .set(Some((std::panic::Location::caller(), "mutable")));
+        Ok(AppRefMut(borrow))
+    }
+}
+
+#[doc(hidden)]
+#[derive(Deref, DerefMut)]
+pub struct AppRef<'a>(Ref<'a, App>);
+
+impl Drop for AppRef<'_> {
+    fn drop(&mut self) {
+        if option_env!("TRACK_THREAD_BORROWS").is_some() {
+            let thread_id = std::thread::current().id();
+            eprintln!("dropped borrow from {thread_id:?}");
+        }
+    }
+}
+
+#[doc(hidden)]
+#[derive(Deref, DerefMut)]
+pub struct AppRefMut<'a>(RefMut<'a, App>);
+
+impl Drop for AppRefMut<'_> {
+    fn drop(&mut self) {
+        if option_env!("TRACK_THREAD_BORROWS").is_some() {
+            let thread_id = std::thread::current().id();
+            eprintln!("dropped {thread_id:?}");
+        }
+    }
+}
+
+/// A reference to a GPUI application, typically constructed in the `main` function of your app.
+/// You won't interact with this type much outside of initial configuration and startup.
+pub struct Application(Rc<AppCell>);
+
+/// A strong handle to an [`Application`] started with [`Application::run_embedded`].
+///
+/// Dropping this handle releases the app, so an embedder must hold it for as long as the
+/// app should run. While held, it is the embedder's entry point back into GPUI each time
+/// the external run loop gives it control.
+pub struct ApplicationHandle {
+    app: Rc<AppCell>,
+}
+
+impl ApplicationHandle {
+    /// Invoke `f` with the app context. Must not be called re-entrantly from code that
+    /// is already inside an update; the app state is a `RefCell` and will panic on a
+    /// double borrow.
+    pub fn update<R>(&self, f: impl FnOnce(&mut App) -> R) -> R {
+        let cx = &mut *self.app.borrow_mut();
+        f(cx)
+    }
+
+    /// An [`AsyncApp`] for use across await points. It holds the app weakly; keeping the
+    /// app alive remains this handle's job.
+    pub fn to_async(&self) -> AsyncApp {
+        self.update(|cx| cx.to_async())
+    }
+}
+
+/// Represents an application before it is fully launched. Once your app is
+/// configured, you'll start the app with `App::run`.
+impl Application {
+    /// Builds an app with a caller-provided platform implementation.
+    pub fn with_platform(platform: Rc<dyn Platform>) -> Self {
+        Self(App::new_app(platform, Arc::new(())))
+    }
+
+    /// Builds an app with accessibility (AccessKit) integration forcibly
+    /// disabled.
+    ///
+    /// In this mode, accessibility APIs (e.g.
+    /// [`div().role()`][crate::StatefulInteractiveElement::role]) silently
+    /// no-op.
+    ///
+    /// See the [accessibility guide](crate::_accessibility) for an overview of
+    /// the features this disables.
+    pub fn new_inaccessible(platform: Rc<dyn Platform>) -> Self {
+        let this = Self::with_platform(platform);
+        this.0.borrow_mut().accessibility_force_disabled = true;
+        this
+    }
+
+    /// Assigns the source of assets for the application.
+    pub fn with_assets(self, asset_source: impl AssetSource) -> Self {
+        let mut context_lock = self.0.borrow_mut();
+        let asset_source = Arc::new(asset_source);
+        context_lock.asset_source = asset_source.clone();
+        context_lock.svg_renderer = SvgRenderer::new(asset_source);
+        drop(context_lock);
+        self
+    }
+
+    /// Configures arguments to pass when restarting the application.
+    pub fn with_restart_arguments(self, arguments: Vec<OsString>) -> Self {
+        self.0.borrow_mut().restart_arguments = arguments;
+        self
+    }
+
+    /// Configures when the application should automatically quit.
+    /// By default, [`QuitMode::Default`] is used.
+    pub fn with_quit_mode(self, mode: QuitMode) -> Self {
+        self.0.borrow_mut().quit_mode = mode;
+        self
+    }
+
+    /// Sets the windowing mode the app starts in. See [`App::request_windowing`].
+    ///
+    /// Defaults to windowed. On Linux, the default environment is the process's own, and the app
+    /// starts headless if that names no allowed display server. On macOS, headless means the app
+    /// starts without a Dock icon or menu bar ([`ActivationPolicy::Accessory`]). Has no effect on
+    /// other platforms.
+    pub fn with_windowing(self, request: WindowingRequest) -> Self {
+        self.0.borrow().platform.set_initial_windowing(request);
+        self
+    }
+
+    /// Start the application. The provided callback will be called once the
+    /// app is fully launched.
+    ///
+    /// On WebAssembly, this returns immediately and retains the app for the lifetime
+    /// of the Wasm instance. Use [`Self::run_embedded`] to control its lifetime explicitly.
+    pub fn run<F>(self, on_finish_launching: F)
+    where
+        F: 'static + FnOnce(&mut App),
+    {
+        let this = self.0.clone();
+        let platform = self.0.borrow().platform.clone();
+        platform.run(Box::new(move || {
+            crate::fast::app_borrow::track_app(&this);
+            let cx = &mut *this.borrow_mut();
+            // Some platforms only connect to their display server in `run`.
+            cx.displays_changed();
+            on_finish_launching(cx);
+        }));
+
+        #[cfg(target_family = "wasm")]
+        std::mem::forget(self);
+    }
+
+    /// Start the application for an embedder that drives the run loop itself.
+    ///
+    /// On ordinary platforms `Platform::run` blocks for the lifetime of the app, and the
+    /// app state is kept alive by [`Application::run`]'s stack frame. Embedded platforms —
+    /// where the run loop belongs to someone else, e.g. GPUI compiled into a Wasm guest,
+    /// or a GPUI view hosted inside a foreign native application — implement
+    /// `Platform::run` to invoke the launch callback and return immediately. This method
+    /// supports that shape: it returns an [`ApplicationHandle`] that keeps the app alive
+    /// and lets the embedder re-enter it whenever the external run loop yields control.
+    pub fn run_embedded<F>(self, on_finish_launching: F) -> ApplicationHandle
+    where
+        F: 'static + FnOnce(&mut App),
+    {
+        let this = self.0.clone();
+        let platform = self.0.borrow().platform.clone();
+        platform.run(Box::new(move || {
+            crate::fast::app_borrow::track_app(&this);
+            let cx = &mut *this.borrow_mut();
+            // Some platforms only connect to their display server in `run`.
+            cx.displays_changed();
+            on_finish_launching(cx);
+        }));
+        ApplicationHandle { app: self.0 }
+    }
+
+    /// Register a handler to be invoked when the platform instructs the application
+    /// to open one or more URLs.
+    pub fn on_open_urls<F>(&self, callback: F) -> &Self
+    where
+        F: 'static + FnMut(Vec<String>),
+    {
+        self.0.borrow().platform.on_open_urls(Box::new(callback));
+        self
+    }
+
+    /// Invokes a handler when an already-running application is launched.
+    /// On macOS, this can occur when the application icon is double-clicked or the app is launched via the dock.
+    pub fn on_reopen<F>(&self, mut callback: F) -> &Self
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        let this = Rc::downgrade(&self.0);
+        self.0.borrow_mut().platform.on_reopen(Box::new(move || {
+            if let Some(app) = this.upgrade() {
+                callback(&mut app.borrow_mut());
+            }
+        }));
+        self
+    }
+
+    /// Returns a handle to the [`BackgroundExecutor`] associated with this app, which can be used to spawn futures in the background.
+    pub fn background_executor(&self) -> BackgroundExecutor {
+        self.0.borrow().background_executor.clone()
+    }
+
+    /// Returns a handle to the [`ForegroundExecutor`] associated with this app, which can be used to spawn futures in the foreground.
+    pub fn foreground_executor(&self) -> ForegroundExecutor {
+        self.0.borrow().foreground_executor.clone()
+    }
+
+    /// Returns a reference to the [`TextSystem`] associated with this app.
+    pub fn text_system(&self) -> Arc<TextSystem> {
+        self.0.borrow().text_system.clone()
+    }
+
+    /// Returns the file URL of the executable with the specified name in the application bundle
+    pub fn path_for_auxiliary_executable(&self, name: &str) -> Result<PathBuf> {
+        self.0.borrow().path_for_auxiliary_executable(name)
+    }
+}
+
+type Handler = Box<dyn FnMut(&mut App) -> bool + 'static>;
+type AppLifecycleHandler = Box<dyn FnMut(AppLifecyclePhase, &mut App) -> bool + 'static>;
+type DisplayHandler = Box<dyn FnMut(DisplayEvent, &mut App) -> bool + 'static>;
+
+/// The properties of a display that GPUI reports changes to.
+#[derive(Clone, Copy, PartialEq)]
+struct DisplayState {
+    bounds: Bounds<Pixels>,
+    refresh_interval: Option<Duration>,
+}
+
+impl DisplayState {
+    fn changes_from(&self, previous: &DisplayState) -> DisplayChanges {
+        let mut changes = DisplayChanges::empty();
+        changes.set(DisplayChanges::BOUNDS, self.bounds != previous.bounds);
+        changes.set(
+            DisplayChanges::REFRESH_INTERVAL,
+            self.refresh_interval != previous.refresh_interval,
+        );
+        changes
+    }
+}
+
+fn read_displays(platform: &dyn Platform) -> HashMap<DisplayId, DisplayState> {
+    platform
+        .displays()
+        .into_iter()
+        .map(|display| {
+            let state = DisplayState {
+                bounds: display.bounds(),
+                refresh_interval: display.refresh_interval(),
+            };
+            (display.id(), state)
+        })
+        .collect()
+}
+
+/// The events that turn one snapshot of the connected displays into the next.
+fn display_events(
+    previous: &HashMap<DisplayId, DisplayState>,
+    current: &HashMap<DisplayId, DisplayState>,
+) -> Vec<DisplayEvent> {
+    let removed = previous
+        .keys()
+        .filter(|id| !current.contains_key(id))
+        .map(|id| DisplayEvent::Removed(*id));
+    let added_or_changed = current.iter().filter_map(|(id, state)| {
+        let Some(previous_state) = previous.get(id) else {
+            return Some(DisplayEvent::Added(*id));
+        };
+        let changes = state.changes_from(previous_state);
+        (!changes.is_empty()).then_some(DisplayEvent::Changed { id: *id, changes })
+    });
+    removed.chain(added_or_changed).collect()
+}
+type Listener = Box<dyn FnMut(&dyn Any, &mut App) -> bool + 'static>;
+type MissingGlyphCallback = Box<dyn FnMut(&[MissingGlyph], &mut App) + 'static>;
+pub(crate) type KeystrokeObserver =
+    Box<dyn FnMut(&KeystrokeEvent, &mut Window, &mut App) -> bool + 'static>;
+type QuitHandler = Box<dyn FnOnce(&mut App) -> LocalBoxFuture<'static, ()> + 'static>;
+type WindowClosedHandler = Box<dyn FnMut(&mut App, WindowId)>;
+type ReleaseListener = Box<dyn FnOnce(&mut dyn Any, &mut App) + 'static>;
+type NewEntityListener = Box<dyn FnMut(AnyEntity, &mut Option<&mut Window>, &mut App) + 'static>;
+
+struct MissingGlyphCallbackEntry {
+    registration: Rc<()>,
+    callback: Option<MissingGlyphCallback>,
+}
+
+#[derive(Default)]
+struct MissingGlyphCallbackSlot {
+    entry: RefCell<Option<MissingGlyphCallbackEntry>>,
+}
+
+impl MissingGlyphCallbackSlot {
+    fn replace(&self, callback: MissingGlyphCallback) -> Rc<()> {
+        let registration = Rc::new(());
+        self.entry.borrow_mut().replace(MissingGlyphCallbackEntry {
+            registration: registration.clone(),
+            callback: Some(callback),
+        });
+        registration
+    }
+
+    fn invoke(&self, missing_glyphs: &[MissingGlyph], cx: &mut App) {
+        let Some((registration, mut callback)) =
+            self.entry.borrow_mut().as_mut().and_then(|entry| {
+                entry
+                    .callback
+                    .take()
+                    .map(|callback| (entry.registration.clone(), callback))
+            })
+        else {
+            return;
+        };
+        callback(missing_glyphs, cx);
+
+        let mut entry = self.entry.borrow_mut();
+        let is_current = entry
+            .as_ref()
+            .is_some_and(|entry| Rc::ptr_eq(&entry.registration, &registration));
+        if is_current {
+            let Some(entry) = entry.as_mut() else {
+                return;
+            };
+            entry.callback = Some(callback);
+        }
+    }
+
+    fn remove(&self, registration: &Rc<()>) -> bool {
+        let mut entry = self.entry.borrow_mut();
+        let is_current = entry
+            .as_ref()
+            .is_some_and(|entry| Rc::ptr_eq(&entry.registration, registration));
+        if is_current {
+            entry.take();
+        }
+        is_current
+    }
+}
+
+/// Defines when the application should automatically quit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum QuitMode {
+    /// Use [`QuitMode::Explicit`] on macOS and [`QuitMode::LastWindowClosed`] on other platforms.
+    #[default]
+    Default,
+    /// Quit automatically when the last window is closed.
+    LastWindowClosed,
+    /// Quit only when requested via [`App::quit`].
+    Explicit,
+}
+
+/// Controls when GPUI hides the mouse cursor in response to keyboard input.
+///
+/// Restoration on mouse motion is handled by the platform layer; this enum
+/// only describes the policy for *triggering* a hide.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum CursorHideMode {
+    /// Never hide the cursor automatically.
+    Never,
+    /// Hide on character-producing key presses (typing).
+    OnTyping,
+    /// Hide on character-producing key presses, *and* when a key binding
+    /// resolves to an action that consumes the keystroke.
+    #[default]
+    OnTypingAndAction,
+}
+
+#[doc(hidden)]
+#[derive(Clone, PartialEq, Eq)]
+pub struct SystemWindowTab {
+    pub id: WindowId,
+    pub title: SharedString,
+    pub handle: AnyWindowHandle,
+    pub last_active_at: Instant,
+}
+
+impl SystemWindowTab {
+    /// Create a new instance of the window tab.
+    pub fn new(title: SharedString, handle: AnyWindowHandle) -> Self {
+        Self {
+            id: handle.id,
+            title,
+            handle,
+            last_active_at: crate::platform::clock::now(),
+        }
+    }
+}
+
+/// A controller for managing window tabs.
+#[derive(Default)]
+pub struct SystemWindowTabController {
+    visible: Option<bool>,
+    tab_groups: FxHashMap<usize, Vec<SystemWindowTab>>,
+}
+
+impl Global for SystemWindowTabController {}
+
+impl SystemWindowTabController {
+    /// Create a new instance of the window tab controller.
+    pub fn new() -> Self {
+        Self {
+            visible: None,
+            tab_groups: FxHashMap::default(),
+        }
+    }
+
+    /// Initialize the global window tab controller.
+    pub fn init(cx: &mut App) {
+        cx.set_global(SystemWindowTabController::new());
+    }
+
+    /// Get all tab groups.
+    pub fn tab_groups(&self) -> &FxHashMap<usize, Vec<SystemWindowTab>> {
+        &self.tab_groups
+    }
+
+    /// Get the next tab group window handle.
+    pub fn get_next_tab_group_window(cx: &mut App, id: WindowId) -> Option<&AnyWindowHandle> {
+        let controller = cx.global::<SystemWindowTabController>();
+        let current_group = controller
+            .tab_groups
+            .iter()
+            .find_map(|(group, tabs)| tabs.iter().find(|tab| tab.id == id).map(|_| group));
+
+        let current_group = current_group?;
+        // TODO: `.keys()` returns arbitrary order, what does "next" mean?
+        let group_ids: Vec<_> = controller.tab_groups.keys().collect();
+        let idx = group_ids.iter().position(|g| *g == current_group)?;
+        let next_idx = (idx + 1) % group_ids.len();
+
+        controller
+            .tab_groups
+            .get(group_ids[next_idx])
+            .and_then(|tabs| {
+                tabs.iter()
+                    .max_by_key(|tab| tab.last_active_at)
+                    .or_else(|| tabs.first())
+                    .map(|tab| &tab.handle)
+            })
+    }
+
+    /// Get the previous tab group window handle.
+    pub fn get_prev_tab_group_window(cx: &mut App, id: WindowId) -> Option<&AnyWindowHandle> {
+        let controller = cx.global::<SystemWindowTabController>();
+        let current_group = controller
+            .tab_groups
+            .iter()
+            .find_map(|(group, tabs)| tabs.iter().find(|tab| tab.id == id).map(|_| group));
+
+        let current_group = current_group?;
+        // TODO: `.keys()` returns arbitrary order, what does "previous" mean?
+        let group_ids: Vec<_> = controller.tab_groups.keys().collect();
+        let idx = group_ids.iter().position(|g| *g == current_group)?;
+        let prev_idx = if idx == 0 {
+            group_ids.len() - 1
+        } else {
+            idx - 1
+        };
+
+        controller
+            .tab_groups
+            .get(group_ids[prev_idx])
+            .and_then(|tabs| {
+                tabs.iter()
+                    .max_by_key(|tab| tab.last_active_at)
+                    .or_else(|| tabs.first())
+                    .map(|tab| &tab.handle)
+            })
+    }
+
+    /// Get all tabs in the same window.
+    pub fn tabs(&self, id: WindowId) -> Option<&Vec<SystemWindowTab>> {
+        self.tab_groups
+            .values()
+            .find(|tabs| tabs.iter().any(|tab| tab.id == id))
+    }
+
+    /// Initialize the visibility of the system window tab controller.
+    pub fn init_visible(cx: &mut App, visible: bool) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        if controller.visible.is_none() {
+            controller.visible = Some(visible);
+        }
+    }
+
+    /// Get the visibility of the system window tab controller.
+    pub fn is_visible(&self) -> bool {
+        self.visible.unwrap_or(false)
+    }
+
+    /// Set the visibility of the system window tab controller.
+    pub fn set_visible(cx: &mut App, visible: bool) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        controller.visible = Some(visible);
+    }
+
+    /// Update the last active of a window.
+    pub fn update_last_active(cx: &mut App, id: WindowId) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        for windows in controller.tab_groups.values_mut() {
+            for tab in windows.iter_mut() {
+                if tab.id == id {
+                    tab.last_active_at = crate::platform::clock::now();
+                }
+            }
+        }
+    }
+
+    /// Update the position of a tab within its group.
+    pub fn update_tab_position(cx: &mut App, id: WindowId, ix: usize) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        for (_, windows) in controller.tab_groups.iter_mut() {
+            if let Some(current_pos) = windows.iter().position(|tab| tab.id == id) {
+                if ix < windows.len() && current_pos != ix {
+                    let window_tab = windows.remove(current_pos);
+                    windows.insert(ix, window_tab);
+                }
+                break;
+            }
+        }
+    }
+
+    /// Update the title of a tab.
+    pub fn update_tab_title(cx: &mut App, id: WindowId, title: SharedString) {
+        let controller = cx.global::<SystemWindowTabController>();
+        let tab = controller
+            .tab_groups
+            .values()
+            .flat_map(|windows| windows.iter())
+            .find(|tab| tab.id == id);
+
+        if tab.map_or(true, |t| t.title == title) {
+            return;
+        }
+
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        for windows in controller.tab_groups.values_mut() {
+            for tab in windows.iter_mut() {
+                if tab.id == id {
+                    tab.title = title;
+                    return;
+                }
+            }
+        }
+    }
+
+    /// Insert a tab into a tab group.
+    pub fn add_tab(cx: &mut App, id: WindowId, tabs: Vec<SystemWindowTab>) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        let Some(tab) = tabs.iter().find(|tab| tab.id == id).cloned() else {
+            return;
+        };
+
+        let expected_tab_ids: Vec<_> = tabs
+            .iter()
+            .filter(|tab| tab.id != id)
+            .map(|tab| tab.id)
+            .sorted()
+            .collect();
+
+        let mut tab_group_id = None;
+        for (group_id, group_tabs) in &controller.tab_groups {
+            let tab_ids: Vec<_> = group_tabs.iter().map(|tab| tab.id).sorted().collect();
+            if tab_ids == expected_tab_ids {
+                tab_group_id = Some(*group_id);
+                break;
+            }
+        }
+
+        if let Some(tab_group_id) = tab_group_id {
+            if let Some(tabs) = controller.tab_groups.get_mut(&tab_group_id) {
+                tabs.push(tab);
+            }
+        } else {
+            let new_group_id = controller.tab_groups.len();
+            controller.tab_groups.insert(new_group_id, tabs);
+        }
+    }
+
+    /// Remove a tab from a tab group.
+    pub fn remove_tab(cx: &mut App, id: WindowId) -> Option<SystemWindowTab> {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        let mut removed_tab = None;
+
+        controller.tab_groups.retain(|_, tabs| {
+            if let Some(pos) = tabs.iter().position(|tab| tab.id == id) {
+                removed_tab = Some(tabs.remove(pos));
+            }
+            !tabs.is_empty()
+        });
+
+        removed_tab
+    }
+
+    /// Move a tab to a new tab group.
+    pub fn move_tab_to_new_window(cx: &mut App, id: WindowId) {
+        let removed_tab = Self::remove_tab(cx, id);
+        let controller = cx.global_mut::<SystemWindowTabController>();
+
+        if let Some(tab) = removed_tab {
+            let new_group_id = controller.tab_groups.keys().max().map_or(0, |k| k + 1);
+            controller.tab_groups.insert(new_group_id, vec![tab]);
+        }
+    }
+
+    /// Merge all tab groups into a single group.
+    pub fn merge_all_windows(cx: &mut App, id: WindowId) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        let Some(initial_tabs) = controller.tabs(id) else {
+            return;
+        };
+
+        let initial_tabs_len = initial_tabs.len();
+        let mut all_tabs = initial_tabs.clone();
+
+        for (_, mut tabs) in controller.tab_groups.drain() {
+            tabs.retain(|tab| !all_tabs[..initial_tabs_len].contains(tab));
+            all_tabs.extend(tabs);
+        }
+
+        controller.tab_groups.insert(0, all_tabs);
+    }
+
+    /// Selects the next tab in the tab group in the trailing direction.
+    pub fn select_next_tab(cx: &mut App, id: WindowId) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        let Some(tabs) = controller.tabs(id) else {
+            return;
+        };
+
+        let current_index = tabs.iter().position(|tab| tab.id == id).unwrap();
+        let next_index = (current_index + 1) % tabs.len();
+
+        let _ = &tabs[next_index].handle.update(cx, |_, window, _| {
+            window.activate_window();
+        });
+    }
+
+    /// Selects the previous tab in the tab group in the leading direction.
+    pub fn select_previous_tab(cx: &mut App, id: WindowId) {
+        let controller = cx.global_mut::<SystemWindowTabController>();
+        let Some(tabs) = controller.tabs(id) else {
+            return;
+        };
+
+        let current_index = tabs.iter().position(|tab| tab.id == id).unwrap();
+        let previous_index = if current_index == 0 {
+            tabs.len() - 1
+        } else {
+            current_index - 1
+        };
+
+        let _ = &tabs[previous_index].handle.update(cx, |_, window, _| {
+            window.activate_window();
+        });
+    }
+}
+
+pub(crate) enum GpuiMode {
+    #[cfg(any(test, feature = "harness"))]
+    Test {
+        skip_drawing: bool,
+    },
+    Production,
+}
+
+impl GpuiMode {
+    #[cfg(any(test, feature = "harness"))]
+    pub fn test() -> Self {
+        GpuiMode::Test {
+            skip_drawing: false,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn skip_drawing(&self) -> bool {
+        match self {
+            #[cfg(any(test, feature = "harness"))]
+            GpuiMode::Test { skip_drawing } => *skip_drawing,
+            GpuiMode::Production => false,
+        }
+    }
+}
+
+struct PlatformOwnedDrag {
+    source_window: WindowId,
+    state: PlatformOwnedDragState,
+}
+
+enum PlatformOwnedDragState {
+    Suspended(AnyDrag),
+    // A source-window drop consumes `active_drag` before AppKit ends the dragging session, so this
+    // marker can outlive the active drag and is cleaned up by `FileDropEvent::Ended`.
+    RestoredInSourceWindow,
+}
+
+/// Contains the state of the full application, and passed as a reference to a variety of callbacks.
+/// Other [Context] derefs to this type.
+/// You need a reference to an `App` to access the state of a [Entity].
+pub struct App {
+    pub(crate) this: Weak<AppCell>,
+    pub(crate) platform: Rc<dyn Platform>,
+    text_system: Arc<TextSystem>,
+
+    pub(crate) actions: Rc<ActionRegistry>,
+    pub(crate) active_drag: Option<AnyDrag>,
+    platform_owned_drag: Option<PlatformOwnedDrag>,
+    pub(crate) background_executor: BackgroundExecutor,
+    pub(crate) foreground_executor: ForegroundExecutor,
+    pub(crate) entities: EntityMap,
+    pub(crate) new_entity_observers: SubscriberSet<TypeId, NewEntityListener>,
+    pub(crate) windows: SlotMap<WindowId, Option<Box<Window>>>,
+    pub(crate) window_handles: FxHashMap<WindowId, AnyWindowHandle>,
+    pub(crate) focus_handles: Arc<RwLock<FocusMap>>,
+    pub(crate) keymap: Rc<RefCell<Keymap>>,
+    pub(crate) keyboard_layout: Box<dyn PlatformKeyboardLayout>,
+    pub(crate) keyboard_mapper: Rc<dyn PlatformKeyboardMapper>,
+    pub(crate) global_action_listeners:
+        TypeIdHashMap<Vec<Rc<dyn Fn(&dyn Any, DispatchPhase, &mut Self)>>>,
+    pending_effects: VecDeque<Effect>,
+
+    pub(crate) observers: SubscriberSet<EntityId, crate::fast::observers::Observer>,
+    pub(crate) event_listeners: SubscriberSet<EntityId, (TypeId, Listener)>,
+    pub(crate) keystroke_observers: SingleSubscriberSet<KeystrokeObserver>,
+    pub(crate) keystroke_interceptors: SingleSubscriberSet<KeystrokeObserver>,
+    pub(crate) keyboard_layout_observers: SingleSubscriberSet<Handler>,
+    missing_glyph_callback: Rc<MissingGlyphCallbackSlot>,
+    pub(crate) thermal_state_observers: SingleSubscriberSet<Handler>,
+    pub(crate) display_observers: SingleSubscriberSet<DisplayHandler>,
+    /// The connected displays, as of the platform's last display change
+    /// notification.
+    displays: HashMap<DisplayId, DisplayState>,
+    pub(crate) system_sleep_observers: SingleSubscriberSet<Handler>,
+    pub(crate) system_wake_observers: SingleSubscriberSet<Handler>,
+    app_lifecycle_observers: SingleSubscriberSet<AppLifecycleHandler>,
+    memory_warning_observers: SingleSubscriberSet<Handler>,
+    pub(crate) release_listeners: SubscriberSet<EntityId, ReleaseListener>,
+    pub(crate) global_observers: SubscriberSet<TypeId, crate::fast::observers::Observer>,
+    pub(crate) quit_observers: SingleSubscriberSet<QuitHandler>,
+    pub(crate) restart_observers: SingleSubscriberSet<Handler>,
+    pub(crate) window_closed_observers: SingleSubscriberSet<WindowClosedHandler>,
+
+    /// Per-App element arena. This isolates element allocations between different
+    /// App instances (important for tests where multiple Apps run concurrently).
+    ///
+    /// Kept in its own allocation because draws reach it through a raw pointer
+    /// (`CURRENT_ELEMENT_ARENA`) while a `&mut App` is live. If it were stored
+    /// inline, those accesses would alias memory the `&mut App` claims
+    /// exclusively, which is undefined behavior.
+    pub(crate) element_arena: Rc<RefCell<Arena>>,
+    /// Per-App event arena.
+    pub(crate) event_arena: Arena,
+
+    // Drop globals last. We need to ensure all tasks owned by entities and
+    // callbacks are marked cancelled at this point as this will also shutdown
+    // the tokio runtime. As any task attempting to spawn a blocking tokio task,
+    // might panic.
+    pub(crate) globals_by_type: TypeIdHashMap<Box<dyn Any>>,
+
+    // assets
+    pub(crate) loading_assets: FxHashMap<(TypeId, u64), Box<dyn Any>>,
+    asset_source: Arc<dyn AssetSource>,
+    pub(crate) svg_renderer: SvgRenderer,
+
+    // below is plain data, the drop order is insignificant here
+    pub(crate) pending_notifications: crate::fast::observers::EntityNotices,
+    pub(crate) pending_global_notifications: crate::fast::observers::GlobalNotices,
+    pub(crate) dependencies: crate::fast::dependencies::AppDependencies,
+    pub(crate) restart_path: Option<PathBuf>,
+    pub(crate) restart_arguments: Vec<OsString>,
+    pub(crate) layout_id_buffer: Vec<LayoutId>, // We recycle this memory across layout requests.
+    pub(crate) propagate_event: bool,
+    pub(crate) prompt_builder: Option<PromptBuilder>,
+    pub(crate) window_invalidators_by_entity:
+        FxHashMap<EntityId, FxHashMap<WindowId, WindowInvalidator>>,
+    pub(crate) tracked_entities: FxHashMap<WindowId, FxHashSet<EntityId>>,
+    pub(crate) current_window_by_entity: FxHashMap<EntityId, WindowId>,
+    #[cfg(any(test, feature = "harness", debug_assertions))]
+    pub(crate) name: Option<&'static str>,
+    pub(crate) text_rendering_mode: Rc<Cell<TextRenderingMode>>,
+
+    pub(crate) window_update_stack: Vec<WindowUpdateEntry>,
+    pub(crate) mode: GpuiMode,
+    pub(crate) cursor_hide_mode: CursorHideMode,
+    pub(crate) reduce_motion: bool,
+    /// Origin of the shared clock that phase-locks synced repeating animations.
+    pub(crate) synced_animation_epoch: Instant,
+    power_mode: PowerMode,
+    /// Whether the app was created by [`Application::new_inaccessible`]. No
+    /// accesskit APIs will be called when this flag is set.
+    pub(crate) accessibility_force_disabled: bool,
+    pending_updates: usize,
+    quit_mode: QuitMode,
+    quitting: bool,
+
+    // We need to ensure the leak detector drops last, after all tasks, callbacks and things have been dropped.
+    // Otherwise it may report false positives.
+    #[cfg(any(test, gpui_leak_detection))]
+    _ref_counts: Arc<RwLock<EntityRefCounts>>,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct WindowUpdateEntry {
+    window_id: WindowId,
+    bounds: WindowBounds,
+    display_id: Option<DisplayId>,
+}
+
+impl App {
+    #[allow(clippy::new_ret_no_self)]
+    pub(crate) fn new_app(
+        platform: Rc<dyn Platform>,
+        asset_source: Arc<dyn AssetSource>,
+    ) -> Rc<AppCell> {
+        let background_executor = platform.background_executor();
+        let foreground_executor = platform.foreground_executor();
+        assert!(
+            background_executor.is_main_thread(),
+            "must construct App on main thread"
+        );
+        let synced_animation_epoch = background_executor.now();
+
+        let text_system = Arc::new(TextSystem::new(platform.text_system()));
+        let entities = EntityMap::new();
+        let keyboard_layout = platform.keyboard_layout();
+        let keyboard_mapper = platform.keyboard_mapper();
+        let power_mode = platform.power_mode();
+
+        #[cfg(any(test, gpui_leak_detection))]
+        let _ref_counts = entities.ref_counts_drop_handle();
+
+        let app = Rc::new_cyclic(|this| AppCell {
+            borrow_origin: Cell::new(None),
+            app: RefCell::new(App {
+                this: this.clone(),
+                platform: platform.clone(),
+                text_system,
+                text_rendering_mode: Rc::new(Cell::new(TextRenderingMode::default())),
+                mode: GpuiMode::Production,
+                actions: Rc::new(ActionRegistry::default()),
+                pending_updates: 0,
+                active_drag: None,
+                platform_owned_drag: None,
+                background_executor,
+                foreground_executor,
+                svg_renderer: SvgRenderer::new(asset_source.clone()),
+                loading_assets: Default::default(),
+                asset_source,
+                globals_by_type: Default::default(),
+                entities,
+                new_entity_observers: SubscriberSet::new(),
+                windows: SlotMap::with_key(),
+                window_update_stack: Vec::new(),
+                window_handles: FxHashMap::default(),
+                focus_handles: Arc::new(RwLock::new(FocusMap::default())),
+                keymap: Rc::new(RefCell::new(Keymap::default())),
+                keyboard_layout,
+                keyboard_mapper,
+                global_action_listeners: Default::default(),
+                pending_effects: VecDeque::new(),
+                pending_notifications: crate::fast::observers::EntityNotices::default(),
+                pending_global_notifications: crate::fast::observers::GlobalNotices::default(),
+                dependencies: crate::fast::dependencies::AppDependencies::default(),
+                observers: SubscriberSet::new(),
+                tracked_entities: FxHashMap::default(),
+                window_invalidators_by_entity: FxHashMap::default(),
+                current_window_by_entity: FxHashMap::default(),
+                event_listeners: SubscriberSet::new(),
+                release_listeners: SubscriberSet::new(),
+                keystroke_observers: SingleSubscriberSet::new(),
+                keystroke_interceptors: SingleSubscriberSet::new(),
+                keyboard_layout_observers: SingleSubscriberSet::new(),
+                missing_glyph_callback: Rc::default(),
+                thermal_state_observers: SingleSubscriberSet::new(),
+                display_observers: SingleSubscriberSet::new(),
+                displays: read_displays(platform.as_ref()),
+                system_sleep_observers: SingleSubscriberSet::new(),
+                system_wake_observers: SingleSubscriberSet::new(),
+                app_lifecycle_observers: SingleSubscriberSet::new(),
+                memory_warning_observers: SingleSubscriberSet::new(),
+                global_observers: SubscriberSet::new(),
+                quit_observers: SingleSubscriberSet::new(),
+                restart_observers: SingleSubscriberSet::new(),
+                restart_path: None,
+                restart_arguments: Vec::new(),
+                window_closed_observers: SingleSubscriberSet::new(),
+                layout_id_buffer: Default::default(),
+                propagate_event: true,
+                prompt_builder: Some(PromptBuilder::Default),
+                quit_mode: QuitMode::default(),
+                quitting: false,
+                cursor_hide_mode: CursorHideMode::default(),
+                reduce_motion: false,
+                synced_animation_epoch,
+                power_mode,
+                accessibility_force_disabled: false,
+
+                #[cfg(any(test, feature = "harness", debug_assertions))]
+                name: None,
+                element_arena: Rc::new(RefCell::new(Arena::new(1024 * 1024))),
+                event_arena: Arena::new(1024 * 1024),
+
+                #[cfg(any(test, gpui_leak_detection))]
+                _ref_counts,
+            }),
+        });
+
+        init_app_menus(platform.as_ref(), &app.borrow());
+        SystemWindowTabController::init(&mut app.borrow_mut());
+
+        platform.on_keyboard_layout_change(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    let cx = &mut app.borrow_mut();
+                    cx.keyboard_layout = cx.platform.keyboard_layout();
+                    cx.keyboard_mapper = cx.platform.keyboard_mapper();
+                    cx.keyboard_layout_observers
+                        .clone()
+                        .retain(move |callback| (callback)(cx));
+                }
+            }
+        }));
+
+        platform.on_thermal_state_change(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    let cx = &mut app.borrow_mut();
+                    cx.thermal_state_observers
+                        .clone()
+                        .retain(move |callback| (callback)(cx));
+                }
+            }
+        }));
+
+        platform.on_displays_changed(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    app.borrow_mut().displays_changed();
+                }
+            }
+        }));
+
+        platform.on_system_sleep(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    if let Ok(mut cx) = app.try_borrow_mut() {
+                        cx.system_sleep_observers
+                            .clone()
+                            .retain(move |callback| (callback)(&mut cx));
+                    }
+                }
+            }
+        }));
+
+        platform.on_system_wake(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    if let Ok(mut cx) = app.try_borrow_mut() {
+                        cx.system_wake_observers
+                            .clone()
+                            .retain(move |callback| (callback)(&mut cx));
+                    }
+                }
+            }
+        }));
+
+        platform.on_app_lifecycle(Box::new({
+            let app = Rc::downgrade(&app);
+            move |phase| {
+                if let Some(app) = app.upgrade() {
+                    app.borrow_mut().update(|cx| {
+                        cx.app_lifecycle_observers
+                            .clone()
+                            .retain(|callback| callback(phase, cx));
+                    });
+                }
+            }
+        }));
+
+        platform.on_memory_warning(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    app.borrow_mut().update(|cx| {
+                        cx.memory_warning_observers
+                            .clone()
+                            .retain(|callback| callback(cx));
+                    });
+                }
+            }
+        }));
+
+        platform.on_power_mode_change(Box::new({
+            let app = Rc::downgrade(&app);
+            move || {
+                if let Some(app) = app.upgrade() {
+                    let power_mode = app.borrow().platform.power_mode();
+                    app.borrow_mut().power_mode = power_mode;
+                }
+            }
+        }));
+
+        platform.on_quit(Box::new({
+            let cx = Rc::downgrade(&app);
+            move || {
+                let Some(cx) = cx.upgrade() else {
+                    return true;
+                };
+                match cx.try_borrow_mut() {
+                    Ok(mut cx) => {
+                        cx.shutdown();
+                        true
+                    }
+                    Err(_) => {
+                        // Quit was requested while the AppCell was borrowed, so we can't shut down synchronously.
+                        // The platform decides how to proceed.
+                        false
+                    }
+                }
+            }
+        }));
+
+        app
+    }
+
+    #[doc(hidden)]
+    pub fn ref_counts_drop_handle(&self) -> impl Sized + use<> {
+        self.entities.ref_counts_drop_handle()
+    }
+
+    /// Captures a snapshot of all entities that currently have alive handles.
+    ///
+    /// The returned [`LeakDetectorSnapshot`] can later be passed to
+    /// [`assert_no_new_leaks`](Self::assert_no_new_leaks) to verify that no
+    /// entities created after the snapshot are still alive.
+    #[cfg(any(test, gpui_leak_detection))]
+    pub fn leak_detector_snapshot(&self) -> LeakDetectorSnapshot {
+        self.entities.leak_detector_snapshot()
+    }
+
+    /// Asserts that no entities created after `snapshot` still have alive handles.
+    ///
+    /// Entities that were already tracked at the time of the snapshot are ignored,
+    /// even if they still have handles. Only *new* entities (those whose
+    /// `EntityId` was not present in the snapshot) are considered leaks.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any new entity handles exist. The panic message lists every
+    /// leaked entity with its type name, and includes allocation-site backtraces
+    /// when `LEAK_BACKTRACE` is set.
+    #[cfg(any(test, gpui_leak_detection))]
+    pub fn assert_no_new_leaks(&self, snapshot: &LeakDetectorSnapshot) {
+        self.entities.assert_no_new_leaks(snapshot)
+    }
+
+    /// Without leak detection compiled in, this records nothing.
+    #[cfg(all(feature = "harness", not(any(test, gpui_leak_detection))))]
+    pub fn leak_detector_snapshot(&self) -> LeakDetectorSnapshot {
+        LeakDetectorSnapshot::default()
+    }
+
+    /// Without leak detection compiled in, this checks nothing. Set
+    /// `GPUI_LEAK_DETECTION` when building to enable it.
+    #[cfg(all(feature = "harness", not(any(test, gpui_leak_detection))))]
+    pub fn assert_no_new_leaks(&self, _snapshot: &LeakDetectorSnapshot) {}
+
+    /// Quit the application gracefully.
+    ///
+    /// Native applications give handlers registered with [`Context::on_app_quit`]
+    /// [`SHUTDOWN_TIMEOUT`] to complete. WebAssembly runs them asynchronously as best-effort cleanup
+    /// because its event-loop thread cannot block.
+    pub fn shutdown(&mut self) {
+        // Requested first so the final hang poll overlaps with the quit
+        // handlers. It's awaited alongside them, within `SHUTDOWN_TIMEOUT`.
+
+        let mut futures: Vec<LocalBoxFuture<'static, ()>> = Vec::new();
+
+        for observer in self.quit_observers.remove() {
+            futures.push(observer(self));
+        }
+
+        self.windows.clear();
+        self.window_handles.clear();
+        self.flush_effects();
+        self.quitting = true;
+
+        let futures = futures::future::join_all(futures);
+        #[cfg(not(target_family = "wasm"))]
+        if self
+            .foreground_executor
+            .block_with_timeout(SHUTDOWN_TIMEOUT, futures)
+            .is_err()
+        {
+            log::error!("timed out waiting on app_will_quit");
+        }
+        #[cfg(target_family = "wasm")]
+        self.foreground_executor.spawn(futures).detach();
+
+        self.quitting = false;
+    }
+
+    /// Get the id of the current keyboard layout
+    pub fn keyboard_layout(&self) -> &dyn PlatformKeyboardLayout {
+        self.keyboard_layout.as_ref()
+    }
+
+    /// Get the current keyboard mapper.
+    pub fn keyboard_mapper(&self) -> &Rc<dyn PlatformKeyboardMapper> {
+        &self.keyboard_mapper
+    }
+
+    /// Invokes a handler when the current keyboard layout changes
+    pub fn on_keyboard_layout_change<F>(&self, mut callback: F) -> Subscription
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        self.keyboard_layout_observers.insert(Box::new(move |cx| {
+            callback(cx);
+            true
+        }))
+    }
+
+    /// Gracefully quit the application via the platform's standard routine.
+    pub fn quit(&self) {
+        self.platform.quit();
+    }
+
+    /// Switches the platform between headless and windowed modes.
+    ///
+    /// On Linux, headless means no display server: windows opened afterwards lay out and handle
+    /// input but draw nothing. Windowed, the platform connects to the display server the
+    /// environment names. On macOS, the modes set the [`ActivationPolicy`]: headless is
+    /// `Accessory` (no Dock icon or menu bar) and windowed is `Regular`. Switching to windowed
+    /// doesn't activate the app: call [`App::activate`] for that.
+    ///
+    /// The returned task resolves once the switch has been applied. It fails if the platform is
+    /// already in the requested mode (switching to another display server means going headless
+    /// first), if the platform doesn't allow the mode or can't switch at all, if any window is
+    /// open (a window belongs to the display server that opened it), or if the display server
+    /// can't be reached.
+    pub fn request_windowing(&self, request: WindowingRequest) -> Task<anyhow::Result<()>> {
+        if !self.windows.is_empty() {
+            return Task::ready(Err(anyhow::anyhow!(
+                "cannot switch windowing modes while windows are open"
+            )));
+        }
+        self.platform.request_windowing(request)
+    }
+
+    /// The environment of the display server the platform is connected to, or `None` while
+    /// headless. Its activation token is always unset, since the connection has used it.
+    ///
+    /// Programs an app launches inherit this process's environment, which may name another
+    /// graphical session, or none if the app started headless. Pass them this one with
+    /// [`GraphicalEnvironment::apply_to`](crate::GraphicalEnvironment::apply_to).
+    ///
+    /// On macOS, the environment carries nothing, and this is `None` while the activation
+    /// policy is `Accessory`. Always `None` on platforms that can't switch windowing modes.
+    pub fn graphical_environment(&self) -> Option<crate::GraphicalEnvironment> {
+        self.platform.graphical_environment()
+    }
+
+    /// Returns the current policy for hiding the cursor in response to
+    /// keyboard input.
+    pub fn cursor_hide_mode(&self) -> CursorHideMode {
+        self.cursor_hide_mode
+    }
+
+    /// Sets the policy controlling when GPUI hides the cursor in response
+    /// to keyboard input.
+    pub fn set_cursor_hide_mode(&mut self, mode: CursorHideMode) {
+        self.cursor_hide_mode = mode;
+    }
+
+    /// Returns whether the cursor is currently visible according to the
+    /// platform. This will report `false` after a keyboard input has hidden
+    /// the cursor and the user has not yet moved the mouse to restore it.
+    ///
+    /// See [`App::set_cursor_hide_mode`].
+    pub fn is_cursor_visible(&self) -> bool {
+        self.platform.is_cursor_visible()
+    }
+
+    /// Returns whether non-essential animations (e.g. loading spinners) should
+    /// be rendered in a static state instead of animating.
+    pub fn reduce_motion(&self) -> bool {
+        self.reduce_motion
+    }
+
+    /// Sets whether non-essential animations (e.g. loading spinners) should be
+    /// rendered in a static state instead of animating.
+    pub fn set_reduce_motion(&mut self, reduce_motion: bool) {
+        if self.reduce_motion != reduce_motion {
+            self.reduce_motion = reduce_motion;
+            self.refresh_windows();
+        }
+    }
+
+    /// Schedules all windows in the application to be redrawn. This can be called
+    /// multiple times in an update cycle and still result in a single redraw.
+    pub fn refresh_windows(&mut self) {
+        self.pending_effects.push_back(Effect::RefreshWindows);
+    }
+
+    #[inline(always)]
+    pub(crate) fn update<R>(&mut self, update: impl FnOnce(&mut Self) -> R) -> R {
+        self.start_update();
+        let result = update(self);
+        self.finish_update();
+        result
+    }
+
+    pub(crate) fn start_update(&mut self) {
+        self.pending_updates += 1;
+    }
+
+    #[inline(never)]
+    pub(crate) fn finish_update(&mut self) {
+        if self.pending_updates == 1 {
+            self.flush_effects();
+        }
+        self.pending_updates -= 1;
+    }
+
+    /// Arrange a callback to be invoked when the given entity calls `notify` on its respective context.
+    pub fn observe<W>(
+        &mut self,
+        entity: &Entity<W>,
+        mut on_notify: impl FnMut(Entity<W>, &mut App) + 'static,
+    ) -> Subscription
+    where
+        W: 'static,
+    {
+        self.observe_internal(entity, move |e, cx| {
+            on_notify(e, cx);
+            true
+        })
+    }
+
+    pub(crate) fn detect_accessed_entities<R>(
+        &mut self,
+        callback: impl FnOnce(&mut App) -> R,
+    ) -> (R, FxHashSet<EntityId>) {
+        self.entities.push_access_scope();
+        let result = callback(self);
+        (result, self.entities.pop_access_scope())
+    }
+
+    pub(crate) fn record_entities_accessed(
+        &mut self,
+        window_handle: AnyWindowHandle,
+        invalidator: WindowInvalidator,
+        entities: &FxHashSet<EntityId>,
+    ) {
+        crate::fast::tracked_entities::record_entities_accessed(
+            self,
+            window_handle,
+            invalidator,
+            entities,
+        );
+    }
+
+    pub(crate) fn new_observer(&mut self, key: EntityId, value: Handler) -> Subscription {
+        let subscription = crate::fast::observers::observe_entity(self, key, value);
+        subscription
+    }
+
+    pub(crate) fn observe_internal<W>(
+        &mut self,
+        entity: &Entity<W>,
+        mut on_notify: impl FnMut(Entity<W>, &mut App) -> bool + 'static,
+    ) -> Subscription
+    where
+        W: 'static,
+    {
+        let entity_id = entity.entity_id();
+        let handle = entity.downgrade();
+        self.new_observer(
+            entity_id,
+            Box::new(move |cx| {
+                if let Some(entity) = handle.upgrade() {
+                    on_notify(entity, cx)
+                } else {
+                    false
+                }
+            }),
+        )
+    }
+
+    /// Arrange for the given callback to be invoked whenever the given entity emits an event of a given type.
+    /// The callback is provided a handle to the emitting entity and a reference to the emitted event.
+    pub fn subscribe<T, Event>(
+        &mut self,
+        entity: &Entity<T>,
+        mut on_event: impl FnMut(Entity<T>, &Event, &mut App) + 'static,
+    ) -> Subscription
+    where
+        T: 'static + EventEmitter<Event>,
+        Event: 'static,
+    {
+        self.subscribe_internal(entity, move |entity, event, cx| {
+            on_event(entity, event, cx);
+            true
+        })
+    }
+
+    pub(crate) fn new_subscription(
+        &mut self,
+        key: EntityId,
+        value: (TypeId, Listener),
+    ) -> Subscription {
+        let (subscription, activate) = self.event_listeners.insert_pending(key, value);
+        self.defer(move |_| activate());
+        subscription
+    }
+    pub(crate) fn subscribe_internal<T, Evt>(
+        &mut self,
+        entity: &Entity<T>,
+        mut on_event: impl FnMut(Entity<T>, &Evt, &mut App) -> bool + 'static,
+    ) -> Subscription
+    where
+        T: 'static + EventEmitter<Evt>,
+        Evt: 'static,
+    {
+        let entity_id = entity.entity_id();
+        let handle = entity.downgrade();
+        self.new_subscription(
+            entity_id,
+            (
+                TypeId::of::<Evt>(),
+                Box::new(move |event, cx| {
+                    let event: &Evt = event.downcast_ref().expect("invalid event type");
+                    if let Some(entity) = handle.upgrade() {
+                        on_event(entity, event, cx)
+                    } else {
+                        false
+                    }
+                }),
+            ),
+        )
+    }
+
+    /// Returns handles to all open windows in the application.
+    /// Each handle could be downcast to a handle typed for the root view of that window.
+    /// To find all windows of a given type, you could filter on
+    pub fn windows(&self) -> Vec<AnyWindowHandle> {
+        self.windows
+            .keys()
+            .flat_map(|window_id| self.window_handles.get(&window_id).copied())
+            .collect()
+    }
+
+    /// Returns the window handles ordered by their appearance on screen, front to back.
+    ///
+    /// The first window in the returned list is the active/topmost window of the application.
+    ///
+    /// This method returns None if the platform doesn't implement the method yet.
+    pub fn window_stack(&self) -> Option<Vec<AnyWindowHandle>> {
+        self.platform.window_stack()
+    }
+
+    /// Returns a handle to the window that is currently focused at the platform level, if one exists.
+    pub fn active_window(&self) -> Option<AnyWindowHandle> {
+        self.platform.active_window()
+    }
+
+    /// Returns the display containing the window that is currently focused at the platform level.
+    pub fn active_display(&self) -> Option<Rc<dyn PlatformDisplay>> {
+        let (display_id, _) = self.active_window_placement()?;
+        self.find_display(display_id?)
+    }
+
+    pub(crate) fn active_window_placement(&self) -> Option<(Option<DisplayId>, WindowBounds)> {
+        let window_id = self.active_window()?.window_id();
+
+        if let Some(state) = self
+            .window_update_stack
+            .iter()
+            .rev()
+            .find(|state| state.window_id == window_id)
+        {
+            return Some((state.display_id, state.bounds));
+        }
+
+        let window = self.windows.get(window_id)?.as_ref()?;
+        Some((window.display_id(), window.last_window_bounds()))
+    }
+
+    pub(crate) fn sync_window_update_entry(&mut self, window: &Window) {
+        if let Some(state) = self
+            .window_update_stack
+            .iter_mut()
+            .rev()
+            .find(|state| state.window_id == window.handle.id)
+        {
+            state.bounds = window.last_window_bounds();
+            state.display_id = window.display_id();
+        }
+    }
+
+    /// Opens a new window with the given option and the root view returned by the given function.
+    /// The function is invoked with a `Window`, which can be used to interact with window-specific
+    /// functionality.
+    pub fn open_window<V: 'static + Render>(
+        &mut self,
+        options: crate::WindowOptions,
+        build_root_view: impl FnOnce(&mut Window, &mut App) -> Entity<V>,
+    ) -> anyhow::Result<WindowHandle<V>> {
+        self.update(|cx| {
+            let id = cx.windows.insert(None);
+            let handle = WindowHandle::new(id);
+            match Window::new(handle.into(), options, cx) {
+                Ok(mut window) => {
+                    cx.window_update_stack.push(WindowUpdateEntry {
+                        window_id: id,
+                        bounds: window.last_window_bounds(),
+                        display_id: window.display_id(),
+                    });
+                    let root_view = build_root_view(&mut window, cx);
+                    cx.window_update_stack.pop();
+                    window.root.replace(root_view.into());
+                    window.defer(cx, |window: &mut Window, cx| window.appearance_changed(cx));
+
+                    // allow a window to draw at least once before returning
+                    // this didn't cause any issues on non windows platforms as it seems we always won the race to on_request_frame
+                    // on windows we quite frequently lose the race and return a window that has never rendered, which leads to a crash
+                    // where DispatchTree::root_node_id asserts on empty nodes
+                    let clear = window.draw(cx);
+                    clear.clear(cx);
+
+                    cx.window_handles.insert(id, window.handle);
+                    cx.windows.get_mut(id).unwrap().replace(Box::new(window));
+                    Ok(handle)
+                }
+                Err(e) => {
+                    cx.windows.remove(id);
+                    Err(e)
+                }
+            }
+        })
+    }
+
+    /// Instructs the platform to activate the application by bringing it to the foreground.
+    pub fn activate(&self, ignoring_other_apps: bool) {
+        self.platform.activate(ignoring_other_apps);
+    }
+
+    /// Hide the application at the platform level.
+    pub fn hide(&self) {
+        self.platform.hide();
+    }
+
+    /// Hide other applications at the platform level.
+    pub fn hide_other_apps(&self) {
+        self.platform.hide_other_apps();
+    }
+
+    /// Unhide other applications at the platform level.
+    pub fn unhide_other_apps(&self) {
+        self.platform.unhide_other_apps();
+    }
+
+    /// Returns the list of currently active displays.
+    pub fn displays(&self) -> Vec<Rc<dyn PlatformDisplay>> {
+        self.platform.displays()
+    }
+
+    /// Returns the primary display that will be used for new windows.
+    pub fn primary_display(&self) -> Option<Rc<dyn PlatformDisplay>> {
+        self.platform.primary_display()
+    }
+
+    /// Returns whether `screen_capture_sources` may work.
+    pub fn is_screen_capture_supported(&self) -> bool {
+        self.platform.is_screen_capture_supported()
+    }
+
+    /// Returns a list of available screen capture sources.
+    pub fn screen_capture_sources(
+        &self,
+    ) -> oneshot::Receiver<Result<Vec<Rc<dyn ScreenCaptureSource>>>> {
+        self.platform.screen_capture_sources()
+    }
+
+    /// Returns the display with the given ID, if one exists.
+    pub fn find_display(&self, id: DisplayId) -> Option<Rc<dyn PlatformDisplay>> {
+        self.displays()
+            .iter()
+            .find(|display| display.id() == id)
+            .cloned()
+    }
+
+    /// Returns a diagnostic snapshot of app, display, and window state.
+    ///
+    /// This is for inspecting a running app that is misbehaving in a way that
+    /// is hard to reproduce. The layout is not stable and varies by platform;
+    /// do not parse it for program logic. A window that is being updated when
+    /// this is called is listed by ID only.
+    pub fn debug_state(&self) -> serde_json::Value {
+        let displays = self
+            .platform
+            .displays()
+            .into_iter()
+            .map(|display| {
+                serde_json::json!({
+                    "id": u64::from(display.id()),
+                    "uuid": display.uuid().ok().map(|uuid| uuid.to_string()),
+                    "bounds": display.bounds(),
+                    "visible_bounds": display.visible_bounds(),
+                    "refresh_interval_seconds": display
+                        .refresh_interval()
+                        .map(|interval| interval.as_secs_f64()),
+                })
+            })
+            .collect::<Vec<_>>();
+        let windows = self
+            .windows
+            .iter()
+            .map(|(window_id, window)| match window {
+                Some(window) => window.debug_state(),
+                None => serde_json::json!({ "id": window_id.as_u64(), "updating": true }),
+            })
+            .collect::<Vec<_>>();
+        serde_json::json!({
+            "compositor": self.platform.compositor_name(),
+            "thermal_state": format!("{:?}", self.platform.thermal_state()),
+            "power_mode": {
+                "cached": format!("{:?}", self.power_mode),
+                "platform": format!("{:?}", self.platform.power_mode()),
+            },
+            "window_appearance": format!("{:?}", self.platform.window_appearance()),
+            "cursor_visible": self.platform.is_cursor_visible(),
+            "active_window_id": self
+                .platform
+                .active_window()
+                .map(|handle| handle.window_id().as_u64()),
+            "window_stack": self.platform.window_stack().map(|stack| {
+                stack
+                    .into_iter()
+                    .map(|handle| handle.window_id().as_u64())
+                    .collect::<Vec<_>>()
+            }),
+            "primary_display_id": self
+                .platform
+                .primary_display()
+                .map(|display| u64::from(display.id())),
+            "displays": displays,
+            "windows": windows,
+            "platform": self.platform.debug_state(),
+        })
+    }
+
+    /// Returns the current thermal state of the system.
+    pub fn thermal_state(&self) -> ThermalState {
+        self.platform.thermal_state()
+    }
+
+    /// Prevents idle sleep while the returned guard is held.
+    pub fn prevent_idle_sleep(&self, reason: &str) -> Task<Result<ActivityGuard>> {
+        self.platform.prevent_idle_sleep(reason)
+    }
+
+    /// Invokes a handler when the thermal state changes
+    pub fn on_thermal_state_change<F>(&self, mut callback: F) -> Subscription
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        self.thermal_state_observers.insert(Box::new(move |cx| {
+            callback(cx);
+            true
+        }))
+    }
+
+    /// Invokes a handler when the system is about to sleep.
+    ///
+    /// The platform gives the process only a short time before suspending, so
+    /// handlers should record state or cancel work rather than start it.
+    pub fn on_system_sleep<F>(&self, mut callback: F) -> Subscription
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        self.system_sleep_observers.insert(Box::new(move |cx| {
+            callback(cx);
+            true
+        }))
+    }
+
+    pub(crate) fn displays_changed(&mut self) {
+        let current = read_displays(self.platform.as_ref());
+        let events = display_events(&self.displays, &current);
+        self.displays = current;
+        for event in &events {
+            let DisplayEvent::Changed { id, .. } = *event else {
+                continue;
+            };
+            for handle in self.windows() {
+                self.update_window(handle, |_, window, cx| {
+                    if window.display_id == Some(id) {
+                        window.notify_display_observers(cx);
+                    }
+                })
+                .log_err();
+            }
+        }
+        for event in events {
+            self.display_observers
+                .clone()
+                .retain(|callback| (callback)(event, self));
+        }
+    }
+
+    pub(crate) fn knows_display(&self, id: DisplayId) -> bool {
+        self.displays.contains_key(&id)
+    }
+
+    /// The refresh interval of a connected display, as of the platform's last
+    /// display change notification.
+    pub(crate) fn display_refresh_interval(&self, id: DisplayId) -> Option<Duration> {
+        self.displays.get(&id)?.refresh_interval
+    }
+
+    /// Invokes a handler when a display is connected, disconnected, or its
+    /// properties change.
+    pub fn observe_displays<F>(&self, mut callback: F) -> Subscription
+    where
+        F: 'static + FnMut(DisplayEvent, &mut App),
+    {
+        self.display_observers.insert(Box::new(move |event, cx| {
+            callback(event, cx);
+            true
+        }))
+    }
+
+    /// Invokes a handler when the system wakes from sleep.
+    pub fn on_system_wake<F>(&self, mut callback: F) -> Subscription
+    where
+        F: 'static + FnMut(&mut App),
+    {
+        self.system_wake_observers.insert(Box::new(move |cx| {
+            callback(cx);
+            true
+        }))
+    }
+
+    /// Observes mobile application lifecycle changes. Desktop platforms do not
+    /// emit these events. On iOS these currently describe the single connected
+    /// scene, not individual windows.
+    ///
+    /// Save important changes incrementally: neither disconnection nor quit is
+    /// guaranteed before the system terminates a backgrounded application.
+    /// Dropping the returned subscription removes the observer.
+    pub fn on_app_lifecycle(
+        &self,
+        mut callback: impl FnMut(AppLifecyclePhase, &mut App) + 'static,
+    ) -> Subscription {
+        self.app_lifecycle_observers
+            .insert(Box::new(move |phase, cx| {
+                callback(phase, cx);
+                true
+            }))
+    }
+
+    /// Observes mobile memory-pressure warnings so applications can release
+    /// expendable caches. Dropping the subscription removes the observer.
+    pub fn on_memory_warning(&self, mut callback: impl FnMut(&mut App) + 'static) -> Subscription {
+        self.memory_warning_observers.insert(Box::new(move |cx| {
+            callback(cx);
+            true
+        }))
+    }
+
+    /// Returns the appearance of the application's windows.
+    pub fn window_appearance(&self) -> WindowAppearance {
+        self.platform.window_appearance()
+    }
+
+    /// Overrides the appearance (light/dark) applied to the app's windows, independent of
+    /// the OS-wide setting. Pass `None` to clear the override and follow the system again.
+    /// The current value is reported by [`App::window_appearance`].
+    ///
+    /// On macOS this sets the underlying `NSApplication.appearance`, which controls the
+    /// native window chrome (the window border and titlebar) of every window. Use this
+    /// when the app uses a dark theme while the system is in light mode (or vice versa)
+    /// so the window edges render to match the theme. While an appearance is forced,
+    /// windows stop tracking system light/dark changes; pass `None` to resume following
+    /// the system. On other platforms this is a no-op.
+    pub fn set_window_appearance(&self, appearance: Option<WindowAppearance>) {
+        self.platform.set_window_appearance(appearance);
+    }
+
+    /// Returns the window button layout configuration when supported.
+    pub fn button_layout(&self) -> Option<WindowButtonLayout> {
+        self.platform.button_layout()
+    }
+
+    /// Reads data from the platform clipboard.
+    pub fn read_from_clipboard(&self) -> Option<ClipboardItem> {
+        self.platform.read_from_clipboard()
+    }
+
+    /// Reads data from the platform clipboard, resolving once the contents
+    /// are available.
+    ///
+    /// Prefer this over [`App::read_from_clipboard`] in code that can await:
+    /// on platforms where clipboard access is asynchronous and
+    /// permission-gated (e.g. web), the synchronous read always returns
+    /// `None` while this method performs a real read.
+    pub fn read_from_clipboard_async(
+        &self,
+    ) -> Task<Result<Option<ClipboardItem>, ClipboardReadError>> {
+        self.platform.read_from_clipboard_async()
+    }
+
+    /// Sets the text rendering mode for the application.
+    pub fn set_text_rendering_mode(&mut self, mode: TextRenderingMode) {
+        self.text_rendering_mode.set(mode);
+    }
+
+    /// Returns the current text rendering mode for the application.
+    pub fn text_rendering_mode(&self) -> TextRenderingMode {
+        self.text_rendering_mode.get()
+    }
+
+    /// Returns the operating system's power mode, or [`PowerMode::Unknown`]
+    /// when the platform cannot determine it.
+    pub fn power_mode(&self) -> PowerMode {
+        self.power_mode
+    }
+
+    /// Writes data to the platform clipboard.
+    pub fn write_to_clipboard(&self, item: ClipboardItem) {
+        self.platform.write_to_clipboard(item)
+    }
+
+    /// Reads data from the primary selection buffer.
+    /// Only available on Linux.
+    #[cfg(target_os = "linux")]
+    pub fn read_from_primary(&self) -> Option<ClipboardItem> {
+        self.platform.read_from_primary()
+    }
+
+    /// Writes data to the primary selection buffer.
+    /// Only available on Linux.
+    #[cfg(target_os = "linux")]
+    pub fn write_to_primary(&self, item: ClipboardItem) {
+        self.platform.write_to_primary(item)
+    }
+
+    /// Reads data from macOS's "Find" pasteboard.
+    ///
+    /// Used to share the current search string between apps.
+    ///
+    /// https://developer.apple.com/documentation/appkit/nspasteboard/name-swift.struct/find
+    #[cfg(target_os = "macos")]
+    pub fn read_from_find_pasteboard(&self) -> Option<ClipboardItem> {
+        self.platform.read_from_find_pasteboard()
+    }
+
+    /// Writes data to macOS's "Find" pasteboard.
+    ///
+    /// Used to share the current search string between apps.
+    ///
+    /// https://developer.apple.com/documentation/appkit/nspasteboard/name-swift.struct/find
+    #[cfg(target_os = "macos")]
+    pub fn write_to_find_pasteboard(&self, item: ClipboardItem) {
+        self.platform.write_to_find_pasteboard(item)
+    }
+
+    /// Writes credentials to the platform keychain.
+    pub fn write_credentials(
+        &self,
+        url: &str,
+        username: &str,
+        password: &[u8],
+    ) -> Task<Result<()>> {
+        self.platform.write_credentials(url, username, password)
+    }
+
+    /// Atomically writes credentials unless an item with this URL and username exists.
+    ///
+    /// Returns `true` if written, or `false` if the existing item was left unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if Keychain access fails or the platform lacks support.
+    #[cfg(target_os = "macos")]
+    pub fn write_credentials_if_not_exists(
+        &self,
+        url: &str,
+        username: &str,
+        password: &[u8],
+    ) -> Task<Result<bool>> {
+        self.platform
+            .write_credentials_if_not_exists(url, username, password)
+    }
+
+    /// Reads credentials from the platform keychain.
+    pub fn read_credentials(&self, url: &str) -> Task<Result<Option<(String, Vec<u8>)>>> {
+        self.platform.read_credentials(url)
+    }
+
+    /// Deletes credentials from the platform keychain.
+    pub fn delete_credentials(&self, url: &str) -> Task<Result<()>> {
+        self.platform.delete_credentials(url)
+    }
+
+    /// Directs the platform's default browser to open the given URL.
+    pub fn open_url(&self, url: &str) {
+        self.platform.open_url(url);
+    }
+
+    /// Registers the given URL scheme (e.g. `zed` for `zed://` urls) to be
+    /// opened by the current app.
+    ///
+    /// On some platforms (e.g. macOS) you may be able to register URL schemes
+    /// as part of app distribution, but this method exists to let you register
+    /// schemes at runtime.
+    pub fn register_url_scheme(&self, scheme: &str) -> Task<Result<()>> {
+        self.platform.register_url_scheme(scheme)
+    }
+
+    /// Sets the application's process-wide identity and user-visible name.
+    ///
+    /// The identifier is used for platform identity mechanisms such as the
+    /// Windows AppUserModelID. The name is used wherever the operating system
+    /// presents the application to the user. Call this once, early in startup,
+    /// before opening windows or posting notifications.
+    pub fn set_app_identity(&self, identifier: &str, name: &str) {
+        self.platform.set_app_identity(identifier, name);
+    }
+
+    /// Posts a notification to the operating system's notification center.
+    ///
+    /// Posting a notification whose [`SystemNotification::tag`] matches an
+    /// earlier one replaces that notification where the platform supports it.
+    /// No-op on platforms without notification support, or when delivery is
+    /// unavailable (e.g. authorization was denied).
+    pub fn show_system_notification(&self, notification: SystemNotification) {
+        self.platform.show_system_notification(notification);
+    }
+
+    /// Removes the delivered or pending notification with this tag.
+    ///
+    /// Best-effort: some platforms cannot retract a notification once shown,
+    /// in which case it ages out of the notification center on its own.
+    pub fn dismiss_system_notification(&self, tag: &str) {
+        self.platform.dismiss_system_notification(tag);
+    }
+
+    /// Registers the handler invoked when the user activates a system
+    /// notification, either by clicking its body or one of its action
+    /// buttons. Subsequent registrations replace the handler.
+    pub fn on_system_notification_response<F>(&self, mut callback: F)
+    where
+        F: 'static + FnMut(SystemNotificationResponse, &mut App),
+    {
+        let this = self.this.clone();
+        self.platform
+            .on_system_notification_response(Box::new(move |response| {
+                if let Some(app) = this.upgrade() {
+                    callback(response, &mut app.borrow_mut());
+                }
+            }));
+    }
+
+    /// Returns the full pathname of the current app bundle.
+    ///
+    /// Returns an error if the app is not being run from a bundle.
+    pub fn app_path(&self) -> Result<PathBuf> {
+        self.platform.app_path()
+    }
+
+    /// On Linux, returns the name of the compositor in use.
+    ///
+    /// Returns an empty string on other platforms.
+    pub fn compositor_name(&self) -> &'static str {
+        self.platform.compositor_name()
+    }
+
+    /// Returns the host OS and application target reported by the backend.
+    pub fn platform_info(&self) -> crate::PlatformInfo {
+        self.platform.platform_info()
+    }
+
+    /// Returns the file URL of the executable with the specified name in the application bundle
+    pub fn path_for_auxiliary_executable(&self, name: &str) -> Result<PathBuf> {
+        self.platform.path_for_auxiliary_executable(name)
+    }
+
+    /// Displays a platform modal for selecting paths.
+    ///
+    /// When one or more paths are selected, they'll be relayed asynchronously via the returned oneshot channel.
+    /// If cancelled, a `None` will be relayed instead.
+    /// May return an error on Linux if the file picker couldn't be opened.
+    pub fn prompt_for_paths(
+        &self,
+        options: PathPromptOptions,
+    ) -> oneshot::Receiver<Result<Option<Vec<PathBuf>>>> {
+        self.platform.prompt_for_paths(options)
+    }
+
+    /// Displays a platform modal for selecting a new path where a file can be saved.
+    ///
+    /// The provided directory will be used to set the initial location.
+    /// When a path is selected, it is relayed asynchronously via the returned oneshot channel.
+    /// If cancelled, a `None` will be relayed instead.
+    /// May return an error on Linux if the file picker couldn't be opened.
+    pub fn prompt_for_new_path(
+        &self,
+        directory: &Path,
+        suggested_name: Option<&str>,
+    ) -> oneshot::Receiver<Result<Option<PathBuf>>> {
+        self.platform.prompt_for_new_path(directory, suggested_name)
+    }
+
+    /// Reveals the specified path at the platform level, such as in Finder on macOS.
+    pub fn reveal_path(&self, path: &Path) {
+        self.platform.reveal_path(path)
+    }
+
+    /// Opens the specified path with the system's default application.
+    pub fn open_with_system(&self, path: &Path) {
+        self.platform.open_with_system(path)
+    }
+
+    /// Returns whether the user has configured scrollbars to auto-hide at the platform level.
+    pub fn should_auto_hide_scrollbars(&self) -> bool {
+        self.platform.should_auto_hide_scrollbars()
+    }
+
+    /// Restarts the application.
+    pub fn restart(&mut self) {
+        self.restart_observers
+            .clone()
+            .retain(|observer| observer(self));
+        self.platform.restart(
+            self.restart_path.take(),
+            std::mem::take(&mut self.restart_arguments),
+        )
+    }
+
+    /// Sets the path to use when restarting the application.
+    pub fn set_restart_path(&mut self, path: PathBuf) {
+        self.restart_path = Some(path);
+    }
+
+    /// Configures when the application should automatically quit.
+    /// By default, [`QuitMode::Default`] is used.
+    pub fn set_quit_mode(&mut self, mode: QuitMode) {
+        self.quit_mode = mode;
+    }
+
+    /// Sets whether the application participates in the system's foreground UI.
+    ///
+    /// Only has an effect on macOS, where [`Self::request_windowing`] normally sets it. Use this
+    /// for an accessory app that shows windows, such as a menu bar utility. It overrides the
+    /// policy until the next [`Self::request_windowing`], and the app counts as headless while
+    /// `Accessory`. After switching to [`ActivationPolicy::Regular`], activate the app yourself
+    /// with [`Self::activate`]; otherwise its menu bar may not appear until the app is
+    /// reactivated.
+    pub fn set_activation_policy(&mut self, policy: ActivationPolicy) {
+        self.platform.set_activation_policy(policy);
+    }
+
+    /// Returns the SVG renderer used by the application.
+    pub fn svg_renderer(&self) -> SvgRenderer {
+        self.svg_renderer.clone()
+    }
+
+    pub(crate) fn push_effect(&mut self, effect: Effect) {
+        match &effect {
+            Effect::Notify { emitter } => {
+                if !crate::fast::observers::note_entity_change(self, *emitter) {
+                    return;
+                }
+            }
+            Effect::NotifyGlobalObservers { global_type } => {
+                crate::fast::dependencies::global_changed(self, *global_type);
+                if !crate::fast::observers::note_global_change(self, *global_type) {
+                    return;
+                }
+            }
+            _ => {}
+        };
+
+        self.pending_effects.push_back(effect);
+    }
+
+    /// Called at the end of [`App::update`] to complete any side effects
+    /// such as notifying observers, emitting events, etc. Effects can themselves
+    /// cause effects, so we continue looping until all effects are processed.
+    fn flush_effects(&mut self) {
+        loop {
+            self.release_dropped_entities();
+            self.release_dropped_focus_handles();
+            if let Some(effect) = self.pending_effects.pop_front() {
+                match effect {
+                    Effect::Notify { emitter } => {
+                        self.apply_notify_effect(emitter);
+                    }
+
+                    Effect::Emit {
+                        emitter,
+                        event_type,
+                        event,
+                    } => self.apply_emit_effect(emitter, event_type, &*event),
+
+                    Effect::RefreshWindows => {
+                        self.apply_refresh_effect();
+                    }
+
+                    Effect::NotifyGlobalObservers { global_type } => {
+                        self.apply_notify_global_observers_effect(global_type);
+                    }
+
+                    Effect::Defer { callback } => {
+                        self.apply_defer_effect(callback);
+                    }
+                    Effect::EntityCreated {
+                        entity,
+                        tid,
+                        window,
+                    } => {
+                        self.apply_entity_created_effect(entity, tid, window);
+                    }
+                }
+            } else {
+                #[cfg(any(test, feature = "harness"))]
+                if matches!(self.mode, GpuiMode::Test { .. }) {
+                    for window in self
+                        .windows
+                        .values()
+                        .filter_map(|window| {
+                            let window = window.as_deref()?;
+                            window.invalidator.is_dirty().then_some(window.handle)
+                        })
+                        .collect::<Vec<_>>()
+                    {
+                        self.update_window(window, |_, window, cx| window.draw(cx).clear(cx))
+                            .unwrap();
+                    }
+                }
+
+                if self.pending_effects.is_empty() {
+                    for window in self.windows.values().filter_map(|window| window.as_deref()) {
+                        if window.invalidator.is_dirty()
+                            || window.needs_present.get()
+                            || !window.next_frame_callbacks.borrow().is_empty()
+                        {
+                            window.platform_window.schedule_frame();
+                        }
+                    }
+
+                    self.event_arena.clear();
+                    break;
+                }
+            }
+        }
+    }
+
+    /// Repeatedly called during `flush_effects` to release any entities whose
+    /// reference count has become zero. We invoke any release observers before dropping
+    /// each entity.
+    fn release_dropped_entities(&mut self) {
+        loop {
+            let dropped = self.entities.take_dropped();
+            if dropped.is_empty() {
+                break;
+            }
+
+            for (entity_id, mut entity) in dropped {
+                self.observers.remove(&entity_id);
+                self.event_listeners.remove(&entity_id);
+                self.window_invalidators_by_entity.remove(&entity_id);
+                self.current_window_by_entity.remove(&entity_id);
+                for release_callback in self.release_listeners.remove(&entity_id) {
+                    release_callback(entity.as_mut(), self);
+                }
+            }
+        }
+    }
+
+    /// Repeatedly called during `flush_effects` to handle a focused handle being dropped.
+    fn release_dropped_focus_handles(&mut self) {
+        let focus_handles = self.focus_handles.clone();
+        let mut focus_handles = focus_handles.write();
+        let FocusMap {
+            handles,
+            dropped_handles,
+        } = &mut *focus_handles;
+        if dropped_handles.is_empty() {
+            return;
+        }
+
+        let windows = self
+            .windows
+            .values()
+            .filter_map(|window| {
+                let window = window.as_ref()?;
+                dropped_handles
+                    .contains(&window.focus?)
+                    .then_some(window.handle)
+            })
+            .collect::<SmallVec<[_; 1]>>();
+        for handle_id in dropped_handles.drain(..) {
+            handles.remove(handle_id);
+        }
+        drop(focus_handles);
+
+        for window_handle in windows {
+            window_handle
+                .update(self, |_, window, cx| window.blur(cx))
+                .ok();
+        }
+    }
+
+    fn apply_notify_effect(&mut self, emitter: EntityId) {
+        let fast_told = crate::fast::observers::take_entity_notice(self, emitter);
+
+        self.observers.clone().retain(&emitter, |observer| {
+            crate::fast::observers::tell(observer, fast_told, self)
+        });
+    }
+
+    fn apply_emit_effect(&mut self, emitter: EntityId, event_type: TypeId, event: &dyn Any) {
+        self.event_listeners
+            .clone()
+            .retain(&emitter, |(stored_type, handler)| {
+                if *stored_type == event_type {
+                    handler(event, self)
+                } else {
+                    true
+                }
+            });
+    }
+
+    fn apply_refresh_effect(&mut self) {
+        for window in self.windows.values_mut() {
+            if let Some(window) = window.as_deref_mut() {
+                window.refreshing = true;
+                window.invalidator.set_dirty(true);
+            }
+        }
+    }
+
+    fn apply_notify_global_observers_effect(&mut self, type_id: TypeId) {
+        let fast_told = crate::fast::observers::take_global_notice(self, type_id);
+        self.global_observers.clone().retain(&type_id, |observer| {
+            crate::fast::observers::tell(observer, fast_told, self)
+        });
+    }
+
+    fn apply_defer_effect(&mut self, callback: Box<dyn FnOnce(&mut Self) + 'static>) {
+        callback(self);
+    }
+
+    fn apply_entity_created_effect(
+        &mut self,
+        entity: AnyEntity,
+        tid: TypeId,
+        window: Option<WindowId>,
+    ) {
+        // Seed the entity's current window from its creation context so
+        // `with_window` resolves correctly before the entity has ever been
+        // rendered.
+        if let Some(id) = window {
+            self.current_window_by_entity.insert(entity.entity_id(), id);
+        }
+
+        self.new_entity_observers.clone().retain(&tid, |observer| {
+            if let Some(id) = window {
+                self.update_window_id(id, {
+                    let entity = entity.clone();
+                    |_, window, cx| (observer)(entity, &mut Some(window), cx)
+                })
+                .expect("All windows should be off the stack when flushing effects");
+            } else {
+                (observer)(entity.clone(), &mut None, self)
+            }
+            true
+        });
+    }
+
+    /// Run `f` against the entity's *current* window — the most recently
+    /// rendered window that referenced the entity, or its creation window if
+    /// it has yet to be rendered. Returns `None` if the entity has no
+    /// current window, or if that window has been closed, or if it is
+    /// already on the update stack.
+    #[inline(always)]
+    pub fn with_window<R>(
+        &mut self,
+        entity_id: EntityId,
+        f: impl FnOnce(&mut Window, &mut App) -> R,
+    ) -> Option<R> {
+        let window_id = *self.current_window_by_entity.get(&entity_id)?;
+        self.update_window_id(window_id, |_, window, cx| f(window, cx))
+            .ok()
+    }
+
+    fn ensure_window(&mut self, entity_id: EntityId, window: WindowId) {
+        self.current_window_by_entity
+            .entry(entity_id)
+            .or_insert(window);
+    }
+
+    #[inline(always)]
+    pub(crate) fn update_window_id<T, F>(&mut self, id: WindowId, update: F) -> Result<T>
+    where
+        F: FnOnce(AnyView, &mut Window, &mut App) -> T,
+    {
+        let mut update = Some(update);
+        let mut result = None;
+        self.update_window_erased(id, &mut |arguments| {
+            if let Some((root_view, window, cx)) = arguments {
+                result = Some(update.take().unwrap()(root_view, window, cx));
+            } else {
+                drop(update.take());
+                drop(result.take());
+            }
+        });
+        result.context("window not found")
+    }
+
+    /// Creates an `AsyncApp`, which can be cloned and has a static lifetime
+    /// so it can be held across `await` points.
+    pub fn to_async(&self) -> AsyncApp {
+        AsyncApp {
+            app: self.this.clone(),
+            background_executor: self.background_executor.clone(),
+            foreground_executor: self.foreground_executor.clone(),
+        }
+    }
+
+    /// Obtains a reference to the executor, which can be used to spawn futures.
+    pub fn background_executor(&self) -> &BackgroundExecutor {
+        &self.background_executor
+    }
+
+    /// Whether this app runs on the deterministic test scheduler. See
+    /// [`BackgroundExecutor::is_test`].
+    pub fn is_test(&self) -> bool {
+        self.background_executor.is_test()
+    }
+
+    /// Obtains a reference to the executor, which can be used to spawn futures.
+    pub fn foreground_executor(&self) -> &ForegroundExecutor {
+        if self.quitting {
+            panic!("Can't spawn on main thread after on_app_quit")
+        };
+        &self.foreground_executor
+    }
+
+    /// Spawns the future returned by the given function on the main thread. The closure will be invoked
+    /// with [AsyncApp], which allows the application state to be accessed across await points.
+    #[track_caller]
+    #[inline(always)]
+    pub fn spawn<AsyncFn, R>(&self, f: AsyncFn) -> Task<R>
+    where
+        AsyncFn: AsyncFnOnce(&mut AsyncApp) -> R + 'static,
+        R: 'static,
+    {
+        let mut cx = self.prepare_spawn();
+
+        self.foreground_executor
+            .spawn(async move { f(&mut cx).await }.boxed_local())
+    }
+
+    /// Spawns the future returned by the given function on the main thread with
+    /// the given priority. The closure will be invoked with [AsyncApp], which
+    /// allows the application state to be accessed across await points.
+    pub fn spawn_with_priority<AsyncFn, R>(&self, priority: Priority, f: AsyncFn) -> Task<R>
+    where
+        AsyncFn: AsyncFnOnce(&mut AsyncApp) -> R + 'static,
+        R: 'static,
+    {
+        if self.quitting {
+            debug_panic!("Can't spawn on main thread after on_app_quit")
+        };
+
+        let mut cx = self.to_async();
+
+        self.foreground_executor
+            .spawn_with_priority(priority, async move { f(&mut cx).await }.boxed_local())
+    }
+
+    /// Schedules the given function to be run at the end of the current effect cycle, allowing entities
+    /// that are currently on the stack to be returned to the app.
+    pub fn defer(&mut self, f: impl FnOnce(&mut App) + 'static) {
+        self.push_effect(Effect::Defer {
+            callback: Box::new(f),
+        });
+    }
+
+    /// Accessor for the application's asset source, which is provided when constructing the `App`.
+    pub fn asset_source(&self) -> &Arc<dyn AssetSource> {
+        &self.asset_source
+    }
+
+    /// Accessor for the text system.
+    pub fn text_system(&self) -> &Arc<TextSystem> {
+        &self.text_system
+    }
+
+    /// Invokes a callback with grapheme clusters that exhausted font fallback.
+    ///
+    /// Registering a callback replaces the previous callback and enables missing-glyph
+    /// detection. The callback runs on the foreground executor after shaping has
+    /// released its internal locks. Dropping its subscription disables detection until
+    /// another callback is registered.
+    ///
+    /// Reports are queued without blocking shaping, then deduplicated before delivery.
+    /// The bounded queue can drop reports on overflow. Dropped reports may be reported
+    /// again when the text is reshaped; no retry is scheduled automatically.
+    pub fn on_missing_glyphs(
+        &self,
+        callback: impl FnMut(&[MissingGlyph], &mut App) + 'static,
+    ) -> Subscription {
+        let registration = self.missing_glyph_callback.replace(Box::new(callback));
+
+        if let Some(mut receiver) = self.text_system.take_missing_glyph_receiver() {
+            let callback = self.missing_glyph_callback.clone();
+            self.spawn(async move |cx| {
+                while let Ok(missing_glyphs) = receiver.recv().await {
+                    cx.update(|cx| callback.invoke(&missing_glyphs, cx));
+                }
+            })
+            .detach();
+        }
+        self.text_system.enable_missing_glyph_reporting();
+
+        let callback = self.missing_glyph_callback.clone();
+        let text_system = self.text_system.clone();
+        Subscription::new(move || {
+            if callback.remove(&registration) {
+                text_system.disable_missing_glyph_reporting();
+            }
+        })
+    }
+
+    /// Check whether a global of the given type has been assigned.
+    pub fn has_global<G: Global>(&self) -> bool {
+        crate::fast::dependencies::note_global_presence_read::<G>(self);
+        self.globals_by_type.contains_key(&TypeId::of::<G>())
+    }
+
+    /// Access the global of the given type. Panics if a global for that type has not been assigned.
+    #[track_caller]
+    pub fn global<G: Global>(&self) -> &G {
+        crate::fast::dependencies::note_global_read(self, TypeId::of::<G>());
+        self.globals_by_type
+            .get(&TypeId::of::<G>())
+            .map(|any_state| any_state.downcast_ref::<G>().unwrap())
+            .unwrap_or_else(|| panic!("no state of type {} exists", type_name::<G>()))
+    }
+
+    /// Access the global of the given type if a value has been assigned.
+    pub fn try_global<G: Global>(&self) -> Option<&G> {
+        crate::fast::dependencies::note_global_read(self, TypeId::of::<G>());
+        self.globals_by_type
+            .get(&TypeId::of::<G>())
+            .map(|any_state| any_state.downcast_ref::<G>().unwrap())
+    }
+
+    /// Access the global of the given type mutably. Panics if a global for that type has not been assigned.
+    #[track_caller]
+    pub fn global_mut<G: Global>(&mut self) -> &mut G {
+        let global_type = TypeId::of::<G>();
+        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        self.globals_by_type
+            .get_mut(&global_type)
+            .and_then(|any_state| any_state.downcast_mut::<G>())
+            .unwrap_or_else(|| panic!("no state of type {} exists", type_name::<G>()))
+    }
+
+    /// Access the global of the given type mutably. A default value is assigned if a global of this type has not
+    /// yet been assigned.
+    pub fn default_global<G: Global + Default>(&mut self) -> &mut G {
+        let global_type = TypeId::of::<G>();
+        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        crate::fast::dependencies::note_global_inserted::<G>(self);
+        self.globals_by_type
+            .entry(global_type)
+            .or_insert_with(|| Box::<G>::default())
+            .downcast_mut::<G>()
+            .unwrap()
+    }
+
+    /// Sets the value of the global of the given type.
+    pub fn set_global<G: Global>(&mut self, global: G) {
+        let global_type = TypeId::of::<G>();
+        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        crate::fast::dependencies::note_global_inserted::<G>(self);
+        self.globals_by_type.insert(global_type, Box::new(global));
+    }
+
+    /// Clear all stored globals. Does not notify global observers.
+    #[cfg(any(test, feature = "harness"))]
+    pub fn clear_globals(&mut self) {
+        self.globals_by_type.drain();
+    }
+
+    /// Remove the global of the given type from the app context. Does not notify global observers.
+    pub fn remove_global<G: Global>(&mut self) -> G {
+        crate::fast::dependencies::note_global_removed::<G>(self);
+        let global_type = TypeId::of::<G>();
+        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        *self
+            .globals_by_type
+            .remove(&global_type)
+            .unwrap_or_else(|| panic!("no global added for {}", type_name::<G>()))
+            .downcast()
+            .unwrap()
+    }
+
+    /// Register a callback to be invoked when a global of the given type is updated.
+    pub fn observe_global<G: Global>(
+        &mut self,
+        mut f: impl FnMut(&mut Self) + 'static,
+    ) -> Subscription {
+        let subscription = crate::fast::observers::observe_global(
+            self,
+            TypeId::of::<G>(),
+            Box::new(move |cx| {
+                f(cx);
+                true
+            }),
+        );
+        subscription
+    }
+
+    /// Move the global of the given type to the stack.
+    #[track_caller]
+    pub(crate) fn lease_global<G: Global>(&mut self) -> GlobalLease<G> {
+        GlobalLease::new(
+            self.globals_by_type
+                .remove(&TypeId::of::<G>())
+                .with_context(|| format!("no global registered of type {}", type_name::<G>()))
+                .unwrap(),
+        )
+    }
+
+    /// Restore the global of the given type after it is moved to the stack.
+    pub(crate) fn end_global_lease<G: Global>(&mut self, lease: GlobalLease<G>) {
+        let global_type = TypeId::of::<G>();
+
+        self.push_effect(Effect::NotifyGlobalObservers { global_type });
+        self.globals_by_type.insert(global_type, lease.global);
+    }
+
+    pub(crate) fn new_entity_observer(
+        &self,
+        key: TypeId,
+        value: NewEntityListener,
+    ) -> Subscription {
+        self.new_entity_observers.insert(key, value)
+    }
+
+    /// Arrange for the given function to be invoked whenever a view of the specified type is created.
+    /// The function will be passed a mutable reference to the view along with an appropriate context.
+    pub fn observe_new<T: 'static>(
+        &self,
+        on_new: impl 'static + Fn(&mut T, Option<&mut Window>, &mut Context<T>),
+    ) -> Subscription {
+        self.new_entity_observer(
+            TypeId::of::<T>(),
+            Box::new(
+                move |any_entity: AnyEntity, window: &mut Option<&mut Window>, cx: &mut App| {
+                    any_entity
+                        .downcast::<T>()
+                        .unwrap()
+                        .update(cx, |entity_state, cx| {
+                            on_new(entity_state, window.as_deref_mut(), cx)
+                        })
+                },
+            ),
+        )
+    }
+
+    /// Observe the release of a entity. The callback is invoked after the entity
+    /// has no more strong references but before it has been dropped.
+    pub fn observe_release<T>(
+        &self,
+        handle: &Entity<T>,
+        on_release: impl FnOnce(&mut T, &mut App) + 'static,
+    ) -> Subscription
+    where
+        T: 'static,
+    {
+        self.release_listeners.insert(
+            handle.entity_id(),
+            Box::new(move |entity, cx| {
+                let entity = entity.downcast_mut().expect("invalid entity type");
+                on_release(entity, cx)
+            }),
+        )
+    }
+
+    /// Observe the release of a entity. The callback is invoked after the entity
+    /// has no more strong references but before it has been dropped.
+    pub fn observe_release_in<T>(
+        &self,
+        handle: &Entity<T>,
+        window: &Window,
+        on_release: impl FnOnce(&mut T, &mut Window, &mut App) + 'static,
+    ) -> Subscription
+    where
+        T: 'static,
+    {
+        let window_handle = window.handle;
+        self.observe_release(handle, move |entity, cx| {
+            let _ = window_handle.update(cx, |_, window, cx| on_release(entity, window, cx));
+        })
+    }
+
+    /// Register a callback to be invoked after a keystroke is resolved in any window,
+    /// including the action that handled it, if any. Keystrokes consumed by an
+    /// interceptor or raw keyboard event handler are not observed.
+    /// Standalone modifiers are observed on release.
+    pub fn observe_keystrokes(
+        &mut self,
+        mut f: impl FnMut(&KeystrokeEvent, &mut Window, &mut App) + 'static,
+    ) -> Subscription {
+        self.keystroke_observers
+            .insert(Box::new(move |event, window, cx| {
+                f(event, window, cx);
+                true
+            }))
+    }
+
+    /// Register a callback to be invoked when a keystroke is received by the application
+    /// in any window. Note that this fires _before_ all other action and event mechanisms have resolved
+    /// unlike [`App::observe_keystrokes`] which fires after. This means that `cx.stop_propagation` calls
+    /// within interceptors will prevent action dispatch
+    pub fn intercept_keystrokes(
+        &mut self,
+        mut f: impl FnMut(&KeystrokeEvent, &mut Window, &mut App) + 'static,
+    ) -> Subscription {
+        self.keystroke_interceptors
+            .insert(Box::new(move |event, window, cx| {
+                f(event, window, cx);
+                true
+            }))
+    }
+
+    /// Register key bindings.
+    pub fn bind_keys(&mut self, bindings: impl IntoIterator<Item = KeyBinding>) {
+        self.keymap.borrow_mut().add_bindings(bindings);
+        self.pending_effects.push_back(Effect::RefreshWindows);
+    }
+
+    /// Clear all key bindings in the app.
+    pub fn clear_key_bindings(&mut self) {
+        self.keymap.borrow_mut().clear();
+        self.pending_effects.push_back(Effect::RefreshWindows);
+    }
+
+    /// Get all key bindings in the app.
+    pub fn key_bindings(&self) -> Rc<RefCell<Keymap>> {
+        self.keymap.clone()
+    }
+
+    /// Register a global handler for actions invoked via the keyboard. These handlers are run at
+    /// the end of the bubble phase for actions, and so will only be invoked if there are no other
+    /// handlers or if they called `cx.propagate()`.
+    pub fn on_action<A: Action>(
+        &mut self,
+        listener: impl Fn(&A, &mut Self) + 'static,
+    ) -> &mut Self {
+        self.global_action_listeners
+            .entry(TypeId::of::<A>())
+            .or_default()
+            .push(Rc::new(move |action, phase, cx| {
+                if phase == DispatchPhase::Bubble {
+                    let action = action.downcast_ref().unwrap();
+                    listener(action, cx)
+                }
+            }));
+        self
+    }
+
+    /// Event handlers propagate events by default. Call this method to stop dispatching to
+    /// event handlers with a lower z-index (mouse) or higher in the tree (keyboard). This is
+    /// the opposite of [`Self::propagate`]. It's also possible to cancel a call to [`Self::propagate`] by
+    /// calling this method before effects are flushed.
+    pub fn stop_propagation(&mut self) {
+        self.propagate_event = false;
+    }
+
+    /// Action handlers stop propagation by default during the bubble phase of action dispatch
+    /// dispatching to action handlers higher in the element tree. This is the opposite of
+    /// [`Self::stop_propagation`]. It's also possible to cancel a call to [`Self::stop_propagation`] by calling
+    /// this method before effects are flushed.
+    pub fn propagate(&mut self) {
+        self.propagate_event = true;
+    }
+
+    /// Build an action from some arbitrary data, typically a keymap entry.
+    pub fn build_action(
+        &self,
+        name: &str,
+        data: Option<serde_json::Value>,
+    ) -> std::result::Result<Box<dyn Action>, ActionBuildError> {
+        self.actions.build_action(name, data)
+    }
+
+    /// Get all action names that have been registered. Note that registration only allows for
+    /// actions to be built dynamically, and is unrelated to binding actions in the element tree.
+    pub fn all_action_names(&self) -> &[&'static str] {
+        self.actions.all_action_names()
+    }
+
+    /// Returns key bindings that invoke the given action on the currently focused element, without
+    /// checking context. Bindings are returned in the order they were added. For display, the last
+    /// binding should take precedence.
+    pub fn all_bindings_for_input(&self, input: &[Keystroke]) -> Vec<KeyBinding> {
+        RefCell::borrow(&self.keymap).all_bindings_for_input(input)
+    }
+
+    /// Get a map from a deprecated action name to the canonical name.
+    pub fn deprecated_actions_to_preferred_actions(&self) -> &HashMap<&'static str, &'static str> {
+        self.actions.deprecated_aliases()
+    }
+
+    /// Get a map from an action name to the deprecation messages.
+    pub fn action_deprecation_messages(&self) -> &HashMap<&'static str, &'static str> {
+        self.actions.deprecation_messages()
+    }
+
+    /// Get a map from an action name to the documentation.
+    pub fn action_documentation(&self) -> &HashMap<&'static str, &'static str> {
+        self.actions.documentation()
+    }
+
+    /// Register a callback to be invoked when the application is about to quit.
+    /// It is not possible to cancel the quit event at this point.
+    pub fn on_app_quit<Fut>(
+        &self,
+        mut on_quit: impl FnMut(&mut App) -> Fut + 'static,
+    ) -> Subscription
+    where
+        Fut: 'static + Future<Output = ()>,
+    {
+        self.quit_observers.insert(Box::new(move |cx| {
+            let future = on_quit(cx);
+            future.boxed_local()
+        }))
+    }
+
+    /// Register a callback to be invoked when the application is about to restart.
+    ///
+    /// These callbacks are called before any `on_app_quit` callbacks.
+    pub fn on_app_restart(&self, mut on_restart: impl 'static + FnMut(&mut App)) -> Subscription {
+        self.restart_observers.insert(Box::new(move |cx| {
+            on_restart(cx);
+            true
+        }))
+    }
+
+    /// Register a callback to be invoked when a window is closed
+    /// The window is no longer accessible at the point this callback is invoked.
+    pub fn on_window_closed(
+        &self,
+        on_closed: impl FnMut(&mut App, WindowId) + 'static,
+    ) -> Subscription {
+        self.window_closed_observers.insert(Box::new(on_closed))
+    }
+
+    pub(crate) fn clear_pending_keystrokes(&mut self) {
+        for window in self.windows() {
+            window
+                .update(self, |_, window, cx| {
+                    window.clear_pending_keystrokes(cx);
+                })
+                .ok();
+        }
+    }
+
+    /// Checks if the given action is bound in the current context, as defined by the app's current focus,
+    /// the bindings in the element tree, and any global action listeners.
+    pub fn is_action_available(&mut self, action: &dyn Action) -> bool {
+        let mut action_available = false;
+        if let Some(window) = self.active_window()
+            && let Ok(window_action_available) =
+                window.update(self, |_, window, cx| window.is_action_available(action, cx))
+        {
+            action_available = window_action_available;
+        }
+
+        action_available
+            || self
+                .global_action_listeners
+                .contains_key(&action.as_any().type_id())
+    }
+
+    /// Sets the menu bar for this application. This will replace any existing menu bar.
+    pub fn set_menus(&self, menus: impl IntoIterator<Item = Menu>) {
+        let menus: Vec<Menu> = menus.into_iter().collect();
+        self.platform.set_menus(menus, &self.keymap.borrow());
+    }
+
+    /// Gets the menu bar for this application.
+    pub fn get_menus(&self) -> Option<Vec<OwnedMenu>> {
+        self.platform.get_menus()
+    }
+
+    /// Sets the right click menu for the app icon in the dock
+    pub fn set_dock_menu(&self, menus: Vec<MenuItem>) {
+        self.platform.set_dock_menu(menus, &self.keymap.borrow())
+    }
+
+    /// Performs the action associated with the given dock menu item, only used on Windows for now.
+    pub fn perform_dock_menu_action(&self, action: usize) {
+        self.platform.perform_dock_menu_action(action);
+    }
+
+    /// Adds given path to the bottom of the list of recent paths for the application.
+    /// The list is usually shown on the application icon's context menu in the dock,
+    /// and allows to open the recent files via that context menu.
+    /// If the path is already in the list, it will be moved to the bottom of the list.
+    pub fn add_recent_document(&self, path: &Path) {
+        self.platform.add_recent_document(path);
+    }
+
+    /// Updates the jump list with the updated list of recent paths for the application, only used on Windows for now.
+    /// Note that this also sets the dock menu on Windows.
+    pub fn update_jump_list(
+        &self,
+        menus: Vec<MenuItem>,
+        entries: Vec<SmallVec<[PathBuf; 2]>>,
+    ) -> Task<Vec<SmallVec<[PathBuf; 2]>>> {
+        self.platform.update_jump_list(menus, entries)
+    }
+
+    /// Dispatch an action to the currently active window or global action handler
+    /// See [`crate::Action`] for more information on how actions work
+    pub fn dispatch_action(&mut self, action: &dyn Action) {
+        if let Some(active_window) = self.active_window() {
+            active_window
+                .update(self, |_, window, cx| {
+                    window.dispatch_action(action.boxed_clone(), cx)
+                })
+                .log_err();
+        } else {
+            self.dispatch_global_action(action);
+        }
+    }
+
+    fn dispatch_global_action(&mut self, action: &dyn Action) {
+        self.propagate_event = true;
+
+        if let Some(mut global_listeners) = self
+            .global_action_listeners
+            .remove(&action.as_any().type_id())
+        {
+            for listener in &global_listeners {
+                listener(action.as_any(), DispatchPhase::Capture, self);
+                if !self.propagate_event {
+                    break;
+                }
+            }
+
+            global_listeners.extend(
+                self.global_action_listeners
+                    .remove(&action.as_any().type_id())
+                    .unwrap_or_default(),
+            );
+
+            self.global_action_listeners
+                .insert(action.as_any().type_id(), global_listeners);
+        }
+
+        if self.propagate_event
+            && let Some(mut global_listeners) = self
+                .global_action_listeners
+                .remove(&action.as_any().type_id())
+        {
+            for listener in global_listeners.iter().rev() {
+                listener(action.as_any(), DispatchPhase::Bubble, self);
+                if !self.propagate_event {
+                    break;
+                }
+            }
+
+            global_listeners.extend(
+                self.global_action_listeners
+                    .remove(&action.as_any().type_id())
+                    .unwrap_or_default(),
+            );
+
+            self.global_action_listeners
+                .insert(action.as_any().type_id(), global_listeners);
+        }
+    }
+
+    /// Is there currently something being dragged?
+    pub fn has_active_drag(&self) -> bool {
+        self.active_drag.is_some()
+    }
+
+    /// Gets the cursor style of the currently active drag operation.
+    pub fn active_drag_cursor_style(&self) -> Option<CursorStyle> {
+        self.active_drag.as_ref().and_then(|drag| drag.cursor_style)
+    }
+
+    /// Stops active drag and clears any related effects.
+    pub fn stop_active_drag(&mut self, window: &mut Window) -> bool {
+        if self.active_drag.is_some() {
+            self.active_drag = None;
+            if self.platform_owned_drag.as_ref().is_some_and(|drag| {
+                drag.source_window == window.window_handle().window_id()
+                    && matches!(&drag.state, PlatformOwnedDragState::RestoredInSourceWindow)
+            }) {
+                self.platform_owned_drag = None;
+            }
+            window.refresh();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn hand_active_drag_to_platform(&mut self, source_window: WindowId) -> bool {
+        let Some(drag) = self.active_drag.take() else {
+            return false;
+        };
+        self.platform_owned_drag = Some(PlatformOwnedDrag {
+            source_window,
+            state: PlatformOwnedDragState::Suspended(drag),
+        });
+        true
+    }
+
+    pub(crate) fn restore_platform_drag(&mut self, source_window: WindowId) -> bool {
+        let Some(platform_drag) = self
+            .platform_owned_drag
+            .as_mut()
+            .filter(|drag| drag.source_window == source_window)
+        else {
+            return false;
+        };
+        let state = std::mem::replace(
+            &mut platform_drag.state,
+            PlatformOwnedDragState::RestoredInSourceWindow,
+        );
+        let PlatformOwnedDragState::Suspended(drag) = state else {
+            return false;
+        };
+        self.active_drag = Some(drag);
+        true
+    }
+
+    pub(crate) fn hand_restored_drag_to_platform(&mut self, source_window: WindowId) -> bool {
+        let Some(platform_drag) = self.platform_owned_drag.as_mut().filter(|drag| {
+            drag.source_window == source_window
+                && matches!(&drag.state, PlatformOwnedDragState::RestoredInSourceWindow)
+        }) else {
+            return false;
+        };
+        let Some(drag) = self.active_drag.take() else {
+            return false;
+        };
+        platform_drag.state = PlatformOwnedDragState::Suspended(drag);
+        true
+    }
+
+    pub(crate) fn end_platform_drag(&mut self, source_window: WindowId) -> bool {
+        if !self
+            .platform_owned_drag
+            .as_ref()
+            .is_some_and(|drag| drag.source_window == source_window)
+        {
+            return false;
+        }
+        self.platform_owned_drag = None;
+        self.active_drag = None;
+        true
+    }
+
+    /// Sets the cursor style for the currently active drag operation.
+    pub fn set_active_drag_cursor_style(
+        &mut self,
+        cursor_style: CursorStyle,
+        window: &mut Window,
+    ) -> bool {
+        if let Some(ref mut drag) = self.active_drag {
+            drag.cursor_style = Some(cursor_style);
+            window.refresh();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Set the prompt renderer for GPUI. This will replace the default or platform specific
+    /// prompts with this custom implementation.
+    pub fn set_prompt_builder(
+        &mut self,
+        renderer: impl Fn(
+            PromptLevel,
+            &str,
+            Option<&str>,
+            &[PromptButton],
+            PromptHandle,
+            &mut Window,
+            &mut App,
+        ) -> RenderablePromptHandle
+        + 'static,
+    ) {
+        self.prompt_builder = Some(PromptBuilder::Custom(Box::new(renderer)));
+    }
+
+    /// Reset the prompt builder to the default implementation.
+    pub fn reset_prompt_builder(&mut self) {
+        self.prompt_builder = Some(PromptBuilder::Default);
+    }
+
+    /// Remove an asset from GPUI's cache
+    pub fn remove_asset<A: Asset>(&mut self, source: &A::Source) {
+        let asset_id = (TypeId::of::<A>(), hash(source));
+        self.loading_assets.remove(&asset_id);
+    }
+
+    /// Check whether an asset is present in GPUI's cache (loading or loaded),
+    /// without fetching it.
+    #[cfg(any(test, feature = "harness"))]
+    pub fn has_asset<A: Asset>(&self, source: &A::Source) -> bool {
+        let asset_id = (TypeId::of::<A>(), hash(source));
+        self.loading_assets.contains_key(&asset_id)
+    }
+
+    /// Starts loading an uncached asset and returns its result once available.
+    ///
+    /// Pending loads and completed results are cached until [`Self::remove_asset`].
+    /// This method does not subscribe a view to completion notifications.
+    pub fn fetch_asset<A: Asset>(&mut self, source: &A::Source) -> Option<A::Output> {
+        self.asset_entry::<A>(source).get()
+    }
+
+    pub(crate) fn asset_entry<A: Asset>(&mut self, source: &A::Source) -> &CachedLoad<A::Output> {
+        let asset_id = (TypeId::of::<A>(), hash(source));
+        if !self.loading_assets.contains_key(&asset_id) {
+            let future = A::load(source.clone(), self);
+            let entry = CachedLoad::new(future, self);
+            self.loading_assets.insert(asset_id, Box::new(entry));
+        }
+        self.loading_assets
+            .get(&asset_id)
+            .and_then(|entry| entry.downcast_ref())
+            .expect("asset cache entries are keyed by their asset type")
+    }
+
+    /// Obtain a new [`FocusHandle`], which allows you to track and manipulate the keyboard focus
+    /// for elements rendered within this window.
+    #[track_caller]
+    pub fn focus_handle(&self) -> FocusHandle {
+        FocusHandle::new(&self.focus_handles)
+    }
+
+    /// Tell GPUI that an entity has changed and observers of it should be notified.
+    pub fn notify(&mut self, entity_id: EntityId) {
+        crate::fast::dependencies::note_notify(&mut self.entities, entity_id);
+        let window_invalidators = mem::take(
+            self.window_invalidators_by_entity
+                .entry(entity_id)
+                .or_default(),
+        );
+
+        // `window_invalidators_by_entity` is monotonic, so an entry alone
+        // doesn't mean the window is currently rendering the entity. Filter
+        // through `tracked_entities` to keep invalidation tight to windows
+        // that actually display this entity right now.
+        let live_invalidators: SmallVec<[WindowInvalidator; 2]> = window_invalidators
+            .iter()
+            .filter(|(window_id, _)| {
+                self.tracked_entities
+                    .get(window_id)
+                    .is_some_and(|set| set.contains(&entity_id))
+            })
+            .map(|(_, invalidator)| invalidator.clone())
+            .collect();
+
+        if live_invalidators.is_empty() {
+            if crate::fast::observers::note_entity_change(self, entity_id) {
+                self.pending_effects
+                    .push_back(Effect::Notify { emitter: entity_id });
+            }
+        } else {
+            for invalidator in &live_invalidators {
+                invalidator.invalidate_view(entity_id, self);
+            }
+        }
+
+        self.window_invalidators_by_entity
+            .insert(entity_id, window_invalidators);
+    }
+
+    /// Returns the name for this [`App`].
+    #[cfg(any(test, feature = "harness", debug_assertions))]
+    pub fn get_name(&self) -> Option<&'static str> {
+        self.name
+    }
+
+    /// Returns `true` if the platform file picker supports selecting a mix of files and directories.
+    pub fn can_select_mixed_files_and_dirs(&self) -> bool {
+        self.platform.can_select_mixed_files_and_dirs()
+    }
+
+    /// Removes an image from the sprite atlas on all windows.
+    ///
+    /// If the current window is being updated, it will be removed from `App.windows`, you can use `current_window` to specify the current window.
+    /// This is a no-op if the image is not in the sprite atlas.
+    pub fn drop_image(&mut self, image: Arc<RenderImage>, current_window: Option<&mut Window>) {
+        // remove the texture from all other windows
+        for window in self.windows.values_mut().flatten() {
+            _ = window.drop_image(image.clone());
+        }
+
+        // remove the texture from the current window
+        if let Some(window) = current_window {
+            _ = window.drop_image(image);
+        }
+    }
+
+    #[inline(never)]
+    fn update_window_erased(
+        &mut self,
+        window_id: WindowId,
+        update: &mut dyn FnMut(Option<(AnyView, &mut Window, &mut App)>),
+    ) {
+        self.update(|cx| {
+            let Some(mut window) = cx.windows.get_mut(window_id).and_then(Option::take) else {
+                update(None);
+                return;
+            };
+
+            let root_view = window.root.clone().unwrap();
+
+            cx.window_update_stack.push(WindowUpdateEntry {
+                window_id: window.handle.id,
+                bounds: window.last_window_bounds(),
+                display_id: window.display_id(),
+            });
+            update(Some((root_view, &mut window, cx)));
+            fn trail(window_id: WindowId, window: Box<Window>, cx: &mut App) -> Option<()> {
+                cx.window_update_stack.pop();
+
+                if window.removed {
+                    cx.end_platform_drag(window_id);
+                    cx.window_handles.remove(&window_id);
+                    cx.windows.remove(window_id);
+                    if let Some(tracked) = cx.tracked_entities.remove(&window_id) {
+                        for entity_id in tracked {
+                            if let Some(windows) =
+                                cx.window_invalidators_by_entity.get_mut(&entity_id)
+                            {
+                                windows.remove(&window_id);
+                            }
+                            if cx.current_window_by_entity.get(&entity_id) == Some(&window_id) {
+                                cx.current_window_by_entity.remove(&entity_id);
+                            }
+                        }
+                    }
+
+                    cx.window_closed_observers.clone().retain(|callback| {
+                        callback(cx, window_id);
+                        true
+                    });
+
+                    let quit_on_empty = match cx.quit_mode {
+                        QuitMode::Explicit => false,
+                        QuitMode::LastWindowClosed => true,
+                        QuitMode::Default => cfg!(not(target_os = "macos")),
+                    };
+
+                    if quit_on_empty && cx.windows.is_empty() {
+                        cx.quit();
+                    }
+                } else {
+                    cx.windows.get_mut(window_id)?.replace(window);
+                }
+                Some(())
+            }
+            if trail(window_id, window, cx).is_none() {
+                update(None);
+            }
+        });
+    }
+
+    #[inline(never)]
+    fn update_entity_erased(
+        &mut self,
+        handle: &AnyEntity,
+        entity_type: &str,
+        update: &mut dyn FnMut(&mut dyn Any, &mut App),
+    ) {
+        self.update(|cx| {
+            let mut lease = cx.entities.lease_erased(handle, entity_type);
+            update(lease.entity.as_deref_mut().unwrap(), cx);
+            cx.entities.end_lease_erased(handle.entity_id, lease);
+        });
+    }
+
+    #[inline(never)]
+    #[track_caller]
+    fn prepare_spawn(&self) -> AsyncApp {
+        if self.quitting {
+            debug_panic!("Can't spawn on main thread after on_app_quit")
+        };
+        self.to_async()
+    }
+}
+
+impl AppContext for App {
+    /// Builds an entity that is owned by the application.
+    ///
+    /// The given function will be invoked with a [`Context`] and must return an object representing the entity. An
+    /// [`Entity`] handle will be returned, which can be used to access the entity in a context.
+    fn new<T: 'static>(&mut self, build_entity: impl FnOnce(&mut Context<T>) -> T) -> Entity<T> {
+        self.update(|cx| {
+            let slot = cx.entities.reserve();
+            let handle = slot.clone();
+            let entity = build_entity(&mut Context::new_context(cx, slot.downgrade()));
+
+            cx.push_effect(Effect::EntityCreated {
+                entity: handle.into_any(),
+                tid: TypeId::of::<T>(),
+                window: cx.window_update_stack.last().map(|state| state.window_id),
+            });
+
+            cx.entities.insert(slot, entity)
+        })
+    }
+
+    fn reserve_entity<T: 'static>(&mut self) -> Reservation<T> {
+        Reservation(self.entities.reserve())
+    }
+
+    fn insert_entity<T: 'static>(
+        &mut self,
+        reservation: Reservation<T>,
+        build_entity: impl FnOnce(&mut Context<T>) -> T,
+    ) -> Entity<T> {
+        self.update(|cx| {
+            let slot = reservation.0;
+            let entity = build_entity(&mut Context::new_context(cx, slot.downgrade()));
+            cx.entities.insert(slot, entity)
+        })
+    }
+
+    /// Updates the entity referenced by the given handle. The function is passed a mutable reference to the
+    /// entity along with a `Context` for the entity.
+    #[inline(always)]
+    fn update_entity<T: 'static, R>(
+        &mut self,
+        handle: &Entity<T>,
+        update: impl FnOnce(&mut T, &mut Context<T>) -> R,
+    ) -> R {
+        let mut update = Some(update);
+        let mut result = None;
+        self.update_entity_erased(handle, type_name::<T>(), &mut |entity, cx| {
+            let value = update.take().unwrap()(
+                entity.downcast_mut::<T>().unwrap(),
+                &mut Context::new_context(cx, handle.downgrade()),
+            );
+            result = Some(value);
+        });
+        result.unwrap()
+    }
+
+    fn as_mut<'a, T>(&'a mut self, handle: &Entity<T>) -> GpuiBorrow<'a, T>
+    where
+        T: 'static,
+    {
+        GpuiBorrow::new(handle.clone(), self)
+    }
+
+    #[inline(always)]
+    fn read_entity<T, R>(&self, handle: &Entity<T>, read: impl FnOnce(&T, &App) -> R) -> R
+    where
+        T: 'static,
+    {
+        let entity = self.entities.read(handle);
+        read(entity, self)
+    }
+
+    fn update_window<T, F>(&mut self, handle: AnyWindowHandle, update: F) -> Result<T>
+    where
+        F: FnOnce(AnyView, &mut Window, &mut App) -> T,
+    {
+        self.update_window_id(handle.id, update)
+    }
+
+    fn with_window<R>(
+        &mut self,
+        entity_id: EntityId,
+        f: impl FnOnce(&mut Window, &mut App) -> R,
+    ) -> Option<R> {
+        App::with_window(self, entity_id, f)
+    }
+
+    fn read_window<T, R>(
+        &self,
+        window: &WindowHandle<T>,
+        read: impl FnOnce(Entity<T>, &App) -> R,
+    ) -> Result<R>
+    where
+        T: 'static,
+    {
+        let window = self
+            .windows
+            .get(window.id)
+            .context("window not found")?
+            .as_deref()
+            .expect("attempted to read a window that is already on the stack");
+
+        let root_view = window.root.clone().unwrap();
+        let view = root_view
+            .downcast::<T>()
+            .map_err(|_| anyhow!("root view's type has changed"))?;
+
+        Ok(read(view, self))
+    }
+
+    fn background_spawn<R>(&self, future: impl Future<Output = R> + Send + 'static) -> Task<R>
+    where
+        R: Send + 'static,
+    {
+        self.background_executor.spawn(future)
+    }
+
+    fn read_global<G, R>(&self, callback: impl FnOnce(&G, &App) -> R) -> R
+    where
+        G: Global,
+    {
+        let g = self.global::<G>();
+        callback(g, self)
+    }
+}
+
+/// These effects are processed at the end of each application update cycle.
+pub(crate) enum Effect {
+    Notify {
+        emitter: EntityId,
+    },
+    Emit {
+        emitter: EntityId,
+        event_type: TypeId,
+        event: ArenaBox<dyn Any>,
+    },
+    RefreshWindows,
+    NotifyGlobalObservers {
+        global_type: TypeId,
+    },
+    Defer {
+        callback: Box<dyn FnOnce(&mut App) + 'static>,
+    },
+    EntityCreated {
+        entity: AnyEntity,
+        tid: TypeId,
+        window: Option<WindowId>,
+    },
+}
+
+impl std::fmt::Debug for Effect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Effect::Notify { emitter } => write!(f, "Notify({})", emitter),
+            Effect::Emit { emitter, .. } => write!(f, "Emit({:?})", emitter),
+            Effect::RefreshWindows => write!(f, "RefreshWindows"),
+            Effect::NotifyGlobalObservers { global_type } => {
+                write!(f, "NotifyGlobalObservers({:?})", global_type)
+            }
+            Effect::Defer { .. } => write!(f, "Defer(..)"),
+            Effect::EntityCreated { entity, .. } => write!(f, "EntityCreated({:?})", entity),
+        }
+    }
+}
+
+/// Wraps a global variable value during `update_global` while the value has been moved to the stack.
+pub(crate) struct GlobalLease<G: Global> {
+    global: Box<dyn Any>,
+    global_type: PhantomData<G>,
+}
+
+impl<G: Global> GlobalLease<G> {
+    fn new(global: Box<dyn Any>) -> Self {
+        GlobalLease {
+            global,
+            global_type: PhantomData,
+        }
+    }
+}
+
+impl<G: Global> Deref for GlobalLease<G> {
+    type Target = G;
+
+    fn deref(&self) -> &Self::Target {
+        self.global.downcast_ref().unwrap()
+    }
+}
+
+impl<G: Global> DerefMut for GlobalLease<G> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.global.downcast_mut().unwrap()
+    }
+}
+
+/// Contains state associated with an active drag operation, started by dragging an element
+/// within the window or by dragging into the app from the underlying platform.
+pub struct AnyDrag {
+    /// The view used to render this drag
+    pub view: AnyView,
+
+    /// The value of the dragged item, to be dropped
+    pub value: Arc<dyn Any>,
+
+    /// This is used to render the dragged item in the same place
+    /// on the original element that the drag was initiated
+    pub cursor_offset: Point<Pixels>,
+
+    /// The cursor style to use while dragging
+    pub cursor_style: Option<CursorStyle>,
+
+    /// Resolves the payload to offer the platform if the drag leaves the window.
+    /// Invoked at most once per drag gesture, at promotion time.
+    pub external_payload_source: Option<ExternalDragPayloadSource>,
+}
+
+/// Lazily resolves the payload handed to the platform when an internal drag is
+/// promoted to a native drag session.
+pub type ExternalDragPayloadSource =
+    Box<dyn FnOnce(&mut Window, &mut App) -> Option<ExternalDragPayload> + 'static>;
+
+/// Contains state associated with a tooltip. You'll only need this struct if you're implementing
+/// tooltip behavior on a custom element. Otherwise, use [Div::tooltip](crate::Interactivity::tooltip).
+#[derive(Clone)]
+pub struct AnyTooltip {
+    /// The view used to display the tooltip
+    pub view: AnyView,
+
+    /// The absolute position of the mouse when the tooltip was deployed.
+    pub mouse_position: Point<Pixels>,
+
+    /// Given the bounds of the tooltip, checks whether the tooltip should still be visible and
+    /// updates its state accordingly. This is needed atop the hovered element's mouse move handler
+    /// to handle the case where the element is not painted (e.g. via use of `visible_on_hover`).
+    pub check_visible_and_update: Rc<dyn Fn(Bounds<Pixels>, &mut Window, &mut App) -> bool>,
+}
+
+/// Whether a keystroke should prefer character input or key bindings.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum InputPreference {
+    /// Prefer typing text over triggering key bindings.
+    CharacterInput,
+    /// Dispatch key bindings normally, if any match.
+    KeyBindings,
+}
+
+/// A keystroke event, and potentially the associated action
+#[derive(Debug)]
+pub struct KeystrokeEvent {
+    /// The keystroke that occurred
+    pub keystroke: Keystroke,
+
+    /// Whether this keystroke should prefer character input or key bindings.
+    /// This is [`InputPreference::CharacterInput`] when the platform prefers text for the key
+    /// (e.g. AltGr on Windows) and the focused input accepts text. Interceptors still receive
+    /// these keystrokes and can consume them.
+    ///
+    /// If the keystroke is part of a multi-stroke binding, it still waits as pending input
+    /// even when this is [`InputPreference::CharacterInput`].
+    pub input_preference: InputPreference,
+
+    /// The action that was resolved for the keystroke, if any
+    pub action: Option<Box<dyn Action>>,
+
+    /// The context stack at the time
+    pub context_stack: Vec<KeyContext>,
+}
+
+/// A mutable reference to an entity owned by GPUI
+pub struct GpuiBorrow<'a, T> {
+    inner: Option<Lease<T>>,
+    app: &'a mut App,
+}
+
+impl<'a, T: 'static> GpuiBorrow<'a, T> {
+    fn new(inner: Entity<T>, app: &'a mut App) -> Self {
+        app.start_update();
+        let lease = app.entities.lease(&inner);
+        Self {
+            inner: Some(lease),
+            app,
+        }
+    }
+}
+
+impl<'a, T: 'static> std::borrow::Borrow<T> for GpuiBorrow<'a, T> {
+    fn borrow(&self) -> &T {
+        self.inner.as_ref().unwrap().borrow()
+    }
+}
+
+impl<'a, T: 'static> std::borrow::BorrowMut<T> for GpuiBorrow<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        self.inner.as_mut().unwrap().borrow_mut()
+    }
+}
+
+impl<'a, T: 'static> std::ops::Deref for GpuiBorrow<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.as_ref().unwrap()
+    }
+}
+
+impl<'a, T: 'static> std::ops::DerefMut for GpuiBorrow<'a, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.inner.as_mut().unwrap()
+    }
+}
+
+impl<'a, T> Drop for GpuiBorrow<'a, T> {
+    fn drop(&mut self) {
+        let lease = self.inner.take().unwrap();
+        self.app.notify(lease.id);
+        self.app.entities.end_lease(lease);
+        self.app.finish_update();
+    }
+}

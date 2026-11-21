@@ -1,0 +1,9 @@
+pub(crate) mod atlas;
+pub(crate) mod bind_groups;
+pub(crate) mod emoji_fonts;
+pub(crate) mod frame;
+pub(crate) mod globals;
+pub(crate) mod pass_state;
+pub(crate) mod rounded_clip;
+#[cfg(not(target_family = "wasm"))]
+pub(crate) mod wgpu_context;

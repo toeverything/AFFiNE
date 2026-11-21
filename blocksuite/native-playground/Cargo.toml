@@ -1,0 +1,209 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/ui",
+    "crates/playground",
+]
+default-members = ["crates/ui", "crates/playground"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[workspace.dependencies]
+anyhow = "1.0.86"
+async-channel = { version = "2.5", default-features = false }
+async-task = "4.7"
+backtrace = "0.3"
+bitflags = "2.6.0"
+block2 = "0.6"
+bytemuck = "1"
+cbindgen = { version = "0.28.0", default-features = false }
+console_error_panic_hook = "0.1.7"
+core-foundation = "0.10"
+core-foundation-sys = "0.8.6"
+core-graphics = "0.24"
+core-text = "21"
+cosmic-text = "0.19.0"
+ctor = "1.0.12"
+derive_more = { version = "2.1", features = ["add", "add_assign", "deref", "deref_mut", "from_str", "mul", "mul_assign", "not"] }
+dispatch2 = { version = "0.3", default-features = false, features = ["std"] }
+etagere = "0.2"
+flume = { version = "0.12", default-features = false, features = ["async"] }
+font-kit = { git = "https://github.com/zed-industries/font-kit", rev = "94b0f28166665e8fd2f53ff6d268a14955c82269", package = "zed-font-kit", version = "0.14.1-zed", default-features = false }
+foreign-types = "0.5"
+futures = "0.3.34"
+getrandom = { version = "0.3.4", features = ["wasm_js"] }
+heapless = "0.9.2"
+icu_segmenter = { version = "2.3.0", default-features = false, features = ["compiled_data"] }
+image = { version = "0.25.1", default-features = false, features = ["bmp", "gif", "ico", "jpeg", "png", "webp"] }
+indexmap = { version = "2.7.0", features = ["serde"] }
+itertools = "0.14.0"
+jiff = "1.0"
+js-sys = "0.3"
+libc = "0.2"
+log = { version = "0.4", default-features = false, features = ["std"] }
+lyon = "1.0"
+mach2 = "0.6"
+num_cpus = "1.13"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "NSAlert",
+    "NSAppearance",
+    "NSApplication",
+    "NSButton",
+    "NSCell",
+    "NSColor",
+    "NSControl",
+    "NSCursor",
+    "NSDocumentController",
+    "NSDragging",
+    "NSDraggingItem",
+    "NSEvent",
+    "NSGraphics",
+    "NSImage",
+    "NSMenu",
+    "NSMenuItem",
+    "NSOpenPanel",
+    "NSPanel",
+    "NSPasteboard",
+    "NSResponder",
+    "NSRunningApplication",
+    "NSSavePanel",
+    "NSScreen",
+    "NSScroller",
+    "NSTrackingArea",
+    "NSView",
+    "NSVisualEffectView",
+    "NSWindow",
+    "NSWorkspace",
+    "block2",
+    "objc2-core-foundation",
+    "objc2-uniform-type-identifiers",
+] }
+objc2-core-foundation = { version = "=0.3.2", default-features = false, features = ["std", "CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes"] }
+objc2-core-graphics = { version = "=0.3.2", default-features = false, features = ["CGColor", "CGColorSpace", "CGDirectDisplay", "objc2"] }
+objc2-core-text = { version = "0.3.2", default-features = false, features = ["std", "CTFont", "CTFontDescriptor"] }
+objc2-core-video = { version = "=0.3.2", default-features = false, features = ["CVBuffer", "CVHostTime", "CVImageBuffer", "CVMetalTexture", "CVMetalTextureCache", "CVPixelBuffer", "CVReturn", "objc2", "objc2-metal"] }
+objc2-foundation = { version = "=0.3.2", default-features = false, features = [
+    "NSArray",
+    "NSAttributedString",
+    "NSBundle",
+    "NSCoder",
+    "NSData",
+    "NSDate",
+    "NSDictionary",
+    "NSEnumerator",
+    "NSError",
+    "NSGeometry",
+    "NSNotification",
+    "NSNull",
+    "NSObjCRuntime",
+    "NSObject",
+    "NSOperation",
+    "NSProcessInfo",
+    "NSRange",
+    "NSRunLoop",
+    "NSSet",
+    "NSString",
+    "NSThread",
+    "NSURL",
+    "NSValue",
+    "block2",
+    "objc2-core-foundation",
+    "std",
+] }
+objc2-metal = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "block2",
+    "dispatch2",
+    "MTLAllocation",
+    "MTLBlitCommandEncoder",
+    "MTLBuffer",
+    "MTLCommandBuffer",
+    "MTLCommandEncoder",
+    "MTLCommandQueue",
+    "MTLDevice",
+    "MTLDrawable",
+    "MTLLibrary",
+    "MTLPixelFormat",
+    "MTLRenderCommandEncoder",
+    "MTLRenderPass",
+    "MTLRenderPipeline",
+    "MTLResource",
+    "MTLTexture",
+    "MTLTypes",
+] }
+objc2-quartz-core = { version = "=0.3.2", default-features = false, features = ["std", "CALayer", "CAMetalDisplayLink", "CAMetalLayer", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal"] }
+objc2-uniform-type-identifiers = { version = "0.3", default-features = false, features = ["std", "UTCoreTypes", "UTType"] }
+parking = "2.0.0"
+parking_lot = "0.12.1"
+pathfinder_geometry = "0.5"
+pin-project = "1.1.10"
+pollster = "0.4.0"
+rand = { version = "0.9", default-features = false, features = ["std", "std_rng", "os_rng", "small_rng", "thread_rng"] }
+raw-window-handle = "0.6"
+regex = { version = "1.5", default-features = false, features = ["std", "perf"] }
+resvg = { version = "0.46.0", default-features = false, features = ["text", "system-fonts", "memmap-fonts", "raster-images"] }
+rustc-hash = "2.1.0"
+seahash = "4.1"
+semver = { version = "1.0", features = ["serde"] }
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = { version = "1.0.144", features = ["preserve_order"] }
+slotmap = "1.0.6"
+smallvec = { version = "1.6", features = ["union", "const_new"] }
+smol_str = { version = "0.3.6", default-features = false, features = ["serde"] }
+spin = { version = "0.10", default-features = false, features = ["mutex", "spin_mutex", "lock_api"] }
+strum = { version = "0.28", features = ["derive"] }
+swash = "0.2.6"
+taffy = { version = "=0.15.0", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "float_layout", "content_size"] }
+thiserror = "2.0.12"
+ttf-parser = "0.25"
+unicode-bidi = { version = "0.3.18", default-features = false, features = ["hardcoded-data"] }
+unicode-properties = "=0.1.3"
+unicode-script = "0.5.7"
+unicode-segmentation = "1.10"
+url = "2.2"
+usvg = { version = "0.46.0", default-features = false }
+uuid = { version = "1.1", features = ["serde", "v4"] }
+waker-fn = "1.2.0"
+wasm-bindgen = "0.2.120"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
+web-time = "1.1.0"
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "cddb2f5d80dc0009b2ef6767635140cacf90a007", default-features = false }
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "deny" }
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+declare_interior_mutable_const = "deny"
+style = { level = "allow", priority = -1 }
+type_complexity = "allow"
+let_underscore_future = "allow"
+single_range_in_vec_init = "allow"
+too_many_arguments = "allow"
+large_enum_variant = "allow"
+nonminimal_bool = "allow"
+
+[patch.crates-io]
+async-task = { git = "https://github.com/zed-industries/async-task.git", rev = "015845a19fc31752c02367567d3b8900a406f9da" }
+
+[profile.dev]
+debug = 0
+incremental = false
+codegen-units = 16
+
+[profile.test]
+debug = 0
+incremental = false
+codegen-units = 16
+
+[profile.release]
+debug = "limited"
+lto = "thin"
+codegen-units = 1
