@@ -114,11 +114,14 @@ export const splitListCommand: Command<{
 
   let newListId: string | null = null;
 
-  if (model.children.length > 0 && !model.props.collapsed) {
+  if (
+    model.children.length > 0 &&
+    (!model.props.collapsed || inlineIndex === 0)
+  ) {
     const afterText = model.props.text.split(inlineIndex);
     if (inlineIndex === 0) {
       /**
-       * case 3: list has children (list not collapsed), split the list at the start of line
+       * case 3: list has children (list collapsed or not), split the list at the start of line
        *
        * before:
        * - |aaa <- split here
@@ -138,6 +141,7 @@ export const splitListCommand: Command<{
             model.props.type === 'numbered' && model.props.order !== null
               ? model.props.order + 1
               : null,
+          collapsed: model.props.collapsed,
         },
         parent,
         modelIndex + 1
@@ -146,6 +150,10 @@ export const splitListCommand: Command<{
       if (!newList) return;
       // move children to new list
       doc.moveBlocks(model.children, newList);
+      if (model.props.collapsed) {
+        // the emptied list has no children left to hide
+        doc.updateBlock(model, { collapsed: false });
+      }
 
       if (model.props.type === 'numbered' && model.props.order !== null) {
         const nextContinuousNumberedLists = getNextContinuousNumberedLists(
@@ -200,7 +208,7 @@ export const splitListCommand: Command<{
     }
   } else {
     /**
-     * case 5: list has children (list collapsed)
+     * case 5: list has children (list collapsed), split the list not at the start of line
      *
      * before:
      * - aa|a <- split here
