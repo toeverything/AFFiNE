@@ -252,8 +252,12 @@ export const NavigationPanelDocNode = ({
       () => ({
         openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
         openNodeCollapsed: () => setCollapsed(false),
+        parentDocId:
+          isLinked && location && 'docId' in location
+            ? location.docId
+            : undefined,
       }),
-      [docId, setCollapsed, workspaceDialogService]
+      [docId, isLinked, location, setCollapsed, workspaceDialogService]
     )
   );
 
