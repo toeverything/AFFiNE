@@ -4,12 +4,13 @@ import {
   PdfAdapter,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
+import type { ServiceProvider } from '@blocksuite/global/di';
 import type { Store } from '@blocksuite/store';
 
 import { download } from './utils.js';
 
-async function exportDoc(doc: Store) {
-  const provider = doc.provider;
+// Pass `std.provider` so the export can fall back to the editor's font config.
+async function exportDoc(doc: Store, provider: ServiceProvider = doc.provider) {
   const job = doc.getTransformer([
     docLinkBaseURLMiddleware(doc.workspace.id),
     titleMiddleware(doc.workspace.meta.docMetas),
