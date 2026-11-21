@@ -28,14 +28,20 @@ export type MenuSubMenuData = {
   autoHeight?: boolean;
   closeOnSelect?: boolean;
 };
+// A submenu opens beside its trigger. Placed below it, the pointer has to cross
+// the items underneath to reach the submenu, and hovering one of them closes it.
 export const subMenuOffset = offset({
-  mainAxis: 16,
+  mainAxis: 0,
   crossAxis: 0,
 });
 export const subMenuPlacements = autoPlacement({
-  allowedPlacements: ['bottom-end'],
+  allowedPlacements: ['right-start', 'left-start'],
 });
-export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
+export const subMenuMiddleware = [
+  subMenuOffset,
+  subMenuPlacements,
+  shift({ crossAxis: true }),
+];
 
 export const dropdownSubMenuMiddleware = [
   autoPlacement({ allowedPlacements: ['bottom-end'] }),
