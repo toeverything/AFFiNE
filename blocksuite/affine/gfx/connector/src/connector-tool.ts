@@ -53,6 +53,12 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
 
   private _startPoint: IVec | null = null;
 
+  /** Lock source position when quick-connecting from a specific anchor. */
+  private _lockSourcePosition = false;
+
+  /** Skip next click handler for programmatic quick-connect start. */
+  private _skipClickOnce = false;
+
   private get _overlay() {
     return this.std.get(OverlayIdentifier('connection')) as ConnectionOverlay;
   }
@@ -92,6 +98,10 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   }
 
   override click() {
+    if (this._skipClickOnce) {
+      this._skipClickOnce = false;
+      return;
+    }
     if (this._mode === ConnectorToolMode.Dragging) return;
     if (!this._connector) return;
 
@@ -121,6 +131,8 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
     this._sourceBounds = null;
     this._startPoint = null;
     this._allowCancel = false;
+    this._lockSourcePosition = false;
+    this._skipClickOnce = false;
   }
 
   override dragEnd() {
@@ -182,6 +194,9 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
       this._sourceBounds,
       this._sourceLocations
     );
+    if (this._lockSourcePosition && this._source) {
+      this._connector.source.position = this._source.position;
+    }
     this.gfx.updateElement(this._connector, {
       target,
       source: this._connector.source,
@@ -193,6 +208,7 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
   }
 
   quickConnect(point: IVec, element: GfxModel) {
+    this._lockSourcePosition = false;
     this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
     this._mode = ConnectorToolMode.Quick;
     this._sourceBounds = Bound.deserialize(element.xywh);
@@ -210,6 +226,34 @@ export class ConnectorTool extends BaseTool<ConnectorToolOptions> {
         this._sourceBounds,
         this._sourceLocations
       ),
+    };
+    this._allowCancel = true;
+
+    this._createConnector();
+
+    if (element instanceof GroupElementModel && this._overlay) {
+      this._overlay.sourceBounds = this._sourceBounds;
+    }
+
+    this.findTargetByPoint(point);
+  }
+
+  quickConnectFromAnchor(point: IVec, element: GfxModel, position: IVec) {
+    this._skipClickOnce = true;
+    this._lockSourcePosition = true;
+    this._startPoint = this.gfx.viewport.toModelCoord(point[0], point[1]);
+    this._mode = ConnectorToolMode.Quick;
+    this._sourceBounds = Bound.deserialize(element.xywh);
+    this._sourceBounds.rotate = element.rotate;
+    this._sourceLocations =
+      element instanceof ShapeElementModel &&
+      element.shapeType === ShapeType.Triangle
+        ? ConnectorEndpointLocationsOnTriangle
+        : ConnectorEndpointLocations;
+
+    this._source = {
+      id: element.id,
+      position,
     };
     this._allowCancel = true;
 

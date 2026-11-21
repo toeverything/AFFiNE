@@ -173,6 +173,8 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   private _autoCompleteOverlay!: AutoCompleteOverlay;
 
   private readonly _onPointerDown = (e: PointerEvent, type: Direction) => {
+    if (!this.canShowAutoComplete) return;
+
     const viewportRect = this.gfx.viewport.boundingClientRect;
     const start = this.gfx.viewport.toModelCoord(
       e.clientX - viewportRect.left,
@@ -371,6 +373,8 @@ export class EdgelessAutoComplete extends WithDisposable(LitElement) {
   }
 
   private _generateElementOnClick(type: Direction) {
+    if (!this.canShowAutoComplete) return;
+
     const { store } = this.edgeless;
     const bound = this._computeNextBound(type);
     const id = createEdgelessElement(this.edgeless, this.current, bound);
