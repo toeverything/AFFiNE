@@ -24,6 +24,10 @@ This document records the active engineering invariants enforced in CI today alo
 - **Callsite tracing**: Under the `harness` feature, `InteractiveElement::snapshot(...)` records post-layout bounds, `content_mask`, interactivity, focus, and `#[track_caller]` `file:line` origins into `Window::frame_snapshot()` for `sources_at(x, y)` and `bs-harness audit`. Non-harness release builds compile to no-op stubs.
 - **Locked builds & rustflags isolation**: `Cargo.lock` is committed and CI runs with `--locked` and `CARGO_ENCODED_RUSTFLAGS=""` (`scripts/check-invariants.sh` verifies fresh `cargo rustc --print link-args` contains zero leaked root NAPI flags).
 
+### Performance guardrail and theme/style oracle
+- **`perf/` (`schema.json`, `accepted.json`, `compare-n3.mjs`, `compare-n3.test.mjs`)**: Zero-dependency rolling `N-3` CI comparator with strict schema validation and rerun history anchoring (`--run-id` `created_at` cutoff + pagination). Deterministic byte sizes (`artifacts_bytes.*`) and work counters (non-`_ms` `benchmarks.*`) are hard-gated at strictly `> 10%` (`--fail-on-regression` exits `1`); shared-runner wall-clock timings (`benchmarks.*_ms` at `> 10%`, `ci_wall_ms.*` at `> 10%` and `> 15_000 ms`) are report-only `ADVISORY_SLOWDOWN`. Intentional increases are acknowledged via `{ metric, accepted_value, reason }` ceiling entries in `perf/accepted.json` (with report-only `stale_acceptances` once the rolling baseline catches up). Unmeasured sub-keys are omitted or `null` (never padded with synthetic `0`s) so newly introduced metrics transition through `BOOTSTRAP`.
+- **`tokens/` (`extract-tokens.mjs`, `tokens.rs`, `icons.rs`, `fonts.lock`, `extract-style-oracle.spec.ts`, `style-oracle.json`)**: `extract-tokens.mjs` deterministically generates Rust-`Ord`-sorted `tokens.rs`, `icons.rs` (preserving inherited `<svg fill>` and stroke attributes), and `fonts.lock` (SHA-256 font asset manifest + `CommunityCanvasTextFonts` descriptors), with `--check` and `rustc --edition 2024 --test` enforced on every push in CI. `style-oracle.json` is regenerated via Vitest Browser (`extract-style-oracle.spec.ts`, `isolate: false` reusable iframe) whenever BlockSuite styles or themes change (until its browser CI job lands).
+
 ## Planned Contracts (upcoming crates & features)
 
 - **`crates/doc` & `bs-relay`**: Pure CRDT document model (`#![forbid(unsafe_code)]`, zero GUI dependencies) built on `y-octo`, preserving 53-bit `clientId` (`1..=2^53 - 1`), complete flavour schema defaults (0 JS writeback updates on initial load), and top-level Awareness `color` alongside `user` and `selectionV2`.
@@ -41,4 +45,9 @@ CARGO_ENCODED_RUSTFLAGS="" cargo check -p ui -p playground --target wasm32-unkno
 CARGO_ENCODED_RUSTFLAGS="" cargo test --workspace
 CARGO_ENCODED_RUSTFLAGS="" cargo test --workspace --features harness
 ./scripts/check-invariants.sh
+node --test perf/compare-n3.test.mjs
+node tokens/extract-tokens.mjs --check
+rustc --edition 2024 --test -D warnings tokens/tokens.rs -o /tmp/tokens_test && /tmp/tokens_test
+rustc --edition 2024 --test -D warnings tokens/icons.rs -o /tmp/icons_test && /tmp/icons_test
+rm -f /tmp/tokens_test /tmp/icons_test
 ```

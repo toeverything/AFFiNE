@@ -1,0 +1,503 @@
+{
+  "schema_version": 1,
+  "source_package": "@toeverything/theme@1.1.23",
+  "bundled_files": [
+    {
+      "path": "fonts/fonts.css",
+      "bytes": 3686,
+      "sha256": "59f34df6c7a8d0edaf48979d577df03a7f40f1ed897ee63c8b37fcc9e682398f"
+    },
+    {
+      "path": "fonts/ibm-plex-mono/IBMPlexMono-Bold.ttf",
+      "bytes": 135932,
+      "sha256": "d3cfb27531839bf27f9af6ccc75b862535167295080fd4420a71045e532c5caf"
+    },
+    {
+      "path": "fonts/ibm-plex-mono/IBMPlexMono-BoldItalic.ttf",
+      "bytes": 142636,
+      "sha256": "df42ee7647a59b8c77d062671b0db6f740d4d7fb764df268dd658f150174f5b5"
+    },
+    {
+      "path": "fonts/ibm-plex-mono/IBMPlexMono-Italic.ttf",
+      "bytes": 142032,
+      "sha256": "624dfae6fb84fc07ba3bca5901398141909814b9f80dc08e6372b5aa2a451988"
+    },
+    {
+      "path": "fonts/ibm-plex-mono/IBMPlexMono-Regular.ttf",
+      "bytes": 133720,
+      "sha256": "2f1f8d81a8f9c5d931fd3431b9860a9bebecf7d80c43e950f7cabd2261996248"
+    },
+    {
+      "path": "fonts/ibm-plex-mono/OFL.txt",
+      "bytes": 4363,
+      "sha256": "5294ce778857e1eb02e830b6ab06435537d38f43055327e73d03a2d4d57d5123"
+    },
+    {
+      "path": "fonts/inter/Inter-VariableFont_slnt,wght.ttf",
+      "bytes": 803384,
+      "sha256": "b9a8e5e213977665be2a56db66945a16c686da3d9861af1e7851322cf15495ea"
+    },
+    {
+      "path": "fonts/inter/OFL.txt",
+      "bytes": 4376,
+      "sha256": "6e6410f2892d61813f54654098dc9654d0a3af2e92172999bee07eec13b0a75a"
+    },
+    {
+      "path": "fonts/kalam/Kalam-Bold.ttf",
+      "bytes": 460872,
+      "sha256": "f2b5f6595f274a4bb00777fd7cb2958fa837ac7bf266a9c3f7d724ca01013c95"
+    },
+    {
+      "path": "fonts/kalam/Kalam-Light.ttf",
+      "bytes": 437488,
+      "sha256": "49c6264e8e4448e3057896508b01542cf3d43d64a991e31517f85ad90e6b3764"
+    },
+    {
+      "path": "fonts/kalam/Kalam-Regular.ttf",
+      "bytes": 427336,
+      "sha256": "c2a5822e35bd9826735baf8cea549534fd300c979129299d327a155ed9ef667f"
+    },
+    {
+      "path": "fonts/kalam/OFL.txt",
+      "bytes": 4373,
+      "sha256": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f"
+    },
+    {
+      "path": "fonts/source-code-pro/OFL.txt",
+      "bytes": 4528,
+      "sha256": "d1e6d465a83ba1a3be52db6484868cf5812ae9bbf91abdad3900ba0165afcf93"
+    },
+    {
+      "path": "fonts/source-code-pro/SourceCodePro-Italic-VariableFont_wght.ttf",
+      "bytes": 162676,
+      "sha256": "5a32fafb68b4f7e1d05844943e3aeed2429f927dcd232d46bdcaafe2cd2c6f81"
+    },
+    {
+      "path": "fonts/source-code-pro/SourceCodePro-VariableFont_wght.ttf",
+      "bytes": 196132,
+      "sha256": "cf5851d657afbe3db00539a8ad73467784723cac03b189072316d6377dd703f7"
+    },
+    {
+      "path": "fonts/source-serif-4/OFL.txt",
+      "bytes": 4302,
+      "sha256": "e564f06d018e7b95bc3594c96a17f1d41865af4038c375e7aa974dd69df38602"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Bold.ttf",
+      "bytes": 329096,
+      "sha256": "d6270a6dd7aab3d2c37fe21239341155d4e3d4331d0c1890b3123a9d35336a0a"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-BoldItalic.ttf",
+      "bytes": 207008,
+      "sha256": "d80aa30b4d431be4cb47bac2eb95728466869558c73a94021388955151f8cda7"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Italic-VariableFont_opsz,wght.ttf",
+      "bytes": 842948,
+      "sha256": "147ee22102614402f6123231ee798b7a1fbffbfc4ebc77eb5cef9250d5aa635c"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Italic.ttf",
+      "bytes": 206920,
+      "sha256": "736297993410d864b62a1e91ed77bdb74ea0f7fb96256509e2bddbb102c7e794"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Light.ttf",
+      "bytes": 328768,
+      "sha256": "a403cf2efd944b8965304d87900ee9817a794be41602503f582337d20c21d90c"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-LightItalic.ttf",
+      "bytes": 207052,
+      "sha256": "919995a9172b57f3efe3215e362815d6de0081658b560de31a4bb7d7b02d2406"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Medium.ttf",
+      "bytes": 329064,
+      "sha256": "3b44675606128827044555c58df7006364436194b6af0ee33984044192788edd"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-MediumItalic.ttf",
+      "bytes": 207092,
+      "sha256": "c9ad2e2cdc5d0eb56710920d45169a7d784be8b3da6a8857d694ffa6707a72cc"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-Regular.ttf",
+      "bytes": 328836,
+      "sha256": "75fd6c6c2e0edd1710a48e0889683e0f4f33d89a15807bbc1be2f1b83f4997c5"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-SemiBold.ttf",
+      "bytes": 329140,
+      "sha256": "9dae036528823edad06b8e9727ba1a56acc8cf186827f1997b9b5d49d22beaee"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-SemiBoldItalic.ttf",
+      "bytes": 207084,
+      "sha256": "1c37c41e1d6f484bfa82b0319dc2e6c7d7b23a452e3ac9716b3bddefc22aa8e6"
+    },
+    {
+      "path": "fonts/source-serif-4/SourceSerif4-VariableFont_opsz,wght.ttf",
+      "bytes": 1195360,
+      "sha256": "73ebc46873043020c5764481ccbd3b7ac4bcb33e538e538b5f2648c9291612be"
+    },
+    {
+      "path": "fonts/space-mono/OFL.txt",
+      "bytes": 4351,
+      "sha256": "53c21088047f372ecf1fa354a22c34836b188b7305776f3aaab796aff9f130cd"
+    },
+    {
+      "path": "fonts/space-mono/SpaceMono-Bold.ttf",
+      "bytes": 86636,
+      "sha256": "d9cb77aa0a456dc1ddd67780fb980cf66863a8a09c6e6c48e5a8b466a9a6667a"
+    },
+    {
+      "path": "fonts/space-mono/SpaceMono-BoldItalic.ttf",
+      "bytes": 95292,
+      "sha256": "94ee7b8bc663105187fe9a1add1af23d000e2bfa16c5114fddd4500bb43ddee6"
+    },
+    {
+      "path": "fonts/space-mono/SpaceMono-Italic.ttf",
+      "bytes": 103524,
+      "sha256": "d966f87a0f05796cf27b40d72b6203ab7ed994a8f0f6848d2b271086377d6572"
+    },
+    {
+      "path": "fonts/space-mono/SpaceMono-Regular.ttf",
+      "bytes": 90904,
+      "sha256": "74ea804954f6f3e3ed4c748da603547ff2f88b03f614c7ad85231449d33c51be"
+    }
+  ],
+  "font_faces": [
+    {
+      "family": "Inter",
+      "style": "normal",
+      "weight": "1 999",
+      "display": "swap",
+      "src": "./inter/Inter-VariableFont_slnt,wght.ttf"
+    },
+    {
+      "family": "Source Code Pro",
+      "style": "normal",
+      "weight": "normal",
+      "display": "swap",
+      "src": "./source-code-pro/SourceCodePro-VariableFont_wght.ttf"
+    },
+    {
+      "family": "Source Code Pro",
+      "style": "italic",
+      "weight": "normal",
+      "display": "swap",
+      "src": "./source-code-pro/SourceCodePro-Italic-VariableFont_wght.ttf"
+    },
+    {
+      "family": "Kalam",
+      "style": "normal",
+      "weight": "400",
+      "display": "swap",
+      "src": "./kalam/Kalam-Regular.ttf"
+    },
+    {
+      "family": "Kalam",
+      "style": "normal",
+      "weight": "300",
+      "display": "swap",
+      "src": "./kalam/Kalam-Light.ttf"
+    },
+    {
+      "family": "Kalam",
+      "style": "normal",
+      "weight": "700",
+      "display": "swap",
+      "src": "./kalam/Kalam-Bold.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "normal",
+      "weight": "400",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-Regular.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "italic",
+      "weight": "400",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-Italic.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "normal",
+      "weight": "500",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-Medium.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "italic",
+      "weight": "500",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-MediumItalic.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "normal",
+      "weight": "600",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-SemiBold.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "italic",
+      "weight": "600",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-SemiBoldItalic.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "normal",
+      "weight": "700",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-Bold.ttf"
+    },
+    {
+      "family": "Source Serif 4",
+      "style": "italic",
+      "weight": "700",
+      "display": "swap",
+      "src": "./source-serif-4/SourceSerif4-BoldItalic.ttf"
+    },
+    {
+      "family": "Space Mono",
+      "style": "normal",
+      "weight": "400",
+      "display": "swap",
+      "src": "./space-mono/SpaceMono-Regular.ttf"
+    },
+    {
+      "family": "Space Mono",
+      "style": "italic",
+      "weight": "400",
+      "display": "swap",
+      "src": "./space-mono/SpaceMono-Italic.ttf"
+    },
+    {
+      "family": "Space Mono",
+      "style": "normal",
+      "weight": "700",
+      "display": "swap",
+      "src": "./space-mono/SpaceMono-Bold.ttf"
+    },
+    {
+      "family": "Space Mono",
+      "style": "italic",
+      "weight": "700",
+      "display": "swap",
+      "src": "./space-mono/SpaceMono-BoldItalic.ttf"
+    },
+    {
+      "family": "IBM Plex Mono",
+      "style": "normal",
+      "weight": "400",
+      "display": "swap",
+      "src": "./ibm-plex-mono/IBMPlexMono-Regular.ttf"
+    },
+    {
+      "family": "IBM Plex Mono",
+      "style": "italic",
+      "weight": "400",
+      "display": "swap",
+      "src": "./ibm-plex-mono/IBMPlexMono-Italic.ttf"
+    },
+    {
+      "family": "IBM Plex Mono",
+      "style": "normal",
+      "weight": "700",
+      "display": "swap",
+      "src": "./ibm-plex-mono/IBMPlexMono-Bold.ttf"
+    },
+    {
+      "family": "IBM Plex Mono",
+      "style": "italic",
+      "weight": "700",
+      "display": "swap",
+      "src": "./ibm-plex-mono/IBMPlexMono-BoldItalic.ttf"
+    }
+  ],
+  "community_canvas_text_fonts": [
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-Light-BETA.woff",
+      "weight": "Light",
+      "style": "Normal"
+    },
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-SemiBold.woff",
+      "weight": "SemiBold",
+      "style": "Normal"
+    },
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-LightItalic-BETA.woff",
+      "weight": "Light",
+      "style": "Italic"
+    },
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-Italic.woff",
+      "weight": "Regular",
+      "style": "Italic"
+    },
+    {
+      "font": "Inter",
+      "url": "https://fonts.cdnfonts.com/s/19795/Inter-SemiBoldItalic.woff",
+      "weight": "SemiBold",
+      "style": "Italic"
+    },
+    {
+      "font": "Kalam",
+      "url": "https://fonts.cdnfonts.com/s/13130/Kalam-Light.woff",
+      "weight": "Light",
+      "style": "Normal"
+    },
+    {
+      "font": "Kalam",
+      "url": "https://fonts.cdnfonts.com/s/13130/Kalam-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "Kalam",
+      "url": "https://fonts.cdnfonts.com/s/13130/Kalam-Bold.woff",
+      "weight": "SemiBold",
+      "style": "Normal"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-Light.woff",
+      "weight": "Light",
+      "style": "Normal"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-Bold.woff",
+      "weight": "SemiBold",
+      "style": "Normal"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-LightItalic.woff",
+      "weight": "Light",
+      "style": "Italic"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-Italic.woff",
+      "weight": "Regular",
+      "style": "Italic"
+    },
+    {
+      "font": "Satoshi",
+      "url": "https://fonts.cdnfonts.com/s/85546/Satoshi-BoldItalic.woff",
+      "weight": "SemiBold",
+      "style": "Italic"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-Light.woff",
+      "weight": "Light",
+      "style": "Normal"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-Medium.woff",
+      "weight": "Medium",
+      "style": "Normal"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-SemiBold.woff",
+      "weight": "SemiBold",
+      "style": "Normal"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-LightItalic.woff",
+      "weight": "Light",
+      "style": "Italic"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-Italic.woff",
+      "weight": "Regular",
+      "style": "Italic"
+    },
+    {
+      "font": "Poppins",
+      "url": "https://fonts.cdnfonts.com/s/16009/Poppins-SemiBoldItalic.woff",
+      "weight": "SemiBold",
+      "style": "Italic"
+    },
+    {
+      "font": "Lora",
+      "url": "https://fonts.cdnfonts.com/s/29883/Lora-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "Lora",
+      "url": "https://fonts.cdnfonts.com/s/29883/Lora-Bold.woff",
+      "weight": "SemiBold",
+      "style": "Normal"
+    },
+    {
+      "font": "Lora",
+      "url": "https://fonts.cdnfonts.com/s/29883/Lora-Italic.woff",
+      "weight": "Regular",
+      "style": "Italic"
+    },
+    {
+      "font": "Lora",
+      "url": "https://fonts.cdnfonts.com/s/29883/Lora-BoldItalic.woff",
+      "weight": "SemiBold",
+      "style": "Italic"
+    },
+    {
+      "font": "BebasNeue",
+      "url": "https://fonts.cdnfonts.com/s/14902/BebasNeue%20Light.woff",
+      "weight": "Light",
+      "style": "Normal"
+    },
+    {
+      "font": "BebasNeue",
+      "url": "https://fonts.cdnfonts.com/s/14902/BebasNeue-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    },
+    {
+      "font": "OrelegaOne",
+      "url": "https://fonts.cdnfonts.com/s/93179/OrelegaOne-Regular.woff",
+      "weight": "Regular",
+      "style": "Normal"
+    }
+  ]
+}

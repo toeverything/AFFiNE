@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toeverything.info/schemas/native-playground/perf-metrics.schema.json",
+  "title": "Native Playground CI Performance Metrics",
+  "description": "Deterministic benchmark timings, work counters, artifact sizes, and CI wall-clock measurements emitted per commit on darksky/native-playground. Individual sub-keys are optional (or null) when a job or benchmark is not yet active so unmeasured metrics are never padded with synthetic zeros.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "commit",
+    "timestamp_utc",
+    "ci_wall_ms",
+    "artifacts_bytes",
+    "benchmarks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Full 40-character lowercase Git commit SHA."
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp when measurements were recorded."
+    },
+    "ci_wall_ms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lint_and_wasm": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "headless_linux": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "total_critical_path": {
+          "type": ["number", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "artifacts_bytes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "web_wasm_raw": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "web_wasm_gzip": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "headless_bin": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doc_1k_edits_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        },
+        "room_sync_1k_ops_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        },
+        "layout_10k_blocks_cold_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        },
+        "layout_single_keystroke_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        },
+        "layout_single_keystroke_blocks_relayout": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Number of blocks re-laid out during a single keystroke."
+        },
+        "edgeless_1k_pan_zoom_frame_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        },
+        "headless_frame_render_ms": {
+          "oneOf": [
+            { "$ref": "#/$defs/timingSummary" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "timingSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "median",
+        "p95"
+      ],
+      "properties": {
+        "median": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

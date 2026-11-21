@@ -54,6 +54,26 @@ jobs:
       - name: Static invariants and link-flag check
         run: ./scripts/check-invariants.sh
 
+      - name: Perf guardrail self-tests and generated token/icon unit tests
+        run: |
+          node --test perf/compare-n3.test.mjs
+          rustc --edition 2024 --test -D warnings tokens/tokens.rs -o /tmp/tokens_test && /tmp/tokens_test
+          rustc --edition 2024 --test -D warnings tokens/icons.rs -o /tmp/icons_test && /tmp/icons_test
+          rm -f /tmp/tokens_test /tmp/icons_test
+
+      - name: Verify generated tokens, icons, and fonts.lock have zero drift
+        run: |
+          THEME_VER=$(awk '/^"@toeverything\/theme@/{f=1} f && /version:/{print $2; exit}' ../../yarn.lock)
+          ICONS_VER=$(awk '/^"@blocksuite\/icons@/{f=1} f && /version:/{print $2; exit}' ../../yarn.lock)
+          rm -rf /tmp/np-token-deps
+          mkdir -p /tmp/np-token-deps/node_modules/@toeverything/theme /tmp/np-token-deps/node_modules/@blocksuite/icons
+          curl -fsSL "https://registry.npmjs.org/@toeverything/theme/-/theme-${THEME_VER}.tgz" \
+            | tar -xz --strip-components=1 -C /tmp/np-token-deps/node_modules/@toeverything/theme
+          curl -fsSL "https://registry.npmjs.org/@blocksuite/icons/-/icons-${ICONS_VER}.tgz" \
+            | tar -xz --strip-components=1 -C /tmp/np-token-deps/node_modules/@blocksuite/icons
+          node tokens/extract-tokens.mjs --check --node-modules /tmp/np-token-deps/node_modules
+          rm -rf /tmp/np-token-deps
+
       - name: Check WebAssembly target
         run: cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
 
@@ -149,6 +169,7 @@ jobs:
               --repo "${{ github.repository }}" \
               --branch darksky/native-playground \
               --workflow native-playground.yml \
+              --run-id "${{ github.run_id }}" \
               --current artifacts/perf-metrics.json \
               --json-out artifacts/perf-verdict.json \
               --fail-on-regression >> "$GITHUB_STEP_SUMMARY"
