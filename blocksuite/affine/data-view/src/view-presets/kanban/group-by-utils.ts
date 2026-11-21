@@ -117,14 +117,19 @@ export const ensureKanbanGroupColumn = (
 
 export const resolveKanbanGroupBy = (
   dataSource: DataSource,
-  current?: GroupBy
+  current?: GroupBy,
+  readonly?: boolean
 ): GroupBy | undefined => {
   const keepColumnId =
     current?.columnId && canGroupable(dataSource, current.columnId)
       ? current.columnId
       : undefined;
 
-  const columnId = keepColumnId ?? ensureKanbanGroupColumn(dataSource);
+  const columnId =
+    keepColumnId ??
+    (readonly
+      ? pickKanbanGroupColumn(dataSource)
+      : ensureKanbanGroupColumn(dataSource));
   if (!columnId) {
     return;
   }

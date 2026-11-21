@@ -4,7 +4,7 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { AddCursorIcon } from '@blocksuite/icons/lit';
+import { AddCursorIcon, DeleteIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { css, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -71,6 +71,7 @@ export class MobileKanbanGroup extends SignalWatcher(
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
     const ele = e.currentTarget as HTMLElement;
+    const canDelete = this.group.manager.canDeleteGroup(this.group);
     popFilterableSimpleMenu(popupTargetFromElement(ele), [
       menu.group({
         items: [
@@ -88,6 +89,22 @@ export class MobileKanbanGroup extends SignalWatcher(
             name: 'Delete Cards',
             select: () => {
               this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+              this.requestUpdate();
+            },
+          }),
+        ],
+      }),
+      menu.group({
+        items: [
+          menu.action({
+            name: 'Delete Group',
+            prefix: DeleteIcon(),
+            class: {
+              'delete-item': true,
+            },
+            hide: () => !canDelete,
+            select: () => {
+              this.group.manager.deleteGroupByKey(this.group);
               this.requestUpdate();
             },
           }),

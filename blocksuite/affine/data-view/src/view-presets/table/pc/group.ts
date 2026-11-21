@@ -5,6 +5,7 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
+  DeleteIcon,
   PlusIcon,
   ToggleDownIcon,
   ToggleRightIcon,
@@ -173,22 +174,43 @@ export class TableGroup extends SignalWatcher(
       return;
     }
     const ele = e.currentTarget as HTMLElement;
+    const canDelete = group.manager.canDeleteGroup(group);
     popFilterableSimpleMenu(popupTargetFromElement(ele), [
-      menu.action({
-        name: 'Ungroup',
-        hide: () => group.value == null,
-        select: () => {
-          group.rows.forEach(row => {
-            group.manager.removeFromGroup(row.rowId, group.key);
-          });
-        },
+      menu.group({
+        items: [
+          menu.action({
+            name: 'Ungroup',
+            hide: () => group.value == null,
+            select: () => {
+              group.rows.forEach(row => {
+                group.manager.removeFromGroup(row.rowId, group.key);
+              });
+            },
+          }),
+          menu.action({
+            name: 'Delete Cards',
+            select: () => {
+              this.view.rowsDelete(group.rows.map(row => row.rowId));
+              this.requestUpdate();
+            },
+          }),
+        ],
       }),
-      menu.action({
-        name: 'Delete Cards',
-        select: () => {
-          this.view.rowsDelete(group.rows.map(row => row.rowId));
-          this.requestUpdate();
-        },
+      menu.group({
+        items: [
+          menu.action({
+            name: 'Delete Group',
+            prefix: DeleteIcon(),
+            class: {
+              'delete-item': true,
+            },
+            hide: () => !canDelete,
+            select: () => {
+              group.manager.deleteGroupByKey(group);
+              this.requestUpdate();
+            },
+          }),
+        ],
       }),
     ]);
   };

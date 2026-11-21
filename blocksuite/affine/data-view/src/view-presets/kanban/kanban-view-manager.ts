@@ -22,6 +22,7 @@ import { SingleViewBase } from '../../core/view-manager/single-view.js';
 import type { ViewManager } from '../../core/view-manager/view-manager.js';
 import type { KanbanViewColumn, KanbanViewData } from './define.js';
 import {
+  canGroupable,
   getKanbanDefaultHideEmpty,
   resolveKanbanGroupBy,
 } from './group-by-utils.js';
@@ -120,8 +121,33 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     })
   );
 
+  readonly$ = computed(() => {
+    return this.manager.readonly$.value;
+  });
+
   groupBy$ = computed(() => {
     const groupBy = this.data$.value?.groupBy;
+    const isReadonly = this.readonly$.value;
+    if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
+      const fallback = resolveKanbanGroupBy(
+        this.dataSource,
+        groupBy,
+        isReadonly
+      );
+      if (!isReadonly && fallback && fallback.columnId !== groupBy.columnId) {
+        queueMicrotask(() => {
+          const current = this.data$.value?.groupBy;
+          if (
+            !this.readonly$.value &&
+            current?.columnId === groupBy.columnId &&
+            !canGroupable(this.dataSource, current.columnId)
+          ) {
+            this.dataUpdate(() => ({ groupBy: fallback }));
+          }
+        });
+      }
+      return fallback;
+    }
     if (!groupBy || groupBy.hideEmpty != null) {
       return groupBy;
     }
@@ -137,7 +163,8 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
       groupBySet: groupBy => {
         const nextGroupBy = resolveKanbanGroupBy(
           this.manager.dataSource,
-          groupBy
+          groupBy,
+          this.readonly$.value
         );
         this.dataUpdate(() => {
           return {
@@ -252,10 +279,6 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     );
   });
 
-  readonly$ = computed(() => {
-    return this.manager.readonly$.value;
-  });
-
   get columns(): KanbanColumn[] {
     return this.propertiesRaw$.value.filter(property => !property.hide$.value);
   }
@@ -287,6 +310,20 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     }
 
     this.dataUpdate(() => ({ columns: nextColumns }));
+  }
+
+  private materializeGroupBy() {
+    const view = this.view;
+    if (!view || this.readonly$.value) {
+      return;
+    }
+    const groupBy = view.groupBy;
+    if (groupBy?.columnId && !canGroupable(this.dataSource, groupBy.columnId)) {
+      const fallback = resolveKanbanGroupBy(this.dataSource, groupBy, false);
+      if (fallback && fallback.columnId !== groupBy.columnId) {
+        this.dataUpdate(() => ({ groupBy: fallback }));
+      }
+    }
   }
 
   get view() {
@@ -388,6 +425,7 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
     // Materialize view columns on view activation so newly added properties
     // can participate in hide/order operations in kanban.
     this.materializeColumns();
+    this.materializeGroupBy();
   }
 }
 

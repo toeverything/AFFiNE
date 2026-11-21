@@ -4,7 +4,7 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { AddCursorIcon } from '@blocksuite/icons/lit';
+import { AddCursorIcon, DeleteIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { css, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -133,23 +133,44 @@ export class KanbanGroup extends SignalWatcher(
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
     const ele = e.currentTarget as HTMLElement;
+    const canDelete = this.group.manager.canDeleteGroup(this.group);
     popFilterableSimpleMenu(popupTargetFromElement(ele), [
-      menu.action({
-        name: 'Ungroup',
-        hide: () => this.group.value == null,
-        select: () => {
-          this.group.rows.forEach(row => {
-            this.group.manager.removeFromGroup(row.rowId, this.group.key);
-          });
-          this.requestUpdate();
-        },
+      menu.group({
+        items: [
+          menu.action({
+            name: 'Ungroup',
+            hide: () => this.group.value == null,
+            select: () => {
+              this.group.rows.forEach(row => {
+                this.group.manager.removeFromGroup(row.rowId, this.group.key);
+              });
+              this.requestUpdate();
+            },
+          }),
+          menu.action({
+            name: 'Delete Cards',
+            select: () => {
+              this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+              this.requestUpdate();
+            },
+          }),
+        ],
       }),
-      menu.action({
-        name: 'Delete Cards',
-        select: () => {
-          this.view.rowsDelete(this.group.rows.map(row => row.rowId));
-          this.requestUpdate();
-        },
+      menu.group({
+        items: [
+          menu.action({
+            name: 'Delete Group',
+            prefix: DeleteIcon(),
+            class: {
+              'delete-item': true,
+            },
+            hide: () => !canDelete,
+            select: () => {
+              this.group.manager.deleteGroupByKey(this.group);
+              this.requestUpdate();
+            },
+          }),
+        ],
       }),
     ]);
   };
