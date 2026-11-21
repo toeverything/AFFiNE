@@ -11,6 +11,7 @@ pub mod storage;
 #[cfg(not(feature = "use-as-lib"))]
 use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
+pub use doc::merge_updates;
 use napi::bindgen_prelude::*;
 #[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
@@ -44,6 +45,16 @@ pub struct DocRecord {
   pub doc_id: String,
   #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
+  pub timestamp: NaiveDateTime,
+}
+
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct DocDiff {
+  pub doc_id: String,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub missing: Data,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub state: Data,
   pub timestamp: NaiveDateTime,
 }
 
@@ -256,6 +267,28 @@ impl DocStoragePool {
   #[napi]
   pub async fn get_doc(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
     Ok(self.get(universal_id).await?.get_doc(doc_id).await?)
+  }
+
+  #[napi]
+  pub fn merge_updates(&self, updates: Vec<Uint8Array>) -> Result<Uint8Array> {
+    let slices: Vec<&[u8]> = updates.iter().map(|u| u.as_ref()).collect();
+    Ok(Uint8Array::new(doc::merge_updates(&slices)?))
+  }
+
+  #[napi]
+  pub async fn get_doc_diff(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    state: Option<Uint8Array>,
+  ) -> Result<Option<DocDiff>> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_doc_diff(doc_id, state.map(|s| s.to_vec()))
+        .await?,
+    )
   }
 
   #[napi]

@@ -294,6 +294,7 @@ export class BackendRuntimeCoreOperations {
 
     expectedPermissionGeneration?: number;
     protocolVersion?: number;
+    expectedCurrentTimestamp?: number;
   }): Promise<{ timestamp: number; created: boolean }> {
     return await this.measured(
       'appendWorkspaceDocUpdatesV1',
@@ -307,6 +308,7 @@ export class BackendRuntimeCoreOperations {
     docId: string;
     updates: Buffer[];
     editorId?: string;
+    expectedCurrentTimestamp?: number;
   }): Promise<number> {
     return await this.measured('appendWorkspaceDocUpdatesTrustedV1', runtime =>
       runtime.appendWorkspaceDocUpdatesTrustedV1(input)
@@ -317,6 +319,14 @@ export class BackendRuntimeCoreOperations {
     return this.measured(
       'getCurrentWorkspaceDocV1',
       runtime => runtime.getCurrentWorkspaceDocV1(workspaceId, docId),
+      { workspaceId, docId }
+    );
+  }
+
+  getWorkspaceDocCreatorV1(workspaceId: string, docId: string) {
+    return this.measured(
+      'getWorkspaceDocCreatorV1',
+      runtime => runtime.getWorkspaceDocCreatorV1(workspaceId, docId),
       { workspaceId, docId }
     );
   }

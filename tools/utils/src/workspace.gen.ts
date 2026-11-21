@@ -1448,7 +1448,7 @@ export const PackageList = [
   {
     location: 'tools/revert-update',
     name: '@affine/revert-update',
-    workspaceDependencies: ['tools/cli'],
+    workspaceDependencies: ['tools/cli', 'packages/backend/native'],
   },
   {
     location: 'tools/utils',

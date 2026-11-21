@@ -13,6 +13,10 @@ import type { PeerStorageOptions } from '../sync/types';
 import { MANUALLY_STOP } from '../utils/throw-if-aborted';
 import type { StoreInitOptions, WorkerOps } from './ops';
 
+export interface StoreConsumerOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
+
 export class StoreConsumer {
   private storages: PeerStorageOptions<SpaceStorage> | null = null;
   private sync: Sync | null = null;
@@ -71,7 +75,8 @@ export class StoreConsumer {
 
   constructor(
     private readonly availableStorageImplementations: StorageConstructor[],
-    init: StoreInitOptions
+    init: StoreInitOptions,
+    private readonly consumerOptions?: StoreConsumerOptions
   ) {
     this.initOptions = init;
     this.initWithOptions(init);
@@ -127,7 +132,9 @@ export class StoreConsumer {
         })
       ),
     };
-    this.sync = new Sync(this.storages);
+    this.sync = new Sync(this.storages, {
+      mergeUpdates: this.consumerOptions?.mergeUpdates,
+    });
     this.storages.local.connect();
     for (const remote of Object.values(this.storages.remotes)) {
       remote.connect();

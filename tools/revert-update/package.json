@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@affine-tools/cli": "workspace:*",
-    "yjs": "^13.6.27"
+    "@affine/server-native": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

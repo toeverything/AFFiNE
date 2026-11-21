@@ -82,6 +82,8 @@ export declare class DiskSyncSubscriber {
 
 export declare function cancelImportSession(sessionId: string): void
 
+export declare function compactDocUpdatesV1(updates: Array<Uint8Array>): Uint8Array
+
 export interface CreateImportBatchLimits {
   maxDocs?: number
   maxBlobs?: number
@@ -156,6 +158,8 @@ export declare function mintChallengeResponse(resource: string, bits?: number | 
 
 export declare function nextImportBatch(sessionId: string): string | null
 
+export declare function parseWorkspaceRootDocMeta(updates: Array<Uint8Array>): WorkspaceRootDocMeta
+
 export declare function renderMermaidSvg(request: MermaidRenderRequest): MermaidRenderResult
 
 export declare function renderTypstSvg(request: TypstRenderRequest): TypstRenderResult
@@ -175,6 +179,12 @@ export interface TypstRenderResult {
 }
 
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>
+
+export interface WorkspaceRootDocMeta {
+  name?: string
+  avatar?: string
+  pageCount?: number
+}
 export declare class DocStorage {
   constructor(path: string)
   validate(): Promise<boolean>
@@ -198,6 +208,8 @@ export declare class DocStoragePool {
   installPeerWorkspaceState(universalId: string, peer: string, rootDocId: string, cacheToken: number, docs: Array<WorkspaceDoc>, clocks: Record<string, number>): Promise<boolean>
   confirmPeerDocCreate(universalId: string, peer: string, docId: string): Promise<void>
   getDoc(universalId: string, docId: string): Promise<DocRecord | null>
+  mergeUpdates(updates: Array<Uint8Array>): Uint8Array
+  getDocDiff(universalId: string, docId: string, state?: Uint8Array | undefined | null): Promise<DocDiff | null>
   readDocRecordsReadonly(path: string, docId: string): Promise<ReadonlyDocRecords>
   readBlobReadonly(path: string, key: string): Promise<Blob | null>
   deleteDoc(universalId: string, docId: string): Promise<void>
@@ -243,6 +255,13 @@ export interface Blob {
 
 export interface DocClock {
   docId: string
+  timestamp: Date
+}
+
+export interface DocDiff {
+  docId: string
+  missing: Uint8Array
+  state: Uint8Array
   timestamp: Date
 }
 

@@ -49,7 +49,8 @@ export declare class BackendRuntime {
    */
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
   getCurrentWorkspaceDocV1(workspaceId: string, docId: string): Promise<RuntimeDocRecord | null>
-  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
+  getWorkspaceDocCreatorV1(workspaceId: string, docId: string): Promise<string | null>
+  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null, creatorId?: string | undefined | null, fromInitialUpdates?: boolean | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
   appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<WorkspaceDocWriteResultV1>
   appendWorkspaceDocUpdatesTrustedV1(input: AppendWorkspaceDocUpdatesTrustedInputV1): Promise<number>
@@ -243,6 +244,7 @@ export interface AppendWorkspaceDocUpdatesInputV1 {
   writeIntent: WorkspaceDocWriteIntentV1
   expectedPermissionGeneration?: number
   protocolVersion?: number
+  expectedCurrentTimestamp?: number
 }
 
 export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
@@ -250,6 +252,7 @@ export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
   docId: string
   updates: Array<Buffer>
   editorId?: string
+  expectedCurrentTimestamp?: number
 }
 
 export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
@@ -612,6 +615,8 @@ export interface CreateByokProfileInput {
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
+export declare function diffDocUpdateV1(update: Buffer, stateVector: Buffer): Buffer
+
 export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
@@ -643,6 +648,8 @@ export interface EmbeddingHealth {
   workerRunning: boolean
 }
 
+export declare function encodeStateVectorFromUpdateV1(update: Buffer): Buffer
+
 export interface EnsureWorkspaceBlobArtifactInput {
   workspaceId: string
   blobId: string
@@ -655,6 +662,12 @@ export interface EnsureWorkspaceBlobArtifactInput {
 export declare function evaluateLocalRedirect(input: string, baseUrl: string, allowedBases: Array<string>): string
 
 export declare function evaluateRedirectUri(input: string, baseUrl: string, allowedOrigins: Array<string>, trustedDomains: Array<string>, queryPairs: Array<UrlQueryPair>): string
+
+export declare function extractDocRecoveryFacts(docBin: Buffer, propertiesBin: Buffer | undefined | null, targetDocId: string): NativeDocRecoveryFacts
+
+export declare function extractRootDocIdAliases(rootDocBin: Buffer): Record<string, string>
+
+export declare function extractWorkspaceLifecycleRootPages(rootDocBin: Buffer, maxStructs?: number | undefined | null): Array<NativeLifecycleRootPage>
 
 export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
 
@@ -849,6 +862,8 @@ export interface MatchEmbeddingCandidatesInput {
 
 export declare function mergeUpdates(updates: Array<Buffer>): Buffer
 
+export declare function migrateRootDocPages(rootDocBin: Buffer): Buffer | null
+
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
 export interface ModelConditionsContract {
@@ -943,6 +958,12 @@ export interface NativeDocBounds {
   height: number
 }
 
+export interface NativeDocRecoveryFacts {
+  title: string
+  existingCreatedBy?: string
+  existingUpdatedBy?: string
+}
+
 export interface NativeDocumentSearchProjection {
   version: number
   docId: string
@@ -968,6 +989,11 @@ export interface NativeDocumentSearchUnit {
   additional?: string
   type: string
   text: string
+}
+
+export interface NativeLifecycleRootPage {
+  docId: string
+  trashed: boolean
 }
 
 export interface NativeMarkdownResult {
@@ -1218,6 +1244,8 @@ export interface ResolveEntitlementInput {
 }
 
 export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
+
+export declare function revertDocUpdateV1(currentSnapshot: Buffer, targetSnapshot: Buffer): Buffer
 
 export interface RotateByokCredentialInput {
   workspaceId: string
@@ -1870,6 +1898,8 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
 export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
+
+export declare function updateExistingRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer | null
 
 /**
  * Updates a document title in the workspace root doc's meta.pages array.

@@ -67,6 +67,15 @@ export interface NbStorePlugin {
     id: string;
     docId: string;
   }) => Promise<{ docId: string; bin: string; timestamp: number } | undefined>;
+  getDocDiff: (options: {
+    id: string;
+    docId: string;
+    state?: string;
+  }) => Promise<
+    | { docId: string; missing: string; state: string; timestamp: number }
+    | undefined
+  >;
+  mergeUpdates: (options: { updates: string[] }) => Promise<{ bin: string }>;
   deleteDoc: (options: { id: string; docId: string }) => Promise<void>;
   getDocClocks: (options: { id: string; after?: number | null }) => Promise<{
     clocks: {

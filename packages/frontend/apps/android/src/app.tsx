@@ -522,5 +522,11 @@ function createStoreManagerClient() {
     { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]
   );
-  return new StoreManagerClient(new OpClient(worker));
+  const nativeMergeUpdates = NbStoreNativeDBApis.mergeUpdates;
+  return new StoreManagerClient(new OpClient(worker), {
+    mergeUpdates: nativeMergeUpdates
+      ? updates =>
+          updates.length === 1 ? updates[0] : nativeMergeUpdates(updates)
+      : undefined,
+  });
 }

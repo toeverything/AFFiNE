@@ -401,3 +401,103 @@ test('should not recreate a doc deleted before its read acquires the database lo
   t.is(await db.snapshot.count({ where: { workspaceId, id: docId } }), 0);
   t.is(await db.update.count({ where: { workspaceId, id: docId } }), 0);
 });
+
+test('recoverDocCreation preserves initial creator across first compaction and leaves legacy snapshot createdBy unset', async t => {
+  const workspaceId = 'recover-creator-pg';
+  const userA = 'user-author-a';
+  const userB = 'user-editor-b';
+  const collaborator = 'user-collab-c';
+
+  await db.user.createMany({
+    data: [
+      { id: userA, name: 'Author A', email: 'author-a@affine.pro' },
+      { id: userB, name: 'Editor B', email: 'editor-b@affine.pro' },
+      { id: collaborator, name: 'Collab C', email: 'collab-c@affine.pro' },
+    ],
+  });
+
+  await db.workspace.create({
+    data: {
+      id: workspaceId,
+      accessPolicy: { create: { memberDefaultDocRole: 'editor' } },
+    },
+  });
+
+  const mode = Sinon.stub(runtime, 'getWorkspaceLifecycleActiveV1').resolves(
+    true
+  );
+  t.teardown(() => mode.restore());
+  const writer = new DocWriter(adapter, m.get(EventBus), runtime);
+
+  // 1. Pre-existing uncompacted updates: userA creates, userB edits -> first compaction -> recoverDocCreation.
+  const docId = 'doc-uncompacted-a-b';
+  const initialBin = createDocWithMarkdown('Title A', 'Body A', docId, {
+    actorUserId: userA,
+    timestampMs: Date.now(),
+  });
+  const baseTs = Date.now();
+  await db.update.create({
+    data: {
+      workspaceId,
+      id: docId,
+      blob: Buffer.from(initialBin),
+      createdAt: new Date(baseTs),
+      createdBy: userA,
+    },
+  });
+  await db.update.create({
+    data: {
+      workspaceId,
+      id: docId,
+      blob: Buffer.from([0, 0]),
+      createdAt: new Date(baseTs + 10),
+      createdBy: userB,
+    },
+  });
+
+  await runtime.compactPendingDocUpdates(workspaceId, docId, 100, 60_000, 3600);
+  await writer.recoverDocCreation(workspaceId, docId, 'Fallback', collaborator);
+
+  const propsDocId = `db$${workspaceId}$docProperties`;
+  const propsAfterFirst = await adapter.getDoc(workspaceId, propsDocId);
+  t.truthy(propsAfterFirst?.bin);
+  const propsYdoc1 = new YDoc();
+  applyUpdate(propsYdoc1, propsAfterFirst!.bin);
+  t.is(propsYdoc1.getMap(docId).get('createdBy'), userA);
+  t.is(propsYdoc1.getMap(docId).get('updatedBy'), userB);
+  propsYdoc1.destroy();
+
+  // 2. Legacy snapshot-only doc (no runtime_doc_creators row): createdBy stays undefined, updatedBy is userB.
+  const legacyDocId = 'doc-legacy-snap-only';
+  const legacyBin = createDocWithMarkdown('Legacy Title', 'Body', legacyDocId, {
+    actorUserId: userB,
+    timestampMs: Date.now(),
+  });
+  await db.snapshot.create({
+    data: {
+      workspaceId,
+      id: legacyDocId,
+      blob: Buffer.from(legacyBin),
+      size: legacyBin.byteLength,
+      createdAt: new Date(baseTs),
+      updatedAt: new Date(baseTs),
+      createdBy: userB,
+      updatedBy: userB,
+    },
+  });
+
+  await writer.recoverDocCreation(
+    workspaceId,
+    legacyDocId,
+    'Fallback',
+    collaborator
+  );
+
+  const propsAfterLegacy = await adapter.getDoc(workspaceId, propsDocId);
+  t.truthy(propsAfterLegacy?.bin);
+  const propsYdoc2 = new YDoc();
+  applyUpdate(propsYdoc2, propsAfterLegacy!.bin);
+  t.is(propsYdoc2.getMap(legacyDocId).get('createdBy'), undefined);
+  t.is(propsYdoc2.getMap(legacyDocId).get('updatedBy'), userB);
+  propsYdoc2.destroy();
+});

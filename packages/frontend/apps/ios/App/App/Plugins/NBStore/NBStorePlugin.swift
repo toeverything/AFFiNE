@@ -13,6 +13,8 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "setSpaceId", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "pushUpdate", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDoc", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getDocDiff", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "mergeUpdates", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "deleteDoc", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getDocClock", returnType: CAPPluginReturnPromise),
@@ -136,6 +138,44 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.reject("invalid_binary")
       } catch {
         call.reject("Failed to get doc, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func getDocDiff(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let docId = try call.getStringEnsure("docId")
+        let state = call.getString("state")
+        if let diff = try await docStoragePool.getDocDiff(universalId: id, docId: docId, state: state) {
+          call.resolve([
+            "docId": diff.docId,
+            "missing": diff.missing,
+            "state": diff.state,
+            "timestamp": diff.timestamp,
+          ])
+        } else {
+          call.resolve()
+        }
+      } catch UniffiError.Err(let message) where message == "invalid_binary" {
+        call.reject("invalid_binary")
+      } catch {
+        call.reject("Failed to get doc diff, \(error)", nil, error)
+      }
+    }
+  }
+
+  @objc func mergeUpdates(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let updates = try call.getArrayEnsure("updates", String.self)
+        let merged = try docStoragePool.mergeUpdates(updates: updates)
+        call.resolve(["bin": merged])
+      } catch UniffiError.Err(let message) where message == "invalid_binary" {
+        call.reject("invalid_binary")
+      } catch {
+        call.reject("Failed to merge updates, \(error)", nil, error)
       }
     }
   }

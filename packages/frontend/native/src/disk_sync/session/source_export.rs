@@ -57,6 +57,10 @@ impl DiskSession {
       self.export_root_meta_for_doc(&doc_id, &meta).await?;
     }
 
+    // Invalidate scan_cache so any files with deferred root metadata are
+    // retried on the next scan without needing another filesystem edit.
+    self.scan_cache.lock().await.files.clear();
+
     Ok(())
   }
 

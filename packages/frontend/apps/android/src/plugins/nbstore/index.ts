@@ -10,6 +10,7 @@ import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
+  type DocDiff,
   type DocIndexedClock,
   type DocRecord,
   type ListedBlobRecord,
@@ -59,6 +60,32 @@ export const NbStoreNativeDBApis: NativeDBApis = {
           timestamp: new Date(record.timestamp),
         }
       : null;
+  },
+  getDocDiff: async function (
+    id: string,
+    docId: string,
+    state?: Uint8Array
+  ): Promise<DocDiff | null> {
+    const diff = await NbStore.getDocDiff({
+      id,
+      docId,
+      state: state ? await uint8ArrayToBase64(state) : undefined,
+    });
+    return diff
+      ? {
+          docId: diff.docId,
+          missing: base64ToUint8Array(diff.missing),
+          state: base64ToUint8Array(diff.state),
+          timestamp: new Date(diff.timestamp),
+        }
+      : null;
+  },
+  mergeUpdates: async function (updates: Uint8Array[]): Promise<Uint8Array> {
+    const encoded = await Promise.all(
+      updates.map(update => uint8ArrayToBase64(update))
+    );
+    const { bin } = await NbStore.mergeUpdates({ updates: encoded });
+    return base64ToUint8Array(bin);
   },
   deleteDoc: async function (id: string, docId: string): Promise<void> {
     await NbStore.deleteDoc({

@@ -7,7 +7,7 @@ import {
   DocStorageModule,
   PgUserspaceDocStorageAdapter as Adapter,
 } from '../../core/doc';
-import { mergeUpdatesWithYjs } from '../../core/doc/merge-updates';
+import { mergeUpdatesWithNative } from '../../core/doc/merge-updates';
 import { Models, type User } from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
 
@@ -79,7 +79,7 @@ test('should push user doc updates work', async t => {
   t.deepEqual(Buffer.from(unchanged!.bin), Buffer.from(record!.bin));
   t.is(unchanged!.timestamp, record!.timestamp);
   t.throws(() =>
-    mergeUpdatesWithYjs(
+    mergeUpdatesWithNative(
       [...Array.from({ length: 10 }, () => updates[0]), new Uint8Array([255])],
       'userspace.invalid_later_batch'
     )

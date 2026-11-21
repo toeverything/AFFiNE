@@ -221,6 +221,7 @@ async fn delete_doc_rows(
     ("comments", "doc_id"),
     ("doc_blob_refs", "doc_id"),
     ("doc_blob_ref_projections", "doc_id"),
+    ("runtime_doc_creators", "doc_id"),
     ("ai_workspace_ignored_docs", "doc_id"),
     ("workspace_doc_view_daily", "doc_id"),
     ("doc_grants", "doc_id"),

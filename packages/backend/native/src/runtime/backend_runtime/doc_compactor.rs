@@ -119,12 +119,15 @@ async fn load_updates(
   .map_err(|err| RuntimeError::database("DocCompactor load updates failed", err))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn upsert_snapshot(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
   blob: &[u8],
-  timestamp: DateTime<Utc>,
+  created_at: DateTime<Utc>,
+  updated_at: DateTime<Utc>,
+  creator: Option<&str>,
   editor: Option<&str>,
 ) -> RuntimeResult<()> {
   sqlx::query(
@@ -132,16 +135,16 @@ async fn upsert_snapshot(
     INSERT INTO snapshots
       (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
     VALUES
-      ($1, $2, $3, $4, $5, $5, $6, $6)
+      ($1, $2, $3, $4, $5, $6, $7, $8)
     ON CONFLICT (workspace_id, guid)
     DO UPDATE SET
       blob = $3,
       size = $4,
-      updated_at = $5,
-      updated_by = $6
+      updated_at = $6,
+      updated_by = $8
     WHERE snapshots.workspace_id = $1
       AND snapshots.guid = $2
-      AND snapshots.updated_at <= $5
+      AND snapshots.updated_at <= $6
     RETURNING updated_at
     "#,
   )
@@ -149,7 +152,9 @@ async fn upsert_snapshot(
   .bind(doc_id)
   .bind(blob)
   .bind(blob.len() as i64)
-  .bind(timestamp)
+  .bind(created_at)
+  .bind(updated_at)
+  .bind(creator)
   .bind(editor)
   .fetch_one(&mut **tx)
   .await
@@ -325,7 +330,52 @@ async fn compact_doc(
     .filter(|snapshot| snapshot.updated_at > last.created_at)
     .and_then(|snapshot| snapshot.updated_by.as_deref())
     .or(last.created_by.as_deref());
-  upsert_snapshot(&mut tx, workspace_id, doc_id, &final_blob, timestamp, editor).await?;
+  if snapshot.is_none() {
+    let first = updates.first().expect("updates is not empty");
+    sqlx::query(
+      "INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at) VALUES ($1, $2, $3, $4) ON \
+       CONFLICT (workspace_id, doc_id) DO NOTHING",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .bind(first.created_by.as_deref())
+    .bind(first.created_at)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("DocCompactor preserve initial doc creator failed", err))?;
+    let creator: Option<String> = sqlx::query_scalar::<_, Option<String>>(
+      "SELECT created_by FROM runtime_doc_creators WHERE workspace_id = $1 AND doc_id = $2",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("DocCompactor load doc creator failed", err))?
+    .flatten();
+    upsert_snapshot(
+      &mut tx,
+      workspace_id,
+      doc_id,
+      &final_blob,
+      first.created_at,
+      timestamp,
+      creator.as_deref(),
+      editor,
+    )
+    .await?;
+  } else {
+    upsert_snapshot(
+      &mut tx,
+      workspace_id,
+      doc_id,
+      &final_blob,
+      timestamp,
+      timestamp,
+      None,
+      editor,
+    )
+    .await?;
+  }
 
   let mut history_created = false;
   if let Some(snapshot) = &snapshot

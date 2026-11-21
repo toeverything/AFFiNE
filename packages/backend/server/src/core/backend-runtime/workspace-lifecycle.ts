@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import * as Y from 'yjs';
 
+import { extractWorkspaceLifecycleRootPages } from '../../native';
 import type { RuntimeInstance } from './contracts';
 
 export class WorkspaceLifecycleMigration {
@@ -15,7 +15,8 @@ export class WorkspaceLifecycleMigration {
       | 'listWorkspaceLifecycleMigrationCandidatesV1'
       | 'prepareWorkspaceLifecycleMigrationV1'
       | 'migrateWorkspaceLifecycleV1'
-    >
+    >,
+    private readonly options?: { maxStructs?: number }
   ) {}
 
   start() {
@@ -90,32 +91,28 @@ export class WorkspaceLifecycleMigration {
         return;
       }
       let rootStatus = source.rootStatus;
-      const docs: { docId: string; trashed: boolean }[] = [];
+      let docs: { docId: string; trashed: boolean }[] = [];
       if (source.bin) {
-        const root = new Y.Doc();
         try {
-          Y.applyUpdate(root, source.bin);
-          const pages: unknown = root.getMap('meta').toJSON().pages;
-          if (Array.isArray(pages)) {
-            for (const page of pages) {
-              if (typeof page !== 'object' || page === null || !('id' in page))
-                continue;
-              const docId: unknown = page.id;
-              if (typeof docId !== 'string' || !docId.trim()) continue;
-              docs.push({
-                docId,
-                trashed: 'trash' in page && page.trash === true,
-              });
-            }
+          docs = extractWorkspaceLifecycleRootPages(
+            Buffer.from(
+              source.bin.buffer,
+              source.bin.byteOffset,
+              source.bin.byteLength
+            ),
+            this.options?.maxStructs
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          if (message.includes('[affine-doc:resource_limit]')) {
+            throw error;
           }
-        } catch {
-          docs.length = 0;
+          docs = [];
           rootStatus = 'invalid_metadata';
           this.logger.warn(
             `Ignoring invalid legacy root metadata during workspace lifecycle migration: ${workspaceId}`
           );
-        } finally {
-          root.destroy();
         }
       }
       const completed = await this.runtime.migrateWorkspaceLifecycleV1({
