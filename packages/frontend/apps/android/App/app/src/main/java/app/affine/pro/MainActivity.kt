@@ -137,13 +137,11 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugi
             isHorizontalScrollBarEnabled = false
             isVerticalScrollBarEnabled = false
             settings.apply {
-                // Debug builds may point CAP_SERVER_URL at an HTTP dev server; release builds
-                // should keep mixed content blocked.
-                mixedContentMode = if (BuildConfig.DEBUG) {
-                    WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-                } else {
-                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                }
+                // The only page loaded in this WebView is the bundled app at https://localhost;
+                // all other requests target the user-configured server, which for self-hosted
+                // instances may be plain HTTP. Blocking mixed content would silently break
+                // those connections (toeverything/AFFiNE#15438).
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                 setSupportZoom(false)
                 builtInZoomControls = false
                 displayZoomControls = false
