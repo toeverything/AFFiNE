@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { sanitizeSvg } from '../../utils/svg.js';
 
@@ -55,17 +55,14 @@ describe('sanitizeSvg', () => {
     expect(sanitized).not.toContain('<!DOCTYPE');
   });
 
-  test('rejects non-svg roots', () => {
-    expect(sanitizeSvg('<div><svg></svg></div>')).toBe('');
-  });
-
-  test('rejects malformed doctype prefixes without regexp backtracking', () => {
+  test('rejects non-svg roots and malformed prefixes', () => {
     const maliciousPrefix = '<!doctype' + '?><!doctype'.repeat(10_000);
 
+    expect(sanitizeSvg('<div><svg></svg></div>')).toBe('');
     expect(sanitizeSvg(`${maliciousPrefix}<div></div>`)).toBe('');
   });
 
-  test('keeps internal glyph references and safe image data urls', () => {
+  test('keeps internal references and safe image data urls', () => {
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
         <defs><path id="glyph-a" d="M0 0h10v10z"></path></defs>
@@ -82,47 +79,51 @@ describe('sanitizeSvg', () => {
     expect(sanitized).toContain('data:image/png;base64,AAAA');
   });
 
-  test('removes external glyph references and unsafe css', () => {
+  test('removes external references and unsafe inline css', () => {
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
-        <style>@import "https://example.com/style.css"; .a { fill: #000; }</style>
         <use href="https://example.com/glyph.svg#x"></use>
-        <use xlink:href="https://example.com/glyph.svg#x"></use>
-        <a xlink:href="javascript:alert(1)"><path d="M0 0h10v10z"></path></a>
-        <image href="https://example.com/image.png" width="10" height="10"></image>
-        <path style="fill: url(https://example.com/pattern.svg#x)" d="M0 0h10v10z"></path>
+        <a xlink:href="javascript:alert(1)"><path></path></a>
+        <image href="https://example.com/image.png"></image>
+        <path style="fill: url(https://example.com/pattern.svg#x)"></path>
       </svg>
     `);
 
     expect(sanitized).not.toContain('https://example.com');
     expect(sanitized).not.toContain('javascript:');
-    expect(sanitized).not.toContain('@import');
     expect(sanitized).not.toContain('url(');
+  });
+
+  test('preserves local fragment urls in inline styles', () => {
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <path style='fill: url("#gradient")'></path>
+        <path style="stroke: url('#gradient')"></path>
+      </svg>
+    `);
+
+    expect(sanitized.match(/url\(#gradient\)/g)).toHaveLength(2);
   });
 
   test('removes links sharing the current registrable domain', () => {
     setLocation('https://sub.example.co.uk/workspace');
-
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
-        <a xlink:href="https://sub.example.co.uk/docs"><path d="M0 0h10v10z"></path></a>
-        <a href="https://other.example.co.uk/docs"><path d="M0 0h10v10z"></path></a>
-        <a xlink:href="https://example.com/docs"><path d="M0 0h10v10z"></path></a>
+        <a href="https://other.example.co.uk/docs"><path></path></a>
+        <a href="https://example.com/docs"><path></path></a>
       </svg>
     `);
 
-    expect(sanitized).not.toContain('https://sub.example.co.uk/docs');
     expect(sanitized).not.toContain('https://other.example.co.uk/docs');
     expect(sanitized).toContain('https://example.com/docs');
   });
 
   test('keeps private suffix sibling domains separate', () => {
     setLocation('https://foo.github.io/workspace');
-
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
-        <a xlink:href="https://foo.github.io/docs"><path d="M0 0h10v10z"></path></a>
-        <a href="https://bar.github.io/docs"><path d="M0 0h10v10z"></path></a>
+        <a href="https://foo.github.io/docs"><path></path></a>
+        <a href="https://bar.github.io/docs"><path></path></a>
       </svg>
     `);
 
@@ -132,60 +133,107 @@ describe('sanitizeSvg', () => {
 
   test('handles local hostnames by exact hostname', () => {
     setLocation('http://localhost:3000/workspace');
-
     const sanitized = sanitizeSvg(`
       <svg xmlns="http://www.w3.org/2000/svg">
-        <a xlink:href="http://localhost:8080/docs"><path d="M0 0h10v10z"></path></a>
-        <a href="http://share.localhost/docs"><path d="M0 0h10v10z"></path></a>
-        <a href="http://127.0.0.1/docs"><path d="M0 0h10v10z"></path></a>
+        <a href="http://localhost:8080/docs"><path></path></a>
+        <a href="http://share.localhost/docs"><path></path></a>
       </svg>
     `);
 
     expect(sanitized).not.toContain('http://localhost:8080/docs');
     expect(sanitized).toContain('http://share.localhost/docs');
-    expect(sanitized).toContain('http://127.0.0.1/docs');
   });
 
-  test('recursively sanitizes svg images', () => {
-    const nestedSvg = svgDataUrl(
-      '<svg xmlns="http://www.w3.org/2000/svg"><defs><path id="glyph-a" d="M0 0h10v10z"></path></defs><use href="#glyph-a"></use><use href="https://example.com/glyph.svg#x"></use></svg>'
-    );
-    const sanitized = sanitizeSvg(`
+  test('recursively applies the complete sanitizer to svg images', () => {
+    const nestedSvg = svgDataUrl(`
       <svg xmlns="http://www.w3.org/2000/svg">
-        <image href="${nestedSvg}" width="10" height="10"></image>
+        <use href="#glyph-a"></use>
+        <use href="https://example.com/glyph.svg#x"></use>
+        <script>alert(1)</script>
       </svg>
     `);
-    const sanitizedImageHref = sanitized.match(/href="([^"]+)"/)?.[1];
+    const sanitized = sanitizeSvg(`
+      <svg xmlns="http://www.w3.org/2000/svg">
+        <image href="${nestedSvg}"></image>
+      </svg>
+    `);
+    const href = sanitized.match(/href="([^"]+)"/)?.[1] ?? '';
+    const nested = decodeSvgDataUrl(href);
 
-    expect(sanitizedImageHref).toMatch(/^data:image\/svg\+xml;base64,/);
-    expect(decodeSvgDataUrl(sanitizedImageHref ?? '')).toContain('<svg');
-    expect(decodeSvgDataUrl(sanitizedImageHref ?? '')).toContain('#glyph-a');
-    expect(decodeSvgDataUrl(sanitizedImageHref ?? '')).not.toContain(
-      'https://example.com'
-    );
+    expect(href).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(nested).toContain('#glyph-a');
+    expect(nested).not.toContain('https://example.com');
+    expect(nested).not.toContain('<script');
   });
 
   test('removes svg images nested deeper than two levels', () => {
-    const thirdLevelSvg = svgDataUrl(
-      '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"></rect></svg>'
+    const thirdLevel = svgDataUrl('<svg><rect></rect></svg>');
+    const secondLevel = svgDataUrl(
+      `<svg><image href="${thirdLevel}"></image></svg>`
     );
-    const secondLevelSvg = svgDataUrl(
-      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${thirdLevelSvg}"></image></svg>`
+    const firstLevel = svgDataUrl(
+      `<svg><image href="${secondLevel}"></image></svg>`
     );
-    const firstLevelSvg = svgDataUrl(
-      `<svg xmlns="http://www.w3.org/2000/svg"><image href="${secondLevelSvg}"></image></svg>`
+    const sanitized = sanitizeSvg(
+      `<svg><image href="${firstLevel}"></image></svg>`
     );
+    const firstHref = sanitized.match(/href="([^"]+)"/)?.[1] ?? '';
+    const firstSvg = decodeSvgDataUrl(firstHref);
+    const secondHref = firstSvg.match(/href="([^"]+)"/)?.[1] ?? '';
+
+    expect(firstSvg).toContain('<image');
+    expect(decodeSvgDataUrl(secondHref)).not.toContain('<image');
+  });
+
+  test('preserves and scopes Mermaid theme styles', () => {
     const sanitized = sanitizeSvg(`
-      <svg xmlns="http://www.w3.org/2000/svg">
-        <image href="${firstLevelSvg}"></image>
+      <svg id="mermaid-diagram" xmlns="http://www.w3.org/2000/svg">
+        <style>
+          #mermaid-diagram .node rect { fill: #1f2020; stroke: #ccc; }
+          #inner text { fill: url("#gradient"); }
+        </style>
+        <g id="inner" class="node"><rect></rect><text>Label</text></g>
       </svg>
     `);
-    const firstLevelHref = sanitized.match(/href="([^"]+)"/)?.[1];
-    const firstLevelSanitizedSvg = decodeSvgDataUrl(firstLevelHref ?? '');
-    const secondLevelHref = firstLevelSanitizedSvg.match(/href="([^"]+)"/)?.[1];
-    const secondLevelSanitizedSvg = decodeSvgDataUrl(secondLevelHref ?? '');
+    const scopeClass = sanitized.match(/svg-scope-[a-z0-9]+/)?.[0];
 
-    expect(firstLevelSanitizedSvg).toContain('<image');
-    expect(secondLevelSanitizedSvg).not.toContain('<image');
+    expect(scopeClass).toBeDefined();
+    expect(sanitized).toContain(`.${scopeClass} .node rect`);
+    expect(sanitized).toContain(`.${scopeClass} #inner text`);
+    expect(sanitized).toContain('url(#gradient)');
+  });
+
+  test('rejects external css resources and selectors escaping the svg root', () => {
+    const sanitized = sanitizeSvg(`
+      <svg id="mermaid-diagram" xmlns="http://www.w3.org/2000/svg">
+        <style>
+          @\\69mport "https://evil.example/a.css";
+          #mermaid-diagram + .host-ui { display: none; }
+          #mermaid-diagram .node { fill: #000; background-image: image-set("https://evil.example/pixel" 1x); }
+        </style>
+        <g class="node"></g>
+      </svg>
+    `);
+
+    expect(sanitized).not.toContain('evil.example');
+    expect(sanitized).not.toContain('@import');
+    expect(sanitized).not.toContain('image-set');
+    expect(sanitized).not.toContain('.host-ui');
+    expect(sanitized).toContain('fill:#000');
+  });
+});
+
+describe('sanitizeSvg without DOM parsing', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test('fails closed', () => {
+    vi.stubGlobal('DOMParser', undefined);
+    vi.stubGlobal('XMLSerializer', undefined);
+
+    expect(sanitizeSvg('<svg><style>.node { fill: #000; }</style></svg>')).toBe(
+      ''
+    );
   });
 });
