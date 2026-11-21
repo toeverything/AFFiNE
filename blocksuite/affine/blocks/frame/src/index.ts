@@ -3,6 +3,7 @@ export * from './edgeless-toolbar';
 export * from './frame-block';
 export * from './frame-highlight-manager';
 export * from './frame-manager';
+export * from './frame-render-options';
 export * from './frame-spec';
 export * from './frame-tool';
 export * from './frame-toolbar';

@@ -1,3 +1,4 @@
+import { EdgelessShapeBrowserPanel } from './components/shape-browser-panel';
 import { EdgelessShapePanel } from './components/shape-panel';
 import { EdgelessShapeStylePanel } from './components/shape-style-panel';
 import {
@@ -22,6 +23,10 @@ export function effects() {
   );
   customElements.define('edgeless-shape-panel', EdgelessShapePanel);
   customElements.define('edgeless-shape-style-panel', EdgelessShapeStylePanel);
+  customElements.define(
+    'edgeless-shape-browser-panel',
+    EdgelessShapeBrowserPanel
+  );
 }
 
 declare global {
@@ -33,5 +38,6 @@ declare global {
     'edgeless-shape-tool-button': EdgelessShapeToolButton;
     'edgeless-shape-panel': EdgelessShapePanel;
     'edgeless-shape-style-panel': EdgelessShapeStylePanel;
+    'edgeless-shape-browser-panel': EdgelessShapeBrowserPanel;
   }
 }

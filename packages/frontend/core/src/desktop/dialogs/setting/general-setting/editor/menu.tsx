@@ -1,12 +1,14 @@
 import { Menu } from '@affine/component';
-import { type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode } from 'react';
 
 export const DropdownMenu = ({
   items,
   trigger,
+  contentStyle,
 }: {
   items: ReactNode;
   trigger: ReactNode;
+  contentStyle?: CSSProperties;
 }) => {
   return (
     <Menu
@@ -14,6 +16,7 @@ export const DropdownMenu = ({
       contentOptions={{
         style: {
           width: '250px',
+          ...contentStyle,
         },
       }}
     >
