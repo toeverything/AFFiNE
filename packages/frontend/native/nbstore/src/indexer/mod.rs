@@ -1,6 +1,7 @@
 mod crawl;
 mod dto;
 mod persistence;
+mod search_window;
 mod table;
 
 use std::sync::atomic::{AtomicBool, Ordering};
