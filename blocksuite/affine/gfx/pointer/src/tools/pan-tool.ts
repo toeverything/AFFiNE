@@ -3,7 +3,8 @@ import {
   EdgelessLegacySlotIdentifier,
 } from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
-import type { PointerEventState } from '@blocksuite/std';
+import { IS_IPAD } from '@blocksuite/global/env';
+import { isPencilInputActive, type PointerEventState } from '@blocksuite/std';
 import {
   BaseTool,
   createRafCoalescer,
@@ -11,6 +12,19 @@ import {
   type ToolOptions,
 } from '@blocksuite/std/gfx';
 import { Signal } from '@preact/signals-core';
+
+/**
+ * Tools whose drag creates freehand/graphical content. On iPad, while an Apple
+ * Pencil is the active instrument, a finger drag over one of these should pan
+ * the canvas instead of drawing (Pencil draws, finger navigates).
+ */
+const IPAD_FINGER_PAN_TOOLS = new Set([
+  'brush',
+  'highlighter',
+  'eraser',
+  'shape',
+  'connector',
+]);
 
 interface RestorablePresentToolOptions {
   mode?: string; // 'fit' | 'fill', simplified to string for local use
@@ -27,6 +41,12 @@ export class PanTool extends BaseTool<PanToolOption> {
   private _lastPoint: [number, number] | null = null;
 
   private _pendingDelta: [number, number] = [0, 0];
+
+  /**
+   * Tracks an in-flight iPad finger pan (Pencil-priority routing). Non-null only
+   * while a finger drag is being rerouted from a drawing tool to a canvas pan.
+   */
+  private _iPadFingerPanLast: [number, number] | null = null;
 
   private readonly _deltaFlushCoalescer = createRafCoalescer<void>(() => {
     this._flushPendingDelta();
@@ -76,7 +96,54 @@ export class PanTool extends BaseTool<PanToolOption> {
     this.panning$.value = true;
   }
 
+  /**
+   * iPad Pencil-priority routing: while an Apple Pencil is the active drawing
+   * instrument and a drawing tool is selected, a finger drag should pan the
+   * canvas rather than draw. The Pencil itself (pointerType 'pen') and non-iPad
+   * platforms are untouched; palms are already discarded upstream in the
+   * pointer dispatcher.
+   */
+  private _shouldFingerPan(e: PointerEventState): boolean {
+    if (!IS_IPAD) return false;
+    if (e.raw.pointerType !== 'touch') return false;
+    if (!isPencilInputActive()) return false;
+    return IPAD_FINGER_PAN_TOOLS.has(this.controller.currentToolName$.peek());
+  }
+
+  private _mountIPadFingerPan(): void {
+    this.addHook('dragStart', evt => {
+      if (!this._shouldFingerPan(evt)) return;
+      this._iPadFingerPanLast = [evt.x, evt.y];
+      this._pendingDelta = [0, 0];
+      // Suppress the drawing tool for this finger drag.
+      return false;
+    });
+
+    this.addHook('dragMove', evt => {
+      if (!this._iPadFingerPanLast) return;
+
+      const { viewport } = this.gfx;
+      const [lastX, lastY] = this._iPadFingerPanLast;
+      this._iPadFingerPanLast = [evt.x, evt.y];
+      // Coalesce like PanTool.dragMove — Pencil/finger streams are high-rate
+      // and synchronous applyDeltaCenter per event still churns setCenter.
+      this._pendingDelta[0] += (lastX - evt.x) / viewport.zoom;
+      this._pendingDelta[1] += (lastY - evt.y) / viewport.zoom;
+      this._deltaFlushCoalescer.schedule(undefined);
+      return false;
+    });
+
+    this.addHook('dragEnd', () => {
+      if (!this._iPadFingerPanLast) return;
+      this._deltaFlushCoalescer.flush();
+      this._iPadFingerPanLast = null;
+      return false;
+    });
+  }
+
   override mounted(): void {
+    this._mountIPadFingerPan();
+
     this.addHook('pointerDown', evt => {
       const shouldPanWithMiddle = evt.raw.button === MouseButton.MIDDLE;
 

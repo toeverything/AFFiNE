@@ -6,6 +6,7 @@ const IMMERSIVE_TAP_EXCLUDE_SELECTORS = [
   'affine-edgeless-zoom-toolbar-widget',
   '.edgeless-zoom-toolbar-container',
   '.affine-edgeless-selected-rect',
+  '[data-affine-edgeless-ui-chrome="true"]',
 ].join(', ');
 
 export function getLandscapeWindowMeasurement({
@@ -63,6 +64,24 @@ export function shouldTrackMobileDetailPageTitleScroll(
 
 export function shouldShowMobileDetailPageTitle(scrollY: number) {
   return scrollY >= 158;
+}
+
+export function shouldAutoHideEdgelessChrome({
+  immersive,
+  chromeVisible,
+  menuOpen,
+  overlayOpen = false,
+}: {
+  immersive: boolean;
+  chromeVisible: boolean;
+  menuOpen: boolean;
+  overlayOpen?: boolean;
+}) {
+  return immersive && chromeVisible && !menuOpen && !overlayOpen;
+}
+
+export function hasOpenEdgelessUiOverlay(root: ParentNode = document) {
+  return !!root.querySelector('[data-affine-edgeless-ui-overlay="true"]');
 }
 
 export function isImmersiveTapTarget(target: EventTarget | null) {

@@ -37,7 +37,11 @@ export const PageHeaderShareButton = () => {
         </div>
       }
     >
-      <IconButton size={24} style={{ padding: 10 }} icon={<ShareiOsIcon />} />
+      <IconButton
+        size={24}
+        style={{ padding: 10, width: 56, height: 44 }}
+        icon={<ShareiOsIcon />}
+      />
     </MobileMenu>
   );
 };
