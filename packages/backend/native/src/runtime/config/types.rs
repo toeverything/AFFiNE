@@ -49,7 +49,10 @@ impl Default for AuthRuntimeConfig {
       access_token_ttl_seconds: 15 * 60,
       refresh_idle_ttl_seconds: 30 * 24 * 60 * 60,
       refresh_absolute_ttl_seconds: 180 * 24 * 60 * 60,
-      refresh_grace_seconds: 30,
+      // Long enough to recover a rotation whose response was lost (laptop sleep,
+      // network switch). Recovery only succeeds while the successor is unused,
+      // so a replay after the successor has been used is still revoked at once.
+      refresh_grace_seconds: 15 * 60,
       refresh_retention_seconds: 30 * 24 * 60 * 60,
       oauth: OAuthRuntimeConfig::default(),
     }

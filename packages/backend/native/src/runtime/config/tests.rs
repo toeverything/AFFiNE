@@ -69,6 +69,18 @@ fn server_config_uses_one_explicit_path() {
   assert!(ServerConfig::open(&config_path, None).is_err());
   fs::write(
     &config_path,
+    r#"{"deployment":{"type":"selfhosted"},"auth":{"token":{"refreshGracePeriod":900}}}"#,
+  )
+  .unwrap();
+  assert!(ServerConfig::open(&config_path, None).is_ok());
+  fs::write(
+    &config_path,
+    r#"{"deployment":{"type":"selfhosted"},"auth":{"token":{"refreshGracePeriod":86401}}}"#,
+  )
+  .unwrap();
+  assert!(ServerConfig::open(&config_path, None).is_err());
+  fs::write(
+    &config_path,
     r#"{"deployment":{"type":"selfhosted"},"redis":{"port":0}}"#,
   )
   .unwrap();

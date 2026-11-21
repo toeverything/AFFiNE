@@ -77,7 +77,7 @@
     },
     "token.refreshGracePeriod": {
       "type": "Number",
-      "desc": "Refresh rotation concurrency grace period in seconds."
+      "desc": "How long, in seconds, a just-rotated refresh token may still redeem its unused successor (covers concurrent refreshes and lost refresh responses)."
     },
     "token.refreshRetention": {
       "type": "Number",
