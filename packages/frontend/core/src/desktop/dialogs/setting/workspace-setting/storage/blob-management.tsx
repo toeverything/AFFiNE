@@ -2,6 +2,7 @@ import {
   Button,
   Checkbox,
   Loading,
+  notify,
   templateToString,
   useConfirmModal,
 } from '@affine/component';
@@ -75,6 +76,7 @@ const BlobCard = ({
 };
 
 const PAGE_SIZE = 9;
+const DELETE_BATCH_SIZE = 5;
 
 export const BlobManagementPanel = () => {
   const t = useI18n();
@@ -88,36 +90,55 @@ export const BlobManagementPanel = () => {
     useState<ListedBlobRecord | null>(null);
 
   const [unusedBlobs, setUnusedBlobs] = useState<ListedBlobRecord[]>([]);
+  const [selectedBlobKeys, setSelectedBlobKeys] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [deleting, setDeleting] = useState(false);
   const unusedBlobsPage = useMemo(() => {
     return unusedBlobs.slice(skip, skip + PAGE_SIZE);
   }, [unusedBlobs, skip]);
 
   useEffect(() => {
     setUnusedBlobs(originalUnusedBlobs);
+    const availableBlobKeys = new Set(
+      originalUnusedBlobs.map(blob => blob.key)
+    );
+    setSelectedBlobKeys(previous => {
+      return new Set(
+        Array.from(previous).filter(key => availableBlobKeys.has(key))
+      );
+    });
   }, [originalUnusedBlobs]);
 
   useEffect(() => {
     unusedBlobsEntity.revalidate();
   }, [unusedBlobsEntity]);
 
-  const [selectedBlobs, setSelectedBlobs] = useState<ListedBlobRecord[]>([]);
-  const [deleting, setDeleting] = useState(false);
-
   const handleSelectBlob = useCallback((blob: ListedBlobRecord) => {
-    setSelectedBlobs(prev => {
-      if (prev.includes(blob)) {
-        return prev;
+    setSelectedBlobKeys(previous => {
+      if (previous.has(blob.key)) {
+        return previous;
       }
-      return [...prev, blob];
+      const next = new Set(previous);
+      next.add(blob.key);
+      return next;
     });
   }, []);
 
   const handleUnselectBlob = useCallback((blob: ListedBlobRecord) => {
-    setSelectedBlobs(prev => prev.filter(b => b.key !== blob.key));
+    setSelectedBlobKeys(previous => {
+      const next = new Set(previous);
+      next.delete(blob.key);
+      return next;
+    });
   }, []);
 
   const handleBlobClick = useCallback(
     (blob: ListedBlobRecord, event: React.MouseEvent) => {
+      if (deleting) {
+        return;
+      }
+
       const isMetaKey = event.metaKey || event.ctrlKey;
 
       if (event.shiftKey && selectionAnchor) {
@@ -132,28 +153,29 @@ export const BlobManagementPanel = () => {
           const end = Math.max(anchorIndex, currentIndex);
           const blobsToSelect = unusedBlobsPage.slice(start, end + 1);
 
-          setSelectedBlobs(prev => {
+          setSelectedBlobKeys(previous => {
             // If meta/ctrl is also pressed, add to existing selection
-            const baseSelection = isMetaKey ? prev : [];
-            const newSelection = new Set([...baseSelection, ...blobsToSelect]);
-            return Array.from(newSelection);
+            const next = isMetaKey ? new Set(previous) : new Set<string>();
+            blobsToSelect.forEach(item => next.add(item.key));
+            return next;
           });
         }
       } else {
-        if (selectedBlobs.includes(blob)) {
+        if (selectedBlobKeys.has(blob.key)) {
           handleUnselectBlob(blob);
         } else {
           handleSelectBlob(blob);
         }
-        if (selectedBlobs.length === 0) {
-          setSelectionAnchor(selectedBlobs.includes(blob) ? null : blob);
+        if (selectedBlobKeys.size === 0) {
+          setSelectionAnchor(selectedBlobKeys.has(blob.key) ? null : blob);
         }
       }
     },
     [
+      deleting,
       selectionAnchor,
       unusedBlobsPage,
-      selectedBlobs,
+      selectedBlobKeys,
       handleSelectBlob,
       handleUnselectBlob,
     ]
@@ -162,26 +184,28 @@ export const BlobManagementPanel = () => {
   const handleSelectAll = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      unusedBlobsPage.forEach(blob => handleSelectBlob(blob));
+      if (deleting) {
+        return;
+      }
+      setSelectedBlobKeys(new Set(unusedBlobs.map(blob => blob.key)));
     },
-    [unusedBlobsPage, handleSelectBlob]
+    [deleting, unusedBlobs]
   );
 
-  const showSelectAll = !unusedBlobsPage.every(blob =>
-    selectedBlobs.includes(blob)
-  );
+  const showSelectAll = selectedBlobKeys.size < unusedBlobs.length;
 
   const { openConfirmModal } = useConfirmModal();
 
   const handleDeleteSelectedBlobs = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      const currentSelectedBlobs = selectedBlobs;
+      const currentSelectedBlobKeys = unusedBlobs
+        .filter(blob => selectedBlobKeys.has(blob.key))
+        .map(blob => blob.key);
       openConfirmModal({
-        title:
-          t[
-            'com.affine.settings.workspace.storage.unused-blobs.delete.title'
-          ](),
+        title: `${t[
+          'com.affine.settings.workspace.storage.unused-blobs.delete.title'
+        ]()} (${currentSelectedBlobKeys.length})`,
         children:
           t[
             'com.affine.settings.workspace.storage.unused-blobs.delete.warning'
@@ -189,12 +213,49 @@ export const BlobManagementPanel = () => {
         onConfirm: async () => {
           setDeleting(true);
           track.$.settingsPanel.workspace.deleteUnusedBlob();
-          for (const blob of currentSelectedBlobs) {
-            await unusedBlobsEntity.deleteBlob(blob.key, true);
-            handleUnselectBlob(blob);
-            setUnusedBlobs(prev => prev.filter(b => b.key !== blob.key));
+          const deletedBlobKeys = new Set<string>();
+          const failedBlobKeys = new Set<string>();
+
+          try {
+            for (
+              let index = 0;
+              index < currentSelectedBlobKeys.length;
+              index += DELETE_BATCH_SIZE
+            ) {
+              const batch = currentSelectedBlobKeys.slice(
+                index,
+                index + DELETE_BATCH_SIZE
+              );
+              const results = await Promise.allSettled(
+                batch.map(key => unusedBlobsEntity.deleteBlob(key, true))
+              );
+
+              results.forEach((result, resultIndex) => {
+                const key = batch[resultIndex];
+                if (result.status === 'fulfilled') {
+                  deletedBlobKeys.add(key);
+                } else {
+                  failedBlobKeys.add(key);
+                }
+              });
+            }
+
+            setUnusedBlobs(previous =>
+              previous.filter(blob => !deletedBlobKeys.has(blob.key))
+            );
+            setSelectedBlobKeys(failedBlobKeys);
+
+            if (failedBlobKeys.size > 0) {
+              notify.error({
+                title:
+                  t[
+                    'com.affine.settings.workspace.storage.unused-blobs.delete.failed'
+                  ](),
+              });
+            }
+          } finally {
+            setDeleting(false);
           }
-          setDeleting(false);
         },
         confirmText: t['Delete'](),
         cancelText: t['Cancel'](),
@@ -203,7 +264,7 @@ export const BlobManagementPanel = () => {
         },
       });
     },
-    [selectedBlobs, openConfirmModal, t, unusedBlobsEntity, handleUnselectBlob]
+    [selectedBlobKeys, unusedBlobs, openConfirmModal, t, unusedBlobsEntity]
   );
 
   const blobPreviewGridRef = useRef<HTMLDivElement>(null);
@@ -213,7 +274,8 @@ export const BlobManagementPanel = () => {
       const unselectBlobs = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         if (!blobPreviewGridRef.current?.contains(target)) {
-          setSelectedBlobs([]);
+          setSelectedBlobKeys(new Set());
+          setSelectionAnchor(null);
         }
       };
       document.addEventListener('click', unselectBlobs);
@@ -224,19 +286,34 @@ export const BlobManagementPanel = () => {
     return;
   }, [unusedBlobs]);
 
+  useEffect(() => {
+    const lastPageNum = Math.max(
+      0,
+      Math.ceil(unusedBlobs.length / PAGE_SIZE) - 1
+    );
+    if (pageNum > lastPageNum) {
+      setPageNum(lastPageNum);
+      setSkip(lastPageNum * PAGE_SIZE);
+    }
+  }, [pageNum, unusedBlobs.length]);
+
   const isEmpty = (unusedBlobs.length === 0 || !unusedBlobs) && !isLoading;
 
   return (
     <>
-      {selectedBlobs.length > 0 ? (
+      {selectedBlobKeys.size > 0 ? (
         <div className={styles.blobManagementControls}>
           <div className={styles.blobManagementName}>
-            {`${selectedBlobs.length} ${t['com.affine.settings.workspace.storage.unused-blobs.selected']()}`}
+            {`${selectedBlobKeys.size} ${t['com.affine.settings.workspace.storage.unused-blobs.selected']()}`}
           </div>
           <div className={styles.spacer} />
           {showSelectAll && (
-            <Button onClick={handleSelectAll} variant="primary">
-              {t['com.affine.keyboardShortcuts.selectAll']()}
+            <Button
+              onClick={handleSelectAll}
+              variant="primary"
+              disabled={deleting}
+            >
+              {`${t['com.affine.keyboardShortcuts.selectAll']()} (${unusedBlobs.length})`}
             </Button>
           )}
           <Button
@@ -265,7 +342,7 @@ export const BlobManagementPanel = () => {
             <>
               <div className={styles.blobPreviewGrid} ref={blobPreviewGridRef}>
                 {unusedBlobsPage.map(blob => {
-                  const selected = selectedBlobs.includes(blob);
+                  const selected = selectedBlobKeys.has(blob.key);
                   return (
                     <BlobCard
                       key={blob.key}
