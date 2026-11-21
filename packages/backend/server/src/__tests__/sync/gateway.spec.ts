@@ -2041,6 +2041,13 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
     );
     t.is(userdataError.name, 'DOC_ACTION_DENIED');
 
+    await models.doc.setDefaultRole(workspace.id, docId, DocRole.Manager);
+    const readAsCollaborator = () =>
+      app
+        .GET(`/api/workspaces/${workspace.id}/docs/${docId}`)
+        .set('Cookie', cookieHeader);
+    await readAsCollaborator().expect(200);
+
     const ownerJoin = unwrapResponse(
       t,
       await emitWithAck<{ clientId: string; success: boolean }>(
@@ -2105,6 +2112,7 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
       }),
       0
     );
+    await readAsCollaborator().expect(403);
 
     await db.$executeRaw`DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND scope='global'`;
     const legacyWorkspace = await models.workspace.create(owner.id);
@@ -2299,10 +2307,15 @@ test('workspace sync delete-doc should enforce doc permissions', async t => {
         docId: physicalId,
         userId: owner.id,
       });
-      for (const id of [logicalId, physicalId])
+      for (const id of [logicalId, physicalId]) {
         await app
           .GET(`/api/workspaces/${legacyWorkspace.id}/public-docs/${id}`)
           .expect(403);
+        await app
+          .GET(`/api/workspaces/${legacyWorkspace.id}/docs/${id}`)
+          .set('Cookie', cookieHeader)
+          .expect(403);
+      }
       legacyPages.push([new YMap([['id', otherLogicalId]])]);
       legacyRoot
         .getMap('spaces')
