@@ -1,6 +1,10 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
-import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
+import {
+  diffUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  mergeUpdatesV1,
+} from '../../y-octo/index.js';
 import type { DocSource } from '../source.js';
 
 export const dbVersion = 1;
@@ -68,11 +72,17 @@ export class IndexedDBDocSource implements DocSource {
     }
 
     const { updates } = data;
-    const update = mergeUpdates(updates.map(({ update }) => update));
+    const rawUpdates = updates.map(({ update }) => update);
+    const update =
+      rawUpdates.length === 0
+        ? new Uint8Array([0, 0])
+        : rawUpdates.length === 1
+          ? rawUpdates[0]
+          : mergeUpdatesV1(rawUpdates);
 
-    const diff = state.length ? diffUpdate(update, state) : update;
+    const diff = state.length ? diffUpdateV1(update, state) : update;
 
-    return { data: diff, state: encodeStateVectorFromUpdate(update) };
+    return { data: diff, state: encodeStateVectorFromUpdateV1(update) };
   }
 
   async push(docId: string, data: Uint8Array): Promise<void> {
@@ -87,7 +97,10 @@ export class IndexedDBDocSource implements DocSource {
       { timestamp: Date.now(), update: data },
     ];
     if (this.mergeCount && rows.length >= this.mergeCount) {
-      const merged = mergeUpdates(rows.map(({ update }) => update));
+      const merged =
+        rows.length === 1
+          ? rows[0].update
+          : mergeUpdatesV1(rows.map(({ update }) => update));
       rows = [{ timestamp: Date.now(), update: merged }];
     }
     await store.put({

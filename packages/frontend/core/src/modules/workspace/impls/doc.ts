@@ -1,12 +1,15 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import {
   AwarenessStore,
+  createYOctoSpaceDoc,
   type Doc,
+  type DocEngineType,
   type ExtensionType,
   type GetStoreOptions,
   StoreContainer,
   type YBlock,
 } from '@blocksuite/affine/store';
+import { YOctoAwarenessSession } from '@toeverything/infra/y-octo-session';
 import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
@@ -16,6 +19,7 @@ type DocOptions = {
   id: string;
   collection: WorkspaceImpl;
   doc: Y.Doc;
+  docEngine?: DocEngineType;
 };
 
 export class DocImpl implements Doc {
@@ -61,6 +65,8 @@ export class DocImpl implements Doc {
 
   readonly awarenessStore: AwarenessStore;
 
+  readonly docEngine: DocEngineType;
+
   readonly id: string;
 
   readonly rootDoc: Y.Doc;
@@ -97,12 +103,25 @@ export class DocImpl implements Doc {
     return this._yBlocks;
   }
 
-  constructor({ id, collection, doc }: DocOptions) {
+  constructor({ id, collection, doc, docEngine = 'yjs' }: DocOptions) {
     this._collection = collection;
     this.id = id;
     this.rootDoc = doc;
-    this._ySpaceDoc = this._initSpaceDoc() as Y.Doc;
-    this.awarenessStore = new AwarenessStore(new Awareness(this._ySpaceDoc));
+    this.docEngine = docEngine;
+    if (docEngine === 'y-octo') {
+      const spaceDoc = createYOctoSpaceDoc({
+        guid: this.id,
+        clientId: this.rootDoc.clientID,
+      });
+      this._loaded = false;
+      this._ySpaceDoc = spaceDoc as unknown as Y.Doc;
+      this.awarenessStore = new AwarenessStore(
+        new YOctoAwarenessSession(spaceDoc.session)
+      );
+    } else {
+      this._ySpaceDoc = this._initSpaceDoc() as Y.Doc;
+      this.awarenessStore = new AwarenessStore(new Awareness(this._ySpaceDoc));
+    }
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
     this._storeContainer = new StoreContainer(this);

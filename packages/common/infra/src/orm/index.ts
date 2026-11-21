@@ -7,5 +7,13 @@ export type {
   TableMap,
   TableSchemaBuilder,
   UpdateEntityInput,
+  YOctoDocProvider,
 } from './core';
-export { createORMClient, f, t, YjsDBAdapter } from './core';
+export {
+  createORMClient,
+  f,
+  t,
+  YjsDBAdapter,
+  YOctoDBAdapter,
+  YOctoTableAdapter,
+} from './core';

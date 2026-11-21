@@ -6,9 +6,12 @@ import {
   pointInPolygon,
   polygonNearestPoint,
 } from '@blocksuite/global/gfx';
-import type { BaseElementProps } from '@blocksuite/std/gfx';
-import { field, GfxPrimitiveElementModel } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
+import type { BaseElementProps, SurfaceText } from '@blocksuite/std/gfx';
+import {
+  createSurfaceText,
+  field,
+  GfxPrimitiveElementModel,
+} from '@blocksuite/std/gfx';
 
 import {
   FontFamily,
@@ -20,7 +23,7 @@ import {
 import { type Color, DefaultTheme } from '../../themes/index';
 
 export type TextElementProps = BaseElementProps & {
-  text: Y.Text;
+  text: SurfaceText;
   hasMaxWidth?: boolean;
 } & Omit<TextStyleProps, 'fontWeight' | 'fontStyle'> &
   Partial<Pick<TextStyleProps, 'fontWeight' | 'fontStyle'>>;
@@ -32,7 +35,7 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
 
   static propsToY(props: Record<string, unknown>) {
     if (typeof props.text === 'string') {
-      props.text = new Y.Text(props.text);
+      props.text = createSurfaceText(props.text);
     }
 
     return props;
@@ -82,7 +85,7 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
   accessor rotate: number = 0;
 
   @field()
-  accessor text: Y.Text = new Y.Text();
+  accessor text: SurfaceText = createSurfaceText();
 
   @field()
   accessor textAlign: TextAlign = TextAlign.Center;

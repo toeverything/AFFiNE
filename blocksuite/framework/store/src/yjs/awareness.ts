@@ -1,4 +1,7 @@
+import type { YOctoAwarenessSession } from '@blocksuite/sync/y-octo';
 import type { Awareness } from 'y-protocols/awareness.js';
+
+export type AwarenessLike = Awareness | YOctoAwarenessSession;
 
 export interface UserInfo {
   name: string;
@@ -22,8 +25,8 @@ export interface AwarenessEvent {
 export class AwarenessStore {
   readonly awareness: Awareness;
 
-  constructor(awareness: Awareness) {
-    this.awareness = awareness;
+  constructor(awareness: AwarenessLike) {
+    this.awareness = awareness as Awareness;
     this.awareness.setLocalStateField('selectionV2', {});
   }
 

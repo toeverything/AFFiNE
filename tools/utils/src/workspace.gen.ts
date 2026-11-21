@@ -874,6 +874,7 @@ export const PackageList = [
       'blocksuite/affine/shared',
       'blocksuite/framework/global',
       'blocksuite/framework/std',
+      'blocksuite/framework/store',
     ],
   },
   {
@@ -1150,6 +1151,7 @@ export const PackageList = [
       'packages/common/env',
       'packages/common/error',
       'packages/frontend/templates',
+      'blocksuite/framework/sync',
     ],
   },
   {

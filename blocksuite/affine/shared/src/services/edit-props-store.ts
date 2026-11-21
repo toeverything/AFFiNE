@@ -3,11 +3,11 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { DeepPartial } from '@blocksuite/global/utils';
 import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/std';
+import { isCrdtValue } from '@blocksuite/store';
 import { computed, type Signal, signal } from '@preact/signals-core';
 import clonedeep from 'lodash-es/cloneDeep';
 import mergeWith from 'lodash-es/mergeWith';
 import { Subject } from 'rxjs';
-import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { makeDeepOptional, NodePropsSchema } from '../utils/index.js';
@@ -60,12 +60,7 @@ function isSessionProp(key: string): key is keyof SessionProps {
 }
 
 function customizer(_target: unknown, source: unknown) {
-  if (
-    ColorSchema.safeParse(source).success ||
-    source instanceof Y.Text ||
-    source instanceof Y.Array ||
-    source instanceof Y.Map
-  ) {
+  if (ColorSchema.safeParse(source).success || isCrdtValue(source)) {
     return source;
   }
   return;

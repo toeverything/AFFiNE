@@ -11,17 +11,14 @@ import { DebugLogger } from '@affine/debug';
 import type { ListHistoryQuery } from '@affine/graphql';
 import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { i18nTime } from '@affine/i18n';
-import type { Workspace } from '@blocksuite/affine/store';
-import { useService } from '@toeverything/infra';
+import {
+  applyDocUpdate,
+  encodeDocStateAsUpdate,
+  type Workspace,
+} from '@blocksuite/affine/store';
+import { revertUpdateV1, useService } from '@toeverything/infra';
 import { useEffect, useMemo, useState } from 'react';
 import useSWRImmutable from 'swr/immutable';
-import {
-  applyUpdate,
-  Doc as YDoc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  UndoManager,
-} from 'yjs';
 
 import {
   useMutateQueryResource,
@@ -121,7 +118,7 @@ const createShellWorkspace = (
   );
   const docCollection = new WorkspaceImpl({
     id: workspaceId,
-    rootDoc: new YDoc({ guid: workspaceId }),
+    rootDocGuid: workspaceId,
     blobSource: {
       name: 'cloud',
       readonly: true,
@@ -214,7 +211,7 @@ export const useSnapshotPage = (
       page.readonly = true;
       const spaceDoc = page.spaceDoc;
       page.load(() => {
-        applyUpdate(spaceDoc, new Uint8Array(snapshot));
+        applyDocUpdate(spaceDoc, new Uint8Array(snapshot));
       }); // must load before applyUpdate
     }
     return page ?? undefined;
@@ -224,8 +221,8 @@ export const useSnapshotPage = (
     if (!historyShell) return;
     // apply the rootdoc's update to the current workspace
     // this makes sure the page reference links are not deleted ones in the preview
-    const update = encodeStateAsUpdate(docCollection.doc);
-    applyUpdate(historyShell.docCollection.doc, update);
+    const update = encodeDocStateAsUpdate(docCollection.doc);
+    applyDocUpdate(historyShell.docCollection.doc, update);
   }, [docCollection, historyShell]);
 
   return page;
@@ -253,42 +250,13 @@ export const historyListGroupByDay = (histories: DocHistory[]) => {
 };
 
 export function revertUpdate(
-  doc: YDoc,
+  doc: Workspace['doc'],
   snapshotUpdate: Uint8Array,
-  getMetadata: (key: string) => 'Text' | 'Map' | 'Array'
+  _getMetadata?: (key: string) => 'Text' | 'Map' | 'Array'
 ) {
-  const snapshotDoc = new YDoc();
-  applyUpdate(snapshotDoc, snapshotUpdate);
-
-  const currentStateVector = encodeStateVector(doc);
-  const snapshotStateVector = encodeStateVector(snapshotDoc);
-
-  const changesSinceSnapshotUpdate = encodeStateAsUpdate(
-    doc,
-    snapshotStateVector
-  );
-  const undoManager = new UndoManager(
-    // oxlint-disable array-callback-return
-    [...snapshotDoc.share.keys()].map(key => {
-      const type = getMetadata(key);
-      if (type === 'Text') {
-        return snapshotDoc.getText(key);
-      } else if (type === 'Map') {
-        return snapshotDoc.getMap(key);
-      } else if (type === 'Array') {
-        return snapshotDoc.getArray(key);
-      }
-
-      throw new Error('Unknown type');
-    })
-  );
-  applyUpdate(snapshotDoc, changesSinceSnapshotUpdate);
-  undoManager.undo();
-  const revertChangesSinceSnapshotUpdate = encodeStateAsUpdate(
-    snapshotDoc,
-    currentStateVector
-  );
-  applyUpdate(doc, revertChangesSinceSnapshotUpdate);
+  const currentSnapshot = encodeDocStateAsUpdate(doc);
+  const compensation = revertUpdateV1(currentSnapshot, snapshotUpdate);
+  applyDocUpdate(doc, compensation);
 }
 
 export const useRestorePage = (docCollection: Workspace, pageId: string) => {
@@ -307,27 +275,17 @@ export const useRestorePage = (docCollection: Workspace, pageId: string) => {
         return;
       }
       const pageDocId = page.spaceDoc.guid;
-      const before = encodeStateAsUpdate(page.spaceDoc);
-      const prepared = new YDoc();
+      const before = encodeDocStateAsUpdate(page.spaceDoc);
       setIsMutating(true);
       try {
-        applyUpdate(prepared, before);
-        const beforeState = encodeStateVector(prepared);
-        revertUpdate(prepared, update, key => {
-          if (key !== 'blocks') {
-            throw new Error('Only expect this value is "blocks"');
-          }
-          return 'Map';
-        });
-
-        const compensation = encodeStateAsUpdate(prepared, beforeState);
+        const compensation = revertUpdateV1(before, update);
         await workspaceService.workspace.engine.doc.waitForSynced(pageDocId);
         await recover({
           docId: pageDocId,
           timestamp: version,
           workspaceId: docCollection.id,
         });
-        applyUpdate(page.spaceDoc, compensation);
+        applyDocUpdate(page.spaceDoc, compensation);
         const title = page.meta?.title ?? '';
         if (getDocMeta(pageId)?.title !== title) {
           setDocTitle(pageId, title);
@@ -342,7 +300,6 @@ export const useRestorePage = (docCollection: Workspace, pageId: string) => {
 
         logger.info('Page restored', pageDocId, version);
       } finally {
-        prepared.destroy();
         setIsMutating(false);
       }
     };

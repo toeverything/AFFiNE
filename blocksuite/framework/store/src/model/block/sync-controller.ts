@@ -11,6 +11,10 @@ import {
   y2Native,
 } from '../../reactive/index.js';
 import type { Schema } from '../../schema/schema.js';
+import {
+  isYOctoArrayHandle,
+  isYOctoMapHandle,
+} from '../../y-octo/space-adapter.js';
 import type { Store } from '../store/store.js';
 import { BlockModel } from './block-model.js';
 import type { YBlock } from './types.js';
@@ -188,12 +192,14 @@ export class SyncController {
             return result;
           }
 
-          const yValue = native2Y(value);
+          const isYOcto = isYOctoMapHandle(this.yBlock);
+          const yValue = isYOcto ? value : native2Y(value);
           if (this.yBlock.get(`prop:${p}`) === yValue) {
             return Reflect.set(target, p, value, receiver);
           }
           this.yBlock.set(`prop:${p}`, yValue);
-          const proxy = this._getPropsProxy(p, yValue);
+          const liveValue = isYOcto ? this.yBlock.get(`prop:${p}`) : yValue;
+          const proxy = this._getPropsProxy(p, liveValue);
           setValue(target, p, value);
           return Reflect.set(target, p, proxy, receiver);
         }
@@ -263,8 +269,11 @@ export class SyncController {
         flavour = value;
         return;
       }
-      if (key === 'sys:children' && value instanceof Y.Array) {
-        yChildren = value;
+      if (
+        key === 'sys:children' &&
+        (value instanceof Y.Array || isYOctoArrayHandle(value))
+      ) {
+        yChildren = value as Y.Array<string[]>;
         return;
       }
       if (key === 'sys:version' && typeof value === 'number') {
@@ -308,14 +317,19 @@ export class SyncController {
 
     // Set default props if not exists
     if (defaultProps) {
+      const isYOcto = isYOctoMapHandle(this.yBlock);
       Object.entries(defaultProps).forEach(([key, value]) => {
         if (key in props) return;
 
-        const yValue = native2Y(value);
+        const yValue = isYOcto ? value : native2Y(value);
         if (value !== undefined) {
           this.yBlock.set(`prop:${key}`, yValue);
         }
-        props[key] = this._getPropsProxy(key, yValue);
+        const liveValue =
+          isYOcto && value !== undefined
+            ? this.yBlock.get(`prop:${key}`)
+            : yValue;
+        props[key] = this._getPropsProxy(key, liveValue);
       });
     }
 
@@ -344,7 +358,7 @@ export class SyncController {
           if (Boxed.is(origin)) {
             return value;
           }
-          if (origin instanceof Y.Map) {
+          if (origin instanceof Y.Map || isYOctoMapHandle(origin)) {
             return new Proxy(value as UnRecord, {
               get: (target, p, receiver) => {
                 return Reflect.get(target, p, receiver);
@@ -361,7 +375,7 @@ export class SyncController {
               },
             });
           }
-          if (origin instanceof Y.Array) {
+          if (origin instanceof Y.Array || isYOctoArrayHandle(origin)) {
             return new Proxy(value as unknown[], {
               get: (target, p, receiver) => {
                 return Reflect.get(target, p, receiver);

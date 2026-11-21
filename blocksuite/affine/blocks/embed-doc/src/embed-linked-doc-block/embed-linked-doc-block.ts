@@ -45,7 +45,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import throttle from 'lodash-es/throttle';
 import { filter } from 'rxjs/operators';
-import * as Y from 'yjs';
 
 import { renderLinkedDocInCard } from '../common/render-linked-doc';
 import { SyncedDocErrorIcon } from '../embed-synced-doc-block/styles.js';
@@ -169,15 +168,17 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     }
     const index = parent.children.indexOf(this.model);
 
-    const yText = new Y.Text();
-    yText.insert(0, REFERENCE_NODE);
-    yText.format(0, REFERENCE_NODE.length, {
-      reference: {
-        type: 'LinkedPage',
-        ...this.referenceInfo$.peek(),
+    const text = new Text([
+      {
+        insert: REFERENCE_NODE,
+        attributes: {
+          reference: {
+            type: 'LinkedPage',
+            ...this.referenceInfo$.peek(),
+          },
+        },
       },
-    });
-    const text = new Text(yText);
+    ]);
 
     store.addBlock(
       'affine:paragraph',

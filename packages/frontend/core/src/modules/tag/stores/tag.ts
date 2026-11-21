@@ -1,4 +1,4 @@
-import type { DocsPropertiesMeta } from '@blocksuite/affine/store';
+import { type DocsPropertiesMeta, isCrdtArray } from '@blocksuite/affine/store';
 import {
   LiveData,
   Store,
@@ -8,7 +8,6 @@ import {
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { map, switchMap } from 'rxjs';
-import { Array as YArray } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 
@@ -33,7 +32,7 @@ export class TagStore extends Store {
     ).pipe(
       switchMap(yjsObserveDeep),
       map(tagOptions => {
-        if (tagOptions instanceof YArray) {
+        if (isCrdtArray(tagOptions)) {
           return tagOptions.toJSON();
         } else {
           return [];
@@ -153,11 +152,11 @@ export class TagStore extends Store {
         return yjsObservePath(pages, '*.tags');
       }),
       map(meta => {
-        if (meta instanceof YArray) {
+        if (isCrdtArray<any>(meta)) {
           return meta
             .map(v => {
-              const tags = v.get('tags') as YArray<string> | undefined;
-              if (tags instanceof YArray) {
+              const tags = v.get('tags');
+              if (isCrdtArray<string>(tags)) {
                 for (const tagId of tags.toArray()) {
                   if (tagId === id) {
                     return v.get('id') as string;

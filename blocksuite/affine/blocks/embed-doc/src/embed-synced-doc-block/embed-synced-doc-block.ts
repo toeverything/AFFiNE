@@ -42,7 +42,6 @@ import { choose } from 'lit/directives/choose.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
-import * as Y from 'yjs';
 
 import type { EmbedSyncedDocCard } from './components/embed-synced-doc-card.js';
 import { blockStyles } from './styles.js';
@@ -319,15 +318,17 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     }
     const index = parent.children.indexOf(this.model);
 
-    const yText = new Y.Text();
-    yText.insert(0, REFERENCE_NODE);
-    yText.format(0, REFERENCE_NODE.length, {
-      reference: {
-        type: 'LinkedPage',
-        ...this.referenceInfo,
+    const text = new Text([
+      {
+        insert: REFERENCE_NODE,
+        attributes: {
+          reference: {
+            type: 'LinkedPage',
+            ...this.referenceInfo,
+          },
+        },
       },
-    });
-    const text = new Text(yText);
+    ]);
 
     store.addBlock(
       'affine:paragraph',

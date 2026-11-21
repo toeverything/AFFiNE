@@ -10,6 +10,7 @@
   "references": [
     { "path": "../debug" },
     { "path": "../env" },
-    { "path": "../error" }
+    { "path": "../error" },
+    { "path": "../../../blocksuite/framework/sync" }
   ]
 }

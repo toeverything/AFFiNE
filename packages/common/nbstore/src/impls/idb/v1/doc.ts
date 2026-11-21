@@ -1,10 +1,4 @@
 import { once } from 'lodash-es';
-import {
-  applyUpdate,
-  type Array as YArray,
-  Doc as YDoc,
-  type Map as YMap,
-} from 'yjs';
 
 import { share } from '../../../connection';
 import {
@@ -14,7 +8,10 @@ import {
   type DocUpdate,
   SnapshotDocStorageBase,
 } from '../../../storage';
-import { getIdConverter } from '../../../utils/id-converter';
+import {
+  extractSpaceSubdocMappings,
+  getIdConverter,
+} from '../../../utils/id-converter';
 import { DocIDBConnection } from './db';
 
 /**
@@ -91,26 +88,11 @@ export class IndexedDBV1DocStorage extends SnapshotDocStorageBase {
 
     const rootDocBuffer = await this.rawGetDoc(this.spaceId);
     if (rootDocBuffer) {
-      const ydoc = new YDoc({
-        guid: this.spaceId,
-      });
-      applyUpdate(ydoc, rootDocBuffer.bin);
-
-      // get all ids from rootDoc.meta.pages.[*].id, trust this id as normalized id
-      const normalizedDocIds = (
-        (ydoc.getMap('meta') as YMap<any> | undefined)?.get('pages') as
-          | YArray<YMap<any>>
-          | undefined
-      )
-        ?.map(i => i.get('id') as string)
-        .filter(i => !!i);
-
-      const spaces = ydoc.getMap('spaces') as YMap<any> | undefined;
-      for (const pageId of normalizedDocIds ?? []) {
-        const subdoc = spaces?.get(pageId);
-        if (subdoc && subdoc instanceof YDoc) {
-          oldIds.push(subdoc.guid);
-        }
+      for (const { subdocGuid } of extractSpaceSubdocMappings(
+        this.spaceId,
+        rootDocBuffer.bin
+      )) {
+        oldIds.push(subdocGuid);
       }
     }
 

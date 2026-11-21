@@ -1,10 +1,17 @@
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { BaseTextAttributes, DeltaInsert } from '@blocksuite/store';
+import {
+  type BaseTextAttributes,
+  createTextRelativePosition,
+  type DeltaInsert,
+  resolveTextRelativePosition,
+  Text,
+  type TextRelativePosition,
+} from '@blocksuite/store';
 import { type Signal, signal } from '@preact/signals-core';
 import { nothing, render, type TemplateResult } from 'lit';
 import { Subject } from 'rxjs';
-import type * as Y from 'yjs';
+import type { Text as YText } from 'yjs';
 
 import type { VLine } from './components/v-line.js';
 import { INLINE_ROOT_ATTR } from './consts.js';
@@ -176,7 +183,7 @@ export class InlineEditor<
 
   readonly vLineRenderer: ((vLine: VLine) => TemplateResult) | null;
 
-  readonly yText: Y.Text;
+  readonly yText: YText;
   get yTextDeltas() {
     return this.yText.toDelta();
   }
@@ -190,7 +197,7 @@ export class InlineEditor<
   readonly isEmbed: (delta: DeltaInsert<TextAttributes>) => boolean;
 
   constructor(
-    yText: InlineEditor['yText'],
+    yText: InlineEditor['yText'] | Text<TextAttributes>,
     ops: {
       isEmbed?: (delta: DeltaInsert<TextAttributes>) => boolean;
       hooks?: InlineHookService<TextAttributes>['hooks'];
@@ -198,14 +205,15 @@ export class InlineEditor<
       vLineRenderer?: (vLine: VLine) => TemplateResult;
     } = {}
   ) {
-    if (!yText.doc) {
+    const resolvedYText = yText instanceof Text ? yText.yText : yText;
+    if (!resolvedYText.doc) {
       throw new BlockSuiteError(
         ErrorCode.InlineEditorError,
         'yText must be attached to a Y.Doc'
       );
     }
 
-    if (yText.toString().includes('\r')) {
+    if (resolvedYText.toString().includes('\r')) {
       throw new BlockSuiteError(
         ErrorCode.InlineEditorError,
         'yText must not contain "\\r" because it will break the range synchronization'
@@ -219,7 +227,7 @@ export class InlineEditor<
       vLineRenderer = null,
     } = ops;
     this._inlineRangeProviderOverride = false;
-    this.yText = yText;
+    this.yText = resolvedYText;
     this.isEmbed = isEmbed;
     this.vLineRenderer = vLineRenderer;
     this.hooksService = new InlineHookService(this, hooks);
@@ -292,5 +300,15 @@ export class InlineEditor<
     }
 
     doc.transact(fn, withoutTransact ? null : doc.clientID);
+  }
+
+  createRelativePosition(index: number): TextRelativePosition {
+    return createTextRelativePosition(this.yText, index);
+  }
+
+  resolveRelativePosition(
+    relativePosition: TextRelativePosition
+  ): number | null {
+    return resolveTextRelativePosition(relativePosition, this.yText.doc);
   }
 }

@@ -38,7 +38,7 @@ Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
 ##### input?
 
-`string` \| `YText` \| `DeltaInsert`\<`TextAttributes`\>[]
+`string` \| `YText` \| `DeltaOperation`[] \| `YOctoTextHandle` \| `DeltaInsert`\<`TextAttributes`\>[]
 
 The input can be a string, a Y.Text instance, or an array of DeltaInsert.
 
@@ -59,6 +59,20 @@ Get the text delta as a signal.
 ##### Returns
 
 `Signal`\<`DeltaOperation`[]\>
+
+***
+
+### length$
+
+#### Get Signature
+
+> **get** **length$**(): `Signal`\<`number`\>
+
+Get the text length as a signal.
+
+##### Returns
+
+`Signal`\<`number`\>
 
 ## Methods
 
@@ -138,6 +152,19 @@ The length to delete.
 #### Returns
 
 `void`
+
+***
+
+### ensureAttached()
+
+> **ensureAttached**(): `this`
+
+Attach an unattached Text to a transient in-memory document so its
+delta, length, and mutations work before insertion into a Store.
+
+#### Returns
+
+`this`
 
 ***
 
@@ -242,6 +269,24 @@ const text = new Text('Hello, world!');
 const other = new Text(' blocksuite');
 text.join(other);
 ```
+
+***
+
+### observe()
+
+> **observe**(`callback`): () => `void`
+
+Observe changes on the underlying text and return an unsubscribe function.
+
+#### Parameters
+
+##### callback
+
+() => `void`
+
+#### Returns
+
+() => `void`
 
 ***
 
@@ -396,3 +441,47 @@ In most cases, you should not use this method. It will lose the delta attributes
 `string`
 
 The text content.
+
+***
+
+### createDetached()
+
+> `static` **createDetached**\<`T`\>(`input?`): `Text`\<`T`\>
+
+Create a standalone Text attached to a transient in-memory document so
+`toDelta()`, `length`, mutations, and `observe()` work without attaching
+to a full Store.
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `object` = \{ `bold?`: `true` \| `null`; `code?`: `true` \| `null`; `italic?`: `true` \| `null`; `link?`: `string` \| `null`; `strike?`: `true` \| `null`; `underline?`: `true` \| `null`; \}
+
+#### Parameters
+
+##### input?
+
+`string` \| `DeltaOperation`[] \| `DeltaInsert`\<`T`\>[]
+
+#### Returns
+
+`Text`\<`T`\>
+
+***
+
+### isTextLike()
+
+> `static` **isTextLike**(`value`): value is YText \| Text\<\{ bold?: true \| null; code?: true \| null; italic?: true \| null; link?: string \| null; strike?: true \| null; underline?: true \| null \}\>
+
+Check whether a value is a reactive Text wrapper or an underlying Y.Text.
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+value is YText \| Text\<\{ bold?: true \| null; code?: true \| null; italic?: true \| null; link?: string \| null; strike?: true \| null; underline?: true \| null \}\>

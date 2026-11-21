@@ -17,13 +17,15 @@ import {
   ShadowlessElement,
   stdContext,
 } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  createSurfaceText,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 import { InlineEditor, RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { consume } from '@lit/context';
 import { html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import * as Y from 'yjs';
 
 function isShapeElement(element: unknown): element is ShapeElementModel {
   return (
@@ -68,7 +70,7 @@ export function mountShapeTextEditor(
   });
 
   if (!updatedElement.text) {
-    const text = new Y.Text();
+    const text = createSurfaceText();
     crud.updateElement(updatedElement.id, { text });
   }
 
@@ -174,7 +176,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       if (len === 0) {
         this.element.text = undefined;
       } else if (len < text.length) {
-        this.element.text = new Y.Text(trimed);
+        this.element.text = createSurfaceText(trimed);
       }
     }
 

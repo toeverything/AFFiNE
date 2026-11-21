@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals-core';
 
+import { isYOctoMapHandle } from '../../y-octo/space-adapter.js';
 import { isPureObject } from '../is-pure-object';
 import { native2Y } from '../native-y';
 import type { UnRecord } from '../types';
@@ -155,8 +156,8 @@ function createProxyHandler(
         bindOnChangeIfNeed(value, () => {
           onChange?.(firstKey, true);
         });
-        const yValue = native2Y(value);
-        const next = transform(firstKey, value, yValue);
+        const isYOcto = isYOctoMapHandle(yMap);
+        const yValue = isYOcto ? value : native2Y(value);
 
         if (!isStashed && initialized() && !shouldByPassYjs()) {
           yMap.doc?.transact(
@@ -166,6 +167,12 @@ function createProxyHandler(
             { proxy: true }
           );
         }
+
+        const liveYValue =
+          isYOcto && !isStashed && initialized() && !shouldByPassYjs()
+            ? yMap.get(keyWithPrefix(fullPath))
+            : yValue;
+        const next = transform(firstKey, value, liveYValue);
 
         const result = Reflect.set(target, p, next, receiver);
         updateSignal(next, p, receiver, options);

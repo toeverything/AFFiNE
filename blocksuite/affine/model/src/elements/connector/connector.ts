@@ -16,14 +16,15 @@ import type {
   BaseElementProps,
   PointTestOptions,
   SerializedElement,
+  SurfaceText,
 } from '@blocksuite/std/gfx';
 import {
+  createSurfaceText,
   derive,
   field,
   GfxPrimitiveElementModel,
   local,
 } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
 
 import {
   CONNECTOR_LABEL_MAX_WIDTH,
@@ -75,7 +76,7 @@ export type ConnectorLabelConstraintsProps = {
 
 export type ConnectorLabelProps = {
   // Label's content
-  text?: Y.Text;
+  text?: SurfaceText;
   labelEditing?: boolean;
   labelDisplay?: boolean;
   labelXYWH?: XYWH;
@@ -133,7 +134,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
 
   static propsToY(props: ConnectorElementProps) {
     if (typeof props.text === 'string') {
-      props.text = new Y.Text(props.text);
+      props.text = createSurfaceText(props.text);
     }
 
     return props;
@@ -523,7 +524,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    * The content of the label.
    */
   @field()
-  accessor text: Y.Text | undefined = undefined;
+  accessor text: SurfaceText | undefined = undefined;
 
   @local()
   accessor xywh: SerializedXYWH = '[0,0,0,0]';

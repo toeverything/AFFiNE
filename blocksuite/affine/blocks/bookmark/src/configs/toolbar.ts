@@ -40,7 +40,6 @@ import { type ExtensionType, Slice, Text } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
-import * as Y from 'yjs';
 
 import { BookmarkBlockComponent } from '../bookmark-block';
 
@@ -115,12 +114,8 @@ const builtinToolbarConfig = {
             const { parent } = model;
             const index = parent?.children.indexOf(model);
 
-            const yText = new Y.Text();
             const insert = title || caption || url;
-            yText.insert(0, insert);
-            yText.format(0, insert.length, { link: url });
-
-            const text = new Text(yText);
+            const text = new Text([{ insert, attributes: { link: url } }]);
 
             ctx.store.addBlock('affine:paragraph', { text }, parent, index);
 

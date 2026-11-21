@@ -58,14 +58,17 @@ import {
   type BlockStdScope,
   stdContext,
 } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  createSurfaceText,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
+import { Text } from '@blocksuite/store';
 import { consume } from '@lit/context';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import * as Y from 'yjs';
 
 import {
   type AUTO_COMPLETE_TARGET_TYPE,
@@ -169,7 +172,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     const frameMgr = this.std.get(EdgelessFrameManagerIdentifier);
     const frameIndex = frameMgr.frames.length + 1;
     const props = this.std.get(EditPropsStore).applyLastProps('affine:frame', {
-      title: new Y.Text(`Frame ${frameIndex}`),
+      title: new Text(`Frame ${frameIndex}`),
       xywh: serializeXYWH(...xywh),
       presentationIndex: frameMgr.generatePresentationIndex(),
     });
@@ -291,7 +294,7 @@ export class EdgelessAutoCompletePanel extends WithDisposable(LitElement) {
     } else {
       const textId = this.crud.addElement(CanvasElementType.TEXT, {
         xywh: bound.serialize(),
-        text: new Y.Text(),
+        text: createSurfaceText(),
         textAlign: 'left',
         fontSize: 24,
         fontFamily: FontFamily.Inter,

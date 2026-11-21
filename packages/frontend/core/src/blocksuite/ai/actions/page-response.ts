@@ -23,7 +23,6 @@ import {
   LayerManager,
 } from '@blocksuite/affine/std/gfx';
 import { type BlockProps, Text } from '@blocksuite/affine/store';
-import * as Y from 'yjs';
 
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AffineNode, AIContext } from '../utils/context';
@@ -288,7 +287,7 @@ function addSurfaceRefBlock(host: EditorHost, bound: Bound, place: Place) {
   const frame = host.store.addBlock(
     'affine:frame',
     {
-      title: new Text(new Y.Text('Frame')),
+      title: new Text('Frame'),
       xywh: bound.serialize(),
       index: LayerManager.INITIAL_INDEX,
     },

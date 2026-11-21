@@ -1,9 +1,15 @@
+import { YOctoAwarenessSession } from '@blocksuite/sync/y-octo';
 import * as Y from 'yjs';
 
 import type { Doc, GetStoreOptions, Workspace } from '../extension/index.js';
 import type { YBlock } from '../model/block/types.js';
 import { StoreContainer } from '../model/index.js';
-import type { AwarenessStore } from '../yjs/index.js';
+import {
+  createYOctoSpaceDoc,
+  type DocEngineType,
+  isYOctoSpaceDoc,
+} from '../y-octo/space-adapter.js';
+import { AwarenessStore } from '../yjs/index.js';
 import type { TestWorkspace } from './test-workspace.js';
 
 type DocOptions = {
@@ -11,6 +17,7 @@ type DocOptions = {
   collection: Workspace;
   doc: Y.Doc;
   awarenessStore: AwarenessStore;
+  docEngine?: DocEngineType;
 };
 
 export class TestDoc implements Doc {
@@ -64,6 +71,8 @@ export class TestDoc implements Doc {
 
   readonly awarenessStore: AwarenessStore;
 
+  readonly docEngine: DocEngineType;
+
   readonly id: string;
 
   readonly rootDoc: Y.Doc;
@@ -100,12 +109,28 @@ export class TestDoc implements Doc {
     return this._yBlocks;
   }
 
-  constructor({ id, collection, doc, awarenessStore }: DocOptions) {
+  constructor({
+    id,
+    collection,
+    doc,
+    awarenessStore,
+    docEngine = 'yjs',
+  }: DocOptions) {
     this.id = id;
     this.rootDoc = doc;
-    this.awarenessStore = awarenessStore;
+    this.docEngine = docEngine;
 
-    this._ySpaceDoc = this._initSubDoc() as Y.Doc;
+    if (docEngine === 'y-octo') {
+      const spaceDoc = createYOctoSpaceDoc({ guid: this.id });
+      this._loaded = true;
+      this._ySpaceDoc = spaceDoc as unknown as Y.Doc;
+      this.awarenessStore = new AwarenessStore(
+        new YOctoAwarenessSession(spaceDoc.session)
+      );
+    } else {
+      this._ySpaceDoc = this._initSubDoc() as Y.Doc;
+      this.awarenessStore = awarenessStore;
+    }
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
     this._collection = collection;
@@ -121,6 +146,9 @@ export class TestDoc implements Doc {
   }
 
   private _destroy() {
+    if (isYOctoSpaceDoc(this._ySpaceDoc)) {
+      this.awarenessStore.destroy();
+    }
     this._ySpaceDoc.destroy();
     this._loaded = false;
   }

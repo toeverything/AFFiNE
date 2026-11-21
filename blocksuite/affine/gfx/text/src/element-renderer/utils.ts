@@ -10,8 +10,8 @@ import {
   getPointsFromBoundWithRotation,
   rotatePoints,
 } from '@blocksuite/global/gfx';
+import type { SurfaceText } from '@blocksuite/std/gfx';
 import { deltaInsertsToChunks } from '@blocksuite/std/inline';
-import type * as Y from 'yjs';
 
 const { getFontFacesByFontFamily, wrapFontFamily } = TextUtils;
 
@@ -200,7 +200,7 @@ export function getTextWidth(text: string, font: string): number {
   return width;
 }
 
-export function wrapTextDeltas(text: Y.Text, font: string, w: number) {
+export function wrapTextDeltas(text: SurfaceText, font: string, w: number) {
   if (!text) return [];
 
   const deltas: TextDelta[] = (text.toDelta() as TextDelta[]).flatMap(
@@ -292,7 +292,7 @@ export function normalizeTextBound(
     hasMaxWidth,
     maxWidth,
   }: {
-    yText: Y.Text;
+    yText: SurfaceText;
     fontStyle: FontStyle;
     fontWeight: FontWeight;
     fontSize: number;

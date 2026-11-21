@@ -6,6 +6,7 @@ import {
 import { NoopLogger } from '@blocksuite/affine/global/utils';
 import {
   type Doc,
+  type DocEngineType,
   type IdGenerator,
   nanoid,
   type Workspace,
@@ -17,7 +18,7 @@ import {
 } from '@blocksuite/affine/sync';
 import { type Observable, Subject, type Subscription } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
-import type { Doc as YDoc } from 'yjs';
+import { Doc as YDoc } from 'yjs';
 
 import type { FeatureFlagService } from '../../feature-flag';
 import { DocImpl } from './doc';
@@ -25,7 +26,9 @@ import { WorkspaceMetaImpl } from './meta';
 
 type WorkspaceOptions = {
   id?: string;
-  rootDoc: YDoc;
+  docEngine?: DocEngineType;
+  rootDoc?: YDoc;
+  rootDocGuid?: string;
   blobSource?: BlobSource;
   onLoadDoc?: (doc: YDoc) => void;
   onUnloadDoc?: (doc: YDoc) => void;
@@ -42,6 +45,8 @@ export class WorkspaceImpl implements Workspace {
   readonly blockCollections = new Map<string, Doc>();
 
   readonly doc: YDoc;
+
+  readonly docEngine: DocEngineType;
 
   readonly id: string;
 
@@ -68,7 +73,9 @@ export class WorkspaceImpl implements Workspace {
 
   constructor({
     id,
+    docEngine = 'yjs',
     rootDoc,
+    rootDocGuid,
     blobSource,
     onLoadDoc,
     onUnloadDoc,
@@ -80,8 +87,9 @@ export class WorkspaceImpl implements Workspace {
   }: WorkspaceOptions) {
     this.usesWorkspaceState = !!inventory$;
     this.id = id || '';
+    this.docEngine = docEngine;
     this.featureFlagService = featureFlagService;
-    this.doc = rootDoc;
+    this.doc = rootDoc ?? new YDoc({ guid: rootDocGuid ?? id });
     this.onLoadDoc = onLoadDoc;
     this.onUnloadDoc = onUnloadDoc;
     this.onLoadDoc?.(this.doc);
@@ -111,6 +119,7 @@ export class WorkspaceImpl implements Workspace {
         id: docId,
         collection: this,
         doc: this.doc,
+        docEngine: this.docEngine,
       });
       this.blockCollections.set(doc.id, doc);
     });

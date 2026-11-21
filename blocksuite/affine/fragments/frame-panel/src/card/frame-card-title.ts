@@ -2,9 +2,9 @@ import type { FrameBlockModel } from '@blocksuite/affine-model';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import type { Text } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
-import type * as Y from 'yjs';
 
 import { FrameCardTitleEditor } from './frame-card-title-editor.js';
 
@@ -83,15 +83,11 @@ export class FrameCardTitle extends WithDisposable(ShadowlessElement) {
     this.requestUpdate();
   };
 
-  private _setFrameDisposables(title: Y.Text) {
+  private _setFrameDisposables(title: Text) {
     this._clearTitleDisposables();
-    title.observe(this._updateElement);
+    const unobserve = title.observe(this._updateElement);
     this._titleDisposables = new DisposableGroup();
-    this._titleDisposables.add({
-      dispose: () => {
-        title.unobserve(this._updateElement);
-      },
-    });
+    this._titleDisposables.add(unobserve);
   }
 
   override connectedCallback() {
@@ -124,7 +120,7 @@ export class FrameCardTitle extends WithDisposable(ShadowlessElement) {
 
   override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('frame')) {
-      this._setFrameDisposables(this.frame.props.title.yText);
+      this._setFrameDisposables(this.frame.props.title);
     }
   }
 

@@ -36,10 +36,6 @@ import type { FuseResultMatch } from 'fuse.js';
 import Fuse from 'fuse.js';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
-import {
-  createAbsolutePositionFromRelativePosition,
-  createRelativePositionFromTypeIndex,
-} from 'yjs';
 
 import { AuthService, type WorkspaceServerService } from '../../cloud';
 import type { WorkspaceDialogService } from '../../dialogs';
@@ -420,8 +416,7 @@ export class AtMenuConfigService extends Service {
 
           if (!sendNotification) return;
 
-          const relativePosition = createRelativePositionFromTypeIndex(
-            inlineEditor.yText,
+          const relativePosition = inlineEditor.createRelativePosition(
             inlineRange.index + 1
           );
           notificationService
@@ -432,15 +427,9 @@ export class AtMenuConfigService extends Service {
               mode: mode as GraphqlDocMode,
             })
             .then(notificationId => {
-              const doc = inlineEditor.yText.doc;
-              if (!doc) return;
-              const absolutePosition =
-                createAbsolutePositionFromRelativePosition(
-                  relativePosition,
-                  doc
-                );
-              if (!absolutePosition) return;
-              const index = absolutePosition.index;
+              const index =
+                inlineEditor.resolveRelativePosition(relativePosition);
+              if (index === null) return;
 
               const delta = inlineEditor.getDeltaByRangeIndex(index);
               if (

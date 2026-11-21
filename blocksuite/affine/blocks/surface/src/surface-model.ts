@@ -4,9 +4,11 @@ import type {
 } from '@blocksuite/affine-model';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { SurfaceBlockProps } from '@blocksuite/std/gfx';
-import { SurfaceBlockModel as BaseSurfaceModel } from '@blocksuite/std/gfx';
+import {
+  createSurfaceElementsMap,
+  SurfaceBlockModel as BaseSurfaceModel,
+} from '@blocksuite/std/gfx';
 import { BlockSchemaExtension, defineBlockSchema } from '@blocksuite/store';
-import * as Y from 'yjs';
 
 import { elementsCtorMap } from './element-model/index.js';
 import { surfaceMiddlewareIdentifier } from './extensions/surface-middleware.js';
@@ -15,7 +17,7 @@ import { SurfaceBlockTransformer } from './surface-transformer.js';
 export const SurfaceBlockSchema = defineBlockSchema({
   flavour: 'affine:surface',
   props: (internalPrimitives): SurfaceBlockProps => ({
-    elements: internalPrimitives.Boxed(new Y.Map()),
+    elements: internalPrimitives.Boxed(createSurfaceElementsMap()),
   }),
   metadata: {
     version: 5,

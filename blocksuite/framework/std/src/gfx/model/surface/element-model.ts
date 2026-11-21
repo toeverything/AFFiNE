@@ -14,6 +14,7 @@ import {
   type SerializedXYWH,
   type XYWH,
 } from '@blocksuite/global/gfx';
+import { Text } from '@blocksuite/store';
 import { createMutex } from 'lib0/mutex';
 import isEqual from 'lodash-es/isEqual';
 import { Subject } from 'rxjs';
@@ -551,9 +552,9 @@ export function syncElementFromY(
       if (type.action === 'update' || type.action === 'add') {
         const value = model.yMap.get(key);
 
-        if (value instanceof Y.Text) {
+        if (value instanceof Y.Text || Text.isTextLike(value)) {
           disposables[key]?.();
-          disposables[key] = watchText(key, value, callback);
+          disposables[key] = watchText(key, value as Y.Text, callback);
         }
 
         model['_preserved'].set(key, value);
@@ -573,8 +574,8 @@ export function syncElementFromY(
   };
 
   Array.from(model.yMap.entries()).forEach(([key, value]) => {
-    if (value instanceof Y.Text) {
-      disposables[key] = watchText(key, value, callback);
+    if (value instanceof Y.Text || Text.isTextLike(value)) {
+      disposables[key] = watchText(key, value as Y.Text, callback);
     }
 
     model['_preserved'].set(key, value);

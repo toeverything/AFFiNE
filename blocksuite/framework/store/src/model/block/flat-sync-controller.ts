@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 
 import { ReactiveFlatYMap } from '../../reactive/flat-native-y/index.js';
 import type { Schema } from '../../schema/schema.js';
+import { isYOctoArrayHandle } from '../../y-octo/space-adapter.js';
 import type { Store } from '../store/store.js';
 import { BlockModel } from './block-model.js';
 import type { YBlock } from './types.js';
@@ -87,8 +88,11 @@ export class FlatSyncController {
         flavour = value;
         return;
       }
-      if (key === 'sys:children' && value instanceof Y.Array) {
-        yChildren = value;
+      if (
+        key === 'sys:children' &&
+        (value instanceof Y.Array || isYOctoArrayHandle(value))
+      ) {
+        yChildren = value as Y.Array<string[]>;
         return;
       }
       if (key === 'sys:version' && typeof value === 'number') {

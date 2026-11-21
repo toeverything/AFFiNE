@@ -24,7 +24,6 @@ import type {
   TransformerMiddleware,
 } from '@blocksuite/affine/store';
 import { toDraftModel, Transformer } from '@blocksuite/affine/store';
-import { Doc as YDoc } from 'yjs';
 
 import { getStoreManager } from '../manager/store';
 
@@ -43,7 +42,7 @@ const getMarkdownWorkspace = (
   }
 
   const collection = new WorkspaceImpl({
-    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
+    rootDocGuid: 'markdownToDoc',
     featureFlagService: featureFlagService,
   });
   collection.meta.initialize();

@@ -1,7 +1,6 @@
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { assertType, type Constructor } from '@blocksuite/global/utils';
-import type { Boxed } from '@blocksuite/store';
-import { BlockModel, nanoid } from '@blocksuite/store';
+import { BlockModel, type Boxed, nanoid, Text } from '@blocksuite/store';
 import { signal } from '@preact/signals-core';
 import { Subject } from 'rxjs';
 import * as Y from 'yjs';
@@ -555,6 +554,10 @@ export class SurfaceBlockModel extends BlockModel<SurfaceBlockProps> {
     }
 
     Object.entries(props).forEach(([key, val]) => {
+      if (val instanceof Text) {
+        Reflect.set(props, key, val.yText.doc ? val.yText.clone() : val.yText);
+        return;
+      }
       if (val instanceof Object) {
         if (Reflect.has(val, SURFACE_TEXT_UNIQ_IDENTIFIER)) {
           const yText = new Y.Text();

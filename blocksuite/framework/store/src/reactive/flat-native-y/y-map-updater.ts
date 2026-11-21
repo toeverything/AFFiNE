@@ -1,3 +1,4 @@
+import { isYOctoMapHandle } from '../../y-octo/space-adapter.js';
 import { isPureObject } from '../is-pure-object';
 import { native2Y } from '../native-y';
 import type { CreateProxyOptions } from './types';
@@ -44,7 +45,10 @@ export function yMapUpdater({
           bindOnChangeIfNeed(value, () => {
             onChange?.(firstKey, true);
           });
-          yMap.set(keyWithPrefix(fullPath), native2Y(value));
+          yMap.set(
+            keyWithPrefix(fullPath),
+            isYOctoMapHandle(yMap) ? value : native2Y(value)
+          );
         });
       }
     });

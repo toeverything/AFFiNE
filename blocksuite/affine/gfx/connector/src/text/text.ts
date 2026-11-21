@@ -7,8 +7,10 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { IVec } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import type { BlockComponent } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
+import {
+  createSurfaceText,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 
 import { EdgelessConnectorLabelEditor } from './edgeless-connector-label-editor';
 
@@ -34,7 +36,7 @@ export function mountConnectorLabelEditor(
   });
 
   if (!connector.text) {
-    const text = new Y.Text();
+    const text = createSurfaceText();
     const labelOffset = connector.labelOffset;
     let labelXYWH = connector.labelXYWH ?? [0, 0, 16, 16];
 

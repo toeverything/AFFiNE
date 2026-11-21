@@ -1,7 +1,7 @@
+import { unwrapCrdtValue } from '@blocksuite/affine/store';
 import { Store, yjsGetPath, yjsObserveDeep } from '@toeverything/infra';
 import { differenceBy } from 'lodash-es';
 import { combineLatest, map, switchMap } from 'rxjs';
-import { AbstractType as YAbstractType } from 'yjs';
 
 import type { WorkspaceDBService } from '../../db';
 import type { DocCustomPropertyInfo } from '../../db/schema/schema';
@@ -155,10 +155,7 @@ export class WorkspacePropertyStore extends Store {
     ).pipe(
       switchMap(yjsObserveDeep),
       map(
-        p =>
-          (p instanceof YAbstractType ? p.toJSON() : p) as
-            | LegacyWorkspacePropertyInfoList
-            | undefined
+        p => unwrapCrdtValue(p) as LegacyWorkspacePropertyInfoList | undefined
       )
     );
   }

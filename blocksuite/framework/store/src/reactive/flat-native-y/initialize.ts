@@ -1,6 +1,11 @@
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import { Array as YArray, Map as YMap, Text as YText } from 'yjs';
 
+import {
+  isYOctoArrayHandle,
+  isYOctoMapHandle,
+  isYOctoTextHandle,
+} from '../../y-octo/space-adapter.js';
 import { Boxed } from '../boxed';
 import { Text } from '../text';
 import type { UnRecord } from '../types';
@@ -28,12 +33,12 @@ export const initializeData = ({
     let finalData = value;
     if (Boxed.is(value)) {
       finalData = transform(firstKey, new Boxed(value), value);
-    } else if (value instanceof YArray) {
+    } else if (value instanceof YArray || isYOctoArrayHandle(value)) {
       finalData = transform(firstKey, value.toArray(), value);
-    } else if (value instanceof YText) {
+    } else if (value instanceof YText || isYOctoTextHandle(value)) {
       const next = new Text(value);
       finalData = transform(firstKey, next, value);
-    } else if (value instanceof YMap) {
+    } else if (value instanceof YMap || isYOctoMapHandle(value)) {
       throw new BlockSuiteError(
         BlockSuiteError.ErrorCode.ReactiveProxyError,
         'flatY2Native does not support Y.Map as value of Y.Map'

@@ -1,6 +1,7 @@
 import './setup';
 
 import { Telemetry } from '@affine/core/components/telemetry';
+import { ensureYOctoWasmReady } from '@toeverything/infra';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -17,8 +18,10 @@ function mountApp() {
   );
 }
 
-try {
-  mountApp();
-} catch (err) {
-  console.error('Failed to bootstrap app', err);
-}
+ensureYOctoWasmReady()
+  .then(() => {
+    mountApp();
+  })
+  .catch(err => {
+    console.error('Failed to bootstrap app', err);
+  });

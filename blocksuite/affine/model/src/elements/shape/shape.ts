@@ -5,15 +5,19 @@ import type {
   PointLocation,
   SerializedXYWH,
 } from '@blocksuite/global/gfx';
-import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
+import type {
+  BaseElementProps,
+  PointTestOptions,
+  SurfaceText,
+} from '@blocksuite/std/gfx';
 import {
+  createSurfaceText,
   field,
   GfxLocalElementModel,
   GfxPrimitiveElementModel,
   local,
   prop,
 } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
 
 import {
   DEFAULT_ROUGHNESS,
@@ -44,7 +48,7 @@ export type ShapeProps = BaseElementProps & {
   // https://github.com/rough-stuff/rough/wiki#roughness
   roughness?: number;
 
-  text?: Y.Text;
+  text?: SurfaceText;
   textHorizontalAlign?: TextAlign;
   textVerticalAlign?: TextVerticalAlign;
   textResizing?: TextResizing;
@@ -66,7 +70,7 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
 
   static propsToY(props: ShapeProps) {
     if (typeof props.text === 'string') {
-      props.text = new Y.Text(props.text);
+      props.text = createSurfaceText(props.text);
     }
 
     return props;
@@ -164,7 +168,7 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
   accessor strokeWidth: number = 4;
 
   @field()
-  accessor text: Y.Text | undefined = undefined;
+  accessor text: SurfaceText | undefined = undefined;
 
   @field(TextAlign.Center as TextAlign)
   accessor textAlign!: TextAlign;

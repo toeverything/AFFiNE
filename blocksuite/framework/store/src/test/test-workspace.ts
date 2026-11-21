@@ -21,6 +21,7 @@ import type {
   WorkspaceMeta,
 } from '../extension/index.js';
 import { type IdGenerator, nanoid } from '../utils/id-generator.js';
+import type { DocEngineType } from '../y-octo/space-adapter.js';
 import { AwarenessStore } from '../yjs/index.js';
 import { TestDoc } from './test-doc.js';
 import { TestMeta } from './test-meta.js';
@@ -28,6 +29,7 @@ import { TestMeta } from './test-meta.js';
 export type DocCollectionOptions = {
   id?: string;
   idGenerator?: IdGenerator;
+  docEngine?: DocEngineType;
   docSources?: {
     main: DocSource;
     shadows?: DocSource[];
@@ -57,6 +59,8 @@ export class TestWorkspace implements Workspace {
 
   readonly doc: Y.Doc;
 
+  readonly docEngine: DocEngineType;
+
   readonly docSync: DocEngine;
 
   readonly id: string;
@@ -76,6 +80,7 @@ export class TestWorkspace implements Workspace {
   constructor({
     id,
     idGenerator,
+    docEngine = 'yjs',
     awarenessSources = [],
     docSources = {
       main: new NoopDocSource(),
@@ -85,6 +90,7 @@ export class TestWorkspace implements Workspace {
     },
   }: DocCollectionOptions = {}) {
     this.id = id || '';
+    this.docEngine = docEngine;
     this.doc = new Y.Doc({ guid: id });
     this.awarenessStore = new AwarenessStore(new Awareness(this.doc));
 
@@ -119,6 +125,7 @@ export class TestWorkspace implements Workspace {
         collection: this,
         doc: this.doc,
         awarenessStore: this.awarenessStore,
+        docEngine: this.docEngine,
       });
       this.blockCollections.set(doc.id, doc);
     });

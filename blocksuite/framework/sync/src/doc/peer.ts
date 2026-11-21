@@ -2,20 +2,58 @@ import type { Logger } from '@blocksuite/global/utils';
 import isEqual from 'lodash-es/isEqual';
 import { Subject } from 'rxjs';
 import type { Doc } from 'yjs';
-import {
-  applyUpdate,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  mergeUpdates,
-} from 'yjs';
+import { applyUpdate, encodeStateAsUpdate, encodeStateVector } from 'yjs';
 
 import {
   PriorityAsyncQueue,
   SharedPriorityTarget,
 } from '../utils/async-queue.js';
 import { MANUALLY_STOP, throwIfAborted } from '../utils/throw-if-aborted.js';
+import { mergeUpdatesV1, type YOctoDocSession } from '../y-octo/index.js';
 import { DocPeerStep } from './consts.js';
 import type { DocSource } from './source.js';
+
+export type SyncDoc = Doc | YOctoDocSession;
+
+function isYOctoDocSession(doc: SyncDoc): doc is YOctoDocSession {
+  return (
+    typeof (doc as YOctoDocSession).applyUpdate === 'function' &&
+    typeof (doc as YOctoDocSession).encodeStateAsUpdate === 'function'
+  );
+}
+
+function encodeDocStateVector(doc: SyncDoc): Uint8Array {
+  return isYOctoDocSession(doc)
+    ? doc.encodeStateVector()
+    : encodeStateVector(doc);
+}
+
+function encodeDocUpdate(
+  doc: SyncDoc,
+  targetStateVector?: Uint8Array
+): Uint8Array {
+  return isYOctoDocSession(doc)
+    ? doc.encodeStateAsUpdate(targetStateVector)
+    : encodeStateAsUpdate(doc, targetStateVector);
+}
+
+function applyDocUpdate(doc: SyncDoc, data: Uint8Array, origin?: unknown) {
+  if (isYOctoDocSession(doc)) {
+    doc.applyUpdate(data, origin);
+  } else {
+    applyUpdate(doc, data, origin);
+  }
+}
+
+function mergeDocUpdates(updates: Uint8Array[]): Uint8Array {
+  if (updates.length === 0) {
+    return new Uint8Array([0, 0]);
+  }
+  if (updates.length === 1) {
+    return updates[0];
+  }
+  return mergeUpdatesV1(updates);
+}
 
 export interface DocPeerStatus {
   step: DocPeerStep;
@@ -91,7 +129,7 @@ export class SyncPeer {
   };
 
   // handle updates from ydoc
-  handleYDocUpdates = (update: Uint8Array, origin: string, doc: Doc) => {
+  handleYDocUpdates = (update: Uint8Array, origin: unknown, doc: SyncDoc) => {
     // don't push updates from storage
     if (origin === this.name) {
       return;
@@ -113,7 +151,7 @@ export class SyncPeer {
   readonly onStatusChange = new Subject<DocPeerStatus>();
 
   readonly state: {
-    connectedDocs: Map<string, Doc>;
+    connectedDocs: Map<string, SyncDoc>;
     pushUpdatesQueue: PriorityAsyncQueue<{
       id: string;
       data: Uint8Array[];
@@ -124,7 +162,7 @@ export class SyncPeer {
       data: Uint8Array;
     }>;
     subdocLoading: boolean;
-    subdocsLoadQueue: PriorityAsyncQueue<{ id: string; doc: Doc }>;
+    subdocsLoadQueue: PriorityAsyncQueue<{ id: string; doc: SyncDoc }>;
   } = {
     connectedDocs: new Map(),
     pushUpdatesQueue: new PriorityAsyncQueue([], this.priorityTarget),
@@ -151,7 +189,7 @@ export class SyncPeer {
   }
 
   constructor(
-    readonly rootDoc: Doc,
+    readonly rootDoc: SyncDoc,
     readonly source: DocSource,
     readonly priorityTarget = new SharedPriorityTarget(),
     readonly logger: Logger
@@ -164,34 +202,45 @@ export class SyncPeer {
     });
   }
 
-  async connectDoc(doc: Doc, abort: AbortSignal) {
+  async connectDoc(doc: SyncDoc, abort: AbortSignal) {
     const { data: docData, state: inStorageState } =
-      (await this.source.pull(doc.guid, encodeStateVector(doc))) ?? {};
+      (await this.source.pull(doc.guid, encodeDocStateVector(doc))) ?? {};
     throwIfAborted(abort);
 
     if (docData && docData.length > 0) {
-      applyUpdate(doc, docData, 'load');
+      applyDocUpdate(doc, docData, 'load');
     }
 
     // diff root doc and in-storage, save updates to pendingUpdates
     this.state.pushUpdatesQueue.push({
       id: doc.guid,
-      data: [encodeStateAsUpdate(doc, inStorageState)],
+      data: [encodeDocUpdate(doc, inStorageState)],
     });
 
     this.state.connectedDocs.set(doc.guid, doc);
 
     // start listen root doc changes
-    doc.on('update', this.handleYDocUpdates);
+    (
+      doc as unknown as {
+        on(event: string, listener: (...args: any[]) => void): void;
+      }
+    ).on('update', this.handleYDocUpdates);
 
     // mark rootDoc as loaded
-    doc.emit('sync', [true, doc]);
+    (doc as unknown as { emit(event: string, args: any[]): void }).emit(
+      'sync',
+      [true, doc]
+    );
 
     this.updateSyncStatus();
   }
 
-  disconnectDoc(doc: Doc) {
-    doc.off('update', this.handleYDocUpdates);
+  disconnectDoc(doc: SyncDoc) {
+    (
+      doc as unknown as {
+        off(event: string, listener: (...args: any[]) => void): void;
+      }
+    ).off('update', this.handleYDocUpdates);
     this.state.connectedDocs.delete(doc.guid);
     this.updateSyncStatus();
   }
@@ -244,15 +293,17 @@ export class SyncPeer {
       await this.connectDoc(this.rootDoc, abortInner.signal);
 
       // Step 2: load subdocs
-      this.state.subdocsLoadQueue.push(
-        ...Array.from(this.rootDoc.getSubdocs()).map(doc => ({
-          id: doc.guid,
-          doc,
-        }))
-      );
-      this.updateSyncStatus();
+      if (!isYOctoDocSession(this.rootDoc)) {
+        this.state.subdocsLoadQueue.push(
+          ...Array.from(this.rootDoc.getSubdocs()).map(doc => ({
+            id: doc.guid,
+            doc,
+          }))
+        );
+        this.updateSyncStatus();
 
-      this.rootDoc.on('subdocs', this.handleSubdocsUpdate);
+        this.rootDoc.on('subdocs', this.handleSubdocsUpdate);
+      }
 
       // Finally: start sync
       await Promise.all([
@@ -284,7 +335,7 @@ export class SyncPeer {
             ) {
               const subdoc = this.state.connectedDocs.get(id);
               if (subdoc) {
-                applyUpdate(subdoc, data, this.name);
+                applyDocUpdate(subdoc, data, this.name);
               }
             }
             this.updateSyncStatus();
@@ -299,7 +350,7 @@ export class SyncPeer {
             this.state.pushingUpdate = true;
             this.updateSyncStatus();
 
-            const merged = mergeUpdates(data);
+            const merged = mergeDocUpdates(data);
 
             // don't push empty data or Uint8Array([0, 0])
             if (
@@ -321,7 +372,9 @@ export class SyncPeer {
       for (const docs of this.state.connectedDocs.values()) {
         this.disconnectDoc(docs);
       }
-      this.rootDoc.off('subdocs', this.handleSubdocsUpdate);
+      if (!isYOctoDocSession(this.rootDoc)) {
+        this.rootDoc.off('subdocs', this.handleSubdocsUpdate);
+      }
     }
   }
 

@@ -3,9 +3,9 @@ import {
   LiveData,
   ObjectPool,
   Service,
-  YjsDBAdapter,
+  YOctoDBAdapter,
+  YOctoDocSession,
 } from '@toeverything/infra';
-import { Doc as YDoc } from 'yjs';
 
 import type { WorkspaceServerService } from '../../cloud';
 import { AuthService } from '../../cloud/services/auth';
@@ -43,18 +43,19 @@ export class WorkspaceDBService extends Service {
       WorkspaceDB<AFFiNEWorkspaceDbSchema>,
       {
         db: new WorkspaceDBClient(
-          new YjsDBAdapter(AFFiNE_WORKSPACE_DB_SCHEMA, {
+          new YOctoDBAdapter(AFFiNE_WORKSPACE_DB_SCHEMA, {
             getDoc: guid => {
-              const ydoc = new YDoc({
+              const doc = new YOctoDocSession({
                 // guid format: db${guid}
                 guid: `db$${guid}`,
+                undo: 'disabled',
               });
-              this.workspaceService.workspace.engine.doc.connectDoc(ydoc);
+              this.workspaceService.workspace.engine.doc.connectDoc(doc);
               this.workspaceService.workspace.engine.doc.addPriority(
-                ydoc.guid,
+                doc.guid,
                 50
               );
-              return ydoc;
+              return doc;
             },
           })
         ),
@@ -75,18 +76,19 @@ export class WorkspaceDBService extends Service {
       WorkspaceDB<AFFiNEWorkspaceUserdataDbSchema>,
       {
         db: new WorkspaceUserdataDBClient(
-          new YjsDBAdapter(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA, {
+          new YOctoDBAdapter(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA, {
             getDoc: guid => {
-              const ydoc = new YDoc({
+              const doc = new YOctoDocSession({
                 // guid format: userdata${userId}${guid}
                 guid: `userdata$${userId}$${guid}`,
+                undo: 'disabled',
               });
-              this.workspaceService.workspace.engine.doc.connectDoc(ydoc);
+              this.workspaceService.workspace.engine.doc.connectDoc(doc);
               this.workspaceService.workspace.engine.doc.addPriority(
-                ydoc.guid,
+                doc.guid,
                 50
               );
-              return ydoc;
+              return doc;
             },
           })
         ),

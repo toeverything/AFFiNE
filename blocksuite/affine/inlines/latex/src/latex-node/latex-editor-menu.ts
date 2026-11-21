@@ -9,11 +9,11 @@ import { noop } from '@blocksuite/global/utils';
 import { DoneIcon } from '@blocksuite/icons/lit';
 import { type BlockStdScope, ShadowlessElement } from '@blocksuite/std';
 import { InlineManagerExtension } from '@blocksuite/std/inline';
+import { Text } from '@blocksuite/store';
 import { effect, type Signal, signal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { codeToTokensBase, type ThemedToken } from 'shiki';
-import * as Y from 'yjs';
 
 import { LatexEditorUnitSpecExtension } from '../inline-spec';
 
@@ -91,7 +91,7 @@ export class LatexEditorMenu extends SignalWatcher(
 
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
-  yText!: Y.Text;
+  yText!: Text;
 
   get inlineManager() {
     return this.std.get(LatexEditorInlineManagerExtension.identifier);
@@ -122,9 +122,7 @@ export class LatexEditorMenu extends SignalWatcher(
   override connectedCallback(): void {
     super.connectedCallback();
 
-    const doc = new Y.Doc();
-    this.yText = doc.getText('latex');
-    this.yText.insert(0, this.latexSignal.value);
+    this.yText = Text.createDetached(this.latexSignal.value);
 
     const yTextObserver = () => {
       const text = this.yText.toString();
@@ -132,10 +130,7 @@ export class LatexEditorMenu extends SignalWatcher(
 
       this._updateHighlightTokens(text);
     };
-    this.yText.observe(yTextObserver);
-    this.disposables.add(() => {
-      this.yText.unobserve(yTextObserver);
-    });
+    this.disposables.add(this.yText.observe(yTextObserver));
 
     this.disposables.add(
       effect(() => {

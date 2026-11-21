@@ -19,13 +19,15 @@ import {
   ShadowlessElement,
   stdContext,
 } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  createSurfaceText,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { consume } from '@lit/context';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import * as Y from 'yjs';
 
 import { getCursorByCoord, getLineHeight } from './element-renderer/utils';
 
@@ -79,7 +81,7 @@ export function addText(edgeless: BlockComponent, event: PointerEventState) {
       .get(EdgelessCRUDIdentifier)
       .addElement(CanvasElementType.TEXT, {
         xywh: new Bound(modelX, modelY, 32, 32).serialize(),
-        text: new Y.Text(),
+        text: createSurfaceText(),
       });
     if (!id) return;
 

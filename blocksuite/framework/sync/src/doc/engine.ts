@@ -1,11 +1,10 @@
 import type { Logger } from '@blocksuite/global/utils';
 import { Subject } from 'rxjs';
-import type { Doc } from 'yjs';
 
 import { SharedPriorityTarget } from '../utils/async-queue.js';
 import { MANUALLY_STOP, throwIfAborted } from '../utils/throw-if-aborted.js';
 import { DocEngineStep, DocPeerStep } from './consts.js';
-import { type DocPeerStatus, SyncPeer } from './peer.js';
+import { type DocPeerStatus, type SyncDoc, SyncPeer } from './peer.js';
 import type { DocSource } from './source.js';
 
 export interface DocEngineStatus {
@@ -62,7 +61,7 @@ export class DocEngine {
   }
 
   constructor(
-    readonly rootDoc: Doc,
+    readonly rootDoc: SyncDoc,
     readonly main: DocSource,
     readonly shadows: DocSource[],
     readonly logger: Logger

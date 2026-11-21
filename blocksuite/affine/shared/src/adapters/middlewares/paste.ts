@@ -24,7 +24,6 @@ import {
   type Text,
   type TransformerMiddleware,
 } from '@blocksuite/store';
-import * as Y from 'yjs';
 
 import { REFERENCE_NODE } from '../../consts';
 import { ImageSelection } from '../../selection';
@@ -377,9 +376,7 @@ class PasteTr {
       !matchModels(this.pointState.model, [CodeBlockModel])
     ) {
       const text = fromJSON(this.lastSnapshot.props.text) as Text;
-      const doc = new Y.Doc();
-      const temp = doc.getMap('temp');
-      temp.set('text', text.yText);
+      text.ensureAttached();
       this.lastIndex = text.length;
     } else {
       this.lastIndex =

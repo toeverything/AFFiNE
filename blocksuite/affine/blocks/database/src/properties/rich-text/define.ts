@@ -1,6 +1,5 @@
 import { propertyType, t } from '@blocksuite/data-view';
 import { Text } from '@blocksuite/store';
-import * as Y from 'yjs';
 import zod from 'zod';
 
 import { getTextWithResolvedReferences } from '../../utils/title-doc.js';
@@ -27,9 +26,7 @@ export const richTextPropertyModelConfig = richTextColumnType.modelConfig({
   },
   rawValue: {
     schema: zod
-      .custom<RichTextCellType>(
-        data => data instanceof Text || data instanceof Y.Text
-      )
+      .custom<RichTextCellType>(data => Text.isTextLike(data))
       .optional(),
     default: () => undefined,
     toString: ({ value }) => value?.toString() ?? '',

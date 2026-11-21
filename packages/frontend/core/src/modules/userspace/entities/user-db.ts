@@ -1,5 +1,9 @@
-import { createORMClient, Entity, YjsDBAdapter } from '@toeverything/infra';
-import { Doc as YDoc } from 'yjs';
+import {
+  createORMClient,
+  Entity,
+  YOctoDBAdapter,
+  YOctoDocSession,
+} from '@toeverything/infra';
 
 import { USER_DB_SCHEMA, type UserDbSchema } from '../schema';
 import { UserDBEngine } from './user-db-engine';
@@ -14,14 +18,15 @@ export class UserDB extends Entity<{
     userId: this.props.userId,
   });
   readonly db = new UserDBClient(
-    new YjsDBAdapter(USER_DB_SCHEMA, {
+    new YOctoDBAdapter(USER_DB_SCHEMA, {
       getDoc: guid => {
-        const ydoc = new YDoc({
+        const doc = new YOctoDocSession({
           guid,
+          undo: 'disabled',
         });
-        this.engine.client.docFrontend.connectDoc(ydoc);
-        this.engine.client.docFrontend.addPriority(ydoc.guid, 50);
-        return ydoc;
+        this.engine.client.docFrontend.connectDoc(doc);
+        this.engine.client.docFrontend.addPriority(doc.guid, 50);
+        return doc;
       },
     })
   );

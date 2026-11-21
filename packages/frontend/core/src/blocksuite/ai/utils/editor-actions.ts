@@ -17,7 +17,6 @@ import {
   type BlockSnapshot,
   Slice,
 } from '@blocksuite/affine/store';
-import { Doc as YDoc } from 'yjs';
 
 import {
   insertFromMarkdown,
@@ -120,7 +119,6 @@ export const replace = async (
   if (textSelection) {
     const collection = new WorkspaceImpl({
       id: 'AI_REPLACE',
-      rootDoc: new YDoc({ guid: 'AI_REPLACE' }),
     });
     collection.meta.initialize();
     const fragmentDoc = collection.createDoc();

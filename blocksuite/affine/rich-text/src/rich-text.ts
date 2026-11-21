@@ -12,13 +12,12 @@ import {
   type InlineRangeProvider,
   type VLine,
 } from '@blocksuite/std/inline';
-import type { DeltaInsert } from '@blocksuite/store';
-import { Text } from '@blocksuite/store';
+import type { DeltaInsert, HistoryUndoManager } from '@blocksuite/store';
+import { createTextUndoManager, Text } from '@blocksuite/store';
 import { effect, signal } from '@preact/signals-core';
 import { css, html, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
@@ -335,9 +334,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
     }
 
     if (!this.undoManager) {
-      this.undoManager = new Y.UndoManager(this._yText, {
-        trackedOrigins: new Set([this._yText.doc.clientID]),
-      });
+      this.undoManager = createTextUndoManager(this._yText);
     }
 
     if (this.enableUndoRedo) {
@@ -462,7 +459,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
   // rich-text will create a undoManager if it is not provided.
   @property({ attribute: false })
-  accessor undoManager!: Y.UndoManager;
+  accessor undoManager!: HistoryUndoManager;
 
   @property({ attribute: false })
   accessor verticalScrollContainerGetter:
@@ -476,5 +473,5 @@ export class RichText extends WithDisposable(ShadowlessElement) {
   accessor wrapText = true;
 
   @property({ attribute: false })
-  accessor yText!: Y.Text | Text;
+  accessor yText!: Text['yText'] | Text;
 }

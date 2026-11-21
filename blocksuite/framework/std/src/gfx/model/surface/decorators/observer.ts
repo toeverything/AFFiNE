@@ -6,6 +6,10 @@ import { getObjectPropMeta, setObjectPropMeta } from './common.js';
 const observeSymbol = Symbol('observe');
 const observerDisposableSymbol = Symbol('observerDisposable');
 
+export type SurfaceObserveTransaction = {
+  local: boolean;
+};
+
 type ObserveFn<
   E extends Y.YEvent<any> = Y.YEvent<any>,
   T extends GfxPrimitiveElementModel = GfxPrimitiveElementModel,

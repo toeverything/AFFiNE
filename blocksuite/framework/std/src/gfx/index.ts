@@ -76,6 +76,7 @@ export {
   initializeWatchers,
   local,
   observe,
+  type SurfaceObserveTransaction,
   updateDerivedProps,
   watch,
 } from './model/surface/decorators/index.js';
@@ -89,6 +90,19 @@ export {
   GfxLocalElementModel,
   prop,
 } from './model/surface/local-element-model.js';
+export {
+  createSurfaceElementsMap,
+  createSurfaceMap,
+  createSurfaceText,
+  isSurfaceMap,
+  surfaceElementFromJSON,
+  surfaceElementsFromJSON,
+  type SurfaceElementsMap,
+  surfaceElementsToJSON,
+  surfaceElementToJSON,
+  type SurfaceMap,
+  type SurfaceText,
+} from './model/surface/primitives.js';
 export {
   SURFACE_TEXT_UNIQ_IDENTIFIER,
   SURFACE_YMAP_UNIQ_IDENTIFIER,

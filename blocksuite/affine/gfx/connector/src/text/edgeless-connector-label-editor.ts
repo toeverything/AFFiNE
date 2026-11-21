@@ -16,13 +16,15 @@ import {
   ShadowlessElement,
   stdContext,
 } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  createSurfaceText,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { consume } from '@lit/context';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import * as Y from 'yjs';
 
 const HORIZONTAL_PADDING = 2;
 const VERTICAL_PADDING = 2;
@@ -50,7 +52,7 @@ export function mountConnectorLabelEditor(
   });
 
   if (!connector.text) {
-    const text = new Y.Text();
+    const text = createSurfaceText();
     const labelOffset = connector.labelOffset;
     let labelXYWH = connector.labelXYWH ?? [0, 0, 16, 16];
 
@@ -254,7 +256,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             } else if (len < text.length) {
               this.crud.updateElement(connector.id, {
                 // @TODO: trim in Y.Text?
-                text: new Y.Text(trimed),
+                text: createSurfaceText(trimed),
               });
             }
           }

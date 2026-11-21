@@ -1,5 +1,4 @@
 import type { Store } from '@blocksuite/affine/store';
-import type { Doc as YDoc, Map as YMap } from 'yjs';
 
 /**
  * TODO(@eyhn): Define error to unexpected state together in the future.
@@ -10,9 +9,12 @@ export class NoPageRootError extends Error {
 
     // Log info to let sentry collect more message
     const hasExpectSpace = Array.from(
-      page.rootDoc.getMap<YDoc>('spaces').values()
+      page.rootDoc.getMap<{ guid: string }>('spaces').values()
     ).some(doc => page.spaceDoc.guid === doc.guid);
-    const blocks = page.spaceDoc.getMap('blocks') as YMap<YMap<any>>;
+    const blocks = page.spaceDoc.getMap('blocks') as {
+      size: number;
+      values(): Iterable<{ get(key: string): unknown }>;
+    };
     const havePageBlock = Array.from(blocks.values()).some(
       block => block.get('sys:flavour') === 'affine:page'
     );

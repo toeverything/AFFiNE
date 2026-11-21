@@ -19,14 +19,14 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { Bound, normalizeDegAngle, type XYWH } from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
 import type { BlockComponent } from '@blocksuite/std';
-import type {
-  CursorType,
-  GfxController,
-  GfxModel,
-  ResizeHandle,
-  StandardCursor,
+import {
+  createSurfaceText,
+  type CursorType,
+  type GfxController,
+  type GfxModel,
+  type ResizeHandle,
+  type StandardCursor,
 } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
 
 export enum Direction {
   Right,
@@ -288,7 +288,7 @@ export function createEdgelessElement(
   if (isShape(current)) {
     id = crud.addElement(current.type, {
       ...current.serialize(),
-      text: new Y.Text(),
+      text: createSurfaceText(),
       xywh: bound.serialize(),
     });
     if (!id) return null;
@@ -344,7 +344,7 @@ export function createShapeElement(
   const id = crud.addElement('shape', {
     shapeType: getShapeType(targetType),
     radius: getShapeRadius(targetType),
-    text: new Y.Text(),
+    text: createSurfaceText(),
   });
   if (!id) return null;
   const element = crud.getElementById(id);

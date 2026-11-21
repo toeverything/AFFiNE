@@ -7,18 +7,22 @@ import type {
   GfxPrimitiveElementModel,
   PointTestOptions,
   SerializedElement,
+  SurfaceMap,
+  SurfaceObserveTransaction,
 } from '@blocksuite/std/gfx';
 import {
   convert,
+  createSurfaceMap,
+  createSurfaceText,
   field,
   GfxGroupLikeElementModel,
+  isSurfaceMap,
   observe,
   watch,
 } from '@blocksuite/std/gfx';
 import { generateKeyBetween } from 'fractional-indexing';
 import last from 'lodash-es/last';
 import pick from 'lodash-es/pick';
-import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { ConnectorMode } from '../../consts/connector.js';
@@ -90,13 +94,13 @@ export type SerializedMindmapElement = SerializedElement & {
 };
 
 type MindmapElementProps = BaseElementProps & {
-  children: Y.Map<NodeDetail>;
+  children: SurfaceMap<NodeDetail>;
 };
 
 function observeChildren(
   _: unknown,
   instance: MindmapElementModel,
-  transaction: Y.Transaction | null
+  transaction: SurfaceObserveTransaction | null
 ) {
   if (instance.children.doc) {
     instance.setChildIds(
@@ -180,9 +184,9 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     if (
       props.children &&
       !isNodeType(props.children as Record<string, unknown>) &&
-      !(props.children instanceof Y.Map)
+      !isSurfaceMap(props.children)
     ) {
-      const children: Y.Map<NodeDetail> = new Y.Map();
+      const children: SurfaceMap<NodeDetail> = createSurfaceMap();
 
       Object.entries(props.children).forEach(([key, value]) => {
         const detail = pick<Record<string, unknown>, keyof NodeDetail>(value, [
@@ -281,7 +285,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       throw new Error(`Parent node ${parent} not found`);
     }
 
-    props['text'] = new Y.Text((props['text'] as string) ?? 'New node');
+    props['text'] = createSurfaceText((props['text'] as string) ?? 'New node');
 
     const type = (props.type as string) ?? 'shape';
     let id: string;
@@ -919,12 +923,12 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
   }
 
   @convert((initialValue, instance) => {
-    if (!(initialValue instanceof Y.Map)) {
+    if (!isSurfaceMap(initialValue)) {
       nodeSchema.parse(initialValue);
 
       assertType<NodeType>(initialValue);
 
-      const map: Y.Map<NodeDetail> = new Y.Map();
+      const map: SurfaceMap<NodeDetail> = createSurfaceMap();
       const surface = instance.surface;
       const doc = surface.store;
       const recursive = (
@@ -967,7 +971,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
   // since this model package is imported by playwright
   @observe(observeChildren)
   @field()
-  accessor children: Y.Map<NodeDetail> = new Y.Map();
+  accessor children: SurfaceMap<NodeDetail> = createSurfaceMap();
 
   @watch(watchLayoutType)
   @field()

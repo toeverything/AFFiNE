@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 
 import { NATIVE_UNIQ_IDENTIFIER } from '../consts.js';
+import { isYOctoMapHandle } from '../y-octo/space-adapter.js';
 
 export type OnBoxedChange = (data: unknown, isLocal: boolean) => void;
 
@@ -75,13 +76,23 @@ export class Boxed<Value = unknown> {
    */
   static is = (value: unknown): value is Boxed => {
     return (
-      value instanceof Y.Map && value.get('type') === NATIVE_UNIQ_IDENTIFIER
+      (value instanceof Y.Map || isYOctoMapHandle(value)) &&
+      value.get('type') === NATIVE_UNIQ_IDENTIFIER
     );
   };
 
   private readonly _map: Y.Map<Value>;
 
   private _onChange?: OnBoxedChange;
+
+  private readonly _hasInitialValue: boolean = false;
+
+  private _initialValue?: Value;
+
+  /** @internal */
+  getInitialValue(): { has: boolean; value: unknown } {
+    return { has: this._hasInitialValue, value: this._initialValue };
+  }
 
   /**
    * Get the current value of the Boxed.
@@ -96,6 +107,9 @@ export class Boxed<Value = unknown> {
    * @param value - The new value to set.
    */
   setValue = (value: Value) => {
+    if (this._hasInitialValue) {
+      this._initialValue = value;
+    }
     return this._map.set('value', value);
   };
 
@@ -106,25 +120,29 @@ export class Boxed<Value = unknown> {
 
   constructor(value: Value) {
     if (
-      value instanceof Y.Map &&
+      (value instanceof Y.Map || isYOctoMapHandle(value)) &&
       value.doc &&
       value.get('type') === NATIVE_UNIQ_IDENTIFIER
     ) {
-      this._map = value;
+      this._map = value as Y.Map<Value>;
     } else {
+      this._hasInitialValue = true;
+      this._initialValue = value;
       this._map = new Y.Map();
       this._map.set('type', NATIVE_UNIQ_IDENTIFIER as Value);
       this._map.set('value', value);
     }
     this._map.observeDeep(events => {
       events.forEach(event => {
+        const origin = event.transaction.origin;
         const isLocal =
-          !event.transaction.origin ||
+          !origin ||
           !this._map.doc ||
-          event.transaction.origin instanceof Y.UndoManager ||
-          event.transaction.origin.proxy
+          origin instanceof Y.UndoManager ||
+          origin.proxy ||
+          origin.isYOctoUndoRedo
             ? true
-            : event.transaction.origin === this._map.doc.clientID;
+            : origin === this._map.doc.clientID;
         this._onChange?.(this.getValue(), isLocal);
       });
     });

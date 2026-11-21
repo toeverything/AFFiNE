@@ -5,7 +5,7 @@ export default defineConfig({
     target: 'es2018',
   },
   test: {
-    include: ['src/__tests__/**/*.unit.spec.ts'],
+    include: ['src/__tests__/**/*.spec.ts'],
     testTimeout: 500,
     coverage: {
       provider: 'istanbul',

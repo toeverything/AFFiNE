@@ -1,3 +1,4 @@
+import type { SessionCommit, YOctoDocSession } from '@toeverything/infra';
 import { groupBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import {
@@ -22,6 +23,25 @@ import {
   Map as YMap,
   type Transaction as YTransaction,
 } from 'yjs';
+
+export type ConnectableDoc = YDoc | YOctoDocSession;
+
+type DocEventTarget = {
+  on(event: string, listener: (...args: any[]) => void): void;
+  off(event: string, listener: (...args: any[]) => void): void;
+  emit(event: string, args: any[]): void;
+};
+
+function asDocEventTarget(doc: ConnectableDoc): DocEventTarget {
+  return doc as unknown as DocEventTarget;
+}
+
+function isYOctoDocSession(doc: ConnectableDoc): doc is YOctoDocSession {
+  return (
+    typeof (doc as YOctoDocSession).applyUpdate === 'function' &&
+    typeof (doc as YOctoDocSession).encodeStateAsUpdate === 'function'
+  );
+}
 
 import type { DocRecord, DocStorage, PeerWorkspaceState } from '../storage';
 import type { DocSync, DocSyncState } from '../sync/doc';
@@ -122,7 +142,7 @@ export class DocFrontend {
   private readonly prioritySettings = new Map<string, number>();
 
   private readonly status = {
-    docs: new Map<string, YDoc>(),
+    docs: new Map<string, ConnectableDoc>(),
     connectedDocs: new Set<string>(),
     readyDocs: new Set<string>(),
     jobDocQueue: new AsyncPriorityQueue(),
@@ -367,7 +387,7 @@ export class DocFrontend {
    * Connect a doc to the frontend, the doc will sync with the doc storage.
    * @param doc - The doc to connect
    */
-  connectDoc(doc: YDoc) {
+  connectDoc(doc: ConnectableDoc) {
     this._connectDoc(doc);
   }
 
@@ -377,7 +397,9 @@ export class DocFrontend {
       if (!doc) {
         return;
       }
-      const existingData = encodeStateAsUpdate(doc);
+      const existingData = isYOctoDocSession(doc)
+        ? doc.encodeStateAsUpdate()
+        : encodeStateAsUpdate(doc);
 
       if (!isEmptyUpdate(existingData)) {
         this.schedule({
@@ -388,7 +410,7 @@ export class DocFrontend {
       }
 
       // mark doc as loaded
-      doc.emit('sync', [true, doc]);
+      asDocEventTarget(doc).emit('sync', [true, doc]);
 
       const docRecord = await this.storage.getDoc(job.docId);
       throwIfAborted(signal);
@@ -458,14 +480,14 @@ export class DocFrontend {
    *
    * @param doc - The doc to disconnect
    */
-  disconnectDoc(doc: YDoc) {
+  disconnectDoc(doc: ConnectableDoc) {
     this.status.docs.delete(doc.guid);
     this.status.connectedDocs.delete(doc.guid);
     this.status.readyDocs.delete(doc.guid);
     this.status.jobDocQueue.remove(doc.guid);
     this.status.jobMap.delete(doc.guid);
     this.statusUpdatedSubject$.next(doc.guid);
-    doc.off('update', this.handleDocUpdate);
+    asDocEventTarget(doc).off('update', this.handleDocUpdate);
   }
 
   addPriority(id: string, priority: number) {
@@ -486,7 +508,7 @@ export class DocFrontend {
     };
   }
 
-  private _connectDoc(doc: YDoc) {
+  private _connectDoc(doc: ConnectableDoc) {
     if (this.status.docs.has(doc.guid)) {
       throw new Error('doc already connected');
     }
@@ -498,9 +520,9 @@ export class DocFrontend {
     this.status.docs.set(doc.guid, doc);
     this.statusUpdatedSubject$.next(doc.guid);
 
-    doc.on('update', this.handleDocUpdate);
-
-    doc.on('destroy', () => {
+    const events = asDocEventTarget(doc);
+    events.on('update', this.handleDocUpdate);
+    events.on('destroy', () => {
       this.disconnectDoc(doc);
     });
   }
@@ -522,9 +544,13 @@ export class DocFrontend {
     if (doc && !isEmptyUpdate(update)) {
       try {
         this.isApplyingUpdate = true;
-        applyUpdate(doc, update, NBSTORE_ORIGIN);
+        if (isYOctoDocSession(doc)) {
+          doc.applyUpdate(update, NBSTORE_ORIGIN);
+        } else {
+          applyUpdate(doc, update, NBSTORE_ORIGIN);
+        }
       } catch (err) {
-        console.error('failed to apply update yjs doc', err);
+        console.error('failed to apply update doc', err);
       } finally {
         this.isApplyingUpdate = false;
       }
@@ -534,19 +560,30 @@ export class DocFrontend {
   private readonly handleDocUpdate = (
     update: Uint8Array,
     origin: any,
-    doc: YDoc,
-    transaction: YTransaction
+    doc: ConnectableDoc,
+    transaction: YTransaction | SessionCommit
   ) => {
     if (origin === NBSTORE_ORIGIN) {
       return;
     }
     if (this.isApplyingUpdate && BUILD_CONFIG.debug) {
       let changedList = '';
-      for (const [changed, keys] of transaction.changed) {
-        for (const key of keys) {
-          if (changed instanceof YMap && key) {
-            changedList += `${key} => ${changed.get(key)}\n`;
+      if ('changed' in transaction && transaction.changed instanceof Map) {
+        for (const [changed, keys] of transaction.changed) {
+          for (const key of keys) {
+            if (changed instanceof YMap && key) {
+              changedList += `${key} => ${changed.get(key)}\n`;
+            }
           }
+        }
+      } else if (
+        'changed' in transaction &&
+        Array.isArray(transaction.changed)
+      ) {
+        for (const item of transaction.changed) {
+          const root =
+            'Root' in item.identity ? item.identity.Root : item.path?.root;
+          changedList += `${root ?? 'unknown'}: ${item.keys.join(', ')}\n`;
         }
       }
       console.warn(`⚠️ When nbstore applies a remote update, some code triggers a local change to the doc.

@@ -3,11 +3,10 @@ import { ConfigModal } from '@affine/core/components/mobile';
 import { DefaultInlineManagerExtension } from '@blocksuite/affine/inlines/preset';
 import { RichText } from '@blocksuite/affine/rich-text';
 import type { BlockStdScope } from '@blocksuite/affine/std';
-import type { Store } from '@blocksuite/affine/store';
+import type { Store, Text } from '@blocksuite/affine/store';
 import { TextIcon } from '@blocksuite/icons/rc';
 import { type LiveData, useLiveData } from '@toeverything/infra';
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
-import type * as Y from 'yjs';
 
 import type { DatabaseCellRendererProps } from '../../../types';
 import { useBlockStdScope } from '../../../use-std';
@@ -20,7 +19,7 @@ const renderRichText = ({
   text,
 }: {
   std: BlockStdScope;
-  text: Y.Text;
+  text: Text['yText'] | Text;
   doc: Store;
 }) => {
   const inlineManager = std.get(DefaultInlineManagerExtension.identifier);
@@ -45,7 +44,7 @@ const RichTextInput = ({
   style,
 }: DatabaseCellRendererProps & { style?: CSSProperties }) => {
   const std = useBlockStdScope(dataSource.doc);
-  const text = useLiveData(cell.value$ as LiveData<Y.Text>);
+  const text = useLiveData(cell.value$ as LiveData<Text['yText'] | Text>);
   const ref = useRef<HTMLDivElement>(null);
   // todo(@pengx17): following is a workaround to y.Text that it is got renewed when the cell is updated externally. however it breaks the cursor position.
   useEffect(() => {

@@ -1,6 +1,9 @@
-import type { BaseTextAttributes } from '@blocksuite/store';
+import {
+  type BaseTextAttributes,
+  createTextRelativePosition,
+  type TextRelativePosition,
+} from '@blocksuite/store';
 import { effect } from '@preact/signals-core';
-import * as Y from 'yjs';
 
 import type { VLine } from '../components/v-line.js';
 import type { InlineEditor } from '../inline-editor.js';
@@ -14,9 +17,9 @@ import {
 import { calculateTextLength, getTextNodesFromElement } from '../utils/text.js';
 
 export class RangeService<TextAttributes extends BaseTextAttributes> {
-  private _lastEndRelativePosition: Y.RelativePosition | null = null;
+  private _lastEndRelativePosition: TextRelativePosition | null = null;
 
-  private _lastStartRelativePosition: Y.RelativePosition | null = null;
+  private _lastStartRelativePosition: TextRelativePosition | null = null;
 
   focusEnd = (): void => {
     this.editor.setInlineRange({
@@ -243,9 +246,11 @@ export class RangeService<TextAttributes extends BaseTextAttributes> {
 
         const yText = editor.yText;
         if (newInlineRange) {
-          this._lastStartRelativePosition =
-            Y.createRelativePositionFromTypeIndex(yText, newInlineRange.index);
-          this._lastEndRelativePosition = Y.createRelativePositionFromTypeIndex(
+          this._lastStartRelativePosition = createTextRelativePosition(
+            yText,
+            newInlineRange.index
+          );
+          this._lastEndRelativePosition = createTextRelativePosition(
             yText,
             newInlineRange.index + newInlineRange.length
           );

@@ -6,3 +6,4 @@ export * from './media';
 export * from './orm';
 export * from './storage';
 export * from './utils';
+export * from './y-octo-session';

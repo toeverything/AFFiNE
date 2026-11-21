@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 
+import { YOctoAwarenessSession, YOctoDocSession } from '@toeverything/infra';
 import { firstValueFrom } from 'rxjs';
 import { expect, test, vitest } from 'vitest';
 import { Awareness } from 'y-protocols/awareness.js';
@@ -349,4 +350,96 @@ test('doc priority requests accumulate and deletion discards a late load', async
   await frontend.waitForUpdated('low');
   expect((await firstValueFrom(frontend.docState$('low'))).loaded).toBe(false);
   frontend.stop();
+});
+
+test('DocFrontend and AwarenessFrontend bridge YOctoDocSession & YOctoAwarenessSession with client ID rotation', async () => {
+  const docStorage = new IndexedDBDocStorage({
+    id: 'ws-yocto-bridge',
+    flavour: 'a',
+    type: 'workspace',
+  });
+  docStorage.connection.connect();
+  await docStorage.connection.waitForConnected();
+
+  const frontend1 = new DocFrontend(docStorage, DocSyncImpl.dummy);
+  frontend1.start();
+
+  const session1 = new YOctoDocSession({ guid: 'yocto-doc-1', clientId: 777 });
+  const root1 = session1.ensureRoot('meta', 'Map');
+  session1.mapSet({ Identity: root1 }, 'title', { Any: 'hello-yocto' });
+  frontend1.connectDoc(session1);
+
+  await vitest.waitFor(async () => {
+    const stored = await docStorage.getDoc('yocto-doc-1');
+    expect(stored).not.toBeNull();
+    expectYjsEqual(stored!.bin, {
+      meta: {
+        title: 'hello-yocto',
+      },
+    });
+  });
+
+  // Connect a second YOctoDocSession with colliding clientId=777 and attached awareness
+  const frontend2 = new DocFrontend(docStorage, DocSyncImpl.dummy);
+  frontend2.start();
+  const session2 = new YOctoDocSession({ guid: 'yocto-doc-1', clientId: 777 });
+  const awareness2 = new YOctoAwarenessSession(session2);
+  awareness2.setLocalState({ user: 'peer-2' });
+
+  const awStorage1 = new BroadcastChannelAwarenessStorage({
+    id: 'ws-yocto-aw:a',
+  });
+  const awStorage2 = new BroadcastChannelAwarenessStorage({
+    id: 'ws-yocto-aw:b',
+  });
+  awStorage1.connection.connect();
+  awStorage2.connection.connect();
+  await awStorage1.connection.waitForConnected();
+  await awStorage2.connection.waitForConnected();
+
+  const awSync1 = new AwarenessSyncImpl({
+    local: awStorage1,
+    remotes: { b: awStorage2 },
+  });
+  const awSync2 = new AwarenessSyncImpl({
+    local: awStorage2,
+    remotes: { a: awStorage1 },
+  });
+  const awFrontend1 = new AwarenessFrontend(awSync1);
+  const awFrontend2 = new AwarenessFrontend(awSync2);
+
+  const yPeerDoc = new YDoc({ guid: 'yocto-doc-1' });
+  yPeerDoc.clientID = 888;
+  const yPeerAwareness = new Awareness(yPeerDoc);
+  awFrontend1.connectAwareness(yPeerAwareness);
+  awFrontend2.connectAwareness(awareness2);
+
+  frontend2.connectDoc(session2);
+
+  await vitest.waitFor(() => {
+    expect(
+      session2.getMapValue({ Identity: { Root: 'meta' } }, 'title')
+    ).toEqual({
+      Any: 'hello-yocto',
+    });
+  });
+
+  // Client ID collision from session1(777) should have rotated session2 & awareness2!
+  expect(session2.clientID).not.toBe(777);
+  expect(session2.clientRequired()).toBe(false);
+  expect(awareness2.clientID).toBe(session2.clientID);
+
+  await vitest.waitFor(() => {
+    expect(yPeerAwareness.getStates().get(session2.clientID)).toEqual({
+      user: 'peer-2',
+    });
+  });
+
+  session1.destroy();
+  session2.destroy();
+  awareness2.destroy();
+  yPeerAwareness.destroy();
+  yPeerDoc.destroy();
+  frontend1.stop();
+  frontend2.stop();
 });

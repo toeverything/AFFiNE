@@ -6,8 +6,11 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { Bound } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
-import { BaseTool, type GfxController } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
+import {
+  BaseTool,
+  createSurfaceText,
+  type GfxController,
+} from '@blocksuite/std/gfx';
 
 import { insertEdgelessTextCommand } from './commands/insert-edgeless-text';
 import { mountTextElementEditor } from './edgeless-text-editor';
@@ -26,7 +29,7 @@ function addText(gfx: GfxController, event: PointerEventState) {
     const id = gfx.surface.addElement({
       type: 'text',
       xywh: new Bound(modelX, modelY, 32, 32).serialize(),
-      text: new Y.Text(),
+      text: createSurfaceText(),
     });
     gfx.doc.captureSync();
     const textElement = gfx.getElementById(id) as TextElementModel;

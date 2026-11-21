@@ -26,7 +26,8 @@ export abstract class BaseReactiveYData<
       event.transaction.origin?.force === true ||
       (event.transaction.origin?.proxy !== true &&
         (!event.transaction.local ||
-          event.transaction.origin instanceof Y.UndoManager))
+          event.transaction.origin instanceof Y.UndoManager ||
+          event.transaction.origin?.isYOctoUndoRedo === true))
     ) {
       handler();
     }
@@ -35,7 +36,8 @@ export abstract class BaseReactiveYData<
       !event.transaction.origin ||
       !this._ySource.doc ||
       event.transaction.origin instanceof Y.UndoManager ||
-      event.transaction.origin.proxy
+      event.transaction.origin.proxy ||
+      event.transaction.origin.isYOctoUndoRedo
         ? true
         : event.transaction.origin === this._ySource.doc.clientID;
 

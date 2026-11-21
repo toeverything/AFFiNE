@@ -1,8 +1,11 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { BaseTextAttributes } from '@blocksuite/store';
+import {
+  type BaseTextAttributes,
+  resolveTextRelativePosition,
+} from '@blocksuite/store';
 import { html, render } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import * as Y from 'yjs';
+import type * as Y from 'yjs';
 
 import type { VLine } from '../components/v-line.js';
 import type { InlineEditor } from '../inline-editor.js';
@@ -29,17 +32,11 @@ export class RenderService<TextAttributes extends BaseTextAttributes> {
       console.error('doc is not found when syncing yText');
       return;
     }
-    const absoluteStart = Y.createAbsolutePositionFromRelativePosition(
+    const startIndex = resolveTextRelativePosition(
       lastStartRelativePosition,
       doc
     );
-    const absoluteEnd = Y.createAbsolutePositionFromRelativePosition(
-      lastEndRelativePosition,
-      doc
-    );
-
-    const startIndex = absoluteStart?.index;
-    const endIndex = absoluteEnd?.index;
+    const endIndex = resolveTextRelativePosition(lastEndRelativePosition, doc);
     if (startIndex == null || endIndex == null) return;
 
     const newInlineRange: InlineRange = {

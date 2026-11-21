@@ -20,8 +20,8 @@ import {
 import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
 import { Bound, type IVec } from '@blocksuite/global/gfx';
 import type { BlockComponent } from '@blocksuite/std';
+import { createSurfaceText } from '@blocksuite/std/gfx';
 import type { TemplateResult } from 'lit';
-import * as Y from 'yjs';
 
 export type ConfigProperty = 'x' | 'y' | 'r' | 's' | 'z' | 'o';
 export type ConfigState = 'default' | 'active' | 'hover' | 'next';
@@ -132,7 +132,7 @@ export const textRender: DraggableTool['render'] = async (bound, edgeless) => {
     const crud = edgeless.std.get(EdgelessCRUDIdentifier);
     id = crud.addElement(CanvasElementType.TEXT, {
       xywh: new Bound(bound.x, vCenter - h / 2, w, h).serialize(),
-      text: new Y.Text(),
+      text: createSurfaceText(),
     }) as string;
 
     edgeless.store.captureSync();

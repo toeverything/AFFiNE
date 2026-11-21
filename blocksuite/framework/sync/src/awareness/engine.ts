@@ -1,10 +1,8 @@
-import type { Awareness } from 'y-protocols/awareness';
-
-import type { AwarenessSource } from './source.js';
+import type { AwarenessSource, SyncAwareness } from './source.js';
 
 export class AwarenessEngine {
   constructor(
-    readonly awareness: Awareness,
+    readonly awareness: SyncAwareness,
     readonly sources: AwarenessSource[]
   ) {}
 

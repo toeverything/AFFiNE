@@ -1,8 +1,13 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
+import type { SessionValue } from '@blocksuite/sync/y-octo';
 import * as Y from 'yjs';
 
 import { isPureObject, native2Y } from '../../reactive/index.js';
 import type { Schema } from '../../schema/index.js';
+import {
+  isYOctoMapHandle,
+  jsValueToSessionValue,
+} from '../../y-octo/space-adapter.js';
 import type { BlockModel } from '../block/block-model.js';
 import type { YBlock } from '../block/types.js';
 import { internalPrimitives } from '../block/zod.js';
@@ -72,18 +77,10 @@ export class DocCRUD {
 
     this._schema.validate(flavour, parentFlavour as string);
 
-    const yBlock = new Y.Map() as YBlock;
-    this._yBlocks.set(id, yBlock);
-
     const version = schema.version;
     const children = (
       initialProps.children as undefined | (string | BlockModel)[]
     )?.map(child => (typeof child === 'string' ? child : child.id));
-
-    yBlock.set('sys:id', id);
-    yBlock.set('sys:flavour', flavour);
-    yBlock.set('sys:version', version);
-    yBlock.set('sys:children', Y.Array.from(children ?? []));
 
     const defaultProps = schema.model.props?.(internalPrimitives) ?? {};
     const props = {
@@ -96,24 +93,66 @@ export class DocCRUD {
     delete props.children;
 
     const isFlatData = schema.model.isFlatData;
-    if (isFlatData) {
-      const run = (obj: unknown, basePath: string) => {
-        if (isPureObject(obj)) {
-          Object.entries(obj).forEach(([key, value]) => {
-            const fullPath = basePath ? `${basePath}.${key}` : key;
-            run(value, fullPath);
-          });
-        } else {
-          yBlock.set(`prop:${basePath}`, native2Y(obj));
-        }
-      };
-      run(props, '');
-    } else {
-      Object.entries(props).forEach(([key, value]) => {
-        if (value === undefined) return;
 
-        yBlock.set(`prop:${key}`, native2Y(value));
-      });
+    if (isYOctoMapHandle(this._yBlocks)) {
+      const entries: [string, SessionValue][] = [
+        ['sys:id', { Any: id }],
+        ['sys:flavour', { Any: flavour }],
+        ['sys:version', { Any: version }],
+        [
+          'sys:children',
+          { Array: (children ?? []).map(childId => ({ Any: childId })) },
+        ],
+      ];
+
+      if (isFlatData) {
+        const run = (obj: unknown, basePath: string) => {
+          if (isPureObject(obj)) {
+            Object.entries(obj).forEach(([key, value]) => {
+              const fullPath = basePath ? `${basePath}.${key}` : key;
+              run(value, fullPath);
+            });
+          } else if (obj !== undefined) {
+            entries.push([`prop:${basePath}`, jsValueToSessionValue(obj)]);
+          }
+        };
+        run(props, '');
+      } else {
+        Object.entries(props).forEach(([key, value]) => {
+          if (value === undefined) return;
+          entries.push([`prop:${key}`, jsValueToSessionValue(value)]);
+        });
+      }
+
+      this._yBlocks.setRawSessionValue(id, { Map: entries });
+    } else {
+      const yBlock = new Y.Map() as YBlock;
+      this._yBlocks.set(id, yBlock);
+
+      yBlock.set('sys:id', id);
+      yBlock.set('sys:flavour', flavour);
+      yBlock.set('sys:version', version);
+      yBlock.set('sys:children', Y.Array.from(children ?? []));
+
+      if (isFlatData) {
+        const run = (obj: unknown, basePath: string) => {
+          if (isPureObject(obj)) {
+            Object.entries(obj).forEach(([key, value]) => {
+              const fullPath = basePath ? `${basePath}.${key}` : key;
+              run(value, fullPath);
+            });
+          } else {
+            yBlock.set(`prop:${basePath}`, native2Y(obj));
+          }
+        };
+        run(props, '');
+      } else {
+        Object.entries(props).forEach(([key, value]) => {
+          if (value === undefined) return;
+
+          yBlock.set(`prop:${key}`, native2Y(value));
+        });
+      }
     }
 
     const parentId =

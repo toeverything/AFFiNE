@@ -1,6 +1,5 @@
 import { propertyType, t } from '@blocksuite/data-view';
 import { Text } from '@blocksuite/store';
-import { Doc } from 'yjs';
 import zod from 'zod';
 
 import { getTextWithResolvedReferences } from '../../utils/title-doc.js';
@@ -52,7 +51,7 @@ export const titlePropertyModelConfig = titleColumnType.modelConfig({
         return;
       }
       if (newValue instanceof Text) {
-        new Doc().getMap('root').set('text', newValue.yText);
+        newValue.ensureAttached();
         value.clear();
         value.applyDelta(newValue.toDelta());
         return;

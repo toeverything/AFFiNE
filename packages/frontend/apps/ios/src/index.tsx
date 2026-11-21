@@ -4,6 +4,7 @@ import '@affine/core/mobile/styles/mobile.css';
 
 import { Telemetry } from '@affine/core/components/telemetry';
 import { bindNativeDBApis } from '@affine/nbstore/sqlite';
+import { ensureYOctoWasmReady } from '@toeverything/infra';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -23,8 +24,10 @@ function mountApp() {
   );
 }
 
-try {
-  mountApp();
-} catch (err) {
-  console.error('Failed to bootstrap app', err);
-}
+ensureYOctoWasmReady()
+  .then(() => {
+    mountApp();
+  })
+  .catch(err => {
+    console.error('Failed to bootstrap app', err);
+  });

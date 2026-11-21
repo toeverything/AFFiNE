@@ -14,7 +14,6 @@ import {
   Transformer,
 } from '@blocksuite/affine/store';
 import { Service } from '@toeverything/infra';
-import { Doc as YDoc } from 'yjs';
 
 import type { DefaultServerService, WorkspaceServerService } from '../../cloud';
 import {
@@ -40,7 +39,7 @@ export class SnapshotHelper extends Service {
 
   getTempWorkspace() {
     const collection = new WorkspaceImpl({
-      rootDoc: new YDoc({ guid: 'markdownToDoc' + nanoid() }),
+      rootDocGuid: 'markdownToDoc' + nanoid(),
       blobSource: {
         name: 'cloud',
         readonly: true,

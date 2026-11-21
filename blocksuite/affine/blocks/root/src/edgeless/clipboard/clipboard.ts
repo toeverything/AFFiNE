@@ -63,8 +63,11 @@ import {
   type GfxPrimitiveElementModel,
   type SerializedElement,
 } from '@blocksuite/std/gfx';
-import { type BlockSnapshot, type SliceSnapshot } from '@blocksuite/store';
-import * as Y from 'yjs';
+import {
+  type BlockSnapshot,
+  type SliceSnapshot,
+  Text,
+} from '@blocksuite/store';
 
 import { PageClipboard } from '../../clipboard/index.js';
 import { getSortedCloneElements } from '../utils/clone-utils.js';
@@ -639,7 +642,7 @@ export class EdgelessClipboardController extends PageClipboard {
       splitIntoLines(content).forEach((line, idx) => {
         this.crud.addBlock(
           'affine:paragraph',
-          { text: new Y.Text(line) },
+          { text: new Text(line) },
           noteId,
           idx
         );

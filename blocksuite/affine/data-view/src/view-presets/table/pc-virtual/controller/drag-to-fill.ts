@@ -1,10 +1,9 @@
 import { ShadowlessElement } from '@blocksuite/std';
-import { type Text } from '@blocksuite/store';
+import { Text } from '@blocksuite/store';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import isEqual from 'lodash-es/isEqual';
-import * as Y from 'yjs';
 
 import { t } from '../../../../core/index.js';
 import type { TableViewAreaSelection } from '../../selection';
@@ -105,9 +104,7 @@ export function fillSelectionWithFocusCellData(
           curCellText.clear();
           curCellText.applyDelta(delta);
         } else {
-          const newText = new Y.Text();
-          newText.applyDelta(delta);
-          curCell.valueSet(newText);
+          curCell.valueSet(new Text(delta));
         }
       } else {
         curCell.valueSet(focusData);

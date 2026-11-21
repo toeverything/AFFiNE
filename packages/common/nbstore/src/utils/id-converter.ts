@@ -1,11 +1,48 @@
-import {
-  applyUpdate,
-  type Array as YArray,
-  Doc as YDoc,
-  type Map as YMap,
-} from 'yjs';
+import { YOctoDocSession } from '@toeverything/infra/y-octo-session';
 
 export type IdConverter = ReturnType<typeof createIdConverter>;
+
+export function extractSpaceSubdocMappings(
+  spaceId: string,
+  rootDocBuffer: Uint8Array
+): Array<{ pageId: string; subdocGuid: string }> {
+  const doc = new YOctoDocSession({
+    guid: spaceId,
+    undo: 'disabled',
+  });
+  try {
+    doc.applyUpdateV1(rootDocBuffer);
+    const pagesVal = doc.getMapValue({ Identity: { Root: 'meta' } }, 'pages');
+    if (!pagesVal || !('Array' in pagesVal)) {
+      return [];
+    }
+    const items = doc.readArray({ Identity: pagesVal.Array });
+    const mappings: Array<{ pageId: string; subdocGuid: string }> = [];
+    for (const item of items) {
+      if (!('Map' in item)) {
+        continue;
+      }
+      const idVal = doc.getMapValue({ Identity: item.Map }, 'id');
+      const pageId =
+        idVal && 'Any' in idVal && typeof idVal.Any === 'string'
+          ? idVal.Any
+          : null;
+      if (!pageId) {
+        continue;
+      }
+      const subdocVal = doc.getMapValue(
+        { Identity: { Root: 'spaces' } },
+        pageId
+      );
+      if (subdocVal && 'Doc' in subdocVal && subdocVal.Doc.guid) {
+        mappings.push({ pageId, subdocGuid: subdocVal.Doc.guid });
+      }
+    }
+    return mappings;
+  } finally {
+    doc.destroy();
+  }
+}
 
 export async function getIdConverter(
   storage: {
@@ -18,27 +55,12 @@ export async function getIdConverter(
 
   const rootDocBuffer = await storage.getDocBuffer(spaceId);
   if (rootDocBuffer) {
-    const ydoc = new YDoc({
-      guid: spaceId,
-    });
-    applyUpdate(ydoc, rootDocBuffer);
-
-    // get all ids from rootDoc.meta.pages.[*].id, trust this id as normalized id
-    const normalizedDocIds = (
-      (ydoc.getMap('meta') as YMap<any> | undefined)?.get('pages') as
-        | YArray<YMap<any>>
-        | undefined
-    )
-      ?.map(i => i.get('id') as string)
-      .filter(i => !!i);
-
-    const spaces = ydoc.getMap('spaces') as YMap<any> | undefined;
-    for (const pageId of normalizedDocIds ?? []) {
-      const subdoc = spaces?.get(pageId);
-      if (subdoc && subdoc instanceof YDoc) {
-        oldIdToNewId.set(subdoc.guid, pageId);
-        newIdToOldId.set(pageId, subdoc.guid);
-      }
+    for (const { pageId, subdocGuid } of extractSpaceSubdocMappings(
+      spaceId,
+      rootDocBuffer
+    )) {
+      oldIdToNewId.set(subdocGuid, pageId);
+      newIdToOldId.set(pageId, subdocGuid);
     }
   }
 

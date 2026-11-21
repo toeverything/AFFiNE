@@ -9,6 +9,7 @@
     "./app-config-storage": "./src/app-config-storage.ts",
     "./op": "./src/op/index.ts",
     "./atom": "./src/atom/index.ts",
+    "./y-octo-session": "./src/y-octo-session/index.ts",
     ".": "./src/index.ts"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "@affine/env": "workspace:*",
     "@affine/error": "workspace:*",
     "@affine/templates": "workspace:*",
+    "@blocksuite/sync": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "eventemitter2": "^6.4.9",
     "fractional-indexing": "^3.2.0",

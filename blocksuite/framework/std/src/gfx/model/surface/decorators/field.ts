@@ -1,8 +1,17 @@
+import { Text } from '@blocksuite/store';
+
 import type { GfxPrimitiveElementModel } from '../element-model.js';
 import { getDecoratorState } from './common.js';
 import { convertProps } from './convert.js';
 import { getDerivedProps, updateDerivedProps } from './derive.js';
 import { startObserve } from './observer.js';
+
+function unwrapSurfaceFieldValue(value: unknown): unknown {
+  if (value instanceof Text) {
+    return value.yText.doc ? value.yText.clone() : value.yText;
+  }
+  return value;
+}
 
 const yPropsSetSymbol = Symbol('yProps');
 
@@ -36,18 +45,19 @@ export function field<V, T extends GfxPrimitiveElementModel>(fallback?: V) {
           return;
         }
 
+        const unwrapped = unwrapSurfaceFieldValue(v);
         if (this.yMap) {
           if (this.yMap.doc) {
             this.surface.store.transact(() => {
-              this.yMap.set(prop as string, v);
+              this.yMap.set(prop as string, unwrapped);
             });
           } else {
-            this.yMap.set(prop as string, v);
-            this._preserved.set(prop as string, v);
+            this.yMap.set(prop as string, unwrapped);
+            this._preserved.set(prop as string, unwrapped);
           }
         }
 
-        return v;
+        return unwrapped;
       },
       get(this: GfxPrimitiveElementModel) {
         return (
@@ -64,9 +74,9 @@ export function field<V, T extends GfxPrimitiveElementModel>(fallback?: V) {
         }
 
         const derivedProps = getDerivedProps(prop, originalVal, this);
-        const val = isCreating
-          ? originalVal
-          : convertProps(prop, originalVal, this);
+        const val = unwrapSurfaceFieldValue(
+          isCreating ? originalVal : convertProps(prop, originalVal, this)
+        );
 
         if (this.yMap.doc) {
           this.surface.store.transact(() => {

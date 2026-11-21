@@ -18,7 +18,6 @@ import {
 } from '@blocksuite/std/gfx';
 import isEqual from 'lodash-es/isEqual';
 import last from 'lodash-es/last';
-import * as Y from 'yjs';
 
 import { layout } from './layout.js';
 
@@ -363,7 +362,7 @@ export function createFromTree(
   layoutType: LayoutType,
   surface: SurfaceBlockModel
 ) {
-  const children = new Y.Map();
+  const children: Record<string, NodeDetail> = {};
   const traverse = (subtree: MindmapNode, parent?: string) => {
     const value: NodeDetail = {
       ...subtree.detail,
@@ -374,7 +373,7 @@ export function createFromTree(
       delete value.parent;
     }
 
-    children.set(subtree.id, value);
+    children[subtree.id] = value;
 
     subtree.children.forEach(child => traverse(child, subtree.id));
   };

@@ -1,11 +1,5 @@
+import { revertUpdateV1 } from '@toeverything/infra/y-octo-session';
 import { noop } from 'lodash-es';
-import {
-  applyUpdate,
-  Doc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  UndoManager,
-} from 'yjs';
 
 import {
   type DocRecord,
@@ -105,22 +99,6 @@ export abstract class HistoricalDocStorage<
     fromNewerBin: Uint8Array,
     toOlderBin: Uint8Array
   ): Uint8Array {
-    const newerDoc = new Doc();
-    applyUpdate(newerDoc, fromNewerBin);
-    const olderDoc = new Doc();
-    applyUpdate(olderDoc, toOlderBin);
-
-    const newerState = encodeStateVector(newerDoc);
-    const olderState = encodeStateVector(olderDoc);
-
-    const diff = encodeStateAsUpdate(newerDoc, olderState);
-
-    const undoManager = new UndoManager(Array.from(olderDoc.share.values()));
-
-    applyUpdate(olderDoc, diff);
-
-    undoManager.undo();
-
-    return encodeStateAsUpdate(olderDoc, newerState);
+    return revertUpdateV1(fromNewerBin, toOlderBin);
   }
 }

@@ -769,8 +769,9 @@ test.each([
       });
 
       if (mode === 'readonly') {
-        // Empty client state takes the raw remote path; its state vector alone
-        // cannot detect this truncated delete set.
+        // y-octo-wasm validates the full V1 update (including the delete set)
+        // when encoding the state vector, so this truncated delete set is
+        // rejected with invalid_binary before polluting local storage.
         for (const storage of [local, remote]) {
           const transaction = storage.db.transaction(
             ['snapshots', 'updates'],
@@ -796,9 +797,7 @@ test.each([
         broken = false;
         await publish({ docId: 'doc-recover', bin: new Uint8Array([0, 0]) });
         await vi.waitFor(async () => {
-          expect((await getLocal('doc-recover'))?.bin).toEqual(
-            new Uint8Array([0, 1])
-          );
+          expect(await getLocal('doc-recover')).toBeNull();
           expect(
             await firstValueFrom(peer.docState$('doc-recover'))
           ).toMatchObject({

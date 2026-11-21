@@ -6,8 +6,9 @@ import {
   test as vitest,
   type TestAPI,
 } from 'vitest';
-import { Doc } from 'yjs';
+import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
+import { YOctoDocSession } from '../../../y-octo-session';
 import {
   createORMClient,
   type DBSchemaBuilder,
@@ -17,6 +18,8 @@ import {
   t,
   Table,
   YjsDBAdapter,
+  YOctoDBAdapter,
+  type YOctoDocProvider,
 } from '../';
 
 function incremental() {
@@ -46,18 +49,34 @@ const docProvider: DocProvider = {
   },
 };
 
+const yOctoDocProvider: YOctoDocProvider = {
+  getDoc(guid: string) {
+    return new YOctoDocSession({ guid, undo: 'disabled' });
+  },
+};
+
 const Client = createORMClient(TEST_SCHEMA);
 type Context = {
   client: InstanceType<typeof Client>;
 };
 
-beforeEach<Context>(async t => {
-  t.client = new Client(new YjsDBAdapter(TEST_SCHEMA, docProvider));
-});
-
 const test = vitest as TestAPI<Context>;
 
-describe('ORM entity CRUD', () => {
+describe.each([
+  {
+    name: 'YjsDBAdapter',
+    createAdapter: (schema: DBSchemaBuilder) =>
+      new YjsDBAdapter(schema, docProvider),
+  },
+  {
+    name: 'YOctoDBAdapter',
+    createAdapter: (schema: DBSchemaBuilder) =>
+      new YOctoDBAdapter(schema, yOctoDocProvider),
+  },
+])('ORM entity CRUD ($name)', ({ createAdapter }) => {
+  beforeEach<Context>(async t => {
+    t.client = new Client(createAdapter(TEST_SCHEMA));
+  });
   test('should be able to create ORM client', t => {
     const { client } = t;
 
@@ -473,16 +492,12 @@ describe('ORM entity CRUD', () => {
   });
 
   test('can not use reserved keyword as field name', () => {
-    expect(
-      () =>
-        new YjsDBAdapter(
-          {
-            tags: {
-              $$DELETED: f.string().primaryKey().default(nanoid),
-            },
-          },
-          docProvider
-        )
+    expect(() =>
+      createAdapter({
+        tags: {
+          $$DELETED: f.string().primaryKey().default(nanoid),
+        },
+      })
     ).toThrow(
       "[Table(tags)]: Field '$$DELETED' is reserved keyword and can't be used"
     );
@@ -632,4 +647,74 @@ describe('ORM entity CRUD', () => {
     const doc2 = client.userInfo.get(1);
     expect(doc2).toBe(null);
   });
+});
+
+describe('ORM YjsDBAdapter <-> YOctoDBAdapter wire interop', () => {
+  vitest(
+    'syncs create, update, observe and delete bidirectionally over V1 wire',
+    () => {
+      const yjsDocs = new Map<string, Doc>();
+      const octoDocs = new Map<string, YOctoDocSession>();
+
+      const yjsClient = new Client(
+        new YjsDBAdapter(TEST_SCHEMA, {
+          getDoc(guid) {
+            const d = new Doc({ guid });
+            yjsDocs.set(guid, d);
+            return d;
+          },
+        })
+      );
+      const octoClient = new Client(
+        new YOctoDBAdapter(TEST_SCHEMA, {
+          getDoc(guid) {
+            const d = new YOctoDocSession({ guid });
+            octoDocs.set(guid, d);
+            return d;
+          },
+        })
+      );
+
+      const observed: any[] = [];
+      const sub = octoClient.tags.find$().subscribe(rows => {
+        observed.push(rows);
+      });
+
+      const t1 = yjsClient.tags.create({
+        id: 't1',
+        name: 'from-yjs',
+        color: 'red',
+      });
+      const yjsUpdate = encodeStateAsUpdate(yjsDocs.get('tags')!);
+      octoDocs.get('tags')!.applyUpdate(yjsUpdate);
+
+      expect(octoClient.tags.get('t1')).toStrictEqual(t1);
+      expect(observed.at(-1)).toStrictEqual([t1]);
+
+      octoClient.tags.update('t1', { color: 'green' });
+      const t2 = octoClient.tags.create({
+        id: 't2',
+        name: 'from-octo',
+        color: 'blue',
+      });
+      applyUpdate(
+        yjsDocs.get('tags')!,
+        octoDocs.get('tags')!.encodeStateAsUpdate()
+      );
+
+      expect(yjsClient.tags.get('t1')).toStrictEqual({ ...t1, color: 'green' });
+      expect(yjsClient.tags.get('t2')).toStrictEqual(t2);
+
+      yjsClient.tags.delete('t1');
+      octoDocs
+        .get('tags')!
+        .applyUpdate(encodeStateAsUpdate(yjsDocs.get('tags')!));
+      expect(octoClient.tags.get('t1')).toBe(null);
+      expect(octoClient.tags.keys()).toStrictEqual(['t2']);
+
+      sub.unsubscribe();
+      for (const d of octoDocs.values()) d.destroy();
+      for (const d of yjsDocs.values()) d.destroy();
+    }
+  );
 });

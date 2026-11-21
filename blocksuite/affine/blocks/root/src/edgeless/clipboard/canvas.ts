@@ -11,7 +11,6 @@ import type {
   GfxPrimitiveElementModel,
   SerializedElement,
 } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
 
 const { GROUP, MINDMAP, CONNECTOR } = CanvasElementType;
 
@@ -22,7 +21,7 @@ export function createCanvasElement(
   newXYWH: SerializedXYWH
 ) {
   if (clipboardData.type === GROUP) {
-    const yMap = new Y.Map();
+    const newChildren: Record<string, unknown> = {};
     const children = clipboardData.children ?? {};
 
     for (const [key, value] of Object.entries(children)) {
@@ -33,12 +32,12 @@ export function createCanvasElement(
         );
         return null;
       }
-      yMap.set(newKey, value);
+      newChildren[newKey] = value;
     }
-    clipboardData.children = yMap;
+    clipboardData.children = newChildren;
     clipboardData.xywh = newXYWH;
   } else if (clipboardData.type === MINDMAP) {
-    const yMap = new Y.Map();
+    const newChildren: Record<string, unknown> = {};
     const children = clipboardData.children ?? {};
 
     for (const [oldKey, oldValue] of Object.entries(children)) {
@@ -64,9 +63,9 @@ export function createCanvasElement(
         newValue.parent = newParent;
       }
 
-      yMap.set(newKey, newValue);
+      newChildren[newKey] = newValue;
     }
-    clipboardData.children = yMap;
+    clipboardData.children = newChildren;
   } else if (clipboardData.type === CONNECTOR) {
     const source = clipboardData.source as Connection;
     const target = clipboardData.target as Connection;

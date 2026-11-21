@@ -31,7 +31,6 @@ import {
 import type { BlockModel, DocSnapshot, Store } from '@blocksuite/affine/store';
 import { Slice, toDraftModel } from '@blocksuite/affine/store';
 import { getElementProps } from '@blocksuite/affine-block-root';
-import { Doc as YDoc } from 'yjs';
 
 import { getStoreManager } from '../../manager/store';
 import type { ChatContextValue } from '../components/ai-chat-content';
@@ -77,7 +76,6 @@ async function extractEdgelessSelected(
     );
     const collection = new WorkspaceImpl({
       id: 'AI_EXTRACT',
-      rootDoc: new YDoc({ guid: 'AI_EXTRACT' }),
     });
     collection.meta.initialize();
 

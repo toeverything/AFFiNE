@@ -1,10 +1,10 @@
-import type { Awareness } from 'y-protocols/awareness';
 import {
   applyAwarenessUpdate,
   encodeAwarenessUpdate,
 } from 'y-protocols/awareness';
 
-import type { AwarenessSource } from '../source.js';
+import type { YOctoAwarenessSession } from '../../y-octo/index.js';
+import type { AwarenessSource, SyncAwareness } from '../source.js';
 
 type AwarenessChanges = Record<'added' | 'updated' | 'removed', number[]>;
 
@@ -12,13 +12,22 @@ type ChannelMessage =
   | { type: 'connect' }
   | { type: 'update'; update: Uint8Array };
 
+function isYOctoAwarenessSession(
+  awareness: SyncAwareness
+): awareness is YOctoAwarenessSession {
+  return (
+    typeof (awareness as YOctoAwarenessSession).encodeUpdate === 'function' &&
+    typeof (awareness as YOctoAwarenessSession).applyUpdate === 'function'
+  );
+}
+
 export class BroadcastChannelAwarenessSource implements AwarenessSource {
-  awareness: Awareness | null = null;
+  awareness: SyncAwareness | null = null;
 
   channel: BroadcastChannel | null = null;
 
   handleAwarenessUpdate = (changes: AwarenessChanges, origin: unknown) => {
-    if (origin === 'remote') {
+    if (origin === 'remote' || !this.awareness) {
       return;
     }
 
@@ -26,7 +35,9 @@ export class BroadcastChannelAwarenessSource implements AwarenessSource {
       res.concat(cur)
     );
 
-    const update = encodeAwarenessUpdate(this.awareness!, changedClients);
+    const update = isYOctoAwarenessSession(this.awareness)
+      ? this.awareness.encodeUpdate(changedClients)
+      : encodeAwarenessUpdate(this.awareness, changedClients);
     this.channel?.postMessage({
       type: 'update',
       update: update,
@@ -35,7 +46,7 @@ export class BroadcastChannelAwarenessSource implements AwarenessSource {
 
   constructor(readonly channelName: string) {}
 
-  connect(awareness: Awareness): void {
+  connect(awareness: SyncAwareness): void {
     this.channel = new BroadcastChannel(this.channelName);
     this.channel.postMessage({
       type: 'connect',
@@ -57,16 +68,24 @@ export class BroadcastChannelAwarenessSource implements AwarenessSource {
   }
 
   handleChannelMessage(event: MessageEvent<ChannelMessage>) {
+    if (!this.awareness) {
+      return;
+    }
     if (event.data.type === 'update') {
       const update = event.data.update;
-      applyAwarenessUpdate(this.awareness!, update, 'remote');
+      if (isYOctoAwarenessSession(this.awareness)) {
+        this.awareness.applyUpdate(update, 'remote');
+      } else {
+        applyAwarenessUpdate(this.awareness, update, 'remote');
+      }
     }
     if (event.data.type === 'connect') {
+      const update = isYOctoAwarenessSession(this.awareness)
+        ? this.awareness.encodeUpdate([this.awareness.clientID])
+        : encodeAwarenessUpdate(this.awareness, [this.awareness.clientID]);
       this.channel?.postMessage({
         type: 'update',
-        update: encodeAwarenessUpdate(this.awareness!, [
-          this.awareness!.clientID,
-        ]),
+        update,
       } satisfies ChannelMessage);
     }
   }

@@ -24,3 +24,7 @@
 ## Other
 
 - [Schema](classes/Schema.md)
+- [isCrdtArray](functions/isCrdtArray.md)
+- [isCrdtValue](functions/isCrdtValue.md)
+- [jsValueToSessionValue](functions/jsValueToSessionValue.md)
+- [unwrapCrdtValue](functions/unwrapCrdtValue.md)

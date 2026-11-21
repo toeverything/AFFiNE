@@ -3,7 +3,30 @@ import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 
 import type { Store } from '../../model';
+import { Text } from '../../reactive/text/index.js';
+import {
+  isYOctoSpaceDoc,
+  isYOctoTextHandle,
+} from '../../y-octo/space-adapter.js';
+import { YOctoUndoManager } from '../../y-octo/undo-manager.js';
 import { StoreExtension } from '../store-extension';
+
+export type HistoryUndoManager = Y.UndoManager;
+
+export function createTextUndoManager(
+  text: Text | Text['yText']
+): HistoryUndoManager {
+  const yText = text instanceof Text ? text.yText : text;
+  if (isYOctoTextHandle(yText)) {
+    return new YOctoUndoManager(yText.adapter, [{ Identity: yText.identity }], {
+      captureTimeout: 500,
+      trackedOrigins: ['Tracked'],
+    }) as unknown as Y.UndoManager;
+  }
+  return new Y.UndoManager(yText, {
+    trackedOrigins: new Set(yText.doc ? [yText.doc.clientID] : []),
+  });
+}
 
 export class HistoryExtension extends StoreExtension {
   static override readonly key = 'history';
@@ -19,9 +42,21 @@ export class HistoryExtension extends StoreExtension {
   constructor(store: Store) {
     super(store);
 
-    this._history = new Y.UndoManager([this.store.doc.yBlocks], {
-      trackedOrigins: new Set([this.store.doc.spaceDoc.clientID]),
-    });
+    const spaceDoc = this.store.doc.spaceDoc;
+    if (isYOctoSpaceDoc(spaceDoc)) {
+      this._history = new YOctoUndoManager(
+        spaceDoc.adapter,
+        [{ Identity: { Root: 'blocks' } }],
+        {
+          captureTimeout: 500,
+          trackedOrigins: ['Tracked'],
+        }
+      ) as unknown as Y.UndoManager;
+    } else {
+      this._history = new Y.UndoManager([this.store.doc.yBlocks], {
+        trackedOrigins: new Set([spaceDoc.clientID]),
+      });
+    }
   }
 
   private readonly _updateCanUndoRedoSignals = () => {
@@ -74,6 +109,9 @@ export class HistoryExtension extends StoreExtension {
     this._history.off('stack-item-added', this._historyObserver);
     this._history.off('stack-item-popped', this._historyObserver);
     this._history.off('stack-item-updated', this._historyObserver);
+    if (this._history instanceof YOctoUndoManager) {
+      this._history.destroy();
+    }
     this.onUpdated.complete();
   }
 }

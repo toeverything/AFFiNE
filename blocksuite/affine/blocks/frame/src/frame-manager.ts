@@ -22,7 +22,6 @@ import {
   renderableInEdgeless,
 } from '@blocksuite/std/gfx';
 import { type BlockModel, Text } from '@blocksuite/store';
-import * as Y from 'yjs';
 
 const FRAME_PADDING = 40;
 
@@ -211,7 +210,7 @@ export class EdgelessFrameManager extends GfxExtension {
     const props = this.gfx.std
       .get(EditPropsStore)
       .applyLastProps('affine:frame', {
-        title: new Text(new Y.Text(`Frame ${this.frames.length + 1}`)),
+        title: new Text(`Frame ${this.frames.length + 1}`),
         xywh: bound.serialize(),
         index: this.gfx.layer.generateIndex(true),
         presentationIndex: this.generatePresentationIndex(),

@@ -1,3 +1,4 @@
+import { unwrapCrdtValue } from '@blocksuite/affine/store';
 import {
   LiveData,
   Store,
@@ -6,7 +7,6 @@ import {
 } from '@toeverything/infra';
 import { isNil, omitBy } from 'lodash-es';
 import { combineLatest, map, switchMap } from 'rxjs';
-import { AbstractType as YAbstractType } from 'yjs';
 
 import type { WorkspaceDBService } from '../../db';
 import type { DocProperties } from '../../db/schema/schema';
@@ -105,12 +105,7 @@ export class DocPropertiesStore extends Store {
       `pageProperties.${id}`
     ).pipe(
       switchMap(yjsObserveDeep),
-      map(
-        p =>
-          (p instanceof YAbstractType ? p.toJSON() : p) as
-            | LegacyDocProperties
-            | undefined
-      )
+      map(p => unwrapCrdtValue(p) as LegacyDocProperties | undefined)
     );
   }
 }

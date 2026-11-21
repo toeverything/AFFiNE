@@ -35,7 +35,6 @@ import { type ExtensionType, Slice, Text } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
-import * as Y from 'yjs';
 
 import type { EmbedFigmaBlockComponent } from '../embed-figma-block';
 import type { EmbedGithubBlockComponent } from '../embed-github-block';
@@ -106,12 +105,8 @@ function createBuiltinToolbarConfigForExternal(
               const { parent } = model;
               const index = parent?.children.indexOf(model);
 
-              const yText = new Y.Text();
               const insert = title || caption || link;
-              yText.insert(0, insert);
-              yText.format(0, insert.length, { link });
-
-              const text = new Text(yText);
+              const text = new Text([{ insert, attributes: { link } }]);
 
               ctx.store.addBlock('affine:paragraph', { text }, parent, index);
 

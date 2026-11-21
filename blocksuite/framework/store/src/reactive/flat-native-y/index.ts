@@ -2,6 +2,7 @@ import { signal } from '@preact/signals-core';
 import type { Subject } from 'rxjs';
 import { Array as YArray, type Map as YMap, type YMapEvent } from 'yjs';
 
+import { isYOctoArrayHandle } from '../../y-octo/space-adapter.js';
 import { BaseReactiveYData } from '../base-reactive-data';
 import { Boxed, type OnBoxedChange } from '../boxed';
 import { ReactiveYArray } from '../proxy';
@@ -52,10 +53,14 @@ export class ReactiveFlatYMap extends BaseReactiveYData<
       (value as Boxed).bind(onChange as OnBoxedChange);
       return value;
     }
-    if (origin instanceof YArray) {
-      const data = new ReactiveYArray(value as unknown[], origin, {
-        onChange,
-      });
+    if (origin instanceof YArray || isYOctoArrayHandle(origin)) {
+      const data = new ReactiveYArray(
+        value as unknown[],
+        origin as YArray<unknown>,
+        {
+          onChange,
+        }
+      );
       return data.proxy;
     }
 

@@ -4,19 +4,23 @@ import type {
   BaseElementProps,
   GfxModel,
   SerializedElement,
+  SurfaceMap,
+  SurfaceText,
 } from '@blocksuite/std/gfx';
 import {
   canSafeAddToContainer,
+  createSurfaceMap,
+  createSurfaceText,
   field,
   GfxGroupLikeElementModel,
+  isSurfaceMap,
   local,
   observe,
 } from '@blocksuite/std/gfx';
-import * as Y from 'yjs';
 
 type GroupElementProps = BaseElementProps & {
-  children: Y.Map<boolean>;
-  title: Y.Text;
+  children: SurfaceMap<boolean>;
+  title: SurfaceText;
 };
 
 export type SerializedGroupElement = SerializedElement & {
@@ -37,11 +41,11 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
 
   static propsToY(props: Record<string, unknown>) {
     if (typeof props.title === 'string') {
-      props.title = new Y.Text(props.title as string);
+      props.title = createSurfaceText(props.title);
     }
 
-    if (props.children && !(props.children instanceof Y.Map)) {
-      const children = new Y.Map() as Y.Map<boolean>;
+    if (props.children && !isSurfaceMap(props.children)) {
+      const children = createSurfaceMap<boolean>();
 
       Object.keys(props.children).forEach(key => {
         children.set(key as string, true);
@@ -131,11 +135,11 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
     }
   )
   @field()
-  accessor children: Y.Map<boolean> = new Y.Map<boolean>();
+  accessor children: SurfaceMap<boolean> = createSurfaceMap<boolean>();
 
   @local()
   accessor showTitle: boolean = true;
 
   @field()
-  accessor title: Y.Text = new Y.Text();
+  accessor title: SurfaceText = createSurfaceText();
 }

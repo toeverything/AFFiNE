@@ -1,9 +1,8 @@
 import { DocDisplayMetaProvider } from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
-import { type DeltaInsert, Text } from '@blocksuite/store';
+import { Text } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
-import { Doc } from 'yjs';
 
 import { evalFilter } from '../../core/filter/eval.js';
 import { generateDefaultValues } from '../../core/filter/generate-default-values.js';
@@ -68,15 +67,12 @@ const isValidTimestamp = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
 const createLinkedDocTitle = (docId: string) => {
-  const text = new Text<AffineTextAttributes>();
-  new Doc().getMap('root').set('text', text.yText);
-  text.applyDelta([
+  return Text.createDetached<AffineTextAttributes>([
     {
       insert: ' ',
       attributes: { reference: { type: 'LinkedPage', pageId: docId } },
     },
-  ] satisfies DeltaInsert<AffineTextAttributes>[]);
-  return text;
+  ]);
 };
 
 const getTitleDeltas = (value: unknown) =>

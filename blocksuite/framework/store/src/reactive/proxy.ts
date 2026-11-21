@@ -2,6 +2,10 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { YArrayEvent, YMapEvent } from 'yjs';
 import { Array as YArray, Map as YMap } from 'yjs';
 
+import {
+  isYOctoArrayHandle,
+  isYOctoMapHandle,
+} from '../y-octo/space-adapter.js';
 import { BaseReactiveYData } from './base-reactive-data.js';
 import { Boxed, type OnBoxedChange } from './boxed.js';
 import { proxies } from './memory.js';
@@ -81,14 +85,16 @@ export class ReactiveYArray extends BaseReactiveYData<
           );
         }
 
-        const yData = native2Y(value);
+        const isYOcto = isYOctoArrayHandle(this._ySource);
+        const yData = isYOcto ? value : native2Y(value);
         this._transact(doc, () => {
           if (index < this._ySource.length) {
             this._ySource.delete(index, 1);
           }
           this._ySource.insert(index, [yData]);
         });
-        const data = createYProxy(yData, this._options);
+        const liveData = isYOcto ? this._ySource.get(index) : yData;
+        const data = createYProxy(liveData, this._options);
         return Reflect.set(target, p, data, receiver);
       },
       get: (target, p, receiver) => {
@@ -102,16 +108,20 @@ export class ReactiveYArray extends BaseReactiveYData<
               );
             }
             const count = deleteCount ?? target.length - start;
-            const yItems = items.map(item => native2Y(item));
+            const isYOcto = isYOctoArrayHandle(this._ySource);
+            const yItems = isYOcto ? items : items.map(item => native2Y(item));
             this._transact(doc, () => {
               this._ySource.delete(start, count);
               this._ySource.insert(start, yItems);
             });
 
+            const liveItems = isYOcto
+              ? items.map((_, i) => this._ySource.get(start + i))
+              : yItems;
             const result = Array.prototype.splice.apply(target, [
               start,
               count,
-              ...yItems.map(yItem => createYProxy(yItem, this._options)),
+              ...liveItems.map(yItem => createYProxy(yItem, this._options)),
             ]);
 
             return result;
@@ -145,13 +155,17 @@ export class ReactiveYArray extends BaseReactiveYData<
                 'YData is not bound to a Y.Doc'
               );
             }
-            const yItems = items.map(item => native2Y(item));
+            const isYOcto = isYOctoArrayHandle(this._ySource);
+            const yItems = isYOcto ? items : items.map(item => native2Y(item));
             this._transact(doc, () => {
               this._ySource.insert(0, yItems);
             });
+            const liveItems = isYOcto
+              ? items.map((_, i) => this._ySource.get(i))
+              : yItems;
             return Array.prototype.unshift.apply(
               target,
-              yItems.map(yItem => createYProxy(yItem, this._options))
+              liveItems.map(yItem => createYProxy(yItem, this._options))
             );
           };
         }
@@ -278,11 +292,13 @@ export class ReactiveYMap extends BaseReactiveYData<UnRecord, YMap<unknown>> {
           );
         }
 
-        const yData = native2Y(value);
+        const isYOcto = isYOctoMapHandle(this._ySource);
+        const yData = isYOcto ? value : native2Y(value);
         this._transact(doc, () => {
           this._ySource.set(p, yData);
         });
-        const data = createYProxy(yData, this._options);
+        const liveData = isYOcto ? this._ySource.get(p) : yData;
+        const data = createYProxy(liveData, this._options);
         return Reflect.set(target, p, data, receiver);
       },
       get: (target, p, receiver) => {
@@ -366,18 +382,18 @@ export function createYProxy<Data>(
       (value as Boxed).bind(options.onChange as OnBoxedChange);
       return value;
     }
-    if (origin instanceof YArray) {
+    if (origin instanceof YArray || isYOctoArrayHandle(origin)) {
       const data = new ReactiveYArray(
         value as unknown[],
-        origin,
+        origin as YArray<unknown>,
         options as ProxyOptions<unknown[]>
       );
       return data.proxy;
     }
-    if (origin instanceof YMap) {
+    if (origin instanceof YMap || isYOctoMapHandle(origin)) {
       const data = new ReactiveYMap(
         value as UnRecord,
-        origin,
+        origin as YMap<unknown>,
         options as ProxyOptions<UnRecord>
       );
       return data.proxy;

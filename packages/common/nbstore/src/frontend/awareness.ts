@@ -1,3 +1,4 @@
+import type { YOctoAwarenessSession } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import {
   applyAwarenessUpdate,
@@ -10,14 +11,25 @@ import type { AwarenessSync } from '../sync/awareness';
 
 type AwarenessChanges = Record<'added' | 'updated' | 'removed', number[]>;
 
+export type ConnectableAwareness = Awareness | YOctoAwarenessSession;
+
+function isYOctoAwarenessSession(
+  awareness: ConnectableAwareness
+): awareness is YOctoAwarenessSession {
+  return (
+    typeof (awareness as YOctoAwarenessSession).encodeUpdate === 'function' &&
+    typeof (awareness as YOctoAwarenessSession).applyUpdate === 'function'
+  );
+}
+
 export class AwarenessFrontend {
   constructor(private readonly sync: AwarenessSync) {}
 
-  connectAwareness(awareness: Awareness) {
+  connectAwareness(awareness: ConnectableAwareness) {
     const uniqueId = nanoid();
     const handleAwarenessUpdate = (
       changes: AwarenessChanges,
-      origin: string
+      origin: unknown
     ) => {
       if (origin === uniqueId) {
         return;
@@ -26,7 +38,9 @@ export class AwarenessFrontend {
         res.concat(cur)
       );
 
-      const update = encodeAwarenessUpdate(awareness, changedClients);
+      const update = isYOctoAwarenessSession(awareness)
+        ? awareness.encodeUpdate(changedClients)
+        : encodeAwarenessUpdate(awareness, changedClients);
       this.sync
         .update(
           {
@@ -47,12 +61,18 @@ export class AwarenessFrontend {
         return;
       }
 
-      applyAwarenessUpdate(awareness, update.bin, uniqueId);
+      if (isYOctoAwarenessSession(awareness)) {
+        awareness.applyUpdate(update.bin, uniqueId);
+      } else {
+        applyAwarenessUpdate(awareness, update.bin, uniqueId);
+      }
     };
     const handleSyncCollect = () => {
       return Promise.resolve({
         docId: awareness.doc.guid,
-        bin: encodeAwarenessUpdate(awareness, [awareness.clientID]),
+        bin: isYOctoAwarenessSession(awareness)
+          ? awareness.encodeUpdate([awareness.clientID])
+          : encodeAwarenessUpdate(awareness, [awareness.clientID]),
       });
     };
     const unsubscribe = this.sync.subscribeUpdate(

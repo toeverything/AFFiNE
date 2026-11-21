@@ -1,7 +1,6 @@
 import type { DocMode, RootBlockModel } from '@blocksuite/affine/model';
 import { Entity } from '@toeverything/infra';
 import { throttle } from 'lodash-es';
-import type { Transaction } from 'yjs';
 
 import type { DocProperties } from '../../db';
 import type { WorkspaceService } from '../../workspace';
@@ -17,7 +16,7 @@ export class Doc extends Entity {
     super();
 
     const handleTransactionThrottled = throttle(
-      (trx: Transaction) => {
+      (trx: { local: boolean }) => {
         if (trx.local) {
           this.setUpdatedAt(Date.now());
         }

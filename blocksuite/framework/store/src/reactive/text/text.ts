@@ -2,6 +2,10 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { type Signal, signal } from '@preact/signals-core';
 import * as Y from 'yjs';
 
+import {
+  isYOctoTextHandle,
+  type YOctoTextHandle,
+} from '../../y-octo/space-adapter.js';
 import type { BaseTextAttributes } from './attributes';
 import type { DeltaInsert, DeltaOperation, OnTextChange } from './types';
 
@@ -26,11 +30,35 @@ import type { DeltaInsert, DeltaOperation, OnTextChange } from './types';
 export class Text<
   TextAttributes extends BaseTextAttributes = BaseTextAttributes,
 > {
+  /**
+   * Create a standalone Text attached to a transient in-memory document so
+   * `toDelta()`, `length`, mutations, and `observe()` work without attaching
+   * to a full Store.
+   */
+  static createDetached<T extends BaseTextAttributes = BaseTextAttributes>(
+    input?: string | DeltaInsert<T>[] | DeltaOperation[]
+  ): Text<T> {
+    return new Text<T>(input).ensureAttached();
+  }
+
+  /**
+   * Check whether a value is a reactive Text wrapper or an underlying Y.Text.
+   */
+  static isTextLike(value: unknown): value is Text | Y.Text {
+    return (
+      value instanceof Text ||
+      value instanceof Y.Text ||
+      isYOctoTextHandle(value)
+    );
+  }
+
   private readonly _deltas$: Signal<DeltaOperation[]>;
 
   private readonly _length$: Signal<number>;
 
   private _onChange?: OnTextChange;
+
+  private readonly _pendingDelta?: DeltaOperation[];
 
   private readonly _yText: Y.Text;
 
@@ -45,19 +73,42 @@ export class Text<
     return this._length$.value;
   }
 
+  /**
+   * Get the text length as a signal.
+   */
+  get length$() {
+    return this._length$;
+  }
+
   get yText() {
     return this._yText;
+  }
+
+  /** @internal */
+  getPendingDelta(): DeltaOperation[] | undefined {
+    return this._pendingDelta;
   }
 
   /**
    * @param input - The input can be a string, a Y.Text instance, or an array of DeltaInsert.
    */
-  constructor(input?: Y.Text | string | DeltaInsert<TextAttributes>[]) {
+  constructor(
+    input?:
+      | Y.Text
+      | YOctoTextHandle
+      | string
+      | DeltaInsert<TextAttributes>[]
+      | DeltaOperation[]
+  ) {
     let length = 0;
     if (typeof input === 'string') {
       const text = input.replaceAll('\r\n', '\n');
       length = text.length;
+      this._pendingDelta = text.length > 0 ? [{ insert: text }] : [];
       this._yText = new Y.Text(text);
+    } else if (isYOctoTextHandle(input)) {
+      this._yText = input as unknown as Y.Text;
+      length = input.length;
     } else if (input instanceof Y.Text) {
       this._yText = input;
       if (input.doc) {
@@ -65,28 +116,34 @@ export class Text<
       }
     } else if (input instanceof Array) {
       for (const delta of input) {
-        if (delta.insert) {
+        if (typeof delta.insert === 'string') {
           delta.insert = delta.insert.replaceAll('\r\n', '\n');
           length += delta.insert.length;
+        } else if (delta.insert !== undefined) {
+          length += 1;
         }
       }
+      this._pendingDelta = input.slice() as DeltaOperation[];
       const yText = new Y.Text();
       yText.applyDelta(input);
       this._yText = yText;
     } else {
+      this._pendingDelta = [];
       this._yText = new Y.Text();
     }
 
     this._length$ = signal(length);
     this._deltas$ = signal(this._yText.doc ? this._yText.toDelta() : []);
     this._yText.observe(event => {
+      const origin = event.transaction.origin;
       const isLocal =
-        !event.transaction.origin ||
+        !origin ||
         !this._yText.doc ||
-        event.transaction.origin instanceof Y.UndoManager ||
-        event.transaction.origin.proxy
+        origin instanceof Y.UndoManager ||
+        origin.proxy ||
+        origin.isYOctoUndoRedo
           ? true
-          : event.transaction.origin === this._yText.doc.clientID;
+          : origin === this._yText.doc.clientID;
       this._length$.value = this._yText.length;
       this._deltas$.value = this._yText.toDelta();
       this._onChange?.(this._yText, isLocal);
@@ -241,6 +298,25 @@ export class Text<
     }
     this._transact(() => {
       this._yText.insert(index, content, attributes);
+    });
+  }
+
+  insertEmbed(
+    embed: Record<string, unknown>,
+    index: number,
+    attributes?: Record<string, unknown>
+  ) {
+    if (index < 0 || index > this._yText.length) {
+      throw new BlockSuiteError(
+        ErrorCode.ReactiveProxyError,
+        'Failed to insert embed! Index out of range, index: ' +
+          index +
+          ', text length: ' +
+          this._yText.length
+      );
+    }
+    this._transact(() => {
+      this._yText.insertEmbed(index, embed, attributes);
     });
   }
 
@@ -449,6 +525,29 @@ export class Text<
     rightText.bind(this._onChange);
 
     return rightText;
+  }
+
+  /**
+   * Attach an unattached Text to a transient in-memory document so its
+   * delta, length, and mutations work before insertion into a Store.
+   */
+  ensureAttached(): this {
+    if (!this._yText.doc) {
+      new Y.Doc().getMap('root').set('text', this._yText);
+      this._length$.value = this._yText.length;
+      this._deltas$.value = this._yText.toDelta();
+    }
+    return this;
+  }
+
+  /**
+   * Observe changes on the underlying text and return an unsubscribe function.
+   */
+  observe(callback: () => void): () => void {
+    this._yText.observe(callback);
+    return () => {
+      this._yText.unobserve(callback);
+    };
   }
 
   /**

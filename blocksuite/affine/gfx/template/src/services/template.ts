@@ -8,7 +8,10 @@ import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import { Bound, getCommonBound } from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
 import type { BlockStdScope } from '@blocksuite/std';
-import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import {
+  GfxControllerIdentifier,
+  type SurfaceElementsMap,
+} from '@blocksuite/std/gfx';
 import {
   type BlockModel,
   type BlockSnapshot,
@@ -18,7 +21,6 @@ import {
   type Transformer,
 } from '@blocksuite/store';
 import { Subject } from 'rxjs';
-import type * as Y from 'yjs';
 
 import {
   createInsertPlaceMiddleware,
@@ -318,7 +320,7 @@ export class TemplateJob {
 
   private _mergeSurfaceElements(
     from: Record<string, Record<string, unknown>>,
-    to: Y.Map<Y.Map<unknown>>
+    to: SurfaceElementsMap
   ) {
     const schema = this.model.store.schema.get('affine:surface');
     const surfaceTransformer = schema?.transformer?.(

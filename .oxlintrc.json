@@ -395,6 +395,34 @@
       }
     },
     {
+      "files": ["blocksuite/affine/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "yjs",
+                "message": "Do not import 'yjs' directly in blocksuite/affine. Use @blocksuite/store or @blocksuite/std abstractions instead."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/dist"],
+                "message": "Don't import from dist",
+                "allowTypeImports": false
+              },
+              {
+                "group": ["**/src"],
+                "message": "Don't import from src",
+                "allowTypeImports": false
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": [
         "**/__tests__/**/*",
         "**/*.stories.tsx",

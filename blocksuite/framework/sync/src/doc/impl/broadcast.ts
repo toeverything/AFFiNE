@@ -1,6 +1,9 @@
-import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
-
 import { MANUALLY_STOP } from '../../utils/throw-if-aborted.js';
+import {
+  diffUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  mergeUpdatesV1,
+} from '../../y-octo/index.js';
 import type { DocSource } from '../source.js';
 
 type ChannelMessage =
@@ -29,7 +32,7 @@ export class BroadcastChannelDocSource implements DocSource {
     const { docId, data } = event.data;
     const update = this.docMap.get(docId);
     if (update) {
-      this.docMap.set(docId, mergeUpdates([update, data]));
+      this.docMap.set(docId, mergeUpdatesV1([update, data]));
     } else {
       this.docMap.set(docId, data);
     }
@@ -53,14 +56,14 @@ export class BroadcastChannelDocSource implements DocSource {
     const update = this.docMap.get(docId);
     if (!update) return null;
 
-    const diff = state.length ? diffUpdate(update, state) : update;
-    return { data: diff, state: encodeStateVectorFromUpdate(update) };
+    const diff = state.length ? diffUpdateV1(update, state) : update;
+    return { data: diff, state: encodeStateVectorFromUpdateV1(update) };
   }
 
   push(docId: string, data: Uint8Array) {
     const update = this.docMap.get(docId);
     if (update) {
-      this.docMap.set(docId, mergeUpdates([update, data]));
+      this.docMap.set(docId, mergeUpdatesV1([update, data]));
     } else {
       this.docMap.set(docId, data);
     }
