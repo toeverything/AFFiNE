@@ -2,6 +2,8 @@
 //!
 //! All targets execute the single shipping [`PlaygroundView`] element tree.
 
+pub mod rich_text;
+
 use std::borrow::Cow;
 use ui::{App, FontWeight, Hsla, Motion, MotionCurve, Window, div, prelude::*, px};
 
@@ -10,12 +12,30 @@ const INTER_VARIABLE_TTF: &[u8] = include_bytes!(
     "../../../../../packages/frontend/component/src/fonts/inter/Inter-VariableFont_slnt,wght.ttf"
 );
 
-/// Registers the tracked repository base font (`Inter`) into the active `TextSystem`.
+macro_rules! plex_mono {
+    ($face:literal) => {
+        Cow::Borrowed(
+            include_bytes!(concat!(
+                "../../../../../packages/frontend/component/src/fonts/ibm-plex-mono/IBMPlexMono-",
+                $face,
+                ".ttf"
+            ))
+            .as_slice(),
+        )
+    };
+}
+
+/// Registers the Inter variable font and four IBM Plex Mono faces.
 ///
 /// Must be called before opening any window across macOS, Linux headless, and Web Wasm.
 pub fn register_bundled_fonts(cx: &App) -> anyhow::Result<()> {
-    cx.text_system()
-        .add_fonts(vec![Cow::Borrowed(INTER_VARIABLE_TTF)])
+    cx.text_system().add_fonts(vec![
+        Cow::Borrowed(INTER_VARIABLE_TTF),
+        plex_mono!("Regular"),
+        plex_mono!("Bold"),
+        plex_mono!("Italic"),
+        plex_mono!("BoldItalic"),
+    ])
 }
 
 /// Active view mode for the playground frame.

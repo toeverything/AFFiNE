@@ -2412,9 +2412,14 @@ dependencies = [
  "image",
  "serde",
  "serde_json",
+ "tempfile",
  "ui",
+ "unicode-bidi",
+ "unicode-linebreak",
+ "unicode-segmentation",
  "wasm-bindgen",
  "web-sys",
+ "y-octo",
 ]
 
 [[package]]

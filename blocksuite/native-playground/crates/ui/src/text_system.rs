@@ -666,6 +666,11 @@ impl WindowTextSystem {
         runs: &[TextRun],
         force_width: Option<Pixels>,
     ) -> ShapedLine {
+        let layout = self.layout_line(&text, font_size, runs, force_width);
+        Self::paintable_line(text, layout, runs)
+    }
+
+    fn paintable_line(text: SharedString, layout: Arc<LineLayout>, runs: &[TextRun]) -> ShapedLine {
         debug_assert!(
             text.find('\n').is_none(),
             "text argument should not contain newlines"
@@ -691,13 +696,47 @@ impl WindowTextSystem {
             });
         }
 
-        let layout = self.layout_line(&text, font_size, runs, force_width);
-
         ShapedLine {
             layout,
             text,
             decoration_runs,
         }
+    }
+
+    /// Shape a paintable line with the given pixel tracking per cluster.
+    pub fn shape_line_with_spacing(
+        &self,
+        text: SharedString,
+        font_size: Pixels,
+        runs: &[TextRun],
+        letter_spacing_px: f32,
+    ) -> ShapedLine {
+        // Preserve shaping across paint-only boundaries; the separate decoration
+        // runs still associate each glyph with its source color.
+        let mut fonts = self.font_runs_buffer.take();
+        fonts.clear();
+        for run in runs {
+            let id = self.resolve_font(&run.font);
+            if let Some(last) = fonts.last_mut()
+                && last.font_id == id
+            {
+                last.len += run.len;
+            } else {
+                fonts.push(FontRun {
+                    len: run.len,
+                    font_id: id,
+                });
+            }
+        }
+        let layout = self
+            .line_layout_cache
+            .layout_line(&text, font_size, &fonts, None);
+        self.font_runs_buffer.set(fonts);
+        let mut line = Self::paintable_line(text, layout, runs);
+        if letter_spacing_px != 0.0 {
+            Arc::make_mut(&mut line.layout).apply_letter_spacing(crate::px(letter_spacing_px));
+        }
+        line
     }
 
     /// Shape a multi line string of text, at the given font_size, for painting to the screen.

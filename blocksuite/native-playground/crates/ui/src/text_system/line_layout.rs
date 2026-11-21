@@ -16,7 +16,7 @@ use std::{
 use super::LineWrapper;
 
 /// A laid out and styled line of text
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct LineLayout {
     /// The font size for this line
     pub font_size: Pixels,
@@ -58,6 +58,24 @@ pub struct ShapedGlyph {
 }
 
 impl LineLayout {
+    /// Add tracking once per shaped cluster, keeping mark glyphs with their base.
+    pub(crate) fn apply_letter_spacing(&mut self, spacing: Pixels) {
+        let mut last_index = None;
+        let mut shift = Pixels::ZERO;
+        for glyph in self.runs.iter_mut().flat_map(|run| &mut run.glyphs) {
+            if let Some(previous) = last_index
+                && previous != glyph.index
+            {
+                shift += spacing;
+            }
+            glyph.position.x += shift;
+            last_index = Some(glyph.index);
+        }
+        if last_index.is_some() {
+            self.width = (self.width + shift + spacing).max(Pixels::ZERO);
+        }
+    }
+
     /// The index for the character at the given x coordinate
     pub fn index_for_x(&self, x: Pixels) -> Option<usize> {
         if x >= self.width {

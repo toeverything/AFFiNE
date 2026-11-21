@@ -193,6 +193,111 @@ fn render_headless(
     Ok(())
 }
 
+struct RichSample {
+    paragraph: playground::rich_text::RichParagraph,
+    rich: bool,
+}
+
+impl ui::Render for RichSample {
+    fn render(&mut self, window: &mut ui::Window, _: &mut ui::Context<Self>) -> impl IntoElement {
+        use playground::rich_text::{
+            CaretPosition, RichParagraphElement, RichParagraphStyle, WrapAffinity,
+        };
+        let style = RichParagraphStyle::default();
+        let frame = ui::div().size_full().bg(ui::white()).p(px(16.));
+        if self.rich {
+            let layout = self.paragraph.layout(window.text_system(), &style, 372.);
+            let mut element = RichParagraphElement::new(std::sync::Arc::new(layout));
+            element.selections.push((4..11, ui::rgb(0xd6eaff).into()));
+            element.carets.push((
+                CaretPosition {
+                    utf16_offset: 11,
+                    affinity: WrapAffinity::Downstream,
+                },
+                ui::rgb(0x286ce8).into(),
+            ));
+            frame.child(element)
+        } else {
+            frame.child(
+                ui::div()
+                    .w(px(372.))
+                    .font_family(style.font_family)
+                    .text_size(px(style.font_size))
+                    .text_color(style.text_color)
+                    .line_height(px(style.line_height))
+                    .child(self.paragraph.source_text().to_owned()),
+            )
+        }
+    }
+}
+
+fn render_rich_sample(mut args: impl Iterator<Item = String>) -> Result<()> {
+    let (mut plain, mut rich) = (None, None);
+    while let Some(flag) = args.next() {
+        let path = match flag.as_str() {
+            "--out-plain" => &mut plain,
+            "--out-rich" => &mut rich,
+            _ => bail!("unknown render-rich-sample flag: {flag}"),
+        };
+        *path = Some(PathBuf::from(
+            args.next()
+                .with_context(|| format!("{flag} requires a path"))?,
+        ));
+    }
+    let plain = plain.context("render-rich-sample requires --out-plain <path>")?;
+    let rich = rich.context("render-rich-sample requires --out-rich <path>")?;
+    anyhow::ensure!(plain != rich, "plain and rich output paths must differ");
+    let platform = HeadlessPlatform::new(404, 105, 2.);
+    let init = Rc::new(RefCell::new(None));
+    let handle_out = Rc::clone(&init);
+    let app = Application::with_platform(platform.clone()).run_embedded(move |cx| {
+        *handle_out.borrow_mut() = Some((|| -> Result<_> {
+            register_bundled_fonts(cx)?;
+            let paragraph = playground::rich_text::sample_paragraph()?;
+            let bounds = Bounds::new(point(px(0.), px(0.)), size(px(404.), px(105.)));
+            cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    ..Default::default()
+                },
+                |_, cx| {
+                    cx.new(|_| RichSample {
+                        paragraph,
+                        rich: false,
+                    })
+                },
+            )
+        })());
+    });
+    let handle = init
+        .borrow_mut()
+        .take()
+        .context("headless application did not start")??;
+    let win = platform
+        .windows()
+        .into_iter()
+        .next()
+        .context("sample window missing")?;
+    for (show_marks, path) in [(false, plain), (true, rich)] {
+        app.update(|cx| {
+            handle.update(cx, |v, _, cx| {
+                v.rich = show_marks;
+                cx.notify();
+            })
+        })?;
+        win.request_frame();
+        let image =
+            app.update(|cx| handle.update(cx, |_, window, _| window.render_to_image()))??;
+        if let Some(dir) = path.parent().filter(|dir| !dir.as_os_str().is_empty()) {
+            std::fs::create_dir_all(dir)?;
+        }
+        image
+            .save_with_format(&path, image::ImageFormat::Png)
+            .with_context(|| format!("writing {}", path.display()))?;
+    }
+    Ok(())
+}
+
 fn run_audit(snapshot_path: PathBuf) -> Result<()> {
     let raw = std::fs::read_to_string(&snapshot_path)
         .with_context(|| format!("reading snapshot {}", snapshot_path.display()))?;
@@ -645,7 +750,7 @@ fn run_bench(
 fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
-        bail!("usage: bs-harness <render|audit|fps-check|bench> [options]");
+        bail!("usage: bs-harness <render|render-rich-sample|audit|fps-check|bench> [options]");
     };
 
     match cmd.as_str() {
@@ -672,6 +777,7 @@ fn main() -> Result<()> {
             }
             render_headless(width, height, out_png, out_snapshot, click_edgeless)
         }
+        "render-rich-sample" => render_rich_sample(args),
         "audit" => {
             let mut snapshot = None;
             while let Some(arg) = args.next() {
@@ -720,5 +826,40 @@ fn main() -> Result<()> {
             run_bench(out_json, explicit_commit, web_wasm_raw, web_wasm_gzip)
         }
         other => bail!("unknown subcommand: {other}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn rich_sample_writes_two_reproducible_pngs() {
+        let dir = tempfile::tempdir().unwrap();
+        let plain = dir.path().join("plain.png");
+        let rich = dir.path().join("rich.png");
+        let render = || {
+            render_rich_sample(
+                [
+                    "--out-plain".to_owned(),
+                    plain.display().to_string(),
+                    "--out-rich".to_owned(),
+                    rich.display().to_string(),
+                ]
+                .into_iter(),
+            )
+            .unwrap();
+            [
+                std::fs::read(&plain).unwrap(),
+                std::fs::read(&rich).unwrap(),
+            ]
+        };
+        let images = render();
+        assert_ne!(images[0], images[1]);
+        for bytes in &images {
+            let frame =
+                image::load_from_memory_with_format(bytes, image::ImageFormat::Png).unwrap();
+            assert_eq!((frame.width(), frame.height()), (808, 210));
+        }
+        assert_eq!(images, render());
     }
 }

@@ -557,7 +557,9 @@ fn paint_line(
         let padding_top = (line_height - layout.ascent - layout.descent) / 2.;
         let baseline_offset = point(px(0.), padding_top + layout.ascent);
         let underline_y_offset = underline_y_offset(line_height, layout.ascent, layout.descent);
-        let mut decoration_runs = decoration_runs.iter();
+        let all_decorations = decoration_runs;
+        let mut decoration_runs = all_decorations.iter();
+        let mut run_start = 0;
         let mut wraps = wrap_boundaries.iter().peekable();
         let mut run_end = 0;
         let mut color = black();
@@ -644,6 +646,11 @@ fn paint_line(
                 let mut finished_underline: Option<(Point<Pixels>, UnderlineStyle, Range<usize>)> =
                     None;
                 let mut finished_strikethrough: Option<(Point<Pixels>, StrikethroughStyle)> = None;
+                if glyph.index < run_start {
+                    // Visual order may traverse the logical color runs backwards.
+                    decoration_runs = all_decorations.iter();
+                    run_end = 0;
+                }
                 if glyph.index >= run_end {
                     let mut style_run = decoration_runs.next();
 
@@ -657,6 +664,7 @@ fn paint_line(
                     }
 
                     if let Some(style_run) = style_run {
+                        run_start = run_end;
                         let style_run_start = run_end;
                         if let Some((_, underline_style, underline_range)) = &mut current_underline
                         {

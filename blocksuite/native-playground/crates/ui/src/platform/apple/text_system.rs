@@ -59,6 +59,7 @@ use crate::platform::apple::open_type::apply_features_and_fallbacks;
 #[allow(non_upper_case_globals)]
 const kCGImageAlphaOnly: u32 = 7;
 
+const SLNT_AXIS_TAG: i64 = u32::from_be_bytes(*b"slnt") as i64;
 const WGHT_AXIS_TAG: i64 = u32::from_be_bytes(*b"wght") as i64;
 
 /// Apple text system using CoreText for font shaping.
@@ -76,7 +77,7 @@ struct AppleTextSystemState {
     system_source: SystemSource,
     fonts: Vec<FontKitFont>,
     font_selections: HashMap<Font, FontId>,
-    font_ids_by_postscript_name: HashMap<(String, Option<i32>), FontId>,
+    font_ids_by_postscript_name: HashMap<(String, Option<i32>, Option<i32>), FontId>,
     font_ids_by_font_key: HashMap<FontKey, SmallVec<[FontId; 4]>>,
     postscript_names_by_font_id: HashMap<FontId, String>,
     sized_fonts: crate::platform::apple::fast::text_system::SizedFonts,
@@ -182,11 +183,11 @@ impl PlatformTextSystem for AppleTextSystem {
 
             let base_id = candidates[ix];
             let font_id = if let Some(varied_font) =
-                apply_wght_variation(&lock.fonts[base_id.0], font.weight.0 as f64)
+                apply_font_variations(&lock.fonts[base_id.0], font.weight.0 as f64, font.style)
             {
                 let native = varied_font.native_font();
                 let postscript_name = native.postscript_name();
-                let lookup_key = (postscript_name.clone(), ct_font_wght_tenths(&native));
+                let lookup_key = font_lookup_key(&native, postscript_name.clone());
                 if let Some(&existing_id) = lock.font_ids_by_postscript_name.get(&lookup_key) {
                     existing_id
                 } else {
@@ -397,10 +398,9 @@ impl AppleTextSystemState {
                 continue;
             }
             let font_id = FontId(self.fonts.len());
-            let wght_key = ct_font_wght_tenths(&font.native_font());
+            let lookup_key = font_lookup_key(&font.native_font(), postscript_name.clone());
             font_ids.push(font_id);
-            self.font_ids_by_postscript_name
-                .insert((postscript_name.clone(), wght_key), font_id);
+            self.font_ids_by_postscript_name.insert(lookup_key, font_id);
             self.postscript_names_by_font_id
                 .insert(font_id, postscript_name);
             self.fonts.push(font);
@@ -425,10 +425,7 @@ impl AppleTextSystemState {
 
     fn id_for_native_font(&mut self, requested_font: CTFont) -> FontId {
         let postscript_name = requested_font.postscript_name();
-        let lookup_key = (
-            postscript_name.clone(),
-            ct_font_wght_tenths(&requested_font),
-        );
+        let lookup_key = font_lookup_key(&requested_font, postscript_name.clone());
         if let Some(font_id) = self.font_ids_by_postscript_name.get(&lookup_key) {
             *font_id
         } else {
@@ -771,7 +768,15 @@ fn size_from_vector2f(vec: Vector2F) -> Size<f32> {
     size(vec.x(), vec.y())
 }
 
-fn ct_font_wght_tenths(ct_font: &CTFont) -> Option<i32> {
+fn font_lookup_key(font: &CTFont, name: String) -> (String, Option<i32>, Option<i32>) {
+    (
+        name,
+        ct_font_axis_tenths(font, WGHT_AXIS_TAG),
+        ct_font_axis_tenths(font, SLNT_AXIS_TAG),
+    )
+}
+
+fn ct_font_axis_tenths(ct_font: &CTFont, tag: i64) -> Option<i32> {
     unsafe {
         let generated_font = &*ct_font
             .as_concrete_TypeRef()
@@ -779,7 +784,7 @@ fn ct_font_wght_tenths(ct_font: &CTFont) -> Option<i32> {
         let variations = generated_font.variation()?;
         let dict_ref = objc2_core_foundation::CFRetained::as_ptr(&variations).as_ptr()
             as core_foundation_sys::dictionary::CFDictionaryRef;
-        let key = CFNumber::from(WGHT_AXIS_TAG);
+        let key = CFNumber::from(tag);
         let mut val_ptr: *const std::ffi::c_void = std::ptr::null();
         if core_foundation_sys::dictionary::CFDictionaryGetValueIfPresent(
             dict_ref,
@@ -796,7 +801,7 @@ fn ct_font_wght_tenths(ct_font: &CTFont) -> Option<i32> {
     }
 }
 
-fn ct_font_wght_axis_range(ct_font: &CTFont) -> Option<(f64, f64, f64)> {
+fn ct_font_axis_range(ct_font: &CTFont, tag: i64) -> Option<(f64, f64, f64)> {
     unsafe {
         let generated_font = &*ct_font
             .as_concrete_TypeRef()
@@ -851,10 +856,10 @@ fn ct_font_wght_axis_range(ct_font: &CTFont) -> Option<(f64, f64, f64)> {
                 && !id_ptr.is_null()
             {
                 let id_num = CFNumber::wrap_under_get_rule(id_ptr as _);
-                if id_num.to_i64() == Some(WGHT_AXIS_TAG) {
+                if id_num.to_i64() == Some(tag) {
                     let min_v = get_f64(dict_ptr, min_key)?;
                     let max_v = get_f64(dict_ptr, max_key)?;
-                    let def_v = get_f64(dict_ptr, def_key).unwrap_or(400.0);
+                    let def_v = get_f64(dict_ptr, def_key)?;
                     return Some((min_v, max_v, def_v));
                 }
             }
@@ -863,34 +868,40 @@ fn ct_font_wght_axis_range(ct_font: &CTFont) -> Option<(f64, f64, f64)> {
     }
 }
 
-fn apply_wght_variation(base: &FontKitFont, target_weight: f64) -> Option<FontKitFont> {
+fn apply_font_variations(
+    base: &FontKitFont,
+    target_weight: f64,
+    style: FontStyle,
+) -> Option<FontKitFont> {
     let base_ct = base.native_font();
-    let (min_v, max_v, def_v) = ct_font_wght_axis_range(&base_ct)?;
-    let clamped = target_weight.clamp(min_v, max_v);
-    let current_weight = ct_font_wght_tenths(&base_ct)
-        .map(|tenths| tenths as f64 / 10.0)
-        .unwrap_or(def_v);
-    if (clamped - current_weight).abs() <= 0.5 {
+    let mut axes = Vec::new();
+    let mut changed = false;
+    for tag in [WGHT_AXIS_TAG, SLNT_AXIS_TAG] {
+        let Some((min, max, default)) = ct_font_axis_range(&base_ct, tag) else {
+            continue;
+        };
+        let current = ct_font_axis_tenths(&base_ct, tag).map_or(default, |n| n as f64 / 10.0);
+        let value = if tag == WGHT_AXIS_TAG {
+            target_weight.clamp(min, max)
+        } else if base_ct.symbolic_traits() & core_text::font_descriptor::kCTFontItalicTrait != 0 {
+            current
+        } else if style == FontStyle::Normal {
+            0.0_f64.clamp(min, max)
+        } else {
+            min
+        };
+        changed |= (current - value).abs() > 0.05;
+        axes.push((CFNumber::from(tag), CFNumber::from(value)));
+    }
+    if !changed {
         return None;
     }
-
+    let variations = core_foundation::dictionary::CFDictionary::from_CFType_pairs(&axes);
     unsafe {
-        let axis_id = CFNumber::from(WGHT_AXIS_TAG);
-        let axis_val = CFNumber::from(clamped);
-        let var_keys = [axis_id.as_CFTypeRef()];
-        let var_vals = [axis_val.as_CFTypeRef()];
-        let var_dict = core_foundation::dictionary::CFDictionaryCreate(
-            core_foundation::base::kCFAllocatorDefault,
-            var_keys.as_ptr() as _,
-            var_vals.as_ptr() as _,
-            1,
-            &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
-            &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
-        );
         let attr_keys = [objc2_core_text::kCTFontVariationAttribute
             as *const objc2_core_foundation::CFString
             as *const std::ffi::c_void];
-        let attr_vals = [var_dict as *const std::ffi::c_void];
+        let attr_vals = [variations.as_CFTypeRef()];
         let attrs = core_foundation::dictionary::CFDictionaryCreate(
             core_foundation::base::kCFAllocatorDefault,
             attr_keys.as_ptr() as _,
@@ -899,7 +910,6 @@ fn apply_wght_variation(base: &FontKitFont, target_weight: f64) -> Option<FontKi
             &core_foundation::dictionary::kCFTypeDictionaryKeyCallBacks,
             &core_foundation::dictionary::kCFTypeDictionaryValueCallBacks,
         );
-        core_foundation::base::CFRelease(var_dict as _);
         let desc_ref = core_text::font_descriptor::CTFontDescriptorCreateWithAttributes(attrs);
         core_foundation::base::CFRelease(attrs as _);
         let desc = CTFontDescriptor::wrap_under_create_rule(desc_ref);
