@@ -1585,6 +1585,18 @@ test.serial(
     };
     const storage = new CopilotStorage(runtime as never);
 
+    const pixels = Buffer.from([0, 255, 16]);
+    const inline = await storage.putGeneratedImage(
+      'user-1',
+      'workspace-1',
+      pixels,
+      'image/webp'
+    );
+    t.is(inline, 'data:image/webp;base64,AP8Q');
+    t.is(written.length, 1);
+    t.deepEqual(deleted, []);
+    written.length = 0;
+
     const missingSigner = await t.throwsAsync(
       storage.put(
         'user-1',

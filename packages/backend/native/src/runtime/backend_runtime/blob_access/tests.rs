@@ -188,6 +188,14 @@ fn root_with_avatar(page_doc_id: &str, avatar_key: &str) -> Vec<u8> {
   page.insert("id".to_string(), page_doc_id).unwrap();
   pages.push(page).unwrap();
   meta.insert("pages".to_string(), pages).unwrap();
+  let mut image = root.create_map().unwrap();
+  image.insert("sys:flavour".into(), "affine:image").unwrap();
+  image.insert("prop:sourceId".into(), "arbitrary-completed").unwrap();
+  root
+    .get_or_create_map("blocks")
+    .unwrap()
+    .insert("image".into(), image)
+    .unwrap();
   root.encode_update_v1().unwrap()
 }
 
@@ -379,7 +387,7 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
     .execute(&fixture.pool)
     .await
     .unwrap();
-  for key in ["avatar-old", "avatar-new", "arbitrary-completed"] {
+  for key in ["avatar-old", "avatar-new", "pending-avatar", "arbitrary-completed"] {
     sqlx::query("INSERT INTO blobs(workspace_id,key,size,mime,status) VALUES($1,$2,7,'image/png','completed')")
       .bind(&fixture.workspace_id)
       .bind(key)
@@ -414,11 +422,23 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
     ["avatar-old"]
   );
 
+  let peer = Doc::with_client(42);
+  let mut peer_meta = peer.get_or_create_map("meta").unwrap();
+  peer_meta.insert("name".into(), "missing").unwrap();
+  let state = peer.get_state_vector();
+  peer_meta.insert("avatar".into(), "pending-avatar").unwrap();
+  let delta = peer.encode_state_as_update_v1(&state).unwrap();
+  let snapshot = root_with_avatar(&fixture.doc_id, "avatar-new");
+  let partial_root = y_octo::merge_updates_v1([snapshot.as_slice(), delta.as_slice()])
+    .unwrap()
+    .encode_v1()
+    .unwrap();
+  assert!(Doc::try_from_binary_v1(&partial_root).unwrap().has_pending_updates());
   sqlx::query(
     "UPDATE snapshots SET blob=$2,updated_at=updated_at + interval '1 millisecond' WHERE workspace_id=$1 AND guid=$1",
   )
   .bind(&fixture.workspace_id)
-  .bind(root_with_avatar(&fixture.doc_id, "avatar-new"))
+  .bind(partial_root)
   .execute(&fixture.pool)
   .await
   .unwrap();
@@ -434,12 +454,12 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
       .collect::<Vec<_>>(),
     ["avatar-new"]
   );
-  assert!(
-    service
-      .open_read(Some(&fixture.member_user_id), source, "arbitrary-completed".to_string())
-      .await
-      .is_err()
-  );
+  for denied in ["avatar-old", "pending-avatar", "arbitrary-completed"] {
+    assert!(matches!(
+      service.open_read(Some(&fixture.member_user_id), source.clone(), denied.into()).await,
+      Err(RuntimeError::InvalidInput(code)) if code == "blob_not_referenced"
+    ));
+  }
   teardown(&fixture).await;
 }
 
@@ -842,16 +862,21 @@ async fn workspace_page_uses_body_identity_independently_of_root_directory() {
   }
   assert_eq!(paged_ids, ids);
   transaction.commit().await.unwrap();
+  let manifest = service(&fixture)
+    .workspace_manifest(WorkspaceManifestRequestV1 {
+      actor_user_id: fixture.member_user_id.clone(),
+      workspace_id: fixture.workspace_id.clone(),
+      cursor: None,
+      limit: Some(100),
+    })
+    .await
+    .unwrap();
+  assert_eq!(manifest.entries.len(), bounded.entries.len());
   assert!(
-    service(&fixture)
-      .workspace_manifest(WorkspaceManifestRequestV1 {
-        actor_user_id: fixture.member_user_id.clone(),
-        workspace_id: fixture.workspace_id.clone(),
-        cursor: None,
-        limit: Some(100),
-      })
-      .await
-      .is_err()
+    manifest
+      .entries
+      .iter()
+      .all(|entry| entry.source.doc_id() != fixture.workspace_id)
   );
   teardown(&fixture).await;
 }
