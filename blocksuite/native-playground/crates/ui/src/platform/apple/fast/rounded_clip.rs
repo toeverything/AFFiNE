@@ -101,14 +101,6 @@ fn bind(
     }
 }
 
-pub(crate) fn raster_nested_tiles(renderer: &mut MetalRenderer, scene: &Scene) {
-    for sprite in &scene.polychrome_sprites {
-        if let Some(frame) = group(scene, sprite.tile.texture_id)
-            && let Some(child) = frame.content.scene()
-        {}
-    }
-}
-
 pub(crate) fn draw(
     renderer: &mut MetalRenderer,
     scene: &Scene,
@@ -146,44 +138,6 @@ pub(crate) fn draw(
     )?
     .endEncoding();
     Ok(command_buffer)
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn draw_tile(
-    renderer: &mut MetalRenderer,
-    scene: &Scene,
-    writer: &mut InstanceBufferWriter,
-    texture: &ProtocolObject<dyn MTLTexture>,
-    viewport: Size<DevicePixels>,
-    commands: &ProtocolObject<dyn MTLCommandBuffer>,
-    background: MTLClearColor,
-    surface_textures: &mut Vec<CFRetained<CVMetalTexture>>,
-) -> Result<()> {
-    let old_texture = renderer.path_intermediate_texture.take();
-    let old_msaa = renderer.path_intermediate_msaa_texture.take();
-    let result = (|| {
-        renderer.update_path_intermediate_textures(viewport)?;
-        let bindings = write_instances(scene, writer)?;
-        let encoder =
-            new_command_encoder_for_texture(commands, texture, viewport, Some(background))?;
-        encode(
-            renderer,
-            scene,
-            &bindings,
-            writer,
-            texture,
-            viewport,
-            commands,
-            &mut Vec::new(),
-            surface_textures,
-            encoder,
-        )?
-        .endEncoding();
-        Ok(())
-    })();
-    renderer.path_intermediate_texture = old_texture;
-    renderer.path_intermediate_msaa_texture = old_msaa;
-    result
 }
 
 #[allow(clippy::too_many_arguments)]

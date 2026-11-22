@@ -560,13 +560,23 @@ impl CosmicTextSystemState {
 
     fn raster_bounds(&mut self, params: &RenderGlyphParams) -> Result<Bounds<DevicePixels>> {
         let image = self.render_glyph_image(params)?;
-        let bounds = Bounds {
-            origin: point(image.placement.left.into(), (-image.placement.top).into()),
-            size: size(image.placement.width.into(), image.placement.height.into()),
-        };
-        if !bounds.is_zero() {
-            self.pending_glyph_images.insert(params.clone(), image);
+        if image.placement.width == 0 || image.placement.height == 0 {
+            return Ok(Bounds::default());
         }
+        // Pad non-empty glyph tiles with a 1px transparent gutter on every side so bilinear
+        // sampling under zoomed/rotated transforms never clips edge coverage or bleeds into
+        // adjacent atlas tiles.
+        let bounds = Bounds {
+            origin: point(
+                (image.placement.left - 1).into(),
+                (-image.placement.top - 1).into(),
+            ),
+            size: size(
+                (image.placement.width + 2).into(),
+                (image.placement.height + 2).into(),
+            ),
+        };
+        self.pending_glyph_images.insert(params.clone(), image);
         Ok(bounds)
     }
     fn rasterize_glyph(
@@ -583,21 +593,40 @@ impl CosmicTextSystemState {
             None => self.render_glyph_image(params)?,
         };
         let bitmap_size = glyph_bounds.size;
+        let pad_bitmap = |src: &[u8], src_w: usize, src_h: usize, bpp: usize| -> Vec<u8> {
+            let dst_w = bitmap_size.width.0 as usize;
+            let dst_h = bitmap_size.height.0 as usize;
+            let mut out = vec![0u8; dst_w * dst_h * bpp];
+            let copy_w = src_w.min(dst_w.saturating_sub(2));
+            let copy_h = src_h.min(dst_h.saturating_sub(2));
+            let src_stride = src_w * bpp;
+            let dst_stride = dst_w * bpp;
+            let row_bytes = copy_w * bpp;
+            for y in 0..copy_h {
+                let src_off = y * src_stride;
+                let dst_off = (y + 1) * dst_stride + bpp;
+                out[dst_off..dst_off + row_bytes]
+                    .copy_from_slice(&src[src_off..src_off + row_bytes]);
+            }
+            out
+        };
+        let src_w = image.placement.width as usize;
+        let src_h = image.placement.height as usize;
         match image.content {
             swash::scale::image::Content::Color | swash::scale::image::Content::SubpixelMask => {
                 // Convert from RGBA to BGRA.
                 for pixel in image.data.chunks_exact_mut(4) {
                     pixel.swap(0, 2);
                 }
-                Ok((bitmap_size, image.data))
+                Ok((bitmap_size, pad_bitmap(&image.data, src_w, src_h, 4)))
             }
             swash::scale::image::Content::Mask => {
                 if params.subpixel_rendering {
                     // We must always return RGBA data when subpixel rendering is requested.
-                    let expanded = image.data.iter().flat_map(|&a| [a, a, a, a]).collect();
-                    Ok((bitmap_size, expanded))
+                    let expanded: Vec<u8> = image.data.iter().flat_map(|&a| [a, a, a, a]).collect();
+                    Ok((bitmap_size, pad_bitmap(&expanded, src_w, src_h, 4)))
                 } else {
-                    Ok((bitmap_size, image.data))
+                    Ok((bitmap_size, pad_bitmap(&image.data, src_w, src_h, 1)))
                 }
             }
         }
@@ -620,7 +649,7 @@ impl CosmicTextSystemState {
             .swash_scale_context
             .builder(font_ref)
             .size(pixel_size * params.scale_factor)
-            .hint(true)
+            .hint(params.subpixel_rendering)
             .normalized_coords(&loaded_font.normalized_coords)
             .build();
 

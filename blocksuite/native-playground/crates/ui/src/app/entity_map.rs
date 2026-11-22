@@ -37,11 +37,6 @@ impl From<u64> for EntityId {
 }
 
 impl EntityId {
-    /// Converts this entity id to a [NonZeroU64]
-    pub fn as_non_zero_u64(self) -> NonZeroU64 {
-        NonZeroU64::new(self.0.as_ffi()).unwrap()
-    }
-
     /// Converts this entity id to a [u64]
     pub fn as_u64(self) -> u64 {
         self.0.as_ffi()
@@ -684,16 +679,6 @@ impl AnyWeakEntity {
     #[inline]
     pub fn entity_id(&self) -> EntityId {
         self.entity_id
-    }
-
-    /// Check if this weak handle can be upgraded, or if the entity has already been dropped
-    pub fn is_upgradable(&self) -> bool {
-        let ref_count = self
-            .entity_ref_counts
-            .upgrade()
-            .and_then(|ref_counts| Some(ref_counts.read().counts.get(self.entity_id)?.load(SeqCst)))
-            .unwrap_or(0);
-        ref_count > 0
     }
 
     /// Upgrade this weak entity reference to a strong reference.

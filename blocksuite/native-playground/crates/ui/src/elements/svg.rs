@@ -61,13 +61,6 @@ impl Svg {
         self.data_path = Some(path);
         self
     }
-
-    /// Transform the SVG element with the given transformation.
-    /// Note that this won't effect the hitbox or layout of the element, only the rendering.
-    pub fn with_transformation(mut self, transformation: Transformation) -> Self {
-        self.transformation = Some(transformation);
-        self
-    }
 }
 
 impl Element for Svg {
@@ -247,24 +240,6 @@ impl Transformation {
             translate: point(px(0.0), px(0.0)),
             rotate,
         }
-    }
-
-    /// Update the scaling factor of this transformation.
-    pub fn with_scaling(mut self, scale: Size<f32>) -> Self {
-        self.scale = scale;
-        self
-    }
-
-    /// Update the translation value of this transformation.
-    pub fn with_translation(mut self, translate: Point<Pixels>) -> Self {
-        self.translate = translate;
-        self
-    }
-
-    /// Update the rotation angle of this transformation.
-    pub fn with_rotation(mut self, rotate: impl Into<Radians>) -> Self {
-        self.rotate = rotate.into();
-        self
     }
 
     fn into_matrix(self, center: Point<Pixels>, scale_factor: f32) -> TransformationMatrix {

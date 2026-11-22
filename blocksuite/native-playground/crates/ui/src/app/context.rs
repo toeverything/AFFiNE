@@ -75,20 +75,6 @@ impl<'a, T: 'static> Context<'a, T> {
         })
     }
 
-    /// Observe changes to ourselves
-    pub fn observe_self(
-        &mut self,
-        mut on_event: impl FnMut(&mut T, &mut Context<T>) + 'static,
-    ) -> Subscription
-    where
-        T: 'static,
-    {
-        let this = self.entity();
-        self.app.observe(&this, move |this, cx| {
-            this.update(cx, |this, cx| on_event(this, cx))
-        })
-    }
-
     /// Subscribe to an event type from another entity
     pub fn subscribe<T2, Evt>(
         &mut self,
@@ -105,21 +91,6 @@ impl<'a, T: 'static> Context<'a, T> {
             .subscribe_internal(entity, move |entity, event, cx| {
                 invoke_subscriber(&subscriber, entity, event, cx, &mut on_event)
             })
-    }
-
-    /// Subscribe to an event type from ourself
-    pub fn subscribe_self<Evt>(
-        &mut self,
-        mut on_event: impl FnMut(&mut T, &Evt, &mut Context<T>) + 'static,
-    ) -> Subscription
-    where
-        T: 'static + EventEmitter<Evt>,
-        Evt: 'static,
-    {
-        let this = self.entity();
-        self.app.subscribe(&this, move |this, evt, cx| {
-            this.update(cx, |this, cx| on_event(this, evt, cx))
-        })
     }
 
     /// Register a callback to be invoked when GPUI releases this entity.
@@ -250,18 +221,6 @@ impl<'a, T: 'static> Context<'a, T> {
         }
     }
 
-    /// Convenience method for producing view state in a closure.
-    /// See `listener` for more details.
-    pub fn processor<E, R>(
-        &self,
-        f: impl Fn(&mut T, E, &mut Window, &mut Context<T>) -> R + 'static,
-    ) -> impl Fn(E, &mut Window, &mut App) -> R + 'static {
-        let view = self.entity();
-        move |e: E, window: &mut Window, cx: &mut App| {
-            view.update(cx, |view, cx| f(view, e, window, cx))
-        }
-    }
-
     /// Run something using this entity and cx, when the returned struct is dropped
     pub fn on_drop(
         &self,
@@ -291,86 +250,6 @@ impl<'a, T: 'static> Context<'a, T> {
         window.on_next_frame(move |window, cx| view.update(cx, |view, cx| f(view, window, cx)));
     }
 
-    /// Schedules the given function to be run at the end of the current effect cycle, allowing entities
-    /// that are currently on the stack to be returned to the app.
-    pub fn defer_in(
-        &mut self,
-        window: &Window,
-        f: impl FnOnce(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) {
-        let view = self.weak_entity();
-        let entity_id = self.entity_id();
-        self.ensure_window(entity_id, window.handle.id);
-        self.app.defer(move |cx| {
-            cx.with_window(entity_id, |window, cx| {
-                view.update(cx, |view, cx| f(view, window, cx)).ok();
-            });
-        });
-    }
-
-    /// Observe another entity for changes to its state, as tracked by [`Context::notify`].
-    pub fn observe_in<V2>(
-        &mut self,
-        observed: &Entity<V2>,
-        window: &mut Window,
-        mut on_notify: impl FnMut(&mut T, Entity<V2>, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription
-    where
-        V2: 'static,
-        T: 'static,
-    {
-        let observed_id = observed.entity_id();
-        let observed = observed.downgrade();
-        let observer = self.weak_entity();
-        let observer_id = self.entity_id();
-        self.ensure_window(observer_id, window.handle.id);
-        self.new_observer(
-            observed_id,
-            Box::new(move |cx| invoke_observer_in(&observer, &observed, cx, &mut on_notify)),
-        )
-    }
-
-    /// Subscribe to events emitted by another entity.
-    /// The entity to which you're subscribing must implement the [`EventEmitter`] trait.
-    /// The callback will be invoked with a reference to the current view, a handle to the emitting `Entity`, the event, a mutable reference to the `Window`, and the context for the entity.
-    pub fn subscribe_in<Emitter, Evt>(
-        &mut self,
-        emitter: &Entity<Emitter>,
-        window: &Window,
-        mut on_event: impl FnMut(&mut T, &Entity<Emitter>, &Evt, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription
-    where
-        Emitter: EventEmitter<Evt>,
-        Evt: 'static,
-    {
-        let emitter = emitter.downgrade();
-        let subscriber = self.weak_entity();
-        let subscriber_id = self.entity_id();
-        self.ensure_window(subscriber_id, window.handle.id);
-        self.new_subscription(
-            emitter.entity_id(),
-            (
-                TypeId::of::<Evt>(),
-                Box::new(move |event, cx| {
-                    invoke_subscriber_in(&subscriber, &emitter, event, cx, &mut on_event)
-                }),
-            ),
-        )
-    }
-
-    /// Register a callback to be invoked when the view is released.
-    ///
-    /// The callback receives a handle to the view's window. This handle may be
-    /// invalid, if the window was closed before the view was released.
-    pub fn on_release_in(
-        &mut self,
-        window: &Window,
-        on_release: impl FnOnce(&mut T, &mut Window, &mut App) + 'static,
-    ) -> Subscription {
-        let entity = self.entity();
-        self.app.observe_release_in(&entity, window, on_release)
-    }
-
     /// Register a callback to be invoked when the given Entity is released.
     pub fn observe_release_in<T2>(
         &self,
@@ -391,34 +270,6 @@ impl<'a, T: 'static> Context<'a, T> {
                     })
                     .ok();
             })
-    }
-
-    /// Register a callback to be invoked when the window is resized.
-    pub fn observe_window_bounds(
-        &self,
-        window: &mut Window,
-        mut callback: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        window.bounds_observers.insert(Box::new(move |window, cx| {
-            view.update(cx, |view, cx| callback(view, window, cx))
-                .is_ok()
-        }))
-    }
-
-    /// Register a callback to be invoked when the window is activated or deactivated.
-    pub fn observe_window_activation(
-        &self,
-        window: &mut Window,
-        mut callback: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        window
-            .activation_observers
-            .insert(Box::new(move |window, cx| {
-                view.update(cx, |view, cx| callback(view, window, cx))
-                    .is_ok()
-            }))
     }
 
     /// Registers a callback to be invoked when the window's visibility changes
@@ -499,46 +350,6 @@ impl<'a, T: 'static> Context<'a, T> {
             }))
     }
 
-    /// Register a callback to be invoked when the window's pending input changes.
-    pub fn observe_pending_input(
-        &self,
-        window: &mut Window,
-        mut callback: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        window
-            .pending_input_observers
-            .insert(Box::new(move |window, cx| {
-                view.update(cx, |view, cx| callback(view, window, cx))
-                    .is_ok()
-            }))
-    }
-
-    /// Register a listener to be called when the given focus handle receives focus.
-    /// Returns a subscription and persists until the subscription is dropped.
-    pub fn on_focus(
-        &mut self,
-        handle: &FocusHandle,
-        window: &mut Window,
-        mut listener: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        let focus_id = handle.id;
-        let (subscription, activate) =
-            window.new_focus_listener(Box::new(move |event, window, cx| {
-                view.update(cx, |view, cx| {
-                    if event.previous_focus_path.last() != Some(&focus_id)
-                        && event.current_focus_path.last() == Some(&focus_id)
-                    {
-                        listener(view, window, cx)
-                    }
-                })
-                .is_ok()
-            }));
-        self.defer(|_| activate());
-        subscription
-    }
-
     /// Register a listener to be called when the given focus handle or one of its descendants receives focus.
     /// This does not fire if the given focus handle - or one of its descendants - was previously focused.
     /// Returns a subscription and persists until the subscription is dropped.
@@ -559,52 +370,6 @@ impl<'a, T: 'static> Context<'a, T> {
                 })
                 .is_ok()
             }));
-        self.defer(|_| activate());
-        subscription
-    }
-
-    /// Register a listener to be called when the given focus handle loses focus.
-    /// Returns a subscription and persists until the subscription is dropped.
-    pub fn on_blur(
-        &mut self,
-        handle: &FocusHandle,
-        window: &mut Window,
-        mut listener: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        let focus_id = handle.id;
-        let (subscription, activate) =
-            window.new_focus_listener(Box::new(move |event, window, cx| {
-                view.update(cx, |view, cx| {
-                    if event.previous_focus_path.last() == Some(&focus_id)
-                        && event.current_focus_path.last() != Some(&focus_id)
-                    {
-                        listener(view, window, cx)
-                    }
-                })
-                .is_ok()
-            }));
-        self.defer(|_| activate());
-        subscription
-    }
-
-    /// Register a listener to be called when nothing in the window has focus.
-    /// This typically happens when the node that was focused is removed from the tree,
-    /// and this callback lets you chose a default place to restore the users focus.
-    /// Returns a subscription and persists until the subscription is dropped.
-    pub fn on_focus_lost(
-        &mut self,
-        window: &mut Window,
-        mut listener: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let view = self.weak_entity();
-        let (subscription, activate) =
-            window
-                .focus_lost_listeners
-                .insert_pending(Box::new(move |window, cx| {
-                    view.update(cx, |view, cx| listener(view, window, cx))
-                        .is_ok()
-                }));
         self.defer(|_| activate());
         subscription
     }
@@ -640,71 +405,6 @@ impl<'a, T: 'static> Context<'a, T> {
         subscription
     }
 
-    /// Schedule a future to be run asynchronously.
-    /// The given callback is invoked with a [`WeakEntity<V>`] to avoid leaking the entity for a long-running process.
-    /// It's also given an [`AsyncWindowContext`], which can be used to access the state of the entity across await points.
-    /// The returned future will be polled on the main thread.
-    #[track_caller]
-    #[inline(always)]
-    pub fn spawn_in<AsyncFn, R>(&self, window: &Window, f: AsyncFn) -> Task<R>
-    where
-        R: 'static,
-        AsyncFn: AsyncFnOnce(WeakEntity<T>, &mut AsyncWindowContext) -> R + 'static,
-    {
-        let view = self.weak_entity();
-        window.spawn(self, async move |cx| f(view, cx).await)
-    }
-
-    /// Schedule a future to be run asynchronously with the given priority.
-    /// The given callback is invoked with a [`WeakEntity<V>`] to avoid leaking the entity for a long-running process.
-    /// It's also given an [`AsyncWindowContext`], which can be used to access the state of the entity across await points.
-    /// The returned future will be polled on the main thread.
-    #[track_caller]
-    #[inline(always)]
-    pub fn spawn_in_with_priority<AsyncFn, R>(
-        &self,
-        priority: Priority,
-        window: &Window,
-        f: AsyncFn,
-    ) -> Task<R>
-    where
-        R: 'static,
-        AsyncFn: AsyncFnOnce(WeakEntity<T>, &mut AsyncWindowContext) -> R + 'static,
-    {
-        let view = self.weak_entity();
-        window.spawn_with_priority(priority, self, async move |cx| f(view, cx).await)
-    }
-
-    /// Register a callback to be invoked when the given global state changes.
-    pub fn observe_global_in<G: Global>(
-        &mut self,
-        window: &Window,
-        mut f: impl FnMut(&mut T, &mut Window, &mut Context<T>) + 'static,
-    ) -> Subscription {
-        let window_handle = window.handle;
-        let view = self.weak_entity();
-        let subscription = crate::fast::observers::observe_global(
-            self,
-            TypeId::of::<G>(),
-            Box::new(move |cx| {
-                // If the entity has been dropped, remove this observer.
-                if view.upgrade().is_none() {
-                    return false;
-                }
-                // If the window is unavailable (e.g. temporarily taken during a
-                // nested update, or already closed), skip this notification but
-                // keep the observer alive so it can fire on future changes.
-                let Ok(entity_alive) = window_handle.update(cx, |_, window, cx| {
-                    view.update(cx, |view, cx| f(view, window, cx)).is_ok()
-                }) else {
-                    return true;
-                };
-                entity_alive
-            }),
-        );
-        subscription
-    }
-
     /// Register a callback to be invoked when the given Action type is dispatched to the window.
     pub fn on_action(
         &mut self,
@@ -720,17 +420,6 @@ impl<'a, T: 'static> Context<'a, T> {
                 })
                 .ok();
         });
-    }
-
-    /// Move focus to the current view, assuming it implements [`Focusable`].
-    pub fn focus_self(&mut self, window: &mut Window)
-    where
-        T: Focusable,
-    {
-        let view = self.entity();
-        window.defer(self, move |window, cx| {
-            view.read(cx).focus_handle(cx).focus(window, cx)
-        })
     }
 }
 
@@ -887,44 +576,6 @@ fn invoke_subscriber<T: 'static, Emitter: 'static, Event: 'static>(
     } else {
         false
     }
-}
-
-#[inline(never)]
-fn invoke_observer_in<T: 'static, W: 'static>(
-    observer: &WeakEntity<T>,
-    observed: &WeakEntity<W>,
-    cx: &mut App,
-    on_notify: &mut dyn FnMut(&mut T, Entity<W>, &mut Window, &mut Context<T>),
-) -> bool {
-    let Some((observer, observed)) = observer.upgrade().zip(observed.upgrade()) else {
-        return false;
-    };
-    cx.with_window(observer.entity_id(), |window, cx| {
-        observer.update(cx, |observer, cx| {
-            on_notify(observer, observed, window, cx);
-        });
-    });
-    true
-}
-
-#[inline(never)]
-fn invoke_subscriber_in<T: 'static, Emitter: 'static, Event: 'static>(
-    subscriber: &WeakEntity<T>,
-    emitter: &WeakEntity<Emitter>,
-    event: &dyn Any,
-    cx: &mut App,
-    on_event: &mut dyn FnMut(&mut T, &Entity<Emitter>, &Event, &mut Window, &mut Context<T>),
-) -> bool {
-    let Some((subscriber, emitter)) = subscriber.upgrade().zip(emitter.upgrade()) else {
-        return false;
-    };
-    let event = event.downcast_ref().expect("invalid event type");
-    cx.with_window(subscriber.entity_id(), |window, cx| {
-        subscriber.update(cx, |subscriber, cx| {
-            on_event(subscriber, &emitter, event, window, cx);
-        });
-    });
-    true
 }
 
 #[inline(never)]

@@ -365,19 +365,6 @@ impl WgpuRenderer {
     }
 
     #[cfg(target_family = "wasm")]
-    pub fn new_from_canvas(
-        context: &WgpuContext,
-        canvas: &web_sys::HtmlCanvasElement,
-        config: WgpuSurfaceConfig,
-    ) -> anyhow::Result<Self> {
-        let surface = context
-            .instance
-            .create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
-            .map_err(|e| anyhow::anyhow!("Failed to create surface: {e}"))?;
-        Self::new_from_surface(context, surface, config)
-    }
-
-    #[cfg(target_family = "wasm")]
     #[allow(clippy::arc_with_non_send_sync)]
     pub fn new_from_surface(
         context: &WgpuContext,

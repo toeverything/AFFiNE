@@ -1,17 +1,1 @@
-[
-  {
-    "metric": "artifacts_bytes.web_wasm_raw",
-    "accepted_value": 16437138,
-    "reason": "The web editor bundles collaborative page editing, Edgeless camera controls and vector rendering for whiteboard shapes, connectors, strokes and labels"
-  },
-  {
-    "metric": "artifacts_bytes.web_wasm_gzip",
-    "accepted_value": 5515823,
-    "reason": "The compressed web editor includes collaborative page editing, Edgeless camera controls and vector rendering for whiteboard shapes, connectors, strokes and labels"
-  },
-  {
-    "metric": "artifacts_bytes.headless_bin",
-    "accepted_value": 96400733,
-    "reason": "Includes the slash menu, formatting toolbar, drag handle, interactive block controls and their state renders and demo recorder in the headless renderer"
-  }
-]
+[]

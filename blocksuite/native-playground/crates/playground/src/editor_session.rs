@@ -160,6 +160,21 @@ impl EditorSession {
     pub(crate) fn composing(&self) -> bool {
         self.preedit.is_some()
     }
+
+    pub(crate) fn clear_preedit_state(&mut self) {
+        self.preedit = None;
+    }
+
+    pub(crate) fn preedit_nonce(&self) -> u64 {
+        self.preedit.as_ref().map_or(0u64, |pre| {
+            use std::hash::{Hash, Hasher};
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            pre.text.hash(&mut hasher);
+            pre.selected.hash(&mut hasher);
+            pre.backward.hash(&mut hasher);
+            hasher.finish().max(1)
+        })
+    }
 }
 
 fn word_range(text: &str, offset: u64) -> Range<u64> {
@@ -308,7 +323,12 @@ impl PlaygroundView {
         self.change_selection(selection, w, cx);
     }
 
-    fn change_selection(&mut self, sel: DocumentSelection, w: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn change_selection(
+        &mut self,
+        sel: DocumentSelection,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if self.editor.preedit.take().is_some() {
             self.dirty_text = None;
             self.doc_rev += 1;
@@ -755,7 +775,7 @@ impl PlaygroundView {
         }
         Some(snapshot)
     }
-    fn clear_composition(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn clear_composition(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         if let Some(sel) = self.composition_selection() {
             self.editor.selection = Some(sel);
         }
@@ -771,7 +791,7 @@ impl PlaygroundView {
             cx.notify();
         }
     }
-    fn visual_focus(&self) -> Option<DocPoint> {
+    pub(crate) fn visual_focus(&self) -> Option<DocPoint> {
         if let Some((id, r)) = self.composed_range() {
             return Some(DocPoint::new(
                 id,
@@ -1201,10 +1221,20 @@ impl PlaygroundView {
 
 impl EntityInputHandler for PlaygroundView {
     fn paste(&mut self, item: ui::ClipboardItem, w: &mut Window, cx: &mut Context<Self>) {
-        let text = item.text().unwrap_or_default();
-        if self
-            .link_input(w, cx, |link| link.replace(None, &text))
-            .is_some()
+        if self.overlays.link_field().is_some() {
+            if let Some(text) = item.text() {
+                let _ = self.link_input(w, cx, |link| link.replace(None, &text));
+            }
+            return;
+        }
+        if self.edgeless.authoring.label_editor().is_some() {
+            if let Some(text) = item.text() {
+                let _ = self.edgeless_label_edit(w, cx, |ed| ed.replace(None, &text));
+            }
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Edgeless
+            && self.edgeless.authoring.editing_spatial_block().is_none()
         {
             return;
         }
@@ -1227,6 +1257,11 @@ impl EntityInputHandler for PlaygroundView {
             *adjusted = Some(covered);
             return Some(text);
         }
+        if let Some(ed) = self.edgeless.authoring.label_editor() {
+            let (text, covered) = ed.text_for_range(range);
+            *adjusted = Some(covered);
+            return Some(text);
+        }
         let text = self.display_text()?;
         let index = TextBiIndex::new(&text);
         let start = index.utf16_to_utf8_clamped(range.start as u64);
@@ -1242,6 +1277,10 @@ impl EntityInputHandler for PlaygroundView {
     ) -> Option<UTF16Selection> {
         if let Some(link) = self.overlays.link_field() {
             let (range, reversed) = link.shown_selection();
+            return Some(UTF16Selection { range, reversed });
+        }
+        if let Some(ed) = self.edgeless.authoring.label_editor() {
+            let (range, reversed) = ed.shown_selection();
             return Some(UTF16Selection { range, reversed });
         }
         if let Some((_, r)) = self.composed_range()
@@ -1268,11 +1307,20 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(link) = self.overlays.link_field() {
             return Some(link.text().encode_utf16().count());
         }
+        if let Some(ed) = self.edgeless.authoring.label_editor() {
+            return Some(ed.display_text().encode_utf16().count());
+        }
         Some(self.display_text()?.encode_utf16().count())
     }
     fn set_selected_text_range(&mut self, r: Range<usize>, w: &mut Window, cx: &mut Context<Self>) {
         if self
             .link_input(w, cx, |link| link.select(r.clone()))
+            .is_some()
+        {
+            return;
+        }
+        if self
+            .edgeless_label_input(w, cx, |ed| ed.select(r.clone()))
             .is_some()
         {
             return;
@@ -1292,12 +1340,26 @@ impl EntityInputHandler for PlaygroundView {
         if let Some(link) = self.overlays.link_field() {
             return link.marked_range();
         }
+        if let Some(ed) = self.edgeless.authoring.label_editor() {
+            return ed.marked_range();
+        }
         let (_, r) = self.composed_range()?;
         let start = r.start as usize;
         Some(start..start + self.editor.preedit.as_ref()?.text.encode_utf16().count())
     }
     fn unmark_text(&mut self, w: &mut Window, cx: &mut Context<Self>) {
         if self.link_input(w, cx, LinkBar::unmark).is_some() {
+            return;
+        }
+        if self
+            .edgeless_label_edit(w, cx, crate::edgeless::EdgelessLabelEditor::unmark)
+            .is_some()
+        {
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Edgeless
+            && self.edgeless.authoring.editing_spatial_block().is_none()
+        {
             return;
         }
         if let Some(pre) = self.editor.preedit.as_ref() {
@@ -1315,6 +1377,17 @@ impl EntityInputHandler for PlaygroundView {
         if self
             .link_input(w, cx, |link| link.replace(r.clone(), text))
             .is_some()
+        {
+            return;
+        }
+        if self
+            .edgeless_label_edit(w, cx, |ed| ed.replace(r.clone(), text))
+            .is_some()
+        {
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Edgeless
+            && self.edgeless.authoring.editing_spatial_block().is_none()
         {
             return;
         }
@@ -1346,6 +1419,17 @@ impl EntityInputHandler for PlaygroundView {
         {
             return;
         }
+        if self
+            .edgeless_label_input(w, cx, |ed| ed.mark(r.clone(), text, selected.clone()))
+            .is_some()
+        {
+            return;
+        }
+        if self.mode == crate::PlaygroundMode::Edgeless
+            && self.edgeless.authoring.editing_spatial_block().is_none()
+        {
+            return;
+        }
         self.begin_input();
         if text.is_empty() {
             self.clear_composition(w, cx);
@@ -1357,6 +1441,8 @@ impl EntityInputHandler for PlaygroundView {
         let Some(page) = self.page() else { return };
         let backward = if let Some(pre) = &self.editor.preedit {
             pre.backward
+        } else if sel.empty() {
+            false
         } else {
             let Some(layout) = self.flow_layout() else {
                 return;
@@ -1408,6 +1494,21 @@ impl EntityInputHandler for PlaygroundView {
                 .map(|field| field.bounds(point(px(0.0), px(0.0))))
                 .into_iter()
                 .collect();
+        }
+        if self.mode == crate::PlaygroundMode::Edgeless {
+            if let Some(bounds) = self.edgeless_label_screen_bounds() {
+                return vec![bounds];
+            }
+            if let Some(sel) = &self.editor.selection {
+                let id = self
+                    .composed_range()
+                    .map(|(id, _)| id)
+                    .unwrap_or_else(|| sel.focus.block_id.clone());
+                if let Some(bounds) = self.edgeless_spatial_block_caret_bounds(&id, r.start as u64)
+                {
+                    return vec![bounds];
+                }
+            }
         }
         let Some(sel) = &self.editor.selection else {
             return vec![];
@@ -1926,12 +2027,52 @@ impl PlaygroundView {
         Ok(())
     }
 
+    pub(crate) fn hit_test_flow_layout(layout: &FlowLayout, x: f32, y: f32) -> Option<DocPoint> {
+        let block = layout
+            .blocks
+            .iter()
+            .filter(|b| b.editable())
+            .min_by(|a, b| {
+                let ar = a.rect();
+                let br = b.rect();
+                let da = if y < ar.y {
+                    ar.y - y
+                } else if y > ar.bottom() {
+                    y - ar.bottom()
+                } else {
+                    0.0
+                };
+                let db = if y < br.y {
+                    br.y - y
+                } else if y > br.bottom() {
+                    y - br.bottom()
+                } else {
+                    0.0
+                };
+                da.total_cmp(&db)
+            })?;
+        Some(DocPoint {
+            block_id: block.block_id.clone(),
+            caret: block.hit_text(x, y)?,
+        })
+    }
+
     pub(super) fn editor_key_down(
         &mut self,
         e: &KeyDownEvent,
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.mode == crate::PlaygroundMode::Edgeless {
+            if self.edgeless_key_down(e, w, cx) {
+                w.prevent_default();
+                cx.stop_propagation();
+                return;
+            }
+            if self.edgeless.authoring.editing_spatial_block().is_none() {
+                return;
+            }
+        }
         if self.editor.preedit.is_some() || e.prefer_character_input {
             return;
         }

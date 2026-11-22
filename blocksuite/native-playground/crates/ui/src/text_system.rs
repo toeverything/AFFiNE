@@ -306,37 +306,6 @@ impl TextSystem {
         Ok(())
     }
 
-    /// Takes the receiver for missing-glyph reports.
-    ///
-    /// Only one receiver is available for each text system. Returns `None` when
-    /// the receiver was already taken or another caller is taking it.
-    pub(crate) fn take_missing_glyph_receiver(&self) -> Option<MissingGlyphReceiver> {
-        self.missing_glyph_receiver
-            .try_lock()
-            .and_then(|mut receiver| receiver.take())
-    }
-
-    pub(crate) fn enable_missing_glyph_reporting(&self) {
-        self.platform_text_system
-            .set_missing_glyph_sink(Some(self.missing_glyph_reporter.clone()));
-    }
-
-    pub(crate) fn disable_missing_glyph_reporting(&self) {
-        self.platform_text_system.set_missing_glyph_sink(None);
-        self.missing_glyph_reporter.reset();
-    }
-
-    /// Get the Font for the Font Id.
-    pub fn get_font_for_id(&self, id: FontId) -> Option<Font> {
-        let lock = self.font_ids_by_font.read();
-        lock.iter()
-            .filter_map(|(font, result)| match result {
-                CachedFont::Direct(font_id) if *font_id == id => Some(font.clone()),
-                _ => None,
-            })
-            .next()
-    }
-
     /// Resolves the specified font, falling back to the default font stack if
     /// the font fails to load.
     ///
@@ -430,20 +399,6 @@ impl TextSystem {
     /// Uses the advance width of the `m` character in the given font and size.
     pub fn em_advance(&self, font_id: FontId, font_size: Pixels) -> Result<Pixels> {
         crate::fast::em_metrics::em_advance(self, font_id, font_size)
-    }
-
-    /// Returns the width of an `ch`.
-    ///
-    /// Uses the width of the `0` character in the given font and size.
-    pub fn ch_width(&self, font_id: FontId, font_size: Pixels) -> Result<Pixels> {
-        Ok(self.typographic_bounds(font_id, font_size, '0')?.size.width)
-    }
-
-    /// Returns the advance width of an `ch`.
-    ///
-    /// Uses the advance width of the `0` character in the given font and size.
-    pub fn ch_advance(&self, font_id: FontId, font_size: Pixels) -> Result<Pixels> {
-        Ok(self.advance(font_id, font_size, '0')?.width)
     }
 
     /// Get the number of font size units per 'em square',
@@ -954,11 +909,6 @@ impl WindowTextSystem {
             )
             .width
     }
-
-    /// Returns the shaped layout width of an `em`.
-    pub fn em_layout_width(&self, font_id: FontId, font_size: Pixels) -> Pixels {
-        self.layout_width(font_id, font_size, 'm')
-    }
 }
 
 #[derive(Hash, Eq, PartialEq)]
@@ -1288,23 +1238,6 @@ pub fn font_name_with_fallbacks<'a>(name: &'a str, system: &'a str) -> &'a str {
         ".SystemUIFont" => system,
         ".ZedSans" | "Zed Plex Sans" => "IBM Plex Sans",
         ".ZedMono" | "Zed Plex Mono" => "Lilex",
-        _ => name,
-    }
-}
-
-/// Like [`font_name_with_fallbacks`] but accepts and returns [`SharedString`] references.
-#[allow(unused)]
-pub fn font_name_with_fallbacks_shared<'a>(
-    name: &'a SharedString,
-    system: &'a SharedString,
-) -> &'a SharedString {
-    // Note: the "Zed Plex" fonts were deprecated as we are not allowed to use "Plex"
-    // in a derived font name. They are essentially indistinguishable from IBM Plex/Lilex,
-    // and so retained here for backward compatibility.
-    match name.as_str() {
-        ".SystemUIFont" => system,
-        ".ZedSans" | "Zed Plex Sans" => const { &SharedString::new_static("IBM Plex Sans") },
-        ".ZedMono" | "Zed Plex Mono" => const { &SharedString::new_static("Lilex") },
         _ => name,
     }
 }

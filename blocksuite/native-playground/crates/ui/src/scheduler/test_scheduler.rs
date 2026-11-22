@@ -184,19 +184,6 @@ impl TestScheduler {
         }
     }
 
-    pub fn end_test(&self) {
-        let mut state = self.state.lock();
-        if let Some((message, backtrace)) = &state.non_determinism_error {
-            if cfg!(miri) {
-                // miri cannot debug print backtraces with `miri-disable-isolation` enabled
-                panic!("{}", message)
-            } else {
-                panic!("{}\n{:?}", message, backtrace)
-            }
-        }
-        state.finished = true;
-    }
-
     pub fn clock(&self) -> Arc<TestClock> {
         self.clock.clone()
     }
@@ -205,18 +192,10 @@ impl TestScheduler {
         SharedRng(self.rng.clone())
     }
 
-    pub fn set_timeout_ticks(&self, timeout_ticks: RangeInclusive<usize>) {
-        self.state.lock().timeout_ticks = timeout_ticks;
-    }
-
     pub fn allow_parking(&self) {
         let mut state = self.state.lock();
         state.allow_parking = true;
         state.parking_allowed_once = true;
-    }
-
-    pub fn forbid_parking(&self) {
-        self.state.lock().allow_parking = false;
     }
 
     pub fn parking_allowed(&self) -> bool {
@@ -248,23 +227,8 @@ impl TestScheduler {
         BackgroundExecutor::new(self.clone())
     }
 
-    pub fn yield_random(&self) -> Yield {
-        let rng = &mut *self.rng.lock();
-        if rng.random_bool(0.1) {
-            Yield(rng.random_range(10..20))
-        } else {
-            Yield(rng.random_range(0..2))
-        }
-    }
-
     pub fn run(&self) {
         while self.step() {
-            // Continue until no work remains
-        }
-    }
-
-    pub fn run_with_clock_advancement(&self) {
-        while self.step() || self.advance_clock_to_next_timer() {
             // Continue until no work remains
         }
     }
@@ -277,33 +241,10 @@ impl TestScheduler {
         self.step_filtered(false)
     }
 
-    /// Execute one tick, but only run background tasks (no foreground/session tasks).
-    /// Returns true if any work was done.
-    pub fn tick_background_only(&self) -> bool {
-        self.step_filtered(true)
-    }
-
     /// Check if there are any pending tasks or timers that could run.
     pub fn has_pending_tasks(&self) -> bool {
         let state = self.state.lock();
         !state.runnables.is_empty() || !state.timers.is_empty()
-    }
-
-    /// Returns counts of (foreground_tasks, background_tasks) currently queued.
-    /// Foreground tasks are those with a session_id, background tasks have none.
-    pub fn pending_task_counts(&self) -> (usize, usize) {
-        let state = self.state.lock();
-        let foreground = state
-            .runnables
-            .iter()
-            .filter(|r| r.session_id.is_some())
-            .count();
-        let background = state
-            .runnables
-            .iter()
-            .filter(|r| r.session_id.is_none())
-            .count();
-        (foreground, background)
     }
 
     fn step(&self) -> bool {
@@ -415,28 +356,6 @@ impl TestScheduler {
         }
 
         false
-    }
-
-    /// Drops all runnable tasks from the scheduler.
-    ///
-    /// This is used by the leak detector to ensure that all tasks have been dropped as tasks may keep entities alive otherwise.
-    /// Why do we even have tasks left when tests finish you may ask. The reason for that is simple, the scheduler itself is the executor and it retains the scheduled runnables.
-    /// A lot of tasks, including every foreground task contain an executor handle that keeps the test scheduler alive, causing a reference cycle, thus the need for this function right now.
-    pub fn drain_tasks(&self) {
-        // dropping runnables may reschedule tasks
-        // due to drop impls with executors in them
-        // so drop until we reach a fixpoint
-        loop {
-            let mut state = self.state.lock();
-            if state.runnables.is_empty() && state.timers.is_empty() {
-                break;
-            }
-            let runnables = std::mem::take(&mut state.runnables);
-            let timers = std::mem::take(&mut state.timers);
-            drop(state);
-            drop(timers);
-            drop(runnables);
-        }
     }
 
     pub fn advance_clock_to_next_timer(&self) -> bool {

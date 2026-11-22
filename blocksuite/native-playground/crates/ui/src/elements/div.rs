@@ -1511,35 +1511,9 @@ pub struct Div {
 }
 
 impl Div {
-    /// Add a listener to be called when the children of this `Div` are prepainted.
-    /// This allows you to store the [`Bounds`] of the children for later use.
-    pub fn on_children_prepainted(
-        mut self,
-        listener: impl Fn(Vec<Bounds<Pixels>>, &mut Window, &mut App) + 'static,
-    ) -> Self {
-        self.prepaint_listener = Some(Box::new(listener));
-        self
-    }
-
     /// Add an image cache at the location of this div in the element tree.
     pub fn image_cache(mut self, cache: impl ImageCacheProvider) -> Self {
         self.image_cache = Some(Box::new(cache));
-        self
-    }
-
-    /// Specify a function that determines the order in which children are prepainted.
-    ///
-    /// The function is called at prepaint time and should return a vector of child indices
-    /// in the desired prepaint order. Each index should appear exactly once.
-    ///
-    /// This is useful when the prepaint of one child affects state that another child reads.
-    /// For example, in split editor views, the editor with an autoscroll request should
-    /// be prepainted first so its scroll position update is visible to the other editor.
-    pub fn with_dynamic_prepaint_order(
-        mut self,
-        order_fn: impl Fn(&mut Window, &mut App) -> SmallVec<[usize; 8]> + 'static,
-    ) -> Self {
-        self.prepaint_order_fn = Some(Box::new(order_fn));
         self
     }
 }
@@ -3010,22 +2984,6 @@ impl Interactivity {
         }
     }
 
-    /// Compute the visual style for this element, based on the current bounds and the element's state.
-    pub fn compute_style(
-        &self,
-        global_id: Option<&GlobalElementId>,
-        hitbox: Option<&Hitbox>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Style {
-        window.with_optional_element_state(global_id, |element_state, window| {
-            let mut element_state =
-                element_state.map(|element_state| element_state.unwrap_or_default());
-            let style = self.compute_style_internal(hitbox, element_state.as_mut(), window, cx);
-            (style, element_state)
-        })
-    }
-
     /// Called from internal methods that have already called with_element_state.
     fn compute_style_internal(
         &self,
@@ -3680,25 +3638,7 @@ pub struct ScrollAnchor {
     last_origin: Rc<RefCell<Point<Pixels>>>,
 }
 
-impl ScrollAnchor {
-    /// Creates a [ScrollAnchor] associated with a given [ScrollHandle].
-    pub fn for_handle(handle: ScrollHandle) -> Self {
-        Self {
-            handle,
-            last_origin: Default::default(),
-        }
-    }
-    /// Request scroll to this item on the next frame.
-    pub fn scroll_to(&self, window: &mut Window, _cx: &mut App) {
-        let this = self.clone();
-
-        window.on_next_frame(move |_, _| {
-            let viewport_bounds = this.handle.bounds();
-            let self_bounds = *this.last_origin.borrow();
-            this.handle.set_offset(viewport_bounds.origin - self_bounds);
-        });
-    }
-}
+impl ScrollAnchor {}
 
 #[derive(Default, Debug)]
 pub(crate) struct ScrollHandleState {
@@ -3753,73 +3693,9 @@ impl ScrollHandle {
         self.0.borrow().max_offset
     }
 
-    /// Get the top child that's scrolled into view.
-    pub fn top_item(&self) -> usize {
-        let state = self.0.borrow();
-        let top = state.bounds.top() - state.offset.borrow().y;
-
-        match state.child_bounds.binary_search_by(|bounds| {
-            if top < bounds.top() {
-                Ordering::Greater
-            } else if top > bounds.bottom() {
-                Ordering::Less
-            } else {
-                Ordering::Equal
-            }
-        }) {
-            Ok(ix) => ix,
-            Err(ix) => ix.min(state.child_bounds.len().saturating_sub(1)),
-        }
-    }
-
-    /// Get the bottom child that's scrolled into view.
-    pub fn bottom_item(&self) -> usize {
-        let state = self.0.borrow();
-        let bottom = state.bounds.bottom() - state.offset.borrow().y;
-
-        match state.child_bounds.binary_search_by(|bounds| {
-            if bottom < bounds.top() {
-                Ordering::Greater
-            } else if bottom > bounds.bottom() {
-                Ordering::Less
-            } else {
-                Ordering::Equal
-            }
-        }) {
-            Ok(ix) => ix,
-            Err(ix) => ix.min(state.child_bounds.len().saturating_sub(1)),
-        }
-    }
-
     /// Return the bounds into which this child is painted
     pub fn bounds(&self) -> Bounds<Pixels> {
         self.0.borrow().bounds
-    }
-
-    /// Get the bounds for a specific child.
-    pub fn bounds_for_item(&self, ix: usize) -> Option<Bounds<Pixels>> {
-        self.0.borrow().child_bounds.get(ix).cloned()
-    }
-
-    /// Update [ScrollHandleState]'s active item for scrolling to in prepaint
-    pub fn scroll_to_item(&self, ix: usize) {
-        let mut state = self.0.borrow_mut();
-        crate::fast::dependencies::StateVersion::bump(&state.version);
-        state.active_item = Some(ScrollActiveItem {
-            index: ix,
-            strategy: ScrollStrategy::default(),
-        });
-    }
-
-    /// Update [ScrollHandleState]'s active item for scrolling to in prepaint
-    /// This scrolls the minimal amount to ensure that the child is the first visible element
-    pub fn scroll_to_top_of_item(&self, ix: usize) {
-        let mut state = self.0.borrow_mut();
-        crate::fast::dependencies::StateVersion::bump(&state.version);
-        state.active_item = Some(ScrollActiveItem {
-            index: ix,
-            strategy: ScrollStrategy::Top,
-        });
     }
 
     /// Scrolls the minimal amount to either ensure that the child is
@@ -3877,49 +3753,5 @@ impl ScrollHandle {
     pub fn scroll_to_bottom(&self) {
         let mut state = self.0.borrow_mut();
         state.scroll_to_bottom = true;
-    }
-
-    /// Set the offset explicitly. The offset is the distance from the top left of the
-    /// parent container to the top left of the first child.
-    /// As you scroll further down the offset becomes more negative.
-    pub fn set_offset(&self, position: Point<Pixels>) {
-        let state = self.0.borrow();
-
-        *state.offset.borrow_mut() = position;
-    }
-
-    /// Get the logical scroll top, based on a child index and a pixel offset.
-    pub fn logical_scroll_top(&self) -> (usize, Pixels) {
-        let ix = self.top_item();
-        let state = self.0.borrow();
-
-        if let Some(child_bounds) = state.child_bounds.get(ix) {
-            (
-                ix,
-                child_bounds.top() + state.offset.borrow().y - state.bounds.top(),
-            )
-        } else {
-            (ix, px(0.))
-        }
-    }
-
-    /// Get the logical scroll bottom, based on a child index and a pixel offset.
-    pub fn logical_scroll_bottom(&self) -> (usize, Pixels) {
-        let ix = self.bottom_item();
-        let state = self.0.borrow();
-
-        if let Some(child_bounds) = state.child_bounds.get(ix) {
-            (
-                ix,
-                child_bounds.bottom() + state.offset.borrow().y - state.bounds.bottom(),
-            )
-        } else {
-            (ix, px(0.))
-        }
-    }
-
-    /// Get the count of children for scrollable item.
-    pub fn children_count(&self) -> usize {
-        self.0.borrow().child_bounds.len()
     }
 }

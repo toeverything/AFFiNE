@@ -91,6 +91,98 @@ enum Command {
         mode: i32,
         now_ms: u64,
     },
+    GenerateKeyBetween {
+        a: Option<String>,
+        b: Option<String>,
+    },
+    AddShape {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        index: String,
+        shape_type: String,
+        xywh: String,
+        text: Option<String>,
+        now_ms: u64,
+    },
+    UpdateShapeRotate {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        rotate: f64,
+        now_ms: u64,
+    },
+    AddConnector {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        index: String,
+        source_id: String,
+        target_id: String,
+        now_ms: u64,
+    },
+    AddBrush {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        index: String,
+        xywh: String,
+        points: Vec<Vec<f64>>,
+        now_ms: u64,
+    },
+    UpdateBrushPoints {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        points: Vec<Vec<f64>>,
+        now_ms: u64,
+    },
+    UpdateConnectorLabelXywh {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        label_xywh: [f64; 4],
+        now_ms: u64,
+    },
+    AddNoteWithText {
+        page_id: String,
+        root_id: String,
+        note_id: String,
+        para_id: String,
+        xywh: [f64; 4],
+        text: String,
+        now_ms: u64,
+    },
+    SpliceSurfaceElementText {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        field: String,
+        utf16_start: u64,
+        utf16_delete_len: u64,
+        insert: String,
+        now_ms: u64,
+    },
+    CommitConnectorLabel {
+        page_id: String,
+        surface_id: String,
+        element_id: String,
+        trimmed_text: String,
+        label_xywh: [f64; 4],
+        now_ms: u64,
+    },
+    DeleteWithConnectors {
+        page_id: String,
+        block_ids: Vec<String>,
+        surface_elements: Vec<(String, String)>,
+        now_ms: u64,
+    },
+    Undo {
+        page_id: String,
+    },
+    Redo {
+        page_id: String,
+    },
     SetAwareness {
         name: String,
         color: String,
@@ -750,6 +842,377 @@ async fn main() {
                         now_ms,
                     )
                     .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::GenerateKeyBetween { a, b } => {
+                match blocksuite_playground_doc::fractional_index::generate_key_between(
+                    a.as_deref(),
+                    b.as_deref(),
+                ) {
+                    Ok(key) => json!({ "ok": true, "key": key }),
+                    Err(err) => json!({ "ok": false, "error": err }),
+                }
+            }
+            Command::AddShape {
+                page_id,
+                surface_id,
+                element_id,
+                index,
+                shape_type,
+                xywh,
+                text,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .structural_edit(now_ms, move |p| {
+                        p.add_surface_element(
+                            &surface_id,
+                            element_id.clone(),
+                            &index,
+                            SurfaceElementSpec::Shape {
+                                shape_type: shape_type.clone(),
+                                xywh: xywh.clone(),
+                                seed: 101,
+                                filled: true,
+                                text: text.clone(),
+                            },
+                            now_ms,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::UpdateShapeRotate {
+                page_id,
+                surface_id,
+                element_id,
+                rotate,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .structural_edit(now_ms, move |p| {
+                        p.set_surface_element_field(
+                            &surface_id,
+                            &element_id,
+                            "rotate",
+                            SessionValue::Any(Any::Float64(rotate.into())),
+                            now_ms,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::AddConnector {
+                page_id,
+                surface_id,
+                element_id,
+                index,
+                source_id,
+                target_id,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .structural_edit(now_ms, move |p| {
+                        p.add_surface_element(
+                            &surface_id,
+                            element_id.clone(),
+                            &index,
+                            SurfaceElementSpec::Connector {
+                                mode: 1,
+                                seed: 202,
+                                source: ConnectorEndpointSpec::element(
+                                    source_id.clone(),
+                                    Some([1.0, 0.5]),
+                                ),
+                                target: ConnectorEndpointSpec::element(
+                                    target_id.clone(),
+                                    Some([0.0, 0.5]),
+                                ),
+                                text: None,
+                                label_xywh: None,
+                            },
+                            now_ms,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::AddBrush {
+                page_id,
+                surface_id,
+                element_id,
+                index,
+                xywh,
+                points,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .structural_edit(now_ms, move |p| {
+                        p.add_surface_element(
+                            &surface_id,
+                            element_id.clone(),
+                            &index,
+                            SurfaceElementSpec::Brush {
+                                seed: 303,
+                                points: points.clone(),
+                                xywh: xywh.clone(),
+                            },
+                            now_ms,
+                        )?;
+                        Ok(())
+                    })
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::UpdateBrushPoints {
+                page_id,
+                surface_id,
+                element_id,
+                points,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                let encoded: Vec<Any> = points
+                    .into_iter()
+                    .map(|p| Any::Array(p.into_iter().map(|v| Any::Float64(v.into())).collect()))
+                    .collect();
+                if let Some(c) = page
+                    .set_surface_element_field(
+                        &surface_id,
+                        &element_id,
+                        "points",
+                        SessionValue::Any(blocksuite_playground_doc::schema::map_array_any(
+                            encoded,
+                        )),
+                        now_ms,
+                    )
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::UpdateConnectorLabelXywh {
+                page_id,
+                surface_id,
+                element_id,
+                label_xywh,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                let encoded: Vec<Any> = label_xywh
+                    .into_iter()
+                    .map(|v| Any::Float64(v.into()))
+                    .collect();
+                if let Some(c) = page
+                    .set_surface_element_field(
+                        &surface_id,
+                        &element_id,
+                        "labelXYWH",
+                        SessionValue::Any(blocksuite_playground_doc::schema::map_array_any(
+                            encoded,
+                        )),
+                        now_ms,
+                    )
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::AddNoteWithText {
+                page_id,
+                root_id,
+                note_id,
+                para_id,
+                xywh,
+                text,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .add_edgeless_note(&root_id, &note_id, &para_id, "a5", xywh, &text, now_ms)
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::SpliceSurfaceElementText {
+                page_id,
+                surface_id,
+                element_id,
+                field,
+                utf16_start,
+                utf16_delete_len,
+                insert,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .splice_surface_element_text(
+                        &surface_id,
+                        &element_id,
+                        &field,
+                        utf16_start,
+                        utf16_delete_len,
+                        &insert,
+                        now_ms,
+                    )
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::CommitConnectorLabel {
+                page_id,
+                surface_id,
+                element_id,
+                trimmed_text,
+                label_xywh,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page
+                    .commit_connector_label(
+                        &surface_id,
+                        &element_id,
+                        &trimmed_text,
+                        label_xywh,
+                        now_ms,
+                    )
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::DeleteWithConnectors {
+                page_id,
+                block_ids,
+                surface_elements,
+                now_ms,
+            } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                let b_refs: Vec<&str> = block_ids.iter().map(String::as_str).collect();
+                let s_refs: Vec<(&str, &str)> = surface_elements
+                    .iter()
+                    .map(|(s, e)| (s.as_str(), e.as_str()))
+                    .collect();
+                if let Some(c) = page
+                    .delete_blocks_and_elements_with_connectors(&b_refs, &s_refs, now_ms)
+                    .unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::Undo { page_id } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page.undo().unwrap()
+                    && !c.update.is_empty()
+                {
+                    let f = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id: page_id,
+                        message: DocMessage::Update(c.update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(f.into())).await.unwrap();
+                }
+                json!({ "ok": true })
+            }
+            Command::Redo { page_id } => {
+                let page = ws_session.ensure_page(&page_id).unwrap();
+                if let Some(c) = page.redo().unwrap()
                     && !c.update.is_empty()
                 {
                     let f = encode_binary_frame(&RoomBinaryFrame::Doc {

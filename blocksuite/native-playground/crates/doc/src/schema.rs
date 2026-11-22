@@ -273,7 +273,7 @@ fn nonzero_seed(seed: i32) -> i32 {
 /// `y-octo`'s `From<Any> for Content` converts a top-level `Any::Array(v)` into
 /// multi-element `Content::Any(v)`. Wrapping once produces `Content::Any(vec![Any::Array(v)])`,
 /// matching Yjs `yMap.set(key, array)`.
-fn map_array_any(items: Vec<Any>) -> Any {
+pub fn map_array_any(items: Vec<Any>) -> Any {
     Any::Array(vec![Any::Array(items)])
 }
 

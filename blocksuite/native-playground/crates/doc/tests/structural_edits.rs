@@ -334,3 +334,247 @@ fn converting_to_a_leaf_lifts_children_at_the_replaced_slot() -> DocResult {
     assert_eq!(p.export_doc_json()?, original);
     Ok(())
 }
+
+#[test]
+fn commit_connector_label_encodes_single_array_item_and_plain_object_offset() -> DocResult {
+    use blocksuite_playground_doc::schema::{ConnectorEndpointSpec, SurfaceElementSpec};
+    use y_octo::{SessionReadValue, StateVector, TypePath, TypeTarget};
+
+    let mut p = PageDocSession::new("doc", 42)?;
+    p.add_block("root", BlockSpec::Page { title: "T".into() }, None, None, 0)?;
+    p.add_block("surf", BlockSpec::Surface, Some("root"), None, 1)?;
+    p.add_surface_element(
+        "surf",
+        "c1",
+        "a0",
+        SurfaceElementSpec::Connector {
+            mode: 1,
+            seed: 7,
+            source: ConnectorEndpointSpec::point(0.0, 0.0),
+            target: ConnectorEndpointSpec::point(200.0, 100.0),
+            text: None,
+            label_xywh: None,
+        },
+        2,
+    )?;
+    // Clear any default labelOffset first so commit_connector_label exercises both labelXYWH and labelOffset writes.
+    p.commit_connector_label("surf", "c1", "", [0.0; 4], 3)?;
+    let sv_before = StateVector::decode_v1(&p.encode_state_vector_v1()?)?;
+    let clock_before = sv_before.get(&42);
+    let commit = p
+        .commit_connector_label("surf", "c1", "Edge", [120.0, 140.0, 64.0, 24.0], 4)?
+        .expect("commit");
+    let sv_after = StateVector::decode_v1(&p.encode_state_vector_v1()?)?;
+    let clock_after = sv_after.get(&42);
+    // Exactly 3 single-element map items: labelDisplay (1) + labelXYWH (1, NOT 4!) + labelOffset (1).
+    assert_eq!(
+        clock_after - clock_before,
+        3,
+        "labelXYWH must consume 1 CRDT clock (single Content::Any wrapping Any::Array), not 4"
+    );
+
+    let mut peer = PageDocSession::new("doc", 99)?;
+    peer.apply_remote_update_v1(&p.encode_update_v1()?)?;
+    let _ = commit;
+    let elem_target = TypeTarget::Path(
+        TypePath::root("blocks")
+            .key("surf")
+            .key("prop:elements")
+            .key("value")
+            .key("c1"),
+    );
+    match peer.inner().get_map_value(&elem_target, "labelXYWH")? {
+        Some(SessionReadValue::Any(Any::Array(vals))) => {
+            assert_eq!(vals.len(), 4);
+            assert_eq!(vals[0], Any::Float64(120.0.into()));
+            assert_eq!(vals[3], Any::Float64(24.0.into()));
+        }
+        other => panic!("expected Any::Array(4) for labelXYWH, got {other:?}"),
+    }
+    match peer.inner().get_map_value(&elem_target, "labelOffset")? {
+        Some(SessionReadValue::Any(Any::Object(obj))) => {
+            assert_eq!(obj.get("distance"), Some(&Any::Float64(0.5.into())));
+            assert_eq!(obj.get("anchor"), Some(&Any::String("center".to_string())));
+        }
+        other => panic!("expected plain Any::Object for labelOffset, got {other:?}"),
+    }
+    Ok(())
+}
+
+#[test]
+fn fresh_page_frame_creation_is_atomic_across_peer_sync_and_undo() -> DocResult {
+    let mut a = PageDocSession::new("doc", 43)?;
+    a.add_block("root", BlockSpec::Page { title: "T".into() }, None, None, 0)?;
+    let mut peer = PageDocSession::new("doc", 44)?;
+    peer.apply_remote_update_v1(&a.encode_update_v1()?)?;
+    let initial_json = a.export_doc_json()?;
+
+    let commit = a
+        .add_frame_with_children(
+            None,
+            "frame-1",
+            "Frame",
+            "a0",
+            [10.0, 20.0, 300.0, 200.0],
+            &[],
+            10,
+        )?
+        .expect("single atomic commit");
+    peer.apply_remote_update_v1(&commit.update)?;
+    assert_eq!(peer.export_doc_json()?, a.export_doc_json()?);
+    let snap = peer.read_page_snapshot()?;
+    assert!(snap.block("frame-1").is_some());
+
+    a.undo()?;
+    assert_eq!(a.export_doc_json()?, initial_json);
+    Ok(())
+}
+
+#[test]
+fn multi_author_merged_v1_surface_tiebreak_matches_yjs_client_desc_clock_asc() -> DocResult {
+    use blocksuite_playground_doc::{read::BlockContent, schema::SurfaceElementSpec};
+
+    let mut base = PageDocSession::new("doc", 5)?;
+    base.add_block("root", BlockSpec::Page { title: "T".into() }, None, None, 0)?;
+    base.add_block("surf", BlockSpec::Surface, Some("root"), None, 1)?;
+    let seed = base.encode_update_v1()?;
+
+    let mut c10 = PageDocSession::new("doc", 10)?;
+    c10.apply_remote_update_v1(&seed)?;
+    let mut c20 = PageDocSession::new("doc", 20)?;
+    c20.apply_remote_update_v1(&seed)?;
+
+    let shape = |xywh: &str| SurfaceElementSpec::Shape {
+        shape_type: "rect".into(),
+        xywh: xywh.into(),
+        seed: 1,
+        filled: true,
+        text: None,
+    };
+    let u20 = c20
+        .add_surface_element("surf", "z", "a0", shape("[0,0,40,40]"), 10)?
+        .unwrap()
+        .update;
+    let u10_a = c10
+        .add_surface_element("surf", "a", "a0", shape("[10,0,40,40]"), 10)?
+        .unwrap()
+        .update;
+    c20.apply_remote_update_v1(&u10_a)?;
+    let merged = c20.encode_update_v1()?;
+
+    let mut observer = PageDocSession::new("doc", 99)?;
+    observer.apply_remote_update_v1(&merged)?;
+    let snap = observer.read_page_snapshot()?;
+    let BlockContent::Surface { elements, .. } = &snap.block("surf").unwrap().content else {
+        panic!("expected surface");
+    };
+    let ids: Vec<&str> = elements.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(ids, vec!["z", "a"]);
+
+    // Same-client sequential inserts with equal index preserve clock ascending order.
+    let mut seq = PageDocSession::new("doc", 30)?;
+    seq.apply_remote_update_v1(&seed)?;
+    seq.add_surface_element("surf", "first", "a0", shape("[0,0,20,20]"), 10)?;
+    seq.add_surface_element("surf", "second", "a0", shape("[30,0,20,20]"), 11)?;
+    let mut seq_obs = PageDocSession::new("doc", 31)?;
+    seq_obs.apply_remote_update_v1(&seq.encode_update_v1()?)?;
+    let seq_snap = seq_obs.read_page_snapshot()?;
+    let BlockContent::Surface { elements, .. } = &seq_snap.block("surf").unwrap().content else {
+        panic!("expected surface");
+    };
+    let seq_ids: Vec<&str> = elements.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(seq_ids, vec!["first", "second"]);
+    let _ = u20;
+    Ok(())
+}
+
+#[test]
+fn cascade_delete_after_property_mutations_undoes_and_redoes_all_elements() -> DocResult {
+    use blocksuite_playground_doc::{
+        read::BlockContent,
+        schema::{ConnectorEndpointSpec, SurfaceElementSpec},
+    };
+    use y_octo::SessionValue;
+
+    let mut page = PageDocSession::new("doc", 77)?;
+    page.add_block("root", BlockSpec::Page { title: "T".into() }, None, None, 0)?;
+    page.add_block("surf", BlockSpec::Surface, Some("root"), None, 1)?;
+    page.add_surface_element(
+        "surf",
+        "sh-1",
+        "a0",
+        SurfaceElementSpec::Shape {
+            shape_type: "rect".into(),
+            xywh: "[100,100,120,80]".into(),
+            seed: 11,
+            filled: true,
+            text: Some("Box".into()),
+        },
+        2,
+    )?;
+    page.add_surface_element(
+        "surf",
+        "conn-att",
+        "a1",
+        SurfaceElementSpec::Connector {
+            mode: 0,
+            seed: 12,
+            source: ConnectorEndpointSpec::element("sh-1", Some([1.0, 0.5])),
+            target: ConnectorEndpointSpec::point(340.0, 140.0),
+            text: None,
+            label_xywh: None,
+        },
+        3,
+    )?;
+    // Mutate sh-1 fields after conn-att so sh-1 holds clocks both below and above conn-att.
+    page.set_surface_element_field(
+        "surf",
+        "sh-1",
+        "xywh",
+        SessionValue::Any(Any::String("[140,125,120,80]".into())),
+        4,
+    )?;
+    page.set_surface_element_field(
+        "surf",
+        "sh-1",
+        "rotate",
+        SessionValue::Any(Any::Float64(45.0.into())),
+        5,
+    )?;
+    page.set_surface_element_field(
+        "surf",
+        "sh-1",
+        "index",
+        SessionValue::Any(Any::String("a2".into())),
+        6,
+    )?;
+    page.stop_capturing()?;
+
+    let before_delete = page.export_doc_json()?;
+    page.delete_blocks_and_elements_with_connectors(&[], &[("surf", "sh-1")], 10)?;
+    let after_delete = page.export_doc_json()?;
+    let snap_del = page.read_page_snapshot()?;
+    let BlockContent::Surface { elements, .. } = &snap_del.block("surf").unwrap().content else {
+        panic!("expected surface");
+    };
+    assert!(
+        elements.is_empty(),
+        "both sh-1 and conn-att must be deleted"
+    );
+
+    page.undo()?;
+    assert_eq!(page.export_doc_json()?, before_delete);
+    let snap_undo = page.read_page_snapshot()?;
+    let BlockContent::Surface { elements, .. } = &snap_undo.block("surf").unwrap().content else {
+        panic!("expected surface");
+    };
+    let ids: Vec<&str> = elements.iter().map(|e| e.id.as_str()).collect();
+    assert!(
+        ids.contains(&"sh-1") && ids.contains(&"conn-att"),
+        "undo must restore both sh-1 and conn-att: {ids:?}"
+    );
+
+    page.redo()?;
+    assert_eq!(page.export_doc_json()?, after_delete);
+    Ok(())
+}

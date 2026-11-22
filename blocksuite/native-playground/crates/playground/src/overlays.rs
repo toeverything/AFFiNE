@@ -94,13 +94,12 @@ const POPOVER_BORDER: f32 = 1.0;
 
 /// Side of the gutter drag handle's hit target.
 pub const DRAG_HANDLE_SIZE: f32 = 24.0;
-/// The handle at rest: BlockSuite's upright grabber bar.
+/// The Page-mode handle at rest: BlockSuite's 4 × 12 px upright grabber bar.
 const DRAG_GRABBER_WIDTH: f32 = 4.0;
+/// The Page-mode handle under the pointer or in a drag: narrows to a 2 × 12 px vertical bar
+/// (the 2 × 3 six-dot pill is reserved for Edgeless `gfx` drag handles).
+const DRAG_GRABBER_HOT_WIDTH: f32 = 2.0;
 const DRAG_GRABBER_HEIGHT: f32 = 12.0;
-/// The handle under the pointer or in a drag: two columns of three dots on a pill.
-const DRAG_DOTS_PILL_WIDTH: f32 = 14.0;
-const DRAG_DOT: f32 = 4.0;
-const DRAG_DOT_GAP: f32 = 2.0;
 /// Closest the drag handle comes to the left window edge.
 pub const DRAG_HANDLE_MIN_X: f32 = 4.0;
 /// Thickness of the drop indicator line.
@@ -885,10 +884,19 @@ impl LinkBar {
         start..end
     }
 
+    /// Abandon any running composition, restoring the original URL and selection.
+    pub(crate) fn cancel_preedit(&mut self) {
+        self.preedit = None;
+    }
+
     /// Put `text` in place of a running composition, else of `range`, else of the
     /// selection, and leave the caret behind it. Control characters are dropped: the
     /// field is one line.
     pub(crate) fn replace(&mut self, range: Option<Range<usize>>, text: &str) {
+        if self.preedit.is_some() && text.is_empty() {
+            self.cancel_preedit();
+            return;
+        }
         let target = match self.preedit.take() {
             Some(preedit) => preedit.replacement,
             None => range.map_or(self.selection.clone(), |range| self.clamped(range)),
@@ -2357,49 +2365,19 @@ impl Overlays {
                     .snapshot_focused(dragging)
                     .snapshot_text(block.block_id.clone());
             }
-            // BlockSuite's grabber: an upright bar while the pointer is on the block, and
-            // two columns of dots on a pill once it is on the handle or drags it.
+            // BlockSuite's Page-mode grabber: a 4 × 12 px bar while the pointer is on the
+            // block's row, narrowing to a 2 × 12 px vertical bar when hovered or dragged.
             let theme = palette.theme;
             let grip = if dragging || self.handle_hot {
-                let dots = theme
+                let color = theme
                     .css_var("--affine-v2-icon-secondary")
                     .unwrap_or(palette.icon);
                 div()
                     .flex_none()
-                    .w(px(DRAG_DOTS_PILL_WIDTH))
-                    .h(px(DRAG_HANDLE_SIZE))
-                    .rounded(px(4.0))
-                    .bg(theme
-                        .css_var("--affine-v2-layer-background-hoverOverlay")
-                        .unwrap_or(palette.hover))
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .child(
-                        canvas(
-                            |_, _, _| (),
-                            move |bounds, _, window, _| {
-                                for row in 0..3 {
-                                    for column in 0..2 {
-                                        let step = DRAG_DOT + DRAG_DOT_GAP;
-                                        let dot = ui::Bounds::new(
-                                            point(
-                                                bounds.origin.x + px(column as f32 * step),
-                                                bounds.origin.y + px(row as f32 * step),
-                                            ),
-                                            size(px(DRAG_DOT), px(DRAG_DOT)),
-                                        );
-                                        window.paint_quad(
-                                            ui::fill(dot, dots).corner_radii(px(DRAG_DOT / 2.0)),
-                                        );
-                                    }
-                                }
-                            },
-                        )
-                        .flex_none()
-                        .w(px(2.0 * DRAG_DOT + DRAG_DOT_GAP))
-                        .h(px(3.0 * DRAG_DOT + 2.0 * DRAG_DOT_GAP)),
-                    )
+                    .w(px(DRAG_GRABBER_HOT_WIDTH))
+                    .h(px(DRAG_GRABBER_HEIGHT))
+                    .rounded(px(1.0))
+                    .bg(color)
             } else {
                 div()
                     .flex_none()
@@ -3299,7 +3277,9 @@ impl PlaygroundView {
         if effects.paste {
             match cx.read_from_clipboard() {
                 Some(item) => {
-                    self.overlays.link_insert(&item.text().unwrap_or_default());
+                    if let Some(text) = item.text() {
+                        self.overlays.link_insert(&text);
+                    }
                 }
                 // A browser hands a paste over as an event of its own, and only when the
                 // key keeps its default action; that event reaches the link field through
@@ -3353,6 +3333,10 @@ impl PlaygroundView {
             window,
             cx,
         );
+        if self.mode == PlaygroundMode::Edgeless {
+            self.on_edgeless_pointer_move(event, window, cx);
+            return;
+        }
         if self.mode == PlaygroundMode::Page && self.overlays.dragged_block().is_none() {
             let selecting = self.editor.dragging;
             self.editor_mouse_move(event, window, cx);
@@ -3364,10 +3348,13 @@ impl PlaygroundView {
 
     pub(crate) fn root_mouse_up(
         &mut self,
-        _: &MouseUpEvent,
+        event: &MouseUpEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.mode == PlaygroundMode::Edgeless {
+            self.on_edgeless_left_up(event, window, cx);
+        }
         // The selection is finished: the formatting toolbar may open over it.
         if std::mem::take(&mut self.editor.dragging) {
             cx.notify();
@@ -6408,5 +6395,70 @@ mod tests {
             f32::from(cut.origin.x) + f32::from(cut.size.width),
             f32::from(moved.origin.x)
         ));
+    }
+
+    #[test]
+    fn link_bar_empty_replace_during_preedit_restores_url_and_selection() {
+        let mut bar = LinkBar::new("abc".into());
+        bar.select(1..2);
+        assert_eq!(bar.selected_text(), "b");
+        bar.mark(None, "ni", None);
+        assert!(bar.composing());
+        assert_eq!(bar.text(), "anic");
+        // Chromium sends compositionend("") on IME cancel: must restore "abc" with "b" selected.
+        bar.replace(None, "");
+        assert!(!bar.composing());
+        assert_eq!(bar.url(), "abc");
+        assert_eq!(bar.selected_text(), "b");
+        assert_eq!(bar.shown_selection(), (1..2, false));
+    }
+
+    #[test]
+    fn link_bar_non_text_clipboard_paste_does_not_erase_selection() {
+        let session = open(1280, 800, PlaygroundTheme::Light);
+        let _ = session.frame();
+        session.select("showcase-intro", "bold");
+        let _ = session.frame();
+        session.overlay(OverlayEvent::Format(FormatAction::Link));
+        let _ = session.frame();
+        session.update(|view, _window, cx| {
+            if let Some(link) = view.overlays.link_field_mut() {
+                link.replace(Some(0..0), "https://affine.pro");
+                link.select(0..18);
+            }
+            // Write a non-text ClipboardItem (`text() == None`).
+            let item = ClipboardItem {
+                entries: vec![ui::ClipboardEntry::ExternalPaths(
+                    ui::ExternalPaths::default(),
+                )],
+            };
+            assert_eq!(item.text(), None);
+            cx.write_to_clipboard(item);
+        });
+        let _ = session.frame();
+        // Trigger Ctrl/Cmd+V in the link field.
+        let _ = session.update(|view, window, cx| {
+            let mut m = ui::Modifiers::default();
+            #[cfg(target_os = "macos")]
+            {
+                m.platform = true;
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                m.control = true;
+            }
+            let event = KeyDownEvent {
+                keystroke: ui::Keystroke {
+                    modifiers: m,
+                    key: "v".into(),
+                    key_char: Some("v".into()),
+                },
+                is_held: false,
+                prefer_character_input: false,
+            };
+            view.overlay_key_down(&event, window, cx)
+        });
+        let url = session.view(|view, _| view.overlays().link_url().map(str::to_string));
+        assert_eq!(url.as_deref(), Some("https://affine.pro"));
     }
 }

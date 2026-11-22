@@ -154,6 +154,7 @@ jobs:
           echo "Run 2 SHA256: $sha2"
           test "$sha1" = "$sha2"
           cargo run --locked --bin bs-harness --features harness -- audit --snapshot artifacts/linux-run1.json
+          cargo run --locked --bin bs-harness --features harness -- audit-states
           cargo run --locked --bin bs-harness --features harness -- fps-check
           cargo run --locked --bin bs-harness --features harness -- bench \
             --json artifacts/perf-metrics.json \

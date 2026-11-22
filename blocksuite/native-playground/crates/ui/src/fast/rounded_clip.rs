@@ -201,10 +201,4 @@ pub(crate) fn track(operation: ClipOperation, active: &mut Vec<Shape>) -> anyhow
 }
 
 #[cfg(any(test, feature = "harness"))]
-impl Window {
-    /// The complete rendered scene, including clip scopes and scroll layers,
-    /// for tests that rasterize through a platform's headless GPU renderer.
-    pub fn painted_scene(&self) -> &Scene {
-        &self.rendered_frame.scene
-    }
-}
+impl Window {}

@@ -53,6 +53,112 @@ if [ -n "$TESTER_CFG_HITS" ]; then
   fail "Inline harness/test cfg branches are forbidden in crates/playground/src/lib.rs and main.rs"
 fi
 
+echo "==> Checking Rust module structure, visibility, orphaned files, and per-file LOC"
+python3 - <<'PY'
+import re
+import sys
+from pathlib import Path
+
+errors = []
+roots = [Path("crates/doc/src"), Path("crates/playground/src")]
+
+def strip_cfg_test_mods(src: str) -> str:
+    """Remove `#[cfg(test)] mod <name> { ... }` blocks while preserving line numbers."""
+    lines = src.splitlines()
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        s = lines[i].strip()
+        if s == "#[cfg(test)]" and i + 1 < n and re.match(r"^(pub(\([^)]*\))?\s+)?mod\s+\w+\s*\{", lines[i + 1].strip()):
+            depth = 0
+            started = False
+            out.append("")
+            i += 1
+            while i < n:
+                line = lines[i]
+                if "{" in line:
+                    started = True
+                depth += line.count("{") - line.count("}")
+                out.append("")
+                i += 1
+                if started and depth <= 0:
+                    break
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+for src_root in roots:
+    rs_files = sorted(src_root.rglob("*.rs"))
+    declared_modules = set()
+    # Root entry points are always live.
+    for entry in ("lib.rs", "main.rs"):
+        if (src_root / entry).exists():
+            declared_modules.add((src_root / entry).resolve())
+    for bin_file in (src_root / "bin").glob("*.rs") if (src_root / "bin").exists() else []:
+        declared_modules.add(bin_file.resolve())
+    for bin_main in (src_root / "bin").glob("*/main.rs") if (src_root / "bin").exists() else []:
+        declared_modules.add(bin_main.resolve())
+
+    mod_decl_re = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+([A-Za-z_][A-Za-z0-9_]*)\s*;")
+    for p in rs_files:
+        text = p.read_text(encoding="utf-8")
+        parent = p.parent
+        # Track declared child modules for orphan detection.
+        for line in text.splitlines():
+            m = mod_decl_re.match(line)
+            if m:
+                mod_name = m.group(1)
+                base_dir = parent if p.name in ("lib.rs", "main.rs", "mod.rs") else parent / p.stem
+                cand_file = base_dir / f"{mod_name}.rs"
+                cand_mod = base_dir / mod_name / "mod.rs"
+                if cand_file.exists():
+                    declared_modules.add(cand_file.resolve())
+                if cand_mod.exists():
+                    declared_modules.add(cand_mod.resolve())
+
+        # Rule (g): no `<mod_name>.rs` coexisting beside `<mod_name>/`.
+        if p.name not in ("lib.rs", "main.rs", "mod.rs") and (parent / p.stem).is_dir():
+            errors.append(f"{p}: coexists beside directory {parent / p.stem}/; move into {parent / p.stem}/mod.rs")
+
+        non_test = strip_cfg_test_mods(text)
+        non_test_lines = non_test.splitlines()
+
+        # Rule (c): no `super::super::` outside `mod tests`.
+        for lineno, line in enumerate(non_test_lines, 1):
+            if "super::super::" in line:
+                errors.append(f"{p}:{lineno}: forbidden `super::super::` outside `mod tests`")
+
+        # Rules (b, c): sibling `src/<mod>/<child>.rs` must not import via `crate::<mod>::`.
+        rel = p.relative_to(src_root)
+        if len(rel.parts) >= 2 and p.name != "mod.rs" and rel.parts[0] != "bin":
+            parent_mod = rel.parts[0]
+            pat = f"crate::{parent_mod}::"
+            for lineno, line in enumerate(non_test_lines, 1):
+                if pat in line:
+                    errors.append(f"{p}:{lineno}: use `super::` instead of `{pat}` inside submodule")
+
+        # Rule (g): <= 800 non-test lines on `crates/playground/src/{edgeless,surface}/*.rs`.
+        if src_root == Path("crates/playground/src") and len(rel.parts) >= 2 and rel.parts[0] in ("edgeless", "surface"):
+            actual_non_test = sum(
+                1 for orig, stripped in zip(text.splitlines(), non_test_lines) if orig == stripped
+            )
+            if actual_non_test > 800:
+                errors.append(f"{p}: {actual_non_test} non-test lines exceeds ceiling of 800")
+
+    # Orphaned .rs file check.
+    for p in rs_files:
+        if p.resolve() not in declared_modules:
+            errors.append(f"{p}: orphaned .rs file not declared by any `mod <name>;`")
+
+if errors:
+    for e in errors:
+        print(f"ERROR: {e}", file=sys.stderr)
+    sys.exit(1)
+print("Rust module structure & LOC checks passed.")
+PY
+
 echo "==> Checking crates/ui LOC ceiling"
 UI_LOC_CEILING=95000
 UI_LOC=$(find crates/ui/src -name '*.rs' -print0 | xargs -0 cat | wc -l | tr -d ' ')

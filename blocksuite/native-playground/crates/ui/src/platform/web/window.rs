@@ -834,7 +834,9 @@ impl PlatformWindow for WebWindow {
                 TextInputStateChange::FocusGained => self.inner.show_virtual_keyboard(),
                 TextInputStateChange::FocusLost => self.hide_soft_keyboard(),
                 TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {
-                    if self.inner.pressed_button.get().is_none() {
+                    if self.inner.pressed_button.get().is_none()
+                        && self.inner.touch_ids.borrow().is_empty()
+                    {
                         self.inner.schedule_ime_mirror_sync();
                     }
                 }
@@ -852,7 +854,9 @@ impl PlatformWindow for WebWindow {
                 self.inner.ime_mirror.set_read_only(true);
             }
             TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {
-                if self.inner.pressed_button.get().is_none() {
+                if self.inner.pressed_button.get().is_none()
+                    && self.inner.touch_ids.borrow().is_empty()
+                {
                     self.inner.schedule_ime_mirror_sync();
                 }
             }

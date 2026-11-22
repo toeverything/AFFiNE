@@ -6,9 +6,7 @@
 
 pub mod block_flow;
 pub mod clipboard;
-pub mod edgeless_camera;
-pub mod edgeless_canvas;
-mod edgeless_order;
+pub mod edgeless;
 pub mod editor_session;
 pub mod overlays;
 pub mod rich_text;
@@ -202,7 +200,7 @@ pub struct PlaygroundView {
     max_scroll: f32,
     /// Window size of the latest frame, in logical pixels.
     window_size: (f32, f32),
-    edgeless: edgeless_canvas::EdgelessCanvasState,
+    edgeless: edgeless::EdgelessCanvasState,
     overlays: Overlays,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
     copied_timer: Option<Task<()>>,
@@ -287,7 +285,7 @@ impl PlaygroundView {
             scroll_y: 0.0,
             max_scroll: 0.0,
             window_size: (0.0, 0.0),
-            edgeless: edgeless_canvas::EdgelessCanvasState::new(),
+            edgeless: edgeless::EdgelessCanvasState::new(),
             overlays: Overlays::new(),
             copied_timer: None,
             _tasks: tasks,
@@ -304,7 +302,7 @@ impl PlaygroundView {
         self.theme
     }
 
-    pub fn edgeless_camera(&self) -> edgeless_camera::EdgelessCamera {
+    pub fn edgeless_camera(&self) -> edgeless::EdgelessCamera {
         self.edgeless.camera
     }
 
@@ -372,22 +370,6 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    fn on_edgeless_pan_move(
-        &mut self,
-        event: &ui::MouseMoveEvent,
-        _: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if let Some(prev) = self.edgeless.drag_pan_anchor {
-            let dx = f32::from(event.position.x) - f32::from(prev.x);
-            let dy = f32::from(event.position.y) - f32::from(prev.y);
-            self.edgeless.camera.pan_by_screen_delta(dx, dy);
-            self.edgeless.drag_pan_anchor = Some(event.position);
-            self.edgeless.camera_initialized = true;
-            cx.notify();
-        }
-    }
-
     fn on_edgeless_pan_end(
         &mut self,
         _: &ui::MouseUpEvent,
@@ -445,8 +427,14 @@ impl PlaygroundView {
         self.snapshot.as_deref()
     }
 
-    /// World-space layout painted by the latest Page frame.
+    /// World-space layout painted by the latest Page frame, or the active inline-edited
+    /// Edgeless Note/EdgelessText layout when editing on the Edgeless canvas.
     pub fn flow_layout(&self) -> Option<Rc<FlowLayout>> {
+        if self.mode == PlaygroundMode::Edgeless
+            && let Some((block_id, is_note)) = self.edgeless.authoring.editing_spatial_block()
+        {
+            return self.edgeless.cached_block_layout(block_id, is_note);
+        }
         self.layout.as_ref().map(|(_, layout)| layout.clone())
     }
 
@@ -619,6 +607,7 @@ impl PlaygroundView {
             .filter(|snapshot| snapshot.root.is_some())
             .map(Rc::new);
         self.doc_rev += 1;
+        self.edgeless_refresh_label_editor_from_snapshot();
 
         let mut referenced = BTreeSet::new();
         for node in self
@@ -682,12 +671,21 @@ impl PlaygroundView {
         }
     }
 
-    fn set_mode(&mut self, target: PlaygroundMode, cx: &mut Context<Self>) {
+    fn set_mode(&mut self, target: PlaygroundMode, window: &mut Window, cx: &mut Context<Self>) {
         if self.mode == target {
             return;
         }
         let now_ms = self.now_ms(cx);
         let current_x = self.indicator_x(now_ms);
+        // Commit any pending inline Edgeless edit cleanly before switching modes.
+        self.edgeless_flush_label_edit(window, cx);
+        if self.edgeless.authoring.editing_spatial_block().is_some() {
+            self.edgeless.authoring.inline_edit = None;
+            self.editor.clear_preedit_state();
+            self.editor.selection = None;
+            self.announce_selection(cx);
+        }
+        self.edgeless.authoring.reset_transient();
         self.mode = target;
         self.overlays.reset();
         self.pill_motion = Some(Motion::new(
@@ -877,8 +875,8 @@ impl PlaygroundView {
         };
 
         let page_button = segment("mode-page", PILL_PAGE_X, is_page)
-            .on_click(cx.listener(|this, _, _, cx| {
-                this.set_mode(PlaygroundMode::Page, cx);
+            .on_click(cx.listener(|this, _, window, cx| {
+                this.set_mode(PlaygroundMode::Page, window, cx);
             }))
             .snapshot("chrome.mode_switcher.page", Some("chrome.mode_switcher"))
             .snapshot_focused(is_page)
@@ -886,8 +884,8 @@ impl PlaygroundView {
             .child("Page");
 
         let edgeless_button = segment("mode-edgeless", PILL_EDGELESS_X, is_edgeless)
-            .on_click(cx.listener(|this, _, _, cx| {
-                this.set_mode(PlaygroundMode::Edgeless, cx);
+            .on_click(cx.listener(|this, _, window, cx| {
+                this.set_mode(PlaygroundMode::Edgeless, window, cx);
             }))
             .snapshot(
                 "chrome.mode_switcher.edgeless",
@@ -1256,33 +1254,41 @@ impl PlaygroundView {
                 .w_full()
                 .min_h_0()
                 .bg(palette.background_secondary)
-                .snapshot(edgeless_canvas::EDGELESS_VIEWPORT_ID, Some("root.canvas"))
+                .snapshot(edgeless::EDGELESS_VIEWPORT_ID, Some("root.canvas"))
                 .into_any_element();
         };
 
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         let vp_size = size(px(viewport_width.max(1.0)), px(viewport_height.max(1.0)));
+        if viewport_width > 0.0 && viewport_height > 0.0 {
+            self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
+        }
 
-        let zoom_controls = edgeless_canvas::build_zoom_controls(
+        let zoom_controls = edgeless::build_zoom_controls(
             self.edgeless.camera.zoom,
+            viewport_width,
             palette,
             self.theme,
             move |this: &mut Self, _, _, cx| {
+                cx.stop_propagation();
                 this.edgeless.camera.zoom_out(vp_origin, vp_size);
                 this.edgeless.camera_initialized = true;
                 cx.notify();
             },
             move |this: &mut Self, _, _, cx| {
+                cx.stop_propagation();
                 this.edgeless.camera.reset_zoom(vp_origin, vp_size);
                 this.edgeless.camera_initialized = true;
                 cx.notify();
             },
             move |this: &mut Self, _, _, cx| {
+                cx.stop_propagation();
                 this.edgeless.camera.zoom_in(vp_origin, vp_size);
                 this.edgeless.camera_initialized = true;
                 cx.notify();
             },
             move |this: &mut Self, _, _, cx| {
+                cx.stop_propagation();
                 if let Some(snap) = &this.snapshot {
                     let bounds = this.edgeless.scene_world_bounds(snap);
                     this.edgeless.camera.fit_to_bounds(bounds, vp_size, 48.0);
@@ -1292,39 +1298,86 @@ impl PlaygroundView {
             },
             cx,
         );
+        let toolbar = edgeless::build_edgeless_toolbar(
+            self.edgeless.authoring.tool,
+            viewport_width,
+            palette,
+            self.theme,
+            cx,
+        );
 
-        let input = edgeless_canvas::EdgelessRenderInput {
-            snapshot: &snapshot,
+        let render_snapshot = self
+            .preedit_snapshot()
+            .map(Rc::new)
+            .unwrap_or_else(|| Rc::clone(&snapshot));
+        let preedit_nonce = self.editor.preedit_nonce();
+        let editing_selection =
+            self.edgeless
+                .authoring
+                .editing_spatial_block()
+                .and_then(|(editing_id, is_note)| {
+                    let sel = self.editor.selection.clone()?;
+                    let focus = self.visual_focus()?;
+                    Some((editing_id.to_string(), is_note, sel, focus))
+                });
+
+        let input = edgeless::EdgelessRenderInput {
+            snapshot: &render_snapshot,
             doc_rev: self.doc_rev,
             env_rev: self.env_rev,
+            preedit_nonce,
             theme: self.theme,
             palette,
             page_titles: &self.page_titles,
             images: &self.images,
             viewport_width,
             viewport_height,
+            editing_selection,
         };
-        let layer = edgeless_canvas::build_edgeless_layer(
+        let layer = edgeless::build_edgeless_layer(
             &mut self.edgeless,
             &input,
             window,
             zoom_controls,
+            toolbar,
         );
+        let needs_text_input =
+            self.edgeless.authoring.inline_edit.is_some() || self.overlays.link_field().is_some();
+        let input_overlay = needs_text_input.then(|| {
+            let focus = self.editor_focus.clone();
+            let entity = cx.entity();
+            canvas(
+                |_, _, _| (),
+                move |bounds, _, window, cx| {
+                    window.handle_input(&focus, ui::ElementInputHandler::new(bounds, entity), cx)
+                },
+            )
+            .absolute()
+            .size_full()
+        });
 
         div()
+            .relative()
             .flex_1()
             .w_full()
             .min_h_0()
             .flex()
             .flex_col()
+            .track_focus(&self.editor_focus)
+            .on_key_down(cx.listener(Self::editor_key_down))
+            .on_key_up(cx.listener(|this, event: &ui::KeyUpEvent, _, _| {
+                if event.keystroke.key == "space" {
+                    this.edgeless.authoring.space_pan = false;
+                }
+            }))
             .on_scroll(cx.listener(Self::on_edgeless_scroll))
+            .on_mouse_down(MouseButton::Left, cx.listener(Self::on_edgeless_left_down))
             .on_mouse_down(
                 MouseButton::Middle,
                 cx.listener(Self::on_edgeless_pan_start),
             )
-            .on_mouse_move(cx.listener(Self::on_edgeless_pan_move))
-            .on_mouse_up(MouseButton::Middle, cx.listener(Self::on_edgeless_pan_end))
             .child(layer)
+            .children(input_overlay)
             .into_any_element()
     }
 }
@@ -1381,6 +1434,14 @@ impl ui::Render for PlaygroundView {
             .text_color(palette.text_primary)
             .on_mouse_move(cx.listener(Self::root_mouse_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::root_mouse_up))
+            .on_mouse_up(
+                MouseButton::Middle,
+                cx.listener(|this, e, w, cx| {
+                    if this.mode == PlaygroundMode::Edgeless {
+                        this.on_edgeless_pan_end(e, w, cx);
+                    }
+                }),
+            )
             .snapshot("root.canvas", None)
             .child(
                 div()
@@ -4616,7 +4677,7 @@ mod tests {
             (note_layout.width, text_layout.width, lines)
         });
         assert!(
-            (note_w - (400.0 / 2.0 - 2.0 * edgeless_canvas::NOTE_CARD_PADDING)).abs() < 0.01,
+            (note_w - (400.0 / 2.0 - 2.0 * edgeless::NOTE_CARD_PADDING)).abs() < 0.01,
             "expected Note logical width 152.0, got {note_w}"
         );
         assert!(

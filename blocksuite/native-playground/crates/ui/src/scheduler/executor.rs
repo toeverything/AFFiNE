@@ -592,11 +592,6 @@ impl<T> Task<T> {
         )
     }
 
-    /// Creates a Task from an async_task::Task
-    pub fn from_async_task(task: async_task::Task<T, RunnableMeta>) -> Self {
-        Task(TaskState::Spawned(task))
-    }
-
     pub fn is_ready(&self) -> bool {
         match &self.0 {
             TaskState::Ready(_) => true,

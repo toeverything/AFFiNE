@@ -135,18 +135,6 @@ impl LineLayout {
         self.width
     }
 
-    /// The corresponding Font at the given index
-    pub fn font_id_for_index(&self, index: usize) -> Option<FontId> {
-        for run in &self.runs {
-            for glyph in &run.glyphs {
-                if glyph.index >= index {
-                    return Some(run.font_id);
-                }
-            }
-        }
-        None
-    }
-
     /// Split this layout at a byte index, returning `(prefix, suffix)`.
     ///
     /// - `prefix` contains glyphs for bytes `[0, byte_index)` with original positions.

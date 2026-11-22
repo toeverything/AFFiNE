@@ -296,11 +296,6 @@ impl ImageCache for RetainAllImageCache {
     }
 }
 
-/// Constructs a retain-all image cache that uses the element state associated with the given ID.
-pub fn retain_all(id: impl Into<ElementId>) -> RetainAllImageCacheProvider {
-    RetainAllImageCacheProvider { id: id.into() }
-}
-
 /// A provider struct for creating a retain-all image cache inline
 pub struct RetainAllImageCacheProvider {
     id: ElementId,

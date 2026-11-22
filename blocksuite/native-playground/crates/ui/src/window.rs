@@ -576,15 +576,6 @@ impl FocusHandle {
         self.id.contains(other.id, window)
     }
 
-    /// Obtains whether the element associated with this handle is part of the most recently rendered frame.
-    pub fn is_rendered(&self, window: &Window) -> bool {
-        window
-            .rendered_frame
-            .dispatch_tree
-            .focusable_node_id(self.id)
-            .is_some()
-    }
-
     /// Dispatch an action on the element that rendered this focus handle
     pub fn dispatch_action(&self, action: &dyn Action, window: &mut Window, cx: &mut App) {
         if let Some(node_id) = window
@@ -817,17 +808,6 @@ impl Hitbox {
     /// container.
     pub fn is_hovered(&self, window: &Window) -> bool {
         self.id.is_hovered(window)
-    }
-
-    /// Checks whether this hitbox would be hovered at `position`, regardless of the current input
-    /// modality or mouse position.
-    pub fn is_hovered_at(&self, position: Point<Pixels>, window: &Window) -> bool {
-        let hit_test = window.rendered_frame.hit_test(position);
-        hit_test
-            .ids
-            .iter()
-            .take(hit_test.hover_hitbox_count)
-            .any(|id| self.id == *id)
     }
 
     /// Checks if the hitbox contains the mouse and should handle scroll events. Typically this
@@ -2435,17 +2415,6 @@ impl Window {
             .and_then(|id| FocusHandle::for_id(id, &cx.focus_handles))
     }
 
-    /// While focus-lost listeners are being dispatched, returns the closest ancestor of the
-    /// previously focused element that can still receive focus, making it a suitable target
-    /// for focus restoration. Returns `None` at all other times, or when no such ancestor exists.
-    pub fn focus_lost_restore_target(&self, cx: &App) -> Option<FocusHandle> {
-        let (_leaf, ancestors) = self.focus_lost_path.split_last()?;
-        ancestors.iter().rev().find_map(|id| {
-            self.rendered_frame.dispatch_tree.focusable_node_id(*id)?;
-            FocusHandle::for_id(*id, &cx.focus_handles)
-        })
-    }
-
     /// Move focus to the element associated with the given [`FocusHandle`].
     pub fn focus(&mut self, handle: &FocusHandle, cx: &mut App) {
         if !self.focus_enabled || self.focus == Some(handle.id) {
@@ -2474,12 +2443,6 @@ impl Window {
         self.refresh();
     }
 
-    /// Blur the window and don't allow anything in it to be focused again.
-    pub fn disable_focus(&mut self, cx: &mut App) {
-        self.blur(cx);
-        self.focus_enabled = false;
-    }
-
     /// Move focus to next tab stop.
     pub fn focus_next(&mut self, cx: &mut App) {
         if !self.focus_enabled {
@@ -2487,17 +2450,6 @@ impl Window {
         }
 
         if let Some(handle) = self.rendered_frame.tab_stops.next(self.focus.as_ref()) {
-            self.focus(&handle, cx)
-        }
-    }
-
-    /// Move focus to previous tab stop.
-    pub fn focus_prev(&mut self, cx: &mut App) {
-        if !self.focus_enabled {
-            return;
-        }
-
-        if let Some(handle) = self.rendered_frame.tab_stops.prev(self.focus.as_ref()) {
             self.focus(&handle, cx)
         }
     }
@@ -2773,20 +2725,6 @@ impl Window {
         self.on_next_frame(move |_, cx| cx.notify(entity));
     }
 
-    /// Runs all callbacks scheduled via [`Self::on_next_frame`], returning how many ran.
-    ///
-    /// Tests have no platform frame loop, so this simulates the delivery of the
-    /// next frame.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn simulate_next_frame(&mut self, cx: &mut App) -> usize {
-        let callbacks = self.next_frame_callbacks.take();
-        let count = callbacks.len();
-        for callback in callbacks {
-            callback(self, cx);
-        }
-        count
-    }
-
     /// Spawn the future returned by the given closure on the application thread pool.
     /// The closure is provided a handle to the current window and an `AsyncWindowContext` for
     /// use within your future.
@@ -2931,21 +2869,6 @@ impl Window {
     /// Borrows the most recently rendered frame's scene, so benchmarks can validate their
     /// output and report batch counts without cloning it.
 
-    /// Returns the quads in the most recently rendered frame's scene, so tests can assert on
-    /// painted output without rasterizing the frame. Quad bounds are in scaled pixels and are
-    /// not clipped; each quad carries the content mask it will be clipped to when drawn. Quads
-    /// whose bounds don't intersect their content mask are culled at paint time and won't appear.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn painted_quads(&self) -> Vec<Quad> {
-        self.rendered_frame.scene.quads.clone()
-    }
-
-    /// Returns the underlines in the most recently rendered frame's scene.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn painted_underlines(&self) -> Vec<Underline> {
-        self.rendered_frame.scene.underlines.clone()
-    }
-
     /// Set the content size of the window.
     pub fn resize(&mut self, size: Size<Pixels>) {
         self.platform_window.resize(size);
@@ -2996,35 +2919,12 @@ impl Window {
         self.platform_window.visual_viewport_bounds()
     }
 
-    /// Returns a conservative rectangle avoiding platform-known obscured content.
-    ///
-    /// Intersects the visual viewport with the full layout area inset by system
-    /// safe areas and keyboard occlusion. Unknown overlays cannot be excluded.
-    pub fn fully_visible_bounds(&self) -> Bounds<Pixels> {
-        let insets = self.platform_window.insets().effective();
-        let viewport = self.viewport_size();
-        let left = insets.left.max(Pixels::ZERO).min(viewport.width);
-        let top = insets.top.max(Pixels::ZERO).min(viewport.height);
-        let right = (viewport.width - insets.right.max(Pixels::ZERO)).max(left);
-        let bottom = (viewport.height - insets.bottom.max(Pixels::ZERO)).max(top);
-        let safe_bounds = Bounds::from_corners(point(left, top), point(right, bottom));
-        let mut visible = safe_bounds.intersect(&self.visual_viewport_bounds());
-        visible.size.width = visible.size.width.max(Pixels::ZERO);
-        visible.size.height = visible.size.height.max(Pixels::ZERO);
-        visible
-    }
-
     /// Requests the virtual keyboard for the currently focused text input.
     ///
     /// Call from a user gesture on platforms that require one. The platform may
     /// decline the request; this does not change focus or the layout viewport.
     pub fn request_virtual_keyboard(&self) {
         self.platform_window.show_soft_keyboard();
-    }
-
-    /// Requests dismissal of the virtual keyboard without changing GPUI focus.
-    pub fn dismiss_virtual_keyboard(&self) {
-        self.platform_window.hide_soft_keyboard();
     }
 
     /// Returns whether this window is focused by the operating system (receiving key events).
@@ -3041,11 +2941,6 @@ impl Window {
         } else {
             self.is_window_active()
         }
-    }
-
-    /// Toggle zoom on the window.
-    pub fn zoom_window(&self) {
-        self.platform_window.zoom();
     }
 
     /// Opens the native title bar context menu, useful when implementing client side decorations (Wayland and X11)
@@ -3097,11 +2992,6 @@ impl Window {
         self.platform_window.window_controls()
     }
 
-    /// Updates the window's title at the platform level.
-    pub fn set_window_title(&mut self, title: &str) {
-        self.platform_window.set_title(title);
-    }
-
     /// Sets the position of the macOS traffic light buttons.
     #[cfg(target_os = "macos")]
     pub fn set_traffic_light_position(&self, position: Point<Pixels>) {
@@ -3123,11 +3013,6 @@ impl Window {
     pub fn set_background_appearance(&self, background_appearance: WindowBackgroundAppearance) {
         self.platform_window
             .set_background_appearance(background_appearance);
-    }
-
-    /// Mark the window as dirty at the platform level.
-    pub fn set_window_edited(&mut self, edited: bool) {
-        self.platform_window.set_edited(edited);
     }
 
     /// Set the path of the file this window represents.
@@ -3154,13 +3039,6 @@ impl Window {
     /// be rendered as two pixels on screen.
     pub fn scale_factor(&self) -> f32 {
         self.scale_factor
-    }
-
-    /// Overrides the display scale factor for tests.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn set_scale_factor(&mut self, scale_factor: f32) {
-        self.scale_factor = scale_factor;
-        self.refresh();
     }
 
     /// The size of an em for the base font of the application. Adjusting this value allows the
@@ -3238,19 +3116,6 @@ impl Window {
         px(round_to_device_pixel(value.0, self.scale_factor()) / self.scale_factor())
     }
 
-    /// f64 variant of [`Self::pixel_snap`].
-    #[inline]
-    pub fn pixel_snap_f64(&self, value: f64) -> f64 {
-        let scale_factor = f64::from(self.scale_factor());
-        round_half_toward_zero_f64(value * scale_factor) / scale_factor
-    }
-
-    /// Snaps a bounds' origin and size to the nearest device pixel.
-    #[inline]
-    pub fn pixel_snap_bounds(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
-        bounds.map(|c| self.pixel_snap(c))
-    }
-
     /// Snaps a point's coordinates to the nearest device pixel.
     #[inline]
     pub fn pixel_snap_point(&self, position: Point<Pixels>) -> Point<Pixels> {
@@ -3274,63 +3139,6 @@ impl Window {
         Bounds {
             origin: origin.map(|c| ScaledPixels(round_to_device_pixel(c.0, scale_factor))),
             size: size(self.snap_stroke(width), height),
-        }
-    }
-
-    /// Paints an underline excluding absolute device-space horizontal spans.
-    pub fn paint_underline_with_exclusions(
-        &mut self,
-        origin: Point<Pixels>,
-        width: Pixels,
-        style: &UnderlineStyle,
-        exclusions: &[Range<ScaledPixels>],
-    ) {
-        self.invalidator.debug_assert_paint();
-        let underline = self.underline(origin, width, style);
-        if exclusions.is_empty() || underline.transformation != TransformationMatrix::unit() {
-            self.next_frame.scene.insert_primitive(underline);
-            return;
-        }
-
-        let bounds = underline.bounds.intersect(&underline.content_mask.bounds);
-        if bounds.is_empty() {
-            return;
-        }
-
-        let mut exclusions = exclusions
-            .iter()
-            .filter_map(|span| {
-                let start = span.start.max(bounds.left());
-                let end = span.end.min(bounds.right());
-                (start < end).then_some(start..end)
-            })
-            .collect::<SmallVec<[_; 4]>>();
-        if exclusions.is_empty() {
-            self.next_frame.scene.insert_primitive(underline);
-            return;
-        }
-        exclusions.sort_unstable_by_key(|span| span.start);
-
-        let mut paint_span = |start, end| {
-            self.next_frame.scene.insert_primitive(Underline {
-                content_mask: ContentMask {
-                    bounds: Bounds::from_corners(
-                        point(start, bounds.top()),
-                        point(end, bounds.bottom()),
-                    ),
-                },
-                ..underline
-            });
-        };
-        let mut start = bounds.left();
-        for exclusion in exclusions {
-            if start < exclusion.start {
-                paint_span(start, exclusion.start);
-            }
-            start = start.max(exclusion.end);
-        }
-        if start < bounds.right() {
-            paint_span(start, bounds.right());
         }
     }
 
@@ -3417,52 +3225,15 @@ impl Window {
             .is_action_available(action, node_id)
     }
 
-    /// Determine whether the given action is available along the dispatch path to the given focus_handle.
-    pub fn is_action_available_in(&self, action: &dyn Action, focus_handle: &FocusHandle) -> bool {
-        let node_id = self.focus_node_id_in_rendered_frame(Some(focus_handle.id));
-        self.rendered_frame
-            .dispatch_tree
-            .is_action_available(action, node_id)
-    }
-
     /// The position of the mouse relative to the window.
     pub fn mouse_position(&self) -> Point<Pixels> {
         crate::fast::dependencies::read_pointer(self);
         self.mouse_position
     }
 
-    /// Captures the pointer for the given hitbox. While captured, all mouse move and mouse up
-    /// events will be routed to listeners that check this hitbox's `is_hovered` status,
-    /// regardless of actual hit testing. This enables drag operations that continue
-    /// even when the pointer moves outside the element's bounds.
-    ///
-    /// The capture is automatically released on mouse up.
-    pub fn capture_pointer(&mut self, hitbox_id: HitboxId) {
-        self.captured_hitbox = Some(hitbox_id);
-    }
-
-    /// Releases any active pointer capture.
-    pub fn release_pointer(&mut self) {
-        self.captured_hitbox = None;
-    }
-
     /// Returns the hitbox that has captured the pointer, if any.
     pub fn captured_hitbox(&self) -> Option<HitboxId> {
         self.captured_hitbox
-    }
-
-    /// Captures the current long press for the given entity.
-    ///
-    /// The capture is released when the gesture ends or is cancelled, or when
-    /// a replacement touch begins. A listener must also call
-    /// [`Self::prevent_default`] on the started event to claim the gesture.
-    pub fn capture_long_press<T: 'static>(&mut self, entity: &Entity<T>) {
-        self.long_press_capture = Some(entity.entity_id());
-    }
-
-    /// Returns whether the given entity has captured the current long press.
-    pub fn has_long_press_capture<T: 'static>(&self, entity: &Entity<T>) -> bool {
-        self.long_press_capture == Some(entity.entity_id())
     }
 
     /// The current state of the keyboard's modifiers
@@ -4285,51 +4056,6 @@ impl Window {
         result
     }
 
-    /// Perform prepaint on child elements in a "retryable" manner, so that any side effects
-    /// of prepaints can be discarded before prepainting again. This is used to support autoscroll
-    /// where we need to prepaint children to detect the autoscroll bounds, then adjust the
-    /// element offset and prepaint again. See [`crate::List`] for an example. This method should only be
-    /// called during the prepaint phase of element drawing.
-    pub fn transact<T, U>(&mut self, f: impl FnOnce(&mut Self) -> Result<T, U>) -> Result<T, U> {
-        self.invalidator.debug_assert_prepaint();
-        let index = self.prepaint_index();
-        let result = f(self);
-        if result.is_err() {
-            self.next_frame.hitboxes.truncate(index.hitboxes_index);
-            self.next_frame
-                .tooltip_requests
-                .truncate(index.tooltips_index);
-            self.next_frame
-                .deferred_draws
-                .truncate(index.deferred_draws_index);
-            self.next_frame
-                .dispatch_tree
-                .truncate(index.dispatch_tree_index);
-            self.next_frame
-                .accessed_element_states
-                .truncate(index.accessed_element_states_index);
-            self.text_system.truncate_layouts(index.line_layout_index);
-        }
-        result
-    }
-
-    /// When you call this method during [`Element::prepaint`], containing elements will attempt to
-    /// scroll to cause the specified bounds to become visible. When they decide to autoscroll, they will call
-    /// [`Element::prepaint`] again with a new set of bounds. See [`crate::List`] for an example of an element
-    /// that supports this method being called on the elements it contains. This method should only be
-    /// called during the prepaint phase of element drawing.
-    pub fn request_autoscroll(&mut self, bounds: Bounds<Pixels>) {
-        self.invalidator.debug_assert_prepaint();
-        self.requested_autoscroll = Some(bounds);
-    }
-
-    /// This method can be called from a containing element such as [`crate::List`] to support the autoscroll behavior
-    /// described in [`Self::request_autoscroll`].
-    pub fn take_autoscroll(&mut self) -> Option<Bounds<Pixels>> {
-        self.invalidator.debug_assert_prepaint();
-        self.requested_autoscroll.take()
-    }
-
     /// Asynchronously load an asset, if the asset hasn't finished loading this will return None.
     /// Your view will be re-drawn once the asset has finished loading.
     ///
@@ -4377,19 +4103,6 @@ impl Window {
                     size: self.viewport_size,
                 },
             })
-    }
-
-    /// Provide elements in the called function with a new namespace in which their identifiers must be unique.
-    /// This can be used within a custom element to distinguish multiple sets of child elements.
-    pub fn with_element_namespace<R>(
-        &mut self,
-        element_id: impl Into<ElementId>,
-        f: impl FnOnce(&mut Self) -> R,
-    ) -> R {
-        self.element_id_stack.push(element_id.into());
-        let result = f(self);
-        self.element_id_stack.pop();
-        result
     }
 
     /// Use a piece of state that exists as long this element is being rendered in consecutive frames.
@@ -5304,21 +5017,6 @@ impl Window {
         Ok(())
     }
 
-    /// Returns whether every frame of an image is present in the sprite atlas.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn has_image_atlas_entry(&self, data: &RenderImage) -> bool {
-        data.frame_count() > 0
-            && (0..data.frame_count()).all(|frame_index| {
-                self.sprite_atlas.contains(
-                    &RenderImageParams {
-                        image_id: data.id,
-                        frame_index,
-                    }
-                    .into(),
-                )
-            })
-    }
-
     /// Add a node to the layout tree for the current frame. Takes the `Style` of the element for which
     /// layout is being requested, along with the layout ids of any children. This method is called during
     /// calls to the [`Element::request_layout`] trait method and enables any element to participate in layout.
@@ -5718,21 +5416,6 @@ impl Window {
         false
     }
 
-    /// Return a key binding string for an action, to display in the UI. Uses the highest precedence
-    /// binding for the action (last binding added to the keymap).
-    pub fn keystroke_text_for(&self, action: &dyn Action, cx: &App) -> String {
-        self.highest_precedence_binding_for_action(action)
-            .map(|binding| {
-                binding
-                    .keystrokes()
-                    .iter()
-                    .map(|keystroke| keystroke.display(cx.platform_info().os).to_string())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .unwrap_or_else(|| action.name().to_string())
-    }
-
     /// Dispatch a mouse, keyboard, or touch event on the window.
     pub fn dispatch_event(&mut self, event: PlatformInput, cx: &mut App) -> DispatchEventResult {
         let update_count_before = self.invalidator.update_count();
@@ -5912,13 +5595,6 @@ impl Window {
     /// latency. Defaults to true.
     pub fn touch_prediction_enabled(&self) -> bool {
         self.touch_prediction_enabled
-    }
-
-    /// Sets whether recognized touch pans may use the platform's predicted
-    /// touch positions. Disabling drops [`TouchEvent::predicted_position`]
-    /// before gesture recognition, so pans track only raw touch positions.
-    pub fn set_touch_prediction_enabled(&mut self, enabled: bool) {
-        self.touch_prediction_enabled = enabled;
     }
 
     /// Runs the portable gesture recognizer over a raw touch event and
@@ -6335,88 +6011,6 @@ impl Window {
             })
     }
 
-    /// Pauses or resumes the current pending input timeout on behalf of `owner`.
-    ///
-    /// A paused timeout resumes automatically if `owner` is released. Returns whether the timeout
-    /// state changed. A timeout paused by one owner cannot be resumed by another.
-    pub fn set_pending_input_timeout_paused<T: 'static>(
-        &mut self,
-        owner: &Entity<T>,
-        paused: bool,
-        cx: &mut App,
-    ) -> bool {
-        let owner_id = owner.entity_id();
-        if !paused {
-            return self.resume_pending_input_timeout(owner_id, cx);
-        }
-
-        let timeout = self
-            .pending_input
-            .as_ref()
-            .filter(|pending_input| pending_input.focus == self.focus)
-            .and_then(|pending_input| pending_input.timeout.as_ref());
-        let Some(timeout) = timeout else {
-            return false;
-        };
-        if timeout.is_paused() {
-            return false;
-        }
-
-        let release_subscription = self.observe_release(owner, cx, move |_, window, cx| {
-            window.resume_pending_input_timeout(owner_id, cx);
-        });
-        let now = cx.background_executor().now();
-        let changed = self
-            .pending_input
-            .as_mut()
-            .filter(|pending_input| pending_input.focus == self.focus)
-            .and_then(|pending_input| pending_input.timeout.as_mut())
-            .is_some_and(|timeout| {
-                timeout.pause(
-                    PendingInputTimeoutPause {
-                        owner_id,
-                        _release_subscription: release_subscription,
-                    },
-                    now,
-                )
-            });
-
-        if changed {
-            self.defer_pending_input_changed(cx);
-        }
-        changed
-    }
-
-    fn resume_pending_input_timeout(&mut self, owner_id: EntityId, cx: &mut App) -> bool {
-        let Some(remaining) = self
-            .pending_input
-            .as_ref()
-            .and_then(|pending_input| pending_input.timeout.as_ref())
-            .filter(|timeout| timeout.pause_owner_id() == Some(owner_id))
-            .map(|timeout| timeout.remaining)
-        else {
-            return false;
-        };
-
-        let (started_at, task) = self.start_pending_input_timeout(remaining, cx);
-        let changed = self
-            .pending_input
-            .as_mut()
-            .and_then(|pending_input| pending_input.timeout.as_mut())
-            .is_some_and(|timeout| timeout.resume(owner_id, started_at, task));
-
-        if changed {
-            self.defer_pending_input_changed(cx);
-        }
-        changed
-    }
-
-    /// Returns the currently pending input keystrokes that might result in a multi-stroke key binding.
-    pub fn pending_input_keystrokes(&self) -> Option<&[Keystroke]> {
-        self.pending_input()
-            .map(|pending_input| pending_input.keystrokes())
-    }
-
     fn replay_pending_input(&mut self, replays: SmallVec<[Replay; 1]>, cx: &mut App) {
         let node_id = self.focus_node_id_in_rendered_frame(self.focus);
         let dispatch_path = self.rendered_frame.dispatch_tree.dispatch_path(node_id);
@@ -6611,11 +6205,6 @@ impl Window {
         self.platform_window.request_attention();
     }
 
-    /// Minimize the current window at the platform level.
-    pub fn minimize_window(&self) {
-        self.platform_window.minimize();
-    }
-
     /// Toggle full screen status on the current window at the platform level.
     pub fn toggle_fullscreen(&self) {
         self.platform_window.toggle_fullscreen();
@@ -6751,62 +6340,6 @@ impl Window {
             )
     }
 
-    /// Returns the key bindings for an action in a context.
-    pub fn bindings_for_action_in_context(
-        &self,
-        action: &dyn Action,
-        context: KeyContext,
-    ) -> Vec<KeyBinding> {
-        let dispatch_tree = &self.rendered_frame.dispatch_tree;
-        dispatch_tree.bindings_for_action(action, &[context])
-    }
-
-    /// Returns the highest precedence key binding for an action in a context. This is more
-    /// efficient than getting the last result of `bindings_for_action_in_context`.
-    pub fn highest_precedence_binding_for_action_in_context(
-        &self,
-        action: &dyn Action,
-        context: KeyContext,
-    ) -> Option<KeyBinding> {
-        let dispatch_tree = &self.rendered_frame.dispatch_tree;
-        dispatch_tree.highest_precedence_binding_for_action(action, &[context])
-    }
-
-    /// Returns any bindings that would invoke an action on the given focus handle if it were
-    /// focused. Bindings are returned in the order they were added. For display, the last binding
-    /// should take precedence.
-    pub fn bindings_for_action_in(
-        &self,
-        action: &dyn Action,
-        focus_handle: &FocusHandle,
-    ) -> Vec<KeyBinding> {
-        let dispatch_tree = &self.rendered_frame.dispatch_tree;
-        let Some(context_stack) = self.context_stack_for_focus_handle(focus_handle) else {
-            return vec![];
-        };
-        dispatch_tree.bindings_for_action(action, &context_stack)
-    }
-
-    /// Returns the highest precedence key binding that would invoke an action on the given focus
-    /// handle if it were focused. This is more efficient than getting the last result of
-    /// `bindings_for_action_in`.
-    pub fn highest_precedence_binding_for_action_in(
-        &self,
-        action: &dyn Action,
-        focus_handle: &FocusHandle,
-    ) -> Option<KeyBinding> {
-        let dispatch_tree = &self.rendered_frame.dispatch_tree;
-        let context_stack = self.context_stack_for_focus_handle(focus_handle)?;
-        dispatch_tree.highest_precedence_binding_for_action(action, &context_stack)
-    }
-
-    /// Find the bindings that can follow the current input sequence for the current context stack.
-    pub fn possible_bindings_for_input(&self, input: &[Keystroke]) -> Vec<KeyBinding> {
-        self.rendered_frame
-            .dispatch_tree
-            .possible_next_bindings_for_input(input, &self.context_stack())
-    }
-
     fn context_stack_for_focus_handle(
         &self,
         focus_handle: &FocusHandle,
@@ -6819,43 +6352,6 @@ impl Window {
             .filter_map(|node_id| dispatch_tree.node(node_id).context.clone())
             .collect();
         Some(context_stack)
-    }
-
-    /// Returns a generic event listener that invokes the given listener with the view and context associated with the given view handle.
-    pub fn listener_for<T: 'static, E>(
-        &self,
-        view: &Entity<T>,
-        f: impl Fn(&mut T, &E, &mut Window, &mut Context<T>) + 'static,
-    ) -> impl Fn(&E, &mut Window, &mut App) + 'static {
-        let view = view.downgrade();
-        move |e: &E, window: &mut Window, cx: &mut App| {
-            view.update(cx, |view, cx| f(view, e, window, cx)).ok();
-        }
-    }
-
-    /// Returns a generic handler that invokes the given handler with the view and context associated with the given view handle.
-    pub fn handler_for<E: 'static, Callback: Fn(&mut E, &mut Window, &mut Context<E>) + 'static>(
-        &self,
-        entity: &Entity<E>,
-        f: Callback,
-    ) -> impl Fn(&mut Window, &mut App) + 'static {
-        let entity = entity.downgrade();
-        move |window: &mut Window, cx: &mut App| {
-            entity.update(cx, |entity, cx| f(entity, window, cx)).ok();
-        }
-    }
-
-    /// Register a callback that can interrupt the closing of the current window based the returned boolean.
-    /// If the callback returns false, the window won't be closed.
-    pub fn on_window_should_close(
-        &self,
-        cx: &App,
-        f: impl Fn(&mut Window, &mut App) -> bool + 'static,
-    ) {
-        let mut cx = self.to_async(cx);
-        self.platform_window.on_should_close(Box::new(move || {
-            cx.update(|window, cx| f(window, cx)).unwrap_or(true)
-        }))
     }
 
     /// Register an action listener on this node for the next frame. The type of action
@@ -6878,29 +6374,6 @@ impl Window {
             .on_action(action_type, Rc::new(listener));
     }
 
-    /// Register a capturing action listener on this node for the next frame if the condition is true.
-    /// The type of action is determined by the first parameter of the given listener. When the next
-    /// frame is rendered the listener will be cleared.
-    ///
-    /// This is a fairly low-level method, so prefer using action handlers on elements unless you have
-    /// a specific need to register a listener yourself.
-    ///
-    /// This method should only be called as part of the paint phase of element drawing.
-    pub fn on_action_when(
-        &mut self,
-        condition: bool,
-        action_type: TypeId,
-        listener: impl Fn(&dyn Any, DispatchPhase, &mut Window, &mut App) + 'static,
-    ) {
-        self.invalidator.debug_assert_paint();
-
-        if condition {
-            self.next_frame
-                .dispatch_tree
-                .on_action(action_type, Rc::new(listener));
-        }
-    }
-
     /// Read information about the GPU backing this window.
     /// Currently returns None on Mac and Windows.
     pub fn gpu_specs(&self) -> Option<GpuSpecs> {
@@ -6912,12 +6385,6 @@ impl Window {
     pub fn titlebar_double_click(&self) {
         self.platform_window
             .titlebar_double_click(self.is_resizable, self.is_minimizable);
-    }
-
-    /// Gets the window's title at the platform level.
-    /// This is macOS specific.
-    pub fn window_title(&self) -> String {
-        self.platform_window.get_title()
     }
 
     /// Returns a list of all tabbed windows and their titles.
@@ -6999,19 +6466,6 @@ impl Window {
     #[cfg(any(test, feature = "harness"))]
     pub fn set_modifiers(&mut self, modifiers: Modifiers) {
         self.modifiers = modifiers;
-    }
-
-    /// For testing: simulate a mouse move event to the given position.
-    /// This dispatches the event through the normal event handling path,
-    /// which will trigger hover states and tooltips.
-    #[cfg(any(test, feature = "harness"))]
-    pub fn simulate_mouse_move(&mut self, position: Point<Pixels>, cx: &mut App) {
-        let event = PlatformInput::MouseMove(MouseMoveEvent {
-            position,
-            modifiers: self.modifiers,
-            pressed_button: None,
-        });
-        let _ = self.dispatch_event(event, cx);
     }
 
     #[inline(never)]
@@ -7315,13 +6769,6 @@ pub enum ElementId {
     NamedChild(Arc<ElementId>, SharedString),
     /// A byte array ID (used for text-anchors)
     OpaqueId([u8; 20]),
-}
-
-impl ElementId {
-    /// Constructs an `ElementId::NamedInteger` from a name and `usize`.
-    pub fn named_usize(name: impl Into<SharedString>, integer: usize) -> ElementId {
-        Self::NamedInteger(name.into(), integer as u64)
-    }
 }
 
 impl Display for ElementId {

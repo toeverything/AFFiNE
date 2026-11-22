@@ -46,6 +46,13 @@ impl WorldRect {
             && self.bottom() > other.y
     }
 
+    pub fn contains_rect(self, inner: Self) -> bool {
+        inner.x >= self.x
+            && inner.y >= self.y
+            && inner.right() <= self.right()
+            && inner.bottom() <= self.bottom()
+    }
+
     pub fn union(self, other: Self) -> Self {
         if self.is_empty() {
             return other;

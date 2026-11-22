@@ -158,6 +158,7 @@ pub struct SurfaceShape {
     pub shape_style: ShapeStyle,
     pub roughness: f64,
     pub text: RichText,
+    pub text_display: bool,
     pub color: ColorValue,
     pub font_family: String,
     pub font_size: f64,
@@ -366,6 +367,7 @@ impl SurfaceElement {
                         ShapeStyle::General
                     },
                     text,
+                    text_display: true,
                     color: font.color,
                     font_family: font.font_family,
                     font_size: font.font_size,
@@ -807,8 +809,11 @@ impl SnapshotReader<'_> {
                 title: self.rich_text(entries.get("prop:title"))?,
             },
             "affine:surface" => {
-                let elements = self
-                    .surface_elements(entries.get("prop:elements"), props.get("prop:elements"))?;
+                let elements = self.surface_elements(
+                    id,
+                    entries.get("prop:elements"),
+                    props.get("prop:elements"),
+                )?;
                 BlockContent::Surface {
                     element_count: elements.len(),
                     elements,
@@ -902,6 +907,7 @@ impl SnapshotReader<'_> {
 
     fn surface_elements(
         &self,
+        surface_id: &str,
         value: Option<&SessionReadValue>,
         normalized: Option<&JsonValue>,
     ) -> DocResult<Vec<SurfaceElement>> {
@@ -920,8 +926,16 @@ impl SnapshotReader<'_> {
         else {
             return Ok(vec![]);
         };
-        let mut elements = Vec::with_capacity(raw.len());
-        for (id, value) in session.read_map(&TypeTarget::Identity(value))? {
+        let map_entries = session.read_map(&TypeTarget::Identity(value))?;
+        let ordered_ids = self
+            .page
+            .refresh_surface_element_order(surface_id, &map_entries);
+        let mut by_id: BTreeMap<String, SessionReadValue> = map_entries.into_iter().collect();
+        let mut elements = Vec::with_capacity(ordered_ids.len());
+        for id in ordered_ids {
+            let Some(value) = by_id.remove(&id) else {
+                continue;
+            };
             let properties = raw.get(&id).unwrap_or(&JsonValue::Null);
             let (props, text) = if let SessionReadValue::Map(identity) = value {
                 let key = if properties["type"] == "group" {
@@ -936,7 +950,7 @@ impl SnapshotReader<'_> {
             };
             elements.push(SurfaceElement::from_properties(id, props, text));
         }
-        elements.sort_by(|a, b| (&a.index, &a.id).cmp(&(&b.index, &b.id)));
+        elements.sort_by(|a, b| a.index.cmp(&b.index));
         Ok(elements)
     }
 }
@@ -1061,8 +1075,10 @@ fn number(value: Option<&SessionReadValue>) -> Option<f64> {
 #[cfg(test)]
 mod surface_tests {
     use super::*;
-    use crate::schema::{BlockSpec, ConnectorEndpointSpec, SurfaceElementSpec as Spec};
-    use y_octo::SessionValue;
+    use crate::schema::{
+        BlockSpec, ConnectorEndpointSpec, SurfaceElementSpec, SurfaceElementSpec as Spec,
+    };
+    use y_octo::{SessionValue, TypePath};
 
     #[test]
     fn partial_normalized_surface_map_keeps_missing_entry_as_unknown() -> DocResult {
@@ -1089,6 +1105,7 @@ mod surface_tests {
         reader.load()?;
         let partial = serde_json::json!({"value":{}});
         let result = reader.surface_elements(
+            "surface",
             reader.raw["surface"].entries.get("prop:elements"),
             Some(&partial),
         )?;
@@ -1194,19 +1211,22 @@ mod surface_tests {
         assert_eq!(
             elements.iter().map(|e| e.id.as_str()).collect::<Vec<_>>(),
             [
-                "brush",
-                "connector",
-                "group",
-                "highlighter",
                 "shape",
+                "connector",
+                "brush",
+                "highlighter",
+                "group",
                 "text"
             ]
         );
-        let SurfaceElementKind::Brush(s) = &elements[0].kind else {
+        let SurfaceElementKind::Shape(s) = &elements[0].kind else {
             panic!()
         };
-        assert_eq!(s.points, [[0., 2., 0.5], [5., 3., 0.75]]);
-        assert_eq!(s.xywh, [100., 20., 40., 10.]);
+        assert_eq!(s.shape_type, ShapeType::Rect);
+        assert_eq!(s.radius, 0.1);
+        assert_eq!(s.padding, [10., 20.]);
+        assert_eq!(s.text.plain, "Label");
+        assert_eq!(elements[0].props["future"], 17);
         let SurfaceElementKind::Connector(c) = &elements[1].kind else {
             panic!()
         };
@@ -1217,24 +1237,21 @@ mod surface_tests {
         assert_eq!(c.source.id.as_deref(), Some("shape"));
         assert_eq!(c.target.position, Some([99., 22.]));
         assert_eq!(c.text.plain, "Edge");
-        let SurfaceElementKind::Group { title, children } = &elements[2].kind else {
+        let SurfaceElementKind::Brush(s) = &elements[2].kind else {
             panic!()
         };
-        assert_eq!(title.plain, "Group");
-        assert_eq!(children, &["shape", "text"]);
+        assert_eq!(s.points, [[0., 2., 0.5], [5., 3., 0.75]]);
+        assert_eq!(s.xywh, [100., 20., 40., 10.]);
         let SurfaceElementKind::Highlighter(s) = &elements[3].kind else {
             panic!()
         };
         assert_eq!(s.points, [[3., 4., 0.5]]);
         assert_eq!(s.color, ColorValue::Single("#84cfff4d".into()));
-        let SurfaceElementKind::Shape(s) = &elements[4].kind else {
+        let SurfaceElementKind::Group { title, children } = &elements[4].kind else {
             panic!()
         };
-        assert_eq!(s.shape_type, ShapeType::Rect);
-        assert_eq!(s.radius, 0.1);
-        assert_eq!(s.padding, [10., 20.]);
-        assert_eq!(s.text.plain, "Label");
-        assert_eq!(elements[4].props["future"], 17);
+        assert_eq!(title.plain, "Group");
+        assert_eq!(children, &["shape", "text"]);
         let SurfaceElementKind::Text(t) = &elements[5].kind else {
             panic!()
         };
@@ -1258,5 +1275,198 @@ mod surface_tests {
         );
         assert!(e.hidden && e.locked_by_self);
         assert_eq!(e.props["nested"]["extra"][1], 2);
+    }
+
+    #[test]
+    fn equal_index_surface_elements_preserve_per_surface_insertion_order_despite_earlier_global_key()
+    -> DocResult<()> {
+        // Adversarial test: insert key `"a"` in an unrelated block first, then insert
+        // equal-index shapes `"z"` ("a1") and `"a"` ("a1") into `prop:elements.value`.
+        // Both a single V1 update and two incremental updates must preserve `["z", "a"]`.
+        let mut author = PageDocSession::new("p-order", 1)?;
+        author.add_block(
+            "page-1",
+            BlockSpec::Page {
+                title: "Order".into(),
+            },
+            None,
+            None,
+            1,
+        )?;
+        author.add_block(
+            "a",
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: "global key a".into(),
+            },
+            Some("page-1"),
+            None,
+            2,
+        )?;
+        let surf = author.ensure_surface_block(3)?;
+        let u_base = author.encode_update_v1()?;
+        let u_z = author
+            .add_surface_element(
+                &surf,
+                "z",
+                "a1",
+                SurfaceElementSpec::Shape {
+                    shape_type: "rect".into(),
+                    xywh: "[0,0,100,80]".into(),
+                    seed: 1,
+                    filled: true,
+                    text: Some("Z".into()),
+                },
+                4,
+            )?
+            .unwrap()
+            .update;
+        let u_a = author
+            .add_surface_element(
+                &surf,
+                "a",
+                "a1",
+                SurfaceElementSpec::Shape {
+                    shape_type: "rect".into(),
+                    xywh: "[20,20,100,80]".into(),
+                    seed: 2,
+                    filled: true,
+                    text: Some("A".into()),
+                },
+                5,
+            )?
+            .unwrap()
+            .update;
+        let u_full = author.encode_update_v1()?;
+
+        let extract_ids = |doc: &PageDocSession| -> Vec<String> {
+            let snap = doc.read_page_snapshot().unwrap();
+            let surf_node = snap
+                .root
+                .unwrap()
+                .children
+                .into_iter()
+                .find(|c| c.id == surf)
+                .unwrap();
+            let BlockContent::Surface { elements, .. } = surf_node.content else {
+                unreachable!()
+            };
+            elements.into_iter().map(|e| e.id).collect()
+        };
+
+        assert_eq!(extract_ids(&author), vec!["z", "a"]);
+
+        // Single V1 update decode on fresh peer:
+        let mut peer_single = PageDocSession::new("p-order", 2)?;
+        peer_single.apply_remote_update_v1(&u_full)?;
+        assert_eq!(extract_ids(&peer_single), vec!["z", "a"]);
+
+        // Two incremental updates on fresh peer:
+        let mut peer_inc = PageDocSession::new("p-order", 3)?;
+        peer_inc.apply_remote_update_v1(&u_base)?;
+        peer_inc.apply_remote_update_v1(&u_z)?;
+        peer_inc.apply_remote_update_v1(&u_a)?;
+        assert_eq!(extract_ids(&peer_inc), vec!["z", "a"]);
+        Ok(())
+    }
+
+    #[test]
+    fn concurrent_two_peer_shape_label_splice_and_undo_redo_preserve_marks() -> DocResult<()> {
+        let mut peer_a = PageDocSession::new("p-collab", 11)?;
+        peer_a.add_block(
+            "page-1",
+            BlockSpec::Page {
+                title: "Collab".into(),
+            },
+            None,
+            None,
+            1,
+        )?;
+        let surf = peer_a.ensure_surface_block(2)?;
+        peer_a.add_surface_element(
+            &surf,
+            "s1",
+            "a0",
+            SurfaceElementSpec::Shape {
+                shape_type: "rect".into(),
+                xywh: "[0,0,160,80]".into(),
+                seed: 7,
+                filled: true,
+                text: Some("Hello".into()),
+            },
+            3,
+        )?;
+        // Apply bold mark to "Hello" directly on Y.Text.
+        let target = TypeTarget::Path(
+            TypePath::root("blocks")
+                .key(&surf)
+                .key("prop:elements")
+                .key("value")
+                .key("s1")
+                .key("text"),
+        );
+        let mut bold = y_octo::TextAttributes::new();
+        bold.insert("bold".into(), Any::True);
+        peer_a.inner_mut().text_format(&target, 0, 5, bold)?;
+        peer_a.stop_capturing()?;
+
+        let mut peer_b = PageDocSession::new("p-collab", 22)?;
+        peer_b.apply_remote_update_v1(&peer_a.encode_update_v1()?)?;
+
+        // Concurrent edits: B prepends "X ", A appends "!"
+        let upd_b = peer_b
+            .splice_surface_element_text(&surf, "s1", "text", 0, 0, "X ", 100)?
+            .unwrap()
+            .update;
+        let upd_a = peer_a
+            .splice_surface_element_text(&surf, "s1", "text", 5, 0, "!", 100)?
+            .unwrap()
+            .update;
+        peer_a.apply_remote_update_v1(&upd_b)?;
+        peer_b.apply_remote_update_v1(&upd_a)?;
+
+        let read_shape_text = |doc: &PageDocSession| -> RichText {
+            let snap = doc.read_page_snapshot().unwrap();
+            let snode = snap
+                .root
+                .unwrap()
+                .children
+                .into_iter()
+                .find(|c| c.id == surf)
+                .unwrap();
+            let BlockContent::Surface { elements, .. } = snode.content else {
+                unreachable!()
+            };
+            let SurfaceElementKind::Shape(sh) = &elements[0].kind else {
+                unreachable!()
+            };
+            sh.text.clone()
+        };
+
+        let ta = read_shape_text(&peer_a);
+        let tb = read_shape_text(&peer_b);
+        assert_eq!(ta.plain, "X Hello!");
+        assert_eq!(tb.plain, "X Hello!");
+        assert!(
+            ta.delta.iter().any(|op| matches!(
+                op,
+                TextDeltaOp::Insert { insert: TextInsert::Text(t), format: Some(f) }
+                    if t.contains("Hello") && f.get("bold") == Some(&Any::True)
+            )),
+            "untouched bold mark on 'Hello' must survive concurrent splices: {:?}",
+            ta.delta
+        );
+
+        // Peer A undoes "!" -> "X Hello" survives; redoes -> "X Hello!".
+        let u_undo = peer_a.undo()?.unwrap().update;
+        peer_b.apply_remote_update_v1(&u_undo)?;
+        assert_eq!(read_shape_text(&peer_a).plain, "X Hello");
+        assert_eq!(read_shape_text(&peer_b).plain, "X Hello");
+
+        let u_redo = peer_a.redo()?.unwrap().update;
+        peer_b.apply_remote_update_v1(&u_redo)?;
+        assert_eq!(read_shape_text(&peer_a).plain, "X Hello!");
+        assert_eq!(read_shape_text(&peer_b).plain, "X Hello!");
+        Ok(())
     }
 }

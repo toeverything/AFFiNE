@@ -45,20 +45,6 @@ impl<K: Eq, V> VecMap<K, V> {
             None => Entry::Vacant(VacantEntry { map: self, key }),
         }
     }
-
-    /// Like [`Self::entry`] but takes its key by reference instead of by value.
-    ///
-    /// This can be helpful if you have a key where cloning is expensive, as we
-    /// can avoid cloning the key until a value is inserted under that entry.
-    pub fn entry_ref<'a, 'k>(&'a mut self, key: &'k K) -> EntryRef<'k, 'a, K, V> {
-        match self.keys.iter().position(|k| k == key) {
-            Some(index) => EntryRef::Occupied(OccupiedEntry {
-                key: &self.keys[index],
-                value: &mut self.values[index],
-            }),
-            None => EntryRef::Vacant(VacantEntryRef { map: self, key }),
-        }
-    }
 }
 
 pub struct Iter<'a, K, V> {

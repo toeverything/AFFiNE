@@ -109,6 +109,10 @@ impl TouchIds {
     fn end(&mut self, pointer_id: i32) -> Option<TouchId> {
         self.active.remove(&pointer_id)
     }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.active.is_empty()
+    }
 }
 
 impl WebWindowInner {

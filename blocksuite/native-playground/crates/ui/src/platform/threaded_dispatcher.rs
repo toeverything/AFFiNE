@@ -321,57 +321,6 @@ impl ThreadedDispatcher {
         ran_any
     }
 
-    #[cfg(test)]
-    pub(crate) fn run_until_with_frames<R>(
-        &self,
-        mut ready: impl FnMut() -> Option<R>,
-        mut dispatch_frames: impl FnMut() -> bool,
-    ) -> R {
-        assert!(
-            self.is_main_thread(),
-            "main tasks must run on the main thread"
-        );
-        loop {
-            if let Some(result) = ready() {
-                return result;
-            }
-            let ran_task = self.run_one_main_task();
-            // A completion poll must not pull an unrelated animation frame
-            // into the measured operation.
-            if let Some(result) = ready() {
-                return result;
-            }
-            let dispatched_frames = dispatch_frames();
-            if ran_task || dispatched_frames {
-                continue;
-            }
-
-            let mut inflight = self.idle.inflight.lock();
-            if self.main_queue_has_work() {
-                continue;
-            }
-            self.idle.condvar.wait(&mut inflight);
-        }
-    }
-
-    /// Cancels all pending timers so timers armed by one workload can't fire
-    /// during a later workload sharing this process-lifetime dispatcher.
-    ///
-    /// Dropping a timer runnable drops its completion sender, waking the task
-    /// awaiting the timer. Call [`Self::run_until_idle`] after this method to
-    /// drain any work that cancellation unblocks.
-    pub fn cancel_pending_timers(&self) -> usize {
-        let timers = {
-            let mut state = self.timers.state.lock();
-            let timers: Vec<_> = state.heap.drain().collect();
-            self.timers.condvar.notify_all();
-            timers
-        };
-        let canceled = timers.len();
-        drop(timers);
-        canceled
-    }
-
     /// Describes the dispatcher's idle-tracking state, for diagnosing
     /// workloads that fail to reach quiescence.
     pub fn debug_state(&self) -> String {
@@ -382,14 +331,6 @@ impl ThreadedDispatcher {
             "ThreadedDispatcher {{ inflight: {inflight}, pending_timers: {timers}, \
              main_queue_has_work: {main_queue_has_work} }}"
         )
-    }
-
-    /// Whether no main-thread work is queued, no background or timer
-    /// runnables are queued or running, and no armed timer is due. Timers
-    /// that aren't due yet are ignored, as in [`Self::run_until_idle`].
-    #[cfg(test)]
-    pub(crate) fn is_idle(&self) -> bool {
-        !self.main_queue_has_work() && !self.has_due_timer() && *self.idle.inflight.lock() == 0
     }
 
     fn has_due_timer(&self) -> bool {

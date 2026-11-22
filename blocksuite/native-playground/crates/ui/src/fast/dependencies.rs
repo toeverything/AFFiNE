@@ -123,14 +123,6 @@ pub(crate) fn global_changed(cx: &mut App, global_type: TypeId) {
     cx.dependencies.global_changed(global_type);
 }
 
-/// A count that grows with every entity updated, written or changed and
-/// every global changed: equal counts taken at two moments saw none of
-/// those between them.
-pub(crate) fn change_count(cx: &App) -> u64 {
-    let log = &cx.entities.access_log;
-    log.update_generation + log.write_generation.get() + cx.dependencies.global_generation
-}
-
 /// Stands for whether a global of type `G` is set, which a subtree that
 /// only asked [`App::has_global`] depends on rather than on the global.
 struct GlobalPresence<G>(std::marker::PhantomData<G>);
@@ -841,20 +833,6 @@ pub(crate) struct Writes {
 }
 
 impl Writes {
-    /// These writes, and those made from `since` to `now` taken for the
-    /// subtree's own.
-    fn with_own(&self, since: u64, now: u64) -> Self {
-        let mut own = self.own.clone();
-        if now > since {
-            own.push((since, now));
-        }
-        Writes {
-            from: self.from,
-            to: self.to,
-            own,
-        }
-    }
-
     /// Whether a write at `written_at` came from outside the subtree after
     /// it began.
     fn is_foreign(&self, written_at: u64) -> bool {
@@ -910,25 +888,7 @@ impl ReadLogs {
     }
 }
 
-impl App {
-    /// The entities read at `spans` of the log of entities read while a
-    /// recording is open (see [`read_log_lengths`]), sorted and without
-    /// repeats.
-    pub(crate) fn entities_read_in(
-        &mut self,
-        spans: impl IntoIterator<Item = Range<usize>>,
-    ) -> Rc<[EntityId]> {
-        let access_log = self.entities.access_log.access_log.borrow();
-        let scratch = &mut self.dependencies.scratch_entities;
-        scratch.clear();
-        for span in spans {
-            let end = span.end.min(access_log.len());
-            scratch.extend_from_slice(&access_log[span.start.min(end)..end]);
-        }
-        sort_unique(scratch);
-        self.dependencies.interned_entities.get(scratch)
-    }
-}
+impl App {}
 
 /// How far the logs of the entities, globals and states read while a
 /// recording is open go, from where no app is at hand, as a `list` being
@@ -1014,20 +974,6 @@ impl StateVersion {
         self.0.get()
     }
 
-    /// Marks the state as changed.
-    pub(crate) fn bump(&self) {
-        self.0.set(self.0.get().wrapping_add(1));
-    }
-
-    /// Marks the state as changed if `changed`, for a change that may leave
-    /// it as it was.
-    #[inline]
-    pub(crate) fn bump_if(&self, changed: bool) {
-        if changed {
-            self.bump();
-        }
-    }
-
     fn ptr(&self) -> *const Cell<u64> {
         Rc::as_ptr(&self.0)
     }
@@ -1058,31 +1004,6 @@ fn unique_states(states: &[(StateVersion, u64)]) -> Rc<[(StateVersion, u64)]> {
 }
 
 impl RenderDependencies {
-    pub(crate) fn with_entities(&self, entities: Rc<[EntityId]>) -> Self {
-        Self {
-            entities,
-            ..self.clone()
-        }
-    }
-
-    pub(crate) fn entities_only(&self, entities: Rc<[EntityId]>) -> Self {
-        Self {
-            entities,
-            globals: Rc::from([]),
-            states: Rc::from([]),
-            generation: self.generation,
-            updates: self.updates,
-            writes: self.writes.clone(),
-        }
-    }
-
-    pub(crate) fn with_own_writes(&self, since: u64, now: u64) -> Self {
-        Self {
-            writes: self.writes.with_own(since, now),
-            ..self.clone()
-        }
-    }
-
     pub(crate) fn written_up_to(&self, writes: u64) -> Self {
         Self {
             writes: Writes {

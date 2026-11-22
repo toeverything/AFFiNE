@@ -324,18 +324,7 @@ impl Point<Pixels> {
     }
 }
 
-impl<T> Point<T>
-where
-    T: Sub<T, Output = T> + Clone + Debug + Default + PartialEq,
-{
-    /// Get the position of this point, relative to the given origin
-    pub fn relative_to(&self, origin: &Point<T>) -> Point<T> {
-        point(
-            self.x.clone() - origin.x.clone(),
-            self.y.clone() - origin.y.clone(),
-        )
-    }
-}
+impl<T> Point<T> where T: Sub<T, Output = T> + Clone + Debug + Default + PartialEq {}
 
 impl<T, Rhs> Mul<Rhs> for Point<T>
 where
@@ -1503,19 +1492,9 @@ impl<T: PartialOrd + Add<T, Output = T> + Sub<Output = T> + Clone + Debug + Defa
     }
 }
 
-impl<T> Bounds<T>
-where
-    T: Add<T, Output = T> + Sub<T, Output = T> + Clone + Debug + Default + PartialEq,
+impl<T> Bounds<T> where
+    T: Add<T, Output = T> + Sub<T, Output = T> + Clone + Debug + Default + PartialEq
 {
-    /// Computes the space available within outer bounds.
-    pub fn space_within(&self, outer: &Self) -> Edges<T> {
-        Edges {
-            top: self.top() - outer.top(),
-            right: outer.right() - self.right(),
-            bottom: outer.bottom() - self.bottom(),
-            left: self.left() - outer.left(),
-        }
-    }
 }
 
 impl<T, Rhs> Mul<Rhs> for Bounds<T>
@@ -1912,15 +1891,9 @@ where
     }
 }
 
-impl<T> Bounds<T>
-where
-    T: Add<T, Output = T> + Sub<T, Output = T> + PartialOrd + Clone + Debug + Default + PartialEq,
+impl<T> Bounds<T> where
+    T: Add<T, Output = T> + Sub<T, Output = T> + PartialOrd + Clone + Debug + Default + PartialEq
 {
-    /// Convert a point to the coordinate space defined by this Bounds
-    pub fn localize(&self, point: &Point<T>) -> Option<Point<T>> {
-        self.contains(point)
-            .then(|| point.relative_to(&self.origin))
-    }
 }
 
 /// Checks if the bounds represent an empty area.
@@ -2763,24 +2736,6 @@ impl Anchor {
             },
         }
     }
-
-    /// Returns whether the anchor is center-positioned.
-    #[inline]
-    pub fn is_center(&self) -> bool {
-        matches!(
-            self,
-            Self::TopCenter | Self::BottomCenter | Self::LeftCenter | Self::RightCenter
-        )
-    }
-
-    /// Returns whether the anchor is bottom-positioned.
-    #[inline]
-    pub fn is_bottom(&self) -> bool {
-        matches!(
-            self,
-            Self::BottomCenter | Self::BottomLeft | Self::BottomRight
-        )
-    }
 }
 
 /// Represents the corners of a box in a 2D space, such as border radius.
@@ -3503,12 +3458,6 @@ impl Pixels {
         self.0
     }
 
-    /// Converts to `i32`, truncating toward zero.
-    /// Out-of-range values saturate, and NaN becomes zero.
-    pub fn to_i32(self) -> i32 {
-        self.0 as i32
-    }
-
     /// Floors the `Pixels` value to the nearest whole number.
     ///
     /// # Returns
@@ -3962,10 +3911,6 @@ impl Rems {
     pub fn to_pixels(self, rem_size: Pixels) -> Pixels {
         self * rem_size
     }
-    /// Convert from pixels to Rem
-    pub fn from_pixels(length: Pixels, window: &crate::Window) -> Self {
-        Self(length / window.rem_size())
-    }
 }
 
 impl Mul<Pixels> for Rems {
@@ -4068,22 +4013,6 @@ impl AbsoluteLength {
         match self {
             AbsoluteLength::Pixels(pixels) => pixels,
             AbsoluteLength::Rems(rems) => rems.to_pixels(rem_size),
-        }
-    }
-
-    /// Converts an `AbsoluteLength` to `Rems` based on a given `rem_size`.
-    ///
-    /// # Arguments
-    ///
-    /// * `rem_size` - The size of one rem in pixels.
-    ///
-    /// # Returns
-    ///
-    /// Returns the `AbsoluteLength` as `Pixels`.
-    pub fn to_rems(self, rem_size: Pixels) -> Rems {
-        match self {
-            AbsoluteLength::Pixels(pixels) => Rems(pixels.0 / rem_size.0),
-            AbsoluteLength::Rems(rems) => rems,
         }
     }
 }

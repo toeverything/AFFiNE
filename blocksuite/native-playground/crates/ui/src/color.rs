@@ -406,16 +406,6 @@ pub const fn transparent_black() -> Hsla {
     }
 }
 
-/// Transparent white in [`Hsla`]
-pub const fn transparent_white() -> Hsla {
-    Hsla {
-        h: 0.,
-        s: 0.,
-        l: 1.,
-        a: 0.,
-    }
-}
-
 /// Opaque grey in [`Hsla`], values will be clamped to the range [0, 1]
 pub const fn opaque_grey(lightness: f32, opacity: f32) -> Hsla {
     Hsla {
@@ -477,11 +467,6 @@ pub const fn yellow() -> Hsla {
 }
 
 impl Hsla {
-    /// Converts this HSLA color to an RGBA color.
-    pub fn to_rgb(self) -> Rgba {
-        self.into()
-    }
-
     /// The color red
     pub const fn red() -> Self {
         red()
@@ -515,11 +500,6 @@ impl Hsla {
     /// Returns true if the HSLA color is fully transparent, false otherwise.
     pub fn is_transparent(&self) -> bool {
         self.a == 0.0
-    }
-
-    /// Returns true if the HSLA color is fully opaque, false otherwise.
-    pub fn is_opaque(&self) -> bool {
-        self.a == 1.0
     }
 
     /// Blends `other` on top of `self` based on `other`'s alpha value. The resulting color is a combination of `self`'s and `other`'s colors.
@@ -778,54 +758,12 @@ impl Default for Background {
     }
 }
 
-/// Creates a hash pattern background
-pub fn pattern_slash(color: impl Into<Hsla>, width: f32, interval: f32) -> Background {
-    let width_scaled = (width * 255.0) as u32;
-    let interval_scaled = (interval * 255.0) as u32;
-    let height = ((width_scaled * 0xFFFF) + interval_scaled) as f32;
-
-    Background {
-        tag: BackgroundTag::PatternSlash,
-        solid: color.into(),
-        gradient_angle_or_pattern_height: height,
-        ..Default::default()
-    }
-}
-
 /// Creates a checkerboard pattern background
 pub fn checkerboard(color: impl Into<Hsla>, size: f32) -> Background {
     Background {
         tag: BackgroundTag::Checkerboard,
         solid: color.into(),
         gradient_angle_or_pattern_height: size,
-        ..Default::default()
-    }
-}
-
-/// Creates a solid background color.
-pub fn solid_background(color: impl Into<Hsla>) -> Background {
-    Background {
-        solid: color.into(),
-        ..Default::default()
-    }
-}
-
-/// Creates a LinearGradient background color.
-///
-/// The gradient line's angle of direction. A value of `0.` is equivalent to top; increasing values rotate clockwise from there.
-///
-/// The `angle` is in degrees value in the range 0.0 to 360.0.
-///
-/// <https://developer.mozilla.org/en-US/docs/Web/CSS/gradient/linear-gradient>
-pub fn linear_gradient(
-    angle: f32,
-    from: impl Into<LinearColorStop>,
-    to: impl Into<LinearColorStop>,
-) -> Background {
-    Background {
-        tag: BackgroundTag::LinearGradient,
-        gradient_angle_or_pattern_height: angle,
-        colors: [from.into(), to.into()],
         ..Default::default()
     }
 }
@@ -842,16 +780,6 @@ pub struct LinearColorStop {
     pub percentage: f32,
 }
 
-/// Creates a new linear color stop.
-///
-/// The percentage of the gradient, in the range 0.0 to 1.0.
-pub fn linear_color_stop(color: impl Into<Hsla>, percentage: f32) -> LinearColorStop {
-    LinearColorStop {
-        color: color.into(),
-        percentage,
-    }
-}
-
 impl LinearColorStop {
     /// Returns a new color stop with the same color, but with a modified alpha value.
     pub fn opacity(&self, factor: f32) -> Self {
@@ -863,15 +791,6 @@ impl LinearColorStop {
 }
 
 impl Background {
-    /// Returns the solid color if this is a solid background, None otherwise.
-    pub fn as_solid(&self) -> Option<Hsla> {
-        if self.tag == BackgroundTag::Solid {
-            Some(self.solid)
-        } else {
-            None
-        }
-    }
-
     /// Use specified color space for color interpolation.
     ///
     /// <https://developer.mozilla.org/en-US/docs/Web/CSS/color-interpolation-method>

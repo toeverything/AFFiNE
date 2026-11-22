@@ -2322,7 +2322,10 @@ pub struct PresenceMark {
     pub client_id: u64,
     pub name: SharedString,
     pub color: Hsla,
-    pub highlights: Vec<FlowRect>,
+    /// `(block_id, rect)` for each selection highlight span; code-block spans are
+    /// translated by `-scroll_x` before clamping in `page_elements`.
+    pub highlights: Vec<(String, FlowRect)>,
+    pub caret_block_id: String,
     pub caret: FlowRect,
     pub label: FlowRect,
     label_text: ShapedLine,
@@ -2366,14 +2369,23 @@ impl FlowLayout {
             let mut highlights = Vec::new();
             let mut cover = |position: usize, start: usize, end: usize| {
                 let (_, block, text) = text_blocks[position];
+                let scrollable_code = block.body.code_scroll.is_some();
                 for (line, x0, x1) in text.layout.selection_spans(start, end) {
                     let left = (block.x + text.x + x0).floor();
-                    let right = (block.x + text.x + x1).ceil().min(self.width);
-                    highlights.push(FlowRect::new(
-                        left,
-                        block.y + text.y + line as f32 * text.layout.line_height(),
-                        (right - left).max(0.0),
-                        text.layout.line_height(),
+                    let raw_right = (block.x + text.x + x1).ceil();
+                    let right = if scrollable_code {
+                        raw_right
+                    } else {
+                        raw_right.min(self.width)
+                    };
+                    highlights.push((
+                        block.block_id.clone(),
+                        FlowRect::new(
+                            left,
+                            block.y + text.y + line as f32 * text.layout.line_height(),
+                            (right - left).max(0.0),
+                            text.layout.line_height(),
+                        ),
                     ));
                 }
             };
@@ -2398,10 +2410,13 @@ impl FlowLayout {
             let (_, block, text) = text_blocks[caret_position];
             let (caret_x, caret_line) = text.layout.caret(caret_offset);
             let line_height = text.layout.line_height();
+            let raw_caret_x = (block.x + text.x + caret_x - 1.0).round();
             let caret = FlowRect::new(
-                (block.x + text.x + caret_x - 1.0)
-                    .round()
-                    .clamp(0.0, (self.width - 2.0).max(0.0)),
+                if block.body.code_scroll.is_some() {
+                    raw_caret_x
+                } else {
+                    raw_caret_x.clamp(0.0, (self.width - 2.0).max(0.0))
+                },
                 block.y + text.y + caret_line as f32 * line_height,
                 2.0,
                 line_height,
@@ -2414,7 +2429,7 @@ impl FlowLayout {
             let label_width = (f32::from(label_text.width()).ceil() + 8.0).min(self.width);
             // The tag hangs above the caret, shifted left at the column edge and flipped
             // below the caret when there is no room above.
-            let label_x = caret.x.min((self.width - label_width).max(0.0));
+            let label_x = caret.x.clamp(0.0, (self.width - label_width).max(0.0));
             let label_y = if caret.y >= PRESENCE_LABEL_HEIGHT {
                 caret.y - PRESENCE_LABEL_HEIGHT
             } else {
@@ -2425,6 +2440,7 @@ impl FlowLayout {
                 name: SharedString::from(presence.name.clone()),
                 color: presence.color,
                 highlights,
+                caret_block_id: block.block_id.clone(),
                 caret,
                 label: FlowRect::new(label_x, label_y, label_width, PRESENCE_LABEL_HEIGHT),
                 label_text,
@@ -2519,19 +2535,52 @@ pub fn page_elements(
     }
 
     // Presence paints after every block so name tags stay above neighbouring text. Marks
-    // in a sideways-scrolled code block follow its lines and stay inside its code area.
-    let scrolled = paint.scrolled_code(layout);
+    // in a sideways-scrolled code block follow its lines and stay inside its code area;
+    // each highlight span uses its own block's horizontal scroll before clamping.
+    let code_blocks: HashMap<&str, ScrolledCode> = layout
+        .blocks
+        .iter()
+        .filter_map(|block| {
+            let code = block.body.code_scroll?;
+            let scroll_x = paint
+                .blocks
+                .get(&block.block_id)
+                .map_or(0.0, |state| state.code_scroll_x)
+                .clamp(0.0, code.max_x);
+            Some((
+                block.block_id.as_str(),
+                ScrolledCode {
+                    block: block.rect(),
+                    area: code.area.translated(block.x, block.y),
+                    scroll_x,
+                },
+            ))
+        })
+        .collect();
     for mut mark in marks {
-        if let Some(code) = ScrolledCode::containing(&scrolled, &mark.caret) {
-            mark.highlights = mark
-                .highlights
-                .iter()
-                .filter_map(|rect| code.span(*rect))
-                .collect();
+        let mut resolved_highlights = Vec::with_capacity(mark.highlights.len());
+        for (block_id, rect) in &mark.highlights {
+            let clamped = if let Some(code) = code_blocks.get(block_id.as_str()) {
+                code.span(*rect).and_then(|r| {
+                    let left = r.x.max(0.0);
+                    let right = r.right().min(layout.width);
+                    (right > left).then(|| FlowRect::new(left, r.y, right - left, r.h))
+                })
+            } else {
+                let left = rect.x.max(0.0);
+                let right = rect.right().min(layout.width);
+                (right > left).then(|| FlowRect::new(left, rect.y, right - left, rect.h))
+            };
+            if let Some(rect) = clamped {
+                resolved_highlights.push(rect);
+            }
+        }
+        if let Some(code) = code_blocks.get(mark.caret_block_id.as_str()) {
             match code.caret(mark.caret) {
-                Some(caret) => {
-                    mark.label.x = (mark.label.x - (mark.caret.x - caret.x)).max(0.0);
+                Some(mut caret) => {
+                    caret.x = caret.x.clamp(0.0, (layout.width - 2.0).max(0.0));
                     mark.caret = caret;
+                    mark.label.x = caret.x.clamp(0.0, (layout.width - mark.label.w).max(0.0));
                 }
                 None => {
                     // The caret scrolled out; its name tag goes with it.
@@ -2550,7 +2599,7 @@ pub fn page_elements(
         };
         // Same wash and corner radius as BlockSuite's remote selection rects.
         let highlight = mark.color.opacity(0.2);
-        for rect in &mark.highlights {
+        for rect in &resolved_highlights {
             if !viewport.intersects(rect) {
                 continue;
             }

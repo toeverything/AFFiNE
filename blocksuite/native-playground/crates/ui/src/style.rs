@@ -2281,13 +2281,6 @@ impl Hash for HighlightStyle {
 }
 
 impl Style {
-    /// Returns true if the style is visible and the background is opaque.
-    pub fn has_opaque_background(&self) -> bool {
-        self.background
-            .as_ref()
-            .is_some_and(|fill| fill.color().is_some_and(|color| !color.is_transparent()))
-    }
-
     /// Get the text style in this element style.
     pub fn text_style(&self) -> Option<&TextStyleRefinement> {
         if self.text.is_some() {
@@ -2899,49 +2892,6 @@ impl From<Rgba> for HighlightStyle {
             ..Default::default()
         }
     }
-}
-
-/// Combine and merge the highlights and ranges in the two iterators.
-pub fn combine_highlights(
-    a: impl IntoIterator<Item = (Range<usize>, HighlightStyle)>,
-    b: impl IntoIterator<Item = (Range<usize>, HighlightStyle)>,
-) -> impl Iterator<Item = (Range<usize>, HighlightStyle)> {
-    let mut endpoints = Vec::new();
-    let mut highlights = Vec::new();
-    for (range, highlight) in a.into_iter().chain(b) {
-        if !range.is_empty() {
-            let highlight_id = highlights.len();
-            endpoints.push((range.start, highlight_id, true));
-            endpoints.push((range.end, highlight_id, false));
-            highlights.push(highlight);
-        }
-    }
-    endpoints.sort_unstable_by_key(|(position, _, _)| *position);
-    let mut endpoints = endpoints.into_iter().peekable();
-
-    let mut active_styles = HashSet::default();
-    let mut ix = 0;
-    iter::from_fn(move || {
-        while let Some((endpoint_ix, highlight_id, is_start)) = endpoints.peek() {
-            let prev_index = mem::replace(&mut ix, *endpoint_ix);
-            if ix > prev_index && !active_styles.is_empty() {
-                let current_style = active_styles
-                    .iter()
-                    .fold(HighlightStyle::default(), |acc, highlight_id| {
-                        acc.highlight(highlights[*highlight_id])
-                    });
-                return Some((prev_index..ix, current_style));
-            }
-
-            if *is_start {
-                active_styles.insert(*highlight_id);
-            } else {
-                active_styles.remove(highlight_id);
-            }
-            endpoints.next();
-        }
-        None
-    })
 }
 
 /// Used to control how child nodes are aligned.

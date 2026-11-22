@@ -186,20 +186,6 @@ impl MetalRenderer {
         Self::new_internal(device, Some(layer), !transparent, instance_buffer_pool)
     }
 
-    /// Creates a renderer for a CAMetalLayer owned by a platform view, such as
-    /// the backing layer UIKit creates for a view whose `layerClass` is
-    /// `CAMetalLayer`. The renderer retains the layer.
-    pub fn from_layer(
-        instance_buffer_pool: Arc<Mutex<InstanceBufferPool>>,
-        layer: &CAMetalLayer,
-        transparent: bool,
-    ) -> Result<Self> {
-        let device = Self::create_device()?;
-        let layer = layer.retain();
-        Self::configure_layer(&layer, &device, transparent, false);
-        Self::new_internal(device, Some(layer), !transparent, instance_buffer_pool)
-    }
-
     pub(crate) fn configure_layer(
         layer: &CAMetalLayer,
         device: &ProtocolObject<dyn MTLDevice>,

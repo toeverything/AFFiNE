@@ -135,18 +135,21 @@ pub(super) struct Route {
 }
 impl Route {
     pub(super) fn point_at_distance(&self, mode: ConnectorMode, t: f64) -> P {
-        if mode == ConnectorMode::Orthogonal {
-            return along(&self.samples, t);
-        }
-        let a = self.contour.start;
-        let (b, c, d) = match self.contour.edges[..] {
-            [Edge::Cubic(b, c, d)] => (b, c, d),
-            _ => {
-                let d = *self.samples.last().unwrap();
-                (a, d, d)
+        match mode {
+            ConnectorMode::Straight => self.contour.start.lerp(*self.samples.last().unwrap(), t),
+            ConnectorMode::Orthogonal => along(&self.samples, t),
+            ConnectorMode::Curve => {
+                let a = self.contour.start;
+                let (b, c, d) = match self.contour.edges[..] {
+                    [Edge::Cubic(b, c, d)] => (b, c, d),
+                    _ => {
+                        let d = *self.samples.last().unwrap();
+                        (a, d, d)
+                    }
+                };
+                cubic(a, b, c, d, t)
             }
-        };
-        cubic(a, b, c, d, t)
+        }
     }
 
     /// Endpoint and inward-facing tangent for each cap. A stationary Bézier endpoint
@@ -323,11 +326,8 @@ mod tests {
     }
 
     #[test]
-    fn labels_follow_the_bezier_parameter_for_curve_and_straight() {
-        for (mode, end, expected) in [
-            (2, [180, 60], P(61.875, 9.375)),
-            (0, [100, 0], P(15.625, 0.)),
-        ] {
+    fn labels_follow_the_bezier_parameter_for_curve_and_linear_for_straight() {
+        for (mode, end, expected) in [(2, [180, 60], P(61.875, 9.375)), (0, [100, 0], P(25., 0.))] {
             let e = SurfaceElement::from_properties(
                 "line".into(),
                 json!({"type":"connector","mode":mode,"source":{"position":[0,0]},"target":{"position":end}}),

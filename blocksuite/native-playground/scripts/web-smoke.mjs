@@ -225,7 +225,7 @@ async function waitForDevToolsWs(chromeProc) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error(`Timed out waiting for Chromium DevTools URL. stderr:\n${stderrBuf}`));
-    }, 15000);
+    }, 45000);
     chromeProc.stderr.on('data', (chunk) => {
       stderrBuf += chunk.toString();
       const match = stderrBuf.match(/DevTools listening on (ws:\/\/[^\s]+)/);
@@ -239,6 +239,30 @@ async function waitForDevToolsWs(chromeProc) {
       reject(new Error(`Chromium exited early (${code}). stderr:\n${stderrBuf}`));
     });
   });
+}
+
+async function launchChromiumWithRetry(chromeBin, chromeArgs) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const chromeProc = spawn(chromeBin, chromeArgs, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: 'disabled:' },
+    });
+    try {
+      const browserWsUrl = await waitForDevToolsWs(chromeProc);
+      return { chromeProc, browserWsUrl };
+    } catch (err) {
+      lastErr = err;
+      try {
+        chromeProc.kill('SIGKILL');
+      } catch {}
+      if (attempt < 2) {
+        console.warn(`Chromium startup attempt ${attempt} failed, retrying once: ${err.message}`);
+        await sleep(500);
+      }
+    }
+  }
+  throw lastErr;
 }
 
 class CdpClient {
@@ -450,6 +474,9 @@ async function main() {
     '--no-sandbox',
     '--disable-gpu-sandbox',
     '--disable-dev-shm-usage',
+    '--disable-background-networking',
+    '--no-first-run',
+    '--no-default-browser-check',
     '--use-gl=angle',
     '--use-angle=swiftshader',
     '--enable-unsafe-swiftshader',
@@ -459,12 +486,11 @@ async function main() {
     '--remote-debugging-port=0',
     'about:blank',
   ];
-  const chromeProc = spawn(chromeBin, chromeArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+  const { chromeProc, browserWsUrl } = await launchChromiumWithRetry(chromeBin, chromeArgs);
   const errors = [];
   const consoleLogs = [];
 
   try {
-    const browserWsUrl = await waitForDevToolsWs(chromeProc);
     const browserPort = new URL(browserWsUrl).port;
     const targetsResp = await fetch(`http://127.0.0.1:${browserPort}/json/list`);
     const targets = await targetsResp.json();
@@ -609,6 +635,26 @@ async function main() {
     }
 
     if (!args.query) {
+      // Exercise Edgeless bottom creation toolbar: select Shape tool (`s`) and drag a new shape on canvas.
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 640, y: 400, button: 'left', clickCount: 1 });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 640, y: 400, button: 'left', clickCount: 1 });
+      await sleep(100);
+      for (const type of ['rawKeyDown', 'keyUp']) {
+        await cdp.send('Input.dispatchKeyEvent', { type, key: 's', code: 'KeyS', windowsVirtualKeyCode: 83 });
+      }
+      await sleep(100);
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 520, y: 300, button: 'left', clickCount: 1 });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 680, y: 400, button: 'left', buttons: 1 });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 680, y: 400, button: 'left', clickCount: 1 });
+      await sleep(300);
+      const shotShape = await cdp.send('Page.captureScreenshot', { format: 'png' });
+      const imgShape = decodePngRgba(Buffer.from(shotShape.data, 'base64'));
+      const shapeDiff = countDifferentPixels(img2, imgShape);
+      console.log(`Web Wasm Edgeless shape creation diffPixels=${shapeDiff}`);
+      if (shapeDiff < 100) {
+        throw new Error(`Edgeless shape creation produced insufficient visual change (${shapeDiff})`);
+      }
+
       // Also verify direct `?mode=edgeless` cold load without WebGL2/WebGPU shader errors.
       await cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/?mode=edgeless` });
       let edgelessDirectInk = 0;

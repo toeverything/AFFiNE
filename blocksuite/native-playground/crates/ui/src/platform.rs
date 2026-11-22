@@ -880,18 +880,6 @@ pub struct WindowButtonLayout {
 
 #[cfg(target_os = "linux")]
 impl WindowButtonLayout {
-    /// Returns Zed's built-in fallback button layout for Linux titlebars.
-    pub fn linux_default() -> Self {
-        Self {
-            left: [None; MAX_BUTTONS_PER_SIDE],
-            right: [
-                Some(WindowButton::Minimize),
-                Some(WindowButton::Maximize),
-                Some(WindowButton::Close),
-            ],
-        }
-    }
-
     /// Parses a GNOME-style `button-layout` string (e.g. `"close,minimize:maximize"`).
     pub fn parse(layout_string: &str) -> Result<Self> {
         fn parse_side(
@@ -974,11 +962,6 @@ impl Tiling {
             right: true,
             bottom: true,
         }
-    }
-
-    /// Whether any edge is tiled
-    pub fn is_tiled(&self) -> bool {
-        self.top || self.left || self.right || self.bottom
     }
 }
 
@@ -2119,21 +2102,6 @@ impl PlatformInputHandler {
             .unwrap_or(true)
     }
 
-    /// Checks eligibility against the current focus, including before the next frame is drawn.
-    ///
-    /// Unlike the legacy acceptance query, this fails closed when the window cannot
-    /// be updated and requires registration through `Window::handle_input`.
-    pub fn query_accepts_focused_text_input(&mut self) -> bool {
-        let focus_id = self.focus_id;
-        self.cx
-            .update(|window, cx| {
-                focus_id.is_some()
-                    && window.focus == focus_id
-                    && self.handler.accepts_text_input(window, cx)
-            })
-            .unwrap_or(false)
-    }
-
     /// See [`InputHandler::prefers_ime_for_printable_keys`].
     ///
     /// This is not a pure delegation to the handler: while a multi-stroke binding is pending this
@@ -2983,28 +2951,11 @@ impl ClipboardItem {
     }
 
     /// Create a new ClipboardItem::String with the given text and associated metadata
-    pub fn new_string_with_metadata(text: String, metadata: String) -> Self {
-        Self {
-            entries: vec![ClipboardEntry::String(ClipboardString {
-                text,
-                metadata: Some(metadata),
-            })],
-        }
-    }
-
-    /// Create a new ClipboardItem::String with the given text and associated metadata
     pub fn new_string_with_json_metadata<T: Serialize>(text: String, metadata: T) -> Self {
         Self {
             entries: vec![ClipboardEntry::String(
                 ClipboardString::new(text).with_json_metadata(metadata),
             )],
-        }
-    }
-
-    /// Create a new ClipboardItem::Image with the given image with no associated metadata
-    pub fn new_image(image: &Image) -> Self {
-        Self {
-            entries: vec![ClipboardEntry::Image(image.clone())],
         }
     }
 
@@ -3050,11 +3001,6 @@ impl ClipboardItem {
     /// Get the item's entries
     pub fn entries(&self) -> &[ClipboardEntry] {
         &self.entries
-    }
-
-    /// Get owned versions of the item's entries
-    pub fn into_entries(self) -> impl Iterator<Item = ClipboardEntry> {
-        self.entries.into_iter()
     }
 }
 
@@ -3281,28 +3227,6 @@ impl Image {
         self.id
     }
 
-    /// Use the GPUI `use_asset` API to make this image renderable
-    pub fn use_render_image(
-        self: Arc<Self>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Option<Arc<RenderImage>> {
-        ImageSource::Image(self)
-            .use_data(None, window, cx)
-            .and_then(|result| result.ok())
-    }
-
-    /// Use the GPUI `get_asset` API to make this image renderable
-    pub fn get_render_image(
-        self: Arc<Self>,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Option<Arc<RenderImage>> {
-        ImageSource::Image(self)
-            .get_data(None, window, cx)
-            .and_then(|result| result.ok())
-    }
-
     /// Use the GPUI `remove_asset` API to drop this image, if possible.
     pub fn remove_asset(self: Arc<Self>, cx: &mut App) {
         ImageSource::Image(self).remove_asset(cx);
@@ -3375,21 +3299,6 @@ impl ClipboardString {
     /// Get the text of the clipboard string
     pub fn text(&self) -> &String {
         &self.text
-    }
-
-    /// Get the owned text of the clipboard string
-    pub fn into_text(self) -> String {
-        self.text
-    }
-
-    /// Get the metadata of the clipboard string, formatted as JSON
-    pub fn metadata_json<T>(&self) -> Option<T>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
-        self.metadata
-            .as_ref()
-            .and_then(|m| serde_json::from_str(m).ok())
     }
 
     /// Compute a hash of the given text for clipboard change detection.

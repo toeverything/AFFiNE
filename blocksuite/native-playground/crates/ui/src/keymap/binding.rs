@@ -97,17 +97,6 @@ impl KeyBinding {
         })
     }
 
-    /// Set the metadata for this binding.
-    pub fn with_meta(mut self, meta: KeyBindingMetaIndex) -> Self {
-        self.meta = Some(meta);
-        self
-    }
-
-    /// Set the metadata for this binding.
-    pub fn set_meta(&mut self, meta: KeyBindingMetaIndex) {
-        self.meta = Some(meta);
-    }
-
     /// Check if the given keystrokes match this binding.
     pub fn match_keystrokes(&self, typed: &[impl AsKeystroke]) -> Option<bool> {
         if self.keystrokes.len() < typed.len() {

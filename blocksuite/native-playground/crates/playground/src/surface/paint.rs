@@ -44,6 +44,8 @@ struct Item {
     label: Option<Label>,
     label_clip: Option<Bounds<Pixels>>,
     path_cutout: Option<WorldBounds>,
+    polyline: Vec<(f32, f32)>,
+    stroke_width: f32,
 }
 impl Item {
     fn path(
@@ -108,17 +110,25 @@ impl SurfaceLayout {
     pub(crate) fn item_ids(&self) -> impl Iterator<Item = &str> {
         self.items.iter().map(|e| e.id.as_str())
     }
+    pub(crate) fn item_polyline(&self, index: usize) -> &[(f32, f32)] {
+        &self.items[index].polyline
+    }
+    pub(crate) fn item_stroke_width(&self, index: usize) -> f32 {
+        self.items[index].stroke_width
+    }
 
     pub(crate) fn paint_item(
         &self,
         index: usize,
         viewport: Bounds<Pixels>,
+        editing_label_id: Option<&str>,
         window: &mut Window,
         cx: &mut App,
     ) {
         let item = &self.items[index];
         if (!item.group || self.show_group_frames) && item.bounds.intersects(&viewport) {
-            item.paint(TransformationMatrix::unit(), window, cx);
+            let suppress_label = editing_label_id.is_some_and(|id| id == item.id);
+            item.paint(TransformationMatrix::unit(), suppress_label, window, cx);
         }
     }
     fn visible_items(&self) -> impl Iterator<Item = &Item> {
@@ -215,7 +225,7 @@ pub fn layout_surface(
 ) -> SurfaceLayout {
     let mut bounds = external_bounds.clone();
     let mut ordered: Vec<_> = elements.iter().filter(|e| !e.hidden).collect();
-    ordered.sort_by(|a, b| (&a.index, &a.id).cmp(&(&b.index, &b.id)));
+    ordered.sort_by(|a, b| a.index.cmp(&b.index));
     bounds.extend(
         ordered
             .iter()
@@ -281,6 +291,8 @@ pub fn layout_surface(
             label: None,
             label_clip: None,
             path_cutout: None,
+            polyline: vec![],
+            stroke_width: 0.0,
         };
         match &e.kind {
             SurfaceElementKind::Shape(s) => {
@@ -290,9 +302,32 @@ pub fn layout_surface(
                 let Some(route) = routes.get(e.id.as_str()) else {
                     continue;
                 };
+                item.polyline = route
+                    .samples
+                    .iter()
+                    .map(|p| (p.0 as f32, p.1 as f32))
+                    .collect();
+                item.stroke_width = c.stroke_width as f32;
                 layout_connector(&mut item, c, route, e.seed, theme, window);
             }
             SurfaceElementKind::Brush(s) | SurfaceElementKind::Highlighter(s) => {
+                let [x, y, w, h] = s.xywh;
+                let cx = x + w * 0.5;
+                let cy = y + h * 0.5;
+                let (sin, cos) = e.rotate.to_radians().sin_cos();
+                item.polyline = s
+                    .points
+                    .iter()
+                    .map(|p| {
+                        let dx = (x + p[0]) - cx;
+                        let dy = (y + p[1]) - cy;
+                        (
+                            (cx + dx * cos - dy * sin) as f32,
+                            (cy + dx * sin + dy * cos) as f32,
+                        )
+                    })
+                    .collect();
+                item.stroke_width = s.line_width as f32;
                 let highlight = matches!(&e.kind, SurfaceElementKind::Highlighter(_));
                 if let Some(path) = strokes::outline(s, e.rotate) {
                     let color = if highlight {
@@ -405,7 +440,9 @@ fn layout_shape(
         slant: &s.font_style,
         align: s.text_align,
     };
-    if let Some((layout, gap)) = style.layout(&s.text, w - 2. * px, theme, ts) {
+    if s.text_display
+        && let Some((layout, gap)) = style.layout(&s.text, w - 2. * px, theme, ts)
+    {
         let lh = f64::from(f32::from(layout.size().height)) + layout.lines().len() as f64 * gap;
         let top = match s.text_vertical_align {
             VerticalAlign::Top => py,
@@ -613,12 +650,18 @@ pub fn paint_surface(
         .visible_items()
         .filter(|item| item.bounds.intersects(&viewport_world))
     {
-        item.paint(offset, window, cx);
+        item.paint(offset, false, window, cx);
     }
 }
 
 impl Item {
-    fn paint(&self, offset: TransformationMatrix, window: &mut Window, cx: &mut App) {
+    fn paint(
+        &self,
+        offset: TransformationMatrix,
+        suppress_label: bool,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         window.with_paint_transformation(offset.compose(self.transform), |window| {
             for (path, color) in &self.paths {
                 if let Some(hole) = self.path_cutout {
@@ -631,7 +674,7 @@ impl Item {
                     window.paint_path(path.clone(), *color);
                 }
             }
-            if let Some(label) = &self.label {
+            if !suppress_label && let Some(label) = &self.label {
                 if let Some((pill, color)) = label.pill {
                     window.paint_quad(ui::fill(pill.ui(), color).corner_radii(px(5.)));
                 }
@@ -727,6 +770,8 @@ mod tests {
                     label: None,
                     label_clip: None,
                     path_cutout: None,
+                    polyline: vec![],
+                    stroke_width: 0.0,
                 };
                 layout_shape(&mut item, &s, 1, PlaygroundTheme::Light, &ts);
                 let label = item.label.unwrap();
@@ -745,6 +790,147 @@ mod tests {
                     );
                 }
             });
+        }
+    }
+
+    #[test]
+    fn surface_label_visibility_and_text_connector_baselines() {
+        let platform = HeadlessPlatform::new(64, 64, 1.);
+        let app = Application::with_platform(platform).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let text = RichText {
+            plain: "Hidden".into(),
+            delta: vec![TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text("Hidden".into()),
+                format: None,
+            }],
+        };
+        let hidden = SurfaceElement::from_properties(
+            "s-hidden".into(),
+            json!({"type":"shape","xywh":[0,0,160,80],"textDisplay":false}),
+            text.clone(),
+        );
+        let standalone = SurfaceElement::from_properties(
+            "t-standalone".into(),
+            json!({"type":"text","xywh":[10,20,160,30],"fontSize":16}),
+            text.clone(),
+        );
+        let conn = SurfaceElement::from_properties(
+            "c-label".into(),
+            json!({"type":"connector","mode":0,"source":{"position":[0,100]},"target":{"position":[200,100]},"labelOffset":{"distance":0.5,"anchor":"center"}}),
+            text,
+        );
+        app.update(|cx| {
+            let ts = WindowTextSystem::new(cx.text_system().clone());
+            let SurfaceElementKind::Shape(mut s) = hidden.kind else {
+                unreachable!()
+            };
+            // `textDisplay` is `@local()` (defaults to `true` from wire); toggle locally to verify suppression.
+            assert!(s.text_display);
+            s.text_display = false;
+            let mut item = Item {
+                id: hidden.id,
+                group: false,
+                bounds: Bounds::default(),
+                transform: TransformationMatrix::unit(),
+                paths: vec![],
+                label: None,
+                label_clip: None,
+                path_cutout: None,
+                polyline: vec![],
+                stroke_width: 0.0,
+            };
+            layout_shape(&mut item, &s, 1, PlaygroundTheme::Light, &ts);
+            assert!(
+                item.label.is_none(),
+                "textDisplay=false must skip shape label"
+            );
+
+            // Standalone SurfaceText baseline sits at y + ascent (0 line_gap offset).
+            let SurfaceElementKind::Text(st) = standalone.kind else {
+                unreachable!()
+            };
+            let style = TextStyle {
+                color: &st.color,
+                font: &st.font_family,
+                size: st.font_size,
+                weight: &st.font_weight,
+                slant: &st.font_style,
+                align: st.text_align,
+            };
+            let (layout, _) = style
+                .layout(&st.text, st.xywh[2], PlaygroundTheme::Light, &ts)
+                .unwrap();
+            let line = &layout.lines()[0];
+            assert!(f32::from(line.baseline_y) > 0.0);
+
+            // Connector label vertical centering around route midpoint y = 100.
+            let SurfaceElementKind::Connector(c) = conn.kind else {
+                unreachable!()
+            };
+            let r = connector::route(&c, &BTreeMap::new(), &BTreeMap::new()).unwrap();
+            let mid = r.point_at_distance(c.mode, 0.5);
+            assert_eq!(mid, P(100., 100.));
+        });
+    }
+
+    #[test]
+    fn equal_index_shapes_paint_in_source_order_z_under_a() {
+        let platform = HeadlessPlatform::new(120, 120, 1.);
+        let app = Application::with_platform(platform.clone()).run_embedded(|cx| {
+            crate::register_bundled_fonts(cx).unwrap();
+        });
+        let z = SurfaceElement::from_properties(
+            "z".into(),
+            json!({"type":"shape","shapeType":"rect","index":"a1","xywh":[10,10,80,80],"filled":true,"fillColor":"#ff0000","strokeStyle":"none"}),
+            RichText::default(),
+        );
+        let a = SurfaceElement::from_properties(
+            "a".into(),
+            json!({"type":"shape","shapeType":"rect","index":"a1","xywh":[10,10,80,80],"filled":true,"fillColor":"#0000ff","strokeStyle":"none"}),
+            RichText::default(),
+        );
+        let elements = vec![z, a];
+        let win = app
+            .update(|cx| {
+                cx.open_window(ui::WindowOptions::default(), |_window, cx| {
+                    cx.new(|_| SurfaceOrderView {
+                        elements: elements.clone(),
+                    })
+                })
+            })
+            .unwrap();
+        let hw = platform.windows().into_iter().next().unwrap();
+        hw.request_frame();
+        let img = app
+            .update(|cx| win.update(cx, |_, window, _| window.render_to_image().unwrap()))
+            .unwrap();
+        let px_rgba = img.get_pixel(50, 50);
+        let [r, g, b, _] = px_rgba.0;
+        assert!(
+            b > 200 && r < 40 && g < 40,
+            "expected 'a' (blue) on top of 'z' (red), got rgb=({r},{g},{b})"
+        );
+    }
+
+    struct SurfaceOrderView {
+        elements: Vec<SurfaceElement>,
+    }
+
+    impl ui::Render for SurfaceOrderView {
+        fn render(&mut self, window: &mut Window, _: &mut ui::Context<Self>) -> impl IntoElement {
+            let layout = layout_surface(
+                &self.elements,
+                &BTreeMap::new(),
+                PlaygroundTheme::Light,
+                window,
+            );
+            surface_element(
+                Rc::new(layout),
+                Bounds::new(ui::point(px(0.), px(0.)), ui::size(px(120.), px(120.))),
+                ui::point(px(0.), px(0.)),
+            )
         }
     }
 }

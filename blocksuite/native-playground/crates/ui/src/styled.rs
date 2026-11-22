@@ -41,16 +41,6 @@ pub trait Styled: Sized {
         self
     }
 
-    fn overflow_x_hidden(mut self) -> Self {
-        self.style().overflow.x = Some(crate::Overflow::Hidden);
-        self
-    }
-
-    fn overflow_y_hidden(mut self) -> Self {
-        self.style().overflow.y = Some(crate::Overflow::Hidden);
-        self
-    }
-
     fn cursor(mut self, cursor: CursorStyle) -> Self {
         self.style().mouse_cursor = Some(cursor);
         self
@@ -66,21 +56,6 @@ pub trait Styled: Sized {
         self
     }
 
-    fn cursor_text(mut self) -> Self {
-        self.style().mouse_cursor = Some(crate::CursorStyle::IBeam);
-        self
-    }
-
-    fn cursor_move(mut self) -> Self {
-        self.style().mouse_cursor = Some(crate::CursorStyle::ClosedHand);
-        self
-    }
-
-    fn cursor_not_allowed(mut self) -> Self {
-        self.style().mouse_cursor = Some(crate::CursorStyle::OperationNotAllowed);
-        self
-    }
-
     fn cursor_grab(mut self) -> Self {
         self.style().mouse_cursor = Some(crate::CursorStyle::OpenHand);
         self
@@ -88,16 +63,6 @@ pub trait Styled: Sized {
 
     fn cursor_grabbing(mut self) -> Self {
         self.style().mouse_cursor = Some(crate::CursorStyle::ClosedHand);
-        self
-    }
-
-    fn cursor_ew_resize(mut self) -> Self {
-        self.style().mouse_cursor = Some(crate::CursorStyle::ResizeLeftRight);
-        self
-    }
-
-    fn cursor_ns_resize(mut self) -> Self {
-        self.style().mouse_cursor = Some(crate::CursorStyle::ResizeUpDown);
         self
     }
 
@@ -139,14 +104,6 @@ pub trait Styled: Sized {
         self
     }
 
-    fn ml(mut self, margin: impl Into<Length>) -> Self {
-        self.style().margin.left = Some(margin.into());
-        self
-    }
-
-    fn m_0(self) -> Self {
-        self.m(px(0.))
-    }
     fn mt_1(self) -> Self {
         self.mt(rems(0.25))
     }
@@ -205,37 +162,12 @@ pub trait Styled: Sized {
         self
     }
 
-    fn p_0(self) -> Self {
-        self.p(px(0.))
-    }
-    fn p_1(self) -> Self {
-        self.p(rems(0.25))
-    }
-    fn p_2(self) -> Self {
-        self.p(rems(0.5))
-    }
     fn p_3(self) -> Self {
         self.p(rems(0.75))
-    }
-    fn p_4(self) -> Self {
-        self.p(rems(1.0))
-    }
-    fn px_2(self) -> Self {
-        self.px(rems(0.5))
-    }
-    fn px_3(self) -> Self {
-        self.px(rems(0.75))
-    }
-    fn px_4(self) -> Self {
-        self.px(rems(1.0))
     }
     fn py_1(self) -> Self {
         self.py(rems(0.25))
     }
-    fn py_2(self) -> Self {
-        self.py(rems(0.5))
-    }
-
     fn inset(mut self, inset: impl Into<Length>) -> Self {
         let inset = inset.into();
         self.style().inset.top = Some(inset);
@@ -272,12 +204,6 @@ pub trait Styled: Sized {
     fn top_0(self) -> Self {
         self.top(px(0.))
     }
-    fn right_0(self) -> Self {
-        self.right(px(0.))
-    }
-    fn bottom_0(self) -> Self {
-        self.bottom(px(0.))
-    }
     fn left_0(self) -> Self {
         self.left(px(0.))
     }
@@ -302,19 +228,9 @@ pub trait Styled: Sized {
     fn w_full(self) -> Self {
         self.w(relative(1.))
     }
-    fn h_full(self) -> Self {
-        self.h(relative(1.))
-    }
     fn size_full(self) -> Self {
         self.size(relative(1.))
     }
-    fn w_auto(self) -> Self {
-        self.w(Length::Auto)
-    }
-    fn h_auto(self) -> Self {
-        self.h(Length::Auto)
-    }
-
     fn min_w(mut self, width: impl Into<Length>) -> Self {
         self.style().min_size.width = Some(width.into());
         self
@@ -325,21 +241,8 @@ pub trait Styled: Sized {
         self
     }
 
-    fn min_w_0(self) -> Self {
-        self.min_w(px(0.))
-    }
     fn min_h_0(self) -> Self {
         self.min_h(px(0.))
-    }
-
-    fn max_w(mut self, width: impl Into<Length>) -> Self {
-        self.style().max_size.width = Some(width.into());
-        self
-    }
-
-    fn max_h(mut self, height: impl Into<Length>) -> Self {
-        self.style().max_size.height = Some(height.into());
-        self
     }
 
     fn gap(mut self, gap: impl Into<DefiniteLength>) -> Self {
@@ -347,29 +250,6 @@ pub trait Styled: Sized {
         self.style().gap.width = Some(gap);
         self.style().gap.height = Some(gap);
         self
-    }
-
-    fn gap_x(mut self, gap: impl Into<DefiniteLength>) -> Self {
-        self.style().gap.width = Some(gap.into());
-        self
-    }
-
-    fn gap_y(mut self, gap: impl Into<DefiniteLength>) -> Self {
-        self.style().gap.height = Some(gap.into());
-        self
-    }
-
-    fn gap_1(self) -> Self {
-        self.gap(rems(0.25))
-    }
-    fn gap_2(self) -> Self {
-        self.gap(rems(0.5))
-    }
-    fn gap_3(self) -> Self {
-        self.gap(rems(0.75))
-    }
-    fn gap_4(self) -> Self {
-        self.gap(rems(1.0))
     }
 
     fn rounded(mut self, radius: impl Into<AbsoluteLength>) -> Self {
@@ -381,73 +261,12 @@ pub trait Styled: Sized {
         self
     }
 
-    fn rounded_t(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        let radius = radius.into();
-        self.style().corner_radii.top_left = Some(radius);
-        self.style().corner_radii.top_right = Some(radius);
-        self
-    }
-
-    fn rounded_b(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        let radius = radius.into();
-        self.style().corner_radii.bottom_left = Some(radius);
-        self.style().corner_radii.bottom_right = Some(radius);
-        self
-    }
-
-    fn rounded_l(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        let radius = radius.into();
-        self.style().corner_radii.top_left = Some(radius);
-        self.style().corner_radii.bottom_left = Some(radius);
-        self
-    }
-
-    fn rounded_r(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        let radius = radius.into();
-        self.style().corner_radii.top_right = Some(radius);
-        self.style().corner_radii.bottom_right = Some(radius);
-        self
-    }
-
-    fn rounded_tl(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        self.style().corner_radii.top_left = Some(radius.into());
-        self
-    }
-
-    fn rounded_tr(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        self.style().corner_radii.top_right = Some(radius.into());
-        self
-    }
-
-    fn rounded_bl(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        self.style().corner_radii.bottom_left = Some(radius.into());
-        self
-    }
-
-    fn rounded_br(mut self, radius: impl Into<AbsoluteLength>) -> Self {
-        self.style().corner_radii.bottom_right = Some(radius.into());
-        self
-    }
-
     fn rounded_xs(self) -> Self {
         self.rounded(px(2.))
-    }
-    fn rounded_sm(self) -> Self {
-        self.rounded(px(2.))
-    }
-    fn rounded_md(self) -> Self {
-        self.rounded(px(6.))
     }
     fn rounded_lg(self) -> Self {
         self.rounded(px(8.))
     }
-    fn rounded_xl(self) -> Self {
-        self.rounded(px(12.))
-    }
-    fn rounded_full(self) -> Self {
-        self.rounded(px(9999.))
-    }
-
     fn border(mut self, width: impl Into<AbsoluteLength>) -> Self {
         let width = width.into();
         self.style().border_widths.top = Some(width);
@@ -477,68 +296,17 @@ pub trait Styled: Sized {
         self
     }
 
-    fn border_0(self) -> Self {
-        self.border(px(0.))
-    }
     fn border_1(self) -> Self {
         self.border(px(1.))
     }
     fn border_2(self) -> Self {
         self.border(px(2.))
     }
-    fn border_t_1(self) -> Self {
-        self.border_t(px(1.))
-    }
     fn border_b_1(self) -> Self {
         self.border_b(px(1.))
     }
-    fn border_l_1(self) -> Self {
-        self.border_l(px(1.))
-    }
-    fn border_r_1(self) -> Self {
-        self.border_r(px(1.))
-    }
-
     fn shadow(mut self, shadows: SmallVec<[crate::BoxShadow; 2]>) -> Self {
         self.style().box_shadow = Some(shadows.into_vec());
-        self
-    }
-
-    fn shadow_none(mut self) -> Self {
-        self.style().box_shadow = Some(Vec::new());
-        self
-    }
-
-    fn shadow_sm(mut self) -> Self {
-        self.style().box_shadow = Some(vec![crate::BoxShadow {
-            color: crate::hsla(0., 0., 0., 0.05),
-            offset: crate::point(px(0.), px(1.)),
-            blur_radius: px(2.),
-            spread_radius: px(0.),
-            inset: false,
-        }]);
-        self
-    }
-
-    fn shadow_md(mut self) -> Self {
-        self.style().box_shadow = Some(vec![crate::BoxShadow {
-            color: crate::hsla(0., 0., 0., 0.1),
-            offset: crate::point(px(0.), px(4.)),
-            blur_radius: px(6.),
-            spread_radius: px(-1.),
-            inset: false,
-        }]);
-        self
-    }
-
-    fn shadow_lg(mut self) -> Self {
-        self.style().box_shadow = Some(vec![crate::BoxShadow {
-            color: crate::hsla(0., 0., 0., 0.12),
-            offset: crate::point(px(0.), px(10.)),
-            blur_radius: px(15.),
-            spread_radius: px(-3.),
-            inset: false,
-        }]);
         self
     }
 
@@ -579,13 +347,6 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the whitespace of the element to `normal`.
-    /// [Docs](https://tailwindcss.com/docs/whitespace#normal)
-    fn whitespace_normal(mut self) -> Self {
-        self.text_style().white_space = Some(WhiteSpace::Normal);
-        self
-    }
-
     /// Sets the whitespace of the element to `nowrap`.
     /// [Docs](https://tailwindcss.com/docs/whitespace#nowrap)
     fn whitespace_nowrap(mut self) -> Self {
@@ -600,22 +361,6 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the truncate overflowing text with an ellipsis (…) at the start if needed.
-    /// Typically more adequate for file paths where the end is more important than the beginning.
-    /// Note: This doesn't exist in Tailwind CSS.
-    fn text_ellipsis_start(mut self) -> Self {
-        self.text_style().text_overflow = Some(TextOverflow::TruncateStart(ELLIPSIS));
-        self
-    }
-
-    /// Sets the truncate overflowing text with an ellipsis (…) in the middle if needed.
-    /// Preserves the beginning and end of the text. Useful for filenames.
-    /// Note: This doesn't exist in Tailwind CSS.
-    fn text_ellipsis_middle(mut self) -> Self {
-        self.text_style().text_overflow = Some(TextOverflow::TruncateMiddle(ELLIPSIS));
-        self
-    }
-
     /// Sets the text overflow behavior of the element.
     fn text_overflow(mut self, overflow: TextOverflow) -> Self {
         self.text_style().text_overflow = Some(overflow);
@@ -626,21 +371,6 @@ pub trait Styled: Sized {
     fn text_align(mut self, align: TextAlign) -> Self {
         self.text_style().text_align = Some(align);
         self
-    }
-
-    /// Sets the text alignment to left
-    fn text_left(self) -> Self {
-        self.text_align(TextAlign::Left)
-    }
-
-    /// Sets the text alignment to center
-    fn text_center(self) -> Self {
-        self.text_align(TextAlign::Center)
-    }
-
-    /// Sets the text alignment to right
-    fn text_right(self) -> Self {
-        self.text_align(TextAlign::Right)
     }
 
     /// Sets the truncate to prevent text from wrapping and truncate overflowing text with an ellipsis (…) if needed.
@@ -664,24 +394,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the flex direction of the element to `column-reverse`.
-    /// [Docs](https://tailwindcss.com/docs/flex-direction#column-reverse)
-    fn flex_col_reverse(mut self) -> Self {
-        self.style().flex_direction = Some(FlexDirection::ColumnReverse);
-        self
-    }
-
     /// Sets the flex direction of the element to `row`.
     /// [Docs](https://tailwindcss.com/docs/flex-direction#row)
     fn flex_row(mut self) -> Self {
         self.style().flex_direction = Some(FlexDirection::Row);
-        self
-    }
-
-    /// Sets the flex direction of the element to `row-reverse`.
-    /// [Docs](https://tailwindcss.com/docs/flex-direction#row-reverse)
-    fn flex_row_reverse(mut self) -> Self {
-        self.style().flex_direction = Some(FlexDirection::RowReverse);
         self
     }
 
@@ -691,24 +407,6 @@ pub trait Styled: Sized {
         self.style().flex_grow = Some(1.);
         self.style().flex_shrink = Some(1.);
         self.style().flex_basis = Some(relative(0.).into());
-        self
-    }
-
-    /// Sets the element to allow a flex item to grow and shrink, taking into account its initial size.
-    /// [Docs](https://tailwindcss.com/docs/flex#auto)
-    fn flex_auto(mut self) -> Self {
-        self.style().flex_grow = Some(1.);
-        self.style().flex_shrink = Some(1.);
-        self.style().flex_basis = Some(Length::Auto);
-        self
-    }
-
-    /// Sets the element to allow a flex item to shrink but not grow, taking into account its initial size.
-    /// [Docs](https://tailwindcss.com/docs/flex#initial)
-    fn flex_initial(mut self) -> Self {
-        self.style().flex_grow = Some(0.);
-        self.style().flex_shrink = Some(1.);
-        self.style().flex_basis = Some(Length::Auto);
         self
     }
 
@@ -735,38 +433,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Disables flex item growth (flex-grow: 0).
-    /// [Docs](https://tailwindcss.com/docs/flex-grow#dont-grow)
-    fn flex_grow_0(mut self) -> Self {
-        self.style().flex_grow = Some(0.);
-        self
-    }
-
-    /// Enables flex item growth (flex-grow: 1).
-    /// [Docs](https://tailwindcss.com/docs/flex-grow#grow-1)
-    fn flex_grow_1(mut self) -> Self {
-        self.style().flex_grow = Some(1.);
-        self
-    }
-
     /// Sets the flex item's shrink factor.
     /// [Docs](https://tailwindcss.com/docs/flex-shrink)
     fn flex_shrink(mut self, shrink: f32) -> Self {
         self.style().flex_shrink = Some(shrink);
-        self
-    }
-
-    /// Disables flex item shrinking (flex-shrink: 0).
-    /// [Docs](https://tailwindcss.com/docs/flex-shrink#dont-shrink)
-    fn flex_shrink_0(mut self) -> Self {
-        self.style().flex_shrink = Some(0.);
-        self
-    }
-
-    /// Enables flex item shrinking (flex-shrink: 1).
-    /// [Docs](https://tailwindcss.com/docs/flex-shrink#shrink-1)
-    fn flex_shrink_1(mut self) -> Self {
-        self.style().flex_shrink = Some(1.);
         self
     }
 
@@ -777,34 +447,6 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the element wrap flex items in the reverse direction.
-    /// [Docs](https://tailwindcss.com/docs/flex-wrap#wrap-reversed)
-    fn flex_wrap_reverse(mut self) -> Self {
-        self.style().flex_wrap = Some(FlexWrap::WrapReverse);
-        self
-    }
-
-    /// Sets the element to prevent flex items from wrapping, causing inflexible items to overflow the container if necessary.
-    /// [Docs](https://tailwindcss.com/docs/flex-wrap#dont-wrap)
-    fn flex_nowrap(mut self) -> Self {
-        self.style().flex_wrap = Some(FlexWrap::NoWrap);
-        self
-    }
-
-    /// Sets the element to align flex items to the start of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-items#start)
-    fn items_start(mut self) -> Self {
-        self.style().align_items = Some(AlignItems::FlexStart);
-        self
-    }
-
-    /// Sets the element to align flex items to the end of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-items#end)
-    fn items_end(mut self) -> Self {
-        self.style().align_items = Some(AlignItems::FlexEnd);
-        self
-    }
-
     /// Sets the element to align flex items along the center of the container's cross axis.
     /// [Docs](https://tailwindcss.com/docs/align-items#center)
     fn items_center(mut self) -> Self {
@@ -812,95 +454,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the element to align flex items along the baseline of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-items#baseline)
-    fn items_baseline(mut self) -> Self {
-        self.style().align_items = Some(AlignItems::Baseline);
-        self
-    }
-
-    /// Sets the element to stretch flex items to fill the available space along the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-items#stretch)
-    fn items_stretch(mut self) -> Self {
-        self.style().align_items = Some(AlignItems::Stretch);
-        self
-    }
-
-    /// Sets how this specific element is aligned along the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#start)
-    fn self_start(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::Start);
-        self
-    }
-
-    /// Sets this element to align against the end of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#end)
-    fn self_end(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::End);
-        self
-    }
-
-    /// Sets this element to align against the start of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#start)
-    fn self_flex_start(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::FlexStart);
-        self
-    }
-
-    /// Sets this element to align against the end of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#end)
-    fn self_flex_end(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::FlexEnd);
-        self
-    }
-
-    /// Sets this element to align along the center of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#center)
-    fn self_center(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::Center);
-        self
-    }
-
-    /// Sets this element to align along the baseline of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#baseline)
-    fn self_baseline(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::Baseline);
-        self
-    }
-
-    /// Sets this element to stretch to fill the available space along the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-self#stretch)
-    fn self_stretch(mut self) -> Self {
-        self.style().align_self = Some(AlignSelf::Stretch);
-        self
-    }
-
-    /// Sets the element to justify flex items against the start of the container's main axis.
-    /// [Docs](https://tailwindcss.com/docs/justify-content#start)
-    fn justify_start(mut self) -> Self {
-        self.style().justify_content = Some(JustifyContent::Start);
-        self
-    }
-
-    /// Sets the element to justify flex items against the end of the container's main axis.
-    /// [Docs](https://tailwindcss.com/docs/justify-content#end)
-    fn justify_end(mut self) -> Self {
-        self.style().justify_content = Some(JustifyContent::End);
-        self
-    }
-
     /// Sets the element to justify flex items along the center of the container's main axis.
     /// [Docs](https://tailwindcss.com/docs/justify-content#center)
     fn justify_center(mut self) -> Self {
         self.style().justify_content = Some(JustifyContent::Center);
-        self
-    }
-
-    /// Sets the element to justify flex items along the container's main axis
-    /// such that there is an equal amount of space between each item.
-    /// [Docs](https://tailwindcss.com/docs/justify-content#space-between)
-    fn justify_between(mut self) -> Self {
-        self.style().justify_content = Some(JustifyContent::SpaceBetween);
         self
     }
 
@@ -912,86 +469,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the element to justify items along the container's main axis such
-    /// that there is an equal amount of space around each item, but also
-    /// accounting for the doubling of space you would normally see between
-    /// each item when using justify-around.
-    /// [Docs](https://tailwindcss.com/docs/justify-content#space-evenly)
-    fn justify_evenly(mut self) -> Self {
-        self.style().justify_content = Some(JustifyContent::SpaceEvenly);
-        self
-    }
-
-    /// Sets the element to pack content items in their default position as if no align-content value was set.
-    /// [Docs](https://tailwindcss.com/docs/align-content#normal)
-    fn content_normal(mut self) -> Self {
-        self.style().align_content = None;
-        self
-    }
-
-    /// Sets the element to pack content items in the center of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-content#center)
-    fn content_center(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::Center);
-        self
-    }
-
-    /// Sets the element to pack content items against the start of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-content#start)
-    fn content_start(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::FlexStart);
-        self
-    }
-
-    /// Sets the element to pack content items against the end of the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-content#end)
-    fn content_end(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::FlexEnd);
-        self
-    }
-
-    /// Sets the element to pack content items along the container's cross axis
-    /// such that there is an equal amount of space between each item.
-    /// [Docs](https://tailwindcss.com/docs/align-content#space-between)
-    fn content_between(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::SpaceBetween);
-        self
-    }
-
-    /// Sets the element to pack content items along the container's cross axis
-    /// such that there is an equal amount of space on each side of each item.
-    /// [Docs](https://tailwindcss.com/docs/align-content#space-around)
-    fn content_around(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::SpaceAround);
-        self
-    }
-
-    /// Sets the element to pack content items along the container's cross axis
-    /// such that there is an equal amount of space between each item.
-    /// [Docs](https://tailwindcss.com/docs/align-content#space-evenly)
-    fn content_evenly(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::SpaceEvenly);
-        self
-    }
-
-    /// Sets the element to allow content items to fill the available space along the container's cross axis.
-    /// [Docs](https://tailwindcss.com/docs/align-content#stretch)
-    fn content_stretch(mut self) -> Self {
-        self.style().align_content = Some(AlignContent::Stretch);
-        self
-    }
-
     /// Sets the aspect ratio of the element.
     /// [Docs](https://tailwindcss.com/docs/aspect-ratio)
     fn aspect_ratio(mut self, ratio: f32) -> Self {
         self.style().aspect_ratio = Some(ratio);
-        self
-    }
-
-    /// Sets the aspect ratio of the element to 1/1 – equal width and height.
-    /// [Docs](https://tailwindcss.com/docs/aspect-ratio)
-    fn aspect_square(mut self) -> Self {
-        self.style().aspect_ratio = Some(1.0);
         self
     }
 
@@ -1002,12 +483,6 @@ pub trait Styled: Sized {
         Self: Sized,
     {
         self.style().background = Some(fill.into());
-        self
-    }
-
-    /// Sets the border style of the element.
-    fn border_dashed(mut self) -> Self {
-        self.style().border_style = Some(BorderStyle::Dashed);
         self
     }
 
@@ -1033,26 +508,11 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the background color of this element.
-    ///
-    /// This value cascades to its child elements.
-    fn text_bg(mut self, bg: impl Into<Hsla>) -> Self {
-        self.text_style().background_color = Some(bg.into());
-        self
-    }
-
     /// Sets the text size of this element.
     ///
     /// This value cascades to its child elements.
     fn text_size(mut self, size: impl Into<AbsoluteLength>) -> Self {
         self.text_style().font_size = Some(size.into());
-        self
-    }
-
-    /// Sets the text size to 'extra small'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_xs(mut self) -> Self {
-        self.text_style().font_size = Some(rems(0.75).into());
         self
     }
 
@@ -1063,52 +523,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the text size to 'base'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_base(mut self) -> Self {
-        self.text_style().font_size = Some(rems(1.0).into());
-        self
-    }
-
-    /// Sets the text size to 'large'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_lg(mut self) -> Self {
-        self.text_style().font_size = Some(rems(1.125).into());
-        self
-    }
-
-    /// Sets the text size to 'extra large'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_xl(mut self) -> Self {
-        self.text_style().font_size = Some(rems(1.25).into());
-        self
-    }
-
-    /// Sets the text size to 'extra extra large'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_2xl(mut self) -> Self {
-        self.text_style().font_size = Some(rems(1.5).into());
-        self
-    }
-
-    /// Sets the text size to 'extra extra extra large'.
-    /// [Docs](https://tailwindcss.com/docs/font-size#setting-the-font-size)
-    fn text_3xl(mut self) -> Self {
-        self.text_style().font_size = Some(rems(1.875).into());
-        self
-    }
-
     /// Sets the font style of the element to italic.
     /// [Docs](https://tailwindcss.com/docs/font-style#italicizing-text)
     fn italic(mut self) -> Self {
         self.text_style().font_style = Some(FontStyle::Italic);
-        self
-    }
-
-    /// Sets the font style of the element to normal (not italic).
-    /// [Docs](https://tailwindcss.com/docs/font-style#displaying-text-normally)
-    fn not_italic(mut self) -> Self {
-        self.text_style().font_style = Some(FontStyle::Normal);
         self
     }
 
@@ -1120,96 +538,6 @@ pub trait Styled: Sized {
             thickness: px(1.),
             ..Default::default()
         });
-        self
-    }
-
-    /// Sets the decoration of the text to have a line through it.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-line#adding-a-line-through-text)
-    fn line_through(mut self) -> Self {
-        let style = self.text_style();
-        style.strikethrough = Some(StrikethroughStyle {
-            thickness: px(1.),
-            ..Default::default()
-        });
-        self
-    }
-
-    /// Removes the text decoration on this element.
-    ///
-    /// This value cascades to its child elements.
-    fn text_decoration_none(mut self) -> Self {
-        self.text_style().underline = None;
-        self
-    }
-
-    /// Sets the color for the underline on this element
-    fn text_decoration_color(mut self, color: impl Into<Hsla>) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.color = Some(color.into());
-        self
-    }
-
-    /// Sets the text decoration style to a solid line.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-style)
-    fn text_decoration_solid(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.wavy = false;
-        self
-    }
-
-    /// Sets the text decoration style to a wavy line.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-style)
-    fn text_decoration_wavy(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.wavy = true;
-        self
-    }
-
-    /// Sets the text decoration to be 0px thick.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-thickness)
-    fn text_decoration_0(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.thickness = px(0.);
-        self
-    }
-
-    /// Sets the text decoration to be 1px thick.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-thickness)
-    fn text_decoration_1(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.thickness = px(1.);
-        self
-    }
-
-    /// Sets the text decoration to be 2px thick.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-thickness)
-    fn text_decoration_2(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.thickness = px(2.);
-        self
-    }
-
-    /// Sets the text decoration to be 4px thick.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-thickness)
-    fn text_decoration_4(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.thickness = px(4.);
-        self
-    }
-
-    /// Sets the text decoration to be 8px thick.
-    /// [Docs](https://tailwindcss.com/docs/text-decoration-thickness)
-    fn text_decoration_8(mut self) -> Self {
-        let style = self.text_style();
-        let underline = style.underline.get_or_insert_with(Default::default);
-        underline.thickness = px(8.);
         self
     }
 
@@ -1266,92 +594,12 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the grid columns with min-content minimum sizing.
-    /// Unlike grid_cols, it won't shrink to width 0 in AvailableSpace::MinContent constraints.
-    fn grid_cols_min_content(mut self, cols: u16) -> Self {
-        self.style().grid_cols = Some(GridTemplate {
-            repeat: cols,
-            min_size: GridTemplateMinSize::MinContent,
-        });
-        self
-    }
-
-    /// Sets the grid columns with max-content maximum sizing for content-based column widths.
-    fn grid_cols_max_content(mut self, cols: u16) -> Self {
-        self.style().grid_cols = Some(GridTemplate {
-            repeat: cols,
-            min_size: GridTemplateMinSize::MaxContent,
-        });
-        self
-    }
-
     /// Sets the grid rows of this element.
     fn grid_rows(mut self, rows: u16) -> Self {
         self.style().grid_rows = Some(GridTemplate {
             repeat: rows,
             min_size: GridTemplateMinSize::Zero,
         });
-        self
-    }
-
-    /// Sets the grid rows with min-content minimum sizing.
-    /// Unlike grid_rows, it won't shrink to height 0 in AvailableSpace::MinContent constraints.
-    fn grid_rows_min_content(mut self, rows: u16) -> Self {
-        self.style().grid_rows = Some(GridTemplate {
-            repeat: rows,
-            min_size: GridTemplateMinSize::MinContent,
-        });
-        self
-    }
-
-    /// Sets the grid rows with max-content maximum sizing for content-based row heights.
-    fn grid_rows_max_content(mut self, rows: u16) -> Self {
-        self.style().grid_rows = Some(GridTemplate {
-            repeat: rows,
-            min_size: GridTemplateMinSize::MaxContent,
-        });
-        self
-    }
-
-    /// Sets the column start of this element.
-    fn col_start(mut self, start: i16) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column.start = GridPlacement::Line(start);
-        self
-    }
-
-    /// Sets the column start of this element to auto.
-    fn col_start_auto(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column.start = GridPlacement::Auto;
-        self
-    }
-
-    /// Sets the column end of this element.
-    fn col_end(mut self, end: i16) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column.end = GridPlacement::Line(end);
-        self
-    }
-
-    /// Sets the column end of this element to auto.
-    fn col_end_auto(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column.end = GridPlacement::Auto;
-        self
-    }
-
-    /// Sets the column span of this element.
-    fn col_span(mut self, span: u16) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column = GridPlacement::Span(span)..GridPlacement::Span(span);
-        self
-    }
-
-    /// Sets the row span of this element.
-    fn col_span_full(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.column = GridPlacement::Line(1)..GridPlacement::Line(-1);
         self
     }
 
@@ -1362,38 +610,10 @@ pub trait Styled: Sized {
         self
     }
 
-    /// Sets the row start of this element to "auto"
-    fn row_start_auto(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.row.start = GridPlacement::Auto;
-        self
-    }
-
     /// Sets the row end of this element.
     fn row_end(mut self, end: i16) -> Self {
         let grid_location = self.style().grid_location_mut();
         grid_location.row.end = GridPlacement::Line(end);
-        self
-    }
-
-    /// Sets the row end of this element to "auto"
-    fn row_end_auto(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.row.end = GridPlacement::Auto;
-        self
-    }
-
-    /// Sets the row span of this element.
-    fn row_span(mut self, span: u16) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.row = GridPlacement::Span(span)..GridPlacement::Span(span);
-        self
-    }
-
-    /// Sets the row span of this element.
-    fn row_span_full(mut self) -> Self {
-        let grid_location = self.style().grid_location_mut();
-        grid_location.row = GridPlacement::Line(1)..GridPlacement::Line(-1);
         self
     }
 

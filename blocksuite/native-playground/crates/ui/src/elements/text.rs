@@ -441,30 +441,6 @@ impl StyledText {
         runs
     }
 
-    /// Override the font family for specific byte ranges of the text.
-    ///
-    /// This is resolved lazily at layout time, so the overrides are applied
-    /// on top of the inherited text style from the parent element.
-    /// Can be combined with [`with_highlights`](Self::with_highlights).
-    ///
-    /// The overrides must be sorted by range start and non-overlapping.
-    /// Each override range must fall on character boundaries.
-    pub fn with_font_family_overrides(
-        mut self,
-        overrides: impl IntoIterator<Item = (Range<usize>, SharedString)>,
-    ) -> Self {
-        self.delayed_font_family_overrides = Some(
-            overrides
-                .into_iter()
-                .inspect(|(range, _)| {
-                    debug_assert!(self.text.is_char_boundary(range.start));
-                    debug_assert!(self.text.is_char_boundary(range.end));
-                })
-                .collect(),
-        );
-        self
-    }
-
     fn apply_font_family_overrides(
         runs: &mut [TextRun],
         overrides: &[(Range<usize>, SharedString)],
@@ -728,41 +704,6 @@ impl TextLayout {
         None
     }
 
-    /// Retrieve the layout for the line containing the given byte index.
-    pub fn line_layout_for_index(&self, index: usize) -> Option<Arc<WrappedLineLayout>> {
-        let element_state = self.0.borrow();
-        let element_state = element_state
-            .as_ref()
-            .expect("measurement has not been performed");
-        let mut line_start_ix = 0;
-
-        for line in &element_state.lines {
-            let line_end_ix = line_start_ix + line.len();
-            if index < line_start_ix {
-                break;
-            } else if index > line_end_ix {
-                line_start_ix = line_end_ix + 1;
-                continue;
-            } else {
-                return Some(line.layout.clone());
-            }
-        }
-
-        None
-    }
-
-    /// Retrieve all line layouts in source order.
-    pub fn line_layouts(&self) -> SmallVec<[Arc<WrappedLineLayout>; 1]> {
-        self.0
-            .borrow()
-            .as_ref()
-            .expect("measurement has not been performed")
-            .lines
-            .iter()
-            .map(|line| line.layout.clone())
-            .collect()
-    }
-
     /// The bounds of this layout.
     pub fn bounds(&self) -> Bounds<Pixels> {
         self.0.borrow().as_ref().unwrap().bounds.unwrap()
@@ -788,29 +729,6 @@ impl TextLayout {
             .iter()
             .map(|s| &s.text)
             .join("\n")
-    }
-
-    /// The text for this layout (with soft-wraps as newlines)
-    pub fn wrapped_text(&self) -> String {
-        let mut accumulator = String::new();
-
-        for wrapped in self.0.borrow().as_ref().unwrap().lines.iter() {
-            let mut seen = 0;
-            for boundary in wrapped.layout.wrap_boundaries.iter() {
-                let index = wrapped.layout.unwrapped_layout.runs[boundary.run_ix].glyphs
-                    [boundary.glyph_ix]
-                    .index;
-
-                accumulator.push_str(&wrapped.text[seen..index]);
-                accumulator.push('\n');
-                seen = index;
-            }
-            accumulator.push_str(&wrapped.text[seen..]);
-            accumulator.push('\n');
-        }
-        // Remove trailing newline
-        accumulator.pop();
-        accumulator
     }
 }
 

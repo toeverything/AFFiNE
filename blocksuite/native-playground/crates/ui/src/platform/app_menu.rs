@@ -114,14 +114,6 @@ impl MenuItem {
         Self::Submenu(menu)
     }
 
-    /// Creates a new submenu that is populated by the OS
-    pub fn os_submenu(name: impl Into<SharedString>, menu_type: SystemMenuType) -> Self {
-        Self::SystemMenu(OsMenu {
-            name: name.into(),
-            menu_type,
-        })
-    }
-
     /// Creates a new menu item that invokes an action
     pub fn action(name: impl Into<SharedString>, action: impl Action) -> Self {
         Self::Action {
@@ -183,17 +175,6 @@ impl MenuItem {
         self
     }
 
-    /// Returns whether this menu item is checked
-    ///
-    /// Only for [`MenuItem::Action`], otherwise, returns false
-    #[inline]
-    pub fn is_checked(&self) -> bool {
-        match self {
-            MenuItem::Action { checked, .. } => *checked,
-            _ => false,
-        }
-    }
-
     /// Set whether this menu item is disabled
     pub fn disabled(mut self, disabled: bool) -> Self {
         match &mut self {
@@ -206,18 +187,6 @@ impl MenuItem {
             _ => {}
         }
         self
-    }
-
-    /// Returns whether this menu item is disabled
-    ///
-    /// Only for [`MenuItem::Action`] and [`MenuItem::Submenu`], otherwise, returns false
-    #[inline]
-    pub fn is_disabled(&self) -> bool {
-        match self {
-            MenuItem::Action { disabled, .. } => *disabled,
-            MenuItem::Submenu(submenu) => submenu.disabled,
-            _ => false,
-        }
     }
 }
 

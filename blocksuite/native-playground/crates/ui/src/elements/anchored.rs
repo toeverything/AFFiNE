@@ -89,18 +89,6 @@ impl Anchored {
         self.position_mode = mode;
         self
     }
-
-    /// Snap to window edge instead of switching anchor corner when an overflow would occur.
-    pub fn snap_to_window(mut self) -> Self {
-        self.fit_mode = AnchoredFitMode::SnapToWindow;
-        self
-    }
-
-    /// Snap to window edge and leave some margins.
-    pub fn snap_to_window_with_margin(mut self, edges: impl Into<Edges<Pixels>>) -> Self {
-        self.fit_mode = AnchoredFitMode::SnapToWindowWithMargin(edges.into());
-        self
-    }
 }
 
 impl ParentElement for Anchored {

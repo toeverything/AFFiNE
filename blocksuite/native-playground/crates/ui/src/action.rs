@@ -168,11 +168,6 @@ struct ActionData {
 }
 
 impl ActionRegistry {
-    pub(crate) fn load_actions(&mut self) {
-        self.register::<NoAction>();
-        self.register::<Unbind>();
-    }
-
     pub fn register<A: Action>(&mut self) {
         let name = A::name_for_type();
         if self.by_name.contains_key(name) {

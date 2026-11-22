@@ -242,32 +242,6 @@ impl AsyncApp {
         read(app.global(), &app)
     }
 
-    /// Reads the global state of the specified type, passing it to the given callback.
-    ///
-    /// Similar to [`AsyncApp::read_global`], but returns an error instead of panicking
-    pub fn try_read_global<G: Global, R>(&self, read: impl FnOnce(&G, &App) -> R) -> Option<R> {
-        let app = self.app();
-        let app = app.borrow_mut();
-        if app.quitting {
-            return None;
-        }
-        Some(read(app.try_global()?, &app))
-    }
-
-    /// Reads the global state of the specified type, passing it to the given callback.
-    /// A default value is assigned if a global of this type has not yet been assigned.
-    pub fn read_default_global<G: Global + Default, R>(
-        &self,
-        read: impl FnOnce(&G, &App) -> R,
-    ) -> R {
-        let app = self.app();
-        let mut app = app.borrow_mut();
-        app.update(|cx| {
-            cx.default_global::<G>();
-        });
-        read(app.global(), &app)
-    }
-
     /// A convenience method for [`App::update_global`](BorrowAppContext::update_global)
     /// for updating the global state of the specified type.
     pub fn update_global<G: Global, R>(&self, update: impl FnOnce(&mut G, &mut App) -> R) -> R {
@@ -316,16 +290,6 @@ impl AsyncWindowContext {
     pub fn update<R>(&mut self, update: impl FnOnce(&mut Window, &mut App) -> R) -> Result<R> {
         self.app
             .update_window(self.window, |_, window, cx| update(window, cx))
-    }
-
-    /// A convenience method for [`App::update_window`].
-    #[inline(always)]
-    #[track_caller]
-    pub fn update_root<R>(
-        &mut self,
-        update: impl FnOnce(AnyView, &mut Window, &mut App) -> R,
-    ) -> Result<R> {
-        self.app.update_window(self.window, update)
     }
 
     /// A convenience method for [`Window::on_next_frame`].

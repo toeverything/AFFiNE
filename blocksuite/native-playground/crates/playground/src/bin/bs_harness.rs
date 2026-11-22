@@ -290,6 +290,10 @@ enum OverlayState {
     DragDropIndicator,
     CodeHover,
     CodeHoverCopied,
+    EdgelessSelected,
+    EdgelessMarquee,
+    EdgelessInlineEdit,
+    EdgelessAuthoring,
 }
 
 impl OverlayState {
@@ -308,6 +312,13 @@ impl OverlayState {
         Self::CodeHoverCopied,
     ];
 
+    const ALL_EDGELESS: [Self; 4] = [
+        Self::EdgelessSelected,
+        Self::EdgelessMarquee,
+        Self::EdgelessInlineEdit,
+        Self::EdgelessAuthoring,
+    ];
+
     fn name(self) -> &'static str {
         match self {
             Self::Default => "default",
@@ -322,11 +333,28 @@ impl OverlayState {
             Self::DragDropIndicator => "drag_drop_indicator",
             Self::CodeHover => "code_hover",
             Self::CodeHoverCopied => "code_hover_copied",
+            Self::EdgelessSelected => "edgeless_selected",
+            Self::EdgelessMarquee => "edgeless_marquee",
+            Self::EdgelessInlineEdit => "edgeless_inline_edit",
+            Self::EdgelessAuthoring => "edgeless_authoring",
         }
     }
 
     fn parse(value: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|state| state.name() == value)
+        Self::ALL
+            .into_iter()
+            .chain(Self::ALL_EDGELESS)
+            .find(|state| state.name() == value)
+    }
+
+    fn is_edgeless(self) -> bool {
+        matches!(
+            self,
+            Self::EdgelessSelected
+                | Self::EdgelessMarquee
+                | Self::EdgelessInlineEdit
+                | Self::EdgelessAuthoring
+        )
     }
 
     /// Snapshot ids the state must show once it is applied.
@@ -351,6 +379,26 @@ impl OverlayState {
             Self::DragHandleHover => &["overlay.drag_handle"],
             Self::DragDropIndicator => &["overlay.drag_handle", "overlay.drop_indicator"],
             Self::CodeHover | Self::CodeHoverCopied => &["page.block.showcase-code.copy"],
+            Self::EdgelessSelected => &[
+                "edgeless.viewport",
+                "chrome.edgeless_toolbar",
+                "chrome.edgeless_zoom",
+            ],
+            Self::EdgelessMarquee => &[
+                "edgeless.viewport",
+                "chrome.edgeless_toolbar",
+                "chrome.edgeless_zoom",
+            ],
+            Self::EdgelessInlineEdit => &[
+                "edgeless.viewport",
+                "chrome.edgeless_toolbar",
+                "edgeless.inline_edit",
+            ],
+            Self::EdgelessAuthoring => &[
+                "edgeless.viewport",
+                "chrome.edgeless_toolbar",
+                "chrome.edgeless_zoom",
+            ],
         }
     }
 }
@@ -457,6 +505,73 @@ fn apply_overlay_state(session: &HeadlessSession, state: OverlayState) -> Result
                 let (x, y) = element_center(&snapshot, &format!("page.block.{CODE}.copy"))?;
                 session.headless_win.simulate_click(point(px(x), px(y)));
             }
+        }
+        OverlayState::EdgelessSelected => {
+            session.frame()?;
+            session.update(|v, _, cx| {
+                v.edgeless_set_selection(["collect".to_string()], cx);
+            })?;
+        }
+        OverlayState::EdgelessMarquee => {
+            session.frame()?;
+            session.update(|v, _, cx| {
+                v.edgeless_set_selection(["collect".to_string(), "review".to_string()], cx);
+                v.edgeless_set_marquee((-120.0, -60.0), (540.0, 260.0), cx);
+            })?;
+        }
+        OverlayState::EdgelessInlineEdit => {
+            session.frame()?;
+            session.update(|v, w, cx| {
+                // Zoom to 1.4x centered on "collect" [818, 522, 150, 82] so inline edit is crisp and non-overlapping.
+                v.set_edgeless_camera(436.0, 296.0, 1.4, cx);
+                v.edgeless_begin_inline_edit("collect", w, cx);
+                v.replace_and_mark_text_in_range(None, " + edit", None, w, cx);
+            })?;
+        }
+        OverlayState::EdgelessAuthoring => {
+            session.frame()?;
+            // Frame open whiteboard space to the right (world x = 1220..1640, y = 220..760)
+            // alongside "collect"/"review" so authored items never overlap Page Note text.
+            session.update(|v, _, cx| {
+                v.set_edgeless_camera(740.0, 140.0, 0.85, cx);
+            })?;
+            session.frame()?;
+            // 1. Draw a Diamond shape in open canvas space: world (1250, 240) -> (1410, 360).
+            session.update(|v, w, cx| {
+                v.edgeless_select_tool(
+                    playground::edgeless::EdgelessTool::Shape(
+                        blocksuite_playground_doc::read::ShapeType::Diamond,
+                    ),
+                    w,
+                    cx,
+                );
+            })?;
+            session.pointer_down(433.5, 137.0);
+            session.pointer_move(569.5, 239.0, true);
+            session.pointer_up(569.5, 239.0);
+            session.frame()?;
+            // 2. Draw a port-snapped Orthogonal Connector from "review" right port to the new Diamond.
+            session.update(|v, w, cx| {
+                v.edgeless_select_tool(playground::edgeless::EdgelessTool::Connector, w, cx);
+            })?;
+            session.pointer_down(343.0, 578.0);
+            session.pointer_move(501.5, 239.0, true);
+            session.pointer_up(501.5, 239.0);
+            session.frame()?;
+            // 3. Draw a freehand Brush stroke in open canvas space: world (1260, 520) -> (1580, 560).
+            session.update(|v, w, cx| {
+                v.edgeless_select_tool(playground::edgeless::EdgelessTool::Brush, w, cx);
+            })?;
+            session.pointer_down(442.0, 375.0);
+            session.pointer_move(510.0, 345.0, true);
+            session.pointer_move(590.0, 415.0, true);
+            session.pointer_move(680.0, 365.0, true);
+            session.pointer_up(680.0, 365.0);
+            session.frame()?;
+            // 4. Show marquee selection around the open-space authored elements.
+            session.update(|v, _, cx| {
+                v.edgeless_set_marquee((1220.0, 210.0), (1620.0, 620.0), cx);
+            })?;
         }
     }
     // Past every overlay transition, short of the `Copied` label's timeout.
@@ -592,6 +707,32 @@ fn run_audit_states() -> Result<()> {
                     snapshot.elements.contains_key("chrome.edgeless_zoom"),
                     "chrome.edgeless_zoom missing in {context}"
                 );
+                anyhow::ensure!(
+                    snapshot.elements.contains_key("chrome.edgeless_toolbar"),
+                    "chrome.edgeless_toolbar missing in {context}"
+                );
+                audited += 1;
+            }
+
+            // Audit Edgeless interactive authoring states in both themes and widths.
+            for state in OverlayState::ALL_EDGELESS {
+                let context = format!("{} {width}x{height} {}", state.name(), theme.as_str());
+                let session = start_headless_session(
+                    width,
+                    height,
+                    PlaygroundOptions {
+                        theme,
+                        mode: PlaygroundMode::Edgeless,
+                        ..PlaygroundOptions::default()
+                    },
+                )?;
+                apply_overlay_state(&session, state).with_context(|| context.clone())?;
+                let snapshot = session.frame()?;
+                let violations = audit_frame_snapshot(&snapshot);
+                anyhow::ensure!(
+                    violations.is_empty(),
+                    "audit violations in {context}: {violations:#?}"
+                );
                 audited += 1;
             }
         }
@@ -609,8 +750,11 @@ fn render_headless(
     zoom: Option<f32>,
     pan: Option<(f32, f32)>,
     state: OverlayState,
-    options: PlaygroundOptions,
+    mut options: PlaygroundOptions,
 ) -> Result<()> {
+    if state.is_edgeless() {
+        options.mode = PlaygroundMode::Edgeless;
+    }
     let theme = options.theme;
     let mode = options.mode;
     let session = start_headless_session(width, height, options)?;
@@ -2539,6 +2683,162 @@ impl DemoRecorder<'_> {
     }
 }
 
+/// Record a 60 fps full-product walkthrough: Page editing -> Edgeless switch ->
+/// select/drag/rotate shape with live connector rerouting -> create shape, connector & brush ->
+/// double-click inline IME label editing -> Undo/Redo -> Dark/Light theme toggle.
+fn record_authoring_demo(dir: PathBuf) -> Result<()> {
+    std::fs::create_dir_all(&dir)?;
+    let session = start_headless_session(
+        1280,
+        800,
+        PlaygroundOptions {
+            theme: PlaygroundTheme::Light,
+            ..Default::default()
+        },
+    )?;
+    session.frame()?;
+    let mut demo = DemoRecorder {
+        session: &session,
+        dir,
+        frames: 0,
+        pointer: (640.0, 400.0),
+        pressed: false,
+    };
+
+    // 1. Page editing (~0.8s).
+    demo.hold(12)?;
+    let intro_end = session.plain_text("showcase-intro")?.encode_utf16().count();
+    let (ix, iy) = demo.text_point("showcase-intro", intro_end)?;
+    demo.move_to((ix + 16.0, iy), 10)?;
+    demo.click()?;
+    demo.type_text(" live!", 6)?;
+    demo.hold(12)?;
+
+    // 2. Smooth mode switch to Edgeless (~0.6s).
+    let snap = session.frame()?;
+    let (ex, ey) = element_center(&snap, "chrome.mode_switcher.edgeless")?;
+    demo.move_to((ex, ey), 10)?;
+    demo.click()?;
+    demo.hold(24)?;
+
+    // 3. Select & drag "collect" shape with live connector rerouting (~1.1s).
+    let snap = session.frame()?;
+    if let Ok((sx, sy)) = element_center(&snap, "edgeless.surface.collect") {
+        demo.move_to((sx, sy), 12)?;
+        demo.press();
+        demo.move_to((sx + 70.0, sy - 35.0), 30)?;
+        demo.release();
+        demo.hold(15)?;
+    }
+
+    // 4. Rotate selected shape via top rotation handle (~0.8s).
+    let snap = session.frame()?;
+    if let Ok((rx, ry)) = element_center(&snap, "edgeless.handle.rotate") {
+        demo.move_to((rx, ry), 10)?;
+        demo.press();
+        demo.move_to((rx + 48.0, ry + 18.0), 24)?;
+        demo.release();
+        demo.hold(12)?;
+    }
+
+    // 5. Frame clean open whiteboard space to the right (world x >= 1220) and draw a Diamond shape (~1.0s).
+    session.update(|v, _, cx| {
+        v.set_edgeless_camera(740.0, 140.0, 0.85, cx);
+    })?;
+    demo.hold(10)?;
+    let snap = session.frame()?;
+    if let Ok((tx, ty)) = element_center(&snap, "chrome.edgeless_toolbar.shape") {
+        demo.move_to((tx, ty), 10)?;
+        demo.click()?;
+        demo.hold(6)?;
+    }
+    session.update(|v, w, cx| {
+        v.edgeless_select_tool(
+            playground::edgeless::EdgelessTool::Shape(
+                blocksuite_playground_doc::read::ShapeType::Diamond,
+            ),
+            w,
+            cx,
+        );
+    })?;
+    demo.move_to((433.5, 137.0), 10)?;
+    demo.press();
+    demo.move_to((569.5, 239.0), 22)?;
+    demo.release();
+    demo.hold(12)?;
+
+    // 6. Pick Connector tool and drag a port-snapped orthogonal connector from "review" to the Diamond (~1.0s).
+    let snap = session.frame()?;
+    if let Ok((cx_t, cy_t)) = element_center(&snap, "chrome.edgeless_toolbar.connector") {
+        demo.move_to((cx_t, cy_t), 10)?;
+        demo.click()?;
+        demo.hold(6)?;
+    }
+    demo.move_to((343.0, 578.0), 10)?;
+    demo.press();
+    demo.move_to((501.5, 239.0), 22)?;
+    demo.release();
+    demo.hold(12)?;
+
+    // 7. Pick Brush tool and draw a smooth freehand stroke in open canvas space (~1.0s).
+    let snap = session.frame()?;
+    if let Ok((bx, by)) = element_center(&snap, "chrome.edgeless_toolbar.brush") {
+        demo.move_to((bx, by), 10)?;
+        demo.click()?;
+        demo.hold(6)?;
+    }
+    demo.move_to((442.0, 385.0), 8)?;
+    demo.press();
+    for step in 1..=24 {
+        let t = step as f32 / 24.0;
+        let x = 442.0 + t * 260.0;
+        let y = 385.0 + (t * std::f32::consts::TAU).sin() * 34.0;
+        demo.move_to((x, y), 1)?;
+    }
+    demo.release();
+    demo.hold(12)?;
+
+    // 8. Inline IME editing on "collect" shape label using bundled Inter glyphs (0 tofu boxes, ~1.2s).
+    session.update(|v, w, cx| {
+        v.edgeless_select_tool(playground::edgeless::EdgelessTool::Select, w, cx);
+        v.edgeless_begin_inline_edit("collect", w, cx);
+    })?;
+    demo.hold(12)?;
+    for pre in ["s", "sy", "syn", "sync"] {
+        session.update(|v, w, cx| {
+            v.replace_and_mark_text_in_range(None, pre, None, w, cx);
+        })?;
+        demo.hold(8)?;
+    }
+    session.update(|v, w, cx| {
+        v.replace_text_in_range(None, " + synced", w, cx);
+        v.edgeless_commit_inline_edit(w, cx);
+    })?;
+    demo.hold(16)?;
+
+    // 9. Undo & Redo (~0.8s).
+    demo.key("z", true, 16)?;
+    demo.hold(14)?;
+    session.key("z", true, true);
+    demo.hold(18)?;
+
+    // 10. Dark / Light theme toggle (~0.9s).
+    let snap = session.frame()?;
+    if let Ok((thx, thy)) = element_center(&snap, "chrome.theme_toggle") {
+        demo.move_to((thx, thy), 10)?;
+        demo.click()?;
+        demo.hold(24)?;
+        demo.click()?;
+        demo.hold(18)?;
+    }
+
+    println!(
+        "record-authoring-demo wrote {} frames at 60 fps",
+        demo.frames
+    );
+    Ok(())
+}
+
 /// Record a walk through the page editor and its overlays at 60 fps into `dir` as
 /// `frame-<n>.png`: typing with marks and a composition, a slash command, a mouse selection
 /// formatted from the toolbar, the block controls, and undo. Every step is an input event
@@ -2751,7 +3051,7 @@ fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
         bail!(
-            "usage: bs-harness <render|render-surface-sample|render-rich-sample|render-editor|record-demo|record-edgeless-demo|audit|audit-states|fps-check|probes|bench> [options]"
+            "usage: bs-harness <render|render-surface-sample|render-rich-sample|render-editor|record-demo|record-edgeless-demo|record-authoring-demo|audit|audit-states|fps-check|probes|bench> [options]"
         );
     };
 
@@ -2845,6 +3145,11 @@ fn main() -> Result<()> {
         "record-edgeless-demo" => record_edgeless_demo(
             args.next()
                 .context("record-edgeless-demo requires an output directory")?
+                .into(),
+        ),
+        "record-authoring-demo" => record_authoring_demo(
+            args.next()
+                .context("record-authoring-demo requires an output directory")?
                 .into(),
         ),
         "record-demo" => {

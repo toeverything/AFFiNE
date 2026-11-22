@@ -9,6 +9,7 @@ import { TextSelection } from '@blocksuite/affine/std';
 import { BlockSchemaExtension, Schema, Text } from '@blocksuite/affine/store';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { MemoryBlobSource } from '@blocksuite/affine/sync';
+import { generateKeyBetween } from 'fractional-indexing';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
 
@@ -1338,4 +1339,286 @@ describe('Rust bs-relay + WorkspaceSession <-> JS BlockSuite TestWorkspace', () 
 
     await driver.quit();
   });
+
+  it('Live multi-peer Page <-> Edgeless soak: concurrent shape/connector/brush/note + CJK + Undo/Redo + fractional-indexing parity', async () => {
+    const room = 'room-edgeless-soak';
+    const rustClientId = 2 ** 44 + 77;
+    const jsClientId = 2 ** 44 + 88;
+    const driver = new RustDriver(relayHttp, room, rustClientId);
+    await driver.waitReady();
+
+    // 1. 15-step base-62 fractional-indexing parity against JS generateKeyBetween.
+    const fiPairs: Array<[string | null, string | null]> = [
+      [null, null],
+      ['a0', null],
+      ['a1', null],
+      [null, 'a0'],
+      [null, 'Zz'],
+      ['a0', 'a1'],
+      ['a0', 'a0V'],
+      ['a0V', 'a1'],
+      ['a0', 'a0G'],
+      ['az', null],
+      ['aZ', null],
+      ['a9', null],
+      ['b00', null],
+      ['Zz', 'a0'],
+      ['a0', 'a2'],
+    ];
+    for (const [a, b] of fiPairs) {
+      const expected = generateKeyBetween(a, b);
+      const res = await driver.call<{ ok: boolean; key: string }>({
+        cmd: 'generate_key_between',
+        a,
+        b,
+      });
+      expect(res.ok).toBe(true);
+      expect(res.key).toBe(expected);
+    }
+
+    // 2. Seed initial page with surface and connect live JS peer in the same room.
+    await driver.call({
+      cmd: 'seed_full_schema',
+      page_id: 'doc:home',
+      title: 'Edgeless Soak',
+    });
+
+    const roomClient = new RoomWebSocketClient(
+      `${relayWsBase}/native-sync/rooms/${room}`
+    );
+    const workspace = new TestWorkspace({
+      id: room,
+      docSources: { main: roomClient.createDocSource() },
+      awarenessSources: [roomClient.createAwarenessSource()],
+      blobSources: {
+        main: new MemoryBlobSource(),
+        shadows: [new MockServerBlobSource(room, relayHttp)],
+      },
+    });
+    workspace.storeExtensions = AffineSchemas.map(s => BlockSchemaExtension(s));
+    workspace.doc.clientID = jsClientId;
+    workspace.awarenessStore.awareness.clientID = jsClientId;
+    workspace.start();
+
+    await vi.waitFor(
+      () => {
+        expect(workspace.getDoc('doc:home')).not.toBeNull();
+      },
+      { timeout: 10_000 }
+    );
+    const doc = workspace.getDoc('doc:home')!;
+    doc.spaceDoc.clientID = jsClientId;
+    doc.getStore({ id: 'doc:home' }).load();
+    await workspace.waitForSynced();
+
+    // Track any unexpected JS writebacks on initial load.
+    let jsWritebacks = 0;
+    doc.spaceDoc.on('update', (_update: Uint8Array, origin: unknown) => {
+      if (origin === null) {
+        jsWritebacks += 1;
+      }
+    });
+
+    // 3. Native authors Shape, rotates it, adds orthogonal Connector, draws Brush, creates Note + CJK text.
+    await driver.call({
+      cmd: 'add_shape',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-shape-1',
+      index: 'a2',
+      shape_type: 'rect',
+      xywh: '[100,120,180,110]',
+      text: 'Native Box',
+      now_ms: 1000,
+    });
+    await driver.call({
+      cmd: 'update_shape_rotate',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-shape-1',
+      rotate: 30,
+      now_ms: 2000,
+    });
+    await driver.call({
+      cmd: 'add_connector',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-conn-1',
+      index: 'a3',
+      source_id: 'el-shape',
+      target_id: 'native-shape-1',
+      now_ms: 3000,
+    });
+    await driver.call({
+      cmd: 'splice_surface_element_text',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-conn-1',
+      field: 'text',
+      utf16_start: 0,
+      utf16_delete_len: 0,
+      insert: 'Link',
+      now_ms: 3200,
+    });
+    await driver.call({
+      cmd: 'commit_connector_label',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-conn-1',
+      trimmed_text: 'Link',
+      label_xywh: [120, 140, 64, 24],
+      now_ms: 3300,
+    });
+    await driver.call({
+      cmd: 'add_brush',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-brush-1',
+      index: 'a4',
+      xywh: '[20,20,80,40]',
+      points: [
+        [0, 0],
+        [40, 20],
+        [80, 40],
+      ],
+      now_ms: 4000,
+    });
+    await driver.call({
+      cmd: 'update_brush_points',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-brush-1',
+      points: [
+        [0, 0],
+        [80, 40],
+        [160, 80],
+      ],
+      now_ms: 4100,
+    });
+    await driver.call({
+      cmd: 'update_connector_label_xywh',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'native-conn-1',
+      label_xywh: [140, 155, 64, 24],
+      now_ms: 4200,
+    });
+    await driver.call({
+      cmd: 'add_note_with_text',
+      page_id: 'doc:home',
+      root_id: 'page-1',
+      note_id: 'native-note-1',
+      para_id: 'native-para-1',
+      xywh: [400, 100, 320, 140],
+      text: '你好，世界！',
+      now_ms: 5000,
+    });
+
+    // 4. Concurrently JS edits paragraph p-1 and prepends 'X ' to el-shape's Y.Text while Native splices '!' at the end.
+    doc.spaceDoc.transact(() => {
+      const yBlocks = doc.spaceDoc.getMap('blocks');
+      const p1 = yBlocks.get('p-1') as Y.Map<unknown>;
+      const yText = p1.get('prop:text') as Y.Text;
+      yText.insert(yText.length, ' [js-concurrent]');
+      const surf = yBlocks.get('surface-1') as Y.Map<unknown>;
+      const elems = (surf.get('prop:elements') as Y.Map<unknown>).get(
+        'value'
+      ) as Y.Map<unknown>;
+      const elShape = elems.get('el-shape') as Y.Map<unknown>;
+      const shapeText = elShape.get('text') as Y.Text;
+      shapeText.insert(0, 'X ');
+    }, 'js-user');
+    await driver.call({
+      cmd: 'splice_surface_element_text',
+      page_id: 'doc:home',
+      surface_id: 'surface-1',
+      element_id: 'el-shape',
+      field: 'text',
+      utf16_start: 5,
+      utf16_delete_len: 0,
+      insert: '!',
+      now_ms: 6000,
+    });
+
+    // 5. Native performs Undo (undoes '!') and Redo (restores '!'); JS concurrent edit MUST survive!
+    await driver.call({ cmd: 'drain', wait_ms: 200 });
+    await driver.call({ cmd: 'undo', page_id: 'doc:home' });
+    await driver.call({ cmd: 'drain', wait_ms: 150 });
+    await driver.call({ cmd: 'redo', page_id: 'doc:home' });
+
+    // 6. Verify live JS model semantics: displayMode === 'edgeless', connector labelXYWH & labelOffset, concurrent label splice.
+    await vi.waitFor(
+      async () => {
+        await driver.call({ cmd: 'drain', wait_ms: 100 });
+        const yBlocks = doc.spaceDoc.getMap('blocks');
+        const noteMap = yBlocks.get('native-note-1') as Y.Map<unknown>;
+        expect(noteMap?.get('prop:displayMode')).toBe('edgeless');
+
+        const surf = yBlocks.get('surface-1') as Y.Map<unknown>;
+        const elems = (surf.get('prop:elements') as Y.Map<unknown>).get(
+          'value'
+        ) as Y.Map<unknown>;
+        const conn = elems.get('native-conn-1') as Y.Map<unknown>;
+        expect(conn?.get('labelXYWH')).toEqual([140, 155, 64, 24]);
+        expect(normalizeYValue(conn?.get('labelOffset'))).toEqual({
+          anchor: 'center',
+          distance: 0.5,
+        });
+        const brush = elems.get('native-brush-1') as Y.Map<unknown>;
+        expect(brush?.get('points')).toEqual([
+          [0, 0],
+          [80, 40],
+          [160, 80],
+        ]);
+        const elShape = elems.get('el-shape') as Y.Map<unknown>;
+        expect((elShape?.get('text') as Y.Text)?.toString()).toBe('X Shape!');
+      },
+      { timeout: 15_000, interval: 200 }
+    );
+
+    // 7. Native cascade-deletes native-shape-1; attached native-conn-1 must also be removed.
+    await driver.call({
+      cmd: 'delete_with_connectors',
+      page_id: 'doc:home',
+      block_ids: [],
+      surface_elements: [['surface-1', 'native-shape-1']],
+      now_ms: 7000,
+    });
+
+    // 8. Assert L0 byte-equivalent CRDT convergence (StateVector + DeleteSet + normalized JSON) and 0 JS writebacks.
+    await vi.waitFor(
+      async () => {
+        await driver.call({ cmd: 'drain', wait_ms: 100 });
+        const rustState = await driver.call<{
+          stateVector: Record<string, number>;
+          fullUpdateV1: number[];
+          docJson: { blocks: Record<string, Record<string, unknown>> };
+        }>({ cmd: 'export_state', page_id: 'doc:home' });
+
+        expect(rustState.stateVector).toEqual(
+          exportJsStateVector(doc.spaceDoc)
+        );
+        expect(
+          exportDeleteSetFromUpdate(new Uint8Array(rustState.fullUpdateV1))
+        ).toEqual(exportJsDeleteSet(doc.spaceDoc));
+        expect(rustState.docJson).toEqual(exportJsDocJson(doc.spaceDoc));
+        const p1Text = JSON.stringify(rustState.docJson.blocks['p-1']);
+        expect(p1Text).toContain('[js-concurrent]');
+        const nativePara = JSON.stringify(
+          rustState.docJson.blocks['native-para-1']
+        );
+        expect(nativePara).toContain('你好，世界！');
+        const surfJson = JSON.stringify(rustState.docJson.blocks['surface-1']);
+        expect(surfJson).not.toContain('native-shape-1');
+        expect(surfJson).not.toContain('native-conn-1');
+      },
+      { timeout: 15_000, interval: 200 }
+    );
+    expect(jsWritebacks).toBe(0);
+
+    workspace.forceStop();
+    workspace.dispose();
+    roomClient.close();
+    await driver.quit();
+  }, 25_000);
 });

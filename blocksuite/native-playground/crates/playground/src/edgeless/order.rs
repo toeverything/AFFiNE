@@ -33,10 +33,8 @@ impl<'a> Layers<'a> {
                         .get("prop:childElementIds")
                         .and_then(|v| v.as_object())
                     {
-                        for (child, present) in children {
-                            if present.as_bool() == Some(true) {
-                                layers.set_parent(child, &node.id);
-                            }
+                        for child in children.keys() {
+                            layers.set_parent(child, &node.id);
                         }
                     }
                 }
@@ -75,7 +73,6 @@ impl<'a> Layers<'a> {
         items: impl IntoIterator<Item = (&'b str, PaintItem)>,
     ) -> Vec<PaintItem> {
         struct Entry<'a> {
-            id: &'a str,
             item: PaintItem,
             path: Vec<&'a str>,
         }
@@ -89,7 +86,7 @@ impl<'a> Layers<'a> {
                     node = parent;
                 }
                 path.reverse();
-                Entry { id, item, path }
+                Entry { item, path }
             })
             .partition(|e| matches!(e.item, PaintItem::Surface(..)));
         let compare = |a: &Entry<'_>, b: &Entry<'_>| {
@@ -106,7 +103,7 @@ impl<'a> Layers<'a> {
             a.path.len().cmp(&b.path.len())
         };
         for stream in [&mut canvas, &mut blocks] {
-            stream.sort_by(|a, b| compare(a, b).then_with(|| a.id.cmp(b.id)));
+            stream.sort_by(|a, b| compare(a, b));
         }
         let mut output = Vec::with_capacity(canvas.len() + blocks.len());
         let (mut blocks, mut canvas) =
@@ -158,7 +155,7 @@ mod tests {
                 "prop:childElementIds",
                 SessionValue::Map(vec![
                     ("member".into(), SessionValue::Any(Any::True)),
-                    ("unrelated".into(), SessionValue::Any(Any::False)),
+                    ("false_member".into(), SessionValue::Any(Any::False)),
                 ]),
             ),
         ] {
@@ -166,22 +163,40 @@ mod tests {
         }
         let snapshot = page.read_page_snapshot().unwrap();
         let mut layers = Layers::from_root(snapshot.root.as_ref().unwrap());
-        layers
-            .indices
-            .extend([("member", "a0"), ("earlier", "a1"), ("unrelated", "a5")]);
-        let (frame, member, earlier, unrelated) = (
+        layers.indices.extend([
+            ("member", "a0"),
+            ("false_member", "a0"),
+            ("earlier", "a1"),
+            ("unrelated", "a5"),
+        ]);
+        let (frame, member, false_member, earlier, unrelated) = (
             PaintItem::Frame(0),
             PaintItem::Surface(0, 0),
             PaintItem::Surface(0, 1),
             PaintItem::Surface(0, 2),
+            PaintItem::Surface(0, 3),
         );
-        let order = layers.merge([("earlier", earlier), ("frame", frame), ("member", member)]);
-        assert_eq!(order, [earlier, frame, member]);
+        let order = layers.merge([
+            ("earlier", earlier),
+            ("frame", frame),
+            ("member", member),
+            ("false_member", false_member),
+        ]);
+        assert_eq!(order, [earlier, frame, member, false_member]);
         let order = layers.merge([
             ("earlier", earlier),
             ("frame", frame),
             ("unrelated", unrelated),
         ]);
         assert_eq!(order, [earlier, unrelated, frame]);
+    }
+
+    #[test]
+    fn equal_indices_preserve_source_order_within_each_stream() {
+        let mut layers = Layers::default();
+        layers.indices.extend([("z", "a1"), ("a", "a1")]);
+        let (z, a) = (PaintItem::Surface(0, 0), PaintItem::Surface(0, 1));
+        assert_eq!(layers.merge([("z", z), ("a", a)]), [z, a]);
+        assert_eq!(layers.merge([("a", a), ("z", z)]), [a, z]);
     }
 }

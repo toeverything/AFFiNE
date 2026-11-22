@@ -37,16 +37,6 @@ pub(crate) fn begin_frame(window: &mut Window, cx: &App) {
     window.mark_changed_retained_views_dirty(cx);
 }
 
-/// Prepares `window` for an element drawn outside of its frames, as
-/// [`crate::VisualTestContext::draw`] draws one. What tells retained subtrees
-/// what changed since they were drawn is the window's frames, so nothing is
-/// drawn again from an earlier frame.
-#[cfg(any(test, feature = "harness"))]
-#[inline(always)]
-pub(crate) fn draw_outside_frames(window: &mut Window) {
-    window.refreshing = true;
-}
-
 /// Forwarded to by `Window::draw` as it hands the platform this frame's input
 /// handler.
 pub(crate) fn note_installed_input_handler(window: &mut Window, handler: &PlatformInputHandler) {

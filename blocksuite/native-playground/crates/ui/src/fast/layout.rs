@@ -374,13 +374,6 @@ enum Claim {
 }
 
 impl TaffyLayoutEngine {
-    /// How many nodes the tree is currently holding, retained and transient
-    /// alike. Used by tests to check that retention does not leak.
-    #[cfg(any(test, feature = "harness"))]
-    pub(crate) fn node_count(&self) -> usize {
-        self.taffy.total_node_count()
-    }
-
     /// Takes the node retained under `key` for use in this frame.
     fn claim(&mut self, key: Option<u64>) -> Claim {
         let Some(key) = key else {
@@ -412,12 +405,6 @@ impl TaffyLayoutEngine {
     pub(crate) fn record_claimed_keys(&mut self) -> usize {
         self.retention.open_key_recordings += 1;
         self.retention.claimed_key_log.len()
-    }
-
-    /// The keys an open recording saw since `start`, where the log was then.
-    pub(crate) fn claimed_keys_since(&self, start: usize) -> &[u64] {
-        let log = &self.retention.claimed_key_log;
-        &log[start.min(log.len())..]
     }
 
     /// Ends the recording started at `start`, returning the keys it saw.
@@ -1226,14 +1213,6 @@ pub(crate) fn laying_out_list_row<R>(window: &mut Window, f: impl FnOnce(&mut Wi
     let result = f(window);
     window.layout_engine.as_mut().unwrap().retention.list_rows -= 1;
     result
-}
-
-/// Whether a list row is being laid out: see [`laying_out_list_row`].
-pub(crate) fn is_laying_out_list_row(window: &Window) -> bool {
-    window
-        .layout_engine
-        .as_ref()
-        .is_some_and(|engine| engine.retention.list_rows > 0)
 }
 
 /// Treats any `auto` dimension of the given node's style as filling `size`.

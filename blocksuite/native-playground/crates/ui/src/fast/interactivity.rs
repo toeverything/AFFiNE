@@ -72,12 +72,6 @@ pub(crate) fn rare<T>(value: T) -> Rare<T> {
     Some(Box::new(value))
 }
 
-/// A [`Rare`] part holding `value`, if there is one.
-#[inline]
-pub(crate) fn rare_option<T>(value: Option<T>) -> Rare<T> {
-    value.map(Box::new)
-}
-
 /// A list one pointer wide that allocates nothing while it is empty.
 ///
 /// An [`Interactivity`] holds a score of listener lists, nearly all of them
