@@ -27,7 +27,8 @@ export class CopilotStorage {
     workspaceId: string,
     key: string,
     blob: BlobInputType,
-    mimeType = 'image/png'
+    mimeType = 'image/png',
+    unsignedResult?: 'inline'
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     const buffer = await toBuffer(blob);
@@ -35,19 +36,19 @@ export class CopilotStorage {
       contentType: mimeType,
       contentLength: buffer.length,
     });
-    if (!env.prod) {
-      return `data:${mimeType};base64,${buffer.toString('base64')}`;
-    }
-    try {
-      const signedUrl = await this.presignGet(userId, workspaceId, key);
-      if (!signedUrl) {
-        throw new Error('Copilot blob signing is required');
+    if (env.prod) {
+      try {
+        const signedUrl = await this.presignGet(userId, workspaceId, key);
+        if (signedUrl) return signedUrl;
+        if (unsignedResult !== 'inline') {
+          throw new Error('Copilot blob signing is required');
+        }
+      } catch (error) {
+        await this.rt.deleteObject('copilot', name);
+        throw error;
       }
-      return signedUrl;
-    } catch (error) {
-      await this.rt.deleteObject('copilot', name);
-      throw error;
     }
+    return `data:${mimeType};base64,${buffer.toString('base64')}`;
   }
 
   @CallMetric('ai', 'session_attachment_put')
@@ -175,6 +176,16 @@ export class CopilotStorage {
     return buffer;
   }
 
+  putGeneratedImage(
+    userId: string,
+    workspaceId: string,
+    buffer: Buffer,
+    mimeType: string
+  ) {
+    const key = createHash('sha256').update(buffer).digest('base64url');
+    return this.put(userId, workspaceId, key, buffer, mimeType, 'inline');
+  }
+
   @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
     const { body, mimeType } = await fetchRemoteAttachment({
@@ -185,7 +196,6 @@ export class CopilotStorage {
       maxImageWidth: 4096,
     });
     const buffer = Buffer.from(body);
-    const filename = createHash('sha256').update(buffer).digest('base64url');
-    return this.put(userId, workspaceId, filename, buffer, mimeType);
+    return this.putGeneratedImage(userId, workspaceId, buffer, mimeType);
   }
 }

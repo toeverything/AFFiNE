@@ -5,7 +5,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use affine_doc_loader::blob_refs::{MAX_SOURCE_BINARY_BYTES, live_blob_keys};
+use affine_doc_loader::blob_refs::{BlobRefProjectionError, MAX_SOURCE_BINARY_BYTES, live_blob_keys};
 use tokio::sync::{Mutex, OwnedSemaphorePermit, Semaphore};
 
 use super::{SourceIdentity, blocking, types::LoadedSource};
@@ -15,6 +15,34 @@ use crate::runtime::{
 
 const DEFAULT_MAX_BYTES: usize = 64 * 1024 * 1024;
 const HARD_TTL: Duration = Duration::from_secs(5 * 60);
+
+fn workspace_avatar_keys(blob: Vec<u8>) -> Result<Vec<Box<str>>, BlobRefProjectionError> {
+  use y_octo::{Any, Doc, ReadDoc, ReadError, ReadValue, Value};
+
+  let blob = Arc::<[u8]>::from(blob);
+  let avatar = match ReadDoc::from_full_update_v1(Arc::clone(&blob)) {
+    Ok(doc) => match doc.map("meta").and_then(|meta| meta.get("avatar")) {
+      Some(ReadValue::Any(value)) => value.as_str().map(str::to_owned),
+      Some(ReadValue::Text(text)) => Some(text.to_string()),
+      _ => None,
+    },
+    Err(ReadError::IncompleteSnapshot(_)) => {
+      let doc = Doc::try_from_binary_v1(&blob).map_err(|_| BlobRefProjectionError::InvalidBinary)?;
+      match doc.get_map("meta").ok().and_then(|meta| meta.get("avatar")) {
+        Some(Value::Any(Any::String(key))) => Some(key),
+        Some(Value::Text(text)) => Some(text.to_string()),
+        _ => None,
+      }
+    }
+    Err(ReadError::ResourceLimit(_)) => return Err(BlobRefProjectionError::Unsupported),
+    Err(ReadError::InvalidUpdate(_)) => return Err(BlobRefProjectionError::InvalidBinary),
+  };
+  match avatar {
+    Some(key) if key.len() > 1024 => Err(BlobRefProjectionError::KeyTooLarge),
+    Some(key) if !key.is_empty() => Ok(vec![key.into_boxed_str()]),
+    _ => Ok(Vec::new()),
+  }
+}
 
 #[derive(Clone)]
 struct Entry {
@@ -143,7 +171,14 @@ impl BlobRefCache {
       return Err(RuntimeError::invalid_state("blob_ref_parse_unavailable"));
     };
     let workspace_root = identity.is_workspace_root();
-    let parsed = blocking::spawn(permit, move || live_blob_keys(blob, workspace_root)).await;
+    let parsed = blocking::spawn(permit, move || {
+      if workspace_root {
+        workspace_avatar_keys(blob)
+      } else {
+        live_blob_keys(blob, false)
+      }
+    })
+    .await;
     let keys = match parsed {
       Ok(Ok(keys)) => Arc::<[Box<str>]>::from(keys),
       Ok(Err(error)) => {
@@ -158,7 +193,16 @@ impl BlobRefCache {
         return Err(RuntimeError::invalid_state("parse_task_failed"));
       }
     };
-    self.record("parse", "immutable").await;
+    self
+      .record(
+        "parse",
+        if workspace_root {
+          "workspace_avatar"
+        } else {
+          "immutable"
+        },
+      )
+      .await;
     let result = confirm().await;
     if result.is_ok() {
       self
