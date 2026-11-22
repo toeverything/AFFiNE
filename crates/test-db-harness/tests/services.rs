@@ -351,7 +351,8 @@ fn redis_service_answers_and_scopes_keys_by_run_prefix() {
 }
 
 #[test]
-fn container_remove_refuses_names_prefixes_foreign_unlabeled_and_shared_containers() {
+fn container_remove_refuses_names_prefixes_foreign_unlabeled_unmarked_and_shared_containers() {
+  let me = test_db_harness::process_run_id();
   let running = |id: &str| {
     let ps = container_cli()
       .args(["ps", "-q", "--no-trunc", "--filter", &format!("id={id}")])
@@ -359,40 +360,57 @@ fn container_remove_refuses_names_prefixes_foreign_unlabeled_and_shared_containe
       .unwrap();
     !String::from_utf8_lossy(&ps.stdout).trim().is_empty()
   };
-  let refused = |id: &str, owner: Option<&str>| Container::remove_owned(id, owner).unwrap_err().to_string();
+  let refused = |id: &str, owner: &str| Container::remove_owned(id, owner).unwrap_err().to_string();
+  let run_raw = |labels: &[&str]| {
+    let mut args = vec!["run", "-d", "--rm"];
+    for label in labels {
+      args.extend(["--label", label]);
+    }
+    args.push(test_db_harness::redis::REDIS_IMAGE);
+    let out = container_cli().args(&args).output().unwrap();
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    String::from_utf8_lossy(&out.stdout).trim().to_owned()
+  };
 
-  // A container this harness did not start.
-  let out = container_cli()
-    .args(["run", "-d", "--rm", test_db_harness::redis::REDIS_IMAGE])
-    .output()
-    .unwrap();
-  assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
-  let foreign = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-  let unlabeled = refused(&foreign, None);
-  let short = refused(&foreign[..12], None);
-  let _ = container_cli().args(["rm", "-f", &foreign]).output();
+  // Containers this harness did not start, or started before the shared
+  // label existed: refused even with this run as the expected owner.
+  let foreign = run_raw(&[]);
+  let unmarked = run_raw(&["affine.test.env=true", &format!("affine.test.owner={me}")]);
+  let unlabeled = refused(&foreign, me);
+  let short = refused(&foreign[..12], me);
+  let no_shared_label = refused(&unmarked, me);
+  let no_owner = refused(&unmarked, "");
+  for id in [&foreign, &unmarked] {
+    let _ = container_cli().args(["rm", "-f", id]).output();
+  }
   assert!(
     unlabeled.contains("lacks the affine.test.env=true label"),
     "{unlabeled}"
   );
   assert!(short.contains("full 64-hex container id"), "{short}");
+  assert!(
+    no_shared_label.contains("not labeled affine.test.shared=false"),
+    "{no_shared_label}"
+  );
+  assert!(no_owner.contains("no expected owner"), "{no_owner}");
 
-  // A private container of another run.
+  // A private container of this run: another run id is refused, its own
+  // handle removes it.
   let private = Container::run(test_db_harness::redis::REDIS_IMAGE, 6379, &[], &[]).unwrap();
-  let other_run = refused(private.id(), Some("another-run"));
+  let other_run = refused(private.id(), "another-run");
   assert!(other_run.contains("belongs to run"), "{other_run}");
   assert!(running(private.id()));
   let id = private.id().to_owned();
   drop(private);
   assert!(!running(&id), "its own handle removes it");
-  Container::remove(&"0".repeat(64)).unwrap();
+  Container::remove_owned(&"0".repeat(64), me).unwrap();
 
   // The shared PostgreSQL container, by id or by name.
   if std::env::var("AFFINE_TEST_PG_URL").is_err() {
     let cluster = PgCluster::from_env_or_docker().unwrap();
     let shared = cluster.container_id().unwrap().to_owned();
-    let by_id = refused(&shared, None);
-    assert!(by_id.contains("machine-wide shared container"), "{by_id}");
+    let by_id = refused(&shared, me);
+    assert!(by_id.contains("affine.test.shared=false"), "{by_id}");
     let name = String::from_utf8_lossy(
       &container_cli()
         .args(["inspect", "--format", "{{.Name}}", &shared])
@@ -403,9 +421,41 @@ fn container_remove_refuses_names_prefixes_foreign_unlabeled_and_shared_containe
     .trim()
     .trim_start_matches('/')
     .to_owned();
-    assert!(refused(&name, None).contains("full 64-hex container id"));
+    assert!(refused(&name, me).contains("full 64-hex container id"));
     assert!(running(&shared), "shared container survives");
   }
+}
+
+#[test]
+fn shared_container_cold_start_converges_for_concurrent_callers() {
+  // A fresh name, so all callers race a cold start.
+  let name = format!("affine-test-env-race-{}", test_db_harness::process_run_id());
+  let barrier = Arc::new(Barrier::new(WORKERS));
+  let results: Vec<_> = (0..WORKERS)
+    .map(|_| {
+      let (barrier, name) = (barrier.clone(), name.clone());
+      std::thread::spawn(move || {
+        barrier.wait();
+        Container::ensure_shared(
+          &name,
+          test_db_harness::redis::REDIS_IMAGE,
+          6379,
+          &[],
+          &["redis-server", "--save", "", "--appendonly", "no"],
+        )
+        .map(|c| (c.id().to_owned(), c.addr()))
+        .map_err(|e| e.to_string())
+      })
+    })
+    .collect::<Vec<_>>()
+    .into_iter()
+    .map(|h| h.join().unwrap())
+    .collect();
+  let ids: std::collections::BTreeSet<_> = results.iter().filter_map(|r| r.as_ref().ok()).collect();
+  let _ = container_cli().args(["rm", "-f", &name]).output();
+  let errors: Vec<_> = results.iter().filter_map(|r| r.as_ref().err()).collect();
+  assert!(errors.is_empty(), "every caller gets the container: {errors:?}");
+  assert_eq!(ids.len(), 1, "all callers converge on one container and port: {ids:?}");
 }
 
 #[test]
@@ -548,4 +598,39 @@ fn affine_test_env_cli_up_lease_release_reap_run_json_down() {
     }
   }
   let _ = std::fs::remove_dir_all(PathBuf::from(&work));
+}
+
+#[test]
+fn paused_shared_container_is_reported_and_kept() {
+  let name = format!("affine-test-env-paused-{}", test_db_harness::process_run_id());
+  let start = || {
+    Container::ensure_shared(
+      &name,
+      test_db_harness::redis::REDIS_IMAGE,
+      6379,
+      &[],
+      &["redis-server", "--save", "", "--appendonly", "no"],
+    )
+  };
+  let id = start().unwrap().id().to_owned();
+  let paused = container_cli().args(["pause", &id]).output().unwrap();
+  if paused.status.success() {
+    let refused = start().unwrap_err().to_string();
+    let exists = container_cli()
+      .args(["ps", "-aq", "--no-trunc", "--filter", &format!("id={id}")])
+      .output()
+      .unwrap();
+    let _ = container_cli().args(["unpause", &id]).output();
+    let _ = container_cli().args(["rm", "-f", &id]).output();
+    assert!(refused.contains("unexpected state \"paused\""), "{refused}");
+    assert!(
+      !String::from_utf8_lossy(&exists.stdout).trim().is_empty(),
+      "paused container kept"
+    );
+  } else {
+    // This runtime cannot pause; the state table is covered by the unit test
+    // in src/docker.rs.
+    let _ = container_cli().args(["rm", "-f", &id]).output();
+    eprintln!("pause unsupported: {}", String::from_utf8_lossy(&paused.stderr).trim());
+  }
 }

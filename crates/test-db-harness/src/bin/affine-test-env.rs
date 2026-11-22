@@ -137,7 +137,7 @@ fn down(opts: &Opts) -> Result<()> {
       owner = Some(value);
     } else if key == PG_CONTAINER_ENV || key == REDIS_CONTAINER_ENV {
       let owner = owner.ok_or_else(|| Error::new(format!("{key} in {path} has no preceding {OWNER_ENV}")))?;
-      Container::remove_owned(value, Some(owner))?;
+      Container::remove_owned(value, owner)?;
       println!("removed {key} {value}");
     }
   }

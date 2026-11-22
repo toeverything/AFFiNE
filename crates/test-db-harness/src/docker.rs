@@ -1,6 +1,7 @@
 use std::{
   net::SocketAddr,
   process::{Command, Output},
+  time::{Duration, Instant},
 };
 
 use crate::{Error, Result, process_run_id};
@@ -8,8 +9,8 @@ use crate::{Error, Result, process_run_id};
 /// Label on every container the harness starts; `down` and shared-container
 /// lookups only ever touch containers carrying it.
 pub const OWNER_LABEL: &str = "affine.test.env";
-/// `true` on the machine-wide shared container, which
-/// [`Container::remove_owned`] never removes; `false` on private ones.
+/// `true` on the machine-wide shared container; `false` on private ones.
+/// [`Container::remove_owned`] removes only containers labeled `false`.
 pub const SHARED_LABEL: &str = "affine.test.shared";
 /// Run id of the process that started a private container.
 pub const RUN_LABEL: &str = "affine.test.owner";
@@ -36,10 +37,15 @@ fn failure(what: &str, output: &Output) -> Error {
   ))
 }
 
+/// How long [`Container::ensure_shared`] waits for a shared container
+/// another caller is starting to come up.
+const SHARED_START_TIMEOUT: Duration = Duration::from_secs(10);
+
 /// A container publishing one port on a random `127.0.0.1` port.
 ///
-/// A private container is removed on drop unless [`Container::detach`]ed; a
-/// shared one (see [`Container::ensure_shared`]) outlives every handle.
+/// A private container is owned by this run and removed on drop unless
+/// [`Container::detach`]ed; a shared one (see [`Container::ensure_shared`])
+/// outlives every handle.
 #[derive(Debug)]
 pub struct Container {
   id: String,
@@ -65,21 +71,74 @@ impl Container {
 
   /// Returns the running machine-wide container named `name`, starting it
   /// when there is none. Concurrent callers converge on one container: a
-  /// name conflict means another process started it first. The caller checks
-  /// that the service inside is ready.
+  /// caller that loses the race for the name waits (short backoff, 10 s
+  /// after its own first lookup or start, so an image pull does not count)
+  /// until the winner's container runs with its port published. A stopped
+  /// leftover of ours is removed and started again; a paused or unknown one
+  /// is left alone and reported. The caller checks that the service inside
+  /// is ready.
   pub fn ensure_shared(name: &str, image: &str, port: u16, docker_args: &[&str], command: &[&str]) -> Result<Self> {
-    let id = match running_labeled(name)? {
-      Some(id) => id,
-      None => match start(image, port, Some(name), docker_args, command) {
-        Ok(id) => id,
-        Err(e) => running_labeled(name)?.ok_or(e)?,
-      },
-    };
-    Ok(Self {
-      addr: published_addr(&id, port)?,
+    let shared = |id: String, addr| Self {
       id,
+      addr,
       remove_on_drop: false,
-    })
+    };
+    let mut deadline: Option<Instant> = None;
+    let mut backoff = [20, 50, 100]
+      .into_iter()
+      .chain(std::iter::repeat(100))
+      .map(Duration::from_millis);
+    let mut last_error = None;
+    loop {
+      match shared_state(name)? {
+        None => match start(image, port, Some(name), docker_args, command) {
+          Ok(id) => match published_addr(&id, port) {
+            Ok(addr) => return Ok(shared(id, addr)),
+            Err(e) => last_error = Some(e),
+          },
+          // Losing the name race is fine: the next pass finds the winner.
+          Err(e) => last_error = Some(e),
+        },
+        Some((id, state)) => match shared_action(&state) {
+          SharedAction::Use => match published_addr(&id, port) {
+            Ok(addr) => return Ok(shared(id, addr)),
+            Err(e) => last_error = Some(e),
+          },
+          SharedAction::Wait => {}
+          SharedAction::Clear => {
+            // Not forced: a container that came back to life is kept.
+            if let Ok(output) = run_cli(&["rm", "-v", &id])
+              && !output.status.success()
+            {
+              last_error = Some(failure(&format!("rm {id}"), &output));
+            }
+          }
+          SharedAction::Refuse => {
+            return Err(Error::new(format!(
+              "shared container {name} ({id}) is in unexpected state {state:?}; unpause or remove it manually"
+            )));
+          }
+        },
+      }
+      // The window starts once this caller's first lookup or start is done,
+      // so pulling the image is not counted against it.
+      let deadline = *deadline.get_or_insert_with(|| Instant::now() + SHARED_START_TIMEOUT);
+      if Instant::now() >= deadline {
+        // One last look, so a container that just came up is not missed.
+        if let Some((id, state)) = shared_state(name)?
+          && shared_action(&state) == SharedAction::Use
+          && let Ok(addr) = published_addr(&id, port)
+        {
+          return Ok(shared(id, addr));
+        }
+        return Err(last_error.unwrap_or_else(|| {
+          Error::new(format!(
+            "shared container {name} not running after {SHARED_START_TIMEOUT:?}"
+          ))
+        }));
+      }
+      std::thread::sleep(backoff.next().unwrap_or(Duration::from_millis(100)));
+    }
   }
 
   pub fn id(&self) -> &str {
@@ -97,25 +156,24 @@ impl Container {
   }
 
   /// Leaves the container running after this handle is dropped and returns
-  /// its id for a later [`Container::remove`].
+  /// its id. Remove it later with [`Container::remove_owned`] and this
+  /// run's [`crate::process_run_id`], its owner.
   pub fn detach(mut self) -> String {
     self.remove_on_drop = false;
     std::mem::take(&mut self.id)
   }
 
-  /// Force-removes a private container started by this harness, given its
-  /// full 64-hex id. See [`Container::remove_owned`].
-  pub fn remove(id: &str) -> Result<()> {
-    Self::remove_owned(id, None)
-  }
-
-  /// Force-removes a private container started by this harness. Refused,
-  /// never removed: anything but a full 64-hex container id (names and
-  /// prefixes could match another container), a container whose id differs,
-  /// one without the harness label, the shared container, and, when
-  /// `expected_owner` is given, a container another run started.
-  pub fn remove_owned(id: &str, expected_owner: Option<&str>) -> Result<()> {
+  /// Force-removes a private container this harness started for run
+  /// `expected_owner`. Refused, never removed: an empty owner, anything but
+  /// a full 64-hex container id (names and prefixes could match another
+  /// container), a container whose id differs, one without the harness
+  /// label, one not labeled private (the shared container, and containers
+  /// without the shared label), and a container another run started.
+  pub fn remove_owned(id: &str, expected_owner: &str) -> Result<()> {
     let refuse = |why: String| Error::new(format!("refusing to remove container {id:?}: {why}"));
+    if expected_owner.is_empty() {
+      return Err(refuse("no expected owner run given".into()));
+    }
     if id.len() != 64 || !id.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
       return Err(refuse("expected a full 64-hex container id".into()));
     }
@@ -140,13 +198,13 @@ impl Container {
     if env != "true" {
       return Err(refuse(format!("it lacks the {OWNER_LABEL}=true label")));
     }
-    if shared == "true" {
-      return Err(refuse("it is the machine-wide shared container".into()));
+    if shared != "false" {
+      return Err(refuse(format!(
+        "it is not labeled {SHARED_LABEL}=false (the machine-wide shared container, or an unknown one)"
+      )));
     }
-    if let Some(expected) = expected_owner
-      && expected != owner
-    {
-      return Err(refuse(format!("it belongs to run {owner:?}, not {expected:?}")));
+    if owner != expected_owner {
+      return Err(refuse(format!("it belongs to run {owner:?}, not {expected_owner:?}")));
     }
     let output = run_cli(&["rm", "-f", "-v", id])?;
     if output.status.success() {
@@ -160,8 +218,30 @@ impl Container {
 impl Drop for Container {
   fn drop(&mut self) {
     if self.remove_on_drop && !self.id.is_empty() {
-      let _ = Self::remove(&self.id);
+      let _ = Self::remove_owned(&self.id, process_run_id());
     }
+  }
+}
+
+/// What [`Container::ensure_shared`] does with a shared container found in
+/// a given Docker or Podman state.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SharedAction {
+  Use,
+  /// Another caller is creating, restarting or stopping it.
+  Wait,
+  /// Stopped for good: remove it and start again.
+  Clear,
+  /// Paused or unknown: it may still hold other runs' databases.
+  Refuse,
+}
+
+fn shared_action(state: &str) -> SharedAction {
+  match state {
+    "running" => SharedAction::Use,
+    "created" | "configured" | "initialized" | "restarting" | "removing" | "stopping" => SharedAction::Wait,
+    "exited" | "dead" | "stopped" => SharedAction::Clear,
+    _ => SharedAction::Refuse,
   }
 }
 
@@ -197,10 +277,12 @@ fn start(image: &str, port: u16, name: Option<&str>, docker_args: &[&str], comma
   Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
-/// Id of the running, harness-labeled shared container named exactly `name`.
-fn running_labeled(name: &str) -> Result<Option<String>> {
+/// Id and state (`running`, `created`, `exited`, ...) of the harness-labeled
+/// shared container named exactly `name`, in any state.
+fn shared_state(name: &str) -> Result<Option<(String, String)>> {
   let output = run_cli(&[
     "ps",
+    "-a",
     "--no-trunc",
     "--filter",
     &format!("label={OWNER_LABEL}=true"),
@@ -208,10 +290,8 @@ fn running_labeled(name: &str) -> Result<Option<String>> {
     &format!("label={SHARED_LABEL}=true"),
     "--filter",
     &format!("name=^{name}$"),
-    "--filter",
-    "status=running",
     "--format",
-    "{{.ID}}",
+    "{{.ID}}|{{.State}}",
   ])?;
   if !output.status.success() {
     return Err(failure("ps", &output));
@@ -219,9 +299,9 @@ fn running_labeled(name: &str) -> Result<Option<String>> {
   Ok(
     String::from_utf8_lossy(&output.stdout)
       .lines()
-      .map(str::trim)
-      .find(|l| !l.is_empty())
-      .map(str::to_owned),
+      .filter_map(|l| l.trim().split_once('|'))
+      .map(|(id, state)| (id.to_owned(), state.trim().to_ascii_lowercase()))
+      .next(),
   )
 }
 
@@ -236,4 +316,31 @@ fn published_addr(id: &str, port: u16) -> Result<SocketAddr> {
     .filter_map(|line| line.trim().parse::<SocketAddr>().ok())
     .find(SocketAddr::is_ipv4)
     .ok_or_else(|| Error::new(format!("port {id} {port}/tcp returned no IPv4 address: {text:?}")))
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn shared_container_states_map_to_actions() {
+    let cases = [
+      ("running", SharedAction::Use),
+      ("created", SharedAction::Wait),
+      ("configured", SharedAction::Wait),
+      ("initialized", SharedAction::Wait),
+      ("restarting", SharedAction::Wait),
+      ("removing", SharedAction::Wait),
+      ("stopping", SharedAction::Wait),
+      ("exited", SharedAction::Clear),
+      ("dead", SharedAction::Clear),
+      ("stopped", SharedAction::Clear),
+      ("paused", SharedAction::Refuse),
+      ("unknown", SharedAction::Refuse),
+      ("", SharedAction::Refuse),
+    ];
+    for (state, action) in cases {
+      assert_eq!(shared_action(state), action, "{state:?}");
+    }
+  }
 }
