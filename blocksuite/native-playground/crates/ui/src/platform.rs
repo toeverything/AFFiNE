@@ -1,4 +1,6 @@
 mod app_menu;
+#[cfg(any(test, target_family = "wasm"))]
+mod click_state;
 pub mod clock;
 mod keyboard;
 mod keystroke;

@@ -21,6 +21,8 @@ use crate::{
         InlineStyle, layout_inline,
     },
     edgeless_camera::{EdgelessCamera, WorldRect, bg_grid_gap, parse_xywh},
+    edgeless_order::{Layers, PaintItem},
+    surface::{SurfaceLayout, WorldBounds, layout_surface},
     theme::{FONT_SANS, Palette, PlaygroundTheme},
 };
 
@@ -50,12 +52,37 @@ struct CachedNoteFlow {
     layout: Rc<FlowLayout>,
 }
 
+struct CachedSurfaces {
+    key: (u64, PlaygroundTheme, u64),
+    layouts: Rc<[SurfaceLayout]>,
+    order: Rc<[PaintItem]>,
+}
+
+fn world_rect(b: Bounds<Pixels>) -> WorldRect {
+    WorldRect::new(
+        b.origin.x.into(),
+        b.origin.y.into(),
+        b.size.width.into(),
+        b.size.height.into(),
+    )
+}
+fn world_bounds(r: WorldRect, rotate: f32) -> WorldBounds {
+    WorldBounds {
+        xywh: [r.x.into(), r.y.into(), r.w.into(), r.h.into()],
+        rotate: rotate.into(),
+    }
+}
+fn rotated_bounds(r: WorldRect, degrees: f32) -> WorldRect {
+    world_rect(world_bounds(r, degrees).aabb().ui())
+}
+
 /// Persistent Edgeless camera, interaction state, and cached per-Note/EdgelessText layouts.
 #[derive(Default)]
 pub struct EdgelessCanvasState {
     pub camera: EdgelessCamera,
     pub camera_initialized: bool,
     pub drag_pan_anchor: Option<Point<Pixels>>,
+    surfaces: Option<CachedSurfaces>,
     note_flows: HashMap<String, CachedNoteFlow>,
     text_flows: HashMap<String, CachedNoteFlow>,
     /// Number of block bodies laid out during the most recent Edgeless frame.
@@ -122,13 +149,6 @@ fn note_collapse(node: &BlockNode) -> bool {
     edgeless_prop(node, "prop:edgeless.collapse", &["collapse"])
         .and_then(JsonValue::as_bool)
         .unwrap_or(false)
-}
-
-fn note_collapsed_height(node: &BlockNode) -> Option<f32> {
-    edgeless_prop(node, "prop:edgeless.collapsedHeight", &["collapsedHeight"])
-        .and_then(JsonValue::as_f64)
-        .map(|v| v as f32)
-        .filter(|v| v.is_finite() && *v > 0.0)
 }
 
 fn note_border_style(node: &BlockNode) -> Option<(BorderStyle, f32)> {
@@ -218,6 +238,11 @@ impl EdgelessCanvasState {
     }
 
     #[cfg(test)]
+    pub(crate) fn cached_surface_layouts(&self) -> Rc<[SurfaceLayout]> {
+        self.surfaces.as_ref().unwrap().layouts.clone()
+    }
+
+    #[cfg(test)]
     pub fn cached_text_layout(&self, id: &str) -> Option<Rc<FlowLayout>> {
         self.text_flows.get(id).map(|entry| entry.layout.clone())
     }
@@ -249,9 +274,9 @@ impl EdgelessCanvasState {
                 } if !hidden && *display_mode != NoteDisplayMode::DocOnly => {
                     let mut rect =
                         parse_xywh(xywh).unwrap_or(WorldRect::new(0.0, 0.0, 800.0, 95.0));
-                    if note_collapse(child) {
-                        rect.h = note_collapsed_height(child).unwrap_or(rect.h);
-                    } else if let Some(cached) = self.note_flows.get(&child.id) {
+                    if !note_collapse(child)
+                        && let Some(cached) = self.note_flows.get(&child.id)
+                    {
                         let scale = note_scale(child);
                         rect.h = rect
                             .h
@@ -265,10 +290,18 @@ impl EdgelessCanvasState {
                         if let Some(cached) = self.text_flows.get(&child.id) {
                             rect.h = (cached.layout.height * scale).max(rect.h);
                         }
-                        union = union.union(rect);
+                        union =
+                            union.union(rotated_bounds(rect, prop_f32(child, "prop:rotate", 0.)));
                     }
                 }
                 _ => {}
+            }
+        }
+        if let Some(surfaces) = &self.surfaces {
+            for layout in surfaces.layouts.iter() {
+                for (_, bounds) in layout.bounds() {
+                    union = union.union(world_rect(bounds));
+                }
             }
         }
         union
@@ -297,6 +330,7 @@ struct PaintNote {
 
 /// Resolved edgeless-text block with its cached `FlowLayout` and rotation/scale.
 struct PaintEdgelessText {
+    world_aabb: WorldRect,
     id: String,
     rect: WorldRect,
     scale: f32,
@@ -403,7 +437,6 @@ pub fn build_edgeless_layer(
                         parse_xywh(xywh).unwrap_or(WorldRect::new(0.0, 0.0, 800.0, 95.0));
                     let scale = note_scale(child);
                     let collapse = note_collapse(child);
-                    let collapsed_height = note_collapsed_height(child);
                     let border = note_border_style(child);
                     let border_radius = note_border_radius(child);
                     let shadows = input.theme.shadows(note_shadow_type(child));
@@ -450,9 +483,7 @@ pub fn build_edgeless_layer(
                             rc
                         }
                     };
-                    if collapse {
-                        rect.h = collapsed_height.unwrap_or(rect.h);
-                    } else {
+                    if !collapse {
                         rect.h = rect
                             .h
                             .max((layout.height + 2.0 * NOTE_CARD_PADDING) * scale);
@@ -527,6 +558,7 @@ pub fn build_edgeless_layer(
                         rect.h = (layout.height * scale).max(rect.h);
                         active_texts.push(child.id.clone());
                         texts.push(PaintEdgelessText {
+                            world_aabb: rotated_bounds(rect, rotate_deg),
                             id: child.id.clone(),
                             rect,
                             scale,
@@ -546,6 +578,76 @@ pub fn build_edgeless_layer(
             state.text_flows.retain(|id, _| active_texts.contains(id));
         }
     }
+
+    let key = (input.doc_rev, input.theme, input.env_rev);
+    let (surfaces, order) = match &state.surfaces {
+        Some(cached) if cached.key == key => (Rc::clone(&cached.layouts), Rc::clone(&cached.order)),
+        _ => {
+            let external = frames
+                .iter()
+                .map(|f| (f.id.clone(), world_bounds(f.rect, 0.)))
+                .chain(
+                    notes
+                        .iter()
+                        .map(|n| (n.id.clone(), world_bounds(n.rect, 0.))),
+                )
+                .chain(
+                    texts
+                        .iter()
+                        .map(|t| (t.id.clone(), world_bounds(t.rect, t.rotate_deg))),
+                )
+                .collect();
+            let layouts: Rc<[SurfaceLayout]> = input
+                .snapshot
+                .root
+                .iter()
+                .flat_map(|root| &root.children)
+                .filter_map(|node| match &node.content {
+                    BlockContent::Surface { elements, .. } => {
+                        Some(layout_surface(elements, &external, input.theme, window))
+                    }
+                    _ => None,
+                })
+                .collect();
+            let order: Rc<[PaintItem]> = input
+                .snapshot
+                .root
+                .as_ref()
+                .map(|root| {
+                    let items = frames
+                        .iter()
+                        .enumerate()
+                        .map(|(i, v)| (v.id.as_str(), PaintItem::Frame(i)))
+                        .chain(
+                            notes
+                                .iter()
+                                .enumerate()
+                                .map(|(i, v)| (v.id.as_str(), PaintItem::Note(i))),
+                        )
+                        .chain(
+                            texts
+                                .iter()
+                                .enumerate()
+                                .map(|(i, v)| (v.id.as_str(), PaintItem::Text(i))),
+                        )
+                        .chain(layouts.iter().enumerate().flat_map(|(l, layout)| {
+                            layout
+                                .item_ids()
+                                .enumerate()
+                                .map(move |(i, id)| (id, PaintItem::Surface(l, i)))
+                        }));
+                    Layers::from_root(root).merge(items)
+                })
+                .unwrap_or_default()
+                .into();
+            state.surfaces = Some(CachedSurfaces {
+                key,
+                layouts: Rc::clone(&layouts),
+                order: Rc::clone(&order),
+            });
+            (layouts, order)
+        }
+    };
 
     if !state.camera_initialized && input.viewport_width > 0.0 && input.viewport_height > 0.0 {
         let bounds = state.scene_world_bounds(input.snapshot);
@@ -604,6 +706,16 @@ pub fn build_edgeless_layer(
             Some(frame.title.clone()),
         );
     }
+    for layout in surfaces.iter() {
+        for (id, bounds) in layout.bounds() {
+            push_marker(
+                &mut snapshot_markers,
+                format!("edgeless.surface.{id}"),
+                world_rect(bounds),
+                None,
+            );
+        }
+    }
     for note in &notes {
         push_marker(
             &mut snapshot_markers,
@@ -616,7 +728,7 @@ pub fn build_edgeless_layer(
         push_marker(
             &mut snapshot_markers,
             format!("edgeless.text.{}", et.id),
-            et.rect,
+            et.world_aabb,
             None,
         );
     }
@@ -649,144 +761,178 @@ pub fn build_edgeless_layer(
 
             window.with_content_mask(Some(ContentMask { bounds }), |window| {
                 window.with_paint_transformation(cam_matrix, |window| {
-                    // 2. Frames (back layer).
-                    for frame in &frames {
-                        if !frame.rect.intersects(cull_world) {
-                            continue;
-                        }
-                        let fb = Bounds::new(
-                            point(px(frame.rect.x), px(frame.rect.y)),
-                            size(px(frame.rect.w), px(frame.rect.h)),
-                        );
-                        window.paint_quad(ui::quad(
-                            fb,
-                            Corners::all(px(FRAME_RADIUS)),
-                            frame.fill.unwrap_or_else(Hsla::transparent_black),
-                            Edges::all(px(1.0)),
-                            frame_border,
-                            BorderStyle::Solid,
-                        ));
+                    let viewport_world = Bounds::new(
+                        point(px(visible_world.x), px(visible_world.y)),
+                        size(px(visible_world.w), px(visible_world.h)),
+                    );
+                    for item in order.iter() {
+                        match *item {
+                            PaintItem::Frame(i) => {
+                                let frame = &frames[i];
+                                if !frame.rect.intersects(cull_world) {
+                                    continue;
+                                }
+                                let fb = Bounds::new(
+                                    point(px(frame.rect.x), px(frame.rect.y)),
+                                    size(px(frame.rect.w), px(frame.rect.h)),
+                                );
+                                window.paint_quad(ui::quad(
+                                    fb,
+                                    Corners::all(px(FRAME_RADIUS)),
+                                    frame.fill.unwrap_or_else(Hsla::transparent_black),
+                                    Edges::all(px(1.0)),
+                                    frame_border,
+                                    BorderStyle::Solid,
+                                ));
 
-                        // Frame title pill above top-left corner.
-                        let title_style =
-                            InlineStyle::new(FONT_SANS, 12.0, 500.0, palette.text_secondary);
-                        let title_inline = layout_inline(
-                            &frame.title,
-                            &title_style,
-                            frame.rect.w.max(80.0),
-                            FRAME_TITLE_HEIGHT,
-                            InlineBaseline::Of(&title_style),
-                            InlineAlign::Left,
-                            window,
-                        );
-                        let pill_w =
-                            (title_inline.content_width() + 16.0).min(frame.rect.w.max(80.0));
-                        let pill_x = frame.rect.x;
-                        let pill_y = frame.rect.y - FRAME_TITLE_HEIGHT - FRAME_TITLE_GAP;
-                        window.paint_quad(ui::quad(
-                            Bounds::new(
-                                point(px(pill_x), px(pill_y)),
-                                size(px(pill_w), px(FRAME_TITLE_HEIGHT)),
-                            ),
-                            Corners::all(px(4.0)),
-                            frame_pill_bg,
-                            Edges::all(px(1.0)),
-                            palette.border,
-                            BorderStyle::Solid,
-                        ));
-                        title_inline.paint(point(px(pill_x + 8.0), px(pill_y)), window, cx);
-                    }
+                                // Frame title pill above top-left corner.
+                                let title_style = InlineStyle::new(
+                                    FONT_SANS,
+                                    12.0,
+                                    500.0,
+                                    palette.text_secondary,
+                                );
+                                let title_inline = layout_inline(
+                                    &frame.title,
+                                    &title_style,
+                                    frame.rect.w.max(80.0),
+                                    FRAME_TITLE_HEIGHT,
+                                    InlineBaseline::Of(&title_style),
+                                    InlineAlign::Left,
+                                    window,
+                                );
+                                let pill_w = (title_inline.content_width() + 16.0)
+                                    .min(frame.rect.w.max(80.0));
+                                let pill_x = frame.rect.x;
+                                let pill_y = frame.rect.y - FRAME_TITLE_HEIGHT - FRAME_TITLE_GAP;
+                                window.paint_quad(ui::quad(
+                                    Bounds::new(
+                                        point(px(pill_x), px(pill_y)),
+                                        size(px(pill_w), px(FRAME_TITLE_HEIGHT)),
+                                    ),
+                                    Corners::all(px(4.0)),
+                                    frame_pill_bg,
+                                    Edges::all(px(1.0)),
+                                    palette.border,
+                                    BorderStyle::Solid,
+                                ));
+                                title_inline.paint(point(px(pill_x + 8.0), px(pill_y)), window, cx);
+                            }
 
-                    // 3. Notes (middle layer): shadow + card + scaled locally masked cached BlockFlow.
-                    for note in &notes {
-                        if !note.rect.intersects(cull_world) {
-                            continue;
-                        }
-                        let nb = Bounds::new(
-                            point(px(note.rect.x), px(note.rect.y)),
-                            size(px(note.rect.w), px(note.rect.h)),
-                        );
-                        if !note.shadows.is_empty() {
-                            window.paint_drop_shadows(
-                                nb,
-                                Corners::all(px(note.border_radius)),
-                                &note.shadows,
-                            );
-                        }
-                        let (border_widths, border_color, border_style) = match note.border {
-                            Some((style, width)) => (Edges::all(px(width)), palette.border, style),
-                            None => (
-                                Edges::default(),
-                                Hsla::transparent_black(),
-                                BorderStyle::Solid,
-                            ),
-                        };
-                        window.paint_quad(ui::quad(
-                            nb,
-                            Corners::all(px(note.border_radius)),
-                            note.fill,
-                            border_widths,
-                            border_color,
-                            border_style,
-                        ));
+                            PaintItem::Surface(l, i) => {
+                                surfaces[l].paint_item(i, viewport_world, window, cx)
+                            }
+                            PaintItem::Note(i) => {
+                                let note = &notes[i];
+                                if !note.rect.intersects(cull_world) {
+                                    continue;
+                                }
+                                let nb = Bounds::new(
+                                    point(px(note.rect.x), px(note.rect.y)),
+                                    size(px(note.rect.w), px(note.rect.h)),
+                                );
+                                if !note.shadows.is_empty() {
+                                    window.paint_drop_shadows(
+                                        nb,
+                                        Corners::all(px(note.border_radius)),
+                                        &note.shadows,
+                                    );
+                                }
+                                let (border_widths, border_color, border_style) = match note.border
+                                {
+                                    Some((style, width)) => {
+                                        (Edges::all(px(width)), palette.border, style)
+                                    }
+                                    None => (
+                                        Edges::default(),
+                                        Hsla::transparent_black(),
+                                        BorderStyle::Solid,
+                                    ),
+                                };
+                                window.paint_quad(ui::quad(
+                                    nb,
+                                    Corners::all(px(note.border_radius)),
+                                    note.fill,
+                                    border_widths,
+                                    border_color,
+                                    border_style,
+                                ));
 
-                        let scale_transform = TransformationMatrix::unit()
-                            .translate(point(ScaledPixels(note.rect.x), ScaledPixels(note.rect.y)))
-                            .scale(size(note.scale, note.scale))
-                            .translate(point(
-                                ScaledPixels(-note.rect.x),
-                                ScaledPixels(-note.rect.y),
-                            ));
-                        let inner_bounds = Bounds::new(
-                            point(
-                                px(note.rect.x + NOTE_CARD_PADDING),
-                                px(note.rect.y + NOTE_CARD_PADDING),
-                            ),
-                            size(
-                                px((note.rect.w / note.scale - 2.0 * NOTE_CARD_PADDING).max(0.0)),
-                                px((note.rect.h / note.scale - 2.0 * NOTE_CARD_PADDING).max(0.0)),
-                            ),
-                        );
-                        window.with_paint_transformation(scale_transform, |window| {
-                            window.with_local_paint_mask(
-                                ContentMask {
-                                    bounds: inner_bounds,
-                                },
-                                |window| {
-                                    for block in &note.layout.blocks {
-                                        let origin = point(
-                                            px(note.rect.x + NOTE_CARD_PADDING + block.x),
-                                            px(note.rect.y + NOTE_CARD_PADDING + block.y),
-                                        );
+                                let scale_transform = TransformationMatrix::unit()
+                                    .translate(point(
+                                        ScaledPixels(note.rect.x),
+                                        ScaledPixels(note.rect.y),
+                                    ))
+                                    .scale(size(note.scale, note.scale))
+                                    .translate(point(
+                                        ScaledPixels(-note.rect.x),
+                                        ScaledPixels(-note.rect.y),
+                                    ));
+                                let inner_bounds = Bounds::new(
+                                    point(
+                                        px(note.rect.x + NOTE_CARD_PADDING),
+                                        px(note.rect.y + NOTE_CARD_PADDING),
+                                    ),
+                                    size(
+                                        px((note.rect.w / note.scale - 2.0 * NOTE_CARD_PADDING)
+                                            .max(0.0)),
+                                        px((note.rect.h / note.scale - 2.0 * NOTE_CARD_PADDING)
+                                            .max(0.0)),
+                                    ),
+                                );
+                                window.with_paint_transformation(scale_transform, |window| {
+                                    window.with_local_paint_mask(
+                                        ContentMask {
+                                            bounds: inner_bounds,
+                                        },
+                                        |window| {
+                                            for block in &note.layout.blocks {
+                                                let origin = point(
+                                                    px(note.rect.x + NOTE_CARD_PADDING + block.x),
+                                                    px(note.rect.y + NOTE_CARD_PADDING + block.y),
+                                                );
+                                                block.body.paint(
+                                                    origin,
+                                                    BlockPaint::default(),
+                                                    window,
+                                                    cx,
+                                                );
+                                            }
+                                        },
+                                    );
+                                });
+                            }
+
+                            PaintItem::Text(i) => {
+                                let et = &texts[i];
+                                if !et.world_aabb.intersects(cull_world) {
+                                    continue;
+                                }
+                                let (cx_w, cy_w) = et.rect.center();
+                                let scale_from_tl = TransformationMatrix::unit()
+                                    .translate(point(
+                                        ScaledPixels(et.rect.x),
+                                        ScaledPixels(et.rect.y),
+                                    ))
+                                    .scale(size(et.scale, et.scale))
+                                    .translate(point(
+                                        ScaledPixels(-et.rect.x),
+                                        ScaledPixels(-et.rect.y),
+                                    ));
+                                let rotate_around_center = TransformationMatrix::unit()
+                                    .translate(point(ScaledPixels(cx_w), ScaledPixels(cy_w)))
+                                    .rotate(ui::radians(et.rotate_deg.to_radians()))
+                                    .translate(point(ScaledPixels(-cx_w), ScaledPixels(-cy_w)));
+                                let local_transform = rotate_around_center.compose(scale_from_tl);
+                                window.with_paint_transformation(local_transform, |window| {
+                                    for block in &et.layout.blocks {
+                                        let origin =
+                                            point(px(et.rect.x + block.x), px(et.rect.y + block.y));
                                         block.body.paint(origin, BlockPaint::default(), window, cx);
                                     }
-                                },
-                            );
-                        });
-                    }
-
-                    // 4. EdgelessText (front layer): scale from top-left, then rotate around visual center.
-                    for et in &texts {
-                        if !et.rect.intersects(cull_world) {
-                            continue;
-                        }
-                        let (cx_w, cy_w) = et.rect.center();
-                        let scale_from_tl = TransformationMatrix::unit()
-                            .translate(point(ScaledPixels(et.rect.x), ScaledPixels(et.rect.y)))
-                            .scale(size(et.scale, et.scale))
-                            .translate(point(ScaledPixels(-et.rect.x), ScaledPixels(-et.rect.y)));
-                        let rotate_around_center = TransformationMatrix::unit()
-                            .translate(point(ScaledPixels(cx_w), ScaledPixels(cy_w)))
-                            .rotate(ui::radians(et.rotate_deg.to_radians()))
-                            .translate(point(ScaledPixels(-cx_w), ScaledPixels(-cy_w)));
-                        let local_transform = rotate_around_center.compose(scale_from_tl);
-                        window.with_paint_transformation(local_transform, |window| {
-                            for block in &et.layout.blocks {
-                                let origin =
-                                    point(px(et.rect.x + block.x), px(et.rect.y + block.y));
-                                block.body.paint(origin, BlockPaint::default(), window, cx);
+                                });
                             }
-                        });
+                        }
                     }
                 });
             });

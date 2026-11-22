@@ -132,6 +132,9 @@ impl PlaygroundTheme {
                 .css_var(name)
                 .or_else(|| fallback.and_then(|fallback| self.css_color(fallback)));
         }
+        if value.starts_with("rgb(") || value.starts_with("rgba(") {
+            return parse_rgb_function(value);
+        }
         parse_hex_color(value)
     }
 

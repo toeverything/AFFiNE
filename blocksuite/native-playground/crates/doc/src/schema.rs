@@ -265,7 +265,7 @@ fn color_any(dark: &str, light: &str) -> Any {
 }
 
 fn nonzero_seed(seed: i32) -> i32 {
-    if seed == 0 { 1 } else { seed.saturating_abs() }
+    if seed == 0 { 1 } else { seed }
 }
 
 /// Wrap a plain JSON array for insertion as a single `Y.Map` entry.
@@ -666,6 +666,11 @@ impl SurfaceElementSpec {
                 filled,
                 text,
             } => {
+                let (shape_type, radius) = if shape_type == "rounded" {
+                    ("rect".to_owned(), 0.1)
+                } else {
+                    (shape_type, 0.0)
+                };
                 let yellow = color_any("#f5c211", "#f5c211");
                 entries.extend([
                     (
@@ -699,7 +704,10 @@ impl SurfaceElementSpec {
                         "padding".to_string(),
                         SessionValue::Any(map_array_any(vec![Any::Integer(10), Any::Integer(20)])),
                     ),
-                    ("radius".to_string(), SessionValue::Any(Any::Integer(0))),
+                    (
+                        "radius".to_string(),
+                        SessionValue::Any(Any::Float64(radius.into())),
+                    ),
                     ("rotate".to_string(), SessionValue::Any(Any::Integer(0))),
                     (
                         "roughness".to_string(),

@@ -685,9 +685,10 @@ fn fs_quad(input: QuadVarying) -> @location(0) vec4<f32> {
 
     // Whether the point is far enough inside the quad, such that the pixels are
     // not affected by the straight border.
+    let inner_edge = select(corner_to_point + border, straight_border_inner_corner_to_point, axis_aligned);
     let is_within_inner_straight_border =
-        straight_border_inner_corner_to_point.x < -antialias_threshold &&
-        straight_border_inner_corner_to_point.y < -antialias_threshold;
+        inner_edge.x < -antialias_threshold &&
+        inner_edge.y < -antialias_threshold;
 
     // Fast path for points that must be part of the background.
     //

@@ -1,13 +1,13 @@
 [
   {
     "metric": "artifacts_bytes.web_wasm_raw",
-    "accepted_value": 15857113,
-    "reason": "Includes the slash menu, formatting toolbar, drag handle and interactive block controls on top of collaborative page editing in the Web playground"
+    "accepted_value": 16437138,
+    "reason": "The web editor bundles collaborative page editing, Edgeless camera controls and vector rendering for whiteboard shapes, connectors, strokes and labels"
   },
   {
     "metric": "artifacts_bytes.web_wasm_gzip",
-    "accepted_value": 5328839,
-    "reason": "Includes the slash menu, formatting toolbar, drag handle and interactive block controls on top of collaborative page editing in the Web playground"
+    "accepted_value": 5515823,
+    "reason": "The compressed web editor includes collaborative page editing, Edgeless camera controls and vector rendering for whiteboard shapes, connectors, strokes and labels"
   },
   {
     "metric": "artifacts_bytes.headless_bin",

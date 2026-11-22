@@ -85,11 +85,7 @@ impl Drop for EventListenerHandle {
     }
 }
 
-pub(crate) struct ClickState {
-    last_position: Point<Pixels>,
-    last_time: f64,
-    current_count: usize,
-}
+pub(crate) use crate::platform::click_state::ClickState;
 
 #[derive(Default)]
 pub(crate) struct TouchIds {
@@ -112,34 +108,6 @@ impl TouchIds {
 
     fn end(&mut self, pointer_id: i32) -> Option<TouchId> {
         self.active.remove(&pointer_id)
-    }
-}
-
-impl Default for ClickState {
-    fn default() -> Self {
-        Self {
-            last_position: Point::default(),
-            last_time: 0.0,
-            current_count: 0,
-        }
-    }
-}
-
-impl ClickState {
-    fn register_click(&mut self, position: Point<Pixels>, time: f64) -> usize {
-        let distance = ((f32::from(position.x) - f32::from(self.last_position.x)).powi(2)
-            + (f32::from(position.y) - f32::from(self.last_position.y)).powi(2))
-        .sqrt();
-
-        if (time - self.last_time) < 400.0 && distance < 5.0 {
-            self.current_count += 1;
-        } else {
-            self.current_count = 1;
-        }
-
-        self.last_position = position;
-        self.last_time = time;
-        self.current_count
     }
 }
 
@@ -593,6 +561,9 @@ impl WebWindowInner {
 
             let modifiers = modifiers_from_mouse_event(&event, this.is_mac);
             let current_pressed = this.pressed_button.get();
+            if current_pressed.is_some() {
+                this.click_state.borrow_mut().drag_to(position);
+            }
 
             {
                 let mut current_state = this.state.borrow_mut();
@@ -1096,11 +1067,13 @@ impl WebWindowInner {
             }
             event.prevent_default();
 
+            // prevent_default leaves the textarea untouched until the paste is mirrored.
             if image_files.is_empty() {
                 if let Some(text) = text {
                     this.with_input_handler(|handler| {
                         handler.paste(ClipboardItem::new_string(text));
                     });
+                    this.schedule_ime_mirror_sync();
                 }
                 return;
             }
@@ -1130,6 +1103,7 @@ impl WebWindowInner {
                 this.with_input_handler(|handler| {
                     handler.paste(ClipboardItem { entries });
                 });
+                this.schedule_ime_mirror_sync();
             });
         })
     }

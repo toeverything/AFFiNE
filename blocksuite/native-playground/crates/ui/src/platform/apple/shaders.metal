@@ -197,9 +197,10 @@ fragment float4 quad_fragment(QuadFragmentInput input [[stage_in]],
 
   // Whether the point is far enough inside the quad, such that the pixels are
   // not affected by the straight border.
+  float2 inner_edge = axis_aligned ? straight_border_inner_corner_to_point : corner_to_point + border;
   bool is_within_inner_straight_border =
-    straight_border_inner_corner_to_point.x < -antialias_threshold &&
-    straight_border_inner_corner_to_point.y < -antialias_threshold;
+    inner_edge.x < -antialias_threshold &&
+    inner_edge.y < -antialias_threshold;
 
   // Fast path for points that must be part of the background
   if (is_within_inner_straight_border && !is_near_rounded_corner) {

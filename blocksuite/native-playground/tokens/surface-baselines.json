@@ -1,0 +1,50 @@
+[
+  {
+    "font": "IBM Plex Mono",
+    "fontSize": 40,
+    "height": 180,
+    "spanHeight": 52,
+    "gap": 0,
+    "ascent": 41,
+    "lines": [
+      79,
+      131
+    ]
+  },
+  {
+    "font": "IBM Plex Mono",
+    "fontSize": 40,
+    "height": 85,
+    "spanHeight": 52,
+    "gap": 0,
+    "ascent": 41,
+    "lines": [
+      51,
+      103
+    ]
+  },
+  {
+    "font": "Surface Metrics Test",
+    "fontSize": 40,
+    "height": 180,
+    "spanHeight": 50,
+    "gap": 8,
+    "ascent": 40,
+    "lines": [
+      76,
+      126
+    ]
+  },
+  {
+    "font": "Surface Metrics Test",
+    "fontSize": 40,
+    "height": 85,
+    "spanHeight": 50,
+    "gap": 8,
+    "ascent": 40,
+    "lines": [
+      54,
+      104
+    ]
+  }
+]

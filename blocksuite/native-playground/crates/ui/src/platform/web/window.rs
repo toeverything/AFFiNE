@@ -833,7 +833,11 @@ impl PlatformWindow for WebWindow {
             match change {
                 TextInputStateChange::FocusGained => self.inner.show_virtual_keyboard(),
                 TextInputStateChange::FocusLost => self.hide_soft_keyboard(),
-                TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {}
+                TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {
+                    if self.inner.pressed_button.get().is_none() {
+                        self.inner.schedule_ime_mirror_sync();
+                    }
+                }
             }
             return;
         }
@@ -847,7 +851,11 @@ impl PlatformWindow for WebWindow {
             TextInputStateChange::FocusLost => {
                 self.inner.ime_mirror.set_read_only(true);
             }
-            TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {}
+            TextInputStateChange::SelectionChanged | TextInputStateChange::ContentChanged => {
+                if self.inner.pressed_button.get().is_none() {
+                    self.inner.schedule_ime_mirror_sync();
+                }
+            }
         }
     }
 

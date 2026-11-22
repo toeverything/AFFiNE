@@ -16,6 +16,8 @@
  * over the network is captured after it rendered.
  */
 
+import { measureSurfaceBaselines } from './surface-baselines.mjs';
+import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -289,11 +291,11 @@ class CdpClient {
 // textarea the browser's text input works on.
 function inputProbe(cdp) {
   async function evaluate(expression) {
-    const reply = await cdp.send('Runtime.evaluate', { expression, returnByValue: true });
+    const reply = await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
     if (reply.exceptionDetails) throw new Error(reply.exceptionDetails.exception?.description);
     return reply.result.value;
   }
-  const mirror = () => evaluate("Array.from(document.querySelectorAll('textarea')).map(t=>({value:t.value,offset:t.selectionStart}))[0]");
+  const mirror = () => evaluate("Array.from(document.querySelectorAll('textarea')).map(t=>({value:t.value,offset:t.selectionStart,end:t.selectionEnd}))[0]");
   const mouse = (type, [x,y], buttons) => cdp.send('Input.dispatchMouseEvent', {
     type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons, clickCount: 1,
   });
@@ -310,6 +312,15 @@ function inputProbe(cdp) {
       if (state.value === value) return;
       await sleep(50);
     }
+    const screenshot = path.join(ROOT, 'artifacts', 'web-smoke-failure.png');
+    fs.mkdirSync(path.dirname(screenshot), { recursive: true });
+    const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
+    const png = Buffer.from(shot.data, 'base64');
+    fs.writeFileSync(screenshot, png);
+    const toolbar = await evaluate(`({ focus: document.activeElement?.tagName,
+      readOnly: document.querySelector('textarea')?.readOnly, atLink: document.elementFromPoint(387,216)?.tagName })`);
+    toolbar.darkPixels = countDarkInkPixels(decodePngRgba(png), 200, 185, 525, 243);
+    console.error({ screenshot, mirror: state, toolbar });
     throw new Error(`Expected mirrored text ${JSON.stringify(value)}, got ${JSON.stringify(state)}`);
   };
   const composition = (type,data) => evaluate(`document.querySelector('textarea').dispatchEvent(new CompositionEvent(${JSON.stringify(type)},{bubbles:true,data:${JSON.stringify(data)}}))`);
@@ -366,12 +377,16 @@ async function checkLinkField(cdp) {
   const { evaluate, mirror, mouse, waitValue, composition, key } = inputProbe(cdp);
   // A few words on the first line of the second showcase block.
   const from = [331,254], to = [400,254];
+  await evaluate('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))');
   await mouse('mousePressed',from,1);
   await mouse('mouseMoved',to,1);
   await mouse('mouseReleased',to,0);
   await evaluate('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))');
   await sleep(100);
   const paragraph = await mirror();
+  if (!(paragraph.end > paragraph.offset + 3)) {
+    throw new Error(`Link toolbar drag selected fewer than four characters: ${JSON.stringify(paragraph)}`);
+  }
   if (!paragraph.value.startsWith('This page')) {
     throw new Error(`Unable to select in the second showcase block: ${JSON.stringify(paragraph)}`);
   }
@@ -563,6 +578,9 @@ async function main() {
     if (!args.query) {
       await checkComposition(cdp);
       await checkLinkField(cdp);
+      const baselines = await measureSurfaceBaselines(inputProbe(cdp).evaluate);
+      assert.deepEqual(baselines, JSON.parse(fs.readFileSync(path.join(ROOT, 'tokens/surface-baselines.json'), 'utf8')));
+      console.log('Chromium DOM and Canvas surface label baselines passed');
     }
 
     // Click "Edgeless" segment (pill centered at x=640, w=186 -> pill_x=547; edgeless x=548+94..548+180 -> center=685, y=26)

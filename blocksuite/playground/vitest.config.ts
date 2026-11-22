@@ -6,7 +6,10 @@ export default {
   },
   plugins: [vanillaExtractPlugin()],
   test: {
-    include: ['apps/_common/sync/room/__tests__/**/*.spec.ts'],
+    include: [
+      'apps/_common/sync/room/__tests__/**/*.spec.ts',
+      '../native-playground/tokens/surface-oracle.spec.mjs',
+    ],
     testTimeout: 60_000,
     hookTimeout: 30_000,
     restoreMocks: true,

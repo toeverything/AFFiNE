@@ -297,6 +297,10 @@ jobs:
         working-directory: blocksuite/native-playground
         run: cargo build --locked -p blocksuite-playground-doc --bin bs-relay --example bs_doc_driver
 
+      - name: Verify JS-authored surface snapshots without writeback
+        working-directory: blocksuite/native-playground
+        run: cargo test --locked -p blocksuite-playground-doc --example bs_doc_driver js_authored_surface
+
       - name: Lint, format, and typecheck JS room sync
         run: |
           yarn oxlint --deny-warnings \
@@ -323,7 +327,7 @@ jobs:
             blocksuite/framework/sync/tsconfig.json \
             blocksuite/playground/tsconfig.json
 
-      - name: Run @blocksuite/sync and @blocksuite/playground live Rust-JS E2E tests
+      - name: Verify surface geometry oracle and live Rust-JS room sync
         env:
           BS_RELAY_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/bs-relay
           BS_DOC_DRIVER_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/examples/bs_doc_driver

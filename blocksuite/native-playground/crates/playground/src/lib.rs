@@ -8,10 +8,12 @@ pub mod block_flow;
 pub mod clipboard;
 pub mod edgeless_camera;
 pub mod edgeless_canvas;
+mod edgeless_order;
 pub mod editor_session;
 pub mod overlays;
 pub mod rich_text;
 pub mod room_client;
+pub mod surface;
 pub mod theme;
 
 use std::{
@@ -1415,6 +1417,118 @@ struct ShowcaseSeed<'a> {
 }
 
 impl ShowcaseSeed<'_> {
+    fn surface_diagram(&mut self) -> DocResult {
+        use blocksuite_playground_doc::schema::{
+            ConnectorEndpointSpec, SurfaceElementSpec as Element,
+        };
+        const SURFACE: &str = "showcase-surface";
+        let shapes = ["collect", "review"];
+        let elements = [
+            (
+                "workflow",
+                Element::Group {
+                    seed: 11,
+                    title: "Research workflow".into(),
+                    children: ["collect", "review", "handoff", "annotation", "highlight"]
+                        .map(str::to_owned)
+                        .into(),
+                },
+            ),
+            (
+                shapes[0],
+                Element::Shape {
+                    shape_type: "rect".into(),
+                    xywh: "[818,522,150,82]".into(),
+                    filled: true,
+                    seed: 31,
+                    text: Some("Collect".into()),
+                },
+            ),
+            (
+                shapes[1],
+                Element::Shape {
+                    shape_type: "rect".into(),
+                    xywh: "[988,722,156,74]".into(),
+                    filled: true,
+                    seed: 37,
+                    text: Some("Review".into()),
+                },
+            ),
+            (
+                "handoff",
+                Element::Connector {
+                    mode: 1,
+                    seed: 41,
+                    source: ConnectorEndpointSpec::element(shapes[0], Some([1., 0.5])),
+                    target: ConnectorEndpointSpec::element(shapes[1], Some([0.5, 0.])),
+                    text: Some("Synthesize".into()),
+                    label_xywh: None,
+                },
+            ),
+            (
+                "annotation",
+                Element::Brush {
+                    seed: 43,
+                    xywh: "[832,850,242,48]".into(),
+                    points: vec![
+                        vec![0., 36., 0.1],
+                        vec![30., 31., 0.6],
+                        vec![66., 7., 0.9],
+                        vec![78., 2., 0.5],
+                        vec![70., 32., 0.8],
+                        vec![95., 22., 0.6],
+                        vec![110., 26., 0.4],
+                        vec![140., 14., 0.7],
+                        vec![180., 12., 0.4],
+                        vec![242., 4., 0.1],
+                    ],
+                },
+            ),
+            (
+                "highlight",
+                Element::Highlighter {
+                    seed: 47,
+                    xywh: "[842,903,198,16]".into(),
+                    points: vec![vec![0., 10.], vec![50., 7.], vec![110., 6.], vec![198., 0.]],
+                },
+            ),
+        ];
+        for (i, (id, element)) in elements.into_iter().enumerate() {
+            let now = self.tick();
+            self.page
+                .add_surface_element(SURFACE, id, &format!("a{}", i + 1), element, now)?;
+        }
+        let color = |light: &str, dark: &str| {
+            Any::Object(Box::new(
+                [
+                    ("light".into(), Any::String(light.into())),
+                    ("dark".into(), Any::String(dark.into())),
+                ]
+                .into_iter()
+                .collect(),
+            ))
+        };
+        for (id, key, value) in [
+            ("collect", "shapeStyle", Any::String("Scribbled".into())),
+            ("collect", "fillColor", color("#8bc9be", "#396c65")),
+            ("collect", "strokeColor", color("#28665e", "#95ded0")),
+            ("collect", "color", color("#133e38", "#ecfffb")),
+            ("review", "rotate", Any::Integer(-14)),
+            ("review", "radius", Any::Float64(0.1_f64.into())),
+            ("review", "fillColor", color("#e5e9ff", "#383c6c")),
+            ("review", "strokeColor", color("#636fa7", "#aab4ff")),
+            ("review", "color", color("#303b65", "#f4f4ff")),
+            ("annotation", "lineWidth", Any::Integer(9)),
+            ("annotation", "color", color("#3e6965", "#8bcfc4")),
+            ("highlight", "color", color("#46b9a855", "#83d7bd77")),
+        ] {
+            let now = self.tick();
+            self.page
+                .set_surface_element_field(SURFACE, id, key, SessionValue::Any(value), now)?;
+        }
+        Ok(())
+    }
+
     fn tick(&mut self) -> u64 {
         self.now_ms += 600;
         self.now_ms
@@ -1882,6 +1996,22 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
         "Rotated EdgelessText on GPU",
         "showcase-edgeless-text",
     )?;
+
+    for (id, index) in [
+        ("showcase-frame", "a0"),
+        ("showcase-note", "a7"),
+        ("showcase-edgeless-note", "a8"),
+        ("showcase-edgeless-text", "a9"),
+    ] {
+        let now = seed.tick();
+        seed.page.set_block_prop(
+            id,
+            "prop:index",
+            SessionValue::Any(Any::String(index.into())),
+            now,
+        )?;
+    }
+    seed.surface_diagram()?;
 
     let image = showcase_gradient_png();
     if !image.is_empty() {
@@ -4355,41 +4485,27 @@ mod tests {
             session.view(|view, cx| view.set_edgeless_camera(pan_x, pan_y, zoom, cx));
             let (_, img) = session.frame();
 
-            // Count distinct non-white ink pixels inside the rendered Note card region
-            // where the code language header ("rust"), code line, and bookmark description sit.
-            let card_left = 50_u32;
-            let card_top = (TOPBAR_HEIGHT + 40.0) as u32;
-            let card_w = (600.0 * zoom).min(1200.0) as u32;
-            let card_h = (320.0 * zoom).min(680.0) as u32;
-            let mut dark_ink_pixels = 0_u64;
-            for y in card_top..(card_top + card_h).min(img.height()) {
-                for x in card_left..(card_left + card_w).min(img.width()) {
-                    let p = img.get_pixel(x, y);
-                    // Text ink in light theme is significantly darker than the white/gray card surface.
-                    if p[0] < 180 && p[1] < 180 && p[2] < 180 {
-                        dark_ink_pixels += 1;
+            let layout = session.view(|v, _| v.edgeless.cached_note_layout("p-note").unwrap());
+            for (id, name, dx, dy, width, height) in [
+                ("p-code", "language", 20., 8., 30., 16.),
+                ("p-code", "body", 52., 32., 320., 20.),
+                ("p-bookmark", "description", 13., 39., 390., 20.),
+            ] {
+                let block = layout.block(id).unwrap();
+                let left = 50. + (24. + block.x + dx) * zoom;
+                let top = TOPBAR_HEIGHT + 40. + (24. + block.y + dy) * zoom;
+                let mut ink = 0;
+                for y in top.ceil() as u32..(top + height * zoom) as u32 {
+                    for x in left.ceil() as u32..(left + width * zoom) as u32 {
+                        let p = img.get_pixel(x, y);
+                        ink += usize::from(p[0] < 195 && p[1] < 195 && p[2] < 195);
                     }
                 }
+                assert!(
+                    ink > 2,
+                    "zoom {zoom}, {name} band contains {ink} glyph pixels"
+                );
             }
-            assert!(
-                dark_ink_pixels > 150,
-                "zoom={zoom}: expected visible glyph ink for code header/line + bookmark description, got only {dark_ink_pixels} dark pixels"
-            );
-
-            // Also verify the GPU scene emitted monochrome glyph sprites for the panned note
-            // (language label + code + bookmark title/description/url > 40 glyphs).
-            let glyph_count = session.app.update(|cx| {
-                session
-                    .window
-                    .update(cx, |_, window, _| {
-                        window.rendered_scene().monochrome_sprites.len()
-                    })
-                    .expect("read scene")
-            });
-            assert!(
-                glyph_count > 60,
-                "zoom={zoom}: expected >60 glyph sprites in scene, got {glyph_count}"
-            );
         }
     }
 
@@ -4525,90 +4641,375 @@ mod tests {
     }
 
     #[test]
-    fn edgeless_collapsed_note_clips_overflow_content_to_stored_height() {
-        let mut doc = DocState::new("collapse-note", client_id_from_seed(0x504)).expect("state");
-        doc.workspace.initialize_meta().expect("meta");
-        doc.workspace
-            .create_page(HOME_PAGE_ID, "Collapsed Note", 1)
-            .expect("page");
-        let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
-        let mut seed = ShowcaseSeed { page, now_ms: 0 };
-        seed.add(
-            "c-page",
-            BlockSpec::Page {
-                title: "Collapsed Note".to_string(),
-            },
-            None,
-        )
-        .expect("page");
-        seed.add(
-            "c-note",
-            BlockSpec::Note {
-                xywh: Some("[40,40,420,120]".to_string()),
-            },
-            Some("c-page"),
-        )
-        .expect("note");
-        let mut edgeless_map = AHashMap::default();
-        edgeless_map.insert("collapse".to_string(), Any::True);
-        edgeless_map.insert(
-            "collapsedHeight".to_string(),
-            Any::Float64(120.0_f64.into()),
-        );
-        let now_ms = seed.tick();
-        seed.page
-            .set_block_prop(
-                "c-note",
-                "prop:edgeless",
-                SessionValue::Any(Any::Object(Box::new(edgeless_map))),
-                now_ms,
-            )
-            .expect("collapse prop");
-        for i in 0..12 {
-            seed.paragraph(
-                &format!("c-p-{i}"),
-                ParagraphType::Text,
-                "Overflowing dark text line that must be clipped below collapsed height",
-                "c-note",
-            )
-            .expect("paragraph");
-        }
-
+    fn edgeless_camera_reuses_the_surface_geometry_and_page_snapshot() {
         let session = open(
             1280,
             800,
             PlaygroundOptions {
                 mode: PlaygroundMode::Edgeless,
-                ..PlaygroundOptions::default()
+                ..Default::default()
+            },
+        );
+        session.frame();
+        let cached = |v: &mut PlaygroundView, _: &mut Context<PlaygroundView>| {
+            (
+                v.snapshot.as_ref().unwrap().clone(),
+                v.edgeless.cached_surface_layouts(),
+            )
+        };
+        let (page, layouts) = session.view(cached);
+        for zoom in [0.5, 1., 2.] {
+            session.view(|v, cx| v.set_edgeless_camera(740., 476., zoom, cx));
+            let (snapshot, _) = session.frame();
+            assert!(snapshot.elements.contains_key("edgeless.surface.collect"));
+            let (new_page, new_layouts) = session.view(cached);
+            assert!(Rc::ptr_eq(&new_page, &page));
+            assert!(Rc::ptr_eq(&new_layouts, &layouts));
+            session.view(|v, _| assert_eq!(v.edgeless.last_frame_relayouts, 0));
+        }
+        session.view(|v, cx| v.set_theme(PlaygroundTheme::Dark, cx));
+        session.frame();
+        assert!(!Rc::ptr_eq(&session.view(cached).1, &layouts));
+    }
+
+    #[test]
+    fn yjs_bring_to_front_repaints_the_shape_over_the_note() {
+        let oracle: serde_json::Value =
+            serde_json::from_str(include_str!("../../../tokens/surface-oracle.json")).unwrap();
+        let update =
+            |name: &str| serde_json::from_value::<Vec<u8>>(oracle["layers"][name].clone()).unwrap();
+        let mut doc = DocState::new("order", 71).unwrap();
+        doc.workspace.initialize_meta().unwrap();
+        doc.workspace
+            .create_page(HOME_PAGE_ID, "Layer order", 1)
+            .unwrap();
+        doc.workspace
+            .ensure_page(HOME_PAGE_ID)
+            .unwrap()
+            .apply_remote_update_v1(&update("initial"))
+            .unwrap();
+        let session = open(
+            400,
+            300,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..Default::default()
             },
         );
         session.view(|view, cx| {
             view.set_document(doc, cx);
-            view.set_edgeless_camera(0.0, 0.0, 1.0, cx);
+            view.set_edgeless_camera(0., 0., 1., cx);
         });
-        let (snap, img) = session.frame();
-        let note_bounds = snap.elements["edgeless.note.c-note"].bounds;
-        assert!(
-            (note_bounds.height - 120.0).abs() < 1.0,
-            "collapsed note height must stay clamped to 120, got {}",
-            note_bounds.height
-        );
+        let (_, before) = session.frame();
+        // Canvas2D's nonzero fill covers these pixels in the tight turn and right cap.
+        // Both are holes under even-odd filling, including a two-pixel margin.
+        for (x, y) in [(47, 28), (112, 50)] {
+            assert_eq!(
+                before.get_pixel(140 + x, TOPBAR_HEIGHT as u32 + 30 + y).0,
+                [0, 0, 255, 255],
+                "stroke pixel {x},{y}"
+            );
+        }
+        let pixel = (60, TOPBAR_HEIGHT as u32 + 60);
+        assert_eq!(before.get_pixel(pixel.0, pixel.1).0, [0, 255, 0, 255]);
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                doc.workspace
+                    .ensure_page(HOME_PAGE_ID)
+                    .unwrap()
+                    .apply_remote_update_v1(&update("bringToFront"))
+                    .unwrap();
+            })
+        });
+        let (_, after) = session.frame();
+        assert_eq!(after.get_pixel(pixel.0, pixel.1).0, [255, 0, 0, 255]);
+    }
 
-        // Region well below the 120px collapsed card (and its drop shadow) must contain no dark text ink.
-        let check_top = (TOPBAR_HEIGHT + 40.0 + 120.0 + 36.0) as u32;
-        let check_bottom = (check_top + 160).min(img.height());
-        let mut leaked_dark = 0_u64;
-        for y in check_top..check_bottom {
-            for x in 60..440 {
-                let p = img.get_pixel(x, y);
-                if p[0] < 160 && p[1] < 160 && p[2] < 160 {
-                    leaked_dark += 1;
+    #[test]
+    fn edgeless_rotated_label_respects_local_and_viewport_clips() {
+        use blocksuite_playground_doc::schema::SurfaceElementSpec;
+        let session = open(
+            480,
+            320,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..Default::default()
+            },
+        );
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+                page.add_surface_element(
+                    "showcase-surface",
+                    "clip",
+                    "z1",
+                    SurfaceElementSpec::Shape {
+                        shape_type: "rect".into(),
+                        xywh: "[3000,3000,180,54]".into(),
+                        filled: true,
+                        seed: 1,
+                        text: Some("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW".into()),
+                    },
+                    1,
+                )
+                .unwrap();
+                for (key, value) in [
+                    ("rotate", Any::Integer(30)),
+                    ("color", Any::String("#ff00ff".into())),
+                    ("fillColor", Any::String("#00ff00".into())),
+                    ("strokeStyle", Any::String("none".into())),
+                ] {
+                    page.set_surface_element_field(
+                        "showcase-surface",
+                        "clip",
+                        key,
+                        SessionValue::Any(value),
+                        2,
+                    )
+                    .unwrap();
                 }
+            });
+            view.set_edgeless_camera(2970., 3020., 1., cx);
+        });
+        let (snapshot, image) = session.frame();
+        assert!(!snapshot.elements.contains_key("edgeless.surface.clip"));
+        let (sin, cos) = 30_f32.to_radians().sin_cos();
+        let mut ink = 0;
+        let mut touches_local_edge = false;
+        let mut touches_viewport = false;
+        for (x, y, p) in image.enumerate_pixels() {
+            let label = p[0] > 160 && p[2] > 160 && p[1] < 80;
+            let fill = p[1] > 220 && p[0] < 30 && p[2] < 30;
+            if !label && !fill {
+                continue;
+            }
+            assert!(y as f32 >= TOPBAR_HEIGHT, "viewport leaked at {x},{y}");
+            touches_viewport |= y == TOPBAR_HEIGHT as u32;
+            if label {
+                let dx = x as f32 + 0.5 - 120.;
+                let dy = y as f32 + 0.5 - TOPBAR_HEIGHT - 7.;
+                let local_x = dx * cos + dy * sin;
+                let local_y = -dx * sin + dy * cos;
+                // Horizontal padding constrains the column. Vertical clipping uses the shape edge.
+                assert!(
+                    local_x.abs() <= 70.6 && local_y.abs() <= 27.6,
+                    "label pixel outside rotated clip: {local_x},{local_y}"
+                );
+                touches_local_edge |= local_y.abs() > 25.5 || local_x.abs() > 68.5;
+                ink += 1;
             }
         }
-        assert_eq!(
-            leaked_dark, 0,
-            "collapsed note leaked {leaked_dark} dark text pixels below its clamped height"
+        assert!(
+            ink > 50 && touches_local_edge && touches_viewport,
+            "ink={ink}, local edge={touches_local_edge}, viewport={touches_viewport}"
         );
+    }
+
+    #[test]
+    fn edgeless_rotated_text_survives_culling_of_its_unrotated_rect() {
+        let session = open(
+            320,
+            TOPBAR_HEIGHT as u32 + 100,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..Default::default()
+            },
+        );
+        session.view(|view, cx| {
+            view.edit_document(cx, |doc| {
+                let page = doc.workspace.ensure_page(HOME_PAGE_ID).unwrap();
+                let mut seed = ShowcaseSeed {
+                    page,
+                    now_ms: 10000,
+                };
+                seed.add(
+                    "rotated",
+                    BlockSpec::EdgelessText {
+                        xywh: Some("[3000,300,800,40]".into()),
+                    },
+                    Some("showcase-surface"),
+                )
+                .unwrap();
+                let now = seed.tick();
+                seed.page
+                    .set_block_prop(
+                        "rotated",
+                        "prop:rotate",
+                        SessionValue::Any(Any::Integer(90)),
+                        now,
+                    )
+                    .unwrap();
+                seed.paragraph(
+                    "rotated-line",
+                    ParagraphType::Text,
+                    "Rotated text remains visible near the top edge of the camera.",
+                    "rotated",
+                )
+                .unwrap();
+            });
+            view.set_edgeless_camera(3380., 0., 1., cx);
+        });
+        let (_, image) = session.frame();
+        let ink = image
+            .enumerate_pixels()
+            .filter(|(x, y, p)| {
+                (15..55).contains(x)
+                    && (*y as f32) > TOPBAR_HEIGHT + 3.
+                    && p[0] < 120
+                    && p[1] < 120
+                    && p[2] < 120
+            })
+            .count();
+        assert!(ink > 40, "rotated text had {ink} visible glyph pixels");
+    }
+
+    #[test]
+    fn borderless_rotated_quad_blends_inside_its_outer_edge() {
+        struct QuadSample;
+        impl Render for QuadSample {
+            fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+                canvas(
+                    |_, _, _| (),
+                    |bounds, (), window, _| {
+                        window.paint_quad(ui::fill(bounds, ui::rgb(0xffffff)));
+                        let matrix = ui::TransformationMatrix::unit()
+                            .translate(point(ui::ScaledPixels(96.), ui::ScaledPixels(80.)))
+                            .rotate(ui::radians(30_f32.to_radians()));
+                        window.with_paint_transformation(matrix, |window| {
+                            window.paint_quad(ui::fill(
+                                Bounds::new(point(px(-70.), px(-25.)), size(px(140.), px(50.))),
+                                ui::rgb(0),
+                            ));
+                        });
+                    },
+                )
+                .size_full()
+            }
+        }
+        let session = open(200, 160, Default::default());
+        let window = session.app.update(|cx| {
+            cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(Bounds::new(
+                        point(px(0.), px(0.)),
+                        size(px(200.), px(160.)),
+                    ))),
+                    ..Default::default()
+                },
+                |_, cx| cx.new(|_| QuadSample),
+            )
+            .unwrap()
+        });
+        session.platform.windows().last().unwrap().request_frame();
+        let image = session.app.update(|cx| {
+            window
+                .update(cx, |_, win, _| win.render_to_image().unwrap())
+                .unwrap()
+        });
+        let (sin, cos) = 30_f32.to_radians().sin_cos();
+        let mut blends = 0;
+        for (x, y, p) in image.enumerate_pixels() {
+            let dx = x as f32 + 0.5 - 96.;
+            let dy = y as f32 + 0.5 - 80.;
+            let u = dx * cos + dy * sin;
+            let v = -dx * sin + dy * cos;
+            if u.abs() < 65. && (24.6..24.95).contains(&v.abs()) && (5..250).contains(&p[0]) {
+                blends += 1;
+            }
+        }
+        assert!(blends > 15, "found {blends} blended interior edge pixels");
+    }
+
+    #[test]
+    fn edgeless_collapsed_note_clips_overflow_content_to_stored_height() {
+        for scale in [1_f32, 2.] {
+            let height = scale * 120.;
+            let mut doc =
+                DocState::new("collapse-note", client_id_from_seed(0x504)).expect("state");
+            doc.workspace.initialize_meta().expect("meta");
+            doc.workspace
+                .create_page(HOME_PAGE_ID, "Collapsed Note", 1)
+                .expect("page");
+            let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+            let mut seed = ShowcaseSeed { page, now_ms: 0 };
+            seed.add(
+                "c-page",
+                BlockSpec::Page {
+                    title: "Collapsed Note".to_string(),
+                },
+                None,
+            )
+            .expect("page");
+            seed.add(
+                "c-note",
+                BlockSpec::Note {
+                    xywh: Some(format!("[40,40,420,{height}]")),
+                },
+                Some("c-page"),
+            )
+            .expect("note");
+            let mut edgeless_map = AHashMap::default();
+            edgeless_map.insert("scale".into(), Any::Float64(f64::from(scale).into()));
+            edgeless_map.insert("collapse".to_string(), Any::True);
+            edgeless_map.insert(
+                "collapsedHeight".to_string(),
+                Any::Float64(120.0_f64.into()),
+            );
+            let now_ms = seed.tick();
+            seed.page
+                .set_block_prop(
+                    "c-note",
+                    "prop:edgeless",
+                    SessionValue::Any(Any::Object(Box::new(edgeless_map))),
+                    now_ms,
+                )
+                .expect("collapse prop");
+            for i in 0..12 {
+                seed.paragraph(
+                    &format!("c-p-{i}"),
+                    ParagraphType::Text,
+                    "Overflowing dark text line that must be clipped below collapsed height",
+                    "c-note",
+                )
+                .expect("paragraph");
+            }
+
+            let session = open(
+                1280,
+                800,
+                PlaygroundOptions {
+                    mode: PlaygroundMode::Edgeless,
+                    ..PlaygroundOptions::default()
+                },
+            );
+            session.view(|view, cx| {
+                view.set_document(doc, cx);
+                view.set_edgeless_camera(0.0, 0.0, 1.0, cx);
+            });
+            let (snap, img) = session.frame();
+            let note_bounds = snap.elements["edgeless.note.c-note"].bounds;
+            assert!(
+                (note_bounds.height - height).abs() < 1.0,
+                "collapsed note height must stay at {height}, got {}",
+                note_bounds.height
+            );
+
+            // Start immediately below the stored world-space card.
+            let check_top = (TOPBAR_HEIGHT + 40.0 + height + 1.0) as u32;
+            let check_bottom = (check_top + 160).min(img.height());
+            let mut leaked_dark = 0_u64;
+            for y in check_top..check_bottom {
+                for x in 60..440 {
+                    let p = img.get_pixel(x, y);
+                    if p[0] < 160 && p[1] < 160 && p[2] < 160 {
+                        leaked_dark += 1;
+                    }
+                }
+            }
+            assert_eq!(
+                leaked_dark, 0,
+                "collapsed note leaked {leaked_dark} dark text pixels below its clamped height"
+            );
+        }
     }
 }

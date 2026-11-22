@@ -700,6 +700,207 @@ fn render_headless(
     Ok(())
 }
 
+struct SurfaceSample {
+    theme: PlaygroundTheme,
+    elements: Vec<blocksuite_playground_doc::read::SurfaceElement>,
+}
+
+impl ui::Render for SurfaceSample {
+    fn render(&mut self, window: &mut ui::Window, _: &mut ui::Context<Self>) -> impl IntoElement {
+        use playground::surface::{layout_surface, surface_element};
+        let layout = Rc::new(layout_surface(
+            &self.elements,
+            &Default::default(),
+            self.theme,
+            window,
+        ));
+        let viewport = Bounds::new(Default::default(), window.viewport_size());
+        ui::div()
+            .size_full()
+            .bg(self.theme.palette().background)
+            .child(surface_element(layout, viewport, Default::default()))
+    }
+}
+
+fn sample_surface_elements() -> Vec<blocksuite_playground_doc::read::SurfaceElement> {
+    use blocksuite_playground_doc::read::{RichText, SurfaceElement};
+    use serde_json::{Value, json};
+    use y_octo::{TextDeltaOp, TextInsert};
+    let mut elements = Vec::new();
+    let mut add = |id: &str, mut props: Value, title: &str| {
+        props["index"] = json!(format!("a{:03}", elements.len()));
+        props["seed"] = json!(101 + elements.len() * 127);
+        let text = RichText {
+            plain: title.into(),
+            delta: vec![TextDeltaOp::Insert {
+                insert: TextInsert::Text(title.into()),
+                format: None,
+            }],
+        };
+        elements.push(SurfaceElement::from_properties(id.into(), props, text));
+    };
+    let ink = json!({"light":"#225d63","dark":"#85d5ca"});
+    let fill = json!({"light":"#d8eeea","dark":"#253f43"});
+    let accent = json!({"light":"#a65735","dark":"#efa983"});
+    let children: serde_json::Map<_, _> = (0..2)
+        .flat_map(|row| (0..5).map(move |col| (format!("shape-{row}-{col}"), json!(true))))
+        .collect();
+    add(
+        "shape-group",
+        json!({"type":"group","children":children}),
+        "Shape studies",
+    );
+    for (row, style) in ["General", "Scribbled"].iter().enumerate() {
+        for (col, (kind, name)) in [
+            ("rect", "Rectangle"),
+            ("rect", "Rounded"),
+            ("ellipse", "Ellipse"),
+            ("diamond", "Diamond"),
+            ("triangle", "Triangle"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            add(
+                &format!("shape-{row}-{col}"),
+                json!({"type":"shape","shapeType":kind,"radius":if col==1{0.1}else{0.0},"shapeStyle":style,"xywh":[70+234*col,76+145*row,193,98],"filled":true,
+                "strokeStyle":if col==1 && row==0{"dash"}else{"solid"},"strokeWidth":2.,"strokeColor":ink,"fillColor":fill,"roughness":1.15,"fontSize":16,"rotate":if col==0 && row==1{-6}else{0}}),
+                name,
+            );
+        }
+    }
+    add(
+        "routing-title",
+        json!({"type":"text","xywh":[68,375,260,28],"textAlign":"left","fontSize":19,"fontWeight":"600"}),
+        "Connector paths",
+    );
+    for (id, x, y, name) in [("start", 70, 470, "Source"), ("end", 1016, 545, "Target")] {
+        add(
+            id,
+            json!({"type":"shape","shapeType":"rect","radius":0.1,"xywh":[x,y,192,92],"filled":true,"fillColor":fill,"strokeColor":ink,"strokeWidth":2,"fontSize":16}),
+            name,
+        );
+    }
+    for (id, mode, sp, tp, front, rear, label) in [
+        (
+            "direct",
+            0,
+            [0.5, 0.],
+            [0.5, 0.],
+            "Circle",
+            "Arrow",
+            "Straight",
+        ),
+        (
+            "orthogonal",
+            1,
+            [1., 0.5],
+            [0., 0.5],
+            "Diamond",
+            "Triangle",
+            "Orthogonal",
+        ),
+        ("curve", 2, [0.5, 1.], [0.5, 1.], "None", "Arrow", "Curve"),
+    ] {
+        let (source, target) = if mode == 0 {
+            (
+                json!({"position":[165,440]}),
+                json!({"position":[1112,440]}),
+            )
+        } else {
+            (
+                json!({"id":"start","position":sp}),
+                json!({"id":"end","position":tp}),
+            )
+        };
+        add(
+            id,
+            json!({"type":"connector","source":source,"target":target,"mode":mode,"stroke":accent,"strokeWidth":2.5,"roughness":0.,
+            "frontEndpointStyle":front,"rearEndpointStyle":rear,"labelStyle":{"color":"--affine-text-primary-color","fontSize":14},"labelOffset":{"distance":if mode==1{0.30}else if mode==2{0.68}else{0.5}}}),
+            label,
+        );
+    }
+    add(
+        "pressure",
+        json!({"type":"brush","xywh":[65,700,360,55],"lineWidth":10,"color":ink,"points":[[0,37,0.1],[40,19,0.3],[85,6,0.85],[122,14,1.],[152,34,0.35],[180,38,0.12],[217,16,0.88],[238,9,0.95],[255,23,0.45],[277,35,0.18],[330,14,0.1]]}),
+        "",
+    );
+    add(
+        "highlight",
+        json!({"type":"highlighter","xywh":[804,273,130,16],"lineWidth":19,"points":[[0,4],[34,2],[81,4],[130,1]],"color":{"light":"#e8b83753","dark":"#f0c15a50"}}),
+        "",
+    );
+    elements
+}
+
+fn render_surface_sample(mut args: impl Iterator<Item = String>) -> Result<()> {
+    let mut theme = PlaygroundTheme::Light;
+    let mut out = None;
+    let mut snapshot = None;
+    while let Some(flag) = args.next() {
+        let v = args
+            .next()
+            .with_context(|| format!("{flag} requires a value"))?;
+        match flag.as_str() {
+            "--theme" => theme = PlaygroundTheme::parse(&v).context("expected light or dark")?,
+            "--out" => out = Some(PathBuf::from(v)),
+            "--snapshot" => snapshot = Some(PathBuf::from(v)),
+            _ => bail!("unknown render-surface-sample flag {flag}"),
+        }
+    }
+    let out = out.context("render-surface-sample requires --out <png>")?;
+    anyhow::ensure!(
+        snapshot.as_ref() != Some(&out),
+        "PNG and snapshot paths must differ"
+    );
+    let platform = HeadlessPlatform::new(1280, 800, 1.);
+    let init = Rc::new(RefCell::new(None));
+    let handle_out = Rc::clone(&init);
+    let app = Application::with_platform(platform.clone()).run_embedded(move |cx| {
+        *handle_out.borrow_mut() = Some((|| -> Result<_> {
+            register_bundled_fonts(cx)?;
+            let bounds = Bounds::new(point(px(0.), px(0.)), size(px(1280.), px(800.)));
+            cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    ..Default::default()
+                },
+                |_, cx| {
+                    cx.new(|_| SurfaceSample {
+                        theme,
+                        elements: sample_surface_elements(),
+                    })
+                },
+            )
+        })());
+    });
+    let handle = init
+        .borrow_mut()
+        .take()
+        .context("headless application did not start")??;
+    let win = platform
+        .windows()
+        .into_iter()
+        .next()
+        .context("sample window missing")?;
+    win.request_frame();
+    let (image, frame) = app.update(|cx| {
+        handle.update(cx, |_, window, _| {
+            Ok::<_, anyhow::Error>((window.render_to_image()?, window.frame_snapshot().clone()))
+        })
+    })??;
+    for path in std::iter::once(&out).chain(snapshot.iter()) {
+        if let Some(p) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(p)?;
+        }
+    }
+    image.save_with_format(out, image::ImageFormat::Png)?;
+    if let Some(path) = snapshot {
+        std::fs::write(path, serde_json::to_vec_pretty(&frame)?)?;
+    }
+    Ok(())
+}
+
 struct RichSample {
     paragraph: playground::rich_text::RichParagraph,
     rich: bool,
@@ -2493,6 +2694,50 @@ fn record_demo(dir: PathBuf, theme: PlaygroundTheme) -> Result<()> {
     Ok(())
 }
 
+/// Capture a seven-second camera walkthrough on the same scheduler as the editor demo.
+fn record_edgeless_demo(dir: PathBuf) -> Result<()> {
+    std::fs::create_dir_all(&dir)?;
+    let session = start_headless_session(1280, 800, Default::default())?;
+    let mut demo = DemoRecorder {
+        session: &session,
+        dir,
+        frames: 0,
+        pointer: (600., 72.),
+        pressed: false,
+    };
+    demo.hold(22)?;
+    session.view(|v, cx| v.set_edgeless_camera(-30., -50., 1., cx))?;
+    demo.click_element("chrome.mode_switcher.edgeless", 16)?;
+    demo.hold(14)?;
+    let mut start = (610., 324., 1_f32);
+    for (end, frames) in [
+        ((887., 550., 1.), 70),
+        ((665., 590., 0.5), 72),
+        ((984., 715., 2.), 96),
+        ((845., 560., 1.), 74),
+    ] {
+        for frame in 1..=frames {
+            let t = frame as f32 / frames as f32;
+            let t = t * t * (3. - 2. * t);
+            let x = start.0 + (end.0 - start.0) * t;
+            let y = start.1 + (end.1 - start.1) * t;
+            let zoom = start.2 * (end.2 / start.2).powf(t);
+            session.view(|v, cx| {
+                v.set_edgeless_camera(
+                    x - 640. / zoom,
+                    y - (800. - playground::TOPBAR_HEIGHT) * 0.5 / zoom,
+                    zoom,
+                    cx,
+                )
+            })?;
+            demo.frame()?;
+        }
+        start = end;
+    }
+    demo.click_element("chrome.theme_toggle", 20)?;
+    demo.hold(420 - demo.frames)
+}
+
 fn run_probes() -> Result<()> {
     let s = start_headless_session(640, 720, Default::default())?;
     probe_geometry(&s)?;
@@ -2506,7 +2751,7 @@ fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
         bail!(
-            "usage: bs-harness <render|render-rich-sample|render-editor|record-demo|audit|audit-states|fps-check|probes|bench> [options]"
+            "usage: bs-harness <render|render-surface-sample|render-rich-sample|render-editor|record-demo|record-edgeless-demo|audit|audit-states|fps-check|probes|bench> [options]"
         );
     };
 
@@ -2576,6 +2821,7 @@ fn main() -> Result<()> {
                 options,
             )
         }
+        "render-surface-sample" => render_surface_sample(args),
         "render-rich-sample" => render_rich_sample(args),
         "audit" => {
             let mut snapshot = None;
@@ -2594,6 +2840,11 @@ fn main() -> Result<()> {
         "render-editor" => render_editor(
             args.next()
                 .context("render-editor requires an output directory")?
+                .into(),
+        ),
+        "record-edgeless-demo" => record_edgeless_demo(
+            args.next()
+                .context("record-edgeless-demo requires an output directory")?
                 .into(),
         ),
         "record-demo" => {

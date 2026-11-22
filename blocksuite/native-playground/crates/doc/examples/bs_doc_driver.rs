@@ -890,3 +890,126 @@ async fn main() {
         let _ = io::stdout().flush();
     }
 }
+
+#[cfg(test)]
+mod surface_roundtrip {
+    use super::*;
+    use blocksuite_playground_doc::{
+        read::{BlockContent, ColorValue, ConnectorMode, ShapeType, SurfaceElementKind},
+        session::PageDocSession,
+    };
+    use std::{
+        path::Path,
+        process::{Command, Stdio},
+    };
+
+    /// Exercise Yjs constructors as well as mutations of the nested shared maps and texts.
+    /// The room-sync Store test separately checks initial hydration sends no outbound update.
+    #[test]
+    fn js_authored_surface_returns_typed_fields_without_writeback() {
+        let mut page = PageDocSession::new("test", 51).unwrap();
+        page.add_block("surface", BlockSpec::Surface, None, None, 1)
+            .unwrap();
+        let script = r#"
+          import * as Y from 'yjs';
+          import { readFileSync } from 'node:fs';
+          const doc = new Y.Doc();
+          Y.applyUpdate(doc, Uint8Array.from(JSON.parse(readFileSync(0, 'utf8'))));
+          const elements = doc.getMap('blocks').get('surface').get('prop:elements').get('value');
+          const make = (id, fields) => {
+            const element = new Y.Map(Object.entries({id, index:'a0', ...fields}));
+            elements.set(id, element);
+            return element;
+          };
+          doc.transact(() => {
+            const shape = make('s', {type:'shape', shapeType:'ellipse', xywh:'[3,5,90,40]', text:new Y.Text()});
+            shape.set('rotate', 17);
+            shape.get('text').insert(0, 'marked', {bold:true});
+            make('c', {type:'connector', rough:true, mode:0, source:{id:'s',position:[1,0.5]}, target:{position:[230,17]}}).set('mode',2);
+            make('b', {type:'brush',xywh:'[10,12,30,25]', points:[[4,3],[20,8,0.8]], lineWidth:7});
+            make('h', {type:'highlighter', color:{light:'#ffea334d',dark:'#4477ff4d'}, points:[[0,0]],lineWidth:19});
+            make('t', {type:'text', text:new Y.Text('canvas'), hasMaxWidth:true}).set('fontSize',31);
+            make('g', {type:'group', title:new Y.Text('set'), children:new Y.Map([['s',true],['h',false],['c',true]])});
+          });
+          process.stdout.write(JSON.stringify(Array.from(Y.encodeStateAsUpdate(doc))));
+        "#;
+        let project = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../..");
+        let mut child = Command::new("node")
+            .current_dir(project)
+            .args(["--input-type=module", "-e", script])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        serde_json::to_writer(
+            child.stdin.take().unwrap(),
+            &page.encode_update_v1().unwrap(),
+        )
+        .unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        let update: Vec<u8> = serde_json::from_slice(&output.stdout).unwrap();
+        page.apply_remote_update_v1(&update).unwrap();
+        let before = page.encode_update_v1().unwrap();
+        let tree = page.read_page_snapshot().unwrap();
+        let BlockContent::Surface {
+            elements,
+            element_count,
+        } = &tree.block("surface").unwrap().content
+        else {
+            panic!()
+        };
+        assert_eq!(*element_count, 6);
+        let lookup: std::collections::BTreeMap<_, _> =
+            elements.iter().map(|e| (e.id.as_str(), e)).collect();
+        let SurfaceElementKind::Shape(s) = &lookup["s"].kind else {
+            panic!()
+        };
+        assert_eq!(s.shape_type, ShapeType::Ellipse);
+        assert_eq!(s.xywh, [3., 5., 90., 40.]);
+        assert_eq!(lookup["s"].rotate, 17.);
+        assert_eq!(s.text.plain, "marked");
+        assert!(
+            matches!(&s.text.delta[..],[y_octo::TextDeltaOp::Insert{format:Some(attrs),..}] if attrs.get("bold")==Some(&Any::True))
+        );
+        let SurfaceElementKind::Connector(c) = &lookup["c"].kind else {
+            panic!()
+        };
+        assert!(c.rough);
+        assert_eq!(c.mode, ConnectorMode::Curve);
+        assert_eq!(c.source.id.as_deref(), Some("s"));
+        assert_eq!(c.source.position, Some([1., 0.5]));
+        assert_eq!(c.target.position, Some([230., 17.]));
+        assert_eq!(c.label_xywh, None);
+        let SurfaceElementKind::Brush(b) = &lookup["b"].kind else {
+            panic!()
+        };
+        assert!(b.simulated_pressure);
+        assert_eq!(b.points, [[4., 3., 0.5], [20., 8., 0.8]]);
+        assert_eq!(b.xywh, [10., 12., 30., 25.]);
+        assert_eq!(b.line_width, 7.);
+        let SurfaceElementKind::Highlighter(h) = &lookup["h"].kind else {
+            panic!()
+        };
+        assert_eq!(h.line_width, 19.);
+        assert_eq!(
+            h.color,
+            ColorValue::Themed {
+                light: "#ffea334d".into(),
+                dark: "#4477ff4d".into()
+            }
+        );
+        let SurfaceElementKind::Text(t) = &lookup["t"].kind else {
+            panic!()
+        };
+        assert_eq!(t.text.plain, "canvas");
+        assert!(t.has_max_width);
+        assert_eq!(t.font_size, 31.);
+        let SurfaceElementKind::Group { title, children } = &lookup["g"].kind else {
+            panic!()
+        };
+        assert_eq!(children, &["c", "h", "s"]);
+        assert_eq!(title.plain, "set");
+        assert_eq!(before, page.encode_update_v1().unwrap());
+    }
+}
