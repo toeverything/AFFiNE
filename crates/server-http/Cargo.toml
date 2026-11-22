@@ -1,0 +1,32 @@
+[package]
+name                   = "server-http"
+version                = "0.1.0"
+edition.workspace      = true
+license.workspace      = true
+publish.workspace      = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+arc-swap.workspace           = true
+async-graphql.workspace      = true
+async-graphql-axum.workspace = true
+axum.workspace               = true
+chrono.workspace             = true
+http.workspace               = true
+redis.workspace              = true
+serde.workspace              = true
+serde_json.workspace         = true
+server-db.workspace          = true
+server-spi.workspace         = true
+server-types.workspace       = true
+sqlx.workspace               = true
+tokio.workspace              = true
+tower-http.workspace         = true
+tracing.workspace            = true
+
+[dev-dependencies]
+test-db-harness.workspace = true
+tower.workspace           = true

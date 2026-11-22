@@ -1,5 +1,14 @@
 [workspace]
-members  = ["frame-audit", "test-db-harness", "server-types", "server-db"]
+members = [
+  "frame-audit",
+  "test-db-harness",
+  "server-types",
+  "server-db",
+  "server-spi",
+  "server-http",
+  "server-worker",
+  "affine-server",
+]
 resolver = "3"
 
 [workspace.package]
@@ -9,22 +18,39 @@ publish      = false
 rust-version = "1.88"
 
 [workspace.dependencies]
-base64       = "0.22"
-chrono       = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
-futures-util = "0.3"
-p256         = { version = "0.13", features = ["ecdsa", "pem"] }
-postgres     = "0.19"
-serde        = { version = "1", features = ["derive"] }
-serde_json   = "1"
-sha2         = "0.10"
-sqlx         = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
-thiserror    = "2"
-tokio        = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "process"] }
-uuid         = { version = "1", features = ["v4", "serde"] }
+arc-swap           = "1"
+async-graphql      = { version = "7", features = ["chrono", "uuid"] }
+async-graphql-axum = "7"
+async-trait        = "0.1"
+axum               = { version = "0.8", features = ["macros", "ws"] }
+base64             = "0.22"
+bytes              = "1"
+chrono             = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+clap               = { version = "4", features = ["derive", "env"] }
+futures-util       = "0.3"
+http               = "1"
+p256               = { version = "0.13", features = ["ecdsa", "pem"] }
+postgres           = "0.19"
+redis              = { version = "0.27", features = ["tokio-comp", "aio"] }
+serde              = { version = "1", features = ["derive"] }
+serde_json         = "1"
+sha2               = "0.10"
+sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
+thiserror          = "2"
+tokio              = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "process"] }
+tower              = "0.5"
+tower-http         = { version = "0.6", features = ["cors", "trace"] }
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid               = { version = "1", features = ["v4", "serde"] }
 
+affine-server   = { path = "affine-server" }
 frame-audit     = { path = "frame-audit" }
 server-db       = { path = "server-db" }
+server-http     = { path = "server-http" }
+server-spi      = { path = "server-spi" }
 server-types    = { path = "server-types" }
+server-worker   = { path = "server-worker" }
 test-db-harness = { path = "test-db-harness" }
 
 [workspace.lints.rust]
