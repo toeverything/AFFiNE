@@ -20,6 +20,13 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
     return this.db.getDoc(docId);
   }
 
+  override async getDocDiff(docId: string, state?: Uint8Array) {
+    if (this.db.getDocDiff) {
+      return this.db.getDocDiff(docId, state);
+    }
+    return super.getDocDiff(docId, state);
+  }
+
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
     const createForPeer =
       update.createForPeer ??

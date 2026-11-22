@@ -77,14 +77,14 @@
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "uuid": "^14.0.0",
     "vitest": "^4.1.11",
+    "yjs": "^13.6.27",
     "zod": "^3.25.76"
   },
   "dependencies": {
     "async-call-rpc": "^6.4.2",
     "electron-updater": "^6.8.9",
     "link-preview-js": "^4.0.4",
-    "set-cookie-parser": "^2.7.1",
-    "yjs": "^13.6.27"
+    "set-cookie-parser": "^2.7.1"
   },
   "build": {
     "protocols": [

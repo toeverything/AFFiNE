@@ -83,7 +83,8 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
     userId: string,
     docId: string,
     updates: Uint8Array[],
-    editorId = userId
+    editorId = userId,
+    _expectedCurrentTimestamp?: number
   ) {
     return (await this.pushDocUpdates(userId, docId, updates, editorId))
       .timestamp;

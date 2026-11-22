@@ -1389,3 +1389,359 @@ async fn concurrent_file_and_doc_edits_require_source_reconciliation() {
 
   teardown(&sync, session_id, &dir).await;
 }
+
+#[test]
+fn same_update_state_matches_gc_compressed_snapshot_vs_incremental_stream() {
+  let doc_id = "doc-gc-vs-stream";
+  let base = build_full_doc("GC Test", "# GC Test\n\nhello world", doc_id).expect("build initial doc");
+  let delta = update_doc(&base, "# GC Test\n\nhello affine", doc_id).expect("build edit delta");
+  let stream = y_octo::merge_updates_v1([base.as_slice(), delta.as_slice()])
+    .and_then(|merged| merged.encode_v1())
+    .expect("merge raw incremental stream");
+
+  let source = affine_doc_loader::export_markdown_source(&stream, doc_id, None).expect("export source");
+  let merged = affine_doc_loader::merge_markdown(affine_doc_loader::MarkdownMergeRequest {
+    baseline: &stream,
+    current: &stream,
+    source_before: &source.markdown,
+    source_after: &source.markdown,
+    doc_id,
+    scope: &source.scope,
+    profile: source.profile,
+  })
+  .expect("merge markdown snapshot");
+
+  assert!(
+    super::utils::same_update_state(&merged.snapshot, &stream)
+      .expect("same_update_state should compare GC snapshot against incremental stream")
+  );
+
+  // Also verify stepwise Y.Text items are preserved when merging with local
+  // first.
+  let original = hex::decode(include_str!("fixtures/stepwise-yjs.hex").replace('\n', "")).expect("decode Yjs update");
+  let mut doc = DocOptions::new().build();
+  doc.apply_update_from_binary_v1(&original).expect("load Yjs update");
+  let reencoded = doc
+    .encode_state_as_update_v1(&StateVector::default())
+    .expect("re-encode Yjs update");
+  let merged_frontend = super::utils::merge_frontend_update_binary(Some(&original), &reencoded)
+    .expect("merge frontend update with local first");
+  assert_eq!(merged_frontend, original);
+}
+
+#[test]
+fn same_update_state_returns_false_when_pending_out_of_order_updates_exist() {
+  let doc = DocOptions::new().with_client_id(42).build();
+  let mut text = doc.get_or_create_text("content").expect("create text");
+  text.insert(0, "first").expect("insert first");
+  let sv_after_first = doc.get_state_vector();
+  text.insert(5, " second").expect("insert second");
+  let out_of_order_delta = doc
+    .encode_state_as_update_v1(&sv_after_first)
+    .expect("encode second delta only");
+
+  let empty = DocOptions::new().build().encode_update_v1().expect("encode empty doc");
+  // `out_of_order_delta` cannot integrate without the first update, so
+  // `has_pending_updates()` is true even though its applied state vector and
+  // delete sets match `empty`.
+  let check_doc = y_octo::Doc::try_from_binary_v1(&out_of_order_delta).expect("decode out-of-order delta");
+  assert!(check_doc.has_pending_updates());
+  assert!(
+    !super::utils::same_update_state(&out_of_order_delta, &empty)
+      .expect("same_update_state should not throw on pending updates")
+  );
+  assert!(
+    !super::utils::same_update_state(&empty, &out_of_order_delta)
+      .expect("same_update_state should be symmetric for pending updates")
+  );
+}
+
+#[tokio::test]
+async fn disk_sync_skips_root_meta_write_for_unmigrated_legacy_root_shapes() {
+  use std::collections::HashMap as StdHashMap;
+
+  use y_octo::{AHashMap, Doc, HashMapExt};
+
+  // Case 1: outer `meta.pages` is a legacy `Any::Array` (2+ elements so y-octo
+  // keeps Any::Array)
+  let legacy_array_root = {
+    let doc = Doc::default();
+    let mut meta = doc.get_or_create_map("meta").expect("meta map");
+    let mut page_obj: AHashMap<String, Any> = AHashMap::new();
+    page_obj.insert("id".into(), Any::String("doc-existing".into()));
+    page_obj.insert("title".into(), Any::String("Old Title".into()));
+    let mut page_obj2: AHashMap<String, Any> = AHashMap::new();
+    page_obj2.insert("id".into(), Any::String("doc-existing-2".into()));
+    page_obj2.insert("title".into(), Any::String("Old Title 2".into()));
+    meta
+      .insert(
+        "pages".into(),
+        Any::Array(vec![Any::Object(Box::new(page_obj)), Any::Object(Box::new(page_obj2))]),
+      )
+      .expect("insert legacy Any::Array pages");
+    doc.encode_update_v1().expect("encode legacy array root")
+  };
+
+  let dir = temp_dir();
+  let md_path = dir.join("doc-new-legacy.md");
+  fs::write(
+    &md_path,
+    "---\nid: doc-new-legacy\ntitle: New Title\n---\n\n# New Title\n\nBody",
+  )
+  .expect("write md");
+  let sync = DiskSync::new();
+  let session_id = "session-legacy-array";
+  let workspace_id = "ws-legacy-array";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+  let _ = sync.pull_events(session_id.to_string()).await.expect("pull discovery");
+
+  sync
+    .prepare_source_doc(
+      session_id.to_string(),
+      "doc-new-legacy".to_string(),
+      None,
+      Some(Uint8Array::new(legacy_array_root.clone())),
+    )
+    .await
+    .expect("prepare_source_doc should succeed and skip root meta write");
+  let events = sync.pull_events(session_id.to_string()).await.expect("pull events");
+  assert!(
+    events
+      .iter()
+      .any(|e| e.update.as_ref().is_some_and(|u| u.doc_id == "doc-new-legacy")),
+    "markdown doc body import must still succeed"
+  );
+  assert!(
+    !events
+      .iter()
+      .any(|e| e.update.as_ref().is_some_and(|u| u.doc_id == workspace_id)),
+    "disk_sync must not emit a root doc migration/meta update for legacy Any::Array"
+  );
+  teardown(&sync, session_id, &dir).await;
+
+  // Case 2: `meta.pages` is a `Y.Array` containing a legacy `Any::Object`
+  // matching target doc_id
+  let legacy_mixed_root = {
+    let doc = Doc::default();
+    let mut meta = doc.get_or_create_map("meta").expect("meta map");
+    let mut pages = doc.create_array().expect("pages array");
+    let mut page_obj: AHashMap<String, Any> = AHashMap::new();
+    page_obj.insert("id".into(), Any::String("doc-mixed".into()));
+    page_obj.insert("title".into(), Any::String("Old Mixed".into()));
+    pages
+      .push(Value::Any(Any::Object(Box::new(page_obj))))
+      .expect("push legacy object");
+    meta
+      .insert("pages".into(), Value::Array(pages))
+      .expect("insert mixed pages");
+    doc.encode_update_v1().expect("encode mixed root")
+  };
+
+  let err = build_root_meta_update(
+    &legacy_mixed_root,
+    "ws-mixed",
+    "doc-mixed",
+    &FrontmatterMeta {
+      id: Some("doc-mixed".into()),
+      title: Some("Updated Mixed".into()),
+      ..Default::default()
+    },
+  )
+  .expect_err("mixed Y.Array hitting legacy Any::Object must return InvalidRootShape");
+  assert!(matches!(
+    err,
+    super::root_meta::RootMetaUpdateError::InvalidRootShape(_)
+  ));
+
+  // Verify no duplicate page IDs exist when reading back
+  let extracted = affine_doc_loader::extract_all_root_meta(&legacy_mixed_root).expect("extract meta");
+  let mut counts: StdHashMap<String, usize> = StdHashMap::new();
+  for page in extracted {
+    *counts.entry(page.id).or_default() += 1;
+  }
+  assert_eq!(counts.get("doc-mixed"), Some(&1));
+}
+
+#[tokio::test]
+async fn disk_sync_retries_deferred_root_meta_after_server_migration() {
+  use y_octo::{AHashMap, Doc, HashMapExt};
+
+  let doc_id = "doc-deferred-meta";
+  let workspace_id = "ws-deferred-meta";
+  let session_id = "session-deferred-meta";
+
+  // Build a legacy Any::Array root doc containing `doc-deferred-meta` (2+
+  // elements so y-octo keeps Any::Array)
+  let legacy_array_root = {
+    let doc = Doc::default();
+    let mut meta = doc.get_or_create_map("meta").expect("meta map");
+    let mut page_obj: AHashMap<String, Any> = AHashMap::new();
+    page_obj.insert("id".into(), Any::String(doc_id.into()));
+    page_obj.insert("title".into(), Any::String("Deferred Title".into()));
+    let mut peer_page: AHashMap<String, Any> = AHashMap::new();
+    peer_page.insert("id".into(), Any::String("doc-deferred-peer".into()));
+    peer_page.insert("title".into(), Any::String("Peer Title".into()));
+    meta
+      .insert(
+        "pages".into(),
+        Any::Array(vec![Any::Object(Box::new(page_obj)), Any::Object(Box::new(peer_page))]),
+      )
+      .expect("insert legacy Any::Array pages");
+    doc.encode_update_v1().expect("encode legacy array root")
+  };
+
+  let initial_doc = build_full_doc("Deferred Title", "# Deferred Title\n\nBody", doc_id).expect("build doc");
+
+  let dir = temp_dir();
+  let sync = DiskSync::new();
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: workspace_id.to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  // Seed legacy root doc and initial page doc into session
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: workspace_id.to_string(),
+        bin: Uint8Array::new(legacy_array_root.clone()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("apply legacy root");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: doc_id.to_string(),
+        bin: Uint8Array::new(initial_doc.clone()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("apply initial doc");
+  let _ = sync.pull_events(session_id.to_string()).await.expect("drain initial");
+
+  // Locate exported markdown file and edit frontmatter tags
+  let md_path = fs::read_dir(&dir)
+    .expect("read dir")
+    .filter_map(|e| e.ok().map(|e| e.path()))
+    .find(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+    .expect("exported markdown file");
+  let original_md = fs::read_to_string(&md_path).expect("read exported md");
+  let updated_md = original_md.replacen("tags: []", "tags:\n  - deferred-tag", 1);
+  assert_ne!(original_md, updated_md, "tags line must exist in exported frontmatter");
+  fs::write(&md_path, &updated_md).expect("write updated md");
+
+  // Discover edited file and prepare source doc: skips root meta write,
+  // preserves retryable meta_hash, emits deferred error event
+  let discovered = sync.pull_events(session_id.to_string()).await.expect("discover edit");
+  assert!(
+    discovered
+      .iter()
+      .any(|e| e.r#type == "source-discovered" && e.doc_id.as_deref() == Some(doc_id))
+  );
+  sync
+    .prepare_source_doc(
+      session_id.to_string(),
+      doc_id.to_string(),
+      Some(Uint8Array::new(initial_doc.clone())),
+      None,
+    )
+    .await
+    .expect("prepare_source_doc should defer root meta write");
+  let events_first = sync.pull_events(session_id.to_string()).await.expect("first scan");
+  assert!(
+    !events_first
+      .iter()
+      .any(|e| e.update.as_ref().is_some_and(|u| u.doc_id == workspace_id)),
+    "must not emit root doc update while root is still legacy Any::Array"
+  );
+  assert!(
+    events_first.iter().any(|e| {
+      e.r#type == "error"
+        && e
+          .message
+          .as_deref()
+          .is_some_and(|m| m.contains("deferred root metadata sync"))
+    }),
+    "must emit observable deferred root metadata sync error event"
+  );
+
+  // Simulate server-side coordinated migration of root doc
+  // (`migrate_root_doc_pages`)
+  let migration_delta = affine_doc_loader::migrate_root_doc_pages(&legacy_array_root)
+    .expect("migrate legacy root")
+    .expect("migration delta");
+  sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: workspace_id.to_string(),
+        bin: Uint8Array::new(migration_delta.clone()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("apply migrated root update");
+
+  // Second scan without touching the markdown file: untouched file is
+  // re-discovered because meta_hash was not advanced, and preparing it writes
+  // tags to the migrated root doc
+  let rediscovered = sync.pull_events(session_id.to_string()).await.expect("second scan");
+  assert!(
+    rediscovered
+      .iter()
+      .any(|e| e.r#type == "source-discovered" && e.doc_id.as_deref() == Some(doc_id)),
+    "untouched file with deferred root metadata must be re-discovered after migration"
+  );
+  sync
+    .prepare_source_doc(
+      session_id.to_string(),
+      doc_id.to_string(),
+      Some(Uint8Array::new(initial_doc)),
+      None,
+    )
+    .await
+    .expect("prepare_source_doc after migration should write root meta");
+  let events_second = sync.pull_events(session_id.to_string()).await.expect("after prepare");
+  let root_update_event = events_second
+    .iter()
+    .find_map(|e| e.update.as_ref().filter(|u| u.doc_id == workspace_id))
+    .expect("second scan must emit root meta update after migration");
+  let migrated_root =
+    super::utils::merge_update_binary(Some(&legacy_array_root), &migration_delta).expect("merge migration");
+  let final_root = super::utils::merge_update_binary(Some(&migrated_root), root_update_event.bin.as_ref())
+    .expect("merge root meta update");
+  let final_meta = super::root_meta::extract_root_meta_for_doc(&final_root, doc_id)
+    .expect("extract final root meta")
+    .expect("doc meta present");
+  assert_eq!(final_meta.tags, Some(vec!["deferred-tag".to_string()]));
+
+  // Third scan: stable with no redundant events
+  let events_third = sync.pull_events(session_id.to_string()).await.expect("third scan");
+  assert!(
+    events_third.is_empty(),
+    "subsequent scan should be stable with no redundant events, got: {:?}",
+    events_third.iter().map(|e| (&e.r#type, &e.message)).collect::<Vec<_>>()
+  );
+
+  teardown(&sync, session_id, &dir).await;
+}

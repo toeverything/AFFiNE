@@ -28,6 +28,8 @@ export const nbstoreHandlers: NativeDBApis = {
   installPeerWorkspaceState: POOL.installPeerWorkspaceState.bind(POOL),
   confirmPeerDocCreate: POOL.confirmPeerDocCreate.bind(POOL),
   getDoc: POOL.getDoc.bind(POOL),
+  getDocDiff: POOL.getDocDiff.bind(POOL),
+  mergeUpdates: async (updates: Uint8Array[]) => POOL.mergeUpdates(updates),
   deleteDoc: POOL.deleteDoc.bind(POOL),
   getDocClocks: POOL.getDocClocks.bind(POOL),
   getDocClock: POOL.getDocClock.bind(POOL),

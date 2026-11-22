@@ -3,6 +3,7 @@ import type {
   BlobRecord,
   CrawlResult,
   DocClock,
+  DocDiff,
   DocIndexedClock,
   DocRecord,
   ListedBlobRecord,
@@ -86,6 +87,12 @@ export interface NativeDBApis {
     docId: string
   ) => Promise<void>;
   getDoc: (id: string, docId: string) => Promise<DocRecord | null>;
+  getDocDiff?: (
+    id: string,
+    docId: string,
+    state?: Uint8Array
+  ) => Promise<DocDiff | null>;
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array>;
   deleteDoc: (id: string, docId: string) => Promise<void>;
   getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;
   getDocClock: (id: string, docId: string) => Promise<DocClock | null>;
@@ -193,13 +200,17 @@ export interface NativeDBApis {
   indexVersion: () => Promise<number>;
 }
 
+type WrapApiFn<T> = T extends (...args: any[]) => any
+  ? Parameters<T> extends [string, ...infer Rest]
+    ? (...args: Rest) => ReturnType<T>
+    : (...args: Parameters<T>) => ReturnType<T>
+  : never;
+
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
   ? {
-      [K in keyof APIs]: APIs[K] extends (...args: any[]) => any
-        ? Parameters<APIs[K]> extends [string, ...infer Rest]
-          ? (...args: Rest) => ReturnType<APIs[K]>
-          : (...args: Parameters<APIs[K]>) => ReturnType<APIs[K]>
-        : never;
+      [K in keyof APIs]: undefined extends APIs[K]
+        ? WrapApiFn<NonNullable<APIs[K]>> | undefined
+        : WrapApiFn<APIs[K]>;
     }
   : never;
 
@@ -207,6 +218,12 @@ let apis: NativeDBApis | null = null;
 
 export function bindNativeDBApis(a: NativeDBApis) {
   apis = a;
+}
+
+export function getNativeMergeUpdates():
+  | ((updates: Uint8Array[]) => Promise<Uint8Array>)
+  | undefined {
+  return apis?.mergeUpdates;
 }
 
 export class NativeDBConnection extends AutoReconnectConnection<void> {
@@ -241,6 +258,15 @@ export class NativeDBConnection extends AutoReconnectConnection<void> {
       {
         get: (_target, key: keyof NativeDBApisWrapper) => {
           const v = originalApis[key];
+          if (typeof v !== 'function') {
+            return undefined;
+          }
+
+          if (key === 'mergeUpdates' || key === 'indexVersion') {
+            return async (...args: any[]) => {
+              return (v as (...a: any[]) => any).apply(originalApis, args);
+            };
+          }
 
           return async (...args: any[]) => {
             return v.call(

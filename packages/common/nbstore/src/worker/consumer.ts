@@ -8,6 +8,10 @@ import { StoreConsumer } from './store';
 
 export type { WorkerManagerOps };
 
+export interface StoreManagerConsumerOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
+
 export class StoreManagerConsumer {
   private readonly storeDisposers = new Map<string, () => Promise<void>>();
   private readonly storePool = new Map<
@@ -34,7 +38,8 @@ export class StoreManagerConsumer {
   private readonly realtime = new RealtimeManager();
 
   constructor(
-    private readonly availableStorageImplementations: StorageConstructor[]
+    private readonly availableStorageImplementations: StorageConstructor[],
+    private readonly options?: StoreManagerConsumerOptions
   ) {}
 
   bindConsumer(consumer: OpConsumer<WorkerManagerOps>) {
@@ -51,7 +56,8 @@ export class StoreManagerConsumer {
             entry = {
               store: new StoreConsumer(
                 this.availableStorageImplementations,
-                options
+                options,
+                this.options
               ),
               refCount: 0,
             };

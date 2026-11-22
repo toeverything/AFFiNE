@@ -581,6 +581,7 @@ mod tests {
     "embedding_indexes",
     "doc_blob_refs",
     "doc_blob_ref_projections",
+    "runtime_doc_creators",
     "document_cleanup_candidates",
     "blob_cleanup_candidates",
     "storage_reconciliation_runs",
@@ -609,6 +610,7 @@ mod tests {
       "INSERT INTO doc_blob_refs(workspace_id,doc_id,blob_key,block_id,flavour,snapshot_updated_at,parser_version) \
        VALUES($1,'doc','blob','block','affine:attachment',now(),1)",
       "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,parser_version,status) VALUES($1,'doc',1,'pending')",
+      "INSERT INTO runtime_doc_creators(workspace_id,doc_id,created_by) VALUES($1,'doc',NULL)",
       "INSERT INTO document_cleanup_candidates(workspace_id,doc_id,status,missing_since,last_observed_missing_at) \
        VALUES($1,'doc','marked',now(),now())",
       "INSERT INTO blob_cleanup_candidates(workspace_id,blob_key,reason,status,object_size,run_id) \
@@ -835,6 +837,7 @@ mod tests {
       "embedding_sources",
       "embedding_workspace_states",
       "embedding_indexes",
+      "runtime_doc_creators",
       "blob_cleanup_candidates",
       "storage_reconciliation_runs",
       "storage_reconciliation_checkpoints",

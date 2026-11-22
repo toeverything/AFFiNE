@@ -1,5 +1,11 @@
 use super::*;
 
+enum PreparedRootMetaUpdate {
+  Applied(Vec<u8>, Vec<u8>),
+  NoChange,
+  DeferredInvalidRootShape(String),
+}
+
 impl DiskSession {
   pub(crate) async fn replay_pending_updates(&self) -> Result<(), String> {
     for (doc_id, bin) in self.state_db.pending_source_updates().await? {
@@ -48,7 +54,7 @@ impl DiskSession {
         let current = if same_update_state(&checkpoint.snapshot, local)? {
           local.to_vec()
         } else {
-          merge_update_binary(Some(&checkpoint.snapshot), local)?
+          merge_frontend_update_binary(Some(local), &checkpoint.snapshot)?
         };
         self.docs.lock().await.insert(doc_id.to_string(), current);
       } else {
@@ -230,9 +236,21 @@ impl DiskSession {
       return Err(format!("markdown file changed during import: {}", file_path.display()));
     }
 
-    let root_update = self
+    let mut next_checkpoint = next_checkpoint;
+    let prepared_root = self
       .prepare_root_meta_from_file(&doc_id, &normalized_meta, existing_checkpoint.as_ref())
       .await?;
+    let (root_update, deferred_root_reason) = match prepared_root {
+      PreparedRootMetaUpdate::Applied(snapshot, delta) => (Some((snapshot, delta)), None),
+      PreparedRootMetaUpdate::NoChange => (None, None),
+      PreparedRootMetaUpdate::DeferredInvalidRootShape(reason) => {
+        next_checkpoint.meta_hash = existing_checkpoint
+          .as_ref()
+          .map(|checkpoint| checkpoint.meta_hash.clone())
+          .unwrap_or_default();
+        (None, Some(reason))
+      }
+    };
 
     let id_candidate = if has_doc_id {
       None
@@ -307,6 +325,15 @@ impl DiskSession {
       path_bindings.insert(file_path.to_path_buf(), doc_id.clone());
     }
 
+    if let Some(reason) = deferred_root_reason {
+      self
+        .queue_error_event(format!(
+          "deferred root metadata sync for {}: workspace root requires coordinated migration ({})",
+          doc_id, reason
+        ))
+        .await;
+    }
+
     if let Some(candidate) = id_candidate {
       self
         .queue_error_event(format!(
@@ -325,19 +352,25 @@ impl DiskSession {
     doc_id: &str,
     meta: &FrontmatterMeta,
     baseline: Option<&SourceCheckpoint>,
-  ) -> Result<Option<(Vec<u8>, Vec<u8>)>, String> {
+  ) -> Result<PreparedRootMetaUpdate, String> {
     if !self.validate_root_meta_from_file(doc_id, meta, baseline).await? {
-      return Ok(None);
+      return Ok(PreparedRootMetaUpdate::NoChange);
     }
     let current_root = self.root_doc.lock().await.clone();
-    let delta = build_root_meta_update(&current_root, &self.workspace_id, doc_id, meta)?;
+    let delta = match build_root_meta_update(&current_root, &self.workspace_id, doc_id, meta) {
+      Ok(delta) => delta,
+      Err(RootMetaUpdateError::InvalidRootShape(reason)) => {
+        return Ok(PreparedRootMetaUpdate::DeferredInvalidRootShape(reason));
+      }
+      Err(RootMetaUpdateError::Other(err)) => return Err(err),
+    };
 
     if is_empty_update(&delta) {
-      return Ok(None);
+      return Ok(PreparedRootMetaUpdate::NoChange);
     }
 
     let merged = merge_update_binary(Some(&current_root), &delta)?;
-    Ok(Some((merged, delta)))
+    Ok(PreparedRootMetaUpdate::Applied(merged, delta))
   }
 
   async fn validate_root_meta_from_file(

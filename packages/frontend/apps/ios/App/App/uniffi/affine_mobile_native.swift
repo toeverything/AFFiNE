@@ -544,6 +544,8 @@ public protocol DocStoragePoolProtocol: AnyObject, Sendable {
     
     func getDocClocks(universalId: String, after: Int64?) async throws  -> [DocClock]
     
+    func getDocDiff(universalId: String, docId: String, state: String?) async throws  -> DocDiff?
+    
     func getDocIndexedClock(universalId: String, docId: String) async throws  -> DocIndexedClock?
     
     func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
@@ -579,6 +581,8 @@ public protocol DocStoragePoolProtocol: AnyObject, Sendable {
     func invalidatePeerWorkspaceState(universalId: String, peer: String, rootDocId: String) async throws 
     
     func listBlobs(universalId: String) async throws  -> [ListedBlob]
+    
+    func mergeUpdates(updates: [String]) throws  -> String
     
     func pushUpdate(universalId: String, docId: String, update: String, createForPeer: String?) async throws  -> Int64
     
@@ -873,6 +877,23 @@ open func getDocClocks(universalId: String, after: Int64?)async throws  -> [DocC
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocClock.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func getDocDiff(universalId: String, docId: String, state: String?)async throws  -> DocDiff?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_diff(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterOptionString.lower(state)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocDiff.lift,
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
@@ -1181,6 +1202,14 @@ open func listBlobs(universalId: String)async throws  -> [ListedBlob]  {
             liftFunc: FfiConverterSequenceTypeListedBlob.lift,
             errorHandler: FfiConverterTypeUniffiError_lift
         )
+}
+    
+open func mergeUpdates(updates: [String])throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeUniffiError_lift) {
+    uniffi_affine_mobile_native_fn_method_docstoragepool_merge_updates(self.uniffiClonePointer(),
+        FfiConverterSequenceString.lower(updates),$0
+    )
+})
 }
     
 open func pushUpdate(universalId: String, docId: String, update: String, createForPeer: String?)async throws  -> Int64  {
@@ -1774,6 +1803,92 @@ public func FfiConverterTypeDocClock_lift(_ buf: RustBuffer) throws -> DocClock 
 #endif
 public func FfiConverterTypeDocClock_lower(_ value: DocClock) -> RustBuffer {
     return FfiConverterTypeDocClock.lower(value)
+}
+
+
+public struct DocDiff {
+    public var docId: String
+    public var missing: String
+    public var state: String
+    public var timestamp: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(docId: String, missing: String, state: String, timestamp: Int64) {
+        self.docId = docId
+        self.missing = missing
+        self.state = state
+        self.timestamp = timestamp
+    }
+}
+
+#if compiler(>=6)
+extension DocDiff: Sendable {}
+#endif
+
+
+extension DocDiff: Equatable, Hashable {
+    public static func ==(lhs: DocDiff, rhs: DocDiff) -> Bool {
+        if lhs.docId != rhs.docId {
+            return false
+        }
+        if lhs.missing != rhs.missing {
+            return false
+        }
+        if lhs.state != rhs.state {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(docId)
+        hasher.combine(missing)
+        hasher.combine(state)
+        hasher.combine(timestamp)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDocDiff: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocDiff {
+        return
+            try DocDiff(
+                docId: FfiConverterString.read(from: &buf), 
+                missing: FfiConverterString.read(from: &buf), 
+                state: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DocDiff, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.docId, into: &buf)
+        FfiConverterString.write(value.missing, into: &buf)
+        FfiConverterString.write(value.state, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDocDiff_lift(_ buf: RustBuffer) throws -> DocDiff {
+    return try FfiConverterTypeDocDiff.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDocDiff_lower(_ value: DocDiff) -> RustBuffer {
+    return FfiConverterTypeDocDiff.lower(value)
 }
 
 
@@ -2903,6 +3018,30 @@ fileprivate struct FfiConverterOptionTypeDocClock: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeDocDiff: FfiConverterRustBuffer {
+    typealias SwiftType = DocDiff?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDocDiff.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDocDiff.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeDocIndexedClock: FfiConverterRustBuffer {
     typealias SwiftType = DocIndexedClock?
 
@@ -3392,6 +3531,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks() != 46082) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_diff() != 22717) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_indexed_clock() != 17668) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3444,6 +3586,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs() != 6777) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_merge_updates() != 49313) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 60089) {

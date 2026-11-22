@@ -76,6 +76,10 @@ function realtimeAbortError(op: RealtimeRequestName) {
   return error;
 }
 
+export interface StoreManagerClientOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
+
 export class StoreManagerClient {
   private readonly connections = new Map<
     string,
@@ -85,7 +89,10 @@ export class StoreManagerClient {
     }
   >();
 
-  constructor(private readonly client: OpClient<WorkerManagerOps>) {
+  constructor(
+    private readonly client: OpClient<WorkerManagerOps>,
+    private readonly options?: StoreManagerClientOptions
+  ) {
     this.telemetry = new TelemetryClient(this.client);
     this.realtime = new RealtimeClient(this.client);
   }
@@ -117,7 +124,7 @@ export class StoreManagerClient {
       });
 
     const connection = {
-      store: new StoreClient(client),
+      store: new StoreClient(client, this.options),
       dispose: () => {
         this.client.call('close', closeKey).catch(err => {
           console.error('error closing', err);
@@ -235,13 +242,18 @@ export class RealtimeClient {
 }
 
 export class StoreClient {
-  constructor(private readonly client: OpClient<WorkerOps>) {
+  constructor(
+    private readonly client: OpClient<WorkerOps>,
+    options?: StoreManagerClientOptions
+  ) {
     this.docStorage = new WorkerDocStorage(this.client);
     this.blobStorage = new WorkerBlobStorage(this.client);
     this.docSync = new WorkerDocSync(this.client);
     this.blobSync = new WorkerBlobSync(this.client);
     this.awarenessSync = new WorkerAwarenessSync(this.client);
-    this.docFrontend = new DocFrontend(this.docStorage, this.docSync);
+    this.docFrontend = new DocFrontend(this.docStorage, this.docSync, {
+      mergeUpdates: options?.mergeUpdates,
+    });
     this.blobFrontend = new BlobFrontend(this.blobStorage, this.blobSync);
     this.awarenessFrontend = new AwarenessFrontend(this.awarenessSync);
     this.indexerSync = new WorkerIndexerSync(this.client);

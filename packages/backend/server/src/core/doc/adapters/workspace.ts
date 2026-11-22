@@ -69,7 +69,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     editorId: string,
     expectedPermissionGeneration?: number,
     writeIntent: 'update_doc' | 'create_doc' = 'update_doc',
-    protocolVersion?: number
+    protocolVersion?: number,
+    expectedCurrentTimestamp?: number
   ) {
     return await this.pushDocUpdatesWithContract(
       workspaceId,
@@ -81,6 +82,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         writeIntent,
         expectedPermissionGeneration,
         protocolVersion,
+        expectedCurrentTimestamp,
       }
     );
   }
@@ -89,7 +91,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     workspaceId: string,
     docId: string,
     updates: Uint8Array[],
-    editorId?: string
+    editorId?: string,
+    expectedCurrentTimestamp?: number
   ) {
     return (
       await this.pushDocUpdatesWithContract(
@@ -97,7 +100,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         docId,
         updates,
         editorId,
-        { trusted: true }
+        { trusted: true, expectedCurrentTimestamp }
       )
     ).timestamp;
   }
@@ -114,8 +117,9 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
 
           expectedPermissionGeneration?: number;
           protocolVersion?: number;
+          expectedCurrentTimestamp?: number;
         }
-      | { trusted: true }
+      | { trusted: true; expectedCurrentTimestamp?: number }
   ) {
     if (!updates.length) {
       return { timestamp: 0, created: false };
@@ -132,6 +136,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
             timestamp: await this.runtime.appendWorkspaceDocUpdatesTrustedV1({
               ...input,
               editorId,
+              expectedCurrentTimestamp: contract.expectedCurrentTimestamp,
             }),
             created: false,
           }
@@ -301,14 +306,19 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     };
   }
 
-  protected async setDocSnapshot(snapshot: DocRecord) {
+  protected async setDocSnapshot(
+    snapshot: DocRecord,
+    options?: { fromInitialUpdates?: boolean }
+  ) {
     try {
       return await this.runtime.upsertDocSnapshot(
         snapshot.spaceId,
         snapshot.docId,
         Buffer.from(snapshot.bin),
         snapshot.timestamp,
-        snapshot.editor
+        snapshot.editor,
+        options?.fromInitialUpdates ? snapshot.creator : undefined,
+        options?.fromInitialUpdates
       );
     } catch (e) {
       metrics.doc.counter('snapshot_upsert_failed').add(1);

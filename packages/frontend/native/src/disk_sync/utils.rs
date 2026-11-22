@@ -7,7 +7,7 @@ use std::{
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sha3::{Digest, Sha3_256};
 use uuid::Uuid;
-use y_octo::{Doc, DocOptions, merge_updates_v1};
+use y_octo::{Doc, merge_updates_v1, validate_update_v1};
 
 use super::{frontmatter::normalize_tags, types::FrontmatterMeta};
 
@@ -225,8 +225,14 @@ pub(crate) fn merge_frontend_update_binary(existing: Option<&[u8]>, update: &[u8
 }
 
 pub(crate) fn same_update_state(left: &[u8], right: &[u8]) -> Result<bool, String> {
+  if left == right && (is_empty_update(left) || validate_update_v1(left).is_ok()) {
+    return Ok(true);
+  }
   let left_doc = Doc::try_from_binary_v1(left).map_err(|err| format!("failed to decode checkpoint update: {err}"))?;
   let right_doc = Doc::try_from_binary_v1(right).map_err(|err| format!("failed to decode local update: {err}"))?;
+  if left_doc.has_pending_updates() || right_doc.has_pending_updates() {
+    return Ok(false);
+  }
   Ok(
     left_doc.get_state_vector() == right_doc.get_state_vector()
       && left_doc.get_delete_sets() == right_doc.get_delete_sets(),
@@ -243,17 +249,6 @@ pub(crate) fn merge_root_update_binary(existing: &[u8], update: &[u8]) -> Result
   merge_updates_v1([existing, update])
     .and_then(|merged| merged.encode_v1())
     .map_err(|err| format!("failed to merge root update: {err}"))
-}
-
-pub(crate) fn load_doc_or_new(binary: &[u8], doc_id: Option<&str>) -> Result<Doc, String> {
-  let options = match doc_id {
-    Some(id) => DocOptions::new().with_guid(id.to_owned()),
-    None => DocOptions::new(),
-  };
-  if is_empty_update(binary) {
-    return Ok(options.build());
-  }
-  Doc::try_from_binary_v1_with_options(binary, options).map_err(|err| format!("failed to decode doc binary: {err}"))
 }
 
 pub(crate) fn paths_equal(lhs: &Path, rhs: &Path) -> bool {

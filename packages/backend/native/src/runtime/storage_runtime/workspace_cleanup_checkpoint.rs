@@ -114,6 +114,7 @@ const WORKSPACE_STORAGE_TABLES: &[&str] = &[
   "snapshot_histories",
   "doc_blob_refs",
   "doc_blob_ref_projections",
+  "runtime_doc_creators",
   "document_cleanup_candidates",
   "blob_cleanup_candidates",
   "storage_reconciliation_runs",

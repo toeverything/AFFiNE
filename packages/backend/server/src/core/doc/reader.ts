@@ -1,15 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  applyUpdate,
-  Array as YArray,
-  diffUpdate,
-  Doc as YDoc,
-  encodeStateVectorFromUpdate,
-  Map as YMap,
-} from 'yjs';
 
 import { Cache } from '../../base';
 import { Models } from '../../models';
+import {
+  diffDocUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  extractRootDocIdAliases,
+} from '../../native';
 import { BackendRuntimeProvider } from '../backend-runtime';
 import { WorkspaceBlobStorage } from '../storage';
 import {
@@ -174,11 +171,34 @@ export abstract class DocReader {
   ): Promise<WorkspaceDocInfo | null>;
 
   protected docDiff(update: Uint8Array, stateVector?: Uint8Array) {
-    const missing = stateVector ? diffUpdate(update, stateVector) : update;
-    const state = encodeStateVectorFromUpdate(update);
+    const bin = Buffer.from(
+      update.buffer,
+      update.byteOffset,
+      update.byteLength
+    );
+    const rawMissing =
+      stateVector && stateVector.length > 0
+        ? diffDocUpdateV1(
+            bin,
+            Buffer.from(
+              stateVector.buffer,
+              stateVector.byteOffset,
+              stateVector.byteLength
+            )
+          )
+        : update;
+    const rawState = encodeStateVectorFromUpdateV1(bin);
     return {
-      missing,
-      state,
+      missing: new Uint8Array(
+        rawMissing.buffer,
+        rawMissing.byteOffset,
+        rawMissing.byteLength
+      ),
+      state: new Uint8Array(
+        rawState.buffer,
+        rawState.byteOffset,
+        rawState.byteLength
+      ),
     };
   }
 }
@@ -206,22 +226,13 @@ export class DatabaseDocReader extends DocReader {
         ? await this.workspace.getDoc(workspaceId, workspaceId)
         : rootDoc;
     if (!root) return aliases;
-    const doc = new YDoc();
-    try {
-      applyUpdate(doc, root.bin);
-      const pages = doc.getMap('meta').get('pages');
-      if (!(pages instanceof YArray)) return aliases;
-      const spaces = doc.getMap('spaces');
-      for (const page of pages) {
-        const id: unknown = page instanceof YMap ? page.get('id') : undefined;
-        if (typeof id !== 'string') continue;
-        const subdoc = spaces.get(id);
-        if (subdoc instanceof YDoc) aliases.set(id, subdoc.guid);
-      }
-      return aliases;
-    } finally {
-      doc.destroy();
+    const extracted = extractRootDocIdAliases(
+      Buffer.from(root.bin.buffer, root.bin.byteOffset, root.bin.byteLength)
+    );
+    for (const [id, guid] of Object.entries(extracted)) {
+      aliases.set(id, guid);
     }
+    return aliases;
   }
 
   async resolveStorageDocId(
