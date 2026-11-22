@@ -106,8 +106,33 @@ vertex QuadVertexOutput quad_vertex(uint unit_vertex_id [[vertex_id]],
     quad.background.colors[1].color
   );
 
+  // Hoist the fast-path predicate into the vertex shader and pack it into bit 31
+  // of `quad_id` so `quad_fragment` can return `background_solid` without loading
+  // the Quad struct from buffer memory.
+  bool unrounded = quad.corner_radii.top_left == 0.0 &&
+    quad.corner_radii.bottom_left == 0.0 &&
+    quad.corner_radii.top_right == 0.0 &&
+    quad.corner_radii.bottom_right == 0.0;
+  bool borderless = quad.border_widths.top == 0.0 &&
+    quad.border_widths.left == 0.0 &&
+    quad.border_widths.right == 0.0 &&
+    quad.border_widths.bottom == 0.0;
+  bool axis_aligned = fabs(quad.transformation.rotation_scale[0][1]) <= 1e-5 &&
+    fabs(quad.transformation.rotation_scale[1][0]) <= 1e-5;
+  Bounds_ScaledPixels mask = quad.local_content_mask.bounds;
+  bool unmasked = quad.bounds.origin.x >= mask.origin.x &&
+    quad.bounds.origin.y >= mask.origin.y &&
+    quad.bounds.origin.x + quad.bounds.size.width <= mask.origin.x + mask.size.width &&
+    quad.bounds.origin.y + quad.bounds.size.height <= mask.origin.y + mask.size.height;
+  bool fast_solid = quad.background.tag == 0 &&
+    unrounded &&
+    borderless &&
+    axis_aligned &&
+    unmasked;
+  uint packed_quad_id = fast_solid ? (quad_id | 0x80000000u) : quad_id;
+
   return QuadVertexOutput{
-      quad_id,
+      packed_quad_id,
       device_position,
       local_position,
       border_color,
@@ -120,6 +145,9 @@ vertex QuadVertexOutput quad_vertex(uint unit_vertex_id [[vertex_id]],
 fragment float4 quad_fragment(QuadFragmentInput input [[stage_in]],
                               constant Quad *quads
                               [[buffer(QuadInputIndex_Quads)]]) {
+  if ((input.quad_id & 0x80000000u) != 0u) {
+    return input.background_solid;
+  }
   Quad quad = quads[input.quad_id];
   if (outside_local_mask(input.local_position, quad.local_content_mask.bounds)) {
     return float4(0.0);

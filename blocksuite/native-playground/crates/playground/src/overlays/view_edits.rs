@@ -1,0 +1,306 @@
+use blocksuite_playground_doc::{
+    DocError, DocResult,
+    read::{BlockNode, TextAlign as BlockAlign},
+    schema::{BlockSpec, ListType, ParagraphType},
+    session::SelectionSnapshot,
+};
+use ui::{Context, Window};
+use y_octo::{Any, SessionValue, TextAttributes};
+
+use crate::{
+    PlaygroundView,
+    block_flow::FlowKind,
+    editor_session::{DocPoint, DocumentSelection},
+};
+
+use super::*;
+
+impl PlaygroundView {
+    /// Snapshot of the editor's selection for the undo entry an edit creates.
+    pub(super) fn selection_snapshot(&self) -> Option<SelectionSnapshot> {
+        self.editor.selection.as_ref()?.snapshot(self.page()?).ok()
+    }
+
+    /// Carry out one overlay edit as a single undo step and publish it.
+    pub(super) fn run_overlay_edit(
+        &mut self,
+        edit: DocEdit,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let now = self.now_ms(cx) as u64;
+        match edit {
+            DocEdit::Mark(key) => self.format_mark(key, window, cx),
+            DocEdit::Align(align) => self.format_selection(Some(align), None, window, cx),
+            DocEdit::Link(url) => self.format_selection(None, Some(url), window, cx),
+            DocEdit::Slash {
+                block_id,
+                command,
+                typed,
+            } => self.run_slash_command(&block_id, command, typed, window, cx),
+            edit @ (DocEdit::SetProp { .. } | DocEdit::Reorder { .. }) => {
+                let before = self.selection_snapshot();
+                let page = self.page_mut()?;
+                // A block control is its own undo step, never merged into typing.
+                page.stop_capturing()?;
+                let commit = match &edit {
+                    DocEdit::SetProp {
+                        block_id,
+                        key,
+                        value,
+                    } => {
+                        page.set_block_prop(block_id, *key, SessionValue::Any(value.clone()), now)?
+                    }
+                    DocEdit::Reorder {
+                        parent_id,
+                        child_id,
+                        new_index,
+                    } => page.reparent_block(child_id, parent_id, parent_id, *new_index, now)?,
+                    _ => None,
+                };
+                if commit.is_some()
+                    && let Some(before) = before
+                {
+                    page.set_undo_selection_snapshot(before)?;
+                }
+                page.stop_capturing()?;
+                self.editor.last_typing = None;
+                self.did_edit(commit, None, window, cx);
+                // The page stays where it is; the caret may be far from the control.
+                self.editor.reveal = false;
+                Ok(())
+            }
+        }
+    }
+
+    /// Align the selected paragraph and list blocks, or set or clear the link of the
+    /// selected text, in one undo step.
+    pub(super) fn format_selection(
+        &mut self,
+        align: Option<BlockAlign>,
+        link: Option<Option<String>>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let Some(selection) = self.editor.selection.clone() else {
+            return Ok(());
+        };
+        let Some(layout) = self.flow_layout() else {
+            return Ok(());
+        };
+        let Some((start, end, a, b, _)) = selection.ordered(&layout) else {
+            return Ok(());
+        };
+        // Alignment goes on every paragraph and list block the selection touches, empty
+        // ones included; a link only where there is text to carry it.
+        let mut blocks: Vec<&str> = Vec::new();
+        let mut ranges: Vec<(&str, u64, u64)> = Vec::new();
+        for block in &layout.blocks[a..=b] {
+            if !matches!(block.body.kind, FlowKind::Paragraph(_) | FlowKind::List(_)) {
+                continue;
+            }
+            let id = block.block_id.as_str();
+            blocks.push(id);
+            let from = if id == start.block_id {
+                start.offset()
+            } else {
+                0
+            };
+            let to = if id == end.block_id {
+                end.offset()
+            } else {
+                block.body.plain.encode_utf16().count() as u64
+            };
+            if to > from {
+                ranges.push((id, from, to - from));
+            }
+        }
+        let now = self.now_ms(cx) as u64;
+        let page = self.page_mut()?;
+        let before = selection.snapshot(page)?;
+        let commit = page.structural_edit(now, |page| {
+            if let Some(align) = align {
+                for id in &blocks {
+                    page.set_block_prop(
+                        id,
+                        "prop:textAlign",
+                        SessionValue::Any(Any::String(align.as_str().to_string())),
+                        now,
+                    )?;
+                }
+            }
+            if let Some(url) = &link {
+                for (id, from, len) in &ranges {
+                    let value = url.clone().map_or(Any::Null, Any::String);
+                    page.format_text(
+                        id,
+                        "prop:text",
+                        *from,
+                        *len,
+                        TextAttributes::from([("link".to_string(), value)]),
+                        now,
+                    )?;
+                }
+            }
+            Ok(())
+        })?;
+        if commit.is_some() {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        self.editor.last_typing = None;
+        self.did_edit(commit, None, window, cx);
+        Ok(())
+    }
+
+    /// Run a slash menu command on a block in one undo step, the way BlockSuite's menu
+    /// does.
+    ///
+    /// A command typed into the block (`typed`) goes first: the `/` and the filter behind
+    /// it are removed, and nothing at all happens when [`Self::typed_slash`] no longer
+    /// finds them. A paragraph type, a list type or code then converts the block, with
+    /// whatever text it has left, in place within a flavour and as a fresh block across
+    /// flavours. A divider goes right below the block, followed by an empty paragraph to
+    /// type in when the block was the last of its parent.
+    pub(super) fn run_slash_command(
+        &mut self,
+        block_id: &str,
+        command: SlashCommand,
+        typed: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
+        let snapshot = self
+            .snapshot
+            .clone()
+            .ok_or_else(|| DocError::InvalidState("missing page".into()))?;
+        let (parent, slot) = snapshot
+            .root
+            .as_ref()
+            .and_then(|root| find_parent(root, block_id))
+            .ok_or_else(|| DocError::BlockNotFound(block_id.to_string()))?;
+        let node = &parent.children[slot];
+        let parent_id = parent.id.as_str();
+
+        let trigger = self.editor.slash_trigger.take();
+        let strip = if typed {
+            let found = trigger
+                .filter(|(trigger, _)| trigger == block_id)
+                .and_then(|(_, position)| self.typed_slash(block_id, &position));
+            // The typed command is gone or was changed under the menu: leave the text alone.
+            let Some((slash, caret, _)) = found else {
+                return Ok(());
+            };
+            Some((slash, caret - slash))
+        } else {
+            None
+        };
+        // Where the caret ends up in the block's text: where the `/` was, or where it is.
+        let offset = strip.map(|(slash, _)| slash).unwrap_or_else(|| {
+            self.editor
+                .selection
+                .as_ref()
+                .filter(|selection| selection.focus.block_id == block_id)
+                .map_or(0, |selection| selection.focus.offset())
+        });
+
+        let fresh = self.fresh_block_id();
+        let trailing = self.fresh_block_id();
+        let text_block =
+            |node: &BlockNode| matches!(node.flavour.as_str(), "affine:paragraph" | "affine:list");
+        let plan = if command == SlashCommand::Divider {
+            match parent.children.get(slot + 1) {
+                None => SlashPlan::Divider {
+                    trailing: true,
+                    caret: DocPoint::new(&trailing, 0),
+                },
+                Some(next) => SlashPlan::Divider {
+                    trailing: false,
+                    caret: if text_block(next) || next.flavour == "affine:code" {
+                        DocPoint::new(&next.id, 0)
+                    } else {
+                        DocPoint::new(block_id, offset)
+                    },
+                },
+            }
+        } else if text_block(node) {
+            let same = command.block_spec().flavour() == node.flavour;
+            SlashPlan::Convert {
+                caret: DocPoint::new(if same { block_id } else { &fresh }, offset),
+            }
+        } else {
+            // A block without text to carry over keeps what it is; the new block goes
+            // below it.
+            SlashPlan::Insert {
+                caret: DocPoint::new(&fresh, 0),
+            }
+        };
+        let numbered = matches!(command, SlashCommand::List(ListType::Numbered));
+        let before = self.selection_snapshot();
+        let now = self.now_ms(cx) as u64;
+        let page = self.page_mut()?;
+        let commit = page.structural_edit(now, |page| {
+            if let Some((slash, len)) = strip {
+                page.remove_text(block_id, "prop:text", slash, len, now)?;
+            }
+            match &plan {
+                SlashPlan::Convert { .. } => {
+                    page.convert_block_flavour(block_id, &fresh, command.block_spec(), now)?;
+                }
+                SlashPlan::Insert { .. } => {
+                    page.add_block(
+                        &fresh,
+                        command.block_spec(),
+                        Some(parent_id),
+                        Some(slot as u64 + 1),
+                        now,
+                    )?;
+                    if numbered {
+                        page.correct_numbered_order_from(parent_id, slot + 1, 1)?;
+                    }
+                }
+                SlashPlan::Divider { trailing: last, .. } => {
+                    page.add_block(
+                        &fresh,
+                        BlockSpec::Divider,
+                        Some(parent_id),
+                        Some(slot as u64 + 1),
+                        now,
+                    )?;
+                    if *last {
+                        page.add_block(
+                            &trailing,
+                            SlashCommand::Paragraph(ParagraphType::Text).block_spec(),
+                            Some(parent_id),
+                            Some(slot as u64 + 2),
+                            now,
+                        )?;
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        if commit.is_some()
+            && let Some(before) = before
+        {
+            page.set_undo_selection_snapshot(before)?;
+        }
+        let (SlashPlan::Convert { caret }
+        | SlashPlan::Insert { caret }
+        | SlashPlan::Divider { caret, .. }) = plan;
+        self.editor.selection = Some(DocumentSelection::caret(caret));
+        self.editor.last_typing = None;
+        self.did_edit(commit, None, window, cx);
+        Ok(())
+    }
+}
+
+/// What a slash command does to the document, and where it leaves the caret.
+#[derive(Clone)]
+enum SlashPlan {
+    /// Convert the block itself.
+    Convert { caret: DocPoint },
+    /// Add the new block below a block that cannot be converted.
+    Insert { caret: DocPoint },
+    /// Add a divider below the block, and an empty paragraph after it when `trailing`.
+    Divider { trailing: bool, caret: DocPoint },
+}

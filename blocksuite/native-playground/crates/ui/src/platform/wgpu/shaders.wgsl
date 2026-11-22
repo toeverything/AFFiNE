@@ -594,7 +594,25 @@ fn vs_quad(@builtin(vertex_index) vertex_id: u32, @builtin(instance_index) insta
     out.background_color0 = gradient.color0;
     out.background_color1 = gradient.color1;
     out.border_color = hsla_to_rgba(quad.border_color);
-    out.quad_id = instance_id;
+    // Bit 31 (0x80000000u) of out.quad_id packs fast_solid so fs_quad returns
+    // background_solid without calling load_quad; any reader of input.quad_id
+    // before that early return must mask off 0x80000000u.
+    let fast_solid = quad.background.tag == 0u &&
+        abs(quad.transformation.rotation_scale[0][1]) <= 1e-5 &&
+        abs(quad.transformation.rotation_scale[1][0]) <= 1e-5 &&
+        quad.border_widths.top == 0.0 &&
+        quad.border_widths.left == 0.0 &&
+        quad.border_widths.right == 0.0 &&
+        quad.border_widths.bottom == 0.0 &&
+        quad.corner_radii.top_left == 0.0 &&
+        quad.corner_radii.bottom_left == 0.0 &&
+        quad.corner_radii.top_right == 0.0 &&
+        quad.corner_radii.bottom_right == 0.0 &&
+        quad.bounds.origin.x >= quad.local_content_mask.origin.x &&
+        quad.bounds.origin.y >= quad.local_content_mask.origin.y &&
+        quad.bounds.origin.x + quad.bounds.size.x <= quad.local_content_mask.origin.x + quad.local_content_mask.size.x &&
+        quad.bounds.origin.y + quad.bounds.size.y <= quad.local_content_mask.origin.y + quad.local_content_mask.size.y;
+    out.quad_id = select(instance_id, instance_id | 0x80000000u, fast_solid);
     out.clip_distances = distance_from_clip_rect_transformed(unit_vertex, quad.bounds, quad.content_mask, quad.transformation);
     return out;
 }
@@ -604,6 +622,10 @@ fn fs_quad(input: QuadVarying) -> @location(0) vec4<f32> {
     // Alpha clip first, since we don't have `clip_distance`.
     if (any(input.clip_distances < vec4<f32>(0.0))) {
         return vec4<f32>(0.0);
+    }
+
+    if ((input.quad_id & 0x80000000u) != 0u) {
+        return blend_color(input.background_solid, 1.0);
     }
 
     let quad = load_quad(input.quad_id);

@@ -21,7 +21,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "bs-harness"
-path = "src/bin/bs_harness.rs"
+path = "src/bin/bs_harness/main.rs"
 required-features = ["harness"]
 
 [dependencies]

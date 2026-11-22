@@ -46,11 +46,13 @@ if grep -rn 'is_headless' crates/playground/src 2>/dev/null; then
   fail "is_headless branches are forbidden in crates/playground/src"
 fi
 TESTER_CFG_HITS=$(
-  grep -rnE '#\[cfg\((any\(test|feature\s*=\s*"harness")' crates/playground/src/lib.rs crates/playground/src/main.rs 2>/dev/null || true
+  grep -rnE '#\[cfg\((any\(test|feature\s*=\s*"harness")' crates/playground/src 2>/dev/null \
+    | grep -Ev '^crates/playground/src/(bin/|rich_text/mod\.rs:)' \
+    || true
 )
 if [ -n "$TESTER_CFG_HITS" ]; then
   echo "$TESTER_CFG_HITS" >&2
-  fail "Inline harness/test cfg branches are forbidden in crates/playground/src/lib.rs and main.rs"
+  fail "Inline harness/test cfg branches are forbidden in shipping crates/playground/src modules"
 fi
 
 echo "==> Checking Rust module structure, visibility, orphaned files, and per-file LOC"
@@ -73,14 +75,14 @@ def strip_cfg_test_mods(src: str) -> str:
         if s == "#[cfg(test)]" and i + 1 < n and re.match(r"^(pub(\([^)]*\))?\s+)?mod\s+\w+\s*\{", lines[i + 1].strip()):
             depth = 0
             started = False
-            out.append("")
+            out.append("<TEST>")
             i += 1
             while i < n:
                 line = lines[i]
                 if "{" in line:
                     started = True
                 depth += line.count("{") - line.count("}")
-                out.append("")
+                out.append("<TEST>")
                 i += 1
                 if started and depth <= 0:
                     break
@@ -139,13 +141,10 @@ for src_root in roots:
                 if pat in line:
                     errors.append(f"{p}:{lineno}: use `super::` instead of `{pat}` inside submodule")
 
-        # Rule (g): <= 800 non-test lines on `crates/playground/src/{edgeless,surface}/*.rs`.
-        if src_root == Path("crates/playground/src") and len(rel.parts) >= 2 and rel.parts[0] in ("edgeless", "surface"):
-            actual_non_test = sum(
-                1 for orig, stripped in zip(text.splitlines(), non_test_lines) if orig == stripped
-            )
-            if actual_non_test > 800:
-                errors.append(f"{p}: {actual_non_test} non-test lines exceeds ceiling of 800")
+        # Rule (g): <= 800 non-test lines on every `.rs` file in `crates/doc/src` and `crates/playground/src`.
+        actual_non_test = len([1 for orig, stripped in zip(text.splitlines(), non_test_lines) if orig == stripped])
+        if actual_non_test > 800:
+            errors.append(f"{p}: {actual_non_test} non-test lines exceeds ceiling of 800")
 
     # Orphaned .rs file check.
     for p in rs_files:

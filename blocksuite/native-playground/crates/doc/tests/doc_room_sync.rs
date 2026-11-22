@@ -59,7 +59,7 @@ fn client_id_53_bit_contract() {
 }
 
 #[test]
-fn all_phase1_blocks_surface_elements_and_unknown_block_lossless() {
+fn all_block_specs_surface_elements_and_unknown_blocks_round_trip() {
     let mut ws = WorkspaceSession::new("room-schema", client_id_from_seed(1)).unwrap();
     ws.initialize_meta().unwrap();
     ws.create_page("doc:home", "Native Schema Doc", 1_700_000_000_000)

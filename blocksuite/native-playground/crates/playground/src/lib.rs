@@ -5,6 +5,7 @@
 //! rendered by [`block_flow`], with the popovers and block controls of [`overlays`] on top.
 
 pub mod block_flow;
+mod chrome;
 pub mod clipboard;
 pub mod edgeless;
 pub mod editor_session;
@@ -14,38 +15,31 @@ pub mod room_client;
 pub mod surface;
 pub mod theme;
 
+mod showcase;
+mod view_room;
+
+pub use showcase::seed_showcase_doc;
+#[cfg(target_arch = "wasm32")]
+pub use view_room::wasm_main;
+
+use view_room::{BlobFetchState, RoomRuntime};
+
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     rc::Rc,
-    sync::Arc,
     time::Duration,
 };
 
 use blocksuite_playground_doc::{
-    DocResult,
-    awareness::{AwarenessPayload, RoomAwareness, TextRangePoint, TextSelectionState},
-    client_id_from_seed,
+    awareness::{AwarenessPayload, TextRangePoint, TextSelectionState},
     read::{BlockContent, PageSnapshot},
-    schema::{BlockSpec, ListType, ParagraphType},
-    session::PageDocSession,
 };
-use ui::{
-    AnyElement, BorderStyle, Bounds, Corners, Edges, FontWeight, Motion, MotionCurve, MouseButton,
-    ScrollEvent, SharedString, Task, TextRun, Window, canvas, div, point, prelude::*, px, size,
-};
-use y_octo::{AHashMap, Any, SessionValue, TextAttributes};
+use ui::{Motion, MotionCurve, ScrollEvent, Task, Window, point, prelude::*, px, size};
 
 use crate::{
-    block_flow::{
-        BlockFlow, FlowInput, FlowLayout, ImageSlot, PAGE_SURFACE_ID, PageViewport, RemotePoint,
-        RemotePresence, RemoteSelection, decode_image, page_elements, page_geometry,
-    },
+    block_flow::{BlockFlow, FlowInput, FlowLayout, ImageSlot, decode_image, page_geometry},
     overlays::Overlays,
-    room_client::{
-        DocState, RoomCommand, RoomConfig, RoomEffects, RoomEvent, RoomLink, RoomProtocol,
-        RoomStatus,
-    },
-    theme::{FONT_SANS, Palette},
+    room_client::{DocState, RoomCommand, RoomConfig, RoomProtocol},
 };
 
 pub use crate::theme::{PlaygroundTheme, register_bundled_fonts};
@@ -132,79 +126,48 @@ impl PlaygroundOptions {
     }
 }
 
-const PILL_WIDTH: f32 = 186.0;
-const PILL_PAGE_X: f64 = 4.0;
-const PILL_EDGELESS_X: f64 = 94.0;
-const PILL_TRANSITION_MS: f64 = 200.0;
-const THEME_TOGGLE_SIZE: f32 = 32.0;
-const TOPBAR_EDGE: f32 = 12.0;
+pub(crate) const PILL_WIDTH: f32 = 186.0;
+pub(crate) const PILL_PAGE_X: f64 = 4.0;
+pub(crate) const PILL_EDGELESS_X: f64 = 94.0;
+pub(crate) const PILL_TRANSITION_MS: f64 = 200.0;
+pub(crate) const THEME_TOGGLE_SIZE: f32 = 32.0;
+pub(crate) const TOPBAR_EDGE: f32 = 12.0;
 const SCROLL_LINE: f32 = 20.0;
-
-/// Images whose blob is still missing after this many fetches show as unavailable.
-const BLOB_MISSES_SHOWN_UNAVAILABLE: u32 = 3;
-/// Longest wait between two fetches of a blob the relay does not have yet.
-const BLOB_RETRY_MAX_MS: u64 = 4_000;
-
-/// Wait before fetching a blob again after `misses` consecutive misses: 500 ms, doubling
-/// up to [`BLOB_RETRY_MAX_MS`].
-fn blob_retry_backoff_ms(misses: u32) -> u64 {
-    (250_u64 << misses.clamp(1, 5)).min(BLOB_RETRY_MAX_MS)
-}
-
-/// Fetch of a room blob the page references but the document state does not hold yet.
-/// It is retried for as long as the page references the blob: an uploader writes the
-/// `sourceId` into the document before its upload finishes, and the relay announces no
-/// completed upload.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct BlobFetchState {
-    in_flight: bool,
-    /// Consecutive fetches that found no blob.
-    misses: u32,
-    /// Scheduler time of the next fetch, once none is in flight.
-    next_retry_ms: u64,
-}
-
-struct RoomRuntime {
-    config: RoomConfig,
-    protocol: RoomProtocol,
-    link: RoomLink,
-    error: Option<String>,
-}
 
 type LayoutKey = (u64, u32, PlaygroundTheme, u64);
 
 /// Interactive GPUI root view for desktop, Web canvas, and headless verification sessions.
 pub struct PlaygroundView {
-    mode: PlaygroundMode,
-    theme: PlaygroundTheme,
-    origin_time: ui::scheduler::Instant,
-    pill_motion: Option<Motion>,
-    editor: editor_session::EditorSession,
-    editor_focus: ui::FocusHandle,
-    reading_anchor: Option<(String, f32)>,
-    state: DocState,
-    room: Option<RoomRuntime>,
-    page_id: Option<String>,
-    snapshot: Option<Rc<PageSnapshot>>,
-    page_titles: BTreeMap<String, String>,
+    pub(crate) mode: PlaygroundMode,
+    pub(crate) theme: PlaygroundTheme,
+    pub(crate) origin_time: ui::scheduler::Instant,
+    pub(crate) pill_motion: Option<Motion>,
+    pub(crate) editor: editor_session::EditorSession,
+    pub(crate) editor_focus: ui::FocusHandle,
+    pub(crate) reading_anchor: Option<(String, f32)>,
+    pub(crate) state: DocState,
+    pub(crate) room: Option<RoomRuntime>,
+    pub(crate) page_id: Option<String>,
+    pub(crate) snapshot: Option<Rc<PageSnapshot>>,
+    pub(crate) page_titles: BTreeMap<String, String>,
     /// What each referenced image shows. An entry without a pending fetch was decoded
     /// from its blob and is final.
-    images: HashMap<String, ImageSlot>,
-    blob_fetches: BTreeMap<String, BlobFetchState>,
-    dirty_text: Option<BTreeSet<String>>,
-    doc_rev: u64,
-    env_rev: u64,
-    flow: BlockFlow,
-    layout: Option<(LayoutKey, Rc<FlowLayout>)>,
-    scroll_y: f32,
-    max_scroll: f32,
+    pub(crate) images: HashMap<String, ImageSlot>,
+    pub(crate) blob_fetches: BTreeMap<String, BlobFetchState>,
+    pub(crate) dirty_text: Option<BTreeSet<String>>,
+    pub(crate) doc_rev: u64,
+    pub(crate) env_rev: u64,
+    pub(crate) flow: BlockFlow,
+    pub(crate) layout: Option<(LayoutKey, Rc<FlowLayout>)>,
+    pub(crate) scroll_y: f32,
+    pub(crate) max_scroll: f32,
     /// Window size of the latest frame, in logical pixels.
-    window_size: (f32, f32),
-    edgeless: edgeless::EdgelessCanvasState,
-    overlays: Overlays,
+    pub(crate) window_size: (f32, f32),
+    pub(crate) edgeless: edgeless::EdgelessCanvasState,
+    pub(crate) overlays: Overlays,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
-    copied_timer: Option<Task<()>>,
-    _tasks: Vec<Task<()>>,
+    pub(crate) copied_timer: Option<Task<()>>,
+    pub(crate) _tasks: Vec<Task<()>>,
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -214,7 +177,9 @@ fn fresh_client_id() -> u64 {
 
 #[cfg(target_family = "wasm")]
 fn fresh_client_id() -> u64 {
-    client_id_from_seed((js_sys::Math::random() * 9_007_199_254_740_992.0) as u64)
+    blocksuite_playground_doc::client_id_from_seed(
+        (js_sys::Math::random() * 9_007_199_254_740_992.0) as u64,
+    )
 }
 
 impl PlaygroundView {
@@ -336,13 +301,18 @@ impl PlaygroundView {
         self.edgeless.last_frame_relayouts
     }
 
-    fn edgeless_viewport_size(&self) -> (f32, f32) {
+    pub(crate) fn edgeless_viewport_size(&self) -> (f32, f32) {
         let vw = self.window_size.0.max(1.0);
         let vh = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
         (vw, vh)
     }
 
-    fn on_edgeless_scroll(&mut self, event: &ScrollEvent, _: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_edgeless_scroll(
+        &mut self,
+        event: &ScrollEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
         if event.modifiers.control || event.modifiers.platform {
@@ -360,7 +330,7 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    fn on_edgeless_pan_start(
+    pub(crate) fn on_edgeless_pan_start(
         &mut self,
         event: &ui::MouseDownEvent,
         _: &mut Window,
@@ -370,7 +340,7 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    fn on_edgeless_pan_end(
+    pub(crate) fn on_edgeless_pan_end(
         &mut self,
         _: &ui::MouseUpEvent,
         _: &mut Window,
@@ -438,138 +408,10 @@ impl PlaygroundView {
         self.layout.as_ref().map(|(_, layout)| layout.clone())
     }
 
-    /// Connection state of the live room, `None` for the showcase document.
-    pub fn room_status(&self) -> Option<RoomStatus> {
-        self.room.as_ref().map(|room| room.protocol.status())
-    }
-
-    /// Handle every room event already delivered by the transport; returns how many.
-    ///
-    /// The view also handles events as they arrive on its own; hosts that step the
-    /// application manually call this to apply what is queued right now.
-    pub fn pump_room(&mut self, cx: &mut Context<Self>) -> usize {
-        let Some(events) = self.room.as_ref().map(|room| room.link.events().clone()) else {
-            return 0;
-        };
-        let mut handled = 0;
-        while let Ok(event) = events.try_recv() {
-            self.handle_room_event(event, cx);
-            handled += 1;
-        }
-        handled
-    }
-
-    fn now_ms(&self, cx: &Context<Self>) -> f64 {
-        cx.background_executor()
-            .now()
-            .saturating_duration_since(self.origin_time)
-            .as_secs_f64()
-            * 1000.0
-    }
-
-    fn handle_room_event(&mut self, event: RoomEvent, cx: &mut Context<Self>) {
-        let now_ms = self.now_ms(cx) as u64;
-        let Some(room) = self.room.as_mut() else {
-            return;
-        };
-        let effects = match event {
-            RoomEvent::Opened => {
-                let effects = room.protocol.on_open(&mut self.state, now_ms);
-                // A fresh connection fetches every missing blob again right away.
-                for (source_id, fetch) in &mut self.blob_fetches {
-                    fetch.misses = 0;
-                    fetch.next_retry_ms = now_ms;
-                    if !fetch.in_flight {
-                        fetch.in_flight = true;
-                        room.link.send(RoomCommand::FetchBlob(source_id.clone()));
-                    }
-                    if matches!(self.images.get(source_id), Some(ImageSlot::Unavailable)) {
-                        self.images.insert(source_id.clone(), ImageSlot::Loading);
-                        self.env_rev += 1;
-                    }
-                }
-                effects
-            }
-            RoomEvent::Frame(frame) => room.protocol.on_frame(&mut self.state, &frame, now_ms),
-            RoomEvent::Closed(reason) => Ok(room.protocol.on_close(reason)),
-            RoomEvent::Blob {
-                source_id,
-                bytes: Some(bytes),
-            } => {
-                // Present bytes are decoded once; bytes that are no image stay unavailable
-                // and are never fetched again.
-                self.blob_fetches.remove(&source_id);
-                let slot = decode_image(&bytes).map_or(ImageSlot::Unavailable, ImageSlot::Ready);
-                self.state.blobs.insert(source_id.clone(), Arc::new(bytes));
-                self.images.insert(source_id, slot);
-                self.env_rev += 1;
-                Ok(RoomEffects::default())
-            }
-            RoomEvent::Blob {
-                source_id,
-                bytes: None,
-            } => {
-                if let Some(fetch) = self.blob_fetches.get_mut(&source_id) {
-                    fetch.in_flight = false;
-                    fetch.misses = fetch.misses.saturating_add(1);
-                    fetch.next_retry_ms =
-                        now_ms.saturating_add(blob_retry_backoff_ms(fetch.misses));
-                    // The frame says so after a few misses; the fetch keeps retrying.
-                    if fetch.misses >= BLOB_MISSES_SHOWN_UNAVAILABLE
-                        && !matches!(self.images.get(&source_id), Some(ImageSlot::Unavailable))
-                    {
-                        self.images.insert(source_id, ImageSlot::Unavailable);
-                        self.env_rev += 1;
-                    }
-                }
-                Ok(RoomEffects::default())
-            }
-        };
-        match effects {
-            Ok(effects) => {
-                room.error = None;
-                for frame in effects.outbound {
-                    room.link.send(RoomCommand::Send(frame));
-                }
-                if effects.doc_changed {
-                    self.capture_reading_anchor();
-                    self.refresh_document();
-                    self.resolve_remote_selection(cx);
-                }
-            }
-            Err(err) => room.error = Some(err.to_string()),
-        }
-        cx.notify();
-    }
-
-    fn tick_room(&mut self, cx: &mut Context<Self>) {
-        let now_ms = self.now_ms(cx) as u64;
-        let Some(room) = self.room.as_mut() else {
-            return;
-        };
-        if let Ok(effects) = room.protocol.tick(&mut self.state, now_ms) {
-            for frame in effects.outbound {
-                room.link.send(RoomCommand::Send(frame));
-            }
-            if effects.awareness_changed {
-                cx.notify();
-            }
-        }
-        // Fetch missing blobs again once their backoff ran out, unless the room is offline.
-        if !matches!(room.protocol.status(), RoomStatus::Offline(_)) {
-            for (source_id, fetch) in &mut self.blob_fetches {
-                if !fetch.in_flight && now_ms >= fetch.next_retry_ms {
-                    fetch.in_flight = true;
-                    room.link.send(RoomCommand::FetchBlob(source_id.clone()));
-                }
-            }
-        }
-    }
-
     pub fn scroll_offset(&self) -> f32 {
         self.scroll_y
     }
-    fn capture_reading_anchor(&mut self) {
+    pub(crate) fn capture_reading_anchor(&mut self) {
         if self.reading_anchor.is_none() && self.scroll_y > 0.0 {
             self.reading_anchor = self.flow_layout().and_then(|layout| {
                 layout
@@ -582,7 +424,7 @@ impl PlaygroundView {
     }
 
     /// Re-read the shown page from the workspace and bring images in line with the blobs.
-    fn refresh_document(&mut self) {
+    pub(crate) fn refresh_document(&mut self) {
         self.dirty_text = None;
         let pages = self.state.workspace.list_pages().unwrap_or_default();
         let titles: BTreeMap<String, String> = pages
@@ -657,21 +499,26 @@ impl PlaygroundView {
         }
     }
 
-    fn target_pill_x(mode: PlaygroundMode) -> f64 {
+    pub(crate) fn target_pill_x(mode: PlaygroundMode) -> f64 {
         match mode {
             PlaygroundMode::Page => PILL_PAGE_X,
             PlaygroundMode::Edgeless => PILL_EDGELESS_X,
         }
     }
 
-    fn indicator_x(&self, now_ms: f64) -> f64 {
+    pub(crate) fn indicator_x(&self, now_ms: f64) -> f64 {
         match self.pill_motion {
             Some(motion) => motion.value_at(now_ms),
             None => Self::target_pill_x(self.mode),
         }
     }
 
-    fn set_mode(&mut self, target: PlaygroundMode, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn set_mode(
+        &mut self,
+        target: PlaygroundMode,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         if self.mode == target {
             return;
         }
@@ -698,7 +545,12 @@ impl PlaygroundView {
         cx.notify();
     }
 
-    fn on_scroll(&mut self, event: &ScrollEvent, _: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn on_scroll(
+        &mut self,
+        event: &ScrollEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let delta = event.delta.pixel_delta(px(SCROLL_LINE));
         // A sideways scroll over an unwrapped code block scrolls its lines, not the page.
         if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
@@ -722,71 +574,7 @@ impl PlaygroundView {
         }
     }
 
-    /// Remote collaborators of the shown page, ordered by client id.
-    fn remote_presences(&self, palette: &Palette) -> Vec<RemotePresence> {
-        const FALLBACK_COLORS: [&str; 8] = [
-            "--affine-multi-players-purple",
-            "--affine-multi-players-magenta",
-            "--affine-multi-players-red",
-            "--affine-multi-players-orange",
-            "--affine-multi-players-green",
-            "--affine-multi-players-blue",
-            "--affine-multi-players-brown",
-            "--affine-multi-players-grey",
-        ];
-        let awareness = &self.state.awareness;
-        awareness
-            .active_remote_clients()
-            .into_iter()
-            .filter_map(|client_id| {
-                let payload = awareness.get_payload(client_id)?;
-                let color = self.theme.css_color(&payload.color).unwrap_or_else(|| {
-                    let fallback = FALLBACK_COLORS[(client_id % 8) as usize];
-                    self.theme.css_var(fallback).unwrap_or(palette.brand)
-                });
-                Some(RemotePresence {
-                    client_id,
-                    name: payload.user.name.clone(),
-                    color,
-                    selection: self.text_selection(&payload),
-                })
-            })
-            .collect()
-    }
-
-    /// The collaborator's text selection in the shown page, if it has one.
-    fn text_selection(&self, payload: &AwarenessPayload) -> Option<RemoteSelection> {
-        let page_id = self.page_id.as_deref()?;
-        // BlockSuite keys `selectionV2` by `${store.id}:${nanoid()}`, and a bare page id is
-        // accepted too. JS matches entries with `startsWith(store.id)`; splitting at the
-        // last colon is deliberately stricter, so `doc:home` never picks up the selections
-        // of `doc:home2` or `doc:home:archive`, and a selection in another page is never
-        // shown in this one.
-        let selection = payload
-            .selection_v2
-            .iter()
-            .filter(|(key, _)| {
-                key.as_str() == page_id
-                    || key
-                        .rsplit_once(':')
-                        .is_some_and(|(store, id)| store == page_id && !id.is_empty())
-            })
-            .flat_map(|(_, selections)| selections)
-            .filter_map(|value| serde_json::from_value::<TextSelectionState>(value.clone()).ok())
-            .find(|selection| selection.kind == "text")?;
-        let remote_point = |point: TextRangePoint| RemotePoint {
-            block_id: point.block_id,
-            index: usize::try_from(point.index).unwrap_or(usize::MAX),
-            length: usize::try_from(point.length).unwrap_or(0),
-        };
-        Some(RemoteSelection {
-            from: remote_point(selection.from),
-            to: selection.to.map(remote_point),
-            reverse: selection.reverse.unwrap_or(false),
-        })
-    }
-
-    fn ensure_layout(&mut self, width: f32, window: &Window) -> Option<Rc<FlowLayout>> {
+    pub(crate) fn ensure_layout(&mut self, width: f32, window: &Window) -> Option<Rc<FlowLayout>> {
         let snapshot = self.snapshot.clone()?;
         let key = (self.doc_rev, width.to_bits(), self.theme, self.env_rev);
         if let Some((cached, layout)) = &self.layout
@@ -816,1356 +604,20 @@ impl PlaygroundView {
         self.layout = Some((key, layout.clone()));
         Some(layout)
     }
-
-    fn render_mode_switcher(
-        &mut self,
-        palette: &Palette,
-        left: f32,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement + use<> {
-        let now_ms = self.now_ms(cx);
-        let raw_indicator_x = self.indicator_x(now_ms);
-        if let Some(motion) = self.pill_motion {
-            if motion.is_finished(now_ms) {
-                self.pill_motion = None;
-            } else {
-                window.request_animation_frame();
-            }
-        }
-        let indicator_x = raw_indicator_x.round() as f32;
-        let is_page = self.mode == PlaygroundMode::Page;
-        let is_edgeless = self.mode == PlaygroundMode::Edgeless;
-
-        let indicator = div()
-            .absolute()
-            .left(px(indicator_x))
-            .top(px(4.0))
-            .w(px(86.0))
-            .h(px(26.0))
-            .rounded(px(6.0))
-            .bg(palette.background)
-            .border_1()
-            .border_color(palette.brand)
-            .snapshot(
-                "chrome.mode_switcher.indicator",
-                Some("chrome.mode_switcher"),
-            );
-
-        let segment = |id: &'static str, x: f64, active: bool| {
-            div()
-                .id(id)
-                .absolute()
-                .left(px(x as f32))
-                .top(px(4.0))
-                .w(px(86.0))
-                .h(px(26.0))
-                .rounded(px(6.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .cursor_pointer()
-                .text_color(if active {
-                    palette.text_primary
-                } else {
-                    palette.text_secondary
-                })
-                .text_size(px(13.0))
-                .font_weight(FontWeight::MEDIUM)
-        };
-
-        let page_button = segment("mode-page", PILL_PAGE_X, is_page)
-            .on_click(cx.listener(|this, _, window, cx| {
-                this.set_mode(PlaygroundMode::Page, window, cx);
-            }))
-            .snapshot("chrome.mode_switcher.page", Some("chrome.mode_switcher"))
-            .snapshot_focused(is_page)
-            .snapshot_text("Page")
-            .child("Page");
-
-        let edgeless_button = segment("mode-edgeless", PILL_EDGELESS_X, is_edgeless)
-            .on_click(cx.listener(|this, _, window, cx| {
-                this.set_mode(PlaygroundMode::Edgeless, window, cx);
-            }))
-            .snapshot(
-                "chrome.mode_switcher.edgeless",
-                Some("chrome.mode_switcher"),
-            )
-            .snapshot_focused(is_edgeless)
-            .snapshot_text("Edgeless")
-            .child("Edgeless");
-
-        div()
-            .absolute()
-            .left(px(left))
-            .top(px(8.0))
-            .w(px(PILL_WIDTH))
-            .h(px(36.0))
-            .p(px(4.0))
-            .rounded(px(10.0))
-            .bg(palette.background_secondary)
-            .border_1()
-            .border_color(palette.border)
-            .snapshot("chrome.mode_switcher", Some("chrome.topbar"))
-            .child(indicator)
-            .child(page_button)
-            .child(edgeless_button)
-    }
-
-    fn render_theme_toggle(
-        &self,
-        palette: &Palette,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement + use<> {
-        let ink = palette.text_primary;
-        let hover = palette.hover;
-        div()
-            .id("theme-toggle")
-            .flex_none()
-            .w(px(THEME_TOGGLE_SIZE))
-            .h(px(THEME_TOGGLE_SIZE))
-            .rounded(px(8.0))
-            .bg(palette.background)
-            .border_1()
-            .border_color(palette.border)
-            .cursor_pointer()
-            .hover(move |style| style.bg(hover))
-            .on_click(cx.listener(|this, _, _, cx| {
-                let next = this.theme.toggled();
-                this.set_theme(next, cx);
-            }))
-            .snapshot("chrome.theme_toggle", Some("chrome.topbar"))
-            .snapshot_text(match self.theme {
-                PlaygroundTheme::Light => "Light",
-                PlaygroundTheme::Dark => "Dark",
-            })
-            .child(
-                // Contrast glyph: a ring whose left half is filled.
-                canvas(
-                    |_, _, _| (),
-                    move |bounds, _, window, _| {
-                        let glyph = Bounds::new(
-                            point(
-                                bounds.origin.x + (bounds.size.width - px(14.0)) / 2.0,
-                                bounds.origin.y + (bounds.size.height - px(14.0)) / 2.0,
-                            ),
-                            size(px(14.0), px(14.0)),
-                        );
-                        window.paint_quad(ui::quad(
-                            glyph,
-                            Corners::all(px(7.0)),
-                            ui::transparent_black(),
-                            Edges::all(px(1.5)),
-                            ink,
-                            BorderStyle::Solid,
-                        ));
-                        window.paint_quad(ui::quad(
-                            Bounds::new(glyph.origin, size(px(7.0), px(14.0))),
-                            Corners {
-                                top_left: px(7.0),
-                                top_right: px(0.0),
-                                bottom_right: px(0.0),
-                                bottom_left: px(7.0),
-                            },
-                            ink,
-                            Edges::all(px(0.0)),
-                            ui::transparent_black(),
-                            BorderStyle::Solid,
-                        ));
-                    },
-                )
-                .size_full(),
-            )
-    }
-
-    /// Presence badges that fit in `available` px: name pills on regular viewports,
-    /// initials on narrow ones, and a `+N` chip for collaborators that do not fit.
-    fn render_presence(
-        presences: &[RemotePresence],
-        palette: &Palette,
-        available: f32,
-        compact: bool,
-        window: &Window,
-    ) -> Vec<AnyElement> {
-        const NAME_MAX: f32 = 72.0;
-        let slot = if compact {
-            32.0
-        } else {
-            8.0 + 8.0 + 6.0 + NAME_MAX + 10.0 + 8.0
-        };
-        let capacity = ((available / slot).floor().max(0.0) as usize).min(3);
-        if capacity == 0 || presences.is_empty() {
-            return Vec::new();
-        }
-        let shown = if presences.len() > capacity {
-            capacity - 1
-        } else {
-            presences.len()
-        };
-        let mut badges = Vec::new();
-        let hidden = presences.len() - shown;
-        if hidden > 0 {
-            badges.push(
-                div()
-                    .flex_none()
-                    .w(px(24.0))
-                    .h(px(24.0))
-                    .rounded(px(12.0))
-                    .bg(palette.background_secondary)
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .text_size(px(11.0))
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(palette.text_secondary)
-                    .snapshot("chrome.presence.more", Some("chrome.topbar"))
-                    .snapshot_text(format!("+{hidden}"))
-                    .child(format!("+{hidden}"))
-                    .into_any_element(),
-            );
-        }
-        for presence in &presences[..shown] {
-            let id = SharedString::from(format!("chrome.presence.{}", presence.client_id));
-            let name = SharedString::from(presence.name.clone());
-            let badge = if compact {
-                let initial: String = presence
-                    .name
-                    .chars()
-                    .find(|ch| ch.is_alphanumeric())
-                    .map(|ch| ch.to_uppercase().collect())
-                    .unwrap_or_else(|| "?".to_string());
-                div()
-                    .flex_none()
-                    .w(px(24.0))
-                    .h(px(24.0))
-                    .rounded(px(12.0))
-                    .bg(presence.color)
-                    .flex()
-                    .items_center()
-                    .justify_center()
-                    .text_size(px(12.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(palette.on_accent)
-                    .snapshot(id, Some("chrome.topbar"))
-                    .snapshot_text(name)
-                    .child(initial)
-            } else {
-                // The name box gets an explicit whole-pixel width so the pill stays on
-                // the pixel grid whatever the name measures.
-                let mut font = ui::font(FONT_SANS);
-                font.weight = FontWeight::MEDIUM;
-                let measured = window.text_system().shape_line(
-                    name.clone(),
-                    px(12.0),
-                    &[TextRun {
-                        len: name.len(),
-                        font,
-                        color: palette.text_primary,
-                        background_color: None,
-                        underline: None,
-                        strikethrough: None,
-                    }],
-                    None,
-                );
-                let name_width = f32::from(measured.width()).ceil().min(NAME_MAX);
-                div()
-                    .flex_none()
-                    .h(px(24.0))
-                    .pl(px(8.0))
-                    .pr(px(10.0))
-                    .rounded(px(12.0))
-                    .bg(presence.color.opacity(0.14))
-                    .flex()
-                    .items_center()
-                    .gap(px(6.0))
-                    .snapshot(id, Some("chrome.topbar"))
-                    .snapshot_text(name.clone())
-                    .child(
-                        div()
-                            .flex_none()
-                            .w(px(8.0))
-                            .h(px(8.0))
-                            .rounded(px(4.0))
-                            .bg(presence.color),
-                    )
-                    .child(
-                        div()
-                            .flex_none()
-                            .w(px(name_width))
-                            .truncate()
-                            .text_size(px(12.0))
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(palette.text_primary)
-                            .child(name),
-                    )
-            };
-            badges.push(badge.into_any_element());
-        }
-        badges
-    }
-
-    fn render_page(
-        &mut self,
-        palette: &Palette,
-        viewport_width: f32,
-        viewport_height: f32,
-        presences: &[RemotePresence],
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> AnyElement {
-        if window.focused(cx).is_none() {
-            self.editor_focus.focus(window, cx);
-        }
-        let geometry = page_geometry(viewport_width);
-        let surface = div()
-            .id("page-viewport")
-            .relative()
-            .flex_1()
-            .w_full()
-            .min_h_0()
-            .overflow_hidden()
-            .bg(palette.background)
-            .track_focus(&self.editor_focus)
-            .on_mouse_down(MouseButton::Left, cx.listener(Self::page_mouse_down))
-            .on_key_down(cx.listener(Self::editor_key_down))
-            .on_scroll(cx.listener(Self::on_scroll))
-            .snapshot(PAGE_SURFACE_ID, Some("root.canvas"));
-
-        let Some(layout) = self.ensure_layout(geometry.column_width, window) else {
-            self.max_scroll = 0.0;
-            self.scroll_y = 0.0;
-            return surface
-                .child(self.render_status(palette, &geometry))
-                .into_any_element();
-        };
-        self.max_scroll = (layout.height - viewport_height).max(0.0).ceil();
-        if let Some((id, screen_y)) = self.reading_anchor.take()
-            && let Some(block) = layout.block(&id)
-        {
-            self.scroll_y = (block.y - screen_y).round();
-        }
-        self.reveal_caret(viewport_height);
-        self.scroll_y = self.scroll_y.clamp(0.0, self.max_scroll);
-        let viewport = PageViewport {
-            column_x: geometry.column_x,
-            height: viewport_height,
-            scroll_y: self.scroll_y,
-        };
-        let local = self.local_selection_elements(&layout, viewport, palette);
-        let focus = self.editor_focus.clone();
-        let entity = cx.entity();
-        let marks = layout.presence_marks(presences, palette, window);
-        let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
-        surface
-            .children(page_elements(
-                &layout,
-                marks,
-                PageViewport {
-                    column_x: geometry.column_x,
-                    height: viewport_height,
-                    scroll_y: self.scroll_y,
-                },
-                &paint,
-            ))
-            .children(local)
-            .child(
-                canvas(
-                    |_, _, _| (),
-                    move |bounds, _, window, cx| {
-                        window.handle_input(
-                            &focus,
-                            ui::ElementInputHandler::new(bounds, entity),
-                            cx,
-                        )
-                    },
-                )
-                .absolute()
-                .size_full(),
-            )
-            .children(controls)
-            .into_any_element()
-    }
-
-    /// Shown while a live room has not delivered a page yet.
-    fn render_status(
-        &self,
-        palette: &Palette,
-        geometry: &block_flow::PageGeometry,
-    ) -> impl IntoElement + use<> {
-        let (headline, detail) = match &self.room {
-            Some(room) => {
-                let headline = match room.protocol.status() {
-                    RoomStatus::Connecting => format!("Connecting to room {}", room.config.room),
-                    RoomStatus::Syncing { .. } => format!("Syncing room {}", room.config.room),
-                    RoomStatus::Live => format!("Room {} has no page yet", room.config.room),
-                    RoomStatus::Offline(_) => format!("Room {} is offline", room.config.room),
-                };
-                let detail = match (room.protocol.status(), &room.error) {
-                    (_, Some(error)) => error.clone(),
-                    (RoomStatus::Offline(reason), None) => reason,
-                    (RoomStatus::Live, None) => {
-                        "The page appears here as soon as a peer creates it.".to_string()
-                    }
-                    _ => room.config.ws_url.clone(),
-                };
-                (headline, detail)
-            }
-            None => (
-                "This document has no page yet".to_string(),
-                "Add an affine:page root block to see it here.".to_string(),
-            ),
-        };
-        div()
-            .absolute()
-            .left(px(geometry.column_x))
-            .top(px(block_flow::TITLE_PADDING_Y))
-            .w(px(geometry.column_width))
-            .flex()
-            .flex_col()
-            .gap(px(8.0))
-            .snapshot("page.status", Some(PAGE_SURFACE_ID))
-            .snapshot_text(headline.clone())
-            .child(
-                div()
-                    .text_size(px(20.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(palette.text_primary)
-                    .child(headline),
-            )
-            .child(
-                div()
-                    .text_size(px(14.0))
-                    .text_color(palette.text_secondary)
-                    .child(detail),
-            )
-    }
-
-    fn render_edgeless(
-        &mut self,
-        palette: &Palette,
-        viewport_width: f32,
-        viewport_height: f32,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) -> AnyElement {
-        let Some(snapshot) = self.snapshot.clone() else {
-            return div()
-                .flex_1()
-                .w_full()
-                .min_h_0()
-                .bg(palette.background_secondary)
-                .snapshot(edgeless::EDGELESS_VIEWPORT_ID, Some("root.canvas"))
-                .into_any_element();
-        };
-
-        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
-        let vp_size = size(px(viewport_width.max(1.0)), px(viewport_height.max(1.0)));
-        if viewport_width > 0.0 && viewport_height > 0.0 {
-            self.edgeless.ensure_camera_initialized(&snapshot, vp_size);
-        }
-
-        let zoom_controls = edgeless::build_zoom_controls(
-            self.edgeless.camera.zoom,
-            viewport_width,
-            palette,
-            self.theme,
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.zoom_out(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.reset_zoom(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                this.edgeless.camera.zoom_in(vp_origin, vp_size);
-                this.edgeless.camera_initialized = true;
-                cx.notify();
-            },
-            move |this: &mut Self, _, _, cx| {
-                cx.stop_propagation();
-                if let Some(snap) = &this.snapshot {
-                    let bounds = this.edgeless.scene_world_bounds(snap);
-                    this.edgeless.camera.fit_to_bounds(bounds, vp_size, 48.0);
-                    this.edgeless.camera_initialized = true;
-                    cx.notify();
-                }
-            },
-            cx,
-        );
-        let toolbar = edgeless::build_edgeless_toolbar(
-            self.edgeless.authoring.tool,
-            viewport_width,
-            palette,
-            self.theme,
-            cx,
-        );
-
-        let render_snapshot = self
-            .preedit_snapshot()
-            .map(Rc::new)
-            .unwrap_or_else(|| Rc::clone(&snapshot));
-        let preedit_nonce = self.editor.preedit_nonce();
-        let editing_selection =
-            self.edgeless
-                .authoring
-                .editing_spatial_block()
-                .and_then(|(editing_id, is_note)| {
-                    let sel = self.editor.selection.clone()?;
-                    let focus = self.visual_focus()?;
-                    Some((editing_id.to_string(), is_note, sel, focus))
-                });
-
-        let input = edgeless::EdgelessRenderInput {
-            snapshot: &render_snapshot,
-            doc_rev: self.doc_rev,
-            env_rev: self.env_rev,
-            preedit_nonce,
-            theme: self.theme,
-            palette,
-            page_titles: &self.page_titles,
-            images: &self.images,
-            viewport_width,
-            viewport_height,
-            editing_selection,
-        };
-        let layer = edgeless::build_edgeless_layer(
-            &mut self.edgeless,
-            &input,
-            window,
-            zoom_controls,
-            toolbar,
-        );
-        let needs_text_input =
-            self.edgeless.authoring.inline_edit.is_some() || self.overlays.link_field().is_some();
-        let input_overlay = needs_text_input.then(|| {
-            let focus = self.editor_focus.clone();
-            let entity = cx.entity();
-            canvas(
-                |_, _, _| (),
-                move |bounds, _, window, cx| {
-                    window.handle_input(&focus, ui::ElementInputHandler::new(bounds, entity), cx)
-                },
-            )
-            .absolute()
-            .size_full()
-        });
-
-        div()
-            .relative()
-            .flex_1()
-            .w_full()
-            .min_h_0()
-            .flex()
-            .flex_col()
-            .track_focus(&self.editor_focus)
-            .on_key_down(cx.listener(Self::editor_key_down))
-            .on_key_up(cx.listener(|this, event: &ui::KeyUpEvent, _, _| {
-                if event.keystroke.key == "space" {
-                    this.edgeless.authoring.space_pan = false;
-                }
-            }))
-            .on_scroll(cx.listener(Self::on_edgeless_scroll))
-            .on_mouse_down(MouseButton::Left, cx.listener(Self::on_edgeless_left_down))
-            .on_mouse_down(
-                MouseButton::Middle,
-                cx.listener(Self::on_edgeless_pan_start),
-            )
-            .child(layer)
-            .children(input_overlay)
-            .into_any_element()
-    }
-}
-
-impl ui::Render for PlaygroundView {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let palette = self.theme.palette();
-        let viewport = window.viewport_size();
-        let viewport_width = f32::from(viewport.width).floor();
-        let viewport_height = (f32::from(viewport.height) - TOPBAR_HEIGHT)
-            .max(0.0)
-            .floor();
-        self.window_size = (viewport_width, f32::from(viewport.height).floor());
-
-        let presences = self.remote_presences(&palette);
-        let switcher_left = ((viewport_width - PILL_WIDTH) / 2.0).floor().max(0.0);
-        let mode_switcher = self.render_mode_switcher(&palette, switcher_left, window, cx);
-        let theme_toggle = self.render_theme_toggle(&palette, cx);
-        let presence_room = viewport_width
-            - TOPBAR_EDGE
-            - THEME_TOGGLE_SIZE
-            - 8.0
-            - (switcher_left + PILL_WIDTH + 8.0);
-        let badges = Self::render_presence(
-            &presences,
-            &palette,
-            presence_room,
-            viewport_width < 720.0,
-            window,
-        );
-
-        let content = match self.mode {
-            PlaygroundMode::Page => self.render_page(
-                &palette,
-                viewport_width,
-                viewport_height,
-                &presences,
-                window,
-                cx,
-            ),
-            PlaygroundMode::Edgeless => {
-                self.render_edgeless(&palette, viewport_width, viewport_height, window, cx)
-            }
-        };
-        let popovers = self.overlay_popovers(&palette, window, cx);
-
-        div()
-            .relative()
-            .size_full()
-            .font_family(FONT_SANS)
-            .flex()
-            .flex_col()
-            .bg(palette.background)
-            .text_color(palette.text_primary)
-            .on_mouse_move(cx.listener(Self::root_mouse_move))
-            .on_mouse_up(MouseButton::Left, cx.listener(Self::root_mouse_up))
-            .on_mouse_up(
-                MouseButton::Middle,
-                cx.listener(|this, e, w, cx| {
-                    if this.mode == PlaygroundMode::Edgeless {
-                        this.on_edgeless_pan_end(e, w, cx);
-                    }
-                }),
-            )
-            .snapshot("root.canvas", None)
-            .child(
-                div()
-                    .relative()
-                    .flex_none()
-                    .w_full()
-                    .h(px(TOPBAR_HEIGHT))
-                    .bg(palette.panel)
-                    .border_b_1()
-                    .border_color(palette.border)
-                    .snapshot("chrome.topbar", Some("root.canvas"))
-                    .child(mode_switcher)
-                    .child(
-                        div()
-                            .absolute()
-                            .right(px(TOPBAR_EDGE))
-                            .top(px(0.0))
-                            .h(px(TOPBAR_HEIGHT - 1.0))
-                            .flex()
-                            .items_center()
-                            .gap(px(8.0))
-                            .children(badges)
-                            .child(theme_toggle),
-                    ),
-            )
-            .child(content)
-            .children(popovers)
-    }
-}
-
-struct ShowcaseSeed<'a> {
-    page: &'a mut PageDocSession,
-    now_ms: u64,
-}
-
-impl ShowcaseSeed<'_> {
-    fn surface_diagram(&mut self) -> DocResult {
-        use blocksuite_playground_doc::schema::{
-            ConnectorEndpointSpec, SurfaceElementSpec as Element,
-        };
-        const SURFACE: &str = "showcase-surface";
-        let shapes = ["collect", "review"];
-        let elements = [
-            (
-                "workflow",
-                Element::Group {
-                    seed: 11,
-                    title: "Research workflow".into(),
-                    children: ["collect", "review", "handoff", "annotation", "highlight"]
-                        .map(str::to_owned)
-                        .into(),
-                },
-            ),
-            (
-                shapes[0],
-                Element::Shape {
-                    shape_type: "rect".into(),
-                    xywh: "[818,522,150,82]".into(),
-                    filled: true,
-                    seed: 31,
-                    text: Some("Collect".into()),
-                },
-            ),
-            (
-                shapes[1],
-                Element::Shape {
-                    shape_type: "rect".into(),
-                    xywh: "[988,722,156,74]".into(),
-                    filled: true,
-                    seed: 37,
-                    text: Some("Review".into()),
-                },
-            ),
-            (
-                "handoff",
-                Element::Connector {
-                    mode: 1,
-                    seed: 41,
-                    source: ConnectorEndpointSpec::element(shapes[0], Some([1., 0.5])),
-                    target: ConnectorEndpointSpec::element(shapes[1], Some([0.5, 0.])),
-                    text: Some("Synthesize".into()),
-                    label_xywh: None,
-                },
-            ),
-            (
-                "annotation",
-                Element::Brush {
-                    seed: 43,
-                    xywh: "[832,850,242,48]".into(),
-                    points: vec![
-                        vec![0., 36., 0.1],
-                        vec![30., 31., 0.6],
-                        vec![66., 7., 0.9],
-                        vec![78., 2., 0.5],
-                        vec![70., 32., 0.8],
-                        vec![95., 22., 0.6],
-                        vec![110., 26., 0.4],
-                        vec![140., 14., 0.7],
-                        vec![180., 12., 0.4],
-                        vec![242., 4., 0.1],
-                    ],
-                },
-            ),
-            (
-                "highlight",
-                Element::Highlighter {
-                    seed: 47,
-                    xywh: "[842,903,198,16]".into(),
-                    points: vec![vec![0., 10.], vec![50., 7.], vec![110., 6.], vec![198., 0.]],
-                },
-            ),
-        ];
-        for (i, (id, element)) in elements.into_iter().enumerate() {
-            let now = self.tick();
-            self.page
-                .add_surface_element(SURFACE, id, &format!("a{}", i + 1), element, now)?;
-        }
-        let color = |light: &str, dark: &str| {
-            Any::Object(Box::new(
-                [
-                    ("light".into(), Any::String(light.into())),
-                    ("dark".into(), Any::String(dark.into())),
-                ]
-                .into_iter()
-                .collect(),
-            ))
-        };
-        for (id, key, value) in [
-            ("collect", "shapeStyle", Any::String("Scribbled".into())),
-            ("collect", "fillColor", color("#8bc9be", "#396c65")),
-            ("collect", "strokeColor", color("#28665e", "#95ded0")),
-            ("collect", "color", color("#133e38", "#ecfffb")),
-            ("review", "rotate", Any::Integer(-14)),
-            ("review", "radius", Any::Float64(0.1_f64.into())),
-            ("review", "fillColor", color("#e5e9ff", "#383c6c")),
-            ("review", "strokeColor", color("#636fa7", "#aab4ff")),
-            ("review", "color", color("#303b65", "#f4f4ff")),
-            ("annotation", "lineWidth", Any::Integer(9)),
-            ("annotation", "color", color("#3e6965", "#8bcfc4")),
-            ("highlight", "color", color("#46b9a855", "#83d7bd77")),
-        ] {
-            let now = self.tick();
-            self.page
-                .set_surface_element_field(SURFACE, id, key, SessionValue::Any(value), now)?;
-        }
-        Ok(())
-    }
-
-    fn tick(&mut self) -> u64 {
-        self.now_ms += 600;
-        self.now_ms
-    }
-
-    fn add(&mut self, id: &str, spec: BlockSpec, parent: Option<&str>) -> DocResult {
-        let now_ms = self.tick();
-        self.page.add_block(id, spec, parent, None, now_ms)?;
-        Ok(())
-    }
-
-    fn paragraph(&mut self, id: &str, kind: ParagraphType, text: &str, parent: &str) -> DocResult {
-        self.add(
-            id,
-            BlockSpec::Paragraph {
-                paragraph_type: kind,
-                text: text.to_string(),
-            },
-            Some(parent),
-        )
-    }
-
-    fn list(
-        &mut self,
-        id: &str,
-        kind: ListType,
-        text: &str,
-        checked: bool,
-        parent: &str,
-    ) -> DocResult {
-        self.add(
-            id,
-            BlockSpec::List {
-                list_type: kind,
-                text: text.to_string(),
-                checked,
-                order: None,
-            },
-            Some(parent),
-        )
-    }
-
-    /// A numbered item with its explicit `prop:order`, as the JavaScript editor stores it.
-    fn numbered(&mut self, id: &str, text: &str, order: i32, parent: &str) -> DocResult {
-        self.add(
-            id,
-            BlockSpec::List {
-                list_type: ListType::Numbered,
-                text: text.to_string(),
-                checked: false,
-                order: Some(order),
-            },
-            Some(parent),
-        )
-    }
-
-    /// Apply an inline attribute to the first occurrence of `needle` in the block's text.
-    fn mark(&mut self, id: &str, text: &str, needle: &str, key: &str, value: Any) -> DocResult {
-        let Some(start) = text.find(needle) else {
-            return Ok(());
-        };
-        let index = text[..start].encode_utf16().count() as u64;
-        let len = needle.encode_utf16().count() as u64;
-        let mut attrs = TextAttributes::new();
-        attrs.insert(key.to_string(), value);
-        let now_ms = self.tick();
-        self.page
-            .format_text(id, "prop:text", index, len, attrs, now_ms)?;
-        Ok(())
-    }
-}
-
-/// The showcase image: a 64 × 40 diagonal gradient PNG, byte-identical on every target.
-fn showcase_gradient_png() -> Vec<u8> {
-    const WIDTH: u32 = 64;
-    const HEIGHT: u32 = 40;
-    const FROM: [u32; 3] = [30, 150, 235];
-    const TO: [u32; 3] = [123, 97, 255];
-    let span = 2 * (WIDTH - 1) * (HEIGHT - 1);
-    let mut rgba = Vec::with_capacity((WIDTH * HEIGHT * 4) as usize);
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let t = x * (HEIGHT - 1) + y * (WIDTH - 1);
-            for channel in 0..3 {
-                rgba.push(((FROM[channel] * (span - t) + TO[channel] * t) / span) as u8);
-            }
-            rgba.push(255);
-        }
-    }
-    encode_png_rgba(WIDTH, HEIGHT, &rgba)
-}
-
-/// Encode 8-bit RGBA pixels as a PNG whose image data sits in stored (uncompressed)
-/// deflate blocks: small, dependency-free, and the same bytes everywhere.
-fn encode_png_rgba(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
-    fn crc32(bytes: &[u8]) -> u32 {
-        let mut crc = u32::MAX;
-        for &byte in bytes {
-            crc ^= u32::from(byte);
-            for _ in 0..8 {
-                crc = (crc >> 1) ^ (0xEDB8_8320 & 0_u32.wrapping_sub(crc & 1));
-            }
-        }
-        !crc
-    }
-    fn chunk(out: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
-        out.extend_from_slice(&(data.len() as u32).to_be_bytes());
-        let start = out.len();
-        out.extend_from_slice(kind);
-        out.extend_from_slice(data);
-        let crc = crc32(&out[start..]);
-        out.extend_from_slice(&crc.to_be_bytes());
-    }
-
-    // Scanlines: a zero filter byte followed by the row's pixels.
-    let stride = width as usize * 4;
-    let mut raw = Vec::with_capacity((stride + 1) * height as usize);
-    for row in rgba.chunks_exact(stride).take(height as usize) {
-        raw.push(0);
-        raw.extend_from_slice(row);
-    }
-
-    let mut zlib = vec![0x78, 0x01];
-    let mut blocks = raw.chunks(0xFFFF).peekable();
-    while let Some(block) = blocks.next() {
-        let len = block.len() as u16;
-        zlib.push(u8::from(blocks.peek().is_none()));
-        zlib.extend_from_slice(&len.to_le_bytes());
-        zlib.extend_from_slice(&(!len).to_le_bytes());
-        zlib.extend_from_slice(block);
-    }
-    let (mut a, mut b) = (1_u32, 0_u32);
-    for &byte in &raw {
-        a = (a + u32::from(byte)) % 65_521;
-        b = (b + a) % 65_521;
-    }
-    zlib.extend_from_slice(&((b << 16) | a).to_be_bytes());
-
-    let mut png = vec![0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1A, b'\n'];
-    let mut header = Vec::with_capacity(13);
-    header.extend_from_slice(&width.to_be_bytes());
-    header.extend_from_slice(&height.to_be_bytes());
-    // 8 bits per channel, RGBA, deflate, adaptive filtering, no interlace.
-    header.extend_from_slice(&[8, 6, 0, 0, 0]);
-    chunk(&mut png, b"IHDR", &header);
-    chunk(&mut png, b"IDAT", &zlib);
-    chunk(&mut png, b"IEND", &[]);
-    png
-}
-
-/// Build the deterministic showcase workspace: one page exercising every Page-mode block,
-/// its image blob, and one remote collaborator with a text selection.
-pub fn seed_showcase_doc() -> DocResult<DocState> {
-    const CREATED: i64 = 1_700_000_000_000;
-    const REFERENCED_PAGE: &str = "doc:edgeless-notes";
-    const INTRO: &str = "This page is a y-octo document laid out by the native BlockFlow \
-        renderer. Inline marks keep their styles: bold, italic, inline code, links, and page \
-        references such as .";
-    const INTRO_TAIL: &str =
-        " Remote carets and selections are drawn in each collaborator's color.";
-
-    let mut state = DocState::new(SHOWCASE_ROOM, client_id_from_seed(0x4d32))?;
-    state.workspace.initialize_meta()?;
-    state
-        .workspace
-        .create_page(HOME_PAGE_ID, "Native BlockSuite Playground", CREATED)?;
-    state
-        .workspace
-        .create_page(REFERENCED_PAGE, "Edgeless notes", CREATED + 1)?;
-
-    let page = state.workspace.ensure_page(HOME_PAGE_ID)?;
-    let mut seed = ShowcaseSeed {
-        page,
-        now_ms: 1_000,
-    };
-    seed.add(
-        "showcase-page",
-        BlockSpec::Page {
-            title: "Native BlockSuite Playground".to_string(),
-        },
-        None,
-    )?;
-    seed.add(
-        "showcase-surface",
-        BlockSpec::Surface,
-        Some("showcase-page"),
-    )?;
-    seed.add(
-        "showcase-frame",
-        BlockSpec::Frame {
-            title: "Workspace Overview".to_string(),
-            xywh: Some("[-40,-60,1240,1320]".to_string()),
-            presentation_index: Some("a0".to_string()),
-        },
-        Some("showcase-surface"),
-    )?;
-    seed.add(
-        "showcase-note",
-        BlockSpec::Note {
-            xywh: Some("[0,0,760,1180]".to_string()),
-        },
-        Some("showcase-page"),
-    )?;
-    let note = "showcase-note";
-
-    seed.paragraph("showcase-h1", ParagraphType::H1, "Page mode", note)?;
-    seed.paragraph("showcase-intro", ParagraphType::Text, INTRO, note)?;
-    seed.mark("showcase-intro", INTRO, "bold", "bold", Any::True)?;
-    seed.mark("showcase-intro", INTRO, "italic", "italic", Any::True)?;
-    seed.mark("showcase-intro", INTRO, "inline code", "code", Any::True)?;
-    seed.mark(
-        "showcase-intro",
-        INTRO,
-        "links",
-        "link",
-        Any::String("https://affine.pro".to_string()),
-    )?;
-    // A linked-page reference is a single placeholder character carrying the page id.
-    let reference_index = INTRO.encode_utf16().count() as u64 - 1;
-    let now_ms = seed.tick();
-    seed.page
-        .insert_text("showcase-intro", "prop:text", reference_index, " ", now_ms)?;
-    let mut reference = AHashMap::default();
-    reference.insert("type".to_string(), Any::String("LinkedPage".to_string()));
-    reference.insert(
-        "pageId".to_string(),
-        Any::String(REFERENCED_PAGE.to_string()),
-    );
-    let mut attrs = TextAttributes::new();
-    attrs.insert("reference".to_string(), Any::Object(Box::new(reference)));
-    let now_ms = seed.tick();
-    seed.page.format_text(
-        "showcase-intro",
-        "prop:text",
-        reference_index,
-        1,
-        attrs,
-        now_ms,
-    )?;
-    let now_ms = seed.tick();
-    seed.page.insert_text(
-        "showcase-intro",
-        "prop:text",
-        reference_index + 2,
-        INTRO_TAIL,
-        now_ms,
-    )?;
-
-    seed.paragraph("showcase-h2", ParagraphType::H2, "Blocks", note)?;
-    seed.paragraph(
-        "showcase-quote",
-        ParagraphType::Quote,
-        "Every block below comes from the same document the JavaScript editor edits.",
-        note,
-    )?;
-
-    seed.list(
-        "showcase-bullet",
-        ListType::Bulleted,
-        "Bulleted list item",
-        false,
-        note,
-    )?;
-    seed.list(
-        "showcase-bullet-nested",
-        ListType::Bulleted,
-        "Nested item",
-        false,
-        "showcase-bullet",
-    )?;
-    seed.list(
-        "showcase-bullet-deep",
-        ListType::Bulleted,
-        "Third level",
-        false,
-        "showcase-bullet-nested",
-    )?;
-    seed.numbered("showcase-numbered-1", "First step", 1, note)?;
-    seed.numbered("showcase-numbered-2", "Second step", 2, note)?;
-    seed.numbered(
-        "showcase-numbered-nested",
-        "Sub-step",
-        1,
-        "showcase-numbered-2",
-    )?;
-    seed.list(
-        "showcase-todo-open",
-        ListType::Todo,
-        "Render remote selections",
-        false,
-        note,
-    )?;
-    seed.list(
-        "showcase-todo-done",
-        ListType::Todo,
-        "Read the block tree",
-        true,
-        note,
-    )?;
-    seed.list(
-        "showcase-toggle-open",
-        ListType::Toggle,
-        "Toggle with details",
-        false,
-        note,
-    )?;
-    seed.paragraph(
-        "showcase-toggle-open-child",
-        ParagraphType::Text,
-        "Children stay visible while the toggle is open.",
-        "showcase-toggle-open",
-    )?;
-    seed.list(
-        "showcase-toggle-closed",
-        ListType::Toggle,
-        "Collapsed toggle",
-        false,
-        note,
-    )?;
-    seed.paragraph(
-        "showcase-toggle-closed-child",
-        ParagraphType::Text,
-        "Hidden until expanded.",
-        "showcase-toggle-closed",
-    )?;
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-toggle-closed",
-        "prop:collapsed",
-        SessionValue::Any(Any::True),
-        now_ms,
-    )?;
-
-    seed.add("showcase-divider", BlockSpec::Divider, Some(note))?;
-    seed.add(
-        "showcase-code",
-        BlockSpec::Code {
-            text: "fn main() {\n    println!(\"hello, blocks\");\n}".to_string(),
-            language: Some("rust".to_string()),
-            caption: String::new(),
-        },
-        Some(note),
-    )?;
-    // Wrapped, so narrow windows show every character instead of clipping the long line.
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-code",
-        "prop:wrap",
-        SessionValue::Any(Any::True),
-        now_ms,
-    )?;
-    seed.add(
-        "showcase-bookmark",
-        BlockSpec::Bookmark {
-            url: "https://affine.pro/".to_string(),
-            title: Some("AFFiNE".to_string()),
-            description: Some(
-                "Open-source workspace for docs, whiteboards and databases.".to_string(),
-            ),
-        },
-        Some(note),
-    )?;
-    seed.add(
-        "showcase-image",
-        BlockSpec::Image {
-            source_id: SHOWCASE_IMAGE_ID.to_string(),
-            caption: "A 64 \u{00d7} 40 gradient decoded from the blob store".to_string(),
-            width: 320.0,
-            height: 200.0,
-            xywh: None,
-        },
-        Some(note),
-    )?;
-    let now_ms = seed.tick();
-    seed.page.add_raw_block(
-        "showcase-database",
-        "affine:database",
-        3,
-        vec![
-            (
-                "prop:title".to_string(),
-                SessionValue::Text(vec![y_octo::TextDeltaOp::Insert {
-                    insert: y_octo::TextInsert::Text("Tasks".to_string()),
-                    format: None,
-                }]),
-            ),
-            ("prop:views".to_string(), SessionValue::Array(Vec::new())),
-            ("prop:columns".to_string(), SessionValue::Array(Vec::new())),
-            ("prop:cells".to_string(), SessionValue::Map(Vec::new())),
-        ],
-        Some(note),
-        None,
-        now_ms,
-    )?;
-
-    // Edgeless-only spatial blocks (excluded from Page mode by `is_edgeless_only`).
-    seed.add(
-        "showcase-edgeless-note",
-        BlockSpec::Note {
-            xywh: Some("[820,40,340,260]".to_string()),
-        },
-        Some("showcase-page"),
-    )?;
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-edgeless-note",
-        "prop:displayMode",
-        SessionValue::Any(Any::String("edgeless".to_string())),
-        now_ms,
-    )?;
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-edgeless-note",
-        "prop:background",
-        SessionValue::Any(Any::String(
-            "var(--affine-background-primary-color)".to_string(),
-        )),
-        now_ms,
-    )?;
-    seed.paragraph(
-        "showcase-edgeless-note-h",
-        ParagraphType::H3,
-        "Spatial Notes",
-        "showcase-edgeless-note",
-    )?;
-    seed.list(
-        "showcase-edgeless-note-b1",
-        ListType::Bulleted,
-        "GPU world-space transforms & crisp dot-grid",
-        false,
-        "showcase-edgeless-note",
-    )?;
-    seed.list(
-        "showcase-edgeless-note-b2",
-        ListType::Bulleted,
-        "Zero BlockFlow relayout during pan & zoom",
-        false,
-        "showcase-edgeless-note",
-    )?;
-
-    seed.add(
-        "showcase-edgeless-text",
-        BlockSpec::EdgelessText {
-            xywh: Some("[820,360,320,84]".to_string()),
-        },
-        Some("showcase-surface"),
-    )?;
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-edgeless-text",
-        "prop:rotate",
-        SessionValue::Any(Any::Float64((-4.0_f64).into())),
-        now_ms,
-    )?;
-    let now_ms = seed.tick();
-    seed.page.set_block_prop(
-        "showcase-edgeless-text",
-        "prop:scale",
-        SessionValue::Any(Any::Float64((1.0_f64).into())),
-        now_ms,
-    )?;
-    seed.paragraph(
-        "showcase-edgeless-text-p",
-        ParagraphType::H4,
-        "Rotated EdgelessText on GPU",
-        "showcase-edgeless-text",
-    )?;
-
-    for (id, index) in [
-        ("showcase-frame", "a0"),
-        ("showcase-note", "a7"),
-        ("showcase-edgeless-note", "a8"),
-        ("showcase-edgeless-text", "a9"),
-    ] {
-        let now = seed.tick();
-        seed.page.set_block_prop(
-            id,
-            "prop:index",
-            SessionValue::Any(Any::String(index.into())),
-            now,
-        )?;
-    }
-    seed.surface_diagram()?;
-
-    let image = showcase_gradient_png();
-    if !image.is_empty() {
-        state
-            .blobs
-            .insert(SHOWCASE_IMAGE_ID.to_string(), Arc::new(image));
-    }
-
-    let page = state.workspace.ensure_page(HOME_PAGE_ID)?;
-    let history = page.undo_stack_id();
-    page.inner_mut().clear_stack_history(history, true, true)?;
-
-    // One remote collaborator selecting the first words of the intro paragraph, which
-    // stay on its first line at every viewport width.
-    let mut peer = RoomAwareness::new(client_id_from_seed(0x0ada))?;
-    let mut payload =
-        AwarenessPayload::new(SHOWCASE_PEER_NAME, "var(--affine-multi-players-purple)");
-    let selected = "y-octo document";
-    let index = INTRO
-        .find(selected)
-        .map_or(0, |start| INTRO[..start].encode_utf16().count());
-    payload.set_text_selection(
-        HOME_PAGE_ID,
-        TextSelectionState::range(
-            TextRangePoint {
-                block_id: "showcase-intro".to_string(),
-                index: index as u64,
-                length: selected.encode_utf16().count() as u64,
-            },
-            None,
-            false,
-        ),
-    )?;
-    let update = peer.set_local_payload(&payload, 0)?;
-    state.awareness.apply_update(&update, 0)?;
-
-    Ok(state)
-}
-
-#[cfg(target_family = "wasm")]
-fn web_options() -> PlaygroundOptions {
-    let mut options = PlaygroundOptions::default();
-    let Some(window) = web_sys::window() else {
-        return options;
-    };
-    let location = window.location();
-    let Some(params) = location
-        .search()
-        .ok()
-        .and_then(|search| web_sys::UrlSearchParams::new_with_str(&search).ok())
-    else {
-        return options;
-    };
-    if let Some(theme) = params.get("theme").and_then(|v| PlaygroundTheme::parse(&v)) {
-        options.theme = theme;
-    }
-    if let Some(mode) = params.get("mode").and_then(|v| PlaygroundMode::parse(&v)) {
-        options.mode = mode;
-    }
-    if let Some(room) = params.get("room").filter(|room| !room.is_empty()) {
-        // `?ws=` names the relay; without it the page's own origin serves the room.
-        let relay = params.get("ws").filter(|ws| !ws.is_empty()).or_else(|| {
-            let protocol = location.protocol().ok()?;
-            let host = location.host().ok()?;
-            let scheme = if protocol == "https:" { "wss" } else { "ws" };
-            Some(format!("{scheme}://{host}"))
-        });
-        options.room = Some(RoomConfig::new(&room, relay.as_deref()));
-    }
-    options
-}
-
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen::prelude::wasm_bindgen(start)]
-pub fn wasm_main() {
-    console_error_panic_hook::set_once();
-    clipboard::browser::install();
-    let platform = std::rc::Rc::new(ui::WebPlatform::new(false));
-    ui::Application::with_platform(platform).run(|cx| {
-        if let Err(err) = register_bundled_fonts(cx) {
-            panic!("failed to register bundled fonts on web: {err:#}");
-        }
-        let options = web_options();
-        if let Err(err) = cx.open_window(ui::WindowOptions::default(), |_, cx| {
-            cx.new(|cx| PlaygroundView::with_options(options, cx))
-        }) {
-            panic!("failed to open playground web window: {err:#}");
-        }
-    });
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use blocksuite_playground_doc::{
+        awareness::RoomAwareness,
+        client_id_from_seed,
+        schema::{BlockSpec, ListType, ParagraphType},
+    };
+    use ui::{Bounds, FontWeight, canvas};
+    use y_octo::{AHashMap, Any, SessionValue};
+
     use super::*;
     use crate::{
         block_flow::{
@@ -2175,6 +627,12 @@ mod tests {
         },
         room_client::RoomFrame,
         theme::{TYPOGRAPHY, tokens},
+    };
+    use crate::{
+        room_client::RoomStatus,
+        showcase::{ShowcaseSeed, showcase_gradient_png},
+        theme::FONT_SANS,
+        view_room::blob_retry_backoff_ms,
     };
     use blocksuite_playground_doc::{
         room::RoomHub,

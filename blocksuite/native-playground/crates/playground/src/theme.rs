@@ -5,7 +5,11 @@
 //! touching this crate. They are pulled in with `include!` rather than `#[path]` modules
 //! so `rustfmt` never rewrites the generated sources.
 
-use std::{borrow::Cow, sync::Arc};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    sync::{Arc, OnceLock, RwLock},
+};
 
 use ui::{
     App, Bounds, BoxShadow, Hsla, Pixels, SharedString, TransformationMatrix, Window, point, px,
@@ -108,7 +112,13 @@ impl PlaygroundTheme {
 
     /// Resolved colors used by the chrome and the page renderer.
     pub fn palette(self) -> Palette {
-        Palette::new(self)
+        static PALETTES: OnceLock<[Palette; 2]> = OnceLock::new();
+        let palettes =
+            PALETTES.get_or_init(|| [Palette::new(Self::Light), Palette::new(Self::Dark)]);
+        match self {
+            Self::Light => palettes[0],
+            Self::Dark => palettes[1],
+        }
     }
 
     /// Color of a `--affine-*` CSS variable in this theme.
@@ -141,10 +151,19 @@ impl PlaygroundTheme {
     /// Box shadow layers of a `--affine-*-shadow` token in this theme, outermost first.
     /// Inset layers and layers that do not parse are left out.
     pub fn shadows(self, name: &str) -> Vec<BoxShadow> {
-        self.tokens()
-            .shadow(name)
-            .map(parse_box_shadows)
-            .unwrap_or_default()
+        static CACHE: OnceLock<RwLock<HashMap<&'static str, Vec<BoxShadow>>>> = OnceLock::new();
+        let Some(raw) = self.tokens().shadow(name) else {
+            return Vec::new();
+        };
+        let cache = CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+        if let Some(hit) = cache.read().ok().and_then(|map| map.get(raw).cloned()) {
+            return hit;
+        }
+        let parsed = parse_box_shadows(raw);
+        if let Ok(mut map) = cache.write() {
+            map.insert(raw, parsed.clone());
+        }
+        parsed
     }
 }
 
@@ -380,13 +399,26 @@ impl IconPaint {
 
     /// Look a generated icon up by name; an unknown name paints nothing.
     pub fn named(name: &str) -> Self {
-        match icon_by_name(name) {
-            Some(icon) => Self::new(icon),
-            None => Self {
+        static CACHE: OnceLock<RwLock<HashMap<&'static str, IconPaint>>> = OnceLock::new();
+        let Some(icon) = icon_by_name(name) else {
+            return Self {
                 key: SharedString::from(format!("playground-icon:missing:{name}")),
                 svg: Arc::from(""),
-            },
+            };
+        };
+        let cache = CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+        if let Some(hit) = cache
+            .read()
+            .ok()
+            .and_then(|map| map.get(icon.name).cloned())
+        {
+            return hit;
         }
+        let paint = Self::new(icon);
+        if let Ok(mut map) = cache.write() {
+            map.insert(icon.name, paint.clone());
+        }
+        paint
     }
 
     /// Paint the icon into `bounds`, tinted with `color`.
