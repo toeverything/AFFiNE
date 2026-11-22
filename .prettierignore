@@ -40,6 +40,7 @@ packages/frontend/apps/android/App/**
 packages/frontend/apps/ios/App/**
 tests/blocksuite/snapshots
 tests/oracle-contracts/**
+crates/server-types/assets/*.license.json
 blocksuite/native-playground/**
 blocksuite/docs/api/**
 blocksuite/docs-site/.vitepress/.temp/**

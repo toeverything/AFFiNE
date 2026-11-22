@@ -164,7 +164,9 @@ jobs:
           cargo run --locked --quiet -p test-db-harness --bin affine-test-env -- \
             run-json --out ../.artifacts/server-harness/run.json --lane server-harness --status "$status" \
             --sha "${{ github.sha }}" --run-id "${{ github.run_id }}-${{ github.run_attempt }}" \
-            --select frame-audit --select test-db-harness --select parity-harness "${timings[@]}"
+            --select frame-audit --select test-db-harness --select parity-harness \
+            --select server-types --select server-db --select server-spi \
+            --select server-http --select server-worker --select affine-server "${timings[@]}"
           cat ../.artifacts/server-harness/run.json
           test "$status" = passed
 

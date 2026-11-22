@@ -1,6 +1,7 @@
 use std::{
   net::SocketAddr,
   process::{Command, Output},
+  sync::{Mutex, OnceLock},
   time::{Duration, Instant},
 };
 
@@ -39,7 +40,7 @@ fn failure(what: &str, output: &Output) -> Error {
 
 /// How long [`Container::ensure_shared`] waits for a shared container
 /// another caller is starting to come up.
-const SHARED_START_TIMEOUT: Duration = Duration::from_secs(10);
+const SHARED_START_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// A container publishing one port on a random `127.0.0.1` port.
 ///
@@ -71,13 +72,18 @@ impl Container {
 
   /// Returns the running machine-wide container named `name`, starting it
   /// when there is none. Concurrent callers converge on one container: a
-  /// caller that loses the race for the name waits (short backoff, 10 s
+  /// caller that loses the race for the name waits (short backoff, 60 s
   /// after its own first lookup or start, so an image pull does not count)
   /// until the winner's container runs with its port published. A stopped
   /// leftover of ours is removed and started again; a paused or unknown one
   /// is left alone and reported. The caller checks that the service inside
   /// is ready.
   pub fn ensure_shared(name: &str, image: &str, port: u16, docker_args: &[&str], command: &[&str]) -> Result<Self> {
+    static IN_PROCESS_SHARED_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    let _guard = IN_PROCESS_SHARED_LOCK
+      .get_or_init(|| Mutex::new(()))
+      .lock()
+      .unwrap_or_else(|e| e.into_inner());
     let shared = |id: String, addr| Self {
       id,
       addr,
@@ -104,7 +110,11 @@ impl Container {
             Ok(addr) => return Ok(shared(id, addr)),
             Err(e) => last_error = Some(e),
           },
-          SharedAction::Wait => {}
+          SharedAction::Wait => {
+            last_error = Some(Error::new(format!(
+              "shared container {name} ({id}) still in state {state:?} after {SHARED_START_TIMEOUT:?}"
+            )));
+          }
           SharedAction::Clear => {
             // Not forced: a container that came back to life is kept.
             if let Ok(output) = run_cli(&["rm", "-v", &id])
