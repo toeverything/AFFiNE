@@ -109,7 +109,14 @@ pub(crate) struct PathRasterizationVertex {
     pub(crate) st_position: Point<f32>,
     pub(crate) color: Background,
     pub(crate) bounds: Bounds<ScaledPixels>,
+    pub(crate) local_position: Point<ScaledPixels>,
+    pub(crate) local_content_mask: crate::ContentMask<ScaledPixels>,
 }
+
+const _: () = assert!(
+    std::mem::size_of::<PathRasterizationVertex>() == 128
+        && std::mem::size_of::<PathRasterizationVertex>().is_multiple_of(16)
+);
 
 pub struct WgpuSurfaceConfig {
     pub size: Size<DevicePixels>,
@@ -1874,11 +1881,14 @@ impl WgpuRendererCore {
         let mut vertices = Vec::new();
         for path in paths {
             let bounds = path.clipped_bounds();
+            let local_content_mask = path.local_content_mask;
             vertices.extend(path.vertices.iter().map(|v| PathRasterizationVertex {
                 xy_position: v.xy_position,
                 st_position: v.st_position,
                 color: path.color,
                 bounds,
+                local_position: v.local_position,
+                local_content_mask,
             }));
         }
 

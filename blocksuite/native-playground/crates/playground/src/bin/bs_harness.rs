@@ -66,6 +66,8 @@ struct BenchmarksV1 {
     layout_single_keystroke_blocks_relayout: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     edgeless_1k_pan_zoom_frame_ms: Option<TimingStat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    edgeless_1k_pan_zoom_blocks_relayout: Option<u64>,
     headless_frame_render_ms: TimingStat,
 }
 
@@ -555,9 +557,46 @@ fn run_audit_states() -> Result<()> {
                 }
                 audited += 1;
             }
+
+            // Audit Edgeless default + zoomed states (0.5x, 2.0x) in both themes and widths.
+            for (label, zoom_opt) in [
+                ("edgeless_default", None),
+                ("edgeless_zoom_0.5x", Some(0.5_f32)),
+                ("edgeless_zoom_2.0x", Some(2.0_f32)),
+            ] {
+                let context = format!("{label} {width}x{height} {}", theme.as_str());
+                let session = start_headless_session(
+                    width,
+                    height,
+                    PlaygroundOptions {
+                        theme,
+                        mode: PlaygroundMode::Edgeless,
+                        ..PlaygroundOptions::default()
+                    },
+                )?;
+                let _ = session.frame()?;
+                if let Some(z) = zoom_opt {
+                    session.update(|v, _, cx| v.set_edgeless_zoom(z, cx))?;
+                }
+                let snapshot = session.frame()?;
+                let violations = audit_frame_snapshot(&snapshot);
+                anyhow::ensure!(
+                    violations.is_empty(),
+                    "audit violations in {context}: {violations:#?}"
+                );
+                anyhow::ensure!(
+                    snapshot.elements.contains_key("edgeless.viewport"),
+                    "edgeless.viewport missing in {context}"
+                );
+                anyhow::ensure!(
+                    snapshot.elements.contains_key("chrome.edgeless_zoom"),
+                    "chrome.edgeless_zoom missing in {context}"
+                );
+                audited += 1;
+            }
         }
     }
-    println!("audit-states passed: 0 violations across {audited} overlay states");
+    println!("audit-states passed: 0 violations across {audited} states");
     Ok(())
 }
 
@@ -567,6 +606,8 @@ fn render_headless(
     out_png: PathBuf,
     out_snapshot: PathBuf,
     click_edgeless: bool,
+    zoom: Option<f32>,
+    pan: Option<(f32, f32)>,
     state: OverlayState,
     options: PlaygroundOptions,
 ) -> Result<()> {
@@ -595,6 +636,16 @@ fn render_headless(
         session.headless_win.simulate_click(click_pt);
         session.platform.run_until_parked();
         session.platform.advance_clock(Duration::from_millis(250));
+        session.headless_win.request_frame();
+    }
+
+    if zoom.is_some() || pan.is_some() {
+        session.update(|v, _, cx| match (pan, zoom) {
+            (Some((px_w, py_w)), Some(z)) => v.set_edgeless_camera(px_w, py_w, z, cx),
+            (Some((px_w, py_w)), None) => v.set_edgeless_pan(px_w, py_w, cx),
+            (None, Some(z)) => v.set_edgeless_zoom(z, cx),
+            (None, None) => {}
+        })?;
         session.headless_win.request_frame();
     }
 
@@ -1432,6 +1483,171 @@ fn bench_page(session: &HeadlessSession) -> Result<(TimingStat, TimingStat, u64)
     Ok((cold, edits, work))
 }
 
+fn bench_edgeless_1k() -> Result<(TimingStat, u64)> {
+    use blocksuite_playground_doc::{
+        client_id_from_seed,
+        schema::{BlockSpec, ParagraphType},
+    };
+    use playground::room_client::DocState;
+
+    let session = start_headless_session(
+        1280,
+        800,
+        PlaygroundOptions {
+            mode: PlaygroundMode::Edgeless,
+            ..PlaygroundOptions::default()
+        },
+    )?;
+
+    // Build a 1,000-block spatial Edgeless scene: 250 Notes (each with 3 paragraphs = 1,000
+    // blocks), 20 Frames, and 30 rotated EdgelessTexts spread across a 2D grid.
+    let mut doc = DocState::new("bench-edgeless-1k", client_id_from_seed(0x4d35))?;
+    doc.workspace.initialize_meta()?;
+    doc.workspace.create_page(
+        playground::HOME_PAGE_ID,
+        "Edgeless 1K Bench",
+        1_700_000_000_000,
+    )?;
+    let page = doc.workspace.ensure_page(playground::HOME_PAGE_ID)?;
+    let mut now_ms = 1_000_u64;
+    let mut tick = || {
+        now_ms += 1;
+        now_ms
+    };
+    page.add_block(
+        "e1k-page",
+        BlockSpec::Page {
+            title: "Edgeless 1K Bench".to_string(),
+        },
+        None,
+        None,
+        tick(),
+    )?;
+    page.add_block(
+        "e1k-surface",
+        BlockSpec::Surface,
+        Some("e1k-page"),
+        None,
+        tick(),
+    )?;
+
+    for f in 0..20 {
+        let col = (f % 5) as f32;
+        let row = (f / 5) as f32;
+        page.add_block(
+            &format!("e1k-frame-{f}"),
+            BlockSpec::Frame {
+                title: format!("Frame {f}"),
+                xywh: Some(format!(
+                    "[{},{},1800,1200]",
+                    col * 2000.0 - 40.0,
+                    row * 1400.0 - 40.0
+                )),
+                presentation_index: Some(format!("a{f:02}")),
+            },
+            Some("e1k-page"),
+            None,
+            tick(),
+        )?;
+    }
+    for n in 0..250 {
+        let col = (n % 25) as f32;
+        let row = (n / 25) as f32;
+        let note_id = format!("e1k-note-{n}");
+        page.add_block(
+            &note_id,
+            BlockSpec::Note {
+                xywh: Some(format!("[{},{},340,180]", col * 400.0, row * 240.0)),
+            },
+            Some("e1k-page"),
+            None,
+            tick(),
+        )?;
+        for p in 0..3 {
+            page.add_block(
+                &format!("e1k-note-{n}-p{p}"),
+                BlockSpec::Paragraph {
+                    paragraph_type: if p == 0 {
+                        ParagraphType::H4
+                    } else {
+                        ParagraphType::Text
+                    },
+                    text: format!("Note {n} paragraph {p}: GPU transform spatial test."),
+                },
+                Some(&note_id),
+                None,
+                tick(),
+            )?;
+        }
+    }
+    for t in 0..30 {
+        let et_id = format!("e1k-text-{t}");
+        page.add_block(
+            &et_id,
+            BlockSpec::EdgelessText {
+                xywh: Some(format!(
+                    "[{},{},260,64]",
+                    (t % 10) as f32 * 480.0,
+                    2600.0 + (t / 10) as f32 * 140.0
+                )),
+            },
+            Some("e1k-page"),
+            None,
+            tick(),
+        )?;
+        page.set_block_prop(
+            &et_id,
+            "prop:rotate",
+            y_octo::SessionValue::Any(y_octo::Any::Float64((((t % 7) as f64 - 3.0) * 5.0).into())),
+            tick(),
+        )?;
+        page.add_block(
+            &format!("e1k-text-{t}-p"),
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: format!("Rotated label #{t}"),
+            },
+            Some(&et_id),
+            None,
+            tick(),
+        )?;
+    }
+
+    session.update(|v, _, cx| v.set_document(doc, cx))?;
+    // Warmup frame: lays out and caches all Notes and EdgelessTexts once.
+    session.headless_win.request_frame();
+    let _ = session.image()?;
+
+    // 30-step pan + 0.25x..4.0x zoom sweep: must incur ZERO block relayouts.
+    let mut times = Vec::with_capacity(30);
+    let mut relayout_count = 0_u64;
+    for step in 0..30 {
+        let frac = step as f32 / 29.0;
+        let zoom = 0.25 * (16.0_f32).powf(frac); // 0.25x -> 4.0x
+        let pan_x = -200.0 + frac * 1800.0;
+        let pan_y = -100.0 + (frac * std::f32::consts::TAU).sin() * 400.0 + 400.0;
+        let t = ui::clock_now();
+        session.update(|v, w, cx| {
+            v.set_edgeless_camera(pan_x, pan_y, zoom, cx);
+            w.refresh();
+        })?;
+        session.headless_win.request_frame();
+        let _ = session.image()?;
+        times.push(t.elapsed().as_secs_f64() * 1000.0);
+        relayout_count += session.update(|v, _, _| v.edgeless_last_frame_relayouts())?;
+    }
+    anyhow::ensure!(
+        relayout_count == 0,
+        "edgeless 1k pan/zoom sweep triggered {relayout_count} block relayouts (expected 0)"
+    );
+    let stat = timing_stat(times);
+    println!(
+        "edgeless 1k pan/zoom (30 steps, 0.25x..4.0x): median/p95 {:.3}/{:.3} ms, {} blocks relayout",
+        stat.median, stat.p95, relayout_count
+    );
+    Ok((stat, relayout_count))
+}
+
 fn run_bench(
     out_json: PathBuf,
     explicit_commit: Option<String>,
@@ -1476,6 +1692,7 @@ fn run_bench(
         .unwrap_or(0);
 
     let (cold, edits, work) = bench_page(&session)?;
+    let (edgeless_ms, edgeless_relayouts) = bench_edgeless_1k()?;
     let metrics = PerfMetricsV1 {
         schema_version: 1,
         commit,
@@ -1492,7 +1709,8 @@ fn run_bench(
             layout_10k_blocks_cold_ms: Some(cold),
             layout_single_keystroke_ms: Some(edits),
             layout_single_keystroke_blocks_relayout: Some(work),
-            edgeless_1k_pan_zoom_frame_ms: None,
+            edgeless_1k_pan_zoom_frame_ms: Some(edgeless_ms),
+            edgeless_1k_pan_zoom_blocks_relayout: Some(edgeless_relayouts),
             headless_frame_render_ms: timing_stat(frame_times_ms),
         },
     };
@@ -2299,6 +2517,8 @@ fn main() -> Result<()> {
             let mut width = 1280_u32;
             let mut height = 800_u32;
             let mut click_edgeless = false;
+            let mut zoom: Option<f32> = None;
+            let mut pan: Option<(f32, f32)> = None;
             let mut state = OverlayState::Default;
             let mut options = PlaygroundOptions::default();
             while let Some(arg) = args.next() {
@@ -2313,6 +2533,16 @@ fn main() -> Result<()> {
                         height = args.next().context("--height requires value")?.parse()?
                     }
                     "--click-edgeless" => click_edgeless = true,
+                    "--zoom" => {
+                        zoom = Some(args.next().context("--zoom requires float")?.parse()?);
+                    }
+                    "--pan" => {
+                        let raw = args.next().context("--pan requires <x>,<y>")?;
+                        let (xs, ys) = raw
+                            .split_once(',')
+                            .context("--pan must be formatted as <x>,<y>")?;
+                        pan = Some((xs.trim().parse()?, ys.trim().parse()?));
+                    }
                     "--state" => {
                         let value = args.next().context("--state requires an overlay state")?;
                         state = OverlayState::parse(&value).with_context(|| {
@@ -2340,6 +2570,8 @@ fn main() -> Result<()> {
                 out_png,
                 out_snapshot,
                 click_edgeless,
+                zoom,
+                pan,
                 state,
                 options,
             )

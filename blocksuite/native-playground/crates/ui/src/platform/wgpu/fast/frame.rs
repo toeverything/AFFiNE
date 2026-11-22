@@ -351,12 +351,15 @@ fn plan_paths(
         let mut union = first_path.clipped_bounds();
         for path in paths {
             let bounds = path.clipped_bounds();
+            let local_content_mask = path.local_content_mask;
             union = union.union(&bounds);
             vertices.extend(path.vertices.iter().map(|v| PathRasterizationVertex {
                 xy_position: v.xy_position,
                 st_position: v.st_position,
                 color: path.color,
                 bounds,
+                local_position: v.local_position,
+                local_content_mask,
             }));
         }
 

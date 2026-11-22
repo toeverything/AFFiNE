@@ -36,6 +36,7 @@ const BENCHMARK_TIMING_KEYS = new Set([
 
 const BENCHMARK_COUNTER_KEYS = new Set([
   'layout_single_keystroke_blocks_relayout',
+  'edgeless_1k_pan_zoom_blocks_relayout',
 ]);
 
 const ALL_BENCHMARK_KEYS = [
@@ -45,6 +46,7 @@ const ALL_BENCHMARK_KEYS = [
   'layout_single_keystroke_ms',
   'layout_single_keystroke_blocks_relayout',
   'edgeless_1k_pan_zoom_frame_ms',
+  'edgeless_1k_pan_zoom_blocks_relayout',
   'headless_frame_render_ms',
 ];
 

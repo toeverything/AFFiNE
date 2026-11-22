@@ -723,3 +723,80 @@ test('partial-metrics baseline to expanded-metrics current yields BOOTSTRAP on n
   assert.equal(byKey.get('benchmarks.doc_1k_edits_ms')?.status, 'BOOTSTRAP');
   assert.equal(byKey.get('artifacts_bytes.web_wasm_raw')?.status, 'BOOTSTRAP');
 });
+
+test('edgeless_1k_pan_zoom_blocks_relayout: 0->0 passes and 0->1 flags deterministic hard regression', () => {
+  const mkPayload = (commitChar, relayouts) => ({
+    schema_version: 1,
+    commit: commitChar.repeat(40),
+    timestamp_utc: '2026-11-22T06:00:00Z',
+    ci_wall_ms: {
+      headless_linux: 50_000,
+      lint_and_wasm: 35_000,
+      total_critical_path: 50_000,
+    },
+    artifacts_bytes: {
+      headless_bin: 14_500_000,
+      web_wasm_raw: 1_800_000,
+      web_wasm_gzip: 620_000,
+    },
+    benchmarks: {
+      doc_1k_edits_ms: { median: 10.0, p95: 12.0 },
+      room_sync_1k_ops_ms: { median: 18.0, p95: 21.0 },
+      layout_10k_blocks_cold_ms: { median: 120.0, p95: 135.0 },
+      layout_single_keystroke_ms: { median: 0.5, p95: 0.7 },
+      layout_single_keystroke_blocks_relayout: 1,
+      edgeless_1k_pan_zoom_frame_ms: { median: 2.5, p95: 3.1 },
+      edgeless_1k_pan_zoom_blocks_relayout: relayouts,
+      headless_frame_render_ms: { median: 8.0, p95: 9.5 },
+    },
+  });
+
+  const baseline = mkPayload('a', 0);
+  const currentPass = mkPayload('b', 0);
+  const passVerdict = comparePerfMetrics({ current: currentPass, baseline });
+  assert.equal(passVerdict.has_hard_regression, false);
+  const passMetric = passVerdict.metrics.find(
+    m => m.key === 'benchmarks.edgeless_1k_pan_zoom_blocks_relayout'
+  );
+  assert.equal(passMetric?.status, 'PASS');
+  assert.equal(passMetric?.regressed, false);
+
+  const currentRegressed = mkPayload('c', 1);
+  const failVerdict = comparePerfMetrics({ current: currentRegressed, baseline });
+  assert.equal(failVerdict.has_hard_regression, true);
+  const failMetric = failVerdict.metrics.find(
+    m => m.key === 'benchmarks.edgeless_1k_pan_zoom_blocks_relayout'
+  );
+  assert.equal(failMetric?.status, 'REGRESSED');
+  assert.equal(failMetric?.regressed, true);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'compare-n3-edgeless-'));
+  try {
+    const basePath = path.join(dir, 'baseline.json');
+    const passPath = path.join(dir, 'pass.json');
+    const failPath = path.join(dir, 'fail.json');
+    fs.writeFileSync(basePath, JSON.stringify(baseline));
+    fs.writeFileSync(passPath, JSON.stringify(currentPass));
+    fs.writeFileSync(failPath, JSON.stringify(currentRegressed));
+
+    execFileSync(
+      process.execPath,
+      [CLI_PATH, '--current', passPath, '--baseline', basePath, '--fail-on-regression'],
+      { encoding: 'utf8' }
+    );
+
+    let failedExit = 0;
+    try {
+      execFileSync(
+        process.execPath,
+        [CLI_PATH, '--current', failPath, '--baseline', basePath, '--fail-on-regression'],
+        { encoding: 'utf8' }
+      );
+    } catch (err) {
+      failedExit = err.status ?? 0;
+    }
+    assert.equal(failedExit, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

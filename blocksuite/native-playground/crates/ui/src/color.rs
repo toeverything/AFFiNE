@@ -693,6 +693,7 @@ pub(crate) enum BackgroundTag {
     LinearGradient = 1,
     PatternSlash = 2,
     Checkerboard = 3,
+    DotGrid = 4,
 }
 
 /// A color space for color interpolation.
@@ -750,6 +751,14 @@ impl std::fmt::Debug for Background {
                 f,
                 "Checkerboard({:?}, {})",
                 self.solid, self.gradient_angle_or_pattern_height
+            ),
+            BackgroundTag::DotGrid => write!(
+                f,
+                "DotGrid({:?}, {:?}, gap={}, r={})",
+                self.solid,
+                self.colors[0].color,
+                self.gradient_angle_or_pattern_height,
+                self.colors[0].percentage
             ),
         }
     }
@@ -882,6 +891,51 @@ impl Background {
         background
     }
 
+    /// Creates a procedural single-draw-call dot-grid background.
+    pub fn dot_grid(
+        bg_color: Hsla,
+        dot_color: Hsla,
+        gap_px: f32,
+        dot_radius_px: f32,
+        phase_x_px: f32,
+        phase_y_px: f32,
+    ) -> Background {
+        Background {
+            tag: BackgroundTag::DotGrid,
+            color_space: ColorSpace::Srgb,
+            solid: bg_color,
+            gradient_angle_or_pattern_height: gap_px,
+            colors: [
+                LinearColorStop {
+                    color: dot_color,
+                    percentage: dot_radius_px,
+                },
+                LinearColorStop {
+                    color: Hsla {
+                        h: phase_x_px,
+                        s: phase_y_px,
+                        l: 0.0,
+                        a: 0.0,
+                    },
+                    percentage: 0.0,
+                },
+            ],
+            pad: 0,
+        }
+    }
+
+    /// Scales pixel-space parameters of procedural backgrounds by `scale_factor`.
+    pub fn scale(&self, scale_factor: f32) -> Self {
+        let mut bg = *self;
+        if bg.tag == BackgroundTag::DotGrid {
+            bg.gradient_angle_or_pattern_height *= scale_factor;
+            bg.colors[0].percentage *= scale_factor;
+            bg.colors[1].color.h *= scale_factor;
+            bg.colors[1].color.s *= scale_factor;
+        }
+        bg
+    }
+
     /// Returns whether the background color is transparent.
     pub fn is_transparent(&self) -> bool {
         match self.tag {
@@ -889,6 +943,9 @@ impl Background {
             BackgroundTag::LinearGradient => self.colors.iter().all(|c| c.color.is_transparent()),
             BackgroundTag::PatternSlash => self.solid.is_transparent(),
             BackgroundTag::Checkerboard => self.solid.is_transparent(),
+            BackgroundTag::DotGrid => {
+                self.solid.is_transparent() && self.colors[0].color.is_transparent()
+            }
         }
     }
 }

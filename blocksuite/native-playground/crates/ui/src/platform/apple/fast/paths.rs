@@ -274,11 +274,14 @@ fn write_vertices(
         .flat_map(|batch| &scene.paths[batch.paths.clone()])
         .flat_map(|path| {
             let bounds = path.bounds.intersect(&path.content_mask.bounds);
+            let local_content_mask = path.local_content_mask;
             path.vertices.iter().map(move |v| PathRasterizationVertex {
                 xy_position: v.xy_position,
                 st_position: v.st_position,
                 color: path.color,
                 bounds,
+                local_position: v.local_position,
+                local_content_mask,
             })
         });
     // The plan counted these same vertices, so the iterator yields exactly

@@ -6,6 +6,8 @@
 
 pub mod block_flow;
 pub mod clipboard;
+pub mod edgeless_camera;
+pub mod edgeless_canvas;
 pub mod editor_session;
 pub mod overlays;
 pub mod rich_text;
@@ -198,6 +200,7 @@ pub struct PlaygroundView {
     max_scroll: f32,
     /// Window size of the latest frame, in logical pixels.
     window_size: (f32, f32),
+    edgeless: edgeless_canvas::EdgelessCanvasState,
     overlays: Overlays,
     /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
     copied_timer: Option<Task<()>>,
@@ -282,6 +285,7 @@ impl PlaygroundView {
             scroll_y: 0.0,
             max_scroll: 0.0,
             window_size: (0.0, 0.0),
+            edgeless: edgeless_canvas::EdgelessCanvasState::new(),
             overlays: Overlays::new(),
             copied_timer: None,
             _tasks: tasks,
@@ -296,6 +300,101 @@ impl PlaygroundView {
 
     pub fn theme(&self) -> PlaygroundTheme {
         self.theme
+    }
+
+    pub fn edgeless_camera(&self) -> edgeless_camera::EdgelessCamera {
+        self.edgeless.camera
+    }
+
+    pub fn set_edgeless_camera(
+        &mut self,
+        pan_x: f32,
+        pan_y: f32,
+        zoom: f32,
+        cx: &mut Context<Self>,
+    ) {
+        self.edgeless.set_camera(pan_x, pan_y, zoom);
+        cx.notify();
+    }
+
+    pub fn set_edgeless_zoom(&mut self, zoom: f32, cx: &mut Context<Self>) {
+        let (vw, vh) = self.edgeless_viewport_size();
+        self.edgeless.set_zoom_centered(
+            zoom,
+            point(px(0.0), px(TOPBAR_HEIGHT)),
+            size(px(vw), px(vh)),
+        );
+        cx.notify();
+    }
+
+    pub fn set_edgeless_pan(&mut self, pan_x: f32, pan_y: f32, cx: &mut Context<Self>) {
+        self.edgeless.set_pan(pan_x, pan_y);
+        cx.notify();
+    }
+
+    pub fn edgeless_last_frame_relayouts(&self) -> u64 {
+        self.edgeless.last_frame_relayouts
+    }
+
+    fn edgeless_viewport_size(&self) -> (f32, f32) {
+        let vw = self.window_size.0.max(1.0);
+        let vh = (self.window_size.1 - TOPBAR_HEIGHT).max(1.0);
+        (vw, vh)
+    }
+
+    fn on_edgeless_scroll(&mut self, event: &ScrollEvent, _: &mut Window, cx: &mut Context<Self>) {
+        let delta = event.delta.pixel_delta(px(SCROLL_LINE));
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        if event.modifiers.control || event.modifiers.platform {
+            let factor = (-f32::from(delta.y) * 0.002).exp();
+            let target_zoom = self.edgeless.camera.zoom * factor;
+            self.edgeless
+                .camera
+                .zoom_at(target_zoom, event.position, vp_origin);
+        } else {
+            self.edgeless
+                .camera
+                .pan_by_screen_delta(f32::from(delta.x), f32::from(delta.y));
+        }
+        self.edgeless.camera_initialized = true;
+        cx.notify();
+    }
+
+    fn on_edgeless_pan_start(
+        &mut self,
+        event: &ui::MouseDownEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.edgeless.drag_pan_anchor = Some(event.position);
+        cx.notify();
+    }
+
+    fn on_edgeless_pan_move(
+        &mut self,
+        event: &ui::MouseMoveEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(prev) = self.edgeless.drag_pan_anchor {
+            let dx = f32::from(event.position.x) - f32::from(prev.x);
+            let dy = f32::from(event.position.y) - f32::from(prev.y);
+            self.edgeless.camera.pan_by_screen_delta(dx, dy);
+            self.edgeless.drag_pan_anchor = Some(event.position);
+            self.edgeless.camera_initialized = true;
+            cx.notify();
+        }
+    }
+
+    fn on_edgeless_pan_end(
+        &mut self,
+        _: &ui::MouseUpEvent,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.edgeless.drag_pan_anchor.take().is_some() {
+            cx.notify();
+        }
     }
 
     pub fn set_theme(&mut self, theme: PlaygroundTheme, cx: &mut Context<Self>) {
@@ -1141,57 +1240,89 @@ impl PlaygroundView {
             )
     }
 
-    fn render_edgeless(&self, palette: &Palette, viewport_width: f32) -> AnyElement {
-        let title_text = "Edgeless Spatial Canvas";
-        let body_text =
-            "Infinite spatial canvas mode active — click Page to return to document layout.";
-        let gutter = if viewport_width <= block_flow::NARROW_VIEWPORT {
-            24.0
-        } else {
-            48.0
+    fn render_edgeless(
+        &mut self,
+        palette: &Palette,
+        viewport_width: f32,
+        viewport_height: f32,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let Some(snapshot) = self.snapshot.clone() else {
+            return div()
+                .flex_1()
+                .w_full()
+                .min_h_0()
+                .bg(palette.background_secondary)
+                .snapshot(edgeless_canvas::EDGELESS_VIEWPORT_ID, Some("root.canvas"))
+                .into_any_element();
         };
+
+        let vp_origin = point(px(0.0), px(TOPBAR_HEIGHT));
+        let vp_size = size(px(viewport_width.max(1.0)), px(viewport_height.max(1.0)));
+
+        let zoom_controls = edgeless_canvas::build_zoom_controls(
+            self.edgeless.camera.zoom,
+            palette,
+            self.theme,
+            move |this: &mut Self, _, _, cx| {
+                this.edgeless.camera.zoom_out(vp_origin, vp_size);
+                this.edgeless.camera_initialized = true;
+                cx.notify();
+            },
+            move |this: &mut Self, _, _, cx| {
+                this.edgeless.camera.reset_zoom(vp_origin, vp_size);
+                this.edgeless.camera_initialized = true;
+                cx.notify();
+            },
+            move |this: &mut Self, _, _, cx| {
+                this.edgeless.camera.zoom_in(vp_origin, vp_size);
+                this.edgeless.camera_initialized = true;
+                cx.notify();
+            },
+            move |this: &mut Self, _, _, cx| {
+                if let Some(snap) = &this.snapshot {
+                    let bounds = this.edgeless.scene_world_bounds(snap);
+                    this.edgeless.camera.fit_to_bounds(bounds, vp_size, 48.0);
+                    this.edgeless.camera_initialized = true;
+                    cx.notify();
+                }
+            },
+            cx,
+        );
+
+        let input = edgeless_canvas::EdgelessRenderInput {
+            snapshot: &snapshot,
+            doc_rev: self.doc_rev,
+            env_rev: self.env_rev,
+            theme: self.theme,
+            palette,
+            page_titles: &self.page_titles,
+            images: &self.images,
+            viewport_width,
+            viewport_height,
+        };
+        let layer = edgeless_canvas::build_edgeless_layer(
+            &mut self.edgeless,
+            &input,
+            window,
+            zoom_controls,
+        );
+
         div()
             .flex_1()
             .w_full()
             .min_h_0()
             .flex()
-            .justify_center()
-            .p(px(gutter))
-            .bg(palette.background_secondary)
-            .child(
-                div()
-                    .w_full()
-                    .max_w(px(block_flow::EDITOR_WIDTH))
-                    .h_full()
-                    .p(px(32.0))
-                    .rounded(px(12.0))
-                    .bg(palette.background)
-                    .border_1()
-                    .border_color(palette.border)
-                    .flex()
-                    .flex_col()
-                    .gap(px(16.0))
-                    .snapshot(PAGE_SURFACE_ID, Some("root.canvas"))
-                    .child(
-                        div()
-                            .text_size(px(24.0))
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(palette.text_primary)
-                            .snapshot("page.title_block", Some(PAGE_SURFACE_ID))
-                            .snapshot_text(title_text)
-                            .child(title_text),
-                    )
-                    .child(div().w_full().h(px(1.0)).bg(palette.border))
-                    .child(
-                        div()
-                            .text_size(px(14.0))
-                            .font_weight(FontWeight::NORMAL)
-                            .text_color(palette.text_secondary)
-                            .snapshot("page.body_block", Some(PAGE_SURFACE_ID))
-                            .snapshot_text(body_text)
-                            .child(body_text),
-                    ),
+            .flex_col()
+            .on_scroll(cx.listener(Self::on_edgeless_scroll))
+            .on_mouse_down(
+                MouseButton::Middle,
+                cx.listener(Self::on_edgeless_pan_start),
             )
+            .on_mouse_move(cx.listener(Self::on_edgeless_pan_move))
+            .on_mouse_up(MouseButton::Middle, cx.listener(Self::on_edgeless_pan_end))
+            .child(layer)
             .into_any_element()
     }
 }
@@ -1232,7 +1363,9 @@ impl ui::Render for PlaygroundView {
                 window,
                 cx,
             ),
-            PlaygroundMode::Edgeless => self.render_edgeless(&palette, viewport_width),
+            PlaygroundMode::Edgeless => {
+                self.render_edgeless(&palette, viewport_width, viewport_height, window, cx)
+            }
         };
         let popovers = self.overlay_popovers(&palette, window, cx);
 
@@ -1470,8 +1603,19 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
         Some("showcase-page"),
     )?;
     seed.add(
+        "showcase-frame",
+        BlockSpec::Frame {
+            title: "Workspace Overview".to_string(),
+            xywh: Some("[-40,-60,1240,1320]".to_string()),
+            presentation_index: Some("a0".to_string()),
+        },
+        Some("showcase-surface"),
+    )?;
+    seed.add(
         "showcase-note",
-        BlockSpec::Note { xywh: None },
+        BlockSpec::Note {
+            xywh: Some("[0,0,760,1180]".to_string()),
+        },
         Some("showcase-page"),
     )?;
     let note = "showcase-note";
@@ -1664,6 +1808,79 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
         Some(note),
         None,
         now_ms,
+    )?;
+
+    // Edgeless-only spatial blocks (excluded from Page mode by `is_edgeless_only`).
+    seed.add(
+        "showcase-edgeless-note",
+        BlockSpec::Note {
+            xywh: Some("[820,40,340,260]".to_string()),
+        },
+        Some("showcase-page"),
+    )?;
+    let now_ms = seed.tick();
+    seed.page.set_block_prop(
+        "showcase-edgeless-note",
+        "prop:displayMode",
+        SessionValue::Any(Any::String("edgeless".to_string())),
+        now_ms,
+    )?;
+    let now_ms = seed.tick();
+    seed.page.set_block_prop(
+        "showcase-edgeless-note",
+        "prop:background",
+        SessionValue::Any(Any::String(
+            "var(--affine-background-primary-color)".to_string(),
+        )),
+        now_ms,
+    )?;
+    seed.paragraph(
+        "showcase-edgeless-note-h",
+        ParagraphType::H3,
+        "Spatial Notes",
+        "showcase-edgeless-note",
+    )?;
+    seed.list(
+        "showcase-edgeless-note-b1",
+        ListType::Bulleted,
+        "GPU world-space transforms & crisp dot-grid",
+        false,
+        "showcase-edgeless-note",
+    )?;
+    seed.list(
+        "showcase-edgeless-note-b2",
+        ListType::Bulleted,
+        "Zero BlockFlow relayout during pan & zoom",
+        false,
+        "showcase-edgeless-note",
+    )?;
+
+    seed.add(
+        "showcase-edgeless-text",
+        BlockSpec::EdgelessText {
+            xywh: Some("[820,360,320,84]".to_string()),
+        },
+        Some("showcase-surface"),
+    )?;
+    let now_ms = seed.tick();
+    seed.page.set_block_prop(
+        "showcase-edgeless-text",
+        "prop:rotate",
+        SessionValue::Any(Any::Float64((-4.0_f64).into())),
+        now_ms,
+    )?;
+    let now_ms = seed.tick();
+    seed.page.set_block_prop(
+        "showcase-edgeless-text",
+        "prop:scale",
+        SessionValue::Any(Any::Float64((1.0_f64).into())),
+        now_ms,
+    )?;
+    seed.paragraph(
+        "showcase-edgeless-text-p",
+        ParagraphType::H4,
+        "Rotated EdgelessText on GPU",
+        "showcase-edgeless-text",
     )?;
 
     let image = showcase_gradient_png();
@@ -1959,9 +2176,17 @@ mod tests {
             page_snap.elements["page.title_block"].text.as_deref(),
             Some("Native BlockSuite Playground")
         );
-        assert_ne!(
-            page_snap.elements["page.title_block"].text,
-            edgeless_snap.elements["page.title_block"].text
+        assert!(
+            edgeless_snap.elements.contains_key("edgeless.viewport"),
+            "edgeless viewport missing from FrameSnapshot"
+        );
+        assert!(
+            edgeless_snap.elements.contains_key("chrome.edgeless_zoom"),
+            "edgeless zoom bar missing from FrameSnapshot"
+        );
+        assert!(
+            !edgeless_snap.elements.contains_key("page.title_block"),
+            "page.title_block should not remain mounted in Edgeless mode"
         );
         assert_ne!(
             page_img.as_raw(),
@@ -3982,6 +4207,408 @@ mod tests {
         assert_eq!(
             options.room.expect("room").ws_url,
             "ws://127.0.0.1:9000/native-sync/rooms/r"
+        );
+    }
+
+    #[test]
+    fn edgeless_surface_parentage_includes_frame_text_and_note() {
+        let mut doc = DocState::new("surf-tree", client_id_from_seed(0x501)).expect("state");
+        doc.workspace.initialize_meta().expect("meta");
+        doc.workspace
+            .create_page(HOME_PAGE_ID, "Surface Tree", 1)
+            .expect("page");
+        let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        let mut seed = ShowcaseSeed { page, now_ms: 0 };
+        seed.add(
+            "s-page",
+            BlockSpec::Page {
+                title: "Surface Tree".to_string(),
+            },
+            None,
+        )
+        .expect("page");
+        seed.add("s-surface", BlockSpec::Surface, Some("s-page"))
+            .expect("surface");
+        seed.add(
+            "s-frame",
+            BlockSpec::Frame {
+                title: "Surface Frame".to_string(),
+                xywh: Some("[0,0,700,420]".to_string()),
+                presentation_index: Some("a0".to_string()),
+            },
+            Some("s-surface"),
+        )
+        .expect("frame under surface");
+        seed.add(
+            "s-text",
+            BlockSpec::EdgelessText {
+                xywh: Some("[440,60,220,60]".to_string()),
+            },
+            Some("s-surface"),
+        )
+        .expect("edgeless text under surface");
+        seed.paragraph("s-text-p", ParagraphType::H4, "Under Surface", "s-text")
+            .expect("text child");
+        seed.add(
+            "s-note",
+            BlockSpec::Note {
+                xywh: Some("[40,40,360,240]".to_string()),
+            },
+            Some("s-page"),
+        )
+        .expect("note under page");
+        seed.paragraph("s-note-p", ParagraphType::Text, "Page note body", "s-note")
+            .expect("note child");
+
+        let session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        session.view(|view, cx| view.set_document(doc, cx));
+        let (snap, _) = session.frame();
+        assert_no_violations(&snap, "Edgeless surface tree");
+        assert!(
+            snap.elements.contains_key("edgeless.frame.s-frame"),
+            "Frame under Surface missing from snapshot"
+        );
+        assert!(
+            snap.elements.contains_key("edgeless.text.s-text"),
+            "EdgelessText under Surface missing from snapshot"
+        );
+        assert!(
+            snap.elements.contains_key("edgeless.note.s-note"),
+            "Note under Page missing from snapshot"
+        );
+    }
+
+    #[test]
+    fn edgeless_panned_code_and_bookmark_render_glyph_ink_across_zooms() {
+        let mut doc = DocState::new("pan-clip", client_id_from_seed(0x502)).expect("state");
+        doc.workspace.initialize_meta().expect("meta");
+        doc.workspace
+            .create_page(HOME_PAGE_ID, "Pan Clip", 1)
+            .expect("page");
+        let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        let mut seed = ShowcaseSeed { page, now_ms: 0 };
+        seed.add(
+            "p-page",
+            BlockSpec::Page {
+                title: "Pan Clip".to_string(),
+            },
+            None,
+        )
+        .expect("page");
+        seed.add("p-surface", BlockSpec::Surface, Some("p-page"))
+            .expect("surface");
+        seed.add(
+            "p-note",
+            BlockSpec::Note {
+                xywh: Some("[2000,100,600,360]".to_string()),
+            },
+            Some("p-page"),
+        )
+        .expect("note");
+        seed.add(
+            "p-code",
+            BlockSpec::Code {
+                text: "fn edgeless_local_clip() -> u32 { 42 }".to_string(),
+                language: Some("rust".to_string()),
+                caption: String::new(),
+            },
+            Some("p-note"),
+        )
+        .expect("code");
+        let now_ms = seed.tick();
+        seed.page
+            .set_block_prop("p-code", "prop:wrap", SessionValue::Any(Any::False), now_ms)
+            .expect("unwrap code");
+        seed.add(
+            "p-bookmark",
+            BlockSpec::Bookmark {
+                url: "https://affine.pro/docs".to_string(),
+                title: Some("AFFiNE Docs".to_string()),
+                description: Some(
+                    "Local-first collaborative workspace description text.".to_string(),
+                ),
+            },
+            Some("p-note"),
+        )
+        .expect("bookmark");
+
+        let session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        session.view(|view, cx| view.set_document(doc, cx));
+
+        for zoom in [0.5_f32, 1.0, 2.0] {
+            let pan_x = 2000.0 - 50.0 / zoom;
+            let pan_y = 100.0 - 40.0 / zoom;
+            session.view(|view, cx| view.set_edgeless_camera(pan_x, pan_y, zoom, cx));
+            let (_, img) = session.frame();
+
+            // Count distinct non-white ink pixels inside the rendered Note card region
+            // where the code language header ("rust"), code line, and bookmark description sit.
+            let card_left = 50_u32;
+            let card_top = (TOPBAR_HEIGHT + 40.0) as u32;
+            let card_w = (600.0 * zoom).min(1200.0) as u32;
+            let card_h = (320.0 * zoom).min(680.0) as u32;
+            let mut dark_ink_pixels = 0_u64;
+            for y in card_top..(card_top + card_h).min(img.height()) {
+                for x in card_left..(card_left + card_w).min(img.width()) {
+                    let p = img.get_pixel(x, y);
+                    // Text ink in light theme is significantly darker than the white/gray card surface.
+                    if p[0] < 180 && p[1] < 180 && p[2] < 180 {
+                        dark_ink_pixels += 1;
+                    }
+                }
+            }
+            assert!(
+                dark_ink_pixels > 150,
+                "zoom={zoom}: expected visible glyph ink for code header/line + bookmark description, got only {dark_ink_pixels} dark pixels"
+            );
+
+            // Also verify the GPU scene emitted monochrome glyph sprites for the panned note
+            // (language label + code + bookmark title/description/url > 40 glyphs).
+            let glyph_count = session.app.update(|cx| {
+                session
+                    .window
+                    .update(cx, |_, window, _| {
+                        window.rendered_scene().monochrome_sprites.len()
+                    })
+                    .expect("read scene")
+            });
+            assert!(
+                glyph_count > 60,
+                "zoom={zoom}: expected >60 glyph sprites in scene, got {glyph_count}"
+            );
+        }
+    }
+
+    #[test]
+    fn edgeless_scale_2x_wraps_at_half_logical_width_with_zero_camera_relayout() {
+        let mut doc = DocState::new("scale-2x", client_id_from_seed(0x503)).expect("state");
+        doc.workspace.initialize_meta().expect("meta");
+        doc.workspace
+            .create_page(HOME_PAGE_ID, "Scale 2x", 1)
+            .expect("page");
+        let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        let mut seed = ShowcaseSeed { page, now_ms: 0 };
+        seed.add(
+            "sc-page",
+            BlockSpec::Page {
+                title: "Scale 2x".to_string(),
+            },
+            None,
+        )
+        .expect("page");
+        seed.add("sc-surface", BlockSpec::Surface, Some("sc-page"))
+            .expect("surface");
+        seed.add(
+            "sc-note",
+            BlockSpec::Note {
+                xywh: Some("[0,0,400,200]".to_string()),
+            },
+            Some("sc-page"),
+        )
+        .expect("note");
+        let mut edgeless_map = AHashMap::default();
+        edgeless_map.insert("scale".to_string(), Any::Float64(2.0_f64.into()));
+        let now_ms = seed.tick();
+        seed.page
+            .set_block_prop(
+                "sc-note",
+                "prop:edgeless",
+                SessionValue::Any(Any::Object(Box::new(edgeless_map))),
+                now_ms,
+            )
+            .expect("note scale");
+        seed.paragraph(
+            "sc-note-p",
+            ParagraphType::Text,
+            "Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu",
+            "sc-note",
+        )
+        .expect("note text");
+
+        seed.add(
+            "sc-text",
+            BlockSpec::EdgelessText {
+                xywh: Some("[460,0,400,80]".to_string()),
+            },
+            Some("sc-surface"),
+        )
+        .expect("edgeless text");
+        let now_ms = seed.tick();
+        seed.page
+            .set_block_prop(
+                "sc-text",
+                "prop:scale",
+                SessionValue::Any(Any::Float64(2.0_f64.into())),
+                now_ms,
+            )
+            .expect("text scale");
+        let now_ms = seed.tick();
+        seed.page
+            .set_block_prop(
+                "sc-text",
+                "prop:hasMaxWidth",
+                SessionValue::Any(Any::True),
+                now_ms,
+            )
+            .expect("hasMaxWidth");
+        seed.paragraph(
+            "sc-text-p",
+            ParagraphType::Text,
+            "Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu",
+            "sc-text",
+        )
+        .expect("text paragraph");
+
+        let session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        session.view(|view, cx| view.set_document(doc, cx));
+        let _ = session.frame();
+
+        let (note_w, text_w, text_lines) = session.view(|view, _| {
+            let note_layout = view
+                .edgeless
+                .cached_note_layout("sc-note")
+                .expect("cached note layout");
+            let text_layout = view
+                .edgeless
+                .cached_text_layout("sc-text")
+                .expect("cached text layout");
+            let lines = text_layout
+                .block("sc-text-p")
+                .and_then(|b| b.body.text.as_ref())
+                .map_or(0, |t| t.layout.line_count());
+            (note_layout.width, text_layout.width, lines)
+        });
+        assert!(
+            (note_w - (400.0 / 2.0 - 2.0 * edgeless_canvas::NOTE_CARD_PADDING)).abs() < 0.01,
+            "expected Note logical width 152.0, got {note_w}"
+        );
+        assert!(
+            (text_w - 200.0).abs() < 0.01,
+            "expected EdgelessText logical width 200.0, got {text_w}"
+        );
+        assert!(
+            text_lines >= 2,
+            "expected EdgelessText at 200px logical width to wrap into >=2 lines, got {text_lines}"
+        );
+
+        // Subsequent camera pan + zoom must trigger zero BlockFlow relayouts.
+        for zoom in [0.5_f32, 1.5, 2.0] {
+            session.view(|view, cx| view.set_edgeless_camera(-20.0, -20.0, zoom, cx));
+            let _ = session.frame();
+            let relayouts = session.view(|view, _| view.edgeless_last_frame_relayouts());
+            assert_eq!(
+                relayouts, 0,
+                "camera zoom={zoom} must cause 0 BlockFlow relayouts"
+            );
+        }
+    }
+
+    #[test]
+    fn edgeless_collapsed_note_clips_overflow_content_to_stored_height() {
+        let mut doc = DocState::new("collapse-note", client_id_from_seed(0x504)).expect("state");
+        doc.workspace.initialize_meta().expect("meta");
+        doc.workspace
+            .create_page(HOME_PAGE_ID, "Collapsed Note", 1)
+            .expect("page");
+        let page = doc.workspace.ensure_page(HOME_PAGE_ID).expect("page");
+        let mut seed = ShowcaseSeed { page, now_ms: 0 };
+        seed.add(
+            "c-page",
+            BlockSpec::Page {
+                title: "Collapsed Note".to_string(),
+            },
+            None,
+        )
+        .expect("page");
+        seed.add(
+            "c-note",
+            BlockSpec::Note {
+                xywh: Some("[40,40,420,120]".to_string()),
+            },
+            Some("c-page"),
+        )
+        .expect("note");
+        let mut edgeless_map = AHashMap::default();
+        edgeless_map.insert("collapse".to_string(), Any::True);
+        edgeless_map.insert(
+            "collapsedHeight".to_string(),
+            Any::Float64(120.0_f64.into()),
+        );
+        let now_ms = seed.tick();
+        seed.page
+            .set_block_prop(
+                "c-note",
+                "prop:edgeless",
+                SessionValue::Any(Any::Object(Box::new(edgeless_map))),
+                now_ms,
+            )
+            .expect("collapse prop");
+        for i in 0..12 {
+            seed.paragraph(
+                &format!("c-p-{i}"),
+                ParagraphType::Text,
+                "Overflowing dark text line that must be clipped below collapsed height",
+                "c-note",
+            )
+            .expect("paragraph");
+        }
+
+        let session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                mode: PlaygroundMode::Edgeless,
+                ..PlaygroundOptions::default()
+            },
+        );
+        session.view(|view, cx| {
+            view.set_document(doc, cx);
+            view.set_edgeless_camera(0.0, 0.0, 1.0, cx);
+        });
+        let (snap, img) = session.frame();
+        let note_bounds = snap.elements["edgeless.note.c-note"].bounds;
+        assert!(
+            (note_bounds.height - 120.0).abs() < 1.0,
+            "collapsed note height must stay clamped to 120, got {}",
+            note_bounds.height
+        );
+
+        // Region well below the 120px collapsed card (and its drop shadow) must contain no dark text ink.
+        let check_top = (TOPBAR_HEIGHT + 40.0 + 120.0 + 36.0) as u32;
+        let check_bottom = (check_top + 160).min(img.height());
+        let mut leaked_dark = 0_u64;
+        for y in check_top..check_bottom {
+            for x in 60..440 {
+                let p = img.get_pixel(x, y);
+                if p[0] < 160 && p[1] < 160 && p[2] < 160 {
+                    leaked_dark += 1;
+                }
+            }
+        }
+        assert_eq!(
+            leaked_dark, 0,
+            "collapsed note leaked {leaked_dark} dark text pixels below its clamped height"
         );
     }
 }

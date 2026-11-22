@@ -369,7 +369,8 @@ async function checkLinkField(cdp) {
   await mouse('mousePressed',from,1);
   await mouse('mouseMoved',to,1);
   await mouse('mouseReleased',to,0);
-  await sleep(400);
+  await evaluate('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))');
+  await sleep(100);
   const paragraph = await mirror();
   if (!paragraph.value.startsWith('This page')) {
     throw new Error(`Unable to select in the second showcase block: ${JSON.stringify(paragraph)}`);
@@ -479,6 +480,8 @@ async function main() {
       }
     });
 
+    await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await cdp.send('Page.bringToFront');
     const pageUrl = `http://127.0.0.1:${port}/${args.query ? `?${args.query}` : ''}`;
     await cdp.send('Page.navigate', { url: pageUrl });
 
@@ -580,6 +583,28 @@ async function main() {
     console.log(`Web Wasm Edgeless click diffPixels=${diffPx}`);
     if (diffPx < 5000) {
       throw new Error(`Clicking Edgeless did not produce expected visual transition (diffPixels=${diffPx})`);
+    }
+    const edgelessInk = countDarkInkPixels(img2, 40, 80, 1240, 760);
+    console.log(`Web Wasm Edgeless canvas ink=${edgelessInk}`);
+    if (edgelessInk < 500) {
+      throw new Error(`Expected non-trivial Edgeless canvas ink (>=500), got ${edgelessInk}`);
+    }
+
+    if (!args.query) {
+      // Also verify direct `?mode=edgeless` cold load without WebGL2/WebGPU shader errors.
+      await cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/?mode=edgeless` });
+      let edgelessDirectInk = 0;
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        await sleep(300);
+        const shot3 = await cdp.send('Page.captureScreenshot', { format: 'png' });
+        const img3 = decodePngRgba(Buffer.from(shot3.data, 'base64'));
+        edgelessDirectInk = countDarkInkPixels(img3, 40, 80, 1240, 760);
+        if (edgelessDirectInk >= 500) break;
+      }
+      console.log(`Web Wasm direct ?mode=edgeless ink=${edgelessDirectInk}`);
+      if (edgelessDirectInk < 500) {
+        throw new Error(`Direct ?mode=edgeless rendered insufficient ink (${edgelessDirectInk})`);
+      }
     }
     if (errors.length > 0) {
       throw new Error(`Uncaught browser errors during Wasm smoke test:\n${errors.join('\n')}`);

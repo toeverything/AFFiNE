@@ -103,6 +103,11 @@
             { "type": "null" }
           ]
         },
+        "edgeless_1k_pan_zoom_blocks_relayout": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Number of blocks re-laid out during a 30-step Edgeless pan and zoom sweep."
+        },
         "headless_frame_render_ms": {
           "oneOf": [
             { "$ref": "#/$defs/timingSummary" },

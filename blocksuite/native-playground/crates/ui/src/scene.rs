@@ -90,7 +90,7 @@ impl Scene {
     pub fn insert_primitive(&mut self, primitive: impl Into<Primitive>) {
         let mut primitive = primitive.into();
         let clipped_bounds = primitive
-            .bounds()
+            .screen_bounds()
             .intersect(&primitive.content_mask().bounds);
 
         if clipped_bounds.is_empty() {
@@ -225,6 +225,21 @@ impl Primitive {
             Primitive::SubpixelSprite(sprite) => &sprite.bounds,
             Primitive::PolychromeSprite(sprite) => &sprite.bounds,
             Primitive::Surface(surface) => &surface.bounds,
+        }
+    }
+
+    pub fn screen_bounds(&self) -> Bounds<ScaledPixels> {
+        match self {
+            Primitive::Shadow(shadow) => shadow.transformation.map_bounds(shadow.bounds),
+            Primitive::Quad(quad) => quad.transformation.map_bounds(quad.bounds),
+            Primitive::Path(path) => path.bounds,
+            Primitive::Underline(underline) => {
+                underline.transformation.map_bounds(underline.bounds)
+            }
+            Primitive::MonochromeSprite(sprite) => sprite.transformation.map_bounds(sprite.bounds),
+            Primitive::SubpixelSprite(sprite) => sprite.transformation.map_bounds(sprite.bounds),
+            Primitive::PolychromeSprite(sprite) => sprite.transformation.map_bounds(sprite.bounds),
+            Primitive::Surface(surface) => surface.bounds,
         }
     }
 
@@ -498,6 +513,25 @@ impl PrimitiveBatch {
     }
 }
 
+/// Unbounded local-space content mask (1e12 px extent, safe under HiDPI scaling without f32 overflow).
+pub(crate) fn unbounded_local_content_mask() -> ContentMask<Pixels> {
+    ContentMask {
+        bounds: Bounds::new(
+            point(Pixels(-1.0e12), Pixels(-1.0e12)),
+            Size::new(Pixels(2.0e12), Pixels(2.0e12)),
+        ),
+    }
+}
+
+pub(crate) fn unbounded_scaled_content_mask() -> ContentMask<ScaledPixels> {
+    ContentMask {
+        bounds: Bounds::new(
+            point(ScaledPixels(-1.0e12), ScaledPixels(-1.0e12)),
+            Size::new(ScaledPixels(2.0e12), ScaledPixels(2.0e12)),
+        ),
+    }
+}
+
 #[derive(Default, Debug, Copy, Clone)]
 #[repr(C)]
 #[expect(missing_docs)]
@@ -510,6 +544,9 @@ pub struct Quad {
     pub border_color: Hsla,
     pub corner_radii: Corners<ScaledPixels>,
     pub border_widths: Edges<ScaledPixels>,
+    pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
+    pub pad: [u32; 2],
 }
 
 impl From<Quad> for Primitive {
@@ -529,6 +566,9 @@ pub struct Underline {
     pub color: Hsla,
     pub thickness: ScaledPixels,
     pub wavy: PaddedBool32,
+    pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
+    pub pad2: [u32; 2],
 }
 
 impl From<Underline> for Primitive {
@@ -552,6 +592,9 @@ pub struct Shadow {
     /// 0 = drop shadow (rendered outside the element), 1 = inset shadow (rendered inside).
     pub inset: u32,
     pub pad: u32, // align to 8 bytes
+    pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
+    pub pad2: [u32; 2],
 }
 
 impl From<Shadow> for Primitive {
@@ -667,9 +710,27 @@ impl TransformationMatrix {
         Point::new(output[0].into(), output[1].into())
     }
 
+    /// Apply transformation to a device-pixel point.
+    #[inline]
+    pub fn apply_scaled(&self, point: Point<ScaledPixels>) -> Point<ScaledPixels> {
+        let x = point.x.0;
+        let y = point.y.0;
+        Point::new(
+            ScaledPixels(
+                self.rotation_scale[0][0] * x + self.rotation_scale[0][1] * y + self.translation[0],
+            ),
+            ScaledPixels(
+                self.rotation_scale[1][0] * x + self.rotation_scale[1][1] * y + self.translation[1],
+            ),
+        )
+    }
+
     /// Maps a local-space axis-aligned rectangle through this 2D linear-plus-translation transform
     /// and returns the conservative axis-aligned bounding box of its four corners.
     pub fn map_bounds(&self, bounds: Bounds<ScaledPixels>) -> Bounds<ScaledPixels> {
+        if *self == Self::unit() {
+            return bounds;
+        }
         let x0 = bounds.origin.x.0;
         let y0 = bounds.origin.y.0;
         let x1 = x0 + bounds.size.width.0;
@@ -696,6 +757,64 @@ impl TransformationMatrix {
             size: Size::new(
                 ScaledPixels((max_x - min_x).max(0.0)),
                 ScaledPixels((max_y - min_y).max(0.0)),
+            ),
+        }
+    }
+
+    /// Computes the inverse of this 2D linear-plus-translation transform, returning `None` if singular.
+    pub fn inverse(&self) -> Option<Self> {
+        let a = self.rotation_scale[0][0];
+        let b = self.rotation_scale[0][1];
+        let c = self.rotation_scale[1][0];
+        let d = self.rotation_scale[1][1];
+        let det = a * d - b * c;
+        if det.abs() <= 1e-12 {
+            return None;
+        }
+        let inv_det = 1.0 / det;
+        let ia = d * inv_det;
+        let ib = -b * inv_det;
+        let ic = -c * inv_det;
+        let id = a * inv_det;
+        let tx = self.translation[0];
+        let ty = self.translation[1];
+        Some(Self {
+            rotation_scale: [[ia, ib], [ic, id]],
+            translation: [-(ia * tx + ib * ty), -(ic * tx + id * ty)],
+        })
+    }
+
+    /// Maps a logical-pixel axis-aligned rectangle through this transform and returns
+    /// the conservative axis-aligned bounding box of its four corners.
+    pub fn map_bounds_pixels(&self, bounds: Bounds<Pixels>) -> Bounds<Pixels> {
+        if *self == Self::unit() {
+            return bounds;
+        }
+        let x0 = bounds.origin.x.0;
+        let y0 = bounds.origin.y.0;
+        let x1 = x0 + bounds.size.width.0;
+        let y1 = y0 + bounds.size.height.0;
+        let mut min_x = f32::INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+        for (cx, cy) in [(x0, y0), (x1, y0), (x0, y1), (x1, y1)] {
+            let tx = self.rotation_scale[0][0] * cx
+                + self.rotation_scale[0][1] * cy
+                + self.translation[0];
+            let ty = self.rotation_scale[1][0] * cx
+                + self.rotation_scale[1][1] * cy
+                + self.translation[1];
+            min_x = min_x.min(tx);
+            min_y = min_y.min(ty);
+            max_x = max_x.max(tx);
+            max_y = max_y.max(ty);
+        }
+        Bounds {
+            origin: Point::new(Pixels(min_x), Pixels(min_y)),
+            size: Size::new(
+                Pixels((max_x - min_x).max(0.0)),
+                Pixels((max_y - min_y).max(0.0)),
             ),
         }
     }
@@ -730,6 +849,7 @@ pub struct MonochromeSprite {
     pub content_mask: ContentMask<ScaledPixels>,
     pub color: Hsla,
     pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
 }
 
 impl From<MonochromeSprite> for Primitive {
@@ -749,6 +869,7 @@ pub struct SubpixelSprite {
     pub content_mask: ContentMask<ScaledPixels>,
     pub color: Hsla,
     pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
 }
 
 impl From<SubpixelSprite> for Primitive {
@@ -769,7 +890,34 @@ pub struct PolychromeSprite {
     pub bounds: Bounds<ScaledPixels>,
     pub content_mask: ContentMask<ScaledPixels>,
     pub corner_radii: Corners<ScaledPixels>,
+    pub transformation: TransformationMatrix,
+    pub local_content_mask: ContentMask<ScaledPixels>,
+    pub pad2: [u32; 2],
 }
+
+// WebGL2 packs GPU instance structs into RGBA32U texels (16 bytes each).
+const _: () = {
+    assert!(std::mem::size_of::<Quad>() == 208 && std::mem::size_of::<Quad>().is_multiple_of(16));
+    assert!(
+        std::mem::size_of::<Shadow>() == 160 && std::mem::size_of::<Shadow>().is_multiple_of(16)
+    );
+    assert!(
+        std::mem::size_of::<Underline>() == 112
+            && std::mem::size_of::<Underline>().is_multiple_of(16)
+    );
+    assert!(
+        std::mem::size_of::<MonochromeSprite>() == 128
+            && std::mem::size_of::<MonochromeSprite>().is_multiple_of(16)
+    );
+    assert!(
+        std::mem::size_of::<SubpixelSprite>() == 128
+            && std::mem::size_of::<SubpixelSprite>().is_multiple_of(16)
+    );
+    assert!(
+        std::mem::size_of::<PolychromeSprite>() == 144
+            && std::mem::size_of::<PolychromeSprite>().is_multiple_of(16)
+    );
+};
 
 impl From<PolychromeSprite> for Primitive {
     fn from(sprite: PolychromeSprite) -> Self {
@@ -805,6 +953,7 @@ pub struct Path<P: Clone + Debug + Default + PartialEq> {
     pub order: DrawOrder,
     pub bounds: Bounds<P>,
     pub content_mask: ContentMask<P>,
+    pub local_content_mask: ContentMask<P>,
     pub vertices: Vec<PathVertex<P>>,
     pub color: Background,
     start: Point<P>,
@@ -826,6 +975,7 @@ impl Path<Pixels> {
                 size: Default::default(),
             },
             content_mask: Default::default(),
+            local_content_mask: unbounded_local_content_mask(),
             color: Default::default(),
             contour_count: 0,
         }
@@ -833,15 +983,48 @@ impl Path<Pixels> {
 
     /// Scale this path by the given factor.
     pub fn scale(&self, factor: f32) -> Path<ScaledPixels> {
+        self.scale_transformed(
+            factor,
+            TransformationMatrix::unit(),
+            self.local_content_mask.scale(factor),
+        )
+    }
+
+    /// Scale and transform this path's vertices into screen space while preserving local coordinates.
+    pub fn scale_transformed(
+        &self,
+        factor: f32,
+        transform: TransformationMatrix,
+        local_content_mask: ContentMask<ScaledPixels>,
+    ) -> Path<ScaledPixels> {
+        let is_unit = transform == TransformationMatrix::unit();
+        let scaled_bounds = self.bounds.scale(factor);
         Path {
             id: self.id,
             order: self.order,
-            bounds: self.bounds.scale(factor),
+            bounds: if is_unit {
+                scaled_bounds
+            } else {
+                transform.map_bounds(scaled_bounds)
+            },
             content_mask: self.content_mask.scale(factor),
+            local_content_mask,
             vertices: self
                 .vertices
                 .iter()
-                .map(|vertex| vertex.scale(factor))
+                .map(|vertex| {
+                    let local_pos = vertex.xy_position.scale(factor);
+                    PathVertex {
+                        xy_position: if is_unit {
+                            local_pos
+                        } else {
+                            transform.apply_scaled(local_pos)
+                        },
+                        local_position: local_pos,
+                        st_position: vertex.st_position,
+                        content_mask: vertex.content_mask.scale(factor),
+                    }
+                })
                 .collect(),
             start: self.start.map(|start| start.scale(factor)),
             current: self.current.scale(factor),
@@ -909,16 +1092,19 @@ impl Path<Pixels> {
 
         self.vertices.push(PathVertex {
             xy_position: xy.0,
+            local_position: xy.0,
             st_position: st.0,
             content_mask: Default::default(),
         });
         self.vertices.push(PathVertex {
             xy_position: xy.1,
+            local_position: xy.1,
             st_position: st.1,
             content_mask: Default::default(),
         });
         self.vertices.push(PathVertex {
             xy_position: xy.2,
+            local_position: xy.2,
             st_position: st.2,
             content_mask: Default::default(),
         });
@@ -947,6 +1133,7 @@ impl From<Path<ScaledPixels>> for Primitive {
 #[expect(missing_docs)]
 pub struct PathVertex<P: Clone + Debug + Default + PartialEq> {
     pub xy_position: Point<P>,
+    pub local_position: Point<P>,
     pub st_position: Point<f32>,
     pub content_mask: ContentMask<P>,
 }
@@ -954,8 +1141,10 @@ pub struct PathVertex<P: Clone + Debug + Default + PartialEq> {
 #[expect(missing_docs)]
 impl PathVertex<Pixels> {
     pub fn scale(&self, factor: f32) -> PathVertex<ScaledPixels> {
+        let scaled = self.xy_position.scale(factor);
         PathVertex {
-            xy_position: self.xy_position.scale(factor),
+            xy_position: scaled,
+            local_position: scaled,
             st_position: self.st_position,
             content_mask: self.content_mask.scale(factor),
         }
@@ -971,7 +1160,7 @@ pub(crate) struct LayerKey(pub u32);
 pub(crate) enum LayerContent {
     #[default]
     Empty,
-    Scene(std::sync::Arc<Scene>),
+    Scene(std::rc::Rc<Scene>),
 }
 
 impl LayerContent {
@@ -985,7 +1174,7 @@ impl LayerContent {
 
 impl From<Scene> for LayerContent {
     fn from(scene: Scene) -> Self {
-        Self::Scene(std::sync::Arc::new(scene))
+        Self::Scene(std::rc::Rc::new(scene))
     }
 }
 

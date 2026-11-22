@@ -164,7 +164,14 @@ pub struct PathRasterizationVertex {
     pub st_position: Point<f32>,
     pub color: Background,
     pub bounds: Bounds<ScaledPixels>,
+    pub local_position: Point<ScaledPixels>,
+    pub local_content_mask: ContentMask<ScaledPixels>,
 }
+
+const _: () = assert!(
+    std::mem::size_of::<PathRasterizationVertex>() == 128
+        && std::mem::size_of::<PathRasterizationVertex>().is_multiple_of(16)
+);
 
 impl MetalRenderer {
     /// Creates a new MetalRenderer with a CAMetalLayer for window-based rendering.
@@ -992,6 +999,8 @@ impl MetalRenderer {
                 st_position: v.st_position,
                 color: path.color,
                 bounds: path.bounds.intersect(&path.content_mask.bounds),
+                local_position: v.local_position,
+                local_content_mask: path.local_content_mask,
             }));
         }
         let vertex_instance_bindings = writer.write(&vertices)?;

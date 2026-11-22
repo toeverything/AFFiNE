@@ -122,6 +122,26 @@ pub(crate) struct GlyphRunRendering {
     dilation: u8,
 }
 
+/// Quantize a non-unit transform scale into quarter-octave buckets so zoomed text
+/// stays crisp without re-laying out paragraphs.
+#[inline]
+pub(crate) fn glyph_zoom_bucket(transform: &TransformationMatrix) -> Option<f32> {
+    let s = transform.rotation_scale[0][0]
+        .hypot(transform.rotation_scale[1][0])
+        .max(1e-3);
+    if (s - 1.0).abs() > 1e-3 {
+        Some(
+            2.0_f32
+                .powf((4.0 * s.log2()).round() / 4.0)
+                .clamp(0.25, 8.0),
+        )
+    } else {
+        None
+    }
+}
+
+/// [`Window::paint_glyph`], for a glyph in a run whose rendering and
+/// snapped content mask the caller has already worked out.
 impl Window {
     /// How the glyphs of a run in `font_id` at `font_size` and in `color` are
     /// rendered, which [`Window::paint_glyph_in_run`] takes so that painting a
@@ -157,16 +177,36 @@ impl Window {
         let element_opacity = self.element_opacity();
         let scale_factor = self.scale_factor();
         let glyph_origin = origin.scale(scale_factor);
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
+        let is_unit = transformation == TransformationMatrix::unit();
+        let zoom_bucket = glyph_zoom_bucket(&transformation);
 
-        let (integer_origin, subpixel_variant) = quantize_origin(glyph_origin);
         let GlyphRunRendering {
             subpixel_rendering,
             dilation,
         } = rendering;
+        let (integer_origin, subpixel_variant, raster_font_size, subpixel_rendering) =
+            if let Some(bucket) = zoom_bucket {
+                (
+                    glyph_origin,
+                    Point::default(),
+                    Pixels(font_size.0 * bucket),
+                    false,
+                )
+            } else {
+                let (integer_origin, subpixel_variant) = quantize_origin(glyph_origin);
+                (
+                    integer_origin,
+                    subpixel_variant,
+                    font_size,
+                    is_unit && subpixel_rendering,
+                )
+            };
         let params = RenderGlyphParams {
             font_id,
             glyph_id,
-            font_size,
+            font_size: raster_font_size,
             subpixel_variant,
             scale_factor,
             is_emoji: false,
@@ -182,7 +222,11 @@ impl Window {
                 (raster_bounds, None, None)
             }
         };
-        let sprite_origin = integer_origin + raster_bounds.origin.map(Into::into);
+        let inv_bucket = 1.0 / zoom_bucket.unwrap_or(1.0);
+        let sprite_origin = Point::new(
+            ScaledPixels(integer_origin.x.0 + raster_bounds.origin.x.0 as f32 * inv_bucket),
+            ScaledPixels(integer_origin.y.0 + raster_bounds.origin.y.0 as f32 * inv_bucket),
+        );
         if !raster_bounds.is_zero() {
             let tile = match tile {
                 Some(tile) => tile,
@@ -190,7 +234,15 @@ impl Window {
                 // where the sprite's size is known, drop it before looking up
                 // its tile.
                 None if sprite_size.is_some_and(|size| {
-                    Bounds::new(sprite_origin, size.map(Into::into))
+                    let local_bounds = Bounds::new(
+                        sprite_origin,
+                        Size::new(
+                            ScaledPixels(size.width.0 as f32 * inv_bucket),
+                            ScaledPixels(size.height.0 as f32 * inv_bucket),
+                        ),
+                    );
+                    transformation
+                        .map_bounds(local_bounds)
                         .intersect(&content_mask.bounds)
                         .is_empty()
                 }) =>
@@ -211,7 +263,10 @@ impl Window {
             };
             let bounds = Bounds {
                 origin: sprite_origin,
-                size: tile.bounds.size.map(Into::into),
+                size: Size::new(
+                    ScaledPixels(tile.bounds.size.width.0 as f32 * inv_bucket),
+                    ScaledPixels(tile.bounds.size.height.0 as f32 * inv_bucket),
+                ),
             };
 
             if subpixel_rendering {
@@ -222,7 +277,8 @@ impl Window {
                     content_mask,
                     color: color.opacity(element_opacity),
                     tile,
-                    transformation: TransformationMatrix::unit(),
+                    transformation,
+                    local_content_mask,
                 });
             } else {
                 self.next_frame.scene.insert_primitive(MonochromeSprite {
@@ -232,7 +288,8 @@ impl Window {
                     content_mask,
                     color: color.opacity(element_opacity),
                     tile,
-                    transformation: TransformationMatrix::unit(),
+                    transformation,
+                    local_content_mask,
                 });
             }
         }
@@ -248,6 +305,7 @@ impl Window {
 pub(crate) struct LineGlyphPainter {
     snapped_content_mask: ContentMask<ScaledPixels>,
     content_mask: Bounds<Pixels>,
+    is_transformed: bool,
     reach: GlyphReach,
     run_rendering: Option<(FontId, Hsla, GlyphRunRendering)>,
 }
@@ -257,6 +315,7 @@ impl LineGlyphPainter {
         Self {
             snapped_content_mask: window.snapped_content_mask(),
             content_mask: window.content_mask().bounds,
+            is_transformed: window.paint_transformation() != TransformationMatrix::unit(),
             reach: GlyphReach::UNSET,
             run_rendering: None,
         }
@@ -288,6 +347,9 @@ impl LineGlyphPainter {
         baseline: Pixels,
         mask: &Bounds<Pixels>,
     ) -> bool {
+        if self.is_transformed {
+            return true;
+        }
         debug_assert_eq!(*mask, self.content_mask);
         if !self.reach.is_for(line_glyph.size) {
             self.reach = GlyphReach::new(line_glyph.size, &self.content_mask);

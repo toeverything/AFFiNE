@@ -406,7 +406,7 @@ impl InlineLayout {
         spans
     }
 
-    fn paint(&self, origin: Point<Pixels>, window: &mut Window, cx: &mut App) {
+    pub(crate) fn paint(&self, origin: Point<Pixels>, window: &mut Window, cx: &mut App) {
         for piece in &self.pieces {
             let piece_origin = point(
                 origin.x + px(piece.x),
@@ -958,7 +958,13 @@ impl BlockBody {
         })
     }
 
-    fn paint(&self, origin: Point<Pixels>, state: BlockPaint, window: &mut Window, cx: &mut App) {
+    pub(crate) fn paint(
+        &self,
+        origin: Point<Pixels>,
+        state: BlockPaint,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
         for prim in &self.prims {
             match prim {
                 Prim::CodeLine { x, y, layout, clip } => {
@@ -966,10 +972,10 @@ impl BlockBody {
                         .code_scroll
                         .map_or(0.0, |code| state.code_scroll_x.clamp(0.0, code.max_x));
                     let text_origin = point(origin.x + px(*x - scroll), origin.y + px(*y));
-                    window.with_content_mask(
-                        Some(ui::ContentMask {
+                    window.with_local_paint_mask(
+                        ui::ContentMask {
                             bounds: clip.bounds(origin),
-                        }),
+                        },
                         |window| layout.paint(text_origin, window, cx),
                     );
                 }
@@ -1001,10 +1007,10 @@ impl BlockBody {
                 Prim::Text { x, y, layout, clip } => {
                     let text_origin = point(origin.x + px(*x), origin.y + px(*y));
                     match clip {
-                        Some(clip) => window.with_content_mask(
-                            Some(ui::ContentMask {
+                        Some(clip) => window.with_local_paint_mask(
+                            ui::ContentMask {
                                 bounds: clip.bounds(origin),
-                            }),
+                            },
                             |window| layout.paint(text_origin, window, cx),
                         ),
                         None => layout.paint(text_origin, window, cx),
@@ -1245,6 +1251,37 @@ impl BlockFlow {
             pass.y += BOTTOM_PADDING;
         }
 
+        self.bodies = pass.next;
+        FlowLayout {
+            blocks: pass.blocks,
+            width: input.width,
+            height: pass.y,
+            stats: pass.stats,
+        }
+    }
+
+    /// Lay an arbitrary slice of block nodes out in local coordinates (no page title or bottom
+    /// padding), reusing cached block bodies across passes.
+    pub fn layout_nodes(
+        &mut self,
+        nodes: &[BlockNode],
+        input: &FlowInput<'_>,
+        window: &Window,
+    ) -> FlowLayout {
+        let mut pass = FlowPass {
+            dirty: None,
+            input,
+            palette: input.theme.palette(),
+            window,
+            previous: std::mem::take(&mut self.bodies),
+            next: HashMap::new(),
+            blocks: Vec::new(),
+            stats: FlowStats::default(),
+            y: 0.0,
+            pending_margin: None,
+        };
+        pass.flow(nodes, 0.0, 0, BlockAlign::Left);
+        pass.y += pass.pending_margin.take().unwrap_or(0.0);
         self.bodies = pass.next;
         FlowLayout {
             blocks: pass.blocks,

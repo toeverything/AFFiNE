@@ -1196,6 +1196,8 @@ pub struct Window {
     pub(crate) element_offset_stack: Vec<Point<Pixels>>,
     pub(crate) element_opacity: f32,
     pub(crate) content_mask_stack: Vec<ContentMask<Pixels>>,
+    pub(crate) paint_transformation_stack: Vec<TransformationMatrix>,
+    pub(crate) local_content_mask_stack: Vec<ContentMask<Pixels>>,
     pub(crate) requested_autoscroll: Option<Bounds<Pixels>>,
     /// The [`TextInputConfiguration`] most recently forwarded to the platform
     /// window, so that only actual changes are forwarded (reconfiguring a live
@@ -2157,6 +2159,8 @@ impl Window {
             rendered_entity_stack: Vec::new(),
             element_offset_stack: Vec::new(),
             content_mask_stack: Vec::new(),
+            paint_transformation_stack: Vec::new(),
+            local_content_mask_stack: Vec::new(),
             element_opacity: 1.0,
             requested_autoscroll: None,
             last_text_input_configuration: None,
@@ -3283,7 +3287,7 @@ impl Window {
     ) {
         self.invalidator.debug_assert_paint();
         let underline = self.underline(origin, width, style);
-        if exclusions.is_empty() {
+        if exclusions.is_empty() || underline.transformation != TransformationMatrix::unit() {
             self.next_frame.scene.insert_primitive(underline);
             return;
         }
@@ -3342,6 +3346,9 @@ impl Window {
                 .opacity(self.element_opacity()),
             thickness: self.snap_stroke(style.thickness),
             wavy: style.wavy.into(),
+            transformation: self.active_gpu_transformation(),
+            local_content_mask: self.active_local_content_mask(),
+            pad2: [0; 2],
         }
     }
 
@@ -4141,6 +4148,81 @@ impl Window {
         }
     }
 
+    /// Returns the active world-to-screen paint transformation matrix.
+    #[inline]
+    pub fn paint_transformation(&self) -> TransformationMatrix {
+        self.paint_transformation_stack
+            .last()
+            .copied()
+            .unwrap_or_else(TransformationMatrix::unit)
+    }
+
+    /// Composes `transform` onto the active paint transformation stack for the duration of `f`.
+    ///
+    /// If a local paint mask is active in the outer coordinate frame, its conservative
+    /// axis-aligned inverse image under `transform` is pushed for the duration of `f` so
+    /// nested local masks remain expressed in the inner local coordinate space.
+    #[inline]
+    pub fn with_paint_transformation<R>(
+        &mut self,
+        transform: TransformationMatrix,
+        f: impl FnOnce(&mut Self) -> R,
+    ) -> R {
+        self.invalidator.debug_assert_paint_or_prepaint();
+        let next = self.paint_transformation().compose(transform);
+        self.paint_transformation_stack.push(next);
+        let mapped_mask = self.local_content_mask_stack.last().and_then(|active| {
+            transform.inverse().map(|inv| ContentMask {
+                bounds: inv.map_bounds_pixels(active.bounds),
+            })
+        });
+        if let Some(mask) = mapped_mask {
+            self.local_content_mask_stack.push(mask);
+        }
+        let result = f(self);
+        if mapped_mask.is_some() {
+            self.local_content_mask_stack.pop();
+        }
+        self.paint_transformation_stack.pop();
+        result
+    }
+
+    /// Intersects `mask` with the active pre-transform local paint mask for the duration of `f`.
+    ///
+    /// Masks are axis-aligned in the active local coordinate space. When a nested
+    /// [`Self::with_paint_transformation`] carries rotation or shear, outer masks are
+    /// projected into the inner space as conservative axis-aligned bounding boxes.
+    #[inline]
+    pub fn with_local_paint_mask<R>(
+        &mut self,
+        mask: ContentMask<Pixels>,
+        f: impl FnOnce(&mut Self) -> R,
+    ) -> R {
+        self.invalidator.debug_assert_paint_or_prepaint();
+        let next = match self.local_content_mask_stack.last() {
+            Some(current) => mask.intersect(current),
+            None => mask,
+        };
+        self.local_content_mask_stack.push(next);
+        let result = f(self);
+        self.local_content_mask_stack.pop();
+        result
+    }
+
+    #[inline]
+    pub(crate) fn active_gpu_transformation(&self) -> TransformationMatrix {
+        self.paint_transformation()
+            .scale_translation(self.scale_factor())
+    }
+
+    #[inline]
+    pub(crate) fn active_local_content_mask(&self) -> ContentMask<ScaledPixels> {
+        self.local_content_mask_stack
+            .last()
+            .map(|mask| mask.scale(self.scale_factor()))
+            .unwrap_or_else(crate::scene::unbounded_scaled_content_mask)
+    }
+
     /// Returns the structured element snapshot recorded during the most recent rendered frame.
     #[inline]
     pub fn frame_snapshot(&self) -> &crate::FrameSnapshot {
@@ -4511,12 +4593,12 @@ impl Window {
     pub fn paint_layer<R>(&mut self, bounds: Bounds<Pixels>, f: impl FnOnce(&mut Self) -> R) -> R {
         self.invalidator.debug_assert_paint();
 
-        let content_mask = self.content_mask();
-        let clipped_bounds = bounds.intersect(&content_mask.bounds);
+        let transformed = self
+            .active_gpu_transformation()
+            .map_bounds(self.cover_bounds(bounds));
+        let clipped_bounds = transformed.intersect(&self.snapped_content_mask().bounds);
         if !clipped_bounds.is_empty() {
-            self.next_frame
-                .scene
-                .push_layer(self.cover_bounds(clipped_bounds));
+            self.next_frame.scene.push_layer(clipped_bounds);
         }
 
         let result = f(self);
@@ -4543,6 +4625,8 @@ impl Window {
 
         let scale_factor = self.scale_factor();
         let content_mask = self.snapped_content_mask();
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
         let opacity = self.element_opacity();
         let element_bounds = self.cover_bounds(bounds);
         let element_corner_radii = corner_radii.scale(scale_factor);
@@ -4562,6 +4646,9 @@ impl Window {
                 element_corner_radii,
                 inset: 0,
                 pad: 0,
+                transformation,
+                local_content_mask,
+                pad2: [0; 2],
             });
         }
     }
@@ -4579,6 +4666,8 @@ impl Window {
 
         let scale_factor = self.scale_factor();
         let content_mask = self.snapped_content_mask();
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
         let opacity = self.element_opacity();
         let element_bounds = self.cover_bounds(bounds);
         let element_corner_radii = corner_radii.scale(scale_factor);
@@ -4607,6 +4696,9 @@ impl Window {
                 element_corner_radii,
                 inset: 1,
                 pad: 0,
+                transformation,
+                local_content_mask,
+                pad2: [0; 2],
             });
         }
     }
@@ -4662,21 +4754,27 @@ impl Window {
     pub fn paint_quad(&mut self, quad: PaintQuad) {
         self.invalidator.debug_assert_paint();
 
+        let scale_factor = self.scale_factor();
         let opacity = self.element_opacity();
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
         let snapped_bounds = self.snap_bounds(quad.bounds);
         let snapped_border_widths = self.snap_border_widths(quad.border_widths);
         let quad = Quad {
             order: 0,
             bounds: snapped_bounds,
             content_mask: self.snapped_content_mask(),
-            background: quad.background.opacity(opacity),
+            background: quad.background.scale(scale_factor).opacity(opacity),
             border_color: quad.border_color.opacity(opacity),
-            corner_radii: quad.corner_radii.scale(self.scale_factor()),
+            corner_radii: quad.corner_radii.scale(scale_factor),
             border_widths: snapped_border_widths,
             border_style: quad.border_style,
+            transformation,
+            local_content_mask,
+            pad: [0; 2],
         };
 
-        if !quad.background.is_transparent() {
+        if !quad.background.is_transparent() || transformation != TransformationMatrix::unit() {
             self.next_frame.scene.insert_primitive(quad);
             return;
         }
@@ -4735,13 +4833,19 @@ impl Window {
 
         let scale_factor = self.scale_factor();
         let content_mask = self.content_mask();
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
         let opacity = self.element_opacity();
         path.content_mask = content_mask;
         let color: Background = color.into();
-        path.color = color.opacity(opacity);
+        path.color = color.scale(scale_factor).opacity(opacity);
         self.next_frame
             .scene
-            .insert_primitive(path.scale(scale_factor));
+            .insert_primitive(path.scale_transformed(
+                scale_factor,
+                transformation,
+                local_content_mask,
+            ));
     }
 
     /// Paint an underline into the scene for the next frame at the current z-index.
@@ -4785,6 +4889,9 @@ impl Window {
             thickness: self.snap_stroke(style.thickness),
             color: style.color.unwrap_or_default().opacity(opacity),
             wavy: false.into(),
+            transformation: self.active_gpu_transformation(),
+            local_content_mask: self.active_local_content_mask(),
+            pad2: [0; 2],
         });
     }
 
@@ -4809,14 +4916,34 @@ impl Window {
         let element_opacity = self.element_opacity();
         let scale_factor = self.scale_factor();
         let glyph_origin = origin.scale(scale_factor);
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
+        let is_unit = transformation == TransformationMatrix::unit();
+        let zoom_bucket = crate::fast::glyphs::glyph_zoom_bucket(&transformation);
 
-        let (integer_origin, subpixel_variant) = crate::fast::glyphs::quantize_origin(glyph_origin);
-        let subpixel_rendering = self.should_use_subpixel_rendering(font_id, font_size);
+        let (integer_origin, subpixel_variant, raster_font_size, subpixel_rendering) =
+            if let Some(bucket) = zoom_bucket {
+                (
+                    glyph_origin,
+                    Point::default(),
+                    Pixels(font_size.0 * bucket),
+                    false,
+                )
+            } else {
+                let (integer_origin, subpixel_variant) =
+                    crate::fast::glyphs::quantize_origin(glyph_origin);
+                (
+                    integer_origin,
+                    subpixel_variant,
+                    font_size,
+                    is_unit && self.should_use_subpixel_rendering(font_id, font_size),
+                )
+            };
         let dilation = self.text_system().glyph_dilation_for_color(color);
         let params = RenderGlyphParams {
             font_id,
             glyph_id,
-            font_size,
+            font_size: raster_font_size,
             subpixel_variant,
             scale_factor,
             is_emoji: false,
@@ -4833,9 +4960,16 @@ impl Window {
                     Ok(Some((size, Cow::Owned(bytes))))
                 })?
                 .expect("Callback above only errors or returns Some");
+            let inv_bucket = 1.0 / zoom_bucket.unwrap_or(1.0);
             let bounds = Bounds {
-                origin: integer_origin + raster_bounds.origin.map(Into::into),
-                size: tile.bounds.size.map(Into::into),
+                origin: Point::new(
+                    ScaledPixels(integer_origin.x.0 + raster_bounds.origin.x.0 as f32 * inv_bucket),
+                    ScaledPixels(integer_origin.y.0 + raster_bounds.origin.y.0 as f32 * inv_bucket),
+                ),
+                size: Size::new(
+                    ScaledPixels(tile.bounds.size.width.0 as f32 * inv_bucket),
+                    ScaledPixels(tile.bounds.size.height.0 as f32 * inv_bucket),
+                ),
             };
             let content_mask = self.snapped_content_mask();
 
@@ -4847,7 +4981,8 @@ impl Window {
                     content_mask,
                     color: color.opacity(element_opacity),
                     tile,
-                    transformation: TransformationMatrix::unit(),
+                    transformation,
+                    local_content_mask,
                 });
             } else {
                 self.next_frame.scene.insert_primitive(MonochromeSprite {
@@ -4857,7 +4992,8 @@ impl Window {
                     content_mask,
                     color: color.opacity(element_opacity),
                     tile,
-                    transformation: TransformationMatrix::unit(),
+                    transformation,
+                    local_content_mask,
                 });
             }
         }
@@ -4932,6 +5068,8 @@ impl Window {
             };
             let content_mask = self.snapped_content_mask();
             let opacity = self.element_opacity();
+            let transformation = self.active_gpu_transformation();
+            let local_content_mask = self.active_local_content_mask();
 
             self.next_frame.scene.insert_primitive(PolychromeSprite {
                 order: 0,
@@ -4942,6 +5080,9 @@ impl Window {
                 content_mask,
                 tile,
                 opacity,
+                transformation,
+                local_content_mask,
+                pad2: [0; 2],
             });
         }
         Ok(())
@@ -4999,6 +5140,8 @@ impl Window {
             .map_origin(|value| ScaledPixels(round_half_toward_zero(value.0)))
             .map_size(|size| size.ceil());
 
+        let transformation = self.active_gpu_transformation().compose(transformation);
+        let local_content_mask = self.active_local_content_mask();
         self.next_frame.scene.insert_primitive(MonochromeSprite {
             order: 0,
             pad: 0,
@@ -5007,6 +5150,7 @@ impl Window {
             color: color.opacity(element_opacity),
             tile,
             transformation,
+            local_content_mask,
         });
 
         Ok(())
@@ -5104,6 +5248,8 @@ impl Window {
             .clamp_radii_for_quad_size(visible_bounds.size)
             .scale(self.scale_factor());
         let opacity = self.element_opacity();
+        let transformation = self.active_gpu_transformation();
+        let local_content_mask = self.active_local_content_mask();
 
         self.next_frame.scene.insert_primitive(PolychromeSprite {
             order: 0,
@@ -5114,6 +5260,9 @@ impl Window {
             corner_radii,
             tile: sub_tile,
             opacity,
+            transformation,
+            local_content_mask,
+            pad2: [0; 2],
         });
         Ok(())
     }

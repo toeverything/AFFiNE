@@ -91,6 +91,9 @@ pub(crate) fn compile(scene: &mut Scene) {
                         padding: 0,
                         bounds: Default::default(),
                     },
+                    transformation: crate::TransformationMatrix::unit(),
+                    local_content_mask: crate::scene::unbounded_scaled_content_mask(),
+                    pad2: [0; 2],
                 });
             }
             PaintOperation::Primitive(primitive) => stack

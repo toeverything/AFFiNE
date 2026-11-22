@@ -13,9 +13,11 @@
 //! module feeds it input and carries each edit out through the editor's document session
 //! as one undo step.
 //!
-//! Popovers are placed by the pure [`place_popover`]. A popover that is fully transparent
-//! is not mounted at all, and one that is fading out carries no handlers, so nothing
-//! invisible can be clicked.
+//! Popovers are placed by the pure [`place_popover`]. Opening popovers mount on frame 1
+//! with opacity clamped to at least `0.01` so interactive controls are immediately clickable
+//! without triggering `zero-opacity-hit-through`; a popover that is fully closed is not
+//! mounted at all, and one that is fading out carries no handlers, so nothing invisible can
+//! be clicked.
 
 use std::{collections::HashMap, ops::Range, time::Duration};
 
@@ -2456,10 +2458,15 @@ impl Overlays {
         let menu = self.slash.as_mut()?;
         menu.rect = None;
         let progress = menu.presence.progress(now_ms);
-        if progress <= 0.0 {
+        if menu.presence.closing && progress <= 0.0 {
             return None;
         }
         let interactive = !menu.presence.closing;
+        let progress = if interactive {
+            progress.max(0.01)
+        } else {
+            progress
+        };
         let anchor_world = menu
             .anchor_world
             .or_else(|| caret_world_rect(scene.layout, &menu.block_id, menu.utf16_offset))?;
@@ -2711,10 +2718,15 @@ impl Overlays {
         let toolbar = self.toolbar.as_mut()?;
         toolbar.rect = None;
         let progress = toolbar.presence.progress(now_ms);
-        if progress <= 0.0 {
+        if toolbar.presence.closing && progress <= 0.0 {
             return None;
         }
         let interactive = !toolbar.presence.closing;
+        let progress = if interactive {
+            progress.max(0.01)
+        } else {
+            progress
+        };
         if !scene
             .page_viewport()
             .intersects(&toolbar.selection.anchor_world)
@@ -4633,9 +4645,11 @@ mod tests {
             utf16_offset: 0,
             anchor: None,
         });
-        // Fully transparent at the start of its fade, the menu is not mounted at all.
+        // Opening mounts on its first frame with live hitboxes and minimal non-zero opacity.
         let first = session.frame();
-        assert!(!first.elements.contains_key("overlay.slash_menu"));
+        let first_menu = element(&first, "overlay.slash_menu");
+        assert!(first_menu.opacity > 0.0 && first_menu.opacity <= 0.02);
+        assert!(first_menu.interactive);
         let opened = session.settle();
         assert_no_violations(&opened, "slash menu");
         let menu = element(&opened, "overlay.slash_menu");

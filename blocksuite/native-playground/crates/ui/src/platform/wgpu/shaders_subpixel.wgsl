@@ -8,6 +8,7 @@ struct SubpixelSprite {
     content_mask: Bounds,
     color: Hsla,
     transformation: TransformationMatrix,
+    local_content_mask: Bounds,
 }
 @group(1) @binding(0) var<storage, read> b_subpixel_sprites: array<SubpixelSprite>;
 
@@ -15,6 +16,7 @@ struct SubpixelSpriteOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) tile_position: vec2<f32>,
     @location(1) @interpolate(flat) color: vec4<f32>,
+    @location(2) local_clip_distances: vec4<f32>,
     @location(3) clip_distances: vec4<f32>,
 }
 
@@ -32,6 +34,7 @@ fn vs_subpixel_sprite(@builtin(vertex_index) vertex_id: u32, @builtin(instance_i
     out.position = to_device_position_transformed(unit_vertex, sprite.bounds, sprite.transformation);
     out.tile_position = to_tile_position(unit_vertex, sprite.tile);
     out.color = hsla_to_rgba(sprite.color);
+    out.local_clip_distances = distance_from_clip_rect(unit_vertex, sprite.bounds, sprite.local_content_mask);
     out.clip_distances = distance_from_clip_rect_transformed(unit_vertex, sprite.bounds, sprite.content_mask, sprite.transformation);
     return out;
 }
@@ -45,7 +48,7 @@ fn fs_subpixel_sprite(input: SubpixelSpriteOutput) -> SubpixelSpriteFragmentOutp
     let alpha_corrected = apply_contrast_and_gamma_correction3(sample, input.color.rgb, gamma_params.subpixel_enhanced_contrast, gamma_params.gamma_ratios);
 
     // Alpha clip after using the derivatives.
-    if (any(input.clip_distances < vec4<f32>(0.0))) {
+    if (any(input.clip_distances < vec4<f32>(0.0)) || any(input.local_clip_distances < vec4<f32>(0.0))) {
         return SubpixelSpriteFragmentOutput(vec4<f32>(0.0), vec4<f32>(0.0));
     }
 

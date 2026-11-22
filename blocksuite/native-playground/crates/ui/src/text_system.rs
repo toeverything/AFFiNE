@@ -474,6 +474,11 @@ impl TextSystem {
         self.read_metrics(font_id, |metrics| metrics.descent(font_size))
     }
 
+    /// Get the recommended additional space between lines for the given font.
+    pub fn line_gap(&self, font_id: FontId, font_size: Pixels) -> Pixels {
+        self.read_metrics(font_id, |metrics| metrics.line_gap(font_size))
+    }
+
     /// Get the recommended baseline offset for the given font and line height.
     pub fn baseline_offset(
         &self,
