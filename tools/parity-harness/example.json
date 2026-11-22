@@ -27,9 +27,7 @@
     }
   ],
   "table_keys": {
-    "public.workspaces": [
-      "id"
-    ]
+    "public.workspaces": ["id"]
   },
   "steps": [
     {

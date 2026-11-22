@@ -26,6 +26,7 @@ bitflags.workspace = true
 derive_more.workspace = true
 etagere.workspace = true
 flume.workspace = true
+frame-audit.workspace = true
 futures.workspace = true
 heapless.workspace = true
 icu_segmenter.workspace = true

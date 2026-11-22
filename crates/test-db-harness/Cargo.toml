@@ -1,0 +1,24 @@
+[package]
+description  = "Isolated PostgreSQL template clones, disposable Redis and run.json reports for server tests"
+edition.workspace      = true
+license.workspace      = true
+name         = "test-db-harness"
+publish.workspace      = true
+rust-version.workspace = true
+version      = "0.1.0"
+
+[lib]
+name = "test_db_harness"
+
+[[bin]]
+name = "affine-test-env"
+path = "src/bin/affine-test-env.rs"
+
+[dependencies]
+postgres   = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+sha2       = { workspace = true }
+
+[lints]
+workspace = true

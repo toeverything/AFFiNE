@@ -1,0 +1,21 @@
+[workspace]
+members  = ["frame-audit", "test-db-harness"]
+resolver = "3"
+
+[workspace.package]
+edition      = "2024"
+license      = "MIT"
+publish      = false
+rust-version = "1.88"
+
+[workspace.dependencies]
+postgres   = "0.19"
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2       = "0.10"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }

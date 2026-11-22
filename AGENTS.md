@@ -8,7 +8,8 @@ These rules apply at repository root on the `darksky/native-playground` branch a
 - **PR-less CI on push:** Push topic branches matching `darksky/np/**` (or `darksky/native-playground`) to trigger `.github/workflows/native-playground.yml` directly. `.github/workflows/build-test.yml` ignores `darksky/native-playground` pull requests so unrelated legacy jobs stay silent.
 - **Review council gate:** Every topic branch requires at least **3 of 4** review council approvals before squash-landing onto `darksky/native-playground`.
 - **Performance regression gate:** Any CI benchmark metric regressing by **more than 10%** against the rolling `N-3` baseline is routed to the dedicated performance guardian before landing.
-- **Cargo rustflags isolation:** Root `.cargo/config.toml` injects NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`) that Cargo concatenates into nested workspaces. Always build and test `blocksuite/native-playground` with `CARGO_ENCODED_RUSTFLAGS=""` in the environment.
+- **Cargo rustflags isolation:** Root `.cargo/config.toml` injects NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`) that Cargo concatenates into nested workspaces. Always build and test `blocksuite/native-playground` and the standalone `crates/` workspace with `CARGO_ENCODED_RUSTFLAGS=""` in the environment.
+- **Static gates and fast lanes:** `node scripts/ci/check-l0-tier-a.mjs` (no dependencies, under a second) guards `crates/` layering and hygiene, the `waitForTimeout` / `.skip` ratchet in `scripts/ci/l0-ratchet.json` (counts may only go down; lower the ceiling with `--update-baseline`), and workflow references. `native-playground.yml` always runs it with the frozen server contract checks (`scripts/oracle`), the `crates/` checks and the `tools/parity-harness` checks, and calls `np-web-fast.yml` (lint, typecheck, Node-only Vitest projects) only when web sources change.
 
 ## Engineering & testing principles
 

@@ -1,0 +1,86 @@
+name: Native Playground Web Fast Checks
+
+on:
+  workflow_call:
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+  SENTRYCLI_SKIP_DOWNLOAD: '1'
+
+jobs:
+  lint:
+    name: Web Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+
+      - name: Run oxlint
+        run: yarn lint:ox
+
+      - name: Run i18n codegen
+        run: |
+          yarn affine @affine/i18n build
+          git checkout packages/frontend/i18n/src/i18n-completenesses.json
+
+      - name: Run oxfmt
+        # setup-node may rewrite .yarnrc.yml (nmMode); format-check the tracked file.
+        run: |
+          git checkout .yarnrc.yml
+          yarn lint:format
+
+  typecheck:
+    name: Web Typecheck
+    runs-on: ubuntu-24.04
+    env:
+      NODE_OPTIONS: --max-old-space-size=12288
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          full-cache: true
+
+      - name: Run i18n codegen
+        run: |
+          yarn affine @affine/i18n build
+          git checkout packages/frontend/i18n/src/i18n-completenesses.json
+
+      - name: Run type check
+        run: yarn typecheck
+
+  unit-test:
+    name: Web Unit Test (Node projects)
+    runs-on: ubuntu-24.04
+    env:
+      DISTRIBUTION: web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          playwright-install: false
+          full-cache: true
+
+      - name: Run Vitest Node projects
+        # Browser-mode, Electron and Rust-binary projects need downloads or
+        # builds this lane skips; build-test.yml and js-room-coop run them.
+        run: |
+          set -euo pipefail
+          raw="$(node scripts/ci/vitest-node-projects.mjs)"
+          read -r -a projects <<< "$raw"
+          test "${#projects[@]}" -gt 0
+          yarn vitest run "${projects[@]}"

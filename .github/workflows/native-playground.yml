@@ -18,6 +18,145 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    name: Changed Paths
+    runs-on: ubuntu-24.04
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history so the merge base and the previous push are present.
+          fetch-depth: 0
+
+      - name: Resolve the base commit
+        id: base
+        env:
+          BEFORE: ${{ github.event.before }}
+        # Topic branches compare with their merge base on the integration
+        # branch; the integration branch compares with the commit before this
+        # push, or its parent when that commit is unknown (new branch, force
+        # push). Always a commit SHA, never a branch name.
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_NAME" = darksky/native-playground ]; then
+            if [ -n "${BEFORE//0/}" ] && git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              sha=$BEFORE
+            else
+              sha=$(git rev-parse HEAD~1)
+            fi
+          else
+            sha=$(git merge-base origin/darksky/native-playground HEAD)
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ steps.base.outputs.sha }}
+          # JavaScript under scripts/oracle and tools/parity-harness also runs
+          # the web lane: its lint and format checks cover those files.
+          filters: |
+            web:
+              - '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css}'
+              - '**/package.json'
+              - '**/tsconfig*.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.oxlintrc.json'
+              - '.oxfmtrc.json'
+              - '.github/actions/setup-node/**'
+              - '.github/workflows/np-web-fast.yml'
+
+  web-fast:
+    name: Web Fast Checks
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    uses: ./.github/workflows/np-web-fast.yml
+
+  server-harness-check:
+    name: L0 Tier A, Server Contracts & Test Harness
+    runs-on: ubuntu-24.04
+    env:
+      # One installed toolchain for crates/ and tools/parity-harness alike.
+      RUSTUP_TOOLCHAIN: '1.98.1'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          playwright-install: false
+          full-cache: true
+
+      - name: L0 Tier A static gates
+        run: node scripts/ci/check-l0-tier-a.mjs
+
+      - name: Frozen v0.27.5 server contracts
+        run: |
+          node scripts/oracle/extract-v0275-contracts.mjs --check
+          node scripts/oracle/test-extractor.mjs
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            crates -> target
+            tools/parity-harness -> target
+          key: server-harness
+
+      - name: Pull pinned test images
+        run: |
+          docker pull -q docker.io/pgvector/pgvector:pg16@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f &
+          docker pull -q docker.io/library/redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe &
+          wait
+
+      - name: Format, clippy and test crates/ (real PostgreSQL and Redis) and the parity harness
+        working-directory: crates
+        run: |
+          mkdir -p ../.artifacts/server-harness
+          status=passed
+          timings=()
+          step() {
+            local name=$1; shift
+            local start=$(date +%s%3N)
+            echo "::group::$name"
+            "$@" || status=failed
+            echo "::endgroup::"
+            timings+=(--timing "$name=$(( $(date +%s%3N) - start ))")
+          }
+          step fmt cargo fmt --all -- --check
+          step clippy cargo clippy --locked --workspace --all-targets -- -D warnings
+          step test cargo test --locked --workspace
+          parity=(--manifest-path ../tools/parity-harness/Cargo.toml)
+          step parity-fmt cargo fmt "${parity[@]}" --all -- --check
+          step parity-clippy cargo clippy --locked "${parity[@]}" --workspace --all-targets -- -D warnings
+          step parity-test cargo test --locked "${parity[@]}" --workspace
+          cargo run --locked --quiet -p test-db-harness --bin affine-test-env -- \
+            run-json --out ../.artifacts/server-harness/run.json --lane server-harness --status "$status" \
+            --sha "${{ github.sha }}" --run-id "${{ github.run_id }}-${{ github.run_attempt }}" \
+            --select frame-audit --select test-db-harness --select parity-harness "${timings[@]}"
+          cat ../.artifacts/server-harness/run.json
+          test "$status" = passed
+
+      - name: Upload run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-harness-run
+          path: .artifacts/server-harness/run.json
+          if-no-files-found: ignore
+
   lint-and-wasm:
     name: Lint, Invariants & Wasm Check
     runs-on: ubuntu-24.04

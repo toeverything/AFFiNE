@@ -69,7 +69,8 @@ Thumbs.db
 out/
 storybook-static
 
-test-results
+test-results/
+.artifacts/
 playwright-report
 playwright/.cache
 download

@@ -1,0 +1,15 @@
+[package]
+description  = "Renderer-independent geometry and interaction audit rules over serialized UI frame snapshots"
+edition.workspace      = true
+license.workspace      = true
+name         = "frame-audit"
+publish.workspace      = true
+rust-version.workspace = true
+version      = "0.1.0"
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

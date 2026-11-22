@@ -1054,6 +1054,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-audit"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "freetype-sys"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3722,6 +3730,7 @@ dependencies = [
  "etagere",
  "flume",
  "foreign-types",
+ "frame-audit",
  "futures",
  "getrandom 0.3.4",
  "heapless",
