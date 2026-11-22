@@ -1,0 +1,4557 @@
+{
+  "sdlSource": "packages/backend/server/src/schema.gql",
+  "sdlSha256": "29408322354010619af312a9bf0a7231c961afb2c129d43feff1ff05828b0dba",
+  "frontendSource": "packages/common/graphql/src/schema.ts",
+  "frontendSha256": "264d844968f9bc50f4610cda8a3fba5fa496f526200416d641180dac76f24e3b",
+  "rootFields": {
+    "Query": [
+      "adminAllSharedLinks",
+      "adminDashboard",
+      "adminMailDeliveries",
+      "adminPaymentReconciliation",
+      "adminWorkspace",
+      "adminWorkspaces",
+      "adminWorkspacesCount",
+      "appConfig",
+      "appConfigMetadata",
+      "authSigningKeys",
+      "checkoutAttempt",
+      "currentUser",
+      "error",
+      "getInviteInfo",
+      "mcpCredentialReadWriteAvailable",
+      "mcpCredentials",
+      "prices",
+      "publicUserById",
+      "serverConfig",
+      "user",
+      "userByEmail",
+      "userById",
+      "users",
+      "usersCount",
+      "validateAppConfig",
+      "workspace",
+      "workspaceRolePermissions",
+      "workspaces"
+    ],
+    "Mutation": [
+      "abortBlobUpload",
+      "acceptInviteById",
+      "activateLicense",
+      "addWorkspaceArtifact",
+      "adminUpdateWorkspace",
+      "appStorePurchase",
+      "approveMember",
+      "banUser",
+      "cancelSubscription",
+      "changeEmail",
+      "changePassword",
+      "cleanupCopilotSession",
+      "completeBlobUpload",
+      "createBlobUpload",
+      "createChangePasswordUrl",
+      "createCheckoutSession",
+      "createComment",
+      "createCopilotMessage",
+      "createCopilotSession",
+      "createCopilotSessionWithHistory",
+      "createCustomerPortal",
+      "createInviteLink",
+      "createMcpCredential",
+      "createReply",
+      "createSelfhostWorkspaceCustomerPortal",
+      "createUser",
+      "createWorkspace",
+      "createWorkspaceByokLocalLease",
+      "createWorkspaceByokProfile",
+      "deactivateLicense",
+      "deleteAccount",
+      "deleteAuthSigningKey",
+      "deleteBlob",
+      "deleteComment",
+      "deleteReply",
+      "deleteUser",
+      "deleteWorkspace",
+      "deleteWorkspaceByokProfile",
+      "enableUser",
+      "expireCheckout",
+      "forkCopilotSession",
+      "generateLicenseKey",
+      "grantCommercialEntitlement",
+      "grantDocUserRoles",
+      "grantMember",
+      "importUsers",
+      "installLicense",
+      "inviteMembers",
+      "leaveWorkspace",
+      "linkCalDAVAccount",
+      "linkCalendarAccount",
+      "mentionUser",
+      "previewLicense",
+      "probeWorkspaceByokDraft",
+      "probeWorkspaceByokProfile",
+      "publishDoc",
+      "readAllNotifications",
+      "readNotification",
+      "reconcileAdminPayment",
+      "recoverDoc",
+      "refreshUserSubscriptions",
+      "releaseDeletedBlobs",
+      "removeAvatar",
+      "removeWorkspaceArtifact",
+      "reorderWorkspaceByokProfiles",
+      "replaceWorkspaceByokProfile",
+      "requestApplySubscription",
+      "resolveComment",
+      "resumeSubscription",
+      "retryTranscriptTask",
+      "revokeCommercialEntitlement",
+      "revokeDocUserRoles",
+      "revokeInviteLink",
+      "revokeMcpCredential",
+      "revokeMember",
+      "revokePublicDoc",
+      "rotateAuthSigningKey",
+      "rotateMcpCredential",
+      "rotateWorkspaceByokCredential",
+      "sendChangeEmail",
+      "sendChangePasswordEmail",
+      "sendSetPasswordEmail",
+      "sendTestEmail",
+      "sendVerifyChangeEmail",
+      "sendVerifyEmail",
+      "setBlob",
+      "settleTranscriptTask",
+      "submitTranscriptTask",
+      "unlinkCalendarAccount",
+      "updateAppConfig",
+      "updateCalendarAccount",
+      "updateComment",
+      "updateCopilotSession",
+      "updateDocDefaultRole",
+      "updateDocUserRole",
+      "updateProfile",
+      "updateReply",
+      "updateSettings",
+      "updateSubscriptionRecurring",
+      "updateUser",
+      "updateUserFeatures",
+      "updateWorkspace",
+      "updateWorkspaceCalendars",
+      "updateWorkspaceEmbeddingIgnoredDocs",
+      "uploadAvatar",
+      "uploadCommentAttachment",
+      "verifyEmail"
+    ],
+    "Subscription": []
+  },
+  "missingRoots": [],
+  "missingFrontendTypes": [],
+  "frontendFieldDifferences": [],
+  "exports": [
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 36,
+      "kind": "ObjectType",
+      "name": "GraphqlBadRequestDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 47,
+      "kind": "ObjectType",
+      "name": "HttpRequestErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 57,
+      "kind": "ObjectType",
+      "name": "SsrfBlockedErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 67,
+      "kind": "ObjectType",
+      "name": "ResponseTooLargeErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 84,
+      "kind": "ObjectType",
+      "name": "ImageFormatNotSupportedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 94,
+      "kind": "ObjectType",
+      "name": "QueryTooLongDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 104,
+      "kind": "ObjectType",
+      "name": "ValidationErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 138,
+      "kind": "ObjectType",
+      "name": "WrongSignInCredentialsDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 148,
+      "kind": "ObjectType",
+      "name": "UnknownOauthProviderDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 170,
+      "kind": "ObjectType",
+      "name": "InvalidOauthCallbackCodeDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 187,
+      "kind": "ObjectType",
+      "name": "MissingOauthQueryParameterDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 203,
+      "kind": "ObjectType",
+      "name": "InvalidOauthResponseDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 213,
+      "kind": "ObjectType",
+      "name": "InvalidEmailDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 223,
+      "kind": "ObjectType",
+      "name": "InvalidPasswordLengthDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 336,
+      "kind": "ObjectType",
+      "name": "WorkspacePermissionNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 346,
+      "kind": "ObjectType",
+      "name": "SpaceNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 356,
+      "kind": "ObjectType",
+      "name": "MemberNotFoundInSpaceDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 366,
+      "kind": "ObjectType",
+      "name": "NotInSpaceDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 376,
+      "kind": "ObjectType",
+      "name": "AlreadyInSpaceDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 386,
+      "kind": "ObjectType",
+      "name": "SpaceAccessDeniedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 396,
+      "kind": "ObjectType",
+      "name": "SyncPermissionGenerationChangedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 406,
+      "kind": "ObjectType",
+      "name": "SpaceOwnerNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 416,
+      "kind": "ObjectType",
+      "name": "SpaceShouldHaveOnlyOneOwnerDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 438,
+      "kind": "ObjectType",
+      "name": "DocNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 449,
+      "kind": "ObjectType",
+      "name": "DocActionDeniedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 485,
+      "kind": "ObjectType",
+      "name": "DocUpdateBlockedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 496,
+      "kind": "ObjectType",
+      "name": "VersionRejectedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 507,
+      "kind": "ObjectType",
+      "name": "InvalidHistoryTimestampDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 517,
+      "kind": "ObjectType",
+      "name": "DocHistoryNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 529,
+      "kind": "ObjectType",
+      "name": "BlobNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 558,
+      "kind": "ObjectType",
+      "name": "ExpectToGrantDocUserRolesDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 569,
+      "kind": "ObjectType",
+      "name": "ExpectToRevokeDocUserRolesDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 580,
+      "kind": "ObjectType",
+      "name": "ExpectToUpdateDocUserRoleDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 645,
+      "kind": "ObjectType",
+      "name": "NoMoreSeatDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 655,
+      "kind": "ObjectType",
+      "name": "UnsupportedSubscriptionPlanDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 689,
+      "kind": "ObjectType",
+      "name": "SubscriptionAlreadyExistsDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 705,
+      "kind": "ObjectType",
+      "name": "SubscriptionNotExistsDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 733,
+      "kind": "ObjectType",
+      "name": "SameSubscriptionRecurringDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 749,
+      "kind": "ObjectType",
+      "name": "SubscriptionPlanNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 784,
+      "kind": "ObjectType",
+      "name": "CalendarProviderRequestErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 813,
+      "kind": "ObjectType",
+      "name": "NoCopilotProviderAvailableDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 829,
+      "kind": "ObjectType",
+      "name": "CopilotFailedToGenerateEmbeddingDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 858,
+      "kind": "ObjectType",
+      "name": "CopilotDocNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 874,
+      "kind": "ObjectType",
+      "name": "CopilotMessageNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 884,
+      "kind": "ObjectType",
+      "name": "CopilotPromptNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 900,
+      "kind": "ObjectType",
+      "name": "CopilotProviderNotSupportedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 911,
+      "kind": "ObjectType",
+      "name": "CopilotProviderSideErrorDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 959,
+      "kind": "ObjectType",
+      "name": "CopilotFailedToAddWorkspaceArtifactDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1011,
+      "kind": "ObjectType",
+      "name": "RuntimeConfigNotFoundDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1021,
+      "kind": "ObjectType",
+      "name": "InvalidRuntimeConfigTypeDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1087,
+      "kind": "ObjectType",
+      "name": "InvalidLicenseToActivateDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1097,
+      "kind": "ObjectType",
+      "name": "InvalidLicenseUpdateParamsDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1113,
+      "kind": "ObjectType",
+      "name": "UnsupportedClientVersionDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1124,
+      "kind": "ObjectType",
+      "name": "UnsupportedServerVersionDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1140,
+      "kind": "ObjectType",
+      "name": "MentionUserDocAccessDeniedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1156,
+      "kind": "ObjectType",
+      "name": "InvalidAppConfigDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1168,
+      "kind": "ObjectType",
+      "name": "InvalidAppConfigInputDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1178,
+      "kind": "ObjectType",
+      "name": "SearchIndexNotReadyDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1200,
+      "kind": "ObjectType",
+      "name": "SearchIndexFailedDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1216,
+      "kind": "ObjectType",
+      "name": "InvalidSearchProviderRequestDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/errors.gen.ts",
+      "line": 1227,
+      "kind": "ObjectType",
+      "name": "InvalidIndexerInputDataType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/error/index.ts",
+      "line": 11,
+      "kind": "Resolver",
+      "name": "ErrorResolver",
+      "arguments": [
+        "() => ErrorDataUnionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/base/error/index.ts",
+      "line": 14,
+      "kind": "Query",
+      "name": "error",
+      "arguments": [
+        "() => ErrorDataUnionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/base/graphql/pagination.ts",
+      "line": 6,
+      "kind": "InputType",
+      "name": "PaginationInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/graphql/pagination.ts",
+      "line": 152,
+      "kind": "ObjectType",
+      "name": "PageInfo",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/base/graphql/pagination.ts",
+      "line": 168,
+      "kind": "ObjectType",
+      "name": "EdgeType",
+      "arguments": [
+        "`${classRef.name}Edge`"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/base/graphql/pagination.ts",
+      "line": 177,
+      "kind": "ObjectType",
+      "name": "PaginatedType",
+      "arguments": [
+        "{ isAbstract: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 29,
+      "kind": "ObjectType",
+      "name": "ClientTokenType",
+      "arguments": [
+        "'tokenType'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 41,
+      "kind": "Resolver",
+      "name": "AuthResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 49,
+      "kind": "Query",
+      "name": "currentUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    name: 'currentUser',\n    description: 'Get current user',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 60,
+      "kind": "ResolveField",
+      "name": "clientToken",
+      "arguments": [
+        "() => ClientTokenType",
+        "{\n    name: 'token',\n    deprecationReason: 'use auth session exchange instead',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 82,
+      "kind": "Mutation",
+      "name": "changePassword",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 100,
+      "kind": "Mutation",
+      "name": "changeEmail",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 112,
+      "kind": "Mutation",
+      "name": "sendChangePasswordEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 132,
+      "kind": "Mutation",
+      "name": "sendSetPasswordEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 159,
+      "kind": "Mutation",
+      "name": "sendChangeEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 173,
+      "kind": "Mutation",
+      "name": "sendVerifyChangeEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 195,
+      "kind": "Mutation",
+      "name": "sendVerifyEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 209,
+      "kind": "Mutation",
+      "name": "verifyEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/resolver.ts",
+      "line": 221,
+      "kind": "Mutation",
+      "name": "createChangePasswordUrl",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create change password url',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/signing-key-resolver.ts",
+      "line": 14,
+      "kind": "ObjectType",
+      "name": "AuthSigningKeyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/signing-key-resolver.ts",
+      "line": 38,
+      "kind": "Resolver",
+      "name": "AuthSigningKeyResolver",
+      "arguments": [
+        "() => AuthSigningKeyType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/signing-key-resolver.ts",
+      "line": 43,
+      "kind": "Query",
+      "name": "authSigningKeys",
+      "arguments": [
+        "() => [AuthSigningKeyType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/signing-key-resolver.ts",
+      "line": 48,
+      "kind": "Mutation",
+      "name": "rotateAuthSigningKey",
+      "arguments": [
+        "() => [AuthSigningKeyType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/auth/signing-key-resolver.ts",
+      "line": 56,
+      "kind": "Mutation",
+      "name": "deleteAuthSigningKey",
+      "arguments": [
+        "() => [AuthSigningKeyType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 52,
+      "kind": "Resolver",
+      "name": "CommentResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 67,
+      "kind": "Mutation",
+      "name": "createComment",
+      "arguments": [
+        "() => CommentObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 96,
+      "kind": "Mutation",
+      "name": "updateComment",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'Update a comment content',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 111,
+      "kind": "Mutation",
+      "name": "resolveComment",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'Resolve a comment or not',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 126,
+      "kind": "Mutation",
+      "name": "deleteComment",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'Delete a comment',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 138,
+      "kind": "Mutation",
+      "name": "createReply",
+      "arguments": [
+        "() => ReplyObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 164,
+      "kind": "Mutation",
+      "name": "updateReply",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'Update a reply content',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 179,
+      "kind": "Mutation",
+      "name": "deleteReply",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'Delete a reply',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 191,
+      "kind": "ResolveField",
+      "name": "comments",
+      "arguments": [
+        "() => PaginatedCommentObjectType",
+        "{\n    description: 'Get comments of a doc',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 261,
+      "kind": "ResolveField",
+      "name": "commentChanges",
+      "arguments": [
+        "() => PaginatedCommentChangeObjectType",
+        "{\n    description: 'Get comment changes of a doc',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/resolver.ts",
+      "line": 308,
+      "kind": "Mutation",
+      "name": "uploadCommentAttachment",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Upload a comment attachment and return the access url',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 27,
+      "kind": "ObjectType",
+      "name": "CommentObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 63,
+      "kind": "ObjectType",
+      "name": "ReplyObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 92,
+      "kind": "ObjectType",
+      "name": "DeletedCommentObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 116,
+      "kind": "ObjectType",
+      "name": "CommentChangeObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 138,
+      "kind": "ObjectType",
+      "name": "PaginatedCommentObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 141,
+      "kind": "ObjectType",
+      "name": "PaginatedCommentChangeObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 146,
+      "kind": "InputType",
+      "name": "CommentCreateInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 171,
+      "kind": "InputType",
+      "name": "CommentUpdateInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 180,
+      "kind": "InputType",
+      "name": "CommentResolveInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 191,
+      "kind": "InputType",
+      "name": "ReplyCreateInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/comment/types.ts",
+      "line": 213,
+      "kind": "InputType",
+      "name": "ReplyUpdateInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 25,
+      "kind": "ObjectType",
+      "name": "PasswordLimitsType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 33,
+      "kind": "ObjectType",
+      "name": "CredentialsRequirementType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 39,
+      "kind": "ObjectType",
+      "name": "ReleaseVersionType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 60,
+      "kind": "Resolver",
+      "name": "ServerConfigResolver",
+      "arguments": [
+        "() => ServerConfigType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 75,
+      "kind": "Query",
+      "name": "serverConfig",
+      "arguments": [
+        "() => ServerConfigType",
+        "{\n    description: 'server config',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 97,
+      "kind": "ResolveField",
+      "name": "credentialsRequirement",
+      "arguments": [
+        "() => CredentialsRequirementType",
+        "{\n    description: 'credentials requirement',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 109,
+      "kind": "ResolveField",
+      "name": "initialized",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'whether server has been initialized',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 116,
+      "kind": "ResolveField",
+      "name": "availableUpgrade",
+      "arguments": [
+        "() => ReleaseVersionType",
+        "{\n    nullable: true,\n    description: 'fetch latest available upgradable release of server',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 169,
+      "kind": "Resolver",
+      "name": "ServerFeatureConfigResolver",
+      "arguments": [
+        "() => ServerConfigType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 171,
+      "kind": "ResolveField",
+      "name": "availableUserFeatures",
+      "arguments": [
+        "() => [Feature]",
+        "{\n    description: 'Features for user that can be configured',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 179,
+      "kind": "InputType",
+      "name": "UpdateAppConfigInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 194,
+      "kind": "ObjectType",
+      "name": "AppConfigValidateResult",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 212,
+      "kind": "Resolver",
+      "name": "AppConfigResolver",
+      "arguments": [
+        "() => GraphQLJSONObject"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 217,
+      "kind": "Query",
+      "name": "appConfig",
+      "arguments": [
+        "() => GraphQLJSONObject",
+        "{\n    description: 'get visible app configuration values',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 224,
+      "kind": "Query",
+      "name": "appConfigMetadata",
+      "arguments": [
+        "() => GraphQLJSONObject",
+        "{\n    description: 'get app configuration value sources and secret status',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 231,
+      "kind": "Mutation",
+      "name": "updateAppConfig",
+      "arguments": [
+        "() => GraphQLJSONObject",
+        "{\n    description: 'update app configuration',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/resolver.ts",
+      "line": 242,
+      "kind": "Query",
+      "name": "validateAppConfig",
+      "arguments": [
+        "() => [AppConfigValidateResult]",
+        "{\n    description: 'validate app configuration',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/config/types.ts",
+      "line": 24,
+      "kind": "ObjectType",
+      "name": "ServerConfigType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 23,
+      "kind": "Resolver",
+      "name": "UserFeatureResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 29,
+      "kind": "ResolveField",
+      "name": "userFeatures",
+      "arguments": [
+        "() => [Feature]",
+        "{\n    name: 'features',\n    description: 'Enabled features of a user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 44,
+      "kind": "Resolver",
+      "name": "AdminFeatureManagementResolver",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 55,
+      "kind": "Mutation",
+      "name": "updateUserFeatures",
+      "arguments": [
+        "() => [Feature]",
+        "{\n    description: 'update user enabled feature',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 92,
+      "kind": "Mutation",
+      "name": "grantCommercialEntitlement",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/features/resolver.ts",
+      "line": 109,
+      "kind": "Mutation",
+      "name": "revokeCommercialEntitlement",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 25,
+      "kind": "InputType",
+      "name": "AdminMailDeliveriesInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 31,
+      "kind": "ObjectType",
+      "name": "AdminMailDeliveryPoint",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 40,
+      "kind": "ObjectType",
+      "name": "AdminMailDeliverySeries",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 55,
+      "kind": "ObjectType",
+      "name": "AdminMailDeliverySummary",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 85,
+      "kind": "ObjectType",
+      "name": "AdminMailDeliveryAnalytics",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 205,
+      "kind": "Resolver",
+      "name": "MailResolver",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 210,
+      "kind": "Mutation",
+      "name": "sendTestEmail",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/mail/resolver.ts",
+      "line": 247,
+      "kind": "Query",
+      "name": "adminMailDeliveries",
+      "arguments": [
+        "() => AdminMailDeliveryAnalytics",
+        "{\n    description: 'Aggregate mail delivery timeline facts for admin panel',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 66,
+      "kind": "Resolver",
+      "name": "UserNotificationResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 73,
+      "kind": "ResolveField",
+      "name": "notifications",
+      "arguments": [
+        "() => PaginatedNotificationObjectType",
+        "{\n    description: 'Get current user notifications',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 100,
+      "kind": "Mutation",
+      "name": "mentionUser",
+      "arguments": [
+        "() => ID",
+        "{\n    description: 'mention user in a doc',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 138,
+      "kind": "Mutation",
+      "name": "readNotification",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'mark notification as read',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 149,
+      "kind": "Mutation",
+      "name": "readAllNotifications",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'mark all notifications as read',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 158,
+      "kind": "Resolver",
+      "name": "NotificationResolver",
+      "arguments": [
+        "() => NotificationObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/resolver.ts",
+      "line": 160,
+      "kind": "ResolveField",
+      "name": "_placeholderForUnionNotificationBodyType",
+      "arguments": [
+        "() => UnionNotificationBodyType",
+        "{\n    description:\n      \"Just a placeholder to export UnionNotificationBodyType, don't use it\",\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 39,
+      "kind": "ObjectType",
+      "name": "NotificationWorkspaceType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 54,
+      "kind": "ObjectType",
+      "name": "BaseNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 74,
+      "kind": "ObjectType",
+      "name": "MentionDocType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 96,
+      "kind": "ObjectType",
+      "name": "MentionNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 102,
+      "kind": "ObjectType",
+      "name": "InvitationBaseNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 108,
+      "kind": "ObjectType",
+      "name": "InvitationNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 113,
+      "kind": "ObjectType",
+      "name": "InvitationAcceptedNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 118,
+      "kind": "ObjectType",
+      "name": "InvitationBlockedNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 123,
+      "kind": "ObjectType",
+      "name": "InvitationReviewRequestNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 128,
+      "kind": "ObjectType",
+      "name": "InvitationReviewApprovedNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 133,
+      "kind": "ObjectType",
+      "name": "InvitationReviewDeclinedNotificationBodyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 150,
+      "kind": "ObjectType",
+      "name": "NotificationObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 181,
+      "kind": "ObjectType",
+      "name": "PaginatedNotificationObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 186,
+      "kind": "InputType",
+      "name": "MentionDocInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/notification/types.ts",
+      "line": 210,
+      "kind": "InputType",
+      "name": "MentionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/resolver.ts",
+      "line": 8,
+      "kind": "Resolver",
+      "name": "QuotaResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/resolver.ts",
+      "line": 12,
+      "kind": "ResolveField",
+      "name": "getQuota",
+      "arguments": [
+        "() => UserQuotaType",
+        "{ name: 'quota' }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/resolver.ts",
+      "line": 22,
+      "kind": "ResolveField",
+      "name": "getQuotaUsage",
+      "arguments": [
+        "() => UserQuotaUsageType",
+        "{ name: 'quotaUsage' }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/types.ts",
+      "line": 6,
+      "kind": "ObjectType",
+      "name": "UserQuotaHumanReadableType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/types.ts",
+      "line": 30,
+      "kind": "ObjectType",
+      "name": "UserQuotaType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/types.ts",
+      "line": 57,
+      "kind": "ObjectType",
+      "name": "UserQuotaUsageType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/types.ts",
+      "line": 66,
+      "kind": "ObjectType",
+      "name": "WorkspaceQuotaHumanReadableType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/quota/types.ts",
+      "line": 93,
+      "kind": "ObjectType",
+      "name": "WorkspaceQuotaType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 55,
+      "kind": "Resolver",
+      "name": "UserResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 62,
+      "kind": "Query",
+      "name": "user",
+      "arguments": [
+        "() => UserOrLimitedUser",
+        "{\n    name: 'user',\n    description: 'Get user by email',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 98,
+      "kind": "Query",
+      "name": "getPublicUserById",
+      "arguments": [
+        "() => PublicUserType",
+        "{\n    name: 'publicUserById',\n    description: 'Get public user by id',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 111,
+      "kind": "Mutation",
+      "name": "uploadAvatar",
+      "arguments": [
+        "() => UserType",
+        "{\n    name: 'uploadAvatar',\n    description: 'Upload user avatar',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 153,
+      "kind": "Mutation",
+      "name": "updateUserProfile",
+      "arguments": [
+        "() => UserType",
+        "{\n    name: 'updateProfile',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 169,
+      "kind": "Mutation",
+      "name": "removeAvatar",
+      "arguments": [
+        "() => RemoveAvatar",
+        "{\n    name: 'removeAvatar',\n    description: 'Remove user avatar',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 181,
+      "kind": "Mutation",
+      "name": "deleteAccount",
+      "arguments": [
+        "() => DeleteAccount"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 190,
+      "kind": "Resolver",
+      "name": "UserSettingsResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 197,
+      "kind": "Mutation",
+      "name": "updateSettings",
+      "arguments": [
+        "() => Boolean",
+        "{\n    name: 'updateSettings',\n    description: 'Update user settings',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 212,
+      "kind": "ResolveField",
+      "name": "getSettings",
+      "arguments": [
+        "() => UserSettingsType",
+        "{\n    name: 'settings',\n    description: 'Get user settings',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 221,
+      "kind": "InputType",
+      "name": "ListUserInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 236,
+      "kind": "InputType",
+      "name": "CreateUserInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 248,
+      "kind": "InputType",
+      "name": "ImportUsersInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 254,
+      "kind": "ObjectType",
+      "name": "UserImportFailedType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 271,
+      "kind": "Resolver",
+      "name": "UserManagementResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 281,
+      "kind": "Query",
+      "name": "usersCount",
+      "arguments": [
+        "() => Int",
+        "{\n    description: 'Get users count',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 294,
+      "kind": "Query",
+      "name": "users",
+      "arguments": [
+        "() => [UserType]",
+        "{\n    description: 'List registered users',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 310,
+      "kind": "Query",
+      "name": "getUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    name: 'userById',\n    description: 'Get user by id',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 326,
+      "kind": "Query",
+      "name": "getUserByEmail",
+      "arguments": [
+        "() => UserType",
+        "{\n    name: 'userByEmail',\n    description: 'Get user by email for admin',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 343,
+      "kind": "Mutation",
+      "name": "createUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    description: 'Create a new user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 358,
+      "kind": "Mutation",
+      "name": "importUsers",
+      "arguments": [
+        "() => [UserImportResultType]",
+        "{\n    description: 'import users',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 379,
+      "kind": "Mutation",
+      "name": "deleteUser",
+      "arguments": [
+        "() => DeleteAccount",
+        "{\n    description: 'Delete a user account',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 393,
+      "kind": "Mutation",
+      "name": "updateUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    description: 'Update an user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 442,
+      "kind": "Mutation",
+      "name": "banUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    description: 'Ban an user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/resolver.ts",
+      "line": 460,
+      "kind": "Mutation",
+      "name": "enableUser",
+      "arguments": [
+        "() => UserType",
+        "{\n    description: 'Reenable an banned user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 18,
+      "kind": "ObjectType",
+      "name": "UserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 56,
+      "kind": "ObjectType",
+      "name": "PublicUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 68,
+      "kind": "ObjectType",
+      "name": "WorkspaceUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 83,
+      "kind": "ObjectType",
+      "name": "LimitedUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 106,
+      "kind": "ObjectType",
+      "name": "DeleteAccount",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 111,
+      "kind": "ObjectType",
+      "name": "RemoveAvatar",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 117,
+      "kind": "ObjectType",
+      "name": "UserSettingsType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 129,
+      "kind": "InputType",
+      "name": "UpdateUserInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 135,
+      "kind": "InputType",
+      "name": "ManageUserInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/user/types.ts",
+      "line": 144,
+      "kind": "InputType",
+      "name": "UpdateUserSettingsInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 105,
+      "kind": "InputType",
+      "name": "ListWorkspaceInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 135,
+      "kind": "ObjectType",
+      "name": "AdminWorkspaceMember",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 156,
+      "kind": "ObjectType",
+      "name": "AdminWorkspaceSharedLink",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 168,
+      "kind": "InputType",
+      "name": "AdminDashboardInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 186,
+      "kind": "ObjectType",
+      "name": "AdminDashboardMinutePoint",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 195,
+      "kind": "ObjectType",
+      "name": "AdminDashboardValueDayPoint",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 204,
+      "kind": "ObjectType",
+      "name": "AdminSharedLinkTopItem",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 234,
+      "kind": "ObjectType",
+      "name": "AdminDashboard",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 276,
+      "kind": "InputType",
+      "name": "AdminAllSharedLinksFilterInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 300,
+      "kind": "ObjectType",
+      "name": "AdminAllSharedLink",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 339,
+      "kind": "ObjectType",
+      "name": "AdminAllSharedLinkEdge",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 348,
+      "kind": "ObjectType",
+      "name": "PaginatedAdminAllSharedLink",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 363,
+      "kind": "ObjectType",
+      "name": "AdminWorkspace",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 417,
+      "kind": "InputType",
+      "name": "AdminUpdateWorkspaceInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 434,
+      "kind": "Resolver",
+      "name": "AdminWorkspaceResolver",
+      "arguments": [
+        "() => AdminWorkspace"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 449,
+      "kind": "Query",
+      "name": "adminWorkspaces",
+      "arguments": [
+        "() => [AdminWorkspace]",
+        "{\n    description: 'List workspaces for admin',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 474,
+      "kind": "Query",
+      "name": "adminWorkspacesCount",
+      "arguments": [
+        "() => Int",
+        "{ description: 'Workspaces count for admin' }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 493,
+      "kind": "Query",
+      "name": "adminWorkspace",
+      "arguments": [
+        "() => AdminWorkspace",
+        "{\n    description: 'Get workspace detail for admin',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 502,
+      "kind": "Query",
+      "name": "adminDashboard",
+      "arguments": [
+        "() => AdminDashboard",
+        "{\n    description: 'Get aggregated dashboard metrics for admin panel',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 545,
+      "kind": "Query",
+      "name": "adminAllSharedLinks",
+      "arguments": [
+        "() => PaginatedAdminAllSharedLink",
+        "{\n    description: 'List all shared links across workspaces for admin panel',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 587,
+      "kind": "ResolveField",
+      "name": "members",
+      "arguments": [
+        "() => [AdminWorkspaceMember]",
+        "{\n    description: 'Members of workspace',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 610,
+      "kind": "ResolveField",
+      "name": "sharedLinks",
+      "arguments": [
+        "() => [AdminWorkspaceSharedLink]",
+        "{\n    description: 'Shared links of workspace',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/admin.ts",
+      "line": 622,
+      "kind": "Mutation",
+      "name": "adminUpdateWorkspace",
+      "arguments": [
+        "() => AdminWorkspace",
+        "{\n    description: 'Update workspace flags for admin',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/analytics-types.ts",
+      "line": 13,
+      "kind": "ObjectType",
+      "name": "TimeWindow",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob-types.ts",
+      "line": 21,
+      "kind": "ObjectType",
+      "name": "BlobUploadedPart",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob-types.ts",
+      "line": 30,
+      "kind": "ObjectType",
+      "name": "BlobUploadInit",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob-types.ts",
+      "line": 60,
+      "kind": "ObjectType",
+      "name": "BlobUploadPart",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob-types.ts",
+      "line": 72,
+      "kind": "InputType",
+      "name": "BlobUploadPartInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob-types.ts",
+      "line": 81,
+      "kind": "ObjectType",
+      "name": "ListedBlob",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 40,
+      "kind": "Resolver",
+      "name": "WorkspaceBlobResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 51,
+      "kind": "ResolveField",
+      "name": "blobs",
+      "arguments": [
+        "() => [ListedBlob]",
+        "{\n    description: 'List blobs of workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 71,
+      "kind": "ResolveField",
+      "name": "blobUploadPartUrl",
+      "arguments": [
+        "() => BlobUploadPart",
+        "{\n    description: 'Get blob upload part url',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 84,
+      "kind": "Mutation",
+      "name": "setBlob",
+      "arguments": [
+        "() => String"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 166,
+      "kind": "Mutation",
+      "name": "createBlobUpload",
+      "arguments": [
+        "() => BlobUploadInit"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 319,
+      "kind": "Mutation",
+      "name": "completeBlobUpload",
+      "arguments": [
+        "() => String"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 390,
+      "kind": "Mutation",
+      "name": "abortBlobUpload",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 508,
+      "kind": "Mutation",
+      "name": "deleteBlob",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/blob.ts",
+      "line": 535,
+      "kind": "Mutation",
+      "name": "releaseDeletedBlobs",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 72,
+      "kind": "ObjectType",
+      "name": "DocType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 108,
+      "kind": "InputType",
+      "name": "GrantDocUserRolesInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 123,
+      "kind": "InputType",
+      "name": "UpdateDocUserRoleInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 138,
+      "kind": "InputType",
+      "name": "RevokeDocUserRoleInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 150,
+      "kind": "InputType",
+      "name": "UpdateDocDefaultRoleInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 162,
+      "kind": "ObjectType",
+      "name": "GrantedDocUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 171,
+      "kind": "ObjectType",
+      "name": "PaginatedGrantedDocUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 174,
+      "kind": "ObjectType",
+      "name": "PaginatedDocType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 194,
+      "kind": "ObjectType",
+      "name": "EditorType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 203,
+      "kind": "ObjectType",
+      "name": "WorkspaceDocMeta",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 218,
+      "kind": "InputType",
+      "name": "DocPageAnalyticsInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 227,
+      "kind": "ObjectType",
+      "name": "DocPageAnalyticsPoint",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 242,
+      "kind": "ObjectType",
+      "name": "DocPageAnalyticsSummary",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 257,
+      "kind": "ObjectType",
+      "name": "DocPageAnalytics",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 272,
+      "kind": "ObjectType",
+      "name": "DocMemberLastAccess",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 284,
+      "kind": "ObjectType",
+      "name": "DocMemberLastAccessEdge",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 293,
+      "kind": "ObjectType",
+      "name": "PaginatedDocMemberLastAccess",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 305,
+      "kind": "Resolver",
+      "name": "WorkspaceDocResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 317,
+      "kind": "ResolveField",
+      "name": "pageMeta",
+      "arguments": [
+        "() => WorkspaceDocMeta",
+        "{\n    description: 'Cloud page metadata of workspace',\n    complexity: 2,\n    deprecationReason: 'use [WorkspaceType.doc] instead',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 343,
+      "kind": "ResolveField",
+      "name": "publicDocs",
+      "arguments": [
+        "() => [DocType]",
+        "{\n    description: 'Get public docs of a workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 351,
+      "kind": "ResolveField",
+      "name": "docs",
+      "arguments": [
+        "() => PaginatedDocType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 370,
+      "kind": "ResolveField",
+      "name": "recentlyUpdatedDocs",
+      "arguments": [
+        "() => PaginatedDocType",
+        "{\n    description: 'Get recently updated docs of a workspace',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 399,
+      "kind": "ResolveField",
+      "name": "doc",
+      "arguments": [
+        "() => DocType",
+        "{\n    description: 'Get get with given id',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 415,
+      "kind": "Mutation",
+      "name": "publishDoc",
+      "arguments": [
+        "() => DocType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 475,
+      "kind": "Mutation",
+      "name": "revokePublicDoc",
+      "arguments": [
+        "() => DocType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 526,
+      "kind": "Resolver",
+      "name": "DocResolver",
+      "arguments": [
+        "() => DocType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 539,
+      "kind": "ResolveField",
+      "name": "createdBy",
+      "arguments": [
+        "() => PublicUserType",
+        "{\n    nullable: true,\n    description: 'Doc create user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 551,
+      "kind": "ResolveField",
+      "name": "lastUpdatedBy",
+      "arguments": [
+        "() => PublicUserType",
+        "{\n    nullable: true,\n    description: 'Doc last updated user',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 563,
+      "kind": "ResolveField",
+      "name": "meta",
+      "arguments": [
+        "() => WorkspaceDocMeta",
+        "{\n    description: 'Doc metadata',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 584,
+      "kind": "ResolveField",
+      "name": "analytics",
+      "arguments": [
+        "() => DocPageAnalytics",
+        "{\n    description: 'Doc page analytics in a time window',\n    complexity: 5,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 615,
+      "kind": "ResolveField",
+      "name": "lastAccessedMembers",
+      "arguments": [
+        "() => PaginatedDocMemberLastAccess",
+        "{\n    description: 'Paginated last accessed members of the current doc',\n    complexity: 5,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 638,
+      "kind": "ResolveField",
+      "name": "permissions",
+      "arguments": [
+        "() => DocPermissions"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 648,
+      "kind": "ResolveField",
+      "name": "grantedUsersList",
+      "arguments": [
+        "() => PaginatedGrantedDocUserType",
+        "{\n    description: 'paginated doc granted users list',\n    complexity: 4,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 665,
+      "kind": "Mutation",
+      "name": "grantDocUserRoles",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 729,
+      "kind": "Mutation",
+      "name": "revokeDocUserRoles",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 785,
+      "kind": "Mutation",
+      "name": "updateDocUserRole",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/doc.ts",
+      "line": 858,
+      "kind": "Mutation",
+      "name": "updateDocDefaultRole",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/history.ts",
+      "line": 22,
+      "kind": "ObjectType",
+      "name": "DocHistoryType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/history.ts",
+      "line": 37,
+      "kind": "Resolver",
+      "name": "DocHistoryResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/history.ts",
+      "line": 46,
+      "kind": "ResolveField",
+      "name": "histories",
+      "arguments": [
+        "() => [DocHistoryType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/history.ts",
+      "line": 80,
+      "kind": "Mutation",
+      "name": "recoverDoc",
+      "arguments": [
+        "() => Date"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 84,
+      "kind": "Resolver",
+      "name": "WorkspaceMemberResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 107,
+      "kind": "ResolveField",
+      "name": "owner",
+      "arguments": [
+        "() => UserType",
+        "{\n    description: 'Owner of workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 115,
+      "kind": "ResolveField",
+      "name": "memberCount",
+      "arguments": [
+        "() => Int",
+        "{\n    description: 'member count of workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 123,
+      "kind": "ResolveField",
+      "name": "members",
+      "arguments": [
+        "() => [InviteUserType]",
+        "{\n    description: 'Members of workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 172,
+      "kind": "Mutation",
+      "name": "inviteMembers",
+      "arguments": [
+        "() => [InviteResult]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 307,
+      "kind": "ResolveField",
+      "name": "inviteLink",
+      "arguments": [
+        "() => InviteLink",
+        "{\n    description: 'invite link for workspace',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 334,
+      "kind": "Mutation",
+      "name": "createInviteLink",
+      "arguments": [
+        "() => InviteLink"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 378,
+      "kind": "Mutation",
+      "name": "revokeInviteLink",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 398,
+      "kind": "Mutation",
+      "name": "approveMember",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 442,
+      "kind": "Mutation",
+      "name": "grantMember",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 482,
+      "kind": "Query",
+      "name": "getInviteInfo",
+      "arguments": [
+        "() => InvitationType",
+        "{\n    description: 'get workspace invitation info',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 519,
+      "kind": "Mutation",
+      "name": "revokeMember",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 566,
+      "kind": "Mutation",
+      "name": "acceptInviteById",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/member.ts",
+      "line": 622,
+      "kind": "Mutation",
+      "name": "leaveWorkspace",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 52,
+      "kind": "ObjectType",
+      "name": "WorkspaceRolePermissions",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 66,
+      "kind": "Resolver",
+      "name": "WorkspaceResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 79,
+      "kind": "ResolveField",
+      "name": "initialized",
+      "arguments": [
+        "() => Boolean",
+        "{\n    description: 'is current workspace initialized',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 87,
+      "kind": "ResolveField",
+      "name": "team",
+      "arguments": [
+        "() => Boolean",
+        "{\n    name: 'team',\n    description: 'if workspace is team workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 96,
+      "kind": "ResolveField",
+      "name": "role",
+      "arguments": [
+        "() => WorkspaceRole",
+        "{\n    description: 'Role of current signed in user in workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 117,
+      "kind": "ResolveField",
+      "name": "permissions",
+      "arguments": [
+        "() => WorkspacePermissions",
+        "{\n    description: 'map of action permissions',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 132,
+      "kind": "ResolveField",
+      "name": "workspaceQuota",
+      "arguments": [
+        "() => WorkspaceQuotaType",
+        "{\n    name: 'quota',\n    description: 'quota of workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 147,
+      "kind": "Query",
+      "name": "workspaces",
+      "arguments": [
+        "() => [WorkspaceType]",
+        "{\n    description: 'Get all accessible workspaces for current user',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 169,
+      "kind": "Query",
+      "name": "workspace",
+      "arguments": [
+        "() => WorkspaceType",
+        "{\n    description: 'Get workspace by id',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 184,
+      "kind": "Query",
+      "name": "workspaceRolePermissions",
+      "arguments": [
+        "() => WorkspaceRolePermissions",
+        "{\n    description: 'Get workspace role permissions',\n    deprecationReason: 'use WorkspaceType[permissions] instead',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 207,
+      "kind": "Mutation",
+      "name": "createWorkspace",
+      "arguments": [
+        "() => WorkspaceType",
+        "{\n    description: 'Create a new workspace',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 246,
+      "kind": "Mutation",
+      "name": "updateWorkspace",
+      "arguments": [
+        "() => WorkspaceType",
+        "{\n    description: 'Update workspace',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/resolvers/workspace.ts",
+      "line": 261,
+      "kind": "Mutation",
+      "name": "deleteWorkspace",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 38,
+      "kind": "ObjectType",
+      "name": "InviteUserType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 65,
+      "kind": "ObjectType",
+      "name": "WorkspaceFeatureType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 77,
+      "kind": "ObjectType",
+      "name": "WorkspaceType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 97,
+      "kind": "ObjectType",
+      "name": "InvitationWorkspaceType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 112,
+      "kind": "ObjectType",
+      "name": "WorkspaceBlobSizes",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 118,
+      "kind": "ObjectType",
+      "name": "InvitationType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 133,
+      "kind": "InputType",
+      "name": "UpdateWorkspaceInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 149,
+      "kind": "ObjectType",
+      "name": "InviteLink",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/core/workspaces/types.ts",
+      "line": 158,
+      "kind": "ObjectType",
+      "name": "InviteResult",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 37,
+      "kind": "Resolver",
+      "name": "CalendarServerConfigResolver",
+      "arguments": [
+        "() => ServerConfigType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 45,
+      "kind": "ResolveField",
+      "name": "calendarProviders",
+      "arguments": [
+        "() => [CalendarProviderName]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 57,
+      "kind": "ResolveField",
+      "name": "calendarCalDAVProviders",
+      "arguments": [
+        "() => [CalendarCalDAVProviderPresetObjectType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 72,
+      "kind": "Resolver",
+      "name": "UserCalendarResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 76,
+      "kind": "ResolveField",
+      "name": "calendarAccounts",
+      "arguments": [
+        "() => [CalendarAccountObjectType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 88,
+      "kind": "Resolver",
+      "name": "CalendarAccountResolver",
+      "arguments": [
+        "() => CalendarAccountObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 92,
+      "kind": "ResolveField",
+      "name": "calendarsCount",
+      "arguments": [
+        "() => Int"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 108,
+      "kind": "ResolveField",
+      "name": "calendars",
+      "arguments": [
+        "() => [CalendarSubscriptionObjectType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 117,
+      "kind": "Resolver",
+      "name": "WorkspaceCalendarResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 124,
+      "kind": "ResolveField",
+      "name": "calendars",
+      "arguments": [
+        "() => [WorkspaceCalendarObjectType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 137,
+      "kind": "Resolver",
+      "name": "WorkspaceCalendarEventsResolver",
+      "arguments": [
+        "() => WorkspaceCalendarObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 144,
+      "kind": "ResolveField",
+      "name": "events",
+      "arguments": [
+        "() => [CalendarEventObjectType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 164,
+      "kind": "Resolver",
+      "name": "CalendarMutationResolver",
+      "arguments": [
+        "() => CalendarAccountObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 174,
+      "kind": "Mutation",
+      "name": "linkCalendarAccount",
+      "arguments": [
+        "() => String"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 197,
+      "kind": "Mutation",
+      "name": "linkCalDAVAccount",
+      "arguments": [
+        "() => CalendarAccountObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 212,
+      "kind": "Mutation",
+      "name": "updateCalendarAccount",
+      "arguments": [
+        "() => CalendarAccountObjectType",
+        "{ nullable: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 225,
+      "kind": "Mutation",
+      "name": "unlinkCalendarAccount",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/resolver.ts",
+      "line": 233,
+      "kind": "Mutation",
+      "name": "updateWorkspaceCalendars",
+      "arguments": [
+        "() => WorkspaceCalendarObjectType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 13,
+      "kind": "ObjectType",
+      "name": "CalendarAccountObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 49,
+      "kind": "ObjectType",
+      "name": "CalendarSubscriptionObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 79,
+      "kind": "ObjectType",
+      "name": "CalendarCalDAVProviderPresetObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 94,
+      "kind": "ObjectType",
+      "name": "WorkspaceCalendarItemObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 112,
+      "kind": "ObjectType",
+      "name": "WorkspaceCalendarObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 136,
+      "kind": "ObjectType",
+      "name": "CalendarEventObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 175,
+      "kind": "InputType",
+      "name": "WorkspaceCalendarItemInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 187,
+      "kind": "InputType",
+      "name": "UpdateWorkspaceCalendarsInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 196,
+      "kind": "InputType",
+      "name": "LinkCalendarAccountInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/calendar/types.ts",
+      "line": 205,
+      "kind": "InputType",
+      "name": "LinkCalDAVAccountInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/captcha/types.ts",
+      "line": 24,
+      "kind": "ObjectType",
+      "name": "ChallengeResponse",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 39,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokCapabilityType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 57,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokModelDeclarationType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 69,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokEndpointType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 81,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokProfileDefinitionType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 90,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokProbeStatusType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 102,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokModelProbeCheckType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 111,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokModelProbeType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 120,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokValidationType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 135,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokProbeResultType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 150,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokProfileType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 183,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokCatalogModelType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 198,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokCatalogProviderType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 207,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokCatalogType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 216,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokPolicyType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 231,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokSettingsType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 255,
+      "kind": "ObjectType",
+      "name": "WorkspaceByokUsagePointType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 267,
+      "kind": "ObjectType",
+      "name": "CreateWorkspaceByokLocalLeaseResultType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 276,
+      "kind": "InputType",
+      "name": "WorkspaceByokCapabilityInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 294,
+      "kind": "InputType",
+      "name": "WorkspaceByokModelDeclarationInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 306,
+      "kind": "InputType",
+      "name": "WorkspaceByokEndpointInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 318,
+      "kind": "InputType",
+      "name": "WorkspaceByokProfileDefinitionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 327,
+      "kind": "InputType",
+      "name": "CreateWorkspaceByokProfileInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 351,
+      "kind": "InputType",
+      "name": "ReplaceWorkspaceByokProfileInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 378,
+      "kind": "InputType",
+      "name": "RotateWorkspaceByokCredentialInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 393,
+      "kind": "InputType",
+      "name": "WorkspaceByokProbeCheckInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 402,
+      "kind": "InputType",
+      "name": "ProbeWorkspaceByokProfileInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 414,
+      "kind": "InputType",
+      "name": "ProbeWorkspaceByokDraftInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 438,
+      "kind": "InputType",
+      "name": "WorkspaceByokProfileOrderInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 447,
+      "kind": "InputType",
+      "name": "ReorderWorkspaceByokProfilesInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 456,
+      "kind": "InputType",
+      "name": "CreateWorkspaceByokLocalLeaseProviderInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 477,
+      "kind": "InputType",
+      "name": "CreateWorkspaceByokLocalLeaseInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 486,
+      "kind": "Resolver",
+      "name": "WorkspaceByokResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 496,
+      "kind": "ResolveField",
+      "name": "settings",
+      "arguments": [
+        "() => WorkspaceByokSettingsType",
+        "{\n    name: 'byokSettings',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 536,
+      "kind": "ResolveField",
+      "name": "usage",
+      "arguments": [
+        "() => [WorkspaceByokUsagePointType]",
+        "{\n    name: 'byokUsage',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 555,
+      "kind": "Mutation",
+      "name": "createWorkspaceByokProfile",
+      "arguments": [
+        "() => WorkspaceByokProfileType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 574,
+      "kind": "Mutation",
+      "name": "replaceWorkspaceByokProfile",
+      "arguments": [
+        "() => WorkspaceByokProfileType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 594,
+      "kind": "Mutation",
+      "name": "rotateWorkspaceByokCredential",
+      "arguments": [
+        "() => WorkspaceByokProfileType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 610,
+      "kind": "Mutation",
+      "name": "probeWorkspaceByokProfile",
+      "arguments": [
+        "() => WorkspaceByokProbeResultType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 621,
+      "kind": "Mutation",
+      "name": "probeWorkspaceByokDraft",
+      "arguments": [
+        "() => WorkspaceByokProbeResultType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 644,
+      "kind": "Mutation",
+      "name": "deleteWorkspaceByokProfile",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 656,
+      "kind": "Mutation",
+      "name": "reorderWorkspaceByokProfiles",
+      "arguments": [
+        "() => [WorkspaceByokProfileType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/byok/resolver.ts",
+      "line": 672,
+      "kind": "Mutation",
+      "name": "createWorkspaceByokLocalLease",
+      "arguments": [
+        "() => CreateWorkspaceByokLocalLeaseResultType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 33,
+      "kind": "ObjectType",
+      "name": "McpCredentialType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 69,
+      "kind": "ObjectType",
+      "name": "RevealedMcpCredentialType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 78,
+      "kind": "InputType",
+      "name": "CreateMcpCredentialInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 93,
+      "kind": "Resolver",
+      "name": "McpCredentialResolver",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 101,
+      "kind": "Query",
+      "name": "mcpCredentials",
+      "arguments": [
+        "() => [McpCredentialType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 110,
+      "kind": "Query",
+      "name": "mcpCredentialReadWriteAvailable",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 115,
+      "kind": "Mutation",
+      "name": "createMcpCredential",
+      "arguments": [
+        "() => RevealedMcpCredentialType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 134,
+      "kind": "Mutation",
+      "name": "rotateMcpCredential",
+      "arguments": [
+        "() => RevealedMcpCredentialType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/mcp/resolver.ts",
+      "line": 151,
+      "kind": "Mutation",
+      "name": "revokeMcpCredential",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 47,
+      "kind": "InputType",
+      "name": "CreateChatSessionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 70,
+      "kind": "InputType",
+      "name": "UpdateChatSessionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 97,
+      "kind": "InputType",
+      "name": "ForkChatSessionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 116,
+      "kind": "InputType",
+      "name": "DeleteSessionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 128,
+      "kind": "InputType",
+      "name": "CreateChatMessageInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 156,
+      "kind": "InputType",
+      "name": "QueryChatSessionsInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 174,
+      "kind": "InputType",
+      "name": "QueryChatHistoriesInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 197,
+      "kind": "ObjectType",
+      "name": "StreamObjectType",
+      "arguments": [
+        "'StreamObject'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 218,
+      "kind": "ObjectType",
+      "name": "ChatMessageType",
+      "arguments": [
+        "'ChatMessage'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 246,
+      "kind": "ObjectType",
+      "name": "CopilotHistoriesType",
+      "arguments": [
+        "'CopilotHistories'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 285,
+      "kind": "ObjectType",
+      "name": "PaginatedCopilotHistoriesType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 290,
+      "kind": "ObjectType",
+      "name": "CopilotQuotaType",
+      "arguments": [
+        "'CopilotQuota'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 299,
+      "kind": "ObjectType",
+      "name": "CopilotSessionType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 320,
+      "kind": "ObjectType",
+      "name": "CopilotRouteTargetType",
+      "arguments": [
+        "'CopilotRouteTarget'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 335,
+      "kind": "ObjectType",
+      "name": "CopilotRouteOptionsType",
+      "arguments": [
+        "'CopilotRouteOptions'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 349,
+      "kind": "ObjectType",
+      "name": "CopilotType",
+      "arguments": [
+        "'Copilot'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 355,
+      "kind": "Resolver",
+      "name": "CopilotResolver",
+      "arguments": [
+        "() => CopilotType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 369,
+      "kind": "ResolveField",
+      "name": "routeOptions",
+      "arguments": [
+        "() => CopilotRouteOptionsType",
+        "{\n    nullable: true,\n    description: 'List native built-in route choices for a prompt',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 395,
+      "kind": "ResolveField",
+      "name": "getQuota",
+      "arguments": [
+        "() => CopilotQuotaType",
+        "{\n    name: 'quota',\n    description: 'Get the quota of the user in the workspace',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 435,
+      "kind": "ResolveField",
+      "name": "session",
+      "arguments": [
+        "() => CopilotSessionType",
+        "{\n    description: 'Get the session by id',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 472,
+      "kind": "ResolveField",
+      "name": "sessions",
+      "arguments": [
+        "() => [CopilotSessionType]",
+        "{\n    description: 'Get the session list in the workspace',\n    deprecationReason: 'use `chats` instead',\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 531,
+      "kind": "ResolveField",
+      "name": "histories",
+      "arguments": [
+        "() => [CopilotHistoriesType]",
+        "{\n    deprecationReason: 'use `chats` instead',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 581,
+      "kind": "ResolveField",
+      "name": "chats",
+      "arguments": [
+        "() => PaginatedCopilotHistoriesType",
+        "{}"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 686,
+      "kind": "Mutation",
+      "name": "createCopilotSession",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create a chat session',\n    deprecationReason: 'use `createCopilotSessionWithHistory` instead',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 699,
+      "kind": "Mutation",
+      "name": "createCopilotSessionWithHistory",
+      "arguments": [
+        "() => CopilotHistoriesType",
+        "{\n    description: 'Create a chat session and return full session payload',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 744,
+      "kind": "Mutation",
+      "name": "updateCopilotSession",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Update a chat session',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 807,
+      "kind": "Mutation",
+      "name": "forkCopilotSession",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create a chat session',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 840,
+      "kind": "Mutation",
+      "name": "cleanupCopilotSession",
+      "arguments": [
+        "() => [String]",
+        "{\n    description: 'Cleanup sessions',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 870,
+      "kind": "Mutation",
+      "name": "createCopilotMessage",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create a chat message',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 913,
+      "kind": "Resolver",
+      "name": "UserCopilotResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/resolver.ts",
+      "line": 919,
+      "kind": "ResolveField",
+      "name": "copilot",
+      "arguments": [
+        "() => CopilotType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 46,
+      "kind": "ObjectType",
+      "name": "TranscriptionItemType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 61,
+      "kind": "ObjectType",
+      "name": "AudioSliceManifestItemType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 82,
+      "kind": "ObjectType",
+      "name": "NormalizedTranscriptSegmentType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 103,
+      "kind": "ObjectType",
+      "name": "MeetingActionItemType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 115,
+      "kind": "ObjectType",
+      "name": "MeetingSummaryV2Type",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 142,
+      "kind": "ObjectType",
+      "name": "TranscriptionSourceAudioType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 160,
+      "kind": "ObjectType",
+      "name": "TranscriptionQualityType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 169,
+      "kind": "InputType",
+      "name": "AudioSliceManifestItemInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 190,
+      "kind": "InputType",
+      "name": "TranscriptionSourceAudioInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 208,
+      "kind": "InputType",
+      "name": "TranscriptionQualityInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 217,
+      "kind": "InputType",
+      "name": "SubmitAudioTranscriptionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 229,
+      "kind": "ObjectType",
+      "name": "TranscriptionResultType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 276,
+      "kind": "Resolver",
+      "name": "CopilotTranscriptionResolver",
+      "arguments": [
+        "() => CopilotType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 324,
+      "kind": "Mutation",
+      "name": "submitTranscriptTask",
+      "arguments": [
+        "() => TranscriptionResultType",
+        "{ nullable: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 359,
+      "kind": "Mutation",
+      "name": "retryTranscriptTask",
+      "arguments": [
+        "() => TranscriptionResultType",
+        "{ nullable: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 377,
+      "kind": "Mutation",
+      "name": "settleTranscriptTask",
+      "arguments": [
+        "() => TranscriptionResultType",
+        "{ nullable: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/transcript/resolver.ts",
+      "line": 395,
+      "kind": "ResolveField",
+      "name": "transcriptTask",
+      "arguments": [
+        "() => TranscriptionResultType",
+        "{\n    nullable: true,\n    deprecationReason:\n      'Use realtime subscription \"copilot.transcript.task.changed\" instead.',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 40,
+      "kind": "ObjectType",
+      "name": "CopilotWorkspaceConfigType",
+      "arguments": [
+        "'CopilotWorkspaceConfig'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 51,
+      "kind": "Resolver",
+      "name": "CopilotWorkspaceEmbeddingResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 56,
+      "kind": "ResolveField",
+      "name": "embedding",
+      "arguments": [
+        "() => CopilotWorkspaceConfigType",
+        "{\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 72,
+      "kind": "Resolver",
+      "name": "CopilotWorkspaceEmbeddingConfigResolver",
+      "arguments": [
+        "() => CopilotWorkspaceConfigType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 81,
+      "kind": "ResolveField",
+      "name": "ignoredDocs",
+      "arguments": [
+        "() => PaginatedIgnoredDocsType",
+        "{\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 97,
+      "kind": "ResolveField",
+      "name": "allIgnoredDocs",
+      "arguments": [
+        "() => [CopilotWorkspaceIgnoredDocType]",
+        "{\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 110,
+      "kind": "Mutation",
+      "name": "updateIgnoredDocs",
+      "arguments": [
+        "() => Number",
+        "{\n    name: 'updateWorkspaceEmbeddingIgnoredDocs',\n    complexity: 2,\n    description: 'Update ignored docs',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 135,
+      "kind": "ResolveField",
+      "name": "artifacts",
+      "arguments": [
+        "() => PaginatedCopilotWorkspaceArtifactType",
+        "{\n    complexity: 2,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 150,
+      "kind": "Mutation",
+      "name": "addArtifact",
+      "arguments": [
+        "() => CopilotWorkspaceArtifactType",
+        "{\n    name: 'addWorkspaceArtifact',\n    complexity: 2,\n    description: 'Add a workspace artifact',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/resolver.ts",
+      "line": 196,
+      "kind": "Mutation",
+      "name": "removeArtifact",
+      "arguments": [
+        "() => Boolean",
+        "{\n    name: 'removeWorkspaceArtifact',\n    complexity: 2,\n    description: 'Remove a workspace artifact',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/types.ts",
+      "line": 7,
+      "kind": "ObjectType",
+      "name": "CopilotWorkspaceIgnoredDocType",
+      "arguments": [
+        "'CopilotWorkspaceIgnoredDoc'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/types.ts",
+      "line": 34,
+      "kind": "ObjectType",
+      "name": "PaginatedIgnoredDocsType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/types.ts",
+      "line": 39,
+      "kind": "ObjectType",
+      "name": "CopilotWorkspaceArtifactType",
+      "arguments": [
+        "'CopilotWorkspaceArtifact'"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/copilot/workspace/types.ts",
+      "line": 66,
+      "kind": "ObjectType",
+      "name": "PaginatedCopilotWorkspaceArtifactType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/resolver.ts",
+      "line": 19,
+      "kind": "Resolver",
+      "name": "IndexerResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/resolver.ts",
+      "line": 57,
+      "kind": "ResolveField",
+      "name": "search",
+      "arguments": [
+        "() => SearchResultObjectType",
+        "{\n    description: 'Search a specific table',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/resolver.ts",
+      "line": 81,
+      "kind": "ResolveField",
+      "name": "aggregate",
+      "arguments": [
+        "() => AggregateResultObjectType",
+        "{\n    description: 'Search a specific table with aggregate',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/resolver.ts",
+      "line": 112,
+      "kind": "ResolveField",
+      "name": "searchDocs",
+      "arguments": [
+        "() => [SearchDocObjectType]",
+        "{\n    description: 'Search docs by keyword',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 68,
+      "kind": "InputType",
+      "name": "SearchQuery",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 92,
+      "kind": "InputType",
+      "name": "SearchHighlight",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 104,
+      "kind": "InputType",
+      "name": "SearchPagination",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 116,
+      "kind": "InputType",
+      "name": "SearchOptions",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 128,
+      "kind": "InputType",
+      "name": "SearchInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 140,
+      "kind": "InputType",
+      "name": "AggregateHitsPagination",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 149,
+      "kind": "InputType",
+      "name": "AggregateHitsOptions",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 161,
+      "kind": "InputType",
+      "name": "AggregateOptions",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 170,
+      "kind": "InputType",
+      "name": "AggregateInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 185,
+      "kind": "InputType",
+      "name": "SearchDocsInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 197,
+      "kind": "ObjectType",
+      "name": "BlockObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 248,
+      "kind": "ObjectType",
+      "name": "DocObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 283,
+      "kind": "ObjectType",
+      "name": "SearchNodeObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 297,
+      "kind": "ObjectType",
+      "name": "SearchResultPagination",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 319,
+      "kind": "ObjectType",
+      "name": "SearchResultObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 328,
+      "kind": "ObjectType",
+      "name": "AggregateBucketHitsObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 334,
+      "kind": "ObjectType",
+      "name": "AggregateBucketObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 350,
+      "kind": "ObjectType",
+      "name": "AggregateResultObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/indexer/types.ts",
+      "line": 359,
+      "kind": "ObjectType",
+      "name": "SearchDocObjectType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 27,
+      "kind": "ObjectType",
+      "name": "License",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 48,
+      "kind": "ObjectType",
+      "name": "AdminLicensePreview",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 84,
+      "kind": "Resolver",
+      "name": "LicenseResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 92,
+      "kind": "ResolveField",
+      "name": "license",
+      "arguments": [
+        "() => License",
+        "{\n    complexity: 2,\n    description: 'The selfhost license of the workspace',\n    nullable: true,\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 108,
+      "kind": "Mutation",
+      "name": "activateLicense",
+      "arguments": [
+        "() => License"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 122,
+      "kind": "Mutation",
+      "name": "deactivateLicense",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 135,
+      "kind": "Mutation",
+      "name": "createSelfhostWorkspaceCustomerPortal",
+      "arguments": [
+        "() => String"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 150,
+      "kind": "Mutation",
+      "name": "installLicense",
+      "arguments": [
+        "() => License"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 169,
+      "kind": "Resolver",
+      "name": "AdminLicenseResolver",
+      "arguments": [
+        "() => AdminLicensePreview"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/license/resolver.ts",
+      "line": 174,
+      "kind": "Mutation",
+      "name": "previewLicense",
+      "arguments": [
+        "() => AdminLicensePreview"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/oauth/resolver.ts",
+      "line": 9,
+      "kind": "Resolver",
+      "name": "OAuthResolver",
+      "arguments": [
+        "() => ServerConfigType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/oauth/resolver.ts",
+      "line": 13,
+      "kind": "ResolveField",
+      "name": "oauthProviders",
+      "arguments": [
+        "() => [OAuthProviderName]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 30,
+      "kind": "ObjectType",
+      "name": "AdminPaymentSource",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 57,
+      "kind": "ObjectType",
+      "name": "AdminPaymentAttempt",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 81,
+      "kind": "ObjectType",
+      "name": "AdminPaymentBinding",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 99,
+      "kind": "ObjectType",
+      "name": "AdminPaymentCase",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 117,
+      "kind": "ObjectType",
+      "name": "AdminPaymentResolution",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 135,
+      "kind": "InputType",
+      "name": "AdminPaymentLookupInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 147,
+      "kind": "InputType",
+      "name": "ReconcileAdminPaymentInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 190,
+      "kind": "Resolver",
+      "name": "AdminPaymentResolver",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 202,
+      "kind": "Query",
+      "name": "adminPaymentReconciliation",
+      "arguments": [
+        "() => [AdminPaymentCase]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/admin-resolver.ts",
+      "line": 219,
+      "kind": "Mutation",
+      "name": "reconcileAdminPayment",
+      "arguments": [
+        "() => AdminPaymentResolution"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 35,
+      "kind": "ObjectType",
+      "name": "SubscriptionBillingSource",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 50,
+      "kind": "ObjectType",
+      "name": "SubscriptionBillingGroup",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 59,
+      "kind": "ObjectType",
+      "name": "SubscriptionBillingInfo",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 78,
+      "kind": "Resolver",
+      "name": "UserSubscriptionResolver",
+      "arguments": [
+        "() => UserType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 92,
+      "kind": "ResolveField",
+      "name": "subscriptions",
+      "arguments": [
+        "() => [SubscriptionType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 104,
+      "kind": "ResolveField",
+      "name": "subscriptionBilling",
+      "arguments": [
+        "() => SubscriptionBillingInfo"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 121,
+      "kind": "ResolveField",
+      "name": "invoiceCount",
+      "arguments": [
+        "() => Int",
+        "{\n    name: 'invoiceCount',\n    description: 'Get user invoice count',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 132,
+      "kind": "ResolveField",
+      "name": "invoices",
+      "arguments": [
+        "() => [InvoiceType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 151,
+      "kind": "Mutation",
+      "name": "requestApplySubscription",
+      "arguments": [
+        "() => [SubscriptionType]",
+        "{\n    description: 'Request to apply the subscription in advance',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 184,
+      "kind": "Mutation",
+      "name": "refreshUserSubscriptions",
+      "arguments": [
+        "() => [SubscriptionType]",
+        "{\n    description: 'Refresh current user subscriptions and return latest.',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 203,
+      "kind": "Resolver",
+      "name": "WorkspaceSubscriptionResolver",
+      "arguments": [
+        "() => WorkspaceType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 211,
+      "kind": "ResolveField",
+      "name": "subscription",
+      "arguments": [
+        "() => SubscriptionType",
+        "{\n    nullable: true,\n    description: 'The team subscription of the workspace, if exists.',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 233,
+      "kind": "ResolveField",
+      "name": "invoiceCount",
+      "arguments": [
+        "() => Int",
+        "{\n    name: 'invoiceCount',\n    description: 'Get user invoice count',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/read-resolver.ts",
+      "line": 248,
+      "kind": "ResolveField",
+      "name": "invoices",
+      "arguments": [
+        "() => [InvoiceType]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 47,
+      "kind": "ObjectType",
+      "name": "SubscriptionPrice",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 68,
+      "kind": "ObjectType",
+      "name": "SubscriptionType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 135,
+      "kind": "ObjectType",
+      "name": "InvoiceType",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 174,
+      "kind": "InputType",
+      "name": "CreateCheckoutSessionInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 219,
+      "kind": "InputType",
+      "name": "AppStorePurchaseInput",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 240,
+      "kind": "ObjectType",
+      "name": "AppStorePurchaseResult",
+      "arguments": []
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 252,
+      "kind": "Resolver",
+      "name": "SubscriptionResolver",
+      "arguments": [
+        "() => SubscriptionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 260,
+      "kind": "Query",
+      "name": "prices",
+      "arguments": [
+        "() => [SubscriptionPrice]"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 321,
+      "kind": "Mutation",
+      "name": "createCheckoutSession",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create a subscription checkout link of stripe',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 374,
+      "kind": "Query",
+      "name": "checkoutAttempt",
+      "arguments": [
+        "() => String",
+        "{ nullable: true }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 382,
+      "kind": "Mutation",
+      "name": "expireCheckout",
+      "arguments": [
+        "() => Boolean"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 391,
+      "kind": "Mutation",
+      "name": "appStorePurchase",
+      "arguments": [
+        "() => AppStorePurchaseResult"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 413,
+      "kind": "Mutation",
+      "name": "createCustomerPortal",
+      "arguments": [
+        "() => String",
+        "{\n    description: 'Create a stripe customer portal to manage payment methods',\n  }"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 420,
+      "kind": "Mutation",
+      "name": "cancelSubscription",
+      "arguments": [
+        "() => SubscriptionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 462,
+      "kind": "Mutation",
+      "name": "resumeSubscription",
+      "arguments": [
+        "() => SubscriptionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 504,
+      "kind": "Mutation",
+      "name": "updateSubscriptionRecurring",
+      "arguments": [
+        "() => SubscriptionType"
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/plugins/payment/resolver.ts",
+      "line": 550,
+      "kind": "Mutation",
+      "name": "generateLicenseKey",
+      "arguments": [
+        "() => String"
+      ]
+    }
+  ],
+  "note": "Exact checked-in NestJS autoSchemaFile artifact. Source-only exports are reported, never silently synthesized into authoritative SDL."
+}

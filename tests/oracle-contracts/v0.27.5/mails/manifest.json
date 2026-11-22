@@ -1,0 +1,1977 @@
+{
+  "propDeclarations": [
+    {
+      "file": "packages/backend/server/src/mails/components/date.tsx",
+      "line": 3,
+      "declaration": "export interface DateProps {\n  value: Date;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/components/doc.tsx",
+      "line": 5,
+      "declaration": "export interface DocProps {\n  title: string;\n  url: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/components/user.tsx",
+      "line": 3,
+      "declaration": "export interface UserProps {\n  email: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/components/workspace.tsx",
+      "line": 3,
+      "declaration": "export interface WorkspaceProps {\n  name: string;\n  avatar?: string;\n  size?: number;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/docs/comment-mention.tsx",
+      "line": 14,
+      "declaration": "export type CommentMentionProps = {\n  user: UserProps;\n  doc: DocProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/docs/comment.tsx",
+      "line": 14,
+      "declaration": "export type CommentProps = {\n  user: UserProps;\n  doc: DocProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/docs/mention.tsx",
+      "line": 14,
+      "declaration": "export type MentionProps = {\n  user: UserProps;\n  doc: DocProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/index.tsx",
+      "line": 39,
+      "declaration": "type EmailContent = {\n  subject: string;\n  html: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/index.tsx",
+      "line": 44,
+      "declaration": "type Props<T> = T extends ComponentType<infer P> ? P : never;"
+    },
+    {
+      "file": "packages/backend/server/src/mails/index.tsx",
+      "line": 45,
+      "declaration": "export type EmailRenderer<Props> = (props: Props) => Promise<EmailContent>;"
+    },
+    {
+      "file": "packages/backend/server/src/mails/index.tsx",
+      "line": 156,
+      "declaration": "export type MailName = keyof typeof Renderers;"
+    },
+    {
+      "file": "packages/backend/server/src/mails/index.tsx",
+      "line": 157,
+      "declaration": "export type MailProps<T extends MailName> = Parameters<\n  (typeof Renderers)[T]\n>[0];"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/become-admin.tsx",
+      "line": 12,
+      "declaration": "export type TeamBecomeAdminProps = {\n  workspace: WorkspaceProps;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/become-collaborator.tsx",
+      "line": 12,
+      "declaration": "export type TeamBecomeCollaboratorProps = {\n  workspace: WorkspaceProps;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/delete-in-1m.tsx",
+      "line": 14,
+      "declaration": "export interface TeamDeleteInOneMonthProps {\n  workspace: WorkspaceProps;\n  expirationDate: Date;\n  deletionDate: Date;\n  url: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/delete-in-24h.tsx",
+      "line": 14,
+      "declaration": "export interface TeamDeleteIn24HoursProps {\n  workspace: WorkspaceProps;\n  deletionDate: Date;\n  url: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/deleted.tsx",
+      "line": 11,
+      "declaration": "export interface TeamWorkspaceDeletedProps {\n  workspace: WorkspaceProps;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/expire-soon.tsx",
+      "line": 13,
+      "declaration": "export interface TeamExpireSoonProps {\n  workspace: WorkspaceProps;\n  expirationDate: Date;\n  url: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/expired.tsx",
+      "line": 13,
+      "declaration": "export interface TeamExpiredProps {\n  workspace: WorkspaceProps;\n  expirationDate: Date;\n  url: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/license.tsx",
+      "line": 10,
+      "declaration": "export interface TeamLicenseProps {\n  license: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/mails/teams/workspace-upgraded.tsx",
+      "line": 12,
+      "declaration": "export type TeamWorkspaceUpgradedProps = {\n  workspace: WorkspaceProps;\n  isOwner: boolean;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/email-change-notification.tsx",
+      "line": 3,
+      "declaration": "export type ChangeEmailNotificationProps = {\n  to: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/email-change-verify.tsx",
+      "line": 3,
+      "declaration": "export type VerifyChangeEmailProps = {\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/email-change.tsx",
+      "line": 3,
+      "declaration": "export type ChangeEmailProps = {\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/email-verify.tsx",
+      "line": 3,
+      "declaration": "export type VerifyEmailProps = {\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/password-change.tsx",
+      "line": 3,
+      "declaration": "export type ChangePasswordProps = {\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/password-set.tsx",
+      "line": 3,
+      "declaration": "export type SetPasswordProps = {\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/sign-in.tsx",
+      "line": 11,
+      "declaration": "export type SignInProps = {\n  url: string;\n  otp: string;\n  serverName?: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/users/sign-up.tsx",
+      "line": 11,
+      "declaration": "export type SignUpProps = {\n  url: string;\n  otp: string;\n  serverName?: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/invitation-accepted.tsx",
+      "line": 14,
+      "declaration": "export type InvitationAcceptedProps = {\n  user: UserProps;\n  workspace: WorkspaceProps;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/invitation.tsx",
+      "line": 14,
+      "declaration": "export type InvitationProps = {\n  user: UserProps;\n  workspace: WorkspaceProps;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/member-leave.tsx",
+      "line": 13,
+      "declaration": "export type MemberLeaveProps = {\n  user: UserProps;\n  workspace: WorkspaceProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/member-removed.tsx",
+      "line": 11,
+      "declaration": "export type MemberRemovedProps = {\n  workspace: WorkspaceProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/ownership-received.tsx",
+      "line": 11,
+      "declaration": "export type OwnershipReceivedProps = {\n  workspace: WorkspaceProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/ownership-transferred.tsx",
+      "line": 11,
+      "declaration": "export type OwnershipTransferredProps = {\n  workspace: WorkspaceProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/review-approved.tsx",
+      "line": 12,
+      "declaration": "export type LinkInvitationApprovedProps = {\n  workspace: WorkspaceProps;\n  url: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/review-declined.tsx",
+      "line": 11,
+      "declaration": "export type LinkInvitationReviewDeclinedProps = {\n  workspace: WorkspaceProps;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/mails/workspaces/review-request.tsx",
+      "line": 14,
+      "declaration": "export type LinkInvitationReviewRequestProps = {\n  workspace: WorkspaceProps;\n  user: UserProps;\n  url: string;\n};"
+    }
+  ],
+  "clock": "2026-01-01T00:00:00.000Z",
+  "timezone": "UTC",
+  "renderer": "packages/backend/server/src/mails/render.ts",
+  "react": "19.2.1",
+  "reactDom": "19.2.1",
+  "templates": [
+    {
+      "name": "ChangeEmail",
+      "component": "ChangeEmail",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/email-change.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function ChangeEmail(props: ChangeEmailProps) {\n  return (\n    <Template>\n      <Title>Verify your current email for AFFiNE</Title>\n      <Content>\n        <P>\n          You recently requested to change the email address associated with\n          your AFFiNE account.\n          <br />\n          To complete this process, please click on the verification link below.\n        </P>\n        <P>\n          This magic link will expire in <Bold>30 minutes</Bold>.\n        </P>\n        <Button href={props.url}>Verify and set up a new email address</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "ChangeEmail.html",
+      "subject": "Change your email address",
+      "props": {
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "e83ca4dbc0c68fd56016223f474ed4784d44d2b2c4453b5e6f03739fd612927a",
+      "bytes": 7687,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3323,
+            "endByte": 3345,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "ChangePassword",
+      "component": "ChangePassword",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/password-change.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function ChangePassword(props: ChangePasswordProps) {\n  return (\n    <Template>\n      <Title>Modify your AFFiNE password</Title>\n      <Content>\n        <P>\n          Click the button below to reset your password. The magic link will\n          expire in <Bold>30 minutes</Bold>.\n        </P>\n        <Button href={props.url}>Set new password</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "ChangePassword.html",
+      "subject": "Modify your AFFiNE password",
+      "props": {
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "4ce581a06b744fb001f6169d7ea994ca0f52ba49299d75c166de86334060ab84",
+      "bytes": 7216,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2873,
+            "endByte": 2895,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "Comment",
+      "component": "Comment",
+      "source": {
+        "file": "packages/backend/server/src/mails/docs/comment.tsx",
+        "line": 19
+      },
+      "componentSource": "export function Comment(props: CommentProps) {\n  const { user, doc } = props;\n  return (\n    <Template>\n      <Title>You have a new comment</Title>\n      <Content>\n        <P>\n          <User {...user} /> commented on <Doc {...doc} />.\n        </P>\n        <Button href={doc.url}>View Comment</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "Comment.html",
+      "subject": "New comment in AFFiNE",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "doc": {
+          "title": "Test Doc",
+          "url": "https://app.affine.pro"
+        }
+      },
+      "sha256": "13db8d5c2dcba19830b71e373df5dfba2b37a6ecc389d0bf9066d7359a095dea",
+      "bytes": 7293,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2592,
+            "endByte": 2605,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.title",
+          "value": "Test Doc",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2753,
+            "endByte": 2761,
+            "baseline": "Test Doc",
+            "alternate": "ORACLE_doc_title"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2635,
+            "endByte": 2976,
+            "baseline": "https://app.affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"https://app.affine.pro",
+            "alternate": "ORACLE_doc_url\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"ORACLE_doc_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "CommentMention",
+      "component": "CommentMention",
+      "source": {
+        "file": "packages/backend/server/src/mails/docs/comment-mention.tsx",
+        "line": 19
+      },
+      "componentSource": "export function CommentMention(props: CommentMentionProps) {\n  const { user, doc } = props;\n  return (\n    <Template>\n      <Title>You are mentioned in a comment</Title>\n      <Content>\n        <P>\n          <User {...user} /> mentioned you in a comment on <Doc {...doc} />.\n        </P>\n        <Button href={doc.url}>View Comment</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "CommentMention.html",
+      "subject": "You were mentioned in a comment",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "doc": {
+          "title": "Test Doc",
+          "url": "https://app.affine.pro"
+        }
+      },
+      "sha256": "bbf6993ee2b8fbb000e6bcd975a3704700ad49b3d963e44e1304bc47e4e24487",
+      "bytes": 7318,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2600,
+            "endByte": 2613,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.title",
+          "value": "Test Doc",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2778,
+            "endByte": 2786,
+            "baseline": "Test Doc",
+            "alternate": "ORACLE_doc_title"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2660,
+            "endByte": 3001,
+            "baseline": "https://app.affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"https://app.affine.pro",
+            "alternate": "ORACLE_doc_url\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"ORACLE_doc_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "EmailChanged",
+      "component": "ChangeEmailNotification",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/email-change-notification.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function ChangeEmailNotification(\n  props: ChangeEmailNotificationProps\n) {\n  return (\n    <Template>\n      <Title>Verify your current email for AFFiNE</Title>\n      <Content>\n        <P>\n          As per your request, we have changed your email. Please make sure\n          you&apos;re using <Name>{props.to}</Name> to log in the next time.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "EmailChanged.html",
+      "subject": "Account email address changed",
+      "props": {
+        "to": "test@affine.pro"
+      },
+      "sha256": "69953f27c6f3e21afadccec19af102f6c6b67b711454f87f1b704fb1963e08c5",
+      "bytes": 6122,
+      "interpolations": [
+        {
+          "path": "to",
+          "value": "test@affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2543,
+            "endByte": 2557,
+            "baseline": "test@affine.pr",
+            "alternate": "ORACLE_t"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "LinkInvitationApprove",
+      "component": "LinkInvitationApproved",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/review-approved.tsx",
+        "line": 17
+      },
+      "componentSource": "export default function LinkInvitationApproved(\n  props: LinkInvitationApprovedProps\n) {\n  const { workspace, url } = props;\n  return (\n    <Template>\n      <Title>Welcome to the workspace!</Title>\n      <Content>\n        <P>\n          Your request to join <Workspace {...workspace} /> has been accepted.\n          You can now access the team workspace and collaborate with other\n          members.\n        </P>\n      </Content>\n      <Button href={url}>Open Workspace</Button>\n    </Template>\n  );\n}",
+      "file": "LinkInvitationApprove.html",
+      "subject": "Your request to join a workspace has been approved",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "a8c535bc98a9c76159da3db053d3bf83a8c24fdfe498b1ba41ce1dd359c4214d",
+      "bytes": 6346,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2700,
+            "endByte": 2713,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2565,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome to the workspace!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your request to join <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome to the workspace!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your request to join <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": null,
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2594,
+            "endByte": 2607,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "LinkInvitationDecline",
+      "component": "LinkInvitationReviewDeclined",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/review-declined.tsx",
+        "line": 15
+      },
+      "componentSource": "export default function LinkInvitationReviewDeclined(\n  props: LinkInvitationReviewDeclinedProps\n) {\n  const { workspace } = props;\n  return (\n    <Template>\n      <Title>Request declined</Title>\n      <Content>\n        <P>\n          Your request to join <Workspace {...workspace} /> has been declined by\n          the workspace admin.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "LinkInvitationDecline.html",
+      "subject": "Your request to join a workspace was declined",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "f797808b3e9cfe7c4a3f0a3ca9cf40a4c5e8ee815d2c5b3fd2e0b5cc3f8709b9",
+      "bytes": 6286,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2691,
+            "endByte": 2704,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2556,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Request declined</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your request to join <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Request declined</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your request to join <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2585,
+            "endByte": 2598,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "LinkInvitationReviewRequest",
+      "component": "LinkInvitationReviewRequest",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/review-request.tsx",
+        "line": 20
+      },
+      "componentSource": "export default function LinkInvitationReviewRequest(\n  props: LinkInvitationReviewRequestProps\n) {\n  const { workspace, user, url } = props;\n  return (\n    <Template>\n      <Title>\n        Request to join <Workspace {...workspace} size={24} />\n      </Title>\n      <Content>\n        <P>\n          <User {...user} /> has requested to join <Workspace {...workspace} />.\n          <br />\n          As a workspace owner/admin, you can approve or decline this request.\n        </P>\n        <Button href={url}>Review request</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "LinkInvitationReviewRequest.html",
+      "subject": "New request to join a workspace",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "user": {
+          "email": "test@test.com"
+        },
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "14b27dca92f2312c3985b6e6d7e46437547494d3aeb7039e41d2fc8e9cbf6fe7",
+      "bytes": 7711,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2374,
+            "endByte": 3107,
+            "baseline": "Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has requested to join <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspac",
+            "alternate": "ORACLE_workspace_name</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has requested to join <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2959,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Request to join <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:24px;height:24px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has requested to join <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Request to join <img src=\"ORACLE_workspace_avatar\" alt=\"avatar\" style=\"width:24px;height:24px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has requested to join <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2868,
+            "endByte": 2881,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3370,
+            "endByte": 3392,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2988,
+            "endByte": 3001,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "MemberAccepted",
+      "component": "InvitationAccepted",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/invitation-accepted.tsx",
+        "line": 20
+      },
+      "componentSource": "export default function InvitationAccepted(props: InvitationAcceptedProps) {\n  const { user, workspace, url } = props;\n  return (\n    <Template>\n      <Title>{user.email} accepted your invitation</Title>\n      <Content>\n        <P>\n          <User {...user} /> has joined <Workspace {...workspace} />\n        </P>\n        <Button href={url}>Open Workspace Members</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "MemberAccepted.html",
+      "subject": "Your workspace invitation was accepted",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "335f807b50afd293c47e13fd48e862d8808cd0afbad35e023554c7bcdf0eb3de",
+      "bytes": 7460,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2175,
+            "endByte": 2707,
+            "baseline": "test@test.com<!-- --> accepted your invitation</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com",
+            "alternate": "ORACLE_user_email<!-- --> accepted your invitation</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2909,
+            "endByte": 2922,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2774,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">test@test.com<!-- --> accepted your invitation</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has joined <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">test@test.com<!-- --> accepted your invitation</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has joined <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3111,
+            "endByte": 3133,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2803,
+            "endByte": 2816,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "MemberInvitation",
+      "component": "Invitation",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/invitation.tsx",
+        "line": 20
+      },
+      "componentSource": "export default function Invitation(props: InvitationProps) {\n  const { user, workspace, url } = props;\n\n  return (\n    <Template>\n      <Title>You are invited!</Title>\n      <Content>\n        <P>\n          <User {...user} /> invited you to join <Workspace {...workspace} />\n        </P>\n        <P>Click button to join this workspace</P>\n        <Button href={url}>Accept & Join</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "MemberInvitation.html",
+      "subject": "You were invited to join a workspace on AFFiNE",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "efdc8190efd5d7c8f04c2903f20e59af3a0b01a5c0353071e2e66efd7732154c",
+      "bytes": 7794,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2664,
+            "endByte": 2677,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2888,
+            "endByte": 2901,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2753,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You are invited!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> invited you to join <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You are invited!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> invited you to join <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3450,
+            "endByte": 3472,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2782,
+            "endByte": 2795,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "MemberLeave",
+      "component": "MemberLeave",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/member-leave.tsx",
+        "line": 18
+      },
+      "componentSource": "export default function MemberLeave(props: MemberLeaveProps) {\n  const { user, workspace } = props;\n  return (\n    <Template>\n      <Title>\n        Member left <Workspace {...workspace} size={24} />\n      </Title>\n      <Content>\n        <P>\n          <Name>{user.email}</Name> has left workspace{' '}\n          <Workspace {...workspace} />\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "MemberLeave.html",
+      "subject": "A workspace member left",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "c112fa457f87155d0fd98edab8237bf508ab54346b000393624ba40895c195c8",
+      "bytes": 6501,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2717,
+            "endByte": 2730,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2370,
+            "endByte": 2961,
+            "baseline": "Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has left workspace<!-- --> <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspac",
+            "alternate": "ORACLE_workspace_name</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has left workspace<!-- --> <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2813,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Member left <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:24px;height:24px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has left workspace<!-- --> <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Member left <img src=\"ORACLE_workspace_avatar\" alt=\"avatar\" style=\"width:24px;height:24px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span></p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><span style=\"font-weight:600\">test@test.com</span> has left workspace<!-- --> <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2842,
+            "endByte": 2855,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "MemberRemoved",
+      "component": "MemberRemoved",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/member-removed.tsx",
+        "line": 15
+      },
+      "componentSource": "export default function MemberRemoved(props: MemberRemovedProps) {\n  const { workspace } = props;\n  return (\n    <Template>\n      <Title>Workspace access removed</Title>\n      <Content>\n        <P>\n          You have been removed from <Workspace {...workspace} />. You no longer\n          have access to this workspace.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "MemberRemoved.html",
+      "subject": "You have been removed from a workspace",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "1ecce1ffa61032296e7c310b9f4e96e900be8c52b1127f91e153e1f51f370c22",
+      "bytes": 6304,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2705,
+            "endByte": 2718,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2570,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Workspace access removed</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been removed from <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Workspace access removed</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been removed from <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2599,
+            "endByte": 2612,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "Mention",
+      "component": "Mention",
+      "source": {
+        "file": "packages/backend/server/src/mails/docs/mention.tsx",
+        "line": 19
+      },
+      "componentSource": "export function Mention(props: MentionProps) {\n  const { user, doc } = props;\n  return (\n    <Template>\n      <Title>You are mentioned!</Title>\n      <Content>\n        <P>\n          <User {...user} /> mentioned you in <Doc {...doc} />.\n        </P>\n        <Button href={doc.url}>Open Doc</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "Mention.html",
+      "subject": "You were mentioned in AFFiNE",
+      "props": {
+        "user": {
+          "email": "test@test.com"
+        },
+        "doc": {
+          "title": "Test Doc",
+          "url": "https://app.affine.pro"
+        }
+      },
+      "sha256": "87afaa02642bbb7385b0e1d69b59fe54ff9a42e1cb79127e94975a6afd634dad",
+      "bytes": 7289,
+      "interpolations": [
+        {
+          "path": "user.email",
+          "value": "test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2588,
+            "endByte": 2601,
+            "baseline": "test@test.com",
+            "alternate": "ORACLE_user_email"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.title",
+          "value": "Test Doc",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2753,
+            "endByte": 2761,
+            "baseline": "Test Doc",
+            "alternate": "ORACLE_doc_title"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "doc.url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2635,
+            "endByte": 2976,
+            "baseline": "https://app.affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"https://app.affine.pro",
+            "alternate": "ORACLE_doc_url\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><span style=\"font-weight:600\">Test Doc</span></a>.</p></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><a href=\"ORACLE_doc_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "OwnershipReceived",
+      "component": "OwnershipReceived",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/ownership-received.tsx",
+        "line": 15
+      },
+      "componentSource": "export default function OwnershipReceived(props: OwnershipReceivedProps) {\n  const { workspace } = props;\n\n  return (\n    <Template>\n      <Title>Welcome, new workspace owner!</Title>\n      <Content>\n        <P>\n          You have been assigned as the owner of\n          <Workspace {...workspace} />. As a workspace owner, you have full\n          control over this workspace.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "OwnershipReceived.html",
+      "subject": "You are now the owner of a workspace",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "d62a5576af1004b31ce96dce9086dc9fd8ca85c59e28f0b4fe6fc42a186fcf47",
+      "bytes": 6340,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2721,
+            "endByte": 2734,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2586,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome, new workspace owner!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been assigned as the owner of<img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome, new workspace owner!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been assigned as the owner of<img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2615,
+            "endByte": 2628,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "OwnershipTransferred",
+      "component": "OwnershipTransferred",
+      "source": {
+        "file": "packages/backend/server/src/mails/workspaces/ownership-transferred.tsx",
+        "line": 15
+      },
+      "componentSource": "export default function OwnershipTransferred(props: OwnershipTransferredProps) {\n  const { workspace } = props;\n  return (\n    <Template>\n      <Title>Ownership transferred</Title>\n      <Content>\n        <P>\n          You have transferred ownership of <Workspace {...workspace} />. You\n          are now a collaborator in this workspace.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "OwnershipTransferred.html",
+      "subject": "Your workspace ownership has been transferred",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "6324a6711e1a05e4dbacaef1315cd9555082d46a1abbcce0b9c7526d8900113a",
+      "bytes": 6309,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2709,
+            "endByte": 2722,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2574,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Ownership transferred</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have transferred ownership of <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Ownership transferred</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have transferred ownership of <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2603,
+            "endByte": 2616,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "SetPassword",
+      "component": "SetPassword",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/password-set.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function SetPassword(props: SetPasswordProps) {\n  return (\n    <Template>\n      <Title>Set your AFFiNE password</Title>\n      <Content>\n        <P>\n          Click the button below to set your password. The magic link will\n          expire in <Bold>30 minutes</Bold>.\n        </P>\n        <Button href={props.url}>Sign in to AFFiNE</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "SetPassword.html",
+      "subject": "Set your AFFiNE password",
+      "props": {
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "c96c5c85b669eca106d0ae5f09f3c0d1df6940cc21f51d64a1901f8928f1fd8f",
+      "bytes": 7212,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2868,
+            "endByte": 2890,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "SignIn",
+      "component": "SignIn",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/sign-in.tsx",
+        "line": 17
+      },
+      "componentSource": "export default function SignIn(props: SignInProps) {\n  return (\n    <Template>\n      <Title>{`Sign in to ${props.serverName ?? 'AFFiNE'}`}</Title>\n      <Content>\n        <P>You are signing in to AFFiNE. Here is your code:</P>\n        <OnelineCodeBlock>{props.otp}</OnelineCodeBlock>\n        <P>\n          Alternatively, you can sign in directly by clicking the magic link\n          below:\n        </P>\n        <Button href={props.url}>Sign in with Magic Link</Button>\n        <P>\n          <SecondaryText>\n            This code and link will expire in 30 minutes.\n          </SecondaryText>\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "SignIn.html",
+      "subject": "Sign in to AFFiNE",
+      "props": {
+        "url": "https://app.affine.pro/magic-link?token=123456&email=test@test.com",
+        "otp": "123456"
+      },
+      "sha256": "0573f6814eecbd9ec6f1be19e7858ba17dff2c21a0b503d6331aafc61f8298ba",
+      "bytes": 8561,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro/magic-link?token=123456&email=test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3630,
+            "endByte": 3700,
+            "baseline": "https://app.affine.pro/magic-link?token=123456&amp;email=test@test.com",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "otp",
+          "value": "123456",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3043,
+            "endByte": 3049,
+            "baseline": "123456",
+            "alternate": "ORACLE_otp"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "serverName",
+          "type": "string",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2108,
+            "endByte": 2114,
+            "baseline": "AFFiNE",
+            "alternate": "ORACLE_serverName"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "SignUp",
+      "component": "SignUp",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/sign-up.tsx",
+        "line": 17
+      },
+      "componentSource": "export default function SignUp(props: SignUpProps) {\n  return (\n    <Template>\n      <Title>{`Sign up to ${props.serverName ?? 'AFFiNE'}`}</Title>\n      <Content>\n        <P>You are signing up to AFFiNE. Here is your code:</P>\n        <OnelineCodeBlock>{props.otp}</OnelineCodeBlock>\n        <P>\n          Alternatively, you can sign up directly by clicking the magic link\n          below:\n        </P>\n        <Button href={props.url}>Sign up with Magic Link</Button>\n        <P>\n          <SecondaryText>\n            This code and link will expire in 30 minutes.\n          </SecondaryText>\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "SignUp.html",
+      "subject": "Your AFFiNE account is waiting for you!",
+      "props": {
+        "url": "https://app.affine.pro/magic-link?token=123456&email=test@test.com",
+        "otp": "123456"
+      },
+      "sha256": "c282eefcecd8b18fbbec66f981568b776069dbc3ec2fbf4a1e5523f4ab691868",
+      "bytes": 8561,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro/magic-link?token=123456&email=test@test.com",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3630,
+            "endByte": 3700,
+            "baseline": "https://app.affine.pro/magic-link?token=123456&amp;email=test@test.com",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "otp",
+          "value": "123456",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3043,
+            "endByte": 3049,
+            "baseline": "123456",
+            "alternate": "ORACLE_otp"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "serverName",
+          "type": "string",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2108,
+            "endByte": 2114,
+            "baseline": "AFFiNE",
+            "alternate": "ORACLE_serverName"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamBecomeAdmin",
+      "component": "TeamBecomeAdmin",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/become-admin.tsx",
+        "line": 17
+      },
+      "componentSource": "export default function TeamBecomeAdmin(props: TeamBecomeAdminProps) {\n  const { workspace, url } = props;\n  return (\n    <Template>\n      <Title>You&apos;ve been promoted to admin.</Title>\n      <Content>\n        <P>\n          You have been promoted to admin of <Workspace {...workspace} />. As an\n          admin, you can help the workspace owner manage members in this\n          workspace.\n        </P>\n        <Button href={url}>Go to Workspace</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamBecomeAdmin.html",
+      "subject": "You are now a workspace admin",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "role": "admin",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "d2ebe9ed20cc75bbf8453ea3895b53180749c23b753a92fc87ff77801d7e1dff",
+      "bytes": 7496,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2871,
+            "endByte": 2884,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2736,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You&#x27;ve been promoted to admin.</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been promoted to admin of <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You&#x27;ve been promoted to admin.</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">You have been promoted to admin of <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "role",
+          "value": "admin",
+          "type": "string",
+          "htmlRange": null,
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3154,
+            "endByte": 3176,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2765,
+            "endByte": 2778,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamBecomeCollaborator",
+      "component": "TeamBecomeCollaborator",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/become-collaborator.tsx",
+        "line": 17
+      },
+      "componentSource": "export default function TeamBecomeCollaborator(\n  props: TeamBecomeCollaboratorProps\n) {\n  const { workspace, url } = props;\n\n  return (\n    <Template>\n      <Title>Role update in workspace</Title>\n      <Content>\n        <P>\n          Your role in <Workspace {...workspace} /> has been changed to{' '}\n          collaborator. You can continue to collaborate in this workspace.\n        </P>\n        <Button href={url}>Go to Workspace</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamBecomeCollaborator.html",
+      "subject": "Your workspace role has been changed",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "role": "admin",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "451ce129092db5b07ae5a2a85168e594a4ba9dca94c57fbaa6a091b435d963bb",
+      "bytes": 7483,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2838,
+            "endByte": 2851,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2703,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Role update in workspace</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your role in <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Role update in workspace</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your role in <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "role",
+          "value": "admin",
+          "type": "string",
+          "htmlRange": null,
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3141,
+            "endByte": 3163,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2732,
+            "endByte": 2745,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamDeleteIn24Hours",
+      "component": "TeamDeleteIn24Hours",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/delete-in-24h.tsx",
+        "line": 20
+      },
+      "componentSource": "export default function TeamDeleteIn24Hours(props: TeamDeleteIn24HoursProps) {\n  const { workspace, deletionDate, url } = props;\n\n  return (\n    <Template>\n      <Title>Urgent: Last chance to prevent data loss</Title>\n      <Content>\n        <P>\n          Your <Workspace {...workspace} /> team workspace data will be\n          permanently deleted in 24 hours on <IOSDate value={deletionDate} />.\n          To prevent data loss, please take immediate action:\n          <li>\n            <Text>Renew your subscription to restore team features</Text>\n          </li>\n          <li>\n            <Text>\n              Export your workspace data from Workspace Settings &gt; Export\n              Workspace\n            </Text>\n          </li>\n        </P>\n        <Button href={url}>Go to Billing</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamDeleteIn24Hours.html",
+      "subject": "[Action Required] Final warning: Your workspace will be deleted in 24 hours",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "deletionDate": "2025-01-31T00:00:00.000Z",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "029179f678cdf427a56891946d836b6bfc61ccbcc87c2d0b4ba9ce1c789d00c0",
+      "bytes": 8016,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2846,
+            "endByte": 2859,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2711,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Urgent: Last chance to prevent data loss</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Urgent: Last chance to prevent data loss</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "deletionDate",
+          "value": "2025-01-31T00:00:00.000Z",
+          "type": "Date",
+          "htmlRange": {
+            "startByte": 2963,
+            "endByte": 2971,
+            "baseline": "25-01-31",
+            "alternate": "31-12-25"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3676,
+            "endByte": 3698,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2740,
+            "endByte": 2753,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamDeleteInOneMonth",
+      "component": "TeamDeleteInOneMonth",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/delete-in-1m.tsx",
+        "line": 21
+      },
+      "componentSource": "export default function TeamDeleteInOneMonth(props: TeamDeleteInOneMonthProps) {\n  const { workspace, expirationDate, deletionDate, url } = props;\n\n  return (\n    <Template>\n      <Title>Take action to prevent data loss</Title>\n      <Content>\n        <P>\n          Your <Workspace {...workspace} /> team workspace expired on{' '}\n          <IOSDate value={expirationDate} />. All workspace data will be\n          permanently deleted on <IOSDate value={deletionDate} /> (180 days\n          after expiration). To prevent data loss, please either:\n          <li>\n            <Text>Renew your subscription to restore team features</Text>\n          </li>\n          <li>\n            <Text>\n              Export your workspace data from Workspace Settings &gt; Export\n              Workspace\n            </Text>\n          </li>\n        </P>\n        <Button href={url}>Go to Billing</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamDeleteInOneMonth.html",
+      "subject": "[Action Required] Important: Your workspace will be deleted soon",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "expirationDate": "2025-01-01T00:00:00.000Z",
+        "deletionDate": "2025-01-31T00:00:00.000Z",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "8bd6f57dcef03f0ad44fe0fcd04ff311e51d14a76232c65f8c05eea79455952e",
+      "bytes": 8091,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2838,
+            "endByte": 2851,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2703,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Take action to prevent data loss</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Take action to prevent data loss</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "expirationDate",
+          "value": "2025-01-01T00:00:00.000Z",
+          "type": "Date",
+          "htmlRange": {
+            "startByte": 2926,
+            "endByte": 2934,
+            "baseline": "25-01-01",
+            "alternate": "31-12-25"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "deletionDate",
+          "value": "2025-01-31T00:00:00.000Z",
+          "type": "Date",
+          "htmlRange": {
+            "startByte": 3025,
+            "endByte": 3033,
+            "baseline": "25-01-31",
+            "alternate": "31-12-25"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3751,
+            "endByte": 3773,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2732,
+            "endByte": 2745,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamLicense",
+      "component": "TeamLicense",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/license.tsx",
+        "line": 14
+      },
+      "componentSource": "export default function TeamLicense(props: TeamLicenseProps) {\n  const { license } = props;\n\n  return (\n    <Template>\n      <Title>Here is your license key.</Title>\n      <Content>\n        <OnelineCodeBlock>{license}</OnelineCodeBlock>\n        <P>\n          You can use this key to upgrade your selfhost workspace in{' '}\n          <Bold>Settings &gt; Workspace &gt; License</Bold>.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamLicense.html",
+      "subject": "Your AFFiNE Self-Hosted Team Workspace license is ready",
+      "props": {
+        "license": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      },
+      "sha256": "304c0eb05040a0b7702b61b0f2f08d849d4c720badaeaeb89fb6082cba7eb019",
+      "bytes": 6735,
+      "interpolations": [
+        {
+          "path": "license",
+          "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2678,
+            "endByte": 2714,
+            "baseline": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "alternate": "ORACLE_license"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamWorkspaceDeleted",
+      "component": "TeamWorkspaceDeleted",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/deleted.tsx",
+        "line": 15
+      },
+      "componentSource": "export default function TeamWorkspaceDeleted(props: TeamWorkspaceDeletedProps) {\n  const { workspace } = props;\n\n  return (\n    <Template>\n      <Title>Workspace data deleted</Title>\n      <Content>\n        <P>\n          All data in <Workspace {...workspace} /> has been permanently deleted\n          as the workspace remained expired for 180 days. This action cannot be\n          undone.\n        </P>\n        <P>\n          Thank you for your support of AFFiNE. We hope to see you again in the\n          future.\n        </P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamWorkspaceDeleted.html",
+      "subject": "Your workspace has been deleted",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        }
+      },
+      "sha256": "d766b3714ddbb5fd618ba9f7f6465a19e4fcb286541ee3c9c0927364442d8f22",
+      "bytes": 6918,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2835,
+            "endByte": 2848,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2700,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Workspace data deleted</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">All data in <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Workspace data deleted</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">All data in <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2729,
+            "endByte": 2742,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamWorkspaceExpireSoon",
+      "component": "TeamExpireSoon",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/expire-soon.tsx",
+        "line": 19
+      },
+      "componentSource": "export default function TeamExpireSoon(props: TeamExpireSoonProps) {\n  const { workspace, expirationDate, url } = props;\n\n  return (\n    <Template>\n      <Title>Team workspace will expire soon</Title>\n      <Content>\n        <P>\n          Your <Workspace {...workspace} /> team workspace will expire on{' '}\n          <IOSDate value={expirationDate} />. After expiration, you won&apos;t\n          be able to sync or collaborate with team members. Please renew your\n          subscription to continue using all team features.\n        </P>\n        <Button href={url}>Go to Billing</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamWorkspaceExpireSoon.html",
+      "subject": "[Action Required] Your team workspace will expire soon",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "expirationDate": "2025-01-01T00:00:00.000Z",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "f772b81f482b52b9c6b7ca647815241ab82707dc374309345a31854f587ef311",
+      "bytes": 7617,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2837,
+            "endByte": 2850,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2702,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Team workspace will expire soon</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Team workspace will expire soon</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "expirationDate",
+          "value": "2025-01-01T00:00:00.000Z",
+          "type": "Date",
+          "htmlRange": {
+            "startByte": 2929,
+            "endByte": 2937,
+            "baseline": "25-01-01",
+            "alternate": "31-12-25"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3277,
+            "endByte": 3299,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2731,
+            "endByte": 2744,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamWorkspaceExpired",
+      "component": "TeamExpired",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/expired.tsx",
+        "line": 19
+      },
+      "componentSource": "export default function TeamExpired(props: TeamExpiredProps) {\n  const { workspace, expirationDate, url } = props;\n\n  return (\n    <Template>\n      <Title>Team workspace expired</Title>\n      <Content>\n        <P>\n          Your <Workspace {...workspace} /> team workspace expired on{' '}\n          <IOSDate value={expirationDate} />. Your workspace can&apos;t sync or\n          collaborate with team members. Please renew your subscription to\n          restore all team features.\n        </P>\n        <Button href={url}>Go to Billing</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamWorkspaceExpired.html",
+      "subject": "Your team workspace has expired",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "expirationDate": "2025-01-01T00:00:00.000Z",
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "dfac534b421a37eaf7fa5450ef7e63066d267d5b9d2f4cce7b2bcf13bd2b5795",
+      "bytes": 7579,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2828,
+            "endByte": 2841,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2693,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Team workspace expired</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Team workspace expired</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Your <img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "expirationDate",
+          "value": "2025-01-01T00:00:00.000Z",
+          "type": "Date",
+          "htmlRange": {
+            "startByte": 2916,
+            "endByte": 2924,
+            "baseline": "25-01-01",
+            "alternate": "31-12-25"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3239,
+            "endByte": 3261,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2722,
+            "endByte": 2735,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TeamWorkspaceUpgraded",
+      "component": "TeamWorkspaceUpgraded",
+      "source": {
+        "file": "packages/backend/server/src/mails/teams/workspace-upgraded.tsx",
+        "line": 18
+      },
+      "componentSource": "export default function TeamWorkspaceUpgraded(\n  props: TeamWorkspaceUpgradedProps\n) {\n  const { workspace, isOwner, url } = props;\n\n  return (\n    <Template>\n      <Title>Welcome to the team workspace!</Title>\n      <Content>\n        <P>\n          {isOwner ? (\n            <>\n              <Workspace {...workspace} /> has been upgraded to team workspace\n              with the following benefits:\n            </>\n          ) : (\n            <>\n              Great news! <Workspace {...workspace} /> has been upgraded to team\n              workspace by the workspace owner.\n              <br />\n              You now have access to the following enhanced features:\n            </>\n          )}\n          <br /> ✓ 100 GB initial storage + 20 GB per seat\n          <br /> ✓ 500 MB of maximum file size\n          <br /> ✓ Unlimited team members (10+ seats)\n          <br /> ✓ Multiple admin roles\n          <br /> ✓ Priority customer support\n        </P>\n        <Button href={url}>Open Workspace</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TeamWorkspaceUpgraded.html",
+      "subject": "Your workspace has been upgraded to team workspace! 🎉",
+      "props": {
+        "workspace": {
+          "name": "Test Workspace",
+          "avatar": "https://app.affine.pro/favicon-192.png"
+        },
+        "isOwner": true,
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "5208b8708a3535a561b87dd97b55a9dbc7b7e8c4e4e59a75bd976ab351818b3f",
+      "bytes": 7634,
+      "interpolations": [
+        {
+          "path": "workspace.name",
+          "value": "Test Workspace",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2831,
+            "endByte": 2844,
+            "baseline": "Test Workspac",
+            "alternate": "ORACLE_workspace_nam"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.avatar",
+          "value": "https://app.affine.pro/favicon-192.png",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 282,
+            "endByte": 2696,
+            "baseline": "https://app.affine.pro/favicon-192.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome to the team workspace!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><img src=\"https://app.affine.pro/favicon-192.png",
+            "alternate": "ORACLE_workspace_avatar\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Welcome to the team workspace!</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\"><img src=\"ORACLE_workspace_avatar"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "isOwner",
+          "value": true,
+          "type": "boolean",
+          "htmlRange": {
+            "startByte": 2648,
+            "endByte": 2915,
+            "baseline": "<img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span> has been upgraded to team workspace with the following benefit",
+            "alternate": "Great news! <img src=\"https://app.affine.pro/favicon-192.png\" alt=\"avatar\" style=\"width:20px;height:20px;border-radius:12px;object-fit:cover;vertical-align:middle\"/><span style=\"font-weight:600\">Test Workspace</span> has been upgraded to team workspace by the workspace owner.<br/>You now have access to the following enhanced feature"
+          },
+          "subjectChanges": true
+        },
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3293,
+            "endByte": 3315,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        },
+        {
+          "path": "workspace.size",
+          "type": "number",
+          "present": false,
+          "htmlRange": {
+            "startByte": 2725,
+            "endByte": 2738,
+            "baseline": "0px;height:20",
+            "alternate": "4px;height:24"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "TestMail",
+      "component": "TestMail",
+      "source": {
+        "file": "packages/backend/server/src/mails/test-mail.tsx",
+        "line": 3
+      },
+      "componentSource": "export default function TestMail() {\n  return (\n    <Template>\n      <Title>Test Email from AFFiNE</Title>\n      <Content>\n        <P>This is a test email from your AFFiNE instance.</P>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "TestMail.html",
+      "subject": "Test Email from AFFiNE",
+      "props": {},
+      "sha256": "dc7e68c6a633b98341eee72096256f3eb942064ad758e3a026f632c9f8346496",
+      "bytes": 5994,
+      "interpolations": []
+    },
+    {
+      "name": "VerifyChangeEmail",
+      "component": "VerifyChangeEmail",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/email-change-verify.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function VerifyChangeEmail(props: VerifyChangeEmailProps) {\n  return (\n    <Template>\n      <Title>Verify your new email address</Title>\n      <Content>\n        <P>\n          You recently requested to change the email address associated with\n          your AFFiNE account. To complete this process, please click on the\n          verification link below. This magic link will expire in 30 minutes.\n        </P>\n        <Button href={props.url}>Verify your new email address</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "VerifyChangeEmail.html",
+      "subject": "Verify your new email address",
+      "props": {
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "08580ebc5a9376a0dabc39ae36eb3e6ac98070f8b0f436cafa0c9a2d36091692",
+      "bytes": 7307,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 2951,
+            "endByte": 2973,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    },
+    {
+      "name": "VerifyEmail",
+      "component": "VerifyEmail",
+      "source": {
+        "file": "packages/backend/server/src/mails/users/email-verify.tsx",
+        "line": 7
+      },
+      "componentSource": "export default function VerifyEmail(props: VerifyEmailProps) {\n  return (\n    <Template>\n      <Title>Verify your email address</Title>\n      <Content>\n        <P>\n          You recently requested to verify the email address associated with\n          your AFFiNE account.\n          <br />\n          To complete this process, please click on the verification link below.\n        </P>\n        <P>\n          This magic link will expire in <Bold>30 minutes</Bold>.\n        </P>\n        <Button href={props.url}>Verify your email address</Button>\n      </Content>\n    </Template>\n  );\n}",
+      "file": "VerifyEmail.html",
+      "subject": "Verify your email address",
+      "props": {
+        "url": "https://app.affine.pro"
+      },
+      "sha256": "a3c68f60a2e9fd993752e4bb37f0a8933a5a8d5e8355685213bba4bf5d1e4304",
+      "bytes": 7664,
+      "interpolations": [
+        {
+          "path": "url",
+          "value": "https://app.affine.pro",
+          "type": "string",
+          "htmlRange": {
+            "startByte": 3312,
+            "endByte": 3334,
+            "baseline": "https://app.affine.pro",
+            "alternate": "ORACLE_url"
+          },
+          "subjectChanges": false
+        }
+      ]
+    }
+  ]
+}

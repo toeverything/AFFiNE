@@ -1,0 +1,48 @@
+{
+  "left_target": {
+    "base_url": "http://127.0.0.1:8081",
+    "postgres": "host=127.0.0.1 port=5433 user=parity dbname=parity_left",
+    "redis": "redis://127.0.0.1:6381",
+    "smtp_bind": "127.0.0.1:2525"
+  },
+  "right_target": {
+    "base_url": "http://127.0.0.1:8082",
+    "postgres": "host=127.0.0.1 port=5434 user=parity dbname=parity_right",
+    "redis": "redis://127.0.0.1:6382",
+    "smtp_bind": "127.0.0.1:2526"
+  },
+  "timeout_ms": 5000,
+  "dynamic": [
+    {
+      "path": "/(id|workspaceId|docId|originId|requestId|sid)$",
+      "kind": "id"
+    },
+    {
+      "path": "/(createdAt|updatedAt|timestamp)$",
+      "kind": "ts"
+    },
+    {
+      "path": "/(accessToken|refreshToken)$|/headers/set-cookie/[0-9]+/value$",
+      "kind": "token"
+    }
+  ],
+  "table_keys": {
+    "public.workspaces": [
+      "id"
+    ]
+  },
+  "steps": [
+    {
+      "name": "server_config",
+      "kind": "graphql",
+      "query": "query { serverConfig { version } }",
+      "variables": {}
+    },
+    {
+      "name": "info",
+      "kind": "http",
+      "method": "GET",
+      "path": "/info"
+    }
+  ]
+}

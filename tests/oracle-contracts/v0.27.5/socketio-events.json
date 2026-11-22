@@ -1,0 +1,1125 @@
+{
+  "gateways": [
+    {
+      "file": "packages/backend/server/src/base/event/eventbus.ts",
+      "line": 31,
+      "class": "EventBus",
+      "options": [
+        "{\n  namespace: 's2s',\n}"
+      ],
+      "decorators": [
+        {
+          "name": "WebSocketGateway",
+          "args": [
+            "{\n  namespace: 's2s',\n}"
+          ],
+          "source": "@WebSocketGateway({\n  namespace: 's2s',\n})"
+        },
+        {
+          "name": "Injectable",
+          "args": [],
+          "source": "@Injectable()"
+        }
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/gateway.ts",
+      "line": 58,
+      "class": "RealtimeGateway",
+      "options": [],
+      "decorators": [
+        {
+          "name": "WebSocketGateway",
+          "args": [],
+          "source": "@WebSocketGateway()"
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "ClsInterceptor"
+          ],
+          "source": "@UseInterceptors(ClsInterceptor)"
+        }
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 332,
+      "class": "SpaceSyncGateway",
+      "options": [],
+      "decorators": [
+        {
+          "name": "WebSocketGateway",
+          "args": [],
+          "source": "@WebSocketGateway()"
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "ClsInterceptor"
+          ],
+          "source": "@UseInterceptors(ClsInterceptor)"
+        }
+      ]
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/gateway.ts",
+      "line": 23,
+      "class": "TelemetryGateway",
+      "options": [],
+      "decorators": [
+        {
+          "name": "WebSocketGateway",
+          "args": [],
+          "source": "@WebSocketGateway()"
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "ClsInterceptor"
+          ],
+          "source": "@UseInterceptors(ClsInterceptor)"
+        }
+      ]
+    }
+  ],
+  "incoming": [
+    {
+      "event": "realtime:request",
+      "file": "packages/backend/server/src/core/realtime/gateway.ts",
+      "line": 94,
+      "gateway": "RealtimeGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'realtime:request'"
+          ],
+          "source": "@SubscribeMessage('realtime:request')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "envelope",
+          "type": "RealtimeRequestEnvelope",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        },
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('realtime:request')\n  async onRequest(\n    @CurrentUser() user: CurrentUser,\n    @MessageBody() envelope: RealtimeRequestEnvelope,\n    @ConnectedSocket() client?: Socket\n  ) {\n    this.assertVersion(envelope.clientVersion);\n    const handler = this.registry.getRequest(envelope.op);\n    const input = handler.input.parse(envelope.input);\n    return {\n      data: await handler.handle(user, input as never, {\n        connectionId: client?.id,\n      }),\n    };\n  }"
+    },
+    {
+      "event": "realtime:subscribe",
+      "file": "packages/backend/server/src/core/realtime/gateway.ts",
+      "line": 110,
+      "gateway": "RealtimeGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'realtime:subscribe'"
+          ],
+          "source": "@SubscribeMessage('realtime:subscribe')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "envelope",
+          "type": "RealtimeSubscribeEnvelope",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('realtime:subscribe')\n  async onSubscribe(\n    @CurrentUser() user: CurrentUser,\n    @ConnectedSocket() client: Socket,\n    @MessageBody() envelope: RealtimeSubscribeEnvelope\n  ) {\n    this.assertVersion(envelope.clientVersion);\n    const handler = this.registry.getTopic(envelope.topic);\n    const input = handler.input.parse(envelope.input);\n    await handler.authorize(user, input as never);\n    const room = handler.room(user, input as never);\n    await client.join(room);\n    const subscriptionId = `${client.id}:${envelope.topic}:${getRealtimeInputKey(input)}`;\n    this.subscriptions.set(subscriptionId, {\n      socketId: client.id,\n      room,\n    });\n    return { data: { subscriptionId } };\n  }"
+    },
+    {
+      "event": "realtime:unsubscribe",
+      "file": "packages/backend/server/src/core/realtime/gateway.ts",
+      "line": 130,
+      "gateway": "RealtimeGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'realtime:unsubscribe'"
+          ],
+          "source": "@SubscribeMessage('realtime:unsubscribe')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "envelope",
+          "type": "RealtimeUnsubscribeEnvelope",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('realtime:unsubscribe')\n  async onUnsubscribe(\n    @ConnectedSocket() client: Socket,\n    @MessageBody() envelope: RealtimeUnsubscribeEnvelope\n  ) {\n    this.assertVersion(envelope.clientVersion);\n    if (!envelope.subscriptionId) {\n      return { data: { ok: true } };\n    }\n    const subscription = this.subscriptions.get(envelope.subscriptionId);\n    if (subscription?.socketId === client.id) {\n      await client.leave(subscription.room);\n      this.subscriptions.delete(envelope.subscriptionId);\n    }\n    return { data: { ok: true } };\n  }"
+    },
+    {
+      "event": "space:delete-doc",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1487,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:delete-doc'"
+          ],
+          "source": "@SubscribeMessage('space:delete-doc')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "{ spaceType, spaceId, docId }",
+          "type": "DeleteDocMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<{ success: true }>>",
+      "implementation": "@SubscribeMessage('space:delete-doc')\n  async onDeleteSpaceDoc(\n    @ConnectedSocket() client: Socket,\n    @CurrentUser() user: CurrentUser,\n    @MessageBody() { spaceType, spaceId, docId }: DeleteDocMessage\n  ): Promise<EventResponse<{ success: true }>> {\n    docId = canonicalDocId(docId, spaceId);\n    if (spaceType === SpaceType.Workspace) {\n      await this.applyDocLifecycle(client, user.id, spaceId, docId, 'delete');\n    } else {\n      const adapter = this.selectAdapter(client, spaceType);\n      await this.assertDocActionAllowed(\n        spaceType,\n        user.id,\n        spaceId,\n        docId,\n        'Doc.Delete'\n      );\n      await adapter.delete(spaceId, docId);\n    }\n    return { data: { success: true } };\n  }"
+    },
+    {
+      "event": "space:doc-lifecycle",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1510,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:doc-lifecycle'"
+          ],
+          "source": "@SubscribeMessage('space:doc-lifecycle')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "{\n      spaceType,\n      spaceId,\n      docId,\n      lifecycle,\n      physicalDocId,\n    }",
+          "type": "DocLifecycleMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<{ timestamp: number; deletedDocIds?: string[] }>>",
+      "implementation": "@SubscribeMessage('space:doc-lifecycle')\n  async onDocLifecycle(\n    @ConnectedSocket() client: Socket,\n    @CurrentUser() user: CurrentUser,\n    @MessageBody() {\n      spaceType,\n      spaceId,\n      docId,\n      lifecycle,\n      physicalDocId,\n    }: DocLifecycleMessage\n  ): Promise<EventResponse<{ timestamp: number; deletedDocIds?: string[] }>> {\n    if (!['trash', 'restore', 'delete'].includes(lifecycle)) {\n      throw new BadRequest('Invalid document lifecycle');\n    }\n    docId = canonicalDocId(docId, spaceId);\n    if (spaceType !== SpaceType.Workspace) {\n      throw new DocActionDenied({\n        action: lifecycle === 'delete' ? 'Doc.Delete' : 'Doc.Update',\n        docId,\n        spaceId,\n      });\n    }\n    return {\n      data: await this.applyDocLifecycle(\n        client,\n        user.id,\n        spaceId,\n        docId,\n        lifecycle,\n        physicalDocId === undefined\n          ? undefined\n          : canonicalDocId(physicalDocId, spaceId)\n      ),\n    };\n  }"
+    },
+    {
+      "event": "space:join-batch",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1246,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:join-batch'"
+          ],
+          "source": "@SubscribeMessage('space:join-batch')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "type": "unknown",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<\n    EventResponse<{\n      clientId: string;\n      success: boolean;\n      protocolVersion: 1 | 2;\n    }>\n  >",
+      "implementation": "@SubscribeMessage('space:join-batch')\n  async onJoinSpaceBatch(\n    @CurrentUser() user: CurrentUser,\n    @ConnectedSocket() client: Socket,\n    @MessageBody() message: unknown\n  ): Promise<\n    EventResponse<{\n      clientId: string;\n      success: boolean;\n      protocolVersion: 1 | 2;\n    }>\n  > {\n    const { spaces, clientVersion, protocolVersion } =\n      parseJoinSpaceBatchMessage(message);\n    if (!isBatchWsClientVersion(clientVersion)) {\n      this.rejectJoin(client);\n      return { data: { clientId: client.id, success: false, protocolVersion } };\n    }\n\n    const [first] = spaces;\n    const adapter = this.selectAdapter(client, first.spaceType);\n\n    await adapter.assertAccessible(first.spaceId, user.id, 'Workspace.Sync');\n    if (first.spaceType === SpaceType.Workspace)\n      await this.runtime.ensureWorkspaceLifecycleV1(\n        first.spaceId,\n        protocolVersion\n      );\n    this.socketProtocolVersions.set(client.id, protocolVersion);\n\n    const docSpaces = spaces.filter(\n      (space): space is JoinSpaceBatchEntry & { docId: string } =>\n        space.docId !== undefined\n    );\n    const docActions = new Map<string, Set<DocAction>>();\n    let permissionGeneration = 0;\n    const rooms = new Set<string>();\n    rooms.add(adapter.room(first.spaceId));\n    rooms.add(adapter.room(first.spaceId, 'sync-027'));\n    const roomsToJoin = [...rooms].filter(room => !client.rooms.has(room));\n    const subscriptionsToAdd = spaces.filter(\n      (space): space is JoinSpaceBatchEntry & { docId: string } =>\n        space.docId !== undefined &&\n        !this.hasActiveDocSubscription(\n          client,\n          space.spaceType,\n          space.spaceId,\n          space.docId\n        )\n    );\n    try {\n      if (roomsToJoin.length > 0) {\n        await client.join(roomsToJoin);\n      }\n      if (first.spaceType === SpaceType.Userspace) {\n        if (first.spaceId !== user.id) {\n          throw new SpaceAccessDenied({ spaceId: first.spaceId });\n        }\n        for (const space of docSpaces) {\n          docActions.set(space.docId, new Set(['Doc.Read', 'Doc.Update']));\n        }\n      } else {\n        for (let attempt = 0; attempt < 3; attempt++) {\n          const before = await this.runtime.getSyncPermissionGenerationV1(\n            first.spaceId\n          );\n          const decisions = await this.ac\n            .user(user.id)\n            .workspace(first.spaceId)\n            .docPermissions(docSpaces, ['Doc.Read', 'Doc.Update']);\n          const after = await this.runtime.getSyncPermissionGenerationV1(\n            first.spaceId\n          );\n          if (before !== after) continue;\n          const authorized = new Map<string, Set<DocAction>>();\n          for (const doc of decisions) {\n            const allowed = new Set(\n              doc.decisions\n                .filter(decision => decision.allowed)\n                .map(decision => decision.action as DocAction)\n            );\n            if (!allowed.has('Doc.Read')) {\n              throw new DocActionDenied({\n                action: 'Doc.Read',\n                docId: doc.docId,\n                spaceId: first.spaceId,\n              });\n            }\n            authorized.set(doc.docId, allowed);\n          }\n          if (authorized.size !== docSpaces.length) {\n            continue;\n          }\n          const installedAt = await this.runtime.getSyncPermissionGenerationV1(\n            first.spaceId\n          );\n          if (installedAt !== after) continue;\n          permissionGeneration = installedAt;\n          for (const [docId, actions] of authorized) {\n            docActions.set(docId, actions);\n          }\n          break;\n        }\n        if (docActions.size !== docSpaces.length) {\n          throw new SyncPermissionGenerationChanged({\n            spaceId: first.spaceId,\n          });\n        }\n      }\n      for (const space of docSpaces) {\n        this.addActiveDocSubscription(\n          client,\n          space.spaceType,\n          space.spaceId,\n          space.docId,\n          docActions.get(space.docId) ?? new Set(['Doc.Read']),\n          permissionGeneration\n        );\n      }\n    } catch (error) {\n      for (const space of subscriptionsToAdd) {\n        this.removeActiveDocSubscription(\n          client,\n          space.spaceType,\n          space.spaceId,\n          space.docId\n        );\n      }\n      await Promise.all(\n        roomsToJoin\n          .filter(room => client.rooms.has(room))\n          .map(async room => {\n            await client.leave(room);\n          })\n      );\n      throw error;\n    }\n\n    return { data: { clientId: client.id, success: true, protocolVersion } };\n  }"
+    },
+    {
+      "event": "space:leave",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1410,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:leave'"
+          ],
+          "source": "@SubscribeMessage('space:leave')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "{ spaceType, spaceId }",
+          "type": "LeaveSpaceMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<{ clientId: string; success: true }>>",
+      "implementation": "@SubscribeMessage('space:leave')\n  async onLeaveSpace(\n    @ConnectedSocket() client: Socket,\n    @MessageBody() { spaceType, spaceId }: LeaveSpaceMessage\n  ): Promise<EventResponse<{ clientId: string; success: true }>> {\n    const adapter = this.selectAdapter(client, spaceType);\n    this.removeActiveDocSubscriptionsInSpace(client, spaceType, spaceId);\n    await adapter.leave(spaceId);\n    await adapter.leave(spaceId, 'sync-027');\n\n    return { data: { clientId: client.id, success: true } };\n  }"
+    },
+    {
+      "event": "space:leave-batch",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1387,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:leave-batch'"
+          ],
+          "source": "@SubscribeMessage('space:leave-batch')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "type": "unknown",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<{ clientId: string; success: true }>>",
+      "implementation": "@SubscribeMessage('space:leave-batch')\n  async onLeaveSpaceBatch(\n    @ConnectedSocket() client: Socket,\n    @MessageBody() message: unknown\n  ): Promise<EventResponse<{ clientId: string; success: true }>> {\n    const { spaceType, spaceId, docIds } = parseLeaveSpaceBatchMessage(message);\n    for (const docId of docIds) {\n      this.removeActiveDocSubscription(client, spaceType, spaceId, docId);\n    }\n\n    const activeDocs = this.activeSocketDocs.get(client.id);\n    const hasActiveDocsInSpace = Array.from(activeDocs ?? []).some(key =>\n      key.startsWith(`${spaceType}:${spaceId}:`)\n    );\n    if (docIds.length === 0 && !hasActiveDocsInSpace) {\n      const adapter = this.selectAdapter(client, spaceType);\n      await adapter.leave(spaceId, 'sync-027');\n      await adapter.leave(spaceId);\n    }\n\n    return { data: { clientId: client.id, success: true } };\n  }"
+    },
+    {
+      "event": "space:load-awarenesses",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1732,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:load-awarenesses'"
+          ],
+          "source": "@SubscribeMessage('space:load-awarenesses')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "type": "LoadSpaceAwarenessesMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('space:load-awarenesses')\n  async onLoadAwareness(\n    @ConnectedSocket() client: Socket,\n    @MessageBody()\n    message: LoadSpaceAwarenessesMessage\n  ) {\n    const { spaceType, spaceId } = message;\n    const docId = canonicalDocId(message.docId, spaceId);\n    const adapter = this.selectAdapter(client, spaceType);\n\n    if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {\n      throw new NotInSpace({ spaceId });\n    }\n    adapter.assertIn(spaceId);\n    const event = { spaceType, spaceId, docId, sourceSocketId: client.id };\n    this.emitActiveAwarenessCollect(event);\n    this.event.broadcast('sync.awareness.collect', event);\n\n    return { data: { clientId: client.id } };\n  }"
+    },
+    {
+      "event": "space:load-doc",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1423,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:load-doc'"
+          ],
+          "source": "@SubscribeMessage('space:load-doc')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "{ spaceType, spaceId, docId, stateVector }",
+          "type": "LoadDocMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<\n    EventResponse<{ missing: string; state: string; timestamp: number }>\n  >",
+      "implementation": "@SubscribeMessage('space:load-doc')\n  async onLoadSpaceDoc(\n    @ConnectedSocket() client: Socket,\n    @MessageBody()\n    { spaceType, spaceId, docId, stateVector }: LoadDocMessage\n  ): Promise<\n    EventResponse<{ missing: string; state: string; timestamp: number }>\n  > {\n    const canonicalId = canonicalDocId(docId, spaceId);\n    const adapter = this.selectAdapter(client, spaceType);\n    adapter.assertIn(spaceId);\n    if (\n      !this.hasActiveDocSubscription(client, spaceType, spaceId, canonicalId)\n    ) {\n      throw new NotInSpace({ spaceId });\n    }\n    const permissionGeneration = this.activeDocGeneration(\n      client,\n      spaceType,\n      spaceId,\n      canonicalId\n    );\n\n    const doc = await adapter.diff(\n      spaceId,\n      canonicalId,\n      stateVector ? Buffer.from(stateVector, 'base64') : undefined\n    );\n\n    const currentGeneration =\n      spaceType === SpaceType.Workspace\n        ? await this.runtime.getSyncPermissionGenerationV1(spaceId)\n        : permissionGeneration;\n    if (\n      permissionGeneration === undefined ||\n      this.activeDocGeneration(client, spaceType, spaceId, canonicalId) !==\n        permissionGeneration ||\n      permissionGeneration !== currentGeneration\n    ) {\n      if (\n        this.activeDocGeneration(client, spaceType, spaceId, canonicalId) ===\n        permissionGeneration\n      )\n        this.removeActiveDocSubscription(\n          client,\n          spaceType,\n          spaceId,\n          canonicalId\n        );\n      throw new NotInSpace({ spaceId });\n    }\n    if (!doc) {\n      throw new DocNotFound({ spaceId, docId });\n    }\n\n    return {\n      data: {\n        missing: Buffer.from(doc.missing).toString('base64'),\n        state: Buffer.from(doc.state).toString('base64'),\n        timestamp: doc.timestamp,\n      },\n    };\n  }"
+    },
+    {
+      "event": "space:load-doc-timestamps",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1706,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:load-doc-timestamps'"
+          ],
+          "source": "@SubscribeMessage('space:load-doc-timestamps')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "{ spaceType, spaceId, timestamp }",
+          "type": "LoadDocTimestampsMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<Record<string, number>>>",
+      "implementation": "@SubscribeMessage('space:load-doc-timestamps')\n  async onLoadDocTimestamps(\n    @ConnectedSocket() client: Socket,\n    @CurrentUser() user: CurrentUser,\n    @MessageBody()\n    { spaceType, spaceId, timestamp }: LoadDocTimestampsMessage\n  ): Promise<EventResponse<Record<string, number>>> {\n    const adapter = this.selectAdapter(client, spaceType);\n\n    adapter.assertIn(spaceId);\n    if (spaceType === SpaceType.Userspace)\n      return { data: (await adapter.getTimestamps(spaceId, timestamp)) ?? {} };\n    const state = await this.runtime.getWorkspaceStateV1(spaceId, user.id);\n    const clocks = {\n      ...state.clocks,\n      ...Object.fromEntries(state.docs.map(doc => [doc.docId, doc.timestamp])),\n    };\n    return {\n      data: Object.fromEntries(\n        Object.entries(clocks).filter(\n          ([, value]) => timestamp === undefined || value > timestamp\n        )\n      ),\n    };\n  }"
+    },
+    {
+      "event": "space:load-workspace-state",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1689,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:load-workspace-state'"
+          ],
+          "source": "@SubscribeMessage('space:load-workspace-state')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "{\n      spaceType,\n      spaceId,\n    }",
+          "type": "{ spaceType: SpaceType; spaceId: string }",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('space:load-workspace-state')\n  async onLoadWorkspaceState(\n    @ConnectedSocket() client: Socket,\n    @CurrentUser() user: CurrentUser,\n    @MessageBody() {\n      spaceType,\n      spaceId,\n    }: { spaceType: SpaceType; spaceId: string }\n  ) {\n    if (spaceType !== SpaceType.Workspace)\n      throw new BadRequest('Workspace state requires a workspace.');\n    this.selectAdapter(client, spaceType).assertIn(spaceId);\n    if (this.socketProtocolVersions.get(client.id) !== 2)\n      throw new BadRequest('Workspace state requires sync protocol 2.');\n    return { data: await this.runtime.getWorkspaceStateV1(spaceId, user.id) };\n  }"
+    },
+    {
+      "event": "space:push-doc-update",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1610,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:push-doc-update'"
+          ],
+          "source": "@SubscribeMessage('space:push-doc-update')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "type": "PushDocUpdateMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<\n    EventResponse<{ accepted: true; timestamp: number; created: boolean }>\n  >",
+      "implementation": "@SubscribeMessage('space:push-doc-update')\n  async onReceiveDocUpdate(\n    @ConnectedSocket() client: Socket,\n    @CurrentUser() user: CurrentUser,\n    @MessageBody()\n    message: PushDocUpdateMessage\n  ): Promise<\n    EventResponse<{ accepted: true; timestamp: number; created: boolean }>\n  > {\n    const { spaceType, spaceId, update } = message;\n    const docId = canonicalDocId(message.docId, spaceId);\n    const adapter = this.selectAdapter(client, spaceType);\n\n    // Quota recovery mode is intentionally not applied to sync.\n    adapter.assertIn(spaceId);\n    if (message.intent !== 'create' && message.intent !== 'update')\n      throw new BadRequest('Document update intent is required.');\n    let permissionGeneration: number | undefined;\n    if (message.intent === 'update') {\n      if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId))\n        throw new NotInSpace({ spaceId });\n      if (\n        !this.hasActiveDocAction(\n          client,\n          spaceType,\n          spaceId,\n          docId,\n          'Doc.Update'\n        )\n      )\n        throw new DocActionDenied({ action: 'Doc.Update', docId, spaceId });\n      permissionGeneration = this.activeDocGeneration(\n        client,\n        spaceType,\n        spaceId,\n        docId\n      );\n      if (permissionGeneration === undefined) throw new NotInSpace({ spaceId });\n    }\n    const { timestamp, created } = await adapter\n      .push(\n        spaceId,\n        docId,\n        [Buffer.from(update, 'base64')],\n        user.id,\n        permissionGeneration,\n        message.intent === 'create' ? 'create_doc' : 'update_doc',\n        this.socketProtocolVersions.get(client.id) ?? 0\n      )\n      .catch((error: unknown) => {\n        const code = backendRuntimeErrorCode(error);\n        if (code === 'domain_permission_denied')\n          throw new AccessDenied('Document write access denied');\n        if (code === 'sync_permission_generation_changed')\n          throw new SyncPermissionGenerationChanged({ spaceId });\n        throw error;\n      });\n\n    this.publishDocUpdate(\n      {\n        spaceType,\n        spaceId,\n        docId,\n        updates: [Buffer.from(update, 'base64')],\n        timestamp,\n        editor: user.id,\n      },\n      client\n    );\n\n    return {\n      data: {\n        accepted: true,\n        timestamp,\n        created,\n      },\n    };\n  }"
+    },
+    {
+      "event": "space:update-awareness",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1753,
+      "gateway": "SpaceSyncGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'space:update-awareness'"
+          ],
+          "source": "@SubscribeMessage('space:update-awareness')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "message",
+          "type": "UpdateAwarenessMessage",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "inferred; see implementation",
+      "implementation": "@SubscribeMessage('space:update-awareness')\n  async onUpdateAwareness(\n    @ConnectedSocket() client: Socket,\n    @MessageBody() message: UpdateAwarenessMessage\n  ) {\n    const { spaceType, spaceId } = message;\n    const docId = canonicalDocId(message.docId, spaceId);\n    const adapter = this.selectAdapter(client, spaceType);\n\n    if (!this.hasActiveDocSubscription(client, spaceType, spaceId, docId)) {\n      throw new NotInSpace({ spaceId });\n    }\n    adapter.assertIn(spaceId);\n    const event = { ...message, docId, sourceSocketId: client.id };\n    this.emitActiveAwarenessUpdate(event);\n    this.event.broadcast('sync.awareness.updated', event);\n\n    return {};\n  }"
+    },
+    {
+      "event": "telemetry:batch",
+      "file": "packages/backend/server/src/core/telemetry/gateway.ts",
+      "line": 28,
+      "gateway": "TelemetryGateway",
+      "namespace": "/",
+      "decorators": [
+        {
+          "name": "SubscribeMessage",
+          "args": [
+            "'telemetry:batch'"
+          ],
+          "source": "@SubscribeMessage('telemetry:batch')"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "user",
+          "type": "CurrentUser",
+          "decorators": [
+            {
+              "name": "CurrentUser",
+              "args": [],
+              "source": "@CurrentUser()"
+            }
+          ]
+        },
+        {
+          "name": "client",
+          "type": "Socket",
+          "decorators": [
+            {
+              "name": "ConnectedSocket",
+              "args": [],
+              "source": "@ConnectedSocket()"
+            }
+          ]
+        },
+        {
+          "name": "batch",
+          "type": "TelemetryBatch",
+          "decorators": [
+            {
+              "name": "MessageBody",
+              "args": [],
+              "source": "@MessageBody()"
+            }
+          ]
+        }
+      ],
+      "ackType": "Promise<EventResponse<TelemetryAck>>",
+      "implementation": "@SubscribeMessage('telemetry:batch')\n  async onBatch(\n    @CurrentUser() user: CurrentUser,\n    @ConnectedSocket() client: Socket,\n    @MessageBody() batch: TelemetryBatch\n  ): Promise<EventResponse<TelemetryAck>> {\n    const origin = client.handshake.headers.origin;\n    const referer = client.handshake.headers.referer;\n    if (!this.telemetry.isOriginAllowed(origin, referer)) {\n      throw new BadRequest(`Invalid origin: ${origin}, referer: ${referer}`);\n    }\n\n    const ack = await this.telemetry.collectBatch({\n      ...batch,\n      transport: 'ws',\n      events: batch?.events?.map(event => ({\n        ...event,\n        userId: event.userId ?? user?.id,\n      })),\n    });\n\n    return { data: ack };\n  }"
+    }
+  ],
+  "outgoing": [
+    {
+      "event": "broadcast",
+      "file": "packages/backend/server/src/base/event/eventbus.ts",
+      "line": 127,
+      "receiver": "this.server",
+      "arguments": [
+        "event",
+        "payload",
+        "this.cls.getId()"
+      ]
+    },
+    {
+      "event": "error",
+      "file": "packages/backend/server/src/base/nestjs/exception.ts",
+      "line": 120,
+      "receiver": "client",
+      "arguments": [
+        "{\n      error: toWebsocketError(error),\n    }"
+      ]
+    },
+    {
+      "event": "realtime:event",
+      "file": "packages/backend/server/src/core/realtime/publisher.ts",
+      "line": 72,
+      "receiver": "this.server?.to(room)",
+      "arguments": [
+        "envelope"
+      ]
+    },
+    {
+      "event": "space:broadcast-awareness-update",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 685,
+      "receiver": "socket",
+      "arguments": [
+        "{\n          spaceType: event.spaceType,\n          spaceId: event.spaceId,\n          docId: event.docId,\n          awarenessUpdate: event.awarenessUpdate,\n        }"
+      ]
+    },
+    {
+      "event": "space:broadcast-doc-invalidation",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1002,
+      "receiver": "this.server?.local\n      .to(`${event.spaceType}:${Room(event.spaceId, 'sync-027')}`)",
+      "arguments": [
+        "{\n        spaceType: event.spaceType,\n        spaceId: event.spaceId,\n        inventoryChanged: true,\n      }"
+      ]
+    },
+    {
+      "event": "space:broadcast-doc-invalidation",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1199,
+      "receiver": "sourceSocket\n        .to(batchRoom)",
+      "arguments": [
+        "invalidation"
+      ]
+    },
+    {
+      "event": "space:broadcast-doc-invalidation",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 1203,
+      "receiver": "this.server\n        .to(batchRoom)",
+      "arguments": [
+        "invalidation"
+      ]
+    },
+    {
+      "event": "space:broadcast-doc-updates",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 649,
+      "receiver": "socket",
+      "arguments": [
+        "activeBroadcastPayload"
+      ]
+    },
+    {
+      "event": "space:collect-awareness",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 664,
+      "receiver": "socket",
+      "arguments": [
+        "{\n          spaceType: event.spaceType,\n          spaceId: event.spaceId,\n          docId: event.docId,\n        }"
+      ]
+    }
+  ],
+  "types": [
+    {
+      "file": "packages/backend/server/src/base/websocket/config.ts",
+      "line": 7,
+      "name": "AppConfigSchema",
+      "declaration": "interface AppConfigSchema {\n    websocket: {\n      transports: ConfigItem<GatewayMetadata['transports']>;\n      maxHttpBufferSize: number;\n    };\n  }"
+    },
+    {
+      "file": "packages/backend/server/src/core/backend-runtime/telemetry.ts",
+      "line": 3,
+      "name": "PermissionTelemetryEvent",
+      "declaration": "type PermissionTelemetryEvent =\n  | {\n      kind: 'evaluation';\n      deployment: 'cloud' | 'selfhosted';\n      action_class: 'workspace' | 'doc';\n      decision: 'allow' | 'deny';\n      reason: string;\n      count: number;\n    }\n  | {\n      kind: 'license_verification';\n      deployment: 'selfhosted';\n      result: 'allow' | 'deny';\n      reason: 'valid' | 'invalid' | 'expired' | 'status' | 'inapplicable';\n    }\n  | {\n      kind: 'license_health';\n      result: 'success' | 'error';\n      changes: number;\n    }\n  | {\n      kind: 'quota_cache';\n      deployment: 'cloud' | 'selfhosted';\n      cache: 'entitlement' | 'owner' | 'storage' | 'seat';\n      event: 'request' | 'db_load' | 'invalidation';\n      result: 'hit' | 'miss' | 'success' | 'error' | 'applied';\n      count: number;\n      entries: number;\n      bytes: number;\n    }\n  | {\n      kind: 'quota_guard';\n      domain: 'seat' | 'storage';\n      operation: 'reserve' | 'activate' | 'finalize' | 'abort' | 'cleanup';\n      result: 'allow' | 'deny' | 'mismatch';\n      reason: string;\n    }\n  | {\n      kind: 'blob_access';\n      operation: 'manifest' | 'workspace_manifest' | 'open' | 'chunk';\n      result: 'allow' | 'deny';\n      reason:\n        | 'authorized'\n        | 'authorization'\n        | 'protocol'\n        | 'reference'\n        | 'ledger'\n        | 'parse'\n        | 'stale'\n        | 'storage'\n        | 'internal';\n    }\n  | {\n      kind: 'blob_ref_cache';\n      event: 'request' | 'parse';\n      result: 'hit' | 'miss' | 'success' | 'error' | 'overload';\n      entries: number;\n      bytes: number;\n    };"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/provider.ts",
+      "line": 6,
+      "name": "RealtimeLiveQueryDefinition",
+      "declaration": "export type RealtimeLiveQueryDefinition<\n  Request extends RealtimeRequestName,\n  Topic extends RealtimeTopicName,\n> = {\n  request: RealtimeRequestHandler<Request>;\n  topic: RealtimeTopicHandler<Topic>;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/types.ts",
+      "line": 13,
+      "name": "RealtimeRequestContext",
+      "declaration": "export type RealtimeRequestContext = {\n  connectionId?: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/types.ts",
+      "line": 18,
+      "name": "Events",
+      "declaration": "interface Events {\n    'realtime.topic.changed': RealtimePublishPayload;\n    'realtime.connection.disconnected': { connectionId: string };\n  }"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/types.ts",
+      "line": 24,
+      "name": "RealtimeRequestHandler",
+      "declaration": "export type RealtimeRequestHandler<Op extends RealtimeRequestName> = {\n  name: Op;\n  input: z.ZodType<RealtimeRequestInputOf<Op>>;\n  handle(\n    user: CurrentUser,\n    input: RealtimeRequestInputOf<Op>,\n    context?: RealtimeRequestContext\n  ): Promise<RealtimeRequestOutputOf<Op>>;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/types.ts",
+      "line": 34,
+      "name": "RealtimeTopicHandler",
+      "declaration": "export type RealtimeTopicHandler<Topic extends RealtimeTopicName> = {\n  name: Topic;\n  input: z.ZodType<RealtimeTopicInputOf<Topic>>;\n  authorize(\n    user: CurrentUser,\n    input: RealtimeTopicInputOf<Topic>\n  ): Promise<void>;\n  room(user: CurrentUser | null, input: RealtimeTopicInputOf<Topic>): string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/realtime/types.ts",
+      "line": 44,
+      "name": "RealtimePublishPayload",
+      "declaration": "export type RealtimePublishPayload<\n  Topic extends RealtimeTopicName = RealtimeTopicName,\n> = {\n  topic: Topic;\n  input: RealtimeTopicInputOf<Topic>;\n  event: RealtimeTopicEventOf<Topic>;\n  room?: string;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 66,
+      "name": "EventResponse",
+      "declaration": "type EventResponse<Data = any> = Data extends never\n  ? {\n      data?: never;\n    }\n  : {\n      data: Data;\n    };"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 74,
+      "name": "RoomType",
+      "declaration": "type RoomType = 'sync' | 'sync-027';"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 108,
+      "name": "SpaceType",
+      "declaration": "enum SpaceType {\n  Workspace = 'workspace',\n  Userspace = 'userspace',\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 113,
+      "name": "JoinSpaceBatchEntry",
+      "declaration": "interface JoinSpaceBatchEntry {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId?: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 119,
+      "name": "JoinSpaceBatchMessage",
+      "declaration": "interface JoinSpaceBatchMessage {\n  spaces: [JoinSpaceBatchEntry, ...JoinSpaceBatchEntry[]];\n  clientVersion: string;\n  protocolVersion: 1 | 2;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 125,
+      "name": "LeaveSpaceMessage",
+      "declaration": "interface LeaveSpaceMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 130,
+      "name": "LeaveSpaceBatchMessage",
+      "declaration": "interface LeaveSpaceBatchMessage extends LeaveSpaceMessage {\n  docIds: string[];\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 134,
+      "name": "PushDocUpdateMessage",
+      "declaration": "interface PushDocUpdateMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  update: string;\n  intent: 'create' | 'update';\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 142,
+      "name": "BroadcastDocUpdatesMessage",
+      "declaration": "interface BroadcastDocUpdatesMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  updates: string[];\n  timestamp: number;\n  editor?: string;\n  compressed?: boolean;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 152,
+      "name": "LoadDocMessage",
+      "declaration": "interface LoadDocMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  stateVector?: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 159,
+      "name": "DeleteDocMessage",
+      "declaration": "interface DeleteDocMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 165,
+      "name": "DocLifecycleMessage",
+      "declaration": "interface DocLifecycleMessage extends DeleteDocMessage {\n  physicalDocId?: string;\n  lifecycle: 'trash' | 'restore' | 'delete';\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 170,
+      "name": "LoadDocTimestampsMessage",
+      "declaration": "interface LoadDocTimestampsMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  timestamp?: number;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 176,
+      "name": "LoadSpaceAwarenessesMessage",
+      "declaration": "interface LoadSpaceAwarenessesMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 181,
+      "name": "UpdateAwarenessMessage",
+      "declaration": "interface UpdateAwarenessMessage {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  awarenessUpdate: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 188,
+      "name": "SyncAwarenessEvent",
+      "declaration": "interface SyncAwarenessEvent {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  sourceSocketId?: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 195,
+      "name": "SyncDocUpdatesPayload",
+      "declaration": "interface SyncDocUpdatesPayload {\n  spaceType: SpaceType;\n  spaceId: string;\n  docId: string;\n  updates: Uint8Array[];\n  timestamp: number;\n  editor?: string;\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 205,
+      "name": "Events",
+      "declaration": "interface Events {\n    'sync.doc.updates.pushed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId: string;\n      updates: string[];\n      timestamp: number;\n      editor?: string;\n      compressed?: boolean;\n    };\n    'sync.awareness.collect': SyncAwarenessEvent;\n    'sync.awareness.updated': SyncAwarenessEvent & {\n      awarenessUpdate: string;\n    };\n    'sync.permissions.changed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId?: string;\n    };\n  }"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/cleaner.ts",
+      "line": 3,
+      "name": "Scalar",
+      "declaration": "export type Scalar = string | number;"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/cleaner.ts",
+      "line": 5,
+      "name": "CleanedTelemetryEvent",
+      "declaration": "export type CleanedTelemetryEvent = {\n  clientId: string;\n  userId?: string;\n  eventId: string;\n  eventName: string;\n  params: Record<string, Scalar>;\n  userProperties: Record<string, string>;\n  timestampMicros: number;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/config.ts",
+      "line": 3,
+      "name": "TelemetryConfig",
+      "declaration": "export interface TelemetryConfig {\n  allowedOrigin: ConfigItem<string[]>;\n  ga4: {\n    measurementId: ConfigItem<string>;\n    apiSecret: ConfigItem<string>;\n  };\n  dedupe: {\n    ttlHours: ConfigItem<number>;\n    maxEntries: ConfigItem<number>;\n  };\n  batch: {\n    maxEvents: ConfigItem<number>;\n  };\n}"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/config.ts",
+      "line": 19,
+      "name": "AppConfigSchema",
+      "declaration": "interface AppConfigSchema {\n    telemetry: TelemetryConfig;\n  }"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/ga4-client.ts",
+      "line": 7,
+      "name": "Ga4Payload",
+      "declaration": "type Ga4Payload = {\n  client_id: string;\n  user_id?: string;\n  user_properties?: Record<string, { value: string }>;\n  events: Array<{\n    name: string;\n    params: Record<string, Scalar>;\n    timestamp_micros?: number;\n  }>;\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/ga4-client.ts",
+      "line": 89,
+      "name": "GroupKey",
+      "declaration": "type GroupKey = {\n  clientId: string;\n  userId?: string;\n  userProperties: Record<string, string>;\n  events: CleanedTelemetryEvent[];\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/gateway.ts",
+      "line": 19,
+      "name": "EventResponse",
+      "declaration": "type EventResponse<Data = any> = [Data] extends [never]\n  ? { data?: never }\n  : { data: Data };"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/types.ts",
+      "line": 1,
+      "name": "TelemetryEvent",
+      "declaration": "export type TelemetryEvent = {\n  schemaVersion: 1;\n  eventName: string;\n  params?: Record<string, unknown>;\n  userProperties?: Record<string, unknown>;\n  userId?: string;\n  clientId: string;\n  sessionId?: string | number;\n  eventId: string;\n  timestampMicros?: number;\n  context?: {\n    appVersion?: string;\n    editorVersion?: string;\n    environment?: string;\n    distribution?: string;\n    channel?: 'stable' | 'beta' | 'internal' | 'canary';\n    isDesktop?: boolean;\n    isMobile?: boolean;\n    locale?: string;\n    timezone?: string;\n    url?: string;\n    referrer?: string;\n  };\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/types.ts",
+      "line": 26,
+      "name": "TelemetryBatch",
+      "declaration": "export type TelemetryBatch = {\n  schemaVersion: 1;\n  transport: 'http' | 'ws';\n  sentAt: number;\n  events: TelemetryEvent[];\n};"
+    },
+    {
+      "file": "packages/backend/server/src/core/telemetry/types.ts",
+      "line": 33,
+      "name": "TelemetryAck",
+      "declaration": "export type TelemetryAck =\n  | { ok: true; accepted: number; dropped: number }\n  | { ok: false; error: { name: string; message: string } };"
+    }
+  ],
+  "sharedRealtimeSource": "export type RealtimeRequestName = keyof RealtimeRequestMap;\nexport type RealtimeTopicName = keyof RealtimeTopicMap;\n\nexport const WORKSPACE_MEMBERS_REQUEST_TAKE_MAX = 100;\n\nexport interface RealtimeRequestMap {\n  'copilot.delegated.editor.upsert': {\n    input: DelegatedEditorLeaseInput;\n    output: { ok: true; expiresAt: number };\n  };\n  'copilot.delegated.editor.release': {\n    input: { clientId: string; editorStateId: string };\n    output: { ok: true };\n  };\n  'copilot.delegated.tool.respond': {\n    input: DelegatedToolResponse;\n    output: { accepted: boolean };\n  };\n  'workspace.access.get': {\n    input: { workspaceId: string };\n    output: { access: WorkspaceAccessSnapshot };\n  };\n  'workspace.config.get': {\n    input: { workspaceId: string };\n    output: { config: WorkspaceConfigSnapshot };\n  };\n  'workspace.members.get': {\n    input: {\n      workspaceId: string;\n      skip?: number;\n      take?: number;\n      query?: string;\n    };\n    output: { members: WorkspaceMemberSnapshot[]; memberCount: number };\n  };\n  'workspace.invite-link.get': {\n    input: { workspaceId: string };\n    output: { inviteLink: WorkspaceInviteLinkSnapshot | null };\n  };\n  'doc.share-state.get': {\n    input: { workspaceId: string; docId: string };\n    output: { state: DocShareStateSnapshot | null };\n  };\n  'doc.grants.get': {\n    input: { workspaceId: string; docId: string; pagination: PaginationInput };\n    output: PaginatedDocGrantedUsersSnapshot;\n  };\n  'user.profile.get': {\n    input: Record<string, never>;\n    output: { user: CurrentUserProfileSnapshot | null };\n  };\n  'user.settings.get': {\n    input: Record<string, never>;\n    output: { settings: UserSettingsSnapshot };\n  };\n  'notification.count.get': {\n    input: Record<string, never>;\n    output: { count: number };\n  };\n  'comment.changes.get': {\n    input: {\n      workspaceId: string;\n      docId: string;\n      after?: string;\n      first?: number;\n    };\n    output: {\n      changes: CommentChangeSnapshot[];\n      startCursor: string;\n      endCursor: string;\n      hasNextPage: boolean;\n    };\n  };\n  'workspace.embedding.progress.get': {\n    input: { workspaceId: string };\n    output: { total: number; embedded: number };\n  };\n  'copilot.transcript.task.get': {\n    input: {\n      workspaceId: string;\n      blobId?: string;\n      taskId?: string;\n    };\n    output: { task: unknown | null };\n  };\n  'copilot.transcript.task.retry': {\n    input: {\n      workspaceId: string;\n      taskId: string;\n    };\n    output: { task: unknown | null };\n  };\n  'user.quota-state.get': {\n    input: Record<string, never>;\n    output: { state: UserQuotaStateSnapshot };\n  };\n  'workspace.quota-state.get': {\n    input: { workspaceId: string };\n    output: { state: WorkspaceQuotaStateSnapshot };\n  };\n}\n\nexport type WorkspaceRoleSnapshot =\n  | 'Owner'\n  | 'Admin'\n  | 'Collaborator'\n  | 'External'\n  | string;\n\nexport type DocRoleSnapshot =\n  | 'Owner'\n  | 'Manager'\n  | 'Editor'\n  | 'Commenter'\n  | 'Reader'\n  | 'External'\n  | string;\n\nexport type PublicDocModeSnapshot = 'Page' | 'Edgeless' | string;\n\nexport interface WorkspaceAccessSnapshot {\n  role: WorkspaceRoleSnapshot;\n  permissions: Record<string, boolean>;\n  team: boolean;\n}\n\nexport interface WorkspaceConfigSnapshot {\n  enableAi: boolean;\n  enableSharing: boolean;\n  enableUrlPreview: boolean;\n  enableDocEmbedding: boolean;\n}\n\nexport interface WorkspaceMemberSnapshot {\n  id: string;\n  name: string;\n  email: string;\n  avatarUrl: string | null;\n  permission: WorkspaceRoleSnapshot;\n  role: WorkspaceRoleSnapshot;\n  inviteId: string;\n  emailVerified: boolean | null;\n  status: string;\n}\n\nexport interface WorkspaceInviteLinkSnapshot {\n  link: string;\n  expireTime: string;\n}\n\nexport interface DocShareStateSnapshot {\n  public: boolean;\n  mode: PublicDocModeSnapshot;\n  defaultRole: DocRoleSnapshot;\n}\n\nexport interface PaginationInput {\n  first: number;\n  offset?: number;\n  after?: string;\n}\n\nexport interface DocGrantedUserSnapshot {\n  role: DocRoleSnapshot;\n  user: {\n    id: string;\n    name: string;\n    email: string;\n    avatarUrl: string | null;\n  };\n}\n\nexport interface PaginatedDocGrantedUsersSnapshot {\n  totalCount: number;\n  pageInfo: {\n    endCursor: string | null;\n    hasNextPage: boolean;\n  };\n  edges: { node: DocGrantedUserSnapshot }[];\n}\n\nexport interface CurrentUserProfileSnapshot {\n  id: string;\n  name: string;\n  email: string;\n  emailVerified: boolean;\n  hasPassword: boolean | null;\n  avatarUrl: string | null;\n  features: string[];\n}\n\nexport interface UserSettingsSnapshot {\n  receiveInvitationEmail: boolean;\n  receiveMentionEmail: boolean;\n  receiveCommentEmail: boolean;\n}\n\nexport type CommentChangeActionSnapshot = 'update' | 'delete';\n\nexport interface CommentChangeSnapshot {\n  id: string;\n  action: CommentChangeActionSnapshot;\n  item: object;\n  commentId: string | null;\n}\n\nexport interface UserQuotaStateSnapshot {\n  plan: string;\n  seatLimit: number;\n  blobLimit: number;\n  storageQuota: number;\n  usedStorageQuota: number;\n  historyPeriodSeconds: number;\n  copilotActionLimit?: number;\n  unlimitedCopilot: boolean;\n}\n\nexport interface WorkspaceQuotaStateSnapshot {\n  plan: string;\n  ownerUserId: string;\n  usesOwnerQuota: boolean;\n  seatLimit: number;\n  memberCount: number;\n  overcapacityMemberCount: number;\n  blobLimit: number;\n  storageQuota: number;\n  usedStorageQuota: number;\n  historyPeriodSeconds: number;\n  readonly: boolean;\n  readonlyReasons: string[];\n  unlimitedCopilot: boolean;\n}\n\nexport type NotificationCountChangedReason =\n  | 'created'\n  | 'read'\n  | 'read-all'\n  | 'expired-cleanup'\n  | 'resync';\n\nexport type WorkspaceEmbeddingProgressReason =\n  | 'queued'\n  | 'progress'\n  | 'finished'\n  | 'failed'\n  | 'resync';\n\nexport interface RealtimeTopicMap {\n  'copilot.delegated.tool.requested': {\n    input: { clientId: string };\n    event: DelegatedToolRequest | DelegatedToolCancel;\n  };\n  'workspace.access.changed': {\n    input: { workspaceId: string };\n    event: { changed: true; reason: string };\n  };\n  'workspace.config.changed': {\n    input: { workspaceId: string };\n    event: { changed: true; reason: string };\n  };\n  'workspace.members.changed': {\n    input: { workspaceId: string };\n    event: { changed: true; reason: string };\n  };\n  'workspace.invite-link.changed': {\n    input: { workspaceId: string };\n    event: { changed: true; reason: string };\n  };\n  'doc.share-state.changed': {\n    input: { workspaceId: string; docId: string };\n    event: { changed: true; reason: string };\n  };\n  'doc.grants.changed': {\n    input: { workspaceId: string; docId: string };\n    event: { changed: true; reason: string };\n  };\n  'user.profile.changed': {\n    input: Record<string, never>;\n    event: { changed: true; reason: string };\n  };\n  'user.settings.changed': {\n    input: Record<string, never>;\n    event: { changed: true; reason: string };\n  };\n  'notification.count.changed': {\n    input: Record<string, never>;\n    event: {\n      count: number;\n      reason: NotificationCountChangedReason;\n    };\n  };\n  'comment.changed': {\n    input: {\n      workspaceId: string;\n      docId: string;\n    };\n    event: {\n      changed: true;\n      cursor?: string;\n    };\n  };\n  'workspace.embedding.progress.changed': {\n    input: { workspaceId: string };\n    event: {\n      total?: number;\n      embedded?: number;\n      reason: WorkspaceEmbeddingProgressReason;\n    };\n  };\n  'copilot.transcript.task.changed': {\n    input: {\n      workspaceId: string;\n      taskId: string;\n    };\n    event: {\n      taskId: string;\n      status: string;\n      error?: string;\n    };\n  };\n  'user.quota-state.changed': {\n    input: Record<string, never>;\n    event: { changed: true };\n  };\n  'workspace.quota-state.changed': {\n    input: { workspaceId: string };\n    event: { changed: true };\n  };\n}\n\nexport type DelegatedToolName =\n  | 'frontend_get_editor_state'\n  | 'frontend_read_selection'\n  | 'frontend_read_nodes'\n  | 'frontend_snapshot_document';\n\nexport interface DelegatedEditorLeaseInput {\n  clientId: string;\n  sessionId: string;\n  workspaceId: string;\n  docId: string;\n  editorStateId: string;\n  mode: 'page' | 'edgeless';\n  readonly: boolean;\n  focused: boolean;\n  capabilities: DelegatedToolName[];\n}\n\nexport interface DelegatedToolIdentity {\n  requestId: string;\n  runId: string;\n  toolCallId: string;\n  sessionId: string;\n  workspaceId: string;\n  docId: string;\n  clientId: string;\n  editorStateId: string;\n}\n\nexport interface DelegatedToolRequest extends DelegatedToolIdentity {\n  type: 'request';\n  tool: DelegatedToolName;\n  args: Record<string, unknown>;\n  deadlineAt: number;\n}\n\nexport interface DelegatedToolCancel extends DelegatedToolIdentity {\n  type: 'cancel';\n  reason: 'aborted' | 'timeout' | 'disconnect';\n}\n\nexport interface DelegatedToolResponse extends DelegatedToolIdentity {\n  result?: unknown;\n  error?: {\n    code: string;\n    message: string;\n    retryable: boolean;\n  };\n}\n\nexport type RealtimeRequestInputOf<Op extends RealtimeRequestName> =\n  RealtimeRequestMap[Op]['input'];\nexport type RealtimeRequestOutputOf<Op extends RealtimeRequestName> =\n  RealtimeRequestMap[Op]['output'];\nexport type RealtimeTopicInputOf<Topic extends RealtimeTopicName> =\n  RealtimeTopicMap[Topic]['input'];\nexport type RealtimeTopicEventOf<Topic extends RealtimeTopicName> =\n  RealtimeTopicMap[Topic]['event'];\n\nexport type RealtimeError = {\n  name: string;\n  message: string;\n  code?: string;\n};\n\nexport type RealtimeAck<T> = { data: T } | { error: RealtimeError };\n\nexport type RealtimeRequestId = string;\nexport type RealtimeSubscriptionId = string;\n\nexport type RealtimeRequestEnvelope<\n  Op extends RealtimeRequestName = RealtimeRequestName,\n> = {\n  requestId?: RealtimeRequestId;\n  op: Op;\n  input: RealtimeRequestInputOf<Op>;\n  clientVersion?: string;\n};\n\nexport type RealtimeRequestInput<\n  Op extends RealtimeRequestName = RealtimeRequestName,\n> = Op extends RealtimeRequestName\n  ? {\n      op: Op;\n      input: RealtimeRequestInputOf<Op>;\n      timeoutMs?: number;\n    }\n  : never;\n\nexport type RealtimeRequestOutput<\n  Op extends RealtimeRequestName = RealtimeRequestName,\n> = RealtimeRequestOutputOf<Op>;\n\nexport type RealtimeSubscribeEnvelope<\n  Topic extends RealtimeTopicName = RealtimeTopicName,\n> = {\n  subscriptionId?: RealtimeSubscriptionId;\n  topic: Topic;\n  input: RealtimeTopicInputOf<Topic>;\n  clientVersion?: string;\n};\n\nexport type RealtimeSubscribeInput<\n  Topic extends RealtimeTopicName = RealtimeTopicName,\n> = Topic extends RealtimeTopicName\n  ? {\n      topic: Topic;\n      input: RealtimeTopicInputOf<Topic>;\n    }\n  : never;\n\nexport type RealtimeUnsubscribeEnvelope = {\n  subscriptionId?: RealtimeSubscriptionId;\n  topic: RealtimeTopicName;\n  input: RealtimeTopicInputOf<RealtimeTopicName>;\n  clientVersion?: string;\n};\n\nexport type RealtimeReadyEvent = {\n  type: 'ready';\n  snapshot?: unknown;\n};\n\nexport type RealtimeSubscriptionReady = RealtimeReadyEvent;\n\nexport type RealtimeEvent<Topic extends RealtimeTopicName = RealtimeTopicName> =\n  Topic extends RealtimeTopicName\n    ? {\n        topic: Topic;\n        inputKey: string;\n        seq?: number;\n        sentAt: number;\n        event: RealtimeTopicEventOf<Topic>;\n      }\n    : never;\n\nexport type RealtimeTopicEvent<\n  Topic extends RealtimeTopicName = RealtimeTopicName,\n> = RealtimeTopicEventOf<Topic> | RealtimeReadyEvent;\n\nexport type RealtimeStatus = {\n  endpoint?: string;\n  connected: boolean;\n  connecting: boolean;\n  subscriptions: number;\n  lastError?: RealtimeError;\n};\n\nexport type RealtimeConfigureInput = {\n  endpoint: string;\n  isSelfHosted: boolean;\n  authenticated: boolean;\n  clientVersion?: string;\n};\n\nexport function getRealtimeInputKey(input: unknown): string {\n  if (\n    input === undefined ||\n    typeof input === 'function' ||\n    typeof input === 'symbol'\n  ) {\n    return 'null';\n  }\n  if (input === null || typeof input !== 'object') {\n    return JSON.stringify(input);\n  }\n  if (Array.isArray(input)) {\n    return `[${input.map(getRealtimeInputKey).join(',')}]`;\n  }\n  if (input instanceof Date) {\n    return JSON.stringify(input.toJSON());\n  }\n  const record = input as Record<string, unknown>;\n  return `{${Object.keys(record)\n    .filter(key => {\n      const property = record[key];\n      return (\n        property !== undefined &&\n        typeof property !== 'function' &&\n        typeof property !== 'symbol'\n      );\n    })\n    .sort()\n    .map(key => `${JSON.stringify(key)}:${getRealtimeInputKey(record[key])}`)\n    .join(',')}}`;\n}\n",
+  "errorWrapperSource": "import { ApolloServerErrorCode } from '@apollo/server/errors';\nimport {\n  ArgumentsHost,\n  Catch,\n  Logger,\n  NotFoundException,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { GqlContextType } from '@nestjs/graphql';\nimport { ThrottlerException } from '@nestjs/throttler';\nimport { BaseWsExceptionFilter } from '@nestjs/websockets';\nimport { Response } from 'express';\nimport { GraphQLError } from 'graphql';\nimport { HttpError } from 'http-errors';\nimport { of } from 'rxjs';\nimport { Socket } from 'socket.io';\nimport { ZodError } from 'zod';\n\nimport {\n  GraphqlBadRequest,\n  HttpRequestError,\n  InternalServerError,\n  NotFound,\n  TooManyRequest,\n  UserFriendlyError,\n  ValidationError,\n} from '../error';\nimport { metrics } from '../metrics';\nimport { getRequestIdFromHost } from '../utils';\n\nexport function isGraphQLBadRequest(error: GraphQLError) {\n  // https://www.apollographql.com/docs/apollo-server/data/errors\n  const code = error.extensions?.code;\n  return (\n    code === ApolloServerErrorCode.GRAPHQL_PARSE_FAILED ||\n    code === ApolloServerErrorCode.GRAPHQL_VALIDATION_FAILED ||\n    code === ApolloServerErrorCode.BAD_USER_INPUT ||\n    code === ApolloServerErrorCode.BAD_REQUEST\n  );\n}\n\nexport function mapAnyError(error: any): UserFriendlyError {\n  if (error instanceof GraphQLError) {\n    if (isGraphQLBadRequest(error)) {\n      return new GraphqlBadRequest({\n        code: error.extensions.code as string,\n        message: error.message,\n      });\n    }\n    error = error.originalError ?? error;\n  }\n  if (error instanceof UserFriendlyError) {\n    return error;\n  } else if (error instanceof ThrottlerException) {\n    return new TooManyRequest();\n  } else if (error instanceof NotFoundException) {\n    return new NotFound();\n  } else if (error instanceof ZodError) {\n    return new ValidationError({\n      errors: error.message,\n    });\n  } else if (\n    error instanceof HttpError &&\n    error.status >= 400 &&\n    error.status < 500\n  ) {\n    const e = new HttpRequestError({\n      message: error.message,\n    });\n    e.status = error.status;\n    return e;\n  } else {\n    const e = new InternalServerError();\n    e.cause = error;\n    return e;\n  }\n}\n\n@Catch()\nexport class GlobalExceptionFilter extends BaseExceptionFilter {\n  logger = new Logger('GlobalExceptionFilter');\n  override catch(exception: Error, host: ArgumentsHost) {\n    const error = mapAnyError(exception);\n    // with useGlobalFilters, the context is always HTTP\n    if (host.getType<GqlContextType>() === 'graphql') {\n      // let Graphql LoggerPlugin handle it\n      // see '../graphql/logger-plugin.ts'\n      throw error;\n    } else {\n      error.log('HTTP', {\n        requestId: error.requestId ?? getRequestIdFromHost(host),\n      });\n      metrics.controllers\n        .counter('error')\n        .add(1, { status: error.status, type: error.type, error: error.name });\n      const res = host.switchToHttp().getResponse<Response>();\n      const respondText = res.getHeader('content-type') === 'text/plain';\n\n      if (respondText) {\n        res\n          .setHeader('content-type', 'text/plain')\n          .status(error.status)\n          .send(error.toText());\n      } else {\n        res.status(error.status).send(error.toJSON());\n      }\n      return;\n    }\n  }\n}\n\nexport class GlobalWsExceptionFilter extends BaseWsExceptionFilter {\n  // @ts-expect-error satisfies the override\n  override handleError(client: Socket, exception: any): void {\n    const error = mapAnyError(exception);\n    error.log('Websocket');\n    metrics.socketio\n      .counter('unhandled_error')\n      .add(1, { status: error.status });\n    client.emit('error', {\n      error: toWebsocketError(error),\n    });\n  }\n}\n\n/**\n * Only exists for websocket error body backward compatibility\n *\n * relay on `code` field instead of `name`\n *\n * @TODO(@forehalo): remove\n */\nfunction toWebsocketError(error: UserFriendlyError) {\n  // should be `error.toJSON()` after backward compatibility removed\n  return {\n    status: error.status,\n    code: error.name.toUpperCase(),\n    type: error.type.toUpperCase(),\n    name: error.name.toUpperCase(),\n    message: error.message,\n    data: error.data,\n    requestId: error.requestId,\n  };\n}\n\nexport const GatewayErrorWrapper = (event: string): MethodDecorator => {\n  // @ts-expect-error allow\n  return (\n    _target,\n    _key,\n    desc: TypedPropertyDescriptor<(...args: any[]) => any>\n  ) => {\n    const originalMethod = desc.value;\n    if (!originalMethod) {\n      return desc;\n    }\n\n    desc.value = async function (...args: any[]) {\n      try {\n        return await originalMethod.apply(this, args);\n      } catch (error) {\n        const mappedError = mapAnyError(error);\n        mappedError.log('Websocket');\n        metrics.socketio\n          .counter('error')\n          .add(1, { event, status: mappedError.status });\n\n        return {\n          error: toWebsocketError(mappedError),\n        };\n      }\n    };\n\n    return desc;\n  };\n};\n\nexport function mapSseError(originalError: any, info: object) {\n  const error = mapAnyError(originalError);\n  error.log('Sse', info);\n  metrics.sse.counter('error').add(1, { status: error.status });\n  return of({\n    type: 'error' as const,\n    data: error.toJSON(),\n  });\n}\n",
+  "adapterSource": "import { INestApplication } from '@nestjs/common';\nimport { IoAdapter } from '@nestjs/platform-socket.io';\nimport { createAdapter } from '@socket.io/redis-adapter';\nimport { Server, Socket } from 'socket.io';\n\nimport { Config } from '../config';\nimport {\n  buildCorsAllowedOrigins,\n  CORS_ALLOWED_HEADERS,\n  CORS_ALLOWED_METHODS,\n  corsOriginCallback,\n} from '../cors';\nimport { AuthenticationRequired } from '../error';\nimport { URLHelper } from '../helpers';\nimport { AFFiNELogger } from '../logger';\nimport { SocketIoRedis } from '../redis';\nimport { WEBSOCKET_OPTIONS } from './options';\n\nexport class SocketIoAdapter extends IoAdapter {\n  constructor(private readonly app: INestApplication) {\n    super(app);\n  }\n\n  override createIOServer(port: number, options?: any): Server {\n    const logger = this.app.get(AFFiNELogger);\n    const config = this.app.get(WEBSOCKET_OPTIONS) as Config['websocket'] & {\n      canActivate: (socket: Socket) => Promise<boolean>;\n    };\n    const url = this.app.get(URLHelper);\n    const allowedOrigins = buildCorsAllowedOrigins(url);\n\n    const server: Server = super.createIOServer(port, {\n      ...config,\n      ...options,\n      cors: {\n        origin: (\n          origin: string | undefined,\n          callback: (error: Error | null, allow?: boolean) => void\n        ) => {\n          corsOriginCallback(\n            origin,\n            allowedOrigins,\n            blockedOrigin =>\n              logger.warn(\n                `Blocked WebSocket CORS request from origin: ${blockedOrigin}`\n              ),\n            callback\n          );\n        },\n        credentials: true,\n        methods: CORS_ALLOWED_METHODS,\n        allowedHeaders: CORS_ALLOWED_HEADERS,\n      },\n    });\n\n    if (config.canActivate) {\n      server.use((socket, next) => {\n        config\n          .canActivate(socket)\n          .then(pass => {\n            if (pass) {\n              next();\n            } else {\n              throw new AuthenticationRequired();\n            }\n          })\n          .catch(e => {\n            next(e);\n          });\n      });\n    }\n\n    const pubClient = this.app.get(SocketIoRedis);\n    const subClient = pubClient.duplicate();\n\n    server.adapter(createAdapter(pubClient, subClient));\n    const close = server.close;\n\n    server.close = async fn => {\n      await close.call(server, fn);\n      // NOTE(@forehalo):\n      //   the lifecycle of duplicated redis client will not be controlled by nestjs lifecycle\n      //   we've got to manually disconnect it\n      subClient.disconnect();\n    };\n\n    return server;\n  }\n}\n",
+  "optionsSource": "import { GatewayMetadata } from '@nestjs/websockets';\nimport { z } from 'zod';\n\nimport { defineModuleConfig } from '../config';\n\ndeclare global {\n  interface AppConfigSchema {\n    websocket: {\n      transports: ConfigItem<GatewayMetadata['transports']>;\n      maxHttpBufferSize: number;\n    };\n  }\n}\n\ndefineModuleConfig('websocket', {\n  transports: {\n    desc: 'The enabled transports for accepting websocket traffics.',\n    default: ['websocket', 'polling'],\n    shape: z.array(z.enum(['websocket', 'polling'])),\n    schema: {\n      type: 'array',\n      items: {\n        type: 'string',\n        enum: ['websocket', 'polling'],\n      },\n    },\n    link: 'https://docs.nestjs.com/websockets/gateways#transports',\n  },\n  maxHttpBufferSize: {\n    desc: 'How many bytes or characters a message can be, before closing the session (to avoid DoS).',\n    default: 1e8, // 100 MB\n    shape: z.number().int().positive(),\n  },\n});\n",
+  "binaryEncoding": "Sync update/stateVector/awarenessUpdate are base64 strings (v1); v2 updates may use Uint8Array and Socket.IO binary attachments; see implementations and interfaces."
+}
