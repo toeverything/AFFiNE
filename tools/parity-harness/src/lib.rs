@@ -4,7 +4,7 @@ pub mod normalize;
 pub mod protocol;
 pub mod sinks;
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use model::{Report, Scenario};
 use normalize::Normalizer;
 use protocol::Session;
@@ -153,20 +153,86 @@ async fn run_inner<S: SnapshotSource>(scenario: &Scenario, source: &S) -> Result
         Some(s) => s.snapshot().await?,
         None => json!([]),
     };
-    let (mut ldb, mut rdb) = source
+    let (ldb, rdb) = source
         .snapshots(
             &scenario.left_target,
             &scenario.right_target,
             &scenario.ignore_tables,
         )
         .await?;
-    sort_tables(&mut ldb, &scenario.table_keys, &normalizer, true)?;
-    sort_tables(&mut rdb, &scenario.table_keys, &normalizer, false)?;
-    normalizer.compare("/database", &ldb, &rdb);
-    normalizer.compare("/effects/smtp", &lm, &rm);
+    compare_with(
+        normalizer,
+        scenario,
+        json!({"protocol":lsteps,"database":ldb,"effects":{"smtp":lm,"redis":le}}),
+        json!({"protocol":rsteps,"database":rdb,"effects":{"smtp":rm,"redis":re}}),
+    )
+}
+
+/// Compare two recorded sides (`Report::left` / `Report::right` shape) offline,
+/// in the same order and with the same rules as a live run. Recorded real runs
+/// can be replayed, and faults injected into them, without any service.
+pub fn compare(scenario: &Scenario, left: Value, right: Value) -> Result<Report> {
+    ensure!(
+        !scenario.steps.is_empty(),
+        "scenario must contain at least one step"
+    );
+    let mut normalizer = Normalizer::new(&scenario.dynamic)?;
+    let (Some(lp), Some(rp)) = (
+        left.pointer("/protocol").and_then(Value::as_array),
+        right.pointer("/protocol").and_then(Value::as_array),
+    ) else {
+        bail!("recorded sides must contain a protocol array");
+    };
+    ensure!(
+        lp.len() == scenario.steps.len() && rp.len() == scenario.steps.len(),
+        "recorded protocol has {}/{} observations for {} scenario steps",
+        lp.len(),
+        rp.len(),
+        scenario.steps.len()
+    );
+    for (i, step) in scenario.steps.iter().enumerate() {
+        normalizer.compare(&format!("/protocol/{i}/{}", step.name), &lp[i], &rp[i]);
+    }
+    compare_with(normalizer, scenario, left, right)
+}
+
+/// Database and side-effect comparison after the protocol steps have bound
+/// their dynamic values.
+fn compare_with(
+    mut normalizer: Normalizer,
+    scenario: &Scenario,
+    mut left: Value,
+    mut right: Value,
+) -> Result<Report> {
+    for side in [&left, &right] {
+        ensure!(
+            side.pointer("/database").is_some_and(Value::is_object)
+                && side.pointer("/effects/smtp").is_some_and(Value::is_array)
+                && side.pointer("/effects/redis").is_some_and(Value::is_array),
+            "recorded sides need database, effects.smtp and effects.redis"
+        );
+    }
+    sort_tables(
+        &mut left["database"],
+        &scenario.table_keys,
+        &normalizer,
+        true,
+    )?;
+    sort_tables(
+        &mut right["database"],
+        &scenario.table_keys,
+        &normalizer,
+        false,
+    )?;
+    normalizer.compare("/database", &left["database"], &right["database"]);
+    normalizer.compare(
+        "/effects/smtp",
+        &left["effects"]["smtp"],
+        &right["effects"]["smtp"],
+    );
     if let Some(expected) = scenario.expected_smtp_count {
-        for (side, mails) in [("left", &lm), ("right", &rm)] {
-            let actual = mails
+        for (side, mails) in [("left", &left), ("right", &right)] {
+            let actual = mails["effects"]["smtp"]
                 .as_array()
                 .context("SMTP snapshot must be array")?
                 .len();
@@ -180,14 +246,54 @@ async fn run_inner<S: SnapshotSource>(scenario: &Scenario, source: &S) -> Result
             }
         }
     }
-    normalizer.compare("/effects/redis", &le, &re);
-    let symbols = normalizer.symbols();
+    normalizer.compare(
+        "/effects/redis",
+        &left["effects"]["redis"],
+        &right["effects"]["redis"],
+    );
+    for (side, observed) in [("left", &left), ("right", &right)] {
+        for requirement in &scenario.require {
+            if let Some(reason) = unmet(requirement, observed) {
+                normalizer.differences.push(model::Difference {
+                    path: format!("/require/{side}{}", requirement.path),
+                    reason,
+                    left: serde_json::to_value(&requirement.check)?,
+                    right: observed
+                        .pointer(&requirement.path)
+                        .cloned()
+                        .unwrap_or(Value::Null),
+                });
+            }
+        }
+    }
     Ok(Report {
-        symbols,
+        symbols: normalizer.symbols(),
         differences: normalizer.differences,
-        left: json!({"protocol":lsteps,"database":ldb,"effects":{"smtp":lm,"redis":le}}),
-        right: json!({"protocol":rsteps,"database":rdb,"effects":{"smtp":rm,"redis":re}}),
+        left,
+        right,
     })
+}
+/// Why `requirement` does not hold on one side, if it does not.
+fn unmet(requirement: &model::Requirement, side: &Value) -> Option<String> {
+    fn contains(value: &Value, pattern: &Value) -> bool {
+        match (value, pattern) {
+            (Value::Object(v), Value::Object(p)) => p
+                .iter()
+                .all(|(k, p)| v.get(k).is_some_and(|v| contains(v, p))),
+            _ => value == pattern,
+        }
+    }
+    let Some(value) = side.pointer(&requirement.path) else {
+        return Some("required path missing".into());
+    };
+    let held = match &requirement.check {
+        model::Check::Equals(expected) => value == expected,
+        model::Check::Length(n) => value.as_array().is_some_and(|a| a.len() == *n),
+        model::Check::Contains(pattern) => value
+            .as_array()
+            .is_some_and(|a| a.iter().any(|v| contains(v, pattern))),
+    };
+    (!held).then(|| "requirement not met".into())
 }
 async fn start_smtp(bind: &Option<String>) -> Result<Option<SmtpSink>> {
     match bind {
@@ -282,6 +388,56 @@ mod snapshot_tests {
                 .differences
                 .iter()
                 .any(|d| d.path == "/database/public.empty")
+        );
+    }
+    #[test]
+    fn offline_compare_rejects_empty_scenarios() {
+        let scenario:Scenario=serde_json::from_value(json!({"left_target":{"base_url":"http://127.0.0.1:1"},"right_target":{"base_url":"http://127.0.0.1:2"},"steps":[]})).unwrap();
+        let side = json!({"protocol":[],"database":{},"effects":{"smtp":[],"redis":[]}});
+        assert!(
+            compare(&scenario, side.clone(), side)
+                .unwrap_err()
+                .to_string()
+                .contains("at least one step")
+        );
+    }
+    #[test]
+    fn requirements_fail_each_side_that_misses_them_even_when_both_sides_are_equal() {
+        let scenario: Scenario = serde_json::from_value(json!({
+            "left_target":{"base_url":"http://127.0.0.1:1"},"right_target":{"base_url":"http://127.0.0.1:2"},
+            "steps":[{"name":"info","kind":"http","method":"GET","path":"/info"}],
+            "require":[
+                {"path":"/protocol/0/status","equals":200},
+                {"path":"/effects/smtp","length":1},
+                {"path":"/effects/redis","contains":{"channel":"affine:eventbus:v1","payload":{"encoding":"json"}}},
+                {"path":"/database/public.updates","contains":{}}
+            ]
+        }))
+        .unwrap();
+        let healthy = json!({"protocol":[{"status":200}],"database":{"public.updates":[{"guid":"doc"}]},
+            "effects":{"smtp":[{"subject":"Mail"}],"redis":[{"channel":"affine:eventbus:v1","payload":{"encoding":"json","value":{}}}]}});
+        assert!(
+            compare(&scenario, healthy.clone(), healthy.clone())
+                .unwrap()
+                .is_equal()
+        );
+        let broken = json!({"protocol":[{"status":503}],"database":{"public.updates":[]},
+            "effects":{"smtp":[],"redis":[{"channel":"affine:eventbus:v1","payload":{"encoding":"invalid_json","raw":"x"}}]}});
+        let report = compare(&scenario, broken.clone(), broken).unwrap();
+        let mut paths: Vec<_> = report.differences.iter().map(|d| d.path.as_str()).collect();
+        paths.sort_unstable();
+        assert_eq!(
+            paths,
+            [
+                "/require/left/database/public.updates",
+                "/require/left/effects/redis",
+                "/require/left/effects/smtp",
+                "/require/left/protocol/0/status",
+                "/require/right/database/public.updates",
+                "/require/right/effects/redis",
+                "/require/right/effects/smtp",
+                "/require/right/protocol/0/status",
+            ]
         );
     }
     #[tokio::test]

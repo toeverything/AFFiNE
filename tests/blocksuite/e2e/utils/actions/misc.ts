@@ -1066,8 +1066,10 @@ export async function getIndexCoordinate(
   [richTextIndex, vIndex]: [number, number],
   coordOffSet: { x: number; y: number } = { x: 0, y: 0 }
 ) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const coord = await page.evaluate(
+  // Re-evaluated on every animation frame until the inline editor has laid out
+  // the range, instead of sleeping between fixed retries.
+  const coord = await page
+    .waitForFunction(
       ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
         const editorHost =
           document.querySelectorAll('editor-host')[currentEditorIndex];
@@ -1112,17 +1114,16 @@ export async function getIndexCoordinate(
         vIndex,
         coordOffSet,
         currentEditorIndex,
-      }
-    );
-    if (coord) {
-      return coord;
-    }
-    await page.waitForTimeout(50);
-  }
-
-  throw new Error(
-    `Failed to get index coordinate: richTextIndex=${richTextIndex}, vIndex=${vIndex}`
-  );
+      },
+      { polling: 'raf', timeout: 1000 }
+    )
+    .catch(error => {
+      throw new Error(
+        `Failed to get index coordinate: richTextIndex=${richTextIndex}, vIndex=${vIndex}`,
+        { cause: error }
+      );
+    });
+  return (await coord.jsonValue()) as { x: number; y: number };
 }
 
 export function inlineEditorInnerTextToString(innerText: string): string {

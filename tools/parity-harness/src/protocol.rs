@@ -132,12 +132,13 @@ impl Session {
                 transports,
                 auth,
                 actions,
+                record_events,
             } => {
                 let cookie_url = self.url(&path).parse()?;
                 if let Some(cookies) = self.jar.cookies(&cookie_url) {
                     headers.insert("Cookie".into(), cookies.to_str()?.to_owned());
                 }
-                let input = json!({"url":self.target.base_url,"path":path,"namespace":namespace,"headers":headers,"transports":transports,"auth":auth,"actions":actions,"timeout_ms":self.timeout_ms});
+                let input = json!({"url":self.target.base_url,"path":path,"namespace":namespace,"headers":headers,"transports":transports,"auth":auth,"actions":actions,"record_events":record_events,"timeout_ms":self.timeout_ms});
                 let driver = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                     .join("scripts/socketio-driver.mjs");
                 let mut child = tokio::process::Command::new("node")

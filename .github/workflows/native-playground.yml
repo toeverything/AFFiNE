@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       web: ${{ steps.filter.outputs.web }}
+      web-build: ${{ steps.filter.outputs.web-build }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -70,12 +71,30 @@ jobs:
               - '.oxfmtrc.json'
               - '.github/actions/setup-node/**'
               - '.github/workflows/np-web-fast.yml'
+            web-build:
+              - 'packages/frontend/**'
+              - 'packages/common/**'
+              - 'blocksuite/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css,json}'
+              - 'tools/cli/**'
+              - '**/package.json'
+              - '**/tsconfig*.json'
+              - 'yarn.lock'
+              - '.yarnrc.yml'
+              - '.yarn/**'
+              - '.github/actions/setup-node/**'
+              - '.github/workflows/np-web-build.yml'
 
   web-fast:
     name: Web Fast Checks
     needs: changes
     if: needs.changes.outputs.web == 'true'
     uses: ./.github/workflows/np-web-fast.yml
+
+  web-build:
+    name: Web Build
+    needs: changes
+    if: needs.changes.outputs.web-build == 'true'
+    uses: ./.github/workflows/np-web-build.yml
 
   server-harness-check:
     name: L0 Tier A, Server Contracts & Test Harness

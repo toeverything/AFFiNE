@@ -357,8 +357,7 @@ async function waitForWorkspaceSynced(page: Page) {
 export async function enableShare(page: Page) {
   await page.getByTestId('cloud-share-menu-button').click();
   await page.getByTestId('share-link-menu-trigger').click();
-  // wait for the menu to be visible
-  await page.waitForTimeout(500);
+  // click() waits for the menu item to be visible, stable and enabled.
   await page.getByTestId('share-link-menu-enable-share').click();
   await expect(page.getByTestId('share-link-menu-trigger')).toHaveText(
     'Read only',

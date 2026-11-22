@@ -1,8 +1,7 @@
 {
   "waitForTimeout": {
-    "total": 378,
+    "total": 370,
     "files": {
-      "blocksuite/framework/std/src/__tests__/inline/utils.ts": 3,
       "tests/affine-cloud-copilot/e2e/basic/chat.spec.ts": 3,
       "tests/affine-cloud-copilot/e2e/insertion/save-as-doc.spec.ts": 2,
       "tests/affine-cloud-copilot/e2e/utils/chat-panel-utils.ts": 2,
@@ -79,15 +78,15 @@
       "tests/blocksuite/e2e/selection/native.spec.ts": 7,
       "tests/blocksuite/e2e/slash-menu.spec.ts": 1,
       "tests/blocksuite/e2e/utils/actions/edgeless.ts": 4,
-      "tests/blocksuite/e2e/utils/actions/misc.ts": 3,
+      "tests/blocksuite/e2e/utils/actions/misc.ts": 2,
       "tests/blocksuite/e2e/utils/asserts.ts": 1,
       "tests/blocksuite/e2e/utils/inline-editor.ts": 1,
       "tests/kit/src/utils/clipboard.ts": 1,
-      "tests/kit/src/utils/cloud.ts": 5,
+      "tests/kit/src/utils/cloud.ts": 4,
       "tests/kit/src/utils/editor.ts": 7,
       "tests/kit/src/utils/image.ts": 1,
       "tests/kit/src/utils/page-logic.ts": 3,
-      "tests/kit/src/utils/properties.ts": 5
+      "tests/kit/src/utils/properties.ts": 2
     }
   },
   "skip": {

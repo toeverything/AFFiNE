@@ -107,7 +107,6 @@ export const ensureAddPropertyButtonVisible = async (
     return;
   }
   await togglePropertyListVisibility(page);
-  await page.waitForTimeout(500);
   await expect(
     root.getByRole('button', { name: 'Add property' })
   ).toBeVisible();
@@ -150,35 +149,6 @@ export const expectPropertyOrdering = async (
 export const openWorkspaceProperties = async (page: Page) => {
   await page.getByTestId('slider-bar-workspace-setting-button').click();
   await page.getByTestId('workspace-setting:properties').click();
-};
-
-export const selectVisibilitySelector = async (
-  page: Page,
-  name: string,
-  option: string
-) => {
-  await page
-    .getByRole('menu')
-    .locator(
-      `[data-testid="page-properties-settings-menu-item"]:has-text("${name}")`
-    )
-    .getByRole('button')
-    .click();
-
-  await page
-    .getByRole('menu')
-    .last()
-    .getByRole('menuitem', {
-      name: option,
-      exact: true,
-    })
-    .click();
-
-  await page.waitForTimeout(500);
-
-  await page.keyboard.press('Escape');
-
-  await page.waitForTimeout(500);
 };
 
 export const changePropertyVisibility = async (

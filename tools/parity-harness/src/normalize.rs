@@ -163,9 +163,13 @@ impl Normalizer {
                         .iter()
                         .all(|v| v.as_f64().is_some_and(|n| n.is_finite() && n >= 0.0))
             }
-            (Value::String(l), Value::String(r)) => [l, r]
-                .iter()
-                .all(|s| chrono::DateTime::parse_from_rfc3339(s).is_ok()),
+            // RFC 3339 (JSON, PostgreSQL) or the RFC 2822 form HTTP dates
+            // take (Cookie Expires, Date), with both sides in one format.
+            (Value::String(l), Value::String(r)) => {
+                let rfc3339 = |s: &str| chrono::DateTime::parse_from_rfc3339(s).is_ok();
+                let rfc2822 = |s: &str| chrono::DateTime::parse_from_rfc2822(s).is_ok();
+                (rfc3339(l) && rfc3339(r)) || (rfc2822(l) && rfc2822(r))
+            }
             _ => false,
         };
         if !valid {
@@ -336,8 +340,18 @@ mod semantic_regressions {
             &json!("2026-01-02T00:00:00+00:00"),
         );
         assert!(n.differences.is_empty());
+        n.compare(
+            "/cookie/timestamp",
+            &json!("Mon, 07 Dec 2026 21:06:13 GMT"),
+            &json!("Mon, 07 Dec 2026 21:06:14 GMT"),
+        );
+        assert!(n.differences.is_empty());
         for (l, r) in [
             (json!("invalid"), json!("2026-01-01T00:00:00Z")),
+            (
+                json!("Mon, 07 Dec 2026 21:06:13 GMT"),
+                json!("2026-12-07T21:06:13Z"),
+            ),
             (json!(1), json!("2026-01-01T00:00:00Z")),
             (Value::Null, json!(1)),
             (json!(-1), json!(1)),

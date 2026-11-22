@@ -1,0 +1,1793 @@
+{
+  "server_sha": "c2929acf2d24456c40c2df164e068d1d3d59d7fd",
+  "left": {
+    "database": {
+      "public._data_migrations": [
+        {
+          "finished_at": "2026-11-22T21:52:55.539+00:00",
+          "id": "3e70108d-e14b-4b74-9bd4-c19c55aba881",
+          "name": "BackfillEntitlementProjection1765600000000",
+          "started_at": "2026-11-22T21:52:55.538+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.537+00:00",
+          "id": "239b5ddf-cd44-4875-9726-5a515cfa5dae",
+          "name": "BackfillPermissionProjection1765500000000",
+          "started_at": "2026-11-22T21:52:55.517+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.544+00:00",
+          "id": "6af4e395-59cc-4d73-ad42-c45eb7328e28",
+          "name": "BackfillTranscriptStorageKeys1786805802350",
+          "started_at": "2026-11-22T21:52:55.541+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.552+00:00",
+          "id": "6d9d7aaf-4f68-44e1-8c1b-57739cd6a2c3",
+          "name": "ConvergeManagedProviderProfiles1786810000000",
+          "started_at": "2026-11-22T21:52:55.546+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.512+00:00",
+          "id": "87e1c135-4d5d-4d36-97c5-15c73a79504e",
+          "name": "CorrectSessionUpdateTime1751966744168",
+          "started_at": "2026-11-22T21:52:55.509+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.562+00:00",
+          "id": "95893dd2-f97f-46d1-b0a1-ab2a6cd86aaf",
+          "name": "DisableIncompleteManagedProfiles1790300000000",
+          "started_at": "2026-11-22T21:52:55.558+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.466+00:00",
+          "id": "17138e33-7926-4ff2-9661-1b5bf9ab4e91",
+          "name": "Guid1698398506533",
+          "started_at": "2026-11-22T21:52:55.456+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.556+00:00",
+          "id": "e8a8b435-d197-4ca8-a70c-a17b51ca15bf",
+          "name": "MigrateLegacyContextBlobArtifacts1786820000000",
+          "started_at": "2026-11-22T21:52:55.553+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.507+00:00",
+          "id": "f1bbbf79-8587-4e1d-b7c1-785161b25575",
+          "name": "RefreshUnnamedUser1721299086340",
+          "started_at": "2026-11-22T21:52:55.503+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.5+00:00",
+          "id": "b921744f-2397-4656-a645-0a19799bc7e9",
+          "name": "UnamedAccount1703756315970",
+          "started_at": "2026-11-22T21:52:55.469+00:00"
+        }
+      ],
+      "public.ai_action_runs": [],
+      "public.ai_jobs": [],
+      "public.ai_message_artifacts": [],
+      "public.ai_prompts_messages": [],
+      "public.ai_prompts_metadata": [],
+      "public.ai_sessions_messages": [],
+      "public.ai_sessions_metadata": [],
+      "public.ai_transcript_tasks": [],
+      "public.ai_usage_events": [],
+      "public.ai_workspace_blob_embeddings": [],
+      "public.ai_workspace_byok_configs": [],
+      "public.ai_workspace_file_embeddings": [],
+      "public.ai_workspace_files": [],
+      "public.ai_workspace_ignored_docs": [],
+      "public.app_configs": [
+        {
+          "created_at": "2026-11-22T21:53:15.331+00:00",
+          "id": "auth.session.signingKeys",
+          "last_updated_by": null,
+          "updated_at": "2026-11-22T21:53:15.331+00:00",
+          "value": [
+            {
+              "createdAt": "2026-11-22T21:53:15.330074635Z",
+              "id": "auth-1795384395329-kRmY7PUm",
+              "secret": "pZ03vKyXHQHD7IsPYjUwWhJzdtKyjn8n_jUry9TE0JM",
+              "source": "auto",
+              "status": "active"
+            }
+          ]
+        }
+      ],
+      "public.auth_refresh_tokens": [],
+      "public.auth_sessions": [],
+      "public.blob_cleanup_candidates": [],
+      "public.blobs": [],
+      "public.calendar_accounts": [],
+      "public.calendar_event_instances": [],
+      "public.calendar_events": [],
+      "public.calendar_subscriptions": [],
+      "public.cloud_subscription_bindings": [],
+      "public.comment_attachments": [],
+      "public.comments": [],
+      "public.doc_access_policies": [],
+      "public.doc_blob_ref_projections": [],
+      "public.doc_blob_refs": [],
+      "public.doc_grants": [
+        {
+          "created_at": "2026-11-22T21:53:24.985+00:00",
+          "doc_id": "parity-self-doc",
+          "granted_by": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "principal_id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "principal_type": "user",
+          "role": "owner",
+          "updated_at": "2026-11-22T21:53:24.985+00:00",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.document_cleanup_candidates": [],
+      "public.effective_user_quota_states": [],
+      "public.effective_workspace_quota_states": [],
+      "public.embedding_chunks": [],
+      "public.embedding_indexes": [],
+      "public.embedding_projections": [],
+      "public.embedding_sources": [],
+      "public.embedding_workspace_states": [],
+      "public.entitlements": [],
+      "public.installed_licenses": [],
+      "public.invoices": [],
+      "public.licenses": [],
+      "public.magic_link_otps": [],
+      "public.mail_deliveries": [],
+      "public.mcp_credentials": [],
+      "public.multiple_users_sessions": [
+        {
+          "created_at": "2026-11-22T21:53:24.176+00:00",
+          "id": "51c78275-9a73-4334-93d3-b50a1e878b49"
+        }
+      ],
+      "public.notifications": [],
+      "public.payment_events": [],
+      "public.payment_financial_facts": [],
+      "public.payment_operations": [],
+      "public.payment_reconciliations": [],
+      "public.pending_license_deactivations": [],
+      "public.provider_subscriptions": [],
+      "public.replies": [],
+      "public.runtime_doc_creators": [
+        {
+          "created_at": "2026-11-22T21:53:24.985+00:00",
+          "created_by": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "doc_id": "parity-self-doc",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.runtime_gates": [],
+      "public.runtime_invite_abuse_actions": [],
+      "public.runtime_invite_abuse_evidence": [],
+      "public.runtime_invite_abuse_subjects": [],
+      "public.runtime_leases": [],
+      "public.runtime_rolling_quota_counters": [],
+      "public.runtime_rolling_quota_reservations": [],
+      "public.runtime_states": [],
+      "public.snapshot_histories": [],
+      "public.snapshots": [],
+      "public.storage_reconciliation_checkpoints": [
+        {
+          "completed_at": "2026-11-22T21:53:02.2+00:00",
+          "cursor": {},
+          "kind": "schema_baseline_0275",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "baselineVersion": "0.27.5",
+            "deployment": "selfhosted"
+          },
+          "scope": "global",
+          "status": "completed",
+          "updated_at": "2026-11-22T21:53:02.2+00:00"
+        },
+        {
+          "completed_at": "2026-11-22T21:53:24.956+00:00",
+          "cursor": {},
+          "kind": "workspace_doc_lifecycle",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "protocolVersion": 2,
+            "rootStatus": "absent",
+            "sourceRevision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "scope": "cba2787a-8109-4799-b99c-4c9e779ba81a",
+          "status": "completed",
+          "updated_at": "2026-11-22T21:53:24.946+00:00"
+        },
+        {
+          "completed_at": "2026-11-22T21:53:08.579+00:00",
+          "cursor": {},
+          "kind": "workspace_doc_lifecycle_activation",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "protocolVersion": 2
+          },
+          "scope": "global",
+          "status": "active",
+          "updated_at": "2026-11-22T21:53:08.578+00:00"
+        }
+      ],
+      "public.storage_reconciliation_runs": [],
+      "public.subscription_trial_usages": [],
+      "public.sync_active_users_minutely": [
+        {
+          "active_users": 0,
+          "minute_ts": "2026-11-22T21:53:00+00:00",
+          "updated_at": "2026-11-22T21:53:25.177+00:00"
+        }
+      ],
+      "public.updates": [
+        {
+          "blob": "\\x010201002801046d657461057469746c65017706706172697479040107636f6e74656e740c68656c6c6f2070617269747900",
+          "created_at": "2026-11-22T21:53:25.009+00:00",
+          "created_by": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "guid": "parity-self-doc",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.user_connected_accounts": [],
+      "public.user_features": [
+        {
+          "activated": true,
+          "created_at": "2026-11-22T21:53:24.17+00:00",
+          "expired_at": null,
+          "id": 1,
+          "name": "administrator",
+          "reason": "selfhost setup",
+          "type": 0,
+          "user_id": "584ed465-8722-47b9-99a6-2535c8e7a0a7"
+        }
+      ],
+      "public.user_sessions": [
+        {
+          "created_at": "2026-11-22T21:53:24.176+00:00",
+          "expires_at": "2026-12-07T21:53:24.176+00:00",
+          "id": "d67d0541-ac36-4e6d-9a6e-a9c5d256f4ad",
+          "refresh_client_version": null,
+          "session_id": "51c78275-9a73-4334-93d3-b50a1e878b49",
+          "sign_in_client_version": null,
+          "user_id": "584ed465-8722-47b9-99a6-2535c8e7a0a7"
+        }
+      ],
+      "public.user_settings": [],
+      "public.user_snapshots": [],
+      "public.user_stripe_customers": [],
+      "public.users": [
+        {
+          "auth_epoch": 0,
+          "avatar_url": null,
+          "created_at": "2026-11-22T21:53:24.16+00:00",
+          "disabled": false,
+          "email": "parity-admin@affine.test",
+          "email_verified": null,
+          "id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "name": "Parity Admin",
+          "password": "$argon2id$v=19$m=19456,t=2,p=1$O9YmZEY+DHhng/qUDWGAUw$WPDx0WAJx2PD9zWuih1t5BQaj6rmsE/fRc9czmb3cJM",
+          "registered": true
+        }
+      ],
+      "public.verification_tokens": [],
+      "public.workspace_access_policies": [
+        {
+          "created_at": "2026-11-22T21:53:24.414+00:00",
+          "member_default_doc_role": "manager",
+          "sharing_enabled": true,
+          "updated_at": "2026-11-22T21:53:24.414+00:00",
+          "url_preview_enabled": false,
+          "visibility": "private",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.workspace_admin_stats": [],
+      "public.workspace_admin_stats_daily": [],
+      "public.workspace_admin_stats_dirty": [
+        {
+          "updated_at": "2026-11-22T21:53:24.408+00:00",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.workspace_artifacts": [],
+      "public.workspace_calendar_items": [],
+      "public.workspace_calendars": [],
+      "public.workspace_doc_view_daily": [],
+      "public.workspace_features": [],
+      "public.workspace_invitations": [],
+      "public.workspace_member_last_access": [],
+      "public.workspace_members": [
+        {
+          "created_at": "2026-11-22T21:53:24.462+00:00",
+          "id": "perm_35695577e66fb858df3a15ad6bf5db21",
+          "role": "owner",
+          "source": "legacy",
+          "state": "active",
+          "updated_at": "2026-11-22T21:53:24.462+00:00",
+          "user_id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.workspace_pages": [],
+      "public.workspace_sync_permission_generations": [
+        {
+          "generation": 3,
+          "workspace_id": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+        }
+      ],
+      "public.workspaces": [
+        {
+          "avatar_key": null,
+          "created_at": "2026-11-22T21:53:24.414+00:00",
+          "enable_ai": true,
+          "enable_doc_embedding": true,
+          "id": "cba2787a-8109-4799-b99c-4c9e779ba81a",
+          "indexed": false,
+          "last_check_embeddings": "1970-01-01T00:00:00+00:00",
+          "name": null,
+          "sid": 1
+        }
+      ],
+      "search_projection.document_states": [],
+      "search_projection.generations": [],
+      "search_projection.workspace_states": []
+    },
+    "effects": {
+      "redis": [
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "kind": "workspaceInventoryChanged",
+              "version": 1,
+              "workspaceId": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+            }
+          }
+        },
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "docId": "parity-self-doc",
+              "kind": "workspaceInventoryChanged",
+              "version": 1,
+              "workspaceId": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+            }
+          }
+        },
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "kind": "blobSource",
+              "source": {
+                "docId": "parity-self-doc",
+                "type": "currentDoc",
+                "workspaceId": "cba2787a-8109-4799-b99c-4c9e779ba81a"
+              },
+              "version": 1
+            }
+          }
+        },
+        {
+          "channel": "affine:eventbus:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "event": "sync.doc.updates.pushed",
+              "id": "eb_54be18a3-f608-4b16-945c-02b5d8c2b744",
+              "originChannel": "production",
+              "originId": "2f6528ca-57eb-42ac-b829-730973fc0397",
+              "payload": {
+                "compressed": false,
+                "docId": "parity-self-doc",
+                "editor": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+                "originChannel": "production",
+                "spaceId": "cba2787a-8109-4799-b99c-4c9e779ba81a",
+                "spaceType": "workspace",
+                "timestamp": 1795384405009,
+                "updates": [
+                  "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA="
+                ]
+              },
+              "requestId": "selfhosted:ws:cf2ef5ca-dd30-4ee0-8650-1c38005405a3",
+              "v": 1
+            }
+          }
+        },
+        {
+          "channel": "affine:eventbus:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "event": "realtime.connection.disconnected",
+              "id": "eb_9d9590f1-57a7-4d0a-88c8-9f3e9e24ad2f",
+              "originChannel": "production",
+              "originId": "2f6528ca-57eb-42ac-b829-730973fc0397",
+              "payload": {
+                "connectionId": "fDELzl7mPFxegunSAAAA"
+              },
+              "requestId": null,
+              "v": 1
+            }
+          }
+        }
+      ],
+      "smtp": [
+        {
+          "from": "noreply@affine.test",
+          "html": [
+            "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html dir=\"ltr\" lang=\"en\"><head><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Test Email from AFFiNE</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">This is a test email from your AFFiNE instance.</p></td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fafafa;margin-top:0;margin-bottom:32px;border-radius:0 0 16px 16px;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"margin:1px auto\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td style=\"padding:0 10px\"><a href=\"https://affine.pro/github\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine github link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/twitter\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine twitter link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/discord\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine discord link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/youtube\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine youtube link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/reddit\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine reddit link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"font-size:15px;font-weight:400;line-height:24px;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:8px;margin-bottom:0;color:#8e8d91\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td>One hyper-fused platform for wildly creative minds</td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"font-size:15px;font-weight:400;line-height:24px;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:8px;margin-bottom:0;color:#8e8d91\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td>Copyright</td><td><img alt=\"copyright\" height=\"14px\" src=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\" style=\"display:block;outline:none;border:none;text-decoration:none;vertical-align:middle;margin:0 4px\"/></td><td>2023-<!-- -->2026<!-- --> ToEverything</td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table><!--/$--></body></html>\r\n"
+          ],
+          "recipients": ["parity-admin@affine.test"],
+          "subject": "Test Email from AFFiNE",
+          "text": []
+        }
+      ]
+    },
+    "protocol": [
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "compatibility": "0.27.5",
+            "flavor": "allinone",
+            "message": "AFFiNE 0.27.5 Server",
+            "type": "selfhosted"
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "serverConfig": {
+                "baseUrl": "http://affine.parity.test",
+                "credentialsRequirement": {
+                  "password": {
+                    "maxLength": 32,
+                    "minLength": 8
+                  }
+                },
+                "features": ["Comment", "LocalWorkspace", "CopilotEmbedding"],
+                "initialized": false,
+                "name": "AFFiNE Parity",
+                "type": "Selfhosted",
+                "version": "0.27.5"
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "email": "parity-admin@affine.test",
+            "id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+            "name": "Parity Admin"
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "content-type": ["application/json; charset=utf-8"],
+          "set-cookie": [
+            {
+              "attributes": {
+                "expires": "Mon, 07 Dec 2026 21:53:24 GMT",
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_csrf_token",
+              "value": "892f835b-3b9d-43e5-8385-2c717731605f"
+            },
+            {
+              "attributes": {
+                "expires": "Mon, 07 Dec 2026 21:53:24 GMT",
+                "httponly": true,
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_session",
+              "value": "51c78275-9a73-4334-93d3-b50a1e878b49"
+            },
+            {
+              "attributes": {
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_user_id",
+              "value": "584ed465-8722-47b9-99a6-2535c8e7a0a7"
+            }
+          ]
+        },
+        "status": 201
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "user": {
+              "avatarUrl": null,
+              "disabled": false,
+              "email": "parity-admin@affine.test",
+              "emailVerified": false,
+              "hasPassword": true,
+              "id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+              "name": "Parity Admin"
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "currentUser": {
+                "email": "parity-admin@affine.test",
+                "emailVerified": false,
+                "features": ["Admin"],
+                "hasPassword": true,
+                "id": "584ed465-8722-47b9-99a6-2535c8e7a0a7",
+                "name": "Parity Admin",
+                "quota": {
+                  "blobLimit": 104857600,
+                  "historyPeriod": 2592000,
+                  "humanReadable": {
+                    "blobLimit": "100 MB",
+                    "historyPeriod": "30 days",
+                    "memberLimit": "10",
+                    "name": "Pro",
+                    "storageQuota": "100 GB"
+                  },
+                  "memberLimit": 10,
+                  "name": "Pro",
+                  "storageQuota": 107374182400
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "createWorkspace": {
+                "id": "cba2787a-8109-4799-b99c-4c9e779ba81a",
+                "public": false
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "workspace": {
+                "id": "cba2787a-8109-4799-b99c-4c9e779ba81a",
+                "public": false,
+                "quota": {
+                  "blobLimit": 104857600,
+                  "historyPeriod": 2592000,
+                  "humanReadable": {
+                    "blobLimit": "100 MB",
+                    "historyPeriod": "30 days",
+                    "memberLimit": "10",
+                    "name": "Pro",
+                    "storageQuota": "100 GB"
+                  },
+                  "memberCount": 1,
+                  "memberLimit": 10,
+                  "name": "Pro",
+                  "overcapacityMemberCount": 0,
+                  "storageQuota": 107374182400,
+                  "usedStorageQuota": 0
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "socketio",
+          "value": {
+            "acks": [
+              {
+                "event": "space:join-batch",
+                "value": {
+                  "data": {
+                    "clientId": "fDELzl7mPFxegunSAAAA",
+                    "protocolVersion": 2,
+                    "success": true
+                  }
+                }
+              },
+              {
+                "event": "space:push-doc-update",
+                "value": {
+                  "data": {
+                    "accepted": true,
+                    "created": true,
+                    "timestamp": 1795384405009
+                  }
+                }
+              },
+              {
+                "event": "space:join-batch",
+                "value": {
+                  "data": {
+                    "clientId": "fDELzl7mPFxegunSAAAA",
+                    "protocolVersion": 2,
+                    "success": true
+                  }
+                }
+              },
+              {
+                "event": "space:load-doc",
+                "value": {
+                  "data": {
+                    "missing": "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA=",
+                    "state": "AQEN",
+                    "timestamp": 1795384405009
+                  }
+                }
+              }
+            ],
+            "connected": true,
+            "events": [],
+            "initial_transport": "polling",
+            "transport": "websocket"
+          }
+        }
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "appConfig": {
+                "auth": {
+                  "allowSignup": true,
+                  "allowSignupForOauth": true,
+                  "newAccountActionDelay": 86400,
+                  "passwordRequirements": {
+                    "max": 32,
+                    "min": 8
+                  },
+                  "requireEmailDomainVerification": false,
+                  "session": {
+                    "ttl": 1296000,
+                    "ttr": 604800
+                  },
+                  "signInRateLimit": {
+                    "emailLimit": 5,
+                    "ipLimit": 20,
+                    "ttl": 60000
+                  },
+                  "token": {
+                    "accessTokenTtl": 900,
+                    "refreshAbsoluteTtl": 15552000,
+                    "refreshGracePeriod": 30,
+                    "refreshIdleTtl": 2592000,
+                    "refreshRetention": 2592000
+                  },
+                  "trustedCloudflareHeaders": false
+                },
+                "calendar": {
+                  "caldav": {
+                    "allowCustomProvider": false,
+                    "allowInsecureHttp": false,
+                    "allowedHosts": [],
+                    "blockPrivateNetwork": true,
+                    "enabled": false,
+                    "maxRedirects": 5,
+                    "providers": [],
+                    "requestTimeoutMs": 10000
+                  }
+                },
+                "captcha": {
+                  "enabled": false
+                },
+                "client": {
+                  "versionControl": {
+                    "enabled": false,
+                    "requiredVersion": ">=0.25.0"
+                  }
+                },
+                "copilot": {
+                  "byok": {
+                    "allowCustomEndpoint": false,
+                    "allowPrivateEndpoint": false,
+                    "allowedProviders": [
+                      "openai",
+                      "anthropic",
+                      "gemini",
+                      "fal"
+                    ],
+                    "enabled": true
+                  },
+                  "enabled": false
+                },
+                "crypto": {},
+                "db": {
+                  "prisma": {}
+                },
+                "doc": {
+                  "history": {
+                    "interval": 600000
+                  }
+                },
+                "flags": {
+                  "allowGuestDemoWorkspace": true
+                },
+                "graphql": {
+                  "apolloDriverConfig": {
+                    "introspection": true
+                  }
+                },
+                "indexer": {
+                  "enabled": false,
+                  "provider": {
+                    "endpoint": "",
+                    "type": "embedded",
+                    "username": ""
+                  }
+                },
+                "mailer": {
+                  "SMTP": {
+                    "host": "127.0.0.1",
+                    "ignoreTLS": false,
+                    "name": "parity.affine.test",
+                    "port": 36523,
+                    "sender": "AFFiNE Parity <noreply@affine.test>",
+                    "username": ""
+                  },
+                  "deliveryWorker": {
+                    "batchSize": 50,
+                    "leaseMs": 120000,
+                    "retentionDays": 30
+                  },
+                  "fallbackDomains": [],
+                  "fallbackSMTP": {
+                    "host": "",
+                    "ignoreTLS": false,
+                    "name": "",
+                    "port": 465,
+                    "sender": "",
+                    "username": ""
+                  }
+                },
+                "metrics": {
+                  "enabled": false
+                },
+                "oauth": {},
+                "payment": {
+                  "enabled": false,
+                  "showLifetimePrice": true
+                },
+                "redis": {
+                  "db": 0,
+                  "host": "127.0.0.1",
+                  "port": 34365,
+                  "username": ""
+                },
+                "server": {
+                  "externalUrl": "http://affine.parity.test",
+                  "host": "localhost",
+                  "hosts": [],
+                  "https": false,
+                  "listenAddr": "127.0.0.1",
+                  "name": "AFFiNE Parity",
+                  "path": "",
+                  "port": 40243
+                },
+                "storages": {
+                  "avatar": {
+                    "publicPath": "/api/avatars/"
+                  }
+                },
+                "telemetry": {
+                  "allowedOrigin": ["localhost", "127.0.0.1"],
+                  "batch": {
+                    "maxEvents": 25
+                  },
+                  "dedupe": {
+                    "maxEntries": 100000,
+                    "ttlHours": 24
+                  },
+                  "ga4": {
+                    "measurementId": ""
+                  }
+                },
+                "throttle": {
+                  "enabled": true,
+                  "throttlers": {
+                    "default": {
+                      "limit": 120,
+                      "ttl": 60000
+                    },
+                    "strict": {
+                      "limit": 20,
+                      "ttl": 60000
+                    }
+                  }
+                },
+                "websocket": {
+                  "maxHttpBufferSize": 100000000,
+                  "transports": ["websocket", "polling"]
+                },
+                "worker": {
+                  "allowedOrigin": ["localhost", "127.0.0.1"]
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "sendTestEmail": true
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      }
+    ]
+  },
+  "right": {
+    "database": {
+      "public._data_migrations": [
+        {
+          "finished_at": "2026-11-22T21:52:55.367+00:00",
+          "id": "76950ff6-1f0c-4ca9-92ae-72b28509de66",
+          "name": "BackfillEntitlementProjection1765600000000",
+          "started_at": "2026-11-22T21:52:55.366+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.364+00:00",
+          "id": "6caeaf40-23cd-4b43-8e5c-e819e7d10b51",
+          "name": "BackfillPermissionProjection1765500000000",
+          "started_at": "2026-11-22T21:52:55.343+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.376+00:00",
+          "id": "f73441e7-95b6-4765-bd35-11ce4ab65ce8",
+          "name": "BackfillTranscriptStorageKeys1786805802350",
+          "started_at": "2026-11-22T21:52:55.369+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.387+00:00",
+          "id": "1505ac5a-4110-4633-b404-f0f2e2d9f498",
+          "name": "ConvergeManagedProviderProfiles1786810000000",
+          "started_at": "2026-11-22T21:52:55.38+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.341+00:00",
+          "id": "c417ee10-19fa-4909-8cdd-4eee963acba7",
+          "name": "CorrectSessionUpdateTime1751966744168",
+          "started_at": "2026-11-22T21:52:55.337+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.397+00:00",
+          "id": "17d5436d-7632-4ee6-84f1-5129acf81ddf",
+          "name": "DisableIncompleteManagedProfiles1790300000000",
+          "started_at": "2026-11-22T21:52:55.393+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.313+00:00",
+          "id": "05d1321d-ca78-4070-a8b6-ffc722adadf4",
+          "name": "Guid1698398506533",
+          "started_at": "2026-11-22T21:52:55.261+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.391+00:00",
+          "id": "b2b6c6fc-cbce-4e27-ad87-be3c943a392c",
+          "name": "MigrateLegacyContextBlobArtifacts1786820000000",
+          "started_at": "2026-11-22T21:52:55.389+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.334+00:00",
+          "id": "6cdb1d8f-b166-4936-be06-7430c9b76ab3",
+          "name": "RefreshUnnamedUser1721299086340",
+          "started_at": "2026-11-22T21:52:55.33+00:00"
+        },
+        {
+          "finished_at": "2026-11-22T21:52:55.324+00:00",
+          "id": "5487a271-bf2a-400f-945e-1694ea86c2fc",
+          "name": "UnamedAccount1703756315970",
+          "started_at": "2026-11-22T21:52:55.319+00:00"
+        }
+      ],
+      "public.ai_action_runs": [],
+      "public.ai_jobs": [],
+      "public.ai_message_artifacts": [],
+      "public.ai_prompts_messages": [],
+      "public.ai_prompts_metadata": [],
+      "public.ai_sessions_messages": [],
+      "public.ai_sessions_metadata": [],
+      "public.ai_transcript_tasks": [],
+      "public.ai_usage_events": [],
+      "public.ai_workspace_blob_embeddings": [],
+      "public.ai_workspace_byok_configs": [],
+      "public.ai_workspace_file_embeddings": [],
+      "public.ai_workspace_files": [],
+      "public.ai_workspace_ignored_docs": [],
+      "public.app_configs": [
+        {
+          "created_at": "2026-11-22T21:53:15.106+00:00",
+          "id": "auth.session.signingKeys",
+          "last_updated_by": null,
+          "updated_at": "2026-11-22T21:53:15.106+00:00",
+          "value": [
+            {
+              "createdAt": "2026-11-22T21:53:15.101495130Z",
+              "id": "auth-1795384395097-jzwiB0Zx",
+              "secret": "g3crjf5iKUg7hHnKChCnNaUqyZbIt-kRBsrwlGzQW2A",
+              "source": "auto",
+              "status": "active"
+            }
+          ]
+        }
+      ],
+      "public.auth_refresh_tokens": [],
+      "public.auth_sessions": [],
+      "public.blob_cleanup_candidates": [],
+      "public.blobs": [],
+      "public.calendar_accounts": [],
+      "public.calendar_event_instances": [],
+      "public.calendar_events": [],
+      "public.calendar_subscriptions": [],
+      "public.cloud_subscription_bindings": [],
+      "public.comment_attachments": [],
+      "public.comments": [],
+      "public.doc_access_policies": [],
+      "public.doc_blob_ref_projections": [],
+      "public.doc_blob_refs": [],
+      "public.doc_grants": [
+        {
+          "created_at": "2026-11-22T21:53:24.939+00:00",
+          "doc_id": "parity-self-doc",
+          "granted_by": "c2b92c58-0653-4426-a063-f95396338855",
+          "principal_id": "c2b92c58-0653-4426-a063-f95396338855",
+          "principal_type": "user",
+          "role": "owner",
+          "updated_at": "2026-11-22T21:53:24.939+00:00",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.document_cleanup_candidates": [],
+      "public.effective_user_quota_states": [],
+      "public.effective_workspace_quota_states": [],
+      "public.embedding_chunks": [],
+      "public.embedding_indexes": [],
+      "public.embedding_projections": [],
+      "public.embedding_sources": [],
+      "public.embedding_workspace_states": [],
+      "public.entitlements": [],
+      "public.installed_licenses": [],
+      "public.invoices": [],
+      "public.licenses": [],
+      "public.magic_link_otps": [],
+      "public.mail_deliveries": [],
+      "public.mcp_credentials": [],
+      "public.multiple_users_sessions": [
+        {
+          "created_at": "2026-11-22T21:53:24.185+00:00",
+          "id": "3b3f6bf1-f6a8-48b7-ad67-af4b5ae3f084"
+        }
+      ],
+      "public.notifications": [],
+      "public.payment_events": [],
+      "public.payment_financial_facts": [],
+      "public.payment_operations": [],
+      "public.payment_reconciliations": [],
+      "public.pending_license_deactivations": [],
+      "public.provider_subscriptions": [],
+      "public.replies": [],
+      "public.runtime_doc_creators": [
+        {
+          "created_at": "2026-11-22T21:53:24.939+00:00",
+          "created_by": "c2b92c58-0653-4426-a063-f95396338855",
+          "doc_id": "parity-self-doc",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.runtime_gates": [],
+      "public.runtime_invite_abuse_actions": [],
+      "public.runtime_invite_abuse_evidence": [],
+      "public.runtime_invite_abuse_subjects": [],
+      "public.runtime_leases": [],
+      "public.runtime_rolling_quota_counters": [],
+      "public.runtime_rolling_quota_reservations": [],
+      "public.runtime_states": [],
+      "public.snapshot_histories": [],
+      "public.snapshots": [],
+      "public.storage_reconciliation_checkpoints": [
+        {
+          "completed_at": "2026-11-22T21:53:01.702+00:00",
+          "cursor": {},
+          "kind": "schema_baseline_0275",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "baselineVersion": "0.27.5",
+            "deployment": "selfhosted"
+          },
+          "scope": "global",
+          "status": "completed",
+          "updated_at": "2026-11-22T21:53:01.702+00:00"
+        },
+        {
+          "completed_at": "2026-11-22T21:53:24.899+00:00",
+          "cursor": {},
+          "kind": "workspace_doc_lifecycle",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "protocolVersion": 2,
+            "rootStatus": "absent",
+            "sourceRevision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "scope": "b222ab53-b423-44b7-ba3b-3c4629ab39b6",
+          "status": "completed",
+          "updated_at": "2026-11-22T21:53:24.893+00:00"
+        },
+        {
+          "completed_at": "2026-11-22T21:53:08.578+00:00",
+          "cursor": {},
+          "kind": "workspace_doc_lifecycle_activation",
+          "last_key": null,
+          "last_sid": null,
+          "metadata": {
+            "protocolVersion": 2
+          },
+          "scope": "global",
+          "status": "active",
+          "updated_at": "2026-11-22T21:53:08.577+00:00"
+        }
+      ],
+      "public.storage_reconciliation_runs": [],
+      "public.subscription_trial_usages": [],
+      "public.sync_active_users_minutely": [
+        {
+          "active_users": 0,
+          "minute_ts": "2026-11-22T21:53:00+00:00",
+          "updated_at": "2026-11-22T21:53:25.135+00:00"
+        }
+      ],
+      "public.updates": [
+        {
+          "blob": "\\x010201002801046d657461057469746c65017706706172697479040107636f6e74656e740c68656c6c6f2070617269747900",
+          "created_at": "2026-11-22T21:53:24.968+00:00",
+          "created_by": "c2b92c58-0653-4426-a063-f95396338855",
+          "guid": "parity-self-doc",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.user_connected_accounts": [],
+      "public.user_features": [
+        {
+          "activated": true,
+          "created_at": "2026-11-22T21:53:24.169+00:00",
+          "expired_at": null,
+          "id": 1,
+          "name": "administrator",
+          "reason": "selfhost setup",
+          "type": 0,
+          "user_id": "c2b92c58-0653-4426-a063-f95396338855"
+        }
+      ],
+      "public.user_sessions": [
+        {
+          "created_at": "2026-11-22T21:53:24.185+00:00",
+          "expires_at": "2026-12-07T21:53:24.185+00:00",
+          "id": "c65f328e-a5d2-4c9c-a8cd-a9f0a131df77",
+          "refresh_client_version": null,
+          "session_id": "3b3f6bf1-f6a8-48b7-ad67-af4b5ae3f084",
+          "sign_in_client_version": null,
+          "user_id": "c2b92c58-0653-4426-a063-f95396338855"
+        }
+      ],
+      "public.user_settings": [],
+      "public.user_snapshots": [],
+      "public.user_stripe_customers": [],
+      "public.users": [
+        {
+          "auth_epoch": 0,
+          "avatar_url": null,
+          "created_at": "2026-11-22T21:53:24.162+00:00",
+          "disabled": false,
+          "email": "parity-admin@affine.test",
+          "email_verified": null,
+          "id": "c2b92c58-0653-4426-a063-f95396338855",
+          "name": "Parity Admin",
+          "password": "$argon2id$v=19$m=19456,t=2,p=1$RfCYpSWr5YS3EM7yHucKzA$tUwssG070nzhg+B2O8WVMDCtLmd41XuU3buhuI/GKDg",
+          "registered": true
+        }
+      ],
+      "public.verification_tokens": [],
+      "public.workspace_access_policies": [
+        {
+          "created_at": "2026-11-22T21:53:24.361+00:00",
+          "member_default_doc_role": "manager",
+          "sharing_enabled": true,
+          "updated_at": "2026-11-22T21:53:24.361+00:00",
+          "url_preview_enabled": false,
+          "visibility": "private",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.workspace_admin_stats": [],
+      "public.workspace_admin_stats_daily": [],
+      "public.workspace_admin_stats_dirty": [
+        {
+          "updated_at": "2026-11-22T21:53:24.359+00:00",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.workspace_artifacts": [],
+      "public.workspace_calendar_items": [],
+      "public.workspace_calendars": [],
+      "public.workspace_doc_view_daily": [],
+      "public.workspace_features": [],
+      "public.workspace_invitations": [],
+      "public.workspace_member_last_access": [],
+      "public.workspace_members": [
+        {
+          "created_at": "2026-11-22T21:53:24.409+00:00",
+          "id": "perm_450a14ec2d3a6b10c344f0218d8e150c",
+          "role": "owner",
+          "source": "legacy",
+          "state": "active",
+          "updated_at": "2026-11-22T21:53:24.409+00:00",
+          "user_id": "c2b92c58-0653-4426-a063-f95396338855",
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.workspace_pages": [],
+      "public.workspace_sync_permission_generations": [
+        {
+          "generation": 3,
+          "workspace_id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+        }
+      ],
+      "public.workspaces": [
+        {
+          "avatar_key": null,
+          "created_at": "2026-11-22T21:53:24.361+00:00",
+          "enable_ai": true,
+          "enable_doc_embedding": true,
+          "id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6",
+          "indexed": false,
+          "last_check_embeddings": "1970-01-01T00:00:00+00:00",
+          "name": null,
+          "sid": 1
+        }
+      ],
+      "search_projection.document_states": [],
+      "search_projection.generations": [],
+      "search_projection.workspace_states": []
+    },
+    "effects": {
+      "redis": [
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "kind": "workspaceInventoryChanged",
+              "version": 1,
+              "workspaceId": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+            }
+          }
+        },
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "docId": "parity-self-doc",
+              "kind": "workspaceInventoryChanged",
+              "version": 1,
+              "workspaceId": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+            }
+          }
+        },
+        {
+          "channel": "affine:backend-runtime:invalidation:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "kind": "blobSource",
+              "source": {
+                "docId": "parity-self-doc",
+                "type": "currentDoc",
+                "workspaceId": "b222ab53-b423-44b7-ba3b-3c4629ab39b6"
+              },
+              "version": 1
+            }
+          }
+        },
+        {
+          "channel": "affine:eventbus:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "event": "sync.doc.updates.pushed",
+              "id": "eb_f15f4f57-0540-4bc8-9c4e-640078893eb6",
+              "originChannel": "production",
+              "originId": "68b8e157-ed3a-4846-b3eb-770fd78b2eb5",
+              "payload": {
+                "compressed": false,
+                "docId": "parity-self-doc",
+                "editor": "c2b92c58-0653-4426-a063-f95396338855",
+                "originChannel": "production",
+                "spaceId": "b222ab53-b423-44b7-ba3b-3c4629ab39b6",
+                "spaceType": "workspace",
+                "timestamp": 1795384404968,
+                "updates": [
+                  "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA="
+                ]
+              },
+              "requestId": "selfhosted:ws:4bc7c671-25b3-46ec-b783-74fa4d4a2c0d",
+              "v": 1
+            }
+          }
+        },
+        {
+          "channel": "affine:eventbus:v1",
+          "payload": {
+            "encoding": "json",
+            "value": {
+              "event": "realtime.connection.disconnected",
+              "id": "eb_9324bd6a-e82e-4d1f-a556-009e5dd82c91",
+              "originChannel": "production",
+              "originId": "68b8e157-ed3a-4846-b3eb-770fd78b2eb5",
+              "payload": {
+                "connectionId": "qWtEb-EJRcMuuPAiAAAA"
+              },
+              "requestId": null,
+              "v": 1
+            }
+          }
+        }
+      ],
+      "smtp": [
+        {
+          "from": "noreply@affine.test",
+          "html": [
+            "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"><html dir=\"ltr\" lang=\"en\"><head><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\"/><link rel=\"preload\" as=\"image\" href=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\"/><meta content=\"text/html; charset=UTF-8\" http-equiv=\"Content-Type\"/><meta name=\"x-apple-disable-message-reformatting\"/></head><body style=\"background-color:#f6f7fb\"><!--$--><!--html--><!--head--><!--body--><table border=\"0\" width=\"100%\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" align=\"center\"><tbody><tr><td style=\"background-color:#f6f7fb;overflow:hidden\"><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fff;margin:32px auto 0;border-radius:16px 16px 0 0;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><a href=\"https://affine.pro\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"AFFiNE logo\" height=\"32px\" src=\"https://cdn.affine.pro/mail/2023-8-9/affine-logo.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:20px;line-height:28px;font-weight:600;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">Test Email from AFFiNE</p></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><p style=\"font-size:15px;line-height:24px;font-weight:400;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:24px;margin-bottom:0;color:#141414\">This is a test email from your AFFiNE instance.</p></td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"max-width:450px;background-color:#fafafa;margin-top:0;margin-bottom:32px;border-radius:0 0 16px 16px;box-shadow:0px 0px 20px 0px rgba(66, 65, 73, 0.04);padding:24px\"><tbody><tr style=\"width:100%\"><td><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"margin:1px auto\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td style=\"padding:0 10px\"><a href=\"https://affine.pro/github\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine github link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Github.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/twitter\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine twitter link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Twitter.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/discord\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine discord link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Discord.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/youtube\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine youtube link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Youtube.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td><td style=\"padding:0 10px\"><a href=\"https://affine.pro/reddit\" style=\"color:#067df7;text-decoration-line:none\" target=\"_blank\"><img alt=\"affine reddit link\" height=\"16px\" src=\"https://cdn.affine.pro/mail/2023-8-9/Reddit.png\" style=\"display:block;outline:none;border:none;text-decoration:none\"/></a></td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"font-size:15px;font-weight:400;line-height:24px;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:8px;margin-bottom:0;color:#8e8d91\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td>One hyper-fused platform for wildly creative minds</td></tr></tbody></table></td></tr></tbody></table><table align=\"center\" width=\"auto\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\"><tbody><tr><td><table align=\"center\" width=\"100%\" border=\"0\" cellPadding=\"0\" cellSpacing=\"0\" role=\"presentation\" style=\"font-size:15px;font-weight:400;line-height:24px;font-family:Inter, Arial, Helvetica, sans-serif;margin-top:8px;margin-bottom:0;color:#8e8d91\"><tbody style=\"width:100%\"><tr style=\"width:100%\"><td>Copyright</td><td><img alt=\"copyright\" height=\"14px\" src=\"https://cdn.affine.pro/mail/2023-8-9/copyright.png\" style=\"display:block;outline:none;border:none;text-decoration:none;vertical-align:middle;margin:0 4px\"/></td><td>2023-<!-- -->2026<!-- --> ToEverything</td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table><!--/$--></body></html>\r\n"
+          ],
+          "recipients": ["parity-admin@affine.test"],
+          "subject": "Test Email from AFFiNE",
+          "text": []
+        }
+      ]
+    },
+    "protocol": [
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "compatibility": "0.27.5",
+            "flavor": "allinone",
+            "message": "AFFiNE 0.27.5 Server",
+            "type": "selfhosted"
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "serverConfig": {
+                "baseUrl": "http://affine.parity.test",
+                "credentialsRequirement": {
+                  "password": {
+                    "maxLength": 32,
+                    "minLength": 8
+                  }
+                },
+                "features": ["Comment", "LocalWorkspace", "CopilotEmbedding"],
+                "initialized": false,
+                "name": "AFFiNE Parity",
+                "type": "Selfhosted",
+                "version": "0.27.5"
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "email": "parity-admin@affine.test",
+            "id": "c2b92c58-0653-4426-a063-f95396338855",
+            "name": "Parity Admin"
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "content-type": ["application/json; charset=utf-8"],
+          "set-cookie": [
+            {
+              "attributes": {
+                "expires": "Mon, 07 Dec 2026 21:53:24 GMT",
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_csrf_token",
+              "value": "2a2411c7-c4fd-415a-9080-583ed1df2ed6"
+            },
+            {
+              "attributes": {
+                "expires": "Mon, 07 Dec 2026 21:53:24 GMT",
+                "httponly": true,
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_session",
+              "value": "3b3f6bf1-f6a8-48b7-ad67-af4b5ae3f084"
+            },
+            {
+              "attributes": {
+                "path": "/",
+                "samesite": "Lax"
+              },
+              "name": "affine_user_id",
+              "value": "c2b92c58-0653-4426-a063-f95396338855"
+            }
+          ]
+        },
+        "status": 201
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "user": {
+              "avatarUrl": null,
+              "disabled": false,
+              "email": "parity-admin@affine.test",
+              "emailVerified": false,
+              "hasPassword": true,
+              "id": "c2b92c58-0653-4426-a063-f95396338855",
+              "name": "Parity Admin"
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "currentUser": {
+                "email": "parity-admin@affine.test",
+                "emailVerified": false,
+                "features": ["Admin"],
+                "hasPassword": true,
+                "id": "c2b92c58-0653-4426-a063-f95396338855",
+                "name": "Parity Admin",
+                "quota": {
+                  "blobLimit": 104857600,
+                  "historyPeriod": 2592000,
+                  "humanReadable": {
+                    "blobLimit": "100 MB",
+                    "historyPeriod": "30 days",
+                    "memberLimit": "10",
+                    "name": "Pro",
+                    "storageQuota": "100 GB"
+                  },
+                  "memberLimit": 10,
+                  "name": "Pro",
+                  "storageQuota": 107374182400
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "createWorkspace": {
+                "id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6",
+                "public": false
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "workspace": {
+                "id": "b222ab53-b423-44b7-ba3b-3c4629ab39b6",
+                "public": false,
+                "quota": {
+                  "blobLimit": 104857600,
+                  "historyPeriod": 2592000,
+                  "humanReadable": {
+                    "blobLimit": "100 MB",
+                    "historyPeriod": "30 days",
+                    "memberLimit": "10",
+                    "name": "Pro",
+                    "storageQuota": "100 GB"
+                  },
+                  "memberCount": 1,
+                  "memberLimit": 10,
+                  "name": "Pro",
+                  "overcapacityMemberCount": 0,
+                  "storageQuota": 107374182400,
+                  "usedStorageQuota": 0
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "socketio",
+          "value": {
+            "acks": [
+              {
+                "event": "space:join-batch",
+                "value": {
+                  "data": {
+                    "clientId": "qWtEb-EJRcMuuPAiAAAA",
+                    "protocolVersion": 2,
+                    "success": true
+                  }
+                }
+              },
+              {
+                "event": "space:push-doc-update",
+                "value": {
+                  "data": {
+                    "accepted": true,
+                    "created": true,
+                    "timestamp": 1795384404968
+                  }
+                }
+              },
+              {
+                "event": "space:join-batch",
+                "value": {
+                  "data": {
+                    "clientId": "qWtEb-EJRcMuuPAiAAAA",
+                    "protocolVersion": 2,
+                    "success": true
+                  }
+                }
+              },
+              {
+                "event": "space:load-doc",
+                "value": {
+                  "data": {
+                    "missing": "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA=",
+                    "state": "AQEN",
+                    "timestamp": 1795384404968
+                  }
+                }
+              }
+            ],
+            "connected": true,
+            "events": [],
+            "initial_transport": "polling",
+            "transport": "websocket"
+          }
+        }
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "appConfig": {
+                "auth": {
+                  "allowSignup": true,
+                  "allowSignupForOauth": true,
+                  "newAccountActionDelay": 86400,
+                  "passwordRequirements": {
+                    "max": 32,
+                    "min": 8
+                  },
+                  "requireEmailDomainVerification": false,
+                  "session": {
+                    "ttl": 1296000,
+                    "ttr": 604800
+                  },
+                  "signInRateLimit": {
+                    "emailLimit": 5,
+                    "ipLimit": 20,
+                    "ttl": 60000
+                  },
+                  "token": {
+                    "accessTokenTtl": 900,
+                    "refreshAbsoluteTtl": 15552000,
+                    "refreshGracePeriod": 30,
+                    "refreshIdleTtl": 2592000,
+                    "refreshRetention": 2592000
+                  },
+                  "trustedCloudflareHeaders": false
+                },
+                "calendar": {
+                  "caldav": {
+                    "allowCustomProvider": false,
+                    "allowInsecureHttp": false,
+                    "allowedHosts": [],
+                    "blockPrivateNetwork": true,
+                    "enabled": false,
+                    "maxRedirects": 5,
+                    "providers": [],
+                    "requestTimeoutMs": 10000
+                  }
+                },
+                "captcha": {
+                  "enabled": false
+                },
+                "client": {
+                  "versionControl": {
+                    "enabled": false,
+                    "requiredVersion": ">=0.25.0"
+                  }
+                },
+                "copilot": {
+                  "byok": {
+                    "allowCustomEndpoint": false,
+                    "allowPrivateEndpoint": false,
+                    "allowedProviders": [
+                      "openai",
+                      "anthropic",
+                      "gemini",
+                      "fal"
+                    ],
+                    "enabled": true
+                  },
+                  "enabled": false
+                },
+                "crypto": {},
+                "db": {
+                  "prisma": {}
+                },
+                "doc": {
+                  "history": {
+                    "interval": 600000
+                  }
+                },
+                "flags": {
+                  "allowGuestDemoWorkspace": true
+                },
+                "graphql": {
+                  "apolloDriverConfig": {
+                    "introspection": true
+                  }
+                },
+                "indexer": {
+                  "enabled": false,
+                  "provider": {
+                    "endpoint": "",
+                    "type": "embedded",
+                    "username": ""
+                  }
+                },
+                "mailer": {
+                  "SMTP": {
+                    "host": "127.0.0.1",
+                    "ignoreTLS": false,
+                    "name": "parity.affine.test",
+                    "port": 43429,
+                    "sender": "AFFiNE Parity <noreply@affine.test>",
+                    "username": ""
+                  },
+                  "deliveryWorker": {
+                    "batchSize": 50,
+                    "leaseMs": 120000,
+                    "retentionDays": 30
+                  },
+                  "fallbackDomains": [],
+                  "fallbackSMTP": {
+                    "host": "",
+                    "ignoreTLS": false,
+                    "name": "",
+                    "port": 465,
+                    "sender": "",
+                    "username": ""
+                  }
+                },
+                "metrics": {
+                  "enabled": false
+                },
+                "oauth": {},
+                "payment": {
+                  "enabled": false,
+                  "showLifetimePrice": true
+                },
+                "redis": {
+                  "db": 0,
+                  "host": "127.0.0.1",
+                  "port": 36409,
+                  "username": ""
+                },
+                "server": {
+                  "externalUrl": "http://affine.parity.test",
+                  "host": "localhost",
+                  "hosts": [],
+                  "https": false,
+                  "listenAddr": "127.0.0.1",
+                  "name": "AFFiNE Parity",
+                  "path": "",
+                  "port": 36637
+                },
+                "storages": {
+                  "avatar": {
+                    "publicPath": "/api/avatars/"
+                  }
+                },
+                "telemetry": {
+                  "allowedOrigin": ["localhost", "127.0.0.1"],
+                  "batch": {
+                    "maxEvents": 25
+                  },
+                  "dedupe": {
+                    "maxEntries": 100000,
+                    "ttlHours": 24
+                  },
+                  "ga4": {
+                    "measurementId": ""
+                  }
+                },
+                "throttle": {
+                  "enabled": true,
+                  "throttlers": {
+                    "default": {
+                      "limit": 120,
+                      "ttl": 60000
+                    },
+                    "strict": {
+                      "limit": 20,
+                      "ttl": 60000
+                    }
+                  }
+                },
+                "websocket": {
+                  "maxHttpBufferSize": 100000000,
+                  "transports": ["websocket", "polling"]
+                },
+                "worker": {
+                  "allowedOrigin": ["localhost", "127.0.0.1"]
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      },
+      {
+        "body": {
+          "encoding": "json",
+          "value": {
+            "data": {
+              "sendTestEmail": true
+            }
+          }
+        },
+        "headers": {
+          "access-control-allow-credentials": ["true"],
+          "cache-control": ["no-store"],
+          "content-type": ["application/json; charset=utf-8"]
+        },
+        "status": 200
+      }
+    ]
+  }
+}

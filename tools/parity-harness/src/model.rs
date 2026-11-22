@@ -32,6 +32,30 @@ pub struct Scenario {
     pub expected_smtp_count: Option<usize>,
     #[serde(default = "headers")]
     pub compare_headers: Vec<String>,
+    /// Checks each side must pass on its own, so that two sides failing the
+    /// same way (both rejecting a write, both missing an effect) are not equal.
+    #[serde(default)]
+    pub require: Vec<Requirement>,
+}
+
+/// A JSON pointer into one side's recorded observations (`/protocol/<i>/...`,
+/// `/database/<schema.table>`, `/effects/smtp`, `/effects/redis`) and what must
+/// hold there.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Requirement {
+    pub path: String,
+    #[serde(flatten)]
+    pub check: Check,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Check {
+    /// The value equals this one exactly.
+    Equals(Value),
+    /// The array has exactly this many elements.
+    Length(usize),
+    /// Some array element contains every field of this object (recursively).
+    Contains(Value),
 }
 fn timeout() -> u64 {
     5000
@@ -111,6 +135,11 @@ pub enum Request {
         #[serde(default)]
         auth: Value,
         actions: Vec<Value>,
+        /// Server-pushed events to report, by name; all when absent. Pushes
+        /// whose arrival races the end of the step (cluster echoes of
+        /// background work) are left out here; `wait_event` still sees them.
+        #[serde(default)]
+        record_events: Option<Vec<String>>,
     },
     Websocket {
         path: String,

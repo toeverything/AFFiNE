@@ -149,12 +149,15 @@ async function run(input) {
       if (!socket.connected)
         throw new Error('Socket.IO disconnected while running actions');
     }
+    const recorded = input.record_events;
     return {
       connected: true,
       initial_transport: initialTransport,
       transport: socket.io.engine.transport.name,
       acks,
-      events,
+      events: recorded
+        ? events.filter(e => recorded.includes(e.event))
+        : events,
     };
   } finally {
     socket.disconnect();

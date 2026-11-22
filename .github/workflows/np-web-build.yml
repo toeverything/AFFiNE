@@ -1,0 +1,59 @@
+name: Native Playground Web Build
+
+# Production bundles of the web, mobile web and admin apps, without the
+# Electron binary, Playwright browsers or Sentry CLI downloads.
+# native-playground.yml calls this only when frontend sources change.
+on:
+  workflow_call:
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+  SENTRYCLI_SKIP_DOWNLOAD: '1'
+
+jobs:
+  build:
+    name: Build ${{ matrix.package }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - '@affine/web'
+          - '@affine/mobile'
+          - '@affine/admin'
+    env:
+      BUILD_TYPE: canary
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          playwright-install: false
+          full-cache: true
+
+      - name: Run i18n codegen
+        run: |
+          yarn affine @affine/i18n build
+          git checkout packages/frontend/i18n/src/i18n-completenesses.json
+
+      - name: Build ${{ matrix.package }}
+        # The bundle itself must stay within eight minutes.
+        timeout-minutes: 8
+        run: yarn affine ${{ matrix.package }} build
+
+      - name: Check the bundle entry exists
+        # `affine bundle` can report an internal error and still exit 0.
+        run: |
+          case '${{ matrix.package }}' in
+            '@affine/web') dist=packages/frontend/apps/web/dist ;;
+            '@affine/mobile') dist=packages/frontend/apps/mobile/dist ;;
+            '@affine/admin') dist=packages/frontend/admin/dist ;;
+          esac
+          test -s "$dist/index.html"
+          du -sh "$dist"
