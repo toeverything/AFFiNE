@@ -3600,11 +3600,11 @@ __metadata:
   linkType: hard
 
 "@capacitor/core@npm:^8.4.2":
-  version: 8.4.2
-  resolution: "@capacitor/core@npm:8.4.2"
+  version: 8.5.2
+  resolution: "@capacitor/core@npm:8.5.2"
   dependencies:
     tslib: "npm:^2.1.0"
-  checksum: 10/dc1f1cf89de2bbdce1fa4b7b8f9eac81886bed6c9956038cd9463c057aba189d1eca938acba798ba039e86ef51e8d7b0eb70db2be08994ddbbd5aa6a35a2deb6
+  checksum: 10/dac28d2be1375f64d553523fdee8c73cc31add8c4766ee97cdf17b333037e895866914615d140cc583ca4f2e72eb6e357af5bbc14f3534d6bca84f84c98e6ab2
   languageName: node
   linkType: hard
 

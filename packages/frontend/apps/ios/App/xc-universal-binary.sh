@@ -52,6 +52,8 @@ CARGO_PROFILE_FLAG=
 if [[ "${BUILDVARIANT}" != "debug" ]]; then
     RELFLAG=release
     CARGO_PROFILE_FLAG=--release
+    # Xcode 27 can produce unloadable host proc macros when their symbols are stripped.
+    export CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none
 fi
 
 IS_SIMULATOR=0
