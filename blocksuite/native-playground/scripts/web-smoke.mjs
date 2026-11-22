@@ -285,6 +285,72 @@ class CdpClient {
   }
 }
 
+// Exercise the browser input handler through the same hidden textarea a platform IME uses.
+async function checkComposition(cdp) {
+  async function evaluate(expression) {
+    const reply = await cdp.send('Runtime.evaluate', { expression, returnByValue: true });
+    if (reply.exceptionDetails) throw new Error(reply.exceptionDetails.exception?.description);
+    return reply.result.value;
+  }
+  const mirror = () => evaluate("Array.from(document.querySelectorAll('textarea')).map(t=>({value:t.value,offset:t.selectionStart}))[0]");
+  const mouse = (type, [x,y], buttons) => cdp.send('Input.dispatchMouseEvent', {
+    type, x, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons, clickCount: 1,
+  });
+  const click = async point => {
+    await mouse('mousePressed',point,1);
+    await mouse('mouseReleased',point,0);
+    await sleep(100);
+    return mirror();
+  };
+  const waitValue = async value => {
+    let state;
+    for (let i=0;i<40;i++) {
+      state = await mirror();
+      if (state.value === value) return;
+      await sleep(50);
+    }
+    throw new Error(`Expected mirrored block ${JSON.stringify(value)}, got ${JSON.stringify(state)}`);
+  };
+  const composition = (type,data) => evaluate(`document.querySelector('textarea').dispatchEvent(new CompositionEvent(${JSON.stringify(type)},{bubbles:true,data:${JSON.stringify(data)}}))`);
+  const undo = async () => {
+    for (const type of ['rawKeyDown','keyUp']) {
+      await cdp.send('Input.dispatchKeyEvent',{type,key:'z',code:'KeyZ',modifiers:2,windowsVirtualKeyCode:90});
+    }
+  };
+  const first = [314,215], second = [331,254];
+  const start = await click(first), end = await click(second);
+  if (start.value !== 'Page mode' || !end.value.startsWith('This page')) {
+    throw new Error(`Unable to select the two showcase blocks: ${JSON.stringify([start,end])}`);
+  }
+  for (const reverse of [false,true]) {
+    const a = reverse ? second : first, b = reverse ? first : second;
+    const original = reverse ? start : end;
+    await mouse('mousePressed',a,1);
+    await mouse('mouseMoved',b,1);
+    await mouse('mouseReleased',b,0);
+    await waitValue(original.value);
+    await composition('compositionstart','');
+    await composition('compositionupdate','ni');
+    await sleep(75);
+    await composition('compositionend','');
+    await waitValue(original.value);
+    // Cancellation must restore the directional document range for the next IME.
+    await composition('compositionstart','');
+    await composition('compositionupdate','nihao');
+    await sleep(75);
+    await composition('compositionend','你好');
+    const joined = token => start.value.slice(0,start.offset) + token + end.value.slice(end.offset);
+    await waitValue(joined('你好'));
+    await undo();
+    await waitValue(original.value);
+    await cdp.send('Input.insertText',{text:'Z'});
+    await waitValue(joined('Z'));
+    await undo();
+    await waitValue(original.value);
+  }
+  console.log('Forward and backward cross-block typing, IME cancellation, commit and undo passed');
+}
+
 async function main() {
   const args = parseArgs(process.argv);
   const pkgJs = path.join(WEB_DIR, 'pkg', 'playground.js');
@@ -421,6 +487,8 @@ async function main() {
         `Expected rendered glyph pixels inside title/body region (>=${args.minTitleInk}), got ${titleDark}. state=${JSON.stringify(lastState)} logs=${consoleLogs.join(' | ')}`,
       );
     }
+
+    if (!args.query) await checkComposition(cdp);
 
     // Click "Edgeless" segment (pill centered at x=640, w=186 -> pill_x=547; edgeless x=548+94..548+180 -> center=685, y=26)
     const clickX = 685;

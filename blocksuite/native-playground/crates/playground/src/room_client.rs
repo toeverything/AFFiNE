@@ -231,7 +231,10 @@ impl RoomProtocol {
         self.sync.clear();
         self.ready.clear();
 
-        let payload = AwarenessPayload::new(LOCAL_AWARENESS_NAME, LOCAL_AWARENESS_COLOR);
+        let payload = state
+            .awareness
+            .get_payload(state.awareness.local_client_id())
+            .unwrap_or_else(|| AwarenessPayload::new(LOCAL_AWARENESS_NAME, LOCAL_AWARENESS_COLOR));
         // On a reconnect the relay holds a tombstone for this client that the presence
         // has to outrank.
         let awareness = if std::mem::replace(&mut self.has_opened, true) {
@@ -439,6 +442,12 @@ impl RoomLink {
     /// Events reported by the transport, in order.
     pub fn events(&self) -> &async_channel::Receiver<RoomEvent> {
         &self.events
+    }
+
+    pub(crate) fn send_binary(&self, frame: RoomBinaryFrame) {
+        if let Ok(frame) = binary(&frame) {
+            self.send(RoomCommand::Send(frame));
+        }
     }
 
     pub fn send(&self, command: RoomCommand) {

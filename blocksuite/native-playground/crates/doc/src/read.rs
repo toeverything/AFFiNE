@@ -169,6 +169,10 @@ pub struct BlockNode {
 }
 
 impl BlockNode {
+    pub fn is_page_visible_note(&self) -> bool {
+        matches!(self.content, BlockContent::Note { hidden: false, .. }) && !self.is_edgeless_only()
+    }
+
     /// Whether this block exists only on the Edgeless canvas and is left out of Page mode.
     pub fn is_edgeless_only(&self) -> bool {
         match &self.content {

@@ -12,7 +12,7 @@
 //! out and painted by [`RichParagraph`]; single-style labels use the plain [`InlineLayout`].
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     hash::{Hash, Hasher},
     rc::Rc,
     sync::Arc,
@@ -279,6 +279,7 @@ pub enum InlineAlign {
     Right,
 }
 
+#[derive(Clone)]
 struct InlinePiece {
     line: usize,
     x: f32,
@@ -866,6 +867,62 @@ pub struct FlowBlock {
 }
 
 impl FlowBlock {
+    pub fn editable(&self) -> bool {
+        matches!(
+            self.body.kind,
+            FlowKind::Title | FlowKind::Paragraph(_) | FlowKind::List(_) | FlowKind::Code
+        )
+    }
+
+    pub fn caret_rect(&self, caret: CaretPosition) -> Option<FlowRect> {
+        let text = self.body.text.as_ref()?;
+        let height = text.layout.line_height();
+        let (x, line) = match &text.layout {
+            FlowTextLayout::Rich(rich) => {
+                let (line, x) = rich.caret_line_and_x(caret);
+                (f32::from(x), line)
+            }
+            FlowTextLayout::Plain(plain) => plain.caret(caret.utf16_offset as usize),
+        };
+        Some(FlowRect::new(
+            self.x + text.x + x,
+            self.y + text.y + line as f32 * height,
+            1.0,
+            height,
+        ))
+    }
+
+    pub fn hit_text(&self, x: f32, y: f32) -> Option<CaretPosition> {
+        let text = self.body.text.as_ref()?;
+        let x = x - self.x - text.x;
+        let y = y - self.y - text.y;
+        Some(match &text.layout {
+            FlowTextLayout::Rich(rich) => rich.hit_test(point(px(x), px(y))),
+            FlowTextLayout::Plain(plain) => {
+                let line =
+                    ((y / plain.line_height).floor().max(0.0) as usize).min(plain.line_count - 1);
+                let index = crate::rich_text::TextBiIndex::new(&self.body.plain);
+                let mut offset = 0;
+                let mut best = (usize::MAX, f32::MAX, 0);
+                loop {
+                    let (at, row) = plain.caret(offset as usize);
+                    let distance = (line.abs_diff(row), (at - x).abs(), offset);
+                    if distance < best {
+                        best = distance;
+                    }
+                    if offset == index.utf16_len() {
+                        break;
+                    }
+                    offset = index.next_grapheme_utf16(offset);
+                }
+                CaretPosition {
+                    utf16_offset: best.2,
+                    affinity: WrapAffinity::Downstream,
+                }
+            }
+        })
+    }
+
     pub fn rect(&self) -> FlowRect {
         FlowRect::new(self.x, self.y, self.body.width, self.body.height)
     }
@@ -903,6 +960,17 @@ pub struct FlowLayout {
 }
 
 impl FlowLayout {
+    /// Hit-test document coordinates against the editable text, including margins
+    /// between blocks while dragging. Ties go to the earlier block.
+    pub fn hit_document(&self, x: f32, y: f32) -> Option<(String, CaretPosition)> {
+        let block = self.blocks.iter().filter(|b| b.editable()).min_by(|a, b| {
+            let distance =
+                |block: &FlowBlock| (block.y - y).max(y - block.rect().bottom()).max(0.0);
+            distance(a).total_cmp(&distance(b))
+        })?;
+        Some((block.block_id.clone(), block.hit_text(x, y)?))
+    }
+
     pub fn block(&self, block_id: &str) -> Option<&FlowBlock> {
         self.blocks.iter().find(|block| block.block_id == block_id)
     }
@@ -915,6 +983,7 @@ pub struct BlockFlow {
 }
 
 struct FlowPass<'a> {
+    dirty: Option<&'a BTreeSet<String>>,
     input: &'a FlowInput<'a>,
     palette: Palette,
     window: &'a Window,
@@ -935,7 +1004,19 @@ impl BlockFlow {
     /// Lay the snapshot out in world space, reusing the body of every block whose content,
     /// width and theme did not change since the previous pass.
     pub fn layout(&mut self, input: &FlowInput<'_>, window: &Window) -> FlowLayout {
+        self.layout_changed(input, window, None)
+    }
+
+    /// The caller may identify text-only changes since the last pass when the environment
+    /// and topology are identical. All other passes fingerprint each block normally.
+    pub(crate) fn layout_changed(
+        &mut self,
+        input: &FlowInput<'_>,
+        window: &Window,
+        dirty: Option<&BTreeSet<String>>,
+    ) -> FlowLayout {
         let mut pass = FlowPass {
+            dirty,
             input,
             palette: input.theme.palette(),
             window,
@@ -972,6 +1053,7 @@ impl BlockFlow {
                 // Each note is its own flow root: margins never collapse across notes.
                 pass.pending_margin = None;
                 match &child.content {
+                    BlockContent::Note { hidden: true, .. } => continue,
                     BlockContent::Note { .. } => {
                         pass.flow(&child.children, 0.0, 0, BlockAlign::Left)
                     }
@@ -1014,6 +1096,14 @@ impl<'a> FlowPass<'a> {
         content: &dyn std::fmt::Debug,
         build: impl FnOnce(&mut Self) -> BlockBody,
     ) -> Rc<BlockBody> {
+        if self.dirty.is_some_and(|ids| !ids.contains(key))
+            && let Some((id, cached)) = self.previous.remove_entry(key)
+        {
+            self.stats.reused += 1;
+            let body = cached.1.clone();
+            self.next.insert(id, cached);
+            return body;
+        }
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         format!("{content:?}").hash(&mut hasher);
         self.input.width.to_bits().hash(&mut hasher);
@@ -1545,7 +1635,9 @@ impl<'a> FlowPass<'a> {
 
         let mut prims = Vec::new();
         let mut y = pad_y;
-        let mut first_line: Option<Rc<InlineLayout>> = None;
+        let mut code_pieces = Vec::new();
+        let mut line_offset = 0;
+        let mut source_offset = 0;
         for (index, line) in text.split('\n').enumerate() {
             let layout = self.plain_inline(
                 line,
@@ -1571,7 +1663,27 @@ impl<'a> FlowPass<'a> {
                 clip: None,
             });
             let height = layout.height();
-            first_line.get_or_insert_with(|| layout.clone());
+            // Empty lines have a caret stop at x=0 even when no glyph was shaped.
+            if layout.pieces.is_empty() {
+                code_pieces.push(InlinePiece {
+                    line: line_offset,
+                    x: 0.0,
+                    visible_width: 0.0,
+                    baseline_shift: 0.0,
+                    shaped: shape(self.window, "", &code_style),
+                    source_start: source_offset,
+                    source_len: 0,
+                });
+            }
+            for piece in &layout.pieces {
+                code_pieces.push(InlinePiece {
+                    line: line_offset + piece.line,
+                    source_start: source_offset + piece.source_start,
+                    ..piece.clone()
+                });
+            }
+            line_offset += layout.line_count;
+            source_offset += line.encode_utf16().count() + 1;
             prims.push(Prim::Text {
                 x: code_x,
                 y,
@@ -1625,10 +1737,16 @@ impl<'a> FlowPass<'a> {
             margin_bottom: CARD_BLOCK_MARGIN,
             plain: text.to_string(),
             prims,
-            text: first_line.map(|layout| FlowText {
+            text: Some(FlowText {
                 x: code_x,
                 y: pad_y,
-                layout: FlowTextLayout::Plain(layout),
+                layout: FlowTextLayout::Plain(Rc::new(InlineLayout {
+                    pieces: code_pieces,
+                    line_count: line_offset,
+                    line_height,
+                    width: code_width,
+                    baseline: baseline_in_line(line_height, &shape(self.window, "Ag", &code_style)),
+                })),
             }),
             prefix: None,
         };

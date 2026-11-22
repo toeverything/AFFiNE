@@ -8,12 +8,17 @@ use blocksuite_playground_doc::{
 use playground::{
     PlaygroundMode, PlaygroundOptions, PlaygroundTheme, PlaygroundView, register_bundled_fonts,
 };
+use playground::{
+    editor_session::{DocPoint, DocumentSelection},
+    room_client::DocState,
+};
 use serde::Serialize;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::process::Command;
 use std::rc::Rc;
 use std::time::{Duration, UNIX_EPOCH};
+use ui::EntityInputHandler;
 use ui::{
     Application, ApplicationHandle, Bounds, FrameSnapshot, HeadlessPlatform, HeadlessWindow,
     WindowBounds, WindowHandle, WindowOptions, audit_frame_snapshot, point, prelude::*, px, size,
@@ -685,6 +690,180 @@ fn bench_room_sync_1k_ops_ms() -> Result<TimingStat> {
     Ok(timing_stat(samples_ms))
 }
 
+impl HeadlessSession {
+    fn update<R>(
+        &self,
+        f: impl FnOnce(&mut PlaygroundView, &mut ui::Window, &mut ui::Context<PlaygroundView>) -> R,
+    ) -> Result<R> {
+        self.app.update(|cx| self.window_handle.update(cx, f))
+    }
+    fn select(&self, block: &str, offset: u64) -> Result<()> {
+        self.update(|v, w, cx| {
+            let p = DocPoint::new(block, offset);
+            v.select_document_range(
+                DocumentSelection {
+                    anchor: p.clone(),
+                    focus: p,
+                },
+                w,
+                cx,
+            );
+        })
+    }
+    fn type_text(&self, text: &str) -> Result<()> {
+        self.update(|v, w, cx| v.replace_text_in_range(None, text, w, cx))
+    }
+    fn key(&self, key: &str, shift: bool, command: bool) {
+        self.headless_win
+            .dispatch_input(ui::PlatformInput::KeyDown(ui::KeyDownEvent {
+                keystroke: ui::Keystroke {
+                    key: key.into(),
+                    key_char: None,
+                    modifiers: ui::Modifiers {
+                        shift,
+                        platform: command,
+                        control: command,
+                        ..Default::default()
+                    },
+                },
+                is_held: false,
+                prefer_character_input: false,
+            }));
+    }
+    fn caret(&self, id: &str, offset: u64) -> Result<ui::Point<ui::Pixels>> {
+        self.update(|v, w, _| {
+            let layout = v.flow_layout().context("page layout")?;
+            let rect = layout
+                .block(id)
+                .context("caret block")?
+                .caret_rect(DocPoint::new(id, offset).caret)
+                .context("editable block")?;
+            let column =
+                playground::block_flow::page_geometry(f32::from(w.viewport_size().width)).column_x;
+            Ok(point(
+                px(column + rect.x),
+                px(playground::TOPBAR_HEIGHT + rect.y + rect.h * 0.5 - v.scroll_offset()),
+            ))
+        })?
+    }
+    fn image(&self) -> Result<image::RgbaImage> {
+        self.update(|_, w, _| w.render_to_image())?
+    }
+    fn doc_json(&self) -> Result<serde_json::Value> {
+        Ok(self.update(|v, _, _| {
+            v.document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap()
+                .export_doc_json()
+        })??)
+    }
+    fn selection(&self) -> Result<DocumentSelection> {
+        self.update(|v, _, _| v.document_selection().cloned())?
+            .context("active selection")
+    }
+    fn set_texts(&self, texts: &[&str]) -> Result<()> {
+        let doc = probe_doc(texts.iter().copied())?;
+        self.update(|v, _, cx| v.set_document(doc, cx))?;
+        self.headless_win.request_frame();
+        Ok(())
+    }
+}
+
+fn probe_doc<'a>(texts: impl IntoIterator<Item = &'a str>) -> Result<DocState> {
+    let mut doc = DocState::new("editing", 23)?;
+    doc.workspace
+        .create_page(playground::HOME_PAGE_ID, "Editing", 0)?;
+    let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+    page.inner_mut()
+        .begin_tx(y_octo::SessionTxOrigin::Untracked)?;
+    page.add_block(
+        "root",
+        BlockSpec::Page {
+            title: "Editing".into(),
+        },
+        None,
+        None,
+        0,
+    )?;
+    page.add_block(
+        "note",
+        BlockSpec::Note { xywh: None },
+        Some("root"),
+        None,
+        0,
+    )?;
+    for (i, text) in texts.into_iter().enumerate() {
+        page.add_block(
+            format!("p{i}"),
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: text.into(),
+            },
+            Some("note"),
+            None,
+            0,
+        )?;
+    }
+    page.inner_mut().commit_tx()?;
+    Ok(doc)
+}
+
+fn bench_page(session: &HeadlessSession) -> Result<(TimingStat, TimingStat, u64)> {
+    const COUNT: usize = 10_000;
+    let mut cold = Vec::new();
+    let mut edits = Vec::new();
+    let mut frames = Vec::new();
+    let mut work = 0;
+    for _ in 0..5 {
+        let doc = probe_doc(std::iter::repeat_n("An editable paragraph.", COUNT - 2))?;
+        session.update(|v, _, cx| v.set_document(doc, cx))?;
+        let t = ui::clock_now();
+        session.headless_win.request_frame();
+        cold.push(t.elapsed().as_secs_f64() * 1000.);
+        let laid_out = session.update(|v, _, _| v.flow_layout().unwrap().stats.laid_out)?;
+        anyhow::ensure!(
+            laid_out == COUNT - 1,
+            "cold pass laid out {laid_out} visible-flow blocks"
+        );
+        session.select("p5000", 5)?;
+        session.headless_win.request_frame();
+        for _ in 0..6 {
+            let t = ui::clock_now();
+            session.type_text("x")?;
+            session.headless_win.request_frame();
+            edits.push(t.elapsed().as_secs_f64() * 1000.);
+            let (count, visible) = session.update(|v, w, _| {
+                (
+                    v.flow_layout().unwrap().stats.laid_out,
+                    w.frame_snapshot()
+                        .elements
+                        .keys()
+                        .filter(|id| id.starts_with("page.block."))
+                        .count(),
+                )
+            })?;
+            anyhow::ensure!(count == 1, "single edit reshaped {count} blocks");
+            anyhow::ensure!(
+                visible > 0 && visible < 40,
+                "viewport instantiated {visible} complete blocks"
+            );
+            work = count as u64;
+            let t = ui::clock_now();
+            session.update(|_, w, _| w.refresh())?;
+            session.headless_win.request_frame();
+            let _ = session.image()?;
+            frames.push(t.elapsed().as_secs_f64() * 1000.);
+        }
+    }
+    let (cold, edits, frames) = (timing_stat(cold), timing_stat(edits), timing_stat(frames));
+    println!(
+        "10k blocks: cold median/p95 {:.3}/{:.3} ms, edit {:.3}/{:.3} ms, restored viewport frame+readback {:.3}/{:.3} ms, {work} body laid out",
+        cold.median, cold.p95, edits.median, edits.p95, frames.median, frames.p95
+    );
+    Ok((cold, edits, work))
+}
+
 fn run_bench(
     out_json: PathBuf,
     explicit_commit: Option<String>,
@@ -728,6 +907,7 @@ fn run_bench(
         .map(|m| m.len())
         .unwrap_or(0);
 
+    let (cold, edits, work) = bench_page(&session)?;
     let metrics = PerfMetricsV1 {
         schema_version: 1,
         commit,
@@ -741,9 +921,9 @@ fn run_bench(
         benchmarks: BenchmarksV1 {
             doc_1k_edits_ms: Some(doc_1k_edits_ms),
             room_sync_1k_ops_ms: Some(room_sync_1k_ops_ms),
-            layout_10k_blocks_cold_ms: None,
-            layout_single_keystroke_ms: None,
-            layout_single_keystroke_blocks_relayout: None,
+            layout_10k_blocks_cold_ms: Some(cold),
+            layout_single_keystroke_ms: Some(edits),
+            layout_single_keystroke_blocks_relayout: Some(work),
             edgeless_1k_pan_zoom_frame_ms: None,
             headless_frame_render_ms: timing_stat(frame_times_ms),
         },
@@ -762,10 +942,443 @@ fn run_bench(
     Ok(())
 }
 
+fn probe_geometry(s: &HeadlessSession) -> Result<()> {
+    use playground::rich_text::{
+        CaretPosition, RichParagraph, RichParagraphStyle, WrapAffinity, sample_paragraph,
+    };
+    use y_octo::{TextDeltaOp, TextInsert};
+    let n = s.update(|_, w, _| -> Result<usize> {
+        let mut delta = sample_paragraph()?.delta().to_vec();
+        delta.push(TextDeltaOp::Insert {
+            insert: TextInsert::Text("中文👨‍👩‍👧‍👦".into()),
+            format: None,
+        });
+        let p = RichParagraph::from_delta(delta)?;
+        let layout = p.layout(w.text_system(), &RichParagraphStyle::default(), 158.);
+        let mut n = 0;
+        let mut offset = 0;
+        loop {
+            for affinity in [WrapAffinity::Downstream, WrapAffinity::Upstream] {
+                let pos = CaretPosition {
+                    utf16_offset: offset,
+                    affinity,
+                };
+                if affinity == WrapAffinity::Upstream
+                    && !layout.lines().windows(2).any(|l| {
+                        l[0].source_utf16.end == offset && l[1].source_utf16.start == offset
+                    })
+                {
+                    continue;
+                }
+                let rect = layout.caret_rect(pos);
+                let hit = layout.hit_test(rect.origin + point(px(0.), rect.size.height * 0.5));
+                anyhow::ensure!(hit == pos, "P1 {pos:?} at {:?} hit {hit:?}", rect.origin);
+                n += 1;
+            }
+            if offset == p.index().utf16_len() {
+                break;
+            }
+            offset = p.index().next_grapheme_utf16(offset);
+        }
+        Ok(n)
+    })??;
+    println!("P1 {n} grapheme/affinity positions, zero mismatches");
+    let long = "Wrap this line across the page. ".repeat(30);
+    s.set_texts(&[&long, "", "i", &long])?;
+    s.select("p0", 15)?;
+    s.headless_win.request_frame();
+    let goal = s.caret("p0", 15)?.x;
+    let mut visited = std::collections::BTreeSet::new();
+    let mut max_drift = 0f32;
+    let mut steps = 0;
+    let column = s.update(|_, w, _| {
+        playground::block_flow::page_geometry(f32::from(w.viewport_size().width)).column_x
+    })?;
+    for _ in 0..100 {
+        s.key("down", false, false);
+        s.headless_win.request_frame();
+        let (sel, x) = s.update(|v, _, _| (v.document_selection().unwrap().clone(), v.goal_x()))?;
+        let drift = (x.context("P2 missing goal")? + column - f32::from(goal)).abs();
+        max_drift = max_drift.max(drift);
+        visited.insert(sel.focus.block_id.clone());
+        steps += 1;
+        if sel.focus.block_id == "p3" {
+            break;
+        }
+    }
+    anyhow::ensure!(
+        steps >= 7 && visited.len() == 4 && max_drift <= 1.0,
+        "P2 {steps} steps over {visited:?}, drift {max_drift}"
+    );
+    s.key("up", true, false);
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.selection()?.anchor.block_id == "p3" && s.selection()?.focus.block_id == "p2",
+        "P2 reverse extension"
+    );
+    println!("P2 sticky goal crossed {steps} lines, drift {max_drift:.3}px");
+    Ok(())
+}
+
+fn mouse(s: &HeadlessSession, id: &str, offset: u64, count: usize, drag: bool) -> Result<()> {
+    let position = s.caret(id, offset)?;
+    let mods = ui::Modifiers::default();
+    if drag {
+        s.headless_win
+            .dispatch_input(ui::PlatformInput::MouseMove(ui::MouseMoveEvent {
+                position,
+                pressed_button: Some(ui::MouseButton::Left),
+                modifiers: mods,
+            }));
+    } else {
+        s.headless_win
+            .dispatch_input(ui::PlatformInput::MouseDown(ui::MouseDownEvent {
+                position,
+                button: ui::MouseButton::Left,
+                click_count: count,
+                modifiers: mods,
+                first_mouse: false,
+            }));
+    }
+    s.platform.run_until_parked();
+    Ok(())
+}
+
+fn probe_selection(s: &HeadlessSession) -> Result<()> {
+    let wrapped = "two beta ".repeat(12);
+    s.set_texts(&["one alpha", &wrapped, "three gamma"])?;
+    let original = s.doc_json()?;
+    for reverse in [false, true] {
+        let (a, b) = if reverse {
+            (("p2", 5), ("p0", 3))
+        } else {
+            (("p0", 3), ("p2", 5))
+        };
+        mouse(s, a.0, a.1, 1, false)?;
+        mouse(s, b.0, b.1, 1, true)?;
+        s.headless_win.request_frame();
+        let sel = s.selection()?;
+        anyhow::ensure!(
+            sel.anchor == DocPoint::new(a.0, a.1) && sel.focus == DocPoint::new(b.0, b.1),
+            "P3 incorrect drag {sel:?}"
+        );
+        s.update(|v, _, _| -> Result<()> {
+            let layout = v.flow_layout().context("selection layout")?;
+            let rects = v.selection_rects(&layout);
+            let mut previous_bottom = None;
+            let mut wrapped_rows = 0;
+            for id in ["p0", "p1", "p2"] {
+                let b = layout.block(id).context("selected block")?;
+                let lines: Vec<_> = rects
+                    .iter()
+                    .filter(|r| r.y >= b.y && r.bottom() <= b.y + b.body.height + 0.01)
+                    .collect();
+                anyhow::ensure!(
+                    !lines.is_empty()
+                        && lines
+                            .windows(2)
+                            .all(|r| (r[0].bottom() - r[1].y).abs() < 0.01),
+                    "line-box gap or overlap"
+                );
+                anyhow::ensure!(
+                    previous_bottom.is_none_or(|y| y <= lines[0].y),
+                    "non-monotonic block selection"
+                );
+                previous_bottom = lines.last().map(|l| l.bottom());
+                wrapped_rows += lines.len();
+            }
+            anyhow::ensure!(
+                wrapped_rows == rects.len() && wrapped_rows > 3,
+                "unexpected inter-block rectangles or missing wrapped lines"
+            );
+            Ok(())
+        })??;
+        s.key("backspace", false, false);
+        s.headless_win.request_frame();
+        let joined = s.doc_json()?;
+        anyhow::ensure!(
+            joined["blocks"]["p0"]["prop:text"][0]["insert"] == "one gamma"
+                && joined["blocks"]["p2"].is_null(),
+            "P3 incorrect joined doc"
+        );
+        s.key("z", false, true);
+        s.headless_win.request_frame();
+        anyhow::ensure!(
+            s.doc_json()? == original && s.selection()? == sel,
+            "P3 undo failed to restore the range and document"
+        );
+    }
+    println!(
+        "P3 two drag directions, continuous line boxes within blocks, clear margins and one undo per delete"
+    );
+    mouse(s, "p0", 6, 2, false)?;
+    let sel = s.selection()?;
+    anyhow::ensure!(
+        sel.anchor.caret.utf16_offset == 4 && sel.focus.caret.utf16_offset == 9,
+        "P4 double click {sel:?}"
+    );
+    mouse(s, "p0", 6, 3, false)?;
+    let sel = s.selection()?;
+    anyhow::ensure!(
+        sel.anchor.caret.utf16_offset == 0 && sel.focus.caret.utf16_offset == 9,
+        "P4 triple click {sel:?}"
+    );
+    println!("P4 double-click 4..9, triple-click 0..9");
+    Ok(())
+}
+
+fn peer_of(s: &HeadlessSession) -> Result<PageDocSession> {
+    let mut peer = PageDocSession::new(playground::HOME_PAGE_ID, 31)?;
+    peer.apply_remote_update_v1(&s.update(|v, _, _| {
+        v.document()
+            .workspace
+            .page(playground::HOME_PAGE_ID)
+            .unwrap()
+            .encode_update_v1()
+    })??)?;
+    Ok(peer)
+}
+
+fn receive(s: &HeadlessSession, bytes: &[u8]) -> Result<()> {
+    s.update(|v, _, cx| {
+        v.edit_document(cx, |d| {
+            d.workspace
+                .page_mut(playground::HOME_PAGE_ID)
+                .unwrap()
+                .apply_remote_update_v1(bytes)
+        })
+    })??;
+    s.headless_win.request_frame();
+    Ok(())
+}
+
+fn probe_input(s: &HeadlessSession) -> Result<()> {
+    s.set_texts(&["a"])?;
+    s.select("p0", 1)?;
+    s.headless_win.request_frame();
+    let before = s.image()?;
+    let left = s.caret("p0", 1)?;
+    s.type_text("W")?;
+    s.headless_win.request_frame();
+    let after = s.image()?;
+    let right = s.caret("p0", 2)?;
+    let x0 = f32::from(left.x).ceil() as u32 + 1;
+    let x1 = f32::from(right.x).floor() as u32;
+    let y = f32::from(left.y) as u32;
+    let ink = (x0..x1)
+        .flat_map(|x| (y - 8..y + 8).map(move |y| (x, y)))
+        .filter(|&(x, y)| before.get_pixel(x, y) != after.get_pixel(x, y))
+        .count();
+    anyhow::ensure!(ink > 0, "P5 next frame has no new glyph ink");
+    println!("P5 {ink} changed glyph pixels after one frame");
+    s.set_texts(&["ab"])?;
+    s.select("p0", 1)?;
+    s.headless_win.request_frame();
+    let mut peer = peer_of(s)?;
+    let initial = s.doc_json()?;
+    let state = |s: &HeadlessSession| -> Result<Vec<u8>> {
+        Ok(s.update(|v, _, _| {
+            v.document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap()
+                .encode_state_vector_v1()
+        })??)
+    };
+    let vector = state(s)?;
+    for pre in ["ni", "nihao"] {
+        s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, pre, None, w, cx))?;
+        s.headless_win.request_frame();
+        anyhow::ensure!(
+            state(s)? == vector && s.doc_json()? == initial,
+            "P6 preedit changed CRDT"
+        );
+    }
+    let update = peer
+        .insert_text("p0", "prop:text", 0, "R", 10)?
+        .unwrap()
+        .update;
+    receive(s, &update)?;
+    let r = s.update(|v, w, cx| v.marked_text_range(w, cx))?;
+    anyhow::ensure!(r == Some(2..7), "P6 shifted preedit {r:?}");
+    s.type_text("你好")?;
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.doc_json()?["blocks"]["p0"]["prop:text"][0]["insert"] == "Ra你好b",
+        "P6 final placement"
+    );
+    println!("P6 no preedit CRDT changes, remote insertion shifted commit to UTF-16 offset 2");
+    s.set_texts(&[""])?;
+    s.select("p0", 0)?;
+    s.headless_win.request_frame();
+    for text in ["a", "b", "c"] {
+        s.type_text(text)?;
+        s.platform.advance_clock(Duration::from_millis(100));
+    }
+    s.platform.advance_clock(Duration::from_millis(600));
+    s.type_text("d")?;
+    s.key("z", false, true);
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.doc_json()?["blocks"]["p0"]["prop:text"][0]["insert"] == "abc",
+        "P7 late edit was merged"
+    );
+    s.key("z", false, true);
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.doc_json()?["blocks"]["p0"]["prop:text"] == serde_json::json!([])
+            && s.selection()?.focus.caret.utf16_offset == 0,
+        "P7 early edits did not merge"
+    );
+    s.key("z", true, true);
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.selection()?.focus.caret.utf16_offset == 3,
+        "P7 redo caret"
+    );
+    println!("P7 100ms typing merged, 600ms gap split, redo caret restored");
+    s.set_texts(&["ab"])?;
+    s.select("p0", 1)?;
+    s.headless_win.request_frame();
+    let mut peer = peer_of(s)?;
+    s.type_text("L")?;
+    let update = peer
+        .insert_text("p0", "prop:text", 0, "R", 10)?
+        .unwrap()
+        .update;
+    receive(s, &update)?;
+    s.key("z", false, true);
+    s.headless_win.request_frame();
+    anyhow::ensure!(
+        s.doc_json()?["blocks"]["p0"]["prop:text"][0]["insert"] == "Rab"
+            && s.selection()?.focus.caret.utf16_offset == 2,
+        "P8 remote edit or local selection lost"
+    );
+    println!("P8 remote R survived local undo, caret restored at offset 2");
+    Ok(())
+}
+
+fn probe_anchor(s: &HeadlessSession) -> Result<()> {
+    s.set_texts(&["A reading paragraph."; 120])?;
+    s.select("p70", 4)?;
+    s.headless_win.request_frame();
+    let before = s.caret("p70", 4)?;
+    let mut peer = peer_of(s)?;
+    let update = peer
+        .add_block(
+            "new",
+            BlockSpec::Paragraph {
+                paragraph_type: ParagraphType::Text,
+                text: "Inserted above fold".into(),
+            },
+            Some("note"),
+            Some(0),
+            50,
+        )?
+        .unwrap()
+        .update;
+    receive(s, &update)?;
+    let shift = f32::from(s.caret("p70", 4)?.y - before.y).abs();
+    anyhow::ensure!(shift <= 0.5, "P9 anchor moved {shift}px");
+    println!("P9 remote insertion above fold, anchor shifted {shift:.3}px");
+    Ok(())
+}
+
+fn replay_editing() -> Result<()> {
+    let mut reference = None;
+    for fps in [60, 120, 24, 7] {
+        let s = start_headless_session(800, 600, Default::default())?;
+        s.set_texts(&["draft", "second"])?;
+        s.select("p0", 5)?;
+        s.headless_win.request_frame();
+        s.type_text(" one")?;
+        s.key("enter", false, false);
+        s.headless_win.request_frame();
+        s.type_text("two")?;
+        s.headless_win.request_frame();
+        for id in ["chrome.mode_switcher.edgeless", "chrome.mode_switcher.page"] {
+            let p = s.update(|_, w, _| {
+                let b = w.frame_snapshot().elements[id].bounds;
+                point(px(b.x + b.width / 2.), px(b.y + b.height / 2.))
+            })?;
+            s.headless_win.simulate_click(p);
+            for _ in 0..fps {
+                s.platform
+                    .advance_clock(Duration::from_secs_f64(1.0 / fps as f64));
+                s.headless_win.request_frame();
+            }
+        }
+        let frame = s.update(|_, w, _| serde_json::to_vec(w.frame_snapshot()))??;
+        let terminal = (frame, serde_json::to_vec(&s.doc_json()?)?);
+        if let Some(expected) = &reference {
+            anyhow::ensure!(
+                &terminal == expected,
+                "P10 terminal state differs at {fps}fps"
+            );
+        } else {
+            reference = Some(terminal);
+        }
+    }
+    println!("P10 identical terminal frame and document bytes at 60/120/24/7 fps");
+    Ok(())
+}
+
+fn render_editor(dir: PathBuf) -> Result<()> {
+    std::fs::create_dir_all(&dir)?;
+    for theme in [PlaygroundTheme::Light, PlaygroundTheme::Dark] {
+        let s = start_headless_session(
+            1280,
+            800,
+            PlaygroundOptions {
+                theme,
+                ..Default::default()
+            },
+        )?;
+        s.headless_win.request_frame();
+        let save = |name: &str| -> Result<()> {
+            s.headless_win.request_frame();
+            let violations = s.update(|_, w, _| audit_frame_snapshot(w.frame_snapshot()))?;
+            anyhow::ensure!(
+                violations.is_empty(),
+                "editor render violations: {violations:?}"
+            );
+            s.image()?
+                .save(dir.join(format!("{name}-{}.png", theme.as_str())))?;
+            Ok(())
+        };
+        mouse(&s, "showcase-h1", 4, 1, false)?;
+        save("caret")?;
+        mouse(&s, "showcase-quote", 15, 1, true)?;
+        save("selection")?;
+        s.select("showcase-h1", 9)?;
+        s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, " nihao", None, w, cx))?;
+        save("preedit")?;
+        s.update(|v, w, cx| v.replace_text_in_range(None, " 你好", w, cx))?;
+        s.select("showcase-intro", 0)?;
+        s.type_text("- ")?;
+        anyhow::ensure!(
+            s.doc_json()?["blocks"][&s.selection()?.focus.block_id]["sys:flavour"] == "affine:list",
+            "list conversion"
+        );
+        save("markdown")?;
+    }
+    Ok(())
+}
+fn run_probes() -> Result<()> {
+    let s = start_headless_session(640, 720, Default::default())?;
+    probe_geometry(&s)?;
+    probe_selection(&s)?;
+    probe_input(&s)?;
+    probe_anchor(&s)?;
+    replay_editing()
+}
+
 fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
-        bail!("usage: bs-harness <render|render-rich-sample|audit|fps-check|bench> [options]");
+        bail!(
+            "usage: bs-harness <render|render-rich-sample|audit|fps-check|probes|bench> [options]"
+        );
     };
 
     match cmd.as_str() {
@@ -825,6 +1438,12 @@ fn main() -> Result<()> {
             }
             run_audit(snapshot.context("audit requires --snapshot <json>")?)
         }
+        "render-editor" => render_editor(
+            args.next()
+                .context("render-editor requires an output directory")?
+                .into(),
+        ),
+        "probes" => run_probes(),
         "fps-check" => run_fps_check(),
         "bench" => {
             let mut out_json = PathBuf::from("perf-metrics.json");
@@ -865,6 +1484,872 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn markdown_and_clipboard_use_the_document_editor_and_undo_stack() -> Result<()> {
+        use playground::clipboard::Slice;
+        let s = start_headless_session(800, 600, Default::default())?;
+        for (prefix, flavour, kind) in [
+            ("# ", "affine:paragraph", "h1"),
+            ("###### ", "affine:paragraph", "h6"),
+            ("> ", "affine:paragraph", "quote"),
+            ("* ", "affine:list", "bulleted"),
+            ("2. ", "affine:list", "numbered"),
+            ("[x] ", "affine:list", "todo"),
+            ("```rust ", "affine:code", ""),
+            ("--- ", "affine:divider", ""),
+        ] {
+            s.set_texts(&[""])?;
+            s.select("p0", 0)?;
+            s.headless_win.request_frame();
+            s.type_text(prefix)?;
+            let json = s.doc_json()?;
+            let block =
+                &json["blocks"][json["blocks"]["note"]["sys:children"][0].as_str().unwrap()];
+            assert_eq!(block["sys:flavour"], flavour, "{prefix}");
+            if !kind.is_empty() {
+                assert_eq!(block["prop:type"], kind, "{prefix}");
+            }
+            s.key("z", false, true);
+            assert_eq!(
+                s.doc_json()?["blocks"]["p0"]["sys:flavour"],
+                "affine:paragraph"
+            );
+        }
+        for delimiter in ["enter", "space"] {
+            s.set_texts(&[""])?;
+            s.select("p0", 0)?;
+            s.headless_win.request_frame();
+            for ch in "```rust".chars() {
+                s.type_text(&ch.to_string())?;
+            }
+            if delimiter == "enter" {
+                s.key("enter", false, false);
+            } else {
+                s.type_text(" ")?;
+            }
+            let json = s.doc_json()?;
+            let block =
+                &json["blocks"][json["blocks"]["note"]["sys:children"][0].as_str().unwrap()];
+            assert_eq!(block["prop:language"], "rust");
+            assert_eq!(block["prop:text"], serde_json::json!([]));
+        }
+        s.set_texts(&[""])?;
+        s.select("p0", 0)?;
+        s.headless_win.request_frame();
+        for ch in "`code`".chars() {
+            s.type_text(&ch.to_string())?;
+        }
+        assert_eq!(
+            s.doc_json()?["blocks"]["p0"]["prop:text"],
+            serde_json::json!([{"insert":"code","attributes":{"code":true}}])
+        );
+        s.set_texts(&[""])?;
+        s.select("p0", 0)?;
+        s.headless_win.request_frame();
+        let slice = Slice::from_html(
+            "<h3><em>Hello</em></h3><ol><li>World</li></ol><pre><code>x\ny</code></pre>",
+        )
+        .unwrap();
+        s.update(|v, w, cx| v.paste(slice.item(), w, cx))?;
+        let json = s.doc_json()?;
+        let blocks = &json["blocks"];
+        let ids = blocks["note"]["sys:children"].as_array().unwrap();
+        assert_eq!(ids.len(), 3);
+        assert_eq!(blocks["p0"]["prop:type"], "h3");
+        assert_eq!(blocks["p0"]["prop:text"][0]["attributes"]["italic"], true);
+        assert_eq!(blocks[ids[1].as_str().unwrap()]["prop:type"], "numbered");
+        assert_eq!(
+            blocks[ids[2].as_str().unwrap()]["prop:text"][0]["insert"],
+            "x\ny"
+        );
+        s.key("z", false, true);
+        s.headless_win.request_frame();
+        assert_eq!(
+            s.doc_json()?["blocks"]["note"]["sys:children"],
+            serde_json::json!(["p0"])
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn composing_over_a_directional_range_changes_only_the_preview_until_commit() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        for reverse in [false, true] {
+            s.set_texts(&["one", "middle", "end"])?;
+            let original = s.doc_json()?;
+            let (a, b) = if reverse { ("p2", "p0") } else { ("p0", "p2") };
+            mouse(&s, a, 1, 1, false)?;
+            mouse(&s, b, 1, 1, true)?;
+            let range = s.selection()?;
+            for cancel_with_commit in [false, true] {
+                s.update(|v, w, cx| {
+                    v.replace_and_mark_text_in_range(Some(1..1), "ni", None, w, cx)
+                })?;
+                s.headless_win.request_frame();
+                assert_eq!(s.doc_json()?, original);
+                s.update(|v, w, cx| {
+                    let layout = v.flow_layout().unwrap();
+                    assert_eq!(layout.block("p0").unwrap().body.plain, "onind");
+                    assert!(layout.block("p1").is_none() && layout.block("p2").is_none());
+                    assert_eq!(v.marked_text_range(w, cx), Some(1..3));
+                    if cancel_with_commit {
+                        v.replace_text_in_range(None, "", w, cx);
+                    } else {
+                        v.replace_and_mark_text_in_range(None, "", None, w, cx);
+                    }
+                    assert!(v.marked_text_range(w, cx).is_none());
+                    assert!(
+                        !v.document()
+                            .workspace
+                            .page(playground::HOME_PAGE_ID)
+                            .unwrap()
+                            .can_undo()
+                    );
+                })?;
+                assert_eq!(s.selection()?, range);
+                assert_eq!(s.doc_json()?, original);
+            }
+            s.update(|v, w, cx| {
+                v.replace_and_mark_text_in_range(Some(1..1), "nihao", None, w, cx)
+            })?;
+            s.headless_win.request_frame();
+            s.type_text("你好")?;
+            assert_eq!(
+                s.doc_json()?["blocks"]["p0"]["prop:text"][0]["insert"],
+                "o你好nd"
+            );
+            s.key("z", false, true);
+            assert_eq!(s.doc_json()?, original);
+            assert_eq!(s.selection()?, range);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn typing_inherits_marks_with_explicit_overrides_and_unmarked_edges() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        for (key, offset, toggle, ime, expected) in [
+            ("bold", 1, false, false, true),
+            ("bold", 1, false, true, true),
+            ("bold", 1, true, false, false),
+            ("bold", 0, false, false, false),
+            ("link", 1, false, false, true),
+            ("link", 2, false, true, false),
+            ("code", 1, false, false, true),
+            ("code", 2, false, false, false),
+        ] {
+            let mut doc = probe_doc(["ab"])?;
+            let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+            let value = if key == "link" {
+                y_octo::Any::String("https://example.org".into())
+            } else {
+                y_octo::Any::True
+            };
+            page.format_text(
+                "p0",
+                "prop:text",
+                0,
+                2,
+                y_octo::TextAttributes::from([(key.into(), value.clone())]),
+                1,
+            )?;
+            s.update(|v, _, cx| v.set_document(doc, cx))?;
+            s.headless_win.request_frame();
+            s.select("p0", offset)?;
+            if toggle {
+                s.key("b", false, true);
+            }
+            if ime {
+                s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, "x", None, w, cx))?;
+            }
+            s.type_text("X")?;
+            let json = s.doc_json()?;
+            let run = json["blocks"]["p0"]["prop:text"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|v| v["insert"].as_str().unwrap().contains('X'))
+                .unwrap();
+            assert_eq!(
+                run["attributes"].get(key).is_some(),
+                expected,
+                "{key} {offset} {toggle} {ime}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn joining_into_a_nested_endpoint_preserves_later_subtrees() -> Result<()> {
+        use playground::clipboard::Slice;
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["Ax", "B"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        for (id, parent) in [("B1", "p1"), ("B2", "p1"), ("B2a", "B2"), ("B3", "p1")] {
+            page.add_block(
+                id,
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: id.into(),
+                },
+                Some(parent),
+                None,
+                1,
+            )?;
+        }
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        let original = s.doc_json()?;
+        mouse(&s, "p0", 1, 1, false)?;
+        mouse(&s, "B1", 1, 1, true)?;
+        let selection = s.selection()?;
+        s.key("c", false, true);
+        let item = s
+            .update(|_, _, cx| cx.read_from_clipboard())?
+            .context("copied items")?;
+        let slice = Slice::from_item(&item).context("rich slice")?;
+        assert_eq!(slice.content.len(), 2);
+        assert_eq!(slice.content[0].id, "p0");
+        assert_eq!(slice.content[1].id, "p1");
+        assert_eq!(slice.content[1].children.len(), 1);
+        assert_eq!(slice.content[1].children[0].id, "B1");
+        assert!(slice.content[1].children[0].children.is_empty());
+        s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, "ni", None, w, cx))?;
+        s.headless_win.request_frame();
+        s.update(|v, w, cx| {
+            let layout = v.flow_layout().unwrap();
+            let ids: Vec<_> = layout.blocks.iter().map(|b| b.block_id.as_str()).collect();
+            assert_eq!(ids, ["root", "p0", "B2", "B2a", "B3"]);
+            v.replace_text_in_range(None, "", w, cx);
+        })?;
+        assert_eq!(s.doc_json()?, original);
+        s.key("backspace", false, false);
+        let blocks = &s.doc_json()?["blocks"];
+        assert_eq!(blocks["p0"]["prop:text"][0]["insert"], "A1");
+        assert_eq!(
+            blocks["p0"]["sys:children"],
+            serde_json::json!(["B2", "B3"])
+        );
+        assert_eq!(blocks["B2"]["sys:children"], serde_json::json!(["B2a"]));
+        assert_eq!(blocks["note"]["sys:children"], serde_json::json!(["p0"]));
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, original);
+        assert_eq!(s.selection()?, selection);
+        Ok(())
+    }
+
+    #[test]
+    fn markdown_list_order_starts_at_the_typed_number_and_stays_local() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        s.set_texts(&["Above", "", "Below"])?;
+        s.select("p1", 0)?;
+        s.type_text("5. ")?;
+        let first = s.selection()?.focus.block_id;
+        assert_eq!(s.doc_json()?["blocks"][&first]["prop:order"], 5);
+        s.type_text("item")?;
+        s.key("enter", false, false);
+        let second = s.selection()?.focus.block_id;
+        assert_eq!(s.doc_json()?["blocks"][&second]["prop:order"], 6);
+        for id in ["p0", "p2"] {
+            s.select(id, 1)?;
+            s.key("enter", false, false);
+            let blocks = &s.doc_json()?["blocks"];
+            assert_eq!(blocks[&first]["prop:order"], 5);
+            assert_eq!(blocks[&second]["prop:order"], 6);
+        }
+        Ok(())
+    }
+
+    fn text_block(id: &str, kind: ParagraphType) -> BlockSpec {
+        BlockSpec::Paragraph {
+            paragraph_type: kind,
+            text: id.to_owned(),
+        }
+    }
+
+    fn select_across(s: &HeadlessSession, start: &str, end: &str) -> Result<()> {
+        s.update(|v, w, cx| {
+            v.select_document_range(
+                DocumentSelection {
+                    anchor: DocPoint::new(start, 1),
+                    focus: DocPoint::new(end, 1),
+                },
+                w,
+                cx,
+            )
+        })
+    }
+
+    #[test]
+    fn collapsed_endpoint_children_survive_preview_and_delete() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["A"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        page.add_block(
+            "T",
+            BlockSpec::List {
+                list_type: blocksuite_playground_doc::schema::ListType::Toggle,
+                text: "Toggle".into(),
+                checked: false,
+                order: None,
+            },
+            Some("note"),
+            None,
+            0,
+        )?;
+        page.set_block_prop(
+            "T",
+            "prop:collapsed",
+            y_octo::SessionValue::Any(y_octo::Any::True),
+            0,
+        )?;
+        for id in ["T1", "T2"] {
+            page.add_block(id, text_block(id, ParagraphType::Text), Some("T"), None, 0)?;
+        }
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        let original = s.doc_json()?;
+        select_across(&s, "p0", "T")?;
+        s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, "ni", None, w, cx))?;
+        s.headless_win.request_frame();
+        s.update(|v, w, cx| {
+            let l = v.flow_layout().unwrap();
+            assert_eq!(
+                l.blocks
+                    .iter()
+                    .map(|b| b.block_id.as_str())
+                    .collect::<Vec<_>>(),
+                ["root", "p0", "T1", "T2"]
+            );
+            v.replace_text_in_range(None, "", w, cx);
+        })?;
+        assert_eq!(s.doc_json()?, original);
+        s.key("backspace", false, false);
+        assert_eq!(
+            s.doc_json()?["blocks"]["p0"]["sys:children"],
+            serde_json::json!(["T1", "T2"])
+        );
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, original);
+        Ok(())
+    }
+
+    #[test]
+    fn cut_includes_a_hidden_sibling_before_the_endpoint() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["Aa", "B"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        for (id, kind) in [
+            ("H", ParagraphType::H1),
+            ("X", ParagraphType::Text),
+            ("E", ParagraphType::H1),
+            ("S", ParagraphType::Text),
+        ] {
+            page.add_block(id, text_block(id, kind), Some("p1"), None, 0)?;
+        }
+        page.set_block_prop(
+            "H",
+            "prop:collapsed",
+            y_octo::SessionValue::Any(y_octo::Any::True),
+            0,
+        )?;
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        assert!(s.update(|v, _, _| v.flow_layout().unwrap().block("X").is_none())?);
+        let original = s.doc_json()?;
+        select_across(&s, "p0", "E")?;
+        s.key("x", false, true);
+        let cut = s.doc_json()?;
+        assert!(cut["blocks"].get("X").is_none());
+        assert_eq!(
+            cut["blocks"]["p0"]["sys:children"],
+            serde_json::json!(["S"])
+        );
+        let item = s
+            .update(|_, _, cx| cx.read_from_clipboard())?
+            .context("cut clipboard")?;
+        let slice = playground::clipboard::Slice::from_item(&item).context("cut slice")?;
+        assert_eq!(
+            slice.content[1]
+                .children
+                .iter()
+                .map(|b| b.id.as_str())
+                .collect::<Vec<_>>(),
+            ["H", "X", "E"]
+        );
+        s.key("v", false, true);
+        let pasted = s.doc_json()?;
+        let blocks = &pasted["blocks"];
+        let parent = blocks["note"]["sys:children"][1].as_str().unwrap();
+        let restored = blocks[parent]["sys:children"][1].as_str().unwrap();
+        assert_eq!(
+            blocks[restored]["prop:text"],
+            original["blocks"]["X"]["prop:text"]
+        );
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, cut);
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, original);
+        Ok(())
+    }
+
+    #[test]
+    fn page_title_and_cross_note_cuts_preserve_page_containers() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["One"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        page.add_block("surface", BlockSpec::Surface, Some("root"), Some(0), 0)?;
+        for (note, id) in [
+            ("canvas", "canvas-text"),
+            ("hidden", "hidden-text"),
+            ("note2", "Two"),
+        ] {
+            page.add_block(note, BlockSpec::Note { xywh: None }, Some("root"), None, 0)?;
+            page.add_block(id, text_block(id, ParagraphType::Text), Some(note), None, 0)?;
+        }
+        page.set_block_prop(
+            "canvas",
+            "prop:displayMode",
+            y_octo::SessionValue::Any(y_octo::Any::String("edgeless".into())),
+            0,
+        )?;
+        page.set_block_prop(
+            "hidden",
+            "prop:hidden",
+            y_octo::SessionValue::Any(y_octo::Any::True),
+            0,
+        )?;
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        let original = s.doc_json()?;
+        for (start, end) in [("root", "p0"), ("p0", "Two")] {
+            select_across(&s, start, end)?;
+            s.key("x", false, true);
+            let cut = s.doc_json()?;
+            for id in ["surface", "canvas", "canvas-text", "hidden", "hidden-text"] {
+                assert_eq!(cut["blocks"][id], original["blocks"][id]);
+            }
+            assert_eq!(
+                cut["blocks"]["root"]["sys:children"],
+                serde_json::json!(["surface", "note", "canvas", "hidden", "note2"])
+            );
+            for note in ["note", "note2"] {
+                assert_eq!(cut["blocks"][note]["sys:id"], note);
+            }
+            let item = s.update(|_, _, cx| cx.read_from_clipboard())?.unwrap();
+            let slice = playground::clipboard::Slice::from_item(&item).unwrap();
+            assert_eq!(
+                slice
+                    .content
+                    .iter()
+                    .map(|b| b.id.as_str())
+                    .collect::<Vec<_>>(),
+                [start, end]
+            );
+            assert!(slice.content.iter().all(|b| b.children.is_empty()));
+            s.key("z", false, true);
+            assert_eq!(s.doc_json()?, original);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn code_range_lifts_following_subtrees_as_siblings() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["B", "C"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        page.add_block(
+            "A",
+            BlockSpec::Code {
+                text: "Code".into(),
+                language: None,
+                caption: String::new(),
+            },
+            Some("note"),
+            Some(0),
+            0,
+        )?;
+        for id in ["B1", "B2"] {
+            page.add_block(id, text_block(id, ParagraphType::Text), Some("p0"), None, 0)?;
+        }
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        let original = s.doc_json()?;
+        select_across(&s, "A", "B1")?;
+        s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, "x", None, w, cx))?;
+        s.headless_win.request_frame();
+        s.update(|v, w, cx| {
+            let l = v.flow_layout().unwrap();
+            assert_eq!(l.block("B2").unwrap().x, l.block("p1").unwrap().x);
+            v.replace_text_in_range(None, "", w, cx);
+        })?;
+        s.key("backspace", false, false);
+        let cut = s.doc_json()?;
+        assert_eq!(
+            cut["blocks"]["note"]["sys:children"],
+            serde_json::json!(["A", "B2", "p1"])
+        );
+        assert_eq!(cut["blocks"]["A"]["sys:children"], serde_json::json!([]));
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, original);
+        Ok(())
+    }
+
+    #[test]
+    fn zero_based_markdown_and_list_only_order_correction() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        s.set_texts(&["Item", "Break", "Later"])?;
+        s.select("p0", 0)?;
+        s.type_text("0. ")?;
+        let first = s.selection()?.focus.block_id;
+        let numbered = s.doc_json()?;
+        assert_eq!(numbered["blocks"][&first]["prop:type"], "numbered");
+        assert_eq!(numbered["blocks"][&first]["prop:order"], 0);
+        s.select(&first, 4)?;
+        s.key("enter", false, false);
+        let second = s.selection()?.focus.block_id;
+        assert_eq!(s.doc_json()?["blocks"][&first]["prop:order"], 1);
+        assert_eq!(s.doc_json()?["blocks"][&second]["prop:order"], 2);
+        s.select("p2", 0)?;
+        s.type_text("5. ")?;
+        let fifth = s.selection()?.focus.block_id;
+        s.select(&fifth, 5)?;
+        s.key("enter", false, false);
+        let sixth = s.selection()?.focus.block_id;
+        s.select("p1", 0)?;
+        s.key("tab", false, false);
+        let indented = s.doc_json()?;
+        assert_eq!(
+            indented["blocks"][&second]["sys:children"],
+            serde_json::json!(["p1"])
+        );
+        assert_eq!(indented["blocks"][&fifth]["prop:order"], 5);
+        assert_eq!(indented["blocks"][&sixth]["prop:order"], 6);
+        s.set_texts(&["One", "Two", "Three"])?;
+        let mut ids = Vec::new();
+        for id in ["p0", "p1", "p2"] {
+            s.select(id, 0)?;
+            s.type_text("1. ")?;
+            ids.push(s.selection()?.focus.block_id);
+        }
+        s.select(&ids[1], 0)?;
+        s.key("backspace", false, false);
+        assert_eq!(s.doc_json()?["blocks"][&ids[2]]["prop:order"], 3);
+        assert_eq!(
+            s.doc_json()?["blocks"][&s.selection()?.focus.block_id]["sys:flavour"],
+            "affine:paragraph"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn paste_preserves_concurrent_suffix_deletion_and_relative_positions() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        s.set_texts(&["abcd"])?;
+        s.select("p0", 1)?;
+        let mut peer = peer_of(&s)?;
+        let suffix = peer.capture_selection_snapshot("p0", 1, "p0", 3)?;
+        let initial = peer.encode_state_vector_v1()?;
+        let remote = peer
+            .remove_text("p0", "prop:text", 2, 1, 1)?
+            .unwrap()
+            .update;
+        s.update(|v, w, cx| v.paste(ui::ClipboardItem::new_string("X".into()), w, cx))?;
+        let local = s.update(|v, _, _| {
+            v.document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap()
+                .encode_diff_v1(&initial)
+        })??;
+        receive(&s, &remote)?;
+        peer.apply_remote_update_v1(&local)?;
+        assert_eq!(s.doc_json()?, peer.export_doc_json()?);
+        assert_eq!(peer.read_editable_text("p0")?.0.plain, "aXbd");
+        let pos = peer.resolve_selection_snapshot(&suffix)?.unwrap();
+        assert_eq!((pos.anchor.1, pos.focus.1), (2, 3));
+        assert_eq!(
+            s.update(|v, _, _| v
+                .document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap()
+                .resolve_selection_snapshot(&suffix))??,
+            Some(pos)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn typing_and_ime_after_a_reference_leave_exactly_one_chip() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        for (input, ime) in [(" ", false), ("好", true)] {
+            let mut doc = probe_doc([" "])?;
+            let reference = serde_json::json!({"type":"LinkedPage","pageId":"dest"});
+            let attrs = y_octo::TextAttributes::from([(
+                "reference".into(),
+                serde_json::from_value(reference.clone())?,
+            )]);
+            doc.workspace
+                .page_mut(playground::HOME_PAGE_ID)
+                .unwrap()
+                .format_text("p0", "prop:text", 0, 1, attrs, 1)?;
+            s.update(|v, _, cx| v.set_document(doc, cx))?;
+            s.headless_win.request_frame();
+            s.select("p0", 1)?;
+            if ime {
+                s.update(|v, w, cx| v.replace_and_mark_text_in_range(None, "hao", None, w, cx))?;
+            }
+            s.type_text(input)?;
+            assert_eq!(
+                s.doc_json()?["blocks"]["p0"]["prop:text"],
+                serde_json::json!([{"insert":" ","attributes":{"reference":reference}},{"insert":input}])
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn image_survives_cross_block_cut_paste_and_undo() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["one", "end"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        page.add_block(
+            "pic",
+            BlockSpec::Image {
+                source_id: "digest".into(),
+                caption: "caption".into(),
+                width: 80.,
+                height: 40.,
+                xywh: Some("[1,2,80,40]".into()),
+            },
+            Some("note"),
+            Some(1),
+            1,
+        )?;
+        let shared_text = |text: &str| {
+            y_octo::SessionValue::Text(vec![y_octo::TextDeltaOp::Insert {
+                insert: y_octo::TextInsert::Text(text.into()),
+                format: None,
+            }])
+        };
+        page.add_raw_block(
+            "vendor",
+            "custom:widget",
+            4,
+            vec![
+                ("prop:caption".into(), shared_text("Caption")),
+                (
+                    "prop:meta".into(),
+                    y_octo::SessionValue::Map(vec![("label".into(), shared_text("Label"))]),
+                ),
+            ],
+            Some("pic"),
+            None,
+            2,
+        )?;
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        let original = s.doc_json()?;
+        s.update(|v, w, cx| {
+            v.select_document_range(
+                DocumentSelection {
+                    anchor: DocPoint::new("p0", 1),
+                    focus: DocPoint::new("p1", 1),
+                },
+                w,
+                cx,
+            )
+        })?;
+        s.key("x", false, true);
+        s.headless_win.request_frame();
+        let cut = s.doc_json()?;
+        assert!(cut["blocks"].get("pic").is_none());
+        let item = s
+            .update(|_, _, cx| cx.read_from_clipboard())?
+            .context("cut clipboard item")?;
+        let slice = playground::clipboard::Slice::from_item(&item).context("snapshot")?;
+        let html =
+            playground::clipboard::Slice::from_html(&slice.html()).context("HTML snapshot")?;
+        assert_eq!(slice, html);
+        s.update(|v, w, cx| v.paste(html.item(), w, cx))?;
+        s.headless_win.request_frame();
+        let restored = s.doc_json()?;
+        let ids = restored["blocks"]["note"]["sys:children"]
+            .as_array()
+            .unwrap();
+        assert_eq!(ids.len(), 3);
+        let image = &restored["blocks"][ids[1].as_str().unwrap()];
+        for key in [
+            "sys:flavour",
+            "sys:version",
+            "prop:sourceId",
+            "prop:caption",
+            "prop:width",
+            "prop:height",
+            "prop:xywh",
+        ] {
+            assert_eq!(image[key], original["blocks"]["pic"][key], "{key}");
+        }
+        let custom_id = image["sys:children"][0].as_str().unwrap();
+        let nested = &restored["blocks"][custom_id];
+        assert_eq!(nested["sys:flavour"], "custom:widget");
+        assert_eq!(nested["sys:version"], 4);
+        let mut replica = peer_of(&s)?;
+        let block = y_octo::TypePath::root("blocks").key(custom_id);
+        for (parent, key, expected) in [
+            (block.clone(), "prop:caption", "Caption"),
+            (block.key("prop:meta"), "label", "Label"),
+        ] {
+            let value = replica
+                .inner()
+                .get_map_value(&y_octo::TypeTarget::Path(parent), key)?;
+            let Some(y_octo::SessionReadValue::Text(identity)) = value else {
+                panic!("expected shared text at {key}")
+            };
+            let target = y_octo::TypeTarget::Identity(identity);
+            replica.inner_mut().text_insert(&target, 0, "!")?;
+            assert_eq!(
+                replica.inner().read_text_string(&target)?,
+                format!("!{expected}")
+            );
+        }
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, cut);
+        s.key("z", false, true);
+        assert_eq!(s.doc_json()?, original);
+        Ok(())
+    }
+
+    #[test]
+    fn multiline_paste_into_a_title_without_a_visible_note_preserves_peer_and_undo() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        let mut doc = probe_doc(["hidden"])?;
+        let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+        page.inner_mut()
+            .begin_tx(y_octo::SessionTxOrigin::Untracked)?;
+        page.set_block_prop(
+            "note",
+            "prop:hidden",
+            y_octo::SessionValue::Any(y_octo::Any::True),
+            1,
+        )?;
+        page.inner_mut().commit_tx()?;
+        s.update(|v, _, cx| v.set_document(doc, cx))?;
+        s.headless_win.request_frame();
+        s.select("root", 2)?;
+        let peer = peer_of(&s)?;
+        let before = peer.export_doc_json()?;
+        let vector = peer.encode_state_vector_v1()?;
+        let original_diff = s.update(|v, _, _| {
+            v.document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap()
+                .encode_diff_v1(&vector)
+        })??;
+        s.update(|v, w, cx| v.paste(ui::ClipboardItem::new_string("A\nB".into()), w, cx))?;
+        assert_eq!(s.doc_json()?, before);
+        s.update(|v, _, _| {
+            let page = v
+                .document()
+                .workspace
+                .page(playground::HOME_PAGE_ID)
+                .unwrap();
+            assert!(!page.can_undo());
+            assert_eq!(page.encode_diff_v1(&vector).unwrap(), original_diff);
+        })?;
+        Ok(())
+    }
+
+    #[test]
+    fn title_edits_paste_merge_and_history_update_workspace_metadata() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        s.set_texts(&["body"])?;
+        let title = || {
+            s.update(|v, _, _| {
+                v.document().workspace.list_pages().unwrap()[0]
+                    .title
+                    .clone()
+            })
+        };
+        s.select("root", 7)?;
+        s.type_text("!")?;
+        assert_eq!(title()?, "Editing!");
+        s.update(|v, w, cx| v.paste(ui::ClipboardItem::new_string(" X".into()), w, cx))?;
+        assert_eq!(title()?, "Editing! X");
+        s.select("p0", 0)?;
+        s.key("backspace", false, false);
+        assert_eq!(title()?, "Editing! Xbody");
+        assert_eq!(
+            s.doc_json()?["blocks"]["note"]["sys:children"],
+            serde_json::json!(["p0"])
+        );
+        s.key("z", false, true);
+        assert_eq!(title()?, "Editing! X");
+        s.key("z", true, true);
+        assert_eq!(title()?, "Editing! Xbody");
+        Ok(())
+    }
+
+    #[test]
+    fn divider_and_fence_keep_trailing_text_and_place_children_at_the_right_level() -> Result<()> {
+        let s = start_headless_session(800, 600, Default::default())?;
+        for trigger in ["---", "***", "___", "```c++"] {
+            let mut doc = probe_doc(["suffix"])?;
+            let page = doc.workspace.page_mut(playground::HOME_PAGE_ID).unwrap();
+            page.add_block(
+                "child",
+                BlockSpec::Paragraph {
+                    paragraph_type: ParagraphType::Text,
+                    text: "nested".into(),
+                },
+                Some("p0"),
+                None,
+                1,
+            )?;
+            s.update(|v, _, cx| v.set_document(doc, cx))?;
+            s.headless_win.request_frame();
+            s.select("p0", 0)?;
+            s.type_text(trigger)?;
+            assert_eq!(
+                s.doc_json()?["blocks"]["p0"]["sys:flavour"],
+                "affine:paragraph"
+            );
+            s.type_text(" ")?;
+            let json = s.doc_json()?;
+            let b = &json["blocks"];
+            let ids = b["note"]["sys:children"].as_array().unwrap();
+            let new = ids[0].as_str().unwrap();
+            if trigger.starts_with('`') {
+                assert_eq!(b[new]["sys:flavour"], "affine:code");
+                assert_eq!(b[new]["prop:language"], "c++");
+                assert_eq!(
+                    b[ids[1].as_str().unwrap()]["prop:text"][0]["insert"],
+                    "suffix"
+                );
+                assert_eq!(ids[2], "child");
+                assert!(b.get("p0").is_none());
+                assert_eq!(s.selection()?.focus, DocPoint::new(new, 0));
+            } else {
+                assert_eq!(b[new]["sys:flavour"], "affine:divider");
+                assert_eq!(ids[1], "p0");
+                assert_eq!(b["p0"]["sys:children"], serde_json::json!(["child"]));
+                assert_eq!(s.selection()?.focus, DocPoint::new("p0", 0));
+            }
+            s.key("z", false, true);
+            assert_eq!(
+                s.doc_json()?["blocks"]["note"]["sys:children"],
+                serde_json::json!(["p0"])
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn document_editing_probes() {
+        run_probes().unwrap();
+    }
     #[test]
     fn rich_sample_writes_two_reproducible_pngs() {
         let dir = tempfile::tempdir().unwrap();

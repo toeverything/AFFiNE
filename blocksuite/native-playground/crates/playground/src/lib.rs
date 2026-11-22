@@ -5,6 +5,8 @@
 //! rendered by [`block_flow`].
 
 pub mod block_flow;
+pub mod clipboard;
+pub mod editor_session;
 pub mod rich_text;
 pub mod room_client;
 pub mod theme;
@@ -173,6 +175,9 @@ pub struct PlaygroundView {
     theme: PlaygroundTheme,
     origin_time: ui::scheduler::Instant,
     pill_motion: Option<Motion>,
+    editor: editor_session::EditorSession,
+    editor_focus: ui::FocusHandle,
+    reading_anchor: Option<(String, f32)>,
     state: DocState,
     room: Option<RoomRuntime>,
     page_id: Option<String>,
@@ -182,6 +187,7 @@ pub struct PlaygroundView {
     /// from its blob and is final.
     images: HashMap<String, ImageSlot>,
     blob_fetches: BTreeMap<String, BlobFetchState>,
+    dirty_text: Option<BTreeSet<String>>,
     doc_rev: u64,
     env_rev: u64,
     flow: BlockFlow,
@@ -253,11 +259,15 @@ impl PlaygroundView {
             pill_motion: None,
             state,
             room,
+            editor: Default::default(),
+            editor_focus: cx.focus_handle(),
+            reading_anchor: None,
             page_id: None,
             snapshot: None,
             page_titles: BTreeMap::new(),
             images: HashMap::new(),
             blob_fetches: BTreeMap::new(),
+            dirty_text: None,
             doc_rev: 0,
             env_rev: 0,
             flow: BlockFlow::new(),
@@ -292,6 +302,10 @@ impl PlaygroundView {
 
     /// Replace the shown document, e.g. with one prepared by a host or a test.
     pub fn set_document(&mut self, state: DocState, cx: &mut Context<Self>) {
+        self.editor = Default::default();
+        self.reading_anchor = None;
+        self.flow = BlockFlow::new();
+        self.layout = None;
         self.state = state;
         self.images.clear();
         self.blob_fetches.clear();
@@ -306,8 +320,10 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
         edit: impl FnOnce(&mut DocState) -> R,
     ) -> R {
+        self.capture_reading_anchor();
         let result = edit(&mut self.state);
         self.refresh_document();
+        self.resolve_remote_selection(cx);
         cx.notify();
         result
     }
@@ -416,7 +432,9 @@ impl PlaygroundView {
                     room.link.send(RoomCommand::Send(frame));
                 }
                 if effects.doc_changed {
+                    self.capture_reading_anchor();
                     self.refresh_document();
+                    self.resolve_remote_selection(cx);
                 }
             }
             Err(err) => room.error = Some(err.to_string()),
@@ -448,8 +466,24 @@ impl PlaygroundView {
         }
     }
 
+    pub fn scroll_offset(&self) -> f32 {
+        self.scroll_y
+    }
+    fn capture_reading_anchor(&mut self) {
+        if self.reading_anchor.is_none() && self.scroll_y > 0.0 {
+            self.reading_anchor = self.flow_layout().and_then(|layout| {
+                layout
+                    .blocks
+                    .iter()
+                    .find(|block| block.rect().bottom() > self.scroll_y)
+                    .map(|block| (block.block_id.clone(), block.y - self.scroll_y))
+            });
+        }
+    }
+
     /// Re-read the shown page from the workspace and bring images in line with the blobs.
     fn refresh_document(&mut self) {
+        self.dirty_text = None;
         let pages = self.state.workspace.list_pages().unwrap_or_default();
         let titles: BTreeMap<String, String> = pages
             .iter()
@@ -634,7 +668,13 @@ impl PlaygroundView {
         {
             return Some(layout.clone());
         }
-        let layout = Rc::new(self.flow.layout(
+        let snapshot = self.preedit_snapshot().map(Rc::new).unwrap_or(snapshot);
+        let dirty = self.dirty_text.take().filter(|_| {
+            self.layout
+                .as_ref()
+                .is_some_and(|(old, _)| old.1 == key.1 && old.2 == key.2 && old.3 == key.3)
+        });
+        let layout = Rc::new(self.flow.layout_changed(
             &FlowInput {
                 snapshot: &snapshot,
                 width,
@@ -644,7 +684,9 @@ impl PlaygroundView {
                 env_rev: self.env_rev,
             },
             window,
+            dirty.as_ref(),
         ));
+        self.dirty_text = Some(BTreeSet::new());
         self.layout = Some((key, layout.clone()));
         Some(layout)
     }
@@ -945,6 +987,9 @@ impl PlaygroundView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        if window.focused(cx).is_none() {
+            self.editor_focus.focus(window, cx);
+        }
         let geometry = page_geometry(viewport_width);
         let surface = div()
             .id("page-viewport")
@@ -954,6 +999,10 @@ impl PlaygroundView {
             .min_h_0()
             .overflow_hidden()
             .bg(palette.background)
+            .track_focus(&self.editor_focus)
+            .on_mouse_down(ui::MouseButton::Left, cx.listener(Self::editor_mouse_down))
+            .on_mouse_move(cx.listener(Self::editor_mouse_move))
+            .on_key_down(cx.listener(Self::editor_key_down))
             .on_scroll(cx.listener(Self::on_scroll))
             .snapshot(PAGE_SURFACE_ID, Some("root.canvas"));
 
@@ -965,7 +1014,21 @@ impl PlaygroundView {
                 .into_any_element();
         };
         self.max_scroll = (layout.height - viewport_height).max(0.0).ceil();
-        self.scroll_y = self.scroll_y.clamp(0.0, self.max_scroll).round();
+        if let Some((id, screen_y)) = self.reading_anchor.take()
+            && let Some(block) = layout.block(&id)
+        {
+            self.scroll_y = (block.y - screen_y).round();
+        }
+        self.reveal_caret(viewport_height);
+        self.scroll_y = self.scroll_y.clamp(0.0, self.max_scroll);
+        let viewport = PageViewport {
+            column_x: geometry.column_x,
+            height: viewport_height,
+            scroll_y: self.scroll_y,
+        };
+        let local = self.local_selection_elements(&layout, viewport, palette);
+        let focus = self.editor_focus.clone();
+        let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
         surface
             .children(page_elements(
@@ -977,6 +1040,21 @@ impl PlaygroundView {
                     scroll_y: self.scroll_y,
                 },
             ))
+            .children(local)
+            .child(
+                canvas(
+                    |_, _, _| (),
+                    move |bounds, _, window, cx| {
+                        window.handle_input(
+                            &focus,
+                            ui::ElementInputHandler::new(bounds, entity),
+                            cx,
+                        )
+                    },
+                )
+                .absolute()
+                .size_full(),
+            )
             .into_any_element()
     }
 
@@ -1560,6 +1638,10 @@ pub fn seed_showcase_doc() -> DocResult<DocState> {
             .insert(SHOWCASE_IMAGE_ID.to_string(), Arc::new(image));
     }
 
+    let page = state.workspace.ensure_page(HOME_PAGE_ID)?;
+    let history = page.undo_stack_id();
+    page.inner_mut().clear_stack_history(history, true, true)?;
+
     // One remote collaborator selecting the first words of the intro paragraph, which
     // stay on its first line at every viewport width.
     let mut peer = RoomAwareness::new(client_id_from_seed(0x0ada))?;
@@ -1624,6 +1706,7 @@ fn web_options() -> PlaygroundOptions {
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn wasm_main() {
     console_error_panic_hook::set_once();
+    clipboard::browser::install();
     let platform = std::rc::Rc::new(ui::WebPlatform::new(false));
     ui::Application::with_platform(platform).run(|cx| {
         if let Err(err) = register_bundled_fonts(cx) {
@@ -3149,6 +3232,101 @@ mod tests {
             pixel(&dark_image, 20.0, 600.0),
             token_rgb(tokens::DARK_THEME.background_primary),
             "dark page background",
+        );
+    }
+
+    #[test]
+    fn typing_preedit_awareness_and_local_undo_reach_two_live_views() {
+        use crate::editor_session::{DocPoint, DocumentSelection};
+        use ui::EntityInputHandler;
+        let rt = relay_runtime();
+        let addr = start_relay(&rt);
+        let room = "room-live-editor";
+        let mut seed = relay_page_peer(room, client_id_from_seed(92));
+        let _socket = join_as_peer(&rt, addr, room, &mut seed);
+        let options = PlaygroundOptions {
+            room: Some(RoomConfig::new(room, Some(&format!("ws://{addr}")))),
+            ..Default::default()
+        };
+        let first = open(800, 600, options.clone());
+        let second = open(800, 600, options);
+        for session in [&first, &second] {
+            wait_for(session, "the initial editable page", |v| {
+                v.room_status() == Some(RoomStatus::Live)
+                    && v.page_snapshot().and_then(|p| p.block("p-1")).is_some()
+            });
+            session.frame();
+        }
+        let edit =
+            |s: &Session, f: fn(&mut PlaygroundView, &mut Window, &mut Context<PlaygroundView>)| {
+                s.app.update(|cx| s.window.update(cx, f)).unwrap();
+            };
+        fn select(
+            v: &mut PlaygroundView,
+            offset: u64,
+            w: &mut Window,
+            cx: &mut Context<PlaygroundView>,
+        ) {
+            let p = DocPoint::new("p-1", offset);
+            v.select_document_range(
+                DocumentSelection {
+                    anchor: p.clone(),
+                    focus: p,
+                },
+                w,
+                cx,
+            );
+        }
+        let first_id = first.view(|v, _| v.document().awareness.local_client_id());
+        edit(&first, |v, w, cx| {
+            select(v, 1, w, cx);
+            v.replace_and_mark_text_in_range(None, "private-preedit", None, w, cx);
+        });
+        wait_for(&second, "the first native selection", |v| {
+            v.document()
+                .awareness
+                .get_payload(first_id)
+                .is_some_and(|p| {
+                    p.selection_v2
+                        .get(&format!("{HOME_PAGE_ID}:native"))
+                        .is_some_and(|s| s[0]["from"]["index"] == 1)
+                })
+        });
+        let text_is = |v: &PlaygroundView, s: &str| matches!(&v.page_snapshot().unwrap().block("p-1").unwrap().content,BlockContent::Paragraph{text,..} if text.plain==s);
+        assert!(second.view(|v, _| text_is(v, "Hello from the relay")));
+        edit(&first, |v, w, cx| v.replace_text_in_range(None, "L", w, cx));
+        wait_for(&second, "the first native edit", |v| {
+            text_is(v, "HLello from the relay")
+        });
+        edit(&second, |v, w, cx| {
+            select(v, 0, w, cx);
+            v.replace_text_in_range(None, "R", w, cx);
+        });
+        wait_for(&first, "the interleaved peer edit", |v| {
+            text_is(v, "RHLello from the relay")
+        });
+        first.frame();
+        first
+            .headless
+            .dispatch_input(ui::PlatformInput::KeyDown(ui::KeyDownEvent {
+                keystroke: ui::Keystroke {
+                    key: "z".into(),
+                    key_char: None,
+                    modifiers: ui::Modifiers {
+                        platform: true,
+                        control: true,
+                        ..Default::default()
+                    },
+                },
+                is_held: false,
+                prefer_character_input: false,
+            }));
+        wait_for(&second, "the first editor's undo", |v| {
+            text_is(v, "RHello from the relay")
+        });
+        assert_eq!(
+            first.view(|v, _| v.document_selection().unwrap().focus.caret.utf16_offset),
+            2
         );
     }
 

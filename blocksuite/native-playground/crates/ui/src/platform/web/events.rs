@@ -928,6 +928,9 @@ impl WebWindowInner {
             }
 
             this.ime_mirror.adopt_element_state();
+            // A block-scoped handler can replace a document selection extending outside
+            // this textarea. Recheck its window after the import has adopted the DOM edit.
+            this.schedule_ime_mirror_sync();
         })
     }
 

@@ -277,6 +277,13 @@ fn map_array_any(items: Vec<Any>) -> Any {
     Any::Array(vec![Any::Array(items)])
 }
 
+pub fn is_leaf_flavour(flavour: &str) -> bool {
+    matches!(
+        flavour,
+        "affine:code" | "affine:divider" | "affine:image" | "affine:bookmark"
+    )
+}
+
 impl BlockSpec {
     pub fn flavour(&self) -> &'static str {
         match self {

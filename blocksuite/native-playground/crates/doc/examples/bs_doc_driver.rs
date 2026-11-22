@@ -42,6 +42,10 @@ enum Command {
         page_id: String,
         title: String,
     },
+    StructuralEdit {
+        page_id: String,
+        action: StructuralAction,
+    },
     SyncAll,
     Reconnect,
     InsertText {
@@ -115,6 +119,17 @@ enum Command {
         page_id: String,
     },
     Quit,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum StructuralAction {
+    Convert,
+    Split,
+    Indent,
+    Outdent,
+    Merge,
+    Title,
 }
 
 type WsStream =
@@ -503,6 +518,53 @@ async fn main() {
                     sync_single_doc(&mut ws, &mut ws_session, &mut awareness, &p.id).await;
                 }
                 json!({ "ok": true })
+            }
+            Command::StructuralEdit { page_id, action } => {
+                let page = ws_session.page_mut(&page_id).unwrap();
+                let numbered = BlockSpec::List {
+                    list_type: ListType::Numbered,
+                    text: String::new(),
+                    checked: false,
+                    order: Some(1),
+                };
+                let commit = match action {
+                    StructuralAction::Convert => {
+                        page.convert_block_flavour("p-2", "converted", numbered, 100)
+                    }
+                    StructuralAction::Split => {
+                        page.split_text_block("converted", "split", 6, numbered, 110)
+                    }
+                    StructuralAction::Indent => {
+                        page.reparent_block("split", "note-1", "converted", 0, 120)
+                    }
+                    StructuralAction::Outdent => page.dedent_block("split", 130),
+                    StructuralAction::Merge => page
+                        .merge_with_previous_text_block("converted", "split", "note-1", 140)
+                        .map(|(_, c)| c),
+                    StructuralAction::Title => {
+                        page.insert_text("page-1", "prop:title", 0, "Edited ", 150)
+                    }
+                }
+                .unwrap()
+                .unwrap();
+                let mut frames = vec![(page_id.clone(), commit.update)];
+                if matches!(action, StructuralAction::Title) {
+                    let title = page.read_editable_text("page-1").unwrap().0.plain;
+                    let root = ws_session
+                        .set_page_title(&page_id, &title)
+                        .unwrap()
+                        .unwrap();
+                    frames.push((ws_session.room().into(), root.update));
+                }
+                for (doc_id, update) in frames {
+                    let data = encode_binary_frame(&RoomBinaryFrame::Doc {
+                        doc_id,
+                        message: DocMessage::Update(update),
+                    })
+                    .unwrap();
+                    ws.send(WsMsg::Binary(data.into())).await.unwrap();
+                }
+                json!({"ok":true})
             }
             Command::InsertText {
                 page_id,

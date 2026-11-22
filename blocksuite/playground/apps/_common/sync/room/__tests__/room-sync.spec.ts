@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 
+import type { ListBlockModel, RootBlockModel } from '@blocksuite/affine/model';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import { TextSelection } from '@blocksuite/affine/std';
 import { BlockSchemaExtension, Schema, Text } from '@blocksuite/affine/store';
@@ -337,6 +338,97 @@ describe('Rust bs-relay + WorkspaceSession <-> JS BlockSuite TestWorkspace', () 
     workspace.dispose();
     roomClient.close();
     await driver.quit();
+  });
+
+  it('applies native structural edits to existing live block models and workspace metadata', async () => {
+    const room = 'live-native-structure';
+    const driver = new RustDriver(relayHttp, room, 2 ** 41 + 381);
+    await driver.waitReady();
+    const client = new RoomWebSocketClient(
+      `${relayWsBase}/native-sync/rooms/${room}`
+    );
+    const workspace = new TestWorkspace({
+      id: room,
+      docSources: { main: client.createDocSource() },
+      awarenessSources: [client.createAwarenessSource()],
+      blobSources: { main: new MemoryBlobSource() },
+    });
+    workspace.storeExtensions = AffineSchemas.map(s => BlockSchemaExtension(s));
+    try {
+      await driver.call({
+        cmd: 'seed_full_schema',
+        page_id: 'doc:home',
+        title: 'Original',
+      });
+      workspace.start();
+      await vi.waitFor(
+        () => expect(workspace.getDoc('doc:home')).toBeTruthy(),
+        { timeout: 10000 }
+      );
+      const store = workspace.getDoc('doc:home')!.getStore({ id: 'doc:home' });
+      store.load();
+      const model = (id: string) => store.getBlock(id)?.model;
+      const children = (id: string) =>
+        model(id)?.children.map(child => child.id);
+      const edit = (action: string) =>
+        driver.call({ cmd: 'structural_edit', page_id: 'doc:home', action });
+      await vi.waitFor(() =>
+        expect(model('p-2')?.flavour).toBe('affine:paragraph')
+      );
+      await edit('convert');
+      await vi.waitFor(() => {
+        expect(model('p-2')).toBeUndefined();
+        expect(model('converted')?.flavour).toBe('affine:list');
+        expect(children('note-1')?.slice(0, 2)).toEqual(['p-1', 'converted']);
+      });
+      await edit('split');
+      await vi.waitFor(() => {
+        expect(children('note-1')?.slice(0, 3)).toEqual([
+          'p-1',
+          'converted',
+          'split',
+        ]);
+        expect(store.getModelById<ListBlockModel>('split')?.props.order).toBe(
+          2
+        );
+      });
+      await edit('indent');
+      await vi.waitFor(() => {
+        expect(children('converted')).toEqual(['split']);
+        expect(store.getModelById<ListBlockModel>('split')?.props.order).toBe(
+          1
+        );
+      });
+      await edit('outdent');
+      await vi.waitFor(() => {
+        expect(children('converted')).toEqual([]);
+        expect(children('note-1')?.[2]).toBe('split');
+        expect(store.getModelById<ListBlockModel>('split')?.props.order).toBe(
+          2
+        );
+      });
+      await edit('merge');
+      await vi.waitFor(() => {
+        expect(model('split')).toBeUndefined();
+        expect(model('converted')?.text?.toString()).toBe(
+          'Shared paragraph text'
+        );
+      });
+      await edit('title');
+      await vi.waitFor(() => {
+        expect(
+          store.getModelById<RootBlockModel>('page-1')?.props.title.toString()
+        ).toBe('Edited Original');
+        expect(workspace.meta.getDocMeta('doc:home')?.title).toBe(
+          'Edited Original'
+        );
+      });
+    } finally {
+      workspace.forceStop();
+      workspace.dispose();
+      client.close();
+      await driver.quit();
+    }
   });
 
   it('1,000-Step Deterministic Seeded Concurrent Fuzz converges L0 (StateVector, DeleteSet, doc.json, Blob, Awareness)', async () => {

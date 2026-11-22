@@ -1,17 +1,17 @@
 [
   {
     "metric": "artifacts_bytes.web_wasm_raw",
-    "accepted_value": 14831945,
-    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+    "accepted_value": 15645011,
+    "reason": "Includes collaborative page editing, IME composition and rich clipboard support in the Web playground"
   },
   {
     "metric": "artifacts_bytes.web_wasm_gzip",
-    "accepted_value": 5016905,
-    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+    "accepted_value": 5264224,
+    "reason": "Includes collaborative page editing, IME composition and rich clipboard support in the Web playground"
   },
   {
     "metric": "artifacts_bytes.headless_bin",
-    "accepted_value": 92078597,
-    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+    "accepted_value": 95194982,
+    "reason": "Includes the collaborative page editor, rich clipboard, document probes and headless renderer"
   }
 ]

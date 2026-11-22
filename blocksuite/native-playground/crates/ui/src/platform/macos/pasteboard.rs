@@ -120,16 +120,15 @@ impl Pasteboard {
     }
 
     fn read_string_from_pasteboard(&self) -> Option<ClipboardEntry> {
-        let pasteboard_types = self.inner.types()?;
-        let string_type = NSString::from_str("public.utf8-plain-text");
-
-        if !pasteboard_types.containsObject(&string_type) {
+        let html_type = NSString::from_str("public.html");
+        let html = self
+            .data_for_type(&html_type)
+            .and_then(|v| String::from_utf8(v).ok());
+        let bytes = self.data_for_type(&NSString::from_str("public.utf8-plain-text"));
+        if bytes.is_none() && html.is_none() {
             return None;
         }
-
-        let text_bytes = self.data_for_type(&string_type)?;
-
-        let text = String::from_utf8_lossy(&text_bytes).to_string();
+        let text = String::from_utf8_lossy(bytes.as_deref().unwrap_or_default()).into_owned();
         let metadata = self
             .data_for_type(&self.text_hash_type)
             .and_then(|hash_bytes| {
@@ -142,7 +141,8 @@ impl Pasteboard {
                 } else {
                     None
                 }
-            });
+            })
+            .or_else(|| html.map(|html| serde_json::json!({"text/html":html}).to_string()));
 
         Some(ClipboardEntry::String(ClipboardString { text, metadata }))
     }
@@ -203,6 +203,14 @@ impl Pasteboard {
                 .setData_forType(Some(&text_bytes), NSPasteboardTypeString);
 
             if let Some(metadata) = string.metadata.as_ref() {
+                if let Ok(value) = serde_json::from_str::<serde_json::Value>(metadata)
+                    && let Some(html) = value["text/html"].as_str()
+                {
+                    self.inner.setData_forType(
+                        Some(&NSData::with_bytes(html.as_bytes())),
+                        &NSString::from_str("public.html"),
+                    );
+                }
                 let hash_bytes = ClipboardString::text_hash(&string.text).to_be_bytes();
                 let hash_bytes = NSData::with_bytes(&hash_bytes);
                 self.inner
@@ -292,5 +300,34 @@ impl UTType {
 
     fn inner(&self) -> &NSString {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn html_on_a_private_pasteboard_survives_plain_text_changes() {
+        let board =
+            Pasteboard::new(unsafe { msg_send![class!(NSPasteboard), pasteboardWithUniqueName] });
+        let html = "<p><a href='https://example.org'>linked page</a></p>";
+        board.write(ClipboardItem::new_string_with_json_metadata(
+            "linked page".into(),
+            serde_json::json!({"text/html":html,"reference":"page-id"}),
+        ));
+        let ty = NSString::from_str("public.html");
+        assert_eq!(board.data_for_type(&ty).as_deref(), Some(html.as_bytes()));
+        let read_metadata = || -> serde_json::Value {
+            serde_json::from_str(board.read().unwrap().metadata().unwrap()).unwrap()
+        };
+        assert_eq!(read_metadata()["reference"], "page-id");
+        board.inner.clearContents();
+        board
+            .inner
+            .setData_forType(Some(&NSData::with_bytes(html.as_bytes())), &ty);
+        assert_eq!(read_metadata()["text/html"], html);
+        unsafe {
+            let _: () = msg_send![&*board.inner, releaseGlobally];
+        }
     }
 }
