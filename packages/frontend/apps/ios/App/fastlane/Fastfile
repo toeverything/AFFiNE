@@ -42,6 +42,8 @@ platform :ios do
       export_method: 'app-store', skip_profile_detection: true,
       export_options: {signingStyle: 'manual', provisioningProfiles: provisioning_profiles}
     )
+    sdk = FastlaneCore::IpaFileAnalyser.fetch_info_plist_file(ipa_path)&.fetch('DTSDKName')
+    UI.user_error!("Expected iOS SDK 27 or later in the exported IPA, found #{sdk.inspect}") unless sdk.to_s[/\Aiphoneos(\d+)/, 1].to_i >= 27
     File.write(File.join(File.dirname(ipa_path), 'store-build.json'), JSON.generate({
       appIdentifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
       version: get_version_number(xcodeproj: 'App.xcodeproj', target: 'AFFiNE'),
