@@ -423,6 +423,25 @@ describe('Rust bs-relay + WorkspaceSession <-> JS BlockSuite TestWorkspace', () 
           'Edited Original'
         );
       });
+      // What the native block controls and formatting toolbar write: a block moved
+      // among its siblings, a text alignment, and an inline link.
+      await edit('reorder');
+      await vi.waitFor(() => {
+        expect(children('note-1')?.slice(0, 2)).toEqual(['converted', 'p-1']);
+      });
+      await edit('align');
+      await vi.waitFor(() => {
+        expect(
+          store.getModelById<ListBlockModel>('converted')?.props.textAlign
+        ).toBe('center');
+      });
+      await edit('link');
+      await vi.waitFor(() => {
+        expect(model('converted')?.text?.toDelta()).toEqual([
+          { insert: 'Shared', attributes: { link: 'https://affine.pro' } },
+          { insert: ' paragraph text' },
+        ]);
+      });
     } finally {
       workspace.forceStop();
       workspace.dispose();

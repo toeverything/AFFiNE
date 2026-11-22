@@ -15,7 +15,8 @@ use unicode_segmentation::UnicodeSegmentation;
 use y_octo::{SessionCommit, TextDeltaOp, TextInsert};
 
 use super::*;
-use crate::block_flow::{FlowBlock, FlowRect};
+use crate::block_flow::{FlowBlock, FlowRect, ScrolledCode};
+use crate::overlays::LinkBar;
 use crate::rich_text::{CaretPosition, TextBiIndex, WrapAffinity};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,7 +35,7 @@ impl DocPoint {
             },
         }
     }
-    fn offset(&self) -> u64 {
+    pub(crate) fn offset(&self) -> u64 {
         self.caret.utf16_offset
     }
 }
@@ -46,16 +47,16 @@ pub struct DocumentSelection {
 }
 
 impl DocumentSelection {
-    fn caret(point: DocPoint) -> Self {
+    pub(crate) fn caret(point: DocPoint) -> Self {
         Self {
             anchor: point.clone(),
             focus: point,
         }
     }
-    fn empty(&self) -> bool {
+    pub(crate) fn empty(&self) -> bool {
         self.anchor.block_id == self.focus.block_id && self.anchor.offset() == self.focus.offset()
     }
-    fn snapshot(&self, page: &PageDocSession) -> DocResult<SelectionSnapshot> {
+    pub(crate) fn snapshot(&self, page: &PageDocSession) -> DocResult<SelectionSnapshot> {
         page.capture_selection_snapshot(
             &self.anchor.block_id,
             self.anchor.offset(),
@@ -63,7 +64,7 @@ impl DocumentSelection {
             self.focus.offset(),
         )
     }
-    fn ordered<'a>(
+    pub(crate) fn ordered<'a>(
         &'a self,
         layout: &FlowLayout,
     ) -> Option<(&'a DocPoint, &'a DocPoint, usize, usize, bool)> {
@@ -144,10 +145,21 @@ pub struct EditorSession {
     preedit: Option<Preedit>,
     relative_selection: Option<SelectionSnapshot>,
     pending_marks: BTreeMap<String, Option<Any>>,
-    last_typing: Option<u64>,
-    reveal: bool,
-    dragging: bool,
+    pub(crate) last_typing: Option<u64>,
+    pub(crate) reveal: bool,
+    /// The primary button is held and extends the selection.
+    pub(crate) dragging: bool,
+    /// The `/` that opened the slash menu from typed text: its block and a relative
+    /// position naming that character.
+    pub(crate) slash_trigger: Option<(String, SelectionSnapshot)>,
     next_id: u64,
+}
+
+impl EditorSession {
+    /// Whether an input method composition is in progress.
+    pub(crate) fn composing(&self) -> bool {
+        self.preedit.is_some()
+    }
 }
 
 fn word_range(text: &str, offset: u64) -> Range<u64> {
@@ -190,24 +202,35 @@ fn parent_of<'a>(snapshot: &'a PageSnapshot, id: &str) -> Option<(&'a BlockNode,
 type Commit = SessionCommit<SelectionSnapshot>;
 
 impl PlaygroundView {
-    fn page(&self) -> Option<&PageDocSession> {
+    pub(crate) fn page(&self) -> Option<&PageDocSession> {
         self.state.workspace.page(self.page_id.as_deref()?)
     }
-    fn page_mut(&mut self) -> DocResult<&mut PageDocSession> {
+    pub(crate) fn page_mut(&mut self) -> DocResult<&mut PageDocSession> {
         self.page_id
             .as_deref()
             .and_then(|id| self.state.workspace.page_mut(id))
             .ok_or_else(|| DocError::InvalidState("no active page".into()))
     }
-    fn block_text(&self, id: &str) -> Option<&str> {
+    pub(crate) fn block_text(&self, id: &str) -> Option<&str> {
         text_content(self.page_snapshot()?.block(id)?)
     }
     fn input_point(&self, pos: Point<Pixels>, window: &Window) -> Option<DocPoint> {
         let geometry = page_geometry(f32::from(window.viewport_size().width));
-        let (block_id, mut caret) = self.flow_layout()?.hit_document(
+        let layout = self.flow_layout()?;
+        let (x, y) = (
             f32::from(pos.x) - geometry.column_x,
             f32::from(pos.y) - TOPBAR_HEIGHT + self.scroll_y,
-        )?;
+        );
+        let (block_id, mut caret) = layout.hit_document(x, y)?;
+        // Lines of a sideways-scrolled code block sit left of where they were laid out.
+        let scroll = self.overlays.code_scroll_x(&block_id);
+        if scroll > 0.0
+            && let Some(scrolled) = layout
+                .block(&block_id)
+                .and_then(|block| block.hit_text(x + scroll, y))
+        {
+            caret = scrolled;
+        }
         caret.utf16_offset = caret
             .utf16_offset
             .min(self.block_text(&block_id)?.encode_utf16().count() as u64);
@@ -299,19 +322,35 @@ impl PlaygroundView {
             let _ = page.stop_capturing();
         }
         self.announce_selection(cx);
+        self.sync_slash_trigger(cx);
         w.notify_text_selection_changed(&self.editor_focus);
         cx.notify();
     }
-    fn announce_selection(&mut self, cx: &Context<Self>) {
+    pub(crate) fn announce_selection(&mut self, cx: &Context<Self>) {
         self.editor.relative_selection = self
             .editor
             .selection
             .as_ref()
             .and_then(|s| s.snapshot(self.page()?).ok());
-        let Some(sel) = &self.editor.selection else {
+        let Some(page_id) = self.page_id.clone() else {
             return;
         };
-        let Some(page_id) = &self.page_id else { return };
+        let key = format!("{page_id}:native");
+        let Some(sel) = &self.editor.selection else {
+            // Nothing is selected any more: peers stop showing this caret, and keep the
+            // name and color it had.
+            let local = self.state.awareness.local_client_id();
+            if let Some(mut payload) = self.state.awareness.get_payload(local)
+                && payload
+                    .selection_v2
+                    .get(&key)
+                    .is_some_and(|selection| !selection.is_empty())
+            {
+                payload.set_selection(key, Vec::new());
+                self.publish_awareness(&payload, cx);
+            }
+            return;
+        };
         let state = if sel.empty() {
             TextSelectionState::caret(&sel.focus.block_id, sel.focus.offset())
         } else {
@@ -340,7 +379,6 @@ impl PlaygroundView {
             });
             TextSelectionState::range(from, to, reverse)
         };
-        let now = self.now_ms(cx) as u64;
         let mut payload = self
             .state
             .awareness
@@ -351,17 +389,22 @@ impl PlaygroundView {
                     room_client::LOCAL_AWARENESS_COLOR,
                 )
             });
-        if payload
-            .set_text_selection(format!("{page_id}:native"), state)
-            .is_ok()
-            && let Ok(bytes) = self.state.awareness.set_local_payload(&payload, now)
+        if payload.set_text_selection(key, state).is_ok() {
+            self.publish_awareness(&payload, cx);
+        }
+    }
+
+    /// Make `payload` the local awareness state and send it to the room.
+    fn publish_awareness(&mut self, payload: &AwarenessPayload, cx: &Context<Self>) {
+        let now = self.now_ms(cx) as u64;
+        if let Ok(bytes) = self.state.awareness.set_local_payload(payload, now)
             && let Some(room) = &self.room
         {
             room.link.send_binary(RoomBinaryFrame::Awareness(bytes));
         }
     }
 
-    fn did_edit(
+    pub(crate) fn did_edit(
         &mut self,
         commit: Option<Commit>,
         dirty: Option<&str>,
@@ -407,6 +450,7 @@ impl PlaygroundView {
         self.editor.reveal = true;
         self.editor.goal_x = None;
         self.announce_selection(cx);
+        self.sync_slash_trigger(cx);
         w.notify_text_input_changed(&self.editor_focus);
         cx.notify();
     }
@@ -455,7 +499,14 @@ impl PlaygroundView {
         true
     }
 
+    /// After a remote update: move the selection, and the typed slash menu with its `/`,
+    /// to where their text went.
     pub(super) fn resolve_remote_selection(&mut self, cx: &Context<Self>) {
+        self.resolve_relative_selection(cx);
+        self.sync_slash_trigger(cx);
+    }
+
+    fn resolve_relative_selection(&mut self, cx: &Context<Self>) {
         if self.editor.relative_selection.is_none() {
             return;
         }
@@ -472,7 +523,9 @@ impl PlaygroundView {
             sel.focus.caret.utf16_offset = r.focus.1;
             self.announce_selection(cx);
         } else {
+            // The selected text is gone: so is the selection, here and for the peers.
             self.editor = EditorSession::default();
+            self.announce_selection(cx);
         }
     }
 
@@ -729,13 +782,15 @@ impl PlaygroundView {
     }
     pub(super) fn reveal_caret(&mut self, height: f32) {
         if std::mem::take(&mut self.editor.reveal)
-            && let Some(rect) = self.visual_focus().and_then(|p| self.geometry(&p))
+            && let Some(focus) = self.visual_focus()
+            && let Some(rect) = self.geometry(&focus)
         {
             if rect.y < self.scroll_y {
                 self.scroll_y = rect.y.round();
             } else if rect.bottom() > self.scroll_y + height {
                 self.scroll_y = (rect.bottom() - height).round();
             }
+            self.reveal_code_caret(&focus.block_id, rect.x);
         }
     }
     fn world_spans(block: &FlowBlock, r: Range<u64>) -> Vec<FlowRect> {
@@ -800,7 +855,18 @@ impl PlaygroundView {
         palette: &Palette,
     ) -> Vec<AnyElement> {
         let mut el = Vec::new();
-        let mut draw = |r: FlowRect, color: ui::Hsla, caret: bool| {
+        let scrolled = self.overlays.scrolled_code(layout);
+        let mut first_box = true;
+        let mut draw = |mut r: FlowRect, color: ui::Hsla, caret: bool| {
+            // Inside a sideways-scrolled code block the text sits left of its layout, and
+            // what scrolled out of the code area is not painted.
+            if let Some(code) = ScrolledCode::containing(&scrolled, &r) {
+                let shown = if caret { code.caret(r) } else { code.span(r) };
+                let Some(shown) = shown else {
+                    return;
+                };
+                r = shown;
+            }
             if r.bottom() < v.scroll_y || r.y > v.scroll_y + v.height {
                 return;
             }
@@ -811,8 +877,12 @@ impl PlaygroundView {
                 .w(px(r.w.max(1.0)))
                 .h(px(r.h))
                 .bg(color);
-            if caret && r.y >= v.scroll_y && r.bottom() <= v.scroll_y + v.height {
-                d = d.snapshot("page.local_caret", Some(PAGE_SURFACE_ID));
+            if r.y >= v.scroll_y && r.bottom() <= v.scroll_y + v.height {
+                if caret {
+                    d = d.snapshot("page.local_caret", Some(PAGE_SURFACE_ID));
+                } else if std::mem::take(&mut first_box) {
+                    d = d.snapshot("page.selection", Some(PAGE_SURFACE_ID));
+                }
             }
             el.push(d.into_any_element());
         };
@@ -833,7 +903,9 @@ impl PlaygroundView {
                 draw(r, palette.brand.opacity(0.22), false);
             }
         }
-        if let Some(p) = self.visual_focus()
+        // While the link field takes the keys, its caret is the only one shown.
+        if self.overlays.link_url().is_none()
+            && let Some(p) = self.visual_focus()
             && let Some(rect) = layout
                 .block(&p.block_id)
                 .and_then(|b| b.caret_rect(p.caret))
@@ -1041,6 +1113,16 @@ impl PlaygroundView {
                 marks.remove(key);
             }
         }
+        // A `/` typed at a caret in paragraph or list text, outside inline code, opens
+        // the slash menu at that character.
+        let slash = (text == "/"
+            && sel.empty()
+            && matches!(
+                layout.blocks[a].body.kind,
+                block_flow::FlowKind::Paragraph(_) | block_flow::FlowKind::List(_)
+            )
+            && marks.get("code") != Some(&Any::True))
+        .then(|| (id.clone(), start.offset()));
         let group = self
             .editor
             .last_typing
@@ -1101,6 +1183,9 @@ impl PlaygroundView {
         self.editor.last_typing = (!cross).then_some(now);
         self.editor.preedit = None;
         self.did_edit(commit, (!cross).then_some(&id), w, cx);
+        if let Some((block_id, offset)) = slash {
+            self.open_typed_slash_menu(block_id, offset, cx);
+        }
         Ok(())
     }
     fn screen_rect(&self, r: FlowRect, w: &Window) -> Bounds<Pixels> {
@@ -1116,6 +1201,13 @@ impl PlaygroundView {
 
 impl EntityInputHandler for PlaygroundView {
     fn paste(&mut self, item: ui::ClipboardItem, w: &mut Window, cx: &mut Context<Self>) {
+        let text = item.text().unwrap_or_default();
+        if self
+            .link_input(w, cx, |link| link.replace(None, &text))
+            .is_some()
+        {
+            return;
+        }
         self.begin_input();
         if let Some((slice, rich)) = crate::clipboard::read_slice(&item)
             && let Err(e) = self.paste_slice(slice, rich, w, cx)
@@ -1130,6 +1222,11 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<String> {
+        if let Some(link) = self.overlays.link_field() {
+            let (text, covered) = link.text_for_range(range);
+            *adjusted = Some(covered);
+            return Some(text);
+        }
         let text = self.display_text()?;
         let index = TextBiIndex::new(&text);
         let start = index.utf16_to_utf8_clamped(range.start as u64);
@@ -1143,6 +1240,10 @@ impl EntityInputHandler for PlaygroundView {
         _: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
+        if let Some(link) = self.overlays.link_field() {
+            let (range, reversed) = link.shown_selection();
+            return Some(UTF16Selection { range, reversed });
+        }
         if let Some((_, r)) = self.composed_range()
             && let Some(pre) = &self.editor.preedit
         {
@@ -1164,9 +1265,18 @@ impl EntityInputHandler for PlaygroundView {
         })
     }
     fn text_length_utf16(&mut self, _: &mut Window, _: &mut Context<Self>) -> Option<usize> {
+        if let Some(link) = self.overlays.link_field() {
+            return Some(link.text().encode_utf16().count());
+        }
         Some(self.display_text()?.encode_utf16().count())
     }
     fn set_selected_text_range(&mut self, r: Range<usize>, w: &mut Window, cx: &mut Context<Self>) {
+        if self
+            .link_input(w, cx, |link| link.select(r.clone()))
+            .is_some()
+        {
+            return;
+        }
         if let Some(focus) = self.visual_focus() {
             self.change_selection(
                 DocumentSelection {
@@ -1179,11 +1289,17 @@ impl EntityInputHandler for PlaygroundView {
         }
     }
     fn marked_text_range(&self, _: &mut Window, _: &mut Context<Self>) -> Option<Range<usize>> {
+        if let Some(link) = self.overlays.link_field() {
+            return link.marked_range();
+        }
         let (_, r) = self.composed_range()?;
         let start = r.start as usize;
         Some(start..start + self.editor.preedit.as_ref()?.text.encode_utf16().count())
     }
     fn unmark_text(&mut self, w: &mut Window, cx: &mut Context<Self>) {
+        if self.link_input(w, cx, LinkBar::unmark).is_some() {
+            return;
+        }
         if let Some(pre) = self.editor.preedit.as_ref() {
             let text = pre.text.clone();
             self.replace_text_in_range(None, &text, w, cx);
@@ -1196,6 +1312,12 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self
+            .link_input(w, cx, |link| link.replace(r.clone(), text))
+            .is_some()
+        {
+            return;
+        }
         self.begin_input();
         let selection = self.replacement_selection(r);
         if self.editor.preedit.is_some() {
@@ -1218,6 +1340,12 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self
+            .link_input(w, cx, |link| link.mark(r.clone(), text, selected.clone()))
+            .is_some()
+        {
+            return;
+        }
         self.begin_input();
         if text.is_empty() {
             self.clear_composition(w, cx);
@@ -1273,6 +1401,14 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         _: &mut Context<Self>,
     ) -> Vec<Bounds<Pixels>> {
+        // The link field answers with its box: candidates open under the field.
+        if let Some(link) = self.overlays.link_field() {
+            return link
+                .bounds()
+                .map(|field| field.bounds(point(px(0.0), px(0.0))))
+                .into_iter()
+                .collect();
+        }
         let Some(sel) = &self.editor.selection else {
             return vec![];
         };
@@ -1291,9 +1427,24 @@ impl EntityInputHandler for PlaygroundView {
         };
         let mut rects = Self::world_spans(block, r.start as u64..r.end as u64);
         if rects.is_empty()
-            && let Some(caret) = block.caret_rect(DocPoint::new(id, r.start as u64).caret)
+            && let Some(caret) = block.caret_rect(DocPoint::new(&id, r.start as u64).caret)
         {
             rects.push(caret);
+        }
+        // The lines of a sideways-scrolled code block sit left of their layout; what the
+        // input method is told follows them and stays inside the code area.
+        if let Some(code) = ScrolledCode::of_block(block, self.overlays.code_scroll_x(&id)) {
+            let caret = rects.len() == 1 && rects[0].w <= 1.0;
+            rects = rects
+                .into_iter()
+                .filter_map(|rect| {
+                    if caret {
+                        code.caret(rect)
+                    } else {
+                        code.span(rect)
+                    }
+                })
+                .collect();
         }
         rects.into_iter().map(|r| self.screen_rect(r, w)).collect()
     }
@@ -1303,6 +1454,19 @@ impl EntityInputHandler for PlaygroundView {
         w: &mut Window,
         _: &mut Context<Self>,
     ) -> Option<usize> {
+        if let Some(link) = self.overlays.link_field() {
+            let (selection, reversed) = link.shown_selection();
+            return link
+                .bounds()
+                .filter(|field| field.contains(f32::from(p.x), f32::from(p.y)))
+                .map(|_| {
+                    if reversed {
+                        selection.start
+                    } else {
+                        selection.end
+                    }
+                });
+        }
         let p = self.input_point(p, w)?;
         (self.editor.selection.as_ref()?.focus.block_id == p.block_id)
             .then_some(p.offset() as usize)
@@ -1382,7 +1546,7 @@ fn markdown_block(input: &str) -> Option<BlockSpec> {
 }
 
 impl PlaygroundView {
-    fn fresh_block_id(&mut self) -> String {
+    pub(crate) fn fresh_block_id(&mut self) -> String {
         loop {
             self.editor.next_id += 1;
             let id = format!(
@@ -1464,7 +1628,12 @@ impl PlaygroundView {
         Ok(TextAttributes::new())
     }
 
-    fn format_mark(&mut self, key: &str, w: &mut Window, cx: &mut Context<Self>) -> DocResult {
+    pub(crate) fn format_mark(
+        &mut self,
+        key: &str,
+        w: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> DocResult {
         let Some(sel) = self.editor.selection.clone() else {
             return Ok(());
         };
@@ -1764,6 +1933,16 @@ impl PlaygroundView {
         cx: &mut Context<Self>,
     ) {
         if self.editor.preedit.is_some() || e.prefer_character_input {
+            return;
+        }
+        // An open link field or slash menu takes its keys before the document does.
+        if self.overlay_key_down(e, w, cx) {
+            w.prevent_default();
+            cx.stop_propagation();
+            return;
+        }
+        // A composition in the link field keeps its keys from the document as well.
+        if self.overlays.link_field().is_some_and(LinkBar::composing) {
             return;
         }
         let m = e.keystroke.modifiers;

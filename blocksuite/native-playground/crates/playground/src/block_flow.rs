@@ -67,6 +67,17 @@ pub const CODE_RADIUS: f32 = 10.0;
 pub const CODE_GUTTER: f32 = 32.0;
 
 const COLLAPSED_MARKER_SIZE: f32 = 16.0;
+
+/// Box of a heading's collapse marker in the gutter left of the heading, on its first
+/// line of `line_height`, relative to the heading block.
+pub fn heading_marker_rect(line_height: f32) -> FlowRect {
+    FlowRect::new(
+        -COLLAPSED_MARKER_SIZE - 4.0,
+        ((line_height - COLLAPSED_MARKER_SIZE) / 2.0).floor(),
+        COLLAPSED_MARKER_SIZE,
+        COLLAPSED_MARKER_SIZE,
+    )
+}
 const PRESENCE_LABEL_HEIGHT: f32 = 18.0;
 
 /// Typography and vertical margins of a text block.
@@ -237,7 +248,18 @@ impl FlowRect {
         self.y + self.h
     }
 
-    fn bounds(&self, origin: Point<Pixels>) -> Bounds<Pixels> {
+    /// Whether the point lies inside the rectangle (right and bottom edges excluded).
+    pub fn contains(&self, x: f32, y: f32) -> bool {
+        x >= self.x && x < self.right() && y >= self.y && y < self.bottom()
+    }
+
+    /// The rectangle moved by `(dx, dy)`.
+    pub fn translated(&self, dx: f32, dy: f32) -> Self {
+        Self::new(self.x + dx, self.y + dy, self.w, self.h)
+    }
+
+    /// The rectangle as pixel bounds relative to `origin`.
+    pub fn bounds(&self, origin: Point<Pixels>) -> Bounds<Pixels> {
         Bounds::new(
             point(origin.x + px(self.x), origin.y + px(self.y)),
             size(px(self.w), px(self.h)),
@@ -666,6 +688,20 @@ enum Prim {
         y: f32,
         layout: Arc<LaidOutRichParagraph>,
     },
+    /// One line of an unwrapped code block: clipped to the code area and shifted left by
+    /// the block's horizontal scroll.
+    CodeLine {
+        x: f32,
+        y: f32,
+        layout: Rc<InlineLayout>,
+        clip: FlowRect,
+    },
+    /// Disclosure chevron of a toggle list or a collapsed heading.
+    Chevron {
+        rect: FlowRect,
+        collapsed: bool,
+        color: Hsla,
+    },
     Icon {
         rect: FlowRect,
         icon: IconPaint,
@@ -796,13 +832,158 @@ pub struct BlockBody {
     pub text: Option<FlowText>,
     /// Box of the list prefix (bullet, number, checkbox or toggle), if the block has one.
     pub prefix: Option<FlowRect>,
+    /// Horizontal scroll range of an unwrapped code block whose lines overflow.
+    pub code_scroll: Option<CodeScroll>,
     prims: Vec<Prim>,
 }
 
+/// The scrollable code area of an unwrapped code block, relative to the block.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CodeScroll {
+    pub area: FlowRect,
+    /// Largest horizontal scroll offset: the widest line minus the code area width.
+    pub max_x: f32,
+}
+
+/// Per-frame paint state of one block that is not part of its laid-out body.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct BlockPaint {
+    /// Disclosure chevron in flight: `0.0` collapsed (pointing right) to `1.0` expanded
+    /// (pointing down). `None` paints the chevron of the block's current state.
+    pub chevron: Option<f32>,
+    /// Horizontal scroll of an unwrapped code block, clamped to its [`CodeScroll`].
+    pub code_scroll_x: f32,
+}
+
+/// Per-frame paint state of the page, by block id.
+#[derive(Clone, Debug, Default)]
+pub struct PagePaint {
+    pub blocks: HashMap<String, BlockPaint>,
+}
+
+impl PagePaint {
+    /// The code blocks of `layout` this frame scrolls sideways.
+    pub fn scrolled_code(&self, layout: &FlowLayout) -> Vec<ScrolledCode> {
+        self.blocks
+            .iter()
+            .filter(|(_, state)| state.code_scroll_x > 0.0)
+            .filter_map(|(block_id, state)| {
+                ScrolledCode::of_block(layout.block(block_id)?, state.code_scroll_x)
+            })
+            .collect()
+    }
+}
+
+/// A sideways-scrolled code block of one frame, in world space. Carets and selections are
+/// laid out on its unscrolled lines; this maps them to where the lines show.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ScrolledCode {
+    /// The block's box.
+    pub block: FlowRect,
+    /// The area its lines show in.
+    pub area: FlowRect,
+    /// How far the lines sit left of where they were laid out.
+    pub scroll_x: f32,
+}
+
+impl ScrolledCode {
+    /// `block` scrolled by `scroll_x`, `None` for a block that does not scroll.
+    pub fn of_block(block: &FlowBlock, scroll_x: f32) -> Option<Self> {
+        let code = block.body.code_scroll?;
+        let scroll_x = scroll_x.clamp(0.0, code.max_x);
+        (scroll_x > 0.0).then(|| Self {
+            block: block.rect(),
+            area: code.area.translated(block.x, block.y),
+            scroll_x,
+        })
+    }
+
+    /// The scrolled block a box laid out on unscrolled lines lies in.
+    pub fn containing<'a>(blocks: &'a [Self], rect: &FlowRect) -> Option<&'a Self> {
+        let middle = rect.y + rect.h * 0.5;
+        blocks
+            .iter()
+            .find(|code| middle >= code.block.y && middle < code.block.bottom())
+    }
+
+    /// A box over text as the scrolled lines show it: moved left and cut to the code
+    /// area. `None` when all of it scrolled out.
+    pub fn span(&self, mut rect: FlowRect) -> Option<FlowRect> {
+        rect.x -= self.scroll_x;
+        let (left, right) = (rect.x.max(self.area.x), rect.right().min(self.area.right()));
+        (right > left).then(|| FlowRect::new(left, rect.y, right - left, rect.h))
+    }
+
+    /// A caret as the scrolled lines show it, `None` when it scrolled out.
+    pub fn caret(&self, mut rect: FlowRect) -> Option<FlowRect> {
+        rect.x -= self.scroll_x;
+        (rect.x + rect.w.max(1.0) > self.area.x && rect.x <= self.area.right()).then_some(rect)
+    }
+}
+
+/// Paint a disclosure chevron: `progress` runs from `0.0` (collapsed, pointing right) to
+/// `1.0` (expanded, pointing down); in between the collapsed glyph turns.
+pub fn paint_chevron(
+    bounds: Bounds<Pixels>,
+    progress: f32,
+    color: Hsla,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    if progress <= 0.0 {
+        IconPaint::named("ToggleRightIcon").paint(bounds, color, window, cx);
+    } else if progress >= 1.0 {
+        IconPaint::named("ToggleDownIcon").paint(bounds, color, window, cx);
+    } else {
+        IconPaint::named("ToggleRightIcon").paint_rotated(
+            bounds,
+            color,
+            progress * std::f32::consts::FRAC_PI_2,
+            window,
+            cx,
+        );
+    }
+}
+
 impl BlockBody {
-    fn paint(&self, origin: Point<Pixels>, window: &mut Window, cx: &mut App) {
+    /// The block's own disclosure chevron, as its box relative to the block and whether it
+    /// shows the collapsed state. A toggle list always has one, a heading only while it
+    /// is collapsed.
+    pub fn chevron(&self) -> Option<(FlowRect, bool)> {
+        self.prims.iter().find_map(|prim| match prim {
+            Prim::Chevron {
+                rect, collapsed, ..
+            } => Some((*rect, *collapsed)),
+            _ => None,
+        })
+    }
+
+    fn paint(&self, origin: Point<Pixels>, state: BlockPaint, window: &mut Window, cx: &mut App) {
         for prim in &self.prims {
             match prim {
+                Prim::CodeLine { x, y, layout, clip } => {
+                    let scroll = self
+                        .code_scroll
+                        .map_or(0.0, |code| state.code_scroll_x.clamp(0.0, code.max_x));
+                    let text_origin = point(origin.x + px(*x - scroll), origin.y + px(*y));
+                    window.with_content_mask(
+                        Some(ui::ContentMask {
+                            bounds: clip.bounds(origin),
+                        }),
+                        |window| layout.paint(text_origin, window, cx),
+                    );
+                }
+                Prim::Chevron {
+                    rect,
+                    collapsed,
+                    color,
+                } => paint_chevron(
+                    rect.bounds(origin),
+                    state.chevron.unwrap_or(if *collapsed { 0.0 } else { 1.0 }),
+                    *color,
+                    window,
+                    cx,
+                ),
                 Prim::Quad {
                     rect,
                     fill,
@@ -1325,6 +1506,7 @@ impl<'a> FlowPass<'a> {
                 layout: FlowTextLayout::Plain(layout),
             }),
             prefix: None,
+            code_scroll: None,
         }
     }
 
@@ -1423,14 +1605,9 @@ impl<'a> FlowPass<'a> {
         if collapsed && is_heading {
             // A collapsed heading hides the blocks under it; a marker in the gutter, on the
             // heading's first line, says so.
-            prims.push(Prim::Icon {
-                rect: FlowRect::new(
-                    -COLLAPSED_MARKER_SIZE - 4.0,
-                    ((spec.line_height - COLLAPSED_MARKER_SIZE) / 2.0).floor(),
-                    COLLAPSED_MARKER_SIZE,
-                    COLLAPSED_MARKER_SIZE,
-                ),
-                icon: IconPaint::named("ToggleRightIcon"),
+            prims.push(Prim::Chevron {
+                rect: heading_marker_rect(spec.line_height),
+                collapsed: true,
                 color: self.palette.icon,
             });
         }
@@ -1449,6 +1626,7 @@ impl<'a> FlowPass<'a> {
                 layout,
             }),
             prefix: None,
+            code_scroll: None,
         }
     }
 
@@ -1536,15 +1714,10 @@ impl<'a> FlowPass<'a> {
                 });
             }
             ListType::Toggle => {
-                let icon = if collapsed {
-                    "ToggleRightIcon"
-                } else {
-                    "ToggleDownIcon"
-                };
                 prefix = FlowRect::new(2.0, center_y - 10.0, 20.0, 20.0);
-                prims.push(Prim::Icon {
+                prims.push(Prim::Chevron {
                     rect: prefix,
-                    icon: IconPaint::named(icon),
+                    collapsed,
                     color: marker,
                 });
             }
@@ -1568,6 +1741,7 @@ impl<'a> FlowPass<'a> {
                 layout,
             }),
             prefix: Some(prefix),
+            code_scroll: None,
         }
     }
 
@@ -1588,6 +1762,7 @@ impl<'a> FlowPass<'a> {
             }],
             text: None,
             prefix: None,
+            code_scroll: None,
         }
     }
 
@@ -1638,6 +1813,7 @@ impl<'a> FlowPass<'a> {
         let mut code_pieces = Vec::new();
         let mut line_offset = 0;
         let mut source_offset = 0;
+        let mut widest_line = 0.0_f32;
         for (index, line) in text.split('\n').enumerate() {
             let layout = self.plain_inline(
                 line,
@@ -1684,16 +1860,31 @@ impl<'a> FlowPass<'a> {
             }
             line_offset += layout.line_count;
             source_offset += line.encode_utf16().count() + 1;
-            prims.push(Prim::Text {
-                x: code_x,
-                y,
-                layout,
-                // Unwrapped lines stop at the block's padding edge.
-                clip: (!wrap).then(|| FlowRect::new(code_x, y, code_width, height)),
+            widest_line = widest_line.max(layout.content_width());
+            prims.push(if wrap {
+                Prim::Text {
+                    x: code_x,
+                    y,
+                    layout,
+                    clip: None,
+                }
+            } else {
+                // Unwrapped lines stop at the block's padding edge and scroll sideways.
+                Prim::CodeLine {
+                    x: code_x,
+                    y,
+                    layout,
+                    clip: FlowRect::new(code_x, y, code_width, height),
+                }
             });
             y += height;
         }
         let height = y + pad_y;
+        let max_scroll_x = (widest_line - code_width).max(0.0).ceil();
+        let code_scroll = (!wrap && max_scroll_x > 0.0).then(|| CodeScroll {
+            area: FlowRect::new(code_x, pad_y, code_width, y - pad_y),
+            max_x: max_scroll_x,
+        });
 
         prims.insert(
             0,
@@ -1749,6 +1940,7 @@ impl<'a> FlowPass<'a> {
                 })),
             }),
             prefix: None,
+            code_scroll,
         };
         self.push_caption(&mut body, caption);
         body
@@ -1878,6 +2070,7 @@ impl<'a> FlowPass<'a> {
             prims,
             text: None,
             prefix: None,
+            code_scroll: None,
         };
         self.push_caption(&mut body, caption);
         body
@@ -1987,6 +2180,7 @@ impl<'a> FlowPass<'a> {
             prims,
             text: None,
             prefix: None,
+            code_scroll: None,
         };
         self.push_caption(&mut body, caption);
         body
@@ -2045,6 +2239,7 @@ impl<'a> FlowPass<'a> {
             ],
             text: None,
             prefix: None,
+            code_scroll: None,
         }
     }
 }
@@ -2214,12 +2409,24 @@ pub struct PageViewport {
 }
 
 impl PageViewport {
-    fn fully_visible(&self, rect: &FlowRect) -> bool {
+    /// Whether a world-space rectangle lies completely inside the viewport, vertically.
+    pub fn fully_visible(&self, rect: &FlowRect) -> bool {
         rect.y >= self.scroll_y && rect.bottom() <= self.scroll_y + self.height
     }
 
-    fn intersects(&self, rect: &FlowRect) -> bool {
+    /// Whether a world-space rectangle shows in the viewport at all, vertically.
+    pub fn intersects(&self, rect: &FlowRect) -> bool {
         rect.bottom() > self.scroll_y && rect.y < self.scroll_y + self.height
+    }
+
+    /// A world-space rectangle in the coordinates of the viewport element.
+    pub fn to_local(&self, rect: &FlowRect) -> FlowRect {
+        FlowRect::new(
+            self.column_x + rect.x,
+            rect.y - self.scroll_y,
+            rect.w,
+            rect.h,
+        )
     }
 }
 
@@ -2227,7 +2434,8 @@ impl PageViewport {
 pub const PAGE_SURFACE_ID: &str = "page.editor_surface";
 
 /// Build the elements of the blocks and presence marks intersecting `viewport`, positioned
-/// absolutely inside the viewport element.
+/// absolutely inside the viewport element. `paint` carries the per-frame state of blocks
+/// that is not part of their layout (a chevron in flight, a code block's scroll).
 ///
 /// Only blocks lying completely inside the viewport record an element snapshot: a block
 /// cut by the fold is clipped on purpose and would read as a clipping fault otherwise.
@@ -2235,6 +2443,7 @@ pub fn page_elements(
     layout: &Rc<FlowLayout>,
     marks: Vec<PresenceMark>,
     viewport: PageViewport,
+    paint: &PagePaint,
 ) -> Vec<AnyElement> {
     let mut elements = Vec::new();
     for block in &layout.blocks {
@@ -2243,6 +2452,11 @@ pub fn page_elements(
             continue;
         }
         let body = block.body.clone();
+        let state = paint
+            .blocks
+            .get(&block.block_id)
+            .copied()
+            .unwrap_or_default();
         let mut element = div()
             .absolute()
             .left(px(viewport.column_x + rect.x))
@@ -2259,7 +2473,7 @@ pub fn page_elements(
                 .child(
                     canvas(
                         |_, _, _| (),
-                        move |bounds, _, window, cx| body.paint(bounds.origin, window, cx),
+                        move |bounds, _, window, cx| body.paint(bounds.origin, state, window, cx),
                     )
                     .size_full(),
                 )
@@ -2267,8 +2481,28 @@ pub fn page_elements(
         );
     }
 
-    // Presence paints after every block so name tags stay above neighbouring text.
-    for mark in marks {
+    // Presence paints after every block so name tags stay above neighbouring text. Marks
+    // in a sideways-scrolled code block follow its lines and stay inside its code area.
+    let scrolled = paint.scrolled_code(layout);
+    for mut mark in marks {
+        if let Some(code) = ScrolledCode::containing(&scrolled, &mark.caret) {
+            mark.highlights = mark
+                .highlights
+                .iter()
+                .filter_map(|rect| code.span(*rect))
+                .collect();
+            match code.caret(mark.caret) {
+                Some(caret) => {
+                    mark.label.x = (mark.label.x - (mark.caret.x - caret.x)).max(0.0);
+                    mark.caret = caret;
+                }
+                None => {
+                    // The caret scrolled out; its name tag goes with it.
+                    mark.caret.w = 0.0;
+                    mark.label.w = 0.0;
+                }
+            }
+        }
         let screen = |rect: &FlowRect| {
             FlowRect::new(
                 viewport.column_x + rect.x,
@@ -2296,7 +2530,7 @@ pub fn page_elements(
                     .into_any_element(),
             );
         }
-        if viewport.intersects(&mark.caret) {
+        if mark.caret.w > 0.0 && viewport.intersects(&mark.caret) {
             let rect = screen(&mark.caret);
             let mut caret = div()
                 .absolute()
@@ -2313,7 +2547,7 @@ pub fn page_elements(
             }
             elements.push(caret.into_any_element());
         }
-        if viewport.intersects(&mark.label) {
+        if mark.label.w > 0.0 && viewport.intersects(&mark.label) {
             let rect = screen(&mark.label);
             let text = mark.label_text.clone();
             let mut label = div()

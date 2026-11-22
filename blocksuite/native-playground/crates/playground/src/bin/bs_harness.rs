@@ -1,12 +1,15 @@
 use anyhow::{Context as _, Result, bail};
 use blocksuite_playground_doc::{
     client_id_from_seed,
+    read::BlockContent,
     schema::{BlockSpec, ParagraphType},
     session::PageDocSession,
     wire::{DocMessage, RoomBinaryFrame, decode_binary_frame, encode_binary_frame},
 };
 use playground::{
-    PlaygroundMode, PlaygroundOptions, PlaygroundTheme, PlaygroundView, register_bundled_fonts,
+    PlaygroundMode, PlaygroundOptions, PlaygroundTheme, PlaygroundView,
+    overlays::{ActiveSelection, FormatAction, OverlayEvent},
+    register_bundled_fonts,
 };
 use playground::{
     editor_session::{DocPoint, DocumentSelection},
@@ -129,18 +132,451 @@ fn start_headless_session(
     })
 }
 
+impl HeadlessSession {
+    fn view<R>(
+        &self,
+        f: impl FnOnce(&mut PlaygroundView, &mut ui::Context<PlaygroundView>) -> R,
+    ) -> Result<R> {
+        self.app
+            .update(|cx| self.window_handle.update(cx, |view, _, cx| f(view, cx)))
+    }
+
+    /// Draw a frame through `Window::draw()` and read its element snapshot.
+    fn frame(&self) -> Result<FrameSnapshot> {
+        self.headless_win.request_frame();
+        self.app.update(|cx| {
+            self.window_handle
+                .update(cx, |_, window, _| window.frame_snapshot().clone())
+        })
+    }
+
+    fn overlay(&self, event: OverlayEvent) -> Result<()> {
+        self.app.update(|cx| {
+            self.window_handle.update(cx, |view, window, cx| {
+                view.dispatch_overlay(event, window, cx);
+            })
+        })
+    }
+
+    /// Run what is queued, then let `millis` pass on the scheduler clock.
+    fn settle(&self, millis: u64) {
+        self.platform.run_until_parked();
+        self.platform.advance_clock(Duration::from_millis(millis));
+        self.platform.run_until_parked();
+    }
+
+    fn pointer_move(&self, x: f32, y: f32, pressed: bool) {
+        self.headless_win
+            .dispatch_input(ui::PlatformInput::MouseMove(ui::MouseMoveEvent {
+                position: point(px(x), px(y)),
+                pressed_button: pressed.then_some(ui::MouseButton::Left),
+                modifiers: ui::Modifiers::default(),
+            }));
+        self.platform.run_until_parked();
+    }
+
+    fn pointer_down(&self, x: f32, y: f32) {
+        self.headless_win
+            .dispatch_input(ui::PlatformInput::MouseDown(ui::MouseDownEvent {
+                button: ui::MouseButton::Left,
+                position: point(px(x), px(y)),
+                modifiers: ui::Modifiers::default(),
+                click_count: 1,
+                first_mouse: false,
+            }));
+        self.platform.run_until_parked();
+    }
+
+    fn pointer_up(&self, x: f32, y: f32) {
+        self.headless_win
+            .dispatch_input(ui::PlatformInput::MouseUp(ui::MouseUpEvent {
+                button: ui::MouseButton::Left,
+                position: point(px(x), px(y)),
+                modifiers: ui::Modifiers::default(),
+                click_count: 1,
+            }));
+        self.platform.run_until_parked();
+    }
+
+    /// Scroll the page so `block_id` sits `top` pixels below the top of the page viewport
+    /// (as far as the page scrolls), and return the frame after it.
+    fn scroll_block_to(&self, block_id: &str, top: f32) -> Result<FrameSnapshot> {
+        let block_y = self
+            .view(|view, _| {
+                view.flow_layout()
+                    .and_then(|layout| layout.block(block_id).map(|block| block.y))
+            })?
+            .with_context(|| format!("block {block_id} is not laid out"))?;
+        let viewport = self.frame()?.viewport;
+        let position = point(px(viewport.width / 2.0), px(viewport.height / 2.0));
+        // Back to the top first, so the scroll below is absolute.
+        for delta in [1_000_000.0, top - block_y] {
+            self.headless_win
+                .dispatch_input(ui::PlatformInput::Scroll(ui::ScrollEvent {
+                    position,
+                    delta: ui::ScrollDelta::Pixels(point(px(0.0), px(delta))),
+                    modifiers: ui::Modifiers::default(),
+                    touch_phase: ui::TouchPhase::Moved,
+                    source: ui::ScrollSource::Pointer,
+                }));
+            self.platform.run_until_parked();
+            self.frame()?;
+        }
+        self.frame()
+    }
+
+    /// Select the first occurrence of `needle` in a block's text.
+    fn select_text(&self, block_id: &str, needle: &str) -> Result<()> {
+        let (start, end) = self.text_range(block_id, needle)?;
+        self.overlay(OverlayEvent::SetSelection(Some(ActiveSelection {
+            block_id: block_id.to_string(),
+            start_utf16: start,
+            end_utf16: end,
+        })))
+    }
+
+    /// The plain text of a paragraph or list block.
+    fn plain_text(&self, block_id: &str) -> Result<String> {
+        self.view(|view, _| {
+            view.page_snapshot()
+                .and_then(|snapshot| snapshot.block(block_id))
+                .and_then(|node| match &node.content {
+                    BlockContent::Paragraph { text, .. } | BlockContent::List { text, .. } => {
+                        Some(text.plain.clone())
+                    }
+                    _ => None,
+                })
+        })?
+        .with_context(|| format!("block {block_id} has no text"))
+    }
+
+    /// The UTF-16 range of the first occurrence of `needle` in a block's text.
+    fn text_range(&self, block_id: &str, needle: &str) -> Result<(usize, usize)> {
+        let plain = self.plain_text(block_id)?;
+        let at = plain
+            .find(needle)
+            .with_context(|| format!("{needle:?} is not in block {block_id}"))?;
+        let start = plain[..at].encode_utf16().count();
+        Ok((start, start + needle.encode_utf16().count()))
+    }
+}
+
+fn element_center(snapshot: &FrameSnapshot, id: &str) -> Result<(f32, f32)> {
+    let bounds = snapshot
+        .elements
+        .get(id)
+        .with_context(|| format!("{id} missing from FrameSnapshot"))?
+        .bounds;
+    Ok((
+        bounds.x + bounds.width * 0.5,
+        bounds.y + bounds.height * 0.5,
+    ))
+}
+
+/// A named arrangement of overlays the harness can put a session into.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OverlayState {
+    Default,
+    SlashMenuOpen,
+    SlashMenuFiltered,
+    SlashMenuEmpty,
+    SlashMenuFlippedBottom,
+    FormatToolbarOpen,
+    FormatToolbarFlippedTop,
+    FormatToolbarLink,
+    DragHandleHover,
+    DragDropIndicator,
+    CodeHover,
+    CodeHoverCopied,
+}
+
+impl OverlayState {
+    const ALL: [Self; 12] = [
+        Self::Default,
+        Self::SlashMenuOpen,
+        Self::SlashMenuFiltered,
+        Self::SlashMenuEmpty,
+        Self::SlashMenuFlippedBottom,
+        Self::FormatToolbarOpen,
+        Self::FormatToolbarFlippedTop,
+        Self::FormatToolbarLink,
+        Self::DragHandleHover,
+        Self::DragDropIndicator,
+        Self::CodeHover,
+        Self::CodeHoverCopied,
+    ];
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::SlashMenuOpen => "slash_menu_open",
+            Self::SlashMenuFiltered => "slash_menu_filtered",
+            Self::SlashMenuEmpty => "slash_menu_empty",
+            Self::SlashMenuFlippedBottom => "slash_menu_flipped_bottom",
+            Self::FormatToolbarOpen => "format_toolbar_open",
+            Self::FormatToolbarFlippedTop => "format_toolbar_flipped_top",
+            Self::FormatToolbarLink => "format_toolbar_link",
+            Self::DragHandleHover => "drag_handle_hover",
+            Self::DragDropIndicator => "drag_drop_indicator",
+            Self::CodeHover => "code_hover",
+            Self::CodeHoverCopied => "code_hover_copied",
+        }
+    }
+
+    fn parse(value: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|state| state.name() == value)
+    }
+
+    /// Snapshot ids the state must show once it is applied.
+    fn expected(self) -> &'static [&'static str] {
+        match self {
+            Self::Default => &[],
+            Self::SlashMenuOpen => &["overlay.slash_menu", "overlay.slash_menu.item.text"],
+            Self::SlashMenuFiltered => &["overlay.slash_menu", "overlay.slash_menu.item.h1"],
+            Self::SlashMenuEmpty => &["overlay.slash_menu", "overlay.slash_menu.empty"],
+            Self::SlashMenuFlippedBottom => &["overlay.slash_menu"],
+            Self::FormatToolbarOpen | Self::FormatToolbarFlippedTop => &[
+                "overlay.format_toolbar",
+                "overlay.format_toolbar.bold",
+                "overlay.format_toolbar.align_right",
+            ],
+            Self::FormatToolbarLink => &[
+                "overlay.format_toolbar",
+                "overlay.format_toolbar.link_input",
+                "overlay.format_toolbar.link_apply",
+                "overlay.format_toolbar.link_remove",
+            ],
+            Self::DragHandleHover => &["overlay.drag_handle"],
+            Self::DragDropIndicator => &["overlay.drag_handle", "overlay.drop_indicator"],
+            Self::CodeHover | Self::CodeHoverCopied => &["page.block.showcase-code.copy"],
+        }
+    }
+}
+
+/// Put a freshly opened showcase session into `state`, driving it through the same input
+/// and overlay events a person or an editor would send.
+fn apply_overlay_state(session: &HeadlessSession, state: OverlayState) -> Result<()> {
+    const HEADING: &str = "showcase-h1";
+    const QUOTE: &str = "showcase-quote";
+    const INTRO: &str = "showcase-intro";
+    const CODE: &str = "showcase-code";
+    // Text blocks of the showcase from the quote down, last first.
+    const LOWER_TEXT_BLOCKS: [&str; 12] = [
+        "showcase-toggle-closed",
+        "showcase-toggle-open-child",
+        "showcase-toggle-open",
+        "showcase-todo-done",
+        "showcase-todo-open",
+        "showcase-numbered-nested",
+        "showcase-numbered-2",
+        "showcase-numbered-1",
+        "showcase-bullet-deep",
+        "showcase-bullet-nested",
+        "showcase-bullet",
+        QUOTE,
+    ];
+    let mut slash_anchor = HEADING;
+    session.frame()?;
+    match state {
+        OverlayState::Default => {}
+        OverlayState::SlashMenuOpen
+        | OverlayState::SlashMenuFiltered
+        | OverlayState::SlashMenuEmpty => {
+            session.overlay(OverlayEvent::OpenSlashMenu {
+                block_id: HEADING.to_string(),
+                utf16_offset: 0,
+                anchor: None,
+            })?;
+            let query = match state {
+                OverlayState::SlashMenuFiltered => "hea",
+                OverlayState::SlashMenuEmpty => "zzz",
+                _ => "",
+            };
+            if !query.is_empty() {
+                session.overlay(OverlayEvent::SetSlashQuery {
+                    query: query.to_string(),
+                    in_document: false,
+                })?;
+            }
+        }
+        OverlayState::SlashMenuFlippedBottom => {
+            // The lowest text block still in view leaves no room below its caret.
+            let snapshot = session.frame()?;
+            slash_anchor = LOWER_TEXT_BLOCKS
+                .into_iter()
+                .find(|id| snapshot.elements.contains_key(&format!("page.block.{id}")))
+                .context("no showcase text block is fully in view")?;
+            session.overlay(OverlayEvent::OpenSlashMenu {
+                block_id: slash_anchor.to_string(),
+                utf16_offset: 0,
+                anchor: None,
+            })?;
+        }
+        OverlayState::FormatToolbarOpen => session.select_text(INTRO, "bold")?,
+        OverlayState::FormatToolbarFlippedTop => {
+            // The selected line sits right under the top bar.
+            session.scroll_block_to(QUOTE, 0.0)?;
+            session.select_text(QUOTE, "Every block")?;
+        }
+        OverlayState::FormatToolbarLink => {
+            session.select_text(INTRO, "links")?;
+            session.frame()?;
+            session.overlay(OverlayEvent::Format(FormatAction::Link))?;
+        }
+        OverlayState::DragHandleHover | OverlayState::DragDropIndicator => {
+            let snapshot = session.scroll_block_to(QUOTE, 40.0)?;
+            let (x, y) = element_center(&snapshot, &format!("page.block.{QUOTE}"))?;
+            session.pointer_move(x, y, false);
+            // From the block onto its handle, which then shows its dots.
+            let snapshot = session.frame()?;
+            let (handle_x, handle_y) = element_center(&snapshot, "overlay.drag_handle")?;
+            session.pointer_move(handle_x, handle_y, false);
+            anyhow::ensure!(
+                session.view(|view, _| view.overlays().drag_handle_hot())?,
+                "the pointer on the drag handle does not show its dots"
+            );
+            if state == OverlayState::DragDropIndicator {
+                // Drag the quote down to between the two numbered items.
+                let target = snapshot
+                    .elements
+                    .get("page.block.showcase-numbered-1")
+                    .context("page.block.showcase-numbered-1 missing from FrameSnapshot")?
+                    .bounds;
+                session.pointer_down(handle_x, handle_y);
+                session.pointer_move(handle_x, target.bottom() + 2.0, true);
+            }
+        }
+        OverlayState::CodeHover | OverlayState::CodeHoverCopied => {
+            let snapshot = session.scroll_block_to(CODE, 120.0)?;
+            let (x, y) = element_center(&snapshot, &format!("page.block.{CODE}"))?;
+            session.pointer_move(x, y, false);
+            if state == OverlayState::CodeHoverCopied {
+                let snapshot = session.frame()?;
+                let (x, y) = element_center(&snapshot, &format!("page.block.{CODE}.copy"))?;
+                session.headless_win.simulate_click(point(px(x), px(y)));
+            }
+        }
+    }
+    // Past every overlay transition, short of the `Copied` label's timeout.
+    session.frame()?;
+    session.settle(400);
+    let snapshot = session.frame()?;
+    for id in state.expected() {
+        anyhow::ensure!(
+            snapshot.elements.contains_key(*id),
+            "state {} does not show {id}",
+            state.name()
+        );
+    }
+    // A popover sits on its preferred side, or on the other one in the flipped states.
+    let bounds = |id: &str| {
+        snapshot
+            .elements
+            .get(id)
+            .map(|element| element.bounds)
+            .with_context(|| format!("{id} missing from FrameSnapshot"))
+    };
+    match state {
+        OverlayState::SlashMenuOpen => {
+            let (menu, anchor) = (
+                bounds("overlay.slash_menu")?,
+                bounds(&format!("page.block.{slash_anchor}"))?,
+            );
+            anyhow::ensure!(
+                menu.y >= anchor.y,
+                "slash menu {menu:?} is not below its block {anchor:?}"
+            );
+        }
+        OverlayState::SlashMenuFlippedBottom => {
+            let (menu, anchor) = (
+                bounds("overlay.slash_menu")?,
+                bounds(&format!("page.block.{slash_anchor}"))?,
+            );
+            anyhow::ensure!(
+                menu.bottom() <= anchor.y,
+                "slash menu {menu:?} did not flip above its block {anchor:?}"
+            );
+        }
+        OverlayState::FormatToolbarOpen => {
+            let (toolbar, selection) =
+                (bounds("overlay.format_toolbar")?, bounds("page.selection")?);
+            anyhow::ensure!(
+                toolbar.bottom() <= selection.y,
+                "toolbar {toolbar:?} is not above the selection {selection:?}"
+            );
+        }
+        OverlayState::FormatToolbarFlippedTop => {
+            let (toolbar, selection) =
+                (bounds("overlay.format_toolbar")?, bounds("page.selection")?);
+            anyhow::ensure!(
+                toolbar.y >= selection.bottom(),
+                "toolbar {toolbar:?} did not flip below the selection {selection:?}"
+            );
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Audit every overlay state in both themes on a regular and a narrow window.
+fn run_audit_states() -> Result<()> {
+    let mut audited = 0_usize;
+    for (width, height) in [(1280_u32, 800_u32), (320, 800)] {
+        for theme in [PlaygroundTheme::Light, PlaygroundTheme::Dark] {
+            for state in OverlayState::ALL {
+                let context = format!("{} {width}x{height} {}", state.name(), theme.as_str());
+                let session = start_headless_session(
+                    width,
+                    height,
+                    PlaygroundOptions {
+                        theme,
+                        ..PlaygroundOptions::default()
+                    },
+                )?;
+                apply_overlay_state(&session, state).with_context(|| context.clone())?;
+                let snapshot = session.frame()?;
+                let violations = audit_frame_snapshot(&snapshot);
+                anyhow::ensure!(
+                    violations.is_empty(),
+                    "audit violations in {context}: {violations:#?}"
+                );
+                // Nothing an overlay draws leaves the window.
+                for (id, element) in &snapshot.elements {
+                    if id.starts_with("overlay.") {
+                        anyhow::ensure!(
+                            element.bounds.x >= 0.0
+                                && element.bounds.y >= 0.0
+                                && element.bounds.right() <= snapshot.viewport.width
+                                && element.bounds.bottom() <= snapshot.viewport.height,
+                            "{id} leaves the window in {context}: {:?}",
+                            element.bounds
+                        );
+                    }
+                }
+                audited += 1;
+            }
+        }
+    }
+    println!("audit-states passed: 0 violations across {audited} overlay states");
+    Ok(())
+}
+
 fn render_headless(
     width: u32,
     height: u32,
     out_png: PathBuf,
     out_snapshot: PathBuf,
     click_edgeless: bool,
+    state: OverlayState,
     options: PlaygroundOptions,
 ) -> Result<()> {
     let theme = options.theme;
     let mode = options.mode;
     let session = start_headless_session(width, height, options)?;
     session.headless_win.request_frame();
+    if state != OverlayState::Default {
+        apply_overlay_state(&session, state)?;
+    }
 
     if click_edgeless {
         let click_pt = session.app.update(|cx| {
@@ -339,8 +775,143 @@ fn run_audit(snapshot_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
+const FPS_RATES: [u32; 4] = [60, 120, 24, 7];
+
+fn frame_interval(fps: u32) -> Duration {
+    Duration::from_nanos((1_000_000_000_u64 + u64::from(fps) / 2) / u64::from(fps))
+}
+
+/// Step a popover's fade for 250 ms at `fps` and return the opacity of every frame it was
+/// mounted in. Every frame is audited, and a mounted popover never sits at the window
+/// origin or moves.
+fn step_popover(
+    session: &HeadlessSession,
+    fps: u32,
+    id: &str,
+    what: &str,
+) -> Result<Vec<Option<f32>>> {
+    let dt = frame_interval(fps);
+    let mut elapsed = Duration::ZERO;
+    let mut opacities = Vec::new();
+    let mut placed: Option<(f32, f32)> = None;
+    // The frame the transition starts in comes first.
+    loop {
+        let snapshot = session.frame()?;
+        let violations = audit_frame_snapshot(&snapshot);
+        anyhow::ensure!(
+            violations.is_empty(),
+            "audit violations while {what} at {fps} fps: {violations:#?}"
+        );
+        let element = snapshot.elements.get(id);
+        if let Some(element) = element {
+            let origin = (element.bounds.x, element.bounds.y);
+            anyhow::ensure!(
+                origin != (0.0, 0.0) && element.opacity > 0.0,
+                "{id} flashed at {origin:?} with opacity {} while {what} at {fps} fps",
+                element.opacity
+            );
+            anyhow::ensure!(
+                placed.is_none_or(|placed| placed == origin),
+                "{id} moved from {placed:?} to {origin:?} while {what} at {fps} fps"
+            );
+            placed = Some(origin);
+        }
+        opacities.push(element.map(|element| element.opacity));
+        if elapsed >= Duration::from_millis(250) {
+            break;
+        }
+        session.platform.advance_clock(dt);
+        elapsed += dt;
+    }
+    Ok(opacities)
+}
+
+/// Open and close one popover at every rate: the fade is monotonic with at least one
+/// in-flight frame each way, and the frames it settles in are byte-identical.
+fn fps_check_popover(
+    name: &str,
+    id: &str,
+    open: impl Fn(&HeadlessSession) -> Result<()>,
+    close: impl Fn(&HeadlessSession) -> Result<()>,
+) -> Result<()> {
+    let mut reference: Option<(String, String)> = None;
+    for fps in FPS_RATES {
+        let session = start_headless_session(1280, 800, PlaygroundOptions::default())?;
+        session.frame()?;
+
+        open(&session)?;
+        session.platform.run_until_parked();
+        let opening = step_popover(&session, fps, id, "opening")?;
+        let shown: Vec<f32> = opening.iter().flatten().copied().collect();
+        anyhow::ensure!(
+            shown.windows(2).all(|pair| pair[1] >= pair[0]),
+            "{name} fade-in is not monotonic at {fps} fps: {shown:?}"
+        );
+        let in_flight_open = shown.iter().filter(|opacity| **opacity < 1.0).count();
+        anyhow::ensure!(
+            in_flight_open >= 1 && shown.last() == Some(&1.0),
+            "{name} fade-in at {fps} fps needs an in-flight frame and a full end: {shown:?}"
+        );
+        let open_json = serde_json::to_string(&session.frame()?)?;
+
+        close(&session)?;
+        session.platform.run_until_parked();
+        let closing = step_popover(&session, fps, id, "closing")?;
+        let fading: Vec<f32> = closing.iter().flatten().copied().collect();
+        anyhow::ensure!(
+            fading.windows(2).all(|pair| pair[1] <= pair[0]),
+            "{name} fade-out is not monotonic at {fps} fps: {fading:?}"
+        );
+        let in_flight_close = fading.iter().filter(|opacity| **opacity < 1.0).count();
+        anyhow::ensure!(
+            in_flight_close >= 1 && closing.last() == Some(&None),
+            "{name} fade-out at {fps} fps needs an in-flight frame and to unmount: {closing:?}"
+        );
+        let closed_json = serde_json::to_string(&session.frame()?)?;
+
+        match &reference {
+            Some((open_reference, closed_reference)) => {
+                if &open_json != open_reference || &closed_json != closed_reference {
+                    bail!("fps-check terminal FrameSnapshot mismatch for {name} at {fps} fps");
+                }
+            }
+            None => reference = Some((open_json, closed_json)),
+        }
+        println!(
+            "fps-check {fps:>3} fps {name}: {in_flight_open} in-flight frames in, {in_flight_close} out"
+        );
+    }
+    Ok(())
+}
+
 fn run_fps_check() -> Result<()> {
-    let rates = [60_u32, 120, 24, 7];
+    fps_check_mode_switch()?;
+    fps_check_popover(
+        "slash menu",
+        "overlay.slash_menu",
+        |session| {
+            session.overlay(OverlayEvent::OpenSlashMenu {
+                block_id: "showcase-h2".to_string(),
+                utf16_offset: 0,
+                anchor: None,
+            })
+        },
+        |session| session.overlay(OverlayEvent::CloseSlashMenu),
+    )?;
+    fps_check_popover(
+        "format toolbar",
+        "overlay.format_toolbar",
+        |session| session.select_text("showcase-quote", "Every block"),
+        |session| session.overlay(OverlayEvent::SetSelection(None)),
+    )?;
+    println!(
+        "fps-check passed: 60/120/24/7 fps stepped the mode switch, the slash menu and the format toolbar monotonically with byte-identical terminal FrameSnapshots."
+    );
+    Ok(())
+}
+
+fn fps_check_mode_switch() -> Result<()> {
+    let rates = FPS_RATES;
     let mut reference_terminal_json: Option<String> = None;
 
     for fps in rates {
@@ -446,9 +1017,6 @@ fn run_fps_check() -> Result<()> {
         );
     }
 
-    println!(
-        "fps-check passed: 60/120/24/7 fps stepped real PlaygroundView transition monotonically with byte-identical terminal FrameSnapshot."
-    );
     Ok(())
 }
 
@@ -1364,6 +1932,349 @@ fn render_editor(dir: PathBuf) -> Result<()> {
     }
     Ok(())
 }
+
+/// The pointer drawn into recorded frames, hot spot at its top-left: `#` is the outline and
+/// `o` the fill.
+const DEMO_POINTER: [&str; 18] = [
+    "#           ",
+    "##          ",
+    "#o#         ",
+    "#oo#        ",
+    "#ooo#       ",
+    "#oooo#      ",
+    "#ooooo#     ",
+    "#oooooo#    ",
+    "#ooooooo#   ",
+    "#oooooooo#  ",
+    "#ooooooooo# ",
+    "#oooooo#####",
+    "#ooo#oo#    ",
+    "#oo# #oo#   ",
+    "#o#  #oo#   ",
+    "##    #oo#  ",
+    "#     #oo#  ",
+    "       ##   ",
+];
+const DEMO_FPS: u32 = 60;
+/// Radius of the disc drawn under the pointer while its button is down.
+const DEMO_PRESS_RADIUS: f32 = 10.0;
+
+/// Drives a session through input events and saves every 60 fps frame of it.
+struct DemoRecorder<'a> {
+    session: &'a HeadlessSession,
+    dir: PathBuf,
+    frames: usize,
+    pointer: (f32, f32),
+    pressed: bool,
+}
+
+impl DemoRecorder<'_> {
+    /// Let one frame interval pass on the scheduler clock, draw, audit and save the frame.
+    fn frame(&mut self) -> Result<()> {
+        let session = self.session;
+        session.platform.run_until_parked();
+        session.platform.advance_clock(frame_interval(DEMO_FPS));
+        session.platform.run_until_parked();
+        let violations = audit_frame_snapshot(&session.frame()?);
+        anyhow::ensure!(
+            violations.is_empty(),
+            "demo frame {} violations: {violations:?}",
+            self.frames
+        );
+        let mut image = session.image()?;
+        self.draw_pointer(&mut image);
+        image.save(self.dir.join(format!("frame-{:05}.png", self.frames)))?;
+        self.frames += 1;
+        Ok(())
+    }
+
+    fn hold(&mut self, frames: usize) -> Result<()> {
+        (0..frames).try_for_each(|_| self.frame())
+    }
+
+    /// Name the moment the next frame shows, for picking stills out of the recording.
+    fn chapter(&self, name: &str) {
+        println!("frame {:05} {name}", self.frames);
+    }
+
+    fn draw_pointer(&self, image: &mut image::RgbaImage) {
+        let (x, y) = (self.pointer.0.round() as i64, self.pointer.1.round() as i64);
+        let mut blend = |px: i64, py: i64, color: [u8; 3], alpha: f32| {
+            if px < 0 || py < 0 || px >= image.width() as i64 || py >= image.height() as i64 {
+                return;
+            }
+            let pixel = image.get_pixel_mut(px as u32, py as u32);
+            for (channel, value) in pixel.0.iter_mut().zip(color) {
+                *channel =
+                    (f32::from(*channel) * (1.0 - alpha) + f32::from(value) * alpha).round() as u8;
+            }
+        };
+        if self.pressed {
+            let reach = DEMO_PRESS_RADIUS.ceil() as i64;
+            for dy in -reach..=reach {
+                for dx in -reach..=reach {
+                    let distance = ((dx * dx + dy * dy) as f32).sqrt();
+                    let coverage = (DEMO_PRESS_RADIUS + 0.5 - distance).clamp(0.0, 1.0);
+                    blend(x + dx, y + dy, [30, 150, 235], 0.35 * coverage);
+                }
+            }
+        }
+        for (row, line) in DEMO_POINTER.iter().enumerate() {
+            for (column, cell) in line.bytes().enumerate() {
+                let color = match cell {
+                    b'#' => [255, 255, 255],
+                    b'o' => [20, 20, 20],
+                    _ => continue,
+                };
+                blend(x + column as i64, y + row as i64, color, 1.0);
+            }
+        }
+    }
+
+    /// Glide the pointer to `target` over `frames` frames.
+    fn move_to(&mut self, target: (f32, f32), frames: usize) -> Result<()> {
+        let from = self.pointer;
+        for step in 1..=frames {
+            let t = step as f32 / frames as f32;
+            let eased = t * t * (3.0 - 2.0 * t);
+            self.pointer = (
+                from.0 + (target.0 - from.0) * eased,
+                from.1 + (target.1 - from.1) * eased,
+            );
+            self.session
+                .pointer_move(self.pointer.0, self.pointer.1, self.pressed);
+            self.frame()?;
+        }
+        Ok(())
+    }
+
+    fn press(&mut self) {
+        self.session.pointer_down(self.pointer.0, self.pointer.1);
+        self.pressed = true;
+    }
+
+    fn release(&mut self) {
+        self.session.pointer_up(self.pointer.0, self.pointer.1);
+        self.pressed = false;
+    }
+
+    fn click(&mut self) -> Result<()> {
+        self.press();
+        self.hold(3)?;
+        self.release();
+        Ok(())
+    }
+
+    /// Scroll the page down by `distance` pixels over `frames` frames.
+    fn scroll(&mut self, distance: f32, frames: usize) -> Result<()> {
+        let ease = |step: usize| {
+            let t = step as f32 / frames as f32;
+            t * t * (3.0 - 2.0 * t)
+        };
+        for step in 1..=frames {
+            let delta = distance * (ease(step) - ease(step - 1));
+            self.session
+                .headless_win
+                .dispatch_input(ui::PlatformInput::Scroll(ui::ScrollEvent {
+                    position: point(px(self.pointer.0), px(self.pointer.1)),
+                    delta: ui::ScrollDelta::Pixels(point(px(0.0), px(-delta))),
+                    modifiers: ui::Modifiers::default(),
+                    touch_phase: ui::TouchPhase::Moved,
+                    source: ui::ScrollSource::Pointer,
+                }));
+            self.frame()?;
+        }
+        Ok(())
+    }
+
+    /// Glide to the middle of an element of the current frame and click it.
+    fn click_element(&mut self, id: &str, frames: usize) -> Result<()> {
+        let target = element_center(&self.session.frame()?, id)?;
+        self.move_to(target, frames)?;
+        self.click()
+    }
+
+    /// Step the pointer aside, so it does not cover what it just clicked.
+    fn step_aside(&mut self, frames: usize) -> Result<()> {
+        self.move_to((self.pointer.0 + 30.0, self.pointer.1 + 16.0), frames)
+    }
+
+    /// Type through the input handler, one character every `frames` frames.
+    fn type_text(&mut self, text: &str, frames: usize) -> Result<()> {
+        for ch in text.chars() {
+            self.session.type_text(ch.encode_utf8(&mut [0; 4]))?;
+            self.hold(frames)?;
+        }
+        Ok(())
+    }
+
+    fn key(&mut self, key: &str, command: bool, frames: usize) -> Result<()> {
+        self.session.key(key, false, command);
+        self.hold(frames)
+    }
+
+    /// The middle of the caret at `offset` in a block's text.
+    fn text_point(&self, block_id: &str, offset: usize) -> Result<(f32, f32)> {
+        let at = self.session.caret(block_id, offset as u64)?;
+        Ok((f32::from(at.x), f32::from(at.y)))
+    }
+}
+
+/// Record a walk through the page editor and its overlays at 60 fps into `dir` as
+/// `frame-<n>.png`: typing with marks and a composition, a slash command, a mouse selection
+/// formatted from the toolbar, the block controls, and undo. Every step is an input event
+/// or an input-handler call, every frame is audited, and the document is checked on the way.
+fn record_demo(dir: PathBuf, theme: PlaygroundTheme) -> Result<()> {
+    std::fs::create_dir_all(&dir)?;
+    let session = start_headless_session(
+        1280,
+        800,
+        PlaygroundOptions {
+            theme,
+            ..Default::default()
+        },
+    )?;
+    session.frame()?;
+    let flavour = |block: &str| -> Result<serde_json::Value> {
+        Ok(session.doc_json()?["blocks"][block]["sys:flavour"].clone())
+    };
+    let prop = |block: &str, key: &str| -> Result<serde_json::Value> {
+        Ok(session.doc_json()?["blocks"][block][key].clone())
+    };
+    let mut demo = DemoRecorder {
+        session: &session,
+        dir,
+        frames: 0,
+        pointer: (760.0, 420.0),
+        pressed: false,
+    };
+    session.pointer_move(demo.pointer.0, demo.pointer.1, false);
+    demo.hold(6)?;
+
+    // A click after the introduction, a new paragraph, and text typed with a mark.
+    demo.chapter("typing");
+    let intro_end = session.plain_text("showcase-intro")?.encode_utf16().count();
+    let (x, y) = demo.text_point("showcase-intro", intro_end)?;
+    demo.move_to((x + 24.0, y), 16)?;
+    demo.click()?;
+    demo.hold(4)?;
+    demo.key("enter", false, 6)?;
+    let typed = session.selection()?.focus.block_id;
+    demo.type_text("Typed ", 3)?;
+    demo.key("b", true, 0)?;
+    demo.type_text("natively", 3)?;
+    demo.key("b", true, 0)?;
+    demo.type_text(" ", 3)?;
+
+    // A composition previews its text and writes it once on commit.
+    demo.chapter("composition");
+    let before_composition = prop(&typed, "prop:text")?;
+    for preview in ["n", "ni", "nih", "nihao"] {
+        session.update(|view, window, cx| {
+            view.replace_and_mark_text_in_range(None, preview, None, window, cx)
+        })?;
+        demo.hold(5)?;
+    }
+    anyhow::ensure!(
+        prop(&typed, "prop:text")? == before_composition,
+        "a composition preview changed the document"
+    );
+    demo.hold(6)?;
+    session.type_text("你好")?;
+    demo.hold(8)?;
+
+    // `/bul` filters the slash menu in the document, `Enter` turns the paragraph into a list.
+    demo.chapter("slash menu");
+    demo.key("enter", false, 6)?;
+    demo.type_text("/", 12)?;
+    demo.type_text("bul", 7)?;
+    demo.hold(10)?;
+    demo.key("enter", false, 8)?;
+    let item = session.selection()?.focus.block_id;
+    anyhow::ensure!(
+        flavour(&item)? == "affine:list" && prop(&item, "prop:type")? == "bulleted",
+        "the slash command did not make a bulleted list item"
+    );
+    demo.type_text("Slash menu", 3)?;
+    demo.hold(6)?;
+
+    // Dragging over text selects it; the toolbar makes it bold and links it.
+    demo.chapter("formatting toolbar");
+    let (start, end) = session.text_range("showcase-quote", "same document")?;
+    let from = demo.text_point("showcase-quote", start)?;
+    demo.move_to(from, 16)?;
+    demo.press();
+    demo.hold(2)?;
+    let to = demo.text_point("showcase-quote", end)?;
+    demo.move_to(to, 18)?;
+    demo.release();
+    demo.hold(12)?;
+    demo.click_element("overlay.format_toolbar.bold", 10)?;
+    demo.hold(8)?;
+    demo.click_element("overlay.format_toolbar.link", 8)?;
+    demo.hold(8)?;
+    demo.type_text("affine.pro", 2)?;
+    demo.hold(8)?;
+    demo.key("enter", false, 12)?;
+    let quote = prop("showcase-quote", "prop:text")?;
+    let linked = quote
+        .as_array()
+        .and_then(|ops| ops.iter().find(|op| op["insert"] == "same document"))
+        .context("the selection is not one formatted run")?;
+    anyhow::ensure!(
+        linked["attributes"]["bold"] == true
+            && linked["attributes"]["link"] == "https://affine.pro",
+        "the toolbar did not format the selection: {linked}"
+    );
+
+    // The block controls: a to-do box and a toggle, scrolled up from the fold first.
+    demo.chapter("block controls");
+    let below = element_center(&session.frame()?, "page.block.showcase-todo-open")?;
+    demo.move_to(below, 10)?;
+    demo.scroll(170.0, 14)?;
+    demo.click_element("page.block.showcase-todo-open.checkbox", 8)?;
+    demo.step_aside(6)?;
+    demo.hold(6)?;
+    anyhow::ensure!(
+        prop("showcase-todo-open", "prop:checked")? == true,
+        "the to-do box did not check"
+    );
+    demo.click_element("page.block.showcase-toggle-open.toggle", 8)?;
+    demo.step_aside(6)?;
+    demo.hold(14)?;
+    anyhow::ensure!(
+        prop("showcase-toggle-open", "prop:collapsed")? == true,
+        "the toggle did not collapse"
+    );
+
+    // Each of them is one undo step.
+    demo.chapter("undo");
+    demo.key("z", true, 15)?;
+    anyhow::ensure!(
+        prop("showcase-toggle-open", "prop:collapsed")? != true,
+        "undo did not expand the toggle"
+    );
+    demo.key("z", true, 15)?;
+    anyhow::ensure!(
+        prop("showcase-todo-open", "prop:checked")? != true,
+        "undo did not clear the to-do box"
+    );
+    demo.key("z", true, 15)?;
+    anyhow::ensure!(
+        prop("showcase-quote", "prop:text")?
+            .as_array()
+            .is_some_and(|ops| ops.iter().all(|op| op["attributes"]["link"].is_null())),
+        "undo did not remove the link"
+    );
+    demo.hold(12)?;
+    println!(
+        "Recorded {} frames at {DEMO_FPS} fps ({:.2} s)",
+        demo.frames,
+        demo.frames as f64 / f64::from(DEMO_FPS)
+    );
+    Ok(())
+}
+
 fn run_probes() -> Result<()> {
     let s = start_headless_session(640, 720, Default::default())?;
     probe_geometry(&s)?;
@@ -1377,7 +2288,7 @@ fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let Some(cmd) = args.next() else {
         bail!(
-            "usage: bs-harness <render|render-rich-sample|audit|fps-check|probes|bench> [options]"
+            "usage: bs-harness <render|render-rich-sample|render-editor|record-demo|audit|audit-states|fps-check|probes|bench> [options]"
         );
     };
 
@@ -1388,6 +2299,7 @@ fn main() -> Result<()> {
             let mut width = 1280_u32;
             let mut height = 800_u32;
             let mut click_edgeless = false;
+            let mut state = OverlayState::Default;
             let mut options = PlaygroundOptions::default();
             while let Some(arg) = args.next() {
                 match arg.as_str() {
@@ -1401,6 +2313,14 @@ fn main() -> Result<()> {
                         height = args.next().context("--height requires value")?.parse()?
                     }
                     "--click-edgeless" => click_edgeless = true,
+                    "--state" => {
+                        let value = args.next().context("--state requires an overlay state")?;
+                        state = OverlayState::parse(&value).with_context(|| {
+                            let names: Vec<&str> =
+                                OverlayState::ALL.iter().map(|state| state.name()).collect();
+                            format!("unknown state {value:?} ({})", names.join("|"))
+                        })?;
+                    }
                     "--theme" => {
                         let value = args.next().context("--theme requires light|dark")?;
                         options.theme = PlaygroundTheme::parse(&value)
@@ -1420,6 +2340,7 @@ fn main() -> Result<()> {
                 out_png,
                 out_snapshot,
                 click_edgeless,
+                state,
                 options,
             )
         }
@@ -1443,7 +2364,25 @@ fn main() -> Result<()> {
                 .context("render-editor requires an output directory")?
                 .into(),
         ),
+        "record-demo" => {
+            let dir = args
+                .next()
+                .context("record-demo requires an output directory")?;
+            let mut theme = PlaygroundTheme::Light;
+            while let Some(arg) = args.next() {
+                match arg.as_str() {
+                    "--theme" => {
+                        let value = args.next().context("--theme requires light|dark")?;
+                        theme = PlaygroundTheme::parse(&value)
+                            .with_context(|| format!("unknown theme {value:?} (light|dark)"))?;
+                    }
+                    other => bail!("unknown record-demo flag: {other}"),
+                }
+            }
+            record_demo(dir.into(), theme)
+        }
         "probes" => run_probes(),
+        "audit-states" => run_audit_states(),
         "fps-check" => run_fps_check(),
         "bench" => {
             let mut out_json = PathBuf::from("perf-metrics.json");
@@ -1484,6 +2423,17 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_overlay_state_audits_clean_in_both_themes_and_on_a_narrow_window() {
+        run_audit_states().unwrap();
+    }
+
+    #[test]
+    fn popovers_and_the_mode_switch_replay_identically_at_four_rates() {
+        run_fps_check().unwrap();
+    }
+
     #[test]
     fn markdown_and_clipboard_use_the_document_editor_and_undo_stack() -> Result<()> {
         use playground::clipboard::Slice;

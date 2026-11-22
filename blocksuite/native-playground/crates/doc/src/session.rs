@@ -587,7 +587,9 @@ impl PageDocSession {
         Ok(Some(value.unwrap_or(0)))
     }
 
-    fn correct_numbered_order_from(
+    /// Renumber the run of numbered list items of `parent` starting at child `slot`, continuing
+    /// a numbered item right before it or starting at `initial`.
+    pub fn correct_numbered_order_from(
         &mut self,
         parent: &str,
         slot: usize,

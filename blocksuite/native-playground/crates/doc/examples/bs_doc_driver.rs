@@ -130,6 +130,9 @@ enum StructuralAction {
     Outdent,
     Merge,
     Title,
+    Reorder,
+    Align,
+    Link,
 }
 
 type WsStream =
@@ -544,6 +547,26 @@ async fn main() {
                     StructuralAction::Title => {
                         page.insert_text("page-1", "prop:title", 0, "Edited ", 150)
                     }
+                    StructuralAction::Reorder => {
+                        page.reparent_block("converted", "note-1", "note-1", 0, 160)
+                    }
+                    StructuralAction::Align => page.set_block_prop(
+                        "converted",
+                        "prop:textAlign",
+                        SessionValue::Any(Any::String("center".into())),
+                        170,
+                    ),
+                    StructuralAction::Link => page.format_text(
+                        "converted",
+                        "prop:text",
+                        0,
+                        6,
+                        TextAttributes::from([(
+                            "link".to_string(),
+                            Any::String("https://affine.pro".into()),
+                        )]),
+                        180,
+                    ),
                 }
                 .unwrap()
                 .unwrap();

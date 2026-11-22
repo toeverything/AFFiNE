@@ -2,11 +2,12 @@
 //!
 //! All targets execute the single shipping [`PlaygroundView`] element tree: screen-space
 //! chrome (top bar, mode switcher, theme toggle, presence) around the world-space page
-//! rendered by [`block_flow`].
+//! rendered by [`block_flow`], with the popovers and block controls of [`overlays`] on top.
 
 pub mod block_flow;
 pub mod clipboard;
 pub mod editor_session;
+pub mod overlays;
 pub mod rich_text;
 pub mod room_client;
 pub mod theme;
@@ -27,8 +28,8 @@ use blocksuite_playground_doc::{
     session::PageDocSession,
 };
 use ui::{
-    AnyElement, BorderStyle, Bounds, Corners, Edges, FontWeight, Motion, MotionCurve, ScrollEvent,
-    SharedString, Task, TextRun, Window, canvas, div, point, prelude::*, px, size,
+    AnyElement, BorderStyle, Bounds, Corners, Edges, FontWeight, Motion, MotionCurve, MouseButton,
+    ScrollEvent, SharedString, Task, TextRun, Window, canvas, div, point, prelude::*, px, size,
 };
 use y_octo::{AHashMap, Any, SessionValue, TextAttributes};
 
@@ -37,6 +38,7 @@ use crate::{
         BlockFlow, FlowInput, FlowLayout, ImageSlot, PAGE_SURFACE_ID, PageViewport, RemotePoint,
         RemotePresence, RemoteSelection, decode_image, page_elements, page_geometry,
     },
+    overlays::Overlays,
     room_client::{
         DocState, RoomCommand, RoomConfig, RoomEffects, RoomEvent, RoomLink, RoomProtocol,
         RoomStatus,
@@ -194,6 +196,11 @@ pub struct PlaygroundView {
     layout: Option<(LayoutKey, Rc<FlowLayout>)>,
     scroll_y: f32,
     max_scroll: f32,
+    /// Window size of the latest frame, in logical pixels.
+    window_size: (f32, f32),
+    overlays: Overlays,
+    /// Timer that ends a code block's `Copied` label; a newer copy replaces it.
+    copied_timer: Option<Task<()>>,
     _tasks: Vec<Task<()>>,
 }
 
@@ -274,6 +281,9 @@ impl PlaygroundView {
             layout: None,
             scroll_y: 0.0,
             max_scroll: 0.0,
+            window_size: (0.0, 0.0),
+            overlays: Overlays::new(),
+            copied_timer: None,
             _tasks: tasks,
         };
         view.refresh_document();
@@ -303,6 +313,7 @@ impl PlaygroundView {
     /// Replace the shown document, e.g. with one prepared by a host or a test.
     pub fn set_document(&mut self, state: DocState, cx: &mut Context<Self>) {
         self.editor = Default::default();
+        self.overlays.reset();
         self.reading_anchor = None;
         self.flow = BlockFlow::new();
         self.layout = None;
@@ -577,6 +588,7 @@ impl PlaygroundView {
         let now_ms = self.now_ms(cx);
         let current_x = self.indicator_x(now_ms);
         self.mode = target;
+        self.overlays.reset();
         self.pill_motion = Some(Motion::new(
             current_x,
             Self::target_pill_x(target),
@@ -588,7 +600,22 @@ impl PlaygroundView {
     }
 
     fn on_scroll(&mut self, event: &ScrollEvent, _: &mut Window, cx: &mut Context<Self>) {
-        let delta = f32::from(event.delta.pixel_delta(px(SCROLL_LINE)).y);
+        let delta = event.delta.pixel_delta(px(SCROLL_LINE));
+        // A sideways scroll over an unwrapped code block scrolls its lines, not the page.
+        if let Some((snapshot, layout)) = self.snapshot.clone().zip(self.flow_layout()) {
+            let scene = self.overlay_scene(&snapshot, &layout, None);
+            if self.overlays.scroll_code(
+                &scene,
+                f32::from(event.position.x),
+                f32::from(event.position.y),
+                f32::from(delta.x),
+                f32::from(delta.y),
+            ) {
+                cx.notify();
+                return;
+            }
+        }
+        let delta = f32::from(delta.y);
         let target = (self.scroll_y - delta).clamp(0.0, self.max_scroll).round();
         if target != self.scroll_y {
             self.scroll_y = target;
@@ -1000,8 +1027,7 @@ impl PlaygroundView {
             .overflow_hidden()
             .bg(palette.background)
             .track_focus(&self.editor_focus)
-            .on_mouse_down(ui::MouseButton::Left, cx.listener(Self::editor_mouse_down))
-            .on_mouse_move(cx.listener(Self::editor_mouse_move))
+            .on_mouse_down(MouseButton::Left, cx.listener(Self::page_mouse_down))
             .on_key_down(cx.listener(Self::editor_key_down))
             .on_scroll(cx.listener(Self::on_scroll))
             .snapshot(PAGE_SURFACE_ID, Some("root.canvas"));
@@ -1030,6 +1056,7 @@ impl PlaygroundView {
         let focus = self.editor_focus.clone();
         let entity = cx.entity();
         let marks = layout.presence_marks(presences, palette, window);
+        let (paint, controls) = self.overlay_page_layer(&layout, palette, window, cx);
         surface
             .children(page_elements(
                 &layout,
@@ -1039,6 +1066,7 @@ impl PlaygroundView {
                     height: viewport_height,
                     scroll_y: self.scroll_y,
                 },
+                &paint,
             ))
             .children(local)
             .child(
@@ -1055,6 +1083,7 @@ impl PlaygroundView {
                 .absolute()
                 .size_full(),
             )
+            .children(controls)
             .into_any_element()
     }
 
@@ -1175,6 +1204,7 @@ impl ui::Render for PlaygroundView {
         let viewport_height = (f32::from(viewport.height) - TOPBAR_HEIGHT)
             .max(0.0)
             .floor();
+        self.window_size = (viewport_width, f32::from(viewport.height).floor());
 
         let presences = self.remote_presences(&palette);
         let switcher_left = ((viewport_width - PILL_WIDTH) / 2.0).floor().max(0.0);
@@ -1204,14 +1234,18 @@ impl ui::Render for PlaygroundView {
             ),
             PlaygroundMode::Edgeless => self.render_edgeless(&palette, viewport_width),
         };
+        let popovers = self.overlay_popovers(&palette, window, cx);
 
         div()
+            .relative()
             .size_full()
             .font_family(FONT_SANS)
             .flex()
             .flex_col()
             .bg(palette.background)
             .text_color(palette.text_primary)
+            .on_mouse_move(cx.listener(Self::root_mouse_move))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::root_mouse_up))
             .snapshot("root.canvas", None)
             .child(
                 div()
@@ -1238,6 +1272,7 @@ impl ui::Render for PlaygroundView {
                     ),
             )
             .child(content)
+            .children(popovers)
     }
 }
 
@@ -3327,6 +3362,152 @@ mod tests {
         assert_eq!(
             first.view(|v, _| v.document_selection().unwrap().focus.caret.utf16_offset),
             2
+        );
+    }
+
+    #[test]
+    fn overlay_edits_reach_the_peers_of_a_live_room() {
+        let runtime = relay_runtime();
+        let addr = start_relay(&runtime);
+        let room = "room-overlay-edits";
+        let mut peer = relay_page_peer(room, client_id_from_seed(91));
+        {
+            let page = peer.page_mut(HOME_PAGE_ID).unwrap();
+            let mut seed = ShowcaseSeed {
+                page,
+                now_ms: 10_000,
+            };
+            seed.list("todo", ListType::Todo, "Ship the overlays", false, "note")
+                .unwrap();
+        }
+        let mut socket = join_as_peer(&runtime, addr, room, &mut peer);
+
+        let config = RoomConfig::new(room, Some(&format!("ws://{addr}")));
+        let session = open(
+            1280,
+            800,
+            PlaygroundOptions {
+                room: Some(config),
+                ..PlaygroundOptions::default()
+            },
+        );
+        wait_for(&session, "the seeded to-do item", |view| {
+            view.room_status() == Some(RoomStatus::Live)
+                && view
+                    .page_snapshot()
+                    .is_some_and(|snapshot| snapshot.block("todo").is_some())
+        });
+        let checked = |snapshot: &PageSnapshot| {
+            matches!(
+                snapshot.block("todo").map(|node| &node.content),
+                Some(BlockContent::List { checked: true, .. })
+            )
+        };
+
+        // Ticking the box edits the local document at once...
+        let (snapshot, _) = session.frame();
+        assert_no_violations(&snapshot, "live to-do");
+        session.click(&snapshot, "page.block.todo.checkbox");
+        assert!(session.view(|view, _| view.page_snapshot().is_some_and(checked)));
+
+        // ...and the peer receives the same edit as a document update of the page.
+        runtime.block_on(async {
+            tokio::time::timeout(Duration::from_secs(10), async {
+                loop {
+                    let WsMessage::Binary(bytes) = socket.next().await.unwrap().unwrap() else {
+                        continue;
+                    };
+                    let Ok(RoomBinaryFrame::Doc {
+                        doc_id,
+                        message: DocMessage::Update(update),
+                    }) = decode_binary_frame(&bytes)
+                    else {
+                        continue;
+                    };
+                    if doc_id != HOME_PAGE_ID {
+                        continue;
+                    }
+                    let page = peer.page_mut(HOME_PAGE_ID).unwrap();
+                    page.apply_remote_update_v1(&update).unwrap();
+                    if checked(&page.read_page_snapshot().unwrap()) {
+                        break;
+                    }
+                }
+            })
+            .await
+            .expect("the peer receives the checked to-do item");
+        });
+    }
+
+    #[test]
+    fn dropping_the_selection_clears_the_caret_peers_see_and_keeps_the_presence() {
+        use crate::overlays::{ActiveSelection, OverlayEvent};
+        let runtime = relay_runtime();
+        let addr = start_relay(&runtime);
+        let room = "room-cleared-selection";
+        let mut seed = relay_page_peer(room, client_id_from_seed(93));
+        let _socket = join_as_peer(&runtime, addr, room, &mut seed);
+        let options = PlaygroundOptions {
+            room: Some(RoomConfig::new(room, Some(&format!("ws://{addr}")))),
+            ..Default::default()
+        };
+        let first = open(800, 600, options.clone());
+        let second = open(800, 600, options);
+        for session in [&first, &second] {
+            wait_for(session, "the initial editable page", |view| {
+                view.room_status() == Some(RoomStatus::Live)
+                    && view
+                        .page_snapshot()
+                        .and_then(|page| page.block("p-1"))
+                        .is_some()
+            });
+            session.frame();
+        }
+        let first_id = first.view(|view, _| view.document().awareness.local_client_id());
+        let key = format!("{HOME_PAGE_ID}:native");
+        let set_selection = |selection: Option<ActiveSelection>| {
+            first
+                .app
+                .update(|cx| {
+                    first.window.update(cx, |view, window, cx| {
+                        view.dispatch_overlay(OverlayEvent::SetSelection(selection), window, cx);
+                    })
+                })
+                .unwrap();
+        };
+        // What the second view knows of the first one's selection on this page.
+        let seen = |view: &PlaygroundView| {
+            view.document()
+                .awareness
+                .get_payload(first_id)
+                .map(|payload| payload.selection_v2.get(&key).cloned())
+        };
+
+        set_selection(Some(ActiveSelection::caret("p-1", 3)));
+        wait_for(&second, "the first view's caret", |view| {
+            seen(view)
+                .flatten()
+                .is_some_and(|selection| selection.len() == 1 && selection[0]["from"]["index"] == 3)
+        });
+        let caret = format!("page.presence.{first_id}.caret");
+        assert!(second.frame().0.elements.contains_key(&caret));
+
+        // Without a selection the entry stays, empty: the caret goes, the peer does not.
+        set_selection(None);
+        wait_for(&second, "the cleared selection", |view| {
+            seen(view) == Some(Some(Vec::new()))
+        });
+        let payload = second
+            .view(|view, _| view.document().awareness.get_payload(first_id))
+            .expect("the first view is still present");
+        assert_eq!(payload.user.name, room_client::LOCAL_AWARENESS_NAME);
+        assert_eq!(payload.color, room_client::LOCAL_AWARENESS_COLOR);
+        let (frame, _) = second.frame();
+        assert!(!frame.elements.contains_key(&caret));
+        assert!(
+            frame
+                .elements
+                .contains_key(&format!("chrome.presence.{first_id}"))
         );
     }
 

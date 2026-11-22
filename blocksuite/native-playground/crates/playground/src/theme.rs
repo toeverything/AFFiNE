@@ -7,7 +7,9 @@
 
 use std::{borrow::Cow, sync::Arc};
 
-use ui::{App, Bounds, Hsla, Pixels, SharedString, TransformationMatrix, Window};
+use ui::{
+    App, Bounds, BoxShadow, Hsla, Pixels, SharedString, TransformationMatrix, Window, point, px,
+};
 
 #[allow(dead_code, clippy::all)]
 pub mod tokens {
@@ -132,6 +134,74 @@ impl PlaygroundTheme {
         }
         parse_hex_color(value)
     }
+
+    /// Box shadow layers of a `--affine-*-shadow` token in this theme, outermost first.
+    /// Inset layers and layers that do not parse are left out.
+    pub fn shadows(self, name: &str) -> Vec<BoxShadow> {
+        self.tokens()
+            .shadow(name)
+            .map(parse_box_shadows)
+            .unwrap_or_default()
+    }
+}
+
+/// Parse a CSS `box-shadow` list of `<x> <y> <blur> [<spread>] <color>` layers.
+fn parse_box_shadows(value: &str) -> Vec<BoxShadow> {
+    // Layers are separated by the commas outside of `rgba(...)`.
+    let mut layers = Vec::new();
+    let (mut depth, mut start) = (0_i32, 0_usize);
+    for (index, ch) in value.char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            ',' if depth == 0 => {
+                layers.push(&value[start..index]);
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+    layers.push(&value[start..]);
+
+    layers
+        .into_iter()
+        .filter_map(|layer| {
+            let layer = layer.trim();
+            if layer.split_whitespace().any(|word| word == "inset") {
+                return None;
+            }
+            let (lengths, color) = match layer.find("rgb") {
+                Some(at) => (&layer[..at], parse_rgb_function(&layer[at..])?),
+                None => {
+                    let at = layer.find('#')?;
+                    (&layer[..at], parse_hex_color(layer[at..].trim())?)
+                }
+            };
+            let lengths: Vec<f32> = lengths
+                .split_whitespace()
+                .map(|length| length.trim_end_matches("px").parse::<f32>())
+                .collect::<Result<_, _>>()
+                .ok()?;
+            let length = |index: usize| lengths.get(index).copied().unwrap_or(0.0);
+            (lengths.len() >= 2).then(|| BoxShadow {
+                color,
+                offset: point(px(length(0)), px(length(1))),
+                blur_radius: px(length(2)),
+                spread_radius: px(length(3)),
+                inset: false,
+            })
+        })
+        .collect()
+}
+
+/// Parse `rgb(r, g, b)` or `rgba(r, g, b, a)` with 0-255 channels and a 0-1 alpha.
+fn parse_rgb_function(value: &str) -> Option<Hsla> {
+    let inner = value.split_once('(')?.1.split_once(')')?.0;
+    let mut channels = inner.split(',').map(|part| part.trim().parse::<f32>().ok());
+    let mut channel = || channels.next().flatten().map(|value| value / 255.0);
+    let (r, g, b) = (channel()?, channel()?, channel()?);
+    let a = channels.next().flatten().unwrap_or(1.0);
+    Some(ui::Rgba { r, g, b, a }.into())
 }
 
 impl From<ThemeMode> for PlaygroundTheme {
@@ -330,6 +400,34 @@ impl IconPaint {
             cx,
         );
     }
+
+    /// Paint the icon into `bounds` turned clockwise by `turn` radians around its center.
+    pub fn paint_rotated(
+        &self,
+        bounds: Bounds<Pixels>,
+        color: Hsla,
+        turn: f32,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        if self.svg.is_empty() {
+            return;
+        }
+        let scale = window.scale_factor();
+        let center = bounds.center();
+        let transformation = TransformationMatrix::unit()
+            .translate(center.scale(scale))
+            .rotate(ui::radians(turn))
+            .translate(center.scale(-scale));
+        let _ = window.paint_svg(
+            bounds,
+            self.key.clone(),
+            Some(self.svg.as_bytes()),
+            transformation,
+            color,
+            cx,
+        );
+    }
 }
 
 #[cfg(test)]
@@ -364,6 +462,36 @@ mod tests {
     }
 
     #[test]
+    fn shadow_tokens_parse_into_outer_layers() {
+        for theme in [PlaygroundTheme::Light, PlaygroundTheme::Dark] {
+            let panel = theme.shadows("--affine-overlay-panel-shadow");
+            assert_eq!(panel.len(), 2, "{theme:?}");
+            assert_eq!(panel[0].offset, point(px(0.0), px(1.0)));
+            assert_eq!(panel[0].blur_radius, px(6.0));
+            assert_eq!(panel[1].offset, point(px(0.0), px(8.0)));
+            assert_eq!(panel[1].blur_radius, px(14.0));
+            assert!(
+                panel
+                    .iter()
+                    .all(|layer| layer.color.a > 0.0 && !layer.inset)
+            );
+
+            // A hex color with alpha, and a list whose inset layer is dropped.
+            let toolbar = theme.shadows("--affine-toolbar-shadow");
+            assert_eq!(toolbar.len(), 1, "{theme:?}");
+            assert_eq!(toolbar[0].offset, point(px(0.0), px(6.0)));
+            assert!(toolbar[0].color.a > 0.0 && toolbar[0].color.a < 1.0);
+            assert_eq!(theme.shadows("--affine-popover-shadow").len(), 2);
+        }
+        assert!(
+            PlaygroundTheme::Light
+                .shadows("--affine-not-a-shadow")
+                .is_empty()
+        );
+        assert!(parse_box_shadows("unset").is_empty());
+    }
+
+    #[test]
     fn icons_serialize_to_parseable_monochrome_svg() {
         for name in [
             "CheckBoxCheckSolidIcon",
@@ -372,6 +500,22 @@ mod tests {
             "ToggleRightIcon",
             "LinkIcon",
             "LinkedPageIcon",
+            "BoldIcon",
+            "ItalicIcon",
+            "UnderLineIcon",
+            "StrikeThroughIcon",
+            "CodeIcon",
+            "CopyIcon",
+            "DragCursorIcon",
+            "TextIcon",
+            "Heading1Icon",
+            "Heading6Icon",
+            "QuoteIcon",
+            "DividerIcon",
+            "BulletedListIcon",
+            "NumberedListIcon",
+            "CheckBoxCheckLinearIcon",
+            "CodeBlockIcon",
         ] {
             let icon = icon_by_name(name).unwrap_or_else(|| panic!("icon {name} is generated"));
             let svg = icon_svg(icon);

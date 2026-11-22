@@ -285,8 +285,9 @@ class CdpClient {
   }
 }
 
-// Exercise the browser input handler through the same hidden textarea a platform IME uses.
-async function checkComposition(cdp) {
+// Drive the page the way a person's pointer, keyboard and IME do, and read back the hidden
+// textarea the browser's text input works on.
+function inputProbe(cdp) {
   async function evaluate(expression) {
     const reply = await cdp.send('Runtime.evaluate', { expression, returnByValue: true });
     if (reply.exceptionDetails) throw new Error(reply.exceptionDetails.exception?.description);
@@ -309,14 +310,22 @@ async function checkComposition(cdp) {
       if (state.value === value) return;
       await sleep(50);
     }
-    throw new Error(`Expected mirrored block ${JSON.stringify(value)}, got ${JSON.stringify(state)}`);
+    throw new Error(`Expected mirrored text ${JSON.stringify(value)}, got ${JSON.stringify(state)}`);
   };
   const composition = (type,data) => evaluate(`document.querySelector('textarea').dispatchEvent(new CompositionEvent(${JSON.stringify(type)},{bubbles:true,data:${JSON.stringify(data)}}))`);
-  const undo = async () => {
+  // `modifiers: 2` is Control, the command modifier outside macOS.
+  const key = async (key,code,windowsVirtualKeyCode,modifiers=0) => {
     for (const type of ['rawKeyDown','keyUp']) {
-      await cdp.send('Input.dispatchKeyEvent',{type,key:'z',code:'KeyZ',modifiers:2,windowsVirtualKeyCode:90});
+      await cdp.send('Input.dispatchKeyEvent',{type,key,code,modifiers,windowsVirtualKeyCode});
     }
   };
+  return { evaluate, mirror, mouse, click, waitValue, composition, key };
+}
+
+// Exercise the browser input handler through the same hidden textarea a platform IME uses.
+async function checkComposition(cdp) {
+  const { mouse, click, waitValue, composition, key } = inputProbe(cdp);
+  const undo = () => key('z','KeyZ',90,2);
   const first = [314,215], second = [331,254];
   const start = await click(first), end = await click(second);
   if (start.value !== 'Page mode' || !end.value.startsWith('This page')) {
@@ -349,6 +358,66 @@ async function checkComposition(cdp) {
     await waitValue(original.value);
   }
   console.log('Forward and backward cross-block typing, IME cancellation, commit and undo passed');
+}
+
+// The formatting toolbar's link field is the text input while it is open: composition
+// and paste go into the field, and the paragraph under the selection stays as it was.
+async function checkLinkField(cdp) {
+  const { evaluate, mirror, mouse, waitValue, composition, key } = inputProbe(cdp);
+  // A few words on the first line of the second showcase block.
+  const from = [331,254], to = [400,254];
+  await mouse('mousePressed',from,1);
+  await mouse('mouseMoved',to,1);
+  await mouse('mouseReleased',to,0);
+  await sleep(400);
+  const paragraph = await mirror();
+  if (!paragraph.value.startsWith('This page')) {
+    throw new Error(`Unable to select in the second showcase block: ${JSON.stringify(paragraph)}`);
+  }
+  // The toolbar is 297 px wide and centered 46 px above the selected line; its sixth
+  // button opens the link field, which then is what the hidden textarea mirrors.
+  const link = [(from[0] + to[0]) / 2 - 148.5 + 170, 243 - 46 + 19];
+  await mouse('mouseMoved',link,0);
+  await mouse('mousePressed',link,1);
+  await mouse('mouseReleased',link,0);
+  await waitValue('');
+
+  // A composition that is cancelled leaves the field empty; one that commits lands once.
+  await composition('compositionstart','');
+  await composition('compositionupdate','ni');
+  await sleep(75);
+  await composition('compositionend','');
+  await waitValue('');
+  await composition('compositionstart','');
+  await composition('compositionupdate','nihao');
+  await sleep(75);
+  await composition('compositionend','你好');
+  await waitValue('你好');
+
+  // The paste key keeps its default action, so the browser follows it with a `paste`
+  // event, and that event's text goes into the field.
+  await evaluate(`window.__pasteKeyPrevented = null;
+    window.addEventListener('keydown', e => {
+      if (e.key === 'v' && e.ctrlKey) window.__pasteKeyPrevented = e.defaultPrevented;
+    })`);
+  await key('v','KeyV',86,2);
+  const prevented = await evaluate('window.__pasteKeyPrevented');
+  if (prevented !== false) {
+    throw new Error(`Ctrl+V in the link field must keep its default action, defaultPrevented=${prevented}`);
+  }
+  const ignored = await evaluate(`(() => {
+    const data = new DataTransfer();
+    data.setData('text/plain', '.affine.pro');
+    return document.querySelector('textarea').dispatchEvent(
+      new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: data }));
+  })()`);
+  if (ignored) throw new Error('The paste event was not taken by the link field');
+  await waitValue('你好.affine.pro');
+
+  // Closing the field hands the text input back to the paragraph, untouched.
+  await key('Escape','Escape',27);
+  await waitValue(paragraph.value);
+  console.log('Link field composition, paste and dismissal left the paragraph untouched');
 }
 
 async function main() {
@@ -488,7 +557,10 @@ async function main() {
       );
     }
 
-    if (!args.query) await checkComposition(cdp);
+    if (!args.query) {
+      await checkComposition(cdp);
+      await checkLinkField(cdp);
+    }
 
     // Click "Edgeless" segment (pill centered at x=640, w=186 -> pill_x=547; edgeless x=548+94..548+180 -> center=685, y=26)
     const clickX = 685;

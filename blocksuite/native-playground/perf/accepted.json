@@ -1,17 +1,17 @@
 [
   {
     "metric": "artifacts_bytes.web_wasm_raw",
-    "accepted_value": 15645011,
-    "reason": "Includes collaborative page editing, IME composition and rich clipboard support in the Web playground"
+    "accepted_value": 15857113,
+    "reason": "Includes the slash menu, formatting toolbar, drag handle and interactive block controls on top of collaborative page editing in the Web playground"
   },
   {
     "metric": "artifacts_bytes.web_wasm_gzip",
-    "accepted_value": 5264224,
-    "reason": "Includes collaborative page editing, IME composition and rich clipboard support in the Web playground"
+    "accepted_value": 5328839,
+    "reason": "Includes the slash menu, formatting toolbar, drag handle and interactive block controls on top of collaborative page editing in the Web playground"
   },
   {
     "metric": "artifacts_bytes.headless_bin",
-    "accepted_value": 95194982,
-    "reason": "Includes the collaborative page editor, rich clipboard, document probes and headless renderer"
+    "accepted_value": 96400733,
+    "reason": "Includes the slash menu, formatting toolbar, drag handle, interactive block controls and their state renders and demo recorder in the headless renderer"
   }
 ]
