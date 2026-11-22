@@ -93,6 +93,11 @@ impl PageDocSession {
         &self.session
     }
 
+    /// Target of the `blocks` root `Y.Map` holding every block of this page.
+    pub fn blocks_target(&self) -> &TypeTarget {
+        &self.blocks_target
+    }
+
     pub fn inner_mut(&mut self) -> &mut DocSession<SelectionSnapshot> {
         &mut self.session
     }
@@ -130,12 +135,63 @@ impl PageDocSession {
         })
     }
 
-    /// Add a typed Phase-1 block with all BlockSuite default properties populated.
+    /// Add a typed block of a supported flavour with all BlockSuite default properties populated.
     /// If `parent_id` is `Some`, appends `block_id` to `parent.sys:children` (or inserts at `index`).
     pub fn add_block(
         &mut self,
         block_id: impl Into<String>,
         spec: BlockSpec,
+        parent_id: Option<&str>,
+        index: Option<u64>,
+        now_ms: u64,
+    ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
+        let block_id = block_id.into();
+        let entries = spec.into_yblock_entries(&block_id);
+        self.insert_block(block_id, entries, parent_id, index, now_ms)
+    }
+
+    /// Add a block of any flavour from explicit `prop:*` entries, for flavours without a
+    /// typed [`BlockSpec`]. `sys:id`, `sys:flavour`, `sys:version` and an empty
+    /// `sys:children` are written alongside `props`; parent handling matches [`Self::add_block`].
+    pub fn add_raw_block(
+        &mut self,
+        block_id: impl Into<String>,
+        flavour: &str,
+        version: i32,
+        props: Vec<(String, SessionValue)>,
+        parent_id: Option<&str>,
+        index: Option<u64>,
+        now_ms: u64,
+    ) -> DocResult<Option<SessionCommit<SelectionSnapshot>>> {
+        let block_id = block_id.into();
+        if let Some((key, _)) = props.iter().find(|(key, _)| !key.starts_with("prop:")) {
+            return Err(DocError::InvalidState(format!(
+                "raw block property {key:?} must start with \"prop:\""
+            )));
+        }
+        let mut entries = vec![
+            (
+                "sys:id".to_string(),
+                SessionValue::Any(Any::String(block_id.clone())),
+            ),
+            (
+                "sys:flavour".to_string(),
+                SessionValue::Any(Any::String(flavour.to_string())),
+            ),
+            (
+                "sys:version".to_string(),
+                SessionValue::Any(Any::Integer(version)),
+            ),
+            ("sys:children".to_string(), SessionValue::Array(Vec::new())),
+        ];
+        entries.extend(props);
+        self.insert_block(block_id, entries, parent_id, index, now_ms)
+    }
+
+    fn insert_block(
+        &mut self,
+        block_id: String,
+        entries: Vec<(String, SessionValue)>,
         parent_id: Option<&str>,
         index: Option<u64>,
         now_ms: u64,
@@ -163,8 +219,6 @@ impl PageDocSession {
         }
 
         self.session.advance_time(now_ms);
-        let block_id = block_id.into();
-        let entries = spec.into_yblock_entries(&block_id);
 
         self.session.begin_tx(SessionTxOrigin::Tracked)?;
         self.session.map_set(
@@ -475,7 +529,7 @@ impl PageDocSession {
         Ok(JsonValue::Object(root))
     }
 
-    fn export_y_value(&self, value: &SessionReadValue) -> DocResult<JsonValue> {
+    pub(crate) fn export_y_value(&self, value: &SessionReadValue) -> DocResult<JsonValue> {
         match value {
             SessionReadValue::Any(any) => Ok(any_to_normalized_json(any)),
             SessionReadValue::Map(id) => {

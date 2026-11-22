@@ -1035,6 +1035,104 @@ async fn room_hub_awareness_equal_clock_refcount_seed_promotion_and_blob_cors() 
     assert!(obs_awareness.get_payload(shared_cid).is_none());
     fresh_obs.close(None).await.unwrap();
 
+    // 2b. Equal-clock live-to-null removal (how `y-protocols` expires a remote peer): an
+    //     already-connected observer must receive it once the LAST owner releases the client.
+    let expiry_ws_url = format!("ws://{addr}/native-sync/rooms/room-equal-clock-expiry");
+    let (mut watcher, _) = connect_async(&expiry_ws_url).await.unwrap();
+    let (mut owner_a, _) = connect_async(&expiry_ws_url).await.unwrap();
+    let (mut owner_b, _) = connect_async(&expiry_ws_url).await.unwrap();
+
+    let expiring_cid = (1u64 << 46) + 79;
+    let mut expiring_sender = RoomAwareness::new(expiring_cid).unwrap();
+    let expiring_live = encode_binary_frame(&RoomBinaryFrame::Awareness(
+        expiring_sender
+            .set_local_payload(&AwarenessPayload::new("ExpiringPeer", "#ff8a00"), 0)
+            .unwrap(),
+    ))
+    .unwrap();
+    let live_clock = expiring_sender
+        .states()
+        .get(&expiring_cid)
+        .expect("local awareness state")
+        .clock();
+    let mut equal_clock_null = y_octo::Awareness::new(0);
+    equal_clock_null.apply_update(y_octo::AwarenessStates::from([(
+        expiring_cid,
+        y_octo::AwarenessState::new(live_clock, "null".to_string()),
+    )]));
+    let equal_clock_null_frame = encode_binary_frame(&RoomBinaryFrame::Awareness(
+        equal_clock_null
+            .encode_update(Some(&[expiring_cid]))
+            .unwrap(),
+    ))
+    .unwrap();
+
+    owner_a
+        .send(WsMsg::Binary(expiring_live.clone().into()))
+        .await
+        .unwrap();
+    owner_b
+        .send(WsMsg::Binary(expiring_live.into()))
+        .await
+        .unwrap();
+
+    let mut watcher_awareness = RoomAwareness::new((1u64 << 46) + 80).unwrap();
+    let live_seen = tokio::time::timeout(std::time::Duration::from_secs(2), watcher.next())
+        .await
+        .expect("connected observer should receive the live awareness broadcast")
+        .unwrap()
+        .unwrap();
+    if let WsMsg::Binary(b) = live_seen
+        && let RoomBinaryFrame::Awareness(payload) = decode_binary_frame(&b).unwrap()
+    {
+        watcher_awareness.apply_update(&payload, 10).unwrap();
+    }
+    assert_eq!(
+        watcher_awareness
+            .get_payload(expiring_cid)
+            .map(|p| p.user.name),
+        Some("ExpiringPeer".to_string())
+    );
+
+    // First owner releases at the same clock: owner_b still holds the client, nothing is sent.
+    owner_a
+        .send(WsMsg::Binary(equal_clock_null_frame.clone().into()))
+        .await
+        .unwrap();
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(120), watcher.next())
+            .await
+            .is_err(),
+        "equal-clock removal must stay local while another owner keeps the client alive"
+    );
+
+    // Last owner releases at the same clock: the connected observer must be told.
+    owner_b
+        .send(WsMsg::Binary(equal_clock_null_frame.into()))
+        .await
+        .unwrap();
+    let removal_seen = tokio::time::timeout(std::time::Duration::from_secs(2), watcher.next())
+        .await
+        .expect("connected observer should receive the equal-clock live-to-null removal")
+        .unwrap()
+        .unwrap();
+    let WsMsg::Binary(removal_bytes) = removal_seen else {
+        panic!("unexpected removal frame: {removal_seen:?}");
+    };
+    let RoomBinaryFrame::Awareness(removal_payload) = decode_binary_frame(&removal_bytes).unwrap()
+    else {
+        panic!("expected an awareness frame for the equal-clock removal");
+    };
+    let removal_event = watcher_awareness
+        .apply_update(&removal_payload, 20)
+        .unwrap();
+    assert_eq!(removal_event.removed(), &[expiring_cid]);
+    assert!(watcher_awareness.get_payload(expiring_cid).is_none());
+
+    watcher.close(None).await.unwrap();
+    owner_a.close(None).await.unwrap();
+    owner_b.close(None).await.unwrap();
+
     // 3. Seed CAS FIFO waiter promotion on partial-seed disconnect.
     let seed_ws_url = format!("ws://{addr}/native-sync/rooms/room-seed-promote");
     let (mut s1, _) = connect_async(&seed_ws_url).await.unwrap();

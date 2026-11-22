@@ -1,16 +1,13 @@
 //! Shaped paragraph geometry in document UTF-16 coordinates.
 use std::{ops::Range, sync::Arc};
 
+pub use crate::theme::ThemeMode;
+use crate::theme::{IconPaint, PlaygroundTheme, tokens as raw_tokens};
 use ui::gpui_util::ResultExt as _;
 use ui::{
     App, Bounds, FontStyle, FontWeight, Hsla, IntoElement, Pixels, Point, ShapedLine, SharedString,
     Size, Styled, TextAlign, TextRun, Window, WindowTextSystem, canvas, fill, point, px, size,
 };
-#[allow(dead_code)]
-mod raw_tokens {
-    include!("../../../tokens/tokens.rs");
-}
-pub use raw_tokens::ThemeMode;
 use unicode_bidi::BidiInfo;
 use unicode_linebreak::linebreaks;
 use unicode_segmentation::UnicodeSegmentation;
@@ -107,6 +104,10 @@ pub struct InlineMarkSet {
     pub code: bool,
     pub link: Option<String>,
     pub reference: Option<InlineReference>,
+    /// Text color as stored in the document (`var(--token)` or a hex color).
+    pub color: Option<String>,
+    /// Highlight color as stored in the document (`var(--token)` or a hex color).
+    pub background: Option<String>,
 }
 
 fn string_attr(value: Option<&Any>) -> Option<String> {
@@ -137,6 +138,8 @@ impl InlineMarkSet {
             code: enabled("code"),
             link: string_attr(attrs.get("link")),
             reference,
+            color: string_attr(attrs.get("color")),
+            background: string_attr(attrs.get("background")),
         }
     }
 }
@@ -281,6 +284,8 @@ const PAGE_PREFIX: &str = "▤ ";
 
 #[derive(Clone, Debug)]
 pub struct RichParagraphStyle {
+    /// Theme that resolves `color` and `background` marks.
+    pub theme: PlaygroundTheme,
     pub font_family: SharedString,
     pub code_font_family: SharedString,
     pub font_size: f32,
@@ -289,6 +294,8 @@ pub struct RichParagraphStyle {
     /// Measured alphabetic baseline within the line box. Defaults to centered font metrics.
     pub baseline_offset: Option<f32>,
     pub letter_spacing: f32,
+    /// Where each line sits inside the layout width.
+    pub align: TextAlign,
     pub text_color: Hsla,
     pub link_color: Hsla,
     pub code_bg: Hsla,
@@ -313,7 +320,9 @@ impl Default for RichParagraphStyle {
     }
 }
 
-#[derive(Clone, Copy)]
+/// Inline code box as measured in the browser (`inline_formats.inline_code` of
+/// `tokens/style-oracle.json`); a test keeps these constants equal to the oracle.
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct CodeBoxMetrics {
     baseline: f32,
     descent: f32,
@@ -324,36 +333,28 @@ struct CodeBoxMetrics {
 }
 
 impl CodeBoxMetrics {
-    fn from_oracle(mode: ThemeMode) -> Self {
-        static BOXES: std::sync::OnceLock<[CodeBoxMetrics; 2]> = std::sync::OnceLock::new();
-        let boxes = BOXES.get_or_init(|| {
-            let oracle: serde_json::Value =
-                serde_json::from_str(include_str!("../../../tokens/style-oracle.json"))
-                    .expect("valid bundled style oracle");
-            ["light", "dark"].map(|name| {
-                let node = &oracle["themes"][name]["inline_formats"]["inline_code"];
-                let css = |property: &str| -> f32 {
-                    node["computed"][property]
-                        .as_str()
-                        .and_then(|s| s.strip_suffix("px"))
-                        .and_then(|v| v.parse().ok())
-                        .expect("pixel measure in inline code oracle")
-                };
-                let baseline = node["baseline_offset_px"].as_f64().unwrap() as f32;
-                let height = node["rect"]["height"].as_f64().unwrap() as f32;
-                let border = css("border_top_width");
-                let padding_bottom = css("padding_bottom");
-                Self {
-                    baseline,
-                    descent: height - baseline - padding_bottom - border,
-                    border,
-                    radius: css("border_radius"),
-                    padding_x: css("padding_left"),
-                    padding_bottom,
-                }
-            })
-        });
-        boxes[usize::from(mode == ThemeMode::Dark)]
+    const LIGHT: Self = Self {
+        baseline: 12.0,
+        descent: 3.0,
+        border: 1.0,
+        radius: 4.0,
+        padding_x: 4.0,
+        padding_bottom: 2.0,
+    };
+    const DARK: Self = Self {
+        baseline: 13.0,
+        descent: 3.0,
+        border: 1.0,
+        radius: 4.0,
+        padding_x: 4.0,
+        padding_bottom: 2.0,
+    };
+
+    fn for_theme(mode: ThemeMode) -> Self {
+        match mode {
+            ThemeMode::Light => Self::LIGHT,
+            ThemeMode::Dark => Self::DARK,
+        }
     }
 }
 
@@ -365,8 +366,9 @@ impl RichParagraphStyle {
         let family = |stack: &'static str| {
             SharedString::from(stack.split(',').next().unwrap().trim_matches('"'))
         };
-        let metrics = CodeBoxMetrics::from_oracle(mode);
+        let metrics = CodeBoxMetrics::for_theme(mode);
         Self {
+            theme: mode.into(),
             font_family: family(typography.font_family),
             code_font_family: family(typography.font_code_family),
             font_size: typography.font_base_px,
@@ -374,6 +376,7 @@ impl RichParagraphStyle {
             line_height: typography.line_height_base_px,
             baseline_offset: None,
             letter_spacing: 0.,
+            align: TextAlign::Left,
             text_color: color(theme.text_primary),
             link_color: color(theme.link),
             code_bg: color(theme.background_code_block),
@@ -415,6 +418,8 @@ pub enum DecorationKind {
     Underline,
     Strikethrough,
     Link(String),
+    /// Background of a highlighted run, painted behind its glyphs.
+    Highlight,
 }
 
 #[derive(Clone, Debug)]
@@ -434,6 +439,9 @@ struct Fragment {
 #[derive(Debug)]
 pub struct LaidOutRichLine {
     pub source_utf16: Range<u64>,
+    /// Left edge of the line inside the layout width (non-zero for centered and
+    /// right-aligned text).
+    pub x: Pixels,
     pub width: Pixels,
     pub baseline_y: Pixels,
     pub top: Pixels,
@@ -476,7 +484,7 @@ impl LaidOutRichLine {
             .get(self.cells.partition_point(|c| c.source.end <= offset))
             .map(|c| c.leading)
             .or_else(|| self.cells.last().map(|c| c.trailing))
-            .unwrap_or(Pixels::ZERO)
+            .unwrap_or(self.x)
     }
 
     fn nearest_offset(&self, x: Pixels) -> u64 {
@@ -485,7 +493,7 @@ impl LaidOutRichLine {
             .map(|c| (c.source.start, c.leading))
             .chain(std::iter::once((
                 self.source_utf16.end,
-                self.cells.last().map_or(Pixels::ZERO, |c| c.trailing),
+                self.cells.last().map_or(self.x, |c| c.trailing),
             )))
             .min_by_key(|(_, pos)| (*pos - x).abs())
             .unwrap()
@@ -610,6 +618,23 @@ impl StyledFragment<'_> {
     }
 }
 
+/// Ink of a span: reference and link colors win, then code, then a custom `color` mark.
+fn span_color(style: &RichParagraphStyle, span: &RichSpan) -> Hsla {
+    if span.chip {
+        style.chip_fg
+    } else if span.marks.link.is_some() {
+        style.link_color
+    } else if span.marks.code {
+        style.code_fg
+    } else {
+        span.marks
+            .color
+            .as_deref()
+            .and_then(|color| style.theme.css_color(color))
+            .unwrap_or(style.text_color)
+    }
+}
+
 impl ParagraphLayout<'_> {
     fn fragments(&self, from: usize, to: usize) -> impl Iterator<Item = StyledFragment<'_>> {
         let p = self.paragraph;
@@ -658,23 +683,18 @@ impl ParagraphLayout<'_> {
                     } else {
                         &style.font_family
                     });
-                    font.weight = if s.marks.bold {
+                    // CSS `bolder`: regular and medium text step to 700, heavier text to 900.
+                    font.weight = if !s.marks.bold {
+                        style.base_weight
+                    } else if style.base_weight.0 <= 500.0 {
                         FontWeight::BOLD
                     } else {
-                        style.base_weight
+                        FontWeight::BLACK
                     };
                     if s.marks.italic {
                         font.style = FontStyle::Italic;
                     }
-                    let color = if s.chip {
-                        style.chip_fg
-                    } else if s.marks.link.is_some() {
-                        style.link_color
-                    } else if is_code {
-                        style.code_fg
-                    } else {
-                        style.text_color
-                    };
+                    let color = span_color(style, s);
                     let len = if s.chip {
                         text.len()
                     } else {
@@ -755,6 +775,7 @@ impl ParagraphLayout<'_> {
     ) -> LaidOutRichLine {
         let index = &self.paragraph.index;
         let baseline_y = top + self.baseline;
+        let first_decoration = decorations.len();
         let mut x = Pixels::ZERO;
         let mut fragments = Vec::new();
         let mut cells = Vec::new();
@@ -783,13 +804,20 @@ impl ParagraphLayout<'_> {
                         })
                     };
                     let style = self.style;
-                    let color = if span.marks.link.is_some() {
-                        style.link_color
-                    } else if span.marks.code {
-                        style.code_fg
-                    } else {
-                        style.text_color
-                    };
+                    let color = span_color(style, span);
+                    if !span.chip
+                        && let Some(highlight) = span
+                            .marks
+                            .background
+                            .as_deref()
+                            .and_then(|background| style.theme.css_color(background))
+                    {
+                        decorate(
+                            DecorationKind::Highlight,
+                            rect(top, self.line_height),
+                            highlight,
+                        );
+                    }
                     if span.chip
                         && let Some(reference) = &span.marks.reference
                     {
@@ -798,12 +826,15 @@ impl ParagraphLayout<'_> {
                             rect(top, self.line_height),
                             style.chip_bg,
                         );
-                        let icon_size = px(style.font_size * 0.8).min(width);
+                        let icon_size = px(style.font_size).min(width);
                         decorate(
                             DecorationKind::PageGlyph,
                             Bounds::new(
-                                point(visual.start, baseline_y - icon_size),
-                                size(icon_size * 0.8, icon_size),
+                                point(
+                                    visual.start,
+                                    (top + (self.line_height - icon_size) * 0.5).floor(),
+                                ),
+                                size(icon_size, icon_size),
                             ),
                             style.icon_color,
                         );
@@ -866,8 +897,29 @@ impl ParagraphLayout<'_> {
             });
             x = right;
         }
+        // The line was laid out from the left edge; move it to its aligned position. An
+        // empty line keeps its caret there too.
+        let free = (self.limit - x).max(Pixels::ZERO);
+        let offset = match self.style.align {
+            TextAlign::Left => Pixels::ZERO,
+            TextAlign::Center => (free * 0.5).floor(),
+            TextAlign::Right => free.floor(),
+        };
+        if offset > Pixels::ZERO {
+            for fragment in &mut fragments {
+                fragment.x += offset;
+            }
+            for cell in &mut cells {
+                cell.leading += offset;
+                cell.trailing += offset;
+            }
+            for decoration in &mut decorations[first_decoration..] {
+                decoration.bounds.origin.x += offset;
+            }
+        }
         LaidOutRichLine {
             source_utf16: index.graphemes[start].utf16..index.graphemes[end].utf16,
+            x: offset,
             width: x,
             baseline_y,
             top,
@@ -878,6 +930,28 @@ impl ParagraphLayout<'_> {
 }
 
 impl RichParagraph {
+    /// Byte offsets into `source` where a line may end. A reference breaks like an inline
+    /// object (UAX #14 class CB) rather than like the space that stands for it in the
+    /// document, so the words before it stay on their line when only the reference wraps.
+    fn break_opportunities(&self) -> Vec<usize> {
+        const OBJECT: char = '\u{fffc}';
+        let mut text = String::with_capacity(self.source.len());
+        let mut references = Vec::new();
+        for span in &self.spans {
+            if span.chip {
+                references.push(text.len());
+                text.push(OBJECT);
+            } else {
+                text.push_str(&self.source[span.source_bytes.clone()]);
+            }
+        }
+        // Every reference is one source byte but `OBJECT.len_utf8()` bytes of `text`.
+        let extra = OBJECT.len_utf8() - 1;
+        linebreaks(&text)
+            .map(|(byte, _)| byte - extra * references.partition_point(|&at| at < byte))
+            .collect()
+    }
+
     pub fn layout(
         &self,
         ts: &WindowTextSystem,
@@ -901,7 +975,7 @@ impl RichParagraph {
                 .map(px)
                 .unwrap_or_else(|| ((line_height + ascent - descent) / 2.).round()),
         };
-        let breaks: Vec<usize> = linebreaks(&self.source).map(|(byte, _)| byte).collect();
+        let breaks = self.break_opportunities();
         let mut lines = Vec::new();
         let mut decorations = Vec::new();
         let mut width = Pixels::ZERO;
@@ -909,7 +983,7 @@ impl RichParagraph {
         let mut start = 0;
         let mut append = |a, b| {
             let line = layout.line(a, b, top, &mut decorations);
-            width = width.max(line.width);
+            width = width.max(line.x + line.width);
             lines.push(line);
             top += line_height;
         };
@@ -959,7 +1033,12 @@ impl LaidOutRichParagraph {
         &self.decorations
     }
 
-    pub fn caret_rect(&self, position: CaretPosition) -> Bounds<Pixels> {
+    pub fn line_height(&self) -> Pixels {
+        self.line_height
+    }
+
+    /// Index of the line holding `position` and the caret's x on that line.
+    pub fn caret_line_and_x(&self, position: CaretPosition) -> (usize, Pixels) {
         let offset = position.utf16_offset;
         let i = match position.affinity {
             WrapAffinity::Upstream => self.lines.partition_point(|l| l.source_utf16.end < offset),
@@ -968,11 +1047,107 @@ impl LaidOutRichParagraph {
                 .partition_point(|l| l.source_utf16.start <= offset)
                 .saturating_sub(1),
         };
-        let line = &self.lines[i.min(self.lines.len() - 1)];
+        let i = i.min(self.lines.len() - 1);
+        (i, self.lines[i].x_for_offset(offset))
+    }
+
+    pub fn caret_rect(&self, position: CaretPosition) -> Bounds<Pixels> {
+        let (line, x) = self.caret_line_and_x(position);
         Bounds::new(
-            point(line.x_for_offset(offset), line.top),
+            point(x, self.lines[line].top),
             size(px(1.), self.line_height),
         )
+    }
+
+    /// Paint the paragraph with its top-left corner at `origin`: decorations, the given
+    /// selection fills, glyphs, strokes, then the given carets.
+    pub fn paint_at(
+        &self,
+        origin: Point<Pixels>,
+        selections: &[(Range<u64>, Hsla)],
+        carets: &[(CaretPosition, Hsla)],
+        hovered_link: Option<&Range<u64>>,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        static PAGE_ICON: std::sync::OnceLock<IconPaint> = std::sync::OnceLock::new();
+        let translated = |b: Bounds<Pixels>| Bounds::new(origin + b.origin, b.size);
+        let style = &self.style;
+        for d in &self.decorations {
+            let bounds = translated(d.bounds);
+            match &d.kind {
+                DecorationKind::Highlight | DecorationKind::ReferenceChip(_) => {
+                    window.paint_quad(fill(bounds, d.color));
+                }
+                DecorationKind::CodePill => window.paint_quad(
+                    fill(bounds, d.color)
+                        .corner_radii(px(style.code_radius))
+                        .border_widths(px(style.code_border_width))
+                        .border_color(style.code_border),
+                ),
+                DecorationKind::PageGlyph => PAGE_ICON
+                    .get_or_init(|| IconPaint::named("LinkedPageIcon"))
+                    .paint(bounds, d.color, window, cx),
+                _ => {}
+            }
+        }
+        for (range, color) in selections {
+            for rect in self.selection_rects(range.start, range.end) {
+                window.paint_quad(fill(translated(rect), *color));
+            }
+        }
+        for line in &self.lines {
+            for fragment in &line.fragments {
+                let shaped = &fragment.shaped;
+                let glyph_origin = origin + point(fragment.x, line.baseline_y - shaped.ascent);
+                shaped
+                    .paint(
+                        glyph_origin,
+                        shaped.ascent + shaped.descent,
+                        TextAlign::Left,
+                        None,
+                        window,
+                        cx,
+                    )
+                    .log_err();
+            }
+        }
+        for d in &self.decorations {
+            if matches!(
+                d.kind,
+                DecorationKind::Underline
+                    | DecorationKind::Strikethrough
+                    | DecorationKind::ReferenceDivider
+            ) {
+                window.paint_quad(fill(translated(d.bounds), d.color));
+            } else if matches!(d.kind, DecorationKind::Link(_))
+                && hovered_link
+                    .is_some_and(|r| r.start < d.source_utf16.end && d.source_utf16.start < r.end)
+            {
+                let line = &self.lines[self
+                    .lines
+                    .partition_point(|line| line.top < d.bounds.origin.y)];
+                let stroke = Bounds::new(
+                    point(d.bounds.origin.x, line.baseline_y + px(1.)),
+                    size(d.bounds.size.width, px(1.)),
+                );
+                window.paint_quad(fill(translated(stroke), d.color));
+            }
+        }
+        self.paint_carets(origin, carets, window);
+    }
+
+    /// Paint only the carets, for callers that clip the paragraph but not its carets.
+    pub fn paint_carets(
+        &self,
+        origin: Point<Pixels>,
+        carets: &[(CaretPosition, Hsla)],
+        window: &mut Window,
+    ) {
+        for (position, color) in carets {
+            let rect = self.caret_rect(*position);
+            window.paint_quad(fill(Bounds::new(origin + rect.origin, rect.size), *color));
+        }
     }
 
     pub fn hit_test(&self, local_point: Point<Pixels>) -> CaretPosition {
@@ -1037,84 +1212,18 @@ impl RichParagraphElement {
 
     fn paint(self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         let layout = &self.layout;
-        let translated = |b: Bounds<Pixels>| Bounds::new(bounds.origin + b.origin, b.size);
+        // Glyphs and decorations stay inside the element; carets may sit on its edge.
         window.with_content_mask(Some(ui::ContentMask { bounds }), |window| {
-            for d in layout.inline_decorations() {
-                let bounds = translated(d.bounds);
-                let style = &layout.style;
-                match &d.kind {
-                    DecorationKind::CodePill => window.paint_quad(
-                        fill(bounds, d.color)
-                            .corner_radii(px(style.code_radius))
-                            .border_widths(px(style.code_border_width))
-                            .border_color(style.code_border),
-                    ),
-                    DecorationKind::ReferenceChip(_) => window.paint_quad(fill(bounds, d.color)),
-                    DecorationKind::PageGlyph => {
-                        window.paint_quad(
-                            ui::outline(bounds, d.color, ui::BorderStyle::Solid)
-                                .corner_radii(px(1.)),
-                        );
-                        for dy in [0.38, 0.63] {
-                            let origin = bounds.origin
-                                + point(bounds.size.width * 0.22, bounds.size.height * dy);
-                            window.paint_quad(fill(
-                                Bounds::new(origin, size(bounds.size.width * 0.56, px(0.8))),
-                                d.color,
-                            ));
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            for (range, color) in &self.selections {
-                for rect in layout.selection_rects(range.start, range.end) {
-                    window.paint_quad(fill(translated(rect), *color));
-                }
-            }
-            for line in layout.lines() {
-                for fragment in &line.fragments {
-                    let shaped = &fragment.shaped;
-                    let origin = bounds.origin + point(fragment.x, line.baseline_y - shaped.ascent);
-                    shaped
-                        .paint(
-                            origin,
-                            shaped.ascent + shaped.descent,
-                            TextAlign::Left,
-                            None,
-                            window,
-                            cx,
-                        )
-                        .log_err();
-                }
-            }
-            for d in layout.inline_decorations() {
-                if matches!(
-                    d.kind,
-                    DecorationKind::Underline
-                        | DecorationKind::Strikethrough
-                        | DecorationKind::ReferenceDivider
-                ) {
-                    window.paint_quad(fill(translated(d.bounds), d.color));
-                } else if matches!(d.kind, DecorationKind::Link(_))
-                    && self.hovered_link.as_ref().is_some_and(|r| {
-                        r.start < d.source_utf16.end && d.source_utf16.start < r.end
-                    })
-                {
-                    let line = &layout.lines[layout
-                        .lines
-                        .partition_point(|line| line.top < d.bounds.origin.y)];
-                    let stroke = Bounds::new(
-                        point(d.bounds.origin.x, line.baseline_y + px(1.)),
-                        size(d.bounds.size.width, px(1.)),
-                    );
-                    window.paint_quad(fill(translated(stroke), d.color));
-                }
-            }
+            layout.paint_at(
+                bounds.origin,
+                &self.selections,
+                &[],
+                self.hovered_link.as_ref(),
+                window,
+                cx,
+            );
         });
-        for (pos, color) in self.carets {
-            window.paint_quad(fill(translated(layout.caret_rect(pos)), color));
-        }
+        layout.paint_carets(bounds.origin, &self.carets, window);
     }
 }
 
@@ -1455,6 +1564,117 @@ mod tests {
     }
 
     #[test]
+    fn code_box_constants_match_the_browser_oracle() {
+        let oracle: serde_json::Value =
+            serde_json::from_str(include_str!("../../../tokens/style-oracle.json")).unwrap();
+        for (mode, name) in [(ThemeMode::Light, "light"), (ThemeMode::Dark, "dark")] {
+            let node = &oracle["themes"][name]["inline_formats"]["inline_code"];
+            let css = |property: &str| -> f32 {
+                node["computed"][property]
+                    .as_str()
+                    .and_then(|s| s.strip_suffix("px"))
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or_else(|| panic!("{name} inline code {property} is a pixel measure"))
+            };
+            let baseline = node["baseline_offset_px"].as_f64().unwrap() as f32;
+            let height = node["rect"]["height"].as_f64().unwrap() as f32;
+            let border = css("border_top_width");
+            let padding_bottom = css("padding_bottom");
+            assert_eq!(
+                CodeBoxMetrics::for_theme(mode),
+                CodeBoxMetrics {
+                    baseline,
+                    descent: height - baseline - padding_bottom - border,
+                    border,
+                    radius: css("border_radius"),
+                    padding_x: css("padding_left"),
+                    padding_bottom,
+                },
+                "{name} inline code box"
+            );
+        }
+    }
+
+    #[test]
+    fn marks_resolve_colors_highlights_and_css_bolder() {
+        let platform = HeadlessPlatform::new(64, 64, 1.);
+        let app = Application::with_platform(platform)
+            .run_embedded(|cx| crate::register_bundled_fonts(cx).unwrap());
+        app.update(|cx| {
+            let ts = WindowTextSystem::new(cx.text_system().clone());
+            let style = RichParagraphStyle::default();
+            let colored = |key: &str, value: &str| {
+                insert(
+                    "mark",
+                    Some([(key.into(), Any::String(value.into()))].into()),
+                )
+            };
+            let para = RichParagraph::from_delta(vec![
+                colored("background", "var(--affine-text-highlight-orange)"),
+                insert(" ", None),
+                colored("color", "var(--affine-text-highlight-foreground-blue)"),
+                insert(" ", None),
+                colored("background", "not-a-color"),
+            ])
+            .unwrap();
+            assert_eq!(
+                para.spans()[0].marks.background.as_deref(),
+                Some("var(--affine-text-highlight-orange)")
+            );
+            let layout = para.layout(&ts, &style, 300.);
+            let highlights: Vec<_> = layout
+                .inline_decorations()
+                .iter()
+                .filter(|d| d.kind == DecorationKind::Highlight)
+                .collect();
+            // Only a color the theme can resolve becomes a highlight.
+            assert_eq!(highlights.len(), 1);
+            assert_eq!(highlights[0].source_utf16, 0..4);
+            assert_eq!(
+                Some(highlights[0].color),
+                style.theme.css_var("--affine-text-highlight-orange")
+            );
+            assert_eq!(highlights[0].bounds.size.height, layout.line_height());
+            assert_eq!(
+                span_color(&style, &para.spans()[2]),
+                style
+                    .theme
+                    .css_var("--affine-text-highlight-foreground-blue")
+                    .unwrap()
+            );
+            assert_eq!(span_color(&style, &para.spans()[0]), style.text_color);
+
+            // `bolder` widens regular text to 700 and heading weights to 900.
+            let bold = RichParagraph::from_delta(vec![insert(
+                "Bolder",
+                Some([("bold".into(), Any::True)].into()),
+            )])
+            .unwrap();
+            let width = |base_weight| {
+                let style = RichParagraphStyle {
+                    base_weight,
+                    ..RichParagraphStyle::default()
+                };
+                bold.layout(&ts, &style, 300.).size().width
+            };
+            let mut font = ui::font("Inter");
+            let mut plain_width = |weight| {
+                font.weight = weight;
+                let run = TextRun {
+                    len: 6,
+                    font: font.clone(),
+                    color: style.text_color,
+                    ..Default::default()
+                };
+                ts.shape_line("Bolder".into(), px(style.font_size), &[run], None)
+                    .width()
+            };
+            assert_eq!(width(FontWeight::NORMAL), plain_width(FontWeight::BOLD));
+            assert_eq!(width(FontWeight::SEMIBOLD), plain_width(FontWeight::BLACK));
+        });
+    }
+
+    #[test]
     fn reference_title_resolution_preserves_document_identity() {
         let reference = |title: Option<&str>| {
             let mut attrs = vec![
@@ -1492,6 +1712,118 @@ mod tests {
             assert_eq!(p.spans()[0].source_utf16, 0..1);
             assert_eq!(p.delta(), delta);
         }
+    }
+
+    #[test]
+    fn a_wrapping_reference_leaves_the_words_before_it_on_their_line() {
+        let platform = HeadlessPlatform::new(64, 64, 1.);
+        let app = Application::with_platform(platform)
+            .run_embedded(|cx| crate::register_bundled_fonts(cx).unwrap());
+        app.update(|cx| {
+            let ts = WindowTextSystem::new(cx.text_system().clone());
+            let style = RichParagraphStyle::default();
+            let reference = Any::Object(Box::new(
+                [
+                    ("type".into(), Any::String("LinkedPage".into())),
+                    ("pageId".into(), Any::String("doc:abc".into())),
+                    ("title".into(), Any::String("Edgeless notes".into())),
+                ]
+                .into_iter()
+                .collect(),
+            ));
+            let prefix = "Reference such as ";
+            let at = prefix.len() as u64;
+            let para = RichParagraph::from_delta(vec![
+                insert(prefix, None),
+                insert(" ", Some([("reference".into(), reference)].into())),
+                insert(". Next", None),
+            ])
+            .unwrap();
+            let chip = para.layout(&ts, &style, 2000.).selection_rects(at, at + 1)[0];
+            // Wide enough for the words or for the reference, but not for both.
+            let width = f32::from(chip.origin.x + chip.size.width * 0.5);
+            let layout = para.layout(&ts, &style, width);
+            let lines = layout.lines();
+            assert_eq!(lines[0].source_utf16, 0..at);
+            // The reference starts the next line and keeps its closing punctuation.
+            assert_eq!(lines[1].source_utf16.start, at);
+            assert!(lines[1].source_utf16.end > at + 1);
+        });
+    }
+
+    #[test]
+    fn centered_and_right_aligned_lines_move_glyphs_carets_and_decorations_together() {
+        let platform = HeadlessPlatform::new(64, 64, 1.);
+        let app = Application::with_platform(platform)
+            .run_embedded(|cx| crate::register_bundled_fonts(cx).unwrap());
+        app.update(|cx| {
+            let ts = WindowTextSystem::new(cx.text_system().clone());
+            let limit = 120.;
+            let para = RichParagraph::from_delta(vec![
+                insert("Aligned ", None),
+                insert("code", Some([("code".into(), Any::True)].into())),
+                insert(" wraps over several lines", None),
+            ])
+            .unwrap();
+            let left = para.layout(&ts, &RichParagraphStyle::default(), limit);
+            assert!(left.lines().len() > 2);
+            for align in [TextAlign::Center, TextAlign::Right] {
+                let style = RichParagraphStyle {
+                    align,
+                    ..RichParagraphStyle::default()
+                };
+                let layout = para.layout(&ts, &style, limit);
+                assert_eq!(layout.lines().len(), left.lines().len());
+                for (line, reference) in layout.lines().iter().zip(left.lines()) {
+                    assert_eq!(line.source_utf16, reference.source_utf16);
+                    assert_eq!(line.width, reference.width);
+                    let free = px(limit) - line.width;
+                    let expected = match align {
+                        TextAlign::Right => free.floor(),
+                        _ => (free * 0.5).floor(),
+                    };
+                    assert_eq!(line.x, expected);
+                    assert!(line.x + line.width <= px(limit));
+                    // Carets, selections and hit testing follow the moved line.
+                    let start = CaretPosition {
+                        utf16_offset: line.source_utf16.start,
+                        affinity: WrapAffinity::Downstream,
+                    };
+                    assert_eq!(layout.caret_rect(start).origin.x, line.x);
+                    let hit = layout.hit_test(point(line.x, line.top + px(1.)));
+                    assert_eq!(hit.utf16_offset, line.source_utf16.start);
+                }
+                let pill = |layout: &LaidOutRichParagraph| {
+                    layout
+                        .inline_decorations()
+                        .iter()
+                        .find(|d| d.kind == DecorationKind::CodePill)
+                        .unwrap()
+                        .bounds
+                };
+                assert_eq!(
+                    pill(&layout).origin.x,
+                    pill(&left).origin.x + layout.lines()[0].x
+                );
+                assert_eq!(layout.size().width.max(px(limit)), px(limit));
+
+                // An empty paragraph keeps its caret at the aligned edge.
+                let empty = RichParagraph::from_delta(Vec::new())
+                    .unwrap()
+                    .layout(&ts, &style, limit);
+                let caret = empty.caret_rect(CaretPosition {
+                    utf16_offset: 0,
+                    affinity: WrapAffinity::Downstream,
+                });
+                assert_eq!(
+                    caret.origin.x,
+                    match align {
+                        TextAlign::Right => px(limit),
+                        _ => px(limit * 0.5),
+                    }
+                );
+            }
+        });
     }
 
     #[test]

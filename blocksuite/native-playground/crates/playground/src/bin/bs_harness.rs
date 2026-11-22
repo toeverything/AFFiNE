@@ -5,7 +5,9 @@ use blocksuite_playground_doc::{
     session::PageDocSession,
     wire::{DocMessage, RoomBinaryFrame, decode_binary_frame, encode_binary_frame},
 };
-use playground::{PlaygroundView, register_bundled_fonts};
+use playground::{
+    PlaygroundMode, PlaygroundOptions, PlaygroundTheme, PlaygroundView, register_bundled_fonts,
+};
 use serde::Serialize;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -76,7 +78,11 @@ struct HeadlessSession {
     headless_win: HeadlessWindow,
 }
 
-fn start_headless_session(width: u32, height: u32) -> Result<HeadlessSession> {
+fn start_headless_session(
+    width: u32,
+    height: u32,
+    options: PlaygroundOptions,
+) -> Result<HeadlessSession> {
     let platform = HeadlessPlatform::new(width, height, 1.0);
     let init_cell: Rc<RefCell<Option<Result<WindowHandle<PlaygroundView>>>>> =
         Rc::new(RefCell::new(None));
@@ -84,7 +90,7 @@ fn start_headless_session(width: u32, height: u32) -> Result<HeadlessSession> {
 
     let app = Application::with_platform(platform.clone()).run_embedded(move |cx| {
         let res = (|| -> Result<WindowHandle<PlaygroundView>> {
-            register_bundled_fonts(cx).context("registering bundled Inter font")?;
+            register_bundled_fonts(cx).context("registering bundled fonts")?;
             cx.open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(Bounds::new(
@@ -93,7 +99,7 @@ fn start_headless_session(width: u32, height: u32) -> Result<HeadlessSession> {
                     ))),
                     ..WindowOptions::default()
                 },
-                |_, cx| cx.new(PlaygroundView::new),
+                |_, cx| cx.new(|cx| PlaygroundView::with_options(options, cx)),
             )
             .context("opening headless PlaygroundView window")
         })();
@@ -124,8 +130,11 @@ fn render_headless(
     out_png: PathBuf,
     out_snapshot: PathBuf,
     click_edgeless: bool,
+    options: PlaygroundOptions,
 ) -> Result<()> {
-    let session = start_headless_session(width, height)?;
+    let theme = options.theme;
+    let mode = options.mode;
+    let session = start_headless_session(width, height, options)?;
     session.headless_win.request_frame();
 
     if click_edgeless {
@@ -159,7 +168,7 @@ fn render_headless(
 
     anyhow::ensure!(
         glyph_count > 0,
-        "headless render produced 0 text glyphs; check bundled Inter font registration"
+        "headless render produced 0 text glyphs; check bundled font registration"
     );
 
     if let Some(parent) = out_png.parent() {
@@ -180,12 +189,18 @@ fn render_headless(
     std::fs::write(&out_snapshot, snapshot_json)
         .with_context(|| format!("writing snapshot to {}", out_snapshot.display()))?;
 
+    let shown_mode = if click_edgeless || mode == PlaygroundMode::Edgeless {
+        "edgeless"
+    } else {
+        "page"
+    };
     println!(
-        "Rendered {}x{} headless PNG ({} glyphs{}) to {} and snapshot ({} elements) to {}",
+        "Rendered {}x{} headless PNG ({} glyphs, {} {}) to {} and snapshot ({} elements) to {}",
         width,
         height,
         glyph_count,
-        if click_edgeless { ", edgeless" } else { "" },
+        shown_mode,
+        theme.as_str(),
         out_png.display(),
         snapshot.elements.len(),
         out_snapshot.display()
@@ -327,7 +342,7 @@ fn run_fps_check() -> Result<()> {
         let dt_nanos = (1_000_000_000_u64 + u64::from(fps) / 2) / u64::from(fps);
         let dt = Duration::from_nanos(dt_nanos);
 
-        let session = start_headless_session(1280, 800)?;
+        let session = start_headless_session(1280, 800, PlaygroundOptions::default())?;
         session.headless_win.request_frame();
 
         let (page_x, edgeless_x, click_pt) = session.app.update(|cx| {
@@ -679,7 +694,7 @@ fn run_bench(
     let commit = resolve_commit_sha(explicit_commit.as_deref())?;
     let doc_1k_edits_ms = bench_doc_1k_edits_ms()?;
     let room_sync_1k_ops_ms = bench_room_sync_1k_ops_ms()?;
-    let session = start_headless_session(1280, 800)?;
+    let session = start_headless_session(1280, 800, PlaygroundOptions::default())?;
 
     // 1 warmup frame outside timing loop
     session.headless_win.request_frame();
@@ -760,6 +775,7 @@ fn main() -> Result<()> {
             let mut width = 1280_u32;
             let mut height = 800_u32;
             let mut click_edgeless = false;
+            let mut options = PlaygroundOptions::default();
             while let Some(arg) = args.next() {
                 match arg.as_str() {
                     "--out" => out_png = PathBuf::from(args.next().context("--out requires path")?),
@@ -772,10 +788,27 @@ fn main() -> Result<()> {
                         height = args.next().context("--height requires value")?.parse()?
                     }
                     "--click-edgeless" => click_edgeless = true,
+                    "--theme" => {
+                        let value = args.next().context("--theme requires light|dark")?;
+                        options.theme = PlaygroundTheme::parse(&value)
+                            .with_context(|| format!("unknown theme {value:?} (light|dark)"))?;
+                    }
+                    "--mode" => {
+                        let value = args.next().context("--mode requires page|edgeless")?;
+                        options.mode = PlaygroundMode::parse(&value)
+                            .with_context(|| format!("unknown mode {value:?} (page|edgeless)"))?;
+                    }
                     other => bail!("unknown render flag: {other}"),
                 }
             }
-            render_headless(width, height, out_png, out_snapshot, click_edgeless)
+            render_headless(
+                width,
+                height,
+                out_png,
+                out_snapshot,
+                click_edgeless,
+                options,
+            )
         }
         "render-rich-sample" => render_rich_sample(args),
         "audit" => {

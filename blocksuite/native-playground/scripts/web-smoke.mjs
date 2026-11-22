@@ -9,6 +9,11 @@
  *      the title and mode-switcher pill regions.
  *   3. Clicking the `"Edgeless"` button on the `<canvas>` triggers an observable
  *      visual state transition to Edgeless mode.
+ *
+ * `--query <string>` loads the page with a query string (for example a live room,
+ * `room=<room>&ws=<ws_url>`), and `--min-title-ink <pixels>` raises the amount of ink
+ * the title/body region must show before the page is captured, so a page that arrives
+ * over the network is captured after it rendered.
  */
 
 import { spawn } from 'node:child_process';
@@ -26,12 +31,23 @@ function parseArgs(argv) {
   const args = {
     outPage: path.join(ROOT, 'artifacts', 'wasm-chromium.png'),
     outEdgeless: path.join(ROOT, 'artifacts', 'wasm-chromium-edgeless.png'),
+    // Query string appended to the page URL, e.g. `room=<room>&ws=<ws_url>`.
+    query: '',
+    // Dark ink pixels required in the title/body region before the page is captured.
+    minTitleInk: 200,
   };
   for (let i = 2; i < argv.length; i += 1) {
     if (argv[i] === '--out' && argv[i + 1]) {
       args.outPage = path.resolve(argv[++i]);
     } else if (argv[i] === '--out-edgeless' && argv[i + 1]) {
       args.outEdgeless = path.resolve(argv[++i]);
+    } else if (argv[i] === '--query' && argv[i + 1]) {
+      args.query = argv[++i].replace(/^\?/, '');
+    } else if (argv[i] === '--min-title-ink' && argv[i + 1]) {
+      args.minTitleInk = Number(argv[++i]);
+      if (!Number.isFinite(args.minTitleInk) || args.minTitleInk < 0) {
+        throw new Error('--min-title-ink requires a non-negative number');
+      }
     }
   }
   return args;
@@ -328,7 +344,8 @@ async function main() {
       }
     });
 
-    await cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/` });
+    const pageUrl = `http://127.0.0.1:${port}/${args.query ? `?${args.query}` : ''}`;
+    await cdp.send('Page.navigate', { url: pageUrl });
 
     // Wait for wasm init + graphics init + ResizeObserver sizing canvas to 1280x800
     let ready = false;
@@ -385,7 +402,7 @@ async function main() {
       img1 = decodePngRgba(png1);
       pillDark = countDarkInkPixels(img1, 547, 8, 733, 44);
       titleDark = countDarkInkPixels(img1, 168, 100, 900, 260);
-      if (pillDark >= 40 && titleDark >= 200) {
+      if (pillDark >= 40 && titleDark >= args.minTitleInk) {
         break;
       }
     }
@@ -399,9 +416,9 @@ async function main() {
         `Expected rendered glyph pixels inside mode-switcher pill (>=40), got ${pillDark}. state=${JSON.stringify(lastState)} logs=${consoleLogs.join(' | ')}`,
       );
     }
-    if (titleDark < 200) {
+    if (titleDark < args.minTitleInk) {
       throw new Error(
-        `Expected rendered glyph pixels inside title/body region (>=200), got ${titleDark}. state=${JSON.stringify(lastState)} logs=${consoleLogs.join(' | ')}`,
+        `Expected rendered glyph pixels inside title/body region (>=${args.minTitleInk}), got ${titleDark}. state=${JSON.stringify(lastState)} logs=${consoleLogs.join(' | ')}`,
       );
     }
 

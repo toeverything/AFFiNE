@@ -310,15 +310,23 @@ impl RoomState {
             return;
         }
 
+        // `y-protocols` expires a remote peer by announcing `{ clock: c, state: null }` at the
+        // peer's current clock, and `Awareness::apply_update` accepts that equal-clock
+        // live-to-deleted transition, so it must reach the other connections as well.
         let forward_clients: Vec<u64> = to_apply
             .iter()
             .filter_map(|(&cid, incoming)| {
-                let is_newer = self
+                let changes_state = self
                     .awareness
                     .get_states()
                     .get(&cid)
-                    .is_none_or(|existing| incoming.clock() > existing.clock());
-                is_newer.then_some(cid)
+                    .is_none_or(|existing| {
+                        incoming.clock() > existing.clock()
+                            || (incoming.clock() == existing.clock()
+                                && incoming.is_deleted()
+                                && !existing.is_deleted())
+                    });
+                changes_state.then_some(cid)
             })
             .collect();
 

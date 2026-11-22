@@ -273,6 +273,9 @@ test('deterministic hard gate vs advisory shared-runner timings and --fail-on-re
     const timingOnlyPath = path.join(dir, 'timing-only.json');
     const bytesRegPath = path.join(dir, 'bytes-reg.json');
     const jsonOut = path.join(dir, 'verdict.json');
+    // The gate itself is under test: no ceiling from the repository's perf/accepted.json applies.
+    const noAcceptedPath = path.join(dir, 'accepted.json');
+    fs.writeFileSync(noAcceptedPath, '[]');
 
     fs.writeFileSync(basePath, JSON.stringify(makeMetrics('1'.repeat(40))));
     // Only *_ms timings slowed down (>10%) -> ADVISORY_SLOWDOWN, must exit 0 under --fail-on-regression
@@ -313,6 +316,8 @@ test('deterministic hard gate vs advisory shared-runner timings and --fail-on-re
         timingOnlyPath,
         '--baseline',
         basePath,
+        '--accepted',
+        noAcceptedPath,
         '--json-out',
         jsonOut,
         '--fail-on-regression',
@@ -340,6 +345,8 @@ test('deterministic hard gate vs advisory shared-runner timings and --fail-on-re
           bytesRegPath,
           '--baseline',
           basePath,
+          '--accepted',
+          noAcceptedPath,
           '--json-out',
           jsonOut,
           '--fail-on-regression',

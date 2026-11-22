@@ -11,10 +11,12 @@ import { MemoryBlobSource } from '@blocksuite/affine/sync';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
 
+import { empty } from '../../../../starter/data/empty.js';
 import { MockServerBlobSource } from '../../blob/mock-server.js';
 import {
   hasUsablePageRoot,
   initRoomDocWithSeed,
+  reusePartialSeedDoc,
   RoomWebSocketClient,
 } from '../index.js';
 
@@ -819,28 +821,7 @@ describe('Rust bs-relay + WorkspaceSession <-> JS BlockSuite TestWorkspace', () 
       const existing = ws.getDoc('doc:home');
       const targetWs =
         existing && !hasUsablePageRoot(existing)
-          ? (() => {
-              let claimed = false;
-              return new Proxy(ws, {
-                get(target, prop, receiver) {
-                  if (prop === 'getDoc') {
-                    return (id: string) =>
-                      id === 'doc:home' && !claimed ? null : target.getDoc(id);
-                  }
-                  if (prop === 'createDoc') {
-                    return (id?: string) => {
-                      if (id === 'doc:home' && !claimed) {
-                        claimed = true;
-                        return existing;
-                      }
-                      return target.createDoc(id);
-                    };
-                  }
-                  const val = Reflect.get(target, prop, receiver);
-                  return typeof val === 'function' ? val.bind(target) : val;
-                },
-              });
-            })()
+          ? reusePartialSeedDoc(ws, 'doc:home', existing)
           : ws;
 
       // Exact preset.ts pattern: checks hasDoc before populating blocks
@@ -913,6 +894,184 @@ describe('Rust bs-relay + WorkspaceSession <-> JS BlockSuite TestWorkspace', () 
     observerWs.forceStop();
     observerWs.dispose();
     observerClient.close();
+  });
+
+  it('reusePartialSeedDoc runs the initializer once, on the first load(initFn), even after a bare load()', () => {
+    const underlyingLoads: boolean[] = [];
+    const existing = {
+      load(initFn?: () => void) {
+        underlyingLoads.push(initFn !== undefined);
+      },
+    };
+    const collection: {
+      getDoc(id: string): typeof existing | null;
+      createDoc(id?: string): typeof existing;
+    } = {
+      getDoc: id => (id === 'doc:home' ? existing : null),
+      createDoc: () => existing,
+    };
+    const view = reusePartialSeedDoc(collection, 'doc:home', existing);
+    expect(view.getDoc('doc:home')).toBeNull();
+    const doc = view.createDoc('doc:home');
+    expect(view.getDoc('doc:home')).toBe(doc);
+
+    let initRuns = 0;
+    doc.load();
+    expect(initRuns).toBe(0);
+    doc.load(() => {
+      initRuns += 1;
+    });
+    doc.load(() => {
+      initRuns += 1;
+    });
+    expect(initRuns).toBe(1);
+    // The already loaded doc is only ever loaded bare; the view runs the initializer.
+    expect(underlyingLoads).toEqual([false, false, false]);
+  });
+
+  it('Promoted partial-seed winner runs an empty-style doc.load(initFn) initializer in place while a waiting observer converges', async () => {
+    const room = 'room-partial-seed-load-callback';
+    const makePeer = () => {
+      const client = new RoomWebSocketClient(
+        `${relayWsBase}/native-sync/rooms/${room}`
+      );
+      const workspace = new TestWorkspace({
+        id: room,
+        docSources: { main: client.createDocSource() },
+        awarenessSources: [client.createAwarenessSource()],
+        blobSources: { main: new MemoryBlobSource() },
+      });
+      workspace.storeExtensions = AffineSchemas.map(s =>
+        BlockSchemaExtension(s)
+      );
+      workspace.start();
+      return { client, workspace };
+    };
+
+    const { client: winnerClient, workspace: winnerWs } = makePeer();
+    const { client: survivorClient, workspace: survivorWs } = makePeer();
+    const { client: observerClient, workspace: observerWs } = makePeer();
+
+    await Promise.all([
+      winnerWs.waitForSynced(),
+      survivorWs.waitForSynced(),
+      observerWs.waitForSynced(),
+    ]);
+
+    // The winner pushes only the meta.pages entry for doc:home, then disappears.
+    expect(await winnerClient.claimSeed('seed:doc:home')).toBe(true);
+    winnerWs.meta.initialize();
+    winnerWs.createDoc('doc:home');
+    await winnerWs.waitForSynced();
+    await vi.waitFor(
+      () => {
+        expect(survivorWs.getDoc('doc:home')).not.toBeNull();
+        expect(observerWs.getDoc('doc:home')).not.toBeNull();
+      },
+      { timeout: 5_000 }
+    );
+
+    // Starter wiring with the real `empty` initializer, which adds its blocks inside
+    // `doc.load(() => { ... })`. initRoomDocWithSeed has already loaded the partial
+    // doc by the time the seed runs, so the callback must still fire through the
+    // reused doc.
+    let seedRuns = 0;
+    const emptyStyleSeed = (ws: TestWorkspace) => {
+      const existing = ws.getDoc('doc:home');
+      const seedCollection =
+        existing && !hasUsablePageRoot(existing)
+          ? reusePartialSeedDoc(ws, 'doc:home', existing)
+          : ws;
+      seedRuns += 1;
+      return empty(seedCollection, 'doc:home');
+    };
+
+    const survivorInitPromise = initRoomDocWithSeed({
+      collection: survivorWs,
+      roomClient: survivorClient,
+      docId: 'doc:home',
+      seedKey: 'seed:doc:home',
+      seed: () => emptyStyleSeed(survivorWs),
+    });
+    await new Promise(resolve => setTimeout(resolve, 60));
+    const observerInitPromise = initRoomDocWithSeed({
+      collection: observerWs,
+      roomClient: observerClient,
+      docId: 'doc:home',
+      seedKey: 'seed:doc:home',
+      seed: () => emptyStyleSeed(observerWs),
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+    winnerWs.forceStop();
+    winnerWs.dispose();
+    winnerClient.close();
+
+    const [survivorResult, observerResult] = await Promise.all([
+      survivorInitPromise,
+      observerInitPromise,
+    ]);
+    expect(survivorResult).toEqual({ seeded: true, offlineFallback: false });
+    expect(observerResult).toEqual({ seeded: false, offlineFallback: false });
+    expect(seedRuns).toBe(1);
+
+    // Both peers hold the single page root the empty initializer builds:
+    // affine:page + affine:surface + affine:note + affine:paragraph.
+    for (const ws of [survivorWs, observerWs]) {
+      await ws.waitForSynced();
+      expect(ws.meta.docMetas.length).toBe(1);
+      const seededDoc = ws.getDoc('doc:home')!;
+      expect(hasUsablePageRoot(seededDoc)).toBe(true);
+      const blocks = seededDoc.spaceDoc.getMap('blocks');
+      const flavours = Array.from(blocks.values())
+        .map(b => String((b as Y.Map<unknown>).get('sys:flavour')))
+        .sort((a, b) => a.localeCompare(b));
+      expect(flavours).toEqual([
+        'affine:note',
+        'affine:page',
+        'affine:paragraph',
+        'affine:surface',
+      ]);
+    }
+
+    // A winner whose seed leaves no page root is rejected instead of reporting success.
+    const { client: brokenClient, workspace: brokenWs } = (() => {
+      const client = new RoomWebSocketClient(
+        `${relayWsBase}/native-sync/rooms/room-seed-without-root`
+      );
+      const workspace = new TestWorkspace({
+        id: 'room-seed-without-root',
+        docSources: { main: client.createDocSource() },
+        awarenessSources: [client.createAwarenessSource()],
+        blobSources: { main: new MemoryBlobSource() },
+      });
+      workspace.storeExtensions = AffineSchemas.map(s =>
+        BlockSchemaExtension(s)
+      );
+      workspace.start();
+      return { client, workspace };
+    })();
+    await expect(
+      initRoomDocWithSeed({
+        collection: brokenWs,
+        roomClient: brokenClient,
+        docId: 'doc:home',
+        seedKey: 'seed:doc:home',
+        seed: () => {
+          brokenWs.createDoc('doc:home');
+        },
+      })
+    ).rejects.toThrow('finished without an affine:page root block');
+
+    for (const { ws, client } of [
+      { ws: survivorWs, client: survivorClient },
+      { ws: observerWs, client: observerClient },
+      { ws: brokenWs, client: brokenClient },
+    ]) {
+      ws.forceStop();
+      ws.dispose();
+      client.close();
+    }
   });
 
   it('JS dropConnection() mid-edit reconnects with L0 convergence and live bidirectional awareness', async () => {

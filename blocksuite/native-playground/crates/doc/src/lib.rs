@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod awareness;
+pub mod read;
 #[cfg(all(feature = "server", not(target_family = "wasm")))]
 pub mod room;
 pub mod schema;

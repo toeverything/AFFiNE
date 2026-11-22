@@ -20,6 +20,7 @@ import { MockServerBlobSource } from '../../_common/sync/blob/mock-server.js';
 import {
   hasUsablePageRoot,
   initRoomDocWithSeed,
+  reusePartialSeedDoc,
   RoomWebSocketClient,
 } from '../../_common/sync/room/index.js';
 import type { InitFn } from '../data/utils.js';
@@ -162,38 +163,13 @@ export async function initStarterDocCollection(collection: TestWorkspace) {
         seedKey: 'seed:doc:home',
         seed: async () => {
           // If a previous winner pushed meta.pages for doc:home and disconnected
-          // before seeding doc:home's blocks, reuse the existing doc:home in-place
-          // without calling removeDoc (which would destroy spaces['doc:home'] on other peers).
+          // before seeding doc:home's blocks, populate the existing doc:home in place.
           const existing = collection.getDoc('doc:home');
-          if (existing && !hasUsablePageRoot(existing)) {
-            let claimedExisting = false;
-            const seedCollection = new Proxy(collection, {
-              get(target, prop, receiver) {
-                if (prop === 'getDoc') {
-                  return (id: string) => {
-                    if (id === 'doc:home' && !claimedExisting) {
-                      return null;
-                    }
-                    return target.getDoc(id);
-                  };
-                }
-                if (prop === 'createDoc') {
-                  return (id?: string) => {
-                    if (id === 'doc:home' && !claimedExisting) {
-                      claimedExisting = true;
-                      return existing;
-                    }
-                    return target.createDoc(id);
-                  };
-                }
-                const val = Reflect.get(target, prop, receiver);
-                return typeof val === 'function' ? val.bind(target) : val;
-              },
-            });
-            await initFn?.(seedCollection, 'doc:home');
-          } else {
-            await initFn?.(collection, 'doc:home');
-          }
+          const seedCollection =
+            existing && !hasUsablePageRoot(existing)
+              ? reusePartialSeedDoc(collection, 'doc:home', existing)
+              : collection;
+          await initFn?.(seedCollection, 'doc:home');
         },
         allowOfflineFallback: !explicitRelayWs,
         onOfflineFallback: () => {

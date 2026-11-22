@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "metric": "artifacts_bytes.web_wasm_raw",
+    "accepted_value": 14831945,
+    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+  },
+  {
+    "metric": "artifacts_bytes.web_wasm_gzip",
+    "accepted_value": 5016905,
+    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+  },
+  {
+    "metric": "artifacts_bytes.headless_bin",
+    "accepted_value": 92078597,
+    "reason": "Links blocksuite-playground-doc, 4 IBM Plex Mono faces, image decoders, RichParagraph, BlockFlow, and native/Web room sync client into playground"
+  }
+]

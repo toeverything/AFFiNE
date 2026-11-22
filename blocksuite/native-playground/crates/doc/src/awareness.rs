@@ -160,6 +160,19 @@ impl RoomAwareness {
         Ok(self.inner.encode_update(Some(&[self.inner.local_id()]))?)
     }
 
+    /// Set the local payload again after the connection that carried it was lost. The relay
+    /// tombstoned this client one clock above its last state when that connection dropped,
+    /// so the local clock advances twice to land above the tombstone.
+    pub fn reannounce_local_payload(
+        &mut self,
+        payload: &AwarenessPayload,
+        now_ms: u64,
+    ) -> DocResult<Vec<u8>> {
+        payload.validate()?;
+        self.inner.set_local_state(serde_json::to_string(payload)?);
+        self.set_local_payload(payload, now_ms)
+    }
+
     /// Mark the local client offline (`null`) and return the encoded removal update.
     pub fn clear_local_state(&mut self) -> DocResult<Vec<u8>> {
         self.inner.clear_local_state();

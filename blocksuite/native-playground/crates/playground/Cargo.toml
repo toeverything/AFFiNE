@@ -26,6 +26,7 @@ required-features = ["harness"]
 
 [dependencies]
 anyhow.workspace = true
+async-channel.workspace = true
 blocksuite-playground-doc = { path = "../doc", default-features = false }
 image.workspace = true
 serde.workspace = true
@@ -40,7 +41,31 @@ y-octo = { version = "0.3.0", default-features = false, features = ["session"] }
 tempfile = "3"
 ui = { path = "../ui", features = ["harness"] }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
+tokio-tungstenite = "0.26"
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+axum = { version = "0.8", features = ["ws"] }
+blocksuite-playground-doc = { path = "../doc", features = ["server"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook.workspace = true
+js-sys.workspace = true
 wasm-bindgen.workspace = true
-web-sys = { workspace = true, features = ["Document", "Element", "HtmlCanvasElement", "Window"] }
+wasm-bindgen-futures.workspace = true
+web-sys = { workspace = true, features = [
+    "BinaryType",
+    "CloseEvent",
+    "Document",
+    "Element",
+    "HtmlCanvasElement",
+    "Location",
+    "MessageEvent",
+    "Response",
+    "UrlSearchParams",
+    "WebSocket",
+    "Window",
+] }

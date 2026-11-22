@@ -50,7 +50,7 @@ pub fn affine_block_versions() -> BTreeMap<&'static str, i32> {
     ])
 }
 
-/// Phase-1 block flavours authored natively with full default properties.
+/// Supported block flavours authored natively with full default properties.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockSpec {
     Page {
@@ -156,7 +156,7 @@ pub struct UnknownBlock {
     pub prop_keys: Vec<String>,
 }
 
-/// Phase-1 surface element specs written into `affine:surface` `prop:elements` (`Boxed(Y.Map)`).
+/// Supported surface element specs written into `affine:surface` `prop:elements` (`Boxed(Y.Map)`).
 #[derive(Debug, Clone, PartialEq)]
 pub enum SurfaceElementSpec {
     Shape {

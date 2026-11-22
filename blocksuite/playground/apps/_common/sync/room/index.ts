@@ -562,6 +562,69 @@ export function hasUsablePageRoot(doc: RoomSeedDocHandle | null): boolean {
   return false;
 }
 
+/**
+ * Collection view for seeding a document that already exists without a page root (a
+ * previous seed winner pushed its `meta.pages` entry and left before adding blocks).
+ *
+ * Initializers start with `collection.getDoc(id) ?? collection.createDoc(id)` and then
+ * either branch on "did the doc exist" or populate it inside `doc.load(() => { ... })`.
+ * Through this view the first `getDoc(docId)` answers `null` and `createDoc(docId)` hands
+ * back the existing doc, so the initializer fills it in place; `removeDoc` is never
+ * needed, which would destroy `spaces[docId]` on the other peers. The doc handed back
+ * runs the first `load` callback it is given once, even though the underlying doc has
+ * been loaded already.
+ */
+export function reusePartialSeedDoc<
+  Doc extends { load(initFn?: () => void): unknown },
+  Collection extends {
+    getDoc(id: string): Doc | null;
+    createDoc(id?: string): Doc;
+  },
+>(collection: Collection, docId: string, existing: Doc): Collection {
+  let claimed = false;
+  let initialized = false;
+  const seedDoc: Doc = new Proxy(existing, {
+    get(target, prop) {
+      if (prop === 'load') {
+        return (initFn?: () => void) => {
+          target.load();
+          // A bare `load()` leaves the initializer for the `load(initFn)` that follows.
+          if (initFn && !initialized) {
+            initialized = true;
+            initFn();
+          }
+          return seedDoc;
+        };
+      }
+      const value = Reflect.get(target, prop, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  return new Proxy(collection, {
+    get(target, prop) {
+      if (prop === 'getDoc') {
+        return (id: string) => {
+          if (id === docId) {
+            return claimed ? seedDoc : null;
+          }
+          return target.getDoc(id);
+        };
+      }
+      if (prop === 'createDoc') {
+        return (id?: string) => {
+          if (id === docId) {
+            claimed = true;
+            return seedDoc;
+          }
+          return target.createDoc(id);
+        };
+      }
+      const value = Reflect.get(target, prop, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+}
+
 async function waitForUsablePageRoot(doc: RoomSeedDocHandle): Promise<void> {
   if (hasUsablePageRoot(doc)) return;
   const spaceDoc = doc.spaceDoc;
@@ -623,8 +686,9 @@ async function waitForDocArrival(
  *   WebSocket connection itself fails (`allowOfflineFallback: true`).
  * - Once connected, waits for initial sync (never timing out into local seeding).
  * - If `docId` already exists with a usable `affine:page` root, loads it without re-seeding.
- * - Otherwise claims `seedKey` over WebSocket: only the single winner seeds `docId`,
- *   while non-winners wait for `docId` to arrive and load it.
+ * - Otherwise claims `seedKey` over WebSocket: only the single winner seeds `docId`
+ *   (and must leave it with an `affine:page` root, or this rejects), while non-winners
+ *   wait for `docId` to arrive and load it.
  */
 export async function initRoomDocWithSeed({
   collection,
@@ -676,6 +740,12 @@ export async function initRoomDocWithSeed({
     const doc = collection.getDoc(docId);
     if (doc && !doc.loaded) {
       doc.load();
+    }
+    // The winner is the only peer that seeds: the waiters block on this page root.
+    if (!hasUsablePageRoot(doc)) {
+      throw new Error(
+        `Seeding "${docId}" finished without an affine:page root block`
+      );
     }
     await collection.waitForSynced();
     return { seeded: true, offlineFallback: false };
