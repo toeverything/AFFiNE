@@ -313,6 +313,76 @@ test.each([
   }
 );
 
+test.each([
+  { name: 'after the next pointer move', moveAfterScroll: true },
+  { name: 'while the pointer rests', moveAfterScroll: false },
+])(
+  'table drag selection follows the pointer across a scroll $name',
+  async ({ moveAfterScroll }) => {
+    const columnIds = ['c0', 'c1', 'c2', 'c3', 'c4', 'c5'];
+    const noteId = addNote(doc);
+    const tableId = doc.addBlock(
+      'affine:table',
+      {
+        rows: { r0: { rowId: 'r0', order: 'a0' } },
+        columns: Object.fromEntries(
+          columnIds.map((columnId, index) => [
+            columnId,
+            { columnId, order: `a${index}`, width: 300 },
+          ])
+        ),
+        cells: Object.fromEntries(
+          columnIds.map(columnId => [
+            `r0:${columnId}`,
+            { text: new Text(columnId) },
+          ])
+        ),
+      },
+      noteId
+    );
+    await wait();
+    const table = editor.host!.view.getBlock(tableId) as TableBlockComponent;
+    const cells = Array.from(
+      table.querySelectorAll<HTMLElement>('affine-table-cell td')
+    );
+    const center = (cell: HTMLElement) => {
+      const rect = cell.getBoundingClientRect();
+      return {
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      };
+    };
+    const mouse = (type: string, target: EventTarget, at: MouseEventInit) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, ...at }));
+
+    const scroller = table.querySelector<HTMLElement>(
+      '[contenteditable="false"]'
+    )!;
+    scroller.scrollLeft = 0;
+    await wait();
+
+    mouse('mousedown', cells[0], center(cells[0]));
+    const pointer = center(cells[1]);
+    mouse('mousemove', cells[1], pointer);
+    scroller.scrollLeft = 600;
+    scroller.dispatchEvent(new Event('scroll'));
+    await wait();
+    if (moveAfterScroll) {
+      mouse('mousemove', cells[3], pointer);
+    }
+    await wait();
+    mouse('mouseup', window, pointer);
+
+    expect(table.selectionController.getSelected()).toEqual({
+      type: 'area',
+      rowStartIndex: 0,
+      rowEndIndex: 0,
+      columnStartIndex: 0,
+      columnEndIndex: 3,
+    });
+  }
+);
+
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',
   async mode => {

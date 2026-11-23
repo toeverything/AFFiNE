@@ -483,15 +483,33 @@ export class SelectionController implements ReactiveController {
     if (!(target instanceof HTMLElement)) {
       return;
     }
-    const offsets = domToOffsets(this.host, 'tr', 'td');
-    if (!offsets) return;
-    const startX = event.clientX;
-    const startY = event.clientY;
+    const startOffsets = domToOffsets(this.host, 'tr', 'td');
+    if (!startOffsets) return;
+    const anchorX = event.clientX - startOffsets.columns[0]!;
+    const anchorY = event.clientY - startOffsets.rows[0]!;
+    let endX = event.clientX;
+    let endY = event.clientY;
     let selected = false;
     const initCell = target.closest('affine-table-cell');
     if (!initCell) {
       selected = true;
     }
+    const updateSelection = () => {
+      const offsets = domToOffsets(this.host, 'tr', 'td');
+      if (!offsets) return;
+      const startX = offsets.columns[0]! + anchorX;
+      const startY = offsets.rows[0]! + anchorY;
+      const [left, right] = startX > endX ? [endX, startX] : [startX, endX];
+      const [top, bottom] = startY > endY ? [endY, startY] : [startY, endY];
+      const area = getAreaByOffsets(offsets, top, bottom, left, right);
+      this.setSelected({
+        type: 'area',
+        rowStartIndex: area.top,
+        rowEndIndex: area.bottom,
+        columnStartIndex: area.left,
+        columnEndIndex: area.right,
+      });
+    };
     const onMove = (event: MouseEvent) => {
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -500,26 +518,24 @@ export class SelectionController implements ReactiveController {
           return;
         }
         selected = true;
-        const endX = event.clientX;
-        const endY = event.clientY;
-        const [left, right] = startX > endX ? [endX, startX] : [startX, endX];
-        const [top, bottom] = startY > endY ? [endY, startY] : [startY, endY];
-        const area = getAreaByOffsets(offsets, top, bottom, left, right);
-        this.setSelected({
-          type: 'area',
-          rowStartIndex: area.top,
-          rowEndIndex: area.bottom,
-          columnStartIndex: area.left,
-          columnEndIndex: area.right,
-        });
+        endX = event.clientX;
+        endY = event.clientY;
+        updateSelection();
+      }
+    };
+    const onScroll = () => {
+      if (selected) {
+        updateSelection();
       }
     };
     const onUp = () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('scroll', onScroll, true);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('scroll', onScroll, true);
   }
 
   setSelected(
