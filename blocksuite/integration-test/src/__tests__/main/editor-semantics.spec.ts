@@ -17,7 +17,11 @@ import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
 import type { SingleViewBase } from '@blocksuite/data-view';
-import { SurfaceSelection, TextSelection } from '@blocksuite/std';
+import {
+  KeymapExtension,
+  SurfaceSelection,
+  TextSelection,
+} from '@blocksuite/std';
 import type { InlineMarkdownMatch } from '@blocksuite/std/inline';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -426,6 +430,39 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     });
   });
 });
+
+test.each([
+  ['formatBold', 'Mod-b'],
+  ['formatItalic', 'Mod-i'],
+  ['formatUnderline', 'Mod-u'],
+])(
+  'native %s input runs the %s binding of the block',
+  async (inputType, hotkey) => {
+    const bindings = {
+      'Mod-b': vi.fn(() => true),
+      'Mod-i': vi.fn(() => true),
+      'Mod-u': vi.fn(() => true),
+    };
+    await setupEditor('page', [
+      KeymapExtension(() => bindings, { flavour: 'affine:paragraph' }),
+    ]);
+    const { paragraphId } = await createParagraph('hello');
+    setTextSelection(paragraphId, 0, 5);
+    editor.std.event.active = true;
+    const event = new InputEvent('beforeinput', {
+      inputType,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    getRichTextByBlockId(paragraphId).dispatchEvent(event);
+
+    for (const [key, binding] of Object.entries(bindings)) {
+      expect(binding).toHaveBeenCalledTimes(key === hotkey ? 1 : 0);
+    }
+    expect(event.defaultPrevented).toBe(true);
+  }
+);
 
 describe('hotkey/bracket/linked-page', () => {
   test('bracket keymap skips redundant right bracket in code block', async () => {
