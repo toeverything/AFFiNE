@@ -12,9 +12,7 @@ export function useFramework(): FrameworkProvider {
   return useContext(FrameworkProviderContext); // never null, because the default value
 }
 
-export function useService<T extends Service>(
-  identifier: GeneralIdentifier<T>
-): T {
+export function useService<T>(identifier: GeneralIdentifier<T>): T {
   return useContext(FrameworkProviderContext).get(identifier);
 }
 
@@ -71,7 +69,8 @@ export const FrameworkScope = ({
 
   const nextStack = useMemo(() => {
     if (!scope) return provider;
-    return new FrameworkStackProvider([provider, scope.framework]);
+    // make sure the stack order is inside to outside
+    return new FrameworkStackProvider([scope.framework, provider]);
   }, [scope, provider]);
 
   return (

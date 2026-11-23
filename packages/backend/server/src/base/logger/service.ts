@@ -1,6 +1,8 @@
 import { ConsoleLogger, Injectable, type LogLevel } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
 
+import { UserFriendlyError } from '../error';
+
 // DO NOT use this Logger directly
 // Use it via this way: `private readonly logger = new Logger(MyService.name)`
 @Injectable()
@@ -20,7 +22,14 @@ export class AFFiNELogger extends ConsoleLogger {
 
   static formatStack(stackOrError?: Error | string | unknown) {
     if (stackOrError instanceof Error) {
-      const err = stackOrError;
+      let err = stackOrError;
+
+      // most of the internal error are caught and created by `GlobalExceptionFilter`,
+      // and their error stack is helpless
+      if (err instanceof UserFriendlyError) {
+        return err.stacktrace;
+      }
+
       let stack = err.stack ?? '';
       if (err.cause instanceof Error && err.cause.stack) {
         stack += `\n\nCaused by:\n\n${err.cause.stack}`;
@@ -30,20 +39,19 @@ export class AFFiNELogger extends ConsoleLogger {
     return stackOrError;
   }
 
-  /**
-   * Nestjs ConsoleLogger.error() will not print the stack trace if the error is an instance of Error
-   * This method is a workaround to print the stack trace
-   *
-   * Usage:
-   * ```
-   * this.logger.error('some error happens', errInstance);
-   * ```
-   */
-  override error(
-    message: any,
-    stackOrError?: Error | string | unknown,
-    context?: string
-  ) {
-    super.error(message, AFFiNELogger.formatStack(stackOrError), context);
+  static formatError(message: unknown, details: unknown) {
+    if (details && typeof details === 'object' && !(details instanceof Error)) {
+      const { error, ...fields } = details as Record<string, unknown>;
+      return {
+        message: { ...fields, message },
+        stack: AFFiNELogger.formatStack(error),
+      };
+    }
+    return { message, stack: AFFiNELogger.formatStack(details) };
+  }
+
+  override error(message: unknown, details?: unknown, context?: string) {
+    const formatted = AFFiNELogger.formatError(message, details);
+    super.error(formatted.message, formatted.stack, context);
   }
 }

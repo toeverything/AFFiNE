@@ -12,7 +12,7 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
           try {
             const start = performance.now();
             const result = await handler(...args);
-            logger.info(
+            logger.debug(
               '[async-api]',
               `${namespace}.${name}`,
               args.filter(
@@ -25,6 +25,9 @@ function setupRendererConnection(rendererPort: Electron.MessagePortMain) {
             return result;
           } catch (error) {
             logger.error('[async-api]', `${namespace}.${name}`, error);
+            // Propagate errors to the renderer so callers don't receive `undefined`
+            // and fail with confusing TypeErrors.
+            throw error instanceof Error ? error : new Error(String(error));
           }
         };
         return [`${namespace}:${name}`, handlerWithLog];
@@ -74,7 +77,7 @@ function main() {
     if (e.data.channel === 'renderer-connect' && e.ports.length === 1) {
       const rendererPort = e.ports[0];
       setupRendererConnection(rendererPort);
-      logger.info('[helper] renderer connected');
+      logger.debug('[helper] renderer connected');
     }
   });
 }

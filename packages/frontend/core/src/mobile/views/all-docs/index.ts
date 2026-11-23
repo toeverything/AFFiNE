@@ -1,4 +1,4 @@
 export * from './collection';
-export * from './doc/';
+export * from './empty-state';
 export * from './header';
 export * from './tag';

@@ -47,7 +47,8 @@ export const generateSubscriptionCallbackLink = (
   account: AuthAccountInfo | null,
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring,
-  workspaceId?: string
+  workspaceId?: string,
+  clientScheme?: string
 ) => {
   const baseUrl =
     plan === SubscriptionPlan.AI
@@ -79,7 +80,7 @@ export const generateSubscriptionCallbackLink = (
     workspaceId ?? '',
   ].join(separator);
 
-  return `${baseUrl}?info=${encodeURIComponent(query)}`;
+  return `${baseUrl}?info=${encodeURIComponent(query)}${clientScheme ? `&client=${clientScheme}` : ''}`;
 };
 
 export const getSubscriptionInfo = (searchParams: URLSearchParams) => {

@@ -1,8 +1,10 @@
-import { defineStartupConfig, ModuleConfig } from '../../base/config';
+import serverNativeModule from '@affine/server-native';
+
+import { defineNativeModuleConfig } from '../../base';
 
 export interface OAuthProviderConfig {
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   args?: Record<string, string>;
 }
 
@@ -11,35 +13,36 @@ export type OIDCArgs = {
   claim_id?: string;
   claim_email?: string;
   claim_name?: string;
+  claim_email_verified?: string;
 };
 
 export interface OAuthOIDCProviderConfig extends OAuthProviderConfig {
   issuer: string;
+  allowPrivateNetwork?: boolean;
   args?: OIDCArgs;
 }
 
 export enum OAuthProviderName {
   Google = 'google',
   GitHub = 'github',
+  Apple = 'apple',
   OIDC = 'oidc',
 }
-
-type OAuthProviderConfigMapping = {
-  [OAuthProviderName.Google]: OAuthProviderConfig;
-  [OAuthProviderName.GitHub]: OAuthProviderConfig;
-  [OAuthProviderName.OIDC]: OAuthOIDCProviderConfig;
-};
-
-export interface OAuthConfig {
-  providers: Partial<OAuthProviderConfigMapping>;
-}
-
-declare module '../config' {
-  interface PluginsConfig {
-    oauth: ModuleConfig<OAuthConfig>;
+declare global {
+  interface AppConfigSchema {
+    oauth: {
+      providers: {
+        [OAuthProviderName.Google]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.GitHub]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.Apple]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.OIDC]: ConfigItem<OAuthOIDCProviderConfig>;
+      };
+    };
   }
 }
 
-defineStartupConfig('plugins.oauth', {
-  providers: {},
-});
+defineNativeModuleConfig(
+  'oauth',
+  serverNativeModule.appConfigDescriptors('oauth'),
+  serverNativeModule.validateAppConfigValue
+);

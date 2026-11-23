@@ -1,3 +1,0 @@
-mutation readNotification($id: String!) {
-  readNotification(id: $id)
-}

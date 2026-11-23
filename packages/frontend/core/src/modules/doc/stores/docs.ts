@@ -2,12 +2,14 @@ import type { DocMode } from '@blocksuite/affine/model';
 import type { DocMeta } from '@blocksuite/affine/store';
 import {
   Store,
+  yjsGetPath,
   yjsObserve,
-  yjsObserveByPath,
   yjsObserveDeep,
+  yjsObservePath,
 } from '@toeverything/infra';
-import { distinctUntilChanged, map, switchMap } from 'rxjs';
-import { Array as YArray, Map as YMap } from 'yjs';
+import { nanoid } from 'nanoid';
+import { distinctUntilChanged, map, Observable, switchMap } from 'rxjs';
+import { Array as YArray, Doc as YDoc, Map as YMap, transact } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { DocPropertiesStore } from './doc-properties';
@@ -21,19 +23,73 @@ export class DocsStore extends Store {
   }
 
   getBlockSuiteDoc(id: string) {
-    return this.workspaceService.workspace.docCollection.getDoc(id);
+    return (
+      this.workspaceService.workspace.docCollection
+        .getDoc(id)
+        ?.getStore({ id }) ?? null
+    );
   }
 
   getBlocksuiteCollection() {
     return this.workspaceService.workspace.docCollection;
   }
 
-  createBlockSuiteDoc() {
-    return this.workspaceService.workspace.docCollection.createDoc();
+  createDoc(docId?: string) {
+    const id = docId ?? nanoid();
+    const workspace = this.workspaceService.workspace;
+    if (workspace.engine.usesWorkspaceState) {
+      workspace.engine.doc
+        .createDoc(id)
+        .catch(error =>
+          console.error('Failed to save document creation', error)
+        );
+      return id;
+    }
+
+    transact(
+      this.workspaceService.workspace.rootYDoc,
+      () => {
+        const docs = this.workspaceService.workspace.rootYDoc
+          .getMap('meta')
+          .get('pages');
+
+        if (!docs || !(docs instanceof YArray)) {
+          return;
+        }
+
+        docs.push([
+          new YMap([
+            ['id', id],
+            ['title', ''],
+            ['createDate', Date.now()],
+            ['tags', new YArray()],
+          ]),
+        ]);
+      },
+      { force: true }
+    );
+
+    return id;
+  }
+
+  private watchEffectiveDocMetas() {
+    const meta = this.workspaceService.workspace.docCollection.meta;
+    return new Observable<DocMeta[]>(subscriber => {
+      subscriber.next(meta.docMetas);
+      const subscription = meta.docMetaUpdated.subscribe(() =>
+        subscriber.next(meta.docMetas)
+      );
+      return () => subscription.unsubscribe();
+    });
   }
 
   watchDocIds() {
-    return yjsObserveByPath(
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => doc.id))
+      );
+    }
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
@@ -48,12 +104,123 @@ export class DocsStore extends Store {
     );
   }
 
-  watchNonTrashDocIds() {
-    return yjsObserveByPath(
+  watchAllDocUpdatedDate() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, updatedDate: doc.updatedDate }))
+        )
+      );
+    }
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.updatedDate')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            updatedDate: v.get('updatedDate') as number | undefined,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocTagIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, tags: doc.tags ?? [] })))
+      );
+    }
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.tags')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            tags: (() => {
+              const tags = v.get('tags');
+              if (tags instanceof YArray) {
+                return tags.toJSON() as string[];
+              }
+              return (tags ?? []) as string[];
+            })(),
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocCreateDate() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, createDate: doc.createDate ?? 0 }))
+        )
+      );
+    }
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.createDate')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            createDate: (v.get('createDate') ?? 0) as number,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocTitle() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, title: doc.title ?? '' })))
+      );
+    }
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.title')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            title: (v.get('title') ?? '') as string,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchNonTrashDocIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => !doc.trash).map(doc => doc.id))
+      );
+    }
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -67,11 +234,16 @@ export class DocsStore extends Store {
   }
 
   watchTrashDocIds() {
-    return yjsObserveByPath(
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => doc.trash).map(doc => doc.id))
+      );
+    }
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -85,8 +257,13 @@ export class DocsStore extends Store {
   }
 
   watchDocMeta(id: string) {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.find(doc => doc.id === id) ?? {})
+      );
+    }
     let docMetaIndexCache = -1;
-    return yjsObserveByPath(
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
@@ -126,6 +303,11 @@ export class DocsStore extends Store {
   }
 
   watchDocListReady() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.workspaceService.workspace.engine.doc.workspaceState$.pipe(
+        map(state => state?.ready ?? false)
+      );
+    }
     return this.workspaceService.workspace.engine.doc
       .docState$(this.workspaceService.workspace.id)
       .pipe(map(state => state.synced));
@@ -133,6 +315,41 @@ export class DocsStore extends Store {
 
   setDocMeta(id: string, meta: Partial<DocMeta>) {
     this.workspaceService.workspace.docCollection.meta.setDocMeta(id, meta);
+  }
+
+  async applyDocLifecycle(
+    id: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
+    const workspace = this.workspaceService.workspace;
+    if (!workspace.engine.usesWorkspaceState) {
+      if (lifecycle === 'delete') {
+        const previous = workspace.docCollection.doc.getMap('spaces').get(id);
+        const result = await workspace.engine.doc.applyDocLifecycle(
+          id,
+          lifecycle
+        );
+        const current = workspace.docCollection.doc.getMap('spaces').get(id);
+        const physicalId = current instanceof YDoc ? current.guid : id;
+        if (
+          (workspace.flavour === 'local'
+            ? current === previous
+            : result.deletedDocIds?.includes(physicalId)) &&
+          workspace.docCollection.meta.getDocMeta(id)
+        ) {
+          workspace.docCollection.removeDoc(id);
+        }
+      } else {
+        this.setDocMeta(
+          id,
+          lifecycle === 'trash'
+            ? { trash: true, trashDate: Date.now() }
+            : { trash: false, trashDate: undefined }
+        );
+      }
+      return;
+    }
+    await workspace.engine.doc.applyDocLifecycle(id, lifecycle);
   }
 
   setDocPrimaryModeSetting(id: string, mode: DocMode) {

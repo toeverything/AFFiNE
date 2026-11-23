@@ -122,7 +122,7 @@ export const addCustomProperty = async (
   root: Locator | Page,
   type: string
 ) => {
-  ensureAddPropertyButtonVisible(page, root);
+  await ensureAddPropertyButtonVisible(page, root);
   await clickAddPropertyButton(root);
   await page
     .locator(

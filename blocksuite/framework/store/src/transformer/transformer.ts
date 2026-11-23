@@ -1,15 +1,13 @@
+import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { nextTick } from '@blocksuite/global/utils';
 import { Subject } from 'rxjs';
 
-import {
-  BlockModel,
-  type BlockSchemaType,
-  type DraftModel,
-  type Store,
-  toDraftModel,
-} from '../model/index.js';
-import type { Schema } from '../schema/index.js';
+import { BlockModel } from '../model/block/block-model.js';
+import { type DraftModel, toDraftModel } from '../model/block/draft.js';
+import type { BlockSchemaType } from '../model/block/zod.js';
+import type { Store } from '../model/store/store.js';
+import type { Schema } from '../schema/schema.js';
 import { AssetsManager } from './assets.js';
 import { BaseBlockTransformer } from './base.js';
 import type {
@@ -66,6 +64,8 @@ export class Transformer {
   private readonly _schema: Schema;
 
   private readonly _docCRUD: DocCRUD;
+
+  private readonly _disposables: DisposableGroup = new DisposableGroup();
 
   private readonly _slots: TransformerSlots = {
     beforeImport: new Subject<BeforeImportPayload>(),
@@ -189,7 +189,10 @@ export class Transformer {
     }
   };
 
-  snapshotToDoc = async (snapshot: DocSnapshot): Promise<Store | undefined> => {
+  snapshotToDoc = async (
+    snapshot: DocSnapshot,
+    options: { replaceExisting?: boolean } = {}
+  ): Promise<Store | undefined> => {
     try {
       this._slots.beforeImport.next({
         type: 'page',
@@ -199,7 +202,13 @@ export class Transformer {
       const { meta, blocks } = snapshot;
       const doc = this.docCRUD.create(meta.id);
       doc.load();
-      await this.snapshotToBlock(blocks, doc);
+      await this._snapshotToBlock(
+        blocks,
+        doc,
+        undefined,
+        undefined,
+        options.replaceExisting
+      );
       this._slots.afterImport.next({
         type: 'page',
         snapshot,
@@ -245,8 +254,9 @@ export class Transformer {
     parent?: string,
     index?: number
   ): Promise<Slice | undefined> => {
-    SliceSnapshotSchema.parse(snapshot);
     try {
+      SliceSnapshotSchema.parse(snapshot);
+
       this._slots.beforeImport.next({
         type: 'slice',
         snapshot,
@@ -365,13 +375,16 @@ export class Transformer {
     this._docCRUD = docCRUD;
 
     middlewares.forEach(middleware => {
-      middleware({
+      const cleanup = middleware({
         slots: this._slots,
         docCRUD: this._docCRUD,
         assetsManager: this._assetsManager,
         adapterConfigs: this._adapterConfigs,
         transformerConfigs: this._transformerConfigs,
       });
+      if (cleanup) {
+        this._disposables.add(cleanup);
+      }
     });
   }
 
@@ -406,12 +419,21 @@ export class Transformer {
     return snapshot;
   }
 
-  private async _convertFlatSnapshots(flatSnapshots: FlatSnapshot[]) {
+  private async _convertFlatSnapshots(
+    flatSnapshots: FlatSnapshot[],
+    requireComplete = false
+  ) {
     // Phase 1: Convert snapshots to draft models in series
     // This is not time-consuming, this is faster than Promise.all
     const draftModels = [];
     for (const flat of flatSnapshots) {
       const draft = await this._convertSnapshotToDraftModel(flat);
+      if (!draft && requireComplete) {
+        throw new BlockSuiteError(
+          ErrorCode.TransformerError,
+          `Cannot replace document: failed to convert block ${flat.snapshot.id}`
+        );
+      }
       if (draft) {
         draft.id = flat.snapshot.id;
       }
@@ -525,11 +547,11 @@ export class Transformer {
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index];
       const { draft } = node;
-      const { id, flavour } = draft;
+      const { id, flavour, props } = draft;
 
       const actualIndex =
         startIndex !== undefined ? startIndex + index : undefined;
-      doc.addBlock(flavour, { id, ...draft.props }, parentId, actualIndex);
+      doc.addBlock(flavour, { id, ...props }, parentId, actualIndex);
 
       const model = doc.getBlock(id)?.model;
       if (!model) {
@@ -603,15 +625,37 @@ export class Transformer {
     snapshot: BlockSnapshot,
     doc: Store,
     parent?: string,
-    index?: number
+    index?: number,
+    replaceExisting = false
   ): Promise<BlockModel | null> {
     this._triggerBeforeImportEvent(snapshot, parent, index);
 
     const flatSnapshots: FlatSnapshot[] = [];
     this._flattenSnapshot(snapshot, flatSnapshots, parent, index);
 
-    const blockTree = await this._convertFlatSnapshots(flatSnapshots);
+    const blockTree = await this._convertFlatSnapshots(
+      flatSnapshots,
+      replaceExisting
+    );
 
+    if (replaceExisting) {
+      const flavours = new Map(
+        flatSnapshots.map(({ snapshot }) => [snapshot.id, snapshot.flavour])
+      );
+      if (flavours.size !== flatSnapshots.length) {
+        throw new BlockSuiteError(
+          ErrorCode.TransformerError,
+          'Cannot replace document: duplicate block IDs'
+        );
+      }
+      for (const { snapshot, parentId } of flatSnapshots) {
+        this.schema.validate(
+          snapshot.flavour,
+          parentId ? flavours.get(parentId) : undefined
+        );
+      }
+      doc.transact(() => doc.doc.clear());
+    }
     await this._insertBlockTree([blockTree], doc, parent, index);
 
     return doc.getBlock(snapshot.id)?.model ?? null;
@@ -643,6 +687,11 @@ export class Transformer {
   }
 
   reset() {
+    this._assetsManager.cleanup();
+  }
+
+  [Symbol.dispose]() {
+    this._disposables.dispose();
     this._assetsManager.cleanup();
   }
 }

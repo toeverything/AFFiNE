@@ -1,3 +1,4 @@
+import { getWorkerUrl } from '@affine/env/worker';
 import { OpClient } from '@toeverything/infra/op';
 
 import type { WorkerOps } from './worker-ops';
@@ -9,12 +10,7 @@ export function getWorkspaceProfileWorker() {
     return worker;
   }
 
-  const rawWorker = new Worker(
-    new URL(
-      /* webpackChunkName: "workspace-profile-worker" */ './in-worker.ts',
-      import.meta.url
-    )
-  );
+  const rawWorker = new Worker(getWorkerUrl('workspace-profile'));
 
   worker = new OpClient<WorkerOps>(rawWorker);
   return worker;

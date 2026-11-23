@@ -3,13 +3,18 @@ import type { MessagePort } from 'node:worker_threads';
 
 import type { EventBasedChannel } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webUtils } from 'electron';
 import { Subject } from 'rxjs';
 import { z } from 'zod';
 
+import type {
+  CreateImportSessionFromSourceOptions,
+  NativeImportBrowserSource,
+} from '../shared/import';
 import {
   AFFINE_API_CHANNEL_NAME,
   AFFINE_EVENT_CHANNEL_NAME,
+  AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME,
   type ExposedMeta,
   type HelperToRenderer,
   type RendererToHelper,
@@ -83,6 +88,33 @@ function getMainAPIs() {
 
     // channel -> callback[]
     const listenersMap = new Map<string, ((...args: any[]) => void)[]>();
+    const subscribeCounts = new Map<string, number>();
+
+    const subscribe = (channel: string) => {
+      const count = (subscribeCounts.get(channel) ?? 0) + 1;
+      subscribeCounts.set(channel, count);
+      if (count === 1) {
+        ipcRenderer.send(
+          AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME,
+          'subscribe',
+          channel
+        );
+      }
+    };
+
+    const unsubscribe = (channel: string) => {
+      const count = (subscribeCounts.get(channel) ?? 0) - 1;
+      if (count <= 0) {
+        subscribeCounts.delete(channel);
+        ipcRenderer.send(
+          AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME,
+          'unsubscribe',
+          channel
+        );
+      } else {
+        subscribeCounts.set(channel, count);
+      }
+    };
 
     ipcRenderer.on(AFFINE_EVENT_CHANNEL_NAME, (_event, channel, ...args) => {
       if (typeof channel !== 'string') {
@@ -108,12 +140,20 @@ function getMainAPIs() {
               ...(listenersMap.get(channel) ?? []),
               callback,
             ]);
+            subscribe(channel);
 
             return () => {
               const listeners = listenersMap.get(channel) ?? [];
               const index = listeners.indexOf(callback);
-              if (index !== -1) {
-                listeners.splice(index, 1);
+              if (index === -1) {
+                return;
+              }
+              listeners.splice(index, 1);
+              unsubscribe(channel);
+              if (listeners.length === 0) {
+                listenersMap.delete(channel);
+              } else {
+                listenersMap.set(channel, listeners);
               }
             };
           },
@@ -239,9 +279,61 @@ function getHelperAPIs() {
 const mainAPIs = getMainAPIs();
 const helperAPIs = getHelperAPIs();
 
+type DirectoryImportFile = File & { webkitRelativePath?: string };
+
+function filePathFromFile(file: File) {
+  return webUtils.getPathForFile(file);
+}
+
+function directoryPathFromFiles(files: File[]) {
+  const first = files.find(
+    (file): file is DirectoryImportFile =>
+      !!(file as DirectoryImportFile).webkitRelativePath
+  );
+  if (!first) return null;
+  const filePath = filePathFromFile(first);
+  if (!filePath) return null;
+  const relativePath = first.webkitRelativePath;
+  if (!relativePath) return null;
+  const relativeParts = relativePath.split('/');
+  let rootPath = filePath.replaceAll('\\', '/');
+  for (let i = relativeParts.length - 1; i > 0; i--) {
+    const part = relativeParts[i];
+    if (part && rootPath.endsWith(`/${part}`)) {
+      rootPath = rootPath.slice(0, -part.length - 1);
+    }
+  }
+  return rootPath || null;
+}
+
+function resolveNativeImportSource(source: NativeImportBrowserSource) {
+  if (source.kind === 'file') {
+    const path = filePathFromFile(source.file);
+    return path ? { kind: 'filePath', path } : null;
+  }
+  const path = directoryPathFromFiles(source.files);
+  return path ? { kind: 'directoryPath', path } : null;
+}
+
 export const apis = {
   ...mainAPIs.apis,
   ...helperAPIs.apis,
+  import: {
+    ...mainAPIs.apis.import,
+    createImportSessionFromSource(
+      options: CreateImportSessionFromSourceOptions
+    ) {
+      const source = resolveNativeImportSource(options.source);
+      if (!source) {
+        throw new Error('Native import requires a local file source');
+      }
+      return mainAPIs.apis.import.createImportSession({
+        format: options.format,
+        source,
+        batchLimits: options.batchLimits,
+      });
+    },
+  },
 };
 
 export const events = {

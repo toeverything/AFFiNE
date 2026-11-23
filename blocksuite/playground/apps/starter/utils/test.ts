@@ -26,7 +26,7 @@ async function getStore(
 ): Promise<Store> {
   if (!noInit) {
     collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'doc:home' });
+    const doc = collection.createDoc('doc:home').getStore();
     window.doc = doc;
     return doc;
   }

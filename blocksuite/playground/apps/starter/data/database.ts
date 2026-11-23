@@ -1,6 +1,6 @@
 import {
-  databaseBlockColumns,
   DatabaseBlockDataSource,
+  databaseBlockProperties,
 } from '@blocksuite/affine/blocks/database';
 import {
   type DatabaseBlockModel,
@@ -15,24 +15,25 @@ import { viewPresets } from '@blocksuite/data-view/view-presets';
 import type { InitFn } from './utils.js';
 
 export const database: InitFn = (collection: Workspace, id: string) => {
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id);
+  const store = doc.getStore();
 
   doc.load(() => {
     // Add root block and surface block at root level
-    const rootId = doc.addBlock('affine:page', {
+    const rootId = store.addBlock('affine:page', {
       title: new Text('BlockSuite Playground'),
     });
-    doc.addBlock('affine:surface', {}, rootId);
+    store.addBlock('affine:surface', {}, rootId);
 
     // Add note block inside root block
-    const noteId = doc.addBlock('affine:note', {}, rootId);
-    const pId = doc.addBlock('affine:paragraph', {}, noteId);
-    const model = doc.getModelById(pId);
+    const noteId = store.addBlock('affine:note', {}, rootId);
+    const pId = store.addBlock('affine:paragraph', {}, noteId);
+    const model = store.getModelById(pId);
     if (!model) {
       throw new Error('model is not found');
     }
     const addDatabase = (title: string, group = true) => {
-      const databaseId = doc.addBlock(
+      const databaseId = store.addBlock(
         'affine:database',
         {
           columns: [],
@@ -40,23 +41,26 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         },
         noteId
       );
-      const database = doc.getModelById(databaseId) as DatabaseBlockModel;
+      const database = store.getModelById(databaseId) as DatabaseBlockModel;
       const datasource = new DatabaseBlockDataSource(database);
       datasource.viewManager.viewAdd('table');
       database.props.title = new Text(title);
-      const richTextId = datasource.propertyAdd(
-        'end',
-        databaseBlockColumns.richTextColumnConfig.type
-      );
+      const richTextId = datasource.propertyAdd('end', {
+        type: databaseBlockProperties.richTextColumnConfig.type,
+        name: 'Rich Text',
+      });
       Object.values([
         propertyPresets.multiSelectPropertyConfig,
         propertyPresets.datePropertyConfig,
         propertyPresets.numberPropertyConfig,
-        databaseBlockColumns.linkColumnConfig,
+        databaseBlockProperties.linkColumnConfig,
         propertyPresets.checkboxPropertyConfig,
         propertyPresets.progressPropertyConfig,
       ]).forEach(column => {
-        datasource.propertyAdd('end', column.type);
+        datasource.propertyAdd('end', {
+          type: column.type,
+          name: column.config.name,
+        });
       });
       if (group) {
         const groupTrait =
@@ -74,7 +78,7 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         'h6',
       ];
       paragraphTypes.forEach(type => {
-        const id = doc.addBlock(
+        const id = store.addBlock(
           'affine:paragraph',
           { type: type, text: new Text(`Paragraph type ${type}`) },
           databaseId
@@ -90,7 +94,7 @@ export const database: InitFn = (collection: Workspace, id: string) => {
       const listTypes: ListType[] = ['numbered', 'bulleted', 'todo', 'toggle'];
 
       listTypes.forEach(type => {
-        const id = doc.addBlock(
+        const id = store.addBlock(
           'affine:list',
           { type: type, text: new Text(`List type ${type}`) },
           databaseId
@@ -104,14 +108,14 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         }
       });
       // Add a paragraph after database
-      doc.addBlock('affine:paragraph', {}, noteId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      doc.addBlock('affine:paragraph', {}, noteId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      store.addBlock('affine:paragraph', {}, noteId);
       datasource.viewManager.viewAdd(viewPresets.kanbanViewMeta.type);
 
-      doc.resetHistory();
+      store.resetHistory();
     };
     // Add database block inside note block
     addDatabase('Database 1', false);

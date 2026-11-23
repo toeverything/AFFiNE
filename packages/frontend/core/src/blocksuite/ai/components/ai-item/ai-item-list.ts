@@ -1,10 +1,11 @@
+import { createLitPortal } from '@blocksuite/affine/components/portal';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { ThemeProvider } from '@blocksuite/affine/shared/services';
 import {
   EditorHost,
   PropTypes,
   requiredProperties,
-} from '@blocksuite/affine/block-std';
-import { createLitPortal } from '@blocksuite/affine/components/portal';
-import { WithDisposable } from '@blocksuite/affine/global/lit';
+} from '@blocksuite/affine/std';
 import { flip, offset } from '@floating-ui/dom';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
@@ -87,6 +88,7 @@ export class AIItemList extends WithDisposable(LitElement) {
 
     createLitPortal({
       template: html`<ai-sub-item-list
+        data-testid=${item.testId ? item.testId + '-menu' : ''}
         .item=${item}
         .host=${this.host}
         .onClick=${this.onClick}
@@ -110,18 +112,22 @@ export class AIItemList extends WithDisposable(LitElement) {
   }
 
   override render() {
+    const theme = this.host.std.get(ThemeProvider).app$.value;
     return html`${repeat(this.groups, group => {
       return html`
-        ${group.name
-          ? html`<div class="group-name">
-              ${group.name.toLocaleUpperCase()}
-            </div>`
-          : nothing}
+        ${
+          group.name
+            ? html`<div class="group-name">
+                ${group.name.toLocaleUpperCase()}
+              </div>`
+            : nothing
+        }
         ${repeat(
           group.items,
           item => item.name,
           item =>
             html`<ai-item
+              .theme=${theme}
               .onClick=${this.onClick}
               .item=${item}
               .host=${this.host}
@@ -141,6 +147,9 @@ export class AIItemList extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor onClick: (() => void) | undefined = undefined;
+
+  @property({ attribute: 'data-testid', reflect: true })
+  accessor testId = 'ai-item-list';
 }
 
 declare global {

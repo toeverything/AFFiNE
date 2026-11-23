@@ -1,7 +1,7 @@
 import { NoteBlockModel, RootBlockModel } from '@blocksuite/affine-model';
-import { BLOCK_ID_ATTR, type BlockComponent } from '@blocksuite/block-std';
-import { SurfaceBlockModel } from '@blocksuite/block-std/gfx';
 import { clamp, type Point, type Rect } from '@blocksuite/global/gfx';
+import { BLOCK_ID_ATTR, type BlockComponent } from '@blocksuite/std';
+import { SurfaceBlockModel } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
 import { BLOCK_CHILDREN_CONTAINER_PADDING_LEFT } from '../../consts/index.js';
@@ -51,7 +51,7 @@ function isImage({ tagName }: Element) {
 }
 
 function isDatabase({ tagName }: Element) {
-  return tagName === 'AFFINE-DATABASE-TABLE' || tagName === 'AFFINE-DATABASE';
+  return tagName === 'AFFINE-DATABASE';
 }
 
 /**

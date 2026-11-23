@@ -1,0 +1,25 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../embed" },
+    { "path": "../surface" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../fragments/doc-title" },
+    { "path": "../../gfx/turbo-renderer" },
+    { "path": "../../inlines/preset" },
+    { "path": "../../model" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/slash-menu" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

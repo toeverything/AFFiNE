@@ -1,5 +1,6 @@
 export {
   type ElementOrFactory,
+  type ReactToLit,
   useLitPortal,
   useLitPortalFactory,
 } from './lit-portal';

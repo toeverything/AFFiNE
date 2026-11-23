@@ -1,11 +1,11 @@
+import { EnterIcon } from '@blocksuite/affine/components/icons';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { stopPropagation } from '@blocksuite/affine/shared/utils';
 import {
   EditorHost,
   PropTypes,
   requiredProperties,
-} from '@blocksuite/affine/block-std';
-import { EnterIcon } from '@blocksuite/affine/components/icons';
-import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { stopPropagation } from '@blocksuite/affine/shared/utils';
+} from '@blocksuite/affine/std';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -70,6 +70,7 @@ export class AISubItemList extends WithDisposable(LitElement) {
         subItem => subItem.type,
         subItem =>
           html`<div
+            data-testid=${subItem.testId}
             class="menu-item"
             @click=${() => this._handleClick(subItem)}
           >

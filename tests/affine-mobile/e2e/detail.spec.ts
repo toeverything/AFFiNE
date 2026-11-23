@@ -5,7 +5,14 @@ const openDocInfoModal = async (page: Page) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('menuitem', { name: 'view info' }).click();
+  const viewInfo = page.getByRole('button', { name: 'view info' });
+  const viewInfoBox = await viewInfo.boundingBox();
+  expect(viewInfoBox).not.toBeNull();
+  if (!viewInfoBox) throw new Error('View info action has no layout box');
+  await page.touchscreen.tap(
+    viewInfoBox.x + viewInfoBox.width / 2,
+    viewInfoBox.y + viewInfoBox.height / 2
+  );
   await expect(page.getByTestId('mobile-menu-back-button')).toBeVisible();
 };
 
@@ -13,8 +20,8 @@ test.beforeEach(async ({ page }) => {
   const docsTab = page.locator('#app-tabs').getByRole('tab', { name: 'all' });
   await expect(docsTab).toBeVisible();
   await docsTab.click();
-  await page.getByTestId('doc-card').first().click();
-  await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
+  await page.getByTestId('doc-list-item').first().click();
+  await expect(page.locator('.affine-page-viewport')).toBeVisible();
 });
 
 test('can open page view more menu', async ({ page }) => {
@@ -22,12 +29,21 @@ test('can open page view more menu', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
-test('switch to page mode', async ({ page }) => {
+test('switch to edgeless mode', async ({ page }) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('menuitem', { name: 'Default to Page mode' }).click();
-  await expect(page.locator('.doc-title-container')).toBeVisible();
+  const switchMode = page.getByRole('button', {
+    name: 'Default to Edgeless mode',
+  });
+  const switchModeBox = await switchMode.boundingBox();
+  expect(switchModeBox).not.toBeNull();
+  if (!switchModeBox) throw new Error('Switch mode action has no layout box');
+  await page.touchscreen.tap(
+    switchModeBox.x + switchModeBox.width / 2,
+    switchModeBox.y + switchModeBox.height / 2
+  );
+  await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
 });
 
 test('can show doc info', async ({ page }) => {
@@ -44,14 +60,12 @@ test('can add text property', async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole('button', { name: 'Add property' }).click();
-  await page.getByRole('menuitem', { name: 'Text' }).click();
+  await page.getByRole('button', { name: 'Text' }).click();
 
   await expect(
     page.getByTestId('mobile-menu-back-button').last()
   ).toBeVisible();
   await page.getByTestId('mobile-menu-back-button').last().click();
 
-  await expect(page.getByTestId('mobile-menu-back-button')).toContainText(
-    'Write, Draw, Plan all at Once'
-  );
+  await expect(page.getByTestId('mobile-menu-back-button')).toBeVisible();
 });

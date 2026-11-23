@@ -2,7 +2,7 @@ import {
   type BlockComponent,
   type Command,
   TextSelection,
-} from '@blocksuite/block-std';
+} from '@blocksuite/std';
 
 /**
  * Focus the end of the block
@@ -19,6 +19,7 @@ export const focusBlockEnd: Command<{
 
   const { selection } = std;
 
+  std.event.active = true;
   if (force) selection.clear();
 
   selection.setGroup('note', [

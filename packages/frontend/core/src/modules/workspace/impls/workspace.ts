@@ -1,35 +1,39 @@
+import type { PeerWorkspaceState } from '@affine/nbstore';
 import {
   BlockSuiteError,
   ErrorCode,
 } from '@blocksuite/affine/global/exceptions';
 import { NoopLogger } from '@blocksuite/affine/global/utils';
 import {
-  type CreateBlocksOptions,
   type Doc,
-  type GetBlocksOptions,
   type IdGenerator,
   nanoid,
-  type Store,
   type Workspace,
-  type WorkspaceMeta,
 } from '@blocksuite/affine/store';
 import {
   BlobEngine,
   type BlobSource,
   MemoryBlobSource,
 } from '@blocksuite/affine/sync';
-import { Subject } from 'rxjs';
+import { type Observable, Subject, type Subscription } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
-import * as Y from 'yjs';
+import type { Doc as YDoc } from 'yjs';
 
+import type { FeatureFlagService } from '../../feature-flag';
 import { DocImpl } from './doc';
 import { WorkspaceMetaImpl } from './meta';
 
 type WorkspaceOptions = {
   id?: string;
+  rootDoc: YDoc;
   blobSource?: BlobSource;
-  onLoadDoc?: (doc: Y.Doc) => void;
+  onLoadDoc?: (doc: YDoc) => void;
+  onUnloadDoc?: (doc: YDoc) => void;
   onLoadAwareness?: (awareness: Awareness) => void;
+  onCreateDoc?: (docId?: string) => string;
+  featureFlagService?: FeatureFlagService;
+  inventory$?: Observable<PeerWorkspaceState | null>;
+  projectedTitles$?: Observable<Record<string, string>>;
 };
 
 export class WorkspaceImpl implements Workspace {
@@ -37,40 +41,52 @@ export class WorkspaceImpl implements Workspace {
 
   readonly blockCollections = new Map<string, Doc>();
 
-  readonly doc: Y.Doc;
+  readonly doc: YDoc;
 
   readonly id: string;
 
   readonly idGenerator: IdGenerator;
 
-  meta: WorkspaceMeta;
+  meta: WorkspaceMetaImpl;
+  readonly usesWorkspaceState: boolean;
+  private readonly inventorySubscription?: Subscription;
+  private readonly projectedTitlesSubscription?: Subscription;
 
   slots = {
-    /* eslint-disable rxjs/finnish */
     docListUpdated: new Subject<void>(),
-    docRemoved: new Subject<string>(),
-    docCreated: new Subject<string>(),
-    /* eslint-enable rxjs/finnish */
   };
 
   get docs() {
     return this.blockCollections;
   }
 
-  readonly onLoadDoc?: (doc: Y.Doc) => void;
+  readonly onLoadDoc?: (doc: YDoc) => void;
+  readonly onUnloadDoc?: (doc: YDoc) => void;
   readonly onLoadAwareness?: (awareness: Awareness) => void;
+  readonly onCreateDoc?: (docId?: string) => string;
+  readonly featureFlagService?: FeatureFlagService;
 
   constructor({
     id,
+    rootDoc,
     blobSource,
     onLoadDoc,
+    onUnloadDoc,
     onLoadAwareness,
-  }: WorkspaceOptions = {}) {
+    onCreateDoc,
+    featureFlagService,
+    inventory$,
+    projectedTitles$,
+  }: WorkspaceOptions) {
+    this.usesWorkspaceState = !!inventory$;
     this.id = id || '';
-    this.doc = new Y.Doc({ guid: id });
+    this.featureFlagService = featureFlagService;
+    this.doc = rootDoc;
     this.onLoadDoc = onLoadDoc;
+    this.onUnloadDoc = onUnloadDoc;
     this.onLoadDoc?.(this.doc);
     this.onLoadAwareness = onLoadAwareness;
+    this.onCreateDoc = onCreateDoc;
 
     blobSource = blobSource ?? new MemoryBlobSource();
     const logger = new NoopLogger();
@@ -79,8 +95,14 @@ export class WorkspaceImpl implements Workspace {
 
     this.idGenerator = nanoid;
 
-    this.meta = new WorkspaceMetaImpl(this.doc);
+    this.meta = new WorkspaceMetaImpl(this.doc, this.usesWorkspaceState);
     this._bindDocMetaEvents();
+    this.inventorySubscription = inventory$?.subscribe(state =>
+      this.meta.setInventory(state?.docs ?? [])
+    );
+    this.projectedTitlesSubscription = projectedTitles$?.subscribe(titles =>
+      this.meta.setProjectedTitles(titles)
+    );
   }
 
   private _bindDocMetaEvents() {
@@ -100,7 +122,6 @@ export class WorkspaceImpl implements Workspace {
       if (!doc) return;
       this.blockCollections.delete(id);
       doc.remove();
-      this.slots.docRemoved.next(id);
     });
   }
 
@@ -113,9 +134,20 @@ export class WorkspaceImpl implements Workspace {
    * If the `init` parameter is passed, a `surface`, `note`, and `paragraph` block
    * will be created in the doc simultaneously.
    */
-  createDoc(options: CreateBlocksOptions = {}) {
-    const { id: docId = this.idGenerator(), query, readonly } = options;
-    if (this._hasDoc(docId)) {
+  createDoc(docId?: string): Doc {
+    if (this.onCreateDoc) {
+      const id = this.onCreateDoc(docId);
+      const doc = this.getDoc(id);
+      if (!doc) {
+        throw new BlockSuiteError(
+          ErrorCode.DocCollectionError,
+          'create doc failed'
+        );
+      }
+      return doc;
+    }
+    const id = docId ?? this.idGenerator();
+    if (this._hasDoc(id)) {
       throw new BlockSuiteError(
         ErrorCode.DocCollectionError,
         'doc already exists'
@@ -123,17 +155,12 @@ export class WorkspaceImpl implements Workspace {
     }
 
     this.meta.addDocMeta({
-      id: docId,
+      id,
       title: '',
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.next(docId);
-    return this.getDoc(docId, {
-      id: docId,
-      query,
-      readonly,
-    }) as Store;
+    return this.getDoc(id) as Doc;
   }
 
   private _getDoc(docId: string): Doc | null {
@@ -141,15 +168,16 @@ export class WorkspaceImpl implements Workspace {
     return space ?? null;
   }
 
-  getDoc(
-    docId: string,
-    options: GetBlocksOptions = { id: docId }
-  ): Store | null {
-    const collection = this._getDoc(docId);
-    return collection?.getStore(options) ?? null;
+  getDoc(docId: string): Doc | null {
+    const doc = this._getDoc(docId);
+    return doc;
   }
 
   removeDoc(docId: string) {
+    if (this.usesWorkspaceState) {
+      this.meta.removeDocMeta(docId);
+      return;
+    }
     const docMeta = this.meta.getDocMeta(docId);
     if (!docMeta) {
       throw new BlockSuiteError(
@@ -167,6 +195,9 @@ export class WorkspaceImpl implements Workspace {
   }
 
   dispose() {
+    this.inventorySubscription?.unsubscribe();
+    this.projectedTitlesSubscription?.unsubscribe();
     this.blockCollections.forEach(doc => doc.dispose());
+    this.onUnloadDoc?.(this.doc);
   }
 }

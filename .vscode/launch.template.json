@@ -29,10 +29,7 @@
       "type": "chrome",
       "request": "launch",
       "name": "Debug AFFiNE Web",
-      "url": "http://localhost:8080",
-      "sourceMapPathOverrides": {
-        "webpack://affine/blocksuite/*": "${workspaceFolder}/blocksuite/*"
-      }
+      "url": "http://localhost:8080"
     }
   ]
 }

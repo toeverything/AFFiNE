@@ -1,8 +1,4 @@
-import {
-  BlockSelection,
-  type Command,
-  TextSelection,
-} from '@blocksuite/block-std';
+import { BlockSelection, type Command, TextSelection } from '@blocksuite/std';
 
 import { ImageSelection } from '../../selection';
 

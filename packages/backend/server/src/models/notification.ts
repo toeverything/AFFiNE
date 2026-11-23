@@ -7,7 +7,7 @@ import {
 } from '@prisma/client';
 import { z } from 'zod';
 
-import { PaginationInput } from '../base';
+import { Due, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { DocMode } from './common';
 
@@ -16,7 +16,7 @@ export type { Notification };
 
 // #region input
 
-export const ONE_YEAR = 1000 * 60 * 60 * 24 * 365;
+export const ONE_YEAR = Due.ms('1y');
 const IdSchema = z.string().trim().min(1).max(100);
 
 export const BaseNotificationCreateSchema = z.object({
@@ -78,9 +78,55 @@ export type InvitationNotificationCreate = z.input<
   typeof InvitationNotificationCreateSchema
 >;
 
+const InvitationReviewDeclinedNotificationBodySchema = z.object({
+  workspaceId: IdSchema,
+  createdByUserId: IdSchema,
+});
+
+export type InvitationReviewDeclinedNotificationBody = z.infer<
+  typeof InvitationReviewDeclinedNotificationBodySchema
+>;
+
+export const InvitationReviewDeclinedNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: InvitationReviewDeclinedNotificationBodySchema,
+  });
+
+export type InvitationReviewDeclinedNotificationCreate = z.input<
+  typeof InvitationReviewDeclinedNotificationCreateSchema
+>;
+
+export const CommentNotificationBodySchema = z.object({
+  workspaceId: IdSchema,
+  createdByUserId: IdSchema,
+  commentId: IdSchema,
+  replyId: IdSchema.optional(),
+  doc: MentionDocSchema,
+});
+
+export type CommentNotificationBody = z.infer<
+  typeof CommentNotificationBodySchema
+>;
+
+export const CommentNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: CommentNotificationBodySchema,
+  });
+
+export type CommentNotificationCreate = z.input<
+  typeof CommentNotificationCreateSchema
+>;
+
+export const CommentMentionNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: CommentNotificationBodySchema,
+  });
+
 export type UnionNotificationBody =
   | MentionNotificationBody
-  | InvitationNotificationBody;
+  | InvitationNotificationBody
+  | InvitationReviewDeclinedNotificationBody
+  | CommentNotificationBody;
 
 // #endregion
 
@@ -92,7 +138,17 @@ export type MentionNotification = Notification &
 export type InvitationNotification = Notification &
   z.infer<typeof InvitationNotificationCreateSchema>;
 
-export type UnionNotification = MentionNotification | InvitationNotification;
+export type InvitationReviewDeclinedNotification = Notification &
+  z.infer<typeof InvitationReviewDeclinedNotificationCreateSchema>;
+
+export type CommentNotification = Notification &
+  z.infer<typeof CommentNotificationCreateSchema>;
+
+export type UnionNotification =
+  | MentionNotification
+  | InvitationNotification
+  | InvitationReviewDeclinedNotification
+  | CommentNotification;
 
 // #endregion
 
@@ -108,7 +164,7 @@ export class NotificationModel extends BaseModel {
       type: NotificationType.Mention,
       body: data.body,
     });
-    this.logger.log(
+    this.logger.debug(
       `Created mention notification:${row.id} for user:${data.userId} in workspace:${data.body.workspaceId}`
     );
     return row as MentionNotification;
@@ -129,10 +185,61 @@ export class NotificationModel extends BaseModel {
       type,
       body: data.body,
     });
-    this.logger.log(
+    this.logger.debug(
       `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
     );
     return row as InvitationNotification;
+  }
+
+  async createInvitationReviewDeclined(
+    input: InvitationReviewDeclinedNotificationCreate
+  ) {
+    const data = InvitationReviewDeclinedNotificationCreateSchema.parse(input);
+    const type = NotificationType.InvitationReviewDeclined;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as InvitationReviewDeclinedNotification;
+  }
+
+  // #endregion
+
+  // #region comment
+
+  async createComment(input: CommentNotificationCreate) {
+    const data = CommentNotificationCreateSchema.parse(input);
+    const type = NotificationType.Comment;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as CommentNotification;
+  }
+
+  async createCommentMention(input: CommentNotificationCreate) {
+    const data = CommentMentionNotificationCreateSchema.parse(input);
+    const type = NotificationType.CommentMention;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as CommentNotification;
   }
 
   // #endregion
@@ -154,6 +261,18 @@ export class NotificationModel extends BaseModel {
     });
   }
 
+  async markAllAsRead(userId: string) {
+    const { count } = await this.db.notification.updateMany({
+      where: { userId },
+      data: {
+        read: true,
+      },
+    });
+    this.logger.log(
+      `Marked all notifications as read for user ${userId}, count: ${count}`
+    );
+  }
+
   /**
    * Find many notifications by user id, exclude read notifications by default
    */
@@ -167,7 +286,7 @@ export class NotificationModel extends BaseModel {
       where: {
         userId,
         ...(options?.includeRead ? {} : { read: false }),
-        ...(options?.after ? { createdAt: { gt: options.after } } : {}),
+        ...(options?.after ? { createdAt: { lt: options.after } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       skip: options?.offset,
@@ -192,13 +311,45 @@ export class NotificationModel extends BaseModel {
     return row as UnionNotification;
   }
 
-  async cleanExpiredNotifications() {
-    const { count } = await this.db.notification.deleteMany({
-      // delete notifications that are older than one year
-      where: { createdAt: { lte: new Date(Date.now() - ONE_YEAR) } },
-    });
-    this.logger.log(`Deleted ${count} expired notifications`);
-    return count;
+  async findPendingCommentDeliveries(limit = 100) {
+    return await this.db.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT notification.id
+      FROM notifications notification
+      WHERE notification.type IN (
+        ${NotificationType.Comment}::"NotificationType",
+        ${NotificationType.CommentMention}::"NotificationType"
+      )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM mail_deliveries delivery
+          WHERE delivery.notification_id = notification.id
+        )
+      ORDER BY notification.created_at, notification.id
+      LIMIT ${limit}
+    `);
+  }
+
+  async cleanExpiredNotifications(limit = 1000) {
+    const deleted = await this.db.$queryRaw<{ userId: string }[]>(Prisma.sql`
+      WITH expired AS (
+        SELECT id
+        FROM notifications
+        WHERE created_at <= ${new Date(Date.now() - ONE_YEAR)}
+        ORDER BY created_at, id
+        LIMIT ${limit}
+      )
+      DELETE FROM notifications notification
+      USING expired
+      WHERE notification.id = expired.id
+      RETURNING notification.user_id AS "userId"
+    `);
+    if (deleted.length > 0) {
+      this.logger.log(`Deleted ${deleted.length} expired notifications`);
+    }
+    return {
+      count: deleted.length,
+      userIds: [...new Set(deleted.map(row => row.userId))],
+    };
   }
 
   // #endregion

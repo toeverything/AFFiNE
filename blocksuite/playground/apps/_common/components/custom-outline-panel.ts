@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { css, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -29,11 +29,13 @@ export class CustomOutlinePanel extends WithDisposable(ShadowlessElement) {
 
   override render() {
     return html`
-      ${this._show
-        ? html`
-            <div class="custom-outline-container">${this._renderPanel()}</div>
-          `
-        : nothing}
+      ${
+        this._show
+          ? html`
+              <div class="custom-outline-container">${this._renderPanel()}</div>
+            `
+          : nothing
+      }
     `;
   }
 

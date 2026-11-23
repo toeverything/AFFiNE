@@ -8,15 +8,17 @@ export type SurfaceRefProps = {
   reference: string;
   caption: string;
   refFlavour: string;
+  comments?: Record<string, boolean>;
 };
 
 export const SurfaceRefBlockSchema = defineBlockSchema({
   flavour: 'affine:surface-ref',
-  props: () =>
-    ({
-      reference: '',
-      caption: '',
-    }) as SurfaceRefProps,
+  props: (): SurfaceRefProps => ({
+    reference: '',
+    caption: '',
+    refFlavour: '',
+    comments: undefined,
+  }),
   metadata: {
     version: 1,
     role: 'content',

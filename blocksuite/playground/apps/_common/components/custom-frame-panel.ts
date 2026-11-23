@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { effect } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
@@ -45,9 +45,13 @@ export class CustomFramePanel extends WithDisposable(ShadowlessElement) {
 
   override render() {
     return html`
-      ${this._show
-        ? html`<div class="custom-frame-container">${this._renderPanel()}</div>`
-        : nothing}
+      ${
+        this._show
+          ? html`<div class="custom-frame-container">
+              ${this._renderPanel()}
+            </div>`
+          : nothing
+      }
     `;
   }
 

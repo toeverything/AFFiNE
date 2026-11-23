@@ -3,6 +3,7 @@ import {
   popMenu,
   type PopupTarget,
 } from '@blocksuite/affine-components/context-menu';
+import type { Middleware } from '@floating-ui/dom';
 
 import { renderUniLit } from '../utils/index.js';
 import type { SortUtils } from './utils.js';
@@ -13,9 +14,13 @@ export const popCreateSort = (
     sortUtils: SortUtils;
     onClose?: () => void;
     onBack?: () => void;
+  },
+  ops?: {
+    middleware?: Middleware[];
   }
 ) => {
-  popMenu(target, {
+  const subHandler = popMenu(target, {
+    middleware: ops?.middleware,
     options: {
       onClose: props.onClose,
       title: {
@@ -50,4 +55,5 @@ export const popCreateSort = (
       ],
     },
   });
+  subHandler.menu.menuElement.style.minHeight = '550px';
 };

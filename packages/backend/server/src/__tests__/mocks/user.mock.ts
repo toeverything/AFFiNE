@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { hashSync } from '@node-rs/argon2';
 import type { Prisma, User } from '@prisma/client';
 
-import type { UserFeatureName } from '../../models';
+import { FeatureConfigs, type UserFeatureName } from '../../models';
 import { Mocker } from './factory';
 
 export type MockUserInput = Prisma.UserCreateInput & {
@@ -15,33 +15,25 @@ export type MockedUser = Omit<User, 'password'> & {
 
 export class MockUser extends Mocker<MockUserInput, MockedUser> {
   override async create(input?: Partial<MockUserInput>) {
+    const { feature, ...userInput } = input ?? {};
     const password = input?.password ?? faker.internet.password();
     const user = await this.db.user.create({
       data: {
-        email: faker.internet.email(),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        email: `${faker.string.uuid()}@example.com`,
         name: faker.person.fullName(),
         password: password ? hashSync(password) : undefined,
-        ...input,
+        ...userInput,
       },
     });
 
-    if (input?.feature) {
-      const feature = await this.db.feature.findFirst({
-        where: {
-          name: input.feature,
-        },
-      });
-
-      if (!feature) {
-        throw new Error(
-          `Feature ${input.feature} does not exist in DB. You might forgot to run data-migration first.`
-        );
-      }
-
+    if (feature) {
+      const config = FeatureConfigs[feature];
       await this.db.userFeature.create({
         data: {
           userId: user.id,
-          featureId: feature.id,
+          name: feature,
+          type: config.type,
           reason: 'test',
           activated: true,
         },

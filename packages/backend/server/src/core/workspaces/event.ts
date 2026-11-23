@@ -1,44 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { OnEvent } from '../../base';
 import { Models } from '../../models';
-import { WorkspaceService } from './resolvers/service';
+import { Mailer } from '../mail';
+import { WorkspaceService } from './service';
+
+declare global {
+  interface Events {
+    'workspace.members.invite': {
+      inviterId: string;
+      inviteId: string;
+    };
+    'workspace.members.removed': {
+      workspaceId: string;
+      userId: string;
+    };
+    'workspace.members.leave': {
+      workspaceId: string;
+      userId: string;
+    };
+    'workspace.members.updated': {
+      workspaceId: string;
+    };
+    'workspace.invite_link.created': {
+      workspaceId: string;
+    };
+    'workspace.invite_link.revoked': {
+      workspaceId: string;
+    };
+  }
+}
 
 @Injectable()
 export class WorkspaceEvents {
+  private readonly logger = new Logger(WorkspaceEvents.name);
+
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly mailer: Mailer
   ) {}
-
-  @OnEvent('workspace.members.reviewRequested')
-  async onReviewRequested({
-    inviteId,
-  }: Events['workspace.members.reviewRequested']) {
-    // send review request mail to owner and admin
-    await this.workspaceService.sendReviewRequestedEmail(inviteId);
-  }
-
-  @OnEvent('workspace.members.requestApproved')
-  async onApproveRequest({
-    inviteId,
-  }: Events['workspace.members.requestApproved']) {
-    // send approve mail
-    await this.workspaceService.sendReviewApproveEmail(inviteId);
-  }
-
-  @OnEvent('workspace.members.requestDeclined')
-  async onDeclineRequest({
-    userId,
-    workspaceId,
-  }: Events['workspace.members.requestDeclined']) {
-    const user = await this.models.user.getWorkspaceUser(userId);
-    // send decline mail
-    await this.workspaceService.sendReviewDeclinedEmail(
-      user?.email,
-      workspaceId
-    );
-  }
 
   @OnEvent('workspace.members.roleChanged')
   async onRoleChanged({
@@ -50,6 +51,35 @@ export class WorkspaceEvents {
     await this.workspaceService.sendRoleChangedEmail(userId, {
       id: workspaceId,
       role,
+    });
+  }
+
+  @OnEvent('workspace.members.removed')
+  async onMemberRemoved({
+    userId,
+    workspaceId,
+  }: Events['workspace.members.removed']) {
+    const user = await this.models.user.get(userId);
+    if (!user) {
+      this.logger.warn(
+        `User not found for seeding member removed email: ${userId}`
+      );
+      return;
+    }
+
+    await this.mailer.trySend({
+      name: 'MemberRemoved',
+      to: user.email,
+      props: {
+        workspace: {
+          $$workspaceId: workspaceId,
+        },
+      },
+      metadata: {
+        workspaceId,
+        recipientUserId: userId,
+        source: { trusted: false },
+      },
     });
   }
 
@@ -77,5 +107,21 @@ export class WorkspaceEvents {
         id: workspaceId,
       });
     }
+  }
+
+  @OnEvent('workspace.members.leave')
+  async onMemberLeave({
+    userId,
+    workspaceId,
+  }: Events['workspace.members.leave']) {
+    await this.workspaceService.sendLeaveEmail(workspaceId, userId);
+  }
+
+  @OnEvent('workspace.members.invite')
+  async onMemberInvite({
+    inviterId,
+    inviteId,
+  }: Events['workspace.members.invite']) {
+    await this.workspaceService.sendInvitationNotification(inviterId, inviteId);
   }
 }

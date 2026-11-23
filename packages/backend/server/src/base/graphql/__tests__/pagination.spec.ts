@@ -4,7 +4,13 @@ import Sinon from 'sinon';
 
 import { createTestingApp } from '../../../__tests__/utils';
 import { Public } from '../../../core/auth';
-import { paginate, Paginated, PaginationInput } from '../pagination';
+import {
+  decodeWithJson,
+  paginate,
+  Paginated,
+  paginateWithCustomCursor,
+  PaginationInput,
+} from '../pagination';
 
 const TOTAL_COUNT = 105;
 const ITEMS = Array.from({ length: TOTAL_COUNT }, (_, i) => ({ id: i + 1 }));
@@ -76,7 +82,7 @@ test('should decode pagination input', async t => {
   await app.gql(query, {
     input: {
       first: 5,
-      offset: 1,
+      offset: 0,
       after: Buffer.from('4').toString('base64'),
     },
   });
@@ -84,10 +90,32 @@ test('should decode pagination input', async t => {
   t.true(
     paginationStub.calledOnceWithExactly({
       first: 5,
-      offset: 1,
+      offset: 0,
       after: '4',
     })
   );
+});
+
+test('should reject mixed pagination cursor and offset', async t => {
+  const res = await app.POST('/graphql').send({
+    query,
+    variables: {
+      input: {
+        first: 5,
+        offset: 1,
+        after: Buffer.from('4').toString('base64'),
+      },
+    },
+  });
+
+  t.is(res.status, 200);
+  t.truthy(res.body.errors?.length);
+  t.is(
+    res.body.errors[0].message,
+    'pagination.after and pagination.offset cannot be used together'
+  );
+  t.is(res.body.errors[0].extensions.status, 400);
+  t.is(res.body.errors[0].extensions.name, 'BAD_REQUEST');
 });
 
 test('should return encode pageInfo', async t => {
@@ -103,4 +131,25 @@ test('should return encode pageInfo', async t => {
   );
 
   t.snapshot(result);
+});
+
+test('should return encode pageInfo with custom cursor', async t => {
+  const result = paginateWithCustomCursor(
+    ITEMS.slice(10, 20),
+    TOTAL_COUNT,
+    { id: 10, name: 'test' },
+    { id: 20, name: 'test2' }
+  );
+
+  t.snapshot(result);
+});
+
+test('should decode with json', async t => {
+  const result = decodeWithJson<{ id: number; name: string }>(
+    'eyJpZCI6MTAsIm5hbWUiOiJ0ZXN0In0='
+  );
+  t.snapshot(result);
+
+  const result2 = decodeWithJson<{ id: number; name: string }>('');
+  t.is(result2, null);
 });

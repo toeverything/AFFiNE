@@ -1,44 +1,43 @@
 import type { InvitationType } from '../../core/workspaces';
 import type { TestingApp } from './testing-app';
+
 export async function inviteUser(
   app: TestingApp,
   workspaceId: string,
-  email: string,
-  sendInviteMail = false
+  email: string
 ): Promise<string> {
   const res = await app.gql(`
     mutation {
-      invite(workspaceId: "${workspaceId}", email: "${email}", sendInviteMail: ${sendInviteMail})
+      inviteMembers(workspaceId: "${workspaceId}", emails: ["${email}"]) {
+        inviteId
+      }
     }
   `);
 
-  return res.invite;
+  return res.inviteMembers[0].inviteId;
 }
 
 export async function inviteUsers(
   app: TestingApp,
   workspaceId: string,
-  emails: string[],
-  sendInviteMail = false
-): Promise<Array<{ email: string; inviteId?: string; sentSuccess?: boolean }>> {
+  emails: string[]
+): Promise<Array<{ email: string; inviteId?: string }>> {
   const res = await app.gql(
     `
-    mutation inviteBatch($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
-      inviteBatch(
+    mutation inviteMembers($workspaceId: String!, $emails: [String!]!) {
+      inviteMembers(
         workspaceId: $workspaceId
         emails: $emails
-        sendInviteMail: $sendInviteMail
       ) {
         email
         inviteId
-        sentSuccess
       }
     }
     `,
-    { workspaceId, emails, sendInviteMail }
+    { workspaceId, emails }
   );
 
-  return res.inviteBatch;
+  return res.inviteMembers;
 }
 
 export async function getInviteLink(
@@ -139,11 +138,11 @@ export async function revokeUser(
 ): Promise<boolean> {
   const res = await app.gql(`
     mutation {
-      revoke(workspaceId: "${workspaceId}", userId: "${userId}")
+      revokeMember(workspaceId: "${workspaceId}", userId: "${userId}")
     }
   `);
 
-  return res.revoke;
+  return res.revokeMember;
 }
 
 export async function getInviteInfo(
@@ -163,6 +162,7 @@ export async function getInviteInfo(
           name
           avatarUrl
         }
+        status
       }
     }
   `);

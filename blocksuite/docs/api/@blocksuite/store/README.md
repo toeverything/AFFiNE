@@ -1,4 +1,4 @@
-**@blocksuite/store**
+[**BlockSuite API Documentation**](../../README.md)
 
 ***
 
@@ -20,3 +20,7 @@
 
 - [Store](classes/Store.md)
 - [StoreSlots](interfaces/StoreSlots.md)
+
+## Other
+
+- [Schema](classes/Schema.md)

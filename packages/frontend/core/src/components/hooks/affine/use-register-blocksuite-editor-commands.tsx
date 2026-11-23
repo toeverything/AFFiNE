@@ -76,6 +76,9 @@ export function useRegisterBlocksuiteEditorCommands(
         title: doc.title$.value || t['Untitled'](),
       }),
       cancelText: t['com.affine.confirmModal.button.cancel'](),
+      confirmButtonOptions: {
+        variant: 'error',
+      },
       confirmText: t.Delete(),
       onConfirm: async () => {
         try {
@@ -84,7 +87,7 @@ export function useRegisterBlocksuiteEditorCommands(
             toast(t['com.affine.no-permission']());
             return;
           }
-          doc.moveToTrash();
+          await doc.moveToTrash();
         } catch (error) {
           console.error(error);
           const userFriendlyError = UserFriendlyError.fromAny(error);
@@ -333,7 +336,7 @@ export function useRegisterBlocksuiteEditorCommands(
           }
           track.$.cmdk.editor.restoreDoc();
 
-          doc.restoreFromTrash();
+          await doc.restoreFromTrash();
         },
       })
     );
@@ -379,7 +382,7 @@ export function useRegisterBlocksuiteEditorCommands(
         label: '',
         icon: null,
         run() {
-          toast(t['Save']());
+          // do nothing
         },
       })
     );

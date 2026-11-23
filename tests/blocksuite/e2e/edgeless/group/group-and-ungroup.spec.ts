@@ -38,9 +38,7 @@ test.describe('group and ungroup in group', () => {
   test.beforeEach(async ({ page }) => {
     await init(page);
     await createShapeElement(page, [200, 0], [300, 100], Shape.Square);
-    newAddedShape = (await getIds(page)).filter(
-      id => !initShapes.includes(id)
-    )[0];
+    newAddedShape = (await getIds(page)).find(id => !initShapes.includes(id))!;
     await selectAllByKeyboard(page);
     await triggerComponentToolbarAction(page, 'addGroup');
     outterGroupId = await getFirstContainerId(page);

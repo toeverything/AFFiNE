@@ -67,8 +67,15 @@ export const mobileStyles = {
     flexDirection: 'column',
     gap: 16,
     selectors: {
+      '&.row': {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+      },
       '&.reverse': {
         flexDirection: 'column-reverse',
+      },
+      '&.rowReverse': {
+        flexDirection: 'row-reverse',
       },
     },
   }),
@@ -80,6 +87,15 @@ export const mobileStyles = {
       borderRadius: 8,
       fontSize: 17,
       fontWeight: 400,
+      selectors: {
+        '&.row': {
+          width: 'auto',
+          minWidth: 0,
+          maxWidth: 140,
+          flex: 1,
+          height: 32,
+        },
+      },
     },
   ]),
 };

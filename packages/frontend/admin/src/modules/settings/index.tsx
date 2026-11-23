@@ -1,190 +1,304 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@affine/admin/components/ui/accordion';
 import { Button } from '@affine/admin/components/ui/button';
 import { ScrollArea } from '@affine/admin/components/ui/scroll-area';
-import { Separator } from '@affine/admin/components/ui/separator';
-import type { RuntimeConfigType } from '@affine/graphql';
-import { CheckIcon } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { get } from 'lodash-es';
+import { useCallback, useState } from 'react';
 
 import { Header } from '../header';
-import { useNav } from '../nav/context';
-import { ConfirmChanges } from './confirm-changes';
-import { RuntimeSettingRow } from './runtime-setting-row';
-import { useGetServerRuntimeConfig } from './use-get-server-runtime-config';
-import { useUpdateServerRuntimeConfigs } from './use-update-server-runtime-config';
 import {
-  formatValue,
-  formatValueForInput,
-  isEqual,
-  renderInput,
-} from './utils';
-
-export type ModifiedValues = {
-  id: string;
-  expiredValue: any;
-  newValue: any;
-};
+  ALL_CONFIG_DESCRIPTORS,
+  ALL_SETTING_GROUPS,
+  type AppConfig,
+} from './config';
+import { type ConfigInputProps, ConfigRow } from './config-input-row';
+import { useAppConfig } from './use-app-config';
 
 export function SettingsPage() {
-  const { trigger } = useUpdateServerRuntimeConfigs();
-  const { serverRuntimeConfig } = useGetServerRuntimeConfig();
-  const [open, setOpen] = useState(false);
-  const [configValues, setConfigValues] = useState(
-    serverRuntimeConfig.reduce(
-      (acc, config) => {
-        acc[config.id] = config.value;
-        return acc;
-      },
-      {} as Record<string, any>
-    )
-  );
-  const modifiedValues: ModifiedValues[] = useMemo(() => {
-    return serverRuntimeConfig
-      .filter(config => !isEqual(config.value, configValues[config.id]))
-      .map(config => ({
-        id: config.id,
-        key: config.key,
-        expiredValue: config.value,
-        newValue: configValues[config.id],
-      }));
-  }, [configValues, serverRuntimeConfig]);
-  const handleSave = useCallback(() => {
-    // post value example: { "key1": "newValue1","key2": "newValue2"}
-    const updates: Record<string, any> = {};
+  const {
+    appConfig,
+    appConfigMetadata,
+    update,
+    clear,
+    saveGroup,
+    resetGroup,
+    patchedAppConfig,
+    isGroupDirty,
+    isGroupSaving,
+    getGroupVersion,
+  } = useAppConfig();
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
-    modifiedValues.forEach(item => {
-      if (item.id && item.newValue !== undefined) {
-        updates[item.id] = item.newValue;
-      }
-    });
-    trigger({ updates });
-  }, [modifiedValues, trigger]);
-
-  const disableSave = modifiedValues.length === 0;
-  const onOpen = useCallback(() => setOpen(true), [setOpen]);
-  const onClose = useCallback(() => setOpen(false), [setOpen]);
-  const onConfirm = useCallback(() => {
-    if (disableSave) {
-      return;
-    }
-    handleSave();
-    onClose();
-  }, [disableSave, handleSave, onClose]);
   return (
-    <div className=" h-screen flex-1 flex-col flex">
-      <Header
-        title="Settings"
-        endFix={
-          <Button
-            type="submit"
-            size="icon"
-            className="w-7 h-7"
-            variant="ghost"
-            onClick={onOpen}
-            disabled={disableSave}
-          >
-            <CheckIcon size={20} />
-          </Button>
-        }
-      />
+    <div className="flex h-dvh flex-1 flex-col bg-background">
+      <Header title="Settings" />
       <AdminPanel
-        configValues={configValues}
-        setConfigValues={setConfigValues}
-      />
-      <ConfirmChanges
-        modifiedValues={modifiedValues}
-        open={open}
-        onOpenChange={setOpen}
-        onClose={onClose}
-        onConfirm={onConfirm}
+        expandedModules={expandedModules}
+        onExpandedModulesChange={setExpandedModules}
+        onUpdate={update}
+        appConfig={appConfig}
+        appConfigMetadata={appConfigMetadata}
+        patchedAppConfig={patchedAppConfig}
+        onClear={clear}
+        onSaveGroup={saveGroup}
+        onResetGroup={resetGroup}
+        isGroupDirty={isGroupDirty}
+        isGroupSaving={isGroupSaving}
+        getGroupVersion={getGroupVersion}
       />
     </div>
   );
 }
 
-export const AdminPanel = ({
-  setConfigValues,
-  configValues,
+const AdminPanel = ({
+  expandedModules,
+  onExpandedModulesChange,
+  appConfig,
+  appConfigMetadata,
+  patchedAppConfig,
+  onUpdate,
+  onClear,
+  onSaveGroup,
+  onResetGroup,
+  isGroupDirty,
+  isGroupSaving,
+  getGroupVersion,
 }: {
-  setConfigValues: Dispatch<SetStateAction<Record<string, any>>>;
-  configValues: Record<string, any>;
+  expandedModules: string[];
+  onExpandedModulesChange: (modules: string[]) => void;
+  appConfig: AppConfig;
+  appConfigMetadata: Record<string, unknown>;
+  patchedAppConfig: AppConfig;
+  onUpdate: (path: string, value: any) => void;
+  onClear: (path: string) => void;
+  onSaveGroup: (module: string) => Promise<void>;
+  onResetGroup: (module: string) => void;
+  isGroupDirty: (module: string) => boolean;
+  isGroupSaving: (module: string) => boolean;
+  getGroupVersion: (module: string) => number;
 }) => {
-  const { configGroup } = useGetServerRuntimeConfig();
+  const [groupErrors, setGroupErrors] = useState<
+    Record<string, Record<string, string>>
+  >({});
 
-  const { currentModule } = useNav();
+  const onFieldErrorChange = useCallback((field: string, error?: string) => {
+    const [module] = field.split('/');
+    if (!module) {
+      return;
+    }
 
-  const handleInputChange = useCallback(
-    (key: string, value: any, type: RuntimeConfigType) => {
-      const newValue = formatValueForInput(value, type);
-      setConfigValues(prevValues => ({
-        ...prevValues,
-        [key]: newValue,
-      }));
-    },
-    [setConfigValues]
-  );
+    setGroupErrors(prev => {
+      const moduleErrors = prev[module] ?? {};
+
+      if (error) {
+        if (moduleErrors[field] === error) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [module]: {
+            ...moduleErrors,
+            [field]: error,
+          },
+        };
+      }
+
+      if (!(field in moduleErrors)) {
+        return prev;
+      }
+
+      const nextModuleErrors = { ...moduleErrors };
+      delete nextModuleErrors[field];
+
+      if (Object.keys(nextModuleErrors).length === 0) {
+        const next = { ...prev };
+        delete next[module];
+        return next;
+      }
+
+      return {
+        ...prev,
+        [module]: nextModuleErrors,
+      };
+    });
+  }, []);
+
+  const clearModuleErrors = useCallback((module: string) => {
+    setGroupErrors(prev => {
+      if (!prev[module]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[module];
+      return next;
+    });
+  }, []);
 
   return (
-    <ScrollArea>
-      <div className="flex flex-col h-full gap-3 py-5 px-6 w-full max-w-[800px] mx-auto">
-        {configGroup
-          .filter(group => group.moduleName === currentModule)
-          .map(group => {
-            const { moduleName, configs } = group;
+    <ScrollArea className="h-full">
+      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-6 py-5">
+        <Accordion
+          type="multiple"
+          className="w-full"
+          value={expandedModules}
+          onValueChange={onExpandedModulesChange}
+        >
+          {ALL_SETTING_GROUPS.map(group => {
+            const { name, module, fields, operations } = group;
+            const dirty = isGroupDirty(module);
+            const saving = isGroupSaving(module);
+            const sourceConfig = patchedAppConfig[module] ?? appConfig[module];
+            const version = getGroupVersion(module);
+            const hasValidationError = Boolean(
+              groupErrors[module] &&
+              Object.keys(groupErrors[module] ?? {}).length > 0
+            );
+
             return (
-              <div
-                className="flex flex-col gap-5"
-                id={moduleName}
-                key={moduleName}
+              <AccordionItem
+                key={module}
+                value={module}
+                id={`config-module-${module}`}
+                className="mb-4 rounded-xl border border-border/60 bg-card px-5 shadow-1"
               >
-                <div className="text-xl font-semibold">{moduleName}</div>
-                {configs?.map((config, index) => {
-                  const { id, type, description, updatedAt } = config;
-                  const isValueEqual = isEqual(config.value, configValues[id]);
-                  const formatServerValue = formatValue(config.value);
-                  const formatCurrentValue = formatValue(configValues[id]);
-                  return (
-                    <div key={id} className="flex flex-col gap-10">
-                      {index !== 0 && <Separator />}
-                      <RuntimeSettingRow
-                        key={id}
-                        id={id}
-                        description={description}
-                        lastUpdatedTime={updatedAt}
-                        operation={renderInput(type, configValues[id], value =>
-                          handleInputChange(id, value, type)
-                        )}
-                      >
-                        <div style={{ opacity: isValueEqual ? 0 : 1 }}>
-                          <span
-                            className="line-through"
-                            style={{
-                              color: 'rgba(198, 34, 34, 1)',
-                              backgroundColor: 'rgba(254, 213, 213, 1)',
-                            }}
-                          >
-                            {formatServerValue}
-                          </span>{' '}
-                          =&gt;{' '}
-                          <span
-                            style={{
-                              color: 'rgba(20, 147, 67, 1)',
-                              backgroundColor: 'rgba(225, 250, 177, 1)',
-                            }}
-                          >
-                            {formatCurrentValue}
-                          </span>
-                        </div>
-                      </RuntimeSettingRow>
+                <AccordionTrigger className="hover:no-underline py-4">
+                  <div className="flex flex-col items-start text-left gap-1">
+                    <div className="text-base font-semibold">{name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Manage {name.toLowerCase()} settings
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                </AccordionTrigger>
+
+                <AccordionContent className="pt-2 pb-2 px-1">
+                  <div
+                    className="flex flex-col gap-8"
+                    key={`${module}-${version}`}
+                  >
+                    {fields.map(field => {
+                      const fieldKey =
+                        typeof field === 'string' ? field : String(field.key);
+                      const metadata = get(
+                        appConfigMetadata,
+                        `${module}.${fieldKey}`
+                      ) as
+                        | { source?: string; configured?: boolean }
+                        | undefined;
+                      const secret = metadata?.configured !== undefined;
+                      const effectiveIndexerProvider =
+                        sourceConfig?.provider?.type ?? 'embedded';
+                      if (
+                        module === 'indexer' &&
+                        effectiveIndexerProvider === 'embedded' &&
+                        fieldKey.startsWith('provider.') &&
+                        fieldKey !== 'provider.type'
+                      ) {
+                        return null;
+                      }
+                      let props: ConfigInputProps;
+                      if (typeof field === 'string') {
+                        const descriptor =
+                          ALL_CONFIG_DESCRIPTORS[module][field];
+                        props = {
+                          field: `${module}/${field}`,
+                          desc: descriptor.desc,
+                          type: descriptor.type,
+                          options: [],
+                          defaultValue: get(sourceConfig, field),
+                          onChange: onUpdate,
+                        };
+                      } else {
+                        const descriptor =
+                          ALL_CONFIG_DESCRIPTORS[module][field.key];
+                        props = {
+                          field: `${module}/${field.key}${field.sub ? `/${field.sub}` : ''}`,
+                          desc: field.desc ?? descriptor.desc,
+                          type: field.type ?? descriptor.type,
+                          // @ts-expect-error for enum type
+                          options: field.options,
+                          defaultValue:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? effectiveIndexerProvider
+                              : get(
+                                  sourceConfig,
+                                  field.key + (field.sub ? '.' + field.sub : '')
+                                ),
+                          onChange:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? (_path, value) => {
+                                  onUpdate('indexer/enabled', true);
+                                  onUpdate('indexer/provider.type', value);
+                                }
+                              : onUpdate,
+                        };
+                      }
+
+                      return (
+                        <ConfigRow
+                          key={props.field}
+                          {...props}
+                          source={metadata?.source}
+                          secret={secret}
+                          configured={metadata?.configured}
+                          onClear={
+                            metadata?.source === 'database'
+                              ? () => onClear(`${module}/${fieldKey}`)
+                              : undefined
+                          }
+                          onErrorChange={onFieldErrorChange}
+                        />
+                      );
+                    })}
+
+                    {operations?.map(Operation => (
+                      <Operation
+                        key={Operation.name}
+                        appConfig={patchedAppConfig}
+                      />
+                    ))}
+
+                    <div className="flex justify-end gap-2">
+                      {dirty ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-9 min-w-[88px]"
+                          onClick={() => {
+                            onResetGroup(module);
+                            clearModuleErrors(module);
+                          }}
+                          disabled={saving}
+                        >
+                          Cancel
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        className="h-9 min-w-[88px]"
+                        onClick={() => {
+                          onSaveGroup(module).catch(err => {
+                            console.error(err);
+                          });
+                        }}
+                        disabled={!dirty || saving || hasValidationError}
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             );
           })}
+        </Accordion>
       </div>
     </ScrollArea>
   );
 };
-
-export { SettingsPage as Component };

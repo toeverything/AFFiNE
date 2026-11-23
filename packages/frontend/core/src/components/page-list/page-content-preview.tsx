@@ -1,4 +1,4 @@
-import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { DocSummaryService } from '@affine/core/modules/doc-summary';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { type ReactNode, useMemo } from 'react';
 
@@ -13,7 +13,7 @@ const PagePreviewInner = ({
   emptyFallback,
   fallback,
 }: PagePreviewProps) => {
-  const docSummary = useService(DocsSearchService);
+  const docSummary = useService(DocSummaryService);
   const summary = useLiveData(
     useMemo(
       () => LiveData.from(docSummary.watchDocSummary(pageId), null),

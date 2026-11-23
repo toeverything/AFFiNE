@@ -1,8 +1,14 @@
 import { getDomain, getSubdomain } from 'tldts';
 
-import { imageProxyBuilder } from './proxy';
-
 const localhost = new Set(['localhost', '127.0.0.1']);
+
+const URL_FIXERS: Record<string, (url: URL) => URL> = {
+  'open.spotify.com': (url: URL) => {
+    // with si query, spotify will redirect to landing page which [Open Desktop] check
+    url.searchParams.delete('si');
+    return url;
+  },
+};
 
 export function fixUrl(url?: string): URL | null {
   if (typeof url !== 'string') {
@@ -28,6 +34,12 @@ export function fixUrl(url?: string): URL | null {
       // check hostname is a valid domain
       (fullDomain === parsed.hostname || localhost.has(parsed.hostname))
     ) {
+      const fixer = URL_FIXERS[parsed.hostname];
+
+      if (fixer) {
+        return fixer(parsed);
+      }
+
       return parsed;
     }
   } catch {}
@@ -44,11 +56,6 @@ export function appendUrl(url: string | null, array?: string[]) {
   }
 }
 
-export async function reduceUrls(baseUrl: string, urls?: string[]) {
-  if (urls && urls.length > 0) {
-    const imageProxy = imageProxyBuilder(baseUrl);
-    const newUrls = await Promise.all(urls.map(imageProxy));
-    return newUrls.filter((x): x is string => !!x);
-  }
-  return [];
+export async function reduceUrls(urls: string[] = []) {
+  return Array.from(new Set(urls.filter(Boolean) as string[]));
 }

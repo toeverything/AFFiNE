@@ -1,5 +1,5 @@
 import type { RootBlockModel } from '@blocksuite/affine-model';
-import { BLOCK_ID_ATTR, type BlockComponent } from '@blocksuite/block-std';
+import { BLOCK_ID_ATTR, type BlockComponent } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 const ATTR_SELECTOR = `[${BLOCK_ID_ATTR}]`;

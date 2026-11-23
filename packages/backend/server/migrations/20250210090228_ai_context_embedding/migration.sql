@@ -37,7 +37,7 @@ BEGIN -- check if pgvector extension is installed
         "file_id" VARCHAR NOT NULL,
         "chunk" INTEGER NOT NULL,
         "content" VARCHAR NOT NULL,
-        "embedding" vector(512) NOT NULL,
+        "embedding" vector(1024) NOT NULL,
         "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
@@ -50,7 +50,7 @@ BEGIN -- check if pgvector extension is installed
         "doc_id" VARCHAR NOT NULL,
         "chunk" INTEGER NOT NULL,
         "content" VARCHAR NOT NULL,
-        "embedding" vector(512) NOT NULL,
+        "embedding" vector(1024) NOT NULL,
         "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
@@ -71,5 +71,8 @@ BEGIN -- check if pgvector extension is installed
 
     -- AddForeignKey
     ALTER TABLE "ai_workspace_embeddings" ADD CONSTRAINT "ai_workspace_embeddings_workspace_id_doc_id_fkey" FOREIGN KEY ("workspace_id", "doc_id") REFERENCES "snapshots"("workspace_id", "guid") ON DELETE CASCADE ON UPDATE CASCADE;
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "ai_workspace_embeddings_workspace_id_doc_id_chunk_key" ON "ai_workspace_embeddings"("workspace_id", "doc_id", "chunk");
   END IF;
 END $$;

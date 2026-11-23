@@ -5,7 +5,7 @@
 import { JOURNAL_DATE_FORMAT } from '@affine/core/modules/journal';
 import { I18n } from '@affine/i18n';
 import dayjs from 'dayjs';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('emoji-mart', () => {
   return {
@@ -16,6 +16,10 @@ vi.mock('emoji-mart', () => {
 import { suggestJournalDate } from '../suggest-journal-date';
 
 describe('suggestJournalDate', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test('today', () => {
     expect(suggestJournalDate('t')).toEqual({
       dateString: dayjs().format(JOURNAL_DATE_FORMAT),
@@ -92,6 +96,17 @@ describe('suggestJournalDate', () => {
     });
   });
 
+  test('last week - saturday', () => {
+    expect(suggestJournalDate('last sa')).toEqual({
+      dateString: dayjs()
+        .subtract(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Last Saturday',
+    });
+  });
+
   test('next week - monday', () => {
     expect(suggestJournalDate('nm')).toEqual({
       dateString: dayjs()
@@ -147,26 +162,83 @@ describe('suggestJournalDate', () => {
     });
   });
 
-  test('dec', () => {
-    const year = dayjs().year();
-    const date = dayjs().date();
-    expect(suggestJournalDate(`dec`)).toEqual({
-      dateString: dayjs(`${year}-12-${date}`).format(JOURNAL_DATE_FORMAT),
+  test('next week - saturday', () => {
+    expect(suggestJournalDate('next sa')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .add(6, 'day')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Saturday',
     });
   });
 
-  test('dec 1', () => {
-    const year = dayjs().year();
-    expect(suggestJournalDate(`dec 10`)).toEqual({
-      dateString: dayjs(`${year}-12-10`).format(JOURNAL_DATE_FORMAT),
+  test('next week - sunday', () => {
+    expect(suggestJournalDate('next su')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
     });
   });
 
-  test('dec 33', () => {
-    const year = dayjs().year();
-    const date = dayjs().date();
-    expect(suggestJournalDate(`dec 33`)).toEqual({
-      dateString: dayjs(`${year}-12-${date}`).format(JOURNAL_DATE_FORMAT),
+  test('month wins over a loose weekday match', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16, 12, 0, 0));
+
+    expect(suggestJournalDate('no')).toEqual({
+      dateString: '2026-11-16',
+    });
+  });
+
+  test('a tie keeps the weekday', () => {
+    expect(suggestJournalDate('n')).toEqual({
+      dateString: dayjs()
+        .add(1, 'week')
+        .startOf('week')
+        .format(JOURNAL_DATE_FORMAT),
+      alias: 'Next Sunday',
+    });
+  });
+
+  test.each([
+    {
+      now: new Date(2026, 8, 16, 12, 0, 0),
+      query: 'dec',
+      expected: '2026-12-16',
+    },
+    {
+      now: new Date(2026, 8, 16, 12, 0, 0),
+      query: 'dec 10',
+      expected: '2026-12-10',
+    },
+    {
+      now: new Date(2026, 8, 16, 12, 0, 0),
+      query: 'feb 30',
+      expected: '2026-02-16',
+    },
+    {
+      now: new Date(2026, 0, 31, 12, 0, 0),
+      query: 'feb',
+      expected: '2026-02-28',
+    },
+    {
+      now: new Date(2028, 0, 31, 12, 0, 0),
+      query: 'feb',
+      expected: '2028-02-29',
+    },
+    {
+      now: new Date(2028, 8, 16, 12, 0, 0),
+      query: 'feb 29',
+      expected: '2028-02-29',
+    },
+  ])('$query resolves to $expected', ({ now, query, expected }) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+
+    expect(suggestJournalDate(query)).toEqual({
+      dateString: expected,
     });
   });
 });

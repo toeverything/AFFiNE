@@ -6,6 +6,7 @@ import {
   type Transaction,
 } from 'yjs';
 
+import { shallowEqual } from '../../../../utils/shallow-equal';
 import { validators } from '../../validators';
 import { HookAdapter } from '../mixins';
 import type {
@@ -133,7 +134,16 @@ export class YjsTableAdapter implements TableAdapter {
 
         if (isMatch && isPrevMatched) {
           const newValue = this.value(record, select);
-          if (prevMatch !== newValue) {
+          if (
+            !(
+              prevMatch === newValue ||
+              (!select && // if select is set, we will check the value
+                select !== '*' &&
+                select !== 'key' &&
+                // skip if the value is the same
+                shallowEqual(prevMatch, newValue))
+            )
+          ) {
             results.set(key, newValue);
             hasChanged = true;
           }

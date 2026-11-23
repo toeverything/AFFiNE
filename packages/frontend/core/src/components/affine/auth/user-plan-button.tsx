@@ -49,6 +49,7 @@ export const UserPlanButton = ({
     <Tooltip content={t['com.affine.payment.tag-tooltips']()} side="top">
       <div
         data-is-believer={isBeliever ? 'true' : undefined}
+        data-is-pro={plan === SubscriptionPlan.Pro ? 'true' : undefined}
         className={styles.userPlanButton}
         onClick={onClick}
         data-event-props="$.settingsPanel.profileAndBadge.viewPlans"

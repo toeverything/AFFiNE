@@ -1,0 +1,5161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AFFiNE Application Configuration",
+  "type": "object",
+  "properties": {
+    "crypto": {
+      "type": "object",
+      "description": "Configuration for crypto module",
+      "properties": {
+        "privateKey": {
+          "type": "string",
+          "description": "Private key for Node signing and encryption plus native runtime identity.\n@default \"\"\n@environment `AFFINE_PRIVATE_KEY`",
+          "default": ""
+        }
+      }
+    },
+    "throttle": {
+      "type": "object",
+      "description": "Configuration for throttle module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the throttler is enabled.\n@default true",
+          "default": true
+        },
+        "throttlers.default": {
+          "type": "object",
+          "description": "The config for the default throttler.\n@default {\"ttl\":60000,\"limit\":120}",
+          "default": {
+            "ttl": 60000,
+            "limit": 120
+          }
+        },
+        "throttlers.strict": {
+          "type": "object",
+          "description": "The config for the strict throttler.\n@default {\"ttl\":60000,\"limit\":20}",
+          "default": {
+            "ttl": 60000,
+            "limit": 20
+          }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "Configuration for auth module",
+      "properties": {
+        "signInRateLimit": {
+          "type": "object",
+          "description": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.\n@default {\"ttl\":60000,\"ipLimit\":20,\"emailLimit\":5}",
+          "default": {
+            "ttl": 60000,
+            "ipLimit": 20,
+            "emailLimit": 5
+          }
+        },
+        "passwordRequirements": {
+          "type": "object",
+          "description": "The password strength requirements when set new password.\n@default {\"min\":8,\"max\":32}",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "min": 8,
+            "max": 32
+          }
+        },
+        "allowSignup": {
+          "type": "boolean",
+          "description": "Allow new registrations.\n@default true",
+          "default": true,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "allowSignupForOauth": {
+          "type": "boolean",
+          "description": "Allow new registrations through configured OAuth providers.\n@default true",
+          "default": true,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "requireEmailDomainVerification": {
+          "type": "boolean",
+          "description": "Require email domain verification for restricted resources.\n@default false",
+          "default": false,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "newAccountActionDelay": {
+          "type": "integer",
+          "description": "Minimum account age in seconds for invites and document publishing.\n@default 86400",
+          "default": 86400,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "minimum": 0
+        },
+        "session.ttl": {
+          "type": "integer",
+          "description": "Application auth expiration in seconds.\n@default 1296000",
+          "default": 1296000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64"
+        },
+        "session.ttr": {
+          "type": "integer",
+          "description": "Application auth refresh interval in seconds.\n@default 604800",
+          "default": 604800,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64"
+        },
+        "token.accessTokenTtl": {
+          "type": "integer",
+          "description": "Access JWT expiration in seconds.\n@default 900",
+          "default": 900,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 3600,
+          "minimum": 60
+        },
+        "token.refreshIdleTtl": {
+          "type": "integer",
+          "description": "Refresh session inactivity expiration in seconds.\n@default 2592000",
+          "default": 2592000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 31536000,
+          "minimum": 3600
+        },
+        "token.refreshAbsoluteTtl": {
+          "type": "integer",
+          "description": "Refresh session absolute expiration in seconds.\n@default 15552000",
+          "default": 15552000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 63072000,
+          "minimum": 3600
+        },
+        "token.refreshGracePeriod": {
+          "type": "integer",
+          "description": "Refresh rotation concurrency grace period in seconds.\n@default 30",
+          "default": 30,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 60,
+          "minimum": 0
+        },
+        "token.refreshRetention": {
+          "type": "integer",
+          "description": "Expired refresh generation retention in seconds.\n@default 2592000",
+          "default": 2592000,
+          "definitions": {
+            "AuthSessionConfigFile": {
+              "properties": {
+                "ttl": {
+                  "default": 1296000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "ttr": {
+                  "default": 604800,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "AuthTokenConfigFile": {
+              "properties": {
+                "accessTokenTtl": {
+                  "default": 900,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshAbsoluteTtl": {
+                  "default": 15552000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshGracePeriod": {
+                  "default": 30,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshIdleTtl": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                },
+                "refreshRetention": {
+                  "default": 2592000,
+                  "format": "int64",
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "format": "int64",
+          "maximum": 31536000,
+          "minimum": 3600
+        }
+      }
+    },
+    "mailer": {
+      "type": "object",
+      "description": "Configuration for mailer module",
+      "properties": {
+        "SMTP.name": {
+          "type": "string",
+          "description": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"\n@environment `MAILER_SERVERNAME`",
+          "default": ""
+        },
+        "SMTP.host": {
+          "type": "string",
+          "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",
+          "default": ""
+        },
+        "SMTP.port": {
+          "type": "number",
+          "description": "Port of the email server (they commonly are 25, 465 or 587)\n@default 465\n@environment `MAILER_PORT`",
+          "default": 465
+        },
+        "SMTP.username": {
+          "type": "string",
+          "description": "Username used to authenticate the email server\n@default \"\"\n@environment `MAILER_USER`",
+          "default": ""
+        },
+        "SMTP.password": {
+          "type": "string",
+          "description": "Password used to authenticate the email server\n@default \"\"\n@environment `MAILER_PASSWORD`",
+          "default": ""
+        },
+        "SMTP.sender": {
+          "type": "string",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")\n@default \"AFFiNE Self Hosted <noreply@example.com>\"\n@environment `MAILER_SENDER`",
+          "default": "AFFiNE Self Hosted <noreply@example.com>"
+        },
+        "SMTP.ignoreTLS": {
+          "type": "boolean",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
+          "default": false
+        },
+        "fallbackDomains": {
+          "type": "array",
+          "description": "The emails from these domains are always sent using the fallback SMTP server.\n@default []",
+          "default": []
+        },
+        "deliveryWorker.batchSize": {
+          "type": "number",
+          "description": "Number of mail delivery rows claimed by each worker tick.\n@default 50",
+          "default": 50
+        },
+        "deliveryWorker.leaseMs": {
+          "type": "number",
+          "description": "Mail delivery worker lease duration in milliseconds.\n@default 120000",
+          "default": 120000
+        },
+        "deliveryWorker.retentionDays": {
+          "type": "number",
+          "description": "Days to retain anonymized terminal mail delivery ledger rows.\n@default 30",
+          "default": 30
+        },
+        "fallbackSMTP.name": {
+          "type": "string",
+          "description": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.host": {
+          "type": "string",
+          "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.port": {
+          "type": "number",
+          "description": "Port of the email server (they commonly are 25, 465 or 587)\n@default 465",
+          "default": 465
+        },
+        "fallbackSMTP.username": {
+          "type": "string",
+          "description": "Username used to authenticate the email server\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.password": {
+          "type": "string",
+          "description": "Password used to authenticate the email server\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.sender": {
+          "type": "string",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")\n@default \"\"",
+          "default": ""
+        },
+        "fallbackSMTP.ignoreTLS": {
+          "type": "boolean",
+          "description": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.\n@default false",
+          "default": false
+        }
+      }
+    },
+    "doc": {
+      "type": "object",
+      "description": "Configuration for doc module",
+      "properties": {
+        "history.interval": {
+          "type": "number",
+          "description": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated.\n@default 600000",
+          "default": 600000
+        }
+      }
+    },
+    "storages": {
+      "type": "object",
+      "description": "Configuration for storages module",
+      "properties": {
+        "avatar.publicPath": {
+          "type": "string",
+          "description": "The public accessible path prefix for user avatars.\n@default \"/api/avatars/\"",
+          "default": "/api/avatars/"
+        },
+        "avatar.storage": {
+          "type": "object",
+          "description": "The config of storage for user avatars.\n@default {\"bucket\":\"avatars\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
+          "oneOf": [
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            }
+          ],
+          "default": {
+            "bucket": "avatars",
+            "config": {
+              "path": "~/.affine/storage"
+            },
+            "provider": "fs"
+          }
+        },
+        "blob.storage": {
+          "type": "object",
+          "description": "The config of storage for all uploaded blobs(images, videos, etc.).\n@default {\"bucket\":\"blobs\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
+          "oneOf": [
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            }
+          ],
+          "default": {
+            "bucket": "blobs",
+            "config": {
+              "path": "~/.affine/storage"
+            },
+            "provider": "fs"
+          }
+        }
+      }
+    },
+    "websocket": {
+      "type": "object",
+      "description": "Configuration for websocket module",
+      "properties": {
+        "transports": {
+          "type": "array",
+          "description": "The enabled transports for accepting websocket traffics.\n@default [\"websocket\",\"polling\"]\n@link https://docs.nestjs.com/websockets/gateways#transports",
+          "items": {
+            "type": "string",
+            "enum": [
+              "websocket",
+              "polling"
+            ]
+          },
+          "default": [
+            "websocket",
+            "polling"
+          ]
+        },
+        "maxHttpBufferSize": {
+          "type": "number",
+          "description": "How many bytes or characters a message can be, before closing the session (to avoid DoS).\n@default 100000000",
+          "default": 100000000
+        }
+      }
+    },
+    "server": {
+      "type": "object",
+      "description": "Configuration for server module",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "A recognizable name for the server. Will be shown when connected with AFFiNE Desktop.\n@default undefined"
+        },
+        "externalUrl": {
+          "type": "string",
+          "description": "Base url of AFFiNE server, used for generating external urls.\nDefault to be `[server.protocol]://[server.host][:server.port]` if not specified.\n    \n@default \"\"\n@environment `AFFINE_SERVER_EXTERNAL_URL`",
+          "default": ""
+        },
+        "https": {
+          "type": "boolean",
+          "description": "Whether the server is hosted on a ssl enabled domain (https://).\n@default false\n@environment `AFFINE_SERVER_HTTPS`",
+          "default": false
+        },
+        "host": {
+          "type": "string",
+          "description": "Where the server get deployed(FQDN).\n@default \"localhost\"\n@environment `AFFINE_SERVER_HOST`",
+          "default": "localhost"
+        },
+        "hosts": {
+          "type": "array",
+          "description": "Multiple hosts the server will accept requests from.\n@default []",
+          "default": []
+        },
+        "listenAddr": {
+          "type": "string",
+          "description": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).\n@default \"0.0.0.0\"\n@environment `LISTEN_ADDR`",
+          "default": "0.0.0.0"
+        },
+        "port": {
+          "type": "number",
+          "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
+          "default": 3010
+        },
+        "path": {
+          "type": "string",
+          "description": "Subpath where the server get deployed if there is one.(e.g. /affine)\n@default \"\"\n@environment `AFFINE_SERVER_SUB_PATH`",
+          "default": ""
+        }
+      }
+    },
+    "flags": {
+      "type": "object",
+      "description": "Configuration for flags module",
+      "properties": {
+        "allowGuestDemoWorkspace": {
+          "type": "boolean",
+          "description": "Whether allow guest users to create demo workspaces.\n@default true",
+          "default": true
+        }
+      }
+    },
+    "client": {
+      "type": "object",
+      "description": "Configuration for client module",
+      "properties": {
+        "versionControl.enabled": {
+          "type": "boolean",
+          "description": "Whether check version of client before accessing the server.\n@default false",
+          "default": false
+        },
+        "versionControl.requiredVersion": {
+          "type": "string",
+          "description": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.\n@default \">=0.25.0\"",
+          "default": ">=0.25.0"
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "description": "Configuration for calendar module",
+      "properties": {
+        "google": {
+          "type": "object",
+          "description": "Google Calendar integration config\n@default {\"enabled\":false,\"allowNewAccounts\":true,\"clientId\":\"\",\"clientSecret\":\"\",\"externalWebhookUrl\":\"\",\"webhookVerificationToken\":\"\",\"requestTimeoutMs\":10000}\n@link https://developers.google.com/calendar/api/guides/push",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "allowNewAccounts": {
+              "type": "boolean"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "externalWebhookUrl": {
+              "type": "string"
+            },
+            "webhookVerificationToken": {
+              "type": "string"
+            },
+            "requestTimeoutMs": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "enabled": false,
+            "allowNewAccounts": true,
+            "clientId": "",
+            "clientSecret": "",
+            "externalWebhookUrl": "",
+            "webhookVerificationToken": "",
+            "requestTimeoutMs": 10000
+          }
+        },
+        "caldav": {
+          "type": "object",
+          "description": "CalDAV integration config\n@default {\"enabled\":false,\"allowCustomProvider\":false,\"providers\":[],\"allowInsecureHttp\":false,\"allowedHosts\":[],\"blockPrivateNetwork\":true,\"requestTimeoutMs\":10000,\"maxRedirects\":5}",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "allowCustomProvider": {
+              "type": "boolean"
+            },
+            "providers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "serverUrl": {
+                    "type": "string"
+                  },
+                  "authType": {
+                    "type": "string"
+                  },
+                  "requiresAppPassword": {
+                    "type": "boolean"
+                  },
+                  "docsUrl": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "allowInsecureHttp": {
+              "type": "boolean"
+            },
+            "allowedHosts": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blockPrivateNetwork": {
+              "type": "boolean"
+            },
+            "requestTimeoutMs": {
+              "type": "number"
+            },
+            "maxRedirects": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "enabled": false,
+            "allowCustomProvider": false,
+            "providers": [],
+            "allowInsecureHttp": false,
+            "allowedHosts": [],
+            "blockPrivateNetwork": true,
+            "requestTimeoutMs": 10000,
+            "maxRedirects": 5
+          }
+        }
+      }
+    },
+    "copilot": {
+      "type": "object",
+      "description": "Configuration for copilot module",
+      "properties": {
+        "unsplash": {
+          "type": "object",
+          "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
+          "default": {
+            "key": ""
+          }
+        },
+        "exa": {
+          "type": "object",
+          "description": "The config for the exa web search key.\n@default {\"key\":\"\"}",
+          "default": {
+            "key": ""
+          }
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
+          "default": false,
+          "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "models": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "$ref": "#/definitions/BackendProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "byok.enabled": {
+          "type": "boolean",
+          "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
+          "default": true,
+          "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "models": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "$ref": "#/definitions/BackendProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "byok.allowedProviders": {
+          "type": "array",
+          "description": "AI providers that workspace owners and admins may add through AI BYOK.\n@default [\"openai\",\"anthropic\",\"gemini\",\"fal\"]",
+          "default": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "fal"
+          ],
+          "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "models": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "$ref": "#/definitions/BackendProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "items": {
+            "enum": [
+              "openai",
+              "anthropic",
+              "gemini",
+              "fal"
+            ],
+            "type": "string"
+          }
+        },
+        "byok.allowCustomEndpoint": {
+          "type": "boolean",
+          "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
+          "default": false,
+          "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "models": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "$ref": "#/definitions/BackendProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "byok.allowPrivateEndpoint": {
+          "type": "boolean",
+          "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
+          "default": false,
+          "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
+            "CopilotByokRuntimeConfig": {
+              "properties": {
+                "allowCustomEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowPrivateEndpoint": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "allowedProviders": {
+                  "default": [
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "fal"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "models": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "$ref": "#/definitions/BackendProvider"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "config"
+              ],
+              "type": "object"
+            },
+            "CopilotProvidersRuntimeConfigFile": {
+              "properties": {
+                "profiles": {
+                  "default": [],
+                  "items": {
+                    "$ref": "#/definitions/CopilotManagedProfileConfigFile"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "description": "The config for the storage provider.\n@default {\"bucket\":\"copilot\",\"config\":{\"path\":\"~/.affine/storage\"},\"provider\":\"fs\"}",
+          "oneOf": [
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "fs"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "assetpack"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "endpoint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "forcePathStyle": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "region"
+                  ],
+                  "title": "S3ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "aws-s3"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "$schema": "http://json-schema.org/draft-07/schema#",
+                  "properties": {
+                    "accountId": {
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "properties": {
+                        "accessKeyId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secretAccessKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sessionToken": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "jurisdiction": {
+                      "enum": [
+                        "default",
+                        "eu",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "minPartSize": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "presign": {
+                      "properties": {
+                        "expiresInSeconds": {
+                          "format": "uint64",
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "signContentTypeForPut": {
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "region": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMs": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "usePresignedURL": {
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "signKey": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "urlPrefix": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "enabled"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "accountId"
+                  ],
+                  "title": "R2ConfigFile",
+                  "type": "object"
+                },
+                "provider": {
+                  "const": "cloudflare-r2"
+                }
+              },
+              "required": [
+                "provider",
+                "bucket",
+                "config"
+              ],
+              "type": "object"
+            }
+          ],
+          "default": {
+            "bucket": "copilot",
+            "config": {
+              "path": "~/.affine/storage"
+            },
+            "provider": "fs"
+          }
+        }
+      }
+    },
+    "indexer": {
+      "type": "object",
+      "description": "Configuration for indexer module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable the indexer.\n@default false",
+          "default": false,
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "provider.type": {
+          "type": "string",
+          "description": "Search provider type.\n@default \"embedded\"",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SearchProviderType"
+            }
+          ],
+          "default": "embedded",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "provider.endpoint": {
+          "type": "string",
+          "description": "Remote search provider endpoint.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "provider.apiKey": {
+          "type": "string",
+          "description": "Remote search provider API key.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "provider.username": {
+          "type": "string",
+          "description": "Remote search provider username.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        "provider.password": {
+          "type": "string",
+          "description": "Remote search provider password.\n@default \"\"",
+          "default": "",
+          "definitions": {
+            "SearchProviderConfigFile": {
+              "properties": {
+                "apiKey": {
+                  "default": "",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "default": "",
+                  "type": "string"
+                },
+                "password": {
+                  "default": "",
+                  "type": "string"
+                },
+                "type": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/SearchProviderType"
+                    }
+                  ],
+                  "default": "embedded"
+                },
+                "username": {
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "SearchProviderType": {
+              "enum": [
+                "embedded",
+                "elasticsearch",
+                "manticoresearch"
+              ],
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "oauth": {
+      "type": "object",
+      "description": "Configuration for oauth module",
+      "properties": {
+        "providers.google": {
+          "type": "object",
+          "description": "Google OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developers.google.com/identity/protocols/oauth2/web-server",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
+            "clientId": {
+              "default": "",
+              "type": "string"
+            },
+            "clientSecret": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "title": "OAuthProviderConfigFile",
+          "default": {
+            "args": {},
+            "clientId": "",
+            "clientSecret": ""
+          }
+        },
+        "providers.github": {
+          "type": "object",
+          "description": "GitHub OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://docs.github.com/en/apps/oauth-apps",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
+            "clientId": {
+              "default": "",
+              "type": "string"
+            },
+            "clientSecret": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "title": "OAuthProviderConfigFile",
+          "default": {
+            "args": {},
+            "clientId": "",
+            "clientSecret": ""
+          }
+        },
+        "providers.oidc": {
+          "type": "object",
+          "description": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true\n@default {\"allowPrivateNetwork\":false,\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\"}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "allowPrivateNetwork": {
+              "default": false,
+              "description": "Allow the OIDC issuer origin to resolve to private network addresses",
+              "type": "boolean"
+            },
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
+            "clientId": {
+              "default": "",
+              "type": "string"
+            },
+            "clientSecret": {
+              "default": "",
+              "type": "string"
+            },
+            "issuer": {
+              "default": "",
+              "description": "OIDC issuer HTTP(S) URL",
+              "type": "string"
+            }
+          },
+          "title": "OAuthProviderConfigFile",
+          "default": {
+            "allowPrivateNetwork": false,
+            "args": {},
+            "clientId": "",
+            "clientSecret": "",
+            "issuer": ""
+          }
+        },
+        "providers.apple": {
+          "type": "object",
+          "description": "Apple OAuth provider config\n@default {\"args\":{},\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "properties": {
+            "args": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "default": {},
+              "type": "object"
+            },
+            "clientId": {
+              "default": "",
+              "type": "string"
+            },
+            "clientSecret": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          "title": "OAuthProviderConfigFile",
+          "default": {
+            "args": {},
+            "clientId": "",
+            "clientSecret": ""
+          }
+        }
+      }
+    },
+    "worker": {
+      "type": "object",
+      "description": "Configuration for worker module",
+      "properties": {
+        "allowedOrigin": {
+          "type": "array",
+          "description": "Allowed origin\n@default [\"localhost\",\"127.0.0.1\"]",
+          "default": [
+            "localhost",
+            "127.0.0.1"
+          ]
+        }
+      }
+    }
+  }
+}

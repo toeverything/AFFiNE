@@ -1,100 +1,90 @@
-import {
-  defineRuntimeConfig,
-  defineStartupConfig,
-  ModuleConfig,
-} from '../../base/config';
+import serverNativeModule from '@affine/server-native';
+import { z } from 'zod';
 
-export interface AuthStartupConfigurations {
-  /**
-   * auth session config
-   */
+import { defineNativeModuleConfig } from '../../base';
+
+export interface AuthConfig {
   session: {
-    /**
-     * Application auth expiration time in seconds
-     */
     ttl: number;
-    /**
-     * Application auth time to refresh in seconds
-     */
     ttr: number;
   };
-
-  /**
-   * Application access token config
-   */
-  accessToken: {
-    /**
-     * Application access token expiration time in seconds
-     */
-    ttl: number;
-    /**
-     * Application refresh token expiration time in seconds
-     */
-    refreshTokenTtl: number;
+  token: {
+    accessTokenTtl: number;
+    refreshIdleTtl: number;
+    refreshAbsoluteTtl: number;
+    refreshGracePeriod: number;
+    refreshRetention: number;
   };
-}
-
-export interface AuthRuntimeConfigurations {
-  /**
-   * Whether allow anonymous users to sign up
-   */
   allowSignup: boolean;
-
-  /**
-   * Whether require email domain record verification before access restricted resources
-   */
+  allowSignupForOauth: boolean;
   requireEmailDomainVerification: boolean;
-
-  /**
-   * Whether require email verification before access restricted resources
-   */
-  requireEmailVerification: boolean;
-
-  /**
-   * The minimum and maximum length of the password when registering new users
-   */
-  password: {
+  newAccountActionDelay: number;
+  trustedCloudflareHeaders: boolean;
+  signInRateLimit: ConfigItem<{
+    ttl: number;
+    ipLimit: number;
+    emailLimit: number;
+  }>;
+  passwordRequirements: ConfigItem<{
     min: number;
     max: number;
-  };
+  }>;
 }
 
-declare module '../../base/config' {
-  interface AppConfig {
-    auth: ModuleConfig<AuthStartupConfigurations, AuthRuntimeConfigurations>;
+declare global {
+  interface AppConfigSchema {
+    auth: AuthConfig;
   }
 }
 
-defineStartupConfig('auth', {
-  session: {
-    ttl: 60 * 60 * 24 * 15, // 15 days
-    ttr: 60 * 60 * 24 * 7, // 7 days
-  },
-  accessToken: {
-    ttl: 60 * 60 * 24 * 7, // 7 days
-    refreshTokenTtl: 60 * 60 * 24 * 30, // 30 days
-  },
-});
-
-defineRuntimeConfig('auth', {
-  allowSignup: {
-    desc: 'Whether allow new registrations',
-    default: true,
-  },
-  requireEmailDomainVerification: {
-    desc: 'Whether require email domain record verification before accessing restricted resources',
-    default: false,
-  },
-  requireEmailVerification: {
-    desc: 'Whether require email verification before accessing restricted resources',
-    default: true,
-  },
-  'password.min': {
-    desc: 'The minimum length of user password',
-    default: 8,
-  },
-  'password.max': {
-    desc: 'The maximum length of user password',
-    default: 32,
-  },
-});
+defineNativeModuleConfig(
+  'auth',
+  serverNativeModule.appConfigDescriptors('auth'),
+  serverNativeModule.validateAppConfigValue,
+  {
+    trustedCloudflareHeaders: {
+      desc: 'Whether request abuse source facts should trust Cloudflare headers from the origin edge.',
+      default: false,
+      shape: z.boolean(),
+    },
+    signInRateLimit: {
+      desc: 'Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds.',
+      default: {
+        ttl: 60_000,
+        ipLimit: 20,
+        emailLimit: 5,
+      },
+      shape: z
+        .object({
+          ttl: z.number().int().positive(),
+          ipLimit: z.number().int().positive(),
+          emailLimit: z.number().int().positive(),
+        })
+        .strict(),
+    },
+    passwordRequirements: {
+      desc: 'The password strength requirements when set new password.',
+      default: {
+        min: 8,
+        max: 32,
+      },
+      shape: z
+        .object({
+          min: z.number().min(1),
+          max: z.number().max(100),
+        })
+        .strict()
+        .refine(data => data.min < data.max, {
+          message:
+            'Minimum length of password must be less than maximum length',
+        }),
+      schema: {
+        type: 'object',
+        properties: {
+          min: { type: 'number' },
+          max: { type: 'number' },
+        },
+      },
+    },
+  }
+);

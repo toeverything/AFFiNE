@@ -1,5 +1,4 @@
 import type { RichTextCell } from '@blocksuite/affine/blocks/database';
-import { ZERO_WIDTH_SPACE } from '@blocksuite/affine/inline';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
@@ -9,10 +8,10 @@ import {
 } from '../utils/actions/keyboard.js';
 import {
   getBoundingBox,
-  getBoundingClientRect,
   getEditorLocator,
   waitNextFrame,
 } from '../utils/actions/misc.js';
+import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../utils/inline-editor.js';
 
 export async function press(page: Page, content: string) {
   await page.keyboard.press(content, { delay: 50 });
@@ -95,7 +94,7 @@ export async function assertDatabaseTitleColumnText(
   const text = await selectCell1.innerText();
 
   if (title === '') {
-    expect(text).toMatch(new RegExp(`^(|[${ZERO_WIDTH_SPACE}])$`));
+    expect(text).toMatch(new RegExp(`^(|[${ZERO_WIDTH_FOR_EMPTY_LINE}])$`));
   } else {
     expect(text).toBe(title);
   }
@@ -117,13 +116,13 @@ export function getDatabaseCell(
   const index = columnIndex ?? 0;
   const columns = columnType
     ? row.getByTestId(columnType)
-    : row.locator('affine-database-cell-container');
+    : row.locator('dv-table-view-cell-container');
   return columns.nth(index);
 }
 
 export const getDatabaseColumnCells = (page: Page, columnIndex: number) => {
   return page.locator(
-    `affine-database-cell-container[data-column-index="${columnIndex}"]`
+    `dv-table-view-cell-container[data-column-index="${columnIndex}"]`
   );
 };
 
@@ -175,7 +174,7 @@ export async function assertDatabaseCellRichTexts(
   }
 ) {
   const cellContainer = page.locator(
-    `affine-database-cell-container[data-row-index='${rowIndex}'][data-column-index='${columnIndex}']`
+    `dv-table-view-cell-container[data-row-index='${rowIndex}'][data-column-index='${columnIndex}']`
   );
 
   const cell = cellContainer.locator('affine-database-rich-text-cell');
@@ -288,10 +287,8 @@ export async function focusDatabaseHeader(page: Page, columnIndex = 0) {
 }
 
 export async function getDatabaseMouse(page: Page) {
-  const databaseRect = await getBoundingClientRect(
-    page,
-    '.affine-database-table'
-  );
+  const databaseRect = await page.getByTestId('dv-table-view').boundingBox();
+  if (!databaseRect) throw new Error('Cannot find database rect');
   return {
     mouseOver: async () => {
       await page.mouse.move(databaseRect.x, databaseRect.y);

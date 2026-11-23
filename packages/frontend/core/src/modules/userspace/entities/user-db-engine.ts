@@ -1,3 +1,4 @@
+import { ServerDeploymentType } from '@affine/graphql';
 import {
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
@@ -7,6 +8,7 @@ import type { StoreClient } from '@affine/nbstore/worker/client';
 import { Entity } from '@toeverything/infra';
 
 import type { ServerService } from '../../cloud';
+import { assertSupportedServerVersion } from '../../cloud/stores/server-config';
 import type { NbstoreService } from '../../storage';
 
 export class UserDBEngine extends Entity<{
@@ -16,11 +18,11 @@ export class UserDBEngine extends Entity<{
   readonly client: StoreClient;
 
   DocStorageType =
-    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteDocStorage
       : IndexedDBDocStorage;
   DocSyncStorageType =
-    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
       ? SqliteDocSyncStorage
       : IndexedDBDocSyncStorage;
 
@@ -34,7 +36,7 @@ export class UserDBEngine extends Entity<{
     serverService: ServerService
   ) {
     super();
-
+    assertSupportedServerVersion(serverService.server.config$.value.version);
     const { store, dispose } = this.nbstoreService.openStore(
       `userspace:${serverService.server.id},${this.userId}`,
       {
@@ -42,17 +44,17 @@ export class UserDBEngine extends Entity<{
           doc: {
             name: this.DocStorageType.identifier,
             opts: {
-              id: `${serverService.server.id}:` + this.userId,
-              flavour: serverService.server.id,
               type: 'userspace',
+              flavour: serverService.server.id,
+              id: this.userId,
             },
           },
           docSync: {
             name: this.DocSyncStorageType.identifier,
             opts: {
-              id: `${serverService.server.id}:` + this.userId,
               type: 'userspace',
               flavour: serverService.server.id,
+              id: this.userId,
             },
           },
         },
@@ -64,6 +66,9 @@ export class UserDBEngine extends Entity<{
                 id: this.userId,
                 serverBaseUrl: serverService.server.baseUrl,
                 type: 'userspace',
+                isSelfHosted:
+                  serverService.server.config$.value.type ===
+                  ServerDeploymentType.Selfhosted,
               },
             },
           },

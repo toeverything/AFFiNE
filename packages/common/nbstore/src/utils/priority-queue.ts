@@ -1,4 +1,4 @@
-import { BinarySearchTree } from '@datastructures-js/binary-search-tree';
+import { BinarySearchTree } from './binary-search-tree';
 
 export class PriorityQueue {
   tree = new BinarySearchTree<{ id: string; priority: number }>((a, b) => {
@@ -24,10 +24,17 @@ export class PriorityQueue {
     this.priorityMap.set(id, priority);
   }
 
-  pop() {
+  pop(minimumPriority?: number) {
     const node = this.tree.max();
 
     if (!node) {
+      return null;
+    }
+
+    if (
+      minimumPriority !== undefined &&
+      node.getValue().priority < minimumPriority
+    ) {
       return null;
     }
 
@@ -39,8 +46,8 @@ export class PriorityQueue {
     return id;
   }
 
-  remove(id: string, priority?: number) {
-    priority ??= this.priorityMap.get(id);
+  remove(id: string) {
+    const priority = this.priorityMap.get(id);
     if (priority === undefined) {
       return false;
     }
@@ -50,6 +57,10 @@ export class PriorityQueue {
     }
 
     return removed;
+  }
+
+  has(id: string) {
+    return this.priorityMap.has(id);
   }
 
   clear() {
@@ -64,6 +75,6 @@ export class PriorityQueue {
   }
 
   get length() {
-    return this.tree.count;
+    return this.tree.count.bind(this.tree);
   }
 }

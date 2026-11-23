@@ -1,4 +1,4 @@
-[**@blocksuite/store**](../../../@blocksuite/store/README.md)
+[**BlockSuite API Documentation**](../../../README.md)
 
 ***
 
@@ -106,21 +106,27 @@ Get the signal for the readonly state of the store.
 
 #### Get Signature
 
-> **get** **root**(): `null` \| `BlockModel`\<`object`\>
+> **get** **root**(): `BlockModel`\<`object`\> \| `null`
 
 Get the root block of the store.
 
 ##### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 ***
 
 ### addBlock()
 
-> **addBlock**(`flavour`, `blockProps`, `parent`?, `parentIndex`?): `string`
+> **addBlock**\<`T`\>(`flavour`, `blockProps?`, `parent?`, `parentIndex?`): `string`
 
 Creates and adds a new block to the store
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -130,17 +136,17 @@ Creates and adds a new block to the store
 
 The block's flavour (type)
 
-##### blockProps
+##### blockProps?
 
-`Partial`\<`BlockSysProps` & `Record`\<`string`, `unknown`\> & `Omit`\<`BlockProps`, `"flavour"`\>\> = `{}`
+`Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\> = `{}`
 
 Optional properties for the new block
 
 ##### parent?
 
-Optional parent block or parent block ID
+`string` \| `BlockModel`\<`object`\> \| `null`
 
-`null` | `string` | `BlockModel`\<`object`\>
+Optional parent block or parent block ID
 
 ##### parentIndex?
 
@@ -162,7 +168,7 @@ When store is in readonly mode
 
 ### addBlocks()
 
-> **addBlocks**(`blocks`, `parent`?, `parentIndex`?): `string`[]
+> **addBlocks**(`blocks`, `parent?`, `parentIndex?`): `string`[]
 
 Add multiple blocks to the store
 
@@ -176,9 +182,9 @@ Array of blocks to add
 
 ##### parent?
 
-Optional parent block or parent block ID
+`string` \| `BlockModel`\<`object`\> \| `null`
 
-`null` | `string` | `BlockModel`\<`object`\>
+Optional parent block or parent block ID
 
 ##### parentIndex?
 
@@ -196,7 +202,7 @@ Array of IDs of the newly created blocks
 
 ### addSiblingBlocks()
 
-> **addSiblingBlocks**(`targetModel`, `props`, `place`): `string`[]
+> **addSiblingBlocks**(`targetModel`, `props`, `placement?`): `string`[]
 
 Add sibling blocks to the store
 
@@ -214,11 +220,11 @@ The target block model
 
 Array of block properties
 
-##### place
+##### placement?
+
+`"after"` \| `"before"`
 
 Optional position to place the new blocks ('after' or 'before')
-
-`"after"` | `"before"`
 
 #### Returns
 
@@ -230,7 +236,7 @@ Array of IDs of the newly created blocks
 
 ### deleteBlock()
 
-> **deleteBlock**(`model`, `options`): `void`
+> **deleteBlock**(`model`, `options?`): `void`
 
 Delete a block from the store
 
@@ -238,11 +244,11 @@ Delete a block from the store
 
 ##### model
 
+`string` \| `BlockModel`\<`object`\>
+
 The block model or block ID to delete
 
-`string` | `BlockModel`\<`object`\>
-
-##### options
+##### options?
 
 Optional options for the deletion
 
@@ -280,7 +286,7 @@ Array of all models
 
 ### getBlock()
 
-> **getBlock**(`id`): `undefined` \| `Block`
+> **getBlock**(`id`): `Block` \| `undefined`
 
 Gets a block by its ID
 
@@ -294,7 +300,7 @@ The block's ID
 
 #### Returns
 
-`undefined` \| `Block`
+`Block` \| `undefined`
 
 The block instance if found, undefined otherwise
 
@@ -302,7 +308,7 @@ The block instance if found, undefined otherwise
 
 ### getBlock$()
 
-> **getBlock$**(`id`): `undefined` \| `Block`
+> **getBlock$**(`id`): `Block` \| `undefined`
 
 Gets a block by its ID
 
@@ -316,7 +322,7 @@ The block's ID
 
 #### Returns
 
-`undefined` \| `Block`
+`Block` \| `undefined`
 
 The block instance in signal if found, undefined otherwise
 
@@ -332,9 +338,9 @@ Gets all blocks of specified flavour(s)
 
 ##### blockFlavour
 
-Single flavour or array of flavours to filter by
+`string` \| `string`[]
 
-`string` | `string`[]
+Single flavour or array of flavours to filter by
 
 #### Returns
 
@@ -346,7 +352,7 @@ Array of matching blocks
 
 ### getModelById()
 
-> **getModelById**\<`Model`\>(`id`): `null` \| `Model`
+> **getModelById**\<`Model`\>(`id`): `Model` \| `null`
 
 Get a model by its ID
 
@@ -366,7 +372,7 @@ The model's ID
 
 #### Returns
 
-`null` \| `Model`
+`Model` \| `null`
 
 The model instance if found, null otherwise
 
@@ -382,9 +388,9 @@ Get all models of specified flavour(s)
 
 ##### blockFlavour
 
-Single flavour or array of flavours to filter by
+`string` \| `string`[]
 
-`string` | `string`[]
+Single flavour or array of flavours to filter by
 
 #### Returns
 
@@ -396,7 +402,7 @@ Array of matching models
 
 ### getNext()
 
-> **getNext**(`block`): `null` \| `BlockModel`\<`object`\>
+> **getNext**(`block`): `BlockModel`\<`object`\> \| `null`
 
 Get the next sibling block of a given block
 
@@ -404,13 +410,13 @@ Get the next sibling block of a given block
 
 ##### block
 
-Block model or block ID to find next sibling for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find next sibling for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The next sibling block model if found, null otherwise
 
@@ -426,9 +432,9 @@ Get all next sibling blocks of a given block
 
 ##### block
 
-Block model or block ID to find next siblings for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find next siblings for
 
 #### Returns
 
@@ -440,7 +446,7 @@ Array of next sibling blocks if found, empty array otherwise
 
 ### getParent()
 
-> **getParent**(`target`): `null` \| `BlockModel`\<`object`\>
+> **getParent**(`target`): `BlockModel`\<`object`\> \| `null`
 
 Gets the parent block of a given block
 
@@ -448,13 +454,13 @@ Gets the parent block of a given block
 
 ##### target
 
-Block model or block ID to find parent for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find parent for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The parent block model if found, null otherwise
 
@@ -462,7 +468,7 @@ The parent block model if found, null otherwise
 
 ### getPrev()
 
-> **getPrev**(`block`): `null` \| `BlockModel`\<`object`\>
+> **getPrev**(`block`): `BlockModel`\<`object`\> \| `null`
 
 Get the previous sibling block of a given block
 
@@ -470,13 +476,13 @@ Get the previous sibling block of a given block
 
 ##### block
 
-Block model or block ID to find previous sibling for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find previous sibling for
 
 #### Returns
 
-`null` \| `BlockModel`\<`object`\>
+`BlockModel`\<`object`\> \| `null`
 
 The previous sibling block model if found, null otherwise
 
@@ -492,9 +498,9 @@ Get all previous sibling blocks of a given block
 
 ##### block
 
-Block model or block ID to find previous siblings for
+`string` \| `BlockModel`\<`object`\>
 
-`string` | `BlockModel`\<`object`\>
+Block model or block ID to find previous siblings for
 
 #### Returns
 
@@ -528,7 +534,7 @@ True if the block exists, false otherwise
 
 ### moveBlocks()
 
-> **moveBlocks**(`blocksToMove`, `newParent`, `targetSibling`, `shouldInsertBeforeSibling`): `void`
+> **moveBlocks**(`blocksToMove`, `newParent`, `targetSibling?`, `shouldInsertBeforeSibling?`): `void`
 
 Move blocks to a new parent block
 
@@ -546,13 +552,13 @@ Array of block models to move
 
 The new parent block model
 
-##### targetSibling
+##### targetSibling?
+
+`BlockModel`\<`object`\> \| `null`
 
 Optional target sibling block model
 
-`null` | `BlockModel`\<`object`\>
-
-##### shouldInsertBeforeSibling
+##### shouldInsertBeforeSibling?
 
 `boolean` = `true`
 
@@ -566,23 +572,29 @@ Optional flag to insert before sibling
 
 ### updateBlock()
 
-> **updateBlock**(`modelOrId`, `callBackOrProps`): `void`
+> **updateBlock**\<`T`\>(`modelOrId`, `callBackOrProps`): `void`
 
 Updates a block's properties or executes a callback in a transaction
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
 ##### modelOrId
 
-The block model or block ID to update
+`string` \| `T`
 
-`string` | `BlockModel`\<`object`\>
+The block model or block ID to update
 
 ##### callBackOrProps
 
-Either a callback function to execute or properties to update
+(() => `void`) \| `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
 
-`Partial`\<`BlockProps`\> | () => `void`
+Either a callback function to execute or properties to update
 
 #### Returns
 
@@ -598,7 +610,7 @@ When the block is not found or schema validation fails
 
 #### Get Signature
 
-> **get** **get**(): \<`T`\>(`identifier`, `options`?) => `T`
+> **get** **get**(): \<`T`\>(`identifier`, `options?`) => `T`
 
 Get an extension instance from the store
 
@@ -610,29 +622,9 @@ const extension = store.get(SomeExtension);
 
 ##### Returns
 
-`Function`
-
 The extension instance
 
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`T`
+\<`T`\>(`identifier`, `options?`) => `T`
 
 ***
 
@@ -640,7 +632,7 @@ The extension instance
 
 #### Get Signature
 
-> **get** **getOptional**(): \<`T`\>(`identifier`, `options`?) => `null` \| `T`
+> **get** **getOptional**(): \<`T`\>(`identifier`, `options?`) => `T` \| `null`
 
 Optional get an extension instance from the store.
 The major difference between `get` and `getOptional` is that `getOptional` will not throw an error if the extension is not found.
@@ -653,29 +645,9 @@ const extension = store.getOptional(SomeExtension);
 
 ##### Returns
 
-`Function`
-
 The extension instance
 
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`null` \| `T`
+\<`T`\>(`identifier`, `options?`) => `T` \| `null`
 
 ***
 
@@ -721,15 +693,31 @@ Check if the store can undo
 
 ***
 
-### captureSync
+### history
 
 #### Get Signature
 
-> **get** **captureSync**(): () => `void`
+> **get** **history**(): `HistoryExtension`
+
+Get the Y.UndoManager instance for current store.
+
+##### Returns
+
+`HistoryExtension`
+
+***
+
+### captureSync()
+
+> **captureSync**(): `void`
 
 Force the following history to be captured into a new stack.
 
-##### Example
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 op1();
@@ -741,75 +729,53 @@ store.undo(); // undo op3
 store.undo(); // undo op1, op2
 ```
 
-##### Returns
-
-`Function`
-
-###### Returns
-
-`void`
-
 ***
 
-### history
+### redo()
 
-#### Get Signature
-
-> **get** **history**(): `UndoManager`
-
-Get the Y.UndoManager instance for current store.
-
-##### Returns
-
-`UndoManager`
-
-***
-
-### redo
-
-#### Get Signature
-
-> **get** **redo**(): () => `void`
+> **redo**(): `void`
 
 Redo the last undone transaction.
 
-##### Returns
-
-`Function`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### resetHistory
+### resetHistory()
 
-#### Get Signature
-
-> **get** **resetHistory**(): () => `void`
+> **resetHistory**(): `void`
 
 Reset the history of the store.
 
-##### Returns
-
-`Function`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### transact
+### transact()
 
-#### Get Signature
-
-> **get** **transact**(): (`fn`, `shouldTransact`?) => `void`
+> **transact**(`fn`, `shouldTransact?`): `void`
 
 Execute a transaction.
 
-##### Example
+#### Parameters
+
+##### fn
+
+() => `void`
+
+##### shouldTransact?
+
+`boolean` = `...`
+
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 store.transact(() => {
@@ -818,53 +784,37 @@ store.transact(() => {
 });
 ```
 
-##### Returns
-
-`Function`
-
-###### Parameters
-
-###### fn
-
-() => `void`
-
-###### shouldTransact?
-
-`boolean`
-
-###### Returns
-
-`void`
-
 ***
 
-### undo
+### undo()
 
-#### Get Signature
-
-> **get** **undo**(): () => `void`
+> **undo**(): `void`
 
 Undo the last transaction.
 
-##### Returns
-
-`Function`
-
-###### Returns
+#### Returns
 
 `void`
 
 ***
 
-### withoutTransact
+### withoutTransact()
 
-#### Get Signature
-
-> **get** **withoutTransact**(): (`fn`) => `void`
+> **withoutTransact**(`fn`): `void`
 
 Execute a transaction without capturing the history.
 
-##### Example
+#### Parameters
+
+##### fn
+
+() => `void`
+
+#### Returns
+
+`void`
+
+#### Example
 
 ```ts
 store.withoutTransact(() => {
@@ -872,20 +822,6 @@ store.withoutTransact(() => {
   op2();
 });
 ```
-
-##### Returns
-
-`Function`
-
-###### Parameters
-
-###### fn
-
-() => `void`
-
-###### Returns
-
-`void`
 
 ## Store Lifecycle
 
@@ -971,7 +907,7 @@ Disposes the store and releases all resources
 
 ### load()
 
-> **load**(`initFn`?): `Store`
+> **load**(`initFn?`): `Store`
 
 Initializes and loads the store
 
@@ -993,13 +929,13 @@ The store instance
 
 ### getTransformer()
 
-> **getTransformer**(`middlewares`): `Transformer`
+> **getTransformer**(`middlewares?`): `Transformer`
 
 Creates a new transformer instance for the store
 
 #### Parameters
 
-##### middlewares
+##### middlewares?
 
 `TransformerMiddleware`[] = `[]`
 
@@ -1059,13 +995,13 @@ Get the Doc instance for current store.
 
 #### Get Signature
 
-> **get** **schema**(): `Schema`
+> **get** **schema**(): [`Schema`](Schema.md)
 
-Get the Schema instance of the store.
+Get the [Schema](Schema.md) instance of the store.
 
 ##### Returns
 
-`Schema`
+[`Schema`](Schema.md)
 
 ***
 

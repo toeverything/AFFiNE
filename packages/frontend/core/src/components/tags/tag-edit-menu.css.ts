@@ -47,6 +47,12 @@ export const mobileTagEditDeleteRow = style({
   color: cssVarV2('button/error'),
 });
 
+export const mobileTagEditTrigger = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
 export const spacer = style({
   flex: 1,
 });

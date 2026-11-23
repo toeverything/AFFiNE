@@ -1,4 +1,4 @@
-import type { BlockFlavourIdentifier } from '@blocksuite/block-std';
+import type { BlockFlavourIdentifier } from '@blocksuite/std';
 
 import type { ToolbarModuleConfig } from './config';
 

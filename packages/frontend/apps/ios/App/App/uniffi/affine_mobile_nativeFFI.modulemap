@@ -1,4 +1,7 @@
 module affine_mobile_nativeFFI {
     header "affine_mobile_nativeFFI.h"
     export *
+    use "Darwin"
+    use "_Builtin_stdbool"
+    use "_Builtin_stdint"
 }

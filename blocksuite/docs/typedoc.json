@@ -1,5 +1,5 @@
 {
-  "entryPoints": ["../framework/store", "../framework/block-std"],
+  "entryPoints": ["../framework/store", "../framework/std"],
   "packageOptions": {
     "readme": "none",
     "categorizeByGroup": false,

@@ -1,3 +1,4 @@
+import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
@@ -11,7 +12,7 @@ import { CloudPlanLayout, PlanLayout } from './layout';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
-const Settings = ({ scrollAnchor }: { scrollAnchor?: string }) => {
+const Settings = () => {
   const subscriptionService = useService(SubscriptionService);
   const prices = useLiveData(subscriptionService.prices.prices$);
 
@@ -24,34 +25,35 @@ const Settings = ({ scrollAnchor }: { scrollAnchor?: string }) => {
     return <PlansSkeleton />;
   }
 
-  return (
-    <PlanLayout
-      cloud={<CloudPlans />}
-      ai={<AIPlan />}
-      scrollAnchor={scrollAnchor}
-    />
-  );
+  if (
+    !prices.some(price => price.plan === SubscriptionPlan.Pro) ||
+    !prices.some(price => price.plan === SubscriptionPlan.Team)
+  ) {
+    return <PlansError retry={() => subscriptionService.prices.revalidate()} />;
+  }
+
+  return <PlanLayout cloud={<CloudPlans />} ai={<AIPlan />} />;
 };
 
-export const AFFiNEPricingPlans = ({
-  scrollAnchor,
-}: {
-  scrollAnchor?: string;
-}) => {
+export const AFFiNEPricingPlans = () => {
   return (
     <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
-      <Settings scrollAnchor={scrollAnchor} />
+      <Settings />
     </SWRErrorBoundary>
   );
 };
 
 const PlansErrorBoundary = ({ resetErrorBoundary }: FallbackProps) => {
+  return <PlansError retry={resetErrorBoundary} />;
+};
+
+const PlansError = ({ retry }: { retry: () => void }) => {
   const t = useI18n();
 
   const scroll = (
     <div className={styles.errorTip}>
       <span>{t['com.affine.payment.plans-error-tip']()}</span>
-      <a onClick={resetErrorBoundary} className={styles.errorTipRetry}>
+      <a onClick={retry} className={styles.errorTipRetry}>
         {t['com.affine.payment.plans-error-retry']()}
       </a>
     </div>

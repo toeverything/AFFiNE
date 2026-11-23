@@ -1,34 +1,31 @@
-import { defineStartupConfig, ModuleConfig } from '../../base/config';
-import { StorageProviderType } from '../../base/storage';
+import serverNativeModule from '@affine/server-native';
 
-export type StorageConfig<Ext = unknown> = {
-  provider: StorageProviderType;
-  bucket: string;
-} & Ext;
+import { defineNativeModuleConfig, StorageProviderConfig } from '../../base';
 
-export interface StorageStartupConfigurations {
-  avatar: StorageConfig<{
-    publicLinkFactory: (key: string) => string;
-    keyInPublicLink: (link: string) => string;
-  }>;
-  blob: StorageConfig;
+export interface Storages {
+  avatar: {
+    storage: ConfigItem<StorageProviderConfig>;
+    publicPath: string;
+  };
+  blob: {
+    storage: ConfigItem<StorageProviderConfig>;
+  };
 }
 
-declare module '../../base/config' {
-  interface AppConfig {
-    storages: ModuleConfig<StorageStartupConfigurations>;
+declare global {
+  interface AppConfigSchema {
+    storages: Storages;
   }
 }
 
-defineStartupConfig('storages', {
-  avatar: {
-    provider: 'fs',
-    bucket: 'avatars',
-    publicLinkFactory: key => `/api/avatars/${key}`,
-    keyInPublicLink: link => link.split('/').pop() as string,
-  },
-  blob: {
-    provider: 'fs',
-    bucket: 'blobs',
-  },
-});
+defineNativeModuleConfig(
+  'storages',
+  serverNativeModule.appConfigDescriptors('storages'),
+  serverNativeModule.validateAppConfigValue,
+  {
+    'avatar.publicPath': {
+      desc: 'The public accessible path prefix for user avatars.',
+      default: '/api/avatars/',
+    },
+  }
+);

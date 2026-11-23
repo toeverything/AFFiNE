@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -18,8 +19,7 @@ const styles = css`
     text-indent: -9999px;
     width: 38px;
     height: 20px;
-    background: var(--affine-icon-color);
-    border: 1px solid var(--affine-black-10);
+    background: ${unsafeCSSVarV2('toggle/backgroundOff')};
     display: block;
     border-radius: 20px;
     position: relative;
@@ -28,22 +28,21 @@ const styles = css`
   label:after {
     content: '';
     position: absolute;
-    top: 1px;
-    left: 1px;
+    top: 2px;
+    left: 2px;
     width: 16px;
     height: 16px;
-    background: var(--affine-white);
-    border: 1px solid var(--affine-black-10);
+    background: ${unsafeCSSVarV2('toggle/foreground')};
     border-radius: 16px;
     transition: 0.1s;
   }
 
-  label.subscribe {
-    background: var(--affine-primary-color);
+  label.on {
+    background: ${unsafeCSSVarV2('toggle/background')};
   }
 
-  label.subscribe:after {
-    left: calc(100% - 1px);
+  label.on:after {
+    left: calc(100% - 2px);
     transform: translateX(-100%);
   }
 
@@ -55,8 +54,8 @@ const styles = css`
 export class ToggleSwitch extends LitElement {
   static override styles = styles;
 
-  private _toggleSwitch() {
-    this.on = !this.on;
+  private _toggleSwitch(event: Event) {
+    this.on = (event.target as HTMLInputElement).checked;
     if (this.onChange) {
       this.onChange(this.on);
     }
@@ -64,11 +63,14 @@ export class ToggleSwitch extends LitElement {
 
   override render() {
     return html`
-      <label class=${this.on ? 'on' : ''}>
+      <label
+        class=${this.on ? 'on' : ''}
+        @click=${(event: MouseEvent) => event.stopPropagation()}
+      >
         <input
           type="checkbox"
           class="switch"
-          ?checked=${this.on}
+          .checked=${this.on}
           @change=${this._toggleSwitch}
         />
       </label>

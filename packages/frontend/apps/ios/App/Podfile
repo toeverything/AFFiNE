@@ -1,6 +1,6 @@
 require_relative '../../../../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '13.0'
+platform :ios, '16.5'
 use_frameworks!
 
 # workaround to avoid Xcode caching of Pods that requires
@@ -15,6 +15,7 @@ def capacitor_pods
   pod 'CapacitorBrowser', :path => '../../../../../node_modules/@capacitor/browser'
   pod 'CapacitorHaptics', :path => '../../../../../node_modules/@capacitor/haptics'
   pod 'CapacitorKeyboard', :path => '../../../../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorPluginAppTrackingTransparency', :path => '../../../../../node_modules/capacitor-plugin-app-tracking-transparency'
 end
 
 target 'AFFiNE' do

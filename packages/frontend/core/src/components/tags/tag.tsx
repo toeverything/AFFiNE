@@ -26,7 +26,7 @@ export const TagItem = ({
   style,
   maxWidth,
 }: TagItemProps) => {
-  const { value, color, id } = tag;
+  const { name, color, id } = tag;
   const handleRemove: MouseEventHandler<HTMLDivElement> = useCallback(
     e => {
       e.stopPropagation();
@@ -39,8 +39,8 @@ export const TagItem = ({
       className={styles.tag}
       data-idx={idx}
       data-tag-id={id}
-      data-tag-value={value}
-      title={value}
+      data-tag-value={name}
+      title={name}
       style={{
         ...style,
         ...assignInlineVars({
@@ -58,7 +58,7 @@ export const TagItem = ({
         })}
       >
         {mode !== 'db-label' ? <div className={styles.tagIndicator} /> : null}
-        <div className={styles.tagLabel}>{value}</div>
+        <div className={styles.tagLabel}>{name}</div>
         {onRemoved ? (
           <div
             data-testid="remove-tag-button"

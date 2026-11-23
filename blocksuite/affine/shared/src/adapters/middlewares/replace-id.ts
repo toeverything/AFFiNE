@@ -1,4 +1,4 @@
-import type {
+import {
   DatabaseBlockModel,
   EmbedLinkedDocModel,
   EmbedSyncedDocModel,
@@ -7,32 +7,50 @@ import type {
   SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
-import type { DeltaOperation, TransformerMiddleware } from '@blocksuite/store';
+import type {
+  AfterImportBlockPayload,
+  BeforeImportBlockPayload,
+  DeltaOperation,
+  TransformerMiddleware,
+} from '@blocksuite/store';
+import { filter, map } from 'rxjs';
+
+import { matchModels } from '../../utils';
 
 export const replaceIdMiddleware =
   (idGenerator: () => string): TransformerMiddleware =>
-  ({ slots, docCRUD }) => {
+  ({ slots, docCRUD, assetsManager }) => {
     const idMap = new Map<string, string>();
-    slots.afterImport.subscribe(payload => {
-      if (
-        payload.type === 'block' &&
-        payload.snapshot.flavour === 'affine:database'
-      ) {
-        const model = payload.model as DatabaseBlockModel;
+
+    // After Import
+
+    const afterImportBlock$ = slots.afterImport.pipe(
+      filter(
+        (payload): payload is AfterImportBlockPayload =>
+          payload.type === 'block'
+      ),
+      map(({ model }) => model)
+    );
+
+    const afterImportBlockSubscription = afterImportBlock$
+      .pipe(filter(model => matchModels(model, [DatabaseBlockModel])))
+      .subscribe(model => {
         Object.keys(model.props.cells).forEach(cellId => {
           if (idMap.has(cellId)) {
             model.props.cells[idMap.get(cellId)!] = model.props.cells[cellId];
             delete model.props.cells[cellId];
           }
         });
-      }
+      });
 
-      // replace LinkedPage pageId with new id in paragraph blocks
-      if (
-        payload.type === 'block' &&
-        ['affine:list', 'affine:paragraph'].includes(payload.snapshot.flavour)
-      ) {
-        const model = payload.model as ParagraphBlockModel | ListBlockModel;
+    // replace LinkedPage pageId with new id in paragraph blocks
+    const replaceLinkedPageIdSubscription = afterImportBlock$
+      .pipe(
+        filter(model =>
+          matchModels(model, [ParagraphBlockModel, ListBlockModel])
+        )
+      )
+      .subscribe(model => {
         let prev = 0;
         const delta: DeltaOperation[] = [];
         for (const d of model.props.text.toDelta()) {
@@ -64,13 +82,11 @@ export const replaceIdMiddleware =
         if (delta.length > 0) {
           model.props.text.applyDelta(delta);
         }
-      }
+      });
 
-      if (
-        payload.type === 'block' &&
-        payload.snapshot.flavour === 'affine:surface-ref'
-      ) {
-        const model = payload.model as SurfaceRefBlockModel;
+    const replaceSurfaceRefIdSubscription = afterImportBlock$
+      .pipe(filter(model => matchModels(model, [SurfaceRefBlockModel])))
+      .subscribe(model => {
         const original = model.props.reference;
         // If there exists a replacement, replace the reference with the new id.
         // Otherwise,
@@ -80,24 +96,22 @@ export const replaceIdMiddleware =
           model.props.reference = idMap.get(original)!;
         } else if (
           model.props.refFlavour === 'affine:frame' &&
-          !model.doc.hasBlock(original)
+          !model.store.hasBlock(original)
         ) {
           const newId = idGenerator();
           idMap.set(original, newId);
           model.props.reference = newId;
         }
-      }
+      });
 
-      // TODO(@fundon): process linked block/element
-      if (
-        payload.type === 'block' &&
-        ['affine:embed-linked-doc', 'affine:embed-synced-doc'].includes(
-          payload.snapshot.flavour
+    // TODO(@fundon): process linked block/element
+    const replaceLinkedDocIdSubscription = afterImportBlock$
+      .pipe(
+        filter(model =>
+          matchModels(model, [EmbedLinkedDocModel, EmbedSyncedDocModel])
         )
-      ) {
-        const model = payload.model as
-          | EmbedLinkedDocModel
-          | EmbedSyncedDocModel;
+      )
+      .subscribe(model => {
         const original = model.props.pageId;
         // If the pageId is not in the doc, generate a new id.
         // If we already have a replacement, use it.
@@ -110,10 +124,13 @@ export const replaceIdMiddleware =
             model.props.pageId = newId;
           }
         }
-      }
-    });
-    slots.beforeImport.subscribe(payload => {
-      if (payload.type === 'page') {
+      });
+
+    // Before Import
+
+    const beforeImportPageSubscription = slots.beforeImport
+      .pipe(filter(payload => payload.type === 'page'))
+      .subscribe(payload => {
         if (idMap.has(payload.snapshot.meta.id)) {
           payload.snapshot.meta.id = idMap.get(payload.snapshot.meta.id)!;
           return;
@@ -121,10 +138,16 @@ export const replaceIdMiddleware =
         const newId = idGenerator();
         idMap.set(payload.snapshot.meta.id, newId);
         payload.snapshot.meta.id = newId;
-        return;
-      }
+      });
 
-      if (payload.type === 'block') {
+    const beforeImportBlockSubscription = slots.beforeImport
+      .pipe(
+        filter(
+          (payload): payload is BeforeImportBlockPayload =>
+            payload.type === 'block'
+        )
+      )
+      .subscribe(payload => {
         const { snapshot } = payload;
         if (snapshot.flavour === 'affine:page') {
           const index = snapshot.children.findIndex(
@@ -145,6 +168,16 @@ export const replaceIdMiddleware =
           idMap.set(original, newId);
         }
         snapshot.id = newId;
+
+        // Should be re-paired.
+        if (['affine:attachment', 'affine:image'].includes(snapshot.flavour)) {
+          if (!assetsManager.uploadingAssetsMap.has(original)) return;
+
+          const data = assetsManager.uploadingAssetsMap.get(original)!;
+          assetsManager.uploadingAssetsMap.set(newId, data);
+          assetsManager.uploadingAssetsMap.delete(original);
+          return;
+        }
 
         if (snapshot.flavour === 'affine:surface') {
           // Generate new IDs for images and frames in advance.
@@ -210,6 +243,14 @@ export const replaceIdMiddleware =
             }
           });
         }
-      }
-    });
+      });
+
+    return () => {
+      afterImportBlockSubscription.unsubscribe();
+      replaceLinkedPageIdSubscription.unsubscribe();
+      replaceSurfaceRefIdSubscription.unsubscribe();
+      replaceLinkedDocIdSubscription.unsubscribe();
+      beforeImportPageSubscription.unsubscribe();
+      beforeImportBlockSubscription.unsubscribe();
+    };
   };

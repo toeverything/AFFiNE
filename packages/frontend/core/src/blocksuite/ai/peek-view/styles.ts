@@ -8,11 +8,9 @@ export const PeekViewStyles = css`
   }
 
   .ai-chat-block-peek-view-container {
-    gap: 8px;
     width: 100%;
     height: 100%;
     display: flex;
-    align-items: center;
     box-sizing: border-box;
     justify-content: start;
     flex-direction: column;
@@ -60,15 +58,10 @@ export const PeekViewStyles = css`
     gap: 8px;
   }
 
-  .peek-view-footer {
-    padding: 0 12px;
-    width: 100%;
-    height: 20px;
+  .history-clear-container {
     display: flex;
-    gap: 4px;
     align-items: center;
-    color: var(--affine-text-secondary-color);
-    font-size: var(--affine-font-xs);
-    user-select: none;
+    flex-direction: row-reverse;
+    width: 100%;
   }
 `;

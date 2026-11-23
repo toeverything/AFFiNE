@@ -1,7 +1,11 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { createContainer, globalStyle, style } from '@vanilla-extract/css';
+
+const copyLinkContainer = createContainer('copy-link-container');
 
 export const copyLinkContainerStyle = style({
+  containerName: copyLinkContainer,
+  containerType: 'inline-size',
   display: 'flex',
   alignItems: 'center',
   width: '100%',
@@ -64,6 +68,11 @@ export const copyLinkShortcutStyle = style({
   opacity: 0.5,
   lineHeight: '20px',
   color: cssVarV2('text/pureWhite'),
+  '@container': {
+    [`${copyLinkContainer} (max-width: 320px)`]: {
+      display: 'none',
+    },
+  },
   selectors: {
     '&.secondary': {
       color: cssVarV2('text/secondary'),

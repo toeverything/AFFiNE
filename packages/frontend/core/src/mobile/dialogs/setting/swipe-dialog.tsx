@@ -1,27 +1,23 @@
-import {
-  InsideModalContext,
-  ModalConfigContext,
-  Scrollable,
-} from '@affine/component';
+import { InsideModalContext, Scrollable } from '@affine/component';
 import { PageHeader } from '@affine/core/mobile/components';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
-import anime from 'animejs';
+import { animate } from 'animejs';
 import {
   createContext,
-  type PropsWithChildren,
-  type RefObject,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useMobileVisualLayer } from '../../modules/back-coordinator';
 import { SwipeHelper } from '../../utils';
 import * as styles from './swipe-dialog.css';
 
-export interface SwipeDialogProps extends PropsWithChildren {
+export interface SwipeDialogProps extends React.PropsWithChildren {
   triggerSize?: number;
   title?: string;
   open?: boolean;
@@ -78,9 +74,8 @@ const getAnimeProxy = (
         if (key === 'deltaX') {
           target.deltaX = value;
           tick(overlay, dialog, prev, value, overlay.clientWidth);
-          return true;
         }
-        return false;
+        return true;
       },
     }
   );
@@ -91,25 +86,27 @@ const cancel = (
   dialog: HTMLDivElement,
   prev: HTMLElement | null,
   deltaX: number,
-  complete?: () => void
+  onComplete?: () => void
 ) => {
-  anime({
-    targets: getAnimeProxy(
+  animate(
+    getAnimeProxy(
       overlay,
       dialog,
       prev,
       Math.min(overlay.clientWidth, Math.max(0, deltaX))
     ),
-    deltaX: 0,
-    easing: 'cubicBezier(.25,.36,.24,.97)',
-    duration: 320,
-    complete: () => {
-      complete?.();
-      setTimeout(() => {
-        reset(overlay, dialog, prev);
-      }, 0);
-    },
-  });
+    {
+      deltaX: 0,
+      easing: 'cubicBezier(.25,.36,.24,.97)',
+      duration: 320,
+      onComplete: () => {
+        onComplete?.();
+        setTimeout(() => {
+          reset(overlay, dialog, prev);
+        }, 0);
+      },
+    }
+  );
 };
 
 const close = (
@@ -117,29 +114,32 @@ const close = (
   dialog: HTMLDivElement,
   prev: HTMLElement | null,
   deltaX: number,
-  complete?: () => void
+  onComplete?: () => void
 ) => {
-  anime({
-    targets: getAnimeProxy(
+  animate(
+    getAnimeProxy(
       overlay,
       dialog,
       prev,
       Math.min(overlay.clientWidth, Math.max(0, deltaX))
     ),
-    deltaX: overlay.clientWidth,
-    easing: 'cubicBezier(.25,.36,.24,.97)',
-    duration: 320,
-    complete: () => {
-      complete?.();
-      setTimeout(() => {
-        reset(overlay, dialog, prev);
-      }, 0);
-    },
-  });
+    {
+      deltaX: overlay.clientWidth,
+      easing: 'cubicBezier(.25,.36,.24,.97)',
+      duration: 320,
+      onComplete: () => {
+        onComplete?.();
+        setTimeout(() => {
+          reset(overlay, dialog, prev);
+        }, 0);
+      },
+    }
+  );
 };
 
 const SwipeDialogContext = createContext<{
-  stack: Array<RefObject<HTMLElement | null>>;
+  stack: Array<React.RefObject<HTMLElement | null>>;
+  backLayer?: symbol;
 }>({
   stack: [],
 });
@@ -152,12 +152,11 @@ export const SwipeDialog = ({
   onOpenChange,
 }: SwipeDialogProps) => {
   const insideModal = useContext(InsideModalContext);
-  const { onOpen: globalOnOpen } = useContext(ModalConfigContext);
   const swiperTriggerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
-  const { stack } = useContext(SwipeDialogContext);
+  const { stack, backLayer } = useContext(SwipeDialogContext);
   const prev = stack[stack.length - 1]?.current;
 
   const handleClose = useCallback(() => {
@@ -173,6 +172,15 @@ export const SwipeDialog = ({
       handleClose();
     }
   }, [handleClose, prev]);
+  const layerId = useMobileVisualLayer({
+    enabled: open,
+    parent: backLayer,
+    onBack: animateClose,
+  });
+  const swipeDialogContextValue = useMemo(
+    () => ({ stack: [...stack, dialogRef], backLayer: layerId }),
+    [layerId, stack]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -199,6 +207,9 @@ export const SwipeDialog = ({
           cancel(overlay, dialog, prev, deltaX);
         }
       },
+      onSwipeCancel: () => {
+        reset(overlay, dialog, prev);
+      },
     });
   }, [handleClose, open, prev]);
 
@@ -211,15 +222,10 @@ export const SwipeDialog = ({
     }
   }, [open, prev]);
 
-  useEffect(() => {
-    if (open) return globalOnOpen?.();
-    return;
-  }, [globalOnOpen, open]);
-
   if (!open) return null;
 
   return (
-    <SwipeDialogContext.Provider value={{ stack: [...stack, dialogRef] }}>
+    <SwipeDialogContext.Provider value={swipeDialogContextValue}>
       <InsideModalContext.Provider value={insideModal + 1}>
         {createPortal(
           <div className={styles.root}>

@@ -7,15 +7,14 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../blocks/block-edgeless-text" },
-    { "path": "../../blocks/block-surface" },
+    { "path": "../../blocks/surface" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
-    { "path": "../../../framework/block-std" },
+    { "path": "../../widgets/edgeless-toolbar" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
-    { "path": "../../../framework/store" }
+    { "path": "../../../framework/std" }
   ]
 }

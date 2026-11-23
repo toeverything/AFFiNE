@@ -23,7 +23,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: !!process.env.CI,
   workers: process.env.CI && !process.env.COPILOT ? 1 : 4,
-  retries: process.env.COPILOT ? 1 : 3,
+  retries: process.env.COPILOT || !process.env.CI ? 1 : 3,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
     {
@@ -32,16 +32,15 @@ const config: PlaywrightTestConfig = {
       //   we could download the builds from archives
       //   and then run the web with simple http serve, it's will be faster
       command: 'yarn run -T affine dev -p @affine/web',
-      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
       },
+      url: 'http://localhost:8080',
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
@@ -59,6 +58,7 @@ const config: PlaywrightTestConfig = {
         MAILER_USER: 'noreply@toeverything.info',
         MAILER_PASSWORD: 'affine',
       },
+      url: 'http://localhost:3010/graphql',
     },
   ],
 };

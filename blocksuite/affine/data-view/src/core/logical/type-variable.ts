@@ -17,9 +17,9 @@ export class TypeVarDefinitionInstance<
   ) {}
 }
 
-export class TypeVarReferenceInstance<Name extends string = string>
-  implements TypeInstance
-{
+export class TypeVarReferenceInstance<
+  Name extends string = string,
+> implements TypeInstance {
   readonly _validate = unknownSchema;
 
   readonly _valueType = undefined as unknown;

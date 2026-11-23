@@ -1,7 +1,0 @@
-query getPublicUserById($id: String!) {
-    publicUserById(id: $id) {
-        id
-        avatarUrl
-        name
-    }
-}

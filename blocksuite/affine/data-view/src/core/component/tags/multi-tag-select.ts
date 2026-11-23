@@ -7,7 +7,6 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { rangeWrap } from '@blocksuite/affine-shared/utils';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
@@ -15,8 +14,9 @@ import {
   DeleteIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { nanoid } from '@blocksuite/store';
-import { flip, offset, shift } from '@floating-ui/dom';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { nothing } from 'lit';
@@ -53,7 +53,7 @@ import {
   tagSelectInputContainerStyle,
   tagSelectInputStyle,
   tagTextStyle,
-} from './styles.css.js';
+} from './styles-css.js';
 
 type RenderOption = {
   value: string;
@@ -69,10 +69,22 @@ export type TagManagerOptions = {
   options: ReadonlySignal<SelectTag[]>;
   onOptionsChange: (options: SelectTag[]) => void;
   onComplete?: () => void;
+  initialDraftText?: string;
 };
 
-class TagManager {
-  changeTag = (option: SelectTag) => {
+// parent elements that can consume tag draft
+const TABLE_CELL_HOST_SELECTOR =
+  'dv-table-view-cell-container, affine-database-virtual-cell-container';
+
+export function consumeTagDraftFromTableCellHost(
+  fromElement: Element
+): string | undefined {
+  const host = fromElement.closest(TABLE_CELL_HOST_SELECTOR) as any;
+  return host?.consumeTagDraft?.();
+}
+
+export class TagManager {
+  changeTag = (option: Partial<SelectTag>) => {
     this.ops.onOptionsChange(
       this.ops.options.value.map(item => {
         if (item.id === option.id) {
@@ -117,12 +129,13 @@ class TagManager {
   filteredOptions$ = computed(() => {
     let matched = false;
     const options: RenderOption[] = [];
+    const filterText = this.text$.value.toLocaleLowerCase();
     for (const option of this.options$.value) {
+      const label = option.value?.trim() ? option.value : 'Untitled';
       if (
-        !this.text$.value ||
-        option.value
-          .toLocaleLowerCase()
-          .includes(this.text$.value.toLocaleLowerCase())
+        !filterText ||
+        label.toLocaleLowerCase().includes(filterText) ||
+        option.value.toLocaleLowerCase().includes(filterText)
       ) {
         options.push({
           ...option,
@@ -177,7 +190,7 @@ class TagManager {
   }
 
   selectTag(id: string) {
-    if (this.isSelected(id)) {
+    if (!this.isSingleMode && this.isSelected(id)) {
       return;
     }
     const newValue = this.isSingleMode ? [id] : [...this.value$.value, id];
@@ -205,9 +218,10 @@ export class MultiTagSelect extends SignalWatcher(
         items: [
           menu.input({
             initialValue: option.value,
+            placeholder: 'Untitled',
             onChange: text => {
               this.tagManager.changeTag({
-                ...option,
+                id: option.id,
                 value: text,
               });
             },
@@ -237,7 +251,7 @@ export class MultiTagSelect extends SignalWatcher(
                 isSelected: option.color === item.color,
                 select: () => {
                   this.tagManager.changeTag({
-                    ...option,
+                    id: option.id,
                     color: item.color,
                   });
                 },
@@ -348,12 +362,16 @@ export class MultiTagSelect extends SignalWatcher(
       backgroundColor: color,
     });
     return html` <div class="${tagContainerStyle}" style=${style}>
-      <div data-testid="tag-name" class="${tagTextStyle}">${name}</div>
-      ${onDelete
-        ? html` <div class="${tagDeleteIconStyle}" @click="${onDelete}">
-            ${CloseIcon()}
-          </div>`
-        : nothing}
+      <div data-testid="tag-name" class="${tagTextStyle}">
+        ${name?.trim() ? name : 'Untitled'}
+      </div>
+      ${
+        onDelete
+          ? html` <div class="${tagDeleteIconStyle}" @click="${onDelete}">
+              ${CloseIcon()}
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 
@@ -390,27 +408,31 @@ export class MultiTagSelect extends SignalWatcher(
                 @click="${select.select}"
               >
                 <div class="${selectOptionContentStyle}">
-                  ${select.isCreate
-                    ? html` <div class="${selectOptionNewIconStyle}">
-                        Create
-                      </div>`
-                    : html`
-                        <div
-                          ${dragHandler(select.id)}
-                          class="${selectOptionDragHandlerStyle}"
-                        ></div>
-                      `}
+                  ${
+                    select.isCreate
+                      ? html` <div class="${selectOptionNewIconStyle}">
+                          Create
+                        </div>`
+                      : html`
+                          <div
+                            ${dragHandler(select.id)}
+                            class="${selectOptionDragHandlerStyle}"
+                          ></div>
+                        `
+                  }
                   ${this.renderTag(select.value, select.color)}
                 </div>
-                ${!select.isCreate
-                  ? html` <div
-                      class="${selectOptionIconStyle}"
-                      @click="${clickOption}"
-                      data-testid="option-more"
-                    >
-                      ${MoreHorizontalIcon()}
-                    </div>`
-                  : null}
+                ${
+                  !select.isCreate
+                    ? html` <div
+                        class="${selectOptionIconStyle}"
+                        @click="${clickOption}"
+                        data-testid="option-more"
+                      >
+                        ${MoreHorizontalIcon()}
+                      </div>`
+                    : null
+                }
               </div>
             `;
           }
@@ -425,6 +447,15 @@ export class MultiTagSelect extends SignalWatcher(
       0,
       this.tagManager.filteredOptions$.value.length
     );
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    const draft = this.initialDraftText;
+    if (draft != null && draft !== '') {
+      this.tagManager.text$.value = draft;
+      this.initialDraftText = undefined;
+    }
   }
 
   protected override firstUpdated() {
@@ -471,6 +502,9 @@ export class MultiTagSelect extends SignalWatcher(
 
   @property({ attribute: false })
   accessor value!: ReadonlySignal<string[]>;
+
+  @property({ attribute: false })
+  accessor initialDraftText: string | undefined;
 }
 
 declare global {
@@ -481,8 +515,23 @@ declare global {
 
 const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
   const tagManager = new TagManager(ops);
+  if (ops.initialDraftText) {
+    tagManager.text$.value = ops.initialDraftText;
+  }
   const onInput = (e: InputEvent) => {
     tagManager.text$.value = (e.target as HTMLInputElement).value;
+  };
+  const onKeydown = (e: KeyboardEvent) => {
+    e.stopPropagation();
+    const inputValue = (e.target as HTMLInputElement).value.trim();
+    if (e.key === 'Backspace' && inputValue === '') {
+      const values = tagManager.value$.value;
+      const lastId = values[values.length - 1];
+      if (lastId) {
+        e.preventDefault();
+        tagManager.deleteTag(lastId);
+      }
+    }
   };
   return popMenu(target, {
     options: {
@@ -510,12 +559,24 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                   width: 'max-content',
                 });
                 return html` <div class="${tagContainerStyle}" style=${style}>
-                  <div class="${tagTextStyle}">${option.value}</div>
+                  <div class="${tagTextStyle}">
+                    ${option.value?.trim() ? option.value : 'Untitled'}
+                  </div>
+                  <div
+                    class="${tagDeleteIconStyle}"
+                    @click="${(e: MouseEvent) => {
+                      e.stopPropagation();
+                      tagManager.deleteTag(id);
+                    }}"
+                  >
+                    ${CloseIcon()}
+                  </div>
                 </div>`;
               })}
               <input
                 .value="${tagManager.text$.value}"
                 @input="${onInput}"
+                @keydown="${onKeydown}"
                 placeholder="Type here..."
                 type="text"
                 style="outline: none;border: none;flex:1;min-width: 10px"
@@ -537,11 +598,17 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                     });
                     return html`
                       <div style="display: flex; align-items:center;">
-                        ${option.isCreate
-                          ? html` <div style="margin-right: 8px;">Create</div>`
-                          : ''}
+                        ${
+                          option.isCreate
+                            ? html` <div style="margin-right: 8px;">
+                                Create
+                              </div>`
+                            : ''
+                        }
                         <div class="${tagContainerStyle}" style=${style}>
-                          <div class="${tagTextStyle}">${option.value}</div>
+                          <div class="${tagTextStyle}">
+                            ${option.value?.trim() ? option.value : 'Untitled'}
+                          </div>
                         </div>
                       </div>
                     `;
@@ -582,13 +649,25 @@ export const popTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
   component.onChange = ops.onChange;
   component.options = ops.options;
   component.onOptionsChange = ops.onOptionsChange;
+  component.initialDraftText = ops.initialDraftText;
   component.onComplete = () => {
     ops.onComplete?.();
     remove();
   };
   const remove = createPopup(target, component, {
     onClose: ops.onComplete,
-    middleware: [flip(), offset({ mainAxis: -28, crossAxis: 112 }), shift()],
+    middleware: [
+      autoPlacement({
+        allowedPlacements: [
+          'bottom-start',
+          'bottom-end',
+          'top-start',
+          'top-end',
+        ],
+      }),
+      offset({ mainAxis: -36 }),
+      shift(),
+    ],
     container: ops.container,
   });
   return remove;

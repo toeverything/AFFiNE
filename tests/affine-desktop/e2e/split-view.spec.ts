@@ -7,10 +7,13 @@ import {
   clickNewPageButton,
   createLinkedPage,
   dragTo,
+  getPageByTitle,
   waitForAllPagesLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { expect } from '@playwright/test';
+
+const SPLIT_VIEW_READY_TIMEOUT = 30_000;
 
 test('open split view', async ({ page }) => {
   await clickNewPageButton(page);
@@ -22,11 +25,20 @@ test('open split view', async ({ page }) => {
     .click({
       modifiers: ['ControlOrMeta', 'Alt'],
     });
-  await expect(page.locator('.doc-title-container')).toHaveCount(2);
+  await expect(page.locator('.doc-title-container')).toHaveCount(2, {
+    timeout: SPLIT_VIEW_READY_TIMEOUT,
+  });
 
   // check tab title
-  await expect(page.getByTestId('split-view-label')).toHaveCount(2);
-  await expectTabTitle(page, 0, ['Untitled', 'hi from another page']);
+  await expect(page.getByTestId('split-view-label')).toHaveCount(2, {
+    timeout: SPLIT_VIEW_READY_TIMEOUT,
+  });
+  await expectTabTitle(
+    page,
+    0,
+    ['Untitled', 'hi from another page'],
+    SPLIT_VIEW_READY_TIMEOUT
+  );
 
   // the first split view should be active
   await expectActiveTab(page, 0, 0);
@@ -52,7 +64,12 @@ test('open split view', async ({ page }) => {
     true
   );
 
-  await expectTabTitle(page, 0, ['hi from another page', 'Untitled']);
+  await expectTabTitle(
+    page,
+    0,
+    ['hi from another page', 'Untitled'],
+    SPLIT_VIEW_READY_TIMEOUT
+  );
 });
 
 test('open split view in all docs (operations button)', async ({ page }) => {
@@ -60,20 +77,21 @@ test('open split view in all docs (operations button)', async ({ page }) => {
   await clickNewPageButton(page, testTitle);
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
-  await page
-    .getByTestId('page-list-item')
-    .filter({
-      hasText: testTitle,
-    })
-    .getByTestId('page-list-operation-button')
+  await getPageByTitle(page, testTitle)
+    .getByTestId('doc-list-operation-button')
     .click();
-  await page.getByRole('menuitem', { name: 'Open in Split View' }).click();
-  await expect(page.getByTestId('split-view-panel')).toHaveCount(2);
+  await page.getByRole('menuitem', { name: 'Open in split view' }).click();
+  await expect(page.getByTestId('split-view-panel')).toHaveCount(2, {
+    timeout: SPLIT_VIEW_READY_TIMEOUT,
+  });
   const targetPage = page.getByTestId('split-view-panel').last();
   await expect(targetPage).toHaveAttribute('data-is-active', 'true');
-  await expect(targetPage.locator('.doc-title-container')).toBeVisible();
+  await expect(targetPage.locator('.doc-title-container')).toBeVisible({
+    timeout: SPLIT_VIEW_READY_TIMEOUT,
+  });
   await expect(targetPage.locator('.doc-title-container')).toContainText(
-    testTitle
+    testTitle,
+    { timeout: SPLIT_VIEW_READY_TIMEOUT }
   );
 });
 
@@ -85,17 +103,17 @@ test('open split view in all docs (drag to resize handle)', async ({
   await clickSideBarAllPageButton(page);
   await waitForAllPagesLoad(page);
 
-  // case for AF-2061. toggle selection checkbox
-  await page.getByTestId('page-list-header-selection-checkbox').click();
-
-  const pageItem = page.getByTestId('page-list-item').filter({
-    hasText: testTitle,
-  });
+  const pageItem = getPageByTitle(page, testTitle);
 
   const leftResizeHandle = page.getByTestId('resize-handle').first();
 
   await dragTo(page, pageItem, leftResizeHandle, 'center');
-  await expectTabTitle(page, 0, ['test-page', 'All docs']);
+  await expectTabTitle(
+    page,
+    0,
+    ['test-page', 'All docs'],
+    SPLIT_VIEW_READY_TIMEOUT
+  );
 });
 
 test('creating split view by dragging sidebar journals', async ({ page }) => {
@@ -103,7 +121,9 @@ test('creating split view by dragging sidebar journals', async ({ page }) => {
   const leftResizeHandle = page.getByTestId('resize-handle').first();
 
   await dragTo(page, journalButton, leftResizeHandle, 'center');
-  await expect(page.getByTestId('split-view-panel')).toHaveCount(2);
+  await expect(page.getByTestId('split-view-panel')).toHaveCount(2, {
+    timeout: SPLIT_VIEW_READY_TIMEOUT,
+  });
   await expect(
     page
       .getByTestId('split-view-panel')
@@ -111,5 +131,5 @@ test('creating split view by dragging sidebar journals', async ({ page }) => {
         has: page.locator('[data-is-first="true"]'),
       })
       .getByTestId('date-today-label')
-  ).toBeVisible();
+  ).toBeVisible({ timeout: SPLIT_VIEW_READY_TIMEOUT });
 });

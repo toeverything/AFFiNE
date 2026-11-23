@@ -1,4 +1,4 @@
-import { toURLSearchParams } from '@affine/core/modules/navigation/utils';
+import { toDocSearchParams } from '@affine/core/modules/navigation/utils';
 import { Unreachable } from '@affine/env/constant';
 import type { ReferenceParams } from '@blocksuite/affine/model';
 import { Entity, LiveData } from '@toeverything/infra';
@@ -21,6 +21,7 @@ export type WorkbenchOpenOptions = {
 
 const sidebarOpenKey = 'workbenchSidebarOpen';
 const sidebarWidthKey = 'workbenchSidebarWidth';
+const workspaceSelectorOpenKey = 'workspaceSelectorOpen';
 
 export class Workbench extends Entity {
   constructor(
@@ -57,17 +58,25 @@ export class Workbench extends Entity {
   });
   sidebarOpen$ = LiveData.from(
     this.globalState.watch<boolean>(sidebarOpenKey),
-    false
+    this.globalState.get<boolean>(sidebarOpenKey) ?? false
   );
   setSidebarOpen(open: boolean) {
     this.globalState.set(sidebarOpenKey, open);
   }
   sidebarWidth$ = LiveData.from(
     this.globalState.watch<number>(sidebarWidthKey),
-    320
+    this.globalState.get<number>(sidebarWidthKey) ?? 320
   );
   setSidebarWidth(width: number) {
     this.globalState.set(sidebarWidthKey, width);
+  }
+
+  workspaceSelectorOpen$ = LiveData.from(
+    this.globalState.watch<boolean>(workspaceSelectorOpenKey),
+    this.globalState.get<boolean>(workspaceSelectorOpenKey) ?? false
+  );
+  setWorkspaceSelectorOpen(open: boolean) {
+    this.globalState.set(workspaceSelectorOpenKey, open);
   }
 
   active(index: number | View) {
@@ -114,6 +123,18 @@ export class Workbench extends Entity {
     this.setSidebarOpen(!this.sidebarOpen$.value);
   }
 
+  openWorkspaceSelector() {
+    this.setWorkspaceSelectorOpen(true);
+  }
+
+  closeWorkspaceSelector() {
+    this.setWorkspaceSelectorOpen(false);
+  }
+
+  toggleWorkspaceSelector() {
+    this.setWorkspaceSelectorOpen(!this.workspaceSelectorOpen$.value);
+  }
+
   open(to: To, option: WorkbenchOpenOptions = {}) {
     if (option.at === 'new-tab') {
       this.newTab(to, {
@@ -156,10 +177,11 @@ export class Workbench extends Entity {
   openDoc(
     id:
       | string
-      | ({ docId: string } & (
-          | ReferenceParams
-          | Record<string, string | undefined>
-        )),
+      | ({
+          docId: string;
+          refreshKey?: string;
+          fromTab?: string;
+        } & ReferenceParams),
     options?: WorkbenchOpenOptions
   ) {
     const isString = typeof id === 'string';
@@ -167,7 +189,7 @@ export class Workbench extends Entity {
 
     let query = '';
     if (!isString) {
-      const search = toURLSearchParams(omit(id, ['docId']));
+      const search = toDocSearchParams(omit(id, ['docId']));
       if (search?.size) {
         query = `?${search.toString()}`;
       }

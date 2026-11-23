@@ -1,0 +1,52 @@
+import { Logger } from '@nestjs/common';
+import { z } from 'zod';
+
+import { toolError } from './error';
+import { defineTool } from './tool';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>
+) => Promise<string>;
+
+const logger = new Logger('SectionEditTool');
+
+export const createSectionEditTool = (prompt: RunPromptText) => {
+  return defineTool({
+    description:
+      'Intelligently edit and modify a specific section of a document based on user instructions, with full document context awareness. This tool can refine, rewrite, translate, restructure, or enhance any part of markdown content while preserving formatting, maintaining contextual coherence, and ensuring consistency with the entire document. Perfect for targeted improvements that consider the broader document context.',
+    inputSchema: z.object({
+      section: z
+        .string()
+        .describe(
+          'The specific section or text snippet to be modified (in markdown format). This is the target content that will be edited and replaced.'
+        ),
+      instructions: z
+        .string()
+        .describe(
+          'Clear and specific instructions describing the desired changes. Examples: "make this more formal and professional", "translate to Chinese while keeping technical terms", "add more technical details and examples", "fix grammar and improve clarity", "restructure for better readability"'
+        ),
+      document: z
+        .string()
+        .describe(
+          "The complete document content (in markdown format) that provides context for the section being edited. This ensures the edited section maintains consistency with the document's overall tone, style, terminology, and structure."
+        ),
+    }),
+    execute: async ({ section, instructions, document }) => {
+      try {
+        const content = await prompt('Section Edit', {
+          content: section,
+          instructions,
+          document,
+        });
+
+        return {
+          content: content.trim(),
+        };
+      } catch (err: any) {
+        logger.error(`Failed to edit section`, err);
+        return toolError('Section Edit Failed', err.message);
+      }
+    },
+  });
+};

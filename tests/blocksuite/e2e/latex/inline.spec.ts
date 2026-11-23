@@ -1,6 +1,12 @@
-import { ZERO_WIDTH_SPACE } from '@blocksuite/inline';
 import { expect } from '@playwright/test';
 
+import {
+  dragBetweenIndices,
+  enterPlaygroundRoom,
+  focusRichText,
+  initEmptyParagraphState,
+  waitNextFrame,
+} from '../utils/actions/index.js';
 import {
   cutByKeyboard,
   pasteByKeyboard,
@@ -17,17 +23,14 @@ import {
   undoByKeyboard,
 } from '../utils/actions/keyboard.js';
 import {
-  enterPlaygroundRoom,
-  focusRichText,
-  initEmptyParagraphState,
-} from '../utils/actions/misc.js';
-import {
   assertRichTextInlineDeltas,
   assertRichTextInlineRange,
 } from '../utils/asserts.js';
+import { ZERO_WIDTH_FOR_EMPTY_LINE } from '../utils/inline-editor.js';
 import { test } from '../utils/playwright.js';
+import { getFormatBar } from '../utils/query.js';
 
-test('add inline latex at the start of line', async ({ page }) => {
+test('add inline latex at the start of line', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
@@ -47,18 +50,15 @@ test('add inline latex at the start of line', async ({ page }) => {
   );
   await type(page, 'E=mc^2');
   expect(await latexEditorLine.innerText()).toBe('E=mc^2');
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+  const innerHTML = await latexElement.locator('.katex').innerHTML();
+  expect(innerHTML).toMatchSnapshot(`${testInfo.title}.html`);
 
   await pressEnter(page);
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+  expect(await latexElement.locator('.katex').innerHTML()).toBe(innerHTML);
 });
 
-test('add inline latex in the middle of text', async ({ page }) => {
+test('add inline latex in the middle of text', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
@@ -80,18 +80,16 @@ test('add inline latex in the middle of text', async ({ page }) => {
   );
   await type(page, 'E=mc^2');
   expect(await latexEditorLine.innerText()).toBe('E=mc^2');
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+
+  const innerHTML = await latexElement.locator('.katex').innerHTML();
+  expect(innerHTML).toMatchSnapshot(`${testInfo.title}.html`);
 
   await pressEnter(page);
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+  expect(await latexElement.locator('.katex').innerHTML()).toBe(innerHTML);
 });
 
-test('update inline latex by clicking the node', async ({ page }) => {
+test('update inline latex by clicking the node', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
@@ -109,7 +107,12 @@ test('update inline latex by clicking the node', async ({ page }) => {
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
   await latexElement.click();
   expect(await latexEditorLine.isVisible()).toBeTruthy();
-  await pressBackspace(page, 6);
+  await expect(
+    page.locator('latex-editor-menu [contenteditable="true"]')
+  ).toBeFocused();
+  await selectAllByKeyboard(page);
+  await pressBackspace(page);
+  await expect(latexEditorLine).toHaveText(ZERO_WIDTH_FOR_EMPTY_LINE);
   await type(page, String.raw`\def\arraystretch{1.5}`);
   await pressShiftEnter(page);
   await type(page, String.raw`\begin{array}{c:c:c}`);
@@ -123,9 +126,9 @@ test('update inline latex by clicking the node', async ({ page }) => {
   await type(page, String.raw`g & h & i`);
   await pressShiftEnter(page);
   await type(page, String.raw`\end{array}`);
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable rowspacing="0.66em" columnalign="center center center" columnlines="dashed dashed" columnspacing="1em" rowlines="none none dashed"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>a</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>b</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>c</mi></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>h</mi><mi>l</mi><mi>i</mi><mi>n</mi><mi>e</mi><mi>d</mi></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>e</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>f</mi></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>g</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>h</mi></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mi>i</mi></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\\def\\arraystretch{1.5}\n\\begin{array}{c:c:c}\na &amp; b &amp; c \\\\ \\\\ hline\nd &amp; e &amp; f \\\\\n\\hdashline\ng &amp; h &amp; i\n\\end{array}</annotation></semantics></math>'
-  );
+
+  const innerHTML = await latexElement.locator('.katex').innerHTML();
+  expect(innerHTML).toMatchSnapshot(`${testInfo.title}.html`);
 
   // click outside to hide the editor
   await page.click('affine-editor-container');
@@ -162,13 +165,13 @@ test('latex editor', async ({ page }) => {
   );
 
   await pressBackspaceWithShortKey(page, 2);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
   await undoByKeyboard(page);
   expect(await latexEditorLine.innerText()).toBe(
     'ababababababababababababababababababababababababab'
   );
   await redoByKeyboard(page);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
   await undoByKeyboard(page);
   expect(await latexEditorLine.innerText()).toBe(
     'ababababababababababababababababababababababababab'
@@ -200,7 +203,7 @@ test('latex editor', async ({ page }) => {
 
   await selectAllByKeyboard(page);
   await pressBackspace(page);
-  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_SPACE);
+  expect(await latexEditorLine.innerText()).toBe(ZERO_WIDTH_FOR_EMPTY_LINE);
 
   // highlight
   await type(
@@ -217,7 +220,7 @@ test('latex editor', async ({ page }) => {
   );
 });
 
-test('add inline latex using slash menu', async ({ page }) => {
+test('add inline latex using slash menu', async ({ page }, testInfo) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);
   await focusRichText(page);
@@ -237,15 +240,69 @@ test('add inline latex using slash menu', async ({ page }) => {
   );
   await type(page, 'E=mc^2');
   expect(await latexEditorLine.innerText()).toBe('E=mc^2');
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+  const innerHTML = await latexElement.locator('.katex').innerHTML();
+  expect(innerHTML).toMatchSnapshot(`${testInfo.title}.html`);
 
   await pressEnter(page);
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
-  expect(await latexElement.locator('.katex').innerHTML()).toBe(
-    '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math>'
-  );
+  expect(await latexElement.locator('.katex').innerHTML()).toBe(innerHTML);
+});
+
+test('should preserve distinct latex values when converting selections in reverse order', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  await type(page, 'a+b test a^2 test');
+
+  await dragBetweenIndices(page, [0, 9], [0, 12]);
+  const { formatBar } = getFormatBar(page);
+  await expect(formatBar).toBeVisible();
+  await formatBar.getByRole('button', { name: 'Inline equation' }).click();
+  await waitNextFrame(page);
+
+  await assertRichTextInlineDeltas(page, [
+    {
+      insert: 'a+b test ',
+    },
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a^2',
+      },
+    },
+    {
+      insert: ' test',
+    },
+  ]);
+
+  await dragBetweenIndices(page, [0, 0], [0, 3]);
+  await expect(formatBar).toBeVisible();
+  await formatBar.getByRole('button', { name: 'Inline equation' }).click();
+  await waitNextFrame(page);
+
+  await assertRichTextInlineDeltas(page, [
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a+b',
+      },
+    },
+    {
+      insert: ' test ',
+    },
+    {
+      insert: ' ',
+      attributes: {
+        latex: 'a^2',
+      },
+    },
+    {
+      insert: ' test',
+    },
+  ]);
 });
 
 test('add inline latex using markdown shortcut', async ({ page }) => {

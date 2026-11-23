@@ -1,8 +1,8 @@
 import { Divider, Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
+import { useGuard } from '@affine/core/components/guard';
 import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
-import { GuardService } from '@affine/core/modules/permissions';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -64,15 +64,10 @@ export const AFFiNESharePage = (
   const shareInfoService = useService(ShareInfoService);
   const serverService = useService(ServerService);
   const docService = useService(DocService);
-  const guardService = useService(GuardService);
 
-  const canManageUsers = useLiveData(
-    guardService.can$('Doc_Users_Manage', docService.doc.id)
-  );
+  const canManageUsers = useGuard('Doc_Users_Manage', docService.doc.id);
 
-  const canPublish = useLiveData(
-    guardService.can$('Doc_Publish', docService.doc.id)
-  );
+  const canPublish = useGuard('Doc_Publish', docService.doc.id);
 
   useEffect(() => {
     shareInfoService.shareInfo.revalidate();

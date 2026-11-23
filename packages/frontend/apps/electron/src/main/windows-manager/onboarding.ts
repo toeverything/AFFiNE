@@ -1,18 +1,13 @@
 import { join } from 'node:path';
 
-import type { Display } from 'electron';
 import { BrowserWindow, screen } from 'electron';
 
-import { isMacOS } from '../../shared/utils';
+import { onboardingViewUrl } from '../../shared/internal-origin';
 import { isDev } from '../config';
-import { onboardingViewUrl } from '../constants';
 // import { getExposedMeta } from './exposed';
 import { logger } from '../logger';
-
-const getScreenSize = (display: Display) => {
-  const { width, height } = isMacOS() ? display.bounds : display.workArea;
-  return { width, height };
-};
+import { buildWebPreferences } from '../web-preferences';
+import { fullscreenAndCenter, getScreenSize } from './utils';
 
 // todo: not all window need all of the exposed meta
 const getWindowAdditionalArguments = async () => {
@@ -23,19 +18,6 @@ const getWindowAdditionalArguments = async () => {
     `--window-name=onboarding`,
   ];
 };
-
-function fullscreenAndCenter(browserWindow: BrowserWindow) {
-  const position = browserWindow.getPosition();
-  const size = browserWindow.getSize();
-  const currentDisplay = screen.getDisplayNearestPoint({
-    x: position[0] + size[0] / 2,
-    y: position[1] + size[1] / 2,
-  });
-  if (!currentDisplay) return;
-  const { width, height } = getScreenSize(currentDisplay);
-  browserWindow.setSize(width, height);
-  browserWindow.center();
-}
 
 async function createOnboardingWindow(additionalArguments: string[]) {
   logger.info('creating onboarding window');
@@ -59,11 +41,11 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     transparent: true,
     hasShadow: false,
     roundedCorners: false,
-    webPreferences: {
+    webPreferences: buildWebPreferences({
       webgl: true,
       preload: join(__dirname, './preload.js'),
       additionalArguments: additionalArguments,
-    },
+    }),
   });
 
   // workaround for the phantom title bar on windows when losing focus

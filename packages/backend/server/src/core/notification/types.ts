@@ -100,31 +100,38 @@ export class MentionNotificationBodyType extends BaseNotificationBodyType {
 }
 
 @ObjectType()
-export class InvitationNotificationBodyType
-  extends BaseNotificationBodyType
-  implements Partial<InvitationNotificationBody>
-{
+export abstract class InvitationBaseNotificationBodyType extends BaseNotificationBodyType {
   @Field(() => ID)
   inviteId!: string;
 }
 
 @ObjectType()
+export class InvitationNotificationBodyType
+  extends InvitationBaseNotificationBodyType
+  implements Partial<InvitationNotificationBody> {}
+
+@ObjectType()
 export class InvitationAcceptedNotificationBodyType
-  extends BaseNotificationBodyType
-  implements Partial<InvitationNotificationBody>
-{
-  @Field(() => String)
-  inviteId!: string;
-}
+  extends InvitationBaseNotificationBodyType
+  implements Partial<InvitationNotificationBody> {}
 
 @ObjectType()
 export class InvitationBlockedNotificationBodyType
-  extends BaseNotificationBodyType
-  implements Partial<InvitationNotificationBody>
-{
-  @Field(() => String)
-  inviteId!: string;
-}
+  extends InvitationBaseNotificationBodyType
+  implements Partial<InvitationNotificationBody> {}
+
+@ObjectType()
+export class InvitationReviewRequestNotificationBodyType
+  extends InvitationBaseNotificationBodyType
+  implements Partial<InvitationNotificationBody> {}
+
+@ObjectType()
+export class InvitationReviewApprovedNotificationBodyType
+  extends InvitationBaseNotificationBodyType
+  implements Partial<InvitationNotificationBody> {}
+
+@ObjectType()
+export class InvitationReviewDeclinedNotificationBodyType extends BaseNotificationBodyType {}
 
 export const UnionNotificationBodyType = createUnionType({
   name: 'UnionNotificationBodyType',
@@ -134,6 +141,9 @@ export const UnionNotificationBodyType = createUnionType({
       InvitationNotificationBodyType,
       InvitationAcceptedNotificationBodyType,
       InvitationBlockedNotificationBodyType,
+      InvitationReviewRequestNotificationBodyType,
+      InvitationReviewApprovedNotificationBodyType,
+      InvitationReviewDeclinedNotificationBodyType,
     ] as const,
 });
 

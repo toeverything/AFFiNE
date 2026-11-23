@@ -1,13 +1,7 @@
-import { Text } from '@blocksuite/affine/store';
 import { LiveData, Service } from '@toeverything/infra';
 import dayjs from 'dayjs';
 
-import {
-  type DocProps,
-  initDocFromProps,
-} from '../../../blocksuite/initialization';
 import type { DocsService } from '../../doc';
-import type { EditorSettingService } from '../../editor-setting';
 import type { TemplateDocService } from '../../template-doc';
 import type { JournalStore } from '../store/journal';
 
@@ -19,7 +13,6 @@ export class JournalService extends Service {
   constructor(
     private readonly store: JournalStore,
     private readonly docsService: DocsService,
-    private readonly editorSettingService: EditorSettingService,
     private readonly templateDocService: TemplateDocService
   ) {
     super();
@@ -53,7 +46,9 @@ export class JournalService extends Service {
   private createJournal(maybeDate: MaybeDate) {
     const day = dayjs(maybeDate);
     const title = day.format(JOURNAL_DATE_FORMAT);
-    const docRecord = this.docsService.createDoc();
+    const docRecord = this.docsService.createDoc({
+      title,
+    });
     // set created date to match the journal date
     docRecord.setMeta({
       createDate: dayjs()
@@ -81,15 +76,6 @@ export class JournalService extends Service {
       this.docsService
         .duplicateFromTemplate(pageTemplateDocId, docRecord.id)
         .catch(console.error);
-    } else {
-      const { doc, release } = this.docsService.open(docRecord.id);
-      this.docsService.list.setPrimaryMode(docRecord.id, 'page');
-      const docProps: DocProps = {
-        page: { title: new Text(title) },
-        note: this.editorSettingService.editorSetting.get('affine:note'),
-      };
-      initDocFromProps(doc.blockSuiteDoc, docProps);
-      release();
     }
     this.setJournalDate(docRecord.id, title);
     return docRecord;

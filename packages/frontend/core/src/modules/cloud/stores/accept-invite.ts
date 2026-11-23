@@ -11,7 +11,6 @@ export class AcceptInviteStore extends Store {
   async acceptInvite(
     workspaceId: string,
     inviteId: string,
-    sendAcceptMail?: boolean,
     signal?: AbortSignal
   ) {
     const data = await this.gqlService.gql({
@@ -20,7 +19,6 @@ export class AcceptInviteStore extends Store {
       variables: {
         workspaceId,
         inviteId,
-        sendAcceptMail,
       },
       context: { signal },
     });

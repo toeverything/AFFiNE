@@ -1,0 +1,22 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../note" },
+    { "path": "../surface" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../gfx/turbo-renderer" },
+    { "path": "../../model" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/slash-menu" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

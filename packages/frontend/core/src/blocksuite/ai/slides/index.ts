@@ -1,10 +1,10 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
+import { createTemplateJob } from '@blocksuite/affine/gfx/template';
+import type { EditorHost } from '@blocksuite/affine/std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { BlockSnapshot } from '@blocksuite/affine/store';
 
 import { markdownToSnapshot } from '../../utils';
 import { getSurfaceElementFromEditor } from '../utils/selection-utils';
-import { createTemplateJob } from '../utils/template-job';
 import {
   basicTheme,
   type PPTDoc,
@@ -36,7 +36,7 @@ export const PPTBuilder = (host: EditorHost) => {
     };
     docs.push(doc);
 
-    const job = createTemplateJob(host);
+    const job = createTemplateJob(host.std, 'template');
     const { images, content } = await basicTheme(doc);
     contents.push(content);
     allImages.push(images);
@@ -56,7 +56,7 @@ export const PPTBuilder = (host: EditorHost) => {
   return {
     process: async (text: string) => {
       try {
-        const snapshot = await markdownToSnapshot(text, host);
+        const snapshot = await markdownToSnapshot(text, host.store, host);
 
         const block = snapshot.snapshot?.content[0];
         if (!block) {
@@ -73,7 +73,7 @@ export const PPTBuilder = (host: EditorHost) => {
       return { contents, images: allImages };
     },
     done: async (text: string) => {
-      const snapshot = await markdownToSnapshot(text, host);
+      const snapshot = await markdownToSnapshot(text, host.store, host);
       const block = snapshot.snapshot?.content[0];
       if (!block) {
         return;

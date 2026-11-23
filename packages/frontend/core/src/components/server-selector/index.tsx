@@ -1,4 +1,10 @@
-import { Menu, MenuItem, type MenuProps, MenuTrigger } from '@affine/component';
+import {
+  Menu,
+  MenuItem,
+  type MenuProps,
+  MenuTrigger,
+  Tooltip,
+} from '@affine/component';
 import type { Server } from '@affine/core/modules/cloud';
 import { useMemo } from 'react';
 
@@ -17,9 +23,14 @@ export const ServerSelector = ({
 }) => {
   const menuItems = useMemo(() => {
     return servers.map(server => (
-      <MenuItem key={server.id} onSelect={() => onSelect(server)}>
-        {server.config$.value.serverName} ({server.baseUrl})
-      </MenuItem>
+      <Tooltip
+        key={server.id}
+        content={`${server.config$.value.serverName} (${server.baseUrl})`}
+      >
+        <MenuItem key={server.id} onSelect={() => onSelect(server)}>
+          {server.config$.value.serverName} ({server.baseUrl})
+        </MenuItem>
+      </Tooltip>
     ));
   }, [servers, onSelect]);
 
@@ -34,7 +45,9 @@ export const ServerSelector = ({
         },
       }}
     >
-      <MenuTrigger className={triggerStyle}>{selectedSeverName}</MenuTrigger>
+      <MenuTrigger tooltip={selectedSeverName} className={triggerStyle}>
+        {selectedSeverName}
+      </MenuTrigger>
     </Menu>
   );
 };

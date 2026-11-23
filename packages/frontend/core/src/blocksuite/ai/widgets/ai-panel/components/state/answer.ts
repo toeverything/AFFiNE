@@ -1,5 +1,5 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -86,49 +86,62 @@ export class AIPanelAnswer extends WithDisposable(LitElement) {
     return html`
       <div class="answer">
         <div class="answer-head">Answer</div>
-        <div class="answer-body">
+        <div class="answer-body" data-testid="answer-content">
           <slot></slot>
         </div>
       </div>
-      ${this.finish
-        ? html`
-            <ai-finish-tip
-              .copy=${this.copy}
-              .host=${this.host}
-            ></ai-finish-tip>
-            ${responseGroup.length > 0
-              ? html`
-                  <ai-panel-divider></ai-panel-divider>
-                  ${responseGroup.map(
-                    (group, index) => html`
-                      ${index !== 0
-                        ? html`<ai-panel-divider></ai-panel-divider>`
-                        : nothing}
-                      <div class="response-list-container">
+      ${
+        this.finish
+          ? html`
+              <ai-finish-tip
+                .copy=${this.copy}
+                .host=${this.host}
+              ></ai-finish-tip>
+              ${
+                responseGroup.length > 0
+                  ? html`
+                      <ai-panel-divider></ai-panel-divider>
+                      ${responseGroup.map(
+                        (group, index) => html`
+                          ${
+                            index !== 0
+                              ? html`<ai-panel-divider></ai-panel-divider>`
+                              : nothing
+                          }
+                          <div
+                            class="response-list-container"
+                            data-testid=${group.testId}
+                          >
+                            <ai-item-list
+                              .host=${this.host}
+                              .groups=${[group]}
+                            ></ai-item-list>
+                          </div>
+                        `
+                      )}
+                    `
+                  : nothing
+              }
+              ${
+                responseGroup.length > 0 && this.config.actions.length > 0
+                  ? html`<ai-panel-divider></ai-panel-divider>`
+                  : nothing
+              }
+              ${
+                this.config.actions.length > 0
+                  ? html`
+                      <div class="action-list-container">
                         <ai-item-list
                           .host=${this.host}
-                          .groups=${[group]}
+                          .groups=${this.config.actions}
                         ></ai-item-list>
                       </div>
                     `
-                  )}
-                `
-              : nothing}
-            ${responseGroup.length > 0 && this.config.actions.length > 0
-              ? html`<ai-panel-divider></ai-panel-divider>`
-              : nothing}
-            ${this.config.actions.length > 0
-              ? html`
-                  <div class="action-list-container">
-                    <ai-item-list
-                      .host=${this.host}
-                      .groups=${this.config.actions}
-                    ></ai-item-list>
-                  </div>
-                `
-              : nothing}
-          `
-        : nothing}
+                  : nothing
+              }
+            `
+          : nothing
+      }
     `;
   }
 
@@ -143,6 +156,9 @@ export class AIPanelAnswer extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor host!: EditorHost;
+
+  @property({ attribute: 'data-testid', reflect: true })
+  accessor testId = 'ai-penel-answer';
 }
 
 declare global {

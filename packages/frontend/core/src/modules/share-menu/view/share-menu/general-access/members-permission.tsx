@@ -28,6 +28,8 @@ const getRoleName = (t: ReturnType<typeof useI18n>, role?: DocRole) => {
       return t['com.affine.share-menu.option.permission.can-edit']();
     case DocRole.Reader:
       return t['com.affine.share-menu.option.permission.can-read']();
+    case DocRole.None:
+      return t['com.affine.share-menu.option.permission.no-access']();
     default:
       return '';
   }
@@ -53,7 +55,9 @@ export const MembersPermission = ({
     [docDefaultRole, t]
   );
   const showTips =
-    docDefaultRole === DocRole.Reader || docDefaultRole === DocRole.Editor;
+    docDefaultRole === DocRole.Reader ||
+    docDefaultRole === DocRole.Editor ||
+    docDefaultRole === DocRole.None;
   const changePermission = useAsyncCallback(
     async (docRole: DocRole) => {
       try {
@@ -91,6 +95,14 @@ export const MembersPermission = ({
       return;
     }
     changePermission(DocRole.Reader);
+  }, [changePermission, hittingPaywall, openPaywallModal]);
+
+  const selectNone = useCallback(() => {
+    if (hittingPaywall) {
+      openPaywallModal?.();
+      return;
+    }
+    changePermission(DocRole.None);
   }, [changePermission, hittingPaywall, openPaywallModal]);
 
   return (
@@ -137,6 +149,17 @@ export const MembersPermission = ({
                 <div className={styles.publicItemRowStyle}>
                   <div className={styles.tagContainerStyle}>
                     {t['com.affine.share-menu.option.permission.can-read']()}
+                    {hittingPaywall ? <PlanTag /> : null}
+                  </div>
+                </div>
+              </MenuItem>
+              <MenuItem
+                onSelect={selectNone}
+                selected={docDefaultRole === DocRole.None}
+              >
+                <div className={styles.publicItemRowStyle}>
+                  <div className={styles.tagContainerStyle}>
+                    {t['com.affine.share-menu.option.permission.no-access']()}
                     {hittingPaywall ? <PlanTag /> : null}
                   </div>
                 </div>

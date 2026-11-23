@@ -12,11 +12,8 @@ import { NbStoreNativeDBApis } from './plugins/nbstore';
 
 bindNativeDBApis(NbStoreNativeDBApis);
 
-// TODO(@L-Sun) Uncomment this when the `show` method implement by `@capacitor/keyboard` in ios
-// import './virtual-keyboard';
-
 function mountApp() {
-  // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
+  // oxlint-disable-next-line typescript/no-non-null-assertion
   const root = document.getElementById('app')!;
   createRoot(root).render(
     <StrictMode>

@@ -1,75 +1,64 @@
 import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
-import { User, Workspace } from '@prisma/client';
-import ava, { TestFn } from 'ava';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import test from 'ava';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
-import { createTestingApp, type TestingApp } from '../../../__tests__/utils';
-import { AppModule } from '../../../app.module';
-import { ConfigModule } from '../../../base/config';
+import { createModule } from '../../../__tests__/create-module';
+import { Mockers } from '../../../__tests__/mocks';
 import { Models } from '../../../models';
-import { WorkspaceBlobStorage } from '../../storage/wrappers/blob';
-import { DocReader, PgWorkspaceDocStorageAdapter } from '..';
+import {
+  DocReader,
+  DocStorageModule,
+  PgWorkspaceDocStorageAdapter,
+} from '../index';
 import { DatabaseDocReader } from '../reader';
 
-const test = ava as TestFn<{
-  models: Models;
-  app: TestingApp;
-  docReader: DocReader;
-  adapter: PgWorkspaceDocStorageAdapter;
-  blobStorage: WorkspaceBlobStorage;
-}>;
-
-test.before(async t => {
-  const app = await createTestingApp({
-    imports: [ConfigModule.forRoot(), AppModule],
-  });
-
-  t.context.models = app.get(Models);
-  t.context.docReader = app.get(DocReader);
-  t.context.adapter = app.get(PgWorkspaceDocStorageAdapter);
-  t.context.blobStorage = app.get(WorkspaceBlobStorage);
-  t.context.app = app;
+const module = await createModule({
+  imports: [DocStorageModule],
 });
+const docReader = module.get(DocReader);
+const adapter = module.get(PgWorkspaceDocStorageAdapter);
+const models = module.get(Models);
 
-let user: User;
-let workspace: Workspace;
-
-test.beforeEach(async t => {
-  await t.context.app.initTestingDB();
-  user = await t.context.models.user.create({
-    email: 'test@affine.pro',
-  });
-  workspace = await t.context.models.workspace.create(user.id);
-});
+const user = await module.create(Mockers.User);
 
 test.afterEach.always(() => {
   mock.reset();
 });
 
-test.after.always(async t => {
-  await t.context.app.close();
+test.after.always(async () => {
+  await module.close();
+});
+
+test('should be database reader', async t => {
+  t.true(docReader instanceof DatabaseDocReader);
 });
 
 test('should return null when doc not found', async t => {
-  const { docReader } = t.context;
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+  });
+
   const docId = randomUUID();
   const doc = await docReader.getDoc(workspace.id, docId);
   t.is(doc, null);
 });
 
 test('should return doc when found', async t => {
-  const { docReader } = t.context;
-  t.true(docReader instanceof DatabaseDocReader);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+  });
 
   const docId = randomUUID();
   const timestamp = Date.now();
-  await t.context.models.doc.createUpdates([
+  const source = new YDoc();
+  source.getText('content').insert(0, 'blob1 data');
+  await models.doc.createUpdates([
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob1 data'),
+      blob: Buffer.from(encodeStateAsUpdate(source)),
       timestamp,
       editorId: user.id,
     },
@@ -77,13 +66,18 @@ test('should return doc when found', async t => {
 
   const doc = await docReader.getDoc(workspace.id, docId);
   t.truthy(doc);
-  t.is(doc!.bin.toString(), 'blob1 data');
+  const loaded = new YDoc();
+  applyUpdate(loaded, doc!.bin);
+  t.is(loaded.getText('content').toString(), 'blob1 data');
   t.is(doc!.timestamp, timestamp);
   t.is(doc!.editor, user.id);
 });
 
 test('should return doc diff', async t => {
-  const { docReader } = t.context;
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+  });
+
   const docId = randomUUID();
   const timestamp = Date.now();
   let updates: Buffer[] = [];
@@ -98,7 +92,7 @@ test('should return doc diff', async t => {
   text.insert(5, ' ');
   text.insert(11, '!');
 
-  await t.context.models.doc.createUpdates(
+  await models.doc.createUpdates(
     updates.map((update, index) => ({
       spaceId: workspace.id,
       docId,
@@ -112,6 +106,7 @@ test('should return doc diff', async t => {
 
   const doc2 = new YDoc();
   const diff = await docReader.getDocDiff(workspace.id, docId);
+
   t.truthy(diff);
   t.truthy(diff!.missing);
   t.truthy(diff!.state);
@@ -120,6 +115,7 @@ test('should return doc diff', async t => {
 
   // nothing changed
   const diff2 = await docReader.getDocDiff(workspace.id, docId, diff!.state);
+
   t.truthy(diff2);
   t.truthy(diff2!.missing);
   t.deepEqual(diff2!.missing, new Uint8Array([0, 0]));
@@ -129,7 +125,7 @@ test('should return doc diff', async t => {
 
   // add new content on doc1
   text.insert(12, '@');
-  await t.context.models.doc.createUpdates(
+  await models.doc.createUpdates(
     updates.map((update, index) => ({
       spaceId: workspace.id,
       docId,
@@ -140,6 +136,7 @@ test('should return doc diff', async t => {
   );
 
   const diff3 = await docReader.getDocDiff(workspace.id, docId, diff2!.state);
+
   t.truthy(diff3);
   t.truthy(diff3!.missing);
   t.truthy(diff3!.state);
@@ -148,8 +145,11 @@ test('should return doc diff', async t => {
 });
 
 test('should get doc content', async t => {
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+  });
+
   const docId = randomUUID();
-  const { docReader } = t.context;
 
   const doc = new YDoc();
   const text = doc.getText('content');
@@ -163,16 +163,19 @@ test('should get doc content', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await t.context.adapter.pushDocUpdates(workspace.id, docId, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates, user.id);
 
   const docContent = await docReader.getDocContent(workspace.id, docId);
+
   // TODO(@fengmk2): should create a test ydoc with blocks
   t.is(docContent, null);
 });
 
 test('should get workspace content with default avatar', async t => {
-  const { docReader } = t.context;
-  t.true(docReader instanceof DatabaseDocReader);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
 
   const doc = new YDoc();
   const text = doc.getText('content');
@@ -186,7 +189,7 @@ test('should get workspace content with default avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await t.context.adapter.pushDocUpdates(
+  await adapter.pushDocUpdatesTrusted(
     workspace.id,
     workspace.id,
     updates,
@@ -199,6 +202,7 @@ test('should get workspace content with default avatar', async t => {
   }));
 
   const workspaceContent = await docReader.getWorkspaceContent(workspace.id);
+
   t.truthy(workspaceContent);
   t.deepEqual(workspaceContent, {
     id: workspace.id,
@@ -209,8 +213,10 @@ test('should get workspace content with default avatar', async t => {
 });
 
 test('should get workspace content with custom avatar', async t => {
-  const { docReader, blobStorage } = t.context;
-  t.true(docReader instanceof DatabaseDocReader);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
 
   const doc = new YDoc();
   const text = doc.getText('content');
@@ -224,7 +230,7 @@ test('should get workspace content with custom avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await t.context.adapter.pushDocUpdates(
+  await adapter.pushDocUpdatesTrusted(
     workspace.id,
     workspace.id,
     updates,
@@ -232,11 +238,6 @@ test('should get workspace content with custom avatar', async t => {
   );
 
   const avatarKey = randomUUID();
-  await blobStorage.put(
-    workspace.id,
-    avatarKey,
-    Buffer.from('mock avatar image data here')
-  );
 
   mock.method(docReader, 'parseWorkspaceContent', () => ({
     name: 'Test Workspace',
@@ -244,11 +245,81 @@ test('should get workspace content with custom avatar', async t => {
   }));
 
   const workspaceContent = await docReader.getWorkspaceContent(workspace.id);
+
   t.truthy(workspaceContent);
   t.deepEqual(workspaceContent, {
     id: workspace.id,
     name: 'Test Workspace',
     avatarKey,
-    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
   });
+
+  // should save to database
+  const workspace2 = await models.workspace.get(workspace.id);
+
+  t.truthy(workspace2);
+  t.is(workspace2!.name, 'Test Workspace');
+  t.is(workspace2!.avatarKey, avatarKey);
+
+  // read from database
+  await models.workspace.update(workspace.id, {
+    name: 'Test Workspace 2',
+  });
+  const workspaceContent2 = await docReader.getWorkspaceContent(workspace.id);
+
+  t.truthy(workspaceContent2);
+  t.deepEqual(workspaceContent2, {
+    id: workspace.id,
+    name: 'Test Workspace 2',
+    avatarKey,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
+  });
+});
+
+test('should return doc markdown success', async t => {
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const docSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user,
+  });
+
+  const result = await docReader.getDocMarkdown(
+    workspace.id,
+    docSnapshot.id,
+    false
+  );
+  if (result) {
+    const { revision, ...markdown } = result;
+    t.truthy(revision);
+    t.snapshot(markdown);
+  }
+  const canvas = await docReader.getDocCanvas(workspace.id, docSnapshot.id);
+  t.is(canvas?.version, 1);
+  t.is(canvas?.docId, docSnapshot.id);
+  t.truthy(canvas?.revision);
+  t.deepEqual(canvas?.counts, {
+    connector: 6,
+    group: 6,
+    shape: 7,
+    text: 7,
+  });
+});
+
+test('should read markdown return null when doc not exists', async t => {
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const result = await docReader.getDocMarkdown(
+    workspace.id,
+    randomUUID(),
+    false
+  );
+  t.is(result, null);
+  t.is(await docReader.getDocCanvas(workspace.id, randomUUID()), null);
 });

@@ -1,0 +1,4 @@
+query appConfig {
+  appConfig
+  appConfigMetadata
+}

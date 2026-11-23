@@ -1,0 +1,19 @@
+{
+  "name": "@affine/revert-update",
+  "version": "0.27.5",
+  "private": true,
+  "type": "module",
+  "description": "Generate a revert update from two Yjs snapshot binaries",
+  "main": "index.ts",
+  "scripts": {
+    "generate": "r ./index.ts"
+  },
+  "dependencies": {
+    "@affine-tools/cli": "workspace:*",
+    "@affine/server-native": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

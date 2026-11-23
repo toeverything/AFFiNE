@@ -1,5 +1,5 @@
 import { toReactNode } from '@affine/component';
-import { BlockComponent } from '@blocksuite/affine/block-std';
+import { BlockComponent } from '@blocksuite/affine/std';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -8,7 +8,10 @@ import { PeekViewService } from '../services/peek-view';
 import { AIChatBlockPeekView } from './ai-chat-block-peek-view';
 import { AttachmentPreviewPeekView } from './attachment-preview';
 import { DocPeekPreview } from './doc-preview';
-import { ImagePreviewPeekView } from './image-preview';
+import {
+  GenericImagePreviewModalWithClose,
+  ImagePreviewPeekView,
+} from './image-preview';
 import {
   PeekViewModalContainer,
   type PeekViewModalContainerProps,
@@ -45,6 +48,10 @@ function renderPeekView({ info }: ActivePeekView, animating?: boolean) {
     );
   }
 
+  if (info.type === 'image-list') {
+    return <GenericImagePreviewModalWithClose {...info.data} />;
+  }
+
   if (info.type === 'ai-chat-block') {
     return <AIChatBlockPeekView model={info.model} host={info.host} />;
   }
@@ -61,7 +68,7 @@ const renderControls = ({ info }: ActivePeekView) => {
     return <AttachmentPeekViewControls docRef={info.docRef} />;
   }
 
-  if (info.type === 'image') {
+  if (info.type === 'image' || info.type === 'image-list') {
     return null; // image controls are rendered in the image preview
   }
 
@@ -69,7 +76,7 @@ const renderControls = ({ info }: ActivePeekView) => {
 };
 
 const getMode = (info: ActivePeekView['info']) => {
-  if (info.type === 'image') {
+  if (info.type === 'image' || info.type === 'image-list') {
     return 'full';
   }
   return 'fit';
@@ -94,7 +101,7 @@ const getRendererProps = (
         : undefined,
     mode: getMode(activePeekView.info),
     animation: 'fadeBottom',
-    dialogFrame: activePeekView.info.type !== 'image',
+    dialogFrame: !['image', 'image-list'].includes(activePeekView.info.type),
   };
 };
 
@@ -111,7 +118,6 @@ export const PeekViewManagerModal = () => {
   }, []);
 
   const onAnimationEnd = useCallback(() => {
-    console.log('onAnimationEnd');
     setAnimating(false);
   }, []);
 

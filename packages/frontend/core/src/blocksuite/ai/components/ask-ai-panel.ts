@@ -1,7 +1,10 @@
-import { type EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { DocModeProvider } from '@blocksuite/affine/shared/services';
+import {
+  DocModeProvider,
+  ThemeProvider,
+} from '@blocksuite/affine/shared/services';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
+import { type EditorHost } from '@blocksuite/affine/std';
 import { cssVar } from '@toeverything/theme';
 import { css, html, LitElement, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -68,6 +71,15 @@ export class AskAIPanel extends WithDisposable(LitElement) {
       }))
       .filter(group => group.items.length > 0);
     return filteredConfig;
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.disposables.add(
+      this.host.std.get(ThemeProvider).app$.subscribe(() => {
+        this.requestUpdate();
+      })
+    );
   }
 
   override render() {

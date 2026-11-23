@@ -1,5 +1,4 @@
 export * from './headers';
-export * from './proxy';
 export * from './url';
 
 export function parseJson<T>(data: string): T | null {

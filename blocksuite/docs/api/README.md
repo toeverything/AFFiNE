@@ -7,4 +7,4 @@
 ## Packages
 
 - [@blocksuite/store](@blocksuite/store/README.md)
-- [@blocksuite/block-std](@blocksuite/block-std/README.md)
+- [@blocksuite/std](@blocksuite/std/README.md)

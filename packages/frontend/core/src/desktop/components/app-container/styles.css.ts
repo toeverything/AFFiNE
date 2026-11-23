@@ -59,14 +59,14 @@ export const desktopAppViewMain = style({
   display: 'flex',
   flexFlow: 'row',
   width: '100%',
-  height: 'calc(100% - 52px)',
+  height: 'calc(100% - 40px)',
   position: 'relative',
 });
 
 export const desktopTabsHeader = style({
   display: 'flex',
   flexFlow: 'row',
-  height: '52px',
+  height: '40px',
   zIndex: 1,
   width: '100%',
   overflow: 'hidden',

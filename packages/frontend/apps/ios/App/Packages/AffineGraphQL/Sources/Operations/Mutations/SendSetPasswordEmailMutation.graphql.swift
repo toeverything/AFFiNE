@@ -26,6 +26,9 @@ public class SendSetPasswordEmailMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("sendSetPasswordEmail", Bool.self, arguments: ["callbackUrl": .variable("callbackUrl")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SendSetPasswordEmailMutation.Data.self
+    ] }
 
     public var sendSetPasswordEmail: Bool { __data["sendSetPasswordEmail"] }
   }

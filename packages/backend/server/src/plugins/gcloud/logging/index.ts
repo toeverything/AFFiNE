@@ -1,12 +1,11 @@
-import { Global } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 
-import { OptionalModule } from '../../../base';
-import { loggerProvider } from './service';
+import { LoggerProvider } from './service';
 
 @Global()
-@OptionalModule({
-  if: config => config.metrics.enabled,
-  overrides: [loggerProvider],
+@Module({
+  providers: [LoggerProvider],
+  exports: [LoggerProvider],
 })
 export class GCloudLogging {}
 

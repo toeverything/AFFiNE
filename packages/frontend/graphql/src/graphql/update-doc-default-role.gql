@@ -1,3 +1,0 @@
-mutation updateDocDefaultRole($input: UpdateDocDefaultRoleInput!) {
-  updateDocDefaultRole(input: $input)
-}

@@ -14,6 +14,7 @@ import {
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { PureWorkspaceCard } from '@affine/core/components/workspace-selector/workspace-card';
 import { AuthService } from '@affine/core/modules/cloud';
@@ -27,7 +28,7 @@ import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { type I18nString, Trans, useI18n } from '@affine/i18n';
 import { DoneIcon, NewPageIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Upgrade } from '../../dialogs/setting/general-setting/plans/plan-card';
@@ -70,9 +71,12 @@ export const UpgradeToTeam = ({ recurring }: { recurring: string | null }) => {
   const [selectedWorkspace, setSelectedWorkspace] =
     useState<WorkspaceMetadata | null>(null);
 
-  const information = useWorkspaceInfo(selectedWorkspace || undefined);
-
-  const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
+  const workspacesService = useService(WorkspacesService);
+  const profile = selectedWorkspace
+    ? workspacesService.getProfile(selectedWorkspace)
+    : undefined;
+  const workspaceInfo = useLiveData(profile?.profile$);
+  const name = workspaceInfo?.name ?? UNTITLED_WORKSPACE_NAME;
 
   const menuTriggerText = useMemo(() => {
     if (selectedWorkspace) {
@@ -90,6 +94,39 @@ export const UpgradeToTeam = ({ recurring }: { recurring: string | null }) => {
   const onClickCreateWorkspace = useCallback(() => {
     setOpenCreate(true);
   }, []);
+
+  const revalidate = useCallback(() => {
+    profile?.revalidate();
+  }, [profile]);
+
+  const { jumpToPage, jumpToOpenInApp } = useNavigateHelper();
+  const [params] = useSearchParams();
+  const isTeam = workspaceInfo?.isTeam;
+
+  const openAFFiNE = useCallback(() => {
+    if (params.get('client')) {
+      jumpToOpenInApp(`/workspace/${selectedWorkspace?.id}/all`);
+    } else if (selectedWorkspace) {
+      jumpToPage(selectedWorkspace.id, 'all');
+    }
+  }, [jumpToOpenInApp, jumpToPage, params, selectedWorkspace]);
+
+  useEffect(() => {
+    revalidate();
+  }, [selectedWorkspace, revalidate]);
+
+  useEffect(() => {
+    window.addEventListener('focus', revalidate);
+    return () => {
+      window.removeEventListener('focus', revalidate);
+    };
+  }, [revalidate]);
+
+  useEffect(() => {
+    if (isTeam && selectedWorkspace) {
+      return openAFFiNE();
+    }
+  }, [isTeam, jumpToPage, openAFFiNE, selectedWorkspace]);
 
   return (
     <AuthPageContainer title={t['com.affine.upgrade-to-team-page.title']()}>
@@ -138,13 +175,15 @@ export const UpgradeToTeam = ({ recurring }: { recurring: string | null }) => {
           <div>
             {t['com.affine.upgrade-to-team-page.benefit.description']()}
           </div>
-          <UpgradeDialog
-            recurring={recurring}
-            open={openUpgrade}
-            onOpenChange={setOpenUpgrade}
-            workspaceName={name}
-            workspaceId={selectedWorkspace?.id ?? ''}
-          />
+          {selectedWorkspace && (
+            <UpgradeDialog
+              recurring={recurring}
+              open={openUpgrade}
+              onOpenChange={setOpenUpgrade}
+              workspaceId={selectedWorkspace.id}
+              workspaceName={name}
+            />
+          )}
           <CreateWorkspaceDialog
             open={openCreate}
             onOpenChange={setOpenCreate}
@@ -172,17 +211,18 @@ export const UpgradeToTeam = ({ recurring }: { recurring: string | null }) => {
 const UpgradeDialog = ({
   open,
   onOpenChange,
-  workspaceName,
   workspaceId,
+  workspaceName,
   recurring,
 }: {
   open: boolean;
-  workspaceName: string;
   workspaceId: string;
+  workspaceName: string;
   recurring: string | null;
   onOpenChange: (open: boolean) => void;
 }) => {
   const t = useI18n();
+
   const onClose = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);

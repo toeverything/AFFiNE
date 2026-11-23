@@ -1,12 +1,16 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
-import { DeploymentType } from '../../base';
+import { DeploymentType } from '../../env';
 
 export enum ServerFeature {
   Captcha = 'captcha',
   Copilot = 'copilot',
+  CopilotEmbedding = 'copilot_embedding',
   Payment = 'payment',
   OAuth = 'oauth',
+  Indexer = 'indexer',
+  Comment = 'comment',
+  LocalWorkspace = 'local_workspace',
 }
 
 registerEnumType(ServerFeature, {
@@ -34,15 +38,6 @@ export class ServerConfigType {
   @Field(() => DeploymentType, { description: 'server type' })
   type!: DeploymentType;
 
-  /**
-   * @deprecated
-   */
-  @Field({ description: 'server flavor', deprecationReason: 'use `features`' })
-  flavor!: string;
-
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
-
-  @Field({ description: 'enable telemetry' })
-  enableTelemetry!: boolean;
 }

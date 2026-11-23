@@ -1,4 +1,4 @@
-export function polyfillEventLoop() {
+(function polyfillEventLoop() {
   globalThis.requestIdleCallback =
     globalThis.requestIdleCallback ||
     function (cb) {
@@ -18,4 +18,4 @@ export function polyfillEventLoop() {
     function (id) {
       clearTimeout(id);
     };
-}
+})();

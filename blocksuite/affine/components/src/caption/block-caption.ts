@@ -1,14 +1,15 @@
 import type { DocMode } from '@blocksuite/affine-model';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import type { BlockStdScope } from '@blocksuite/block-std';
+import { WithDisposable } from '@blocksuite/global/lit';
+import type { BlockStdScope } from '@blocksuite/std';
 import {
-  docContext,
   modelContext,
   ShadowlessElement,
   stdContext,
+  storeContext,
   TextSelection,
-} from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/lit';
+} from '@blocksuite/std';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import type { BlockModel, Store } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import { consume } from '@lit/context';
@@ -121,6 +122,8 @@ export class BlockCaptionEditor<
   override connectedCallback(): void {
     super.connectedCallback();
 
+    this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
+
     this.caption = this.model.props.caption;
 
     this.disposables.add(
@@ -165,7 +168,7 @@ export class BlockCaptionEditor<
   @state()
   accessor display = false;
 
-  @consume({ context: docContext })
+  @consume({ context: storeContext })
   accessor doc!: Store;
 
   @query('.block-caption-editor')

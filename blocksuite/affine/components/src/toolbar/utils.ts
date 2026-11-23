@@ -1,4 +1,4 @@
-import type { BlockStdScope } from '@blocksuite/block-std';
+import type { BlockStdScope } from '@blocksuite/std';
 import { html, nothing } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { join } from 'lit/directives/join.js';
@@ -83,9 +83,11 @@ export function renderActions(
                 ?disabled=${item.disabled}
                 @click=${item.action ? item.action : () => action?.(item)}
               >
-                ${item.icon}${item.label
-                  ? html`<span class="label">${item.label}</span>`
-                  : nothing}
+                ${item.icon}${
+                  item.label
+                    ? html`<span class="label">${item.label}</span>`
+                    : nothing
+                }
               </editor-menu-action>
             `
         )

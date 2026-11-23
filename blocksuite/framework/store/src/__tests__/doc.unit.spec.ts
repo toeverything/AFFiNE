@@ -31,12 +31,15 @@ test('trigger props updated', () => {
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
 
-  const doc = collection.createDoc({ id: 'home', extensions });
+  const doc = collection.createDoc('home');
   doc.load();
+  const store = doc.getStore({
+    extensions,
+  });
 
-  doc.addBlock('affine:page');
+  store.addBlock('affine:page');
 
-  const rootModel = doc.root as RootBlockModel;
+  const rootModel = store.root as RootBlockModel;
 
   expect(rootModel).not.toBeNull();
 
@@ -91,12 +94,15 @@ test('stash and pop', () => {
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
 
-  const doc = collection.createDoc({ id: 'home', extensions });
+  const doc = collection.createDoc('home');
   doc.load();
+  const store = doc.getStore({
+    extensions,
+  });
 
-  doc.addBlock('affine:page');
+  store.addBlock('affine:page');
 
-  const rootModel = doc.root as RootBlockModel;
+  const rootModel = store.root as RootBlockModel;
 
   expect(rootModel).not.toBeNull();
 
@@ -161,12 +167,15 @@ test('always get latest value in onChange', () => {
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
 
-  const doc = collection.createDoc({ id: 'home', extensions });
+  const doc = collection.createDoc('home');
   doc.load();
+  const store = doc.getStore({
+    extensions,
+  });
 
-  doc.addBlock('affine:page');
+  store.addBlock('affine:page');
 
-  const rootModel = doc.root as RootBlockModel;
+  const rootModel = store.root as RootBlockModel;
 
   expect(rootModel).not.toBeNull();
 
@@ -207,11 +216,15 @@ test('query', () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc1 = collection.createDoc({ id: 'home', extensions });
-  doc1.load();
-  const doc2 = collection.getDoc('home', { extensions });
-
-  const doc3 = collection.getDoc('home', {
+  const doc = collection.createDoc('home');
+  doc.load();
+  const store1 = doc.getStore({
+    extensions,
+  });
+  const store2 = doc.getStore({
+    extensions,
+  });
+  const store3 = doc.getStore({
     extensions,
     query: {
       mode: 'loose',
@@ -223,48 +236,53 @@ test('query', () => {
       ],
     },
   });
-  expect(doc1).toBe(doc2);
-  expect(doc1).not.toBe(doc3);
+  expect(store1).toBe(store2);
+  expect(store1).not.toBe(store3);
 
-  const page = doc1.addBlock('affine:page');
-  const note = doc1.addBlock('affine:note', {}, page);
-  const paragraph1 = doc1.addBlock('affine:paragraph', {}, note);
-  const list1 = doc1.addBlock('affine:list' as never, {}, note);
+  const page = store1.addBlock('affine:page');
+  const note = store1.addBlock('affine:note', {}, page);
+  const paragraph1 = store1.addBlock('affine:paragraph', {}, note);
+  const list1 = store1.addBlock('affine:list' as never, {}, note);
 
-  expect(doc2?.getBlock(paragraph1)?.blockViewType).toBe('display');
-  expect(doc2?.getBlock(list1)?.blockViewType).toBe('display');
-  expect(doc3?.getBlock(list1)?.blockViewType).toBe('hidden');
+  expect(store2?.getBlock(paragraph1)?.blockViewType).toBe('display');
+  expect(store2?.getBlock(list1)?.blockViewType).toBe('display');
+  expect(store3?.getBlock(list1)?.blockViewType).toBe('hidden');
 
-  const list2 = doc1.addBlock('affine:list' as never, {}, note);
+  const list2 = store1.addBlock('affine:list' as never, {}, note);
 
-  expect(doc2?.getBlock(list2)?.blockViewType).toBe('display');
-  expect(doc3?.getBlock(list2)?.blockViewType).toBe('hidden');
+  expect(store2?.getBlock(list2)?.blockViewType).toBe('display');
+  expect(store3?.getBlock(list2)?.blockViewType).toBe('hidden');
 });
 
 test('local readonly', () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc1 = collection.createDoc({ id: 'home', extensions });
-  doc1.load();
-  const doc2 = collection.getDoc('home', { readonly: true, extensions });
-  const doc3 = collection.getDoc('home', { readonly: false, extensions });
+  const doc = collection.createDoc('home');
+  const store1 = doc.getStore({
+    extensions,
+  });
+  const store2 = doc.getStore({
+    readonly: true,
+    extensions,
+  });
+  const store3 = doc.getStore({ readonly: false, extensions });
 
-  expect(doc1.readonly).toBeFalsy();
-  expect(doc2?.readonly).toBeTruthy();
-  expect(doc3?.readonly).toBeFalsy();
+  expect(store1.readonly).toBeFalsy();
+  expect(store2.readonly).toBeTruthy();
+  expect(store3.readonly).toBeFalsy();
 
-  doc1.readonly = true;
+  store1.readonly = true;
 
-  expect(doc1.readonly).toBeTruthy();
-  expect(doc2?.readonly).toBeTruthy();
-  expect(doc3?.readonly).toBeFalsy();
+  expect(store1.readonly).toBeTruthy();
+  expect(store2.readonly).toBeTruthy();
+  expect(store3.readonly).toBeFalsy();
 
-  doc1.readonly = false;
+  store1.readonly = false;
 
-  expect(doc1.readonly).toBeFalsy();
-  expect(doc2?.readonly).toBeTruthy();
-  expect(doc3?.readonly).toBeFalsy();
+  expect(store1.readonly).toBeFalsy();
+  expect(store2.readonly).toBeTruthy();
+  expect(store3.readonly).toBeFalsy();
 });
 
 describe('move blocks', () => {
@@ -274,21 +292,22 @@ describe('move blocks', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc = collection.createDoc({ id: 'home', extensions });
+    const doc = collection.createDoc('home');
     doc.load();
-    const pageId = doc.addBlock('affine:page');
-    const page = doc.getBlock(pageId)!.model;
+    const store = doc.getStore({ extensions });
+    const pageId = store.addBlock('affine:page');
+    const page = store.getBlock(pageId)!.model;
 
-    const noteIds = doc.addBlocks(
+    const noteIds = store.addBlocks(
       [1, 2, 3].map(i => ({
         flavour: 'affine:note',
         blockProps: { id: `${i}` },
       })),
       page
     );
-    const notes = noteIds.map(id => doc.getBlock(id)!.model);
+    const notes = noteIds.map(id => store.getBlock(id)!.model);
 
-    context.doc = doc;
+    context.doc = store;
     context.page = page;
     context.notes = notes;
   });

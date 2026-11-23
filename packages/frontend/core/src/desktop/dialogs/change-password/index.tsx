@@ -21,10 +21,11 @@ import {
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const ChangePasswordDialog = ({
   close,
+  hasPassword: hasPasswordProp,
   server: serverBaseUrl,
 }: DialogComponentProps<GLOBAL_DIALOG_SCHEMA['change-password']>) => {
   const t = useI18n();
@@ -44,7 +45,8 @@ export const ChangePasswordDialog = ({
   const authService = server.scope.get(AuthService);
   const account = useLiveData(authService.session.account$);
   const email = account?.email;
-  const hasPassword = account?.info?.hasPassword;
+  const hasPassword =
+    hasPasswordProp ?? account?.info?.authMethods?.password.bound ?? false;
   const [hasSentEmail, setHasSentEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const passwordLimits = useLiveData(
@@ -52,10 +54,12 @@ export const ChangePasswordDialog = ({
   );
   const serverName = useLiveData(server.config$.selector(c => c.serverName));
 
-  if (!email) {
-    // should not happen
-    throw new Unreachable();
-  }
+  useEffect(() => {
+    if (!account) {
+      // we are logged out, close the dialog
+      close();
+    }
+  }, [account, close]);
 
   const onSendEmail = useAsyncCallback(async () => {
     setLoading(true);

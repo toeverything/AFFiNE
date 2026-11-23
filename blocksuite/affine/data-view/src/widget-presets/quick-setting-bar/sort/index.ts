@@ -8,7 +8,7 @@ import type { DataViewWidgetProps } from '../../../core/widget/types.js';
 import { popSortRoot } from './root-panel.js';
 
 export const renderSortBar = (props: DataViewWidgetProps) => {
-  const sortTrait = props.dataViewInstance.view.traitGet(sortTraitKey);
+  const sortTrait = props.dataViewLogic.view.traitGet(sortTraitKey);
   if (!sortTrait) {
     return;
   }
@@ -19,7 +19,7 @@ export const renderSortBar = (props: DataViewWidgetProps) => {
   const text = count === 1 ? html`1 Sort` : html`${count} Sorts`;
   const click = (event: MouseEvent) => {
     popSortRoot(popupTargetFromElement(event.currentTarget as HTMLElement), {
-      sortUtils: createSortUtils(sortTrait, props.dataViewInstance.eventTrace),
+      sortUtils: createSortUtils(sortTrait, props.dataViewLogic.eventTrace),
     });
   };
   return html` <data-view-component-button

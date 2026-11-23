@@ -4,6 +4,7 @@
 import ApolloAPI
 
 public enum OAuthProviderType: String, EnumType {
+  case apple = "Apple"
   case gitHub = "GitHub"
   case google = "Google"
   case oidc = "OIDC"

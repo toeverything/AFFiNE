@@ -1,14 +1,19 @@
 import { Button, Modal } from '@affine/component';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import * as styles from './connected.css';
-import { ImportDialog } from './import-dialog';
 import { actionButton } from './index.css';
+import { readwiseTrack } from './track';
 
-export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
+export const ReadwiseDisconnectDialog = ({
+  onClose,
+}: {
+  onClose: () => void;
+}) => {
   const t = useI18n();
   const readwise = useService(IntegrationService).readwise;
 
@@ -21,11 +26,15 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
   const handleCancel = useCallback(() => onClose(), [onClose]);
   const handleKeep = useCallback(() => {
     readwise.disconnect();
+    readwiseTrack.disconnectIntegration({ method: 'keep' });
     onClose();
   }, [onClose, readwise]);
-  // const handleDelete = useAsyncCallback(async () => {
-  //   // TODO
-  // }, []);
+  const handleDelete = useAsyncCallback(async () => {
+    await readwise.deleteAll();
+    readwise.disconnect();
+    readwiseTrack.disconnectIntegration({ method: 'delete' });
+    onClose();
+  }, [onClose, readwise]);
 
   return (
     <Modal
@@ -42,7 +51,7 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
       <footer className={styles.footer}>
         <Button onClick={handleCancel}>{t['Cancel']()}</Button>
         <div className={styles.actions}>
-          <Button variant="error">
+          <Button variant="error" onClick={handleDelete}>
             {t['com.affine.integration.readwise.disconnect.delete']()}
           </Button>
           <Button variant="primary" onClick={handleKeep}>
@@ -54,25 +63,16 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ConnectedActions = () => {
+export const ReadwiseDisconnectButton = () => {
   const t = useI18n();
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-
   return (
     <>
       {showDisconnectDialog && (
-        <DisconnectDialog onClose={() => setShowDisconnectDialog(false)} />
+        <ReadwiseDisconnectDialog
+          onClose={() => setShowDisconnectDialog(false)}
+        />
       )}
-      {showImportDialog && (
-        <ImportDialog onClose={() => setShowImportDialog(false)} />
-      )}
-      <Button
-        className={actionButton}
-        onClick={() => setShowImportDialog(true)}
-      >
-        {t['com.affine.integration.readwise.import']()}
-      </Button>
       <Button
         variant="error"
         className={actionButton}

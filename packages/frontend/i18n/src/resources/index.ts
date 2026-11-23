@@ -1,4 +1,4 @@
-import en from './en.json' assert { type: 'json' };
+import en from './en.json' with { type: 'json' };
 
 export type Language =
   | 'en'
@@ -8,6 +8,7 @@ export type Language =
   | 'es'
   | 'es-AR'
   | 'es-CL'
+  | 'pl'
   | 'de'
   | 'ru'
   | 'ja'
@@ -21,7 +22,10 @@ export type Language =
   | 'uk'
   | 'ko'
   | 'pt-BR'
-  | 'fa';
+  | 'fa'
+  | 'nb-NO'
+  | 'kk'
+  | 'tr';
 
 export type LanguageResource = typeof en;
 export const SUPPORTED_LANGUAGES: Record<
@@ -30,6 +34,7 @@ export const SUPPORTED_LANGUAGES: Record<
     name: string;
     originalName: string;
     flagEmoji: string;
+    rtl?: boolean;
     resource:
       | LanguageResource
       | (() => Promise<{ default: Partial<LanguageResource> }>);
@@ -45,122 +50,147 @@ export const SUPPORTED_LANGUAGES: Record<
     name: 'Korean (South Korea)',
     originalName: '한국어(대한민국)',
     flagEmoji: '🇰🇷',
-    resource: () => /* webpackChunkName "i18n-ko" */ import('./ko.json'),
+    resource: () => import('./ko.json'),
   },
   'pt-BR': {
     name: 'Portuguese (Brazil)',
     originalName: 'português (Brasil)',
     flagEmoji: '🇧🇷',
-    resource: () => /* webpackChunkName "i18n-pt_BR" */ import('./pt-BR.json'),
+    resource: () => import('./pt-BR.json'),
   },
   'zh-Hans': {
     name: 'Simplified Chinese',
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
-    resource: () =>
-      /* webpackChunkName "i18n-zh_Hans" */ import('./zh-Hans.json'),
+    resource: () => import('./zh-Hans.json'),
   },
   'zh-Hant': {
     name: 'Traditional Chinese',
     originalName: '繁體中文',
     flagEmoji: '🇭🇰',
-    resource: () =>
-      /* webpackChunkName "i18n-zh_Hant" */ import('./zh-Hant.json'),
+    resource: () => import('./zh-Hant.json'),
   },
   fr: {
     name: 'French',
     originalName: 'français',
     flagEmoji: '🇫🇷',
-    resource: () => /* webpackChunkName "i18n-fr" */ import('./fr.json'),
+    resource: () => import('./fr.json'),
   },
   es: {
     name: 'Spanish',
     originalName: 'español',
     flagEmoji: '🇪🇸',
-    resource: () => /* webpackChunkName "i18n-es" */ import('./es.json'),
+    resource: () => import('./es.json'),
   },
   'es-AR': {
     name: 'Spanish (Argentina)',
     originalName: 'español (Argentina)',
     flagEmoji: '🇦🇷',
-    resource: () => /* webpackChunkName "i18n-es_AR" */ import('./es-AR.json'),
+    resource: () => import('./es-AR.json'),
   },
   'es-CL': {
     name: 'Spanish (Chile)',
     originalName: 'español (Chile)',
     flagEmoji: '🇨🇱',
-    resource: () => /* webpackChunkName "i18n-es_CL" */ import('./es-CL.json'),
+    resource: () => import('./es-CL.json'),
+  },
+  pl: {
+    name: 'Polish',
+    originalName: 'Polski',
+    flagEmoji: '🇵🇱',
+    resource: () => import('./pl.json'),
   },
   de: {
     name: 'German',
     originalName: 'Deutsch',
     flagEmoji: '🇩🇪',
-    resource: () => /* webpackChunkName "i18n-de" */ import('./de.json'),
+    resource: () => import('./de.json'),
   },
   ru: {
     name: 'Russian',
     originalName: 'русский',
     flagEmoji: '🇷🇺',
-    resource: () => /* webpackChunkName "i18n-ru" */ import('./ru.json'),
+    resource: () => import('./ru.json'),
   },
   ja: {
     name: 'Japanese',
     originalName: '日本語',
     flagEmoji: '🇯🇵',
-    resource: () => /* webpackChunkName "i18n-ja" */ import('./ja.json'),
+    resource: () => import('./ja.json'),
   },
   it: {
     name: 'Italian',
     originalName: 'italiano',
     flagEmoji: '🇮🇹',
-    resource: () => /* webpackChunkName "i18n-it" */ import('./it.json'),
+    resource: () => import('./it.json'),
   },
   ca: {
     name: 'Catalan',
     originalName: 'català',
     flagEmoji: '🇦🇩',
-    resource: () => /* webpackChunkName "i18n-ca" */ import('./ca.json'),
+    resource: () => import('./ca.json'),
   },
   da: {
     name: 'Danish',
     originalName: 'dansk',
     flagEmoji: '🇩🇰',
-    resource: () => /* webpackChunkName "i18n-da" */ import('./da.json'),
+    resource: () => import('./da.json'),
   },
   hi: {
     name: 'Hindi',
     originalName: 'हिन्दी',
     flagEmoji: '🇮🇳',
-    resource: () => /* webpackChunkName "i18n-hi" */ import('./hi.json'),
+    resource: () => import('./hi.json'),
   },
   'sv-SE': {
     name: 'Swedish (Sweden)',
     originalName: 'svenska (Sverige)',
     flagEmoji: '🇸🇪',
-    resource: () => /* webpackChunkName "i18n-sv_SE" */ import('./sv-SE.json'),
+    resource: () => import('./sv-SE.json'),
   },
   ur: {
     name: 'Urdu',
     originalName: 'اردو',
     flagEmoji: '🇵🇰',
-    resource: () => /* webpackChunkName "i18n-ur" */ import('./ur.json'),
+    rtl: true,
+    resource: () => import('./ur.json'),
   },
   ar: {
     name: 'Arabic',
     originalName: 'العربية',
     flagEmoji: '🇸🇦',
-    resource: () => /* webpackChunkName "i18n-ar" */ import('./ar.json'),
+    rtl: true,
+    resource: () => import('./ar.json'),
   },
   fa: {
     name: 'Persian',
     originalName: 'فارسی',
     flagEmoji: '🇮🇷',
-    resource: () => /* webpackChunkName "i18n-ar" */ import('./fa.json'),
+    rtl: true,
+    resource: () => import('./fa.json'),
   },
   uk: {
     name: 'Ukrainian',
     originalName: 'українська',
     flagEmoji: '🇺🇦',
-    resource: () => /* webpackChunkName "i18n-uk" */ import('./uk.json'),
+    resource: () => import('./uk.json'),
+  },
+  'nb-NO': {
+    name: 'Norwegian',
+    originalName: 'Norsk (Bokmål)',
+    flagEmoji: '🇳🇴',
+    resource: () => import('./nb-NO.json'),
+  },
+  kk: {
+    name: 'Kazakh',
+    originalName: 'Қазақша',
+    flagEmoji: '🇰🇿',
+    resource: () => import('./kk.json'),
+  },
+  tr: {
+    name: 'Turkish',
+    originalName: 'Türkçe',
+    flagEmoji: '🇹🇷',
+    resource: () => import('./tr.json'),
   },
 };

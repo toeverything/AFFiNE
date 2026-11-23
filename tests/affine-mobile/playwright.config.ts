@@ -50,12 +50,12 @@ const config: PlaywrightTestConfig = {
     // Intentionally not building the web, reminds you to run it by yourself.
     {
       command: 'yarn run -T affine dev -p @affine/mobile',
-      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
       },
+      url: 'http://localhost:8080',
     },
   ],
 };

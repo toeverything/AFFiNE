@@ -1,6 +1,6 @@
 import { Unreachable } from '@affine/env/constant';
 
-export interface RcRef<T> {
+export interface RcRef<T> extends Disposable {
   obj: T;
   release: () => void;
 }
@@ -21,17 +21,19 @@ export class ObjectPool<Key, T> {
     if (exist) {
       exist.rc++;
       let released = false;
+      const release = () => {
+        // avoid double release
+        if (released) {
+          return;
+        }
+        released = true;
+        exist.rc--;
+        this.requestGc();
+      };
       return {
         obj: exist.obj,
-        release: () => {
-          // avoid double release
-          if (released) {
-            return;
-          }
-          released = true;
-          exist.rc--;
-          this.requestGc();
-        },
+        release,
+        [Symbol.dispose]: release,
       };
     }
     return null;
@@ -62,7 +64,8 @@ export class ObjectPool<Key, T> {
 
   private gc() {
     for (const [key, { obj, rc }] of new Map(
-      this.objects /* clone the map, because the origin will be modified during iteration */
+      this
+        .objects /* clone the map, because the origin will be modified during iteration */
     )) {
       if (
         rc === 0 &&

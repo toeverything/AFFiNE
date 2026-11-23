@@ -11,4 +11,5 @@ export interface SettingSidebarItem {
   title: string;
   icon: ReactElement;
   testId: string;
+  beta?: boolean;
 }

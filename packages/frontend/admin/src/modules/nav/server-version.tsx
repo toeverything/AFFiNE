@@ -1,4 +1,3 @@
-import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback } from 'react';
 
 import { Button } from '../../components/ui/button';
@@ -10,28 +9,36 @@ export const ServerVersion = () => {
   const version = serverConfig?.version;
 
   const handleClick = useCallback(() => {
-    window.open(availableUpgrade.url, '_blank');
+    if (availableUpgrade) {
+      window.open(availableUpgrade.url, '_blank');
+    }
   }, [availableUpgrade]);
 
   if (availableUpgrade) {
     return (
       <Button
         variant="outline"
-        className="flex items-center justify-center gap-1 text-xs p-2 font-medium"
+        className="flex w-full items-center justify-center gap-1 overflow-hidden px-2 py-1.5 text-xs font-medium"
         onClick={handleClick}
+        title={`New Version ${availableUpgrade.version} Available`}
       >
-        New Version <span>{availableUpgrade.version}</span>Available
+        <span className="overflow-hidden text-ellipsis space-x-1">
+          <span>New Version</span>
+          <span>{availableUpgrade.version}</span>
+          <span>Available</span>
+        </span>
       </Button>
     );
   }
   return (
-    <div
-      className="flex items-center justify-between pt-2 border-t px-2 text-xs"
-      style={{
-        color: cssVarV2('text/tertiary'),
-      }}
-    >
-      ServerVersion<span>v{version}</span>
+    <div className="inline-flex flex-nowrap items-center justify-between gap-1 border-t border-border px-2 pt-2 text-xs text-muted-foreground">
+      <span>ServerVersion</span>
+      <span
+        className="overflow-hidden text-ellipsis whitespace-nowrap"
+        title={version}
+      >
+        {`v${version}`}
+      </span>
     </div>
   );
 };

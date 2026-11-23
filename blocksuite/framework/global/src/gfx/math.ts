@@ -11,6 +11,24 @@ export function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
+/**
+ * Calculates the intersection point of two line segments.
+ *
+ * @param sp - Start point of the first line segment [x, y]
+ * @param ep - End point of the first line segment [x, y]
+ * @param sp2 - Start point of the second line segment [x, y]
+ * @param ep2 - End point of the second line segment [x, y]
+ * @param infinite - If true, treats the lines as infinite lines rather than line segments
+ * @returns The intersection point [x, y] if the lines intersect, null if they are parallel or coincident
+ *
+ * @example
+ * const intersection = lineIntersects([0, 0], [2, 2], [0, 2], [2, 0]);
+ * // Returns [1, 1] - the intersection point of the two line segments
+ *
+ * @example
+ * const parallel = lineIntersects([0, 0], [2, 2], [0, 1], [2, 3], true);
+ * // Returns null - the lines are parallel
+ */
 export function lineIntersects(
   sp: IVec,
   ep: IVec,
@@ -45,10 +63,23 @@ export function lineIntersects(
   return null;
 }
 
+/**
+ * Finds the nearest point on a polygon to a given point.
+ *
+ * @param points - Array of points defining the polygon vertices [x, y][]
+ * @param point - The point to find the nearest point to [x, y]
+ * @returns The nearest point on the polygon to the given point
+ * @throws Error if points array is empty or has less than 2 points
+ */
 export function polygonNearestPoint(points: IVec[], point: IVec) {
   const len = points.length;
-  let rst: IVec;
-  let dis = Infinity;
+  if (len < 2) {
+    throw new Error('Polygon must have at least 2 points');
+  }
+
+  let rst: IVec = points[0]; // Initialize with first point as fallback
+  let dis = Vec.dist(points[0], point);
+
   for (let i = 0; i < len; i++) {
     const p = points[i];
     const p2 = points[(i + 1) % len];
@@ -59,7 +90,7 @@ export function polygonNearestPoint(points: IVec[], point: IVec) {
       rst = temp;
     }
   }
-  return rst!;
+  return rst;
 }
 
 export function polygonPointDistance(points: IVec[], point: IVec) {

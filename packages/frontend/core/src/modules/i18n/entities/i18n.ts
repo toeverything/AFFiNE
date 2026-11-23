@@ -7,7 +7,7 @@ import {
   SUPPORTED_LANGUAGES,
 } from '@affine/i18n';
 import { effect, Entity, fromPromise, LiveData } from '@toeverything/infra';
-import { catchError, EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { catchError, EMPTY, exhaustMap } from 'rxjs';
 
 import type { GlobalCache } from '../../storage';
 
@@ -16,11 +16,12 @@ export type LanguageInfo = {
   name: string;
   originalName: string;
   completeness: number;
+  rtl: boolean;
 };
 
 const logger = new DebugLogger('i18n');
 
-function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
+export function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
   const languageInfo = SUPPORTED_LANGUAGES[language];
 
   return {
@@ -28,6 +29,7 @@ function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
     name: languageInfo.name,
     originalName: languageInfo.originalName,
     completeness: i18nCompletenesses[language],
+    rtl: languageInfo.rtl ?? false,
   };
 }
 
@@ -54,13 +56,22 @@ export class I18n extends Entity {
   constructor(private readonly cache: GlobalCache) {
     super();
     this.i18n.on('languageChanged', (language: Language) => {
-      document.documentElement.lang = language;
+      this.applyDocumentLanguage(language);
       this.cache.set('i18n_lng', language);
     });
   }
 
   init() {
-    this.changeLanguage(this.currentLanguageKey$.value ?? 'en');
+    const language = this.currentLanguageKey$.value ?? 'en';
+    this.applyDocumentLanguage(language);
+    this.changeLanguage(language);
+  }
+
+  private applyDocumentLanguage(language: Language) {
+    document.documentElement.lang = language;
+    document.documentElement.dir = SUPPORTED_LANGUAGES[language]?.rtl
+      ? 'rtl'
+      : 'ltr';
   }
 
   changeLanguage = effect(
@@ -76,8 +87,7 @@ export class I18n extends Entity {
           logger.error('Failed to change language', error);
 
           return EMPTY;
-        }),
-        mergeMap(() => EMPTY)
+        })
       )
     )
   );

@@ -30,6 +30,11 @@ const iconX64PngPath = path.join(
   `./resources/icons/icon_${buildType}_64x64.png`
 );
 
+const iconX512PngPath = path.join(
+  ROOT,
+  `./resources/icons/icon_${buildType}_512x512.png`
+);
+
 const icnsPath = path.join(
   ROOT,
   !stableBuild
@@ -58,6 +63,8 @@ const {
       default: process.platform,
     },
   },
+  allowPositionals: true,
+  strict: false,
 });
 
 log(`parsed args: arch=${arch}, platform=${platform}`);
@@ -77,6 +84,7 @@ export {
   iconPngPath,
   iconUrl,
   iconX64PngPath,
+  iconX512PngPath,
   icoPath,
   platform,
   productName,

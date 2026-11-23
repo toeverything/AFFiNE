@@ -1,15 +1,22 @@
+import type { MediaStats } from '@toeverything/infra';
 import { app } from 'electron';
 
 import { logger } from './logger';
+import { globalStateStorage } from './shared-storage/storage';
 
-const cleanupRegistry: (() => void)[] = [];
+const beforeAppQuitRegistry: (() => void)[] = [];
+const beforeTabCloseRegistry: ((tabId: string) => void)[] = [];
 
 export function beforeAppQuit(fn: () => void) {
-  cleanupRegistry.push(fn);
+  beforeAppQuitRegistry.push(fn);
+}
+
+export function beforeTabClose(fn: (tabId: string) => void) {
+  beforeTabCloseRegistry.push(fn);
 }
 
 app.on('before-quit', () => {
-  cleanupRegistry.forEach(fn => {
+  beforeAppQuitRegistry.forEach(fn => {
     // some cleanup functions might throw on quit and crash the app
     try {
       fn();
@@ -17,4 +24,33 @@ app.on('before-quit', () => {
       logger.warn('cleanup error on quit', err);
     }
   });
+});
+
+export function onTabClose(tabId: string) {
+  beforeTabCloseRegistry.forEach(fn => {
+    try {
+      fn(tabId);
+    } catch (err) {
+      logger.warn('cleanup error on tab close', err);
+    }
+  });
+}
+
+app.on('ready', () => {
+  globalStateStorage.set('media:playback-state', null);
+  globalStateStorage.set('media:stats', null);
+});
+
+beforeAppQuit(() => {
+  globalStateStorage.set('media:playback-state', null);
+  globalStateStorage.set('media:stats', null);
+});
+
+// set audio play state
+beforeTabClose(tabId => {
+  const stats = globalStateStorage.get<MediaStats | null>('media:stats');
+  if (stats && stats.tabId === tabId) {
+    globalStateStorage.set('media:playback-state', null);
+    globalStateStorage.set('media:stats', null);
+  }
 });

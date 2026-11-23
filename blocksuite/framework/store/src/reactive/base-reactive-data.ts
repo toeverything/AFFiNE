@@ -23,9 +23,10 @@ export abstract class BaseReactiveYData<
 
   protected _onObserve = (event: Y.YEvent<any>, handler: () => void) => {
     if (
-      event.transaction.origin?.proxy !== true &&
-      (!event.transaction.local ||
-        event.transaction.origin instanceof Y.UndoManager)
+      event.transaction.origin?.force === true ||
+      (event.transaction.origin?.proxy !== true &&
+        (!event.transaction.local ||
+          event.transaction.origin instanceof Y.UndoManager))
     ) {
       handler();
     }

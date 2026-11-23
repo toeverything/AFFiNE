@@ -44,5 +44,5 @@ export const workspaceSelector = style({
   margin: '0 -16px',
   width: 'calc(100% + 32px)',
   border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
-  padding: '0 16px',
+  padding: '6px',
 });

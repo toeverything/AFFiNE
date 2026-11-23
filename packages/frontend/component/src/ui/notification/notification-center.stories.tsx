@@ -181,10 +181,13 @@ export const WithAction: StoryFn = () => {
                         ),
                         style,
                         theme,
-                        action: {
-                          label: 'UNDO',
-                          onClick: () => console.log('undo'),
-                        },
+                        actions: [
+                          {
+                            key: 'undo',
+                            label: 'UNDO',
+                            onClick: () => console.log('undo'),
+                          },
+                        ],
                       })
                     }
                   >
@@ -204,11 +207,14 @@ export const WithAction: StoryFn = () => {
             {
               title: 'Disable auto close',
               message: 'Test with disable auto close',
-              action: {
-                label: 'UNDO',
-                onClick: () => console.log('undo'),
-                autoClose: false,
-              },
+              actions: [
+                {
+                  key: 'undo',
+                  label: 'UNDO',
+                  onClick: () => console.log('undo'),
+                  autoClose: false,
+                },
+              ],
             },
             { duration: 22222222 }
           );
@@ -296,25 +302,12 @@ export const DifferentSize: StoryFn = () => {
       { duration: 60000 }
     );
   };
-  const openWithFooter = () => {
-    notify(
-      {
-        title: 'With footer',
-        message: 'With basic title and one line message',
-        footer: (
-          <Button onClick={() => console.log('clicked')}>Click me</Button>
-        ),
-      },
-      { duration: 60000 }
-    );
-  };
   return (
     <Root style={{ display: 'flex', gap: 8 }}>
       <Button onClick={openTiny}>Open Tiny</Button>
       <Button onClick={openNormal}>Open Normal</Button>
       <Button onClick={openLarge}>Open Large</Button>
       <Button onClick={openWithThumb}>Open with thumb</Button>
-      <Button onClick={openWithFooter}>Open with footer</Button>
     </Root>
   );
 };

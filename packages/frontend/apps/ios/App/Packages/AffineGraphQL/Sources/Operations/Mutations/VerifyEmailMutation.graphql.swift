@@ -26,6 +26,9 @@ public class VerifyEmailMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("verifyEmail", Bool.self, arguments: ["token": .variable("token")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      VerifyEmailMutation.Data.self
+    ] }
 
     public var verifyEmail: Bool { __data["verifyEmail"] }
   }

@@ -1,3 +1,7 @@
+import type {
+  UserListService,
+  UserService,
+} from '@blocksuite/affine-shared/services';
 import * as zod from 'zod';
 import Zod from 'zod';
 
@@ -12,6 +16,11 @@ export const SelectTagSchema = Zod.object({
   color: Zod.string(),
   value: Zod.string(),
 });
+export const UserInfoSchema = Zod.object({
+  userService: Zod.custom<UserService>(() => true),
+  userListService: Zod.custom<UserListService>(() => true),
+});
+export type UserInfo = Zod.TypeOf<typeof UserInfoSchema>;
 export const unknown = defineDataType('Unknown', zod.never(), zod.unknown());
 export const dt = {
   number: defineDataType('Number', zod.number(), zod.number()),
@@ -22,6 +31,7 @@ export const dt = {
   url: defineDataType('URL', zod.string(), zod.string()),
   image: defineDataType('Image', zod.string(), zod.string()),
   tag: defineDataType('Tag', zod.array(SelectTagSchema), zod.string()),
+  user: defineDataType('User', UserInfoSchema, zod.string()),
 };
 export const t = {
   unknown,
@@ -53,4 +63,5 @@ export const converts: TypeConvertConfig[] = [
   ),
   createTypeConvert(t.richText.instance(), t.string.instance(), value => value),
   createTypeConvert(t.url.instance(), t.string.instance(), value => value),
+  createTypeConvert(t.user.instance(), t.string.instance(), value => value),
 ];

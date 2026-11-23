@@ -1,7 +1,11 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
-import { ActionForbidden, UserAvatarNotFound } from '../../base';
+import {
+  ActionForbidden,
+  applyAttachHeaders,
+  UserAvatarNotFound,
+} from '../../base';
 import { Public } from '../auth/guard';
 import { AvatarStorage } from '../storage';
 
@@ -12,9 +16,9 @@ export class UserAvatarController {
 
   @Get('/:id')
   async getAvatar(@Res() res: Response, @Param('id') id: string) {
-    if (this.storage.provider.type !== 'fs') {
+    if (!this.storage.isLocalStorage()) {
       throw new ActionForbidden(
-        'Only available when avatar storage provider set to fs.'
+        'Only available when avatar storage provider is fs or assetpack.'
       );
     }
 
@@ -30,6 +34,10 @@ export class UserAvatarController {
       res.setHeader('last-modified', metadata.lastModified.toISOString());
       res.setHeader('content-length', metadata.contentLength);
     }
+    applyAttachHeaders(res, {
+      contentType: metadata?.contentType,
+      filename: `${id}`,
+    });
 
     body.pipe(res);
   }

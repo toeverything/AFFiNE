@@ -1,12 +1,22 @@
 import { toReactNode } from '@affine/component';
 import { AIChatBlockPeekViewTemplate } from '@affine/core/blocksuite/ai';
 import type { AIChatBlockModel } from '@affine/core/blocksuite/ai/blocks/ai-chat-block/model/ai-chat-model';
-import { enableFootnoteConfigExtension } from '@affine/core/blocksuite/extensions';
-import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import { SpecProvider } from '@blocksuite/affine/shared/utils';
+import { registerAIAppEffects } from '@affine/core/blocksuite/ai/effects/app';
+import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
+import { useAISubscribe } from '@affine/core/components/hooks/affine/use-ai-subscribe';
+import {
+  AIDraftService,
+  AIModelService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { useFramework } from '@toeverything/infra';
 import { useMemo } from 'react';
+
+registerAIAppEffects();
 
 export type AIChatBlockPeekViewProps = {
   model: AIChatBlockModel;
@@ -17,23 +27,49 @@ export const AIChatBlockPeekView = ({
   model,
   host,
 }: AIChatBlockPeekViewProps) => {
+  const { docDisplayConfig, searchMenuConfig, reasoningConfig } =
+    useAIChatConfig();
+
   const framework = useFramework();
-  const searchService = framework.get(AINetworkSearchService);
+  const serverService = framework.get(ServerService);
+  const affineFeatureFlagService = framework.get(FeatureFlagService);
+  const affineWorkspaceDialogService = framework.get(WorkspaceDialogService);
+  const aiDraftService = framework.get(AIDraftService);
+  const aiToolsConfigService = framework.get(AIToolsConfigService);
+  const aiModelService = framework.get(AIModelService);
+  const subscriptionService = framework.get(SubscriptionService);
+  const handleAISubscribe = useAISubscribe();
+
   return useMemo(() => {
-    const previewSpecBuilder = enableFootnoteConfigExtension(
-      SpecProvider._.getSpec('preview:page')
-    );
-    const networkSearchConfig = {
-      visible: searchService.visible,
-      enabled: searchService.enabled,
-      setEnabled: searchService.setEnabled,
-    };
     const template = AIChatBlockPeekViewTemplate(
       model,
       host,
-      previewSpecBuilder,
-      networkSearchConfig
+      docDisplayConfig,
+      searchMenuConfig,
+      reasoningConfig,
+      serverService,
+      affineFeatureFlagService,
+      affineWorkspaceDialogService,
+      aiDraftService,
+      aiToolsConfigService,
+      aiModelService,
+      subscriptionService,
+      handleAISubscribe
     );
     return toReactNode(template);
-  }, [model, host, searchService]);
+  }, [
+    model,
+    host,
+    docDisplayConfig,
+    searchMenuConfig,
+    reasoningConfig,
+    serverService,
+    affineFeatureFlagService,
+    affineWorkspaceDialogService,
+    aiDraftService,
+    aiToolsConfigService,
+    aiModelService,
+    subscriptionService,
+    handleAISubscribe,
+  ]);
 };

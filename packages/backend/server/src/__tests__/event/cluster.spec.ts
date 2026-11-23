@@ -63,6 +63,21 @@ test('should broadcast event to cluster instances', async t => {
   off();
 });
 
+test('should preserve encoded binary updates across cluster instances', async t => {
+  const { app1, app2 } = t.context;
+  const eventbus1 = app1.get(EventBus);
+  const eventbus2 = app2.get(EventBus);
+  const listener = Sinon.spy(app1.get(Listeners), 'onEncodedBinaryEvent');
+  const payload = {
+    updates: [Buffer.from(new Uint8Array([1, 2, 3])).toString('base64')],
+  };
+
+  eventbus2.broadcast('__test__.encodedBinary', payload);
+  await eventbus1.waitFor('__test__.encodedBinary');
+
+  t.true(listener.calledOnceWith(payload));
+});
+
 test('should continuously use the same request id', async t => {
   const { app1, app2 } = t.context;
 

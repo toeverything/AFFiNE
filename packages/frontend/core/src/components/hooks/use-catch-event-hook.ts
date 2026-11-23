@@ -9,12 +9,9 @@ export const useCatchEventCallback = <
   cb: (e: E, ...args: Args) => void | Promise<void>,
   deps: DependencyList
 ) => {
-  return useAsyncCallback(
-    async (e: E, ...args: Args) => {
-      e.stopPropagation();
-      await cb(e, ...args);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    deps
-  );
+  return useAsyncCallback(async (e: E, ...args: Args) => {
+    e.stopPropagation();
+    await cb(e, ...args);
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, deps);
 };

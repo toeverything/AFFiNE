@@ -1,0 +1,44 @@
+{
+  "name": "@blocksuite/affine-inline-footnote",
+  "description": "Inline footnote for BlockSuite.",
+  "type": "module",
+  "scripts": {
+    "build": "yarn run -T tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-ext-loader": "workspace:*",
+    "@blocksuite/affine-model": "workspace:*",
+    "@blocksuite/affine-shared": "workspace:*",
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/std": "workspace:*",
+    "@blocksuite/store": "workspace:*",
+    "@floating-ui/dom": "^1.6.13",
+    "@preact/signals-core": "^1.8.0",
+    "@toeverything/theme": "^1.1.23",
+    "lit": "^3.2.0",
+    "lit-html": "^3.2.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@vitest/browser-playwright": "^4.1.11",
+    "playwright": "=1.58.2",
+    "vitest": "^4.1.11"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./view": "./src/view.ts",
+    "./store": "./src/store.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.27.5"
+}

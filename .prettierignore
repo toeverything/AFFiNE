@@ -1,8 +1,11 @@
-# we will make this file shared by prettier|eslint|oxlint
+# shared by oxfmt|oxlint
 **/node_modules
 .yarn
 .github/helm
+.git
 .vscode
+.context
+.codex
 .yarnrc.yml
 .docker
 **/.storybook
@@ -24,15 +27,21 @@ test-results
 **/*.gen.ts
 **/*.gql
 **/*.d.ts
-packages/frontend/graphql/src/graphql/index.ts
 
 # per files
 tools/cli/src/webpack/error-handler.js
 packages/backend/native/index.d.ts
 packages/backend/server/src/__tests__/__snapshots__
 packages/common/native/fixtures/**
+packages/common/graphql/src/graphql/index.ts
 packages/frontend/native/index.d.ts
 packages/frontend/native/index.js
-packages/frontend/apps/android/App/app/build/**
+packages/frontend/apps/android/App/**
+packages/frontend/apps/ios/App/**
 tests/blocksuite/snapshots
 blocksuite/docs/api/**
+blocksuite/docs-site/.vitepress/.temp/**
+blocksuite/docs-site/api/**
+packages/frontend/admin/src/config.json
+**/test-docs.json
+**/test-blocks.json

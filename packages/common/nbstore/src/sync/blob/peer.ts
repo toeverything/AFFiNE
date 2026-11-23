@@ -1,8 +1,11 @@
-import { difference } from 'lodash-es';
-import { Observable, ReplaySubject, share, Subject } from 'rxjs';
+import { filter, Observable, ReplaySubject, share, Subject } from 'rxjs';
 
-import type { BlobRecord, BlobStorage } from '../../storage';
-import { OverCapacityError, OverSizeError } from '../../storage';
+import type { BlobRecord, BlobSource, BlobStorage } from '../../storage';
+import {
+  isSourceScopedBlobStorage,
+  OverCapacityError,
+  OverSizeError,
+} from '../../storage';
 import type { BlobSyncStorage } from '../../storage/blob-sync';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
 
@@ -14,6 +17,8 @@ export interface BlobSyncPeerState {
 }
 
 export interface BlobSyncPeerBlobState {
+  needUpload: boolean;
+  needDownload: boolean;
   uploading: boolean;
   downloading: boolean;
   overSize: boolean;
@@ -38,17 +43,62 @@ export class BlobSyncPeer {
     readonly blobSync: BlobSyncStorage
   ) {}
 
+  async registerSource(source: BlobSource, signal?: AbortSignal) {
+    if (isSourceScopedBlobStorage(this.remote)) {
+      const statusId = this.sourceStatusId(source);
+      try {
+        await this.remote.registerSource(source, signal);
+        this.status.blobErrorFree(statusId);
+      } catch (error) {
+        this.status.blobError(
+          statusId,
+          error instanceof Error ? error.message : String(error)
+        );
+        throw error;
+      }
+    }
+  }
+
+  async unregisterSource(source: BlobSource) {
+    if (isSourceScopedBlobStorage(this.remote)) {
+      const statusId = this.sourceStatusId(source);
+      try {
+        await this.remote.unregisterSource(source);
+        this.status.blobErrorFree(statusId);
+      } catch (error) {
+        this.status.blobError(
+          statusId,
+          error instanceof Error ? error.message : String(error)
+        );
+        throw error;
+      }
+    }
+  }
+
+  private sourceStatusId(source: BlobSource) {
+    return `source:${source.type}:${source.workspaceId}:${source.docId}:${source.type === 'history' ? source.timestampMs : ''}`;
+  }
+
   private readonly downloadingPromise = new Map<string, Promise<boolean>>();
 
   /**
-   * Downloads a blob from the peer with retry logic
-   * @returns true if the blob is downloaded successfully, false if the blob is not found or encounters an error
+   * Downloads a blob from the peer with exponential backoff retry logic
+   * @param blobId - The ID of the blob to download
+   * @param signal - Optional AbortSignal to cancel the download
+   * @returns true if the blob is downloaded successfully, false if the blob is not found after retries
    *
-   * @throws This method will never throw (errors are saved to the sync status) unless the signal is aborted
+   * @throws This method will throw an error if the download operation fails due to network issues or is aborted
    */
-  downloadBlob(blobId: string, signal?: AbortSignal): Promise<boolean> {
+  downloadBlob(
+    blobId: string,
+    signal?: AbortSignal,
+    source?: BlobSource
+  ): Promise<boolean> {
+    const downloadId = source
+      ? `${blobId}\0${source.type}\0${source.workspaceId}\0${source.docId}\0${source.type === 'history' ? source.timestampMs : ''}`
+      : blobId;
     // if the blob is already downloading, return the existing promise
-    const existing = this.downloadingPromise.get(blobId);
+    const existing = this.downloadingPromise.get(downloadId);
     if (existing) {
       return existing;
     }
@@ -59,50 +109,34 @@ export class BlobSyncPeer {
       count: this.remote.isReadonly ? 1 : 5, // readonly remote storage will not retry
     };
 
-    const promise = new Promise<boolean>((resolve, reject) => {
-      // mark the blob as downloading
+    const promise = (async () => {
+      this.status.markBlobToDownload(blobId);
       this.status.blobDownloading(blobId);
 
-      let attempts = 0;
-
-      const attempt = async () => {
-        try {
-          throwIfAborted(signal);
-          const data = await this.remote.get(blobId, signal);
-          throwIfAborted(signal);
-          if (data) {
-            // mark the blob as uploaded to avoid uploading the same blob again
-            await this.blobSync.setBlobUploadedAt(
-              this.peerId,
-              blobId,
-              new Date()
-            );
-            await this.local.set(data, signal);
-            resolve(true);
-          } else {
-            // if the blob is not found, maybe the uploader have't uploaded the blob yet, we will retry several times
-            attempts++;
-            if (attempts < backoffRetry.count) {
-              const waitTime = Math.min(
-                Math.pow(2, attempts - 1) * backoffRetry.delay,
-                backoffRetry.maxDelay
-              );
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              setTimeout(attempt, waitTime);
-            } else {
-              // reach the max retry times, resolve the promise with false
-              resolve(false);
-            }
-          }
-        } catch (error) {
-          // if we encounter any error, reject without retry
-          reject(error);
+      for (let attempt = 0; attempt < backoffRetry.count; attempt++) {
+        throwIfAborted(signal);
+        const data = await this.remote.get(blobId, signal, source);
+        throwIfAborted(signal);
+        if (data) {
+          await this.blobSync.setBlobUploadedAt(
+            this.peerId,
+            blobId,
+            new Date()
+          );
+          await this.local.set(data, signal);
+          this.status.blobDownloadSuccess(blobId);
+          return true;
         }
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      attempt();
-    })
+        if (attempt + 1 < backoffRetry.count) {
+          const waitTime = Math.min(
+            2 ** attempt * backoffRetry.delay,
+            backoffRetry.maxDelay
+          );
+          await waitForRetry(waitTime, signal);
+        }
+      }
+      return false;
+    })()
       .catch(error => {
         if (error === MANUALLY_STOP) {
           throw error;
@@ -111,22 +145,46 @@ export class BlobSyncPeer {
           blobId,
           error instanceof Error ? error.message : String(error)
         );
-        return false;
+        throw error;
       })
       .finally(() => {
         this.status.blobDownloadFinish(blobId);
-        this.downloadingPromise.delete(blobId);
+        this.downloadingPromise.delete(downloadId);
       });
 
-    this.downloadingPromise.set(blobId, promise);
+    this.downloadingPromise.set(downloadId, promise);
     return promise;
   }
 
-  uploadingPromise = new Map<string, Promise<void>>();
+  uploadingPromise = new Map<string, Promise<true>>();
 
-  uploadBlob(blob: BlobRecord, signal?: AbortSignal): Promise<void> {
+  /**
+   * Upload a blob to the peer
+   * @param blob - The blob to upload
+   * @param force - Whether to force upload the blob, even if it has already been uploaded
+   * @param signal - The abort signal
+   * @returns The promise should always resolve to true when the upload is complete.
+   *
+   * @throws This method will throw an error if the upload is aborted or fails due to storage limitations.
+   */
+  async uploadBlob(
+    blob: BlobRecord,
+    force = false,
+    signal?: AbortSignal
+  ): Promise<true> {
     if (this.remote.isReadonly) {
-      return Promise.resolve();
+      return true;
+    }
+
+    if (!force) {
+      // if the blob has been uploaded, skip the upload
+      const uploadedAt = await this.blobSync.getBlobUploadedAt(
+        this.peerId,
+        blob.key
+      );
+      if (uploadedAt) {
+        return true;
+      }
     }
 
     const existing = this.uploadingPromise.get(blob.key);
@@ -135,6 +193,7 @@ export class BlobSyncPeer {
     }
 
     const promise = (async () => {
+      this.status.markBlobToUpload(blob.key);
       // mark the blob as uploading
       this.status.blobUploading(blob.key);
       await this.blobSync.setBlobUploadedAt(this.peerId, blob.key, null);
@@ -147,8 +206,11 @@ export class BlobSyncPeer {
           new Date()
         );
 
+        this.status.blobUploadSuccess(blob.key);
+
         // free the remote storage over capacity flag
         this.status.remoteOverCapacityFree();
+        return true;
       } catch (err) {
         if (err === MANUALLY_STOP) {
           throw err;
@@ -158,20 +220,20 @@ export class BlobSyncPeer {
           this.status.remoteOverCapacity();
           this.status.blobError(blob.key, 'Remote storage over capacity');
         } else if (err instanceof OverSizeError) {
-          this.status.blobOverSize(blob.key);
-          this.status.blobError(blob.key, 'Blob size too large');
+          this.status.blobOverSizeWithError(blob.key, err.message);
         } else {
           this.status.blobError(
             blob.key,
             err instanceof Error ? err.message : String(err)
           );
         }
+        throw err;
       } finally {
         this.status.blobUploadFinish(blob.key);
       }
     })().finally(() => {
       this.uploadingPromise.delete(blob.key);
-    });
+    }) as Promise<true>;
 
     this.uploadingPromise.set(blob.key, promise);
     return promise;
@@ -189,9 +251,7 @@ export class BlobSyncPeer {
         console.warn('Blob full upload error, retry in 15s', err);
       }
       // wait for 15s before next loop
-      await new Promise<void>(resolve => {
-        setTimeout(resolve, 15000);
-      });
+      await waitForRetry(15000, signal);
       if (signal?.aborted) {
         return;
       }
@@ -222,9 +282,9 @@ export class BlobSyncPeer {
       if (uploadedAt === null) {
         needUpload.push(blob.key);
       } else {
-        // if the blob has uploaded, we clear its error flag here.
+        // if the blob has uploaded, we clear its states flags here.
         // this ensures that the sync status seen by the user is clean.
-        this.status.blobErrorFree(blob.key);
+        this.status.blobStateClear(blob.key);
       }
     }
 
@@ -234,48 +294,24 @@ export class BlobSyncPeer {
 
     // mark all blobs as will upload
     for (const blobKey of needUpload) {
+      this.status.markBlobToUpload(blobKey);
       this.status.blobWillUpload(blobKey);
     }
 
     try {
-      if (needUpload.length <= 3) {
-        // if there is only few blobs to upload, upload them one by one
-
-        // upload the blobs
-        for (const blobKey of needUpload) {
-          const data = await this.local.get(blobKey);
-          throwIfAborted(signal);
-          if (data) {
-            await this.uploadBlob(data, signal);
-          }
+      for (const blobKey of needUpload) {
+        if (this.status.overSize.has(blobKey)) {
+          continue;
         }
-      } else {
-        // if there are many blobs to upload, call remote list to reduce unnecessary uploads
-        const remoteList = new Set((await this.remote.list()).map(b => b.key));
-
-        for (const blobKey of needUpload) {
-          if (remoteList.has(blobKey)) {
-            // if the blob is already uploaded, set the blob as uploaded
-            await this.blobSync.setBlobUploadedAt(
-              this.peerId,
-              blobKey,
-              new Date()
-            );
-
-            // mark the blob as uploaded
-            this.status.blobUploadFinish(blobKey);
-            continue;
-          }
-
-          // if the blob is over size, skip it
-          if (this.status.overSize.has(blobKey)) {
-            continue;
-          }
-
-          const data = await this.local.get(blobKey);
-          throwIfAborted(signal);
-          if (data) {
-            await this.uploadBlob(data, signal);
+        const data = await this.local.get(blobKey);
+        throwIfAborted(signal);
+        if (data) {
+          try {
+            await this.uploadBlob(data, false, signal);
+          } catch (err) {
+            if (err === MANUALLY_STOP) {
+              throw err;
+            }
           }
         }
       }
@@ -291,27 +327,48 @@ export class BlobSyncPeer {
     await this.local.connection.waitForConnected(signal);
     await this.remote.connection.waitForConnected(signal);
 
-    const localList = (await this.local.list()).map(b => b.key);
-    const remoteList = (await this.remote.list()).map(b => b.key);
-
-    const needDownload = difference(remoteList, localList);
-
-    // mark all blobs as will download
-    for (const blobKey of needDownload) {
-      this.status.blobWillDownload(blobKey);
+    const localKeys = new Set(
+      (await this.local.list(signal)).map(blob => blob.key)
+    );
+    if (isSourceScopedBlobStorage(this.remote)) {
+      for await (const entry of this.remote.readableSources(signal)) {
+        await this.downloadMissingBlob(
+          entry.key,
+          localKeys,
+          signal,
+          entry.source
+        );
+      }
+    } else {
+      for (const entry of await this.remote.list(signal)) {
+        await this.downloadMissingBlob(entry.key, localKeys, signal);
+      }
     }
+  }
 
+  private async downloadMissingBlob(
+    blobKey: string,
+    localKeys: Set<string>,
+    signal?: AbortSignal,
+    source?: BlobSource
+  ) {
+    if (localKeys.has(blobKey)) return;
+    this.status.markBlobToDownload(blobKey);
+    this.status.blobWillDownload(blobKey);
     try {
-      for (const blobKey of needDownload) {
-        throwIfAborted(signal);
-        // download the blobs
-        await this.downloadBlob(blobKey, signal);
+      throwIfAborted(signal);
+      try {
+        if (await this.downloadBlob(blobKey, signal, source)) {
+          localKeys.add(blobKey);
+        }
+      } catch (err) {
+        if (err === MANUALLY_STOP) {
+          throw err;
+        }
+        // ignore the error as it has already been recorded in the sync status
       }
     } finally {
-      // remove all will download flags
-      for (const blobKey of needDownload) {
-        this.status.blobWillDownloadFinish(blobKey);
-      }
+      this.status.blobWillDownloadFinish(blobKey);
     }
   }
 
@@ -320,8 +377,26 @@ export class BlobSyncPeer {
   }
 }
 
+function waitForRetry(delay: number, signal?: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, delay);
+    if (signal?.aborted) finish();
+    else signal?.addEventListener('abort', finish, { once: true });
+  });
+}
+
 class BlobSyncPeerStatus {
   overCapacity = false;
+
+  // blobs that need to be uploaded or downloaded
+  toUpload = new Set<string>();
+  toDownload = new Set<string>();
+
   willUpload = new Set<string>();
   uploading = new Set<string>();
   downloading = new Set<string>();
@@ -355,6 +430,8 @@ class BlobSyncPeerStatus {
     return new Observable<BlobSyncPeerBlobState>(subscribe => {
       const next = () => {
         subscribe.next({
+          needUpload: this.toUpload.has(blobId),
+          needDownload: this.toDownload.has(blobId),
           uploading: this.willUpload.has(blobId) || this.uploading.has(blobId),
           downloading:
             this.willDownload.has(blobId) || this.downloading.has(blobId),
@@ -363,22 +440,51 @@ class BlobSyncPeerStatus {
         });
       };
       next();
-      const dispose = this.statusUpdatedSubject$.subscribe(updatedBlobId => {
-        if (updatedBlobId === blobId || updatedBlobId === true) {
-          next();
-        }
-      });
+      const dispose = this.statusUpdatedSubject$
+        .pipe(
+          filter(
+            updatedBlobId => updatedBlobId === blobId || updatedBlobId === true
+          )
+        )
+        .subscribe(() => next());
       return () => {
         dispose.unsubscribe();
       };
-    });
+    }).pipe(
+      share({
+        connector: () => new ReplaySubject(1),
+      })
+    );
   }
 
   private readonly statusUpdatedSubject$ = new Subject<string | true>();
 
+  markBlobToUpload(blobId: string) {
+    if (!this.toUpload.has(blobId)) {
+      this.toUpload.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  markBlobToDownload(blobId: string) {
+    if (!this.toDownload.has(blobId)) {
+      this.toDownload.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
   blobUploading(blobId: string) {
     if (!this.uploading.has(blobId)) {
       this.uploading.add(blobId);
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  blobUploadSuccess(blobId: string) {
+    this.blobUploadFinish(blobId);
+    this.blobErrorFree(blobId);
+    const deleted = this.toUpload.delete(blobId);
+    if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
   }
@@ -390,7 +496,6 @@ class BlobSyncPeerStatus {
     if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
-    this.blobErrorFree(blobId);
   }
 
   blobWillUpload(blobId: string) {
@@ -414,6 +519,15 @@ class BlobSyncPeerStatus {
     }
   }
 
+  blobDownloadSuccess(blobId: string) {
+    this.blobDownloadFinish(blobId);
+    this.blobErrorFree(blobId);
+    const deleted = this.toDownload.delete(blobId);
+    if (deleted) {
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
   blobDownloadFinish(blobId: string) {
     let deleted = false;
     deleted = this.willDownload.delete(blobId) || deleted;
@@ -421,7 +535,6 @@ class BlobSyncPeerStatus {
     if (deleted) {
       this.statusUpdatedSubject$.next(blobId);
     }
-    this.blobErrorFree(blobId);
   }
 
   blobWillDownload(blobId: string) {
@@ -462,8 +575,29 @@ class BlobSyncPeerStatus {
     this.statusUpdatedSubject$.next(blobId);
   }
 
+  blobOverSizeWithError(blobId: string, errorMessage: string) {
+    this.overSize.add(blobId);
+    this.error.set(blobId, errorMessage);
+    this.statusUpdatedSubject$.next(blobId);
+  }
+
   blobErrorFree(blobId: string) {
     let deleted = false;
+    deleted = this.error.delete(blobId) || deleted;
+    deleted = this.overSize.delete(blobId) || deleted;
+    if (deleted) {
+      this.statusUpdatedSubject$.next(blobId);
+    }
+  }
+
+  blobStateClear(blobId: string) {
+    let deleted = false;
+    deleted = this.toUpload.delete(blobId) || deleted;
+    deleted = this.toDownload.delete(blobId) || deleted;
+    deleted = this.willUpload.delete(blobId) || deleted;
+    deleted = this.willDownload.delete(blobId) || deleted;
+    deleted = this.uploading.delete(blobId) || deleted;
+    deleted = this.downloading.delete(blobId) || deleted;
     deleted = this.error.delete(blobId) || deleted;
     deleted = this.overSize.delete(blobId) || deleted;
     if (deleted) {

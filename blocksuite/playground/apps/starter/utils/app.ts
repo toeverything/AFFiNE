@@ -1,6 +1,13 @@
 import type { Store, Workspace } from '@blocksuite/affine/store';
+import {
+  defaultImageProxyMiddleware,
+  docLinkBaseURLMiddlewareBuilder,
+  embedSyncedDocMiddleware,
+  titleMiddleware,
+} from '@blocksuite/affine-shared/adapters';
 
 import { AttachmentViewerPanel } from '../../_common/components/attachment-viewer-panel';
+import { CustomAdapterPanel } from '../../_common/components/custom-adapter-panel';
 import { CustomFramePanel } from '../../_common/components/custom-frame-panel';
 import { CustomOutlinePanel } from '../../_common/components/custom-outline-panel';
 import { CustomOutlineViewer } from '../../_common/components/custom-outline-viewer';
@@ -24,6 +31,7 @@ export async function createTestApp(doc: Store, collection: Workspace) {
   const docsPanel = new DocsPanel();
   const framePanel = new CustomFramePanel();
   const outlinePanel = new CustomOutlinePanel();
+  const adapterPanel = new CustomAdapterPanel();
   const outlineViewer = new CustomOutlineViewer();
   const leftSidePanel = new LeftSidePanel();
   const commentPanel = new CommentPanel();
@@ -36,6 +44,16 @@ export async function createTestApp(doc: Store, collection: Workspace) {
   outlineViewer.toggleOutlinePanel = () => {
     outlinePanel.toggleDisplay();
   };
+  adapterPanel.editor = editor;
+  adapterPanel.transformerMiddlewares = [
+    docLinkBaseURLMiddlewareBuilder(
+      'https://example.com',
+      editor.doc.workspace.id
+    ).get(),
+    titleMiddleware(editor.doc.workspace.meta.docMetas),
+    embedSyncedDocMiddleware('content'),
+    defaultImageProxyMiddleware,
+  ];
 
   debugMenu.collection = collection;
   debugMenu.editor = editor;
@@ -44,6 +62,7 @@ export async function createTestApp(doc: Store, collection: Workspace) {
   debugMenu.framePanel = framePanel;
   debugMenu.leftSidePanel = leftSidePanel;
   debugMenu.docsPanel = docsPanel;
+  debugMenu.adapterPanel = adapterPanel;
 
   debugMenu.commentPanel = commentPanel;
 
@@ -55,6 +74,7 @@ export async function createTestApp(doc: Store, collection: Workspace) {
   document.body.append(framePanel);
   document.body.append(leftSidePanel);
   document.body.append(debugMenu);
+  document.body.append(adapterPanel);
 
   window.editor = editor;
   window.doc = doc;

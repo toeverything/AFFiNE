@@ -6,6 +6,7 @@ import {
   type ParagraphBlockModel,
   type ReferenceInfo,
 } from '@blocksuite/affine-model';
+import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import {
   BLOCK_ID_ATTR,
   type BlockComponent,
@@ -13,8 +14,7 @@ import {
   type EditorHost,
   type TextRangePoint,
   TextSelection,
-} from '@blocksuite/block-std';
-import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
+} from '@blocksuite/std';
 import {
   type BlockModel,
   type BlockSnapshot,
@@ -124,6 +124,13 @@ class PasteTr {
 
   private readonly _mergeCode = () => {
     const deltas: DeltaOperation[] = [{ retain: this.pointState.point.index }];
+    // if there is text selection, delete the text selected
+    if (this.pointState.text.length - this.pointState.point.index > 0) {
+      deltas.push({
+        delete: this.pointState.text.length - this.pointState.point.index,
+      });
+    }
+    // paste the text from the snapshot to code block
     this.snapshot.content.forEach((blockSnapshot, i) => {
       if (blockSnapshot.props.text) {
         const text = this._textFromSnapshot(blockSnapshot);
@@ -133,6 +140,11 @@ class PasteTr {
         deltas.push(...text.delta);
       }
     });
+    // paste the text after the text selection from the snapshot to code block
+    const { toDelta } = this._getDeltas();
+    if (toDelta.length > 0) {
+      deltas.push(...toDelta);
+    }
     this.pointState.text.applyDelta(deltas);
     this.snapshot.content = [];
   };
@@ -490,13 +502,13 @@ class PasteTr {
   }
 
   merge() {
-    if (this.pointState.model.flavour === 'affine:code') {
-      this._mergeCode();
+    if (this.firstSnapshot === this.lastSnapshot) {
+      this._mergeSingle();
       return;
     }
 
-    if (this.firstSnapshot === this.lastSnapshot) {
-      this._mergeSingle();
+    if (this.pointState.model.flavour === 'affine:code') {
+      this._mergeCode();
       return;
     }
 
@@ -516,7 +528,7 @@ export const pasteMiddleware = (
 ): TransformerMiddleware => {
   return ({ slots }) => {
     let tr: PasteTr | undefined;
-    slots.beforeImport.subscribe(payload => {
+    const beforeImportSubscription = slots.beforeImport.subscribe(payload => {
       if (payload.type === 'slice') {
         const { snapshot } = payload;
         flatNote(snapshot);
@@ -531,13 +543,18 @@ export const pasteMiddleware = (
         }
       }
     });
-    slots.afterImport.subscribe(payload => {
+    const afterImportSubscription = slots.afterImport.subscribe(payload => {
       if (tr && payload.type === 'slice') {
         tr.pasted();
         tr.focusPasted();
         tr.convertToLinkedDoc();
       }
     });
+
+    return () => {
+      beforeImportSubscription.unsubscribe();
+      afterImportSubscription.unsubscribe();
+    };
   };
 };
 

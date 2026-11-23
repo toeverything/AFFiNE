@@ -3,29 +3,33 @@ import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
+  Config,
   InternalServerError,
   Mutex,
   PasswordRequired,
-  Runtime,
+  UseNamedGuard,
 } from '../../base';
 import { Models } from '../../models';
-import { AuthService, Public } from '../auth';
+import { AuthService, Public, SessionIssuer } from '../auth';
 import { ServerService } from '../config';
 import { validators } from '../utils/validators';
 
 interface CreateUserInput {
+  name?: string;
   email: string;
   password: string;
 }
 
+@UseNamedGuard('selfhost')
 @Controller('/api/setup')
 export class CustomSetupController {
   constructor(
+    private readonly config: Config,
     private readonly models: Models,
     private readonly auth: AuthService,
+    private readonly sessionIssuer: SessionIssuer,
     private readonly mutex: Mutex,
-    private readonly server: ServerService,
-    private readonly runtime: Runtime
+    private readonly server: ServerService
   ) {}
 
   @Public()
@@ -45,15 +49,10 @@ export class CustomSetupController {
       throw new PasswordRequired();
     }
 
-    const config = await this.runtime.fetchAll({
-      'auth/password.max': true,
-      'auth/password.min': true,
-    });
-
-    validators.assertValidPassword(input.password, {
-      max: config['auth/password.max'],
-      min: config['auth/password.min'],
-    });
+    validators.assertValidPassword(
+      input.password,
+      this.config.auth.passwordRequirements
+    );
 
     await using lock = await this.mutex.acquire('createFirstAdmin');
 
@@ -61,6 +60,7 @@ export class CustomSetupController {
       throw new InternalServerError();
     }
     const user = await this.models.user.create({
+      name: input.name || undefined,
       email: input.email,
       password: input.password,
       registered: true,
@@ -73,7 +73,11 @@ export class CustomSetupController {
         'selfhost setup'
       );
 
-      await this.auth.setCookies(req, res, user.id);
+      const issued = await this.auth.issueUser(
+        user.id,
+        this.sessionIssuer.target(req)
+      );
+      this.sessionIssuer.apply(res, issued);
       res.send({ id: user.id, email: user.email, name: user.name });
     } catch (e) {
       await this.models.user.delete(user.id);

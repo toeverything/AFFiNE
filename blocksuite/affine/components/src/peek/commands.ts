@@ -3,11 +3,7 @@ import {
   getSelectedBlocksCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
-import type {
-  BlockComponent,
-  Command,
-  InitCommandCtx,
-} from '@blocksuite/block-std';
+import type { BlockComponent, Command, InitCommandCtx } from '@blocksuite/std';
 
 import { isPeekable, peek } from './peekable.js';
 

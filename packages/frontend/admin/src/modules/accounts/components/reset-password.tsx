@@ -31,8 +31,8 @@ export const ResetPasswordDialog = ({
             complete it.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <div className="flex justify-between items-center w-full space-x-4">
+        <DialogFooter className="mt-4">
+          <div className="flex justify-end gap-2 items-center w-full">
             <Input
               type="text"
               value={link}

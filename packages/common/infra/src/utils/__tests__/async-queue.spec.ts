@@ -22,12 +22,18 @@ describe('async-queue', () => {
     let v = -1;
 
     // setup 2 pop tasks
-    queue.next().then(next => {
-      v = next;
-    });
-    queue.next().then(next => {
-      v = next;
-    });
+    queue
+      .next()
+      .then(next => {
+        v = next;
+      })
+      .catch(console.error);
+    queue
+      .next()
+      .then(next => {
+        v = next;
+      })
+      .catch(console.error);
 
     // Wait for 100ms
     await new Promise(resolve => setTimeout(resolve, 100));

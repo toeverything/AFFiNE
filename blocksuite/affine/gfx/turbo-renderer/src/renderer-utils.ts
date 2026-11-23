@@ -1,16 +1,27 @@
-import type { EditorHost, GfxBlockComponent } from '@blocksuite/block-std';
 import {
-  GfxBlockElementModel,
-  GfxControllerIdentifier,
-  type Viewport,
-} from '@blocksuite/block-std/gfx';
+  getAffinePlaceholderFillColor,
+  getAffinePlaceholderStrokeColor,
+  inferColorSchemeFromThemeMode,
+} from '@blocksuite/affine-shared/theme';
+import type { EditorHost, GfxBlockComponent } from '@blocksuite/std';
+import { getEffectiveDpr, type Viewport } from '@blocksuite/std/gfx';
+import type { BlockModel } from '@blocksuite/store';
 
 import { BlockLayoutHandlersIdentifier } from './layout/block-layout-provider';
-import type { BlockLayout, RenderingState, ViewportLayout } from './types';
+import type {
+  BlockLayout,
+  BlockLayoutTreeNode,
+  RenderingState,
+  ViewportLayoutTree,
+} from './types';
 
-export function syncCanvasSize(canvas: HTMLCanvasElement, host: HTMLElement) {
+export function syncCanvasSize(
+  canvas: HTMLCanvasElement,
+  host: HTMLElement,
+  zoom = 1
+) {
   const hostRect = host.getBoundingClientRect();
-  const dpr = window.devicePixelRatio;
+  const dpr = getEffectiveDpr(zoom);
   canvas.style.position = 'absolute';
   canvas.style.left = '0px';
   canvas.style.top = '0px';
@@ -21,33 +32,10 @@ export function syncCanvasSize(canvas: HTMLCanvasElement, host: HTMLElement) {
   canvas.style.pointerEvents = 'none';
 }
 
-function getBlockLayouts(host: EditorHost): BlockLayout[] {
-  const gfx = host.std.get(GfxControllerIdentifier);
-  const models = gfx.gfxElements.filter(e => e instanceof GfxBlockElementModel);
-  const components = models
-    .map(model => gfx.view.get(model.id))
-    .filter(Boolean) as GfxBlockComponent[];
-
-  const layouts: BlockLayout[] = [];
-  components.forEach(component => {
-    const layoutHandlers = host.std.provider.getAll(
-      BlockLayoutHandlersIdentifier
-    );
-    const handlersArray = Array.from(layoutHandlers.values());
-    for (const handler of handlersArray) {
-      const layout = handler.queryLayout(component);
-      if (layout) {
-        layouts.push(layout);
-      }
-    }
-  });
-  return layouts;
-}
-
-export function getViewportLayout(
+export function getViewportLayoutTree(
   host: EditorHost,
   viewport: Viewport
-): ViewportLayout {
+): ViewportLayoutTree {
   const zoom = viewport.zoom;
 
   let layoutMinX = Infinity;
@@ -55,36 +43,140 @@ export function getViewportLayout(
   let layoutMaxX = -Infinity;
   let layoutMaxY = -Infinity;
 
-  const blockLayouts = getBlockLayouts(host);
+  const store = host.std.store;
+  const rootModel = store.root;
+
+  if (!rootModel) {
+    return { roots: [], overallRect: { x: 0, y: 0, w: 0, h: 0 } };
+  }
 
   const providers = host.std.provider.getAll(BlockLayoutHandlersIdentifier);
   const providersArray = Array.from(providers.values());
 
-  blockLayouts.forEach(blockLayout => {
-    const provider = providersArray.find(p => p.blockType === blockLayout.type);
-    if (!provider) return;
+  // Recursive function to build the tree structure
+  const buildLayoutTreeNode = (
+    model: BlockModel,
+    ancestorViewportState?: string | null,
+    root = false
+  ): BlockLayoutTreeNode | null => {
+    const baseLayout: BlockLayout = {
+      blockId: model.id,
+      type: model.flavour,
+      rect: { x: 0, y: 0, w: 0, h: 0 },
+    };
 
-    const { rect } = provider.calculateBound(blockLayout);
+    const handler = providersArray.find(p => p.blockType === model.flavour);
 
-    layoutMinX = Math.min(layoutMinX, rect.x);
-    layoutMinY = Math.min(layoutMinY, rect.y);
-    layoutMaxX = Math.max(layoutMaxX, rect.x + rect.w);
-    layoutMaxY = Math.max(layoutMaxY, rect.y + rect.h);
-  });
+    // Determine the correct viewport state to use
+    const component = host.std.view.getBlock(
+      model.id
+    ) as GfxBlockComponent | null;
+    const currentViewportState = component?.dataset.viewportState;
+    const effectiveViewportState =
+      currentViewportState ?? ancestorViewportState;
+    const defaultViewportState = {
+      left: 0,
+      top: 0,
+      viewportX: 0,
+      viewportY: 0,
+      zoom: 1,
+      viewScale: 1,
+    };
 
-  const layoutModelCoord = [layoutMinX, layoutMinY];
+    const viewportRecord = effectiveViewportState
+      ? viewport.deserializeRecord(effectiveViewportState) ||
+        defaultViewportState
+      : defaultViewportState;
+
+    const layoutData = handler?.queryLayout(model, host, viewportRecord);
+    let layout: BlockLayout = baseLayout;
+
+    if (handler && layoutData) {
+      const { rect: calculatedRect } = handler.calculateBound(layoutData);
+      layout = {
+        ...layoutData,
+        ...baseLayout,
+        rect: calculatedRect,
+      };
+      layoutMinX = Math.min(layoutMinX, calculatedRect.x);
+      layoutMinY = Math.min(layoutMinY, calculatedRect.y);
+      layoutMaxX = Math.max(layoutMaxX, calculatedRect.x + calculatedRect.w);
+      layoutMaxY = Math.max(layoutMaxY, calculatedRect.y + calculatedRect.h);
+    } else if (component && !root) {
+      const clientRect = component.getBoundingClientRect();
+      const [modelX, modelY] = viewport.toModelCoordFromClientCoord([
+        clientRect.x,
+        clientRect.y,
+      ]);
+
+      const rect = {
+        x: modelX,
+        y: modelY,
+        w: clientRect.width / zoom / viewport.viewScale,
+        h: clientRect.height / zoom / viewport.viewScale,
+      };
+
+      layout = {
+        ...baseLayout,
+        rect,
+      };
+
+      layoutMinX = Math.min(layoutMinX, rect.x);
+      layoutMinY = Math.min(layoutMinY, rect.y);
+      layoutMaxX = Math.max(layoutMaxX, rect.x + rect.w);
+      layoutMaxY = Math.max(layoutMaxY, rect.y + rect.h);
+    } else {
+      layoutMinX = Math.min(layoutMinX, baseLayout.rect.x);
+      layoutMinY = Math.min(layoutMinY, baseLayout.rect.y);
+      layoutMaxX = Math.max(layoutMaxX, baseLayout.rect.x + baseLayout.rect.w);
+      layoutMaxY = Math.max(layoutMaxY, baseLayout.rect.y + baseLayout.rect.h);
+    }
+
+    const children: BlockLayoutTreeNode[] = [];
+    for (const childModel of model.children) {
+      const childNode = buildLayoutTreeNode(childModel, effectiveViewportState);
+      if (childNode) {
+        children.push(childNode);
+      }
+    }
+
+    return {
+      blockId: model.id,
+      type: model.flavour,
+      layout,
+      children,
+    };
+  };
+
+  const roots: BlockLayoutTreeNode[] = [];
+  const rootNode = buildLayoutTreeNode(rootModel, null, true);
+  if (rootNode) {
+    roots.push(rootNode);
+  }
+
+  // If no valid layouts were found, use default values
+  if (layoutMinX === Infinity) {
+    layoutMinX = 0;
+    layoutMinY = 0;
+    layoutMaxX = 0;
+    layoutMaxY = 0;
+  }
+
+  // Calculate overall rectangle
   const w = (layoutMaxX - layoutMinX) / zoom / viewport.viewScale;
   const h = (layoutMaxY - layoutMinY) / zoom / viewport.viewScale;
-  const layout: ViewportLayout = {
-    blocks: blockLayouts,
-    rect: {
-      x: layoutModelCoord[0],
-      y: layoutModelCoord[1],
+
+  const result = {
+    roots,
+    overallRect: {
+      x: layoutMinX,
+      y: layoutMinY,
       w: Math.max(w, 0),
       h: Math.max(h, 0),
     },
   };
-  return layout;
+
+  return result;
 }
 
 export function debugLog(message: string, state: RenderingState) {
@@ -96,54 +188,44 @@ export function debugLog(message: string, state: RenderingState) {
 }
 
 export function paintPlaceholder(
-  host: EditorHost,
   canvas: HTMLCanvasElement,
-  layout: ViewportLayout | null,
+  layout: ViewportLayoutTree | null,
   viewport: Viewport
 ) {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  if (!layout) return;
-  const dpr = window.devicePixelRatio;
-  const layoutViewCoord = viewport.toViewCoord(layout.rect.x, layout.rect.y);
+  if (!ctx || !layout) return;
+
+  const dpr = getEffectiveDpr(viewport.zoom);
+  const { overallRect } = layout;
+  const layoutViewCoord = viewport.toViewCoord(overallRect.x, overallRect.y);
 
   const offsetX = layoutViewCoord[0];
   const offsetY = layoutViewCoord[1];
-  const colors = [
-    'rgba(200, 200, 200, 0.7)',
-    'rgba(180, 180, 180, 0.7)',
-    'rgba(160, 160, 160, 0.7)',
-  ];
-
-  const layoutHandlers = host.std.provider.getAll(
-    BlockLayoutHandlersIdentifier
+  const colorScheme = inferColorSchemeFromThemeMode(
+    document.documentElement.dataset.theme
   );
-  const handlersArray = Array.from(layoutHandlers.values());
+  const fillColor = getAffinePlaceholderFillColor(colorScheme);
+  const strokeColor = getAffinePlaceholderStrokeColor(colorScheme);
 
-  layout.blocks.forEach((blockLayout, blockIndex) => {
-    ctx.fillStyle = colors[blockIndex % colors.length];
-    const renderedPositions = new Set<string>();
+  const paintNode = (node: BlockLayoutTreeNode) => {
+    const { layout: nodeLayout } = node;
+    ctx.fillStyle = fillColor;
+    const rect = nodeLayout.rect;
+    const x = ((rect.x - overallRect.x) * viewport.zoom + offsetX) * dpr;
+    const y = ((rect.y - overallRect.y) * viewport.zoom + offsetY) * dpr;
+    const width = rect.w * viewport.zoom * dpr;
+    const height = rect.h * viewport.zoom * dpr;
 
-    const handler = handlersArray.find(h => h.blockType === blockLayout.type);
-    if (!handler) return;
-    const { subRects } = handler.calculateBound(blockLayout);
+    ctx.fillRect(x, y, width, height);
+    if (width > 10 && height > 5) {
+      ctx.strokeStyle = strokeColor;
+      ctx.strokeRect(x, y, width, height);
+    }
 
-    subRects.forEach(rect => {
-      const x = ((rect.x - layout.rect.x) * viewport.zoom + offsetX) * dpr;
-      const y = ((rect.y - layout.rect.y) * viewport.zoom + offsetY) * dpr;
+    if (node.children.length > 0) {
+      node.children.forEach(childNode => paintNode(childNode));
+    }
+  };
 
-      const width = rect.w * viewport.zoom * dpr;
-      const height = rect.h * viewport.zoom * dpr;
-
-      const posKey = `${x},${y}`;
-      if (renderedPositions.has(posKey)) return;
-      ctx.fillRect(x, y, width, height);
-      if (width > 10 && height > 5) {
-        ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)';
-        ctx.strokeRect(x, y, width, height);
-      }
-
-      renderedPositions.add(posKey);
-    });
-  });
+  layout.roots.forEach(rootNode => paintNode(rootNode));
 }

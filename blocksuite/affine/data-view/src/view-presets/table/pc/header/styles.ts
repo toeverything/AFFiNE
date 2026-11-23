@@ -1,5 +1,6 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { baseTheme } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, unsafeCSS } from 'lit';
 
 import {
@@ -19,8 +20,8 @@ export const styles = css`
         position: relative;
         display: flex;
         flex-direction: row;
-        border-bottom: 1px solid var(--affine-border-color);
-        border-top: 1px solid var(--affine-border-color);
+        border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
+        border-top: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
         box-sizing: border-box;
         user-select: none;
         background-color: var(--affine-background-primary-color);
@@ -108,7 +109,7 @@ export const styles = css`
         width: 16px;
         height: 16px;
         background: var(--affine-white);
-        border: 1px solid var(--affine-border-color);
+        border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
         border-radius: 4px;
         opacity: 0;
     }
@@ -125,7 +126,7 @@ export const styles = css`
 
     .affine-database-column-text-save-icon:hover {
         background: var(--affine-white);
-        border-color: var(--affine-border-color);
+        border-color: ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .affine-database-column-text-icon svg {
@@ -195,7 +196,7 @@ export const styles = css`
     }
 
     .affine-database-column-type-menu-icon {
-        border: 1px solid var(--affine-border-color);
+        border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
         border-radius: 4px;
         padding: 5px;
         background-color: var(--affine-background-secondary-color);

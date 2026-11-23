@@ -1,6 +1,6 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 

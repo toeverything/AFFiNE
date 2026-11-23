@@ -99,9 +99,10 @@ function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: docId, extensions });
+  const doc = collection.createDoc(docId);
   doc.load();
-  return doc;
+  const store = doc.getStore({ extensions });
+  return store;
 }
 
 describe('schema', () => {

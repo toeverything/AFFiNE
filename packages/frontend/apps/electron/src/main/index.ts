@@ -1,10 +1,8 @@
-import './security-restrictions';
-
 import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
 import { IPCMode } from '@sentry/electron/main';
-import { app } from 'electron';
+import { app, protocol } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
 import { buildType, isDev, overrideSession } from './config';
@@ -14,23 +12,53 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
-import { setupRecording } from './recording';
-import { getTrayState } from './tray';
+import { setupRecordingFeature } from './recording/feature';
+import { ensureSecureLinuxPasswordStore } from './secure-storage';
+import { registerSecurityRestrictions } from './security-restrictions';
+import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
 
-app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
+ensureSecureLinuxPasswordStore();
+
 if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
   // might be blocked by electron.
   // See https://github.com/webpack/webpack-dev-server/pull/384
-  app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
+  app.commandLine.appendSwitch('host-resolver-rules', 'MAP 0.0.0.0 127.0.0.1');
 }
 // https://github.com/electron/electron/issues/43556
-app.commandLine.appendSwitch('disable-features', 'PlzDedicatedWorker');
+// // `CalculateNativeWinOcclusion` - Disable native window occlusion tracker (https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw/m/VDN2hDXMAAAJ)
+const disabledFeatures = [
+  'PlzDedicatedWorker',
+  'CalculateNativeWinOcclusion',
+  // Disable Chrome autofill and password save prompts
+  'AutofillServerCommunication',
+  'AutofillProfileCleanup',
+  'AutofillAddressProfileSavePrompt',
+  'AutofillPaymentCards',
+  'AutofillEnableAccountWalletStorage',
+  'SavePasswordBubble',
+].join(',');
+app.commandLine.appendSwitch('disable-features', disabledFeatures);
+app.commandLine.appendSwitch('disable-blink-features', 'Autofill');
+
+// Following features are enabled from the runtime:
+// `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
+// `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
+// `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
+const enabledFeatures = [
+  'DocumentPolicyIncludeJSCallStacksInCrashReports',
+  'EarlyEstablishGpuChannel',
+  'EstablishGpuChannelAsync',
+].join(',');
+app.commandLine.appendSwitch('enable-features', enabledFeatures);
+const enabledBlinkFeatures = ['CSSTextAutoSpace', 'WebCodecs'].join(',');
+app.commandLine.appendSwitch('enable-blink-features', enabledBlinkFeatures);
+app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 // use the same data for internal & beta for testing
 if (overrideSession) {
@@ -40,7 +68,7 @@ if (overrideSession) {
   app.setPath('sessionData', userDataPath);
 }
 
-// oxlint-disable-next-line @typescript-eslint/no-var-requires
+// oxlint-disable-next-line typescript/no-var-requires
 if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {
@@ -73,10 +101,13 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  launch().catch(e => console.error('Failed launch:', e));
+  if (app.isReady()) {
+    launch().catch(e => console.error('Failed launch:', e));
+  }
 });
 
 setupDeepLink(app);
+registerSecurityRestrictions();
 
 /**
  * Create app window when background process will be ready
@@ -87,10 +118,10 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(launch)
-  .then(setupRecording)
   .then(createApplicationMenu)
-  .then(getTrayState)
   .then(registerUpdater)
+  .then(setupRecordingFeature)
+  .then(setupTrayState)
   .catch(e => console.error('Failed create window:', e));
 
 if (process.env.SENTRY_RELEASE) {
@@ -109,3 +140,16 @@ if (process.env.SENTRY_RELEASE) {
     appVersion: app.getVersion(),
   });
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'assets',
+    privileges: {
+      secure: true,
+      corsEnabled: true,
+      supportFetchAPI: true,
+      standard: true,
+      stream: true,
+    },
+  },
+]);

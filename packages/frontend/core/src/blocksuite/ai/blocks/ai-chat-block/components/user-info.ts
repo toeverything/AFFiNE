@@ -2,7 +2,10 @@ import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, type TemplateResult, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { MessageRole, MessageUserInfo } from '../model';
+import type {
+  MessageRole,
+  MessageUserInfo,
+} from '../../../components/ai-chat-messages';
 import { AffineAIIcon } from './icon';
 
 export class UserInfo extends LitElement {
@@ -62,14 +65,16 @@ export class UserInfo extends LitElement {
   override render() {
     return html`<div class="user-info-container">
       <div class="user-avatar-container">
-        ${this.avatarIcon
-          ? this.avatarIcon
-          : this.avatarUrl && !this.avatarLoadedFailed
-            ? html`<img
-                .src=${this.avatarUrl}
-                @error=${this._handleAvatarLoadError}
-              />`
-            : html`<span class="default-avatar"></span>`}
+        ${
+          this.avatarIcon
+            ? this.avatarIcon
+            : this.avatarUrl && !this.avatarLoadedFailed
+              ? html`<img
+                  .src=${this.avatarUrl}
+                  @error=${this._handleAvatarLoadError}
+                />`
+              : html`<span class="default-avatar"></span>`
+        }
       </div>
       <span class="user-name">${this.userName}</span>
     </div>`;

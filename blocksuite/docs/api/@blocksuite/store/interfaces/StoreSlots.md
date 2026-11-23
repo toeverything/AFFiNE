@@ -1,4 +1,4 @@
-[**@blocksuite/store**](../../../@blocksuite/store/README.md)
+[**BlockSuite API Documentation**](../../../README.md)
 
 ***
 
@@ -29,14 +29,6 @@ The payload can have three types:
 - add: When a new block is added
 - delete: When a block is removed
 - update: When a block's properties are modified
-
-***
-
-### historyUpdated
-
-> **historyUpdated**: `Subject`\<`void`\>
-
-This fires when the doc history is updated.
 
 ***
 

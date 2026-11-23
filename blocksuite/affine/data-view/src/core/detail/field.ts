@@ -3,7 +3,6 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   DeleteIcon,
@@ -11,9 +10,10 @@ import {
   MoveLeftIcon,
   MoveRightIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed, signal } from '@preact/signals-core';
 import { css } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { html } from 'lit/static-html.js';
 
@@ -83,9 +83,9 @@ export class RecordField extends SignalWatcher(
       border: 1px solid transparent;
     }
 
-    .field-content .affine-database-number {
+    .field-content affine-database-number-cell .number {
       text-align: left;
-      justify-content: start;
+      justify-content: flex-start;
     }
 
     .field-content:hover {
@@ -140,15 +140,16 @@ export class RecordField extends SignalWatcher(
                   ${MoveLeftIcon()}
                 </div>`,
                 hide: () =>
-                  properties.findIndex(v => v === this.column.id) === 0,
+                  properties.findIndex(
+                    property => property.id === this.column.id
+                  ) === 0,
                 select: () => {
-                  const index = properties.findIndex(v => v === this.column.id);
-                  const targetId = properties[index - 1];
-                  if (!targetId) {
+                  const prev = this.column.prev$.value;
+                  if (!prev) {
                     return;
                   }
-                  this.view.propertyMove(this.column.id, {
-                    id: targetId,
+                  this.column.move({
+                    id: prev.id,
                     before: true,
                   });
                 },
@@ -161,16 +162,17 @@ export class RecordField extends SignalWatcher(
                   ${MoveRightIcon()}
                 </div>`,
                 hide: () =>
-                  properties.findIndex(v => v === this.column.id) ===
+                  properties.findIndex(
+                    property => property.id === this.column.id
+                  ) ===
                   properties.length - 1,
                 select: () => {
-                  const index = properties.findIndex(v => v === this.column.id);
-                  const targetId = properties[index + 1];
-                  if (!targetId) {
+                  const next = this.column.next$.value;
+                  if (!next) {
                     return;
                   }
-                  this.view.propertyMove(this.column.id, {
-                    id: targetId,
+                  this.column.move({
+                    id: next.id,
                     before: false,
                   });
                 },
@@ -211,7 +213,7 @@ export class RecordField extends SignalWatcher(
   accessor rowId!: string;
 
   cell$ = computed(() => {
-    return this.column.cellGet(this.rowId);
+    return this.column.cellGetOrCreate(this.rowId);
   });
 
   changeEditing = (editing: boolean) => {
@@ -249,7 +251,7 @@ export class RecordField extends SignalWatcher(
       'field-content': true,
       empty: !this.isEditing$.value && this.cell$.value.isEmpty$.value,
       'is-editing': this.isEditing$.value,
-      'is-focus': this.isFocus,
+      'is-focus': this.isFocus$.value,
     });
     return html`
       <div>
@@ -271,8 +273,7 @@ export class RecordField extends SignalWatcher(
 
   isEditing$ = signal(false);
 
-  @state()
-  accessor isFocus = false;
+  isFocus$ = signal(false);
 
   @property({ attribute: false })
   accessor view!: SingleView;

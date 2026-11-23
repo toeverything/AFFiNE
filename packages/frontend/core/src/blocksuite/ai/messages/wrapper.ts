@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -41,9 +41,9 @@ export class AIAnswerWrapper extends LitElement {
   protected override render() {
     return html`<style>
         :host {
-          height: ${this.options?.height
-            ? this.options?.height + 'px'
-            : '100%'};
+          height: ${
+            this.options?.height ? this.options?.height + 'px' : '100%'
+          };
         }
       </style>
       <slot></slot> `;
@@ -75,7 +75,6 @@ export const createIframeRenderer: (
       class="ai-answer-iframe"
       sandbox="allow-scripts"
       scrolling="no"
-      allowfullscreen
       .srcdoc=${preprocessHtml(answer)}
     >
     </iframe>`;
@@ -107,7 +106,7 @@ export const createImageRenderer: (
         object-fit: contain;
       }
     </style>
-    <div class="ai-answer-image">
+    <div class="ai-answer-image" data-testid="ai-answer-image">
       <img src=${answer}></img>
     </div>`;
 

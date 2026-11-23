@@ -12,19 +12,19 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { TableViewRowSelection } from '../selection';
 import type { TableSelectionController } from './controller/selection.js';
+import type { TableViewUILogic } from './table-view-ui-logic.js';
 
 export const openDetail = (
-  dataViewEle: DataViewRenderer,
+  tableViewLogic: TableViewUILogic,
   rowId: string,
   selection: TableSelectionController
 ) => {
   const old = selection.selection;
   selection.selection = undefined;
-  dataViewEle.openDetailPanel({
-    view: selection.host.props.view,
+  tableViewLogic.root.openDetailPanel({
+    view: selection.logic.view,
     rowId: rowId,
     onClose: () => {
       selection.selection = old;
@@ -33,7 +33,7 @@ export const openDetail = (
 };
 
 export const popRowMenu = (
-  dataViewEle: DataViewRenderer,
+  tableViewLogic: TableViewUILogic,
   ele: PopupTarget,
   selectionController: TableSelectionController
 ) => {
@@ -55,7 +55,7 @@ export const popRowMenu = (
               ${CopyIcon()}
             </div>`,
             select: () => {
-              selectionController.host.clipboardController.copy();
+              selectionController.logic.clipboardController.copy();
             },
           }),
         ],
@@ -70,7 +70,8 @@ export const popRowMenu = (
             },
             prefix: DeleteIcon(),
             select: () => {
-              selectionController.view.rowDelete(rows);
+              selectionController.view.rowsDelete(rows);
+              selectionController.logic.ui$.value?.requestUpdate();
             },
           }),
         ],
@@ -85,7 +86,7 @@ export const popRowMenu = (
       name: 'Expand Row',
       prefix: ExpandFullIcon(),
       select: () => {
-        openDetail(dataViewEle, row.id, selectionController);
+        openDetail(tableViewLogic, row.id, selectionController);
       },
     }),
     menu.group({

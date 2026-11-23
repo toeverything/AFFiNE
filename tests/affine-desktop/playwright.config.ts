@@ -41,12 +41,12 @@ if (process.env.DEV_SERVER_URL) {
   config.webServer = [
     {
       command: 'yarn run -T affine bundle -p @affine/electron-renderer --dev',
-      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
       },
+      url: 'http://localhost:8080',
     },
   ];
 }

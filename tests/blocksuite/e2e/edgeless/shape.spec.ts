@@ -2,15 +2,17 @@ import { expect, type Page } from '@playwright/test';
 import { lightThemeV2 } from '@toeverything/theme/v2';
 
 import {
+  assertEdgelessShapeType,
   assertEdgelessTool,
   changeShapeFillColor,
   changeShapeFillColorToTransparent,
   changeShapeStrokeColor,
   changeShapeStrokeStyle,
   changeShapeStrokeWidth,
-  changeShapeStyle,
   clickComponentToolbarMoreMenuButton,
+  dragBetweenViewCoords,
   getEdgelessSelectedRect,
+  getSelectedBoundCount,
   locatorComponentToolbar,
   locatorEdgelessToolButton,
   locatorShapeStrokeStyleButton,
@@ -25,13 +27,17 @@ import {
 import {
   addBasicBrushElement,
   addBasicRectShapeElement,
+  clickView,
   copyByKeyboard,
+  dblclickView,
   dragBetweenCoords,
   enterPlaygroundRoom,
   focusRichText,
   initEmptyEdgelessState,
   pasteByKeyboard,
+  pressBackspace,
   pressEscape,
+  selectAllBlocksByKeyboard,
   type,
   waitNextFrame,
 } from '../utils/actions/index.js';
@@ -41,6 +47,7 @@ import {
   assertEdgelessNonSelectedRect,
   assertEdgelessSelectedRect,
   assertRichTexts,
+  assertSelectedBound,
 } from '../utils/asserts.js';
 import { test } from '../utils/playwright.js';
 
@@ -347,17 +354,16 @@ test('change shape stroke width', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
   await changeShapeStrokeColor(page, 'MediumMagenta');
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   await changeShapeStrokeWidth(page);
   await page.mouse.click(start.x + 5, start.y + 5);
   await assertEdgelessSelectedRect(page, [100, 150, 100, 100]);
 
   await waitNextFrame(page);
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
 });
 
 test('change shape stroke style', async ({ page }) => {
@@ -370,14 +376,12 @@ test('change shape stroke style', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
   await changeShapeStrokeColor(page, 'MediumBlue');
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   await changeShapeStrokeStyle(page, 'dash');
   await waitNextFrame(page);
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   const activeButton = locatorShapeStrokeStyleButton(page, 'dash');
   const className = await activeButton.evaluate(ele => ele.className);
   expect(className.includes(' active')).toBeTruthy();
@@ -552,12 +556,12 @@ test('change shape style', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStyle');
-  await changeShapeStyle(page, 'general');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
+  // The style switching feature has been removed.
+  //await changeShapeStyle(page, 'general');
   await waitNextFrame(page);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
   const color = 'LightPurple';
   await changeShapeStrokeColor(page, color);
   await page.waitForTimeout(50);
@@ -638,8 +642,11 @@ test.describe('shape hit test', () => {
     await addBasicRectShapeElement(page, rect.start, rect.end);
 
     await page.mouse.click(rect.start.x + 5, rect.start.y + 5);
-    await triggerComponentToolbarAction(page, 'changeShapeFillColor');
+    // opens color picker
+    await triggerComponentToolbarAction(page, 'changeShapeColor');
     await changeShapeFillColorToTransparent(page);
+    // closes color picker
+    await triggerComponentToolbarAction(page, 'changeShapeColor');
     await page.waitForTimeout(50);
   }
 
@@ -683,22 +690,21 @@ test.describe('shape hit test', () => {
 
   // FIXME(@flrande): This is broken by recent changes
   // In Playwright, we can't add text in shape hollow area
-  test.fixme(
-    'using text tool to add text in shape hollow area',
-    async ({ page }) => {
-      await addTransparentRect(page, rect.start, rect.end);
-      await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
-      await assertEdgelessNonSelectedRect(page);
+  test.fixme('using text tool to add text in shape hollow area', async ({
+    page,
+  }) => {
+    await addTransparentRect(page, rect.start, rect.end);
+    await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
+    await assertEdgelessNonSelectedRect(page);
 
-      await assertEdgelessTool(page, 'default');
-      await setEdgelessTool(page, 'text');
-      await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
-      await waitNextFrame(page);
+    await assertEdgelessTool(page, 'default');
+    await setEdgelessTool(page, 'text');
+    await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
+    await waitNextFrame(page);
 
-      await type(page, 'hello');
-      await assertEdgelessCanvasText(page, 'hello');
-    }
-  );
+    await type(page, 'hello');
+    await assertEdgelessCanvasText(page, 'hello');
+  });
 
   test('should enter edit mode when double-clicking a text area in a shape with a transparent background', async ({
     page,
@@ -715,15 +721,15 @@ test.describe('shape hit test', () => {
     await pressEscape(page);
     await waitNextFrame(page);
 
-    const textAlignBtn = locatorComponentToolbar(page).getByRole('button', {
+    const alignmentMenu =
+      locatorComponentToolbar(page).getByLabel('alignment-menu');
+
+    const textAlignBtn = alignmentMenu.getByRole('button', {
       name: 'Alignment',
     });
     await textAlignBtn.click();
 
-    await page
-      .locator('edgeless-align-panel')
-      .getByRole('button', { name: 'Left' })
-      .click();
+    await alignmentMenu.getByRole('button', { name: 'Left' }).click();
 
     // creates an edgeless-text
     await page.mouse.dblclick(rect.start.x + 80, rect.start.y + 20);
@@ -739,4 +745,64 @@ test.describe('shape hit test', () => {
     await type(page, ' world');
     await assertEdgelessCanvasText(page, 'hello world');
   });
+});
+
+test('should create a shape when press s and click on canvas', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+  await zoomResetByKeyboard(page);
+  await selectAllBlocksByKeyboard(page);
+  await pressBackspace(page);
+
+  await page.keyboard.press('s');
+  await assertEdgelessTool(page, 'shape');
+  await clickView(page, [100, 100]);
+  await selectAllBlocksByKeyboard(page);
+  expect(await getSelectedBoundCount(page)).toBe(1);
+  await assertSelectedBound(page, [100, 100, 100, 100]);
+});
+
+test('shape should be editable when re-enter canvas', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+  await zoomResetByKeyboard(page);
+  await selectAllBlocksByKeyboard(page);
+  await pressBackspace(page);
+
+  await page.keyboard.press('s');
+  await dragBetweenViewCoords(page, [0, 0], [100, 100]);
+  await dblclickView(page, [50, 50]);
+  await type(page, 'hello');
+  await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
+  await assertEdgelessCanvasText(page, 'hello');
+
+  await switchEditorMode(page);
+  await switchEditorMode(page);
+
+  await dblclickView(page, [50, 50]);
+  await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
+});
+
+test('shape tool should not be changed after adding new shape', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  await setEdgelessTool(page, 'shape');
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
+  await clickView(page, [0, 0]);
+
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
 });

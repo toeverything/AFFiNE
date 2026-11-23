@@ -1,9 +1,10 @@
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import { useCallback, useState } from 'react';
 
 import { Button, IconButton } from '../../button';
 import { Modal } from '../../modal';
-import type { NotificationCardProps } from '../types';
+import type { NotificationActionProps, NotificationCardProps } from '../types';
 import { getCardVars } from '../utils';
 import * as styles from './styles.css';
 
@@ -16,7 +17,14 @@ export function MobileNotificationCard({
     icon = <InformationFillDuotoneIcon />,
     iconColor,
     onDismiss,
+    error,
   } = notification;
+  const t = useI18n();
+  const errorI18nKey = error ? (`error.${error.name}` as const) : undefined;
+  const errorTitle =
+    errorI18nKey && errorI18nKey in t
+      ? t[errorI18nKey](error?.data)
+      : undefined;
 
   const [animated, setAnimated] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -43,7 +51,9 @@ export function MobileNotificationCard({
       style={getCardVars(style, theme, iconColor)}
     >
       <span className={styles.toastIcon}>{icon}</span>
-      <span className={styles.toastLabel}>{notification.title}</span>
+      <span className={styles.toastLabel}>
+        {notification.title || errorTitle}
+      </span>
     </div>
   );
 }
@@ -60,9 +70,15 @@ const MobileNotifyDetail = ({
     iconColor,
     title,
     message,
-    footer,
-    action,
+    actions,
+    error,
   } = notification;
+  const t = useI18n();
+  const errorI18nKey = error ? (`error.${error.name}` as const) : undefined;
+  const errorTitle =
+    errorI18nKey && errorI18nKey in t
+      ? t[errorI18nKey](error?.data)
+      : undefined;
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -70,12 +86,6 @@ const MobileNotifyDetail = ({
     },
     [onClose]
   );
-  const onActionClicked = useCallback(() => {
-    action?.onClick()?.catch(console.error);
-    if (action?.autoClose !== false) {
-      onClose?.();
-    }
-  }, [action, onClose]);
 
   return (
     <Modal
@@ -91,20 +101,39 @@ const MobileNotifyDetail = ({
       <div className={styles.detailCard} onClick={e => e.stopPropagation()}>
         <header className={styles.detailHeader}>
           <span className={styles.detailIcon}>{icon}</span>
-          <span className={styles.detailLabel}>{title}</span>
+          <span className={styles.detailLabel}>{title || errorTitle}</span>
           <IconButton onClick={onClose} icon={<CloseIcon />} />
         </header>
         <main className={styles.detailContent}>{message}</main>
         {/* actions */}
         <div className={styles.detailActions}>
-          {action ? (
-            <Button onClick={onActionClicked} {...action.buttonProps}>
-              {action.label}
-            </Button>
-          ) : null}
-          {footer}
+          {actions?.map(action => (
+            <NotificationCardAction
+              key={action.key}
+              action={action}
+              onDismiss={onClose}
+            />
+          ))}
         </div>
       </div>
     </Modal>
+  );
+};
+
+const NotificationCardAction = ({
+  action,
+  onDismiss,
+}: NotificationActionProps) => {
+  const onActionClicked = useCallback(() => {
+    action.onClick()?.catch(console.error);
+    if (action.autoClose !== false) {
+      onDismiss?.();
+    }
+  }, [action, onDismiss]);
+
+  return (
+    <Button onClick={onActionClicked} {...action.buttonProps}>
+      {action.label}
+    </Button>
   );
 };

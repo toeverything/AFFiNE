@@ -42,12 +42,10 @@ import { test } from '../utils/playwright.js';
 
 test.describe('lock', () => {
   const getButtons = (page: Page) => {
-    const elementToolbar = page.locator('edgeless-element-toolbar-widget');
+    const toolbar = page.locator('affine-toolbar-widget');
     return {
-      lock: elementToolbar.locator('edgeless-lock-button[data-locked="false"]'),
-      unlock: elementToolbar.locator(
-        'edgeless-lock-button[data-locked="true"]'
-      ),
+      lock: toolbar.getByTestId('lock'),
+      unlock: toolbar.getByTestId('unlock'),
     };
   };
 
@@ -124,7 +122,7 @@ test.describe('lock', () => {
     expect(await getSelectedIds(page)).toHaveLength(1);
   });
 
-  test('locked element should not be selectable by dragging default tool or lasso tool. unlocking will recover', async ({
+  test('locked element should not be selectable by dragging default tool. unlocking will recover', async ({
     page,
   }) => {
     await edgelessCommonSetup(page);
@@ -196,7 +194,7 @@ test.describe('lock', () => {
     await lock.click();
     await assertEdgelessSelectedModelRect(page, [0, 0, 125, 125]); // frame outline and shape
     await pressEscape(page);
-    await clickView(page, [100, 100]);
+    await clickView(page, [90, 90]);
     await assertEdgelessSelectedModelRect(page, [0, 0, 125, 125]);
 
     await unlock.click();
@@ -292,8 +290,8 @@ test.describe('lock', () => {
     await selectAllByKeyboard(page);
     await dragBetweenViewCoords(page, [100, 100], [150, 150]);
 
-    assertEdgelessElementBound(page, frame, [100, 100, 200, 200]);
-    assertEdgelessElementBound(page, shape, [150, 150, 50, 50]);
+    await assertEdgelessElementBound(page, frame, [100, 100, 200, 200]);
+    await assertEdgelessElementBound(page, shape, [150, 150, 50, 50]);
   });
 
   test('locked element should not be scalable and rotatable. unlocking will recover', async ({

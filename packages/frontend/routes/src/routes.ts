@@ -1,0 +1,59 @@
+// #region Path Parameter Types
+export interface RouteParamsTypes {
+  admin: { settings: { module: { module: string } } };
+}
+// #endregion
+
+// #region Absolute Paths
+export const ROUTES = {
+  index: '/',
+  admin: {
+    index: '/admin',
+    auth: '/admin/auth',
+    setup: '/admin/setup',
+    dashboard: '/admin/dashboard',
+    accounts: '/admin/accounts',
+    workspaces: '/admin/workspaces',
+    ai: '/admin/ai',
+    settings: { index: '/admin/settings', module: '/admin/settings/:module' },
+    about: '/admin/about',
+    notFound: '/admin/404',
+  },
+};
+// #endregion
+
+// #region Relative Paths
+export const RELATIVE_ROUTES = {
+  index: '/',
+  admin: {
+    index: 'admin',
+    auth: 'auth',
+    setup: 'setup',
+    dashboard: 'dashboard',
+    accounts: 'accounts',
+    workspaces: 'workspaces',
+    ai: 'ai',
+    settings: { index: 'settings', module: ':module' },
+    about: 'about',
+    notFound: '404',
+  },
+};
+// #endregion
+
+// #region Path Factories
+const home = () => '/';
+const admin = () => '/admin';
+admin.auth = () => '/admin/auth';
+admin.setup = () => '/admin/setup';
+admin.dashboard = () => '/admin/dashboard';
+admin.accounts = () => '/admin/accounts';
+admin.workspaces = () => '/admin/workspaces';
+admin.ai = () => '/admin/ai';
+const admin_settings = () => '/admin/settings';
+admin_settings.module = (params: { module: string }) =>
+  `/admin/settings/${params.module}`;
+admin.settings = admin_settings;
+admin.about = () => '/admin/about';
+admin.notFound = () => '/admin/404';
+export const FACTORIES = { admin, home };
+// #endregion

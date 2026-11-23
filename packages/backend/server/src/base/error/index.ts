@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { Logger, Module, OnModuleInit } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 
-import { Config } from '../config/provider';
 import { generateUserFriendlyErrors } from './def';
 import { ActionForbidden, ErrorDataUnionType, ErrorNames } from './errors.gen';
 
@@ -23,9 +22,8 @@ class ErrorResolver {
 })
 export class ErrorModule implements OnModuleInit {
   logger = new Logger('ErrorModule');
-  constructor(private readonly config: Config) {}
   onModuleInit() {
-    if (!this.config.node.dev) {
+    if (!env.dev) {
       return;
     }
     this.logger.log('Generating UserFriendlyError classes');

@@ -11,7 +11,13 @@ import {
   type SubscribeMessage,
   type UnsubscribeMessage,
 } from './message';
-import type { OpInput, OpNames, OpOutput, OpSchema } from './types';
+import type {
+  OpInput,
+  OpInputWithSignal,
+  OpNames,
+  OpOutput,
+  OpSchema,
+} from './types';
 
 export interface CancelablePromise<T> extends Promise<T> {
   cancel(): void;
@@ -24,6 +30,18 @@ interface PendingCall extends PromiseWithResolvers<any> {
 
 export interface OpClientOptions {
   timeout?: number;
+}
+
+function hydrateRemoteError(error: Error) {
+  const hydrated = Object.assign(new Error(), error);
+  if (
+    'stacktrace' in error &&
+    typeof error.stacktrace === 'string' &&
+    error.stacktrace.length > 0
+  ) {
+    hydrated.stack = error.stacktrace;
+  }
+  return hydrated;
 }
 
 export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
@@ -55,7 +73,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
     }
 
     if ('error' in msg) {
-      pending.reject(msg.error);
+      pending.reject(hydrateRemoteError(msg.error));
     } else {
       pending.resolve(msg.data);
     }
@@ -80,7 +98,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
         return;
       }
 
-      ob.error(msg.error);
+      ob.error(hydrateRemoteError(msg.error));
     };
 
   private readonly handleSubscriptionCompleteMessage: MessageHandlers['complete'] =
@@ -107,10 +125,17 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
 
   call<Op extends OpNames<Ops>>(
     op: Op,
-    ...args: OpInput<Ops, Op>
+    ...args: OpInputWithSignal<Ops, Op>
   ): CancelablePromise<OpOutput<Ops, Op>> {
     const promiseWithResolvers = Promise.withResolvers<any>();
-    const payload = args[0];
+    if (args.length > 1 && args[args.length - 1] === undefined) {
+      args.pop();
+    }
+    const abortSignal =
+      args[args.length - 1] instanceof AbortSignal
+        ? (args.pop() as AbortSignal)
+        : undefined;
+    const payload = args.pop();
 
     const msg = {
       type: 'call',
@@ -121,7 +146,7 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
 
     const promise = promiseWithResolvers.promise as CancelablePromise<any>;
 
-    const raise = (reason: string) => {
+    const raise = (reason: any) => {
       const pending = this.pendingCalls.get(msg.id);
       if (!pending) {
         return;
@@ -130,10 +155,14 @@ export class OpClient<Ops extends OpSchema> extends AutoMessageHandler {
         type: 'cancel',
         id: msg.id,
       } satisfies CancelMessage);
-      promiseWithResolvers.reject(new Error(reason));
+      promiseWithResolvers.reject(reason);
       clearTimeout(pending.timeout);
       this.pendingCalls.delete(msg.id);
     };
+
+    abortSignal?.addEventListener('abort', () => {
+      raise(abortSignal.reason);
+    });
 
     promise.cancel = () => {
       raise('canceled');

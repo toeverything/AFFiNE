@@ -1,0 +1,7 @@
+#import "./fragments/copilot-chat-history.gql"
+
+mutation createCopilotSessionWithHistory($options: CreateChatSessionInput!) {
+  createCopilotSessionWithHistory(options: $options) {
+    ...CopilotChatHistory
+  }
+}

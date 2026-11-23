@@ -1,10 +1,11 @@
+import { ArrowRightIcon, EnterIcon } from '@blocksuite/affine/components/icons';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { ColorScheme } from '@blocksuite/affine/model';
 import {
   EditorHost,
   PropTypes,
   requiredProperties,
-} from '@blocksuite/affine/block-std';
-import { ArrowRightIcon, EnterIcon } from '@blocksuite/affine/components/icons';
-import { WithDisposable } from '@blocksuite/affine/global/lit';
+} from '@blocksuite/affine/std';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 
@@ -23,8 +24,11 @@ export class AIItem extends WithDisposable(LitElement) {
   override render() {
     const { item } = this;
     const className = item.name.split(' ').join('-').toLocaleLowerCase();
+    const testId = item.testId;
 
     return html`<div
+      data-testid=${testId}
+      data-app-theme=${this.theme}
       class="menu-item ${className}"
       @pointerdown=${(e: MouseEvent) => e.stopPropagation()}
       @click=${() => {
@@ -36,13 +40,15 @@ export class AIItem extends WithDisposable(LitElement) {
     >
       <span class="item-icon">${item.icon}</span>
       <div class="item-name">
-        ${item.name}${item.beta
-          ? html`<div class="item-beta">(Beta)</div>`
-          : nothing}
+        ${item.name}${
+          item.beta ? html`<div class="item-beta">(Beta)</div>` : nothing
+        }
       </div>
-      ${item.subItem
-        ? html`<span class="arrow-right-icon">${ArrowRightIcon}</span>`
-        : html`<span class="enter-icon">${EnterIcon}</span>`}
+      ${
+        item.subItem
+          ? html`<span class="arrow-right-icon">${ArrowRightIcon}</span>`
+          : html`<span class="enter-icon">${EnterIcon}</span>`
+      }
     </div>`;
   }
 
@@ -57,6 +63,9 @@ export class AIItem extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor onClick: (() => void) | undefined;
+
+  @property({ attribute: false })
+  accessor theme: ColorScheme = ColorScheme.Light;
 }
 
 declare global {

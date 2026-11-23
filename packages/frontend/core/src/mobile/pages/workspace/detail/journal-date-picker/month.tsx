@@ -1,5 +1,5 @@
 import { SwipeHelper } from '@affine/core/mobile/utils';
-import anime from 'animejs';
+import { animate, eases } from 'animejs';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import {
@@ -72,14 +72,14 @@ export const MonthView = ({ viewportHeight }: MonthViewProps) => {
 
   const animateTo = useCallback(
     (dir: 0 | 1 | -1) => {
+      if (!swipeRef.current) return;
       setAnimating(true);
 
-      anime({
-        targets: swipeRef.current,
+      animate(swipeRef.current, {
         translateX: -dir * width,
         duration: 300,
-        easing: 'easeInOutSine',
-        complete: () => {
+        ease: eases.inOutSine,
+        onComplete: () => {
           setSwipingDeltaX(0);
           setAnimating(false);
           // should recover swipe before change month

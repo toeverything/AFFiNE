@@ -1,71 +1,98 @@
 import './config';
 
-import { ServerFeature } from '../../core/config';
+import { Module } from '@nestjs/common';
+
+import { ServerConfigModule } from '../../core';
 import { DocStorageModule } from '../../core/doc';
+import { EntitlementModule } from '../../core/entitlement';
 import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
-import { Plugin } from '../registry';
-import {
-  CopilotContextDocJob,
-  CopilotContextResolver,
-  CopilotContextRootResolver,
-  CopilotContextService,
-} from './context';
+import { StorageModule } from '../../core/storage';
+import { WorkspaceModule } from '../../core/workspaces';
+import { IndexerModule } from '../indexer';
+import { CopilotAttachmentController } from './attachment-controller';
 import { CopilotController } from './controller';
-import { ChatMessageCache } from './message';
-import { PromptService } from './prompt';
+import { CopilotFeatureGuard, CopilotFeatureService } from './feature';
+import { WorkspaceMcpController } from './mcp/controller';
+import { McpCredentialService } from './mcp/credential';
+import { McpCredentialResolver } from './mcp/resolver';
 import {
-  assertProvidersConfigs,
-  CopilotProviderService,
-  FalProvider,
-  OpenAIProvider,
-  PerplexityProvider,
-  registerCopilotProvider,
-} from './providers';
-import { GoogleProvider } from './providers/google';
-import {
-  CopilotResolver,
-  PromptsManagementResolver,
-  UserCopilotResolver,
-} from './resolver';
-import { ChatSessionService } from './session';
-import { CopilotStorage } from './storage';
-import { CopilotWorkflowExecutors, CopilotWorkflowService } from './workflow';
+  COPILOT_API_PROVIDERS,
+  COPILOT_FEATURE_PROVIDERS,
+  COPILOT_JOB_PROVIDERS,
+  COPILOT_KERNEL_PROVIDERS,
+  COPILOT_TRANSCRIPT_REALTIME_PROVIDERS,
+} from './module-providers';
 
-registerCopilotProvider(FalProvider);
-registerCopilotProvider(OpenAIProvider);
-registerCopilotProvider(GoogleProvider);
-registerCopilotProvider(PerplexityProvider);
+const COPILOT_SHARED_IMPORTS = [
+  DocStorageModule,
+  EntitlementModule,
+  FeatureModule,
+  QuotaModule,
+  PermissionModule,
+  ServerConfigModule,
+  StorageModule,
+  WorkspaceModule,
+  IndexerModule,
+];
 
-@Plugin({
-  name: 'copilot',
-  imports: [DocStorageModule, FeatureModule, QuotaModule, PermissionModule],
-  providers: [
-    ChatSessionService,
-    CopilotResolver,
-    ChatMessageCache,
-    UserCopilotResolver,
-    PromptService,
-    CopilotProviderService,
-    CopilotStorage,
-    PromptsManagementResolver,
-    // workflow
-    CopilotWorkflowService,
-    ...CopilotWorkflowExecutors,
-    // context
-    CopilotContextRootResolver,
-    CopilotContextResolver,
-    CopilotContextService,
-    CopilotContextDocJob,
+@Module({
+  imports: [ServerConfigModule],
+  providers: [CopilotFeatureService, CopilotFeatureGuard],
+  exports: [CopilotFeatureService, CopilotFeatureGuard],
+})
+export class CopilotAvailabilityModule {}
+
+@Module({
+  imports: [...COPILOT_SHARED_IMPORTS, CopilotAvailabilityModule],
+  providers: [...COPILOT_KERNEL_PROVIDERS],
+  exports: [CopilotAvailabilityModule, ...COPILOT_KERNEL_PROVIDERS],
+})
+export class CopilotKernelModule {}
+
+@Module({
+  imports: [PermissionModule, CopilotAvailabilityModule, CopilotKernelModule],
+  providers: [...COPILOT_TRANSCRIPT_REALTIME_PROVIDERS],
+})
+export class CopilotRealtimeModule {}
+
+@Module({
+  imports: [...COPILOT_SHARED_IMPORTS, CopilotKernelModule],
+  providers: [...COPILOT_FEATURE_PROVIDERS],
+  exports: [...COPILOT_FEATURE_PROVIDERS],
+})
+export class CopilotFeatureModule {}
+
+@Module({
+  imports: [
+    ...COPILOT_SHARED_IMPORTS,
+    CopilotKernelModule,
+    CopilotFeatureModule,
   ],
-  controllers: [CopilotController],
-  contributesTo: ServerFeature.Copilot,
-  if: config => {
-    if (config.flavor.graphql || config.flavor.doc) {
-      return assertProvidersConfigs(config);
-    }
-    return false;
-  },
+  providers: [...COPILOT_API_PROVIDERS],
+  exports: [...COPILOT_API_PROVIDERS],
+})
+export class CopilotApiModule {}
+
+@Module({
+  imports: [
+    PermissionModule,
+    CopilotKernelModule,
+    CopilotFeatureModule,
+    CopilotApiModule,
+  ],
+  providers: [McpCredentialService, McpCredentialResolver],
+  controllers: [
+    CopilotAttachmentController,
+    CopilotController,
+    WorkspaceMcpController,
+  ],
 })
 export class CopilotModule {}
+
+@Module({
+  imports: [CopilotKernelModule, CopilotFeatureModule],
+  providers: [...COPILOT_JOB_PROVIDERS],
+})
+export class CopilotWorkerModule {}

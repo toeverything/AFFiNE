@@ -20,12 +20,12 @@ export const divider = style({
   margin: '4px 0px',
 });
 export const menuStyle = style({
-  width: '390px',
+  width: '420px',
   maxHeight: '562px',
   padding: '12px',
 });
 export const localMenuStyle = style({
-  width: '390px',
+  width: '420px',
   padding: '12px',
 });
 export const menuTriggerStyle = style({

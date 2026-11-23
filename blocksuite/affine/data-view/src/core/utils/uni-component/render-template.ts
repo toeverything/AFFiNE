@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import type { TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 

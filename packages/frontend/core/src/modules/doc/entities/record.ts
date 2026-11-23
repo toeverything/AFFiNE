@@ -30,6 +30,12 @@ export class DocRecord extends Entity<{ id: string }> {
     { id: this.id }
   );
 
+  property$(propertyId: string) {
+    return this.properties$.selector(p => p[propertyId]) as LiveData<
+      string | undefined | null
+    >;
+  }
+
   customProperty$(propertyId: string) {
     return this.properties$.selector(
       p => p['custom:' + propertyId]
@@ -77,14 +83,42 @@ export class DocRecord extends Entity<{ id: string }> {
   }
 
   moveToTrash() {
-    return this.setMeta({ trash: true, trashDate: Date.now() });
+    return this.docsStore.applyDocLifecycle(this.id, 'trash');
   }
 
   restoreFromTrash() {
-    return this.setMeta({ trash: false, trashDate: undefined });
+    return this.docsStore.applyDocLifecycle(this.id, 'restore');
+  }
+
+  deletePermanently() {
+    return this.docsStore.applyDocLifecycle(this.id, 'delete');
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');
 
   trash$ = this.meta$.map(meta => meta.trash ?? false);
+
+  createdAt$ = this.meta$.map(meta => meta.createDate);
+
+  updatedAt$ = this.meta$.map(meta => meta.updatedDate);
+
+  createdBy$ = this.property$('createdBy');
+
+  updatedBy$ = this.property$('updatedBy');
+
+  setCreatedAt(createdAt: number) {
+    this.setMeta({ createDate: createdAt });
+  }
+
+  setUpdatedAt(updatedAt: number) {
+    this.setMeta({ updatedDate: updatedAt });
+  }
+
+  setCreatedBy(createdBy: string) {
+    this.setProperty('createdBy', createdBy);
+  }
+
+  setUpdatedBy(updatedBy: string) {
+    this.setProperty('updatedBy', updatedBy);
+  }
 }

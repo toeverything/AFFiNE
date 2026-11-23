@@ -2,14 +2,59 @@ use std::ops::Deref;
 
 use chrono::{DateTime, NaiveDateTime};
 use sqlx::{QueryBuilder, Row};
+use y_octo::{diff_update_v1, encode_state_vector_from_update_v1, merge_updates_v1, validate_update_v1};
 
-use super::{error::Result, storage::SqliteDocStorage, DocClock, DocRecord, DocUpdate};
+use super::{
+  DocClock, DocDiff, DocRecord, DocUpdate, ReadonlyDocRecords,
+  error::{Error, Result},
+  storage::SqliteDocStorage,
+};
+
+fn is_empty_update(bin: &[u8]) -> bool {
+  bin.is_empty() || bin == [0, 0]
+}
+
+pub fn merge_updates(updates: &[&[u8]]) -> Result<Vec<u8>> {
+  let non_empty: Vec<&[u8]> = updates.iter().copied().filter(|u| !is_empty_update(u)).collect();
+  match non_empty.as_slice() {
+    [] => Ok(vec![0, 0]),
+    [single] => {
+      validate_update_v1(single).map_err(|_| Error::InvalidBinary)?;
+      Ok((*single).to_vec())
+    }
+    many => merge_updates_v1(many.iter().copied())
+      .and_then(|merged| merged.encode_v1())
+      .map_err(|_| Error::InvalidBinary),
+  }
+}
 
 struct Meta {
   space_id: String,
 }
 
 impl SqliteDocStorage {
+  pub async fn read_doc_records_readonly(path: &str, doc_id: &str) -> Result<ReadonlyDocRecords> {
+    let pool = Self::open_readonly_path(path).await?;
+    let mut tx = pool.begin().await?;
+    let snapshot = sqlx::query_as!(
+      DocRecord,
+      "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+      doc_id
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
+    let updates = sqlx::query_as!(
+      DocUpdate,
+      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+      doc_id
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    pool.close().await;
+    Ok(ReadonlyDocRecords { snapshot, updates })
+  }
+
   pub async fn set_space_id(&self, space_id: String) -> Result<()> {
     // ensure only one record exists in table
     let result = sqlx::query_as!(Meta, "SELECT * FROM meta;")
@@ -41,6 +86,11 @@ impl SqliteDocStorage {
             .bind(&meta.space_id)
             .execute(&self.pool)
             .await?;
+          sqlx::query("UPDATE indexer_sync SET doc_id = $1 WHERE doc_id = $2;")
+            .bind(&space_id)
+            .bind(&meta.space_id)
+            .execute(&self.pool)
+            .await?;
 
           sqlx::query("UPDATE peer_clocks SET doc_id = $1 WHERE doc_id = $2;")
             .bind(&space_id)
@@ -60,37 +110,38 @@ impl SqliteDocStorage {
     Ok(())
   }
 
-  pub async fn push_update<Update: AsRef<[u8]>>(
+  pub async fn push_update<Update: AsRef<[u8]>>(&self, doc_id: String, update: Update) -> Result<NaiveDateTime> {
+    self.push_update_with_peer(doc_id, update, None).await
+  }
+
+  pub async fn push_update_with_peer<Update: AsRef<[u8]>>(
     &self,
     doc_id: String,
     update: Update,
+    create_for_peer: Option<String>,
   ) -> Result<NaiveDateTime> {
     let mut timestamp = DateTime::from_timestamp_millis(chrono::Utc::now().timestamp_millis())
       .unwrap()
       .naive_utc();
 
-    let mut tried = 0;
-
-    // Keep trying with incremented timestamps until success
-    loop {
+    for attempt in 0..12 {
       match self
-        .try_insert_update_with_timestamp(&doc_id, update.as_ref(), timestamp)
+        .try_insert_update_with_timestamp(&doc_id, update.as_ref(), timestamp, create_for_peer.as_deref())
         .await
       {
-        Ok(()) => break,
-        Err(e) => {
-          if tried > 10 {
-            return Err(e.into());
-          }
-
-          // Increment timestamp by 1ms and retry
-          timestamp += chrono::Duration::milliseconds(1);
-          tried += 1;
-        }
+        Ok(true) => return Ok(timestamp),
+        Ok(false) => {}
+        Err(err) if attempt == 11 => return Err(err.into()),
+        Err(_) => {}
       }
+      let clock = self.get_doc_clock(doc_id.clone()).await?.map(|clock| clock.timestamp);
+      timestamp = (timestamp + chrono::Duration::milliseconds(1)).max(
+        clock
+          .map(|clock| clock + chrono::Duration::milliseconds(1))
+          .unwrap_or(timestamp),
+      );
     }
-
-    Ok(timestamp)
+    Err(Error::ConcurrentModification)
   }
 
   async fn try_insert_update_with_timestamp(
@@ -98,30 +149,55 @@ impl SqliteDocStorage {
     doc_id: &str,
     update: &[u8],
     timestamp: NaiveDateTime,
-  ) -> sqlx::Result<()> {
+    create_for_peer: Option<&str>,
+  ) -> sqlx::Result<bool> {
     let mut tx = self.pool.begin().await?;
 
-    sqlx::query(r#"INSERT INTO updates (doc_id, data, created_at) VALUES ($1, $2, $3);"#)
-      .bind(doc_id)
-      .bind(update.as_ref())
-      .bind(timestamp)
-      .execute(&mut *tx)
-      .await?;
+    let inserted = sqlx::query(
+      "INSERT INTO updates (doc_id, data, created_at) SELECT $1, $2, $3 WHERE NOT EXISTS (SELECT 1 FROM clocks WHERE \
+       doc_id = $1 AND timestamp >= $3)",
+    )
+    .bind(doc_id)
+    .bind(update)
+    .bind(timestamp)
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    if inserted == 0 {
+      return Ok(false);
+    }
 
     sqlx::query(
       r#"
     INSERT INTO clocks (doc_id, timestamp) VALUES ($1, $2)
     ON CONFLICT(doc_id)
-    DO UPDATE SET timestamp=$2;"#,
+    DO UPDATE SET timestamp=MAX(clocks.timestamp, excluded.timestamp);"#,
     )
     .bind(doc_id)
     .bind(timestamp)
     .execute(&mut *tx)
     .await?;
 
+    if let Some(peer) = create_for_peer {
+      sqlx::query(
+        "INSERT INTO peer_clocks (peer, doc_id, pending_create) VALUES ($1, $2, TRUE) ON CONFLICT(peer,doc_id) DO \
+         UPDATE SET pending_create = TRUE",
+      )
+      .bind(peer)
+      .bind(doc_id)
+      .execute(&mut *tx)
+      .await?;
+      sqlx::query(
+        "INSERT INTO peer_clocks (peer, doc_id, cache_token) SELECT $1, space_id, 1 FROM meta WHERE TRUE ON \
+         CONFLICT(peer,doc_id) DO UPDATE SET cache_token = cache_token + 1",
+      )
+      .bind(peer)
+      .execute(&mut *tx)
+      .await?;
+    }
     tx.commit().await?;
 
-    Ok(())
+    Ok(true)
   }
 
   pub async fn get_doc_snapshot(&self, doc_id: String) -> Result<Option<DocRecord>> {
@@ -134,6 +210,156 @@ impl SqliteDocStorage {
     .await?;
 
     Ok(result)
+  }
+
+  pub async fn get_doc(&self, doc_id: String) -> Result<Option<DocRecord>> {
+    for _ in 0..8 {
+      let mut read_tx = self.pool.begin().await?;
+      let snapshot = sqlx::query_as!(
+        DocRecord,
+        "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+        doc_id
+      )
+      .fetch_optional(&mut *read_tx)
+      .await?;
+      let updates = sqlx::query_as!(
+        DocUpdate,
+        "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+        doc_id
+      )
+      .fetch_all(&mut *read_tx)
+      .await?;
+      read_tx.commit().await?;
+      if updates.is_empty() {
+        return Ok(snapshot);
+      }
+
+      let timestamp = updates
+        .last()
+        .map(|update| update.timestamp)
+        .into_iter()
+        .chain(snapshot.as_ref().map(|record| record.timestamp))
+        .max()
+        .expect("updates are not empty");
+      let mut segments = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+      if let Some(record) = &snapshot {
+        segments.push(record.bin.to_vec());
+      }
+      segments.extend(updates.iter().map(|update| update.bin.to_vec()));
+      let bin = merge_updates_v1(segments)
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
+        .encode_v1()
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
+
+      let mut tx = self.pool.begin().await?;
+      let installed = if let Some(previous) = &snapshot {
+        sqlx::query("UPDATE snapshots SET data = ?, updated_at = ? WHERE doc_id = ? AND updated_at = ? AND data = ?")
+          .bind(&bin)
+          .bind(timestamp)
+          .bind(&doc_id)
+          .bind(previous.timestamp)
+          .bind(previous.bin.deref())
+          .execute(&mut *tx)
+          .await?
+          .rows_affected()
+      } else {
+        sqlx::query("INSERT INTO snapshots (doc_id, data, updated_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+          .bind(&doc_id)
+          .bind(&bin)
+          .bind(timestamp)
+          .execute(&mut *tx)
+          .await?
+          .rows_affected()
+      };
+      if installed != 1 {
+        continue;
+      }
+
+      let current_updates = sqlx::query_as!(
+        DocUpdate,
+        "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+        doc_id
+      )
+      .fetch_all(&mut *tx)
+      .await?;
+      if current_updates.len() != updates.len()
+        || current_updates
+          .iter()
+          .zip(&updates)
+          .any(|(current, read)| current.timestamp != read.timestamp || current.bin.deref() != read.bin.deref())
+      {
+        continue;
+      }
+      sqlx::query("DELETE FROM updates WHERE doc_id = ?")
+        .bind(&doc_id)
+        .execute(&mut *tx)
+        .await?;
+      tx.commit().await?;
+      let bin = bin.into();
+      return Ok(Some(DocRecord { doc_id, bin, timestamp }));
+    }
+    Err(Error::ConcurrentModification)
+  }
+
+  pub async fn get_doc_diff(&self, doc_id: String, remote_state_vector: Option<Vec<u8>>) -> Result<Option<DocDiff>> {
+    let mut read_tx = self.pool.begin().await?;
+    let snapshot = sqlx::query_as!(
+      DocRecord,
+      "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+      doc_id
+    )
+    .fetch_optional(&mut *read_tx)
+    .await?;
+    let updates = sqlx::query_as!(
+      DocUpdate,
+      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+      doc_id
+    )
+    .fetch_all(&mut *read_tx)
+    .await?;
+    read_tx.commit().await?;
+
+    if snapshot.is_none() && updates.is_empty() {
+      return Ok(None);
+    }
+
+    let timestamp = updates
+      .last()
+      .map(|update| update.timestamp)
+      .into_iter()
+      .chain(snapshot.as_ref().map(|record| record.timestamp))
+      .max()
+      .expect("snapshot or updates is non-empty");
+
+    let merged_bin = if updates.is_empty() {
+      snapshot.expect("snapshot is non-empty").bin.to_vec()
+    } else {
+      let mut segments = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+      if let Some(record) = &snapshot {
+        segments.push(record.bin.to_vec());
+      }
+      segments.extend(updates.iter().map(|update| update.bin.to_vec()));
+      merge_updates_v1(segments)
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
+        .encode_v1()
+        .map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
+    };
+
+    let state =
+      encode_state_vector_from_update_v1(&merged_bin).map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?;
+    let missing = match remote_state_vector.as_deref() {
+      Some(sv) if !sv.is_empty() => {
+        diff_update_v1(&merged_bin, sv).map_err(|_| affine_doc_loader::ParseError::InvalidBinary)?
+      }
+      _ => merged_bin,
+    };
+
+    Ok(Some(DocDiff {
+      doc_id,
+      missing: missing.into(),
+      state: state.into(),
+      timestamp,
+    }))
   }
 
   pub async fn set_doc_snapshot(&self, snapshot: DocRecord) -> Result<bool> {
@@ -157,7 +383,7 @@ impl SqliteDocStorage {
   pub async fn get_doc_updates(&self, doc_id: String) -> Result<Vec<DocUpdate>> {
     let result = sqlx::query_as!(
       DocUpdate,
-      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ?",
+      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
       doc_id
     )
     .fetch_all(&self.pool)
@@ -166,11 +392,7 @@ impl SqliteDocStorage {
     Ok(result)
   }
 
-  pub async fn mark_updates_merged(
-    &self,
-    doc_id: String,
-    updates: Vec<NaiveDateTime>,
-  ) -> Result<u32> {
+  pub async fn mark_updates_merged(&self, doc_id: String, updates: Vec<NaiveDateTime>) -> Result<u32> {
     let mut qb = QueryBuilder::new("DELETE FROM updates");
 
     qb.push(" WHERE doc_id = ");
@@ -203,6 +425,24 @@ impl SqliteDocStorage {
       .await?;
 
     sqlx::query("DELETE FROM clocks WHERE doc_id = ?;")
+      .bind(&doc_id)
+      .execute(&mut *tx)
+      .await?;
+
+    sqlx::query("DELETE FROM indexer_sync WHERE doc_id = ?;")
+      .bind(&doc_id)
+      .execute(&mut *tx)
+      .await?;
+
+    sqlx::query(
+      "INSERT INTO peer_clocks (peer, doc_id, cache_token) SELECT peer, meta.space_id, 1 FROM peer_clocks CROSS JOIN \
+       meta WHERE doc_id = $1 AND pending_create = TRUE ON CONFLICT(peer,doc_id) DO UPDATE SET cache_token = \
+       cache_token + 1",
+    )
+    .bind(&doc_id)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("UPDATE peer_clocks SET pending_create = FALSE WHERE doc_id = $1 AND pending_create = TRUE")
       .bind(&doc_id)
       .execute(&mut *tx)
       .await?;
@@ -248,14 +488,199 @@ impl SqliteDocStorage {
 #[cfg(test)]
 mod tests {
   use chrono::{DateTime, Utc};
+  use y_octo::DocOptions;
 
   use super::*;
+  use crate::Data;
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
     storage.connect().await.unwrap();
 
     storage
+  }
+
+  fn text_updates() -> (Vec<u8>, Vec<u8>) {
+    let doc = DocOptions::new().with_guid("doc".to_string()).build();
+    let mut text = doc.get_or_create_text("content").unwrap();
+    text.insert(0, "hello").unwrap();
+    let first = doc.encode_update_v1().unwrap();
+    let state = doc.get_state_vector();
+    text.insert(5, " world").unwrap();
+    let second = doc.encode_state_as_update_v1(&state).unwrap();
+    (first, second)
+  }
+
+  #[tokio::test]
+  async fn get_doc_compacts_updates_losslessly_and_preserves_partial_data() {
+    let storage = get_storage().await;
+    assert!(storage.get_doc("doc".to_string()).await.unwrap().is_none());
+    let (first, second) = text_updates();
+    let first_clock = storage.push_update("doc".to_string(), first).await.unwrap();
+    let record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert_eq!(record.timestamp, first_clock);
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+
+    let second_clock = storage.push_update("doc".to_string(), second).await.unwrap();
+    let record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert!(record.timestamp >= second_clock);
+    let mut doc = DocOptions::new().with_guid("doc".to_string()).build();
+    doc.apply_update_from_binary_v1(&record.bin).unwrap();
+    assert_eq!(doc.get_or_create_text("content").unwrap().to_string(), "hello world");
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+
+    for with_snapshot in [false, true] {
+      let storage = get_storage().await;
+      let source = DocOptions::new().with_client_id(542).build();
+      let mut text = source.get_or_create_text("content").unwrap();
+      text.insert(0, "hello").unwrap();
+      let prefix = source.encode_update_v1().unwrap();
+      let state = source.get_state_vector();
+      text.insert(5, " world").unwrap();
+      text.remove(0, 1).unwrap();
+      let partial = source.encode_state_as_update_v1(&state).unwrap();
+      if with_snapshot {
+        storage
+          .set_doc_snapshot(DocRecord {
+            doc_id: "partial".into(),
+            bin: partial.clone().into(),
+            timestamp: Utc::now().naive_utc(),
+          })
+          .await
+          .unwrap();
+      } else {
+        storage.push_update("partial".into(), &partial).await.unwrap();
+      }
+      storage.push_update("partial".into(), [0, 0]).await.unwrap();
+      let record = storage.get_doc("partial".into()).await.unwrap().unwrap();
+      let expected = merge_updates_v1([partial.clone(), vec![0, 0]])
+        .unwrap()
+        .encode_v1()
+        .unwrap();
+      assert_eq!(record.bin.deref(), expected);
+      let mut pending = DocOptions::new().build();
+      pending.apply_update_from_binary_v1(&record.bin).unwrap();
+      assert!(pending.has_pending_updates());
+      assert!(storage.get_doc_updates("partial".into()).await.unwrap().is_empty());
+      assert_eq!(
+        storage.get_doc("partial".into()).await.unwrap().unwrap().bin.deref(),
+        expected
+      );
+      storage.push_update("partial".into(), &prefix).await.unwrap();
+      let record = storage.get_doc("partial".into()).await.unwrap().unwrap();
+      assert_eq!(
+        record.bin.deref(),
+        merge_updates_v1([partial, prefix]).unwrap().encode_v1().unwrap()
+      );
+      let mut completed = DocOptions::new().build();
+      completed.apply_update_from_binary_v1(&record.bin).unwrap();
+      assert!(!completed.has_pending_updates());
+      assert_eq!(
+        completed.get_or_create_text("content").unwrap().to_string(),
+        "ello world"
+      );
+    }
+  }
+
+  #[tokio::test]
+  async fn failed_compaction_rolls_back_snapshot_and_updates() {
+    let storage = get_storage().await;
+    let (first, second) = text_updates();
+    storage.push_update("doc".to_string(), first).await.unwrap();
+    sqlx::query("ALTER TABLE updates RENAME TO updates_unavailable")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    assert!(storage.get_doc("doc".to_string()).await.is_err());
+    sqlx::query("ALTER TABLE updates_unavailable RENAME TO updates")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    assert!(storage.get_doc_snapshot("doc".to_string()).await.unwrap().is_none());
+    assert_eq!(storage.get_doc_updates("doc".to_string()).await.unwrap().len(), 1);
+    for operation in ["INSERT ON snapshots", "DELETE ON updates"] {
+      let create =
+        format!("CREATE TRIGGER fail_compaction BEFORE {operation} BEGIN SELECT RAISE(ABORT, 'injected'); END");
+      sqlx::query(&create).execute(&storage.pool).await.unwrap();
+      assert!(storage.get_doc("doc".to_string()).await.is_err());
+      assert!(storage.get_doc_snapshot("doc".to_string()).await.unwrap().is_none());
+      assert_eq!(storage.get_doc_updates("doc".to_string()).await.unwrap().len(), 1);
+      sqlx::query("DROP TRIGGER fail_compaction")
+        .execute(&storage.pool)
+        .await
+        .unwrap();
+    }
+    assert!(storage.get_doc("doc".to_string()).await.unwrap().is_some());
+
+    storage.push_update("doc".to_string(), second).await.unwrap();
+    sqlx::query("CREATE TRIGGER fail_compaction BEFORE UPDATE ON snapshots BEGIN SELECT RAISE(ABORT, 'injected'); END")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    assert!(storage.get_doc("doc".to_string()).await.is_err());
+    assert_eq!(storage.get_doc_updates("doc".to_string()).await.unwrap().len(), 1);
+    sqlx::query("DROP TRIGGER fail_compaction")
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    assert!(storage.get_doc("doc".to_string()).await.unwrap().is_some());
+
+    storage.push_update("invalid".to_string(), vec![1]).await.unwrap();
+    assert!(storage.get_doc("invalid".to_string()).await.is_err());
+    assert!(storage.get_doc_snapshot("invalid".to_string()).await.unwrap().is_none());
+    assert_eq!(storage.get_doc_updates("invalid".to_string()).await.unwrap().len(), 1);
+  }
+
+  #[tokio::test]
+  async fn get_doc_reads_snapshot_and_updates_from_one_view() {
+    let path = std::env::temp_dir().join(format!("affine-get-doc-{}.db", uuid::Uuid::new_v4()));
+    let storage = SqliteDocStorage::new(path.to_string_lossy().to_string());
+    storage.connect().await.unwrap();
+    let (first, second) = text_updates();
+    storage.push_update("doc".to_string(), first).await.unwrap();
+    let first_record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    let pushed = storage.push_update("doc".to_string(), second).await.unwrap();
+
+    let mut read_tx = storage.pool.begin().await.unwrap();
+    let snapshot = sqlx::query_as!(
+      DocRecord,
+      "SELECT doc_id, data as bin, updated_at as timestamp FROM snapshots WHERE doc_id = ?",
+      "doc"
+    )
+    .fetch_optional(&mut *read_tx)
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(snapshot.bin.deref(), first_record.bin.deref());
+    let compacted = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert!(compacted.timestamp >= pushed);
+    assert!(storage.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+    let updates = sqlx::query_as!(
+      DocUpdate,
+      "SELECT doc_id, created_at as timestamp, data as bin FROM updates WHERE doc_id = ? ORDER BY created_at",
+      "doc"
+    )
+    .fetch_all(&mut *read_tx)
+    .await
+    .unwrap();
+    assert_eq!(updates.len(), 1);
+    read_tx.commit().await.unwrap();
+
+    let record = storage.get_doc("doc".to_string()).await.unwrap().unwrap();
+    assert!(record.timestamp >= pushed);
+    let mut doc = DocOptions::new().with_guid("doc".to_string()).build();
+    doc.apply_update_from_binary_v1(&record.bin).unwrap();
+    assert_eq!(doc.get_or_create_text("content").unwrap().to_string(), "hello world");
+    storage.close().await;
+    let reopened = SqliteDocStorage::new(path.to_string_lossy().to_string());
+    reopened.connect().await.unwrap();
+    assert!(reopened.get_doc_updates("doc".to_string()).await.unwrap().is_empty());
+    assert_eq!(
+      reopened.get_doc("doc".to_string()).await.unwrap().unwrap().timestamp,
+      record.timestamp
+    );
+    reopened.close().await;
+    std::fs::remove_file(&path).unwrap();
   }
 
   #[tokio::test]
@@ -286,25 +711,18 @@ mod tests {
     let storage = get_storage().await;
 
     storage.set_space_id("test".to_string()).await.unwrap();
-    storage
-      .push_update("test".to_string(), vec![0, 0])
-      .await
-      .unwrap();
+    storage.push_update("test".to_string(), vec![0, 0]).await.unwrap();
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0],
+        bin: Into::<Data>::into(vec![0, 0]),
         timestamp: Utc::now().naive_utc(),
       })
       .await
       .unwrap();
 
     storage
-      .set_peer_pulled_remote_clock(
-        "remote".to_string(),
-        "test".to_string(),
-        Utc::now().naive_utc(),
-      )
+      .set_peer_pulled_remote_clock("remote".to_string(), "test".to_string(), Utc::now().naive_utc())
       .await
       .unwrap();
 
@@ -333,10 +751,7 @@ mod tests {
 
     assert_eq!(updates.len(), 1);
 
-    let snapshot = storage
-      .get_doc_snapshot("new_id".to_string())
-      .await
-      .unwrap();
+    let snapshot = storage.get_doc_snapshot("new_id".to_string()).await.unwrap();
 
     assert!(snapshot.is_some());
   }
@@ -348,18 +763,31 @@ mod tests {
     let updates = vec![vec![0, 0], vec![0, 1], vec![1, 0], vec![1, 1]];
 
     for update in updates.iter() {
-      storage
-        .push_update("test".to_string(), update)
-        .await
-        .unwrap();
+      storage.push_update("test".to_string(), update).await.unwrap();
     }
 
     let result = storage.get_doc_updates("test".to_string()).await.unwrap();
 
     assert_eq!(result.len(), 4);
+    assert_eq!(result.iter().map(|u| u.bin.to_vec()).collect::<Vec<_>>(), updates);
+    assert!(result.windows(2).all(|pair| pair[0].timestamp < pair[1].timestamp));
+
+    let future = result.last().unwrap().timestamp + chrono::Duration::seconds(1);
+    sqlx::query("UPDATE clocks SET timestamp = ? WHERE doc_id = 'test'")
+      .bind(future)
+      .execute(&storage.pool)
+      .await
+      .unwrap();
+    let next = storage.push_update("test".to_string(), vec![0, 0]).await.unwrap();
+    assert!(next > future);
     assert_eq!(
-      result.iter().map(|u| u.bin.as_ref()).collect::<Vec<_>>(),
-      updates
+      storage
+        .get_doc_clock("test".to_string())
+        .await
+        .unwrap()
+        .unwrap()
+        .timestamp,
+      next
     );
   }
 
@@ -373,7 +801,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -382,7 +810,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]
@@ -391,7 +819,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0],
+      bin: Into::<Data>::into(vec![0, 0]),
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -400,11 +828,11 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1],
+      bin: Into::<Data>::into(vec![0, 1]),
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),
@@ -416,7 +844,7 @@ mod tests {
     let result = storage.get_doc_snapshot("test".to_string()).await.unwrap();
 
     assert!(result.is_some());
-    assert_eq!(result.unwrap().bin.as_ref(), vec![0, 0]);
+    assert_eq!(result.unwrap().bin.to_vec(), vec![0, 0]);
   }
 
   #[tokio::test]
@@ -428,10 +856,7 @@ mod tests {
     assert_eq!(clocks.len(), 0);
 
     for i in 1..5u32 {
-      storage
-        .push_update(format!("test_{i}"), vec![0, 0])
-        .await
-        .unwrap();
+      storage.push_update(format!("test_{i}"), vec![0, 0]).await.unwrap();
     }
 
     let clocks = storage.get_doc_clocks(None).await.unwrap();
@@ -442,10 +867,7 @@ mod tests {
       vec!["test_1", "test_2", "test_3", "test_4"]
     );
 
-    let clocks = storage
-      .get_doc_clocks(Some(Utc::now().naive_utc()))
-      .await
-      .unwrap();
+    let clocks = storage.get_doc_clocks(Some(Utc::now().naive_utc())).await.unwrap();
 
     assert_eq!(clocks.len(), 0);
 
@@ -456,16 +878,108 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn get_doc_diff_handles_missing_empty_and_remote_state_vectors() {
+    let storage = get_storage().await;
+
+    // 1. Non-existent doc returns None
+    assert!(
+      storage
+        .get_doc_diff("missing".to_string(), None)
+        .await
+        .unwrap()
+        .is_none()
+    );
+
+    // Build a doc with snapshot + multiple uncompressed updates
+    let doc = DocOptions::new().with_client_id(11).build();
+    let mut text = doc.get_or_create_text("content").unwrap();
+    text.insert(0, "alpha").unwrap();
+    let snap_bin = doc.encode_update_v1().unwrap();
+    let sv_after_snap = doc.get_state_vector().encode_v1().unwrap();
+
+    text.insert(5, " beta").unwrap();
+    let u1 = doc
+      .encode_state_as_update_v1(&y_octo::StateVector::decode_v1(&sv_after_snap).unwrap())
+      .unwrap();
+    let sv_after_u1 = doc.get_state_vector().encode_v1().unwrap();
+
+    text.insert(10, " gamma").unwrap();
+    let u2 = doc
+      .encode_state_as_update_v1(&y_octo::StateVector::decode_v1(&sv_after_u1).unwrap())
+      .unwrap();
+    let full_sv = doc.get_state_vector().encode_v1().unwrap();
+
+    let snap_ts = DateTime::from_timestamp_millis(1_700_000_000_000).unwrap().naive_utc();
+    storage
+      .set_doc_snapshot(DocRecord {
+        doc_id: "doc-diff".to_string(),
+        bin: snap_bin.into(),
+        timestamp: snap_ts,
+      })
+      .await
+      .unwrap();
+    let _t1 = storage.push_update("doc-diff".to_string(), u1).await.unwrap();
+    let t2 = storage.push_update("doc-diff".to_string(), u2).await.unwrap();
+
+    // 2. None and Some(vec![]) return full merged snapshot
+    for sv in [None, Some(Vec::new())] {
+      let diff = storage.get_doc_diff("doc-diff".to_string(), sv).await.unwrap().unwrap();
+      assert_eq!(diff.doc_id, "doc-diff");
+      assert_eq!(diff.timestamp, t2);
+      assert_eq!(diff.state.deref(), full_sv.as_slice());
+      let restored = y_octo::Doc::try_from_binary_v1(&diff.missing).unwrap();
+      assert_eq!(
+        restored.get_or_create_text("content").unwrap().to_string(),
+        "alpha beta gamma"
+      );
+    }
+
+    // 3. Some(vec![0]) returns full diff from empty state vector
+    let diff_zero = storage
+      .get_doc_diff("doc-diff".to_string(), Some(vec![0]))
+      .await
+      .unwrap()
+      .unwrap();
+    assert_eq!(diff_zero.state.deref(), full_sv.as_slice());
+    let restored_zero = y_octo::Doc::try_from_binary_v1(&diff_zero.missing).unwrap();
+    assert_eq!(
+      restored_zero.get_or_create_text("content").unwrap().to_string(),
+      "alpha beta gamma"
+    );
+
+    // 4. Real remote SV returns incremental diff only
+    let diff_inc = storage
+      .get_doc_diff("doc-diff".to_string(), Some(sv_after_snap))
+      .await
+      .unwrap()
+      .unwrap();
+    assert_eq!(diff_inc.state.deref(), full_sv.as_slice());
+    let mut remote = DocOptions::new().with_client_id(99).build();
+    remote
+      .apply_update_from_binary_v1(
+        &storage
+          .get_doc_snapshot("doc-diff".to_string())
+          .await
+          .unwrap()
+          .unwrap()
+          .bin,
+      )
+      .unwrap();
+    remote.apply_update_from_binary_v1(&diff_inc.missing).unwrap();
+    assert_eq!(
+      remote.get_or_create_text("content").unwrap().to_string(),
+      "alpha beta gamma"
+    );
+  }
+
+  #[tokio::test]
   async fn mark_updates_merged() {
     let storage = get_storage().await;
 
     let updates = [vec![0, 0], vec![0, 1], vec![1, 0], vec![1, 1]];
 
     for update in updates.iter() {
-      storage
-        .push_update("test".to_string(), update)
-        .await
-        .unwrap();
+      storage.push_update("test".to_string(), update).await.unwrap();
     }
 
     let updates = storage.get_doc_updates("test".to_string()).await.unwrap();
@@ -473,11 +987,7 @@ mod tests {
     let result = storage
       .mark_updates_merged(
         "test".to_string(),
-        updates
-          .iter()
-          .skip(1)
-          .map(|u| u.timestamp)
-          .collect::<Vec<_>>(),
+        updates.iter().skip(1).map(|u| u.timestamp).collect::<Vec<_>>(),
       )
       .await
       .unwrap();
@@ -487,5 +997,32 @@ mod tests {
     let updates = storage.get_doc_updates("test".to_string()).await.unwrap();
 
     assert_eq!(updates.len(), 1);
+  }
+
+  #[test]
+  fn merge_updates_handles_empty_single_multiple_and_invalid() {
+    use y_octo::DocOptions;
+
+    assert_eq!(merge_updates(&[]).unwrap(), vec![0, 0]);
+    assert_eq!(merge_updates(&[&[], &[0, 0]]).unwrap(), vec![0, 0]);
+
+    let doc1 = DocOptions::new().with_client_id(1).build();
+    doc1.get_or_create_text("content").unwrap().insert(0, "hello").unwrap();
+    let u1 = doc1.encode_update_v1().unwrap();
+
+    let doc2 = DocOptions::new().with_client_id(2).build();
+    doc2.get_or_create_text("content").unwrap().insert(0, " world").unwrap();
+    let u2 = doc2.encode_update_v1().unwrap();
+
+    assert_eq!(merge_updates(&[&u1, &[0, 0]]).unwrap(), u1);
+
+    let merged = merge_updates(&[&u1, &u2]).unwrap();
+    let mut check = DocOptions::new().build();
+    check.apply_update_from_binary_v1(&merged).unwrap();
+    let text = check.get_or_create_text("content").unwrap().to_string();
+    assert!(text.contains("hello") && text.contains("world"));
+
+    assert!(matches!(merge_updates(&[&[0xff]]), Err(Error::InvalidBinary)));
+    assert!(matches!(merge_updates(&[&u1, &[0xff]]), Err(Error::InvalidBinary)));
   }
 }

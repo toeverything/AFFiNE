@@ -4,6 +4,7 @@ import {
   autoUpdate,
   computePosition,
   offset,
+  type Placement,
   type Rect,
   shift,
   size,
@@ -32,6 +33,18 @@ export function listenClickAway(
 type Display = 'show' | 'hidden';
 
 const ATTR_SHOW = 'data-show';
+
+export type ButtonPopperOptions = {
+  reference: HTMLElement;
+  popperElement: HTMLElement;
+  topLayer?: boolean;
+  stateUpdated?: (state: { display: Display }) => void;
+  mainAxis?: number;
+  crossAxis?: number;
+  allowedPlacements?: Placement[];
+  rootBoundary?: Rect | (() => Rect | undefined);
+  offsetHeight?: number;
+};
 /**
  * Using attribute 'data-show' to control popper visibility.
  *
@@ -44,28 +57,26 @@ const ATTR_SHOW = 'data-show';
  * }
  * ```
  */
-export function createButtonPopper(
-  reference: HTMLElement,
-  popperElement: HTMLElement,
-  stateUpdated: (state: { display: Display }) => void = () => {
-    /** DEFAULT EMPTY FUNCTION */
-  },
-  {
-    mainAxis,
-    crossAxis,
-    rootBoundary,
-    ignoreShift,
-    offsetHeight,
-  }: {
-    mainAxis?: number;
-    crossAxis?: number;
-    rootBoundary?: Rect | (() => Rect | undefined);
-    ignoreShift?: boolean;
-    offsetHeight?: number;
-  } = {}
-) {
+export function createButtonPopper(options: ButtonPopperOptions) {
   let display: Display = 'hidden';
   let cleanup: (() => void) | void;
+  const {
+    reference,
+    popperElement,
+    topLayer = false,
+    stateUpdated = () => {},
+    mainAxis,
+    crossAxis,
+    allowedPlacements = ['top', 'bottom'],
+    rootBoundary,
+    offsetHeight,
+  } = options;
+  const useTopLayer =
+    topLayer && typeof popperElement.showPopover === 'function';
+
+  if (useTopLayer) {
+    popperElement.popover = 'manual';
+  }
 
   const originMaxHeight = window.getComputedStyle(popperElement).maxHeight;
 
@@ -76,13 +87,14 @@ export function createButtonPopper(
     };
 
     computePosition(reference, popperElement, {
+      strategy: useTopLayer ? 'fixed' : 'absolute',
       middleware: [
         offset({
           mainAxis: mainAxis ?? 14,
           crossAxis: crossAxis ?? 0,
         }),
         autoPlacement({
-          allowedPlacements: ['top', 'bottom'],
+          allowedPlacements,
           ...overflowOptions,
         }),
         shift(overflowOptions),
@@ -97,13 +109,9 @@ export function createButtonPopper(
         }),
       ],
     })
-      .then(({ x, y, middlewareData: data }) => {
-        if (!ignoreShift) {
-          x += data.shift?.x ?? 0;
-          y += data.shift?.y ?? 0;
-        }
+      .then(({ x, y }) => {
         Object.assign(popperElement.style, {
-          position: 'absolute',
+          position: useTopLayer ? 'fixed' : 'absolute',
           zIndex: 1,
           left: `${x}px`,
           top: `${y}px`,
@@ -119,6 +127,9 @@ export function createButtonPopper(
 
     if (!displayed) {
       popperElement.setAttribute(ATTR_SHOW, '');
+      if (useTopLayer) {
+        popperElement.showPopover();
+      }
       display = 'show';
       stateUpdated({ display });
     }
@@ -131,6 +142,9 @@ export function createButtonPopper(
 
   const hide = () => {
     if (display === 'hidden') return;
+    if (useTopLayer) {
+      popperElement.hidePopover();
+    }
     popperElement.removeAttribute(ATTR_SHOW);
     display = 'hidden';
     stateUpdated({ display });
@@ -155,7 +169,7 @@ export function createButtonPopper(
     hide,
     toggle,
     dispose: () => {
-      cleanup?.();
+      hide();
       clickAway.dispose();
     },
   };

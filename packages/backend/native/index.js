@@ -1,15 +1,14 @@
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-
 /** @type {import('.')} */
-const binding = require('./server-native.node');
+let binding;
+try {
+  binding = require('./server-native.node');
+} catch {
+  binding =
+    process.arch === 'arm64'
+      ? require('./server-native.arm64.node')
+      : process.arch === 'arm'
+        ? require('./server-native.armv7.node')
+        : require('./server-native.x64.node');
+}
 
-export const mergeUpdatesInApplyWay = binding.mergeUpdatesInApplyWay;
-export const verifyChallengeResponse = binding.verifyChallengeResponse;
-export const mintChallengeResponse = binding.mintChallengeResponse;
-export const getMime = binding.getMime;
-export const Tokenizer = binding.Tokenizer;
-export const fromModelName = binding.fromModelName;
-export const htmlSanitize = binding.htmlSanitize;
-export const parseDoc = binding.parseDoc;
+module.exports = binding;

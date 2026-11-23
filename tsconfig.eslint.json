@@ -3,7 +3,11 @@
   "compilerOptions": {
     "allowJs": true
   },
-  "include": [".", ".github/actions/*/*.mjs"],
+  "include": [
+    ".",
+    ".github/actions/*/*.mjs",
+    "blocksuite/docs-site/.vitepress/**/*.ts"
+  ],
   "exclude": [
     "**/target",
     "**/node_modules",

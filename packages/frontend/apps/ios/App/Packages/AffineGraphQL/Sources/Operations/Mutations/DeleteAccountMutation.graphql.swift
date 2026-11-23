@@ -20,6 +20,9 @@ public class DeleteAccountMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("deleteAccount", DeleteAccount.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DeleteAccountMutation.Data.self
+    ] }
 
     public var deleteAccount: DeleteAccount { __data["deleteAccount"] }
 
@@ -34,6 +37,9 @@ public class DeleteAccountMutation: GraphQLMutation {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("success", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        DeleteAccountMutation.Data.DeleteAccount.self
       ] }
 
       public var success: Bool { __data["success"] }

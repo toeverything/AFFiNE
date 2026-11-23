@@ -13,6 +13,7 @@ import {
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { AllDocsIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -21,6 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as styles from './style.css';
 
 const clipperInput$ = new LiveData<ClipperInput | null>(null);
+const port$ = new LiveData<MessagePort | null>(null);
 
 window.addEventListener('message', event => {
   if (
@@ -28,6 +30,10 @@ window.addEventListener('message', event => {
     event.data.type === 'affine-clipper:import'
   ) {
     clipperInput$.value = event.data.payload;
+
+    if (event.ports.length > 0) {
+      port$.value = event.ports[0];
+    }
   }
 });
 
@@ -90,25 +96,41 @@ export const Component = () => {
     []
   );
 
+  const handleSuccess = useCallback(() => {
+    const arg = { type: 'affine-clipper:import:success' };
+    const port = port$.value;
+    track.clipper.$.$.createDoc();
+    if (port) {
+      port.postMessage(arg);
+    } else {
+      window.postMessage(arg);
+    }
+    window.close();
+  }, []);
+
   const handleImportToSelectedWorkspace = useAsyncCallback(async () => {
     if (clipperInputSnapshot && selectedWorkspace) {
+      // save the last opened workspace id
+      localStorage.setItem('last_workspace_id', selectedWorkspace.id);
       setImporting(true);
       try {
         await importClipperService.importToWorkspace(
           selectedWorkspace,
           clipperInputSnapshot
         );
-        window.postMessage({
-          type: 'affine-clipper:import:success',
-        });
-        window.close();
+        handleSuccess();
       } catch (err) {
         setImportingError(err);
       } finally {
         setImporting(false);
       }
     }
-  }, [clipperInputSnapshot, importClipperService, selectedWorkspace]);
+  }, [
+    clipperInputSnapshot,
+    handleSuccess,
+    importClipperService,
+    selectedWorkspace,
+  ]);
 
   const handleImportToNewWorkspace = useAsyncCallback(async () => {
     if (!clipperInputSnapshot) {
@@ -121,16 +143,13 @@ export const Component = () => {
         'Workspace',
         clipperInputSnapshot
       );
-      window.postMessage({
-        type: 'affine-clipper:import:success',
-      });
-      window.close();
+      handleSuccess();
     } catch (err) {
       setImportingError(err);
     } finally {
       setImporting(false);
     }
-  }, [clipperInputSnapshot, importClipperService]);
+  }, [clipperInputSnapshot, handleSuccess, importClipperService]);
 
   const handleClickSignIn = useCallback(() => {
     window.open(

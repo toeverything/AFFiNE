@@ -92,7 +92,7 @@ export async function switchToPage(page: Page, docId?: string) {
       docId = docMetas[0].id;
     }
 
-    const doc = collection.getDoc(docId);
+    const doc = collection.getDoc(docId)?.getStore();
     if (!doc) return;
     editor.doc = doc;
   }, docId);
@@ -113,10 +113,10 @@ export async function switchReadonly(page: Page, value = true) {
     const defaultPage = document.querySelector(
       'affine-page-root,affine-edgeless-root'
     ) as HTMLElement & {
-      doc: Store;
+      store: Store;
     };
-    const doc = defaultPage.doc;
-    doc.readonly = _value;
+    const store = defaultPage.store;
+    store.readonly = _value;
   }, value);
 }
 

@@ -116,7 +116,7 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
   readonly blockMatchers: BlockNotionHtmlAdapterMatcher[];
 
   constructor(job: Transformer, provider: ServiceProvider) {
-    super(job);
+    super(job, provider);
     const blockMatchers = Array.from(
       provider.getAll(BlockNotionHtmlAdapterMatcherIdentifier).values()
     );

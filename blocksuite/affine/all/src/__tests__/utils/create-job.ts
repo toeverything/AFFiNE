@@ -1,5 +1,4 @@
-import { defaultImageProxyMiddleware } from '@blocksuite/affine-block-image';
-import { SpecProvider } from '@blocksuite/affine-shared/utils';
+import { defaultImageProxyMiddleware } from '@blocksuite/affine-shared/adapters';
 import {
   Schema,
   Transformer,
@@ -8,6 +7,7 @@ import {
 import { TestWorkspace } from '@blocksuite/store/test';
 
 import { AffineSchemas } from '../../schemas.js';
+import { testStoreExtensions } from './store.js';
 
 declare global {
   interface Window {
@@ -27,15 +27,15 @@ export function createJob(middlewares?: TransformerMiddleware[]) {
   testMiddlewares.push(defaultImageProxyMiddleware);
   const schema = new Schema().register(AffineSchemas);
   const docCollection = new TestWorkspace();
-  docCollection.storeExtensions = SpecProvider._.getSpec('store').value;
+  docCollection.storeExtensions = testStoreExtensions;
   docCollection.meta.initialize();
   return new Transformer({
     schema,
     blobCRUD: docCollection.blobSync,
     middlewares: testMiddlewares,
     docCRUD: {
-      create: (id: string) => docCollection.createDoc({ id }),
-      get: (id: string) => docCollection.getDoc(id),
+      create: (id: string) => docCollection.createDoc(id).getStore({ id }),
+      get: (id: string) => docCollection.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => docCollection.removeDoc(id),
     },
   });

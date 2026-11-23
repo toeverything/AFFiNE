@@ -4,9 +4,10 @@ import '../blocksuite/block-suite-editor';
 import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import onboardingUrl from '@affine/templates/onboarding.zip';
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 
 import { DocsService } from '../modules/doc';
+import { OrganizeService } from '../modules/organize';
 import {
   getAFFiNEWorkspaceSchema,
   type WorkspacesService,
@@ -19,7 +20,7 @@ export async function buildShowcaseWorkspace(
 ) {
   const meta = await workspacesService.create(flavour, async docCollection => {
     docCollection.meta.initialize();
-    docCollection.meta.setName(workspaceName);
+    docCollection.doc.getMap('meta').set('name', workspaceName);
     const blob = await (await fetch(onboardingUrl)).blob();
 
     await ZipTransformer.importDocs(
@@ -35,13 +36,28 @@ export async function buildShowcaseWorkspace(
 
   const docsService = workspace.scope.get(DocsService);
 
-  // should jump to "Write, Draw, Plan all at Once." in edgeless by default
+  // should jump to "Getting Started"
   const defaultDoc = docsService.list.docs$.value.find(p =>
-    p.title$.value.startsWith('Write, Draw, Plan all at Once.')
+    p.title$.value.startsWith('Getting Started')
+  );
+  const folderTutorialDoc = docsService.list.docs$.value.find(p =>
+    p.title$.value.startsWith('How to use folder and Tags')
   );
 
-  if (defaultDoc) {
-    defaultDoc.setPrimaryMode('edgeless');
+  // create default organize
+  if (folderTutorialDoc) {
+    const organizeService = workspace.scope.get(OrganizeService);
+    const folderId = organizeService.folderTree.rootFolder.createFolder(
+      'First Folder',
+      organizeService.folderTree.rootFolder.indexAt('after')
+    );
+    const firstFolderNode =
+      organizeService.folderTree.folderNode$(folderId).value;
+    firstFolderNode?.createLink(
+      'doc',
+      folderTutorialDoc.id,
+      firstFolderNode.indexAt('after')
+    );
   }
 
   dispose();
@@ -51,16 +67,33 @@ export async function buildShowcaseWorkspace(
 
 const logger = new DebugLogger('createFirstAppData');
 
-export async function createFirstAppData(workspacesService: WorkspacesService) {
-  if (localStorage.getItem('is-first-open') !== null) {
+let firstAppDataPromise:
+  | Promise<Awaited<ReturnType<typeof buildShowcaseWorkspace>>>
+  | undefined;
+
+export function createFirstAppData(workspacesService: WorkspacesService) {
+  if (workspacesService.list.workspaces$.value.length > 0) {
     return;
   }
-  localStorage.setItem('is-first-open', 'false');
-  const { meta, defaultDocId } = await buildShowcaseWorkspace(
+
+  if (
+    !BUILD_CONFIG.isMobileEdition &&
+    localStorage.getItem('is-first-open') !== null
+  ) {
+    return;
+  }
+
+  firstAppDataPromise ??= buildShowcaseWorkspace(
     workspacesService,
     'local',
     DEFAULT_WORKSPACE_NAME
-  );
-  logger.info('create first workspace', defaultDocId);
-  return { meta, defaultPageId: defaultDocId };
+  ).finally(() => {
+    firstAppDataPromise = undefined;
+  });
+
+  return firstAppDataPromise.then(({ meta, defaultDocId }) => {
+    localStorage.setItem('is-first-open', 'false');
+    logger.info('create first workspace', defaultDocId);
+    return { meta, defaultPageId: defaultDocId };
+  });
 }

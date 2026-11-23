@@ -47,6 +47,9 @@ export class AILoading extends WithDisposable(LitElement) {
   @property({ attribute: false })
   accessor stopGenerating!: () => void;
 
+  @property({ attribute: 'data-testid', reflect: true })
+  accessor testId = 'ai-loading';
+
   override render() {
     return html`
       <div class="generating-tip">

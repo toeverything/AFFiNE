@@ -3,8 +3,7 @@ import {
   type ServiceIdentifier,
   type ServiceProvider,
 } from '@blocksuite/global/di';
-import type { DeltaInsert } from '@blocksuite/inline';
-import type { ExtensionType } from '@blocksuite/store';
+import type { DeltaInsert, ExtensionType } from '@blocksuite/store';
 
 import type { AffineTextAttributes } from '../../types/index.js';
 import {
@@ -12,7 +11,7 @@ import {
   DeltaASTConverter,
   type DeltaASTConverterOptions,
   type InlineDeltaMatcher,
-} from '../types/adapter.js';
+} from '../types/delta-converter.js';
 import type { HtmlAST, InlineHtmlAST } from '../types/hast.js';
 import { AdapterTextUtils } from '../utils/text.js';
 

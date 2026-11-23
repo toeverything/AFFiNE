@@ -1,5 +1,5 @@
 export * from './connection';
-export * from './frontend';
+export type * from './frontend'; // // Only export types. For implementation, please import from '@affine/nbstore/frontend'
 export * from './storage';
-export * from './sync';
+export type * from './sync'; // Only export types. For implementation, please import from '@affine/nbstore/sync'
 export * from './utils/universal-id';

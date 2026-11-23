@@ -1,5 +1,5 @@
-import type { BlockComponent } from '@blocksuite/block-std';
 import type { Rect } from '@blocksuite/global/gfx';
+import type { BlockComponent } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 export interface EditingState {

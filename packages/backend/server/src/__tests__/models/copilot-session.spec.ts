@@ -1,0 +1,1817 @@
+import { randomUUID } from 'node:crypto';
+
+import { PrismaClient, User, Workspace } from '@prisma/client';
+import ava, { ExecutionContext, TestFn } from 'ava';
+
+import {
+  CopilotPromptInvalid,
+  CopilotSessionInvalidInput,
+  CopilotSessionNotFound,
+} from '../../base';
+import {
+  CopilotSessionModel,
+  Models,
+  UpdateChatSessionOptions,
+  UserModel,
+  WorkspaceModel,
+} from '../../models';
+import { CopilotAccessService } from '../../plugins/copilot/access';
+import { createTestingModule, type TestingModule } from '../utils';
+import { cleanObject } from '../utils/copilot';
+
+interface Context {
+  module: TestingModule;
+  db: PrismaClient;
+  user: UserModel;
+  workspace: WorkspaceModel;
+  copilotSession: CopilotSessionModel;
+  models: Models;
+}
+
+const test = ava as TestFn<Context>;
+
+test.before(async t => {
+  const module = await createTestingModule();
+  t.context.user = module.get(UserModel);
+  t.context.workspace = module.get(WorkspaceModel);
+  t.context.copilotSession = module.get(CopilotSessionModel);
+  t.context.models = module.get(Models);
+  t.context.db = module.get(PrismaClient);
+  t.context.module = module;
+});
+
+let user: User;
+let workspace: Workspace;
+
+test.beforeEach(async t => {
+  await t.context.module.initTestingDB();
+  user = await t.context.user.create({
+    email: 'test@affine.pro',
+  });
+  workspace = await t.context.workspace.create(user.id);
+});
+
+test.after(async t => {
+  await t.context.module.close();
+});
+
+test('personal session scope atomically binds workspace absence to actor resource', async t => {
+  const personalWorkspaceId = randomUUID();
+  const other = await t.context.user.create({ email: 'other@affine.pro' });
+  const own = await createTestSession(t, {
+    workspaceId: personalWorkspaceId,
+    pinned: true,
+  });
+  const foreign = await createTestSession(t, {
+    userId: other.id,
+    workspaceId: personalWorkspaceId,
+  });
+  const access = t.context.module.get(CopilotAccessService);
+
+  const mode = await access.sessionResource(
+    { userId: user.id, workspaceId: personalWorkspaceId },
+    [own.sessionId]
+  );
+  t.is(mode, 'personal');
+  await t.throwsAsync(
+    access.sessionResource(
+      { userId: user.id, workspaceId: personalWorkspaceId },
+      [foreign.sessionId]
+    ),
+    { instanceOf: Error }
+  );
+
+  await t.throwsAsync(
+    t.context.copilotSession.create({
+      ...own,
+      sessionId: randomUUID(),
+      personal: true,
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  t.true(
+    (await t.context.db.aiSession.findUnique({ where: { id: own.sessionId } }))
+      ?.pinned
+  );
+
+  await t.context.db.workspace.create({ data: { id: personalWorkspaceId } });
+  await t.throwsAsync(
+    t.context.copilotSession.get(
+      own.sessionId,
+      user.id,
+      personalWorkspaceId,
+      true
+    ),
+    { instanceOf: Error }
+  );
+  await t.throwsAsync(
+    t.context.copilotSession.update({
+      userId: user.id,
+      sessionId: own.sessionId,
+      workspaceId: personalWorkspaceId,
+      personal: true,
+      title: 'stale-personal-update',
+    }),
+    { instanceOf: Error }
+  );
+  t.is(
+    (
+      await t.context.db.aiSession.findUnique({
+        where: { id: own.sessionId },
+        select: { title: true },
+      })
+    )?.title,
+    null
+  );
+  await t.throwsAsync(
+    access.sessionResource(
+      { userId: user.id, workspaceId: personalWorkspaceId },
+      [own.sessionId]
+    ),
+    { instanceOf: Error }
+  );
+});
+
+async function waitForPersonalScopeBarrier(
+  db: PrismaClient,
+  workspaceId: string
+) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [result] = await db.$queryRaw<Array<{ waiting: boolean }>>`
+      WITH key AS (
+        SELECT hashtextextended(${`copilot-personal:${workspaceId}`}, 0) AS value
+      )
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_locks, key
+        WHERE locktype = 'advisory'
+          AND NOT granted
+          AND classid::bigint = ((key.value >> 32) & 4294967295)
+          AND objid::bigint = (key.value & 4294967295)
+      ) AS waiting
+    `;
+    if (result?.waiting) return true;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+async function waitForBlockedBackend(db: PrismaClient, pid: number) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [result] = await db.$queryRaw<Array<{ waiting: boolean }>>`
+      SELECT cardinality(pg_blocking_pids(CAST(${pid} AS integer))) > 0 AS waiting
+    `;
+    if (result?.waiting) return true;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+test('workspace insert and personal session write serialize in both lock orders', async t => {
+  const second = new PrismaClient();
+  const third = new PrismaClient();
+  t.teardown(() => second.$disconnect());
+  t.teardown(() => third.$disconnect());
+
+  const canonicalFirstId = randomUUID();
+  const canonicalLock = Promise.withResolvers<void>();
+  const releaseCanonical = Promise.withResolvers<void>();
+  const canonicalInsert = second.$transaction(async tx => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${canonicalFirstId}`}, 0))`;
+    await tx.workspace.create({ data: { id: canonicalFirstId } });
+    canonicalLock.resolve();
+    await releaseCanonical.promise;
+  });
+  await canonicalLock.promise;
+  const blockedPersonal = t.context.copilotSession.create({
+    sessionId: randomUUID(),
+    userId: user.id,
+    workspaceId: canonicalFirstId,
+    docId: null,
+    pinned: false,
+    title: null,
+    promptName: 'test-prompt',
+    promptAction: null,
+    personal: true,
+  });
+  const blockedTranscript = t.context.models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: canonicalFirstId,
+    blobId: randomUUID(),
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+    personal: true,
+  });
+  const personalWritesBlocked = await waitForPersonalScopeBarrier(
+    t.context.db,
+    canonicalFirstId
+  );
+  releaseCanonical.resolve();
+  await canonicalInsert;
+  const rejectedPersonalWrites = await Promise.allSettled([
+    blockedPersonal,
+    blockedTranscript,
+  ]);
+  t.deepEqual(
+    rejectedPersonalWrites.map(result => result.status),
+    ['rejected', 'rejected']
+  );
+
+  const personalFirstId = randomUUID();
+  const personalSessionId = randomUUID();
+  const personalLock = Promise.withResolvers<void>();
+  const releasePersonal = Promise.withResolvers<void>();
+  const personalWrite = second.$transaction(async tx => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`copilot-personal:${personalFirstId}`}, 0))`;
+    await tx.aiSession.create({
+      data: {
+        id: personalSessionId,
+        userId: user.id,
+        workspaceId: personalFirstId,
+        docId: null,
+        pinned: false,
+        promptName: 'test-prompt',
+        promptAction: null,
+      },
+    });
+    personalLock.resolve();
+    await releasePersonal.promise;
+  });
+  await personalLock.promise;
+  const workspaceInsertStarted = Promise.withResolvers<number>();
+  const blockedWorkspace = third.$transaction(async tx => {
+    const [backend] = await tx.$queryRaw<Array<{ pid: number }>>`
+      SELECT pg_backend_pid() AS pid
+    `;
+    workspaceInsertStarted.resolve(backend.pid);
+    await tx.workspace.create({ data: { id: personalFirstId } });
+  });
+  const blockedWorkspacePid = await workspaceInsertStarted.promise;
+  const workspaceInsertBlocked = await waitForPersonalScopeBarrier(
+    t.context.db,
+    personalFirstId
+  );
+  const workspaceBackendBlocked = await waitForBlockedBackend(
+    t.context.db,
+    blockedWorkspacePid
+  );
+  releasePersonal.resolve();
+  await personalWrite;
+  await blockedWorkspace;
+  t.true(personalWritesBlocked);
+  t.true(workspaceInsertBlocked);
+  t.true(
+    workspaceBackendBlocked,
+    'workspace insert is waiting for the personal-scope transaction'
+  );
+  t.truthy(
+    await t.context.db.aiSession.findUnique({
+      where: { id: personalSessionId },
+    })
+  );
+  t.truthy(
+    await t.context.db.workspace.findUnique({
+      where: { id: personalFirstId },
+    })
+  );
+});
+
+// Test data constants
+const TEST_PROMPTS = {
+  NORMAL: 'test-prompt',
+  ACTION: 'action-prompt',
+} as const;
+
+// Helper functions
+const createTestSession = async (
+  t: ExecutionContext<Context>,
+  overrides: Partial<{
+    sessionId: string;
+    userId: string;
+    workspaceId: string;
+    docId: string | null;
+    pinned: boolean;
+    promptName: string;
+    promptAction: string | null;
+    personal: boolean;
+  }> = {}
+) => {
+  const sessionData = {
+    sessionId: randomUUID(),
+    userId: user.id,
+    workspaceId: workspace.id,
+    docId: null,
+    pinned: false,
+    title: null,
+    promptName: TEST_PROMPTS.NORMAL,
+    promptAction: null,
+    ...overrides,
+  };
+
+  await t.context.copilotSession.create(sessionData);
+  return sessionData;
+};
+
+const getSessionStates = async (db: PrismaClient, sessionIds: string[]) => {
+  const sessions = await Promise.all(
+    sessionIds.map(id =>
+      db.aiSession.findUnique({
+        where: { id },
+        select: { id: true, pinned: true, docId: true },
+      })
+    )
+  );
+  return sessions;
+};
+
+const addMessagesToSession = async (
+  copilotSession: CopilotSessionModel,
+  sessionId: string,
+  content: string,
+  delayMs: number = 0
+) => {
+  if (delayMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  await copilotSession.updateMessages({
+    sessionId,
+    userId: user.id,
+    workspaceId: workspace.id,
+    messages: [
+      {
+        role: 'user',
+        content,
+        createdAt: new Date(),
+      },
+    ],
+  });
+};
+
+const createSessionWithMessages = async (
+  t: ExecutionContext<Context>,
+  overrides: Parameters<typeof createTestSession>[1] = {},
+  messageContent?: string,
+  delayMs: number = 0
+) => {
+  const sessionData = await createTestSession(t, overrides);
+  if (messageContent) {
+    await addMessagesToSession(
+      t.context.copilotSession,
+      sessionData.sessionId,
+      messageContent,
+      delayMs
+    );
+  }
+  return sessionData;
+};
+
+// Simplified update assertion helpers
+type UpdateData = Omit<
+  UpdateChatSessionOptions,
+  'userId' | 'sessionId' | 'workspaceId'
+>;
+
+test('should list and filter session type', async t => {
+  const { copilotSession } = t.context;
+
+  const docId = 'doc-id-1';
+  await createTestSession(t, { sessionId: randomUUID() });
+  await createTestSession(t, { sessionId: randomUUID(), pinned: true });
+  await createTestSession(t, { sessionId: randomUUID(), docId });
+  await createTestSession(t, {
+    sessionId: randomUUID(),
+    docId,
+    promptName: 'action-prompt',
+    promptAction: 'action',
+  });
+
+  // should list sessions
+  {
+    const workspaceSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId: null,
+    });
+
+    t.snapshot(
+      workspaceSessions.map(s => ({ docId: s.docId, pinned: s.pinned })),
+      'workspace sessions should include workspace and pinned sessions'
+    );
+  }
+
+  {
+    const docSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+    });
+
+    t.is(
+      docSessions.length,
+      2,
+      'should return exactly 2 doc sessions for the specified docId'
+    );
+
+    t.true(
+      docSessions.every(s => s.docId === docId),
+      'all returned sessions should have the specified docId'
+    );
+
+    t.snapshot(
+      cleanObject(
+        docSessions.toSorted((a, b) =>
+          a.promptName.localeCompare(b.promptName)
+        ),
+        ['id', 'userId', 'workspaceId', 'createdAt', 'updatedAt']
+      ),
+      'doc sessions should only include sessions with matching docId'
+    );
+  }
+
+  // should identify session types
+  {
+    // check get session type
+    const testCases = [
+      { docId: null, pinned: false },
+      { docId: undefined, pinned: false },
+      { docId: null, pinned: true },
+      { docId, pinned: false },
+    ];
+
+    const sessionTypeResults = testCases.map(session => ({
+      session,
+      type: copilotSession.getSessionType(session),
+    }));
+
+    t.snapshot(sessionTypeResults, 'session type identification results');
+  }
+});
+
+test('should validate session prompt compatibility', async t => {
+  const { copilotSession } = t.context;
+
+  const sessionTypes = [
+    { name: 'workspace', session: { docId: null, pinned: false } },
+    { name: 'pinned', session: { docId: null, pinned: true } },
+    { name: 'doc', session: { docId: randomUUID(), pinned: false } },
+  ];
+
+  const result = sessionTypes.flatMap(({ name, session }) => [
+    // non-action prompts should work for all session types
+    {
+      sessionType: name,
+      promptType: 'non-action',
+      shouldThrow: false,
+      result: (() => {
+        try {
+          copilotSession.checkSessionPrompt(session, {
+            name: TEST_PROMPTS.NORMAL,
+            action: undefined,
+          });
+          return 'success';
+        } catch (error) {
+          return error instanceof CopilotPromptInvalid
+            ? 'CopilotPromptInvalid'
+            : 'unknown';
+        }
+      })(),
+    },
+    // action prompts should only work for doc session type
+    {
+      sessionType: name,
+      promptType: 'action',
+      shouldThrow: name !== 'doc',
+      result: (() => {
+        try {
+          copilotSession.checkSessionPrompt(session, {
+            name: TEST_PROMPTS.ACTION,
+            action: 'edit',
+          });
+          return 'success';
+        } catch (error) {
+          return error instanceof CopilotPromptInvalid
+            ? 'CopilotPromptInvalid'
+            : 'unknown';
+        }
+      })(),
+    },
+  ]);
+
+  t.snapshot(result, 'session prompt validation results');
+});
+
+test('should pin and unpin sessions', async t => {
+  const { copilotSession, db } = t.context;
+
+  const firstSessionId = 'first-session-id';
+  const secondSessionId = 'second-session-id';
+  const thirdSessionId = 'third-session-id';
+
+  // should unpin existing pinned session when creating a new one
+  {
+    await copilotSession.create({
+      sessionId: firstSessionId,
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId: null,
+      promptName: 'test-prompt',
+      promptAction: null,
+      pinned: true,
+      title: null,
+    });
+
+    const firstSession = await copilotSession.get(
+      firstSessionId,
+      user.id,
+      workspace.id
+    );
+    t.truthy(firstSession, 'first session should be created successfully');
+    t.is(firstSession?.pinned, true, 'first session should be pinned');
+
+    // should unpin the first one when creating second pinned session
+    await copilotSession.create({
+      sessionId: secondSessionId,
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId: null,
+      promptName: 'test-prompt',
+      promptAction: null,
+      pinned: true,
+      title: null,
+    });
+
+    const sessionStatesAfterSecondPin = await getSessionStates(db, [
+      firstSessionId,
+      secondSessionId,
+    ]);
+
+    t.snapshot(
+      sessionStatesAfterSecondPin,
+      'session states after creating second pinned session'
+    );
+  }
+
+  // should can unpin a pinned session
+  {
+    await createTestSession(t, { sessionId: thirdSessionId, pinned: true });
+    const unpinResult = await copilotSession.unpin(workspace.id, user.id);
+    t.is(
+      unpinResult,
+      true,
+      'unpin operation should return true when sessions are unpinned'
+    );
+
+    const unpinResultAgain = await copilotSession.unpin(workspace.id, user.id);
+    t.snapshot(
+      unpinResultAgain,
+      'should return false when no sessions to unpin'
+    );
+  }
+
+  // should unpin all sessions
+  {
+    const allSessionsAfterUnpin = await db.aiSession.findMany({
+      where: { id: { in: [firstSessionId, secondSessionId, thirdSessionId] } },
+      select: { pinned: true, id: true },
+      orderBy: { id: 'asc' },
+    });
+
+    t.snapshot(
+      allSessionsAfterUnpin,
+      'all sessions should be unpinned after unpin operation'
+    );
+  }
+});
+
+test('should handle session updates and type conversions', async t => {
+  const { copilotSession, db } = t.context;
+
+  const sessionId = randomUUID();
+  const actionSessionId = randomUUID();
+  const forkedSessionId = randomUUID();
+  const parentSessionId = randomUUID();
+  const docId = randomUUID();
+
+  {
+    await createTestSession(t, { sessionId });
+    await createTestSession(t, {
+      sessionId: actionSessionId,
+      promptName: TEST_PROMPTS.ACTION,
+      promptAction: 'edit',
+      docId,
+    });
+    await createTestSession(t, { sessionId: parentSessionId, docId });
+    await db.aiSession.create({
+      data: {
+        id: forkedSessionId,
+        workspaceId: workspace.id,
+        userId: user.id,
+        docId,
+        pinned: false,
+        promptName: TEST_PROMPTS.NORMAL,
+        promptAction: null,
+        parentSessionId,
+      },
+    });
+  }
+
+  const updateTestCases = [
+    // action sessions should reject all updates
+    {
+      sessionId: actionSessionId,
+      updates: [
+        { docId: 'new-doc', expected: 'reject' },
+        { pinned: true, expected: 'reject' },
+        { promptName: TEST_PROMPTS.NORMAL, expected: 'reject' },
+      ],
+    },
+    // forked sessions should reject docId updates but allow others
+    {
+      sessionId: forkedSessionId,
+      updates: [
+        { pinned: true, expected: 'allow' },
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
+        { docId: 'new-doc', expected: 'reject' },
+      ],
+    },
+    // Regular sessions - prompt validation
+    {
+      sessionId,
+      updates: [
+        {
+          promptName: TEST_PROMPTS.NORMAL,
+          promptAction: null,
+          expected: 'allow',
+        },
+        {
+          promptName: TEST_PROMPTS.ACTION,
+          promptAction: 'edit',
+          expected: 'reject',
+        },
+        { promptName: 'non-existent-prompt', expected: 'reject' },
+      ],
+    },
+  ];
+
+  const updateResults = [];
+  for (const { sessionId: testSessionId, updates } of updateTestCases) {
+    for (const update of updates) {
+      const { expected: _, ...updateData } = update;
+      try {
+        await t.context.copilotSession.update({
+          ...updateData,
+          userId: user.id,
+          sessionId: testSessionId,
+          workspaceId: workspace.id,
+        });
+        updateResults.push({
+          sessionType:
+            testSessionId === actionSessionId
+              ? 'action'
+              : testSessionId === forkedSessionId
+                ? 'forked'
+                : 'regular',
+          update: updateData,
+          result: 'success',
+        });
+      } catch (error) {
+        updateResults.push({
+          sessionType:
+            testSessionId === actionSessionId
+              ? 'action'
+              : testSessionId === forkedSessionId
+                ? 'forked'
+                : 'regular',
+          update: updateData,
+          result:
+            error instanceof CopilotSessionInvalidInput ? 'rejected' : 'error',
+        });
+      }
+    }
+  }
+
+  t.snapshot(updateResults, 'session update validation results');
+
+  // session type conversions
+  const existingPinnedId = randomUUID();
+  await createTestSession(t, { sessionId: existingPinnedId, pinned: true });
+
+  await copilotSession.update({
+    userId: user.id,
+    sessionId,
+    workspaceId: workspace.id,
+    pinned: true,
+  });
+
+  // pinning behavior
+  const states = await getSessionStates(db, [sessionId, existingPinnedId]);
+  const pinnedCount = states.filter(s => s?.pinned).length;
+  const unpinnedCount = states.filter(s => s && !s.pinned).length;
+
+  t.snapshot(
+    {
+      totalSessions: states.length,
+      pinnedSessions: pinnedCount,
+      unpinnedSessions: unpinnedCount,
+      onlyOneSessionPinned: pinnedCount === 1,
+    },
+    'pinning behavior - should unpin existing when pinning new'
+  );
+
+  // type conversions
+  const conversionSteps = [];
+  const conversions: Array<[string, UpdateData]> = [
+    ['workspace_to_doc', { docId, pinned: false }],
+    ['doc_to_workspace', { docId: null }],
+    ['workspace_to_pinned', { pinned: true }],
+  ];
+
+  for (const [step, data] of conversions) {
+    await copilotSession.update({
+      userId: user.id,
+      sessionId,
+      workspaceId: workspace.id,
+      ...data,
+    });
+    const session = await db.aiSession.findUnique({
+      where: { id: sessionId },
+      select: { docId: true, pinned: true },
+    });
+    conversionSteps.push({
+      step,
+      sessionState: {
+        hasDocId: !!session?.docId,
+        pinned: !!session?.pinned,
+      },
+      type: copilotSession.getSessionType(session!),
+    });
+  }
+
+  t.snapshot(conversionSteps, 'session type conversion steps');
+});
+
+test('should handle session queries, ordering, and filtering', async t => {
+  const { copilotSession, db } = t.context;
+
+  const docId = randomUUID();
+  const sessionIds: string[] = [];
+  const sessionConfigs = [
+    { type: 'workspace', config: { docId: null, pinned: false } },
+    { type: 'pinned', config: { docId: null, pinned: true } },
+    { type: 'doc', config: { docId, pinned: false }, withMessages: true },
+    {
+      type: 'action',
+      config: { docId, promptName: TEST_PROMPTS.ACTION, promptAction: 'edit' },
+    },
+  ];
+
+  // create sessions with timing delays for ordering tests
+  for (let i = 0; i < sessionConfigs.length; i++) {
+    const { config, withMessages } = sessionConfigs[i];
+    const sessionId = randomUUID();
+    sessionIds.push(sessionId);
+
+    if (withMessages) {
+      await createSessionWithMessages(
+        t,
+        { sessionId, ...config },
+        `Message for session ${i}`,
+        100 * i
+      );
+    } else {
+      await createTestSession(t, { sessionId, ...config });
+    }
+  }
+
+  // Create additional doc sessions for multiple doc test
+  for (let i = 0; i < 2; i++) {
+    const sessionId = randomUUID();
+    sessionIds.push(sessionId);
+    await createSessionWithMessages(
+      t,
+      { sessionId, docId },
+      `Additional doc message ${i}`,
+      200 + 100 * i
+    );
+  }
+
+  // create fork session
+  const parentSessionId = sessionIds[2]; // use first doc session as parent
+  const forkedSessionId = randomUUID();
+  await db.aiSession.create({
+    data: {
+      id: forkedSessionId,
+      workspaceId: workspace.id,
+      userId: user.id,
+      docId,
+      pinned: false,
+      promptName: TEST_PROMPTS.NORMAL,
+      promptAction: null,
+      parentSessionId,
+    },
+  });
+
+  const baseParams = { userId: user.id, workspaceId: workspace.id };
+  const docParams = { ...baseParams, docId };
+  const queryTestCases = [
+    { name: 'all_workspace_sessions', params: baseParams },
+    {
+      name: 'workspace_sessions_with_messages',
+      params: { ...baseParams, docId: null, withMessages: true },
+    },
+    {
+      name: 'doc_sessions_with_messages',
+      params: { ...docParams, withMessages: true },
+    },
+    {
+      name: 'recent_top3_sessions',
+      params: { ...baseParams, limit: 3, sessionOrder: 'desc' as const },
+    },
+    {
+      name: 'non_action_sessions',
+      params: { ...docParams, action: false },
+    },
+    { name: 'non_fork_sessions', params: { ...docParams, fork: false } },
+    {
+      name: 'latest_valid_session',
+      params: {
+        ...docParams,
+        limit: 1,
+        sessionOrder: 'desc' as const,
+        action: false,
+        fork: false,
+      },
+    },
+  ];
+
+  const queryResults: Record<string, any> = {};
+  for (const { name, params } of queryTestCases) {
+    const sessions = await copilotSession.list(params);
+    queryResults[name] = {
+      count: sessions.length,
+      sessionTypes: sessions.map(s => ({
+        type: copilotSession.getSessionType(s),
+        hasMessages: !!s.messages?.length,
+        messageCount: s.messages?.length || 0,
+        isAction: s.promptName === TEST_PROMPTS.ACTION,
+        isFork: !!s.parentSessionId,
+      })),
+    };
+  }
+
+  t.snapshot(queryResults, 'comprehensive session query results');
+
+  const otherUser = await t.context.user.create({
+    email: `${randomUUID()}@affine.pro`,
+  });
+  const otherSession = await createTestSession(t, {
+    userId: otherUser.id,
+    workspaceId: workspace.id,
+    docId,
+  });
+  await t.context.copilotSession.updateMessages({
+    sessionId: otherSession.sessionId,
+    userId: otherUser.id,
+    workspaceId: workspace.id,
+    messages: [{ role: 'user', content: 'private', createdAt: new Date() }],
+  });
+
+  const otherWorkspace = await t.context.models.workspace.create(user.id);
+  const sameUserOtherWorkspace = await createTestSession(t, {
+    workspaceId: otherWorkspace.id,
+    docId: null,
+  });
+  await t.context.copilotSession.updateMessages({
+    sessionId: sameUserOtherWorkspace.sessionId,
+    userId: user.id,
+    workspaceId: otherWorkspace.id,
+    messages: [
+      { role: 'user', content: 'other workspace', createdAt: new Date() },
+    ],
+  });
+  const otherWorkspaceMessage =
+    await t.context.db.aiSessionMessage.findFirstOrThrow({
+      where: { sessionId: sameUserOtherWorkspace.sessionId },
+    });
+  const scopedReads = {
+    expectedWorkspace: Boolean(
+      await copilotSession.get(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        otherWorkspace.id
+      )
+    ),
+    wrongWorkspace: Boolean(
+      await copilotSession.get(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        workspace.id
+      )
+    ),
+    wrongWorkspaceMessage: Boolean(
+      await copilotSession.getMessage(
+        sameUserOtherWorkspace.sessionId,
+        user.id,
+        workspace.id,
+        otherWorkspaceMessage.id
+      )
+    ),
+  };
+  t.snapshot(scopedReads, 'canonical session reads require workspace scope');
+
+  t.is(
+    await copilotSession.get(otherSession.sessionId, user.id, workspace.id),
+    null
+  );
+  t.is(
+    await copilotSession.getMessage(
+      otherSession.sessionId,
+      user.id,
+      workspace.id,
+      (
+        await t.context.db.aiSessionMessage.findFirstOrThrow({
+          where: { sessionId: otherSession.sessionId },
+        })
+      ).id
+    ),
+    null
+  );
+  t.false(
+    (await copilotSession.list(docParams)).some(
+      session => session.id === otherSession.sessionId
+    )
+  );
+  await t.throwsAsync(
+    copilotSession.update({
+      userId: user.id,
+      sessionId: otherSession.sessionId,
+      workspaceId: workspace.id,
+      pinned: true,
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  await t.throwsAsync(
+    copilotSession.updateMessages({
+      userId: user.id,
+      sessionId: otherSession.sessionId,
+      workspaceId: workspace.id,
+      messages: [{ role: 'user', content: 'intrusion', createdAt: new Date() }],
+    }),
+    { instanceOf: CopilotSessionNotFound }
+  );
+  t.deepEqual(
+    await copilotSession.cleanup({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+      sessionIds: [otherSession.sessionId],
+    }),
+    []
+  );
+
+  // should list sessions appear in correct order
+  {
+    const docSessionsWithMessages = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+      withMessages: true,
+      sessionOrder: 'desc',
+    });
+
+    // check sessions are returned in desc order by updatedAt
+    if (docSessionsWithMessages.length > 1) {
+      for (let i = 1; i < docSessionsWithMessages.length; i++) {
+        const currentSession = docSessionsWithMessages[i - 1];
+        const nextSession = docSessionsWithMessages[i];
+        t.true(
+          currentSession.updatedAt >= nextSession.updatedAt,
+          `sessions should be ordered by updatedAt desc: ${currentSession.updatedAt} >= ${nextSession.updatedAt}`
+        );
+      }
+    }
+  }
+
+  // should update `updatedAt` when updating messages
+  {
+    const oldestDocSession = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+      sessionOrder: 'asc',
+      limit: 1,
+    });
+
+    if (oldestDocSession.length > 0) {
+      const sessionId = oldestDocSession[0].id;
+
+      // get initial updatedAt
+      const sessionBeforeUpdate = await db.aiSession.findUnique({
+        where: { id: sessionId },
+        select: { updatedAt: true },
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await addMessagesToSession(
+        copilotSession,
+        sessionId,
+        'Update to verify sorting'
+      );
+
+      const sessionAfterUpdate = await db.aiSession.findUnique({
+        where: { id: sessionId },
+        select: { updatedAt: true },
+      });
+      t.true(
+        sessionAfterUpdate!.updatedAt > sessionBeforeUpdate!.updatedAt,
+        'updatedAt should be updated after adding messages'
+      );
+
+      // the updated session now should appears first in desc order
+      const sessionsAfterUpdate = await copilotSession.list({
+        userId: user.id,
+        workspaceId: workspace.id,
+        docId,
+        sessionOrder: 'desc',
+      });
+      t.is(
+        sessionsAfterUpdate[0].id,
+        sessionId,
+        'session with updated messages should appear first in descending order'
+      );
+    }
+  }
+
+  // should get latest valid session
+  {
+    const latestValidSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+      limit: 1,
+      sessionOrder: 'desc',
+      action: false,
+      fork: false,
+    });
+
+    if (latestValidSessions.length > 0) {
+      const latestSession = latestValidSessions[0];
+
+      // verify this is indeed a non-action, non-fork session
+      t.falsy(
+        latestSession.parentSessionId,
+        'latest session should not be a fork'
+      );
+      t.not(
+        latestSession.promptName,
+        TEST_PROMPTS.ACTION,
+        'latest session should not use action prompt'
+      );
+
+      // verify it's the most recently updated among valid sessions
+      const allValidSessions = await copilotSession.list({
+        userId: user.id,
+        workspaceId: workspace.id,
+        docId,
+        action: false,
+        fork: false,
+        sessionOrder: 'desc',
+      });
+
+      if (allValidSessions.length > 0) {
+        t.is(
+          allValidSessions[0].id,
+          latestSession.id,
+          'latest valid session should be the first in the ordered list'
+        );
+      }
+    }
+  }
+
+  // session type identification
+  const sessionTypeTests = [
+    { docId: null, pinned: false },
+    { docId: undefined, pinned: false },
+    { docId: null, pinned: true },
+    { docId: 'test-doc-id', pinned: false },
+  ];
+
+  const sessionTypeResults = sessionTypeTests.map(session => ({
+    session,
+    type: copilotSession.getSessionType(session),
+  }));
+
+  t.snapshot(sessionTypeResults, 'session type identification results');
+});
+
+test('should handle fork and session attachment operations', async t => {
+  const { copilotSession } = t.context;
+
+  const parentSessionId = randomUUID();
+  const docId = randomUUID();
+
+  await createSessionWithMessages(
+    t,
+    { sessionId: parentSessionId, docId },
+    'Original message'
+  );
+
+  const forkTestCases = [
+    {
+      sessionId: randomUUID(),
+      docId: null,
+      pinned: false,
+      description: 'workspace fork',
+    },
+    { sessionId: randomUUID(), docId, pinned: false, description: 'doc fork' },
+    {
+      sessionId: randomUUID(),
+      docId: null,
+      pinned: true,
+      description: 'pinned fork',
+    },
+  ];
+
+  // test unpinning behavior
+  const existingPinnedId = randomUUID();
+  await createTestSession(t, { sessionId: existingPinnedId, pinned: true });
+
+  const performForkOperation = async (
+    copilotSession: CopilotSessionModel,
+    parentSessionId: string,
+    forkConfig: {
+      sessionId: string;
+      docId: string | null;
+      pinned: boolean;
+    }
+  ) => {
+    return await copilotSession.fork({
+      sessionId: forkConfig.sessionId,
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId: forkConfig.docId,
+      pinned: forkConfig.pinned,
+      title: null,
+      parentSessionId,
+      prompt: { name: TEST_PROMPTS.NORMAL, action: null },
+      messages: [
+        {
+          role: 'user',
+          content: 'Original message',
+          createdAt: new Date(),
+        },
+      ],
+    });
+  };
+
+  // fork operations
+  const forkResults = await Promise.all(
+    forkTestCases.map(async test => {
+      const returnedId = await performForkOperation(
+        copilotSession,
+        parentSessionId,
+        test
+      );
+      const forkedSession = await copilotSession.get(
+        test.sessionId,
+        user.id,
+        workspace.id
+      );
+      return {
+        description: test.description,
+        success: returnedId === test.sessionId,
+        actualState: forkedSession
+          ? {
+              hasDocId: !!forkedSession.docId,
+              isDocIdCorrect: forkedSession.docId === test.docId,
+              pinned: forkedSession.pinned,
+              hasParent: !!forkedSession.parentSessionId,
+            }
+          : null,
+      };
+    })
+  );
+
+  // check if pinned fork unpinned existing session
+  const originalPinned = await copilotSession.get(
+    existingPinnedId,
+    user.id,
+    workspace.id
+  );
+
+  t.snapshot(
+    {
+      forkResults,
+      existingPinnedSessionUnpinned: !originalPinned?.pinned,
+    },
+    'fork operation results'
+  );
+
+  // attach/detach operations
+  const workspaceSessionId = randomUUID();
+  const existingDocSessionId = randomUUID();
+  const attachTestDocId = randomUUID();
+
+  // sessions for attach/detach test
+  await createTestSession(t, { sessionId: workspaceSessionId, docId: null });
+  await createTestSession(t, {
+    sessionId: existingDocSessionId,
+    docId: attachTestDocId,
+  });
+
+  // attach: workspace -> doc
+  await copilotSession.update({
+    userId: user.id,
+    sessionId: workspaceSessionId,
+    workspaceId: workspace.id,
+    docId: attachTestDocId,
+  });
+
+  const docSessionsAfterAttach = await copilotSession.list({
+    userId: user.id,
+    workspaceId: workspace.id,
+    docId: attachTestDocId,
+  });
+
+  // detach: doc -> workspace
+  await copilotSession.update({
+    userId: user.id,
+    sessionId: workspaceSessionId,
+    workspaceId: workspace.id,
+    docId: null,
+  });
+
+  const workspaceSessionsAfterDetach = await copilotSession.list({
+    userId: user.id,
+    workspaceId: workspace.id,
+    docId: null,
+  });
+
+  const remainingDocSessions = await copilotSession.list({
+    userId: user.id,
+    workspaceId: workspace.id,
+    docId: attachTestDocId,
+  });
+
+  t.snapshot(
+    {
+      afterAttach: {
+        docSessionCount: docSessionsAfterAttach.length,
+        bothSessionsPresent:
+          docSessionsAfterAttach.some(s => s.id === workspaceSessionId) &&
+          docSessionsAfterAttach.some(s => s.id === existingDocSessionId),
+      },
+      afterDetach: {
+        workspaceSessionExists: workspaceSessionsAfterDetach.some(
+          s => s.id === workspaceSessionId && !s.pinned
+        ),
+        originalDocSessionRemains:
+          remainingDocSessions.length === 1 &&
+          remainingDocSessions[0].id === existingDocSessionId,
+      },
+    },
+    'attach and detach operation results'
+  );
+});
+
+test('should cleanup empty sessions correctly', async t => {
+  const { copilotSession, db } = t.context;
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+  // should be deleted
+  const neverUsedSessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    neverUsedSessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 0, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should be marked as deleted
+  const emptySessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    emptySessionIds.map(async id => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: { messageCost: 100, updatedAt: oneDayAgo },
+      });
+    })
+  );
+
+  // should not be affected
+  const recentSessionId = randomUUID();
+  await createTestSession(t, { sessionId: recentSessionId });
+  await db.aiSession.update({
+    where: { id: recentSessionId },
+    data: { messageCost: 0, updatedAt: twoHoursAgo },
+  });
+
+  // Create session with messages (should not be affected)
+  const sessionWithMsgId = randomUUID();
+  await createSessionWithMessages(
+    t,
+    { sessionId: sessionWithMsgId },
+    'test message'
+  );
+
+  const result = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const orderedSessionIds = [
+    ...neverUsedSessionIds,
+    ...emptySessionIds,
+    recentSessionId,
+    sessionWithMsgId,
+  ];
+
+  const remainingSessions = await db.aiSession.findMany({
+    where: {
+      id: { in: orderedSessionIds },
+    },
+    select: { id: true, deletedAt: true, pinned: true },
+  });
+  remainingSessions.sort(
+    (left, right) =>
+      orderedSessionIds.indexOf(left.id) - orderedSessionIds.indexOf(right.id)
+  );
+
+  t.snapshot(
+    {
+      cleanupResult: result,
+      remainingSessions: remainingSessions.map(s => ({
+        deleted: !!s.deletedAt,
+        pinned: s.pinned,
+        type: neverUsedSessionIds.includes(s.id)
+          ? 'zeroCost'
+          : emptySessionIds.includes(s.id)
+            ? 'noMessages'
+            : s.id === recentSessionId
+              ? 'recent'
+              : 'withMessages',
+      })),
+    },
+    'cleanup empty sessions results'
+  );
+});
+
+test('should append durable message and account message cost', async t => {
+  const { copilotSession, db } = t.context;
+  const workspaceId = workspace.id;
+  if (!workspaceId) {
+    t.fail('Test workspace ID is missing');
+    return;
+  }
+
+  const { sessionId } = await createTestSession(t);
+  const artifact = await db.workspaceArtifact.create({
+    data: {
+      workspaceId,
+      contentHash: `test-${sessionId}`,
+      canonicalMediaType: 'text/plain',
+      sizeBytes: 5,
+      storageScope: 'copilot',
+      storageKey: `artifacts/${sessionId}`,
+      status: 'ready',
+      readyAt: new Date(),
+    },
+  });
+  const scopeSnapshot = {
+    version: 1,
+    resolvedAt: new Date().toISOString(),
+    selectors: [
+      {
+        kind: 'artifact' as const,
+        id: artifact.id,
+        source: 'message' as const,
+      },
+    ],
+    requiredDocIds: [],
+    requiredArtifactIds: [artifact.id],
+    preferredSourceIds: [],
+    retrieval: {
+      mode: 'required' as const,
+      requiredDocIds: [],
+      requiredArtifactIds: [artifact.id],
+      preferredSourceIds: [],
+    },
+  };
+  const appended = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    workspaceId: workspace.id,
+    message: {
+      role: 'user',
+      content: 'hello durable world',
+      attachments: [
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'note.txt',
+        },
+        {
+          kind: 'file_handle',
+          fileHandle: artifact.id,
+          mimeType: 'text/plain',
+          fileName: 'duplicate-name.txt',
+        },
+      ],
+      params: { foo: 'bar' },
+      scopeSnapshot,
+      createdAt: new Date(),
+    },
+    focus: {
+      selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+    },
+    artifacts: [
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'note.txt',
+      },
+      {
+        artifactId: artifact.id,
+        role: 'attachment',
+        displayName: 'duplicate-name.txt',
+      },
+    ],
+  });
+
+  const afterAppend = await db.aiSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { messageCost: true, focus: true },
+  });
+
+  const messageId = appended.id;
+  if (!messageId) {
+    t.fail('Appended message ID is missing');
+    return;
+  }
+  t.is(afterAppend.messageCost, 1);
+  t.is(appended.attachments?.length, 2);
+  t.deepEqual(appended.params, { foo: 'bar' });
+  t.deepEqual(appended.scopeSnapshot, scopeSnapshot);
+  t.deepEqual(afterAppend.focus, {
+    selectors: [{ kind: 'document', id: 'doc-1', source: 'focus' }],
+  });
+  const artifactReference = await db.aiMessageArtifact.findUniqueOrThrow({
+    where: {
+      messageId_artifactId_role: {
+        messageId,
+        artifactId: artifact.id,
+        role: 'attachment',
+      },
+    },
+  });
+  t.is(artifactReference.workspaceId, workspaceId);
+  t.is(artifactReference.displayName, 'note.txt');
+  t.is(
+    await db.aiMessageArtifact.count({
+      where: { messageId, artifactId: artifact.id, role: 'attachment' },
+    }),
+    1
+  );
+
+  const appendedBare = await copilotSession.appendMessage({
+    sessionId,
+    userId: user.id,
+    workspaceId: workspace.id,
+    message: {
+      role: 'assistant',
+      content: 'assistant reply',
+      createdAt: new Date(),
+    },
+  });
+
+  const storedBare = await db.aiSessionMessage.findUniqueOrThrow({
+    where: { id: appendedBare.id },
+    select: { params: true },
+  });
+
+  t.deepEqual(appendedBare.params, {});
+  t.deepEqual(storedBare.params, {});
+
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  await db.aiSession.update({
+    where: { id: sessionId },
+    data: { updatedAt: oneDayAgo },
+  });
+
+  const cleanup = await copilotSession.cleanupEmptySessions(oneDayAgo);
+  const persisted = await db.aiSession.findUnique({
+    where: { id: sessionId },
+    select: { deletedAt: true, messageCost: true },
+  });
+
+  t.deepEqual(cleanup, { removed: 0, cleaned: 0 });
+  t.truthy(persisted);
+  t.is(persisted?.deletedAt, null);
+  t.is(persisted?.messageCost, 1);
+});
+
+test('should count action runs without double-counting legacy action sessions', async t => {
+  const { copilotSession, models } = t.context;
+
+  const regular = await createTestSession(t);
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+
+  const legacyAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const migratedAction = await createTestSession(t, {
+    promptName: TEST_PROMPTS.ACTION,
+    promptAction: 'edit',
+  });
+  const run = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(run.id, {
+    status: 'succeeded',
+    result: { ok: true },
+    trace: [{ type: 'action_done', status: 'succeeded' }],
+  });
+  const retryRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    sessionId: migratedAction.sessionId,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+    attempt: 2,
+    retryOf: run.id,
+  });
+  await models.copilotActionRun.complete(retryRun.id, {
+    status: 'aborted',
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  const persistedRetry = await models.copilotActionRun.get(retryRun.id);
+  const transcriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'audio-1',
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+  });
+  await models.copilotTranscriptTask.complete(transcriptTask.id, {
+    status: 'ready',
+    protectedResult: { normalizedTranscript: '00:00:01 A: Hello' },
+  });
+  await models.copilotTranscriptTask.settle(
+    transcriptTask.id,
+    user.id,
+    workspace.id
+  );
+
+  t.like(persistedRetry, {
+    status: 'aborted',
+    attempt: 2,
+    retryOf: run.id,
+    errorCode: 'action_aborted',
+    trace: [{ type: 'error', status: 'aborted' }],
+  });
+  t.is(await copilotSession.countUserMessages(user.id), 4);
+  t.truthy(legacyAction.sessionId);
+});
+
+test('should exclude BYOK provider usage from copilot quota cost', async t => {
+  const { copilotSession, models } = t.context;
+
+  const regular = await createTestSession(t);
+  const firstMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'regular message',
+      createdAt: new Date(),
+    },
+  });
+  const secondMessage = await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'second BYOK message',
+      createdAt: new Date(),
+    },
+  });
+  await copilotSession.appendMessage({
+    sessionId: regular.sessionId,
+    userId: user.id,
+    workspaceId: regular.workspaceId,
+    message: {
+      role: 'user',
+      content: 'quota-backed message',
+      createdAt: new Date(),
+    },
+  });
+  const failedRun = await models.copilotActionRun.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    actionId: 'mindmap.generate',
+    actionVersion: 'v1',
+  });
+  await models.copilotActionRun.complete(failedRun.id, {
+    status: 'failed',
+    errorCode: 'test_failed',
+  });
+  const pendingTranscriptTask = await models.copilotTranscriptTask.create({
+    userId: user.id,
+    workspaceId: workspace.id,
+    blobId: 'pending-audio',
+    recipeId: 'transcript.audio',
+    recipeVersion: 'v1',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'chat',
+    billingUnitId: firstMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+    billingUnitId: secondMessage.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'fal',
+    providerSource: 'byok_server',
+    featureKind: 'image',
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'openai',
+    providerSource: 'byok_server',
+    featureKind: 'action',
+    billingUnitId: failedRun.id,
+  });
+  await models.copilotUsage.create({
+    workspaceId: workspace.id,
+    userId: user.id,
+    provider: 'gemini',
+    providerSource: 'byok_server',
+    featureKind: 'transcript',
+    billingUnitId: pendingTranscriptTask.id,
+  });
+
+  t.is(await copilotSession.countUserMessages(user.id), 1);
+});
+
+test('should get sessions for title generation correctly', async t => {
+  const { copilotSession, db } = t.context;
+
+  // create valid sessions with messages
+  const sessionIds: string[] = [randomUUID(), randomUUID()];
+  await Promise.all(
+    sessionIds.map(async (id, index) => {
+      await createTestSession(t, { sessionId: id });
+      await db.aiSession.update({
+        where: { id },
+        data: {
+          updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 - index * 1000),
+          messages: {
+            create: Array.from({ length: index + 1 }, (_, i) => ({
+              role: 'assistant',
+              content: `assistant message ${i}`,
+            })),
+          },
+        },
+      });
+    })
+  );
+
+  // create excluded sessions
+  const excludedSessions = [
+    {
+      reason: 'hasTitle',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { title: 'Existing Title' },
+        });
+      },
+    },
+    {
+      reason: 'isDeleted',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSession.update({
+          where: { id },
+          data: { deletedAt: new Date() },
+        });
+      },
+    },
+    {
+      reason: 'noMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+      },
+    },
+    {
+      reason: 'isAction',
+      setupFn: async (id: string) => {
+        await createTestSession(t, {
+          sessionId: id,
+          promptName: TEST_PROMPTS.ACTION,
+        });
+      },
+    },
+    {
+      reason: 'noAssistantMessages',
+      setupFn: async (id: string) => {
+        await createTestSession(t, { sessionId: id });
+        await db.aiSessionMessage.create({
+          data: { sessionId: id, role: 'user', content: 'User message only' },
+        });
+      },
+    },
+  ];
+
+  await Promise.all(
+    excludedSessions.map(async session => {
+      await session.setupFn(randomUUID());
+    })
+  );
+
+  const result = await copilotSession.toBeGenerateTitle();
+  const concurrentlyVisible = await copilotSession.toBeGenerateTitle();
+
+  t.deepEqual(
+    concurrentlyVisible.map(session => session.id),
+    result.map(session => session.id)
+  );
+
+  await db.aiSession.update({
+    where: { id: result[0].id },
+    data: { title: 'Manual title' },
+  });
+  t.false(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[0].id,
+      userId: result[0].userId,
+      workspaceId: result[0].workspaceId,
+      title: 'Generated title',
+    })
+  );
+  t.true(
+    await copilotSession.setTitleIfAbsent({
+      sessionId: result[1].id,
+      userId: result[1].userId,
+      workspaceId: result[1].workspaceId,
+      title: 'Generated title',
+    })
+  );
+
+  t.snapshot(
+    {
+      total: result.length,
+      sessions: result.map(s => ({
+        assistantMessageCount: s._count.messages,
+        isValid: sessionIds.includes(s.id),
+      })),
+      onlyValidSessionsReturned: result.every(s => sessionIds.includes(s.id)),
+    },
+    'sessions for title generation results'
+  );
+});

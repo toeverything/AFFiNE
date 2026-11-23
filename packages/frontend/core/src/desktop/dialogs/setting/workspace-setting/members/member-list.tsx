@@ -10,11 +10,7 @@ import { UserFriendlyError } from '@affine/error';
 import { Permission, WorkspaceMemberStatus } from '@affine/graphql';
 import { type I18nString, useI18n } from '@affine/i18n';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
-import {
-  useEnsureLiveData,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { clamp } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -44,20 +40,23 @@ export const MemberList = ({
   }, [membersService]);
 
   const session = useService(AuthService).session;
-  const account = useEnsureLiveData(session.account$);
+  const account = useLiveData(session.account$);
 
   const handlePageChange = useCallback(
     (_: number, pageNum: number) => {
       membersService.members.setPageNum(pageNum);
-      membersService.members.revalidate();
     },
     [membersService]
   );
 
+  if (!account) {
+    return null;
+  }
+
   return (
     <div>
       {pageMembers === undefined ? (
-        isLoading ? (
+        isLoading || !error ? (
           <MemberListFallback
             memberCount={
               memberCount
@@ -70,11 +69,7 @@ export const MemberList = ({
             }
           />
         ) : (
-          <span className={styles.errorStyle}>
-            {error
-              ? UserFriendlyError.fromAny(error).message
-              : 'Failed to load members'}
-          </span>
+          <MemberListError error={error} />
         )
       ) : (
         pageMembers?.map(member => (
@@ -256,12 +251,14 @@ const MemberItem = ({
 const getMemberStatus = (member: Member): I18nString => {
   switch (member.status) {
     case WorkspaceMemberStatus.NeedMoreSeat:
+    case WorkspaceMemberStatus.NeedMoreSeatAndReview:
       return 'insufficient-team-seat';
     case WorkspaceMemberStatus.Pending:
       return 'Pending';
-    case WorkspaceMemberStatus.NeedMoreSeatAndReview:
     case WorkspaceMemberStatus.UnderReview:
       return 'Under-Review';
+    case WorkspaceMemberStatus.AllocatingSeat:
+      return 'Allocating Seat';
     case WorkspaceMemberStatus.Accepted:
       switch (member.permission) {
         case Permission.Owner:
@@ -276,19 +273,24 @@ const getMemberStatus = (member: Member): I18nString => {
   }
 };
 
+const getMembersFallbackHeight = (memberCount?: number) => {
+  if (memberCount) {
+    // height and margin-bottom
+    return memberCount * 58 + (memberCount - 1) * 6;
+  }
+  return 'auto';
+};
+
 export const MemberListFallback = ({
   memberCount,
 }: {
   memberCount?: number;
 }) => {
   // prevent page jitter
-  const height = useMemo(() => {
-    if (memberCount) {
-      // height and margin-bottom
-      return memberCount * 58 + (memberCount - 1) * 6;
-    }
-    return 'auto';
-  }, [memberCount]);
+  const height = useMemo(
+    () => getMembersFallbackHeight(memberCount),
+    [memberCount]
+  );
   const t = useI18n();
 
   return (
@@ -300,6 +302,34 @@ export const MemberListFallback = ({
     >
       <Loading size={20} />
       <span>{t['com.affine.settings.member.loading']()}</span>
+    </div>
+  );
+};
+
+export const MemberListError = ({
+  error,
+  memberCount,
+}: {
+  error?: unknown;
+  memberCount?: number;
+}) => {
+  const height = useMemo(
+    () => getMembersFallbackHeight(memberCount),
+    [memberCount]
+  );
+
+  return (
+    <div
+      style={{
+        height,
+      }}
+      className={styles.membersFallback}
+    >
+      <span className={styles.errorStyle}>
+        {error
+          ? UserFriendlyError.fromAny(error).message
+          : 'Failed to load members'}
+      </span>
     </div>
   );
 };

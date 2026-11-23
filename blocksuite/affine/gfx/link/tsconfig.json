@@ -1,0 +1,19 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../../blocks/bookmark" },
+    { "path": "../../blocks/embed" },
+    { "path": "../../blocks/surface" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/edgeless-toolbar" },
+    { "path": "../../../framework/std" }
+  ]
+}

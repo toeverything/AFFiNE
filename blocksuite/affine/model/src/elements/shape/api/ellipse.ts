@@ -1,4 +1,3 @@
-import type { PointTestOptions } from '@blocksuite/block-std/gfx';
 import {
   Bound,
   clamp,
@@ -13,6 +12,7 @@ import {
   toRadian,
   Vec,
 } from '@blocksuite/global/gfx';
+import type { PointTestOptions } from '@blocksuite/std/gfx';
 
 import { DEFAULT_CENTRAL_AREA_RATIO } from '../../../consts/index.js';
 import type { ShapeElementModel } from '../shape.js';

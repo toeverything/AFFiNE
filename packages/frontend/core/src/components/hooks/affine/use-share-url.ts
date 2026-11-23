@@ -1,14 +1,10 @@
 import { notify } from '@affine/component';
 import { ServerService } from '@affine/core/modules/cloud';
-import { toURLSearchParams } from '@affine/core/modules/navigation';
+import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { type EditorHost } from '@blocksuite/affine/block-std';
-import {
-  GfxBlockElementModel,
-  GfxControllerIdentifier,
-} from '@blocksuite/affine/block-std/gfx';
+import type { SerializedXYWH } from '@blocksuite/affine/global/gfx';
 import { type DocMode } from '@blocksuite/affine/model';
 import {
   getBlockSelectionsCommand,
@@ -16,6 +12,11 @@ import {
   getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine/shared/commands';
+import { type EditorHost } from '@blocksuite/affine/std';
+import {
+  GfxBlockElementModel,
+  GfxControllerIdentifier,
+} from '@blocksuite/affine/std/gfx';
 import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
@@ -25,7 +26,7 @@ export type UseSharingUrl = {
   mode?: DocMode;
   blockIds?: string[];
   elementIds?: string[];
-  xywh?: string; // not needed currently
+  xywh?: SerializedXYWH; // not needed currently
 };
 
 /**
@@ -44,7 +45,7 @@ export const generateUrl = ({
 }: UseSharingUrl & { baseUrl: string }) => {
   try {
     const url = new URL(`/workspace/${workspaceId}/${pageId}`, baseUrl);
-    const search = toURLSearchParams({ mode, blockIds, elementIds, xywh });
+    const search = toDocSearchParams({ mode, blockIds, elementIds, xywh });
     if (search?.size) url.search = search.toString();
     return url.toString();
   } catch (err) {

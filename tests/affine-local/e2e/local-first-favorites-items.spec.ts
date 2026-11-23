@@ -29,7 +29,7 @@ test('Show favorite items in sidebar', async ({ page, workspace }) => {
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
   const favoriteListItemInSidebar = page.getByTestId(
-    'explorer-doc-' + newPageId
+    'navigation-panel-doc-' + newPageId
   );
   expect(await favoriteListItemInSidebar.textContent()).toBe(
     'this is a new page to favorite'
@@ -58,7 +58,7 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
 
-  const favItemTestId = 'explorer-doc-' + newPageId;
+  const favItemTestId = 'navigation-panel-doc-' + newPageId;
 
   const favoriteListItemInSidebar = page.getByTestId(favItemTestId);
   expect(await favoriteListItemInSidebar.textContent()).toBe(
@@ -66,14 +66,14 @@ test('Show favorite reference in sidebar', async ({ page, workspace }) => {
   );
 
   const collapseButton = favoriteListItemInSidebar.getByTestId(
-    'explorer-collapsed-button'
+    'navigation-panel-collapsed-button'
   );
 
   await expect(collapseButton).toBeVisible();
   await collapseButton.click();
   await expect(
     favoriteListItemInSidebar.locator(
-      '[data-testid^="explorer-doc-"]:has-text("Another page")'
+      '[data-testid^="navigation-panel-doc-"]:has-text("Another page")'
     )
   ).toBeVisible();
   const currentWorkspace = await workspace.current();
@@ -111,7 +111,7 @@ test("Deleted page's reference will not be shown in sidebar", async ({
 
   const anotherPageId = getCurrentDocIdFromUrl(page);
 
-  const favItemTestId = 'explorer-doc-' + newPageId;
+  const favItemTestId = 'navigation-panel-doc-' + newPageId;
 
   await expect(page.getByTestId(favItemTestId)).toHaveText(
     'this is a new page to favorite'
@@ -119,10 +119,10 @@ test("Deleted page's reference will not be shown in sidebar", async ({
 
   await page
     .getByTestId(favItemTestId)
-    .getByTestId('explorer-collapsed-button')
+    .getByTestId('navigation-panel-collapsed-button')
     .click();
 
-  const favItemAnotherPageTestId = 'explorer-doc-' + anotherPageId;
+  const favItemAnotherPageTestId = 'navigation-panel-doc-' + anotherPageId;
 
   await expect(
     page.getByTestId(favItemTestId).getByTestId(favItemAnotherPageTestId)
@@ -146,7 +146,10 @@ test('Add new favorite page via sidebar', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
 
-  await page.getByTestId('explorer-bar-add-favorite-button').first().click();
+  await page
+    .getByTestId('navigation-panel-bar-add-favorite-button')
+    .first()
+    .click();
   await clickPageModeButton(page);
   await waitForEmptyEditor(page);
 
@@ -154,7 +157,7 @@ test('Add new favorite page via sidebar', async ({ page }) => {
   await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
   // check if the page title is shown in the favorite list
   const favItem = page
-    .getByTestId('explorer-favorites')
+    .getByTestId('navigation-panel-favorites')
     .locator('[draggable] >> text=this is a new fav page');
   await expect(favItem).toBeVisible();
 });

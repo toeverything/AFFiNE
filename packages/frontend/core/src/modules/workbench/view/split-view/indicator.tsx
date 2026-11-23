@@ -8,8 +8,7 @@ import { forwardRef, memo, useCallback, useMemo, useState } from 'react';
 import type { View } from '../../entities/view';
 import * as styles from './indicator.css';
 
-export interface SplitViewDragHandleProps
-  extends HTMLAttributes<HTMLDivElement> {
+export interface SplitViewDragHandleProps extends HTMLAttributes<HTMLDivElement> {
   active?: boolean;
   dragging?: boolean;
   open?: boolean;

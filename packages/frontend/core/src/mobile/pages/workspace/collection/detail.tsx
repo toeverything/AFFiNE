@@ -1,29 +1,26 @@
-import { notify, useThemeColorV2 } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import { useThemeColorV2 } from '@affine/component';
 import { CollectionService } from '@affine/core/modules/collection';
 import { GlobalContextService } from '@affine/core/modules/global-context';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { CollectionDetail } from '../../../views';
 
 export const Component = () => {
   useThemeColorV2('layer/background/mobile/primary');
-  const { collectionService, globalContextService, workspaceService } =
-    useServices({
-      WorkspaceService,
-      CollectionService,
-      GlobalContextService,
-    });
+  const { collectionService, globalContextService } = useServices({
+    CollectionService,
+    GlobalContextService,
+  });
 
   const globalContext = globalContextService.globalContext;
-  const collections = useLiveData(collectionService.collections$);
   const params = useParams();
-  const navigate = useNavigateHelper();
-  const workspace = workspaceService.workspace;
-  const collection = collections.find(v => v.id === params.collectionId);
+  const collection = useLiveData(
+    params.collectionId
+      ? collectionService.collection$(params.collectionId)
+      : null
+  );
 
   useEffect(() => {
     if (collection) {
@@ -38,30 +35,9 @@ export const Component = () => {
     return;
   }, [collection, globalContext]);
 
-  const notifyCollectionDeleted = useCallback(() => {
-    navigate.jumpToPage(workspace.id, 'home');
-    const collection = collectionService.collectionsTrash$.value.find(
-      v => v.collection.id === params.collectionId
-    );
-    let text = 'Collection does not exist';
-    if (collection) {
-      if (collection.userId) {
-        text = `${collection.collection.name} has been deleted by ${collection.userName}`;
-      } else {
-        text = `${collection.collection.name} has been deleted`;
-      }
-    }
-    return notify.error({ title: text });
-  }, [collectionService, navigate, params.collectionId, workspace.id]);
-
-  useEffect(() => {
-    if (!collection) {
-      notifyCollectionDeleted();
-    }
-  }, [collection, notifyCollectionDeleted]);
-
   if (!collection) {
-    return null;
+    // TODO: implement 404 page
+    return <div></div>;
   }
 
   return <CollectionDetail collection={collection} />;

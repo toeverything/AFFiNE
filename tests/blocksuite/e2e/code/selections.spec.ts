@@ -86,7 +86,9 @@ test('split code with selection by enter', async ({ page }) => {
   await assertRichTexts(page, ['he\no']);
 });
 
-test('drag select code block can delete it', async ({ page }) => {
+test('drag select code block can delete it with backspace', async ({
+  page,
+}) => {
   await enterPlaygroundRoom(page);
   await initEmptyCodeBlockState(page);
   await focusRichText(page);
@@ -110,6 +112,36 @@ test('drag select code block can delete it', async ({ page }) => {
   );
   await page.waitForTimeout(10);
   await page.keyboard.press('Backspace');
+  const locator = page.locator('affine-code');
+  await expect(locator).toBeHidden();
+});
+
+test('drag select code block can delete it with delete key', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyCodeBlockState(page);
+  await focusRichText(page);
+
+  const codeBlock = page.locator('affine-code');
+  const bbox = await codeBlock.boundingBox();
+  if (!bbox) {
+    throw new Error("Failed to get code block's bounding box");
+  }
+  const position = {
+    startX: bbox.x - 10,
+    startY: bbox.y - 10,
+    endX: bbox.x + bbox.width,
+    endY: bbox.y + bbox.height / 2,
+  };
+  await dragBetweenCoords(
+    page,
+    { x: position.startX, y: position.startY },
+    { x: position.endX, y: position.endY },
+    { steps: 20 }
+  );
+  await page.waitForTimeout(10);
+  await page.keyboard.press('Delete');
   const locator = page.locator('affine-code');
   await expect(locator).toBeHidden();
 });

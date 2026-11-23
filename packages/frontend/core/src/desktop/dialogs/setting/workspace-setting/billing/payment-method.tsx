@@ -1,8 +1,9 @@
-import { Button } from '@affine/component';
+import { Button, notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useMutation } from '@affine/core/components/hooks/use-mutation';
 import { UrlService } from '@affine/core/modules/url';
+import { UserFriendlyError } from '@affine/error';
 import { createCustomerPortalMutation } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
@@ -19,8 +20,11 @@ export const PaymentMethodUpdater = () => {
   const update = useAsyncCallback(async () => {
     await trigger(null, {
       onSuccess: data => {
-        urlService.openPopupWindow(data.createCustomerPortal);
+        urlService.openExternal(data.createCustomerPortal);
       },
+    }).catch(e => {
+      const userFriendlyError = UserFriendlyError.fromAny(e);
+      notify.error(userFriendlyError);
     });
   }, [trigger, urlService]);
 

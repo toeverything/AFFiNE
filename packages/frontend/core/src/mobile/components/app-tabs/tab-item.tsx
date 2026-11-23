@@ -1,7 +1,8 @@
 import { GlobalCacheService } from '@affine/core/modules/storage';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
-import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
+import { type PropsWithChildren, useCallback, useMemo } from 'react';
 
+import { cacheKey } from './constants';
 import { tabItem } from './styles.css';
 
 export interface TabItemProps extends PropsWithChildren {
@@ -10,8 +11,6 @@ export interface TabItemProps extends PropsWithChildren {
   onClick?: (isActive: boolean) => void;
 }
 
-const cacheKey = 'activeAppTabId';
-let isInitialized = false;
 export const TabItem = ({ id, label, children, onClick }: TabItemProps) => {
   const globalCache = useService(GlobalCacheService).globalCache;
   const activeTabId$ = useMemo(
@@ -26,14 +25,6 @@ export const TabItem = ({ id, label, children, onClick }: TabItemProps) => {
     globalCache.set(cacheKey, id);
     onClick?.(isActive);
   }, [globalCache, id, isActive, onClick]);
-
-  useEffect(() => {
-    if (isInitialized) return;
-    isInitialized = true;
-    if (BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
-      globalCache.set(cacheKey, 'home');
-    }
-  }, [globalCache]);
 
   return (
     <li

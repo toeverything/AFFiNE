@@ -1,0 +1,3 @@
+mutation deleteWorkspaceByokProfile($workspaceId: String!, $profileId: ID!) {
+  deleteWorkspaceByokProfile(workspaceId: $workspaceId, profileId: $profileId)
+}

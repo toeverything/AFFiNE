@@ -1,32 +1,56 @@
+import { notify } from '@affine/component';
+import { UserFriendlyError } from '@affine/error';
+import {
+  type DocMode as GraphqlDocMode,
+  DocRole,
+  ErrorNames,
+} from '@affine/graphql';
 import { I18n, i18nTime } from '@affine/i18n';
 import track from '@affine/track';
-import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { DocMode } from '@blocksuite/affine/model';
+import { DocModeProvider } from '@blocksuite/affine/shared/services';
+import type { AffineInlineEditor } from '@blocksuite/affine/shared/types';
+import {
+  BLOCK_ID_ATTR,
+  type BlockComponent,
+  type EditorHost,
+} from '@blocksuite/affine/std';
+import type { DocMeta } from '@blocksuite/affine/store';
 import {
   type LinkedMenuGroup,
   type LinkedMenuItem,
   type LinkedWidgetConfig,
   LinkedWidgetUtils,
-} from '@blocksuite/affine/blocks/root';
-import type { DocMode } from '@blocksuite/affine/model';
-import type { AffineInlineEditor } from '@blocksuite/affine/rich-text';
-import type { DocMeta } from '@blocksuite/affine/store';
-import { Text } from '@blocksuite/affine/store';
+} from '@blocksuite/affine/widgets/linked-doc';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import {
   DateTimeIcon,
   NewXxxEdgelessIcon,
   NewXxxPageIcon,
+  UserIcon,
 } from '@blocksuite/icons/lit';
 import { computed, Signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
+import type { FuseResultMatch } from 'fuse.js';
+import Fuse from 'fuse.js';
 import { html } from 'lit';
+import { styleMap } from 'lit/directives/style-map.js';
+import {
+  createAbsolutePositionFromRelativePosition,
+  createRelativePositionFromTypeIndex,
+} from 'yjs';
 
+import { AuthService, type WorkspaceServerService } from '../../cloud';
 import type { WorkspaceDialogService } from '../../dialogs';
 import type { DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
-import type { DocSearchMenuService } from '../../doc-search-menu/services';
-import type { EditorSettingService } from '../../editor-setting';
 import { type JournalService, suggestJournalDate } from '../../journal';
+import { NotificationService } from '../../notification';
+import type { GuardService, MemberSearchService } from '../../permissions';
+import type { DocGrantedUsersService } from '../../permissions/services/doc-granted-users';
+import { highlighter } from '../../quicksearch/utils/highlighter';
+import type { SearchMenuService } from '../../search-menu/services';
 
 function resolveSignal<T>(data: T | Signal<T>): T {
   return data instanceof Signal ? data.value : data;
@@ -43,9 +67,12 @@ export class AtMenuConfigService extends Service {
     private readonly journalService: JournalService,
     private readonly docDisplayMetaService: DocDisplayMetaService,
     private readonly dialogService: WorkspaceDialogService,
-    private readonly editorSettingService: EditorSettingService,
     private readonly docsService: DocsService,
-    private readonly docsSearchMenuService: DocSearchMenuService
+    private readonly searchMenuService: SearchMenuService,
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly memberSearchService: MemberSearchService,
+    private readonly guardService: GuardService,
+    private readonly docGrantedUsersService: DocGrantedUsersService
   ) {
     super();
   }
@@ -69,27 +96,24 @@ export class AtMenuConfigService extends Service {
 
   private readonly autoFocusedItemKey = (
     menus: LinkedMenuGroup[],
-    query: string,
-    currentActiveKey: string | null
+    query: string
   ): string | null => {
     if (query.trim().length === 0) {
       return null;
     }
 
-    if (
-      currentActiveKey === RESERVED_ITEM_KEYS.createPage ||
-      currentActiveKey === RESERVED_ITEM_KEYS.createEdgeless
-    ) {
-      return currentActiveKey;
+    const linkToDocGroup = menus[0];
+    const memberGroup = menus[1];
+
+    if (resolveSignal(memberGroup.items).length > 1) {
+      return resolveSignal(memberGroup.items)[0]?.key;
     }
 
-    // if the second group (linkToDocGroup) is EMPTY,
-    // if the query is NOT empty && the second group (linkToDocGroup) is EMPTY,
-    // we will focus on the first item of the third group (create), which is the "New Doc" item.
-    if (resolveSignal(menus[1].items).length === 0) {
-      return resolveSignal(menus[2].items)[0]?.key;
+    if (resolveSignal(linkToDocGroup.items).length > 0) {
+      return resolveSignal(linkToDocGroup.items)[0]?.key;
     }
-    return null;
+
+    return RESERVED_ITEM_KEYS.createPage;
   };
 
   private newDocMenuGroup(
@@ -118,10 +142,7 @@ export class AtMenuConfigService extends Service {
 
     const createPage = (mode: DocMode) => {
       const page = this.docsService.createDoc({
-        docProps: {
-          note: this.editorSettingService.editorSetting.get('affine:note'),
-          page: { title: new Text(query) },
-        },
+        title: query,
         primaryMode: mode,
       });
 
@@ -292,7 +313,7 @@ export class AtMenuConfigService extends Service {
       track.doc.editor.atMenu.linkDoc();
       this.insertDoc(inlineEditor, meta.id);
     };
-    const result = this.docsSearchMenuService.getDocMenuGroup(
+    const result = this.searchMenuService.getDocMenuGroup(
       query,
       action,
       abortSignal
@@ -310,11 +331,336 @@ export class AtMenuConfigService extends Service {
     return result;
   }
 
+  private highlightFuseTitle(
+    matches: readonly FuseResultMatch[] | undefined,
+    title: string,
+    key: string
+  ): string {
+    if (!matches) {
+      return title;
+    }
+    const normalizedRange = ([start, end]: [number, number]) =>
+      [
+        start,
+        end + 1 /* in fuse, the `end` is different from the `substring` */,
+      ] as [number, number];
+    const titleMatches = matches
+      ?.filter(match => match.key === key)
+      .flatMap(match => match.indices.map(normalizedRange));
+    return (
+      highlighter(
+        title,
+        `<span style="color: ${cssVarV2('text/emphasis')}">`,
+        '</span>',
+        titleMatches ?? []
+      ) ?? title
+    );
+  }
+
+  private memberGroup(
+    query: string,
+    close: () => void,
+    inlineEditor: AffineInlineEditor,
+    _: AbortSignal
+  ): LinkedMenuGroup {
+    const getMenuItem = (
+      id: string,
+      name?: string | null,
+      avatar?: string | null,
+      sendNotification: boolean = true
+    ): LinkedMenuItem => {
+      const avatarStyle = styleMap({
+        borderRadius: '50%',
+        border: `1px solid ${cssVarV2('layer/background/overlayPanel')}`,
+        width: '20px',
+        height: '20px',
+        boxSizing: 'border-box',
+      });
+      const icon = avatar
+        ? html`<img style=${avatarStyle} src="${avatar}" />`
+        : UserIcon();
+
+      let displayName = name ?? 'Unknown';
+      return {
+        key: id,
+        name: html`${unsafeHTML(displayName)}`,
+        icon,
+        action: () => {
+          const root = inlineEditor.rootElement;
+          const block = root?.closest<BlockComponent>(`[${BLOCK_ID_ATTR}]`);
+          if (!block) return;
+
+          const notificationService =
+            this.workspaceServerService.server?.scope.get(NotificationService);
+          if (!notificationService) return;
+
+          const doc = block.store;
+          const workspaceId = doc.workspace.id;
+          const docId = doc.id;
+          const mode = block.std.get(DocModeProvider).getEditorMode() ?? 'page';
+
+          close();
+
+          track.doc.editor.atMenu.mentionMember({
+            type: 'member',
+          });
+
+          const inlineRange = inlineEditor.getInlineRange();
+          if (!inlineRange || inlineRange.length !== 0) return;
+
+          inlineEditor.insertText(inlineRange, ' ', {
+            mention: {
+              member: id,
+            },
+          });
+          inlineEditor.setInlineRange({
+            index: inlineRange.index + 1,
+            length: 0,
+          });
+
+          if (!sendNotification) return;
+
+          const relativePosition = createRelativePositionFromTypeIndex(
+            inlineEditor.yText,
+            inlineRange.index + 1
+          );
+          notificationService
+            .mentionUser(id, workspaceId, {
+              id: docId,
+              title: this.docDisplayMetaService.title$(docId).value,
+              blockId: block.blockId,
+              mode: mode as GraphqlDocMode,
+            })
+            .then(notificationId => {
+              const doc = inlineEditor.yText.doc;
+              if (!doc) return;
+              const absolutePosition =
+                createAbsolutePositionFromRelativePosition(
+                  relativePosition,
+                  doc
+                );
+              if (!absolutePosition) return;
+              const index = absolutePosition.index;
+
+              const delta = inlineEditor.getDeltaByRangeIndex(index);
+              if (
+                !delta ||
+                delta.insert !== ' ' ||
+                !delta.attributes?.mention ||
+                delta.attributes.mention.notification ||
+                delta.attributes.mention.member !== id
+              )
+                return;
+
+              inlineEditor.formatText(
+                {
+                  index: index - 1,
+                  length: 1,
+                },
+                {
+                  mention: {
+                    member: id,
+                    notification: notificationId,
+                  },
+                }
+              );
+            })
+            .catch(error => {
+              const err = UserFriendlyError.fromAny(error);
+
+              if (err.is(ErrorNames.MENTION_USER_DOC_ACCESS_DENIED)) {
+                track.doc.editor.atMenu.noAccessPrompted();
+
+                const canUserManage = this.guardService.can$(
+                  'Doc_Users_Manage',
+                  docId
+                ).signal.value;
+                if (canUserManage) {
+                  const username = name ?? 'Unknown';
+                  notify.error({
+                    title: I18n.t('com.affine.editor.at-menu.access-needed'),
+                    message: I18n[
+                      'com.affine.editor.at-menu.access-needed-message'
+                    ]({
+                      username,
+                    }),
+                    actions: [
+                      {
+                        key: 'invite',
+                        label: 'Invite',
+                        onClick: async () => {
+                          track.$.sharePanel.$.inviteUserDocRole({
+                            control: 'member list',
+                            role: 'reader',
+                          });
+
+                          try {
+                            await this.docGrantedUsersService.updateUserRole(
+                              id,
+                              DocRole.Reader
+                            );
+
+                            await notificationService.mentionUser(
+                              id,
+                              workspaceId,
+                              {
+                                id: docId,
+                                title:
+                                  this.docDisplayMetaService.title$(docId)
+                                    .value,
+                                blockId: block.blockId,
+                                mode: mode as GraphqlDocMode,
+                              }
+                            );
+
+                            notify.success({
+                              title: I18n.t(
+                                'com.affine.editor.at-menu.invited-and-notified'
+                              ),
+                            });
+                          } catch (error) {
+                            const err = UserFriendlyError.fromAny(error);
+                            notify.error({
+                              title: I18n[`error.${err.name}`](err.data),
+                            });
+                          }
+                        },
+                      },
+                    ],
+                  });
+                } else {
+                  notify.error({
+                    title: I18n.t(
+                      'com.affine.editor.at-menu.member-not-notified'
+                    ),
+                    message:
+                      I18n[
+                        'com.affine.editor.at-menu.member-not-notified-message'
+                      ](),
+                  });
+                }
+
+                return;
+              }
+
+              notify.error({
+                title: I18n[`error.${err.name}`](err.data),
+              });
+            });
+        },
+      };
+    };
+
+    const inviteItem: LinkedMenuItem = {
+      key: 'invite',
+      name: 'Invite...',
+      icon: UserIcon(),
+      action: () => {
+        close();
+
+        track.doc.editor.atMenu.mentionMember({
+          type: 'invite',
+        });
+
+        this.dialogService.open('setting', {
+          activeTab: 'workspace:members',
+        });
+      },
+    };
+
+    const items = computed<LinkedMenuItem[]>(() => {
+      const members = this.memberSearchService.result$.signal.value;
+      const currentUser =
+        this.workspaceServerService.server?.scope.get(AuthService).session
+          .account$.signal.value;
+      const canUserManage = this.guardService.can$('Workspace_Users_Manage')
+        .signal.value;
+
+      if (query.length === 0) {
+        return [
+          ...(currentUser
+            ? [
+                getMenuItem(
+                  currentUser.id,
+                  currentUser.info?.name,
+                  currentUser.info?.avatarUrl,
+                  false
+                ),
+              ]
+            : []),
+          ...members
+            .slice(0, 2)
+            .filter(member => member.id !== currentUser?.id)
+            .map(member =>
+              getMenuItem(member.id, member.name, member.avatarUrl)
+            ),
+          ...(canUserManage ? [inviteItem] : []),
+        ];
+      }
+
+      // Create a single Fuse instance for all members
+      const fuse = new Fuse(members, {
+        keys: ['name'],
+        includeMatches: true,
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.0,
+      });
+      const searchResults = fuse.search(query);
+
+      return [
+        ...searchResults.map(result => {
+          const member = result.item;
+          const displayName = this.highlightFuseTitle(
+            result.matches,
+            member.name ?? 'Unknown',
+            'name'
+          );
+          return {
+            ...getMenuItem(
+              member.id,
+              member.name,
+              member.avatarUrl,
+              member.id !== currentUser?.id
+            ),
+            name: html`${unsafeHTML(displayName)}`,
+          };
+        }),
+        ...(canUserManage ? [inviteItem] : []),
+      ];
+    });
+    const hidden = computed(() => {
+      const members = this.memberSearchService.result$.signal.value;
+      const loading = this.memberSearchService.isLoading$.signal.value;
+      return query.length > 0 && !loading && members.length === 0;
+    });
+
+    if (query.length > 0) {
+      this.memberSearchService.search(query);
+    }
+
+    return {
+      name: I18n.t('com.affine.editor.at-menu.mention-members'),
+      items,
+      loading: this.memberSearchService.isLoading$.signal,
+      hidden,
+      maxDisplay: 3,
+      overflowText: computed(() => {
+        const totalCount = this.memberSearchService.result$.signal.value.length;
+        const remainingCount = totalCount - 3;
+        return I18n.t('com.affine.editor.at-menu.more-members-hint', {
+          count: remainingCount,
+        });
+      }),
+    };
+  }
+
   private getMenusFn(): LinkedWidgetConfig['getMenus'] {
     return (query, close, editorHost, inlineEditor, abortSignal) => {
       return [
-        this.journalGroup(query, close, inlineEditor),
         this.linkToDocGroup(query, close, inlineEditor, abortSignal),
+        this.memberGroup(query, close, inlineEditor, abortSignal),
+        this.journalGroup(query, close, inlineEditor),
         this.newDocMenuGroup(query, close, editorHost, inlineEditor),
       ];
     };

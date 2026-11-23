@@ -1,13 +1,15 @@
 import './action-wrapper';
 
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { unsafeCSSVar } from '@blocksuite/affine/shared/theme';
+import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { type ChatAction } from '../../components/ai-chat-messages';
 import { createTextRenderer } from '../../components/text-renderer';
-import type { ChatAction } from '../chat-context';
 
 export class ActionText extends WithDisposable(LitElement) {
   static override styles = css`
@@ -16,6 +18,21 @@ export class ActionText extends WithDisposable(LitElement) {
       margin-bottom: 12px;
       font-size: var(--affine-font-sm);
       line-height: 22px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .original-text::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    .original-text::-webkit-scrollbar-thumb {
+      background-color: ${unsafeCSSVar('borderColor')};
+    }
+
+    .original-text::-webkit-scrollbar-track {
+      background: transparent;
     }
   `;
 
@@ -39,9 +56,11 @@ export class ActionText extends WithDisposable(LitElement) {
           border: isCode ? 'none' : '1px solid var(--affine-border-color)',
         })}
         class="original-text"
+        data-testid="original-text"
       >
-        ${createTextRenderer(this.host, {
+        ${createTextRenderer({
           customHeading: true,
+          theme: this.host.std.get(ThemeProvider).app$,
         })(originalText)}
       </div>
     </action-wrapper>`;

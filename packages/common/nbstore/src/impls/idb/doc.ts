@@ -1,3 +1,6 @@
+import { isEqual } from 'lodash-es';
+
+import { share } from '../../connection';
 import {
   type DocClock,
   type DocClocks,
@@ -6,18 +9,20 @@ import {
   type DocUpdate,
 } from '../../storage';
 import { IDBConnection, type IDBConnectionOptions } from './db';
-import { IndexedDBLocker } from './lock';
+import { createPeerClock } from './schema';
 
-interface ChannelMessage {
-  type: 'update';
-  update: DocRecord;
-  origin?: string;
-}
+type ChannelMessage =
+  | { type: 'delete'; docId: string }
+  | {
+      type: 'update';
+      update: DocRecord;
+      origin?: string;
+    };
 
 export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
   static readonly identifier = 'IndexedDBDocStorage';
 
-  readonly connection = new IDBConnection(this.options);
+  readonly connection = share(new IDBConnection(this.options));
 
   get db() {
     return this.connection.inner.db;
@@ -27,36 +32,41 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
     return this.connection.inner.channel;
   }
 
-  override locker = new IndexedDBLocker(this.connection);
-
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
-    let timestamp = new Date();
-
-    let retry = 0;
-
-    while (true) {
-      try {
-        const trx = this.db.transaction(['updates', 'clocks'], 'readwrite');
-
-        await trx.objectStore('updates').add({
-          ...update,
-          createdAt: timestamp,
-        });
-
-        await trx.objectStore('clocks').put({ docId: update.docId, timestamp });
-
-        trx.commit();
-      } catch (e) {
-        if (e instanceof Error && e.name === 'ConstraintError') {
-          retry++;
-          if (retry < 10) {
-            timestamp = new Date(timestamp.getTime() + 1);
-            continue;
-          }
-        }
-        throw e;
+    const createForPeer =
+      update.createForPeer ??
+      (update.intent === 'create' ? this.options.creationPeer : undefined);
+    const trx = this.db.transaction(
+      ['updates', 'clocks', 'peerClocks'],
+      'readwrite'
+    );
+    let timestamp: Date;
+    try {
+      const previous = await trx.objectStore('clocks').get(update.docId);
+      timestamp = new Date(
+        Math.max(Date.now(), (previous?.timestamp.getTime() ?? 0) + 1)
+      );
+      await trx.objectStore('updates').add({
+        ...update,
+        createdAt: timestamp,
+      });
+      await trx.objectStore('clocks').put({ docId: update.docId, timestamp });
+      if (createForPeer) {
+        const peers = trx.objectStore('peerClocks');
+        const record =
+          (await peers.get([createForPeer, update.docId])) ??
+          createPeerClock(createForPeer, update.docId);
+        await peers.put({ ...record, pendingCreate: true });
+        const root =
+          (await peers.get([createForPeer, this.spaceId])) ??
+          createPeerClock(createForPeer, this.spaceId);
+        await peers.put({ ...root, cacheToken: (root.cacheToken ?? 0) + 1 });
       }
-      break;
+      trx.commit();
+      await trx.done;
+    } catch (error) {
+      await trx.done.catch(() => {});
+      throw error;
     }
 
     this.emit(
@@ -66,6 +76,7 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
         bin: update.bin,
         timestamp,
         editor: update.editor,
+        createForPeer: createForPeer,
       },
       origin
     );
@@ -77,6 +88,7 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
         bin: update.bin,
         timestamp,
         editor: update.editor,
+        createForPeer: createForPeer,
       },
       origin,
     } satisfies ChannelMessage);
@@ -84,24 +96,71 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
     return { docId: update.docId, timestamp };
   }
 
-  protected override async getDocSnapshot(docId: string) {
-    const trx = this.db.transaction('snapshots', 'readonly');
-    const record = await trx.store.get(docId);
-
-    if (!record) {
-      return null;
+  override async getDoc(docId: string): Promise<DocRecord | null> {
+    const read = this.db.transaction(['snapshots', 'updates'], 'readonly');
+    const [snapshot, updates] = await Promise.all([
+      read.objectStore('snapshots').get(docId),
+      read.objectStore('updates').index('docId').getAll(docId),
+    ]);
+    await read.done;
+    if (updates.length === 0) {
+      return snapshot
+        ? { docId, bin: snapshot.bin, timestamp: snapshot.updatedAt }
+        : null;
     }
 
-    return {
+    const sources = [
+      ...(snapshot ? [snapshot.bin] : []),
+      ...updates.map(update => update.bin),
+    ];
+    const record = {
       docId,
-      bin: record.bin,
-      timestamp: record.updatedAt,
+      bin: sources.length === 1 ? sources[0] : await this.mergeUpdates(sources),
+      timestamp: new Date(
+        Math.max(
+          snapshot?.updatedAt.getTime() ?? 0,
+          updates[updates.length - 1].createdAt.getTime()
+        )
+      ),
     };
+    if (this.isReadonly) return record;
+
+    const write = this.db.transaction(['snapshots', 'updates'], 'readwrite');
+    const [currentSnapshot, currentUpdates] = await Promise.all([
+      write.objectStore('snapshots').get(docId),
+      Promise.all(
+        updates.map(update =>
+          write.objectStore('updates').get([docId, update.createdAt])
+        )
+      ),
+    ]);
+    if (
+      currentSnapshot?.updatedAt.getTime() === snapshot?.updatedAt.getTime() &&
+      isEqual(currentSnapshot?.bin, snapshot?.bin) &&
+      updates.every((update, index) =>
+        isEqual(currentUpdates[index]?.bin, update.bin)
+      )
+    ) {
+      await write.objectStore('snapshots').put({
+        docId,
+        bin: record.bin,
+        createdAt: currentSnapshot?.createdAt ?? record.timestamp,
+        updatedAt: record.timestamp,
+      });
+      await Promise.all(
+        updates.map(update =>
+          write.objectStore('updates').delete([docId, update.createdAt])
+        )
+      );
+    }
+    await write.done;
+    // A concurrent mutation can prevent compaction without invalidating the captured read.
+    return record;
   }
 
   override async deleteDoc(docId: string) {
     const trx = this.db.transaction(
-      ['snapshots', 'updates', 'clocks'],
+      ['snapshots', 'updates', 'clocks', 'peerClocks'],
       'readwrite'
     );
 
@@ -114,6 +173,21 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
 
     await trx.objectStore('snapshots').delete(docId);
     await trx.objectStore('clocks').delete(docId);
+    const peers = trx.objectStore('peerClocks');
+    for (const record of await peers.getAll()) {
+      if (record.docId !== docId || !record.pendingCreate) continue;
+      await peers.put({ ...record, pendingCreate: false });
+      const root =
+        (await peers.get([record.peer, this.spaceId])) ??
+        createPeerClock(record.peer, this.spaceId);
+      await peers.put({ ...root, cacheToken: (root.cacheToken ?? 0) + 1 });
+    }
+    await trx.done;
+    this.emit('delete', docId);
+    this.channel.postMessage({
+      type: 'delete',
+      docId,
+    } satisfies ChannelMessage);
   }
 
   override async getDocTimestamps(after: Date = new Date(0)) {
@@ -133,50 +207,6 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
     const trx = this.db.transaction('clocks', 'readonly');
 
     return (await trx.store.get(docId)) ?? null;
-  }
-
-  protected override async setDocSnapshot(
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    const trx = this.db.transaction('snapshots', 'readwrite');
-    const record = await trx.store.get(snapshot.docId);
-
-    if (!record || record.updatedAt < snapshot.timestamp) {
-      await trx.store.put({
-        docId: snapshot.docId,
-        bin: snapshot.bin,
-        createdAt: record?.createdAt ?? snapshot.timestamp,
-        updatedAt: snapshot.timestamp,
-      });
-    }
-
-    trx.commit();
-    return true;
-  }
-
-  protected override async getDocUpdates(docId: string): Promise<DocRecord[]> {
-    const trx = this.db.transaction('updates', 'readonly');
-    const updates = await trx.store.index('docId').getAll(docId);
-
-    return updates.map(update => ({
-      docId,
-      bin: update.bin,
-      timestamp: update.createdAt,
-    }));
-  }
-
-  protected override async markUpdatesMerged(
-    docId: string,
-    updates: DocRecord[]
-  ): Promise<number> {
-    const trx = this.db.transaction('updates', 'readwrite');
-
-    await Promise.all(
-      updates.map(update => trx.store.delete([docId, update.timestamp]))
-    );
-
-    trx.commit();
-    return updates.length;
   }
 
   private docUpdateListener = 0;
@@ -201,7 +231,9 @@ export class IndexedDBDocStorage extends DocStorageBase<IDBConnectionOptions> {
   }
 
   handleChannelMessage = (event: MessageEvent<ChannelMessage>) => {
-    if (event.data.type === 'update') {
+    if (event.data.type === 'delete') {
+      this.emit('delete', event.data.docId);
+    } else if (event.data.type === 'update') {
       this.emit('update', event.data.update, event.data.origin);
     }
   };

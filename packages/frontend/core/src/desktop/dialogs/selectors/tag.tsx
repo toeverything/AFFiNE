@@ -62,7 +62,7 @@ export const TagSelectorDialog = ({
   const filteredTagMetas = useMemo(() => {
     return tagMetas.filter(tag => {
       const reg = new RegExp(keyword, 'i');
-      return reg.test(tag.title);
+      return reg.test(tag.name);
     });
   }, [keyword, tagMetas]);
 

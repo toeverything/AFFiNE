@@ -1,12 +1,14 @@
 import { createIdentifier } from '@blocksuite/global/di';
 import type { ExtensionType } from '@blocksuite/store';
-import type { Signal } from '@preact/signals-core';
+import type { ReadonlySignal } from '@preact/signals-core';
 
 import type { AffineUserInfo } from './types';
 
 export interface UserListService {
-  users$: Signal<AffineUserInfo[]>;
-  hasMore$: Signal<boolean>;
+  users$: ReadonlySignal<AffineUserInfo[]>;
+  isLoading$: ReadonlySignal<boolean>;
+  searchText$: ReadonlySignal<string>;
+  hasMore$: ReadonlySignal<boolean>;
   loadMore(): void;
   search(keyword: string): void;
 }

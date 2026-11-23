@@ -1,3 +1,5 @@
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+
 export type { WorkspaceProfileInfo } from './entities/profile';
 export { Workspace } from './entities/workspace';
 export { WorkspaceEngineBeforeStart, WorkspaceInitialized } from './events';
@@ -70,9 +72,13 @@ export function configureWorkspaceModule(framework: Framework) {
     ])
     .scope(WorkspaceScope)
     .service(WorkspaceService)
-    .entity(Workspace, [WorkspaceScope])
+    .entity(Workspace, [WorkspaceScope, FeatureFlagService])
     .service(WorkspaceEngineService, [WorkspaceScope])
-    .entity(WorkspaceEngine, [WorkspaceService, NbstoreService])
+    .entity(WorkspaceEngine, [
+      WorkspaceService,
+      NbstoreService,
+      FeatureFlagService,
+    ])
     .impl(WorkspaceLocalState, WorkspaceLocalStateImpl, [
       WorkspaceService,
       GlobalState,

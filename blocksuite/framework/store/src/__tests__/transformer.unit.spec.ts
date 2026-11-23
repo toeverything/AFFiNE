@@ -59,10 +59,11 @@ test('model to snapshot', () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: 'home', extensions });
+  const doc = collection.createDoc('home');
+  const store = doc.getStore({ extensions });
   doc.load();
-  doc.addBlock('page');
-  const rootModel = doc.root as RootBlockModel;
+  store.addBlock('page');
+  const rootModel = store.root as RootBlockModel;
 
   expect(rootModel).not.toBeNull();
   const snapshot = transformer.toSnapshot({
@@ -76,10 +77,11 @@ test('snapshot to model', async () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: 'home', extensions });
+  const doc = collection.createDoc('home');
+  const store = doc.getStore({ extensions });
   doc.load();
-  doc.addBlock('page');
-  const rootModel = doc.root as RootBlockModel;
+  store.addBlock('page');
+  const rootModel = store.root as RootBlockModel;
 
   const tempDoc = new Y.Doc();
   const map = tempDoc.getMap('temp');

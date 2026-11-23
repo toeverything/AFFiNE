@@ -10,7 +10,7 @@ export const JoinFailedPage = ({
   inviteInfo,
   error,
 }: {
-  inviteInfo: GetInviteInfoQuery['getInviteInfo'];
+  inviteInfo?: GetInviteInfoQuery['getInviteInfo'];
   error?: any;
 }) => {
   const userFriendlyError = UserFriendlyError.fromAny(error);
@@ -20,29 +20,34 @@ export const JoinFailedPage = ({
       title={t['com.affine.fail-to-join-workspace.title']()}
       subtitle={
         userFriendlyError.name === ErrorNames.MEMBER_QUOTA_EXCEEDED ? (
-          <div className={styles.content}>
+          <div className={styles.lineHeight}>
             <Trans
               i18nKey={'com.affine.fail-to-join-workspace.description-1'}
               components={{
                 1: (
-                  <Avatar
-                    url={`data:image/png;base64,${inviteInfo.workspace.avatar}`}
-                    name={inviteInfo.workspace.name}
-                    size={20}
-                    style={{ marginLeft: 4 }}
-                    colorfulFallback
-                  />
+                  <div className={styles.avatarWrapper}>
+                    <Avatar
+                      url={`data:image/png;base64,${inviteInfo?.workspace.avatar}`}
+                      name={inviteInfo?.workspace.name}
+                      size={20}
+                      colorfulFallback
+                    />
+                  </div>
                 ),
                 2: <span className={styles.inviteName} />,
               }}
               values={{
-                workspaceName: inviteInfo.workspace.name,
+                workspaceName: inviteInfo?.workspace.name,
               }}
             />
             <div>{t['com.affine.fail-to-join-workspace.description-2']()}</div>
           </div>
         ) : (
-          <div>{t['error.' + userFriendlyError.name]()}</div>
+          <div>
+            {t['error.' + userFriendlyError.name]()}
+            <br />
+            {userFriendlyError.message}
+          </div>
         )
       }
     />

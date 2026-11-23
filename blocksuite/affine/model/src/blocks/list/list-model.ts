@@ -5,6 +5,7 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types';
 
 // `toggle` type has been deprecated, do not use it
@@ -13,9 +14,11 @@ export type ListType = 'bulleted' | 'numbered' | 'todo' | 'toggle';
 export type ListProps = {
   type: ListType;
   text: Text;
+  textAlign?: TextAlign;
   checked: boolean;
   collapsed: boolean;
   order: number | null;
+  comments?: Record<string, boolean>;
 } & BlockMeta;
 
 export const ListBlockSchema = defineBlockSchema({
@@ -24,11 +27,13 @@ export const ListBlockSchema = defineBlockSchema({
     ({
       type: 'bulleted',
       text: internal.Text(),
+      textAlign: undefined,
       checked: false,
       collapsed: false,
 
       // number type only for numbered list
       order: null,
+      comments: undefined,
       'meta:createdAt': undefined,
       'meta:createdBy': undefined,
       'meta:updatedAt': undefined,
@@ -43,6 +48,7 @@ export const ListBlockSchema = defineBlockSchema({
       'affine:list',
       'affine:paragraph',
       'affine:edgeless-text',
+      'affine:callout',
     ],
   },
   toModel: () => new ListBlockModel(),

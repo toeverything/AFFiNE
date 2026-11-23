@@ -13,7 +13,7 @@ import { test } from '../utils/playwright.js';
 const mockImageId = '_e2e_test_image_id_';
 
 async function initMockImage(page: Page) {
-  await page.evaluate(() => {
+  await page.evaluate(sourceId => {
     const { doc } = window;
     doc.captureSync();
     const rootId = doc.addBlock('affine:page');
@@ -21,20 +21,20 @@ async function initMockImage(page: Page) {
     doc.addBlock(
       'affine:image',
       {
-        sourceId: '_e2e_test_image_id_',
+        sourceId,
         width: 200,
         height: 180,
       },
       noteId
     );
     doc.captureSync();
-  });
+  }, mockImageId);
 }
 
 test('image loading but failed', async ({ page }) => {
   expectConsoleMessage(
     page,
-    'Error: Failed to fetch blob _e2e_test_image_id_',
+    `Error: Failed to fetch blob ${mockImageId}`,
     'warning'
   );
   expectConsoleMessage(
@@ -65,26 +65,25 @@ test('image loading but failed', async ({ page }) => {
 
   await initMockImage(page);
 
-  const loadingContent = await page
-    .locator(
-      '.affine-image-fallback-card .affine-image-fallback-card-title-text'
-    )
-    .innerText();
-  expect(loadingContent).toBe('Loading image...');
+  const title = page.locator(
+    '.affine-image-fallback-card .affine-image-fallback-card-title-text'
+  );
+
+  await expect(title).toHaveText('Image');
 
   await page.waitForTimeout(3 * timeout);
 
-  await expect(
-    page.locator(
-      '.affine-image-fallback-card .affine-image-fallback-card-title-text'
-    )
-  ).toContainText('Image loading failed.');
+  const desc = page.locator(
+    '.affine-image-fallback-card .affine-image-fallback-card-description'
+  );
+
+  await expect(desc).toContainText('Image not found');
 });
 
 test('image loading but success', async ({ page }) => {
   expectConsoleMessage(
     page,
-    'Error: Failed to fetch blob _e2e_test_image_id_',
+    `Error: Failed to fetch blob ${mockImageId}`,
     'warning'
   );
   expectConsoleMessage(
@@ -118,21 +117,18 @@ test('image loading but success', async ({ page }) => {
           body: imageBuffer,
         });
       }
-      // broken image
-      return route.fulfill({
-        status: 404,
-      });
+
+      return route.continue();
     }
   );
 
   await initMockImage(page);
 
-  const loadingContent = await page
-    .locator(
-      '.affine-image-fallback-card .affine-image-fallback-card-title-text'
-    )
-    .innerText();
-  expect(loadingContent).toBe('Loading image...');
+  const title = page.locator(
+    '.affine-image-fallback-card .affine-image-fallback-card-title-text'
+  );
+
+  await expect(title).toHaveText('Image');
 
   await page.waitForTimeout(3 * timeout);
 

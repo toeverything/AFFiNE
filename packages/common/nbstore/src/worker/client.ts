@@ -1,23 +1,84 @@
+import type {
+  RealtimeConfigureInput,
+  RealtimeRequestInputOf,
+  RealtimeRequestName,
+  RealtimeRequestOutputOf,
+  RealtimeStatus,
+  RealtimeSubscriptionReady,
+  RealtimeTopicEventOf,
+  RealtimeTopicInputOf,
+  RealtimeTopicName,
+} from '@affine/realtime';
 import { OpClient, transfer } from '@toeverything/infra/op';
+import type { Observable } from 'rxjs';
 import { v4 as uuid } from 'uuid';
 
 import { DummyConnection } from '../connection';
-import { AwarenessFrontend, BlobFrontend, DocFrontend } from '../frontend';
 import {
+  AwarenessFrontend,
+  BlobFrontend,
+  DocFrontend,
+  IndexerFrontend,
+} from '../frontend';
+import {
+  type AggregateOptions,
+  type AggregateResult,
   type AwarenessRecord,
   type BlobRecord,
+  type BlobSource,
   type BlobStorage,
+  type DocLifecycle,
+  type DocLifecycleResult,
   type DocRecord,
   type DocStorage,
   type DocUpdate,
+  type IndexerSchema,
   type ListedBlobRecord,
+  type Query,
+  type SearchOptions,
+  type SearchResult,
 } from '../storage';
 import type { AwarenessSync } from '../sync/awareness';
 import type { BlobSync } from '../sync/blob';
 import type { DocSync } from '../sync/doc';
+import type { IndexerPreferOptions, IndexerSync } from '../sync/indexer';
+import type {
+  TelemetryAck,
+  TelemetryContext,
+  TelemetryEvent,
+  TelemetryQueueState,
+} from '../telemetry/types';
 import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 
 export type { StoreInitOptions as WorkerInitOptions } from './ops';
+
+type RealtimeWorkerClient = {
+  call<Op extends RealtimeRequestName>(
+    name: 'realtime.request',
+    payload: {
+      op: Op;
+      input: RealtimeRequestInputOf<Op>;
+      timeoutMs?: number;
+    }
+  ): Promise<RealtimeRequestOutputOf<Op>>;
+  ob$<Topic extends RealtimeTopicName>(
+    name: 'realtime.subscribe',
+    payload: {
+      topic: Topic;
+      input: RealtimeTopicInputOf<Topic>;
+    }
+  ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady>;
+};
+
+function realtimeAbortError(op: RealtimeRequestName) {
+  const error = new Error(`Realtime request aborted: ${op}`);
+  error.name = 'AbortError';
+  return error;
+}
+
+export interface StoreManagerClientOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
 
 export class StoreManagerClient {
   private readonly connections = new Map<
@@ -28,7 +89,16 @@ export class StoreManagerClient {
     }
   >();
 
-  constructor(private readonly client: OpClient<WorkerManagerOps>) {}
+  constructor(
+    private readonly client: OpClient<WorkerManagerOps>,
+    private readonly options?: StoreManagerClientOptions
+  ) {
+    this.telemetry = new TelemetryClient(this.client);
+    this.realtime = new RealtimeClient(this.client);
+  }
+
+  readonly telemetry: TelemetryClient;
+  readonly realtime: RealtimeClient;
 
   open(key: string, options: StoreInitOptions) {
     const { port1, port2 } = new MessageChannel();
@@ -54,7 +124,7 @@ export class StoreManagerClient {
       });
 
     const connection = {
-      store: new StoreClient(client),
+      store: new StoreClient(client, this.options),
       dispose: () => {
         this.client.call('close', closeKey).catch(err => {
           console.error('error closing', err);
@@ -73,18 +143,121 @@ export class StoreManagerClient {
       connection.dispose();
     });
   }
+
+  pause() {
+    this.connections.forEach(connection => {
+      connection.store.pauseSync().catch(err => {
+        console.error('error pausing', err);
+      });
+    });
+  }
+
+  resume() {
+    this.connections.forEach(connection => {
+      connection.store.resumeSync().catch(err => {
+        console.error('error resuming', err);
+      });
+    });
+  }
+}
+
+class TelemetryClient {
+  constructor(private readonly client: OpClient<WorkerManagerOps>) {}
+
+  setContext(context: TelemetryContext): Promise<void> {
+    return this.client.call('telemetry.setContext', context);
+  }
+
+  track(event: TelemetryEvent): Promise<{ queued: boolean }> {
+    return this.client.call('telemetry.track', event);
+  }
+
+  pageview(event: TelemetryEvent): Promise<{ queued: boolean }> {
+    return this.client.call('telemetry.pageview', event);
+  }
+
+  flush(): Promise<TelemetryAck> {
+    return this.client.call('telemetry.flush');
+  }
+
+  getQueueState(): Promise<TelemetryQueueState> {
+    return this.client.call('telemetry.getQueueState');
+  }
+}
+
+export class RealtimeClient {
+  constructor(private readonly client: OpClient<WorkerManagerOps>) {}
+
+  configure(context: RealtimeConfigureInput): Promise<void> {
+    return this.client.call('realtime.configure', context);
+  }
+
+  request<Op extends RealtimeRequestName>(
+    op: Op,
+    input: RealtimeRequestInputOf<Op>,
+    options?: { timeoutMs?: number; signal?: AbortSignal }
+  ): Promise<RealtimeRequestOutputOf<Op>> {
+    const request = (this.client as unknown as RealtimeWorkerClient).call(
+      'realtime.request',
+      {
+        op,
+        input,
+        timeoutMs: options?.timeoutMs,
+      }
+    );
+    if (!options?.signal) {
+      return request;
+    }
+    if (options.signal.aborted) {
+      return Promise.reject(realtimeAbortError(op));
+    }
+    let abortHandler: (() => void) | undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      abortHandler = () => reject(realtimeAbortError(op));
+      options.signal?.addEventListener('abort', abortHandler, { once: true });
+    });
+    return Promise.race([request, aborted]).finally(() => {
+      if (abortHandler) {
+        options.signal?.removeEventListener('abort', abortHandler);
+      }
+    });
+  }
+
+  subscribe<Topic extends RealtimeTopicName>(
+    topic: Topic,
+    input: RealtimeTopicInputOf<Topic>
+  ): Observable<RealtimeTopicEventOf<Topic> | RealtimeSubscriptionReady> {
+    return (this.client as unknown as RealtimeWorkerClient).ob$(
+      'realtime.subscribe',
+      {
+        topic,
+        input,
+      }
+    );
+  }
+
+  status(): Promise<RealtimeStatus> {
+    return this.client.call('realtime.status');
+  }
 }
 
 export class StoreClient {
-  constructor(private readonly client: OpClient<WorkerOps>) {
+  constructor(
+    private readonly client: OpClient<WorkerOps>,
+    options?: StoreManagerClientOptions
+  ) {
     this.docStorage = new WorkerDocStorage(this.client);
     this.blobStorage = new WorkerBlobStorage(this.client);
     this.docSync = new WorkerDocSync(this.client);
     this.blobSync = new WorkerBlobSync(this.client);
     this.awarenessSync = new WorkerAwarenessSync(this.client);
-    this.docFrontend = new DocFrontend(this.docStorage, this.docSync);
+    this.docFrontend = new DocFrontend(this.docStorage, this.docSync, {
+      mergeUpdates: options?.mergeUpdates,
+    });
     this.blobFrontend = new BlobFrontend(this.blobStorage, this.blobSync);
     this.awarenessFrontend = new AwarenessFrontend(this.awarenessSync);
+    this.indexerSync = new WorkerIndexerSync(this.client);
+    this.indexerFrontend = new IndexerFrontend(this.indexerSync);
   }
 
   private readonly docStorage: WorkerDocStorage;
@@ -92,14 +265,31 @@ export class StoreClient {
   private readonly docSync: WorkerDocSync;
   private readonly blobSync: WorkerBlobSync;
   private readonly awarenessSync: WorkerAwarenessSync;
+  private readonly indexerSync: WorkerIndexerSync;
 
   readonly docFrontend: DocFrontend;
   readonly blobFrontend: BlobFrontend;
   readonly awarenessFrontend: AwarenessFrontend;
+  readonly indexerFrontend: IndexerFrontend;
+
+  enableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.enableBatterySaveMode');
+  }
+  disableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.disableBatterySaveMode');
+  }
+
+  pauseSync() {
+    return this.client.call('sync.pauseSync');
+  }
+  resumeSync() {
+    return this.client.call('sync.resumeSync');
+  }
 }
 
 class WorkerDocStorage implements DocStorage {
   constructor(private readonly client: OpClient<WorkerOps>) {}
+  spaceId = '';
 
   readonly storageType = 'doc';
   readonly isReadonly = false;
@@ -128,6 +318,16 @@ class WorkerDocStorage implements DocStorage {
     return this.client.call('docStorage.deleteDoc', docId);
   }
 
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: DocLifecycle
+  ): Promise<DocLifecycleResult> {
+    return this.client.call('docStorage.applyDocLifecycle', {
+      docId,
+      lifecycle,
+    });
+  }
+
   subscribeDocUpdate(callback: (update: DocRecord, origin?: string) => void) {
     const subscription = this.client
       .ob$('docStorage.subscribeDocUpdate')
@@ -139,6 +339,13 @@ class WorkerDocStorage implements DocStorage {
     };
   }
 
+  subscribeDocDelete(callback: (docId: string) => void) {
+    const subscription = this.client
+      .ob$('docStorage.subscribeDocDelete')
+      .subscribe(callback);
+    return () => subscription.unsubscribe();
+  }
+
   connection = new WorkerDocConnection(this.client);
 }
 
@@ -147,28 +354,14 @@ class WorkerDocConnection extends DummyConnection {
     super();
   }
 
-  override waitForConnected(signal?: AbortSignal): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const abortListener = () => {
-        reject(signal?.reason);
-        subscription.unsubscribe();
-      };
+  promise: Promise<void> | undefined;
 
-      signal?.addEventListener('abort', abortListener);
-
-      const subscription = this.client
-        .ob$('docStorage.waitForConnected')
-        .subscribe({
-          next() {
-            signal?.removeEventListener('abort', abortListener);
-            resolve();
-          },
-          error(err) {
-            signal?.removeEventListener('abort', abortListener);
-            reject(err);
-          },
-        });
-    });
+  override waitForConnected(): Promise<void> {
+    if (this.promise) {
+      return this.promise;
+    }
+    this.promise = this.client.call('docStorage.waitForConnected');
+    return this.promise;
   }
 }
 
@@ -201,11 +394,37 @@ class WorkerBlobStorage implements BlobStorage {
     return this.client.call('blobStorage.listBlobs');
   }
 
-  connection = new DummyConnection();
+  connection = new WorkerBlobConnection(this.client);
+}
+
+class WorkerBlobConnection extends DummyConnection {
+  constructor(private readonly client: OpClient<WorkerOps>) {
+    super();
+  }
+
+  promise: Promise<void> | undefined;
+
+  override waitForConnected(): Promise<void> {
+    if (this.promise) {
+      return this.promise;
+    }
+    this.promise = this.client.call('blobStorage.waitForConnected');
+    return this.promise;
+  }
 }
 
 class WorkerDocSync implements DocSync {
   constructor(private readonly client: OpClient<WorkerOps>) {}
+
+  get workspaceState$() {
+    return this.client.ob$('docSync.workspaceState');
+  }
+  createDoc(docId: string) {
+    return this.client.call('docSync.createDoc', docId);
+  }
+  refreshWorkspaceState() {
+    return this.client.call('docSync.refreshWorkspaceState');
+  }
 
   get state$() {
     return this.client.ob$('docSync.state');
@@ -213,6 +432,10 @@ class WorkerDocSync implements DocSync {
 
   docState$(docId: string) {
     return this.client.ob$('docSync.docState', docId);
+  }
+
+  async waitForSynced(docId?: string, abort?: AbortSignal): Promise<void> {
+    await this.client.call('docSync.waitForSynced', docId ?? null, abort);
   }
 
   addPriority(docId: string, priority: number) {
@@ -238,11 +461,17 @@ class WorkerBlobSync implements BlobSync {
     return this.client.ob$('blobSync.blobState', blobId);
   }
 
-  downloadBlob(blobId: string): Promise<void> {
+  downloadBlob(blobId: string): Promise<boolean> {
     return this.client.call('blobSync.downloadBlob', blobId);
   }
-  uploadBlob(blob: BlobRecord): Promise<void> {
-    return this.client.call('blobSync.uploadBlob', blob);
+  registerSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.registerSource', source);
+  }
+  unregisterSource(source: BlobSource): Promise<void> {
+    return this.client.call('blobSync.unregisterSource', source);
+  }
+  uploadBlob(blob: BlobRecord, force?: boolean): Promise<true> {
+    return this.client.call('blobSync.uploadBlob', { blob, force });
   }
   fullDownload(peerId?: string, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -311,6 +540,122 @@ class WorkerAwarenessSync implements AwarenessSync {
           }
         },
       });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }
+}
+
+class WorkerIndexerSync implements IndexerSync {
+  constructor(private readonly client: OpClient<WorkerOps>) {}
+  get docTitles$() {
+    return this.client.ob$('indexerSync.docTitles');
+  }
+
+  search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<SearchResult<T, O>> {
+    return this.client.call('indexerSync.search', { table, query, options });
+  }
+  aggregate<T extends keyof IndexerSchema, const O extends AggregateOptions<T>>(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<AggregateResult<T, O>> {
+    return this.client.call('indexerSync.aggregate', {
+      table,
+      query,
+      field: field as string,
+      options,
+    });
+  }
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<SearchResult<T, O>> {
+    return this.client.ob$('indexerSync.subscribeSearch', {
+      table,
+      query,
+      options,
+    });
+  }
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<AggregateResult<T, O>> {
+    return this.client.ob$('indexerSync.subscribeAggregate', {
+      table,
+      query,
+      field: field as string,
+      options,
+    });
+  }
+
+  waitForCompleted(signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const abortListener = () => {
+        reject(signal?.reason);
+        subscription.unsubscribe();
+      };
+
+      signal?.addEventListener('abort', abortListener);
+
+      const subscription = this.client
+        .ob$('indexerSync.waitForCompleted')
+        .subscribe({
+          complete() {
+            signal?.removeEventListener('abort', abortListener);
+            resolve();
+          },
+          error(err) {
+            signal?.removeEventListener('abort', abortListener);
+            reject(err);
+          },
+        });
+    });
+  }
+  waitForDocCompleted(docId: string, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const abortListener = () => {
+        reject(signal?.reason);
+        subscription.unsubscribe();
+      };
+
+      signal?.addEventListener('abort', abortListener);
+
+      const subscription = this.client
+        .ob$('indexerSync.waitForDocCompleted', docId)
+        .subscribe({
+          complete() {
+            signal?.removeEventListener('abort', abortListener);
+            resolve();
+          },
+          error(err) {
+            signal?.removeEventListener('abort', abortListener);
+            reject(err);
+          },
+        });
+    });
+  }
+  get state$() {
+    return this.client.ob$('indexerSync.state');
+  }
+  docState$(docId: string) {
+    return this.client.ob$('indexerSync.docState', docId);
+  }
+  addPriority(docId: string, priority: number) {
+    const subscription = this.client
+      .ob$('indexerSync.addPriority', { docId, priority })
+      .subscribe();
     return () => {
       subscription.unsubscribe();
     };

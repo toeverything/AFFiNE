@@ -1,4 +1,4 @@
-import type { BlobRecord, BlobStorage } from '../storage';
+import type { BlobRecord, BlobSource, BlobStorage } from '../storage';
 import { SingletonLocker } from '../storage/lock';
 import type { BlobSync } from '../sync/blob';
 
@@ -15,7 +15,12 @@ export class BlobFrontend {
     return this.sync.state$;
   }
 
+  blobState$(blobId: string) {
+    return this.sync.blobState$(blobId);
+  }
+
   async get(blobId: string) {
+    await this.waitForConnected();
     await using lock = await this.lock.lock('blob', blobId);
     const local = await this.storage.get(blobId);
     if (local) {
@@ -23,46 +28,59 @@ export class BlobFrontend {
     }
     await lock[Symbol.asyncDispose]();
 
-    await this.sync.downloadBlob(blobId);
+    await this.sync.downloadBlob(blobId).catch(() => {
+      // ignore the error as it has already been recorded in the sync status
+    });
     return await this.storage.get(blobId);
   }
 
   async set(blob: BlobRecord) {
-    if (blob.data.byteLength > this.maxBlobSize) {
-      for (const cb of this.onReachedMaxBlobSizeCallbacks) {
-        cb(blob.data.byteLength);
-      }
-      throw new Error('Blob size exceeds the maximum limit');
-    }
+    await this.waitForConnected();
     await using lock = await this.lock.lock('blob', blob.key);
     await this.storage.set(blob);
     await lock[Symbol.asyncDispose]();
 
     // We don't wait for the upload to complete,
     // as the upload process runs asynchronously in the background
-    this.sync.uploadBlob(blob).catch(err => {
-      // never reach here
-      console.error(err);
+    this.sync.uploadBlob(blob, true /* force upload */).catch(() => {
+      // ignore the error as it has already been recorded in the sync status
     });
 
     return;
+  }
+
+  /**
+   * Uploads a blob to the peer. Do nothing if the blob has already been uploaded.
+   *
+   * @returns Always resolves to true when successful
+   *
+   * @throws This method will throw an error if the blob is not found locally, if the upload is aborted, or if it fails due to storage limitations.
+   */
+  async upload(blobIdOrRecord: string | BlobRecord): Promise<boolean> {
+    await this.waitForConnected();
+    const blob =
+      typeof blobIdOrRecord === 'string'
+        ? await this.storage.get(blobIdOrRecord)
+        : blobIdOrRecord;
+    if (!blob) {
+      throw new Error(`Blob ${blobIdOrRecord} not found`);
+    }
+    return this.sync.uploadBlob(blob, false);
+  }
+
+  registerSource(source: BlobSource) {
+    return this.sync.registerSource(source);
+  }
+
+  unregisterSource(source: BlobSource) {
+    return this.sync.unregisterSource(source);
   }
 
   fullDownload(peerId?: string, signal?: AbortSignal) {
     return this.sync.fullDownload(peerId, signal);
   }
 
-  private maxBlobSize = 1024 * 1024 * 100; // 100MB
-  private readonly onReachedMaxBlobSizeCallbacks: Set<
-    (byteSize: number) => void
-  > = new Set();
-
-  setMaxBlobSize(max: number) {
-    this.maxBlobSize = max;
-  }
-
-  onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void {
-    this.onReachedMaxBlobSizeCallbacks.add(cb);
-    return () => this.onReachedMaxBlobSizeCallbacks.delete(cb);
+  private waitForConnected(signal?: AbortSignal) {
+    return this.storage.connection.waitForConnected(signal);
   }
 }

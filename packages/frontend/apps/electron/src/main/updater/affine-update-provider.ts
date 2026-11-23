@@ -3,6 +3,7 @@
 import {
   CancellationToken,
   type CustomPublishOptions,
+  HttpError,
   newError,
   type UpdateInfo,
 } from 'builder-util-runtime';
@@ -86,7 +87,7 @@ export class AFFiNEUpdateProvider extends Provider<GithubUpdateInfo> {
       );
     }
 
-    const releases = JSON.parse(releasesJsonStr);
+    const releases: GithubRelease[] = JSON.parse(releasesJsonStr);
 
     if (releases.length === 0) {
       throw new Error(
@@ -94,64 +95,65 @@ export class AFFiNEUpdateProvider extends Provider<GithubUpdateInfo> {
       );
     }
 
-    const latestRelease = releases[0] as GithubRelease;
-    const tag = latestRelease.tag_name;
-
     const channelFileName = 'latest.yml';
-    const channelFileAsset = latestRelease.assets.find(
-      ({ name }) => name === channelFileName
-    );
-
-    // TODO(@forehalo):
-    //   we need a way to let UI thread prompt user to manually install the latest version,
-    //   if we introduce breaking changes on auto updater in the future.
-    //   for example we rename the release file from `latest.yml` to `release.yml`
-    if (!channelFileAsset) {
-      throw newError(
-        `Cannot find ${channelFileName} in the latest release artifacts.`,
-        'ERR_UPDATER_CHANNEL_FILE_NOT_FOUND'
+    const squirrel = isSquirrelBuild();
+    for (const release of releases) {
+      const channelFileAsset = release.assets.find(
+        ({ name }) => name === channelFileName
       );
-    }
+      if (!channelFileAsset) {
+        continue;
+      }
 
-    const channelFileUrl = new URL(channelFileAsset.url);
-    const channelFileContent = await this.httpRequest(channelFileUrl);
-
-    const result = parseUpdateInfo(
-      channelFileContent,
-      channelFileName,
-      channelFileUrl
-    );
-
-    result.files
-      .filter(({ url }) =>
+      const installers = release.assets.filter(({ name }) =>
         availableForMyPlatformAndInstaller(
-          url,
+          name,
           process.platform,
           process.arch,
-          isSquirrelBuild()
+          squirrel
         )
-      )
-      .forEach(file => {
-        const asset = latestRelease.assets.find(
-          ({ name }) => name === file.url
-        );
-        if (asset) {
-          file.url = asset.url;
+      );
+      if (installers.length === 0) {
+        continue;
+      }
+
+      const channelFileUrl = new URL(channelFileAsset.url);
+      let channelFileContent: string | null;
+      try {
+        channelFileContent = await this.httpRequest(channelFileUrl);
+      } catch (error) {
+        if (error instanceof HttpError && error.statusCode === 404) {
+          continue;
         }
+        throw error;
+      }
+
+      const result = parseUpdateInfo(
+        channelFileContent,
+        channelFileName,
+        channelFileUrl
+      );
+      const files = result.files.flatMap(file => {
+        const asset = installers.find(({ name }) => name === file.url);
+        return asset ? [{ ...file, url: asset.url }] : [];
       });
+      if (files.length === 0) {
+        continue;
+      }
 
-    if (result.releaseName == null) {
-      result.releaseName = latestRelease.name;
+      return {
+        ...result,
+        files,
+        tag: release.tag_name,
+        releaseName: result.releaseName ?? release.name,
+        releaseNotes: result.releaseNotes ?? release.body,
+      };
     }
 
-    if (result.releaseNotes == null) {
-      result.releaseNotes = latestRelease.body;
-    }
-
-    return {
-      tag: tag,
-      ...result,
-    };
+    throw newError(
+      `Cannot find ${channelFileName} with compatible installers in channel ${this.options.channel}.`,
+      'ERR_UPDATER_CHANNEL_FILE_NOT_FOUND'
+    );
   }
 
   resolveFiles(updateInfo: GithubUpdateInfo): Array<ResolvedUpdateFileInfo> {

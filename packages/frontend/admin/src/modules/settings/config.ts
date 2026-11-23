@@ -1,0 +1,174 @@
+import { upperFirst } from 'lodash-es';
+import type { ComponentType } from 'react';
+
+import CONFIG_DESCRIPTORS from '../../config.json';
+import type { ConfigInputProps } from './config-input-row';
+import { AuthSigningKeys } from './operations/auth-signing-keys';
+import { SendTestEmail } from './operations/send-test-email';
+export type ConfigType = 'String' | 'Number' | 'Boolean' | 'JSON' | 'Enum';
+
+type ConfigDescriptor = {
+  desc: string;
+  type: ConfigType;
+  env?: string;
+  link?: string;
+};
+
+export type AppConfig = Record<string, Record<string, any>>;
+
+type AppConfigDescriptors = typeof CONFIG_DESCRIPTORS;
+type AppConfigModule = keyof AppConfigDescriptors;
+type ModuleConfigDescriptors<M extends AppConfigModule> =
+  AppConfigDescriptors[M];
+type ConfigGroup<T extends AppConfigModule> = {
+  name: string;
+  module: T;
+  fields: Array<
+    | keyof ModuleConfigDescriptors<T>
+    | ({
+        key: keyof ModuleConfigDescriptors<T>;
+        sub?: string;
+        desc?: string;
+      } & Partial<ConfigInputProps>)
+  >;
+  operations?: ComponentType<{
+    appConfig: AppConfig;
+  }>[];
+};
+const IGNORED_MODULES: (keyof AppConfig)[] = [];
+
+if (environment.isSelfHosted) {
+  IGNORED_MODULES.push('payment', 'captcha', 'telemetry', 'metrics');
+}
+
+const ALL_CONFIGURABLE_MODULES = Object.keys(CONFIG_DESCRIPTORS).filter(
+  key => !IGNORED_MODULES.includes(key as keyof AppConfig)
+);
+
+export const KNOWN_CONFIG_GROUPS = [
+  {
+    name: 'Server',
+    module: 'server',
+    fields: ['externalUrl', 'name', 'hosts'],
+  } as ConfigGroup<'server'>,
+  {
+    name: 'Auth',
+    module: 'auth',
+    fields: [
+      'allowSignup',
+      'allowSignupForOauth',
+      {
+        key: 'newAccountActionDelay',
+        type: 'Number',
+        desc: 'Minimum account age in seconds before accounts can invite members, create invite links, or publish documents. Set to 0 to disable.',
+      },
+      // nested json object
+      {
+        key: 'passwordRequirements',
+        sub: 'min',
+        type: 'Number',
+        desc: 'Minimum length requirement of password',
+      },
+      {
+        key: 'passwordRequirements',
+        sub: 'max',
+        type: 'Number',
+        desc: 'Maximum length requirement of password',
+      },
+    ],
+    operations: [AuthSigningKeys],
+  } as ConfigGroup<'auth'>,
+  {
+    name: 'Notification',
+    module: 'mailer',
+    fields: [
+      'SMTP.name',
+      'SMTP.host',
+      'SMTP.port',
+      'SMTP.username',
+      'SMTP.password',
+      'SMTP.ignoreTLS',
+      'SMTP.sender',
+    ],
+    operations: [SendTestEmail],
+  } as ConfigGroup<'mailer'>,
+  {
+    name: 'Storage',
+    module: 'storages',
+    fields: [
+      {
+        key: 'blob.storage',
+        desc: 'Complete storage configuration for user uploaded blobs',
+        type: 'JSON',
+      },
+      {
+        key: 'avatar.storage',
+        desc: 'Complete storage configuration for user avatars',
+        type: 'JSON',
+      },
+      {
+        key: 'avatar.publicPath',
+        type: 'String',
+        desc: 'The public path prefix for user avatars(e.g. https://my-bucket.s3.amazonaws.com/)',
+      },
+    ],
+  } as ConfigGroup<'storages'>,
+  {
+    name: 'OAuth',
+    module: 'oauth',
+    fields: ['providers.google', 'providers.github', 'providers.oidc'],
+  } as ConfigGroup<'oauth'>,
+  {
+    name: 'AI BYOK',
+    module: 'copilot',
+    fields: [
+      {
+        key: 'enabled',
+        desc: 'Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.',
+      },
+      'byok.enabled',
+      'byok.allowedProviders',
+      'byok.allowCustomEndpoint',
+      {
+        key: 'byok.allowPrivateEndpoint',
+        desc: 'Allow workspace owners and admins to connect BYOK providers on private network endpoints. Only enable this for trusted workspaces.',
+      },
+    ],
+  } as ConfigGroup<'copilot'>,
+  {
+    name: 'Indexer',
+    module: 'indexer',
+    fields: [
+      {
+        key: 'provider.type',
+        type: 'Enum',
+        options: ['embedded', 'elasticsearch', 'manticoresearch'],
+        desc: 'Search provider. Embedded and Elasticsearch provide full search semantics; Manticore Search provides basic search semantics.',
+      },
+      'provider.endpoint',
+      'provider.apiKey',
+      'provider.username',
+      'provider.password',
+    ],
+  } as ConfigGroup<'indexer'>,
+];
+
+export const UNKNOWN_CONFIG_GROUPS = ALL_CONFIGURABLE_MODULES.filter(
+  module => !KNOWN_CONFIG_GROUPS.some(group => group.module === module)
+).map(module => ({
+  name: upperFirst(module),
+  module,
+  // @ts-expect-error allow
+  fields: Object.keys(CONFIG_DESCRIPTORS[module]),
+  operations: undefined,
+}));
+
+export const ALL_SETTING_GROUPS = [
+  ...KNOWN_CONFIG_GROUPS,
+  ...UNKNOWN_CONFIG_GROUPS,
+];
+
+export const ALL_CONFIG_DESCRIPTORS = CONFIG_DESCRIPTORS as Record<
+  string,
+  Record<string, ConfigDescriptor>
+>;

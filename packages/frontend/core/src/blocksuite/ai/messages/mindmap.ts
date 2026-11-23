@@ -1,5 +1,5 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import type { MindmapStyle } from '@blocksuite/affine/model';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { html, nothing } from 'lit';
 
 import { markdownToMindmap } from '../mini-mindmap';
@@ -56,7 +56,7 @@ export const createMindmapExecuteRenderer: (
     }
 
     ctx.set({
-      node: markdownToMindmap(answer, host.doc, host.std.provider),
+      node: markdownToMindmap(answer, host.store, host.std.store.provider),
     });
 
     handler(host, ctx);

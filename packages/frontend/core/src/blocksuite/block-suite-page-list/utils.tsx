@@ -1,34 +1,52 @@
 import { toast } from '@affine/component';
-import type { DocProps } from '@affine/core/blocksuite/initialization';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { DocsService } from '@affine/core/modules/doc';
-import { EditorSettingService } from '@affine/core/modules/editor-setting';
+import {
+  EditorSettingService,
+  resolveNewDocTitle,
+} from '@affine/core/modules/editor-setting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
-import {
-  DEFAULT_PAGE_BLOCK_HEIGHT,
-  DEFAULT_PAGE_BLOCK_WIDTH,
-  type DocMode,
-} from '@blocksuite/affine/model';
+import { type DocMode } from '@blocksuite/affine/model';
 import type { Workspace } from '@blocksuite/affine/store';
-import { useServices } from '@toeverything/infra';
+import { LiveData, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 export const usePageHelper = (docCollection: Workspace) => {
   const {
     docsService,
     workbenchService,
-    editorSettingService,
     appSidebarService,
+    editorSettingService,
   } = useServices({
     DocsService,
     WorkbenchService,
-    EditorSettingService,
     AppSidebarService,
+    EditorSettingService,
   });
   const workbench = workbenchService.workbench;
   const docRecordList = docsService.list;
   const appSidebar = appSidebarService.sidebar;
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const allDocTitles = useLiveData(
+    useMemo(() => LiveData.from(docsService.allDocTitle$(), []), [docsService])
+  );
+
+  const createBlankDoc = useCallback(() => {
+    const title = resolveNewDocTitle({
+      autoTitleEnabled: settings.autoTitleNewDocWithCurrentDate,
+      existingTitles: allDocTitles.map(doc => doc.title).filter(Boolean),
+      format: settings.newDocDateTitleFormat,
+    });
+
+    return docsService.createDoc(title ? { title } : undefined);
+  }, [
+    allDocTitles,
+    docsService,
+    settings.autoTitleNewDocWithCurrentDate,
+    settings.newDocDateTitleFormat,
+  ]);
 
   const createPageAndOpen = useCallback(
     (
@@ -42,13 +60,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
     ) => {
       appSidebar.setHovering(false);
-      const docProps: DocProps = {
-        note: {
-          ...editorSettingService.editorSetting.get('affine:note'),
-          xywh: `[0, 0, ${DEFAULT_PAGE_BLOCK_WIDTH}, ${DEFAULT_PAGE_BLOCK_HEIGHT}]`,
-        },
-      };
-      const page = docsService.createDoc({ docProps });
+      const page = createBlankDoc();
 
       if (mode) {
         docRecordList.doc$(page.id).value?.setPrimaryMode(mode);
@@ -62,21 +74,12 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
       return page;
     },
-    [
-      appSidebar,
-      docRecordList,
-      docsService,
-      editorSettingService.editorSetting,
-      workbench,
-    ]
+    [appSidebar, createBlankDoc, docRecordList, workbench]
   );
 
   const createEdgelessAndOpen = useCallback(
     (
-      options: {
-        at?: 'new-tab' | 'tail' | 'active';
-        show?: boolean;
-      } = {
+      options: { at?: 'new-tab' | 'tail' | 'active'; show?: boolean } = {
         at: 'active',
         show: true,
       }
@@ -88,9 +91,8 @@ export const usePageHelper = (docCollection: Workspace) => {
 
   const importFileAndOpen = useMemo(
     () => async () => {
-      const { showImportModal } = await import(
-        '@blocksuite/affine/blocks/root'
-      );
+      const { showImportModal } =
+        await import('@blocksuite/affine/widgets/linked-doc');
       const { promise, resolve, reject } =
         Promise.withResolvers<
           Parameters<
@@ -121,6 +123,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       showImportModal({
         collection: docCollection,
         schema: getAFFiNEWorkspaceSchema(),
+        extensions: getStoreManager().config.init().value.get('store'),
         onSuccess,
         onFail: message => {
           reject(new Error(message));

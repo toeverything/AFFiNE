@@ -1,4 +1,4 @@
-import type { BlockComponent, Command } from '@blocksuite/block-std';
+import type { BlockComponent, Command } from '@blocksuite/std';
 
 export const getBlockIndexCommand: Command<
   {

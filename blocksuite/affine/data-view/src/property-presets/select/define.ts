@@ -11,6 +11,10 @@ export const SelectPropertySchema = zod.object({
 export type SelectPropertyData = zod.infer<typeof SelectPropertySchema>;
 export const selectPropertyModelConfig = selectPropertyType.modelConfig({
   name: 'Select',
+  kanbanGroup: {
+    enabled: true,
+    mutable: true,
+  },
   propertyData: {
     schema: SelectPropertySchema,
     default: () => ({
@@ -35,7 +39,7 @@ export const selectPropertyModelConfig = selectPropertyType.modelConfig({
       const name = oldValue
         .split(',')
         .map(v => v.trim())
-        .filter(v => v)[0];
+        .find(v => v);
       if (!name) {
         return { value: null, data: data };
       }

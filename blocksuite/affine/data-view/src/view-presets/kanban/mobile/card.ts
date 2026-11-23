@@ -1,16 +1,17 @@
 import { popupTargetFromElement } from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { CenterPeekIcon, MoreHorizontalIcon } from '@blocksuite/icons/lit';
-import { css } from 'lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
-import type { KanbanColumn, KanbanSingleView } from '../kanban-view-manager.js';
+import type { KanbanColumn } from '../kanban-view-manager.js';
+import type { MobileKanbanViewUILogic } from './kanban-view-ui-logic.js';
 import { popCardMenu } from './menu.js';
 
 const styles = css`
@@ -18,7 +19,7 @@ const styles = css`
     display: flex;
     position: relative;
     flex-direction: column;
-    border: 0.5px solid var(--affine-border-color);
+    border: 0.5px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     background-color: var(--affine-background-kanban-card-color);
@@ -36,7 +37,7 @@ const styles = css`
   }
 
   .mobile-card-header.has-divider {
-    border-bottom: 0.5px solid var(--affine-border-color);
+    border-bottom: 0.5px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   .mobile-card-header-title {
@@ -93,7 +94,7 @@ export class MobileKanbanCard extends SignalWatcher(
 
   private readonly clickCenterPeek = (e: MouseEvent) => {
     e.stopPropagation();
-    this.dataViewEle.openDetailPanel({
+    this.kanbanViewLogic.root.openDetailPanel({
       view: this.view,
       rowId: this.cardId,
     });
@@ -103,10 +104,9 @@ export class MobileKanbanCard extends SignalWatcher(
     e.stopPropagation();
     popCardMenu(
       popupTargetFromElement(e.currentTarget as HTMLElement),
-      this.view,
       this.groupKey,
       this.cardId,
-      this.dataViewEle
+      this.kanbanViewLogic
     );
   };
 
@@ -125,10 +125,10 @@ export class MobileKanbanCard extends SignalWatcher(
           return html` <mobile-kanban-cell
             .contentOnly="${false}"
             data-column-id="${column.id}"
-            .view="${this.view}"
             .groupKey="${this.groupKey}"
             .column="${column}"
             .cardId="${this.cardId}"
+            .kanbanViewLogic="${this.kanbanViewLogic}"
           ></mobile-kanban-cell>`;
         }
       )}
@@ -154,7 +154,7 @@ export class MobileKanbanCard extends SignalWatcher(
       return;
     }
     return html` <div class="mobile-card-header-icon">
-      ${icon.cellGet(this.cardId).value$.value}
+      ${icon.cellGetOrCreate(this.cardId).value$.value}
     </div>`;
   }
 
@@ -183,10 +183,10 @@ export class MobileKanbanCard extends SignalWatcher(
       <mobile-kanban-cell
         .contentOnly="${true}"
         data-column-id="${title.id}"
-        .view="${this.view}"
         .groupKey="${this.groupKey}"
         .column="${title}"
         .cardId="${this.cardId}"
+        .kanbanViewLogic="${this.kanbanViewLogic}"
       ></mobile-kanban-cell>
     </div>`;
   }
@@ -205,16 +205,17 @@ export class MobileKanbanCard extends SignalWatcher(
   accessor cardId!: string;
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
-
-  @property({ attribute: false })
   accessor groupKey!: string;
 
   @state()
   accessor isFocus = false;
 
   @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  accessor kanbanViewLogic!: MobileKanbanViewUILogic;
+
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

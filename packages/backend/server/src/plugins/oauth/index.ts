@@ -1,26 +1,18 @@
 import './config';
 
+import { Module } from '@nestjs/common';
+
+import { ServerConfigModule } from '../../core';
 import { AuthModule } from '../../core/auth';
-import { ServerFeature } from '../../core/config';
+import { BackendRuntimeModule } from '../../core/backend-runtime';
 import { UserModule } from '../../core/user';
-import { Plugin } from '../registry';
 import { OAuthController } from './controller';
-import { OAuthProviders } from './providers';
-import { OAuthProviderFactory } from './register';
 import { OAuthResolver } from './resolver';
 import { OAuthService } from './service';
 
-@Plugin({
-  name: 'oauth',
-  imports: [AuthModule, UserModule],
-  providers: [
-    OAuthProviderFactory,
-    OAuthService,
-    OAuthResolver,
-    ...OAuthProviders,
-  ],
+@Module({
+  imports: [AuthModule, UserModule, ServerConfigModule, BackendRuntimeModule],
+  providers: [OAuthService, OAuthResolver],
   controllers: [OAuthController],
-  contributesTo: ServerFeature.OAuth,
-  if: config => config.flavor.graphql && !!config.plugins.oauth,
 })
 export class OAuthModule {}

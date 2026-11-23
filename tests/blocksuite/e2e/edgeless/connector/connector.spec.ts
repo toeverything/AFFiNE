@@ -2,25 +2,38 @@ import { expect } from '@playwright/test';
 
 import {
   addBasicConnectorElement,
+  assertEdgelessConnectorToolMode,
   changeConnectorStrokeColor,
   changeConnectorStrokeStyle,
   changeConnectorStrokeWidth,
+  ConnectorMode,
   createConnectorElement,
   createShapeElement,
   dragBetweenViewCoords,
   edgelessCommonSetup as commonSetup,
+  getConnectorPath,
+  getConnectorPathWithInOut,
+  locatorComponentToolbar,
   pickColorAtPoints,
   rotateElementByHandle,
+  selectElementInEdgeless,
+  setEdgelessTool,
   Shape,
   toModelCoord,
   toViewCoord,
   triggerComponentToolbarAction,
+  triggerShapeSwitch,
 } from '../../utils/actions/edgeless.js';
-import { pressBackspace, waitNextFrame } from '../../utils/actions/index.js';
+import {
+  clickView,
+  pressBackspace,
+  waitNextFrame,
+} from '../../utils/actions/index.js';
 import {
   assertConnectorPath,
   assertEdgelessNonSelectedRect,
   assertEdgelessSelectedRect,
+  getSelectedRect,
 } from '../../utils/asserts.js';
 import { test } from '../../utils/playwright.js';
 
@@ -146,15 +159,11 @@ test('change connector line width', async ({ page }) => {
   await addBasicConnectorElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y);
-  await triggerComponentToolbarAction(page, 'changeConnectorStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
   await changeConnectorStrokeColor(page, 'MediumGrey');
 
   await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
   await changeConnectorStrokeWidth(page, 5);
-
-  await waitNextFrame(page);
-
-  await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
 
   const pickedColor = await pickColorAtPoints(page, [
     [start.x + 5, start.y],
@@ -171,7 +180,7 @@ test('change connector stroke style', async ({ page }) => {
   await addBasicConnectorElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y);
-  await triggerComponentToolbarAction(page, 'changeConnectorStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
   await changeConnectorStrokeColor(page, 'MediumGrey');
 
   await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
@@ -182,6 +191,28 @@ test('change connector stroke style', async ({ page }) => {
 
   const pickedColor = await pickColorAtPoints(page, [[start.x + 20, start.y]]);
   expect(pickedColor[0]).toBe('#000000');
+});
+
+test('should record previous connector mode', async ({ page }) => {
+  await commonSetup(page);
+  await setEdgelessTool(page, 'connector');
+  await assertEdgelessConnectorToolMode(page, ConnectorMode.Curve);
+  await page.keyboard.press('c');
+  await assertEdgelessConnectorToolMode(page, ConnectorMode.Orthogonal);
+  await page.keyboard.press('c');
+  await assertEdgelessConnectorToolMode(page, ConnectorMode.Straight);
+
+  await dragBetweenViewCoords(page, [100, 100], [200, 200]);
+  await page.keyboard.press('c');
+  await assertEdgelessConnectorToolMode(page, ConnectorMode.Straight);
+
+  await setEdgelessTool(page, 'default');
+  await clickView(page, [150, 150]);
+  await triggerComponentToolbarAction(page, 'changeConnectorShape');
+  await locatorComponentToolbar(page).getByLabel('Curve').click();
+
+  await page.keyboard.press('c');
+  await assertEdgelessConnectorToolMode(page, ConnectorMode.Curve);
 });
 
 test.describe('quick connect', () => {
@@ -319,5 +350,119 @@ test.describe('quick connect', () => {
     endpoint = await toModelCoord(page, point);
     await page.mouse.move(...point);
     await assertConnectorPath(page, [[50, 100], endpoint]);
+  });
+
+  test('the triangle connectors should remain the same when switch to other shape', async ({
+    page,
+  }) => {
+    await commonSetup(page);
+
+    const shape1Id = await createShapeElement(
+      page,
+      [0, 0],
+      [100, 100],
+      Shape.Triangle
+    );
+    const shape2Id = await createShapeElement(
+      page,
+      [200, 0],
+      [300, 100],
+      Shape.Triangle
+    );
+
+    await setEdgelessTool(page, 'connector');
+    await dragBetweenViewCoords(page, [60, 50], [240, 50]);
+
+    {
+      const path = await getConnectorPath(page);
+      // make sure the connector is created
+      expect(path.length).toBeGreaterThan(0);
+    }
+
+    // switch to other shape
+
+    await selectElementInEdgeless(page, [shape1Id]);
+    await triggerShapeSwitch(page, 'Square');
+
+    await selectElementInEdgeless(page, [shape2Id]);
+    await triggerShapeSwitch(page, 'Square');
+
+    await dragBetweenViewCoords(page, [50, 50], [0, 0]);
+
+    await dragBetweenViewCoords(page, [250, 50], [300, 50]);
+
+    {
+      const path = await getConnectorPathWithInOut(page);
+      expect(path.length).toBeGreaterThan(0);
+      path.forEach(point => {
+        [0, 1].forEach(i => {
+          expect(point.in[i]).not.toBeNaN();
+          expect(point.out[i]).not.toBeNaN();
+          expect(point.point[i]).not.toBeNaN();
+        });
+      });
+    }
+  });
+
+  test('connector can not be moved directly if the source or target is not selected', async ({
+    page,
+  }) => {
+    await commonSetup(page);
+
+    const normalConnectorId = await createConnectorElement(
+      page,
+      [0, 0],
+      [100, 100]
+    );
+    await selectElementInEdgeless(page, [normalConnectorId]);
+
+    const normalRect1 = await getSelectedRect(page);
+
+    // connector with no source and target can be moved
+    await dragBetweenViewCoords(page, [50, 50], [100, 100]);
+    const normalRect2 = await getSelectedRect(page);
+    expect(normalRect2).toEqual({
+      x: normalRect1.x + 50,
+      y: normalRect1.y + 50,
+      width: normalRect1.width,
+      height: normalRect1.height,
+    });
+
+    const shape1 = await createShapeElement(
+      page,
+      [150, 150],
+      [200, 200],
+      Shape.Square
+    );
+    const shape2 = await createShapeElement(
+      page,
+      [250, 250],
+      [300, 300],
+      Shape.Square
+    );
+    const connectorWithShapes = await createConnectorElement(
+      page,
+      [190, 175],
+      [260, 275]
+    );
+    await selectElementInEdgeless(page, [connectorWithShapes]);
+
+    // cannot be moved because the source and target are not selected
+    const initialShapeConnectorRect = await getSelectedRect(page);
+    await dragBetweenViewCoords(page, [225, 200], [275, 250]);
+    const shapeConnectorRect1 = await getSelectedRect(page);
+    expect(shapeConnectorRect1).toEqual(initialShapeConnectorRect);
+
+    // can be moved because the source and target are selected
+    await selectElementInEdgeless(page, [shape1, shape2, connectorWithShapes]);
+    await dragBetweenViewCoords(page, [225, 200], [275, 250]);
+    await selectElementInEdgeless(page, [connectorWithShapes]);
+    const shapeConnectorRect2 = await getSelectedRect(page);
+    expect(shapeConnectorRect2).toEqual({
+      x: initialShapeConnectorRect.x + 50,
+      y: initialShapeConnectorRect.y + 50,
+      width: initialShapeConnectorRect.width,
+      height: initialShapeConnectorRect.height,
+    });
   });
 });

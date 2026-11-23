@@ -3,6 +3,7 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
+  getPageByTitle,
   getPageOperationButton,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -42,7 +43,7 @@ test('switch between new page and all page', async ({ page }) => {
   await clickNewPageButton(page, title);
   await page.getByTestId('all-pages').click();
 
-  const cell = page.getByTestId('page-list-item').getByText(title);
+  const cell = await getPageByTitle(page, title);
   await expect(cell).toBeVisible();
 
   await cell.click();
@@ -142,5 +143,9 @@ test('ctrl click embedded doc link and open in new tab', async ({ page }) => {
     }),
   ]);
 
-  await expect(newTabPage).toHaveURL(newPageUrl, { timeout: 15000 });
+  const newTabPageUrl = new URL(newTabPage.url());
+  // ignores `search params`
+  newTabPageUrl.search = '';
+
+  expect(newTabPageUrl.toString()).toBe(newPageUrl);
 });

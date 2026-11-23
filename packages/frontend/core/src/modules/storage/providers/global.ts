@@ -1,4 +1,8 @@
-import { createIdentifier, type Memento } from '@toeverything/infra';
+import {
+  type AsyncMemento,
+  createIdentifier,
+  type Memento,
+} from '@toeverything/infra';
 
 /**
  * A memento object that stores the entire application state.
@@ -25,3 +29,7 @@ export const GlobalCache = createIdentifier<GlobalCache>('GlobalCache');
 export interface GlobalSessionState extends Memento {}
 export const GlobalSessionState =
   createIdentifier<GlobalSessionState>('GlobalSessionState');
+
+export interface CacheStorage extends AsyncMemento {}
+
+export const CacheStorage = createIdentifier<CacheStorage>('CacheStorage');

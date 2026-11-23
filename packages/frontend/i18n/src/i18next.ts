@@ -150,6 +150,16 @@ export function createI18nWrapper(getI18nFn: () => i18n) {
 
       return I18nMethod.t.bind(null, key);
     },
+    has(self, key: string) {
+      if (key in self) {
+        return true;
+      }
+      const i18n = getI18nFn();
+      if (i18n.exists(key)) {
+        return true;
+      }
+      return false;
+    },
   }) as typeof I18nMethod &
     ReturnType<typeof useAFFiNEI18N> & { [unknownKey: string]: () => string };
 }

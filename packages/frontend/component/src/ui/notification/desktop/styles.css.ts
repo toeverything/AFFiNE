@@ -8,14 +8,11 @@ export const actionTextColor = createVar();
 export const iconColor = createVar();
 export const closeIconColor = createVar();
 
-export const cardWrapper = style({
-  borderRadius: 8,
-  boxShadow: cssVar('shadow1'),
-  overflow: 'hidden',
-});
+export const cardWrapper = style({});
 
 export const card = style({
-  borderRadius: 'inherit',
+  borderRadius: 8,
+  boxShadow: cssVar('shadow1'),
   borderWidth: 1,
   borderStyle: 'solid',
   backgroundColor: cardColor,
@@ -58,14 +55,14 @@ export const title = style({
   fontSize: 15,
   marginRight: 10,
 });
-export const action = style({
-  marginRight: 16,
-});
+
 export const actionButton = style({
   color: actionTextColor,
   position: 'relative',
   background: 'transparent',
   border: 'none',
+  fontSize: cssVar('fontSm'),
+  lineHeight: '22px',
 });
 export const closeButton = style({
   selectors: {

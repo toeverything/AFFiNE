@@ -1,5 +1,7 @@
+import type { GfxModel } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
+import type { BookmarkBlockModel } from '../bookmark';
 import { EmbedFigmaModel } from './figma';
 import { EmbedGithubModel } from './github';
 import type { EmbedHtmlModel } from './html';
@@ -29,12 +31,15 @@ export type EmbedCardModel = InstanceType<
   ExternalEmbedModel | InternalEmbedModel
 >;
 
-export type LinkableEmbedModel = EmbedCardModel | EmbedIframeBlockModel;
+export type LinkableEmbedModel =
+  | EmbedCardModel
+  | EmbedIframeBlockModel
+  | BookmarkBlockModel;
 
 export type BuiltInEmbedModel = EmbedCardModel | EmbedHtmlModel;
 
 export function isExternalEmbedModel(
-  model: BlockModel
+  model: GfxModel | BlockModel
 ): model is InstanceType<ExternalEmbedModel> {
   return (
     model instanceof EmbedFigmaModel ||
@@ -45,7 +50,7 @@ export function isExternalEmbedModel(
 }
 
 export function isInternalEmbedModel(
-  model: BlockModel
+  model: GfxModel | BlockModel
 ): model is InstanceType<InternalEmbedModel> {
   return (
     model instanceof EmbedLinkedDocModel || model instanceof EmbedSyncedDocModel

@@ -1,6 +1,18 @@
+pub mod disk_sync;
 pub mod hashcash;
+mod import;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod preview;
+pub mod workspace_meta;
+
+#[cfg(not(target_arch = "arm"))]
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[allow(unused_imports)]
 pub use affine_media_capture::*;
 pub use affine_nbstore::*;
 pub use affine_sqlite_v1::*;
+pub use disk_sync::*;
+pub use import::*;
+pub use workspace_meta::*;

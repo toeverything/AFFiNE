@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 
 import {
+  clickView,
   copyByKeyboard,
   createConnectorElement,
   createNote,
@@ -10,12 +11,12 @@ import {
   edgelessCommonSetup,
   getAllSortedIds,
   getFirstContainerId,
+  moveView,
   pasteByKeyboard,
+  pressEscape,
   selectAllByKeyboard,
   Shape,
-  toViewCoord,
   triggerComponentToolbarAction,
-  waitNextFrame,
 } from '../../utils/actions/index.js';
 import {
   assertContainerChildCount,
@@ -33,10 +34,8 @@ test.describe('clipboard', () => {
     const originGroupId = await getFirstContainerId(page);
 
     await copyByKeyboard(page);
-    await waitNextFrame(page, 100);
-    const move = await toViewCoord(page, [100, -50]);
-    await page.mouse.click(move[0], move[1]);
-    await waitNextFrame(page, 1000);
+    await pressEscape(page);
+    await clickView(page, [100, -50]);
     await pasteByKeyboard(page, false);
     const copyedGroupId = await getFirstContainerId(page, [originGroupId]);
 
@@ -59,10 +58,8 @@ test.describe('clipboard', () => {
     const originGroupId = await getFirstContainerId(page);
 
     await copyByKeyboard(page);
-    await waitNextFrame(page, 100);
-    const move = await toViewCoord(page, [100, -50]);
-    await page.mouse.click(move[0], move[1]);
-    await waitNextFrame(page, 1000);
+    await pressEscape(page);
+    await clickView(page, [100, -50]);
     await pasteByKeyboard(page, false);
     const copyedGroupId = await getFirstContainerId(page, [originGroupId]);
 
@@ -81,20 +78,17 @@ test.describe('group clipboard', () => {
     await commonSetup(page);
     await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
     await createNote(page, [100, -100]);
-    await page.mouse.click(10, 50);
+    await pressEscape(page, 3);
 
     await selectAllByKeyboard(page);
     await triggerComponentToolbarAction(page, 'addGroup');
-
     const originIds = await getAllSortedIds(page);
     expect(originIds.length).toBe(3);
 
     await copyByKeyboard(page);
-    const move = await toViewCoord(page, [250, 250]);
-    await page.mouse.move(move[0], move[1]);
-    await page.mouse.click(move[0], move[1]);
+    await pressEscape(page);
+    await moveView(page, [250, 250]);
     await pasteByKeyboard(page, true);
-    await waitNextFrame(page, 500);
     const sortedIds = await getAllSortedIds(page);
     expect(sortedIds.length).toBe(6);
   });
@@ -105,9 +99,10 @@ test.describe('group clipboard', () => {
     await createShapeElement(page, [200, 0], [300, 100], Shape.Square);
     await selectAllByKeyboard(page);
     await triggerComponentToolbarAction(page, 'addGroup');
+    await pressEscape(page);
 
-    await createNote(page, [100, -100]);
-    await page.mouse.click(10, 50);
+    await createNote(page, [100, -200]);
+    await pressEscape(page, 3);
     await selectAllByKeyboard(page);
     await triggerComponentToolbarAction(page, 'createGroupOnMoreOption');
 
@@ -115,11 +110,9 @@ test.describe('group clipboard', () => {
     expect(originIds.length).toBe(5);
 
     await copyByKeyboard(page);
-    const move = await toViewCoord(page, [250, 250]);
-    await page.mouse.move(move[0], move[1]);
-    await page.mouse.click(move[0], move[1]);
+    await pressEscape(page);
+    await moveView(page, [250, 250]);
     await pasteByKeyboard(page, true);
-    await waitNextFrame(page, 500);
     const sortedIds = await getAllSortedIds(page);
     expect(sortedIds.length).toBe(10);
   });
@@ -128,7 +121,7 @@ test.describe('group clipboard', () => {
     await commonSetup(page);
     await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
     await createNote(page, [100, -100]);
-    await page.mouse.click(10, 50);
+    await pressEscape(page, 3);
     await selectAllByKeyboard(page);
     await triggerComponentToolbarAction(page, 'addFrame');
 
@@ -141,11 +134,9 @@ test.describe('group clipboard', () => {
     expect(originIds.length).toBe(5);
 
     await copyByKeyboard(page);
-    const move = await toViewCoord(page, [250, 250]);
-    await page.mouse.move(move[0], move[1]);
-    await page.mouse.click(move[0], move[1]);
+    await pressEscape(page);
+    await moveView(page, [250, 250]);
     await pasteByKeyboard(page, true);
-    await waitNextFrame(page, 500);
     const sortedIds = await getAllSortedIds(page);
     expect(sortedIds.length).toBe(10);
   });

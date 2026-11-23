@@ -9,6 +9,7 @@ import {
   dragEmbedResizeByTopLeft,
   dragEmbedResizeByTopRight,
   enterPlaygroundRoom,
+  getEditorHostLocator,
   initImageState,
   moveToImage,
   pasteByKeyboard,
@@ -21,7 +22,6 @@ import {
   waitNextFrame,
 } from '../utils/actions/index.js';
 import {
-  assertImageOption,
   assertImageSize,
   assertRichDragButton,
   assertRichImage,
@@ -31,9 +31,8 @@ import {
 import { test } from '../utils/playwright.js';
 
 async function focusCaption(page: Page) {
-  await page.click(
-    '.affine-image-toolbar-container .image-toolbar-button.caption'
-  );
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  await toolbar.getByLabel('Caption').click();
 }
 
 test('can drag resize image by left menu', async ({ page }) => {
@@ -115,11 +114,12 @@ test('enter shortcut on focusing embed block and its caption', async ({
   await initImageState(page);
   await assertRichImage(page, 1);
 
+  await getEditorHostLocator(page).focus();
   await moveToImage(page);
-  await assertImageOption(page);
+
+  await focusCaption(page);
 
   const caption = page.locator('affine-image block-caption-editor textarea');
-  await focusCaption(page);
   await type(page, '123');
 
   test.info().annotations.push({
@@ -139,11 +139,12 @@ test('should support the enter key of image caption', async ({ page }) => {
   await initImageState(page);
   await assertRichImage(page, 1);
 
+  await getEditorHostLocator(page).focus();
   await moveToImage(page);
-  await assertImageOption(page);
+
+  await focusCaption(page);
 
   const caption = page.locator('affine-image block-caption-editor textarea');
-  await focusCaption(page);
   await type(page, 'abc123');
   await pressArrowLeft(page, 3);
   await pressEnter(page);

@@ -3,7 +3,7 @@ import { builtInTemplates as builtInStickersTemplates } from '@affine/templates/
 import {
   EdgelessTemplatePanel,
   type TemplateManager,
-} from '@blocksuite/affine/blocks/root';
+} from '@blocksuite/affine/gfx/template';
 
 export function registerTemplates() {
   EdgelessTemplatePanel.templates.extend(

@@ -1,8 +1,10 @@
 import {
   ColorSchema,
   ConnectorMode,
-  DEFAULT_FRONT_END_POINT_STYLE,
-  DEFAULT_REAR_END_POINT_STYLE,
+  DEFAULT_CONNECTOR_MODE,
+  DEFAULT_FRONT_ENDPOINT_STYLE,
+  DEFAULT_HIGHLIGHTER_LINE_WIDTH,
+  DEFAULT_REAR_ENDPOINT_STYLE,
   DEFAULT_ROUGHNESS,
   DefaultTheme,
   EdgelessTextZodSchema,
@@ -13,6 +15,7 @@ import {
   FontWeight,
   FontWeightSchema,
   FrameZodSchema,
+  HIGHLIGHTER_LINE_WIDTHS,
   LayoutType,
   LineWidth,
   MindmapStyle,
@@ -61,13 +64,13 @@ export const ConnectorSchema = z
     }),
   })
   .default({
-    frontEndpointStyle: DEFAULT_FRONT_END_POINT_STYLE,
-    rearEndpointStyle: DEFAULT_REAR_END_POINT_STYLE,
+    frontEndpointStyle: DEFAULT_FRONT_ENDPOINT_STYLE,
+    rearEndpointStyle: DEFAULT_REAR_ENDPOINT_STYLE,
     stroke: DefaultTheme.connectorColor,
     strokeStyle: StrokeStyle.Solid,
     strokeWidth: LineWidth.Two,
     rough: false,
-    mode: ConnectorMode.Curve,
+    mode: DEFAULT_CONNECTOR_MODE,
     labelStyle: {
       color: DefaultTheme.black,
       fontSize: 16,
@@ -86,6 +89,19 @@ export const BrushSchema = z
   .default({
     color: DefaultTheme.black,
     lineWidth: LineWidth.Four,
+  });
+
+export const HighlighterSchema = z
+  .object({
+    color: ColorSchema,
+    lineWidth: z
+      .number()
+      .int()
+      .refine(value => HIGHLIGHTER_LINE_WIDTHS.includes(value)),
+  })
+  .default({
+    color: DefaultTheme.hightlighterColor,
+    lineWidth: DEFAULT_HIGHLIGHTER_LINE_WIDTH,
   });
 
 const DEFAULT_SHAPE = {
@@ -161,6 +177,7 @@ export const MindmapSchema = z
 export const NodePropsSchema = z.object({
   connector: ConnectorSchema,
   brush: BrushSchema,
+  highlighter: HighlighterSchema,
   text: TextSchema,
   mindmap: MindmapSchema,
   'affine:edgeless-text': EdgelessTextZodSchema,

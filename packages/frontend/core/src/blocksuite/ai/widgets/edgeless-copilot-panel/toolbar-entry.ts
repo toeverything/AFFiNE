@@ -1,16 +1,16 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import {
-  GfxControllerIdentifier,
-  isGfxGroupCompatibleModel,
-} from '@blocksuite/affine/block-std/gfx';
 import { sortEdgelessElements } from '@blocksuite/affine/blocks/root';
 import { AIStarIcon } from '@blocksuite/affine/components/icons';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import type { EditorHost } from '@blocksuite/affine/std';
+import {
+  GfxControllerIdentifier,
+  isGfxGroupCompatibleModel,
+} from '@blocksuite/affine/std/gfx';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
-import type { CopilotTool } from '../../tool/copilot-tool';
+import { CopilotTool } from '../../tool/copilot-tool';
 
 export class EdgelessCopilotToolbarEntry extends WithDisposable(LitElement) {
   static override styles = css`
@@ -51,7 +51,7 @@ export class EdgelessCopilotToolbarEntry extends WithDisposable(LitElement) {
       }
     });
 
-    this._gfx.tool.setTool('copilot');
+    this._gfx.tool.setTool(CopilotTool);
     (this._gfx.tool.currentTool$.peek() as CopilotTool).updateSelectionWith(
       Array.from(toBeSelected),
       10
@@ -62,6 +62,7 @@ export class EdgelessCopilotToolbarEntry extends WithDisposable(LitElement) {
     return html`<edgeless-tool-icon-button
       aria-label="Ask AI"
       class="copilot-icon-button"
+      data-testid="ask-ai-button"
       @click=${this._onClick}
     >
       ${AIStarIcon} <span class="label medium">Ask AI</span>

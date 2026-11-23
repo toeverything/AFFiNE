@@ -126,10 +126,8 @@ export const MonthPicker = memo(function MonthPicker(
   const Body = useMemo(() => {
     return (
       <div className={styles.yearViewBody}>
-        {/* eslint-disable-next-line react/no-array-index-key */}
         {matrix.map((row, i) => {
           return (
-            // eslint-disable-next-line react/no-array-index-key
             <div key={i} className={styles.yearViewRow}>
               {row.map(month => {
                 const monthValue = month.format('YYYY-MM');
@@ -145,7 +143,7 @@ export const MonthPicker = memo(function MonthPicker(
                       tabIndex={month.isSame(monthCursor, 'month') ? 0 : -1}
                       aria-label={monthValue}
                     >
-                      {monthNames.split(',')[month.month()]}
+                      {monthNames.split(/[,،]/)[month.month()]}
                     </button>
                   </div>
                 );

@@ -1,4 +1,4 @@
-import type { TelemetryEvent } from './types.js';
+import type { LinkEvent } from './types.js';
 
 export type LinkEventType =
   | 'CopiedLink'
@@ -11,6 +11,9 @@ export type LinkEventType =
   | 'OpenedCardStyleSelector'
   | 'SelectedCardStyle'
   | 'OpenedCardScaleSelector'
-  | 'SelectedCardScale';
+  | 'SelectedCardScale'
+  | 'OpenLink'
+  | 'EditLink'
+  | 'ReloadLink';
 
-export type LinkToolbarEvents = Record<LinkEventType, TelemetryEvent>;
+export type LinkToolbarEvents = Record<LinkEventType, LinkEvent>;

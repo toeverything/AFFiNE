@@ -1,8 +1,21 @@
 use std::ops::Deref;
 
-use super::{error::Result, storage::SqliteDocStorage, Blob, ListedBlob, SetBlob};
+use super::{Blob, ListedBlob, SetBlob, error::Result, storage::SqliteDocStorage};
 
 impl SqliteDocStorage {
+  pub async fn read_blob_readonly(path: &str, key: &str) -> Result<Option<Blob>> {
+    let pool = Self::open_readonly_path(path).await?;
+    let blob = sqlx::query_as!(
+      Blob,
+      "SELECT key, data, size, mime, created_at FROM blobs WHERE key = ? AND deleted_at IS NULL",
+      key
+    )
+    .fetch_optional(&pool)
+    .await?;
+    pool.close().await;
+    Ok(blob)
+  }
+
   pub async fn get_blob(&self, key: String) -> Result<Option<Blob>> {
     let result = sqlx::query_as!(
       Blob,
@@ -60,8 +73,7 @@ impl SqliteDocStorage {
   pub async fn list_blobs(&self) -> Result<Vec<ListedBlob>> {
     let result = sqlx::query_as!(
       ListedBlob,
-      "SELECT key, size, mime, created_at FROM blobs WHERE deleted_at IS NULL ORDER BY created_at \
-       DESC;"
+      "SELECT key, size, mime, created_at FROM blobs WHERE deleted_at IS NULL ORDER BY created_at DESC;"
     )
     .fetch_all(&self.pool)
     .await?;
@@ -74,7 +86,7 @@ impl SqliteDocStorage {
 mod tests {
   use sqlx::Row;
 
-  use super::*;
+  use super::{super::Data, *};
 
   async fn get_storage() -> SqliteDocStorage {
     let storage = SqliteDocStorage::new(":memory:".to_string());
@@ -91,7 +103,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -102,18 +114,12 @@ mod tests {
 
     assert!(result.is_some());
 
-    storage
-      .delete_blob("test_".to_string(), false)
-      .await
-      .unwrap();
+    storage.delete_blob("test_".to_string(), false).await.unwrap();
 
     let result = storage.get_blob("test".to_string()).await.unwrap();
     assert!(result.is_none());
 
-    storage
-      .delete_blob("test_2".to_string(), true)
-      .await
-      .unwrap();
+    storage.delete_blob("test_2".to_string(), true).await.unwrap();
 
     let result = storage.get_blob("test".to_string()).await.unwrap();
     assert!(result.is_none());
@@ -131,7 +137,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
@@ -146,15 +152,9 @@ mod tests {
       vec!["test_1", "test_2", "test_3", "test_4"]
     );
 
-    storage
-      .delete_blob("test_2".to_string(), false)
-      .await
-      .unwrap();
+    storage.delete_blob("test_2".to_string(), false).await.unwrap();
 
-    storage
-      .delete_blob("test_3".to_string(), true)
-      .await
-      .unwrap();
+    storage.delete_blob("test_3".to_string(), true).await.unwrap();
 
     let query = sqlx::query("SELECT COUNT(*) as len FROM blobs;")
       .fetch_one(&storage.pool)
@@ -179,17 +179,14 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0],
+          data: Into::<Data>::into(vec![0, 0]),
           mime: "text/plain".to_string(),
         })
         .await
         .unwrap();
     }
 
-    storage
-      .delete_blob("test_2".to_string(), false)
-      .await
-      .unwrap();
+    storage.delete_blob("test_2".to_string(), false).await.unwrap();
     storage.release_blobs().await.unwrap();
 
     let query = sqlx::query("SELECT COUNT(*) as len FROM blobs;")

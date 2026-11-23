@@ -1,4 +1,4 @@
-import { Button, notify } from '@affine/component';
+import { type Notification, notify } from '@affine/component';
 import {
   RouteLogic,
   useNavigateHelper,
@@ -8,7 +8,7 @@ import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { toggleLocalAIOnboarding } from './apis';
 import * as styles from './local.dialog.css';
@@ -29,51 +29,41 @@ const LocalOnboardingAnimation = () => {
   );
 };
 
-const FooterActions = ({ onDismiss }: { onDismiss: () => void }) => {
-  const t = useI18n();
-  const authService = useService(AuthService);
-  const loginStatus = useLiveData(authService.session.status$);
-  const loggedIn = loginStatus === 'authenticated';
-  const { jumpToSignIn } = useNavigateHelper();
-
-  return (
-    <div className={styles.footerActions}>
-      <a href="https://ai.affine.pro" target="_blank" rel="noreferrer">
-        <Button
-          className={styles.actionButton}
-          variant="plain"
-          onClick={onDismiss}
-        >
-          {t['com.affine.ai-onboarding.local.action-learn-more']()}
-        </Button>
-      </a>
-      {loggedIn ? null : (
-        <Button
-          className={styles.actionButton}
-          variant="plain"
-          onClick={() => {
-            onDismiss();
-            jumpToSignIn('', RouteLogic.REPLACE, {}, { initCloud: 'true' });
-          }}
-        >
-          {t['com.affine.ai-onboarding.local.action-get-started']()}
-        </Button>
-      )}
-    </div>
-  );
-};
-
 export const AIOnboardingLocal = () => {
   const t = useI18n();
   const authService = useService(AuthService);
   const notifyId = useLiveData(localNotifyId$);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { jumpToSignIn } = useNavigateHelper();
 
   const loginStatus = useLiveData(authService.session.status$);
   const notSignedIn = loginStatus !== 'authenticated';
 
+  const actions = useMemo(() => {
+    const result: NonNullable<Notification['actions']> = [
+      {
+        key: 'learn-more',
+        label: t['com.affine.ai-onboarding.local.action-learn-more'](),
+        onClick: () => {
+          window.open('https://ai.affine.pro', '_blank', 'noreferrer');
+        },
+      },
+    ];
+    if (notSignedIn) {
+      result.push({
+        key: 'get-started',
+        label: t['com.affine.ai-onboarding.local.action-get-started'](),
+        onClick: () => {
+          jumpToSignIn('', RouteLogic.REPLACE, {}, { initCloud: 'true' });
+        },
+      });
+    }
+
+    return result;
+  }, [t, jumpToSignIn, notSignedIn]);
+
   useEffect(() => {
-    if (!notSignedIn) return;
+    // if (!notSignedIn) return;
     if (notifyId) return;
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -95,21 +85,14 @@ export const AIOnboardingLocal = () => {
           thumb: <LocalOnboardingAnimation />,
           alignMessage: 'icon',
           onDismiss: () => toggleLocalAIOnboarding(false),
-          footer: (
-            <FooterActions
-              onDismiss={() => {
-                toggleLocalAIOnboarding(false);
-                notify.dismiss(id);
-              }}
-            />
-          ),
+          actions,
           rootAttrs: { className: styles.card },
         },
         { duration: 1000 * 60 * 10 }
       );
       localNotifyId$.next(id);
     }, 1000);
-  }, [notSignedIn, notifyId, t]);
+  }, [actions, notSignedIn, notifyId, t]);
 
   return null;
 };

@@ -1,24 +1,22 @@
-import { FactoryProvider, Injectable, Logger } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
-import {
-  applyUpdate,
-  diffUpdate,
-  Doc as YDoc,
-  encodeStateVectorFromUpdate,
-} from 'yjs';
+import { Injectable, Logger } from '@nestjs/common';
 
+import { Cache } from '../../base';
+import { Models } from '../../models';
 import {
-  Cache,
-  Config,
-  CryptoHelper,
-  getOrGenRequestId,
-  UserFriendlyError,
-} from '../../base';
+  diffDocUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  extractRootDocIdAliases,
+} from '../../native';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { WorkspaceBlobStorage } from '../storage';
 import {
+  type CanvasProjectionV1,
   type PageDocContent,
+  parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
+  projectDocCanvas,
+  type WorkspaceDocContent,
 } from '../utils/blocksuite';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 import { type DocDiff, type DocRecord } from './storage';
@@ -32,25 +30,58 @@ export interface WorkspaceDocInfo {
   avatarUrl?: string;
 }
 
+export interface DocMarkdown {
+  title: string;
+  markdown: string;
+  revision: string;
+  knownUnsupportedBlocks: string[];
+  unknownBlocks: string[];
+}
+
 export abstract class DocReader {
-  constructor(protected readonly cache: Cache) {}
+  protected readonly logger = new Logger(DocReader.name);
 
-  parseDocContent(bin: Uint8Array) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parsePageDoc(doc);
+  constructor(
+    protected readonly cache: Cache,
+    protected readonly models: Models,
+    protected readonly blobStorage: WorkspaceBlobStorage
+  ) {}
+
+  // keep methods to allow test mocking
+  parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
+    return parsePageDoc(bin, { maxSummaryLength });
   }
 
+  // keep methods to allow test mocking
   parseWorkspaceContent(bin: Uint8Array) {
-    const doc = new YDoc();
-    applyUpdate(doc, bin);
-    return parseWorkspaceDoc(doc);
+    return parseWorkspaceDoc(bin);
   }
+
+  abstract getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>>;
+
+  abstract resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string>;
 
   abstract getDoc(
     workspaceId: string,
     docId: string
   ): Promise<DocRecord | null>;
+
+  abstract getDocMarkdown(
+    workspaceId: string,
+    docId: string,
+    aiEditable: boolean
+  ): Promise<DocMarkdown | null>;
+
+  abstract getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null>;
 
   abstract getDocDiff(
     spaceId: string,
@@ -78,19 +109,43 @@ export abstract class DocReader {
     return content;
   }
 
-  // TODO(@fengmk2): should remove this method after frontend support workspace content update
+  async getFullDocContent(
+    workspaceId: string,
+    docId: string
+  ): Promise<PageDocContent | null> {
+    return await this.getDocContentWithoutCache(workspaceId, docId, true);
+  }
+
+  /**
+   * Get workspace content, try to read from database first.
+   * If not exists, read from `getWorkspaceContentWithoutCache()` and save it back to database.
+   */
   async getWorkspaceContent(
     workspaceId: string
   ): Promise<WorkspaceDocInfo | null> {
-    const cacheKey = this.cacheKey(workspaceId, workspaceId);
-    const cachedResult = await this.cache.get<WorkspaceDocInfo>(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    const workspace = await this.models.workspace.get(workspaceId);
+    if (!workspace) {
+      return null;
+    }
+    if (workspace.name) {
+      return {
+        id: workspaceId,
+        name: workspace.name,
+        avatarKey: workspace.avatarKey ?? undefined,
+        avatarUrl: workspace.avatarKey
+          ? this.blobStorage.getAvatarUrl(workspaceId, workspace.avatarKey)
+          : undefined,
+      };
     }
 
     const content = await this.getWorkspaceContentWithoutCache(workspaceId);
     if (content) {
-      await this.cache.set(cacheKey, content);
+      await this.models.workspace.update(workspaceId, {
+        name: content.name,
+        avatarKey: content.avatarKey,
+      });
+    } else {
+      this.logger.warn(`Workspace ${workspaceId} content not found`);
     }
     return content;
   }
@@ -107,7 +162,8 @@ export abstract class DocReader {
 
   protected abstract getDocContentWithoutCache(
     workspaceId: string,
-    guid: string
+    guid: string,
+    fullContent?: boolean
   ): Promise<PageDocContent | null>;
 
   protected abstract getWorkspaceContentWithoutCache(
@@ -115,11 +171,34 @@ export abstract class DocReader {
   ): Promise<WorkspaceDocInfo | null>;
 
   protected docDiff(update: Uint8Array, stateVector?: Uint8Array) {
-    const missing = stateVector ? diffUpdate(update, stateVector) : update;
-    const state = encodeStateVectorFromUpdate(update);
+    const bin = Buffer.from(
+      update.buffer,
+      update.byteOffset,
+      update.byteLength
+    );
+    const rawMissing =
+      stateVector && stateVector.length > 0
+        ? diffDocUpdateV1(
+            bin,
+            Buffer.from(
+              stateVector.buffer,
+              stateVector.byteOffset,
+              stateVector.byteLength
+            )
+          )
+        : update;
+    const rawState = encodeStateVectorFromUpdateV1(bin);
     return {
-      missing,
-      state,
+      missing: new Uint8Array(
+        rawMissing.buffer,
+        rawMissing.byteOffset,
+        rawMissing.byteLength
+      ),
+      state: new Uint8Array(
+        rawState.buffer,
+        rawState.byteOffset,
+        rawState.byteLength
+      ),
     };
   }
 }
@@ -128,14 +207,87 @@ export abstract class DocReader {
 export class DatabaseDocReader extends DocReader {
   constructor(
     protected override readonly cache: Cache,
+    protected override readonly models: Models,
+    protected override readonly blobStorage: WorkspaceBlobStorage,
     protected readonly workspace: PgWorkspaceDocStorageAdapter,
-    protected readonly blobStorage: WorkspaceBlobStorage
+    private readonly runtime: BackendRuntimeProvider
   ) {
-    super(cache);
+    super(cache, models, blobStorage);
+  }
+
+  async getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>> {
+    const aliases = new Map<string, string>();
+    if (await this.runtime.getWorkspaceLifecycleActiveV1()) return aliases;
+    const root =
+      rootDoc === undefined
+        ? await this.workspace.getDoc(workspaceId, workspaceId)
+        : rootDoc;
+    if (!root) return aliases;
+    const extracted = extractRootDocIdAliases(
+      Buffer.from(root.bin.buffer, root.bin.byteOffset, root.bin.byteLength)
+    );
+    for (const [id, guid] of Object.entries(extracted)) {
+      aliases.set(id, guid);
+    }
+    return aliases;
+  }
+
+  async resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string> {
+    if (docId === workspaceId) return docId;
+    return (await this.getDocIdAliases(workspaceId)).get(docId) ?? docId;
   }
 
   async getDoc(workspaceId: string, docId: string): Promise<DocRecord | null> {
     return await this.workspace.getDoc(workspaceId, docId);
+  }
+
+  async getDocMarkdown(
+    workspaceId: string,
+    docId: string,
+    aiEditable: boolean
+  ): Promise<DocMarkdown | null> {
+    const doc = await this.workspace.getDoc(workspaceId, docId);
+    if (!doc) {
+      return null;
+    }
+    try {
+      const markdown = parseDocToMarkdownFromDocSnapshot(
+        workspaceId,
+        docId,
+        doc.bin,
+        aiEditable
+      );
+
+      const unknownBlocks = markdown.unknownBlocks ?? [];
+      if (unknownBlocks.length > 0) {
+        this.logger.warn(
+          `Unknown blocks found when parsing markdown for ${workspaceId}/${docId}.`,
+          { unknownBlocks }
+        );
+      }
+
+      return { ...markdown, revision: doc.timestamp.toString() };
+    } catch (error) {
+      this.logger.error(`Failed to parse ${workspaceId}/${docId}.`, error);
+      throw error;
+    }
+  }
+
+  async getDocCanvas(
+    workspaceId: string,
+    docId: string
+  ): Promise<CanvasProjectionV1 | null> {
+    const doc = await this.workspace.getDoc(workspaceId, docId);
+    if (!doc) {
+      return null;
+    }
+    return projectDocCanvas(doc.bin, docId, doc.timestamp.toString());
   }
 
   async getDocDiff(
@@ -155,13 +307,13 @@ export class DatabaseDocReader extends DocReader {
 
   protected override async getDocContentWithoutCache(
     workspaceId: string,
-    guid: string
+    guid: string,
+    fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docRecord = await this.workspace.getDoc(workspaceId, guid);
-    if (!docRecord) {
-      return null;
-    }
-    return this.parseDocContent(docRecord.bin);
+    const record = await this.workspace.getDoc(workspaceId, guid);
+    const docBinary = record?.bin;
+    if (!docBinary) return null;
+    return this.parseDocContent(docBinary, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -171,10 +323,17 @@ export class DatabaseDocReader extends DocReader {
     if (!docRecord) {
       return null;
     }
-    const content = this.parseWorkspaceContent(docRecord.bin);
-    if (!content) {
+    let content: WorkspaceDocContent | null;
+    try {
+      content = this.parseWorkspaceContent(docRecord.bin);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to parse workspace ${workspaceId} content`,
+        error as Error
+      );
       return null;
     }
+    if (!content) return null;
     let avatarUrl: string | undefined;
     if (content.avatarKey) {
       avatarUrl = this.blobStorage.getAvatarUrl(workspaceId, content.avatarKey);
@@ -188,185 +347,7 @@ export class DatabaseDocReader extends DocReader {
   }
 }
 
-@Injectable()
-export class RpcDocReader extends DatabaseDocReader {
-  private readonly logger = new Logger(DocReader.name);
-
-  constructor(
-    private readonly config: Config,
-    private readonly crypto: CryptoHelper,
-    protected override readonly cache: Cache,
-    protected override readonly workspace: PgWorkspaceDocStorageAdapter,
-    protected override readonly blobStorage: WorkspaceBlobStorage
-  ) {
-    super(cache, workspace, blobStorage);
-  }
-
-  private async fetch(
-    accessToken: string,
-    url: string,
-    method: 'GET' | 'POST',
-    body?: Uint8Array
-  ) {
-    const headers: Record<string, string> = {
-      'x-access-token': accessToken,
-      'x-cloud-trace-context': getOrGenRequestId('rpc'),
-    };
-    if (body) {
-      headers['content-type'] = 'application/octet-stream';
-    }
-    const requestInit: RequestInit = {
-      method,
-      headers,
-    };
-    if (body) {
-      requestInit.body = body;
-    }
-    const res = await fetch(url, requestInit);
-    if (!res.ok) {
-      if (res.status === 404) {
-        return null;
-      }
-      const body = (await res.json()) as UserFriendlyError;
-      throw UserFriendlyError.fromUserFriendlyErrorJSON(body);
-    }
-    return res;
-  }
-
-  override async getDoc(
-    workspaceId: string,
-    docId: string
-  ): Promise<DocRecord | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}`;
-    const accessToken = this.crypto.sign(docId);
-    try {
-      const res = await this.fetch(accessToken, url, 'GET');
-      if (!res) {
-        return null;
-      }
-      const timestamp = res.headers.get('x-doc-timestamp') as string;
-      const editor = res.headers.get('x-doc-editor-id') ?? undefined;
-      const bin = await res.arrayBuffer();
-      return {
-        spaceId: workspaceId,
-        docId,
-        bin: Buffer.from(bin),
-        timestamp: parseInt(timestamp),
-        editor,
-      };
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      // other error
-      this.logger.error(
-        `Failed to fetch doc ${url}, fallback to database doc reader`,
-        err
-      );
-      // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDoc(workspaceId, docId);
-    }
-  }
-
-  override async getDocDiff(
-    workspaceId: string,
-    docId: string,
-    stateVector?: Uint8Array
-  ): Promise<DocDiff | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/diff`;
-    const accessToken = this.crypto.sign(docId);
-    try {
-      const res = await this.fetch(accessToken, url, 'POST', stateVector);
-      if (!res) {
-        return null;
-      }
-      const timestamp = res.headers.get('x-doc-timestamp') as string;
-      // blob missing data offset [0, 123]
-      // x-doc-missing-offset: 0,123
-      // blob stateVector data offset [124,789]
-      // x-doc-state-offset: 124,789
-      const missingOffset = res.headers.get('x-doc-missing-offset') as string;
-      const [missingStart, missingEnd] = missingOffset.split(',').map(Number);
-      const stateOffset = res.headers.get('x-doc-state-offset') as string;
-      const [stateStart, stateEnd] = stateOffset.split(',').map(Number);
-      const bin = await res.arrayBuffer();
-      return {
-        missing: new Uint8Array(bin, missingStart, missingEnd - missingStart),
-        state: new Uint8Array(bin, stateStart, stateEnd - stateStart),
-        timestamp: parseInt(timestamp),
-      };
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch doc diff ${url}, fallback to database doc reader`,
-        err
-      );
-      // fallback to database doc reader if the error is not user friendly, like network error
-      return await super.getDocDiff(workspaceId, docId, stateVector);
-    }
-  }
-
-  protected override async getDocContentWithoutCache(
-    workspaceId: string,
-    docId: string
-  ): Promise<PageDocContent | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content`;
-    const accessToken = this.crypto.sign(docId);
-    try {
-      const res = await this.fetch(accessToken, url, 'GET');
-      if (!res) {
-        return null;
-      }
-      return (await res.json()) as PageDocContent;
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch doc content ${url}, fallback to database doc reader`,
-        err
-      );
-      return await super.getDocContentWithoutCache(workspaceId, docId);
-    }
-  }
-
-  protected override async getWorkspaceContentWithoutCache(
-    workspaceId: string
-  ): Promise<WorkspaceDocInfo | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/content`;
-    const accessToken = this.crypto.sign(workspaceId);
-    try {
-      const res = await this.fetch(accessToken, url, 'GET');
-      if (!res) {
-        return null;
-      }
-      return (await res.json()) as WorkspaceDocInfo;
-    } catch (e) {
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      const err = e as Error;
-      this.logger.error(
-        `Failed to fetch workspace content ${url}, fallback to database doc reader`,
-        err
-      );
-      return await super.getWorkspaceContentWithoutCache(workspaceId);
-    }
-  }
-}
-
-export const DocReaderProvider: FactoryProvider = {
+export const DocReaderProvider = {
   provide: DocReader,
-  useFactory: (config: Config, ref: ModuleRef) => {
-    if (config.flavor.doc) {
-      return ref.create(DatabaseDocReader);
-    }
-    return ref.create(RpcDocReader);
-  },
-  inject: [Config, ModuleRef],
+  useExisting: DatabaseDocReader,
 };

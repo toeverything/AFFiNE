@@ -1,34 +1,69 @@
-import { Injectable } from '@nestjs/common';
+export type StorageProviderName =
+  | 'fs'
+  | 'aws-s3'
+  | 'cloudflare-r2'
+  | 'assetpack';
 
-import { Config } from '../../config';
-import { StorageConfig, StorageProviderType } from '../config';
-import type { StorageProvider } from './provider';
-
-const availableProviders = new Map<
-  StorageProviderType,
-  (config: Config, bucket: string) => StorageProvider
->();
-
-export function registerStorageProvider(
-  type: StorageProviderType,
-  providerFactory: (config: Config, bucket: string) => StorageProvider
-) {
-  availableProviders.set(type, providerFactory);
+export interface FsStorageConfig {
+  path: string;
 }
 
-@Injectable()
-export class StorageProviderFactory {
-  constructor(private readonly config: Config) {}
+export type AssetpackStorageConfig = FsStorageConfig;
 
-  create(storage: StorageConfig): StorageProvider {
-    const providerFactory = availableProviders.get(storage.provider);
+export interface S3StorageConfig {
+  endpoint?: string;
+  region: string;
+  credentials?: {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    sessionToken?: string;
+  };
+  forcePathStyle?: boolean;
+  requestTimeoutMs?: number;
+  minPartSize?: number;
+  presign?: {
+    expiresInSeconds?: number;
+    signContentTypeForPut?: boolean;
+  };
+  usePresignedURL?: {
+    enabled: boolean;
+    urlPrefix?: string;
+    signKey?: string;
+  };
+}
 
-    if (!providerFactory) {
-      throw new Error(`Unknown storage provider type: ${storage.provider}`);
+export const R2_JURISDICTIONS = ['default', 'eu'] as const;
+
+export interface R2StorageConfig extends Omit<S3StorageConfig, 'endpoint'> {
+  accountId: string;
+  jurisdiction?: (typeof R2_JURISDICTIONS)[number];
+}
+
+export type StorageProviderConfig = { bucket: string } & (
+  | {
+      provider: 'fs';
+      config: FsStorageConfig;
     }
+  | {
+      provider: 'aws-s3';
+      config: S3StorageConfig;
+    }
+  | {
+      provider: 'cloudflare-r2';
+      config: R2StorageConfig;
+    }
+  | {
+      provider: 'assetpack';
+      config: AssetpackStorageConfig;
+    }
+);
 
-    return providerFactory(this.config, storage.bucket);
-  }
-}
-
-export type * from './provider';
+export type * from '../types';
+export {
+  applyAttachHeaders,
+  PROXY_MULTIPART_PATH,
+  PROXY_UPLOAD_PATH,
+  sniffMime,
+  STORAGE_PROXY_ROOT,
+  toBuffer,
+} from '../utils';

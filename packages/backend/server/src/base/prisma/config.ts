@@ -1,17 +1,27 @@
 import type { Prisma } from '@prisma/client';
+import { z } from 'zod';
 
-import { defineStartupConfig, ModuleConfig } from '../config';
+import { defineModuleConfig } from '../config';
 
-interface PrismaStartupConfiguration extends Prisma.PrismaClientOptions {
-  datasourceUrl: string;
-}
-
-declare module '../config' {
-  interface AppConfig {
-    prisma: ModuleConfig<PrismaStartupConfiguration>;
+declare global {
+  interface AppConfigSchema {
+    db: {
+      datasourceUrl: string;
+      prisma: ConfigItem<Prisma.PrismaClientOptions>;
+    };
   }
 }
 
-defineStartupConfig('prisma', {
-  datasourceUrl: '',
+defineModuleConfig('db', {
+  datasourceUrl: {
+    desc: 'The datasource url for the prisma client.',
+    default: 'postgresql://localhost:5432/affine',
+    env: 'DATABASE_URL',
+    shape: z.string().url(),
+  },
+  prisma: {
+    desc: 'The config for the prisma client.',
+    default: {},
+    link: 'https://www.prisma.io/docs/reference/api-reference/prisma-client-reference',
+  },
 });

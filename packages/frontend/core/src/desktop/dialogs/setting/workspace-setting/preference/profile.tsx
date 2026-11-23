@@ -38,22 +38,11 @@ export const ProfilePanel = () => {
     }, [workspace])
   );
   const [name, setName] = useState('');
+  const currentName = useLiveData(workspace.name$);
 
   useEffect(() => {
-    if (workspace?.docCollection) {
-      setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
-      const dispose =
-        workspace.docCollection.meta.commonFieldsUpdated.subscribe(() => {
-          setName(workspace.docCollection.meta.name ?? UNTITLED_WORKSPACE_NAME);
-        });
-      return () => {
-        dispose.unsubscribe();
-      };
-    } else {
-      setName(UNTITLED_WORKSPACE_NAME);
-    }
-    return;
-  }, [workspace]);
+    setName(currentName ?? UNTITLED_WORKSPACE_NAME);
+  }, [currentName]);
 
   const setWorkspaceAvatar = useCallback(
     async (file: File | null) => {
@@ -61,14 +50,14 @@ export const ProfilePanel = () => {
         return;
       }
       if (!file) {
-        workspace.docCollection.meta.setAvatar('');
+        workspace.setAvatar('');
         return;
       }
       try {
         const reducedFile = await validateAndReduceImage(file);
         const blobs = workspace.docCollection.blobSync;
         const blobId = await blobs.set(reducedFile);
-        workspace.docCollection.meta.setAvatar(blobId);
+        workspace.setAvatar(blobId);
       } catch (error) {
         console.error(error);
         throw error;
@@ -82,7 +71,7 @@ export const ProfilePanel = () => {
       if (!workspace) {
         return;
       }
-      workspace.docCollection.meta.setName(name);
+      workspace.setName(name);
     },
     [workspace]
   );

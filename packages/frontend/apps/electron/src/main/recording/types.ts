@@ -1,7 +1,7 @@
-import type { AudioTapStream, TappableApplication } from '@affine/native';
+import type { ApplicationInfo } from '@affine/native';
 
 export interface TappableAppInfo {
-  rawInstance: TappableApplication;
+  info: ApplicationInfo;
   isRunning: boolean;
   processId: number;
   processGroupId: number;
@@ -18,21 +18,103 @@ export interface AppGroupInfo {
   isRunning: boolean;
 }
 
-export interface Recording {
-  id: number;
-  // the app may not be available if the user choose to record system audio
-  app?: TappableAppInfo;
-  appGroup?: AppGroupInfo;
-  // the raw audio buffers that are already accumulated
-  buffers: Float32Array[];
-  stream: AudioTapStream;
-  startTime: number;
+export type RecordingJobPhase =
+  | 'new'
+  | 'starting'
+  | 'recording'
+  | 'finalizing'
+  | 'recorded'
+  | 'importing'
+  | 'imported'
+  | 'failed'
+  | 'aborted';
+
+export type RecordingFailureStage = 'start' | 'finalize' | 'import';
+
+export interface RecordingFailureInfo {
+  stage: RecordingFailureStage;
+  message: string;
 }
 
-export interface RecordingStatus {
-  id: number; // corresponds to the recording id
-  status: 'recording' | 'paused' | 'stopped';
-  app?: TappableAppInfo;
-  appGroup?: AppGroupInfo;
+export type RecordingImportState =
+  | 'pending_import'
+  | 'importing'
+  | 'imported'
+  | 'import_failed';
+
+export interface RecordingArtifactInfo {
+  filepath: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+}
+
+export interface RecordingImportProgress {
+  workspaceId?: string;
+  docId?: string;
+  errorMessage?: string;
+  leaseExpiresAt?: number;
+  startedAt?: number;
+  finishedAt?: number;
+}
+
+export interface RecordingJobStatus {
+  id: number;
+  phase: RecordingJobPhase;
+  appName?: string;
+  appGroupId?: number;
+  bundleIdentifier?: string;
+  appProcessId?: number;
+  nativeId?: string;
   startTime: number;
+  createdAt: number;
+  updatedAt: number;
+  artifact?: RecordingArtifactInfo;
+  import?: RecordingImportProgress;
+  error?: RecordingFailureInfo;
+  dismissedAt?: number;
+}
+
+export interface RecordingImportStatus extends RecordingArtifactInfo {
+  id: number;
+  appName?: string;
+  workspaceId?: string;
+  docId?: string;
+  startTime: number;
+  importStatus: RecordingImportState;
+  errorMessage?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type RecordingDisplayState =
+  | 'new'
+  | 'starting'
+  | 'start_failed'
+  | 'recording'
+  | 'finalizing'
+  | 'pending_import'
+  | 'importing'
+  | 'imported'
+  | 'import_failed'
+  | 'finalize_failed';
+
+export interface RecordingStatus {
+  id: number;
+  status: RecordingDisplayState;
+  appName?: string;
+  appGroupId?: number;
+  icon?: Buffer;
+  startTime: number;
+  filepath?: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
+  durationMs?: number;
+  size?: number;
+  degraded?: boolean;
+  overflowCount?: number;
+  errorMessage?: string;
 }

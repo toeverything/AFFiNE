@@ -178,7 +178,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
@@ -188,7 +188,7 @@ test('Create a new page and search this page', async ({ page }) => {
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
@@ -388,7 +388,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, '123456');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertResultList(page, [
     'this is a new page to search for content',
     '123456',
@@ -417,14 +417,21 @@ test('Create a new page with special characters in the title and search for this
   await clickNewPageButton(page);
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
+  await page.keyboard.press('Enter');
+  await expect(getBlockSuiteEditorTitle(page)).toContainText(specialTitle);
   await openQuickSearchByShortcut(page);
 
   await insertInputText(page, specialTitle);
-  await page.waitForTimeout(300);
-
-  await assertResultList(page, [specialTitle, specialTitle]);
+  await expect
+    .poll(async () => {
+      const labels = await page
+        .locator('[cmdk-item] [data-testid=cmdk-label]')
+        .allInnerTexts();
+      return labels.some(label => label.split('\n').includes(specialTitle));
+    })
+    .toBe(true);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(1000);
   await assertTitle(page, specialTitle);
 });
 
@@ -464,6 +471,8 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
 
   const url = page.url();
 
+  const docTitle = await page.getByTestId('title-edit-button').innerText();
+
   await clickNewPageButton(page);
   await clickEdgelessModeButton(page);
   await page.locator('affine-edgeless-root').press('@');
@@ -475,26 +484,28 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await insertInputText(page, url);
 
   // expect the default page to be selected
-  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(5);
+  await expect(
+    page.locator('[cmdk-group-items] [cmdk-item][data-selected="true"]')
+  ).toContainText(docTitle);
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
   await expect(
-    page.locator('affine-embed-edgeless-linked-doc-block')
+    page.locator('affine-embed-edgeless-synced-doc-block')
   ).toBeVisible();
   await expect(
-    page.locator('.affine-embed-linked-doc-content-title')
-  ).toContainText('Write, Draw, Plan all at Once');
+    page.getByTestId('edgeless-embed-synced-doc-title')
+  ).toContainText(docTitle);
 
   // focus on the note block
   await page.waitForTimeout(500);
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .click({ force: true });
   await page.waitForTimeout(500);
   // double clock to show peek view
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
@@ -511,17 +522,13 @@ test('can paste a doc link to create link reference', async ({ page }) => {
   // paste the url
   await writeTextToClipboard(page, url);
 
-  // check the link reference
-  await page.waitForTimeout(500);
   await expect(
-    page.locator('affine-reference:has-text("Write, Draw, Plan all at Once.")')
+    page.locator('affine-reference:has-text("Getting Started")')
   ).toBeVisible();
 
   // can ctrl-z to revert to normal link
   await page.keyboard.press('ControlOrMeta+z');
 
-  // check the normal link
-  await page.waitForTimeout(500);
   await expect(page.locator(`affine-link:has-text("${url}")`)).toBeVisible();
 });
 

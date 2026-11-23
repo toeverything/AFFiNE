@@ -1,21 +1,26 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { Config, SkipThrottle } from './base';
+import { SkipThrottle } from './base';
 import { Public } from './core/auth';
+import { DeploymentType } from './env';
+import { ServerConfigHandle } from './native';
 
 @Controller('/info')
 export class AppController {
-  constructor(private readonly config: Config) {}
+  constructor(private readonly serverConfig: ServerConfigHandle) {}
 
   @SkipThrottle()
   @Public()
   @Get()
   info() {
     return {
-      compatibility: this.config.version,
-      message: `AFFiNE ${this.config.version} Server`,
-      type: this.config.type,
-      flavor: this.config.flavor.type,
+      compatibility: env.version,
+      message: `AFFiNE ${env.version} Server`,
+      type:
+        this.serverConfig.deploymentType === 'selfhosted'
+          ? DeploymentType.Selfhosted
+          : DeploymentType.Affine,
+      flavor: env.FLAVOR,
     };
   }
 }

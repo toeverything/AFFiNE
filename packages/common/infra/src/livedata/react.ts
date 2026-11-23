@@ -1,4 +1,3 @@
-import { use } from 'foxact/use';
 import { useSyncExternalStore } from 'react';
 
 import type { LiveData } from './livedata';
@@ -35,34 +34,4 @@ export function useLiveData<Input extends LiveData<any> | null | undefined>(
         ? undefinedGetSnapshot
         : nullGetSnapshot
   );
-}
-
-/**
- * subscribe LiveData and return the value. If the value is nullish, will suspends until the value is not nullish.
- */
-export function useEnsureLiveData<T>(liveData$: LiveData<T>): NonNullable<T> {
-  const data = useLiveData(liveData$);
-
-  if (data === null || data === undefined) {
-    return use(
-      new Promise<NonNullable<T>>((resolve, reject) => {
-        const subscription = liveData$.subscribe({
-          next(value) {
-            if (value !== null && value !== undefined) {
-              resolve(value as NonNullable<T>);
-              subscription.unsubscribe();
-            }
-          },
-          error(err) {
-            reject(err);
-          },
-          complete() {
-            reject(new Error('Unexpected completion'));
-          },
-        });
-      })
-    );
-  }
-
-  return data as NonNullable<T>;
 }

@@ -1,13 +1,10 @@
 import { randomBytes } from 'node:crypto';
 
-import {
-  getCurrentMailMessageCount,
-  getTokenFromLatestMailMessage,
-} from '@affine-test/kit/utils/cloud';
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import supertest from 'supertest';
 
-import { MailService } from '../../base/mailer';
 import {
   changeEmail,
   changePassword,
@@ -19,16 +16,24 @@ import {
   TestingApp,
 } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
-  mail: MailService;
 }>;
+
+async function lastAuthMail(app: TestingApp, name: string) {
+  const delivery = await app.get(PrismaClient).mailDelivery.findFirstOrThrow({
+    where: { mailName: name },
+    orderBy: { createdAt: 'desc' },
+  });
+  return delivery.payload as {
+    to: string;
+    props: Record<string, string>;
+  };
+}
 
 test.beforeEach(async t => {
   const app = await createTestingApp();
-  const mail = app.get(MailService);
   t.context.app = app;
-  t.context.mail = mail;
 });
 
 test.afterEach.always(async t => {
@@ -36,182 +41,154 @@ test.afterEach.always(async t => {
 });
 
 test('change email', async t => {
-  const { mail, app } = t.context;
-  if (mail.hasConfigured()) {
-    const u1Email = 'u1@affine.pro';
-    const u2Email = 'u2@affine.pro';
+  const { app } = t.context;
+  const u1Email = 'u1@affine.pro';
+  const u2Email = 'u2@affine.pro';
 
-    await app.signupV1(u1Email);
-    const primitiveMailCount = await getCurrentMailMessageCount();
-    await sendChangeEmail(app, u1Email, 'affine.pro');
+  const user = await app.signupV1(u1Email);
+  const signedIn = await currentUser(app);
+  const jwt = signedIn?.token.token;
+  t.truthy(jwt);
 
-    const afterSendChangeMailCount = await getCurrentMailMessageCount();
-    t.is(
-      primitiveMailCount + 1,
-      afterSendChangeMailCount,
-      'failed to send change email'
-    );
+  await sendChangeEmail(app, '/email-change');
 
-    const changeEmailToken = await getTokenFromLatestMailMessage();
+  const changeMail = await lastAuthMail(app, 'ChangeEmail');
 
-    t.not(
-      changeEmailToken,
-      null,
-      'fail to get change email token from email content'
-    );
+  t.is(changeMail.to, u1Email);
 
-    await sendVerifyChangeEmail(
-      app,
-      changeEmailToken as string,
-      u2Email,
-      'affine.pro'
-    );
+  let link = new URL(changeMail.props.url);
 
-    const afterSendVerifyMailCount = await getCurrentMailMessageCount();
+  const changeEmailToken = link.searchParams.get('token');
 
-    t.is(
-      afterSendChangeMailCount + 1,
-      afterSendVerifyMailCount,
-      'failed to send verify email'
-    );
+  t.not(
+    changeEmailToken,
+    null,
+    'fail to get change email token from email content'
+  );
 
-    const verifyEmailToken = await getTokenFromLatestMailMessage();
+  await sendVerifyChangeEmail(
+    app,
+    changeEmailToken as string,
+    u2Email,
+    '/email-change-verify'
+  );
 
-    t.not(
-      verifyEmailToken,
-      null,
-      'fail to get verify change email token from email content'
-    );
+  const verifyMail = await lastAuthMail(app, 'VerifyChangeEmail');
 
-    await changeEmail(app, verifyEmailToken as string, u2Email);
+  t.is(verifyMail.to, u2Email);
 
-    const afterNotificationMailCount = await getCurrentMailMessageCount();
+  link = new URL(verifyMail.props.url);
 
-    t.is(
-      afterSendVerifyMailCount + 1,
-      afterNotificationMailCount,
-      'failed to send notification email'
-    );
-  }
-  t.pass();
+  const verifyEmailToken = link.searchParams.get('token');
+
+  t.not(
+    verifyEmailToken,
+    null,
+    'fail to get verify change email token from email content'
+  );
+
+  await changeEmail(app, verifyEmailToken as string, u2Email);
+
+  const changedMail = await lastAuthMail(app, 'EmailChanged');
+
+  t.is(changedMail.to, u2Email);
+  t.is(changedMail.props.to, u2Email);
+
+  const revokedCookieSession = await currentUser(app);
+  t.is(revokedCookieSession, null);
+
+  const revokedJwtSession = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Authorization', `Bearer ${jwt}`)
+    .expect(200);
+  t.falsy(revokedJwtSession.body.user);
+
+  app.clearAuth();
+  await app.login({
+    ...user,
+    email: u2Email,
+  });
+
+  const me = await currentUser(app);
+
+  t.not(me, null, 'failed to get current user');
+  t.is(me?.email, u2Email, 'failed to get current user');
 });
 
 test('set and change password', async t => {
-  const { mail, app } = t.context;
-  if (mail.hasConfigured()) {
-    const u1Email = 'u1@affine.pro';
+  const { app } = t.context;
+  const u1Email = 'u1@affine.pro';
 
-    const u1 = await app.signupV1(u1Email);
+  const u1 = await app.signupV1(u1Email);
+  const authSession = await app.createNativeAuthSession(u1.id, {
+    installationId: 'password-change-device',
+    platform: 'ios',
+  });
+  await sendSetPasswordEmail(app, u1Email, '/password-change');
 
-    const primitiveMailCount = await getCurrentMailMessageCount();
+  const setPasswordMail = await lastAuthMail(app, 'SetPassword');
+  const link = new URL(setPasswordMail.props.url);
+  const setPasswordToken = link.searchParams.get('token');
 
-    await sendSetPasswordEmail(app, u1Email, 'affine.pro');
+  t.is(setPasswordMail.to, u1Email);
+  t.not(
+    setPasswordToken,
+    null,
+    'fail to get set password token from email content'
+  );
 
-    const afterSendSetMailCount = await getCurrentMailMessageCount();
+  const newPassword = randomBytes(16).toString('hex');
+  const success = await changePassword(
+    app,
+    u1.id,
+    setPasswordToken as string,
+    newPassword
+  );
 
-    t.is(
-      primitiveMailCount + 1,
-      afterSendSetMailCount,
-      'failed to send set email'
-    );
+  t.true(success, 'failed to change password');
+  t.is(
+    await app.get(PrismaClient).authSession.count({
+      where: { id: authSession.session.id },
+    }),
+    0
+  );
 
-    const setPasswordToken = await getTokenFromLatestMailMessage();
+  let user = await currentUser(app);
 
-    t.not(
-      setPasswordToken,
-      null,
-      'fail to get set password token from email content'
-    );
+  t.is(user, null);
 
-    const newPassword = randomBytes(16).toString('hex');
-    const success = await changePassword(
-      app,
-      u1.id,
-      setPasswordToken as string,
-      newPassword
-    );
+  await app.login({
+    ...u1,
+    password: newPassword,
+  });
 
-    t.true(success, 'failed to change password');
+  user = await currentUser(app);
 
-    await app.login({
-      ...u1,
-      password: newPassword,
-    });
-
-    const user = await currentUser(app);
-
-    t.not(user, null, 'failed to get current user');
-    t.is(user?.email, u1Email, 'failed to get current user');
-  }
-  t.pass();
+  t.not(user, null, 'failed to get current user');
+  t.is(user?.email, u1Email, 'failed to get current user');
 });
-test('should revoke token after change user identify', async t => {
-  const { mail, app } = t.context;
-  if (mail.hasConfigured()) {
-    // change email
-    {
-      const u1Email = 'u1@affine.pro';
-      const u2Email = 'u2@affine.pro';
 
-      const u1 = await app.signupV1(u1Email);
+test('should forbid graphql callbackUrl to external origin', async t => {
+  const { app } = t.context;
 
-      {
-        const user = await currentUser(app);
-        t.is(user?.email, u1Email, 'failed to get current user');
-      }
+  const u1Email = 'u1@affine.pro';
+  await app.signupV1(u1Email);
 
-      await sendChangeEmail(app, u1Email, 'affine.pro');
+  const res = await app
+    .POST('/graphql')
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation($callbackUrl: String!) {
+          sendChangeEmail(callbackUrl: $callbackUrl)
+        }
+      `,
+      variables: {
+        callbackUrl: 'https://evil.example',
+      },
+    })
+    .expect(200);
 
-      const changeEmailToken = await getTokenFromLatestMailMessage();
-      await sendVerifyChangeEmail(
-        app,
-        changeEmailToken as string,
-        u2Email,
-        'affine.pro'
-      );
-
-      const verifyEmailToken = await getTokenFromLatestMailMessage();
-      await changeEmail(app, verifyEmailToken as string, u2Email);
-
-      let user = await currentUser(app);
-      t.is(user, null, 'token should be revoked');
-
-      await app.login({
-        ...u1,
-        email: u2Email,
-      });
-
-      user = await currentUser(app);
-      t.is(user?.email, u2Email, 'failed to sign in with new email');
-    }
-
-    // change password
-    {
-      const u3Email = 'u3333@affine.pro';
-
-      await app.logout();
-      const u3 = await app.signupV1(u3Email);
-
-      {
-        const user = await currentUser(app);
-        t.is(user?.email, u3Email, 'failed to get current user');
-      }
-
-      await sendSetPasswordEmail(app, u3Email, 'affine.pro');
-      const token = await getTokenFromLatestMailMessage();
-      const newPassword = randomBytes(16).toString('hex');
-      await changePassword(app, u3.id, token as string, newPassword);
-
-      let user = await currentUser(app);
-      t.is(user, null, 'token should be revoked');
-
-      await app.login({
-        ...u3,
-        password: newPassword,
-      });
-      user = await currentUser(app);
-      t.is(user?.email, u3Email, 'failed to sign in with new password');
-    }
-  }
-  t.pass();
+  t.truthy(res.body.errors?.length);
+  t.is(res.body.errors[0].extensions?.name, 'ACTION_FORBIDDEN');
 });

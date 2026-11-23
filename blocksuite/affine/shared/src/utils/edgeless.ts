@@ -1,9 +1,9 @@
 import { FrameBlockModel, GroupElementModel } from '@blocksuite/affine-model';
-import type { GfxBlockElementModel, GfxModel } from '@blocksuite/block-std/gfx';
 import {
   deserializeXYWH,
   getQuadBoundWithRotation,
 } from '@blocksuite/global/gfx';
+import type { GfxBlockElementModel, GfxModel } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
 export function getSelectedRect(selected: GfxModel[]): DOMRect {
@@ -11,14 +11,12 @@ export function getSelectedRect(selected: GfxModel[]): DOMRect {
     return new DOMRect();
   }
 
-  const lockedElementsByFrame = selected
-    .map(selectable => {
-      if (selectable instanceof FrameBlockModel && selectable.isLocked()) {
-        return selectable.descendantElements;
-      }
-      return [];
-    })
-    .flat();
+  const lockedElementsByFrame = selected.flatMap(selectable => {
+    if (selectable instanceof FrameBlockModel && selectable.isLocked()) {
+      return selectable.descendantElements;
+    }
+    return [];
+  });
 
   selected = [...new Set([...selected, ...lockedElementsByFrame])];
 

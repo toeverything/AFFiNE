@@ -1,28 +1,24 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
-import type { DeltaInsert } from '@blocksuite/affine/inline';
-import type { DocMode } from '@blocksuite/affine/model';
 import { replaceIdMiddleware } from '@blocksuite/affine/shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
+import type { DeltaInsert } from '@blocksuite/affine/store';
 import { Slice, Text, Transformer } from '@blocksuite/affine/store';
-import { LiveData, ObjectPool, Service } from '@toeverything/infra';
-import { omitBy } from 'lodash-es';
+import { ObjectPool, Service } from '@toeverything/infra';
 import { combineLatest, map } from 'rxjs';
 
-import {
-  type DocProps,
-  initDocFromProps,
-} from '../../../blocksuite/initialization';
-import type { DocProperties } from '../../db';
-import { getAFFiNEWorkspaceSchema } from '../../workspace';
+import { initDocFromProps } from '../../../blocksuite/initialization';
+import { getAFFiNEWorkspaceSchema } from '../../workspace/global-schema';
 import type { Doc } from '../entities/doc';
-import { DocPropertyList } from '../entities/property-list';
 import { DocRecordList } from '../entities/record-list';
 import { DocCreated, DocInitialized } from '../events';
+import type { DocCreateMiddleware } from '../providers/doc-create-middleware';
 import { DocScope } from '../scopes/doc';
 import type { DocPropertiesStore } from '../stores/doc-properties';
 import type { DocsStore } from '../stores/docs';
+import type { DocCreateOptions } from '../types';
 import { DocService } from './doc';
+import { getDuplicatedDocTitle } from './duplicate-title';
 
 const logger = new DebugLogger('DocsService');
 
@@ -35,30 +31,65 @@ export class DocsService extends Service {
     },
   });
 
-  propertyList = this.framework.createEntity(DocPropertyList);
+  /**
+   * Get all property values of a property, used for search
+   *
+   * Results may include docs in trash or deleted docs
+   * Legacy property data such as old `journal` will not be included in the values
+   */
+  propertyValues$(propertyKey: string) {
+    return combineLatest([
+      this.store.watchDocIds(),
+      this.docPropertiesStore.watchPropertyAllValues(propertyKey),
+    ]).pipe(
+      map(([docIds, propertyValues]) => {
+        const result = new Map<string, string | undefined>();
+        for (const docId of docIds) {
+          result.set(docId, propertyValues.get(docId));
+        }
+        return result;
+      })
+    );
+  }
 
   /**
-   * used for search doc by properties, for convenience of search, all non-exist doc or trash doc have been filtered
+   * used for search
    */
-  allDocProperties$: LiveData<Record<string, DocProperties>> = LiveData.from(
-    combineLatest([
-      this.docPropertiesStore.watchAllDocProperties(),
-      this.store.watchNonTrashDocIds(),
-    ]).pipe(
-      map(([properties, docIds]) => {
-        const allIds = new Set(docIds);
-        return omitBy(
-          properties as Record<string, DocProperties>,
-          (_, id) => !allIds.has(id)
-        );
-      })
-    ),
-    {}
-  );
+  allDocsCreatedDate$() {
+    return this.store.watchAllDocCreateDate();
+  }
+
+  /**
+   * used for search
+   */
+  allDocsUpdatedDate$() {
+    return this.store.watchAllDocUpdatedDate();
+  }
+
+  allDocsTagIds$() {
+    return this.store.watchAllDocTagIds();
+  }
+
+  allDocIds$() {
+    return this.store.watchDocIds();
+  }
+
+  allNonTrashDocIds$() {
+    return this.store.watchNonTrashDocIds();
+  }
+
+  allTrashDocIds$() {
+    return this.store.watchTrashDocIds();
+  }
+
+  allDocTitle$() {
+    return this.store.watchAllDocTitle();
+  }
 
   constructor(
     private readonly store: DocsStore,
-    private readonly docPropertiesStore: DocPropertiesStore
+    private readonly docPropertiesStore: DocPropertiesStore,
+    private readonly docCreateMiddlewares: DocCreateMiddleware[]
   ) {
     super();
   }
@@ -110,16 +141,21 @@ export class DocsService extends Service {
     return { doc: obj, release };
   }
 
-  createDoc(
-    options: {
-      primaryMode?: DocMode;
-      docProps?: DocProps;
-      isTemplate?: boolean;
-    } = {}
-  ) {
-    const doc = this.store.createBlockSuiteDoc();
-    initDocFromProps(doc, options.docProps);
-    const docRecord = this.list.doc$(doc.id).value;
+  createDoc(options: DocCreateOptions = {}) {
+    for (const middleware of this.docCreateMiddlewares) {
+      options = middleware.beforeCreate
+        ? middleware.beforeCreate(options)
+        : options;
+    }
+    const id = this.store.createDoc(options.id);
+    const docStore = this.store.getBlockSuiteDoc(id);
+    if (!docStore) {
+      throw new Error('Failed to create doc');
+    }
+    if (options.skipInit !== true) {
+      initDocFromProps(docStore, options.docProps, options);
+    }
+    const docRecord = this.list.doc$(id).value;
     if (!docRecord) {
       throw new Unreachable();
     }
@@ -129,8 +165,28 @@ export class DocsService extends Service {
     if (options.isTemplate) {
       docRecord.setProperty('isTemplate', true);
     }
-    this.eventBus.emit(DocCreated, docRecord);
+    for (const middleware of this.docCreateMiddlewares) {
+      middleware.afterCreate?.(docRecord, options);
+    }
+    docRecord.setCreatedAt(Date.now());
+    docRecord.setUpdatedAt(Date.now());
+    this.eventBus.emit(DocCreated, {
+      doc: docRecord,
+      docCreateOptions: options,
+    });
     return docRecord;
+  }
+
+  getCustomPropertyById(docId: string, propertyId: string) {
+    return this.docPropertiesStore.getDocProperties(docId)?.[
+      'custom:' + propertyId
+    ] as string | undefined;
+  }
+
+  setCustomPropertyById(docId: string, propertyId: string, value: string) {
+    return this.docPropertiesStore.updateDocProperties(docId, {
+      ['custom:' + propertyId]: value,
+    });
   }
 
   async addLinkedDoc(targetDocId: string, linkedDocId: string) {
@@ -166,6 +222,94 @@ export class DocsService extends Service {
     disposePriorityLoad();
     doc.changeDocTitle(newTitle);
     release();
+  }
+
+  async duplicate(sourceDocId: string, _targetDocId?: string) {
+    const targetDocId = _targetDocId ?? this.createDoc().id;
+
+    // check if source doc is removed
+    if (this.list.doc$(sourceDocId).value?.trash$.value) {
+      console.warn(
+        `Template doc(id: ${sourceDocId}) is removed, skip duplicate`
+      );
+      return targetDocId;
+    }
+
+    const { release: sourceRelease, doc: sourceDoc } = this.open(sourceDocId);
+    const { release: targetRelease, doc: targetDoc } = this.open(targetDocId);
+    await sourceDoc.waitForSyncReady();
+
+    // duplicate doc content
+    try {
+      const sourceBsDoc = this.store.getBlockSuiteDoc(sourceDocId);
+      const targetBsDoc = this.store.getBlockSuiteDoc(targetDocId);
+      if (!sourceBsDoc) throw new Error('Source doc not found');
+      if (!targetBsDoc) throw new Error('Target doc not found');
+
+      // clear the target doc (both surface and note)
+      targetBsDoc.root?.children.forEach(child =>
+        targetBsDoc.deleteBlock(child)
+      );
+
+      const collection = this.store.getBlocksuiteCollection();
+      const transformer = new Transformer({
+        schema: getAFFiNEWorkspaceSchema(),
+        blobCRUD: collection.blobSync,
+        docCRUD: {
+          create: (id: string) => {
+            this.createDoc({ id });
+            const store = collection.getDoc(id)?.getStore({ id });
+            if (!store) {
+              throw new Error('Failed to create doc');
+            }
+            return store;
+          },
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+          delete: (id: string) => collection.removeDoc(id),
+        },
+        middlewares: [replaceIdMiddleware(collection.idGenerator)],
+      });
+      const slice = Slice.fromModels(sourceBsDoc, [
+        ...(sourceBsDoc.root?.children ?? []),
+      ]);
+      const snapshot = transformer.sliceToSnapshot(slice);
+      if (!snapshot) {
+        throw new Error('Failed to create snapshot');
+      }
+      await transformer.snapshotToSlice(
+        snapshot,
+        targetBsDoc,
+        targetBsDoc.root?.id
+      );
+    } catch (e) {
+      logger.error('Failed to duplicate doc', {
+        sourceDocId,
+        targetDocId,
+        originalTargetDocId: _targetDocId,
+        error: e,
+      });
+    } finally {
+      sourceRelease();
+      targetRelease();
+    }
+
+    // duplicate doc meta
+    targetDoc.record.setMeta({
+      tags: sourceDoc.meta$.value.tags,
+    });
+
+    // duplicate doc title
+    targetDoc.changeDocTitle(getDuplicatedDocTitle(sourceDoc.title$.value));
+
+    // duplicate doc properties
+    const properties = sourceDoc.getProperties();
+    const removedProperties = ['id', 'isTemplate', 'journal'];
+    removedProperties.forEach(key => {
+      delete properties[key];
+    });
+    targetDoc.updateProperties(properties);
+
+    return targetDocId;
   }
 
   /**
@@ -206,8 +350,15 @@ export class DocsService extends Service {
         schema: getAFFiNEWorkspaceSchema(),
         blobCRUD: collection.blobSync,
         docCRUD: {
-          create: (id: string) => collection.createDoc({ id }),
-          get: (id: string) => collection.getDoc(id),
+          create: (id: string) => {
+            this.createDoc({ id });
+            const store = collection.getDoc(id)?.getStore({ id });
+            if (!store) {
+              throw new Error('Failed to create doc');
+            }
+            return store;
+          },
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
           delete: (id: string) => collection.removeDoc(id),
         },
         middlewares: [replaceIdMiddleware(collection.idGenerator)],

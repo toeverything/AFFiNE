@@ -13,6 +13,10 @@ inputs:
     description: 'Run the install step for Playwright.'
     required: false
     default: 'false'
+  playwright-platform:
+    description: 'The platform to install Playwright for.'
+    required: false
+    default: 'chromium,webkit'
   electron-install:
     description: 'Download the Electron binary'
     required: false
@@ -49,7 +53,7 @@ runs:
         fi
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version-file: '.nvmrc'
         registry-url: https://npm.pkg.github.com
@@ -89,7 +93,7 @@ runs:
       run: node -e "const p = $(yarn config cacheFolder --json).effective; console.log('yarn_global_cache=' + p)" >> $GITHUB_OUTPUT
 
     - name: Cache non-full yarn cache on Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       if: ${{ inputs.full-cache != 'true' && runner.os == 'Linux' }}
       with:
         path: |
@@ -101,7 +105,7 @@ runs:
     # and the decompression performance on Windows is very terrible
     # so we reduce the number of cached files on non-Linux systems by remove node_modules from cache path.
     - name: Cache non-full yarn cache on non-Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       if: ${{ inputs.full-cache != 'true' && runner.os != 'Linux' }}
       with:
         path: |
@@ -109,7 +113,7 @@ runs:
         key: node_modules-cache-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.name }}-${{ steps.system-info.outputs.release }}-${{ steps.system-info.outputs.version }}
 
     - name: Cache full yarn cache on Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       if: ${{ inputs.full-cache == 'true' && runner.os == 'Linux' }}
       with:
         path: |
@@ -118,7 +122,7 @@ runs:
         key: node_modules-cache-full-${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.name }}-${{ steps.system-info.outputs.release }}-${{ steps.system-info.outputs.version }}
 
     - name: Cache full yarn cache on non-Linux
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       if: ${{ inputs.full-cache == 'true' && runner.os != 'Linux' }}
       with:
         path: |
@@ -127,14 +131,12 @@ runs:
 
     - name: yarn install
       if: ${{ inputs.package-install == 'true' }}
-      continue-on-error: true
       shell: bash
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       run: yarn ${{ inputs.extra-flags }}
       env:
         HUSKY: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-        ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         SENTRYCLI_SKIP_DOWNLOAD: '1'
         DEBUG: '*'
 
@@ -151,7 +153,7 @@ runs:
       # Note: Playwright's cache directory is hard coded because that's what it
       # says to do in the docs. There doesn't appear to be a command that prints
       # it out for us.
-    - uses: actions/cache@v4
+    - uses: actions/cache@v6
       id: playwright-cache
       if: ${{ inputs.playwright-install == 'true' }}
       with:
@@ -173,7 +175,7 @@ runs:
     - name: Install Playwright's dependencies
       shell: bash
       if: inputs.playwright-install == 'true'
-      run: yarn playwright install --with-deps chromium webkit
+      run: yarn playwright install --with-deps $(echo "${{ inputs.playwright-platform }}" | tr ',' ' ')
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       env:
         PLAYWRIGHT_BROWSERS_PATH: ${{ steps.workspace-path.outputs.workspace_path }}/node_modules/.cache/ms-playwright
@@ -184,9 +186,9 @@ runs:
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       shell: bash
       run: |
-        echo "version=$(yarn why --json electron | grep -h 'workspace:.' | jq --raw-output '.children[].locator' | sed -e 's/@playwright\/test@.*://' | head -n 1)" >> $GITHUB_OUTPUT
+        node -e "console.log('version=' + require('electron/package.json').version)" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v6
       id: electron-cache
       if: ${{ inputs.electron-install == 'true' }}
       with:
@@ -198,7 +200,7 @@ runs:
     - name: Install Electron binary
       shell: bash
       if: inputs.electron-install == 'true'
-      run: node ./node_modules/electron/install.js
+      run: yarn install-electron
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       env:
         electron_config_cache: ${{ steps.workspace-path.outputs.workspace_path }}/node_modules/.cache/electron

@@ -7,7 +7,7 @@ public class AdminServerConfigQuery: GraphQLQuery {
   public static let operationName: String = "adminServerConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query adminServerConfig { serverConfig { __typename version baseUrl name features type initialized credentialsRequirement { __typename ...CredentialsRequirements } availableUserFeatures } }"#,
+      #"query adminServerConfig { serverConfig { __typename version baseUrl name features type initialized credentialsRequirement { __typename ...CredentialsRequirements } availableUpgrade { __typename changelog version publishedAt url } availableUserFeatures } }"#,
       fragments: [CredentialsRequirements.self, PasswordLimits.self]
     ))
 
@@ -20,6 +20,9 @@ public class AdminServerConfigQuery: GraphQLQuery {
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Query }
     public static var __selections: [ApolloAPI.Selection] { [
       .field("serverConfig", ServerConfig.self),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminServerConfigQuery.Data.self
     ] }
 
     /// server config
@@ -42,7 +45,11 @@ public class AdminServerConfigQuery: GraphQLQuery {
         .field("type", GraphQLEnum<AffineGraphQL.ServerDeploymentType>.self),
         .field("initialized", Bool.self),
         .field("credentialsRequirement", CredentialsRequirement.self),
+        .field("availableUpgrade", AvailableUpgrade?.self),
         .field("availableUserFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminServerConfigQuery.Data.ServerConfig.self
       ] }
 
       /// server version
@@ -59,6 +66,8 @@ public class AdminServerConfigQuery: GraphQLQuery {
       public var initialized: Bool { __data["initialized"] }
       /// credentials requirement
       public var credentialsRequirement: CredentialsRequirement { __data["credentialsRequirement"] }
+      /// fetch latest available upgradable release of server
+      public var availableUpgrade: AvailableUpgrade? { __data["availableUpgrade"] }
       /// Features for user that can be configured
       public var availableUserFeatures: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["availableUserFeatures"] }
 
@@ -74,6 +83,10 @@ public class AdminServerConfigQuery: GraphQLQuery {
           .field("__typename", String.self),
           .fragment(CredentialsRequirements.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminServerConfigQuery.Data.ServerConfig.CredentialsRequirement.self,
+          CredentialsRequirements.self
+        ] }
 
         public var password: Password { __data["password"] }
 
@@ -85,6 +98,31 @@ public class AdminServerConfigQuery: GraphQLQuery {
         }
 
         public typealias Password = CredentialsRequirements.Password
+      }
+
+      /// ServerConfig.AvailableUpgrade
+      ///
+      /// Parent Type: `ReleaseVersionType`
+      public struct AvailableUpgrade: AffineGraphQL.SelectionSet {
+        public let __data: DataDict
+        public init(_dataDict: DataDict) { __data = _dataDict }
+
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.ReleaseVersionType }
+        public static var __selections: [ApolloAPI.Selection] { [
+          .field("__typename", String.self),
+          .field("changelog", String.self),
+          .field("version", String.self),
+          .field("publishedAt", AffineGraphQL.DateTime.self),
+          .field("url", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminServerConfigQuery.Data.ServerConfig.AvailableUpgrade.self
+        ] }
+
+        public var changelog: String { __data["changelog"] }
+        public var version: String { __data["version"] }
+        public var publishedAt: AffineGraphQL.DateTime { __data["publishedAt"] }
+        public var url: String { __data["url"] }
       }
     }
   }

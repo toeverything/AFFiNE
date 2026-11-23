@@ -7,8 +7,9 @@ import type { ExtensionType } from '@blocksuite/store';
 
 import type {
   BlockLayoutPainter,
+  BlockLayoutTreeNode,
   HostToWorkerMessage,
-  ViewportLayout,
+  ViewportLayoutTree,
   WorkerToHostMessage,
 } from '../types';
 
@@ -33,8 +34,8 @@ export class ViewportLayoutPainter {
   private zoom = 1;
   public provider: ServiceProvider;
 
-  getPainter(type: string): BlockLayoutPainter | undefined {
-    return this.provider.get(BlockPainterProvider(type));
+  getPainter(type: string): BlockLayoutPainter | null {
+    return this.provider.getOptional(BlockPainterProvider(type));
   }
 
   constructor(extensions: ExtensionType[]) {
@@ -66,24 +67,28 @@ export class ViewportLayoutPainter {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  paint(layout: ViewportLayout, version: number) {
+  paint(layout: ViewportLayoutTree, version: number) {
     const { canvas, ctx } = this;
     if (!canvas || !ctx) return;
-    if (layout.rect.w === 0 || layout.rect.h === 0) {
-      console.warn('empty layout rect');
-      return;
-    }
+
+    this.paintTree(layout, version);
+  }
+
+  paintTree(layout: ViewportLayoutTree, version: number) {
+    const { canvas, ctx } = this;
+    const { overallRect } = layout;
+    if (!canvas || !ctx) return;
 
     this.clearBackground();
-
     ctx.scale(this.zoom, this.zoom);
 
-    layout.blocks.forEach(blockLayout => {
-      const painter = this.getPainter(blockLayout.type);
-      if (!painter) return;
-      painter.paint(ctx, blockLayout, layout.rect.x, layout.rect.y);
-    });
+    const paintNode = (node: BlockLayoutTreeNode) => {
+      const painter = this.getPainter(node.type);
+      painter?.paint(ctx, node.layout, overallRect.x, overallRect.y);
+      node.children.forEach(paintNode);
+    };
 
+    layout.roots.forEach(root => paintNode(root));
     const bitmap = canvas.transferToImageBitmap();
     const message: WorkerToHostMessage = {
       type: 'bitmapPainted',
@@ -104,4 +109,21 @@ export class ViewportLayoutPainter {
       }
     }
   };
+}
+
+const meta = {
+  emSize: 2048,
+  hHeadAscent: 1984,
+  hHeadDescent: -494,
+};
+
+export function getBaseline(fontSize: number) {
+  const lineHeight = 1.2 * fontSize;
+
+  const A = fontSize * (meta.hHeadAscent / meta.emSize); // ascent
+  const D = fontSize * (meta.hHeadDescent / meta.emSize); // descent
+  const AD = A + Math.abs(D); // ascent + descent
+  const L = lineHeight - AD; // leading
+  const y = A + L / 2;
+  return y;
 }

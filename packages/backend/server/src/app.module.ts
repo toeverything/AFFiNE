@@ -1,61 +1,72 @@
-import {
-  DynamicModule,
-  ExecutionContext,
-  ForwardReference,
-  Logger,
-  Module,
-} from '@nestjs/common';
+import { DynamicModule, ExecutionContext } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { get } from 'lodash-es';
 import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import {
-  getOptionalModuleMetadata,
+  getRequestFromHost,
   getRequestIdFromHost,
   getRequestIdFromRequest,
   ScannerModule,
 } from './base';
 import { CacheModule } from './base/cache';
-import { AFFiNEConfig, ConfigModule, mergeConfigOverride } from './base/config';
+import { ConfigModule } from './base/config';
 import { ErrorModule } from './base/error';
 import { EventModule } from './base/event';
 import { GqlModule } from './base/graphql';
 import { HelpersModule } from './base/helpers';
-import { JobModule } from './base/job';
 import { LoggerModule } from './base/logger';
-import { MailModule } from './base/mailer';
 import { MetricsModule } from './base/metrics';
 import { MutexModule } from './base/mutex';
 import { PrismaModule } from './base/prisma';
 import { RedisModule } from './base/redis';
-import { RuntimeModule } from './base/runtime';
-import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
-import { AuthModule } from './core/auth';
-import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
+import { AuthModule, AuthWorkerModule } from './core/auth';
+import {
+  BackendRuntimeModule,
+  BackendRuntimeWorkerModule,
+} from './core/backend-runtime';
+import { CommentModule } from './core/comment';
+import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
+import { DocJobsModule } from './core/doc-jobs';
 import { DocRendererModule } from './core/doc-renderer';
-import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
-import { NotificationModule } from './core/notification';
+import { MailModule, MailWorkerModule } from './core/mail';
+import { MonitorModule } from './core/monitor';
+import {
+  NotificationModule,
+  NotificationWorkerModule,
+} from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
+import { RealtimeGatewayModule, RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
-import { StorageModule } from './core/storage';
+import { StaticFileModule } from './core/static-files';
+import { StorageApiModule, StorageWorkerModule } from './core/storage';
+import { StorageRuntimeModule } from './core/storage-runtime';
 import { SyncModule } from './core/sync';
+import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
-import { WorkspaceModule } from './core/workspaces';
+import { WorkspaceModule, WorkspaceWorkerModule } from './core/workspaces';
+import { Env, ServerRole } from './env';
 import { ModelsModule } from './models';
-import { REGISTERED_PLUGINS } from './plugins';
+import { CalendarModule, CalendarWorkerModule } from './plugins/calendar';
+import { CaptchaModule } from './plugins/captcha';
+import { CopilotModule, CopilotWorkerModule } from './plugins/copilot';
+import { GCloudModule } from './plugins/gcloud';
+import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
-import { ENABLED_PLUGINS } from './plugins/registry';
+import { OAuthModule } from './plugins/oauth';
+import { PaymentModule } from './plugins/payment';
+import { WorkerModule } from './plugins/worker';
+import { ServerRealtimeHandlersModule } from './realtime-handlers.module';
 
 export const FunctionalityModules = [
   ClsModule.forRoot({
@@ -68,8 +79,9 @@ export const FunctionalityModules = [
         // make every request has a unique id to tracing
         return getRequestIdFromRequest(req, 'http');
       },
-      setup(cls, _req, res: Response) {
+      setup(cls, req: Request, res: Response) {
         res.setHeader('X-Request-Id', cls.getId());
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     // for websocket connection
@@ -81,6 +93,10 @@ export const FunctionalityModules = [
         // make every request has a unique id to tracing
         return getRequestIdFromHost(context);
       },
+      setup(cls, context: ExecutionContext) {
+        const req = getRequestFromHost(context);
+        cls.set(CLS_REQUEST_HOST, req.hostname);
+      },
     },
     plugins: [
       // https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional/prisma-adapter
@@ -91,169 +107,131 @@ export const FunctionalityModules = [
       }),
     ],
   }),
-  ConfigModule.forRoot(),
-  RuntimeModule,
+  LoggerModule,
   ScannerModule,
+  PrismaModule,
   EventModule,
+  ConfigModule,
   RedisModule,
   CacheModule,
   MutexModule,
-  PrismaModule,
   MetricsModule,
   RateLimiterModule,
-  MailModule,
-  StorageProviderModule,
   HelpersModule,
   ErrorModule,
-  LoggerModule,
   WebSocketModule,
-  JobModule.forRoot(),
+  RealtimeModule,
+  ModelsModule,
+  BackendRuntimeModule,
+  StorageRuntimeModule,
+  ScheduleModule.forRoot(),
+  MonitorModule,
 ];
-
-function filterOptionalModule(
-  config: AFFiNEConfig,
-  module: AFFiNEModule | Promise<DynamicModule> | ForwardReference<any>
-) {
-  // can't deal with promise or forward reference
-  if (module instanceof Promise || 'forwardRef' in module) {
-    return module;
-  }
-
-  const requirements = getOptionalModuleMetadata(module, 'requires');
-  // if condition not set or condition met, include the module
-  if (requirements?.length) {
-    const nonMetRequirements = requirements.filter(c => {
-      const value = get(config, c);
-      return (
-        value === undefined ||
-        value === null ||
-        (typeof value === 'string' && value.trim().length === 0)
-      );
-    });
-
-    if (nonMetRequirements.length) {
-      const name = 'module' in module ? module.module.name : module.name;
-      if (!config.node.test) {
-        new Logger(name).warn(
-          `${name} is not enabled because of the required configuration is not satisfied.`,
-          'Unsatisfied configuration:',
-          ...nonMetRequirements.map(config => `  AFFiNE.${config}`)
-        );
-      }
-      return null;
-    }
-  }
-
-  const predicator = getOptionalModuleMetadata(module, 'if');
-  if (predicator && !predicator(config)) {
-    return null;
-  }
-
-  const contribution = getOptionalModuleMetadata(module, 'contributesTo');
-  if (contribution) {
-    ADD_ENABLED_FEATURES(contribution);
-  }
-
-  const subModules = getOptionalModuleMetadata(module, 'imports');
-  const filteredSubModules = subModules
-    ?.map(subModule => filterOptionalModule(config, subModule))
-    .filter(Boolean);
-  Reflect.defineMetadata('imports', filteredSubModules, module);
-
-  return module;
-}
 
 export class AppModuleBuilder {
   private readonly modules: AFFiNEModule[] = [];
-  constructor(private readonly config: AFFiNEConfig) {}
 
   use(...modules: AFFiNEModule[]): this {
     modules.forEach(m => {
-      const result = filterOptionalModule(this.config, m);
-      if (result) {
-        this.modules.push(m);
-      }
+      this.modules.push(m);
     });
 
     return this;
   }
 
-  useIf(
-    predicator: (config: AFFiNEConfig) => boolean,
-    ...modules: AFFiNEModule[]
-  ): this {
-    if (predicator(this.config)) {
+  useIf(predicator: () => boolean, ...modules: AFFiNEModule[]): this {
+    if (predicator()) {
       this.use(...modules);
     }
 
     return this;
   }
 
-  compile() {
-    @Module({
-      imports: this.modules,
-      controllers: [AppController],
-    })
+  compile(): DynamicModule {
     class AppModule {}
 
-    return AppModule;
+    return {
+      module: AppModule,
+      imports: this.modules,
+      controllers: [AppController],
+    };
   }
 }
 
-export function buildAppModule() {
-  AFFiNE = mergeConfigOverride(AFFiNE);
-  const factor = new AppModuleBuilder(AFFiNE);
+export function buildAppModule(env: Env) {
+  const factor = new AppModuleBuilder();
+  const workerOnly = env.role === ServerRole.Worker;
 
   factor
     // basic
     .use(...FunctionalityModules)
-    .use(ModelsModule)
+    .useIf(() => !workerOnly, RealtimeGatewayModule)
 
-    // enable schedule module on graphql server and doc service
+    // Search API and worker runtime are separate from the queue worker application.
+    .useIf(() => env.isApi || env.isFrontend, IndexerModule)
+
+    // the worker owns doc consumers and schedulers
+    .useIf(() => env.isWorker, DocJobsModule)
+    .useIf(() => env.isWorker, BackendRuntimeWorkerModule)
     .useIf(
-      config => config.flavor.graphql || config.flavor.doc,
-      ScheduleModule.forRoot()
+      () => env.isWorker,
+      AuthWorkerModule,
+      MailWorkerModule,
+      NotificationWorkerModule,
+      CalendarWorkerModule,
+      WorkspaceWorkerModule,
+      CopilotWorkerModule
     )
 
-    // auth
-    .use(UserModule, AuthModule, PermissionModule)
+    // auth and business APIs are not part of the queue worker application
+    .useIf(() => !workerOnly, UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(FeatureModule, QuotaModule, DocStorageModule, NotificationModule)
-
-    // sync server only
-    .useIf(config => config.flavor.sync, SyncModule)
-
+    .use(ServerConfigModule, QuotaModule, DocStorageModule)
+    .useIf(() => env.isWorker, StorageWorkerModule)
+    .useIf(() => !workerOnly, FeatureModule, NotificationModule, MailModule)
+    // renderer server and front server
+    .useIf(() => env.flavors.renderer || env.flavors.front, DocRendererModule)
+    // sync server and front server
+    .useIf(
+      () => env.flavors.sync || env.flavors.front,
+      SyncModule,
+      TelemetryModule
+    )
+    .useIf(
+      () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
+      ServerRealtimeHandlersModule
+    )
     // graphql server only
     .useIf(
-      config => config.flavor.graphql,
-      VersionModule,
+      () => env.flavors.graphql,
       GqlModule,
-      StorageModule,
-      ServerConfigModule,
+      VersionModule,
+      StorageApiModule,
+      ServerConfigResolverModule,
       WorkspaceModule,
-      LicenseModule
+      LicenseModule,
+      PaymentModule,
+      CopilotModule,
+      CaptchaModule,
+      OAuthModule,
+      CalendarModule,
+      TelemetryModule,
+      CommentModule
     )
+    // worker for and self-hosted API only for self-host and local development only
+    .useIf(
+      () => !workerOnly && (env.dev || env.selfhosted),
+      WorkerModule,
+      SelfhostModule
+    )
+    // static frontend routes for front flavor
+    .useIf(() => env.flavors.front, StaticFileModule)
 
-    // doc service only
-    .useIf(config => config.flavor.doc, DocServiceModule)
-
-    // self hosted server only
-    .useIf(config => config.isSelfhosted, SelfhostModule)
-    .useIf(config => config.flavor.renderer, DocRendererModule);
-
-  // plugin modules
-  ENABLED_PLUGINS.forEach(name => {
-    const plugin = REGISTERED_PLUGINS.get(name);
-    if (!plugin) {
-      new Logger('AppBuilder').warn(`Unknown plugin ${name}`);
-      return;
-    }
-
-    factor.use(plugin);
-  });
+    // gcloud
+    .useIf(() => env.gcp, GCloudModule);
 
   return factor.compile();
 }
 
-export const AppModule = buildAppModule();
+export const AppModule = buildAppModule(env);

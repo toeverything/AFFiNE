@@ -6,9 +6,14 @@ import {
 } from '@affine/core/modules/dialogs';
 import { I18nService } from '@affine/core/modules/i18n';
 import { UrlService } from '@affine/core/modules/url';
+import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import { useService, useServiceOptional } from '@toeverything/infra';
+import {
+  useService,
+  useServiceOptional,
+  useServices,
+} from '@toeverything/infra';
 import { useStore } from 'jotai';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
@@ -53,24 +58,36 @@ export function useRegisterWorkspaceCommands() {
   const urlService = useService(UrlService);
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
-  const cmdkQuickSearchService = useService(CMDKQuickSearchService);
-  const editorSettingService = useService(EditorSettingService);
-  const workspaceDialogService = useService(WorkspaceDialogService);
-  const globalDialogService = useService(GlobalDialogService);
-  const appSidebarService = useService(AppSidebarService);
-  const i18n = useService(I18nService).i18n;
+  const {
+    cMDKQuickSearchService,
+    editorSettingService,
+    workspaceDialogService,
+    globalDialogService,
+    appSidebarService,
+    i18nService,
+  } = useServices({
+    CMDKQuickSearchService,
+    EditorSettingService,
+    WorkspaceDialogService,
+    GlobalDialogService,
+    AppSidebarService,
+    I18nService,
+  });
+
+  const i18n = i18nService.i18n;
 
   const desktopApiService = useServiceOptional(DesktopApiService);
+  const workbenchService = useServiceOptional(WorkbenchService);
 
   const quitAndInstall = desktopApiService?.handler.updater.quitAndInstall;
 
   useEffect(() => {
-    const unsub = registerCMDKCommand(cmdkQuickSearchService);
+    const unsub = registerCMDKCommand(cMDKQuickSearchService);
 
     return () => {
       unsub();
     };
-  }, [cmdkQuickSearchService]);
+  }, [cMDKQuickSearchService]);
 
   // register AffineUpdatesCommands
   useEffect(() => {
@@ -92,11 +109,11 @@ export function useRegisterWorkspaceCommands() {
   // register AffineNavigationCommands
   useEffect(() => {
     const unsub = registerAffineNavigationCommands({
-      store,
       t,
       docCollection: currentWorkspace.docCollection,
       navigationHelper,
       workspaceDialogService,
+      workbenchService,
     });
 
     return () => {
@@ -109,6 +126,7 @@ export function useRegisterWorkspaceCommands() {
     navigationHelper,
     globalDialogService,
     workspaceDialogService,
+    workbenchService,
   ]);
 
   // register AffineSettingsCommands

@@ -11,21 +11,31 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath libs.android.gradlePlugin
+        classpath libs.android.gradle.plugin
         classpath libs.google.services
     }
 }
 
 plugins {
+    alias libs.plugins.gradle.versions
+    alias libs.plugins.version.catalog.update
     alias libs.plugins.android.application apply false
     alias libs.plugins.android.library apply false
-    alias libs.plugins.kotlin.android apply false
-    alias libs.plugins.rust.android apply false
     alias libs.plugins.apollo.android apply false
-    alias(libs.plugins.jetbrains.kotlin.jvm) apply false
+    alias libs.plugins.compose apply false
+    alias libs.plugins.firebase.crashlytics apply false
+    alias libs.plugins.google.service apply false
+    alias libs.plugins.hilt apply false
+    alias libs.plugins.jetbrains.kotlin.jvm apply false
+    alias libs.plugins.kotlin.android apply false
+    alias libs.plugins.kotlin.parcelize apply false
+    alias libs.plugins.kotlin.serialization apply false
+    alias libs.plugins.ksp apply false
+    alias libs.plugins.rust.android apply false
 }
 
 apply from: "variables.gradle"
+apply from: "${project.rootDir}/buildscripts/toml-updater-config.gradle"
 
 allprojects {
     repositories {

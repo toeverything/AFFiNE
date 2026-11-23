@@ -2,8 +2,8 @@ import type {
   UniComponent,
   UniComponentReturn,
 } from '@blocksuite/affine-shared/types';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import type { Signal } from '@preact/signals-core';
 import type { LitElement, PropertyValues, TemplateResult } from 'lit';
 import { css, html } from 'lit';

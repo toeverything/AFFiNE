@@ -1,4 +1,4 @@
-import { DateValue } from '@affine/core/components/doc-properties/types/date';
+import { DateValue } from '@affine/core/components/workspace-property-types/date';
 import type { LiveData } from '@toeverything/infra';
 import { useLiveData } from '@toeverything/infra';
 import dayjs from 'dayjs';

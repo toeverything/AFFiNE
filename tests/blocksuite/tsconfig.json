@@ -5,8 +5,9 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
-  "include": ["./e2e"],
+  "include": ["e2e"],
   "references": [
+    { "path": "../kit" },
     { "path": "../../blocksuite/affine/all" },
     { "path": "../../blocksuite/integration-test" }
   ]

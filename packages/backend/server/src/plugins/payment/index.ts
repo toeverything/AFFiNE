@@ -1,58 +1,48 @@
 import './config';
 
-import { ServerFeature } from '../../core/config';
+import { Module } from '@nestjs/common';
+
+import { ServerConfigModule } from '../../core';
 import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
-import { QuotaModule } from '../../core/quota';
 import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
-import { Plugin } from '../registry';
+import { AdminPaymentResolver } from './admin-resolver';
 import { StripeWebhookController } from './controller';
-import { SubscriptionCronJobs } from './cron';
-import { LicenseController } from './license/controller';
+import { PaymentEventHandlers } from './event';
 import {
-  SelfhostTeamSubscriptionManager,
-  UserSubscriptionManager,
-  WorkspaceSubscriptionManager,
-} from './manager';
-import { QuotaOverride } from './quota';
+  LegacyLicenseController,
+  LicenseController,
+} from './license-controller';
 import {
-  SubscriptionResolver,
   UserSubscriptionResolver,
   WorkspaceSubscriptionResolver,
-} from './resolver';
+} from './read-resolver';
+import { SubscriptionResolver } from './resolver';
+import { RevenueCatWebhookController } from './revenuecat-controller';
 import { SubscriptionService } from './service';
-import { StripeProvider } from './stripe';
-import { StripeWebhook } from './webhook';
 
-@Plugin({
-  name: 'payment',
+@Module({
   imports: [
     FeatureModule,
-    QuotaModule,
     UserModule,
     PermissionModule,
     WorkspaceModule,
+    ServerConfigModule,
   ],
   providers: [
-    StripeProvider,
+    AdminPaymentResolver,
     SubscriptionService,
     SubscriptionResolver,
     UserSubscriptionResolver,
-    StripeWebhook,
-    UserSubscriptionManager,
-    WorkspaceSubscriptionManager,
-    SelfhostTeamSubscriptionManager,
-    SubscriptionCronJobs,
     WorkspaceSubscriptionResolver,
-    QuotaOverride,
+    PaymentEventHandlers,
   ],
-  controllers: [StripeWebhookController, LicenseController],
-  requires: [
-    'plugins.payment.stripe.keys.APIKey',
-    'plugins.payment.stripe.keys.webhookKey',
+  controllers: [
+    StripeWebhookController,
+    LicenseController,
+    LegacyLicenseController,
+    RevenueCatWebhookController,
   ],
-  contributesTo: ServerFeature.Payment,
-  if: config => config.flavor.graphql,
 })
 export class PaymentModule {}

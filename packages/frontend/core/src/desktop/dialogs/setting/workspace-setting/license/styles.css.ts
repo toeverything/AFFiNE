@@ -53,6 +53,10 @@ export const buttonContainer = style({
 export const activeButton = style({
   marginTop: '8px',
 });
+export const uploadButton = style({
+  marginTop: '8px',
+  marginRight: '9px',
+});
 
 export const seat = style({
   fontSize: cssVar('fontXs'),
@@ -71,4 +75,18 @@ export const activateModalContent = style({
 export const tips = style({
   color: cssVarV2('text/secondary'),
   fontSize: cssVar('fontSm'),
+});
+
+export const footer = style({
+  marginTop: 'auto',
+  marginBottom: '0',
+  display: 'flex',
+  alignItems: 'center',
+  paddingTop: '20px',
+  justifyContent: 'space-between',
+});
+
+export const rightActions = style({
+  display: 'flex',
+  gap: '20px',
 });

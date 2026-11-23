@@ -16,6 +16,10 @@ export type GetJsonValueFromConfig<T> =
 export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   name: string;
   hide?: boolean;
+  kanbanGroup?: {
+    enabled: boolean;
+    mutable?: boolean;
+  };
   propertyData: {
     schema: ZodType<Data>;
     default: () => Data;
@@ -23,7 +27,11 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   rawValue: {
     schema: ZodType<RawValue>;
     default: () => RawValue;
-    toString: (config: { value: RawValue; data: Data }) => string;
+    toString: (config: {
+      value: RawValue;
+      data: Data;
+      dataSource?: DataSource;
+    }) => string;
     fromString: (
       config: WithCommonPropertyConfig<{
         value: string;
@@ -39,7 +47,7 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
         data: Data;
       }>
     ) => JsonValue;
-    fromJson: (
+    fromJson?: (
       config: WithCommonPropertyConfig<{
         value: JsonValue;
         data: Data;
@@ -76,7 +84,7 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   };
   fixed?: {
     defaultData: Data;
-    defaultOrder?: string;
+    defaultOrder?: 'start' | 'end';
     defaultShow?: boolean;
   };
   minWidth?: number;

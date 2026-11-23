@@ -1,14 +1,12 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 
-import {
-  AIErrorType,
-  type AIItemGroupConfig,
-} from '../../../../components/ai-item/types.js';
+import { type AIItemGroupConfig } from '../../../../components/ai-item/types.js';
+import { AIErrorType } from '../../../../provider';
 import type { AIPanelErrorConfig, CopyConfig } from '../../type.js';
 import { filterAIItemGroup } from '../../utils.js';
 
@@ -184,13 +182,12 @@ export class AIPanelError extends WithDisposable(LitElement) {
       () => {
         const tip = this.config.error?.message;
         const error = tip
-          ? html`<span class="error-tip"
-              >An error occurred<affine-tooltip
-                tip-position="bottom-start"
-                .arrow=${false}
-                >${tip}</affine-tooltip
-              ></span
-            >`
+          ? html`<span class="error-tip">
+              An error occurred
+              <affine-tooltip tip-position="bottom-start">
+                ${tip}
+              </affine-tooltip>
+            </span>`
           : 'An error occurred';
         return html`
           <style>
@@ -210,37 +207,43 @@ export class AIPanelError extends WithDisposable(LitElement) {
     );
 
     return html`
-      <div class="error">
+      <div class="error" data-testid="ai-error">
         <div class="answer-tip">
           <div class="answer-label">Answer</div>
           <slot></slot>
         </div>
         ${errorTemplate}
       </div>
-      ${this.withAnswer
-        ? html`<ai-finish-tip
-            .copy=${this.copy}
-            .host=${this.host}
-          ></ai-finish-tip>`
-        : nothing}
-      ${responseGroup.length > 0
-        ? html`
-            <ai-panel-divider></ai-panel-divider>
-            ${responseGroup.map(
-              (group, index) => html`
-                ${index !== 0
-                  ? html`<ai-panel-divider></ai-panel-divider>`
-                  : nothing}
-                <div class="response-list-container">
-                  <ai-item-list
-                    .host=${this.host}
-                    .groups=${[group]}
-                  ></ai-item-list>
-                </div>
-              `
-            )}
-          `
-        : nothing}
+      ${
+        this.withAnswer
+          ? html`<ai-finish-tip
+              .copy=${this.copy}
+              .host=${this.host}
+            ></ai-finish-tip>`
+          : nothing
+      }
+      ${
+        responseGroup.length > 0
+          ? html`
+              <ai-panel-divider></ai-panel-divider>
+              ${responseGroup.map(
+                (group, index) => html`
+                  ${
+                    index !== 0
+                      ? html`<ai-panel-divider></ai-panel-divider>`
+                      : nothing
+                  }
+                  <div class="response-list-container">
+                    <ai-item-list
+                      .host=${this.host}
+                      .groups=${[group]}
+                    ></ai-item-list>
+                  </div>
+                `
+              )}
+            `
+          : nothing
+      }
     `;
   }
 

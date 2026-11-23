@@ -94,8 +94,8 @@ export const useDndMonitor = <D extends DNDData = DNDData>(
           (dropTargetContext.fromExternalData as fromExternalData<D>))
         : undefined,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, getOptions]);
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [...deps, getOptions, dropTargetContext.fromExternalData]);
 
   const monitorOptions = useMemo(() => {
     return {

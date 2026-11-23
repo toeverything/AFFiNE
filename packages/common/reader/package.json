@@ -1,0 +1,27 @@
+{
+  "name": "@affine/reader",
+  "type": "module",
+  "version": "0.27.5",
+  "private": true,
+  "sideEffects": false,
+  "module": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dist": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "affine bundle -p @affine/reader",
+    "bundle": "affine bundle -p @affine/reader"
+  },
+  "dependencies": {
+    "lodash-es": "^4.17.23",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@blocksuite/affine": "workspace:*",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@blocksuite/affine": "workspace:*"
+  }
+}

@@ -4,8 +4,8 @@ import * as Y from 'yjs';
 import type { InitFn } from './utils.js';
 
 export const pendingStructs: InitFn = (collection: Workspace, id: string) => {
-  const doc = collection.createDoc({ id });
-  const tempDoc = collection.createDoc({ id: 'tempDoc' });
+  const doc = collection.createDoc(id).getStore({ id });
+  const tempDoc = collection.createDoc('tempDoc').getStore();
   doc.load();
   tempDoc.load(() => {
     const rootId = tempDoc.addBlock('affine:page', {

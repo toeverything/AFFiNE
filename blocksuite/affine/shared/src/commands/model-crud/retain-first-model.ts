@@ -1,4 +1,4 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 export const retainFirstModelCommand: Command<{

@@ -55,7 +55,7 @@ test('shortcut', async ({ page }) => {
   await expect(shapeButton).toHaveAttribute('active', '');
 
   await page.keyboard.press('p');
-  const penButton = await locatorEdgelessToolButton(page, 'brush');
+  const penButton = await locatorEdgelessToolButton(page, 'pen');
   await expect(penButton).toHaveAttribute('active', '');
 
   await page.keyboard.press('h');
@@ -65,33 +65,6 @@ test('shortcut', async ({ page }) => {
   await page.keyboard.press('c');
   const connectorButton = await locatorEdgelessToolButton(page, 'connector');
   await expect(connectorButton).toHaveAttribute('active', '');
-
-  // await page.keyboard.press('l');
-  // const lassoButton = await locatorEdgelessToolButton(page, 'lasso');
-  // await expect(lassoButton).toHaveAttribute('active', '');
-});
-
-test.skip('toggle lasso tool modes', async ({ page }) => {
-  await enterPlaygroundRoom(page);
-  await initEmptyEdgelessState(page);
-  await switchEditorMode(page);
-  await page.mouse.click(100, 100);
-
-  const lassoButton = await locatorEdgelessToolButton(page, 'lasso', false);
-
-  const isLassoMode = async (type: 'freehand' | 'polygonal') => {
-    const classes = (await lassoButton.getAttribute('class'))?.split(' ') ?? [];
-    return classes.includes(type);
-  };
-
-  await page.keyboard.press('Shift+l');
-  expect(await isLassoMode('freehand')).toBe(true);
-
-  await page.keyboard.press('Shift+l');
-  expect(await isLassoMode('polygonal')).toBe(true);
-
-  await page.keyboard.press('Shift+l');
-  expect(await isLassoMode('freehand')).toBe(true);
 });
 
 test('toggle shapes shortcut', async ({ page }) => {
@@ -113,8 +86,13 @@ test('toggle shapes shortcut', async ({ page }) => {
     'roundedRect',
   ] as ShapeName[];
   for (const shape of shapesInOrder) {
-    await page.keyboard.press('Shift+s');
+    await page.keyboard.press('s');
     await assertEdgelessShapeType(page, shape);
+  }
+
+  for (const shape of shapesInOrder.reverse()) {
+    await assertEdgelessShapeType(page, shape);
+    await page.keyboard.press('Shift+s');
   }
 });
 

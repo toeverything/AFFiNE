@@ -16,8 +16,10 @@ import {
 
 import * as styles from './style.css';
 
-export interface SearchInputProps
-  extends Omit<HTMLProps<HTMLInputElement>, 'onInput'> {
+export interface SearchInputProps extends Omit<
+  HTMLProps<HTMLInputElement>,
+  'onInput'
+> {
   value?: string;
   height?: number;
   cornerRadius?: number;
@@ -60,7 +62,14 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     );
 
     useEffect(() => {
-      setWidth(containerRef.current?.offsetWidth ?? 0);
+      const container = containerRef.current;
+      if (!container) return;
+      const observer = new ResizeObserver(([entry]) => {
+        const nextWidth = entry.contentRect.width;
+        setWidth(current => (current === nextWidth ? current : nextWidth));
+      });
+      observer.observe(container);
+      return () => observer.disconnect();
     }, []);
 
     const emitValue = useMemo(() => {

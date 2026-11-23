@@ -88,11 +88,73 @@ export function getCurrentNativeRange(selection = window.getSelection()) {
   return selection.getRangeAt(0);
 }
 
+// functions need to be mocked in unit-test
+export const api = {
+  caretRangeFromPoint,
+  resetNativeSelection,
+};
+
 export function handleNativeRangeAtPoint(x: number, y: number) {
-  const range = caretRangeFromPoint(x, y);
+  const range = api.caretRangeFromPoint(x, y);
+  if (range) {
+    normalizeCaretRange(range);
+  }
+
   const startContainer = range?.startContainer;
   // click on rich text
   if (startContainer instanceof Node) {
-    resetNativeSelection(range);
+    api.resetNativeSelection(range);
+  }
+}
+
+function lastMeaningfulTextNode(node: Node) {
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      return node.textContent && node.textContent?.trim().length > 0
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
+    },
+  });
+
+  let last = null;
+  while (walker.nextNode()) {
+    last = walker.currentNode;
+  }
+  return last;
+}
+
+function normalizeCaretRange(range: Range) {
+  let { startContainer, startOffset } = range;
+  if (startContainer.nodeType === Node.TEXT_NODE) return;
+
+  // Try to find text in the element at `startOffset`
+  const offsetEl =
+    startOffset > 0
+      ? startContainer.childNodes[startOffset - 1]
+      : startContainer.childNodes[0];
+  if (offsetEl) {
+    if (offsetEl.nodeType === Node.TEXT_NODE) {
+      range.setStart(
+        offsetEl,
+        startOffset > 0 ? (offsetEl.textContent?.length ?? 0) : 0
+      );
+      range.collapse(true);
+      return;
+    }
+
+    const text = lastMeaningfulTextNode(offsetEl);
+    if (text) {
+      range.setStart(text, text.textContent?.length ?? 0);
+      range.collapse(true);
+      return;
+    }
+  }
+
+  // Fallback, try to find text in startContainer
+  const text = lastMeaningfulTextNode(startContainer);
+  if (text) {
+    range.setStart(text, text.textContent?.length ?? 0);
+    range.collapse(true);
+    return;
   }
 }

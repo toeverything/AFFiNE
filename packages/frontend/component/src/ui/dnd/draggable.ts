@@ -83,8 +83,8 @@ export const useDraggable = <D extends DNDData = DNDData>(
           }
         : undefined,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, context.toExternalData]);
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [...deps, getOptions, context.toExternalData]);
 
   useEffect(() => {
     if (

@@ -1,5 +1,8 @@
-import { type CreateCheckoutSessionInput } from '@affine/graphql';
-import { mixpanel } from '@affine/track';
+import type {
+  CreateCheckoutSessionInput,
+  SubscriptionPlan,
+} from '@affine/graphql';
+import { tracker } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
 
 import { Subscription } from '../entities/subscription';
@@ -18,7 +21,7 @@ export class SubscriptionService extends Service {
       .map(sub => !!sub)
       .distinctUntilChanged()
       .subscribe(ai => {
-        mixpanel.people.set({
+        tracker.people.set({
           ai,
         });
       });
@@ -26,7 +29,7 @@ export class SubscriptionService extends Service {
       .map(sub => !!sub)
       .distinctUntilChanged()
       .subscribe(pro => {
-        mixpanel.people.set({
+        tracker.people.set({
           pro,
         });
       });
@@ -34,6 +37,14 @@ export class SubscriptionService extends Service {
 
   async createCheckoutSession(input: CreateCheckoutSessionInput) {
     return await this.store.createCheckoutSession(input);
+  }
+
+  checkoutAttempt(plan: SubscriptionPlan) {
+    return this.store.checkoutAttempt(plan);
+  }
+
+  expireCheckout(plan: SubscriptionPlan, attemptId: string) {
+    return this.store.expireCheckout(plan, attemptId);
   }
 
   private onAccountChanged() {

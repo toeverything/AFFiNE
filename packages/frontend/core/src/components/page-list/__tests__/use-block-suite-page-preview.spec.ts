@@ -3,7 +3,7 @@
  */
 import 'fake-indexeddb/auto';
 
-import { StoreExtensions } from '@blocksuite/affine/extensions';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { type Store, Text } from '@blocksuite/affine/store';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { renderHook } from '@testing-library/react';
@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBlockSuitePagePreview } from '../use-block-suite-page-preview';
 let docCollection: TestWorkspace;
 
-const extensions = StoreExtensions;
+const extensions = getStoreManager().config.init().value.get('store');
 
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['requestIdleCallback'] });
@@ -33,12 +33,16 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  await initPage(docCollection.createDoc({ id: 'page0', extensions }));
+  const store = docCollection.createDoc('page0').getStore({ extensions });
+  await initPage(store);
 });
 
 describe('useBlockSuitePagePreview', () => {
   test('basic', async () => {
-    const page = docCollection.getDoc('page0') as Store;
+    const page = docCollection.getDoc('page0')?.getStore();
+    if (!page) {
+      throw new Error('Page not found');
+    }
     const id = page.addBlock(
       'affine:paragraph',
       {

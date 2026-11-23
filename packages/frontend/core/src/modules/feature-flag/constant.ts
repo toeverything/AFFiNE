@@ -1,9 +1,10 @@
 import type { FlagInfo } from './types';
 
-const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
-const isDesktopEnvironment = BUILD_CONFIG.isElectron;
+// const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
+const isIOS = BUILD_CONFIG.isIOS;
+const isAndroid = BUILD_CONFIG.isAndroid;
 
 export const AFFINE_FLAGS = {
   enable_ai: {
@@ -26,32 +27,14 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_database_full_width: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_full_width',
+  enable_ai_playground: {
+    category: 'affine',
     displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.name',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name',
     description:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.description',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description',
     configurable: isCanaryBuild,
-  },
-  enable_database_attachment_note: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_attachment_note',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.description',
-    configurable: isNotStableBuild,
-  },
-  enable_block_query: {
-    category: 'blocksuite',
-    bsFlag: 'enable_block_query',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.description',
-    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
   },
   enable_edgeless_text: {
     category: 'blocksuite',
@@ -111,27 +94,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-block-meta.description',
     configurable: isCanaryBuild,
-    defaultState: false,
-  },
-  enable_callout: {
-    category: 'blocksuite',
-    bsFlag: 'enable_callout',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-callout.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-callout.description',
-    configurable: isCanaryBuild,
-    defaultState: false,
-  },
-  enable_embed_iframe_block: {
-    category: 'blocksuite',
-    bsFlag: 'enable_embed_iframe_block',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-embed-iframe-block.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-embed-iframe-block.description',
-    configurable: isCanaryBuild,
-    defaultState: false,
+    defaultState: true,
   },
 
   enable_emoji_folder_icon: {
@@ -144,7 +107,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_emoji_doc_icon: {
@@ -156,7 +119,7 @@ export const AFFINE_FLAGS = {
     feedbackType: 'discord',
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351',
-    configurable: true,
+    configurable: false,
     defaultState: true,
   },
   enable_editor_settings: {
@@ -176,15 +139,6 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-theme-editor.description',
     configurable: isCanaryBuild && !isMobile,
     defaultState: isCanaryBuild,
-  },
-  enable_local_workspace: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.description',
-    configurable: isCanaryBuild,
-    defaultState: isDesktopEnvironment || isCanaryBuild,
   },
   enable_advanced_block_visibility: {
     category: 'blocksuite',
@@ -216,15 +170,6 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: isMobile,
   },
-  enable_multiple_cloud_servers: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
-    configurable: false,
-    defaultState: isDesktopEnvironment,
-  },
   enable_mobile_edgeless_editing: {
     category: 'affine',
     displayName:
@@ -241,7 +186,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description',
     configurable: !isMobile,
-    defaultState: false,
+    defaultState: true,
   },
   enable_editor_rtl: {
     category: 'affine',
@@ -256,21 +201,123 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition,
-    defaultState: false,
+    configurable: isMobile && isIOS,
+    defaultState: isMobile && isIOS,
+  },
+  enable_mermaid_wasm_native_renderer: {
+    category: 'affine',
+    displayName: 'Enable Native Mermaid Renderer',
+    description:
+      'Use the new Mermaid renderer backend. Web uses WASM, desktop uses native, and mobile always uses native. The native renderer is more than 10x faster, but its styling/aesthetic quality and the types of graphics it supports are not as good as the JS version.',
+    configurable: !isIOS && !isAndroid,
+    defaultState: isIOS || isAndroid,
   },
   enable_turbo_renderer: {
-    category: 'affine',
+    category: 'blocksuite',
+    bsFlag: 'enable_turbo_renderer',
     displayName: 'Enable Turbo Renderer',
     description: 'Enable experimental edgeless turbo renderer',
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_integration: {
-    category: 'affine',
-    displayName: 'Enable Integration',
-    description: 'Enable Integration',
+  enable_dom_renderer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_dom_renderer',
+    displayName: 'Enable DOM Renderer',
+    description: 'Enable DOM renderer for graphics elements',
+    configurable: true,
+    defaultState: false,
+  },
+  enable_edgeless_scribbled_style: {
+    category: 'blocksuite',
+    bsFlag: 'enable_edgeless_scribbled_style',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description',
     configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_table_virtual_scroll: {
+    category: 'blocksuite',
+    bsFlag: 'enable_table_virtual_scroll',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_setting_subpage_animation: {
+    category: 'affine',
+    displayName: 'Enable Setting Subpage Animation',
+    description: 'Apply animation for setting subpage open/close',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_adapter_panel: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_view_analytics_panel: {
+    category: 'affine',
+    displayName: 'Enable View Analytics Panel',
+    description: 'Show the View analytics tab in the right sidebar.',
+    configurable: true,
+    defaultState: false,
+  },
+  enable_two_step_journal_confirmation: {
+    category: 'affine',
+    displayName: 'Enable Two Step Journal Confirmation',
+    description:
+      'When enabled, you must confirm the journal before you can create a new journal.',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_send_detailed_object_to_ai: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-ai-send-detailed-object.description',
+    configurable: true,
+    defaultState: true,
+  },
+  enable_battery_save_mode: {
+    category: 'affine',
+    displayName: 'Enable Battery Save Mode (Require Restart)',
+    description:
+      'Limit indexing and other compute-intensive tasks on this device, may experience longer loading time and latency in search and other features, in exchange for quietness.',
+    configurable: true,
+    defaultState: isMobile,
+  },
+  enable_disk_sync: {
+    category: 'affine',
+    displayName: 'Enable Disk Markdown Sync',
+    description: 'Sync workspace pages with Markdown files in a local folder.',
+    configurable: BUILD_CONFIG.isElectron && isCanaryBuild,
+    defaultState: false,
+  },
+  enable_mobile_database_editing: {
+    category: 'blocksuite',
+    bsFlag: 'enable_mobile_database_editing',
+    displayName: 'Enable Mobile Database Editing',
+    description: 'Enable mobile database editing',
+    configurable: isMobile,
+    defaultState: false,
+  },
+  enable_pdfmake_export: {
+    category: 'blocksuite',
+    bsFlag: 'enable_pdfmake_export',
+    displayName: 'Enable PDF Export',
+    description:
+      'Experimental export PDFs support, it may contain the wrong style.',
+    configurable: true,
     defaultState: false,
   },
 } satisfies { [key in string]: FlagInfo };

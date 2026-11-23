@@ -207,10 +207,7 @@ test.describe('frame panel', () => {
         end: { x: number; y: number },
         comparison: 'greaterThan' | 'lessThan'
       ) {
-        await page.mouse.move(start.x, start.y);
-        await page.mouse.down();
-        await page.mouse.move(end.x, end.y);
-        await page.mouse.up();
+        await dragBetweenCoords(page, start, end);
         await waitNextFrame(page);
 
         const newNoteRect = await edgelessNote.boundingBox();

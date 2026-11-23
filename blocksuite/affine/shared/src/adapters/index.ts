@@ -1,4 +1,5 @@
 export * from './attachment';
+export * from './clipboard';
 export {
   BlockHtmlAdapterExtension,
   type BlockHtmlAdapterMatcher,
@@ -21,19 +22,27 @@ export {
   type BlockMarkdownAdapterMatcher,
   BlockMarkdownAdapterMatcherIdentifier,
   FOOTNOTE_DEFINITION_PREFIX,
+  getCalloutEmoji,
+  getFootnoteDefinitionText,
+  IN_PARAGRAPH_NODE_CONTEXT_KEY,
   InlineDeltaToMarkdownAdapterExtension,
   type InlineDeltaToMarkdownAdapterMatcher,
   InlineDeltaToMarkdownAdapterMatcherIdentifier,
+  isCalloutNode,
+  isFootnoteDefinitionNode,
   isMarkdownAST,
   type Markdown,
   MarkdownAdapter,
   MarkdownAdapterFactoryExtension,
   MarkdownAdapterFactoryIdentifier,
+  type MarkdownAdapterPreprocessor,
   type MarkdownAST,
   MarkdownASTToDeltaExtension,
   type MarkdownASTToDeltaMatcher,
   MarkdownASTToDeltaMatcherIdentifier,
   MarkdownDeltaConverter,
+  MarkdownPreprocessorExtension,
+  MarkdownPreprocessorManager,
 } from './markdown';
 export * from './middlewares';
 export * from './mix-text';
@@ -52,6 +61,7 @@ export {
   NotionHtmlDeltaConverter,
 } from './notion-html';
 export * from './notion-text';
+export { PdfAdapter } from './pdf';
 export {
   BlockPlainTextAdapterExtension,
   type BlockPlainTextAdapterMatcher,

@@ -134,10 +134,12 @@ test.describe('auto-complete', () => {
       await edgelessCommonSetup(page);
       await createShapeElement(page, [0, 0], [100, 100], Shape.Square);
       await assertSelectedBound(page, [0, 0, 100, 100]);
-      await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
+      await triggerComponentToolbarAction(page, 'changeShapeColor');
       await changeShapeStrokeColor(page, 'MediumRed');
-      await triggerComponentToolbarAction(page, 'changeShapeFillColor');
       await changeShapeFillColor(page, 'HeavyGreen');
+      // Closes color pickers
+      await triggerComponentToolbarAction(page, 'changeShapeColor');
+
       await dragBetweenViewCoords(page, [120, 50], [200, 0]);
 
       const noteButton = getAutoCompletePanelButton(page, 'note');
@@ -189,7 +191,7 @@ test.describe('auto-complete', () => {
       await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
       await waitNextFrame(page);
 
-      await triggerComponentToolbarAction(page, 'changeNoteColor');
+      await triggerComponentToolbarAction(page, 'changeNoteStyle');
       await changeEdgelessNoteBackground(page, 'Red');
 
       // move to arrow icon

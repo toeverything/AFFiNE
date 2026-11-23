@@ -1,14 +1,16 @@
 import { test } from '@affine-test/kit/playwright';
 import {
+  assertTitle,
   clickEdgelessModeButton,
   clickView,
   createEdgelessNoteBlock,
   getEdgelessSelectedIds,
   getPageMode,
   getSelectedXYWH,
+  isDocTitleFocused,
   locateEditorContainer,
-  locateElementToolbar,
   locateModeSwitchButton,
+  locateToolbar,
   moveToView,
   resizeElementByHandle,
   toViewCoord,
@@ -27,6 +29,7 @@ import {
   type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { clickLocatorByRatio } from '@affine-test/kit/utils/utils';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { IVec } from '@blocksuite/affine/global/gfx';
 import type { NoteBlockModel } from '@blocksuite/affine/model';
@@ -158,11 +161,64 @@ test.describe('edgeless page block', () => {
     await expect(infoButton).toBeHidden();
   });
 
+  test('caret on focusing', async ({ page }) => {
+    const note = page.locator('affine-edgeless-note');
+    await note.click(); // focus note
+
+    // click on title's rear
+    const docTitle = note.locator('edgeless-page-block-title');
+    await expect(docTitle).toBeVisible();
+    await clickLocatorByRatio(page, docTitle, { xRatio: 0.9, yRatio: 0.8 });
+
+    const hasCaretInTitle = await page.evaluate(
+      hasCaretIn,
+      'edgeless-page-block-title'
+    );
+    expect(hasCaretInTitle).toBe(true);
+
+    await clickLocatorByRatio(page, note, { xRatio: 1.1, yRatio: 0.1 }); // cancel note focus
+    await note.click(); // focus note again
+
+    // click on firstParagraph's rear
+    const firstParagraph = note.locator('affine-paragraph:first-child');
+    await expect(firstParagraph).toBeVisible();
+
+    await clickLocatorByRatio(page, firstParagraph, {
+      xRatio: 0.9,
+      yRatio: 0.5,
+    });
+
+    const hasCaretInParagraph = await page.evaluate(
+      hasCaretIn,
+      'affine-paragraph'
+    );
+    expect(hasCaretInParagraph).toBe(true);
+
+    function hasCaretIn(elemSelector: string) {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0) return false;
+
+      const startContainer = sel.getRangeAt(0).startContainer;
+      const selContainer =
+        startContainer.nodeType === Node.TEXT_NODE
+          ? startContainer.parentElement
+          : startContainer;
+
+      if (!selContainer) return false;
+
+      const closestDstElem = (selContainer as HTMLElement)?.closest(
+        elemSelector
+      );
+      if (!closestDstElem) return false;
+      return true;
+    }
+  });
+
   test('page title should be editable', async ({ page }) => {
     const note = page.locator('affine-edgeless-note');
     const docTitle = note.locator('edgeless-page-block-title');
     await expect(docTitle).toBeVisible();
-    await expect(docTitle).toHaveText(title);
+    await assertTitle(page, title);
 
     await note.dblclick();
     await docTitle.click();
@@ -170,11 +226,11 @@ test.describe('edgeless page block', () => {
     // clear the title
     await selectAllByKeyboard(page);
     await pressBackspace(page);
-    await expect(docTitle).toHaveText('');
+    await assertTitle(page, '');
 
     // type new title
     await type(page, 'New Title');
-    await expect(docTitle).toHaveText('New Title');
+    await assertTitle(page, 'New Title');
 
     // cursor could move between doc title and note content
     await page.keyboard.press('ArrowDown');
@@ -186,10 +242,10 @@ test.describe('edgeless page block', () => {
 
     await page.keyboard.press('ArrowUp');
     await type(page, 'yy');
-    await expect(docTitle).toHaveText('yyNew Title');
+    await assertTitle(page, 'yyNew Title');
 
     await pressEnter(page);
-    await expect(docTitle).toHaveText('yy');
+    await assertTitle(page, 'yy');
     await expect(paragraphs).toHaveCount(numParagraphs + 1);
     await expect(paragraphs.nth(0)).toHaveText('New Title');
     await expect(paragraphs.nth(1)).toHaveText('xxHello');
@@ -201,8 +257,8 @@ test.describe('edgeless note element toolbar', () => {
     page,
   }) => {
     await selectAllByKeyboard(page);
-    const toolbar = locateElementToolbar(page);
-    const autoHeight = toolbar.getByTestId('edgeless-note-auto-height');
+    const toolbar = locateToolbar(page);
+    const autoHeight = toolbar.getByTestId('auto-height');
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await expect(toolbar).toBeVisible();
@@ -218,8 +274,8 @@ test.describe('edgeless note element toolbar', () => {
     await clickView(page, [0, 0]);
     await clickView(page, [100, 100]);
 
-    const toolbar = locateElementToolbar(page);
-    const autoHeight = toolbar.getByTestId('edgeless-note-auto-height');
+    const toolbar = locateToolbar(page);
+    const autoHeight = toolbar.getByTestId('auto-height');
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await expect(toolbar).toBeVisible();
@@ -234,38 +290,38 @@ test.describe('edgeless note element toolbar', () => {
     await createEdgelessNoteBlock(page, [100, 100]);
     await page.waitForSelector('.affine-paragraph-placeholder.visible');
     await page.keyboard.type('Note 2');
-    await clickView(page, [0, 0]);
+    await clickView(page, [0, 300]);
     await clickView(page, [100, 100]);
 
-    const toolbar = locateElementToolbar(page);
+    const toolbar = locateToolbar(page);
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await displayInPage.click();
     await locateModeSwitchButton(page, 'page').click();
-    expect(notes).toHaveCount(2);
+    await expect(notes).toHaveCount(2);
 
     await clickEdgelessModeButton(page);
     await clickView(page, [100, 100]);
     await displayInPage.click();
     await locateModeSwitchButton(page, 'page').click();
     await waitForEditorLoad(page);
-    expect(notes).toHaveCount(1);
+    await expect(notes).toHaveCount(1);
 
-    const undoButton = page.getByTestId('undo-display-in-page');
+    const undoButton = page.getByTestId('notification-card-undo');
     const viewTocButton = page.getByTestId('view-in-toc');
 
     await clickEdgelessModeButton(page);
     await waitForEditorLoad(page);
     await clickView(page, [100, 100]);
     await displayInPage.click();
-    expect(undoButton).toBeVisible();
-    expect(viewTocButton).toBeVisible();
+    await expect(undoButton).toBeVisible();
+    await expect(viewTocButton).toBeVisible();
 
     await undoButton.click();
     await expect(undoButton).toBeHidden();
     await locateModeSwitchButton(page, 'page').click();
     await waitForEditorLoad(page);
-    expect(notes).toHaveCount(1);
+    await expect(notes).toHaveCount(1);
 
     await clickEdgelessModeButton(page);
     await waitForEditorLoad(page);
@@ -273,7 +329,7 @@ test.describe('edgeless note element toolbar', () => {
     await displayInPage.click();
     await undoByKeyboard(page);
     await page.waitForTimeout(500);
-    expect(
+    await expect(
       undoButton,
       'the toast should be hidden immediately when undo by keyboard'
     ).toBeHidden();
@@ -285,7 +341,7 @@ test.describe('edgeless note element toolbar', () => {
     const highlightNoteCards = toc.locator(
       'affine-outline-note-card > [data-status="selected"]'
     );
-    expect(highlightNoteCards).toHaveCount(1);
+    await expect(highlightNoteCards).toHaveCount(1);
   });
 
   test('note edgeless styles', async ({ page }) => {
@@ -300,7 +356,7 @@ test.describe('edgeless note element toolbar', () => {
       }, noteId);
     };
 
-    const toolbar = locateElementToolbar(page);
+    const toolbar = locateToolbar(page);
 
     await selectAllByKeyboard(page);
     const noteId = (await getEdgelessSelectedIds(page))[0];
@@ -314,8 +370,9 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Shadow style' }).click();
-    await toolbar.getByTestId('affine-note-shadow-film').click();
+    await toolbar.getByRole('button', { name: 'Note Style' }).click();
+    const noteStylePanel = page.locator('edgeless-note-style-panel');
+    await noteStylePanel.getByTestId('affine-note-shadow-film').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -326,10 +383,11 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Border style' }).click();
-    await toolbar.locator('.mode-solid').click();
-    await toolbar.getByRole('button', { name: 'Border style' }).click();
-    await toolbar.locator('edgeless-line-width-panel').getByLabel('8').click();
+    const borderStylePanel = noteStylePanel.getByTestId(
+      'affine-note-border-style-panel'
+    );
+    await borderStylePanel.locator('.mode-solid').click();
+    await borderStylePanel.locator('affine-slider').getByLabel('8').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -340,8 +398,10 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Corners' }).click();
-    await toolbar.locator('edgeless-size-panel').getByText('Large').click();
+    const cornerPanel = noteStylePanel.getByTestId(
+      'affine-note-corner-radius-panel'
+    );
+    await cornerPanel.locator('affine-slider').getByLabel('24').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -351,6 +411,8 @@ test.describe('edgeless note element toolbar', () => {
         shadowType: '--affine-note-shadow-film',
       },
     });
+
+    await pressEscape(page);
 
     const headerToolbar = page.getByTestId('edgeless-page-block-header');
     const toggleButton = headerToolbar.getByTestId(
@@ -420,4 +482,54 @@ test.describe('note block rendering', () => {
       'should show collapsed content when dragging is finished'
     ).toHaveCSS('overflow-y', 'visible');
   });
+
+  test('cursor should not jump to page block title from note block', async ({
+    page,
+  }) => {
+    await createEdgelessNoteBlock(page, [50, 50]);
+    await pressBackspace(page);
+    expect(await isDocTitleFocused(page)).toBeFalsy();
+  });
+});
+
+test('should convert note block to linked doc when clicking turn into linked doc button', async ({
+  page,
+}) => {
+  await createEdgelessNoteBlock(page, [100, 100]);
+  await type(page, '# Two Questions');
+  await pressEnter(page);
+  await type(page, 'Is this the real life?');
+  await pressEnter(page);
+  await type(page, 'Is this just fantasy?');
+
+  await pressEscape(page, 3);
+
+  const note = page.locator('affine-edgeless-note', {
+    hasText: 'Is this just fantasy?',
+  });
+  await note.click();
+  const toolbar = locateToolbar(page);
+  const moreBtn = toolbar.getByRole('button', { name: 'More' });
+  await moreBtn.click();
+  const turnIntoLinkedDocBtn = toolbar.getByRole('button', {
+    name: 'Turn into linked doc',
+  });
+  await turnIntoLinkedDocBtn.click();
+  const inputModal = page.getByRole('dialog').locator('input');
+  await expect(inputModal).toHaveValue('Two Questions');
+  await type(page, 'Bohemian Rhapsody');
+
+  const confirmBtn = page.getByTestId('confirm-modal-confirm');
+  await confirmBtn.click();
+
+  const syncedDoc = page.locator('affine-embed-edgeless-synced-doc-block');
+  await expect(syncedDoc).toBeVisible();
+
+  const noteInSyncedDoc = syncedDoc.locator('affine-note');
+  await expect(noteInSyncedDoc).toBeVisible();
+
+  const paragraphs = noteInSyncedDoc.locator('affine-paragraph');
+  await expect(paragraphs.nth(0)).toContainText('Two Questions');
+  await expect(paragraphs.nth(1)).toContainText('Is this the real life?');
+  await expect(paragraphs.nth(2)).toContainText('Is this just fantasy?');
 });

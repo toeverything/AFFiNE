@@ -47,8 +47,11 @@ export function getBuildConfig(
         changelogUrl: 'https://affine.pro/what-is-new',
         downloadUrl: 'https://affine.pro/download',
         pricingUrl: 'https://affine.pro/pricing',
+        discordUrl: 'https://affine.pro/redirect/discord',
+        requestLicenseUrl: 'https://affine.pro/redirect/license',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
+        SENTRY_DSN: process.env.SENTRY_DSN ?? '',
       };
     },
     get beta() {

@@ -39,7 +39,7 @@ export const showButton = style({
   height: '28px',
   borderRadius: '8px',
   border: '1px solid ' + cssVar('--affine-border-color'),
-  backgroundColor: cssVar('--affine-white'),
+  backgroundColor: cssVarV2('button/secondary'),
   textAlign: 'center',
   fontSize: '12px',
   lineHeight: '28px',
@@ -108,6 +108,13 @@ export const linkPreview = style({
 
 globalStyle(`${linkPreview} *`, {
   cursor: 'default',
+});
+
+export const notFound = style({
+  color: cssVarV2('text/secondary'),
+  fontSize: '12px',
+  lineHeight: '16px',
+  textAlign: 'center',
 });
 
 export const linkPreviewRenderer = style({

@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import {
   InformationFillDuotoneIcon,
   SingleSelectCheckSolidIcon,
@@ -35,7 +36,16 @@ export function notify(notification: Notification, options?: ExternalToast) {
   }, options);
 }
 
-notify.error = (notification: Notification, options?: ExternalToast) => {
+notify.error = (
+  notification: Notification | UserFriendlyError,
+  options?: ExternalToast
+) => {
+  if (notification instanceof UserFriendlyError) {
+    notification = {
+      error: notification,
+    };
+  }
+
   return notify(
     {
       icon: <InformationFillDuotoneIcon />,

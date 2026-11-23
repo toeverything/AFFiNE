@@ -40,7 +40,7 @@ function formatWithTimezone(date: Date, timeZone: string = 'Asia/Tokyo') {
   const tokyoDate = date.toLocaleString('en-US', { timeZone });
   const year = tokyoDate.split(',')[0].split('/')[2];
   const month = tokyoDate.split(',')[0].split('/')[0].padStart(2, '0');
-  const day = tokyoDate.split(',')[0].split('/')[1];
+  const day = tokyoDate.split(',')[0].split('/')[1].padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -577,9 +577,10 @@ test.describe('slash search', () => {
 
     // search should active the first item
     await type(page, 'co');
-    await expect(slashItems).toHaveCount(3);
+    await expect(slashItems).toHaveCount(5);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Code Block']);
+    await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
     await expect(slashItems.nth(0)).toHaveAttribute('hover', 'true');
 
     await type(page, 'p');
@@ -588,9 +589,10 @@ test.describe('slash search', () => {
 
     // assert backspace works
     await pressBackspace(page);
-    await expect(slashItems).toHaveCount(3);
+    await expect(slashItems).toHaveCount(5);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Code Block']);
+    await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
     await expect(slashItems.nth(0)).toHaveAttribute('hover', 'true');
   });
 
@@ -606,14 +608,15 @@ test.describe('slash search', () => {
     await expect(slashMenu).toBeVisible();
 
     await type(page, 'c');
-    await expect(slashItems).toHaveCount(8);
+    await expect(slashItems).toHaveCount(12);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Copy']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText(['Italic']);
-    await expect(slashItems.nth(2).locator('.text')).toHaveText(['New Doc']);
-    await expect(slashItems.nth(3).locator('.text')).toHaveText(['Duplicate']);
-    await expect(slashItems.nth(4).locator('.text')).toHaveText(['Code Block']);
-    await expect(slashItems.nth(5).locator('.text')).toHaveText(['Linked Doc']);
-    await expect(slashItems.nth(6).locator('.text')).toHaveText(['Attachment']);
+    await expect(slashItems.nth(2).locator('.text')).toHaveText(['Callout']);
+    await expect(slashItems.nth(3).locator('.text')).toHaveText(['New Doc']);
+    await expect(slashItems.nth(4).locator('.text')).toHaveText(['Duplicate']);
+    await expect(slashItems.nth(5).locator('.text')).toHaveText(['Code Block']);
+    await expect(slashItems.nth(6).locator('.text')).toHaveText(['Linked Doc']);
+    await expect(slashItems.nth(7).locator('.text')).toHaveText(['Attachment']);
     await type(page, 'b');
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Code Block']);
   });
@@ -629,10 +632,13 @@ test.describe('slash search', () => {
 
     const slashItems = slashMenu.locator('icon-button');
     await type(page, 'database');
-    await expect(slashItems).toHaveCount(2);
+    await expect(slashItems).toHaveCount(3);
     await expect(slashItems.nth(0).locator('.text')).toHaveText(['Table View']);
     await expect(slashItems.nth(1).locator('.text')).toHaveText([
       'Kanban View',
+    ]);
+    await expect(slashItems.nth(2).locator('.text')).toHaveText([
+      'Calendar View',
     ]);
     await type(page, 'v');
     await expect(slashItems).toHaveCount(0);
@@ -840,4 +846,22 @@ test('delete block by slash menu should remove children', async ({
   await assertRichTexts(page, ['123', '456', '789']);
   await redoByKeyboard(page);
   await assertRichTexts(page, ['123']);
+});
+
+test('should slash menu can trigger linked doc popover', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  await type(page, '/linked');
+  await pressEnter(page);
+  await expect(page.locator('.linked-doc-popover')).toBeVisible();
+  await assertRichTexts(page, ['@']);
+
+  await type(page, 'doc');
+  await pressEnter(page);
+  await expect(page.locator('affine-reference')).toBeVisible();
+  await expect(
+    page.locator('affine-reference .affine-reference-title')
+  ).toHaveText('doc');
 });

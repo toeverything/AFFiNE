@@ -2,12 +2,12 @@ import {
   type GfxCommonBlockProps,
   GfxCompatible,
   type GfxElementGeometry,
-} from '@blocksuite/block-std/gfx';
+} from '@blocksuite/std/gfx';
 import { BlockModel } from '@blocksuite/store';
 
 import { type EmbedCardStyle } from '../../../utils/index.js';
 
-export const EmbedIframeStyles: EmbedCardStyle[] = ['figma'] as const;
+export const EmbedIframeStyles = ['figma'] as const satisfies EmbedCardStyle[];
 
 export type EmbedIframeBlockProps = {
   url: string; // the original url that user input

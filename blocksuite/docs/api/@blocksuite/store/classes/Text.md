@@ -1,10 +1,10 @@
-[**@blocksuite/store**](../../../@blocksuite/store/README.md)
+[**BlockSuite API Documentation**](../../../README.md)
 
 ***
 
 [BlockSuite API Documentation](../../../README.md) / [@blocksuite/store](../README.md) / Text
 
-# Class: Text
+# Class: Text\<TextAttributes\>
 
 Text is an abstraction of Y.Text.
 It provides useful methods to manipulate the text content.
@@ -22,23 +22,29 @@ text.split(7, 1);
 
 Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
+## Type Parameters
+
+### TextAttributes
+
+`TextAttributes` *extends* `BaseTextAttributes` = `BaseTextAttributes`
+
 ## Constructors
 
-### new Text()
+### Constructor
 
-> **new Text**(`input`?): `Text`
+> **new Text**\<`TextAttributes`\>(`input?`): `Text`\<`TextAttributes`\>
 
 #### Parameters
 
 ##### input?
 
-The input can be a string, a Y.Text instance, or an array of DeltaInsert.
+`string` \| `YText` \| `DeltaInsert`\<`TextAttributes`\>[]
 
-`string` | `YText` | `DeltaInsert`[]
+The input can be a string, a Y.Text instance, or an array of DeltaInsert.
 
 #### Returns
 
-`Text`
+`Text`\<`TextAttributes`\>
 
 ## Accessors
 
@@ -97,13 +103,13 @@ Clear the text content.
 
 ### clone()
 
-> **clone**(): `Text`
+> **clone**(): `Text`\<\{ `bold?`: `true` \| `null`; `code?`: `true` \| `null`; `italic?`: `true` \| `null`; `link?`: `string` \| `null`; `strike?`: `true` \| `null`; `underline?`: `true` \| `null`; \}\>
 
 Clone the text to a new Text instance.
 
 #### Returns
 
-`Text`
+`Text`\<\{ `bold?`: `true` \| `null`; `code?`: `true` \| `null`; `italic?`: `true` \| `null`; `link?`: `string` \| `null`; `strike?`: `true` \| `null`; `underline?`: `true` \| `null`; \}\>
 
 A new Text instance.
 
@@ -176,7 +182,7 @@ text.format(7, 1, { bold: true });
 
 ### insert()
 
-> **insert**(`content`, `index`, `attributes`?): `void`
+> **insert**(`content`, `index`, `attributes?`): `void`
 
 Insert content at the specified index.
 
@@ -241,7 +247,7 @@ text.join(other);
 
 ### replace()
 
-> **replace**(`index`, `length`, `content`, `attributes`?): `void`
+> **replace**(`index`, `length`, `content`, `attributes?`): `void`
 
 Replace the text content with a new content.
 
@@ -286,7 +292,7 @@ text.replace(7, 1, ' blocksuite');
 
 ### sliceToDelta()
 
-> **sliceToDelta**(`begin`, `end`?): `DeltaOperation`[]
+> **sliceToDelta**(`begin`, `end?`): `DeltaOperation`[]
 
 Slice the text to a delta.
 
@@ -314,7 +320,7 @@ The delta of the sliced text.
 
 ### split()
 
-> **split**(`index`, `length`): `Text`
+> **split**(`index`, `length?`): `Text`
 
 Split the text into another Text.
 
@@ -326,7 +332,7 @@ Split the text into another Text.
 
 The index to split.
 
-##### length
+##### length?
 
 `number` = `0`
 

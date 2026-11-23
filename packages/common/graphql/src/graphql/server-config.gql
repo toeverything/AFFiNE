@@ -1,0 +1,17 @@
+#import './fragments/password-limits.gql'
+#import './fragments/credentials-requirement.gql'
+
+query serverConfig {
+  serverConfig {
+    version
+    baseUrl
+    name
+    features
+    type
+    initialized
+    calendarProviders
+    credentialsRequirement {
+      ...CredentialsRequirements
+    }
+  }
+}

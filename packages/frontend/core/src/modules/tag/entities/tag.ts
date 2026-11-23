@@ -64,14 +64,5 @@ export class Tag extends Entity<{ id: string }> {
     });
   }
 
-  /**
-   * @deprecated performance issue here, use with caution until it is fixed
-   * @fixme(EYHN): page.meta$ has performance issue
-   */
-  readonly pageIds$ = LiveData.computed(get => {
-    const pages = get(this.docs.list.docs$);
-    return pages
-      .filter(page => get(page.meta$).tags?.includes(this.id))
-      .map(page => page.id);
-  });
+  readonly pageIds$ = LiveData.from(this.store.watchTagPageIds(this.id), []);
 }

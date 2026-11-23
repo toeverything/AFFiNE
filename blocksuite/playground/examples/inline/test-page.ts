@@ -1,14 +1,16 @@
 import '@shoelace-style/shoelace';
 
-import { ShadowlessElement } from '@blocksuite/affine/block-std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import { effects } from '@blocksuite/affine/std/effects';
 import {
   type AttributeRenderer,
+  InlineEditor,
+  ZERO_WIDTH_FOR_EMBED_NODE,
+} from '@blocksuite/affine/std/inline';
+import {
   type BaseTextAttributes,
   baseTextAttributes,
-  InlineEditor,
-  ZERO_WIDTH_NON_JOINER,
-} from '@blocksuite/affine/inline';
-import { effects } from '@blocksuite/affine/inline/effects';
+} from '@blocksuite/affine/store';
 import { effect } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
@@ -60,7 +62,7 @@ const attributeRenderer: AttributeRenderer = ({ delta, selected }) => {
         border: selected ? '1px solid #eb763a' : '',
         background: 'rgba(135,131,120,0.15)',
       })}
-      >@flrande<v-text .str=${ZERO_WIDTH_NON_JOINER}></v-text
+      >@flrande<v-text .str=${ZERO_WIDTH_FOR_EMBED_NODE}></v-text
     ></span>`;
   }
 
@@ -224,6 +226,13 @@ export class CustomToolbar extends ShadowlessElement {
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
   `;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('pointerdown', e => {
+      e.preventDefault();
+    });
+  }
 
   override firstUpdated() {
     const boldButton = this.querySelector('.bold');

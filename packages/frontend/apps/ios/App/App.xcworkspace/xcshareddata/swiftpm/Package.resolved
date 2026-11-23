@@ -3,28 +3,82 @@
     {
       "identity" : "apollo-ios",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apollographql/apollo-ios.git",
+      "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
-        "revision" : "9aa748d6f0526a744d49d59a2383dc7fdf9d645b",
-        "version" : "1.18.0"
+        "revision" : "09a62e377f4e9054b5d3ee7d702984094e69f661",
+        "version" : "1.25.7"
       }
     },
     {
-      "identity" : "msdisplaylink",
+      "identity" : "eventsource",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/MSDisplayLink",
+      "location" : "https://github.com/Recouse/EventSource",
       "state" : {
-        "revision" : "c2fcd28cb99300d83acc30860ce252ef97c20b61",
-        "version" : "1.1.1"
+        "revision" : "2fc19773dac78904c6770712ae9e780cf049bff1",
+        "version" : "0.1.9"
       }
     },
     {
-      "identity" : "networkimage",
+      "identity" : "highlightr",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalezreal/NetworkImage",
+      "location" : "https://github.com/raspu/Highlightr",
       "state" : {
-        "revision" : "2849f5323265386e200484b0d0f896e73c3411b9",
-        "version" : "6.0.1"
+        "revision" : "05e7fcc63b33925cd0c1faaa205cdd5681e7bbef",
+        "version" : "2.3.0"
+      }
+    },
+    {
+      "identity" : "listviewkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ListViewKit",
+      "state" : {
+        "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
+        "version" : "1.1.6"
+      }
+    },
+    {
+      "identity" : "litext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/Litext",
+      "state" : {
+        "revision" : "a2ed9b63ae623a20591effc72f9db7d04e41a64c",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "lrucache",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nicklockwood/LRUCache",
+      "state" : {
+        "revision" : "cb5b2bd0da83ad29c0bec762d39f41c8ad0eaf3e",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "markdownview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/MarkdownView",
+      "state" : {
+        "revision" : "e0cd01cb1fcaf47c2aeb14625065773846f7136a",
+        "version" : "3.9.1"
+      }
+    },
+    {
+      "identity" : "purchases-ios-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RevenueCat/purchases-ios-spm.git",
+      "state" : {
+        "revision" : "e45bb84b726885492ce4e7ee94ddb252d171a205",
+        "version" : "5.92.0"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
       }
     },
     {
@@ -32,17 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/SpringInterpolation",
       "state" : {
-        "revision" : "f9d1ee3d2466bdb00fd0ade7f256ed20229c8413",
-        "version" : "1.3.0"
-      }
-    },
-    {
-      "identity" : "sqlite.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stephencelis/SQLite.swift.git",
-      "state" : {
-        "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
-        "version" : "0.15.3"
+        "revision" : "cdb556516daa9b43c16aae9436dd39e19ff930fd",
+        "version" : "1.4.0"
       }
     },
     {
@@ -50,26 +95,35 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "3ccff77b2dc5b96b77db3da0d68d28068593fa53",
-        "version" : "0.5.0"
+        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
+        "version" : "0.7.1"
       }
     },
     {
-      "identity" : "swift-eventsource",
+      "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LaunchDarkly/swift-eventsource.git",
+      "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "57051701c58a93603ffa2051f8e9cf0c8cff7814",
-        "version" : "3.3.0"
+        "revision" : "f96b909e1a9e469620bc5037c1e24e00153f376f",
+        "version" : "1.7.5"
       }
     },
     {
-      "identity" : "swift-markdown-ui",
+      "identity" : "swifterswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gonzalezreal/swift-markdown-ui",
+      "location" : "https://github.com/SwifterSwift/SwifterSwift.git",
       "state" : {
-        "revision" : "5f613358148239d0292c0cef674a3c2314737f9e",
-        "version" : "2.4.1"
+        "revision" : "39fa28c90a3ebe3d53f80289304fd880cf2c42d0",
+        "version" : "6.2.0"
+      }
+    },
+    {
+      "identity" : "swiftmath",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mgriebling/SwiftMath",
+      "state" : {
+        "revision" : "fa8244ed032f4a1ade4cb0571bf87d2f1a9fd2d7",
+        "version" : "1.7.3"
       }
     }
   ],

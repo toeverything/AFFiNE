@@ -49,11 +49,8 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
 
   readonly blockMatchers: BlockPlainTextAdapterMatcher[];
 
-  constructor(
-    job: Transformer,
-    readonly provider: ServiceProvider
-  ) {
-    super(job);
+  constructor(job: Transformer, provider: ServiceProvider) {
+    super(job, provider);
     const blockMatchers = Array.from(
       provider.getAll(BlockPlainTextAdapterMatcherIdentifier).values()
     );

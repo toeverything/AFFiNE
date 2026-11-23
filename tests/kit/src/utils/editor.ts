@@ -1,11 +1,23 @@
-import type * as BlocksuiteEffects from '@blocksuite/affine/effects';
+import '@blocksuite/affine/effects';
+
 import type { IVec, XYWH } from '@blocksuite/affine/global/gfx';
+import type { CodeBlockComponent } from '@blocksuite/affine-block-code';
+import type { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
+import type { BlockComponent } from '@blocksuite/std';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-declare type _GLOBAL_ = typeof BlocksuiteEffects;
+import { dblclickLocatorByRatio } from './utils';
 
-const EDGELESS_ELEMENT_TOOLBAR_WIDGET = 'edgeless-element-toolbar-widget';
 const EDGELESS_TOOLBAR_WIDGET = 'edgeless-toolbar-widget';
+export const ZERO_WIDTH_FOR_EMPTY_LINE =
+  process.env.BROWSER === 'webkit' ? '\u200C' : '\u200B';
+
+export function inlineEditorInnerTextToString(innerText: string): string {
+  return innerText.replace(ZERO_WIDTH_FOR_EMPTY_LINE, '').trim();
+}
+
+const PARAGRAPH_BLOCK_LOCATOR = 'affine-paragraph';
+const CODE_BLOCK_LOCATOR = 'affine-code';
 
 export function locateModeSwitchButton(
   page: Page,
@@ -55,15 +67,34 @@ export function locateEditorContainer(page: Page, editorIndex = 0) {
   return page.locator('[data-affine-editor-container]').nth(editorIndex);
 }
 
+export async function dblclickNoteBody(page: Page) {
+  const note = page.locator('affine-edgeless-note');
+  await dblclickLocatorByRatio(page, note, { yRatio: 0.7 });
+}
+
 export function locateDocTitle(page: Page, editorIndex = 0) {
   return locateEditorContainer(page, editorIndex).locator('doc-title');
+}
+
+export function isDocTitleFocused(page: Page, editorIndex = 0) {
+  return locateDocTitle(page, editorIndex)
+    .locator('.inline-editor')
+    .evaluate(inlineEditor => {
+      return document.activeElement === inlineEditor;
+    });
 }
 
 export async function focusDocTitle(page: Page, editorIndex = 0) {
   await locateDocTitle(page, editorIndex).locator('.inline-editor').focus();
 }
 
-// ================== Page ==================
+export async function assertTitle(page: Page, text: string) {
+  const title = locateDocTitle(page);
+  const inlineEditor = title.locator('.doc-title-container').first();
+  const vText = inlineEditorInnerTextToString(await inlineEditor.innerText());
+  expect(vText).toBe(text);
+}
+
 export function locateToolbar(page: Page, editorIndex = 0) {
   return locateEditorContainer(page, editorIndex).locator(
     'affine-toolbar-widget editor-toolbar'
@@ -110,6 +141,17 @@ export async function getViewportCenter(page: Page, editorIndex = 0) {
   });
 }
 
+export async function getViewportBound(page: Page, editorIndex = 0) {
+  const container = locateEditorContainer(page, editorIndex);
+  return container.evaluate(container => {
+    const root = container.querySelector('affine-edgeless-root');
+    if (!root) {
+      throw new Error('Edgeless root not found');
+    }
+    return root.gfx.viewport.viewportBounds.toXYWH();
+  });
+}
+
 export async function setViewportCenter(
   page: Page,
   center: IVec,
@@ -134,6 +176,17 @@ export async function setViewportZoom(page: Page, zoom = 1, editorIndex = 0) {
     }
     root.gfx.viewport.setZoom(zoom);
   }, zoom);
+}
+
+export async function fitViewportToContent(page: Page, editorIndex = 0) {
+  const container = locateEditorContainer(page, editorIndex);
+  return container.evaluate(container => {
+    const root = container.querySelector('affine-edgeless-root');
+    if (!root) {
+      throw new Error('Edgeless root not found');
+    }
+    root.gfx.fitToScreen();
+  });
 }
 
 /**
@@ -201,11 +254,12 @@ export async function dragView(
   to: IVec,
   editorIndex = 0
 ) {
+  const steps = 10;
   const [x1, y1] = await toViewCoord(page, from, editorIndex);
   const [x2, y2] = await toViewCoord(page, to, editorIndex);
   await page.mouse.move(x1, y1);
   await page.mouse.down();
-  await page.mouse.move(x2, y2);
+  await page.mouse.move(x2, y2, { steps });
   await page.mouse.up();
 }
 
@@ -220,13 +274,14 @@ type EdgelessTool =
   | 'pan'
   | 'note'
   | 'shape'
+  | 'pen'
   | 'brush'
+  | 'highlighter'
   | 'eraser'
   | 'text'
   | 'connector'
   | 'frame'
-  | 'frameNavigator'
-  | 'lasso';
+  | 'frameNavigator';
 
 /**
  * @param type the type of the tool in the toolbar
@@ -244,19 +299,24 @@ export async function locateEdgelessToolButton(
     default: '.edgeless-default-button',
     pan: '.edgeless-default-button',
     shape: '.edgeless-shape-button',
+    pen: '.edgeless-pen-button',
     brush: '.edgeless-brush-button',
+    highlighter: '.edgeless-highlighter-button',
     eraser: '.edgeless-eraser-button',
     text: '.edgeless-mindmap-button',
     connector: '.edgeless-connector-button',
     note: '.edgeless-note-button',
     frame: '.edgeless-frame-button',
     frameNavigator: '.edgeless-frame-navigator-button',
-    lasso: '.edgeless-lasso-button',
   }[type];
 
   let buttonType;
   switch (type) {
     case 'brush':
+    case 'highlighter':
+      buttonType = 'edgeless-tool-icon-button';
+      break;
+    case 'pen':
     case 'text':
     case 'eraser':
     case 'shape':
@@ -351,9 +411,29 @@ export async function setEdgelessTool(
       }
       break;
     }
-    case 'lasso':
-    case 'note':
     case 'brush':
+    case 'highlighter': {
+      const penButton = await locateEdgelessToolButton(
+        page,
+        'pen',
+        false,
+        editorIndex
+      );
+      await penButton.click();
+
+      await page.waitForTimeout(250);
+
+      const button = await locateEdgelessToolButton(
+        page,
+        tool,
+        false,
+        editorIndex
+      );
+      await button.click();
+
+      break;
+    }
+    case 'note':
     case 'eraser':
     case 'frame':
     case 'connector': {
@@ -389,6 +469,10 @@ export async function resizeElementByHandle(
   page: Page,
   delta: IVec,
   corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
     | 'top-left'
     | 'top-right'
     | 'bottom-right'
@@ -407,10 +491,23 @@ export async function resizeElementByHandle(
   await dragView(page, from, to, editorIndex);
 }
 
-export function locateElementToolbar(page: Page, editorIndex = 0) {
-  return locateEditorContainer(page, editorIndex).locator(
-    EDGELESS_ELEMENT_TOOLBAR_WIDGET
-  );
+export async function scaleElementByHandle(
+  page: Page,
+  delta: IVec,
+  corner:
+    | 'right'
+    | 'left'
+    | 'top'
+    | 'bottom'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-right'
+    | 'bottom-left' = 'top-left',
+  editorIndex = 0
+) {
+  await page.keyboard.down('Shift');
+  await resizeElementByHandle(page, delta, corner, editorIndex);
+  await page.keyboard.up('Shift');
 }
 
 /**
@@ -424,7 +521,7 @@ export async function createEdgelessNoteBlock(
 ) {
   await setEdgelessTool(page, 'note', undefined, editorIndex);
   if (position.length === 4) {
-    dragView(
+    await dragView(
       page,
       [position[0], position[1]],
       [position[0] + position[2], position[1] + position[3]]
@@ -432,4 +529,26 @@ export async function createEdgelessNoteBlock(
   } else {
     await clickView(page, position, editorIndex);
   }
+}
+
+// Helper function to get block ids
+export async function getBlockIds<T extends BlockComponent>(
+  page: Page,
+  selector: string
+) {
+  const blocks = page.locator(selector);
+  const blockIds = await blocks.evaluateAll((blocks: T[]) =>
+    blocks.map(block => block.model.id)
+  );
+  return { blockIds };
+}
+
+// Helper functions using the generic getBlockIds
+export async function getParagraphIds(page: Page) {
+  return getBlockIds<ParagraphBlockComponent>(page, PARAGRAPH_BLOCK_LOCATOR);
+}
+
+// Helper functions using the generic getBlockIds
+export async function getCodeBlockIds(page: Page) {
+  return getBlockIds<CodeBlockComponent>(page, CODE_BLOCK_LOCATOR);
 }

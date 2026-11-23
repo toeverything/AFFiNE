@@ -1,6 +1,6 @@
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
 import type { SurfaceBlockModel } from '@blocksuite/affine/blocks/surface';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import type { PointLocation } from '@blocksuite/global/gfx';
 import { Schema } from '@blocksuite/store';
 import { beforeEach, expect, test } from 'vitest';

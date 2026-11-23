@@ -1,4 +1,3 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
   AIDoneIcon,
   CopyIcon,
@@ -6,6 +5,7 @@ import {
 } from '@blocksuite/affine/components/icons';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { baseTheme } from '@toeverything/theme';
 import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -71,26 +71,33 @@ export class AIFinishTip extends WithDisposable(LitElement) {
     return html`<div class="finish-tip">
       ${WarningIcon}
       <div class="text">AI outputs can be misleading or wrong</div>
-      ${this.copy?.allowed
-        ? html`<div class="right">
-            ${this.copied
-              ? html`<div class="copied">${AIDoneIcon}</div>`
-              : html`<div
-                  class="copy"
-                  @click=${async () => {
-                    this.copied = !!(await this.copy?.onCopy());
-                    if (this.copied) {
-                      this.host.std
-                        .getOptional(NotificationProvider)
-                        ?.toast('Copied to clipboard');
-                    }
-                  }}
-                >
-                  ${CopyIcon}
-                  <affine-tooltip>Copy</affine-tooltip>
-                </div>`}
-          </div>`
-        : nothing}
+      ${
+        this.copy?.allowed
+          ? html`<div class="right">
+              ${
+                this.copied
+                  ? html`<div class="copied" data-testid="answer-copied">
+                      ${AIDoneIcon}
+                    </div>`
+                  : html`<div
+                      class="copy"
+                      data-testid="answer-copy-button"
+                      @click=${async () => {
+                        this.copied = !!(await this.copy?.onCopy());
+                        if (this.copied) {
+                          this.host.std
+                            .getOptional(NotificationProvider)
+                            ?.toast('Copied to clipboard');
+                        }
+                      }}
+                    >
+                      ${CopyIcon}
+                      <affine-tooltip>Copy</affine-tooltip>
+                    </div>`
+              }
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 

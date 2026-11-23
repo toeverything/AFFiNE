@@ -1,4 +1,4 @@
-import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const workbenchRootContainer = style({
@@ -24,7 +24,7 @@ export const workbenchSidebar = style({
       borderRadius: 6,
     },
     [`&[data-client-border=false]`]: {
-      borderLeft: `0.5px solid ${cssVar('borderColor')}`,
+      borderLeft: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
     },
   },
 });

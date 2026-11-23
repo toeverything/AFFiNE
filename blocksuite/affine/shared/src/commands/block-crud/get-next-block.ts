@@ -1,8 +1,4 @@
-import type {
-  BlockComponent,
-  BlockStdScope,
-  Command,
-} from '@blocksuite/block-std';
+import type { BlockComponent, BlockStdScope, Command } from '@blocksuite/std';
 
 import { getNextContentBlock } from '../../utils/index.js';
 

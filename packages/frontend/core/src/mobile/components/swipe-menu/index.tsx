@@ -1,5 +1,5 @@
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
-import anime from 'animejs';
+import { animate as anime, eases } from 'animejs';
 import clsx from 'clsx';
 import {
   type HTMLAttributes,
@@ -53,7 +53,7 @@ const animate: TickFunc<[number]> = (content, menu, options, to) => {
     { deltaX },
     {
       set(target, key, value) {
-        if (key !== 'deltaX') return false;
+        if (key !== 'deltaX') return true;
         target.deltaX = value;
         tick(content, menu, { ...options, deltaX: value });
         return true;
@@ -61,11 +61,10 @@ const animate: TickFunc<[number]> = (content, menu, options, to) => {
     }
   );
   if (deltaX === to) return;
-  anime({
-    targets: proxy,
+  anime(proxy, {
     deltaX: to,
     duration: 230,
-    easing: 'easeInOutSine',
+    ease: eases.inOutSine,
   });
 };
 
@@ -116,11 +115,16 @@ export const SwipeMenu = ({
 
     let shouldExecute = false;
 
-    return swipeHelper.init(container, {
+    const dispose = swipeHelper.init(container, {
       preventScroll: true,
       direction: 'horizontal',
       onSwipeStart() {
+        shouldExecute = false;
         activeId$.next(id);
+      },
+      onTap() {
+        shouldExecute = false;
+        activeId$.next(null);
       },
       onSwipe({ deltaX: dragX, initialDirection }) {
         if (initialDirection !== 'horizontal') return;
@@ -155,7 +159,27 @@ export const SwipeMenu = ({
           isOpenRef.current = false;
         }
       },
+      onSwipeCancel() {
+        shouldExecute = false;
+        activeId$.next(null);
+        animate(
+          content,
+          menu,
+          { deltaX: isOpenRef.current ? -normalWidth : 0, normalWidth },
+          isOpenRef.current ? -normalWidth : 0
+        );
+      },
     });
+
+    return () => {
+      dispose();
+      shouldExecute = false;
+      if (activeId$.value === id) {
+        activeId$.next(null);
+      }
+      const deltaX = isOpenRef.current ? -normalWidth : 0;
+      tick(content, menu, { deltaX, normalWidth });
+    };
   }, [executeThreshold, haptics, id, normalWidth, onExecute]);
 
   return (

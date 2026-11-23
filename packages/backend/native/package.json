@@ -1,10 +1,9 @@
 {
   "name": "@affine/server-native",
-  "version": "0.20.0",
+  "version": "0.27.5",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
-  "type": "module",
   "main": "./index.js",
   "module": "./index.js",
   "types": "index.d.ts",
@@ -17,6 +16,7 @@
   },
   "napi": {
     "binaryName": "server-native",
+    "dtsHeaderFile": "dts-header.d.ts",
     "targets": [
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
@@ -29,14 +29,11 @@
   "scripts": {
     "test": "node --test ./__tests__/**/*.spec.js",
     "bench": "node ./benchmark/index.js",
-    "build": "napi build --release --strip --no-const-enum",
-    "build:debug": "napi build"
+    "build": "napi build --release --no-const-enum",
+    "build:debug": "napi build --no-const-enum"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.75",
-    "lib0": "^0.2.99",
-    "tiktoken": "^1.0.17",
-    "tinybench": "^3.0.7",
-    "yjs": "^13.6.21"
+    "@napi-rs/cli": "3.5.0",
+    "tiktoken": "^1.0.17"
   }
 }

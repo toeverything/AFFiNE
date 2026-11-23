@@ -35,7 +35,7 @@ async function openScalePanel(page: Page, noteId: string) {
   await selectNoteInEdgeless(page, noteId);
   await triggerComponentToolbarAction(page, 'changeNoteScale');
   await waitNextFrame(page);
-  const scalePanel = page.locator('edgeless-scale-panel');
+  const scalePanel = page.locator('.scale-menu');
   await expect(scalePanel).toBeVisible();
   return scalePanel;
 }
@@ -49,14 +49,13 @@ async function checkNoteScale(
   const edgelessNote = page.locator(
     `affine-edgeless-note[data-block-id="${noteId}"]`
   );
-  const noteContainer = edgelessNote.getByTestId('edgeless-note-container');
-  const style = await noteContainer.getAttribute('style');
+  const style = await edgelessNote.getAttribute('style');
 
   if (!style) {
     throw new Error('Style attribute not found');
   }
 
-  const scaleMatch = style.match(/transform:\s*scale\(([\d.]+)\)/);
+  const scaleMatch = style.match(/transform:[^;]*scale\(([\d.]+)\)/);
   if (!scaleMatch) {
     throw new Error('Scale transform not found in style');
   }
@@ -90,7 +89,7 @@ test.describe('note scale', () => {
     const noteId = await setupAndAddNote(page);
     const scalePanel = await openScalePanel(page, noteId);
 
-    const scaleInput = scalePanel.locator('.scale-input');
+    const scaleInput = scalePanel.locator('input');
     await scaleInput.click();
     await page.keyboard.type('50');
     await page.keyboard.press('Enter');
@@ -102,7 +101,7 @@ test.describe('note scale', () => {
     const noteId = await setupAndAddNote(page);
     const scalePanel = await openScalePanel(page, noteId);
 
-    const scaleInput = scalePanel.locator('.scale-input');
+    const scaleInput = scalePanel.locator('input');
     await scaleInput.click();
     await page.keyboard.type('50');
     await selectAllByKeyboard(page);
@@ -137,7 +136,10 @@ test.describe('note scale', () => {
     await page.mouse.down();
     await page.mouse.move(
       noteRect.x + noteRect.width * 2,
-      noteRect.y + noteRect.height * 2
+      noteRect.y + noteRect.height * 2,
+      {
+        steps: 10,
+      }
     );
     await page.mouse.up();
 

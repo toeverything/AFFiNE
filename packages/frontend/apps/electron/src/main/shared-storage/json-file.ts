@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 import type { Memento } from '@toeverything/infra';
 import {
@@ -7,7 +8,7 @@ import {
   exhaustMapWithTrailing,
   fromPromise,
 } from '@toeverything/infra';
-import { debounceTime, EMPTY, mergeMap, Observable, timeout } from 'rxjs';
+import { debounceTime, Observable, timeout } from 'rxjs';
 
 import { logger } from '../logger';
 
@@ -115,6 +116,9 @@ export class PersistentJSONFileStorage implements Memento {
     exhaustMapWithTrailing(() => {
       return fromPromise(async () => {
         try {
+          await fs.promises.mkdir(path.dirname(this.filepath), {
+            recursive: true,
+          });
           await fs.promises.writeFile(
             this.filepath,
             JSON.stringify(this.data, null, 2),
@@ -127,8 +131,7 @@ export class PersistentJSONFileStorage implements Memento {
         timeout(5000),
         backoffRetry({
           count: Infinity,
-        }),
-        mergeMap(() => EMPTY)
+        })
       );
     })
   );

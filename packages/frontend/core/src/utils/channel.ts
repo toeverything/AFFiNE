@@ -8,10 +8,8 @@ export const appSchemes = z.enum([
   'affine-dev',
 ]);
 
-const appChannelSchemes = z.enum(['stable', 'canary', 'beta', 'internal']);
-
 export type Scheme = z.infer<typeof appSchemes>;
-export type Channel = z.infer<typeof appChannelSchemes>;
+export type Channel = 'stable' | 'canary' | 'beta' | 'internal';
 
 export const schemeToChannel = {
   affine: 'stable',
@@ -23,8 +21,7 @@ export const schemeToChannel = {
 
 export const channelToScheme = {
   stable: 'affine',
-  canary:
-    process.env.NODE_ENV === 'development' ? 'affine-dev' : 'affine-canary',
+  canary: BUILD_CONFIG.debug ? 'affine-dev' : 'affine-canary',
   beta: 'affine-beta',
   internal: 'affine-internal',
 } as Record<Channel, Scheme>;

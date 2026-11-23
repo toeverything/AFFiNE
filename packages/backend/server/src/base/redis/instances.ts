@@ -5,14 +5,33 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Redis as IORedis, RedisOptions } from 'ioredis';
+import { omit } from 'lodash-es';
 
-import { Config } from '../../base/config';
+import { ServerConfigHandle } from '../../native';
+
+function redisOptions(options: RedisOptions) {
+  return {
+    ...(env.testing ? { lazyConnect: true } : {}),
+    ...options,
+  };
+}
+
+function redisConnection(
+  handle: ServerConfigHandle,
+  dbOffset: number
+): [string, RedisOptions] {
+  const url = new URL(handle.redisUrl() ?? 'redis://localhost:6379/0');
+  const db = Number(url.pathname.slice(1) || 0) + dbOffset;
+  url.pathname = `/${db}`;
+  const options = omit(
+    JSON.parse(handle.redisNodeOptionsJson()) as RedisOptions,
+    ['host', 'port', 'db', 'username', 'password']
+  );
+  return [url.toString(), redisOptions(options)];
+}
 
 class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(this.constructor.name);
-  constructor(opts: RedisOptions) {
-    super(opts);
-  }
 
   errorHandler = (err: Error) => {
     this.logger.error(err);
@@ -22,8 +41,12 @@ class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
     this.on('error', this.errorHandler);
   }
 
-  onModuleDestroy() {
-    this.disconnect();
+  async onModuleDestroy() {
+    try {
+      await this.quit();
+    } catch {
+      this.disconnect();
+    }
   }
 
   override duplicate(override?: Partial<RedisOptions>): IORedis {
@@ -45,33 +68,21 @@ class Redis extends IORedis implements OnModuleInit, OnModuleDestroy {
 
 @Injectable()
 export class CacheRedis extends Redis {
-  constructor(config: Config) {
-    super(config.redis);
+  constructor(handle: ServerConfigHandle) {
+    super(...redisConnection(handle, 0));
   }
 }
 
 @Injectable()
 export class SessionRedis extends Redis {
-  constructor(config: Config) {
-    super({ ...config.redis, db: (config.redis.db ?? 0) + 2 });
+  constructor(handle: ServerConfigHandle) {
+    super(...redisConnection(handle, 2));
   }
 }
 
 @Injectable()
 export class SocketIoRedis extends Redis {
-  constructor(config: Config) {
-    super({ ...config.redis, db: (config.redis.db ?? 0) + 3 });
-  }
-}
-
-@Injectable()
-export class QueueRedis extends Redis {
-  constructor(config: Config) {
-    super({
-      ...config.redis,
-      db: (config.redis.db ?? 0) + 4,
-      // required explicitly set to `null` by bullmq
-      maxRetriesPerRequest: null,
-    });
+  constructor(handle: ServerConfigHandle) {
+    super(...redisConnection(handle, 3));
   }
 }

@@ -8,8 +8,8 @@ import track from '@affine/track';
 import { EditIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 
-import type { AppTabCustomFCProps } from './data';
 import { TabItem } from './tab-item';
+import type { AppTabCustomFCProps } from './type';
 
 export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
   const workbench = useService(WorkbenchService).workbench;
@@ -32,10 +32,10 @@ export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
       if (enablePageTemplate && pageTemplateDocId) {
         const docId =
           await docsService.duplicateFromTemplate(pageTemplateDocId);
-        workbench.openDoc({ docId, fromTab: 'true' });
+        workbench.openDoc(docId);
       } else {
         const doc = pageHelper.createPage(undefined, { show: false });
-        workbench.openDoc({ docId: doc.id, fromTab: 'true' });
+        workbench.openDoc(doc.id);
       }
       track.$.navigationPanel.$.createDoc();
     },

@@ -16,8 +16,6 @@ import {
   zoomResetByKeyboard,
 } from '../../utils/actions/edgeless.js';
 import {
-  pressBackspace,
-  pressEnter,
   pressEscape,
   selectAllByKeyboard,
   type,
@@ -57,21 +55,6 @@ test.describe('frame selection', () => {
     expect(await getSelectedBoundCount(page)).toBe(0);
   });
 
-  test('frame can selected by click blank area of frame if it has not title', async ({
-    page,
-  }) => {
-    await createFrame(page, [50, 50], [150, 150]);
-    await pressEscape(page);
-    expect(await getSelectedBoundCount(page)).toBe(0);
-
-    await page.locator('affine-frame-title').dblclick();
-    await pressBackspace(page);
-    await pressEnter(page);
-
-    await clickView(page, [100, 100]);
-    expect(await getSelectedBoundCount(page)).toBe(1);
-  });
-
   test('frame can be selected by click frame title', async ({ page }) => {
     const frame = await createFrame(page, [50, 50], [150, 150]);
     await pressEscape(page);
@@ -84,7 +67,61 @@ test.describe('frame selection', () => {
     await assertSelectedBound(page, [50, 50, 100, 100]);
   });
 
-  test('frame can be selected by click frame title when a note overlap on it', async ({
+  test('frame can be selected by body only if frame is locked or its background is not transparent', async ({
+    page,
+  }) => {
+    const frame = await createFrame(page, [50, 50], [150, 150]);
+    await pressEscape(page);
+    expect(await getSelectedBoundCount(page)).toBe(0);
+
+    const frameTitle = getFrameTitle(page, frame);
+    await frameTitle.click();
+
+    const getButtons = (page: Page) => {
+      const toolbar = page.locator('affine-toolbar-widget');
+      return {
+        lock: toolbar.getByTestId('lock'),
+        unlock: toolbar.getByTestId('unlock'),
+      };
+    };
+
+    const { lock, unlock } = await getButtons(page);
+    await lock.click();
+
+    await pressEscape(page);
+    expect(await getSelectedBoundCount(page)).toBe(0);
+
+    // click body should select
+    await clickView(page, [100, 100]);
+    expect(await getSelectedBoundCount(page)).toBe(1);
+
+    await unlock.click();
+    // set frame background to non-transparent value
+    await page.evaluate(() => {
+      const edgelessRoot = document.querySelector('affine-edgeless-root');
+
+      if (!edgelessRoot) {
+        throw new Error('Not edgeless root found');
+      }
+
+      const gfx = edgelessRoot.gfx;
+
+      gfx.std.store.transact(() => {
+        // @ts-expect-error set frame block background
+        gfx.selection.selectedElements[0].props.background = '#fb7081';
+      });
+    });
+
+    await pressEscape(page);
+    expect(await getSelectedBoundCount(page)).toBe(0);
+
+    // click body should select
+    await clickView(page, [100, 100]);
+    expect(await getSelectedBoundCount(page)).toBe(1);
+  });
+
+  // TODO(@L-Sun): see frame-title.spec.ts:60
+  test.skip('frame can be selected by click frame title when a note overlap on it', async ({
     page,
   }) => {
     const frame = await createFrame(page, [50, 50], [150, 150]);
@@ -112,11 +149,37 @@ test.describe('frame selection', () => {
     expect(selectedIds[0]).toBe(frame);
   });
 
-  test('shape inside frame can be selected and edited', async ({ page }) => {
-    await createFrame(page, [50, 50], [150, 150]);
+  test('shape inside frame can be directly selected and edited', async ({
+    page,
+  }) => {
+    const frame = await createFrame(page, [50, 50], [250, 250]);
     await createShapeElement(page, [100, 100], [200, 200], Shape.Square);
     await pressEscape(page);
 
+    await clickView(page, [150, 150]);
+    expect(await getSelectedBoundCount(page)).toBe(1);
+    await assertSelectedBound(page, [100, 100, 100, 100]);
+
+    // select frame to change its background
+    const frameTitle = getFrameTitle(page, frame);
+    await frameTitle.click();
+    // set frame background to non-transparent value
+    await page.evaluate(() => {
+      const edgelessRoot = document.querySelector('affine-edgeless-root');
+
+      if (!edgelessRoot) {
+        throw new Error('Not edgeless root found');
+      }
+
+      const gfx = edgelessRoot.gfx;
+
+      gfx.std.store.transact(() => {
+        // @ts-expect-error set frame block background
+        gfx.selection.selectedElements[0].props.background = '#fb7081';
+      });
+    });
+    await pressEscape(page);
+    expect(await getSelectedBoundCount(page)).toBe(0);
     await clickView(page, [150, 150]);
     expect(await getSelectedBoundCount(page)).toBe(1);
     await assertSelectedBound(page, [100, 100, 100, 100]);

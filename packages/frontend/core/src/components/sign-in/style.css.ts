@@ -84,3 +84,11 @@ export const skipSection = style({
   flexDirection: 'column',
   alignItems: 'center',
 });
+
+export const authInput = style({
+  backgroundColor: cssVarV2.button.signinbutton.background,
+});
+
+export const signInButton = style({
+  backgroundColor: cssVarV2.button.signinbutton.background,
+});

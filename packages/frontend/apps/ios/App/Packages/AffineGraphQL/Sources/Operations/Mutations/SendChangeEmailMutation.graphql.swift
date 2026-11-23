@@ -26,6 +26,9 @@ public class SendChangeEmailMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("sendChangeEmail", Bool.self, arguments: ["callbackUrl": .variable("callbackUrl")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SendChangeEmailMutation.Data.self
+    ] }
 
     public var sendChangeEmail: Bool { __data["sendChangeEmail"] }
   }

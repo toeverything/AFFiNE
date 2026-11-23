@@ -1,9 +1,7 @@
 import {
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
-  getMembersByWorkspaceIdQuery,
   grantWorkspaceTeamMemberMutation,
-  inviteByEmailMutation,
   inviteByEmailsMutation,
   type Permission,
   revokeInviteLinkMutation,
@@ -13,9 +11,14 @@ import {
 import { Store } from '@toeverything/infra';
 
 import type { WorkspaceServerService } from '../../cloud';
+import type { NbstoreService } from '../../storage';
+import { mapWorkspaceMemberSnapshot } from './realtime-mappers';
 
 export class WorkspaceMembersStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
+  ) {
     super();
   }
 
@@ -25,48 +28,25 @@ export class WorkspaceMembersStore extends Store {
     take: number,
     signal?: AbortSignal
   ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId,
-        skip,
-        take,
-      },
-      context: {
-        signal,
-      },
-    });
-
-    return data.workspace;
+    return await this.nbstoreService.realtime
+      .request(
+        'workspace.members.get',
+        { workspaceId, skip, take },
+        { signal, timeoutMs: 10000 }
+      )
+      .then(data => ({
+        ...data,
+        members: data.members.map(mapWorkspaceMemberSnapshot),
+      }));
   }
 
-  async inviteMember(
-    workspaceId: string,
-    email: string,
-    sendInviteMail = false
-  ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const invite = await this.workspaceServerService.server.gql({
-      query: inviteByEmailMutation,
-      variables: {
-        workspaceId,
-        email,
-        sendInviteMail,
-      },
+  subscribeMembers(workspaceId: string) {
+    return this.nbstoreService.realtime.subscribe('workspace.members.changed', {
+      workspaceId,
     });
-    return invite.invite;
   }
 
-  async inviteBatch(
-    workspaceId: string,
-    emails: string[],
-    sendInviteMail = false
-  ) {
+  async inviteBatch(workspaceId: string, emails: string[]) {
     if (!this.workspaceServerService.server) {
       throw new Error('No Server');
     }
@@ -75,10 +55,9 @@ export class WorkspaceMembersStore extends Store {
       variables: {
         workspaceId,
         emails,
-        sendInviteMail,
       },
     });
-    return inviteBatch.inviteBatch;
+    return inviteBatch.inviteMembers;
   }
 
   async generateInviteLink(
@@ -128,7 +107,7 @@ export class WorkspaceMembersStore extends Store {
       },
       context: { signal },
     });
-    return revoke.revoke;
+    return revoke.revokeMember;
   }
 
   async approveMember(workspaceId: string, userId: string) {

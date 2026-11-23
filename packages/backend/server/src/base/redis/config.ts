@@ -1,11 +1,32 @@
+import serverNativeModule from '@affine/server-native';
 import { RedisOptions } from 'ioredis';
 
-import { defineStartupConfig, ModuleConfig } from '../../base/config';
+import { defineNativeModuleConfig } from '../config';
 
-declare module '../config' {
-  interface AppConfig {
-    redis: ModuleConfig<RedisOptions>;
+declare global {
+  interface AppConfigSchema {
+    redis: {
+      host: string;
+      port: number;
+      db: number;
+      username: string;
+      password: string;
+      ioredis: ConfigItem<
+        Omit<RedisOptions, 'host' | 'port' | 'db' | 'username' | 'password'>
+      >;
+    };
   }
 }
 
-defineStartupConfig('redis', {});
+defineNativeModuleConfig(
+  'redis',
+  serverNativeModule.appConfigDescriptors('redis'),
+  serverNativeModule.validateAppConfigValue,
+  {
+    ioredis: {
+      desc: 'The config for the ioredis client.',
+      default: {},
+      link: 'https://github.com/luin/ioredis',
+    },
+  }
+);

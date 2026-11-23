@@ -1,25 +1,96 @@
 import {
+  CanvasElementType,
+  DefaultTool,
   EdgelessCRUDIdentifier,
   getSurfaceBlock,
+  type IModelCoord,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
-import type { TextElementModel } from '@blocksuite/affine-model';
+import { DefaultTheme, TextElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
-import {
-  type BlockStdScope,
-  RANGE_SYNC_EXCLUDE_ATTR,
-  ShadowlessElement,
-  stdContext,
-} from '@blocksuite/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import { Bound, toRadian, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
+import {
+  type BlockComponent,
+  type BlockStdScope,
+  type PointerEventState,
+  ShadowlessElement,
+  stdContext,
+} from '@blocksuite/std';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { consume } from '@lit/context';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import * as Y from 'yjs';
+
+import { getCursorByCoord, getLineHeight } from './element-renderer/utils';
+
+export function mountTextElementEditor(
+  textElement: TextElementModel,
+  edgeless: BlockComponent,
+  focusCoord?: IModelCoord
+) {
+  let cursorIndex = textElement.text.length;
+  if (focusCoord) {
+    cursorIndex = Math.min(
+      getCursorByCoord(textElement, focusCoord),
+      cursorIndex
+    );
+  }
+
+  const textEditor = new EdgelessTextEditor();
+  textEditor.element = textElement;
+
+  edgeless.append(textEditor);
+  textEditor.updateComplete
+    .then(() => {
+      textEditor.inlineEditor?.focusIndex(cursorIndex);
+    })
+    .catch(console.error);
+
+  const gfx = edgeless.std.get(GfxControllerIdentifier);
+
+  gfx.tool.setTool(DefaultTool);
+  gfx.selection.set({
+    elements: [textElement.id],
+    editing: true,
+  });
+}
+
+/**
+ * @deprecated
+ *
+ * Canvas Text has been deprecated
+ */
+export function addText(edgeless: BlockComponent, event: PointerEventState) {
+  const gfx = edgeless.std.get(GfxControllerIdentifier);
+  const crud = edgeless.std.get(EdgelessCRUDIdentifier);
+  const [x, y] = gfx.viewport.toModelCoord(event.x, event.y);
+  const selected = gfx.getElementByPoint(x, y);
+
+  if (!selected) {
+    const [modelX, modelY] = gfx.viewport.toModelCoord(event.x, event.y);
+
+    const id = edgeless.std
+      .get(EdgelessCRUDIdentifier)
+      .addElement(CanvasElementType.TEXT, {
+        xywh: new Bound(modelX, modelY, 32, 32).serialize(),
+        text: new Y.Text(),
+      });
+    if (!id) return;
+
+    edgeless.store.captureSync();
+    const textElement = crud.getElementById(id);
+    if (!textElement) return;
+    if (textElement instanceof TextElementModel) {
+      mountTextElementEditor(textElement, edgeless);
+    }
+  }
+}
 
 export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
   get crud() {
@@ -344,20 +415,17 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
       hasMaxWidth,
       w,
     } = this.element;
-    const lineHeight = TextUtils.getLineHeight(
-      fontFamily,
-      fontSize,
-      fontWeight
-    );
+    const lineHeight = getLineHeight(fontFamily, fontSize, fontWeight);
     const rect = getSelectedRect([this.element]);
 
-    const { translateX, translateY, zoom } = this.gfx.viewport;
+    const { translateX, translateY, zoom, viewScale } = this.gfx.viewport;
     const [visualX, visualY] = this.getVisualPosition(this.element);
     const containerOffset = this.getContainerOffset();
+    // Compensate for outer CSS scale, matching GfxBlockComponent.getCSSTransform.
     const transformOperation = [
-      `translate(${translateX}px, ${translateY}px)`,
-      `translate(${visualX * zoom}px, ${visualY * zoom}px)`,
-      `scale(${zoom})`,
+      `translate(${translateX / viewScale}px, ${translateY / viewScale}px)`,
+      `translate(${(visualX * zoom) / viewScale}px, ${(visualY * zoom) / viewScale}px)`,
+      `scale(${zoom / viewScale})`,
       `rotate(${rotate}deg)`,
       `translate(${containerOffset})`,
     ];
@@ -365,7 +433,7 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
     const isEmpty = !text.length && !this._isComposition;
     const color = this.std
       .get(ThemeProvider)
-      .generateColorProperty(this.element.color, '#000000');
+      .generateColorProperty(this.element.color, DefaultTheme.textColor);
 
     return html`<div
       style=${styleMap({
@@ -387,21 +455,25 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
         .yText=${text}
         .enableFormat=${false}
         .enableAutoScrollHorizontally=${false}
-        style=${isEmpty
-          ? styleMap({
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
+        style=${
+          isEmpty
+            ? styleMap({
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
         ${EdgelessTextEditor.PADDING_HORIZONTAL}px`,
-            })
-          : nothing}
+              })
+            : nothing
+        }
       ></rich-text>
-      ${isEmpty
-        ? html`<span class="edgeless-text-editor-placeholder">
-            Type from here
-          </span>`
-        : nothing}
+      ${
+        isEmpty
+          ? html`<span class="edgeless-text-editor-placeholder">
+              Type from here
+            </span>`
+          : nothing
+      }
     </div>`;
   }
 

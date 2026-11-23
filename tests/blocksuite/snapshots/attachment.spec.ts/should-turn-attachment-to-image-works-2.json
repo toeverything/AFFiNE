@@ -10,6 +10,7 @@
           "props": {
             "caption": "",
             "embed": false,
+            "footnoteIdentifier": null,
             "index": "a0",
             "lockedBySelf": false,
             "name": "test-card-1.png",
@@ -28,7 +29,7 @@
       "id": "1",
       "props": {
         "background": {
-          "dark": "#000000",
+          "dark": "#252525",
           "light": "#ffffff"
         },
         "displayMode": "both",

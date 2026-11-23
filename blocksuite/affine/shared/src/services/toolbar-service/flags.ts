@@ -62,6 +62,10 @@ export class Flags {
     });
   }
 
+  isSurface() {
+    return this.check(Flag.Surface);
+  }
+
   isText() {
     return this.check(Flag.Text);
   }
@@ -72,6 +76,10 @@ export class Flags {
 
   isNative() {
     return this.check(Flag.Native);
+  }
+
+  isHovering() {
+    return this.check(Flag.Hovering);
   }
 
   accept() {

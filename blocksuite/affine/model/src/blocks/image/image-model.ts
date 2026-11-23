@@ -1,14 +1,15 @@
 import type {
   GfxCommonBlockProps,
   GfxElementGeometry,
-} from '@blocksuite/block-std/gfx';
-import { GfxCompatible } from '@blocksuite/block-std/gfx';
+} from '@blocksuite/std/gfx';
+import { GfxCompatible } from '@blocksuite/std/gfx';
 import {
   BlockModel,
   BlockSchemaExtension,
   defineBlockSchema,
 } from '@blocksuite/store';
 
+import type { TextAlign } from '../../consts';
 import type { BlockMeta } from '../../utils/types.js';
 import { ImageBlockTransformer } from './image-transformer.js';
 
@@ -19,6 +20,8 @@ export type ImageBlockProps = {
   height?: number;
   rotate: number;
   size?: number;
+  comments?: Record<string, boolean>;
+  textAlign?: TextAlign;
 } & Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
 
@@ -32,6 +35,8 @@ const defaultImageProps: ImageBlockProps = {
   lockedBySelf: false,
   rotate: 0,
   size: -1,
+  comments: undefined,
+  textAlign: undefined,
   'meta:createdAt': undefined,
   'meta:createdBy': undefined,
   'meta:updatedAt': undefined,

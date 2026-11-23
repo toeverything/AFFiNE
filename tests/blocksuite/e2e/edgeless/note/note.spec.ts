@@ -7,10 +7,16 @@ import {
   assertEdgelessTool,
   changeEdgelessNoteBackground,
   changeNoteDisplayMode,
+  dragBetweenViewCoords,
+  getSelectedBound,
+  getSelectedBoundCount,
+  getViewportCenter,
   locatorComponentToolbar,
   locatorEdgelessZoomToolButton,
+  resizeElementByHandle,
   selectNoteInEdgeless,
   setEdgelessTool,
+  setViewportCenter,
   switchEditorMode,
   triggerComponentToolbarAction,
   zoomOutByKeyboard,
@@ -19,6 +25,7 @@ import {
 import {
   click,
   clickBlockById,
+  clickView,
   dragBetweenCoords,
   dragBetweenIndices,
   enterPlaygroundRoom,
@@ -30,7 +37,9 @@ import {
   pressArrowUp,
   pressBackspace,
   pressEnter,
+  pressEscape,
   pressTab,
+  selectAllByKeyboard,
   type,
   undoByKeyboard,
   waitForInlineEditorStateUpdated,
@@ -262,7 +271,7 @@ test('duplicate note should work correctly', async ({ page }) => {
 
   await triggerComponentToolbarAction(page, 'duplicate');
   await waitNextFrame(page, 200); // wait viewport fit animation
-  const moreActionsContainer = page.locator('.more-actions-container');
+  const moreActionsContainer = page.getByLabel('More menu').getByRole('menu');
   await expect(moreActionsContainer).toBeHidden();
 
   const noteLocator = page.locator('affine-edgeless-note');
@@ -308,7 +317,7 @@ test('change note color', async ({ page }) => {
   );
 
   await selectNoteInEdgeless(page, noteId);
-  await triggerComponentToolbarAction(page, 'changeNoteColor');
+  await triggerComponentToolbarAction(page, 'changeNoteStyle');
   await changeEdgelessNoteBackground(page, 'Green');
   await assertEdgelessNoteBackground(
     page,
@@ -370,69 +379,68 @@ test('when no visible note block, clicking in page mode will auto add a new note
   expect(note).not.toBeNull();
 });
 
-test.fixme(
-  'Click at empty note should add a paragraph block',
-  async ({ page }) => {
-    await enterPlaygroundRoom(page);
-    await initEmptyEdgelessState(page);
-    await focusRichText(page);
-    await type(page, '123');
-    await assertRichTexts(page, ['123']);
+test.fixme('Click at empty note should add a paragraph block', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await focusRichText(page);
+  await type(page, '123');
+  await assertRichTexts(page, ['123']);
 
-    await switchEditorMode(page);
+  await switchEditorMode(page);
 
-    // Drag paragraph out of note block
-    const paragraphBlock = await page
-      .locator(`[data-block-id="3"]`)
-      .boundingBox();
-    if (!paragraphBlock) {
-      throw new Error('paragraphBlock is not found');
-    }
-    await page.mouse.dblclick(paragraphBlock.x, paragraphBlock.y);
-    await waitNextFrame(page);
-    await page.mouse.move(
-      paragraphBlock.x + paragraphBlock.width / 2,
-      paragraphBlock.y + paragraphBlock.height / 2
-    );
-    await waitNextFrame(page);
-    const handle = await page
-      .locator('.affine-drag-handle-container')
-      .boundingBox();
-    if (!handle) {
-      throw new Error('handle is not found');
-    }
-    await page.mouse.move(
-      handle.x + handle.width / 2,
-      handle.y + handle.height / 2,
-      { steps: 10 }
-    );
-    await page.mouse.down();
-    await page.mouse.move(100, 200, { steps: 30 });
-    await page.mouse.up();
-
-    // There should be two note blocks and one paragraph block
-    await assertRichTexts(page, ['123']);
-    await assertBlockCount(page, 'edgeless-note', 2);
-    await assertBlockCount(page, 'paragraph', 1);
-
-    // Click at empty note block to add a paragraph block
-    const emptyNote = await page.locator(`[data-block-id="2"]`).boundingBox();
-    if (!emptyNote) {
-      throw new Error('emptyNote is not found');
-    }
-    await page.mouse.click(
-      emptyNote.x + emptyNote.width / 2,
-      emptyNote.y + emptyNote.height / 2
-    );
-    await waitNextFrame(page, 300);
-    await type(page, '456');
-    await waitNextFrame(page, 400);
-
-    await page.mouse.click(100, 100);
-    await waitNextFrame(page, 400);
-    await assertBlockCount(page, 'paragraph', 2);
+  // Drag paragraph out of note block
+  const paragraphBlock = await page
+    .locator(`[data-block-id="3"]`)
+    .boundingBox();
+  if (!paragraphBlock) {
+    throw new Error('paragraphBlock is not found');
   }
-);
+  await page.mouse.dblclick(paragraphBlock.x, paragraphBlock.y);
+  await waitNextFrame(page);
+  await page.mouse.move(
+    paragraphBlock.x + paragraphBlock.width / 2,
+    paragraphBlock.y + paragraphBlock.height / 2
+  );
+  await waitNextFrame(page);
+  const handle = await page
+    .locator('.affine-drag-handle-container')
+    .boundingBox();
+  if (!handle) {
+    throw new Error('handle is not found');
+  }
+  await page.mouse.move(
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2,
+    { steps: 10 }
+  );
+  await page.mouse.down();
+  await page.mouse.move(100, 200, { steps: 30 });
+  await page.mouse.up();
+
+  // There should be two note blocks and one paragraph block
+  await assertRichTexts(page, ['123']);
+  await assertBlockCount(page, 'edgeless-note', 2);
+  await assertBlockCount(page, 'paragraph', 1);
+
+  // Click at empty note block to add a paragraph block
+  const emptyNote = await page.locator(`[data-block-id="2"]`).boundingBox();
+  if (!emptyNote) {
+    throw new Error('emptyNote is not found');
+  }
+  await page.mouse.click(
+    emptyNote.x + emptyNote.width / 2,
+    emptyNote.y + emptyNote.height / 2
+  );
+  await waitNextFrame(page, 300);
+  await type(page, '456');
+  await waitNextFrame(page, 400);
+
+  await page.mouse.click(100, 100);
+  await waitNextFrame(page, 400);
+  await assertBlockCount(page, 'paragraph', 2);
+});
 
 test('Should focus at closest text block when note collapse', async ({
   page,
@@ -540,4 +548,142 @@ test('select text cross blocks in edgeless note', async ({ page }) => {
   await dragBetweenIndices(page, [0, 1], [2, 2]);
   await pressBackspace(page);
   await assertRichTexts(page, ['ac']);
+});
+
+test('should not select doc only note', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+  await clickView(page, [0, 0]);
+
+  await selectAllByKeyboard(page);
+  const noteBound = await getSelectedBound(page);
+
+  await triggerComponentToolbarAction(page, 'changeNoteDisplayMode');
+  await waitNextFrame(page);
+  await changeNoteDisplayMode(page, NoteDisplayMode.DocOnly);
+
+  await selectAllByKeyboard(page);
+  expect(await getSelectedBoundCount(page)).toBe(0);
+
+  await clickView(page, [
+    0.5 * (noteBound[0] + noteBound[2]),
+    0.5 * (noteBound[1] + noteBound[3]),
+  ]);
+  expect(await getSelectedBoundCount(page)).toBe(0);
+
+  await dragBetweenViewCoords(
+    page,
+    [noteBound[0] - 10, noteBound[1] - 10],
+    [noteBound[0] + noteBound[2] + 10, noteBound[1] + noteBound[3] + 10]
+  );
+  expect(await getSelectedBoundCount(page)).toBe(0);
+});
+
+test.describe('visibility of hidden content of edgeless note', () => {
+  test.beforeEach(async ({ page }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+
+    const note = page.locator('affine-edgeless-note');
+    await note.click({ clickCount: 3 });
+    await type(page, 'hello');
+    await pressEnter(page, 30);
+    await type(page, 'world');
+    await pressEscape(page, 3);
+
+    const vpCenter = await getViewportCenter(page);
+    vpCenter[1] += 1000;
+    await setViewportCenter(page, vpCenter);
+
+    await note.click();
+    await resizeElementByHandle(page, { x: 0, y: -300 }, 'bottom-right');
+  });
+
+  test('should hide content when note is not selected or hovered when selected', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    await pressEscape(page, 3);
+    await expect(lastParagraph).not.toBeInViewport();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+    await note.click();
+    // move out to right side
+    await page.mouse.move(
+      noteBound.x + noteBound.width + 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).not.toBeInViewport();
+  });
+
+  test('should show hidden content when hover on selected note', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+
+    // move in right side
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).toBeInViewport();
+
+    // move to hidden content
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height + 100
+    );
+    await expect(lastParagraph).toBeInViewport();
+  });
+
+  test('should show hidden content when the note is being edited', async ({
+    page,
+  }) => {
+    const note = page.locator('affine-edgeless-note');
+    const lastParagraph = page.locator('affine-paragraph').last();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+    await type(page, 'test');
+
+    await expect(lastParagraph).toBeInViewport();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+
+    const noteBound = await note.boundingBox();
+    if (!noteBound) {
+      test.fail();
+      return;
+    }
+    await page.mouse.move(
+      noteBound.x + noteBound.width - 10,
+      noteBound.y + noteBound.height - 10
+    );
+    await expect(lastParagraph).toBeInViewport();
+
+    await note.click({ clickCount: 3 });
+    await page.locator('affine-paragraph').nth(22).click();
+
+    await page.mouse.wheel(0, 200);
+    await expect(
+      lastParagraph,
+      'editing note but out of viewport should also show hidden content'
+    ).toBeInViewport();
+  });
 });

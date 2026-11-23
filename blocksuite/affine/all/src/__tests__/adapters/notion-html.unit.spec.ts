@@ -1,11 +1,14 @@
 import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import { NotionHtmlAdapter } from '@blocksuite/affine-shared/adapters';
+import { DEFAULT_IMAGE_PROXY_ENDPOINT } from '@blocksuite/affine-shared/consts';
 import {
   AssetsManager,
   type BlockSnapshot,
   MemoryBlobCRUD,
 } from '@blocksuite/store';
-import { describe, expect, test } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 
 import { createJob } from '../utils/create-job.js';
 import { getProvider } from '../utils/get-provider.js';
@@ -1195,43 +1198,71 @@ describe('notion html to snapshot', () => {
     expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
-  test('image', async () => {
-    const html = `<div class="page-body">
-      <figure id="ed3d2ae9-62f5-433a-9049-9ddbd1c81ac5" class="image"><a
-          href="https://raw.githubusercontent.com/toeverything/blocksuite/master/assets/logo.svg"><img src="https://raw.githubusercontent.com/toeverything/blocksuite/master/assets/logo.svg" /></a>
-      </figure>
-    </div>`;
+  describe('image', () => {
+    const originalUrl =
+      'https://raw.githubusercontent.com/toeverything/blocksuite/master/assets/logo.svg';
 
-    const blockSnapshot: BlockSnapshot = {
-      type: 'block',
-      id: 'matchesReplaceMap[0]',
-      flavour: 'affine:note',
-      props: {
-        xywh: '[0,0,800,95]',
-        background: DefaultTheme.noteBackgrounColor,
-        index: 'a0',
-        hidden: false,
-        displayMode: NoteDisplayMode.DocAndEdgeless,
-      },
-      children: [
-        {
-          type: 'block',
-          id: 'matchesReplaceMap[1]',
-          flavour: 'affine:image',
-          props: {
-            sourceId: 'matchesReplaceMap[2]',
+    const imageProxy = DEFAULT_IMAGE_PROXY_ENDPOINT;
+    const imageUrl = `${imageProxy}?url=${encodeURIComponent(originalUrl)}`;
+
+    // Mock the image request
+    const imageRequestHandlers = [
+      http.get(imageUrl.toString(), async () => {
+        // Return a mock image blob
+        const mockImageBlob = new Blob(['mock image data'], {
+          type: 'image/svg+xml',
+        });
+        return new HttpResponse(mockImageBlob, {
+          headers: {
+            'Content-Type': 'image/svg+xml',
           },
-          children: [],
-        },
-      ],
-    };
+        });
+      }),
+    ];
 
-    const adapter = new NotionHtmlAdapter(createJob(), provider);
-    const rawBlockSnapshot = await adapter.toBlockSnapshot({
-      file: html,
-      assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+    const server = setupServer(...imageRequestHandlers);
+    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+    afterAll(() => server.close());
+    afterEach(() => server.resetHandlers());
+
+    test('network image resource', async () => {
+      const html = `<div class="page-body">
+        <figure id="ed3d2ae9-62f5-433a-9049-9ddbd1c81ac5" class="image"><a
+            href="${originalUrl}"><img src="${originalUrl}" /></a>
+        </figure>
+      </div>`;
+
+      const blockSnapshot: BlockSnapshot = {
+        type: 'block',
+        id: 'matchesReplaceMap[0]',
+        flavour: 'affine:note',
+        props: {
+          xywh: '[0,0,800,95]',
+          background: DefaultTheme.noteBackgrounColor,
+          index: 'a0',
+          hidden: false,
+          displayMode: NoteDisplayMode.DocAndEdgeless,
+        },
+        children: [
+          {
+            type: 'block',
+            id: 'matchesReplaceMap[1]',
+            flavour: 'affine:image',
+            props: {
+              sourceId: 'matchesReplaceMap[2]',
+            },
+            children: [],
+          },
+        ],
+      };
+
+      const adapter = new NotionHtmlAdapter(createJob(), provider);
+      const rawBlockSnapshot = await adapter.toBlockSnapshot({
+        file: html,
+        assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+      });
+      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
     });
-    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
   test('bookmark', async () => {

@@ -10,6 +10,10 @@ import { DummyBlobStorage } from './dummy/blob';
 import { DummyBlobSyncStorage } from './dummy/blob-sync';
 import { DummyDocStorage } from './dummy/doc';
 import { DummyDocSyncStorage } from './dummy/doc-sync';
+import { DummyIndexerStorage } from './dummy/indexer';
+import { DummyIndexerSyncStorage } from './dummy/indexer-sync';
+import type { IndexerStorage } from './indexer';
+import type { IndexerSyncStorage } from './indexer-sync';
 import type { StorageType } from './storage';
 
 type Storages =
@@ -17,7 +21,9 @@ type Storages =
   | BlobStorage
   | BlobSyncStorage
   | DocSyncStorage
-  | AwarenessStorage;
+  | AwarenessStorage
+  | IndexerStorage
+  | IndexerSyncStorage;
 
 export type SpaceStorageOptions = {
   [K in StorageType]?: Storages & { storageType: K };
@@ -37,6 +43,8 @@ export class SpaceStorage {
       blobSync: storages.blobSync ?? new DummyBlobSyncStorage(),
       doc: storages.doc ?? new DummyDocStorage(),
       docSync: storages.docSync ?? new DummyDocSyncStorage(),
+      indexer: storages.indexer ?? new DummyIndexerStorage(),
+      indexerSync: storages.indexerSync ?? new DummyIndexerSyncStorage(),
     };
   }
 
@@ -83,4 +91,6 @@ export * from './doc';
 export * from './doc-sync';
 export * from './errors';
 export * from './history';
+export * from './indexer';
+export * from './indexer-sync';
 export * from './storage';

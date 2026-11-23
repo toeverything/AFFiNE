@@ -2,16 +2,15 @@ import {
   createIdentifier,
   type ServiceIdentifier,
 } from '@blocksuite/global/di';
-import type { DeltaInsert } from '@blocksuite/inline';
-import type { ExtensionType } from '@blocksuite/store';
+import type { DeltaInsert, ExtensionType } from '@blocksuite/store';
 
 import type { AffineTextAttributes } from '../../types/index.js';
+import type { TextBuffer } from '../types/adapter.js';
 import {
   type ASTToDeltaMatcher,
   DeltaASTConverter,
   type InlineDeltaMatcher,
-  type TextBuffer,
-} from '../types/adapter.js';
+} from '../types/delta-converter.js';
 
 export type InlineDeltaToPlainTextAdapterMatcher =
   InlineDeltaMatcher<TextBuffer>;

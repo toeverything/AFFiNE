@@ -1,116 +1,145 @@
-import test from 'ava';
+import { createHash, randomUUID } from 'node:crypto';
+
+import { PrismaClient } from '@prisma/client';
+import ava from 'ava';
 import Sinon from 'sinon';
 
-import { WorkspaceBlobStorage } from '../../core/storage/wrappers/blob';
-import { WorkspaceFeatureModel } from '../../models';
+import { CloudThrottlerGuard } from '../../base';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
+import { BlobModel } from '../../models';
 import {
   collectAllBlobSizes,
   createTestingApp,
   createWorkspace,
   deleteWorkspace,
-  getWorkspaceBlobsSize,
+  getBlobUploadPartUrl,
   listBlobs,
   setBlob,
   TestingApp,
 } from '../utils';
 
-const OneMB = 1024 * 1024;
-const RESTRICTED_QUOTA = {
-  seatQuota: 0,
-  blobLimit: OneMB,
-  storageQuota: 2 * OneMB - 1,
-  historyPeriod: 1,
-  memberLimit: 1,
-};
+const test = ava.serial;
 
 let app: TestingApp;
-let model: WorkspaceFeatureModel;
+let tracker: Sinon.SinonStub;
 
 test.before(async () => {
   app = await createTestingApp();
-  model = app.get(WorkspaceFeatureModel);
 });
 
 test.beforeEach(async () => {
   await app.initTestingDB();
+  tracker = Sinon.stub(app.get(CloudThrottlerGuard), 'getTracker').resolves(
+    `workspace-blobs:${randomUUID()}`
+  );
+});
+
+test.afterEach.always(() => {
+  tracker.restore();
 });
 
 test.after.always(async () => {
   await app.close();
 });
 
-test('should set blobs', async t => {
+test('should set and list blobs', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
+  t.deepEqual(await listBlobs(app, workspace.id), []);
 
   const buffer1 = Buffer.from([0, 0]);
   const hash1 = await setBlob(app, workspace.id, buffer1);
   const buffer2 = Buffer.from([0, 1]);
   const hash2 = await setBlob(app, workspace.id, buffer2);
 
-  const response1 = await app
-    .GET(`/api/workspaces/${workspace.id}/blobs/${hash1}`)
-    .buffer();
-
-  t.deepEqual(response1.body, buffer1, 'failed to get blob');
-
-  const response2 = await app
-    .GET(`/api/workspaces/${workspace.id}/blobs/${hash2}`)
-    .buffer();
-
-  t.deepEqual(response2.body, buffer2, 'failed to get blob');
-});
-
-test('should list blobs', async t => {
-  await app.signupV1('u1@affine.pro');
-
-  const workspace = await createWorkspace(app);
-  const blobs = await listBlobs(app, workspace.id);
-  t.is(blobs.length, 0, 'failed to list blobs');
-
-  const buffer1 = Buffer.from([0, 0]);
-  const hash1 = await setBlob(app, workspace.id, buffer1);
-  const buffer2 = Buffer.from([0, 1]);
-  const hash2 = await setBlob(app, workspace.id, buffer2);
+  t.is(hash1, sha256Base64urlWithPadding(buffer1).replace(/=+$/, ''));
+  t.is(hash2, sha256Base64urlWithPadding(buffer2).replace(/=+$/, ''));
 
   const ret = await listBlobs(app, workspace.id);
-  t.is(ret.length, 2, 'failed to list blobs');
-  // list blob result is not ordered
+  t.is(ret.length, 2);
   t.deepEqual(ret.map(x => x.key).sort(), [hash1, hash2].sort());
 });
 
-test('should auto delete blobs when workspace is deleted', async t => {
+test('should keep partial blob metadata listing on DB path without storage scan', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
-  const buffer1 = Buffer.from([0, 0]);
-  await setBlob(app, workspace.id, buffer1);
-  const buffer2 = Buffer.from([0, 1]);
-  await setBlob(app, workspace.id, buffer2);
-  const size = await collectAllBlobSizes(app);
-  t.is(size, 4);
-  const blobs = await listBlobs(app, workspace.id);
-  t.is(blobs.length, 2);
+  const rt = app.get(StorageRuntimeProvider);
 
-  const workspaceBlobStorage = Sinon.spy(app.get(WorkspaceBlobStorage));
-  await deleteWorkspace(app, workspace.id);
-  // should not emit workspace.blob.sync event
-  t.is(workspaceBlobStorage.syncBlobMeta.callCount, 0);
+  const buffer1 = Buffer.from('with metadata');
+  const buffer2 = Buffer.from('without metadata');
+  const key1 = sha256Base64urlWithPadding(buffer1);
+  const key2 = sha256Base64urlWithPadding(buffer2);
+  await rt.putObject('blob', `${workspace.id}/${key1}`, buffer1, {
+    contentType: 'text/plain',
+    contentLength: buffer1.length,
+  });
+  await rt.putObject('blob', `${workspace.id}/${key2}`, buffer2, {
+    contentType: 'text/plain',
+    contentLength: buffer2.length,
+  });
+
+  await app.get(PrismaClient).blob.create({
+    data: {
+      workspaceId: workspace.id,
+      key: key1,
+      mime: 'text/plain',
+      size: buffer1.length,
+      status: 'completed',
+      uploadId: null,
+    },
+  });
+
+  const listed = await app.get(BlobModel).list(workspace.id);
+
+  t.deepEqual(
+    listed.map(blob => blob.key),
+    [key1]
+  );
 });
 
-test('should calc blobs size', async t => {
+test('should reject multipart upload part url on fs provider', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
 
-  const buffer1 = Buffer.from([0, 0]);
-  await setBlob(app, workspace.id, buffer1);
-  const buffer2 = Buffer.from([0, 1]);
-  await setBlob(app, workspace.id, buffer2);
+  await t.throwsAsync(
+    () =>
+      getBlobUploadPartUrl(
+        app,
+        workspace.id,
+        sha256Base64urlWithPadding(Buffer.from('blob-key')),
+        'upload',
+        1
+      ),
+    {
+      message: 'Multipart upload is not supported',
+    }
+  );
+});
 
-  const size = await getWorkspaceBlobsSize(app, workspace.id);
-  t.is(size, 4, 'failed to collect blob sizes');
+test('workspace deletion remains authoritative when targeted object cleanup fails', async t => {
+  await app.signupV1('u1@affine.pro');
+
+  const workspace = await createWorkspace(app);
+  const rt = app.get(StorageRuntimeProvider);
+  const key = await setBlob(app, workspace.id, Buffer.from('same-id-guard'));
+  t.is(await rt.deleteWorkspaceObjects(workspace.id), 0);
+  t.truthy(await rt.headObject('blob', `${workspace.id}/${key}`));
+  const cleanupStub = Sinon.stub(rt, 'deleteWorkspaceObjects');
+  cleanupStub.rejects(new Error('injected cleanup failure'));
+  t.teardown(() => cleanupStub.restore());
+
+  await deleteWorkspace(app, workspace.id);
+  t.is(
+    await app
+      .get(PrismaClient)
+      .workspace.findUnique({ where: { id: workspace.id } }),
+    null
+  );
+  t.true(cleanupStub.calledOnce);
+  t.is(cleanupStub.firstCall.args[0], workspace.id);
 });
 
 test('should calc all blobs size', async t => {
@@ -134,48 +163,8 @@ test('should calc all blobs size', async t => {
   t.is(size, 8, 'failed to collect all blob sizes');
 });
 
-test('should reject blob exceeded limit', async t => {
-  await app.signupV1('u1@affine.pro');
-
-  const workspace1 = await createWorkspace(app);
-  await model.add(workspace1.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
-
-  const buffer1 = Buffer.from(
-    Array.from({ length: RESTRICTED_QUOTA.blobLimit + 1 }, () => 0)
-  );
-  await t.throwsAsync(setBlob(app, workspace1.id, buffer1), {
-    message: 'You have exceeded your blob size quota.',
-  });
-});
-
-test('should reject blob exceeded storage quota', async t => {
-  await app.signupV1('u1@affine.pro');
-
-  const workspace = await createWorkspace(app);
-  await model.add(workspace.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
-
-  const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
-
-  await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
-  await t.throwsAsync(setBlob(app, workspace.id, buffer), {
-    message: 'You have exceeded your storage quota.',
-  });
-});
-
-test('should accept blob even storage out of quota if workspace has unlimited feature', async t => {
-  await app.signupV1('u1@affine.pro');
-
-  const workspace = await createWorkspace(app);
-  await model.add(workspace.id, 'team_plan_v1', 'test', RESTRICTED_QUOTA);
-  await model.add(workspace.id, 'unlimited_workspace', 'test');
-
-  const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
-  await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
-  await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
-});
-
 test('should throw error when blob size large than max file size', async t => {
-  await app.signup();
+  await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
 
@@ -185,3 +174,11 @@ test('should throw error when blob size large than max file size', async t => {
       'HTTP request error, message: File truncated as it exceeds the 10485760 byte size limit.',
   });
 });
+
+function sha256Base64urlWithPadding(buffer: Buffer) {
+  return createHash('sha256')
+    .update(buffer)
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}

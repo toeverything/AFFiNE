@@ -22,8 +22,10 @@ export interface InlineEditHandle {
   triggerEdit: () => void;
 }
 
-export interface InlineEditProps
-  extends Omit<HTMLAttributes<HTMLSpanElement>, 'onChange' | 'onInput'> {
+export interface InlineEditProps extends Omit<
+  HTMLAttributes<HTMLSpanElement>,
+  'onChange' | 'onInput'
+> {
   /**
    * Content to be displayed
    */
@@ -91,14 +93,14 @@ export const InlineEdit = ({
   const [editingValue, setEditingValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useImperativeHandle<InlineEditHandle, InlineEditHandle>(handleRef, () => ({
-    triggerEdit,
-  }));
-
   const triggerEdit = useCallback(() => {
     if (!editable) return;
     setEditing(true);
   }, [editable]);
+
+  useImperativeHandle<InlineEditHandle, InlineEditHandle>(handleRef, () => ({
+    triggerEdit,
+  }));
 
   const onDoubleClick = useCallback(() => {
     if (trigger !== 'doubleClick') return;
@@ -220,8 +222,7 @@ export const InlineEdit = ({
 };
 
 interface PlaceholderProps
-  extends PropsWithChildren,
-    HTMLAttributes<HTMLSpanElement> {
+  extends PropsWithChildren, HTMLAttributes<HTMLSpanElement> {
   label?: string;
 }
 const Placeholder = ({

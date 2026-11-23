@@ -1,5 +1,5 @@
-import { type BlockStdScope, StdIdentifier } from '@blocksuite/block-std';
 import { type Container, createIdentifier } from '@blocksuite/global/di';
+import { type BlockStdScope, StdIdentifier } from '@blocksuite/std';
 import { Extension, Slice, type SliceSnapshot } from '@blocksuite/store';
 
 export const DndApiExtensionIdentifier = createIdentifier<DNDAPIExtension>(
@@ -47,6 +47,7 @@ export class DNDAPIExtension extends Extension {
       ...options.props,
       ...(blockId ? { blockId } : {}),
       pageId: docId,
+      style: flavour === 'affine:embed-synced-doc' ? 'syncedDoc' : 'vertical',
     };
     return {
       ...snapshot,

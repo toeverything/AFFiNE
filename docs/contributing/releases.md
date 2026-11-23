@@ -2,48 +2,47 @@
 
 > In order to make a stable/beta release, you need to get authorization from the AFFiNE test team.
 
-## Who can make a release?
+## Who Can Make a Release?
 
-The AFFiNE core team gives release authorization. And also have the following requirements.
+The AFFiNE core team grants release authorization and enforces the following requirements:
 
-- Have commit access to the AFFiNE repository.
-- Have access to GitHub Actions.
+- Commit access to the AFFiNE repository.
+- Access to GitHub Actions.
 
-## How to make a release?
+## How to Make a Release
 
-Before releasing, ensure you have the latest version of the `canary` branch.
+Before releasing, ensure you have the latest version of the `canary` branch and review the [SemVer](https://semver.org) specification to understand versioning.
 
-And Read the semver specification to understand how to version your release. https://semver.org
-
-### 1. Update the version in `package.json`
+### 1. Update the Version in `package.json`
 
 ```shell
 ./scripts/set-version.sh 0.5.4-canary.5
 ```
 
-### 2. Commit changes and push to `canary`
+### 2. Commit Changes and Push to `canary`
 
 ```shell
 git add .
-# vx.y.z-canary.n
+# vX.Y.Z-canary.N
 git commit -m "v0.5.4-canary.5"
 git push origin canary
 ```
 
-### 3. Create a release action
+### 3. Create a Release Action
 
-Create a release action in the [Release Desktop App](https://github.com/toeverything/AFFiNE/actions/workflows/release-desktop-app.yml).
+Trigger a release action in the [Release Desktop App](https://github.com/toeverything/AFFiNE/actions/workflows/release-desktop-app.yml).
 
 ![img.png](assets/release-action.png)
 
-Select the correct branch and fill out the form, then click `Run workflow`.
+Select the appropriate branch, complete the form, and click `Run workflow`.
 
-### 4. Publish the release
+### 4. Publish the Release
 
-After the release action is completed, you can see the draft release on the [release page](https://github.com/toeverything/AFFiNE/releases).
+Once the release action is complete, a draft release will appear on the [Releases page](https://github.com/toeverything/AFFiNE/releases).
 
-You can edit the release note and publish it.
+Edit the release notes if necessary, then publish the release.
 
-Remember that the release tag and title should be the same as the version in `package.json`.
+Ensure that:
 
-And target the release to that commit you just pushed.
+- The release tag and title match the version in `package.json`.
+- The release targets the commit you just pushed.

@@ -1,10 +1,8 @@
 import { Button } from '@affine/component';
 import { AuthPageContainer } from '@affine/component/auth-components';
-import { getSubscriptionInfo } from '@affine/core/components/hooks/affine/use-subscription-notify';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { Trans, useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 import * as styles from './styles.css';
 
@@ -15,27 +13,11 @@ import * as styles from './styles.css';
  */
 export const Component = () => {
   const t = useI18n();
-  const [params] = useSearchParams();
-  const subscriptionInfo = getSubscriptionInfo(params);
+  const { jumpToIndex } = useNavigateHelper();
 
-  const { jumpToPage, jumpToOpenInApp, jumpToIndex } = useNavigateHelper();
   const openWorkspace = useCallback(() => {
-    if (params.get('schema')) {
-      jumpToOpenInApp('bring-to-front');
-    } else {
-      if (subscriptionInfo.workspaceId) {
-        jumpToPage(subscriptionInfo.workspaceId, 'all');
-        return;
-      }
-      jumpToIndex();
-    }
-  }, [
-    jumpToIndex,
-    jumpToOpenInApp,
-    jumpToPage,
-    params,
-    subscriptionInfo.workspaceId,
-  ]);
+    jumpToIndex();
+  }, [jumpToIndex]);
 
   const subtitle = (
     <div className={styles.leftContentText}>

@@ -85,6 +85,9 @@ export class WorkspaceQuotaHumanReadableType {
 
   @Field()
   memberCount!: string;
+
+  @Field()
+  overcapacityMemberCount!: string;
 }
 
 @ObjectType()
@@ -111,13 +114,8 @@ export class WorkspaceQuotaType implements Partial<WorkspaceQuota> {
   memberCount!: number;
 
   @Field()
-  humanReadable!: WorkspaceQuotaHumanReadableType;
+  overcapacityMemberCount!: number;
 
-  /**
-   * @deprecated
-   */
-  @Field(() => SafeIntResolver, {
-    deprecationReason: 'use `usedStorageQuota` instead',
-  })
-  usedSize!: number;
+  @Field()
+  humanReadable!: WorkspaceQuotaHumanReadableType;
 }

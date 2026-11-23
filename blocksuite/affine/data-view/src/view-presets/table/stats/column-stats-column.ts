@@ -4,9 +4,9 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ArrowDownSmallIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { Text } from '@blocksuite/store';
 import { autoPlacement, offset } from '@floating-ui/dom';
 import { computed, signal } from '@preact/signals-core';
@@ -14,11 +14,11 @@ import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
 import { typeSystem } from '../../../core/index.js';
 import { statsFunctions } from '../../../core/statistics/index.js';
 import type { StatisticsConfig } from '../../../core/statistics/types.js';
-import type { TableColumn } from '../table-view-manager.js';
+import type { TableProperty } from '../table-view-manager.js';
 
 const styles = css`
   .stats-cell {
@@ -34,7 +34,7 @@ const styles = css`
     user-select: none;
   }
 
-  .affine-database-column-stats:hover .stats-cell {
+  affine-database-column-stats:hover .stats-cell {
     opacity: 1;
   }
 
@@ -57,12 +57,12 @@ const styles = css`
     margin-inline: 5px;
   }
 
-  .label {
+  .stats-cell .label {
     text-transform: uppercase;
     color: var(--affine-text-secondary-color);
   }
 
-  .value {
+  .stats-cell .value {
     color: var(--affine-text-primary-color);
   }
 `;
@@ -73,12 +73,12 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
   static override styles = styles;
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   cellValues$ = computed(() => {
     if (this.group) {
-      return this.group.rows.map(id => {
-        return this.column.valueGet(id);
+      return this.group.rows.map(row => {
+        return this.column.valueGet(row.rowId);
       });
     }
     return this.column.cells$.value.map(cell => cell.jsonValue$.value);
@@ -157,7 +157,7 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
   values$ = signal<unknown[]>([]);
 
   statsResult$ = computed(() => {
-    const meta = this.column.view.propertyMetaGet(this.column.type$.value);
+    const meta = this.column.meta$.value;
     if (!meta) {
       return null;
     }
@@ -225,18 +225,20 @@ export class DatabaseColumnStatsCell extends SignalWatcher(
       class="stats-cell"
     >
       <div class="content">
-        ${!this.statsResult$.value
-          ? html`Calculate ${ArrowDownSmallIcon()}`
-          : html`
-              <span class="label">${this.statsResult$.value.name}</span>
-              <span class="value">${this.statsResult$.value.value} </span>
-            `}
+        ${
+          !this.statsResult$.value
+            ? html`Calculate ${ArrowDownSmallIcon()}`
+            : html`
+                <span class="label">${this.statsResult$.value.name}</span>
+                <span class="value">${this.statsResult$.value.value} </span>
+              `
+        }
       </div>
     </div>`;
   }
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
 }
 
 declare global {

@@ -24,8 +24,10 @@ export type InputProps = {
   endFix?: ReactNode;
   type?: HTMLInputElement['type'];
   inputStyle?: CSSProperties;
-  onEnter?: () => void;
+  onEnter?: (value: string) => void;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
+
+const EMPTY_STYLE: CSSProperties = {};
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
@@ -34,8 +36,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     noBorder = false,
     className,
     status = 'default',
-    style = {},
-    inputStyle = {},
+    style = EMPTY_STYLE,
+    inputStyle = EMPTY_STYLE,
     size = 'default',
     preFix,
     endFix,

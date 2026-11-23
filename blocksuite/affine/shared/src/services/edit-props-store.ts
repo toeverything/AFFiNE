@@ -1,8 +1,8 @@
 import { ColorSchema } from '@blocksuite/affine-model';
-import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/block-std';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { DeepPartial } from '@blocksuite/global/utils';
+import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/std';
 import { computed, type Signal, signal } from '@preact/signals-core';
 import clonedeep from 'lodash-es/cloneDeep';
 import mergeWith from 'lodash-es/mergeWith';
@@ -41,6 +41,7 @@ const LocalPropsSchema = z.object({
   presentBlackBackground: z.boolean(),
   presentFillScreen: z.boolean(),
   presentHideToolbar: z.boolean(),
+  presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
 });
@@ -98,7 +99,9 @@ export class EditPropsStore extends LifeCycleWatcher {
     );
 
     this.lastProps$ = computed(() => {
-      const editorSetting$ = this.std.getOptional(EditorSettingProvider);
+      const editorSetting$ = this.std.getOptional(
+        EditorSettingProvider
+      )?.setting$;
       const nextProps = mergeWith(
         clonedeep(initProps),
         editorSetting$?.value,
@@ -124,6 +127,8 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:presentation:fillScreen';
       case 'presentHideToolbar':
         return 'blocksuite:presentation:hideToolbar';
+      case 'presentNoFrameToastShown':
+        return 'blocksuite:presentation:noFrameToastShown';
       case 'templateCache':
         return 'blocksuite:' + id + ':templateTool';
       case 'remoteColor':

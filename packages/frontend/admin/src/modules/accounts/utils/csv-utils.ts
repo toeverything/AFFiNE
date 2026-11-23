@@ -5,6 +5,7 @@ import { emailRegex } from '../../../utils';
 export interface ParsedUser {
   name: string | null;
   email: string;
+  password?: string;
   valid?: boolean;
   error?: string;
   importStatus?: ImportStatus;
@@ -16,6 +17,41 @@ export enum ImportStatus {
   Failed = 'failed',
   Processing = 'processing',
 }
+
+export const validatePassword = (
+  password: string | undefined,
+  passwordLimits: { minLength: number; maxLength: number }
+): { valid: boolean; error?: string } => {
+  // if password is empty, it is valid
+  if (!password || password.trim() === '') {
+    return { valid: true };
+  }
+
+  // check password length
+  if (
+    password.length < passwordLimits.minLength ||
+    password.length > passwordLimits.maxLength
+  ) {
+    return {
+      valid: false,
+      error: 'Invalid password format',
+    };
+  }
+
+  // TODO(@Jimmfly): check password contains at least one letter and one number
+
+  // const hasLetter = /[a-zA-Z]/.test(password);
+  // const hasNumber = /[0-9]/.test(password);
+
+  // if (!hasLetter || !hasNumber) {
+  //   return {
+  //     valid: false,
+  //     error: 'Invalid password format',
+  //   };
+  // }
+
+  return { valid: true };
+};
 
 /**
  * Validates email addresses for duplicates and format
@@ -53,6 +89,7 @@ export const getValidUsersToImport = (users: ParsedUser[]) => {
     .map(user => ({
       name: user.name || undefined,
       email: user.email,
+      password: user.password,
     }));
 };
 
@@ -60,7 +97,7 @@ export const getValidUsersToImport = (users: ParsedUser[]) => {
  * Downloads a CSV template for user import
  */
 export const downloadCsvTemplate = () => {
-  const csvContent = 'Username,Email\n,example@example.com';
+  const csvContent = 'Username,Email,Password\n,example@example.com,';
   downloadCsv(csvContent, 'user_import_template.csv');
 };
 
@@ -69,10 +106,10 @@ export const downloadCsvTemplate = () => {
  */
 export const exportImportResults = (results: ParsedUser[]) => {
   const csvContent = [
-    'Username,Email,status',
+    'Username,Email,Password,Status',
     ...results.map(
       user =>
-        `${user.name || ''},${user.email},${user.importStatus}${user.importError ? ` (${user.importError})` : ''}`
+        `${user.name || ''},${user.email},${user.password || ''},${user.importStatus}${user.importError ? ` (${user.importError})` : ''}`
     ),
   ].join('\n');
 
@@ -138,6 +175,7 @@ export const processCSVFile = async (
     const users = dataRows.map(row => ({
       name: row[0]?.trim() || null,
       email: row[1]?.trim() || '',
+      password: row[2]?.trim() || undefined,
     }));
 
     const usersWithEmail = users.filter(user => user.email);
@@ -163,4 +201,35 @@ export const processCSVFile = async (
     toast.error('Failed to parse CSV file');
     onError();
   }
+};
+
+/**
+ * Validate users
+ */
+export const validateUsers = (
+  users: ParsedUser[],
+  passwordLimits: { minLength: number; maxLength: number }
+): ParsedUser[] => {
+  // validate emails
+  const emailValidatedUsers = validateEmails(users);
+
+  // validate password
+  return emailValidatedUsers.map(user => {
+    // if email is invalid, return
+    if (user.valid === false) {
+      return user;
+    }
+
+    // validate password
+    const passwordValidation = validatePassword(user.password, passwordLimits);
+    if (!passwordValidation.valid) {
+      return {
+        ...user,
+        valid: false,
+        error: passwordValidation.error,
+      };
+    }
+
+    return user;
+  });
 };

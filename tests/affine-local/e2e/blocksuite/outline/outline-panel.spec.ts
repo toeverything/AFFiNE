@@ -7,7 +7,7 @@ import {
   focusDocTitle,
   getEdgelessSelectedIds,
   getViewportCenter,
-  locateElementToolbar,
+  locateToolbar,
   setViewportCenter,
 } from '@affine-test/kit/utils/editor';
 import {
@@ -193,15 +193,15 @@ test.describe('TOC display', () => {
     const toc = await openTocPanel(page);
     const sortingButton = locateSortingButton(toc);
     await expect(sortingButton).not.toHaveClass(/active/);
-    expect(toc.locator('[data-sortable="false"]')).toHaveCount(1);
+    await expect(toc.locator('[data-sortable="false"]')).toHaveCount(1);
 
     await clickEdgelessModeButton(page);
     await expect(sortingButton).toHaveClass(/active/);
-    expect(toc.locator('[data-sortable="true"]')).toHaveCount(1);
+    await expect(toc.locator('[data-sortable="true"]')).toHaveCount(1);
 
     await sortingButton.click();
     await expect(sortingButton).not.toHaveClass(/active/);
-    expect(toc.locator('[data-sortable="false"]')).toHaveCount(1);
+    await expect(toc.locator('[data-sortable="false"]')).toHaveCount(1);
   });
 
   test('should notify user when there are some page only notes and sorting is disabled', async ({
@@ -320,9 +320,10 @@ test.describe('TOC and edgeless selection', () => {
     expect(await getEdgelessSelectedIds(page)).toHaveLength(0);
 
     await cards.nth(1).click();
-    expect(await getEdgelessSelectedIds(page)).toHaveLength(1);
-    await cards.nth(1).click();
-    expect(await getEdgelessSelectedIds(page)).toHaveLength(0);
+    expect(
+      await getEdgelessSelectedIds(page),
+      'should not select doc only note'
+    ).toHaveLength(0);
 
     await cards.nth(2).click();
     expect(await getEdgelessSelectedIds(page)).toHaveLength(1);
@@ -333,7 +334,7 @@ test.describe('TOC and edgeless selection', () => {
     await cards.nth(1).click({ modifiers: ['Shift'] });
     await cards.nth(2).click({ modifiers: ['Shift'] });
 
-    expect(await getEdgelessSelectedIds(page)).toHaveLength(3);
+    expect(await getEdgelessSelectedIds(page)).toHaveLength(2);
   });
 
   test('should select note cards when select note blocks in canvas', async ({
@@ -508,12 +509,10 @@ test.describe('advanced visibility control', () => {
     await expect(edgelessCard).toHaveCount(1);
 
     await clickView(page, [100, 100]);
-    const noteButtons = locateElementToolbar(page).locator(
-      'edgeless-change-note-button'
-    );
+    const toolbar = locateToolbar(page);
 
-    await noteButtons.getByRole('button', { name: 'Mode' }).click();
-    await noteButtons.locator('note-display-mode-panel .item.both').click();
+    await toolbar.getByRole('button', { name: 'Mode' }).click();
+    await toolbar.locator('note-display-mode-panel .item.both').click();
 
     await expect(bothCard).toHaveCount(2);
     await expect(edgelessCard).toHaveCount(0);
@@ -525,29 +524,42 @@ test.describe('advanced visibility control', () => {
     await type(page, 'hello');
     await pressEnter(page);
     await type(page, 'world');
+    await pressEscape(page, 3);
+    await createEdgelessNoteBlock(page, [200, 400]);
 
     const toc = await openTocPanel(page);
 
     const bothCard = locateCards(toc, 'both');
-    const edgelessCard = locateCards(toc, 'edgeless');
+    const edgelessCards = locateCards(toc, 'edgeless');
 
     await expect(bothCard).toHaveCount(1);
-    await expect(edgelessCard).toHaveCount(1);
+    await expect(edgelessCards).toHaveCount(2);
 
-    await edgelessCard.hover();
-    await edgelessCard.getByTestId('display-mode-button').click();
-    await edgelessCard.locator('note-display-mode-panel .item.both').click();
+    while ((await edgelessCards.count()) > 0) {
+      await edgelessCards.first().hover();
+      await edgelessCards.first().getByTestId('display-mode-button').click();
+      await edgelessCards
+        .first()
+        .locator('note-display-mode-panel .item.both')
+        .click();
+    }
 
-    await expect(bothCard).toHaveCount(2);
+    await expect(bothCard).toHaveCount(3);
 
     await clickView(page, [200, 100]);
-    const changeNoteButtons = locateElementToolbar(page).locator(
-      'edgeless-change-note-button'
-    );
-    await changeNoteButtons.getByRole('button', { name: 'Slicer' }).click();
+    const toolbar = locateToolbar(page);
+    await toolbar.getByRole('button', { name: 'Slicer' }).click();
     await expect(page.locator('.note-slicer-button')).toBeVisible();
     await page.locator('.note-slicer-button').click();
 
-    await expect(bothCard).toHaveCount(3);
+    await expect(bothCard).toHaveCount(4);
+    await expect(
+      bothCard.nth(1),
+      'the sliced note card should keep the order in its parent'
+    ).toContainText('hello');
+    await expect(
+      bothCard.nth(2),
+      'the sliced note card should keep the order in its parent'
+    ).toContainText('world');
   });
 });

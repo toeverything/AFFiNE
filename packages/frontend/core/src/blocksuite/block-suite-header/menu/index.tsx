@@ -6,6 +6,7 @@ import {
   MenuSub,
 } from '@affine/component/ui/menu';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { useGuard } from '@affine/core/components/guard';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
@@ -48,6 +49,7 @@ import { useCallback, useState } from 'react';
 import { HeaderDropDownButton } from '../../../components/pure/header-drop-down-button';
 import { useFavorite } from '../favorite';
 import { HistoryTipsModal } from './history-tips-modal';
+import { shareMenu } from './style.css';
 
 type PageMenuProps = {
   rename?: () => void;
@@ -79,7 +81,7 @@ export const PageHeaderMenuButton = ({
 
   const openHistoryModal = useCallback(() => {
     track.$.header.history.open();
-    if (workspace.flavour === 'affine-cloud') {
+    if (workspace.flavour !== 'local') {
       return setHistoryModalOpen(true);
     }
     return setOpenHistoryTipsModal(true);
@@ -210,7 +212,7 @@ const PageHeaderMenuItem = ({
           toast(t['com.affine.no-permission']());
           return;
         }
-        editorService.editor.doc.moveToTrash();
+        await editorService.editor.doc.moveToTrash();
       },
     });
   }, [editorService.editor.doc, guardService, openConfirmModal, pageId, t]);
@@ -301,9 +303,12 @@ const PageHeaderMenuItem = ({
           subContentOptions={{
             sideOffset: 12,
             alignOffset: -8,
+
+            // to handle overflow when the width is not enough
+            collisionPadding: 20,
           }}
           items={
-            <div style={{ padding: 4 }}>
+            <div className={shareMenu}>
               <ShareMenuContent
                 workspaceMetadata={workspace.meta}
                 currentPage={page}
@@ -333,8 +338,8 @@ const PageHeaderMenuItem = ({
     openInAppService?.showOpenInAppPage();
   }, [openInAppService]);
 
-  const canEdit = useLiveData(guardService.can$('Doc_Update', pageId));
-  const canMoveToTrash = useLiveData(guardService.can$('Doc_Trash', pageId));
+  const canEdit = useGuard('Doc_Update', pageId);
+  const canMoveToTrash = useGuard('Doc_Trash', pageId);
 
   return (
     <>
@@ -442,7 +447,7 @@ const PageHeaderMenuItem = ({
         onSelect={handleOpenTrashModal}
         disabled={!canMoveToTrash}
       />
-      {BUILD_CONFIG.isWeb && workspace.flavour === 'affine-cloud' ? (
+      {BUILD_CONFIG.isWeb && workspace.flavour !== 'local' ? (
         <MenuItem
           prefixIcon={<LocalWorkspaceIcon />}
           data-testid="editor-option-menu-link"

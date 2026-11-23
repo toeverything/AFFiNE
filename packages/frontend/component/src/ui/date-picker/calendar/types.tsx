@@ -63,6 +63,11 @@ export interface DatePickerProps {
    */
   onChange?: (value: string) => void;
 
+  /**
+   * when cursor date changes (month navigation/keyboard)
+   */
+  onCursorChange?: (cursor: dayjs.Dayjs) => void;
+
   // style customizations
   monthHeaderCellClassName?: string;
   monthBodyCellClassName?: string;
@@ -108,7 +113,8 @@ export const defaultDatePickerProps = {
 export type DefaultDatePickerProps = typeof defaultDatePickerProps;
 
 export interface DatePickerModePanelProps
-  extends DefaultDatePickerProps,
+  extends
+    DefaultDatePickerProps,
     Omit<DatePickerProps, keyof DefaultDatePickerProps> {
   cursor: dayjs.Dayjs;
   onCursorChange?: (cursor: dayjs.Dayjs) => void;

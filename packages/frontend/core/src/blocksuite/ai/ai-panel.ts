@@ -1,6 +1,3 @@
-import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import { Bound } from '@blocksuite/affine/global/gfx';
 import {
   ImageBlockModel,
@@ -11,6 +8,9 @@ import {
   isInsideEdgelessEditor,
   matchModels,
 } from '@blocksuite/affine/shared/utils';
+import type { EditorHost } from '@blocksuite/affine/std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   ChatWithAiIcon,
   DeleteIcon,
@@ -21,7 +21,6 @@ import {
   ReplaceIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
-import type { FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 
 import { insertFromMarkdown } from '../utils';
@@ -36,7 +35,7 @@ import {
 } from './actions/page-response';
 import type { AIItemConfig } from './components/ai-item/types';
 import { createAIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
-import { AIProvider } from './provider';
+import { AIAppEvents } from './provider';
 import { reportResponse } from './utils/action-reporter';
 import { getAIPanelWidget } from './utils/ai-widgets';
 import { AIContext } from './utils/context';
@@ -53,12 +52,13 @@ function asCaption<T extends keyof BlockSuitePresets.AIActions>(
   return {
     name: 'Use as caption',
     icon: PenIcon(),
+    testId: 'answer-use-as-caption',
     showWhen: () => {
       const panel = getAIPanelWidget(host);
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      reportResponse('result:use-as-caption');
+      reportResponse('result:use-as-caption', host);
       const panel = getAIPanelWidget(host);
       const caption = panel.answer;
       if (!caption) return;
@@ -69,7 +69,7 @@ function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       const imageBlock = selectedBlocks[0].model;
       if (!(imageBlock instanceof ImageBlockModel)) return;
 
-      host.doc.updateBlock(imageBlock, { caption });
+      host.store.updateBlock(imageBlock, { caption });
       panel.hide();
     },
   };
@@ -79,12 +79,13 @@ function createNewNote(host: EditorHost): AIItemConfig {
   return {
     name: 'Create new note',
     icon: PageIcon(),
+    testId: 'answer-create-new-note',
     showWhen: () => {
       const panel = getAIPanelWidget(host);
       return !!panel.answer && isInsideEdgelessEditor(host);
     },
     handler: () => {
-      reportResponse('result:add-note');
+      reportResponse('result:add-note', host);
       // get the note block
       const { selectedBlocks } = getSelections(host);
       if (!selectedBlocks || !selectedBlocks.length) return;
@@ -95,7 +96,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
       // create a new note block at the left of the current note block
       const bound = Bound.deserialize(noteModel.xywh);
       const newBound = new Bound(bound.x - bound.w - 20, bound.y, bound.w, 72);
-      const doc = host.doc;
+      const doc = host.store;
       const panel = getAIPanelWidget(host);
       const gfx = host.std.get(GfxControllerIdentifier);
       doc.transact(() => {
@@ -147,25 +148,28 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
   return [
     {
       name: 'Response',
+      testId: 'answer-responses',
       items: [
         {
           name: 'Insert below',
+          testId: 'answer-insert-below',
           icon: InsertBelowIcon(),
           showWhen: () =>
             !!panel.answer && (!id || !INSERT_ABOVE_ACTIONS.includes(id)),
           handler: () => {
-            reportResponse('result:insert');
+            reportResponse('result:insert', host);
             pageResponseHandler(id, host, ctx, 'after').catch(console.error);
             panel.hide();
           },
         },
         {
           name: 'Insert above',
+          testId: 'answer-insert-above',
           icon: InsertTopIcon(),
           showWhen: () =>
             !!panel.answer && !!id && INSERT_ABOVE_ACTIONS.includes(id),
           handler: () => {
-            reportResponse('result:insert');
+            reportResponse('result:insert', host);
             pageResponseHandler(id, host, ctx, 'before').catch(console.error);
             panel.hide();
           },
@@ -173,11 +177,12 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
         asCaption(host, id),
         {
           name: 'Replace selection',
+          testId: 'answer-replace',
           icon: ReplaceIcon(),
           showWhen: () =>
             !!panel.answer && !EXCLUDING_REPLACE_ACTIONS.includes(id),
           handler: () => {
-            reportResponse('result:replace');
+            reportResponse('result:replace', host);
             replaceWithMarkdown(host).catch(console.error);
             panel.hide();
           },
@@ -187,27 +192,31 @@ function buildPageResponseConfig<T extends keyof BlockSuitePresets.AIActions>(
     },
     {
       name: '',
+      testId: 'answer-common-responses',
       items: [
         {
           name: 'Continue in chat',
           icon: ChatWithAiIcon(),
+          testId: 'answer-continue-in-chat',
           handler: () => {
-            reportResponse('result:continue-in-chat');
-            AIProvider.slots.requestOpenWithChat.next({ host });
+            reportResponse('result:continue-in-chat', host);
+            AIAppEvents.requestOpenWithChat.next({ host });
             panel.hide();
           },
         },
         {
           name: 'Regenerate',
           icon: ResetIcon(),
+          testId: 'answer-regenerate',
           handler: () => {
-            reportResponse('result:retry');
+            reportResponse('result:retry', host);
             panel.generate();
           },
         },
         {
           name: 'Discard',
           icon: DeleteIcon(),
+          testId: 'answer-discard',
           handler: () => {
             panel.discard();
           },
@@ -225,15 +234,17 @@ export function buildErrorResponseConfig(panel: AffineAIPanelWidget) {
         {
           name: 'Retry',
           icon: ResetIcon(),
+          testId: 'error-retry',
           showWhen: () => true,
           handler: () => {
-            reportResponse('result:retry');
+            reportResponse('result:retry', panel.host);
             panel.generate();
           },
         },
         {
           name: 'Discard',
           icon: DeleteIcon(),
+          testId: 'error-discard',
           showWhen: () => !!panel.answer,
           handler: () => {
             panel.discard();
@@ -258,11 +269,11 @@ export function buildFinishConfig<T extends keyof BlockSuitePresets.AIActions>(
 export function buildErrorConfig(panel: AffineAIPanelWidget) {
   return {
     upgrade: () => {
-      AIProvider.slots.requestUpgradePlan.next({ host: panel.host });
+      AIAppEvents.requestUpgradePlan.next({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      AIProvider.slots.requestLogin.next({ host: panel.host });
+      AIAppEvents.requestLogin.next({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
@@ -288,21 +299,20 @@ export function buildCopyConfig(panel: AffineAIPanelWidget) {
 }
 
 export function buildAIPanelConfig(
-  panel: AffineAIPanelWidget,
-  framework: FrameworkProvider
+  panel: AffineAIPanelWidget
 ): AffineAIPanelWidgetConfig {
   const ctx = new AIContext();
-  const searchService = framework.get(AINetworkSearchService);
   return {
-    answerRenderer: createAIScrollableTextRenderer(panel.host, {}, 320, true),
+    answerRenderer: createAIScrollableTextRenderer(
+      {
+        theme: panel.host.std.get(ThemeProvider).app$,
+      },
+      320,
+      true
+    ),
     finishStateConfig: buildFinishConfig(panel, 'chat', ctx),
     generatingStateConfig: buildGeneratingConfig(),
     errorStateConfig: buildErrorConfig(panel),
     copy: buildCopyConfig(panel),
-    networkSearchConfig: {
-      visible: searchService.visible,
-      enabled: searchService.enabled,
-      setEnabled: searchService.setEnabled,
-    },
   };
 }

@@ -1,7 +1,9 @@
 import { IconButton } from '@affine/component';
+import { NotificationCountService } from '@affine/core/modules/notification';
 import { track } from '@affine/track';
 import { SidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { useCallback, useRef } from 'react';
 
 import { AppSidebarService } from '../../services/app-sidebar';
@@ -14,6 +16,11 @@ export const SidebarSwitch = ({
   show: boolean;
   className?: string;
 }) => {
+  const notificationCountService = useService(NotificationCountService);
+  const hasNotification = useLiveData(
+    notificationCountService.count$.selector(count => count > 0)
+  );
+
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
   const preventHovering = useLiveData(appSidebarService.preventHovering$);
@@ -44,6 +51,8 @@ export const SidebarSwitch = ({
     appSidebarService.toggleSidebar();
   }, [appSidebarService, open]);
 
+  const showNotificationDot = hasNotification && !open;
+
   return (
     <div
       ref={switchRef}
@@ -51,6 +60,7 @@ export const SidebarSwitch = ({
       className={styles.sidebarSwitchClip}
       data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
       onMouseEnter={handleMouseEnter}
+      data-notification={showNotificationDot}
     >
       <IconButton
         className={className}
@@ -60,7 +70,10 @@ export const SidebarSwitch = ({
         }}
         onClick={handleClickSwitch}
       >
-        <SidebarIcon />
+        <SidebarIcon
+          className={clsx(styles.switchIcon)}
+          data-notification={showNotificationDot}
+        />
       </IconButton>
     </div>
   );

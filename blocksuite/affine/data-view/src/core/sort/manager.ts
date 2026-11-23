@@ -1,7 +1,7 @@
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 
 import { createTraitKey } from '../traits/key.js';
-import type { SingleView } from '../view-manager/index.js';
+import type { Row, SingleView } from '../view-manager/index.js';
 import { evalSort } from './eval.js';
 import type { Sort, SortBy } from './types.js';
 
@@ -16,7 +16,7 @@ export class SortManager {
     });
   };
 
-  sort = (rows: string[]) => {
+  sort = (rows: Row[]) => {
     if (!this.sort$.value) {
       return rows;
     }

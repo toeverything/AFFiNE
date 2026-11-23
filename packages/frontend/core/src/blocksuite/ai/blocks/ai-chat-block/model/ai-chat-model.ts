@@ -1,7 +1,7 @@
 import {
   type GfxCommonBlockProps,
   GfxCompatible,
-} from '@blocksuite/affine/block-std/gfx';
+} from '@blocksuite/affine/std/gfx';
 import {
   BlockModel,
   BlockSchemaExtension,

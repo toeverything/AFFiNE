@@ -1,0 +1,3 @@
+mutation updateReply($input: ReplyUpdateInput!) {
+  updateReply(input: $input)
+}

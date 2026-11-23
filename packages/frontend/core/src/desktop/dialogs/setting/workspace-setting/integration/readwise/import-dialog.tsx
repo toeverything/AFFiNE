@@ -14,6 +14,7 @@ import { InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
+  type ChangeEvent,
   type Dispatch,
   forwardRef,
   type SetStateAction,
@@ -26,6 +27,7 @@ import {
 import { Virtuoso } from 'react-virtuoso';
 
 import * as styles from './import-dialog.css';
+import { readwiseTrack } from './track';
 
 export const ImportDialog = ({ onClose }: { onClose: () => void }) => {
   const t = useI18n();
@@ -54,6 +56,13 @@ export const ImportDialog = ({ onClose }: { onClose: () => void }) => {
   );
   const handleConfirmImport = useCallback(
     (ids: string[]) => {
+      readwiseTrack.confirmIntegrationImport({
+        control: 'Readwise import list',
+        method: readwise.setting$('lastImportedAt').value
+          ? 'withtimestamp'
+          : 'new',
+      });
+
       if (ids.length === 0) {
         onClose();
         return;
@@ -65,15 +74,26 @@ export const ImportDialog = ({ onClose }: { onClose: () => void }) => {
       abortControllerRef.current = abortController;
       const signal = abortController.signal;
 
+      const startTime = Date.now();
       readwise
         .highlightsToAffineDocs(selectedHighlights.reverse(), books, {
           signal,
           onProgress: setImportProgress,
           onComplete: () => {
+            readwiseTrack.completeIntegrationImport({
+              total: selectedHighlights.length,
+              done: selectedHighlights.length,
+              time: (Date.now() - startTime) / 1000,
+            });
             readwise.updateSetting('lastImportedAt', timestamp);
             onClose();
           },
           onAbort: finished => {
+            readwiseTrack.abortIntegrationImport({
+              total: selectedHighlights.length,
+              done: finished,
+              time: (Date.now() - startTime) / 1000,
+            });
             notify({
               icon: <InformationFillDuotoneIcon />,
               style: 'normal',
@@ -103,6 +123,7 @@ export const ImportDialog = ({ onClose }: { onClose: () => void }) => {
   }, []);
 
   const handleRetryCrawl = useCallback(() => {
+    crawler.abort();
     crawler.crawl();
   }, [crawler]);
 
@@ -144,6 +165,7 @@ export const ImportDialog = ({ onClose }: { onClose: () => void }) => {
             highlights={highlights}
             onClose={onClose}
             onConfirm={handleConfirmImport}
+            onResetLastImportedAt={handleRetryCrawl}
           />
         )
       ) : (
@@ -167,11 +189,13 @@ const SelectStage = ({
   highlights,
   onClose,
   onConfirm,
+  onResetLastImportedAt,
 }: {
   loading: boolean;
   highlights: ReadwiseHighlight[];
   onClose: () => void;
   onConfirm: (ids: ReadwiseHighlight['id'][]) => void;
+  onResetLastImportedAt: () => void;
 }) => {
   const t = useI18n();
   const readwise = useService(IntegrationService).readwise;
@@ -180,8 +204,13 @@ const SelectStage = ({
   const [selected, setSelected] = useState<ReadwiseHighlight['id'][]>([]);
 
   const handleResetLastImportedAt = useCallback(() => {
+    readwiseTrack.startIntegrationImport({
+      method: 'cleartimestamp',
+      control: 'Readwise import list',
+    });
     readwise.updateSetting('lastImportedAt', undefined);
-  }, [readwise]);
+    onResetLastImportedAt();
+  }, [onResetLastImportedAt, readwise]);
 
   const handleConfirmImport = useCallback(() => {
     onConfirm(selected);
@@ -286,6 +315,12 @@ const HighlightTable = ({
     useState<
       Record<ReadwiseHighlight['id'], ReadwiseHighlight['updated_at']>
     >();
+  const syncNewHighlights = useLiveData(
+    useMemo(() => readwise.setting$('syncNewHighlights'), [readwise])
+  );
+  const updateStrategy = useLiveData(
+    useMemo(() => readwise.setting$('updateStrategy'), [readwise])
+  );
 
   useEffect(() => {
     readwise
@@ -304,11 +339,17 @@ const HighlightTable = ({
       .catch(console.error);
   }, [readwise]);
 
-  const handleToggleSelectAll = useCallback(() => {
-    setSelected(prev =>
-      prev.length === highlights.length ? [] : highlights.map(h => h.id)
-    );
-  }, [highlights, setSelected]);
+  const handleToggleSelectAll = useCallback(
+    (_: ChangeEvent, checked: boolean) => {
+      readwiseTrack.selectIntegrationImport({
+        method: 'all',
+        option: checked ? 'on' : 'off',
+        control: 'Readwise import list',
+      });
+      setSelected(checked ? highlights.map(h => h.id) : []);
+    },
+    [highlights, setSelected]
+  );
 
   return (
     <div className={styles.table}>
@@ -336,19 +377,28 @@ const HighlightTable = ({
           const highlight = highlights[idx];
           const localUpdatedAt = updatedMap?.[highlight.id];
           const readwiseUpdatedAt = highlight.updated_at;
+          const action = readwise.getAction({
+            localUpdatedAt,
+            remoteUpdatedAt: readwiseUpdatedAt,
+            updateStrategy,
+            syncNewHighlights,
+          });
           return (
             <li className={styles.tableBodyRow}>
               <div className={styles.tableCellSelect}>
                 <Checkbox
                   checked={selected.includes(highlight.id)}
-                  onChange={() => {
-                    setSelected(prev => {
-                      if (prev.includes(highlight.id)) {
-                        return prev.filter(id => id !== highlight.id);
-                      } else {
-                        return [...prev, highlight.id];
-                      }
+                  onChange={(_: ChangeEvent, checked: boolean) => {
+                    readwiseTrack.selectIntegrationImport({
+                      method: 'single',
+                      option: checked ? 'on' : 'off',
+                      control: 'Readwise import list',
                     });
+                    setSelected(
+                      checked
+                        ? [...selected, highlight.id]
+                        : selected.filter(id => id !== highlight.id)
+                    );
                   }}
                 />
               </div>
@@ -363,11 +413,11 @@ const HighlightTable = ({
                 </a>
               </div>
               <div className={styles.tableCellTodo}>
-                {!localUpdatedAt ? (
+                {action === 'new' ? (
                   <span className={styles.todoNew}>
                     {t['com.affine.integration.readwise.import.todo-new']()}
                   </span>
-                ) : localUpdatedAt === readwiseUpdatedAt ? (
+                ) : action === 'skip' ? (
                   <span className={styles.todoSkip}>
                     {t['com.affine.integration.readwise.import.todo-skip']()}
                   </span>

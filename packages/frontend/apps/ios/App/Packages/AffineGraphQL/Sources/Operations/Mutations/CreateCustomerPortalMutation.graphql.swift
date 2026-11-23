@@ -20,6 +20,9 @@ public class CreateCustomerPortalMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createCustomerPortal", String.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCustomerPortalMutation.Data.self
+    ] }
 
     /// Create a stripe customer portal to manage payment methods
     public var createCustomerPortal: String { __data["createCustomerPortal"] }

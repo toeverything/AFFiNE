@@ -4,6 +4,7 @@ import type { ToolbarContext } from './context';
 
 export enum ActionPlacement {
   Start = 0,
+  Normal = 1 << 0,
   End = 1 << 1,
   More = 1 << 2,
 }
@@ -18,8 +19,9 @@ type ActionBase = {
 
 export type ToolbarAction = ActionBase & {
   label?: string;
+  showLabel?: boolean;
   icon?: TemplateResult;
-  tooltip?: string;
+  tooltip?: string | TemplateResult;
   variant?: 'destructive';
   disabled?: ((cx: ToolbarContext) => boolean) | boolean;
   content?:

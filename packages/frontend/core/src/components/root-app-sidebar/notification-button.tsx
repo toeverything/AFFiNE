@@ -2,6 +2,7 @@ import { Menu } from '@affine/component';
 import { MenuItem } from '@affine/core/modules/app-sidebar/views';
 import { NotificationCountService } from '@affine/core/modules/notification';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { NotificationIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
@@ -28,9 +29,17 @@ export const NotificationButton = () => {
 
   const [notificationListOpen, setNotificationListOpen] = useState(false);
 
-  const handleNotificationListOpenChange = useCallback((open: boolean) => {
-    setNotificationListOpen(open);
-  }, []);
+  const handleNotificationListOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        track.$.sidebar.notifications.openInbox({
+          unreadCount: notificationCountService.count$.value,
+        });
+      }
+      setNotificationListOpen(open);
+    },
+    [notificationCountService.count$.value]
+  );
 
   return (
     <Menu
@@ -47,7 +56,6 @@ export const NotificationButton = () => {
       <MenuItem
         icon={<NotificationIcon />}
         postfix={<Badge count={notificationCount} />}
-        active={notificationListOpen}
         postfixDisplay="always"
       >
         <span data-testid="notification-button">

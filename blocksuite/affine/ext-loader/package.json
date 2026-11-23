@@ -1,0 +1,30 @@
+{
+  "name": "@blocksuite/affine-ext-loader",
+  "description": "Extension loader for affine",
+  "type": "module",
+  "scripts": {
+    "build": "yarn run -T tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/store": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.27.5"
+}

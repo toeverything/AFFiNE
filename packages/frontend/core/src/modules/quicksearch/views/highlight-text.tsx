@@ -3,7 +3,7 @@ import { Fragment, useMemo } from 'react';
 import * as styles from './highlight-text.css';
 
 type HighlightProps = {
-  text: string;
+  text?: string;
   start: string;
   end: string;
 };

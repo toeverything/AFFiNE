@@ -1,4 +1,3 @@
-import type { PointTestOptions } from '@blocksuite/block-std/gfx';
 import type { IBound, IVec } from '@blocksuite/global/gfx';
 import {
   Bound,
@@ -12,6 +11,7 @@ import {
   polygonNearestPoint,
   rotatePoints,
 } from '@blocksuite/global/gfx';
+import type { PointTestOptions } from '@blocksuite/std/gfx';
 
 import { DEFAULT_CENTRAL_AREA_RATIO } from '../../../consts/index.js';
 import type { ShapeElementModel } from '../shape.js';

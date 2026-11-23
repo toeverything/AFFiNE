@@ -1,10 +1,24 @@
-import { Button, Input, Modal, notify } from '@affine/component';
+import {
+  Button,
+  type ButtonProps,
+  Input,
+  Modal,
+  notify,
+} from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { Trans, useI18n } from '@affine/i18n';
 import { ReadwiseLogoDuotoneIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
-import { type FormEvent, useCallback, useState } from 'react';
+import clsx from 'clsx';
+import {
+  type FormEvent,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { IntegrationCardIcon } from '../card';
 import {
@@ -17,9 +31,17 @@ import {
   getTokenLink,
   inputErrorMsg,
 } from './index.css';
+import { readwiseTrack } from './track';
 
-const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
+const ConnectDialog = ({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: (token: string) => void;
+}) => {
   const t = useI18n();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<'idle' | 'verifying' | 'error'>('idle');
   const [token, setToken] = useState('');
   const readwise = useService(IntegrationService).readwise;
@@ -42,8 +64,11 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
 
   const handleResult = useCallback(
     (success: boolean, token: string) => {
+      readwiseTrack.connectIntegration({
+        result: success ? 'success' : 'failed',
+      });
       if (success) {
-        readwise.updateSetting('token', token);
+        onSuccess(token);
       } else {
         setStatus('error');
         notify.error({
@@ -54,7 +79,7 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
         });
       }
     },
-    [readwise, t]
+    [onSuccess, t]
   );
 
   const handleConnect = useAsyncCallback(
@@ -71,6 +96,14 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
     },
     [handleResult, readwise]
   );
+
+  useEffect(() => {
+    const onFocus = () => inputRef.current?.focus();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
 
   return (
     <Modal
@@ -96,10 +129,12 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
                 className={getTokenLink}
               />
             ),
+            br: <br />,
           }}
         />
       </div>
       <Input
+        ref={inputRef}
         value={token}
         onInput={handleInput}
         placeholder={t['com.affine.integration.readwise.connect.placeholder']()}
@@ -129,7 +164,14 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ConnectButton = () => {
+export const ReadwiseConnectButton = ({
+  onSuccess,
+  className,
+  onClick,
+  ...buttonProps
+}: {
+  onSuccess: (token: string) => void;
+} & ButtonProps) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
 
@@ -137,14 +179,22 @@ export const ConnectButton = () => {
     setOpen(false);
   }, []);
 
-  const handleOpen = useCallback(() => {
-    setOpen(true);
-  }, []);
+  const handleOpen = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      onClick?.(e);
+      setOpen(true);
+    },
+    [onClick]
+  );
 
   return (
     <>
-      {open && <ConnectDialog onClose={handleClose} />}
-      <Button variant="primary" className={actionButton} onClick={handleOpen}>
+      {open && <ConnectDialog onClose={handleClose} onSuccess={onSuccess} />}
+      <Button
+        className={clsx(actionButton, className)}
+        onClick={handleOpen}
+        {...buttonProps}
+      >
         {t['com.affine.integration.readwise.connect']()}
       </Button>
     </>

@@ -20,23 +20,33 @@ export const validateAndReduceImage = async (file: File): Promise<File> => {
     const sizeInMB = file.size / (1024 * 1024);
     if (sizeInMB > 10 || img.width > 4000 || img.height > 4000) {
       // Compress the file to less than 10MB
-      const compressedImg = await reduce().toBlob(file, {
-        max: 4000,
-        unsharpAmount: 80,
-        unsharpRadius: 0.6,
-        unsharpThreshold: 2,
-      });
-      return compressedImg;
+
+      try {
+        const compressedImg = await reduce().toBlob(file, {
+          max: 4000,
+          unsharpAmount: 80,
+          unsharpRadius: 0.6,
+          unsharpThreshold: 2,
+        });
+        return compressedImg;
+      } catch (error) {
+        if (error instanceof Error) {
+          throw new Error(
+            'Image processing failed. This can happen if fingerprint protection is enabled in your browser. Please check your browser settings and try again.'
+          );
+        } else {
+          throw new Error('Unknown error occurred');
+        }
+      }
     }
 
     return file;
   };
 
-  try {
-    const reducedBlob = await decodeAndReduceImage();
+  const reducedBlob = await decodeAndReduceImage();
 
-    return new File([reducedBlob], file.name, { type: file.type });
-  } catch (error) {
-    throw new Error('Image could not be reduce :' + error);
-  }
+  return new File([reducedBlob], file.name, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 };

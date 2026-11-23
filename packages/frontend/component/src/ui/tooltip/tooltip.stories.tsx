@@ -91,6 +91,19 @@ export const CustomAlign = () => {
   );
 };
 
+const sides = ['top', 'right', 'bottom', 'left'] as const;
+export const CustomSide = () => {
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      {sides.map(side => (
+        <Tooltip content="This is a tooltip" side={side} key={side}>
+          <Button>Show tooltip at {side}</Button>
+        </Tooltip>
+      ))}
+    </div>
+  );
+};
+
 export const WithCustomContent: StoryFn<TooltipProps> = args => (
   <Tooltip
     content={

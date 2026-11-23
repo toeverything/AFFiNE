@@ -2,6 +2,10 @@ import type { RouteObject } from 'react-router-dom';
 
 export const workbenchRoutes = [
   {
+    path: '/chat',
+    lazy: () => import('./pages/workspace/chat/index'),
+  },
+  {
     path: '/all',
     lazy: () => import('./pages/workspace/all-page/all-page'),
   },
@@ -35,7 +39,11 @@ export const workbenchRoutes = [
   },
   {
     path: '/journals',
-    lazy: () => import('./pages/journals'),
+    lazy: () => import('./pages/workspace/journals'),
+  },
+  {
+    path: '/settings',
+    lazy: () => import('./pages/workspace/settings'),
   },
   {
     path: '*',

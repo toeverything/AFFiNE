@@ -1,7 +1,6 @@
 import { Divider, Loading, toast } from '@affine/component';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { useI18n } from '@affine/i18n';
 import type { ImageBlockModel } from '@blocksuite/affine/model';
 import type { BlockModel, Workspace } from '@blocksuite/affine/store';
 import {
@@ -37,9 +36,24 @@ import { useEditor } from '../utils';
 import { useZoomControls } from './hooks/use-zoom';
 import * as styles from './index.css';
 
-const filterImageBlock = (block: BlockModel): block is ImageBlockModel => {
-  return block.flavour === 'affine:image';
-};
+export interface ImageData {
+  index?: number;
+  url: string;
+  caption?: string;
+  onDelete?: () => void;
+  previous?: () => ImageData | undefined;
+  next?: () => ImageData | undefined;
+}
+
+export interface ImagePreviewData {
+  image: ImageData;
+  total?: number;
+}
+
+export interface ImagePreviewProps extends ImagePreviewData {
+  onClose: () => void;
+  blobId?: string;
+}
 
 async function copyImageToClipboard(url: string) {
   const blob = await resourceUrlToBlob(url);
@@ -55,111 +69,23 @@ async function copyImageToClipboard(url: string) {
   }
 }
 
-export type ImagePreviewModalProps = {
-  docId: string;
-  blockId: string;
-};
-
-function useImageBlob(
-  docCollection: Workspace,
-  docId: string,
-  blockId: string
-) {
-  const { data, error, isLoading } = useSWR(
-    ['workspace', 'image', docId, blockId],
-    {
-      fetcher: async ([_, __, pageId, blockId]) => {
-        const page = docCollection.getDoc(pageId);
-        const block = page?.getBlock(blockId);
-        if (!block) {
-          return null;
-        }
-        const blockModel = block.model as ImageBlockModel;
-        return await docCollection.blobSync.get(
-          blockModel.props.sourceId as string
-        );
-      },
-      suspense: false,
-    }
-  );
-
-  return { data, error, isLoading };
-}
-
-const ImagePreview = forwardRef<
+const GenericImagePreview = forwardRef<
   HTMLImageElement,
-  {
-    docCollection: Workspace;
-    docId: string;
-    blockId: string;
-  } & ImgHTMLAttributes<HTMLImageElement>
->(function ImagePreview({ docCollection, docId, blockId, ...props }, ref) {
-  const { data, error, isLoading } = useImageBlob(
-    docCollection,
-    docId,
-    blockId
-  );
-
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-
-  const t = useI18n();
-
-  useEffect(() => {
-    let blobUrl = null;
-    if (data) {
-      blobUrl = URL.createObjectURL(data);
-      setBlobUrl(blobUrl);
-    }
-    return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
-    };
-  }, [data]);
-
-  if (error) {
-    return <div>{t['error.NOT_FOUND']()}</div>;
-  }
-
-  if (!blobUrl || isLoading) {
+  ImgHTMLAttributes<HTMLImageElement>
+>(function GenericImagePreview(props, ref) {
+  if (!props.src) {
     return <Loading size={24} />;
   }
 
-  return (
-    <img
-      data-blob-id={blockId}
-      data-testid="image-content"
-      src={blobUrl}
-      ref={ref}
-      {...props}
-    />
-  );
+  return <img data-testid="image-content" ref={ref} {...props} />;
 });
 
-const ImagePreviewModalImpl = ({
-  docId,
-  blockId,
-  onBlockIdChange,
+export const GenericImagePreviewModal = ({
+  image,
+  total,
   onClose,
-}: ImagePreviewModalProps & {
-  onBlockIdChange: (blockId: string) => void;
-  onClose: () => void;
-}): ReactElement | null => {
-  const { doc, workspace } = useEditor(docId);
-  const blocksuiteDoc = doc?.blockSuiteDoc;
-  const docCollection = workspace.docCollection;
-  const blockModel = useMemo(() => {
-    const block = blocksuiteDoc?.getBlock(blockId);
-    if (!block) {
-      return null;
-    }
-    return block.model as ImageBlockModel;
-  }, [blockId, blocksuiteDoc]);
-  const caption = useMemo(() => {
-    return blockModel?.props.caption ?? '';
-  }, [blockModel?.props.caption]);
-  const [blocks, setBlocks] = useState<ImageBlockModel[]>([]);
-  const [cursor, setCursor] = useState(0);
+  blobId,
+}: ImagePreviewProps): ReactElement => {
   const zoomRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const {
@@ -174,107 +100,23 @@ const ImagePreviewModalImpl = ({
     currentScale,
   } = useZoomControls({ zoomRef, imageRef });
 
-  const goto = useCallback(
-    (index: number) => {
-      const block = blocks[index];
-
-      if (!block) return;
-
-      setCursor(index);
-      onBlockIdChange(block.id);
-      resetZoom();
-    },
-    [blocks, onBlockIdChange, resetZoom]
-  );
-
-  const deleteHandler = useCallback(
-    (index: number) => {
-      if (!blocksuiteDoc) {
-        return;
-      }
-
-      let block = blocks[index];
-
-      if (!block) return;
-      const newBlocks = blocks.toSpliced(index, 1);
-      setBlocks(newBlocks);
-
-      blocksuiteDoc.deleteBlock(block);
-
-      // next
-      block = newBlocks[index];
-
-      // prev
-      if (!block) {
-        index -= 1;
-        block = newBlocks[index];
-
-        if (!block) {
-          onClose();
-          return;
-        }
-
-        setCursor(index);
-      }
-
-      onBlockIdChange(block.id);
-
-      resetZoom();
-    },
-    [blocksuiteDoc, blocks, onBlockIdChange, resetZoom, onClose]
-  );
   const downloadHandler = useAsyncCallback(async () => {
-    const image = imageRef.current;
-    if (!image?.src) return;
-    const filename = caption || blockModel?.id || 'image';
-    await downloadResourceWithUrl(image.src, filename);
-  }, [caption, blockModel?.id]);
+    if (!image.url) return;
+    const filename = image.caption || 'image';
+    await downloadResourceWithUrl(image.url, filename);
+  }, [image]);
 
   const copyHandler = useAsyncCallback(async () => {
-    const image = imageRef.current;
-    if (!image?.src) return;
-    await copyImageToClipboard(image.src);
-  }, []);
-
-  useEffect(() => {
-    if (!blockModel || !blocksuiteDoc) {
-      return;
-    }
-
-    const prevs = blocksuiteDoc.getPrevs(blockModel).filter(filterImageBlock);
-    const nexts = blocksuiteDoc.getNexts(blockModel).filter(filterImageBlock);
-
-    const blocks = [...prevs, blockModel, ...nexts];
-    setBlocks(blocks);
-    setCursor(blocks.length ? prevs.length : 0);
-  }, [setBlocks, blockModel, blocksuiteDoc]);
+    if (!image.url) return;
+    await copyImageToClipboard(image.url);
+  }, [image.url]);
 
   useEffect(() => {
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (!blocksuiteDoc || !blockModel) {
-        return;
-      }
-
-      if (event.key === 'ArrowLeft') {
-        const prevBlock = blocksuiteDoc
-          .getPrevs(blockModel)
-          .findLast(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          );
-        if (prevBlock) {
-          onBlockIdChange(prevBlock.id);
-        }
-      } else if (event.key === 'ArrowRight') {
-        const nextBlock = blocksuiteDoc
-          .getNexts(blockModel)
-          .find(
-            (block): block is ImageBlockModel =>
-              block.flavour === 'affine:image'
-          );
-        if (nextBlock) {
-          onBlockIdChange(nextBlock.id);
-        }
+      if (event.key === 'ArrowLeft' && image.previous) {
+        image.previous();
+      } else if (event.key === 'ArrowRight' && image.next) {
+        image.next();
       } else {
         return;
       }
@@ -285,7 +127,6 @@ const ImagePreviewModalImpl = ({
     const onCopyEvent = (event: ClipboardEvent) => {
       event.preventDefault();
       event.stopPropagation();
-
       copyHandler();
     };
 
@@ -295,7 +136,7 @@ const ImagePreviewModalImpl = ({
       document.removeEventListener('keyup', handleKeyUp);
       document.removeEventListener('copy', onCopyEvent);
     };
-  }, [blockModel, blocksuiteDoc, copyHandler, onBlockIdChange]);
+  }, [copyHandler, image]);
 
   return (
     <div
@@ -309,13 +150,11 @@ const ImagePreviewModalImpl = ({
           ref={zoomRef}
         >
           <div className={styles.imagePreviewModalCenterStyle}>
-            <ImagePreview
-              data-blob-id={blockId}
+            <GenericImagePreview
+              data-blob-id={blobId}
+              src={image.url}
+              alt={image.caption}
               data-testid="image-content"
-              docCollection={docCollection}
-              docId={docId}
-              blockId={blockId}
-              alt={caption}
               tabIndex={0}
               ref={imageRef}
               draggable={isZoomedBigger}
@@ -329,7 +168,7 @@ const ImagePreviewModalImpl = ({
                 data-testid="image-caption-zoomedout"
                 className={styles.imagePreviewModalCaptionStyle}
               >
-                {caption}
+                {image.caption}
               </p>
             )}
           </div>
@@ -337,12 +176,12 @@ const ImagePreviewModalImpl = ({
       </div>
 
       <div className={styles.imageBottomContainerStyle}>
-        {isZoomedBigger && caption !== '' ? (
+        {isZoomedBigger && image.caption ? (
           <p
-            data-testid={'image-caption-zoomedin'}
+            data-testid="image-caption-zoomedin"
             className={styles.captionStyle}
           >
-            {caption}
+            {image.caption}
           </p>
         ) : null}
         <div className={styles.imagePreviewActionBarStyle}>
@@ -350,18 +189,20 @@ const ImagePreviewModalImpl = ({
             data-testid="previous-image-button"
             tooltip="Previous"
             icon={<ArrowLeftSmallIcon />}
-            disabled={cursor < 1}
-            onClick={() => goto(cursor - 1)}
+            disabled={!image.previous}
+            onClick={image.previous}
           />
-          <div className={styles.cursorStyle}>
-            {`${blocks.length ? cursor + 1 : 0}/${blocks.length}`}
-          </div>
+          {image.index != null && total != null && (
+            <div className={styles.cursorStyle}>
+              {`${image.index + 1}/${total}`}
+            </div>
+          )}
           <IconButton
             data-testid="next-image-button"
             tooltip="Next"
             icon={<ArrowRightSmallIcon />}
-            disabled={cursor + 1 === blocks.length}
-            onClick={() => goto(cursor + 1)}
+            disabled={!image.next}
+            onClick={image.next}
           />
           <Divider size="thinner" orientation="vertical" />
           <IconButton
@@ -403,15 +244,14 @@ const ImagePreviewModalImpl = ({
             icon={<CopyIcon />}
             onClick={copyHandler}
           />
-          {blockModel && !blockModel.doc.readonly && (
+          {image.onDelete && (
             <>
               <Divider size="thinner" orientation="vertical" />
               <IconButton
                 data-testid="delete-button"
                 tooltip="Delete"
                 icon={<DeleteIcon />}
-                disabled={blocks.length === 0}
-                onClick={() => deleteHandler(cursor)}
+                onClick={image.onDelete}
                 variant="danger"
               />
             </>
@@ -420,6 +260,171 @@ const ImagePreviewModalImpl = ({
       </div>
     </div>
   );
+};
+
+// Adapter layer
+export type ImagePreviewModalProps = {
+  docId: string;
+  blockId: string;
+};
+
+const useImageBlob = (
+  docCollection: Workspace,
+  docId: string,
+  blockId: string
+) => {
+  const { data, error, isLoading } = useSWR(
+    ['workspace', 'image', docId, blockId],
+    {
+      fetcher: async ([_, __, pageId, blockId]) => {
+        const page = docCollection.getDoc(pageId)?.getStore();
+        const block = page?.getBlock(blockId);
+        if (!block) {
+          return null;
+        }
+        const blockModel = block.model as ImageBlockModel;
+        return await docCollection.blobSync.get(
+          blockModel.props.sourceId as string
+        );
+      },
+      suspense: false,
+    }
+  );
+
+  return { data, error, isLoading };
+};
+
+const ImagePreviewModalImpl = ({
+  docId,
+  blockId,
+  onBlockIdChange,
+  onClose,
+}: ImagePreviewModalProps & {
+  onBlockIdChange: (blockId: string) => void;
+  onClose: () => void;
+}): ReactElement | null => {
+  const { doc, workspace } = useEditor(docId);
+  const blocksuiteDoc = doc?.blockSuiteDoc;
+  const docCollection = workspace.docCollection;
+  const blockModel = useMemo(() => {
+    const block = blocksuiteDoc?.getBlock(blockId);
+    if (!block) {
+      return null;
+    }
+    return block.model as ImageBlockModel;
+  }, [blockId, blocksuiteDoc]);
+
+  const {
+    data: blobData,
+    error,
+    isLoading,
+  } = useImageBlob(docCollection, docId, blockId);
+
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let blobUrl = null;
+    if (blobData) {
+      blobUrl = URL.createObjectURL(blobData);
+      setBlobUrl(blobUrl);
+    }
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [blobData]);
+
+  const [blocks, setBlocks] = useState<ImageBlockModel[]>([]);
+  const [cursor, setCursor] = useState(0);
+
+  useEffect(() => {
+    if (!blockModel || !blocksuiteDoc) {
+      return;
+    }
+
+    const prevs = blocksuiteDoc.getPrevs(blockModel).filter(filterImageBlock);
+    const nexts = blocksuiteDoc.getNexts(blockModel).filter(filterImageBlock);
+
+    const blocks = [...prevs, blockModel, ...nexts];
+    setBlocks(blocks);
+    setCursor(blocks.length ? prevs.length : 0);
+  }, [blockModel, blocksuiteDoc]);
+
+  if (error || !blobUrl || isLoading || !blockModel) {
+    return null;
+  }
+
+  const createImageData = (index: number): ImageData => {
+    const prevBlock = blocks[index - 1];
+    const nextBlock = blocks[index + 1];
+    return {
+      index,
+      url: blobUrl,
+      caption: blockModel.props.caption,
+      onDelete: !blockModel.store.readonly
+        ? () => {
+            handleDelete();
+          }
+        : undefined,
+      previous: prevBlock
+        ? () => {
+            onBlockIdChange(prevBlock.id);
+            return createImageData(index - 1);
+          }
+        : undefined,
+      next: nextBlock
+        ? () => {
+            onBlockIdChange(nextBlock.id);
+            return createImageData(index + 1);
+          }
+        : undefined,
+    };
+  };
+
+  const imageData: ImageData = createImageData(cursor);
+
+  const handleDelete = () => {
+    if (!blocksuiteDoc) {
+      return;
+    }
+
+    const currentBlock = blocks[cursor];
+    if (!currentBlock) return;
+
+    const newBlocks = blocks.toSpliced(cursor, 1);
+    setBlocks(newBlocks);
+    blocksuiteDoc.deleteBlock(currentBlock);
+
+    let nextBlock = newBlocks[cursor];
+
+    if (!nextBlock) {
+      const prevIndex = cursor - 1;
+      nextBlock = newBlocks[prevIndex];
+
+      if (!nextBlock) {
+        onClose();
+        return;
+      }
+
+      setCursor(prevIndex);
+    }
+
+    onBlockIdChange(nextBlock.id);
+  };
+
+  return (
+    <GenericImagePreviewModal
+      total={blocks.length}
+      image={imageData}
+      onClose={onClose}
+      blobId={blockId}
+    />
+  );
+};
+
+const filterImageBlock = (block: BlockModel): block is ImageBlockModel => {
+  return block.flavour === 'affine:image';
 };
 
 export const ImagePreviewPeekView = (
@@ -448,6 +453,54 @@ export const ImagePreviewPeekView = (
         ref={buttonRef}
         data-testid="image-preview-close-button"
         onClick={onClose}
+        className={styles.imagePreviewModalCloseButtonStyle}
+      >
+        <CloseIcon />
+      </button>
+    </>
+  );
+};
+
+export const GenericImagePreviewModalWithClose = (
+  props: Omit<ImagePreviewProps, 'onClose'>
+) => {
+  const peekViewService = useService(PeekViewService);
+  const handleClose = useCallback(() => {
+    peekViewService.peekView.close();
+  }, [peekViewService]);
+
+  const [image, setImage] = useState<ImageData>(props.image);
+
+  const prevImage = useCallback(() => {
+    const prev = image.previous?.();
+    if (!prev) return;
+    setImage(prev);
+    return prev;
+  }, [image]);
+
+  const nextImage = useCallback(() => {
+    const next = image.next?.();
+    if (!next) return;
+    setImage(next);
+    return next;
+  }, [image]);
+  return (
+    <>
+      <GenericImagePreviewModal
+        total={props.total}
+        image={{
+          index: image.index,
+          url: image.url,
+          caption: image.caption,
+          onDelete: image.onDelete,
+          previous: prevImage,
+          next: nextImage,
+        }}
+        onClose={handleClose}
+      />
+      <button
+        data-testid="image-preview-close-button"
+        onClick={handleClose}
         className={styles.imagePreviewModalCloseButtonStyle}
       >
         <CloseIcon />

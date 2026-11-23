@@ -3,6 +3,7 @@ import {
   getSelectedNodes,
   useSharingUrl,
 } from '@affine/core/components/hooks/affine/use-share-url';
+import { getDefaultShareMode } from '@affine/core/components/hooks/affine/use-share-url.utils';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/affine/model';
@@ -44,13 +45,18 @@ export const CopyLinkButton = ({
   const onCopyBlockLink = useCallback(() => {
     onClickCopyLink(currentMode, blockIds, elementIds);
   }, [onClickCopyLink, currentMode, blockIds, elementIds]);
+
+  const onCopyLink = useCallback(() => {
+    onClickCopyLink(getDefaultShareMode(currentMode));
+  }, [currentMode, onClickCopyLink]);
+
   return (
     <div
       className={clsx(styles.copyLinkContainerStyle, { secondary: secondary })}
     >
       <Button
         className={styles.copyLinkButtonStyle}
-        onClick={onCopyBlockLink}
+        onClick={onCopyLink}
         withoutHover
         variant={secondary ? 'secondary' : 'primary'}
       >

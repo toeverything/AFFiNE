@@ -1,9 +1,9 @@
 import './ask-ai-panel';
 
-import { type EditorHost } from '@blocksuite/affine/block-std';
 import { HoverController } from '@blocksuite/affine/components/hover';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { type EditorHost } from '@blocksuite/affine/std';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -92,7 +92,7 @@ export class AskAIButton extends WithDisposable(LitElement) {
       return;
     }
 
-    if (this._abortController) {
+    if (this._abortController && !this._abortController.signal.aborted) {
       this._clearAbortController();
       return;
     }
@@ -131,6 +131,7 @@ export class AskAIButton extends WithDisposable(LitElement) {
     });
     return html`<div
       class="ask-ai-button"
+      data-testid="ask-ai-button"
       style=${buttonStyles}
       ${toggleType === 'hover' ? ref(this._whenHover.setReference) : nothing}
       @click=${this._toggleAIPanel}

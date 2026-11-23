@@ -1,24 +1,15 @@
-import { ChatHistoryOrder } from '@affine/graphql';
-import {
-  type BlockComponent,
-  type BlockSelection,
-  type BlockStdScope,
-  type EditorHost,
-  type TextSelection,
-} from '@blocksuite/affine/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
   getCommonBoundWithRotation,
   type SerializedXYWH,
 } from '@blocksuite/affine/global/gfx';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   type DocMode,
   NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/affine/model';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
 import {
   getFirstBlockCommand,
   getLastBlockCommand,
@@ -31,9 +22,18 @@ import {
   NotificationProvider,
   TelemetryProvider,
 } from '@blocksuite/affine/shared/services';
+import {
+  type BlockComponent,
+  type BlockSelection,
+  type BlockStdScope,
+  type EditorHost,
+  type TextSelection,
+} from '@blocksuite/affine/std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { Store } from '@blocksuite/affine/store';
 import {
   BlockIcon,
+  EdgelessIcon,
   InsertBleowIcon as InsertBelowIcon,
   LinkedPageIcon,
   PageIcon,
@@ -41,8 +41,10 @@ import {
 import type { TemplateResult } from 'lit';
 
 import { insertFromMarkdown } from '../../utils';
-import type { ChatMessage } from '../blocks';
-import { AIProvider, type AIUserInfo } from '../provider';
+import type { ChatMessage } from '../components/ai-chat-messages';
+import { AIAppEvents, type AIUserInfo } from '../provider';
+import { AIChatRuntime, ForkAIChatSessionStrategy } from '../runtime/chat';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { insertBelow } from '../utils/editor-actions';
 
@@ -68,14 +70,15 @@ export type ChatAction = {
 
 export async function queryHistoryMessages(
   workspaceId: string,
-  docId: string,
-  forkSessionId: string
+  forkSessionId: string,
+  docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
-    sessionId: forkSessionId,
-    messageOrder: ChatHistoryOrder.asc,
-  });
+  const histories = await getAIRequestService().histories.chats(
+    workspaceId,
+    forkSessionId,
+    docId
+  );
 
   if (!histories || !histories.length) {
     return [];
@@ -90,7 +93,7 @@ export function constructUserInfoWithMessages(
   userInfo: AIUserInfo | null
 ) {
   return messages.map(message => {
-    const { role, id, content, createdAt } = message;
+    const { role, streamObjects } = message;
     const isUser = role === 'user';
     const userInfoProps = isUser
       ? {
@@ -100,12 +103,10 @@ export function constructUserInfoWithMessages(
         }
       : {};
     return {
-      id,
-      role,
-      content,
-      createdAt,
-      attachments: [],
+      ...message,
       ...userInfoProps,
+      attachments: [],
+      streamObjects: streamObjects || [],
     };
   });
 }
@@ -115,12 +116,12 @@ export async function constructRootChatBlockMessages(
   forkSessionId: string
 ) {
   // Convert chat messages to AI chat block messages
-  const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(
+  const userInfo = AIAppEvents.userInfo.value;
+  const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
-    doc.id,
-    forkSessionId
-  );
+    forkSessionId,
+    doc.id
+  )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
@@ -160,8 +161,8 @@ function addAIChatBlock(
     return;
   }
 
-  const { doc } = host;
-  const surfaceBlock = doc
+  const { store } = host;
+  const surfaceBlock = store
     .getAllModels()
     .find(block => block.flavour === 'affine:surface');
   if (!surfaceBlock) {
@@ -174,15 +175,15 @@ function addAIChatBlock(
   const x = viewportCenter.x - width / 2;
   const y = viewportCenter.y - height / 2;
   const bound = new Bound(x, y, width, height);
-  const aiChatBlockId = doc.addBlock(
+  const aiChatBlockId = store.addBlock(
     'affine:embed-ai-chat',
     {
       xywh: bound.serialize(),
       messages: JSON.stringify(messages),
       index,
       sessionId,
-      rootWorkspaceId: doc.workspace.id,
-      rootDocId: doc.id,
+      rootWorkspaceId: store.workspace.id,
+      rootDocId: store.id,
     },
     surfaceBlock.id
   );
@@ -248,12 +249,12 @@ async function insertBelowBlock(
 ): Promise<boolean> {
   if (!block) return false;
 
-  reportResponse('result:insert');
+  reportResponse('result:insert', host);
   await insertBelow(host, content, block);
   return true;
 }
 
-const PAGE_INSERT = {
+export const PAGE_INSERT = {
   icon: InsertBelowIcon({ width: '20px', height: '20px' }),
   title: 'Insert',
   showWhen: (host: EditorHost) => {
@@ -292,7 +293,7 @@ const PAGE_INSERT = {
   },
 };
 
-const EDGELESS_INSERT = {
+export const EDGELESS_INSERT = {
   ...PAGE_INSERT,
   handler: async (
     host: EditorHost,
@@ -377,13 +378,20 @@ const SAVE_AS_BLOCK: ChatAction = {
       });
     }
 
-    try {
-      const newSessionId = await AIProvider.forkChat?.({
-        workspaceId: host.doc.workspace.id,
-        docId: host.doc.id,
-        sessionId: parentSessionId,
+    const runtime = new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'fork',
+        workspaceId: host.store.workspace.id,
+        docId: host.store.id,
+        parentSessionId,
         latestMessageId: messageId,
-      });
+      },
+      strategy: new ForkAIChatSessionStrategy(),
+    });
+    try {
+      const newSession = await runtime.createSession();
+      const newSessionId = newSession?.sessionId;
 
       if (!newSessionId) {
         return false;
@@ -391,7 +399,7 @@ const SAVE_AS_BLOCK: ChatAction = {
 
       // Get messages before the latest message
       const messages = await constructRootChatBlockMessages(
-        host.doc,
+        host.store,
         newSessionId
       );
 
@@ -425,12 +433,14 @@ const SAVE_AS_BLOCK: ChatAction = {
         onClose: function (): void {},
       });
       return false;
+    } finally {
+      runtime.dispose();
     }
   },
 };
 
 const ADD_TO_EDGELESS_AS_NOTE = {
-  icon: PageIcon({ width: '20px', height: '20px' }),
+  icon: EdgelessIcon({ width: '20px', height: '20px' }),
   title: 'Add to edgeless as note',
   showWhen: (host: EditorHost) => {
     if (host.std.store.readonly$.value) {
@@ -440,8 +450,8 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
   toast: 'New note created',
   handler: async (host: EditorHost, content: string): Promise<boolean> => {
-    reportResponse('result:add-note');
-    const { doc } = host;
+    reportResponse('result:add-note', host);
+    const { store } = host;
 
     const gfx = host.std.get(GfxControllerIdentifier);
     const elements = gfx.selection.selectedElements;
@@ -457,9 +467,9 @@ const ADD_TO_EDGELESS_AS_NOTE = {
       props.xywh = newBound.serialize();
     }
 
-    const id = doc.addBlock('affine:note', props, doc.root?.id);
+    const id = store.addBlock('affine:note', props, store.root?.id);
 
-    await insertFromMarkdown(host, content, doc, id, 0);
+    await insertFromMarkdown(host, content, store, id, 0);
 
     gfx.selection.set({
       elements: [id],
@@ -470,14 +480,15 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
 };
 
-const SAVE_AS_DOC = {
+export const SAVE_AS_DOC = {
   icon: PageIcon({ width: '20px', height: '20px' }),
   title: 'Save as doc',
   showWhen: () => true,
   toast: 'New doc created',
   handler: (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
-    const newDoc = host.doc.workspace.createDoc();
+    reportResponse('result:add-page', host);
+    const doc = host.store.workspace.createDoc();
+    const newDoc = doc.getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
     newDoc.addBlock('affine:surface', {}, rootId);
@@ -490,15 +501,19 @@ const SAVE_AS_DOC = {
     let complete = false;
     (function addContent() {
       if (complete) return;
-      const newHost = document.querySelector('editor-host');
+      const newHost = [
+        ...document.querySelectorAll<EditorHost>('editor-host'),
+      ].find(candidate => candidate.store.id === newDoc.id);
       // FIXME: this is a hack to wait for the host to be ready, now we don't have a way to know if the new host is ready
-      if (!newHost || newHost === host) {
+      if (!newHost) {
         setTimeout(addContent, 100);
         return;
       }
       complete = true;
-      const { doc } = newHost;
-      insertFromMarkdown(newHost, content, doc, noteId, 0).catch(console.error);
+      const { store } = newHost;
+      insertFromMarkdown(newHost, content, store, noteId, 0).catch(
+        console.error
+      );
     })();
 
     return true;
@@ -516,10 +531,10 @@ const CREATE_AS_LINKED_DOC = {
   },
   toast: 'New doc created',
   handler: async (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
+    reportResponse('result:add-page', host);
 
-    const { doc } = host;
-    const surfaceBlock = doc
+    const { store } = host;
+    const surfaceBlock = store
       .getAllModels()
       .find(block => block.flavour === 'affine:surface');
     if (!surfaceBlock) {
@@ -533,7 +548,7 @@ const CREATE_AS_LINKED_DOC = {
     }
 
     // Create a new doc and add the content to it
-    const newDoc = host.doc.workspace.createDoc();
+    const newDoc = host.store.workspace.createDoc().getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
     newDoc.addBlock('affine:surface', {}, rootId);

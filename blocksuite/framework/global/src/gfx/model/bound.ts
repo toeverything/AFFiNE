@@ -341,8 +341,15 @@ export class Bound implements IBound {
     return serializeXYWH(this.x, this.y, this.w, this.h);
   }
 
+  /**
+   * Convert a point to relative coordinates.
+   * @param point - The point to convert.
+   * @returns The normalized relative coordinates of the point.
+   */
   toRelative([x, y]: IVec): IVec {
-    return [(x - this.x) / this.w, (y - this.y) / this.h];
+    const normalizedX = this.w === 0 ? 0 : (x - this.x) / this.w;
+    const normalizedY = this.h === 0 ? 0 : (y - this.y) / this.h;
+    return [normalizedX, normalizedY];
   }
 
   toXYWH(): XYWH {

@@ -71,6 +71,7 @@ export const authInputError = style({
   color: cssVar('errorColor'),
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
+  minHeight: '20px',
 });
 
 globalStyle(`${authContent} a`, {

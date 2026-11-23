@@ -1,6 +1,7 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ToggleDownIcon, ToggleRightIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html } from 'lit-html';
@@ -14,6 +15,11 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       align-items: start;
       justify-content: start;
       position: absolute;
+      padding: 0;
+      border: 0;
+      color: inherit;
+      background: transparent;
+      font: inherit;
       width: 16px;
       height: 16px;
       top: calc((1em - 16px) / 2 + 5px);
@@ -27,6 +33,11 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
 
     .toggle-icon:hover {
       background: var(--affine-hover-color);
+    }
+
+    .toggle-icon:focus-visible {
+      opacity: 1;
+      outline: 1px solid var(--affine-primary-color);
     }
 
     .toggle-icon[data-collapsed='true'] {
@@ -43,39 +54,32 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
     .with-drag-handle .affine-block-children-container .toggle-icon {
       opacity: 0;
     }
+
+    .toggle-icon {
+      svg {
+        color: ${unsafeCSSVarV2('icon/primary', '#77757D')};
+      }
+    }
   `;
 
   override render() {
-    const toggleDownTemplate = html`
-      <div
-        contenteditable="false"
-        class="toggle-icon"
-        @click=${() => this.updateCollapsed(!this.collapsed)}
-      >
-        ${ToggleDownIcon({
-          width: '16px',
-          height: '16px',
-          style: 'color: #77757D',
-        })}
-      </div>
-    `;
-
-    const toggleRightTemplate = html`
-      <div
+    return html`
+      <button
+        type="button"
         contenteditable="false"
         class="toggle-icon"
         data-collapsed=${this.collapsed}
+        aria-label=${this.collapsed ? 'Expand content' : 'Collapse content'}
+        aria-expanded=${!this.collapsed}
+        aria-controls=${this.controls}
         @click=${() => this.updateCollapsed(!this.collapsed)}
       >
-        ${ToggleRightIcon({
+        ${(this.collapsed ? ToggleRightIcon : ToggleDownIcon)({
           width: '16px',
           height: '16px',
-          style: 'color: #77757D',
         })}
-      </div>
+      </button>
     `;
-
-    return this.collapsed ? toggleRightTemplate : toggleDownTemplate;
   }
 
   @property({ attribute: false })
@@ -83,6 +87,9 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor updateCollapsed!: (collapsed: boolean) => void;
+
+  @property({ attribute: false })
+  accessor controls!: string;
 }
 
 declare global {

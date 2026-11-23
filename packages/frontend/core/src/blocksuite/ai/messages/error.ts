@@ -1,7 +1,8 @@
-import { type EditorHost } from '@blocksuite/affine/block-std';
+import { I18n } from '@affine/i18n';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import { type EditorHost } from '@blocksuite/affine/std';
 import { InformationIcon, ToggleDownIcon } from '@blocksuite/icons/lit';
 import { signal } from '@preact/signals-core';
 import { baseTheme } from '@toeverything/theme';
@@ -9,11 +10,15 @@ import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import {
+  AIAppEvents,
   type AIError,
   PaymentRequiredError,
+  SelectedSourcesFailedError,
+  SelectedSourcesLimitExceededError,
+  SelectedSourcesProcessingError,
+  SelectedSourcesUnavailableError,
   UnauthorizedError,
-} from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+} from '../provider';
 
 export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
   static override styles = css`
@@ -22,11 +27,11 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
       flex-direction: column;
       justify-content: center;
       align-items: flex-start;
-      gap: 12px;
+      gap: 8px;
       align-self: stretch;
       border-radius: 4px;
       padding: 8px 8px 12px 8px;
-      background-color: ${unsafeCSSVarV2('layer/background/error')};
+      background-color: ${unsafeCSSVarV2('aI/errorBackground')};
       font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
 
       .content {
@@ -34,7 +39,7 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         display: flex;
         gap: 8px;
         align-self: stretch;
-        color: ${unsafeCSSVarV2('status/error')};
+        color: ${unsafeCSSVarV2('aI/errorText')};
         font-feature-settings:
           'clig' off,
           'liga' off;
@@ -70,10 +75,9 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         cursor: pointer;
       }
       .detail-content {
-        padding: 4px;
+        padding: 8px;
         border-radius: 4px;
-        background-color: ${unsafeCSSVarV2('layer/background/translucentUI')};
-        height: 66px;
+        background-color: ${unsafeCSSVarV2('aI/errorDetailBackground')};
         overflow: auto;
       }
       ${scrollbarStyle('.detail-content')}
@@ -124,44 +128,56 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         <div class="icon">${InformationIcon()}</div>
         <div class="text-container">
           <div>${this.text}</div>
-          ${this.showDetailPanel
-            ? html`<div class="detail-container">
-                <div
-                  class="detail-title"
-                  @click=${() =>
-                    (this._showDetailContent.value =
-                      !this._showDetailContent.value)}
-                >
-                  <span>Show detail</span>
-                  <span
-                    class="toggle ${this._showDetailContent.value
-                      ? 'down'
-                      : 'up'}"
+          ${
+            this.showDetailPanel
+              ? html`<div class="detail-container">
+                  <div
+                    class="detail-title"
+                    @click=${() =>
+                      (this._showDetailContent.value =
+                        !this._showDetailContent.value)}
                   >
-                    ${ToggleDownIcon({ width: '16px', height: '16px' })}
-                  </span>
-                </div>
-                ${this._showDetailContent.value
-                  ? html`<div class="detail-content">${this.errorMessage}</div>`
-                  : nothing}
-              </div>`
-            : nothing}
+                    <span>Show detail</span>
+                    <span
+                      class="toggle ${
+                        this._showDetailContent.value ? 'down' : 'up'
+                      }"
+                    >
+                      ${ToggleDownIcon({ width: '16px', height: '16px' })}
+                    </span>
+                  </div>
+                  ${
+                    this._showDetailContent.value
+                      ? html`<div class="detail-content">
+                          ${this.errorMessage}
+                        </div>`
+                      : nothing
+                  }
+                </div>`
+              : nothing
+          }
         </div>
       </div>
-      <div class="action">
-        <span
-          class="action-button"
-          @click=${this.onClick}
-          data-testid="ai-error-action-button"
-        >
-          ${this.actionText}
-          ${this.actionTooltip
-            ? html`<affine-tooltip tip-position="top"
-                >${this.actionTooltip}</affine-tooltip
-              >`
-            : nothing}
-        </span>
-      </div>
+      ${
+        this.showAction
+          ? html`<div class="action">
+              <span
+                class="action-button"
+                @click=${this.onClick}
+                data-testid="ai-error-action-button"
+              >
+                ${this.actionText}
+                ${
+                  this.actionTooltip
+                    ? html`<affine-tooltip tip-position="top">
+                        ${this.actionTooltip}
+                      </affine-tooltip>`
+                    : nothing
+                }
+              </span>
+            </div>`
+          : nothing
+      }
     </div>`;
   }
 
@@ -182,21 +198,27 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
 
   @property({ attribute: false })
   accessor showDetailPanel: boolean = false;
+
+  @property({ attribute: false })
+  accessor showAction: boolean = true;
+
+  @property({ attribute: 'data-testid', reflect: true })
+  accessor testId = 'ai-error';
 }
 
-const PaymentRequiredErrorRenderer = (host: EditorHost) => html`
+const PaymentRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${"You've reached the current usage cap for AFFiNE AI. You can subscribe to AFFiNE AI(with free 7-day-trial) to continue the AI experience!"}
     .actionText=${'Upgrade'}
-    .onClick=${() => AIProvider.slots.requestUpgradePlan.next({ host })}
+    .onClick=${() => AIAppEvents.requestUpgradePlan.next({ host })}
   ></ai-error-wrapper>
 `;
 
-const LoginRequiredErrorRenderer = (host: EditorHost) => html`
+const LoginRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${'You need to login to AFFiNE Cloud to continue using AFFiNE AI.'}
     .actionText=${'Login'}
-    .onClick=${() => AIProvider.slots.requestLogin.next({ host })}
+    .onClick=${() => AIAppEvents.requestLogin.next({ host })}
   ></ai-error-wrapper>
 `;
 
@@ -205,13 +227,15 @@ type ErrorProps = {
   errorMessage?: string;
   actionText?: string;
   actionTooltip?: string;
+  onClick?: () => void;
+  showAction?: boolean;
 };
 
 const generalErrorText =
   'An error occurred, If this issue persists please let us know.';
 
 const GeneralErrorRenderer = (props: ErrorProps = {}) => {
-  const onClick = () => {
+  const contactSupport = () => {
     window.open('mailto:support@toeverything.info', '_blank');
   };
 
@@ -221,15 +245,49 @@ const GeneralErrorRenderer = (props: ErrorProps = {}) => {
     .showDetailPanel=${!!props.errorMessage}
     .actionText=${props.actionText ?? 'Contact us'}
     .actionTooltip=${props.actionTooltip ?? 'support@toeverything.info'}
-    .onClick=${onClick}
+    .onClick=${props.onClick ?? contactSupport}
+    .showAction=${props.showAction ?? true}
   ></ai-error-wrapper>`;
 };
 
-export function AIChatErrorRenderer(host: EditorHost, error: AIError) {
+export function AIChatErrorRenderer(
+  error: AIError,
+  host?: EditorHost | null,
+  retry?: () => void
+) {
   if (error instanceof PaymentRequiredError) {
     return PaymentRequiredErrorRenderer(host);
   } else if (error instanceof UnauthorizedError) {
     return LoginRequiredErrorRenderer(host);
+  } else if (error instanceof SelectedSourcesProcessingError) {
+    return GeneralErrorRenderer({
+      text: I18n['com.affine.ai.error.selectedSourcesProcessing'](),
+      actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
+      onClick: retry,
+      showAction: !!retry,
+    });
+  } else if (error instanceof SelectedSourcesFailedError) {
+    return GeneralErrorRenderer({
+      text: I18n['com.affine.ai.error.selectedSourcesFailed'](),
+      actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
+      onClick: retry,
+      showAction: !!retry,
+    });
+  } else if (error instanceof SelectedSourcesUnavailableError) {
+    return GeneralErrorRenderer({
+      text: I18n['com.affine.ai.error.selectedSourcesUnavailable'](),
+      actionText: I18n['com.affine.ai.error.retry'](),
+      actionTooltip: '',
+      onClick: retry,
+      showAction: !!retry,
+    });
+  } else if (error instanceof SelectedSourcesLimitExceededError) {
+    return GeneralErrorRenderer({
+      text: I18n['com.affine.ai.error.selectedSourcesLimitExceeded'](),
+      showAction: false,
+    });
   } else {
     return GeneralErrorRenderer({
       errorMessage: error.message,

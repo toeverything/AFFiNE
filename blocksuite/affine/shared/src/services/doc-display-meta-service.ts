@@ -1,6 +1,4 @@
-import type { AliasInfo, ReferenceParams } from '@blocksuite/affine-model';
-import { LifeCycleWatcher, StdIdentifier } from '@blocksuite/block-std';
-import { type Container, createIdentifier } from '@blocksuite/global/di';
+import type { Container } from '@blocksuite/global/di';
 import {
   type DisposableMember,
   disposeMember,
@@ -14,46 +12,23 @@ import {
   LinkedPageIcon,
   PageIcon,
 } from '@blocksuite/icons/lit';
+import { LifeCycleWatcher, StdIdentifier } from '@blocksuite/std';
 import type { Store } from '@blocksuite/store';
-import { computed, type Signal, signal } from '@preact/signals-core';
+import {
+  computed,
+  type ReadonlySignal,
+  type Signal,
+  signal,
+} from '@preact/signals-core';
 import type { TemplateResult } from 'lit';
 
 import { referenceToNode } from '../utils/reference.js';
+import {
+  type DocDisplayMetaExtension,
+  type DocDisplayMetaParams,
+  DocDisplayMetaProvider,
+} from './doc-display-meta-provider.js';
 import { DocModeProvider } from './doc-mode-service.js';
-
-export type DocDisplayMetaParams = {
-  referenced?: boolean;
-  params?: ReferenceParams;
-} & AliasInfo;
-
-/**
- * Customize document display title and icon.
- *
- * Supports the following blocks:
- *
- * * Inline View:
- *      `AffineReference`
- * * Card View:
- *      `EmbedLinkedDocBlockComponent`
- *      `EmbedEdgelessLinkedDocBlockComponent`
- * * Embed View:
- *      `EmbedSyncedDocBlockComponent`
- *      `EmbedEdgelessSyncedDocBlockComponent`
- */
-export interface DocDisplayMetaExtension {
-  icon: (
-    docId: string,
-    referenceInfo?: DocDisplayMetaParams
-  ) => Signal<TemplateResult>;
-  title: (
-    docId: string,
-    referenceInfo?: DocDisplayMetaParams
-  ) => Signal<string>;
-}
-
-export const DocDisplayMetaProvider = createIdentifier<DocDisplayMetaExtension>(
-  'DocDisplayMetaService'
-);
 
 export class DocDisplayMetaService
   extends LifeCycleWatcher
@@ -93,14 +68,16 @@ export class DocDisplayMetaService
   icon(
     pageId: string,
     { params, title, referenced }: DocDisplayMetaParams = {}
-  ): Signal<TemplateResult> {
+  ): ReadonlySignal<TemplateResult> {
     const doc = this.std.workspace.getDoc(pageId);
 
     if (!doc) {
-      return signal(DocDisplayMetaService.icons.deleted);
+      return computed(() => DocDisplayMetaService.icons.deleted);
     }
 
-    let icon$ = this.iconMap.get(doc);
+    const store = doc.getStore();
+
+    let icon$ = this.iconMap.get(store);
 
     if (!icon$) {
       icon$ = signal(
@@ -119,20 +96,7 @@ export class DocDisplayMetaService
         }, pageId);
 
       this.disposables.push(disposable);
-      const docRemovedSubscription =
-        this.std.workspace.slots.docRemoved.subscribe(docId => {
-          if (docId === doc.id) {
-            docRemovedSubscription.unsubscribe();
-            const index = this.disposables.findIndex(d => d === disposable);
-            if (index !== -1) {
-              this.disposables.splice(index, 1);
-              disposable.unsubscribe();
-            }
-            this.iconMap.delete(doc);
-          }
-        });
-      this.disposables.push(docRemovedSubscription);
-      this.iconMap.set(doc, icon$);
+      this.iconMap.set(store, icon$);
     }
 
     return computed(() => {
@@ -158,14 +122,19 @@ export class DocDisplayMetaService
     });
   }
 
-  title(pageId: string, { title }: DocDisplayMetaParams = {}): Signal<string> {
+  title(
+    pageId: string,
+    { title }: DocDisplayMetaParams = {}
+  ): ReadonlySignal<string> {
     const doc = this.std.workspace.getDoc(pageId);
 
     if (!doc) {
-      return signal(title || 'Deleted doc');
+      return computed(() => title || 'Deleted doc');
     }
 
-    let title$ = this.titleMap.get(doc);
+    const store = doc.getStore();
+
+    let title$ = this.titleMap.get(store);
     if (!title$) {
       title$ = signal(doc.meta?.title || 'Untitled');
 
@@ -176,20 +145,7 @@ export class DocDisplayMetaService
       );
 
       this.disposables.push(disposable);
-      const docRemovedSubscription =
-        this.std.workspace.slots.docRemoved.subscribe(docId => {
-          if (docId === doc.id) {
-            docRemovedSubscription.unsubscribe();
-            const index = this.disposables.findIndex(d => d === disposable);
-            if (index !== -1) {
-              this.disposables.splice(index, 1);
-              disposable.unsubscribe();
-            }
-            this.iconMap.delete(doc);
-          }
-        });
-      this.disposables.push(docRemovedSubscription);
-      this.titleMap.set(doc, title$);
+      this.titleMap.set(store, title$);
     }
 
     return computed(() => {
@@ -205,7 +161,7 @@ export class DocDisplayMetaService
 function iconBuilder(
   icon: typeof PageIcon,
   size = '1.25em',
-  style = 'user-select:none;flex-shrink:0;vertical-align:middle;font-size:inherit;margin-bottom:0.1em;'
+  style = 'user-select:none;flex-shrink:0;vertical-align:middle;font-size:inherit;'
 ) {
   return icon({ width: size, height: size, style });
 }

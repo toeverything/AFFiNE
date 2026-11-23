@@ -1,12 +1,12 @@
 import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import type { ServiceProvider } from '@blocksuite/global/di';
-import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   ASTWalker,
   BaseAdapter,
   type BlockSnapshot,
   BlockSnapshotSchema,
+  type DeltaInsert,
   type DocSnapshot,
   type ExtensionType,
   type FromBlockSnapshotPayload,
@@ -38,7 +38,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
   private readonly _markdownAdapter: MarkdownAdapter;
 
   constructor(job: Transformer, provider: ServiceProvider) {
-    super(job);
+    super(job, provider);
     this._markdownAdapter = new MarkdownAdapter(job, provider);
   }
 

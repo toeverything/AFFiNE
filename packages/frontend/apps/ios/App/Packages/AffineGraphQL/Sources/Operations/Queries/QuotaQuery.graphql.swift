@@ -20,6 +20,9 @@ public class QuotaQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      QuotaQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -37,6 +40,9 @@ public class QuotaQuery: GraphQLQuery {
         .field("id", AffineGraphQL.ID.self),
         .field("quota", Quota.self),
         .field("quotaUsage", QuotaUsage.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        QuotaQuery.Data.CurrentUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -59,6 +65,9 @@ public class QuotaQuery: GraphQLQuery {
           .field("historyPeriod", AffineGraphQL.SafeInt.self),
           .field("memberLimit", Int.self),
           .field("humanReadable", HumanReadable.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          QuotaQuery.Data.CurrentUser.Quota.self
         ] }
 
         public var name: String { __data["name"] }
@@ -84,6 +93,9 @@ public class QuotaQuery: GraphQLQuery {
             .field("historyPeriod", String.self),
             .field("memberLimit", String.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            QuotaQuery.Data.CurrentUser.Quota.HumanReadable.self
+          ] }
 
           public var name: String { __data["name"] }
           public var blobLimit: String { __data["blobLimit"] }
@@ -104,6 +116,9 @@ public class QuotaQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("storageQuota", AffineGraphQL.SafeInt.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          QuotaQuery.Data.CurrentUser.QuotaUsage.self
         ] }
 
         @available(*, deprecated, message: "use `UserQuotaType[\'usedStorageQuota\']` instead")

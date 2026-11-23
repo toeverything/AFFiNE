@@ -4,7 +4,7 @@ import type { DataTypeOf } from '../logical/data-type.js';
 import { t } from '../logical/index.js';
 import type { TypeInstance } from '../logical/type.js';
 import { typeSystem } from '../logical/type-system.js';
-import type { SingleView } from '../view-manager/index.js';
+import type { Row, SingleView } from '../view-manager/index.js';
 import type { Sort } from './types.js';
 
 export const Compare = {
@@ -16,14 +16,14 @@ const evalRef = (
   view: SingleView,
   ref: VariableRef
 ):
-  | ((row: string) => {
+  | ((row: Row) => {
       value: unknown;
       ttype?: TypeInstance;
     })
   | undefined => {
-  const ttype = view.propertyDataTypeGet(ref.name);
+  const ttype = view.propertyGetOrCreate(ref.name).dataType$.value;
   return row => ({
-    value: view.cellJsonValueGet(row, ref.name),
+    value: view.cellGetOrCreate(row.rowId, ref.name).jsonValue$.value,
     ttype,
   });
 };
@@ -48,32 +48,41 @@ const compareList = <T>(
   return 0;
 };
 const compareString = (a: unknown, b: unknown): CompareType => {
-  if (typeof a != 'string' || a === '') {
-    return Compare.GT;
+  const strA = String(a ?? '');
+  const strB = String(b ?? '');
+
+  if (strA === '' && strB !== '') {
+    return Compare.GT; // Empty strings come last
   }
-  if (typeof b != 'string' || b === '') {
-    return Compare.LT;
+  if (strA !== '' && strB === '') {
+    return Compare.LT; // Empty strings come last
   }
-  const listA = a.split('.');
-  const listB = b.split('.');
+  if (strA === '' && strB === '') {
+    return 0; // Both empty, equal
+  }
+
+  const listA = strA.split('.');
+  const listB = strB.split('.');
   return compareList(listA, listB, (a, b) => {
-    const lowA = a.toLowerCase();
-    const lowB = b.toLowerCase();
+    const lowA = String(a).toLowerCase(); // Ensure 'a' and 'b' from split are strings too
+    const lowB = String(b).toLowerCase();
+
     const numberA = Number.parseInt(lowA);
     const numberB = Number.parseInt(lowB);
     const aIsNaN = Number.isNaN(numberA);
     const bIsNaN = Number.isNaN(numberB);
+
     if (aIsNaN && !bIsNaN) {
-      return 1;
+      return 1; // Non-numeric part comes after numeric part
     }
     if (!aIsNaN && bIsNaN) {
-      return -1;
+      return -1; // Numeric part comes before non-numeric part
     }
     if (!aIsNaN && !bIsNaN && numberA !== numberB) {
-      return numberA - numberB;
+      return numberA - numberB; // Numeric comparison for numeric parts
     }
 
-    return lowA.localeCompare(lowB);
+    return lowA.localeCompare(lowB); // Lexicographical comparison for string parts
   });
 };
 const compareNumber = (a: unknown, b: unknown) => {
@@ -153,7 +162,7 @@ const compare = (type: TypeInstance, a: unknown, b: unknown): CompareType => {
 export const evalSort = (
   sort: Sort,
   view: SingleView
-): ((rowA: string, rowB: string) => number) | undefined => {
+): ((rowA: Row, rowB: Row) => number) | undefined => {
   if (sort.sortBy.length) {
     const sortBy = sort.sortBy.map(sort => {
       return {

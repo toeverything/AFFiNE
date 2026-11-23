@@ -359,18 +359,4 @@ export const createKeydownObserver = ({
   target.addEventListener('compositionend', () => onInput?.(true), { signal });
 };
 
-export class ColorEvent extends Event {
-  detail: Palette;
-
-  constructor(
-    type: string,
-    {
-      detail,
-      composed,
-      bubbles,
-    }: { detail: Palette; composed: boolean; bubbles: boolean }
-  ) {
-    super(type, { bubbles, composed });
-    this.detail = detail;
-  }
-}
+export class ColorEvent extends CustomEvent<Palette> {}

@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test';
 
-import { assertImageOption } from '../asserts.js';
 import { getIndexCoordinate, waitNextFrame } from './misc.js';
 
 export async function dragBetweenCoords(
@@ -201,42 +200,22 @@ export async function dragBlockToPoint(
 }
 
 export async function moveToImage(page: Page) {
-  const { x, y } = await page.evaluate(() => {
-    const bottomRightButton = document.querySelector(
-      'affine-image img'
-    ) as HTMLElement;
-    const imageClient = bottomRightButton.getBoundingClientRect();
-    const y = imageClient.top;
-    return {
-      x: imageClient.left + 30,
-      y: y + 30,
-    };
-  });
-  await page.mouse.move(x, y);
+  await page.locator('affine-image').hover({ timeout: 500 });
 }
 
 export async function popImageMoreMenu(page: Page) {
   await moveToImage(page);
-  await assertImageOption(page);
-  const moreButton = page.locator('.image-toolbar-button.more');
-  await moreButton.click();
-  const menu = page.locator('.image-more-popup-menu');
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  const menu = toolbar.getByLabel('More menu');
+  await menu.click();
 
-  const turnIntoCardButton = page.locator('editor-menu-action', {
-    hasText: 'Turn into card view',
-  });
+  const turnIntoCardButton = menu.getByLabel('Turn into card view');
 
-  const copyButton = page.locator('editor-menu-action', {
-    hasText: 'Copy',
-  });
+  const copyButton = menu.getByLabel('Copy');
 
-  const duplicateButton = page.locator('editor-menu-action', {
-    hasText: 'Duplicate',
-  });
+  const duplicateButton = page.getByLabel('Duplicate');
 
-  const deleteButton = page.locator('editor-menu-action', {
-    hasText: 'Delete',
-  });
+  const deleteButton = page.getByLabel('Delete');
 
   return {
     menu,

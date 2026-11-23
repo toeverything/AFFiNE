@@ -1,9 +1,19 @@
 import { test } from '@affine-test/kit/playwright';
-import { locateToolbar } from '@affine-test/kit/utils/editor';
-import { selectAllByKeyboard } from '@affine-test/kit/utils/keyboard';
+import {
+  clickEdgelessModeButton,
+  dragView,
+  locateToolbar,
+  setEdgelessTool,
+} from '@affine-test/kit/utils/editor';
+import { importImage } from '@affine-test/kit/utils/image';
+import {
+  selectAllByKeyboard,
+  writeTextToClipboard,
+} from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  type,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
@@ -156,5 +166,293 @@ test.describe('Formatting', () => {
 
     await expect(textSpan1).toHaveCSS('background-color', hexToRGB(bgColor));
     await expect(textSpan2).toHaveCSS('background-color', hexToRGB(bgColor));
+  });
+});
+
+test('should not show toolbar when releasing spacebar and elements have been deleted', async ({
+  page,
+}) => {
+  await clickEdgelessModeButton(page);
+
+  await setEdgelessTool(page, 'shape');
+  await dragView(page, [100, 300], [200, 400]);
+
+  const toolbar = locateToolbar(page);
+
+  await expect(toolbar).toBeVisible();
+
+  await page.keyboard.down('Space');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.up('Space');
+
+  await expect(toolbar).toBeVisible();
+
+  await page.keyboard.press('Delete');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.down('Space');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.up('Space');
+
+  await expect(toolbar).toBeHidden();
+});
+
+test('should not show inner toolbar of surface-ref in note under edgeless', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/frame');
+  await page.keyboard.press('Enter');
+
+  const toolbar = locateToolbar(page);
+
+  const surfaceRef = page.locator('affine-surface-ref');
+  await surfaceRef.hover();
+
+  await expect(toolbar).toBeVisible();
+
+  await clickEdgelessModeButton(page);
+
+  const note = page.locator('affine-edgeless-note');
+  await note.click();
+  await note.click();
+
+  const edgelessSurfaceRef = note.locator('affine-edgeless-surface-ref');
+  await edgelessSurfaceRef.hover();
+
+  await expect(toolbar).toBeHidden();
+
+  const dragHandler = page.locator('.affine-drag-handle-grabber');
+  await dragHandler.hover();
+  await dragHandler.click();
+
+  await expect(
+    edgelessSurfaceRef.locator('.affine-edgeless-surface-ref-container')
+  ).toHaveClass(/focused$/);
+
+  await expect(toolbar).toBeHidden();
+});
+
+test('should show toolbar when inline link is preceded by image or surface-ref', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+
+  await importImage(page, 'affine-preview.png');
+
+  const image = page.locator('affine-image');
+  await image.click();
+
+  await page.keyboard.press('Enter');
+
+  const url = new URL(page.url());
+
+  await writeTextToClipboard(page, url.toString());
+
+  const toolbar = locateToolbar(page);
+
+  const inlineLink = page.locator('affine-reference');
+
+  await inlineLink.hover();
+  await expect(toolbar).toBeVisible();
+
+  await toolbar.hover();
+  await expect(toolbar).toBeVisible();
+
+  await image.hover();
+  await expect(toolbar).toBeVisible();
+  await expect(toolbar).toHaveAttribute('data-placement', 'inner');
+
+  await inlineLink.hover();
+  await expect(toolbar).toBeVisible();
+  await expect(toolbar).not.toHaveAttribute('data-placement', 'inner');
+});
+
+test('should focus on input of popover on toolbar', async ({ page }) => {
+  await clickEdgelessModeButton(page);
+
+  const toolbar = locateToolbar(page);
+
+  await expect(toolbar).toBeHidden();
+
+  const note = page.locator('affine-edgeless-note').first();
+
+  await note.click();
+
+  await expect(toolbar).toBeVisible();
+
+  const scaleMenu = toolbar.locator('.scale-menu');
+  const scaleInput = scaleMenu.locator('input');
+  const scaleButton = scaleMenu.getByLabel('Scale');
+
+  await expect(scaleInput).toBeHidden();
+  await scaleButton.click();
+
+  await scaleInput.click();
+  await expect(scaleInput).toBeFocused();
+
+  await scaleInput.fill('150');
+  await expect(scaleInput).toBeFocused();
+
+  const scaleValue = await scaleInput.inputValue();
+  expect(scaleValue).toBe('150');
+
+  const stylePanelButton = toolbar.locator('edgeless-note-style-panel');
+  const cornersInput = stylePanelButton.locator(
+    '.edgeless-note-corner-radius-panel input'
+  );
+
+  await stylePanelButton.click();
+
+  await cornersInput.click();
+  await expect(cornersInput).toBeFocused();
+
+  await cornersInput.fill('36');
+  await expect(cornersInput).toBeFocused();
+
+  const cornersValue = await cornersInput.inputValue();
+  expect(cornersValue).toBe('36');
+});
+
+test('Dropdown menus should be closed automatically when toolbar is displayed', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('/frame');
+  await page.keyboard.press('Enter');
+
+  const toolbar = locateToolbar(page);
+
+  const surfaceRef = page.locator('affine-surface-ref');
+  await surfaceRef.hover();
+
+  await expect(toolbar).toBeVisible();
+
+  const moreMenuContainer = toolbar.getByLabel('More menu');
+  const moreMenuButton = moreMenuContainer.getByLabel('More');
+  const moreMenu = moreMenuContainer.getByRole('menu');
+
+  await expect(moreMenu).toBeHidden();
+
+  await moreMenuButton.click();
+
+  await expect(moreMenu).toBeVisible();
+
+  await page.keyboard.press('Escape');
+
+  await expect(toolbar).toBeHidden();
+
+  await surfaceRef.hover();
+
+  await expect(toolbar).toBeVisible();
+  await expect(moreMenu).toBeHidden();
+});
+
+test('should clear selection when switching doc mode', async ({ page }) => {
+  await page.keyboard.press('Enter');
+
+  await page.keyboard.type('hello world');
+  await page.keyboard.press('Shift+ArrowLeft');
+  await page.keyboard.press('Shift+ArrowLeft');
+  await page.keyboard.press('Shift+ArrowLeft');
+
+  const toolbar = locateToolbar(page);
+
+  await expect(toolbar).toBeVisible();
+
+  await clickEdgelessModeButton(page);
+
+  await expect(toolbar).toBeHidden();
+});
+
+test.describe('Toolbar More Actions', () => {
+  test('should copy selected text as markdown', async ({ page }) => {
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('toolbar-copy-as-markdown');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toContain('toolbar-copy-as-markdown');
+  });
+
+  test('should preserve heading syntax when copying as markdown from toolbar', async ({
+    page,
+  }) => {
+    await page.keyboard.press('Enter');
+    await type(page, '# toolbar-heading');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toContain('# toolbar-heading');
+  });
+
+  test('should preserve bulleted list syntax when copying as markdown from toolbar', async ({
+    page,
+  }) => {
+    await page.keyboard.press('Enter');
+    await type(page, '- toolbar-list-item');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toMatch(/^\* toolbar-list-item/m);
+  });
+
+  test('should duplicate block', async ({ page }) => {
+    await page.keyboard.press('Enter');
+
+    await importImage(page, 'large-image.png');
+    const images = page.locator('affine-page-image');
+
+    const firstImage = images.first();
+    const firstImageUrl = await firstImage.locator('img').getAttribute('src');
+
+    await firstImage.hover();
+
+    const toolbar = locateToolbar(page);
+    const moreMenu = toolbar.getByLabel('More menu');
+    await moreMenu.click();
+
+    const duplicateButton = toolbar.getByTestId('duplicate');
+    await duplicateButton.click();
+
+    await expect(images).toHaveCount(2);
+
+    const secondImage = images.nth(1);
+    const secondImageUrl = await secondImage.locator('img').getAttribute('src');
+
+    expect(firstImageUrl).not.toBeNull();
+    expect(firstImageUrl!.startsWith('blob:')).toBe(true);
+
+    expect(secondImageUrl).not.toBeNull();
+    expect(secondImageUrl!.startsWith('blob:')).toBe(true);
   });
 });

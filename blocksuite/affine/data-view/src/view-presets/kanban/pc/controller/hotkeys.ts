@@ -1,63 +1,67 @@
 import type { ReactiveController } from 'lit';
 
-import type { DataViewKanban } from '../kanban-view.js';
+import type { KanbanViewUILogic } from '../kanban-view-ui-logic.js';
 
 export class KanbanHotkeysController implements ReactiveController {
   private get hasSelection() {
-    return !!this.host.selectionController.selection;
+    return !!this.logic.selectionController.selection;
   }
 
-  constructor(private readonly host: DataViewKanban) {
-    this.host.addController(this);
+  constructor(public logic: KanbanViewUILogic) {}
+
+  get host() {
+    return this.logic.ui$.value;
   }
 
   hostConnected() {
-    this.host.disposables.add(
-      this.host.props.bindHotkey({
-        Escape: () => {
-          this.host.selectionController.focusOut();
-          return true;
-        },
-        Enter: () => {
-          this.host.selectionController.focusIn();
-        },
-        ArrowUp: context => {
-          if (!this.hasSelection) return false;
+    if (this.host) {
+      this.host.disposables.add(
+        this.logic.bindHotkey({
+          Escape: () => {
+            this.logic.selectionController.focusOut();
+            return true;
+          },
+          Enter: () => {
+            this.logic.selectionController.focusIn();
+          },
+          ArrowUp: context => {
+            if (!this.hasSelection) return false;
 
-          this.host.selectionController.focusNext('up');
-          context.get('keyboardState').raw.preventDefault();
-          return true;
-        },
-        ArrowDown: context => {
-          if (!this.hasSelection) return false;
+            this.logic.selectionController.focusNext('up');
+            context.get('keyboardState').raw.preventDefault();
+            return true;
+          },
+          ArrowDown: context => {
+            if (!this.hasSelection) return false;
 
-          this.host.selectionController.focusNext('down');
-          context.get('keyboardState').raw.preventDefault();
-          return true;
-        },
-        Tab: context => {
-          if (!this.hasSelection) return false;
+            this.logic.selectionController.focusNext('down');
+            context.get('keyboardState').raw.preventDefault();
+            return true;
+          },
+          Tab: context => {
+            if (!this.hasSelection) return false;
 
-          this.host.selectionController.focusNext('down');
-          context.get('keyboardState').raw.preventDefault();
-          return true;
-        },
-        ArrowLeft: () => {
-          if (!this.hasSelection) return false;
+            this.logic.selectionController.focusNext('down');
+            context.get('keyboardState').raw.preventDefault();
+            return true;
+          },
+          ArrowLeft: () => {
+            if (!this.hasSelection) return false;
 
-          this.host.selectionController.focusNext('left');
-          return true;
-        },
-        ArrowRight: () => {
-          if (!this.hasSelection) return false;
+            this.logic.selectionController.focusNext('left');
+            return true;
+          },
+          ArrowRight: () => {
+            if (!this.hasSelection) return false;
 
-          this.host.selectionController.focusNext('right');
-          return true;
-        },
-        Backspace: () => {
-          this.host.selectionController.deleteCard();
-        },
-      })
-    );
+            this.logic.selectionController.focusNext('right');
+            return true;
+          },
+          Backspace: () => {
+            this.logic.selectionController.deleteCard();
+          },
+        })
+      );
+    }
   }
 }

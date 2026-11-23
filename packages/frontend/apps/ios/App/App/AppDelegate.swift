@@ -2,46 +2,40 @@ import Capacitor
 import UIKit
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate {}
+
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
 
-  func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    // Override point for customization after application launch.
-    true
+  func scene(_ scene: UIScene, willConnectTo _: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+    self.scene(scene, openURLContexts: connectionOptions.urlContexts)
+    for activity in connectionOptions.userActivities {
+      self.scene(scene, continue: activity)
+    }
   }
 
-  func applicationWillResignActive(_: UIApplication) {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+  func sceneDidBecomeActive(_: UIScene) {
+    processShareInbox()
   }
 
-  func applicationDidEnterBackground(_: UIApplication) {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+  func scene(_: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) {
+    for context in contexts {
+      var options: [UIApplication.OpenURLOptionsKey: Any] = [.openInPlace: context.options.openInPlace]
+      options[.sourceApplication] = context.options.sourceApplication
+      options[.annotation] = context.options.annotation
+      _ = ApplicationDelegateProxy.shared.application(.shared, open: context.url, options: options)
+      if context.url.scheme == "affine", context.url.host == "share-inbox" {
+        processShareInbox()
+      }
+    }
   }
 
-  func applicationWillEnterForeground(_: UIApplication) {
-    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+  func scene(_: UIScene, continue userActivity: NSUserActivity) {
+    _ = ApplicationDelegateProxy.shared.application(.shared, continue: userActivity) { _ in }
   }
 
-  func applicationDidBecomeActive(_: UIApplication) {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-  }
-
-  func applicationWillTerminate(_: UIApplication) {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-  }
-
-  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-    // Called when the app was launched with a url. Feel free to add additional processing here,
-    // but if you want the App API to support tracking app url opens, make sure to keep this call
-    ApplicationDelegateProxy.shared.application(app, open: url, options: options)
-  }
-
-  func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-    // Called when the app was launched with an activity, including Universal Links.
-    // Feel free to add additional processing here, but if you want the App API to support
-    // tracking app url opens, make sure to keep this call
-    ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
+  private func processShareInbox() {
+    let navigation = window?.rootViewController as? RootViewController
+    (navigation?.viewControllers.first as? AFFiNEViewController)?.processShareInboxIfNeeded()
   }
 }

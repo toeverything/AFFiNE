@@ -5,13 +5,18 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
-import type { Column, SerializedCells, ViewBasicDataType } from './types.js';
+import type {
+  ColumnDataType,
+  SerializedCells,
+  ViewBasicDataType,
+} from './types.js';
 
 export type DatabaseBlockProps = {
   views: ViewBasicDataType[];
   title: Text;
   cells: SerializedCells;
-  columns: Array<Column>;
+  columns: Array<ColumnDataType>;
+  comments?: Record<string, boolean>;
 };
 
 export class DatabaseBlockModel extends BlockModel<DatabaseBlockProps> {}
@@ -23,6 +28,7 @@ export const DatabaseBlockSchema = defineBlockSchema({
     title: internal.Text(),
     cells: Object.create(null),
     columns: [],
+    comments: undefined,
   }),
   metadata: {
     role: 'hub',

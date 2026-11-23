@@ -5,7 +5,7 @@ import type {
   DocMeta,
   DocsPropertiesMeta,
   WorkspaceMeta,
-} from '../model/index.js';
+} from '../extension/index.js';
 import { createYProxy } from '../reactive/proxy.js';
 
 type DocCollectionMetaState = {
@@ -30,10 +30,6 @@ export class TestMeta implements WorkspaceMeta {
       ) {
         this._handleDocMetaEvent();
       }
-
-      if (hasKey('name') || hasKey('avatar')) {
-        this._handleCommonFieldsEvent();
-      }
     });
   };
 
@@ -45,8 +41,6 @@ export class TestMeta implements WorkspaceMeta {
     DocCollectionMetaState[keyof DocCollectionMetaState]
   >;
 
-  commonFieldsUpdated = new Subject<void>();
-
   readonly doc: Y.Doc;
 
   docMetaAdded = new Subject<string>();
@@ -57,10 +51,6 @@ export class TestMeta implements WorkspaceMeta {
 
   readonly id: string = 'meta';
 
-  get avatar() {
-    return this._proxy.avatar;
-  }
-
   get docMetas() {
     if (!this._proxy.pages) {
       return [] as DocMeta[];
@@ -70,10 +60,6 @@ export class TestMeta implements WorkspaceMeta {
 
   get docs() {
     return this._proxy.pages;
-  }
-
-  get name() {
-    return this._proxy.name;
   }
 
   get properties(): DocsPropertiesMeta {
@@ -100,10 +86,6 @@ export class TestMeta implements WorkspaceMeta {
     this._yMap = map;
     this._proxy = createYProxy(map);
     this._yMap.observeDeep(this._handleDocCollectionMetaEvents);
-  }
-
-  private _handleCommonFieldsEvent() {
-    this.commonFieldsUpdated.next();
   }
 
   private _handleDocMetaEvent() {
@@ -173,12 +155,6 @@ export class TestMeta implements WorkspaceMeta {
     }, this.doc.clientID);
   }
 
-  setAvatar(avatar: string) {
-    this.doc.transact(() => {
-      this._proxy.avatar = avatar;
-    }, this.doc.clientID);
-  }
-
   setDocMeta(id: string, props: Partial<DocMeta>) {
     const docs = (this.docs as DocMeta[]) ?? [];
     const index = docs.findIndex((doc: DocMeta) => id === doc.id);
@@ -193,12 +169,6 @@ export class TestMeta implements WorkspaceMeta {
       Object.entries(props).forEach(([key, value]) => {
         doc[key] = value;
       });
-    }, this.doc.clientID);
-  }
-
-  setName(name: string) {
-    this.doc.transact(() => {
-      this._proxy.name = name;
     }, this.doc.clientID);
   }
 

@@ -8,9 +8,14 @@ import {
   dragBetweenViewCoords,
   edgelessCommonSetup,
   enterPresentationMode,
+  getSelectedBound,
   locatorPresentationToolbarButton,
+  resizeElementByHandle,
+  selectElementInEdgeless,
+  selectNoteInEdgeless,
   setEdgelessTool,
   Shape,
+  switchEditorMode,
   toggleFramePanel,
 } from '../utils/actions/edgeless.js';
 import {
@@ -19,7 +24,11 @@ import {
   pressEscape,
   selectAllBlocksByKeyboard,
 } from '../utils/actions/keyboard.js';
-import { waitNextFrame } from '../utils/actions/misc.js';
+import {
+  enterPlaygroundRoom,
+  initEmptyEdgelessState,
+  waitNextFrame,
+} from '../utils/actions/misc.js';
 import { test } from '../utils/playwright.js';
 
 test.describe('presentation', () => {
@@ -139,7 +148,7 @@ test.describe('presentation', () => {
   }) => {
     await edgelessCommonSetup(page);
 
-    await createFrame(page, [100, 100], [100, 200]);
+    await createFrame(page, [100, 100], [200, 200]);
     await createFrame(page, [200, 100], [300, 200]);
     await createFrame(page, [300, 100], [400, 200]);
     await createFrame(page, [400, 100], [500, 200]);
@@ -245,5 +254,92 @@ test.describe('presentation', () => {
     await expect(frameItems.nth(5)).toHaveText('Frame 2');
     await expect(frameItems.nth(6)).toHaveText('Frame 3');
     await expect(frameItems.nth(7)).toHaveText('Frame 4');
+  });
+
+  test('note should hide the collapse button when enter presentation mode', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    const { noteId } = await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+
+    await selectNoteInEdgeless(page, noteId);
+    await resizeElementByHandle(page, { x: 0, y: 70 }, 'bottom-right');
+
+    await createFrame(page, [100, 100], [100, 200]);
+
+    await enterPresentationMode(page);
+
+    const collapseButton = page.getByTestId('edgeless-note-collapse-button');
+    await expect(collapseButton).not.toBeVisible();
+  });
+
+  test('note should be visible when enter presentation mode', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    const { noteId } = await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+
+    await selectNoteInEdgeless(page, noteId);
+    const noteBound = await getSelectedBound(page);
+    await pressEscape(page, 3);
+
+    const frame1 = await createFrame(
+      page,
+      [noteBound[0] - 10, noteBound[1] - 10],
+      [noteBound[0] + noteBound[2] + 10, noteBound[1] + noteBound[3] + 10]
+    );
+    await selectElementInEdgeless(page, [frame1]);
+    const frame1Bound = await getSelectedBound(page);
+    await pressEscape(page);
+
+    await createFrame(
+      page,
+      [frame1Bound[0] + frame1Bound[2] + 10, frame1Bound[1]],
+      [frame1Bound[0] + 2 * frame1Bound[2], frame1Bound[1] + frame1Bound[3]]
+    );
+
+    await enterPresentationMode(page);
+    const nextButton = locatorPresentationToolbarButton(page, 'next');
+    const prevButton = locatorPresentationToolbarButton(page, 'previous');
+
+    const note = page.locator('affine-edgeless-note');
+    await expect(note).toBeVisible();
+
+    await nextButton.click();
+    await expect(note).toBeHidden();
+
+    await prevButton.click();
+    await expect(note).toBeVisible();
+  });
+
+  test('should disable black background when space+drag in presentation mode', async ({
+    page,
+  }) => {
+    await edgelessCommonSetup(page);
+    await createNote(page, [300, 100], 'hello');
+    await setEdgelessTool(page, 'frame');
+    await dragBetweenViewCoords(page, [240, 0], [800, 200]);
+
+    expect(await page.locator('affine-frame').count()).toBe(1);
+    await enterPresentationMode(page);
+    await waitNextFrame(page, 300);
+
+    await assertEdgelessTool(page, 'frameNavigator');
+
+    // Verify black background is initially visible
+    const navigatorBlackBackground = page.locator(
+      '.edgeless-navigator-black-background'
+    );
+    await expect(navigatorBlackBackground).toBeVisible();
+
+    // Press space and drag to trigger the black background disable logic
+    await page.keyboard.down('Space');
+    await dragBetweenViewCoords(page, [400, 300], [500, 400]);
+    await page.keyboard.up('Space');
+
+    await waitNextFrame(page, 100);
+    await expect(navigatorBlackBackground).toBeHidden();
   });
 });

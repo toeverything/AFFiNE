@@ -3,14 +3,15 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html } from 'lit/static-html.js';
 
 import { groupTraitKey } from '../../../core/group-by/trait.js';
 import type { SingleView } from '../../../core/index.js';
+import { canGroupable } from '../group-by-utils.js';
 
 const styles = css`
   affine-data-view-kanban-header {
@@ -43,7 +44,12 @@ export class KanbanHeader extends SignalWatcher(
     popMenu(popupTargetFromElement(e.target as HTMLElement), {
       options: {
         items: this.view.properties$.value
-          .filter(column => column.id !== groupTrait.property$.value?.id)
+          .filter(column => {
+            if (column.id === groupTrait.property$.value?.id) {
+              return false;
+            }
+            return canGroupable(this.view.manager.dataSource, column.id);
+          })
           .map(column => {
             return menu.action({
               name: column.name$.value,

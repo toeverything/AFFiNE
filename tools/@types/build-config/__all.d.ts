@@ -29,9 +29,13 @@ declare interface BUILD_CONFIG_TYPE {
   changelogUrl: string;
   pricingUrl: string;
   downloadUrl: string;
+  discordUrl: string;
+  requestLicenseUrl: string;
   // see: tools/workers
   imageProxyUrl: string;
   linkPreviewUrl: string;
+
+  SENTRY_DSN: string;
 }
 
 declare var BUILD_CONFIG: BUILD_CONFIG_TYPE;

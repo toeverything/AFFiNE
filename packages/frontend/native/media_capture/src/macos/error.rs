@@ -74,6 +74,16 @@ pub enum CoreAudioError {
   InitAVAudioPCMBufferFailed,
   #[error("Write AVAudioFile failed")]
   WriteAVAudioFileFailed,
+  #[error("Input frame contains no data")]
+  InputFrameContainsNoData,
+  #[error("Output frame contains no data")]
+  OutputFrameContainsNoData,
+  #[error("Get property data size failed, status: {0}")]
+  GetPropertyDataSizeFailed(i32),
+  #[error("Get property data failed, status: {0}")]
+  GetPropertyDataFailed(i32),
+  #[error("Process audio {0} frame failed")]
+  ProcessAudioFrameFailed(&'static str),
 }
 
 impl From<CoreAudioError> for napi::Error {

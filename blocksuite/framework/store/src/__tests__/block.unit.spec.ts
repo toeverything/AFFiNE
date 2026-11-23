@@ -10,7 +10,7 @@ import {
   internalPrimitives,
 } from '../model/block/index.js';
 import type { YBlock } from '../model/block/types.js';
-import type { Text } from '../reactive/text.js';
+import type { Text } from '../reactive/text/index.js';
 import { createAutoIncrementIdGenerator } from '../test/index.js';
 import { TestWorkspace } from '../test/test-workspace.js';
 
@@ -51,6 +51,7 @@ const flatTableSchema = defineBlockSchema({
     textCols: {} as Record<string, Text>,
     rows: {} as Record<string, { color: string }>,
     labels: [] as Array<string>,
+    optional: undefined as string | undefined,
   }),
   metadata: {
     role: 'content',
@@ -80,16 +81,16 @@ function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({
-    id: docId,
+  const doc = collection.createDoc(docId);
+  doc.load();
+  const store = doc.getStore({
     extensions: [
       pageSchemaExtension,
       tableSchemaExtension,
       flatTableSchemaExtension,
     ],
   });
-  doc.load();
-  return doc;
+  return store;
 }
 
 test('init block without props should add default props', () => {
@@ -494,6 +495,16 @@ describe('flat', () => {
     expect(model.props.textCols$.value.a.toDelta()).toEqual([
       { insert: 'test' },
     ]);
+
+    onChange.mockClear();
+    expect(model.props).not.toHaveProperty('optional');
+    expect(model.props).toHaveProperty('optional$');
+    model.props.optional$.value = 'test';
+    expect(model.props.optional).toBe('test');
+    expect(model.props.optional$.value).toBe('test');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(expect.anything(), 'optional', true);
+    expect(yBlock.get('prop:optional')).toBe('test');
   });
 
   test('stash and pop', () => {

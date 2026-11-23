@@ -1,6 +1,6 @@
-import { type EditorHost, TextSelection } from '@blocksuite/affine/block-std';
 import { AIStarIconWithAnimation } from '@blocksuite/affine/components/icons';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
+import { type EditorHost, TextSelection } from '@blocksuite/affine/std';
 import { flip, offset } from '@floating-ui/dom';
 import { html, type TemplateResult } from 'lit';
 
@@ -10,8 +10,10 @@ import {
   buildFinishConfig,
   buildGeneratingConfig,
 } from '../ai-panel';
-import type { AIError, AIItemGroupConfig } from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+import { StreamObjectSchema } from '../components/ai-chat-messages';
+import { type AIItemGroupConfig } from '../components/ai-item/types';
+import { type AIError } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -21,7 +23,9 @@ import {
   getSelections,
   selectAboveBlocks,
 } from '../utils/selection-utils';
+import { mergeStreamObjects } from '../utils/stream-objects';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
+import type { AIActionAnswer } from '../widgets/ai-panel/type';
 import { actionToAnswerRenderer } from './answer-renderer';
 
 export function bindTextStream(
@@ -30,23 +34,39 @@ export function bindTextStream(
     update,
     finish,
     signal,
+    host,
   }: {
-    update: (text: string) => void;
+    update: (answer: AIActionAnswer) => void;
     finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     signal?: AbortSignal;
+    host?: EditorHost;
   }
 ) {
   (async () => {
-    let answer = '';
+    const answer: AIActionAnswer = {
+      content: '',
+    };
     signal?.addEventListener('abort', () => {
       finish('aborted');
-      reportResponse('aborted:stop');
+      reportResponse('aborted:stop', host);
     });
     for await (const data of stream) {
       if (signal?.aborted) {
         return;
       }
-      answer += data;
+      try {
+        const parsed = StreamObjectSchema.safeParse(JSON.parse(data));
+        if (parsed.success) {
+          answer.streamObjects = mergeStreamObjects([
+            ...(answer.streamObjects ?? []),
+            parsed.data,
+          ]);
+        } else {
+          answer.content += data;
+        }
+      } catch {
+        answer.content += data;
+      }
       update(answer);
     }
     finish('success');
@@ -71,9 +91,6 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
   >,
   trackerOptions?: BlockSuitePresets.TrackerOptions
 ): BlockSuitePresets.TextStream | undefined {
-  const action = AIProvider.actions[id];
-  if (!action || typeof action !== 'function') return;
-
   let stream: BlockSuitePresets.TextStream | undefined;
   return {
     async *[Symbol.asyncIterator]() {
@@ -97,18 +114,20 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
       const options = {
         ...variants,
         attachments,
-        input: input ? `${markdown}\n${input}` : markdown,
+        input: input ? (markdown ? `${markdown}\n${input}` : input) : markdown,
         stream: true,
         host,
         models,
         signal,
         control,
         where,
-        docId: host.doc.id,
-        workspaceId: host.doc.workspace.id,
-      } as Parameters<typeof action>[0];
-      // @ts-expect-error TODO(@Peng): maybe fix this
-      stream = action(options);
+        docId: host.store.id,
+        workspaceId: host.store.workspace.id,
+      } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
+      stream = (await getAIRequestService().executeAction(
+        id,
+        options
+      )) as BlockSuitePresets.TextStream;
       if (!stream) return;
       yield* stream;
     },
@@ -132,7 +151,7 @@ function actionToGenerateAnswer<T extends keyof BlockSuitePresets.AIActions>(
   }: {
     input: string;
     signal?: AbortSignal;
-    update: (text: string) => void;
+    update: (answer: AIActionAnswer) => void;
     finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
   }) => {
     const { selectedBlocks: blocks } = getSelections(host);
@@ -146,7 +165,7 @@ function actionToGenerateAnswer<T extends keyof BlockSuitePresets.AIActions>(
       trackerOptions
     );
     if (!stream) return;
-    bindTextStream(stream, { update, finish, signal });
+    bindTextStream(stream, { update, finish, signal, host });
   };
 }
 
@@ -181,7 +200,7 @@ function updateAIPanelConfig<T extends keyof BlockSuitePresets.AIActions>(
   config.errorStateConfig = buildErrorConfig(aiPanel);
   config.copy = buildCopyConfig(aiPanel);
   config.discardCallback = () => {
-    reportResponse('result:discard');
+    reportResponse('result:discard', host);
   };
 }
 
@@ -201,7 +220,18 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!blocks || blocks.length === 0) return;
     const block = blocks.at(-1);
     if (!block) return;
-    aiPanel.toggle(block, '');
+    if (
+      blocks.length === 1 &&
+      block.model.flavour === 'affine:image' &&
+      id === 'createImage'
+    ) {
+      // if only one image block is selected, and the action is createImage
+      // toggle panel to allow user to enter text prompt
+      aiPanel.toggle(block, 'input');
+    } else {
+      // generate the answer
+      aiPanel.toggle(block, 'generate');
+    }
   };
 }
 
@@ -225,7 +255,7 @@ export function handleInlineAskAIAction(
   });
 
   if (!actionGroups) {
-    panel.toggle(block);
+    panel.toggle(block, 'input');
     return;
   }
 
@@ -245,7 +275,7 @@ export function handleInlineAskAIAction(
     clear();
   };
 
-  panel.toggle(block);
+  panel.toggle(block, 'input');
 
   setTimeout(() => {
     abortController = new AbortController();
@@ -268,6 +298,6 @@ export function handleInlineAskAIAction(
       },
       abortController: abortController,
       closeOnClickAway: true,
-    });
+    }).portal;
   }, 0);
 }

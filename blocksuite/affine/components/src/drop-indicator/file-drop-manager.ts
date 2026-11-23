@@ -6,16 +6,16 @@ import {
   isInsidePageEditor,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { createIdentifier } from '@blocksuite/global/di';
+import type { IVec } from '@blocksuite/global/gfx';
+import { Point } from '@blocksuite/global/gfx';
 import {
   type BlockComponent,
   type BlockStdScope,
   type EditorHost,
   LifeCycleWatcher,
-} from '@blocksuite/block-std';
-import { SurfaceBlockModel } from '@blocksuite/block-std/gfx';
-import { createIdentifier } from '@blocksuite/global/di';
-import type { IVec } from '@blocksuite/global/gfx';
-import { Point } from '@blocksuite/global/gfx';
+} from '@blocksuite/std';
+import { SurfaceBlockModel } from '@blocksuite/std/gfx';
 import type { BlockModel, ExtensionType } from '@blocksuite/store';
 import { computed, signal } from '@preact/signals-core';
 import throttle from 'lodash-es/throttle';

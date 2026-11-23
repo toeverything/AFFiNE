@@ -1,4 +1,10 @@
-import { css } from 'lit';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import { darkCssVariables, lightCssVariables } from '@toeverything/theme';
+import {
+  darkCssVariablesV2,
+  lightCssVariablesV2,
+} from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 
 export const menuItemStyles = css`
   .menu-item {
@@ -13,36 +19,41 @@ export const menuItemStyles = css`
     border-radius: 4px;
     box-sizing: border-box;
   }
+
   .menu-item:hover {
-    background: var(--affine-hover-color);
+    background: ${unsafeCSSVar('--affine-hover-color')};
     cursor: pointer;
   }
+
   .item-icon {
     display: flex;
-    color: var(--item-icon-color, var(--affine-brand-color));
+    color: ${unsafeCSSVar('--affine-brand-color')};
 
     svg {
       width: 20px;
       height: 20px;
     }
   }
+
   .menu-item:hover .item-icon {
-    color: var(--item-icon-hover-color, var(--affine-brand-color));
+    color: ${unsafeCSSVar('--affine-brand-color')};
   }
+
   .menu-item.discard:hover {
-    background: var(--affine-background-error-color);
+    background: ${unsafeCSSVar('--affine-background-error-color')};
     .item-name,
     .item-icon,
     .enter-icon {
-      color: var(--affine-error-color);
+      color: ${unsafeCSSVar('--affine-error-color')};
     }
   }
+
   .item-name {
     display: flex;
     padding: 0px 4px;
     align-items: baseline;
     flex: 1 0 0;
-    color: var(--affine-text-primary-color);
+    color: ${unsafeCSSVarV2('text/primary')};
     text-align: start;
     white-space: nowrap;
     font-feature-settings:
@@ -55,7 +66,7 @@ export const menuItemStyles = css`
   }
 
   .item-beta {
-    color: var(--affine-text-secondary-color);
+    color: ${unsafeCSSVarV2('text/secondary')};
     font-size: var(--affine-font-xs);
     font-weight: 500;
     margin-left: 0.5em;
@@ -63,14 +74,66 @@ export const menuItemStyles = css`
 
   .enter-icon,
   .arrow-right-icon {
-    color: var(--affine-icon-color);
+    color: ${unsafeCSSVarV2('icon/primary')};
     display: flex;
   }
+
   .enter-icon {
     opacity: 0;
   }
+
   .arrow-right-icon,
   .menu-item:hover .enter-icon {
     opacity: 1;
+  }
+
+  .menu-item[data-app-theme='light'] {
+    .item-name {
+      color: ${unsafeCSS(lightCssVariablesV2['--affine-v2-text-primary'])};
+    }
+
+    .item-beta {
+      color: ${unsafeCSS(lightCssVariablesV2['--affine-v2-text-secondary'])};
+    }
+
+    .enter-icon,
+    .arrow-right-icon {
+      color: ${unsafeCSS(lightCssVariablesV2['--affine-v2-icon-primary'])};
+    }
+  }
+
+  .menu-item[data-app-theme='light']:hover {
+    background: ${unsafeCSS(lightCssVariables['--affine-hover-color'])};
+  }
+
+  .menu-item.discard[data-app-theme='light']:hover {
+    background: ${unsafeCSS(
+      lightCssVariables['--affine-background-error-color']
+    )};
+  }
+
+  .menu-item[data-app-theme='dark'] {
+    .item-name {
+      color: ${unsafeCSS(darkCssVariablesV2['--affine-v2-text-primary'])};
+    }
+
+    .item-beta {
+      color: ${unsafeCSS(darkCssVariablesV2['--affine-v2-text-secondary'])};
+    }
+
+    .enter-icon,
+    .arrow-right-icon {
+      color: ${unsafeCSS(darkCssVariablesV2['--affine-v2-icon-primary'])};
+    }
+  }
+
+  .menu-item[data-app-theme='dark']:hover {
+    background: ${unsafeCSS(darkCssVariables['--affine-hover-color'])};
+  }
+
+  .menu-item.discard[data-app-theme='dark']:hover {
+    background: ${unsafeCSS(
+      darkCssVariables['--affine-background-error-color']
+    )};
   }
 `;

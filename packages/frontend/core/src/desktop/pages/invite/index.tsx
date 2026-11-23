@@ -1,79 +1,169 @@
+import { notify } from '@affine/component';
 import {
   AcceptInvitePage,
   ExpiredPage,
+  InvitationAccountMismatchPage,
   JoinFailedPage,
+  RequestToJoinPage,
+  SentRequestPage,
 } from '@affine/component/member-components';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { WorkspacesService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
+import { WorkspaceMemberStatus } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../components/hooks/use-navigate-helper';
-import { AcceptInviteService, AuthService } from '../../../modules/cloud';
+import { AuthService, InvitationService } from '../../../modules/cloud';
 
 const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
   const { jumpToPage } = useNavigateHelper();
-  const acceptInviteService = useService(AcceptInviteService);
-  const error = useLiveData(acceptInviteService.error$);
-  const inviteId = useLiveData(acceptInviteService.inviteId$);
-  const inviteInfo = useLiveData(acceptInviteService.inviteInfo$);
-  const accepted = useLiveData(acceptInviteService.accepted$);
-  const loading = useLiveData(acceptInviteService.loading$);
-  const navigateHelper = useNavigateHelper();
 
-  const openWorkspace = useCallback(() => {
+  const invitationService = useService(InvitationService);
+  const workspacesService = useService(WorkspacesService);
+  const authService = useService(AuthService);
+  const user = useLiveData(authService.session.account$);
+  const error = useLiveData(invitationService.error$);
+  const inviteId = useLiveData(invitationService.inviteId$);
+  const inviteInfo = useLiveData(invitationService.inviteInfo$);
+  const loading = useLiveData(invitationService.loading$);
+  const workspaces = useLiveData(workspacesService.list.workspaces$);
+  const navigateHelper = useNavigateHelper();
+  const [accepted, setAccepted] = useState(false);
+  const [requestToJoinLoading, setRequestToJoinLoading] = useState(false);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
+  const [acceptError, setAcceptError] = useState<UserFriendlyError | null>(
+    null
+  );
+
+  const openWorkspace = useAsyncCallback(async () => {
     if (!inviteInfo?.workspace.id) {
       return;
     }
+    await workspacesService.list.waitForRevalidation();
     jumpToPage(inviteInfo.workspace.id, 'all', RouteLogic.REPLACE);
-  }, [jumpToPage, inviteInfo]);
+  }, [inviteInfo, workspacesService, jumpToPage]);
 
   const onOpenAffine = useCallback(() => {
     navigateHelper.jumpToIndex();
   }, [navigateHelper]);
 
   useEffect(() => {
-    acceptInviteService.revalidate({
-      inviteId: targetInviteId,
-    });
-  }, [acceptInviteService, targetInviteId]);
-
-  useEffect(() => {
-    if (error && inviteId === targetInviteId) {
-      const err = UserFriendlyError.fromAny(error);
-      if (err.is('ALREADY_IN_SPACE')) {
-        return navigateHelper.jumpToIndex();
-      }
+    // if workspace already exists, open it
+    if (
+      !accepted &&
+      inviteInfo?.workspace.id &&
+      workspaces.some(w => w.id === inviteInfo.workspace.id)
+    ) {
+      return openWorkspace();
     }
-  }, [error, inviteId, navigateHelper, targetInviteId]);
+  }, [accepted, inviteInfo?.workspace.id, openWorkspace, workspaces]);
 
-  if (loading || inviteId !== targetInviteId) {
+  const requestToJoin = useAsyncCallback(async () => {
+    setRequestToJoinLoading(true);
+    await invitationService
+      .acceptInvite(targetInviteId)
+      .then(() => {
+        invitationService.getInviteInfo({ inviteId: targetInviteId });
+        setAccepted(true);
+      })
+      .catch(error => {
+        const err = UserFriendlyError.fromAny(error);
+        if (err.is('ALREADY_IN_SPACE')) {
+          return openWorkspace();
+        }
+        setAcceptError(err);
+        if (err.is('INVITATION_ACCOUNT_MISMATCH')) {
+          return;
+        }
+        notify.error(err);
+      });
+    setRequestToJoinLoading(false);
+  }, [invitationService, openWorkspace, targetInviteId]);
+
+  const onSwitchAccount = useAsyncCallback(async () => {
+    setSwitchingAccount(true);
+    try {
+      await authService.signOut();
+      navigateHelper.jumpToSignIn(
+        `/invite/${targetInviteId}`,
+        RouteLogic.REPLACE
+      );
+    } finally {
+      setSwitchingAccount(false);
+    }
+  }, [authService, navigateHelper, targetInviteId]);
+
+  const invitationError = error ? UserFriendlyError.fromAny(error) : null;
+  const accountMismatch =
+    invitationError?.is('INVITATION_ACCOUNT_MISMATCH') ||
+    acceptError?.is('INVITATION_ACCOUNT_MISMATCH');
+
+  if ((loading && !requestToJoinLoading) || inviteId !== targetInviteId) {
     return null;
   }
 
-  if (!inviteInfo) {
-    // if invite is expired
-    return <ExpiredPage onOpenAffine={onOpenAffine} />;
-  }
-
-  if (error) {
-    return <JoinFailedPage inviteInfo={inviteInfo} error={error} />;
-  }
-
-  if (accepted) {
+  if (accountMismatch) {
     return (
-      <AcceptInvitePage
-        inviteInfo={inviteInfo}
-        onOpenWorkspace={openWorkspace}
+      <InvitationAccountMismatchPage
+        user={user}
+        switchingAccount={switchingAccount}
+        onSwitchAccount={onSwitchAccount}
+        onOpenAffine={onOpenAffine}
       />
     );
-  } else {
-    // invite is expired
+  }
+
+  if (
+    !inviteInfo &&
+    !loading &&
+    (!invitationError ||
+      invitationError.is('INVALID_INVITATION') ||
+      invitationError.is('NOT_FOUND'))
+  ) {
     return <ExpiredPage onOpenAffine={onOpenAffine} />;
   }
+
+  if (invitationError || acceptError) {
+    return (
+      <JoinFailedPage
+        inviteInfo={inviteInfo}
+        error={invitationError || acceptError}
+      />
+    );
+  }
+
+  // for email invite
+  if (accepted && inviteInfo?.status === WorkspaceMemberStatus.Accepted) {
+    return (
+      <AcceptInvitePage
+        onOpenWorkspace={openWorkspace}
+        inviteInfo={inviteInfo}
+      />
+    );
+  }
+
+  if (
+    inviteInfo?.status === WorkspaceMemberStatus.UnderReview ||
+    inviteInfo?.status === WorkspaceMemberStatus.NeedMoreSeatAndReview ||
+    inviteInfo?.status === WorkspaceMemberStatus.NeedMoreSeat
+  ) {
+    return <SentRequestPage user={user} inviteInfo={inviteInfo} />;
+  }
+
+  return (
+    <RequestToJoinPage
+      user={user}
+      inviteInfo={inviteInfo}
+      requestToJoin={requestToJoin}
+      onSignOut={onSwitchAccount}
+    />
+  );
 };
 
 /**
@@ -83,6 +173,7 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
  */
 export const Component = () => {
   const authService = useService(AuthService);
+  const invitationService = useService(InvitationService);
   const isRevalidating = useLiveData(authService.session.isRevalidating$);
   const loginStatus = useLiveData(authService.session.status$);
   const params = useParams<{ inviteId: string }>();
@@ -90,6 +181,12 @@ export const Component = () => {
   useEffect(() => {
     authService.session.revalidate();
   }, [authService]);
+
+  useEffect(() => {
+    if (loginStatus === 'authenticated' && params.inviteId) {
+      invitationService.getInviteInfo({ inviteId: params.inviteId });
+    }
+  }, [invitationService, loginStatus, params.inviteId]);
 
   const { jumpToSignIn } = useNavigateHelper();
 

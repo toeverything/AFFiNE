@@ -12,9 +12,11 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../../tests/kit" },
+    { "path": "../../common/s3-compat" },
+    { "path": "../native" },
     { "path": "../../../tools/cli" },
     { "path": "../../../tools/utils" },
-    { "path": "../native" }
+    { "path": "../../common/graphql" },
+    { "path": "../../common/realtime" }
   ]
 }

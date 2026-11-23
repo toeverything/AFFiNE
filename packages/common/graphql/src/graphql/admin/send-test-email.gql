@@ -1,0 +1,21 @@
+mutation sendTestEmail(
+  $name: String!
+  $host: String!
+  $port: Int!
+  $sender: String!
+  $username: String!
+  $password: String!
+  $ignoreTLS: Boolean!
+) {
+  sendTestEmail(
+    config: {
+      name: $name
+      host: $host
+      port: $port
+      sender: $sender
+      username: $username
+      password: $password
+      ignoreTLS: $ignoreTLS
+    }
+  )
+}

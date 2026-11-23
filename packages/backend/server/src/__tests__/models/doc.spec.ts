@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base/config';
@@ -18,7 +19,7 @@ interface Context {
   history: HistoryModel;
 }
 
-const test = ava as TestFn<Context>;
+const test = ava.serial as TestFn<Context>;
 
 test.before(async t => {
   const module = await createTestingModule();
@@ -101,22 +102,22 @@ test('should find updates by spaceId and docId', async t => {
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob1'),
+      blob: Uint8Array.from([1, 2, 3]),
       timestamp: Date.now(),
       editorId: user.id,
     },
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob2'),
+      blob: Uint8Array.from([4, 5, 6]),
       timestamp: Date.now() + 1000,
       editorId: user.id,
     },
   ]);
   const foundUpdates = await t.context.doc.findUpdates(workspace.id, docId);
   t.is(foundUpdates.length, 2);
-  t.deepEqual(foundUpdates[0].blob, Buffer.from('blob1'));
-  t.deepEqual(foundUpdates[1].blob, Buffer.from('blob2'));
+  t.deepEqual(foundUpdates[0].blob, Uint8Array.from([1, 2, 3]));
+  t.deepEqual(foundUpdates[1].blob, Uint8Array.from([4, 5, 6]));
 
   let count = await t.context.doc.getUpdateCount(workspace.id, docId);
   t.is(count, 2);
@@ -199,7 +200,7 @@ test('should upsert a doc', async t => {
   const snapshot = {
     spaceId: workspace.id,
     docId: randomUUID(),
-    blob: Buffer.from('blob1'),
+    blob: Uint8Array.from([1, 2, 3]),
     timestamp: Date.now(),
     editorId: user.id,
   };
@@ -229,6 +230,11 @@ test('should upsert a doc', async t => {
   t.truthy(updatedSnapshot);
   t.deepEqual(updatedSnapshot!.blob, snapshot.blob);
   t.is(updatedSnapshot!.editorId, otherUser.id);
+  await t.throwsAsync(
+    t.context.doc.upsert({ ...snapshot, docId: workspace.id }),
+    { message: 'Workspace indexes must use the root update writer.' }
+  );
+  t.is(await t.context.doc.get(workspace.id, workspace.id), null);
 });
 
 test('should get a doc authors', async t => {
@@ -479,6 +485,23 @@ test('should update doc meta', async t => {
     ...data,
     public: false,
   });
+  const db = t.context.module.get(PrismaClient);
+  await db.workspaceDoc.update({
+    where: { workspaceId_docId: { workspaceId: workspace.id, docId } },
+    data: { lifecycleState: 'deleted', lifecycleChangedAt: new Date() },
+  });
+  await t.throwsAsync(
+    t.context.doc.upsertMeta(workspace.id, docId, { title: 'revive' }),
+    { message: 'Document not found' }
+  );
+  t.is(
+    (
+      await db.workspaceDoc.findUniqueOrThrow({
+        where: { workspaceId_docId: { workspaceId: workspace.id, docId } },
+      })
+    ).lifecycleState,
+    'deleted'
+  );
 });
 
 test('should get null when doc meta not exists', async t => {
@@ -505,11 +528,42 @@ test('should get public doc count', async t => {
   const docId3 = randomUUID();
   await t.context.doc.upsertMeta(workspace.id, docId1, {
     public: true,
+    publishedAt: new Date(),
   });
   await t.context.doc.upsertMeta(workspace.id, docId2, {
     public: true,
+    publishedAt: new Date(),
   });
   await t.context.doc.upsertMeta(workspace.id, docId3);
+  await t.context.doc.createUpdates(
+    [docId1, docId2, docId3].map(docId => ({
+      spaceId: workspace.id,
+      docId,
+      blob: Buffer.from([0, 0]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    }))
+  );
+  await t.context.doc.upsertMeta(workspace.id, 'metadata-only-public', {
+    public: true,
+    publishedAt: new Date(),
+  });
+  await t.context.doc.createUpdates([
+    {
+      spaceId: workspace.id,
+      docId: 'orphan-policy',
+      blob: Buffer.from([0, 0]),
+      timestamp: Date.now(),
+    },
+  ]);
+  await t.context.module.get(PrismaClient).docAccessPolicy.create({
+    data: {
+      workspaceId: workspace.id,
+      docId: 'orphan-policy',
+      visibility: 'public',
+      publicRole: 'external',
+    },
+  });
   const count = await t.context.doc.getPublicsCount(workspace.id);
   t.is(count, 2);
 });
@@ -520,12 +574,27 @@ test('should get public docs of a workspace', async t => {
   const docId3 = `3-${randomUUID()}`;
   await t.context.doc.upsertMeta(workspace.id, docId1, {
     public: true,
+    publishedAt: new Date(),
   });
   await t.context.doc.upsertMeta(workspace.id, docId2, {
     public: true,
+    publishedAt: new Date(),
   });
   await t.context.doc.upsertMeta(workspace.id, docId3, {
     public: false,
+  });
+  await t.context.doc.createUpdates(
+    [docId1, docId2, docId3].map(docId => ({
+      spaceId: workspace.id,
+      docId,
+      blob: Buffer.from([0, 0]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    }))
+  );
+  await t.context.doc.upsertMeta(workspace.id, 'metadata-only-public', {
+    public: true,
+    publishedAt: new Date(),
   });
   const docs = await t.context.doc.findPublics(workspace.id);
   t.is(docs.length, 2);
@@ -658,4 +727,148 @@ test('should find metas by workspaceIds and docIds', async t => {
   );
 });
 
+test('should get doc info', async t => {
+  const docId = randomUUID();
+  const snapshot = {
+    spaceId: workspace.id,
+    docId,
+    blob: Buffer.from('blob1'),
+    timestamp: Date.now(),
+    editorId: user.id,
+  };
+
+  await t.context.doc.upsert(snapshot);
+  await t.context.doc.upsertMeta(workspace.id, docId, {
+    title: 'test title',
+    summary: 'test summary',
+  });
+
+  const docInfo = await t.context.doc.getDocInfo(workspace.id, docId);
+
+  t.like(docInfo, {
+    workspaceId: workspace.id,
+    docId,
+    public: false,
+    updatedAt: new Date(snapshot.timestamp),
+    creatorId: user.id,
+    lastUpdaterId: user.id,
+    title: 'test title',
+    summary: 'test summary',
+  });
+  const updateOnlyId = randomUUID();
+  await t.context.doc.createUpdates([
+    {
+      spaceId: workspace.id,
+      docId: updateOnlyId,
+      blob: Buffer.from([0, 0]),
+      timestamp: snapshot.timestamp + 1,
+      editorId: user.id,
+    },
+  ]);
+  const updateOnly = await t.context.doc.getDocInfo(workspace.id, updateOnlyId);
+  t.like(updateOnly, {
+    docId: updateOnlyId,
+    title: null,
+    updatedAt: new Date(snapshot.timestamp + 1),
+    creatorId: user.id,
+    lastUpdaterId: user.id,
+  });
+  t.true(
+    (await t.context.doc.listWorkspaceDocIds(workspace.id)).includes(
+      updateOnlyId
+    )
+  );
+  t.like(await t.context.doc.getAuthors(workspace.id, updateOnlyId), {
+    createdByUser: { id: user.id },
+    updatedByUser: { id: user.id },
+  });
+});
+
+test('should paginate docs info', async t => {
+  const docId1 = randomUUID();
+  const docId2 = randomUUID();
+  const docId3 = randomUUID();
+  const snapshot1 = {
+    spaceId: workspace.id,
+    docId: docId1,
+    blob: Buffer.from('blob1'),
+    timestamp: Date.now(),
+    editorId: user.id,
+  };
+  const snapshot2 = {
+    spaceId: workspace.id,
+    docId: docId2,
+    blob: Buffer.from('blob2'),
+    timestamp: Date.now() + 1,
+    editorId: user.id,
+  };
+  const snapshot3 = {
+    spaceId: workspace.id,
+    docId: docId3,
+    blob: Buffer.from('blob3'),
+    timestamp: Date.now() + 2,
+    editorId: user.id,
+  };
+  await t.context.doc.upsertMeta(workspace.id, docId1);
+  await t.context.doc.upsertMeta(workspace.id, docId2);
+  await t.context.doc.upsertMeta(workspace.id, docId3);
+  await t.context.doc.upsert(snapshot1);
+  await t.context.doc.upsert(snapshot2);
+  await t.context.doc.upsert(snapshot3);
+
+  let [count, docs] = await t.context.doc.paginateDocInfo(workspace.id, {
+    first: 1,
+    offset: 0,
+  });
+
+  t.is(count, 3);
+  t.is(docs.length, 1);
+  t.is(docs[0].docId, docId1);
+  t.false(docs[0].public);
+
+  [count, docs] = await t.context.doc.paginateDocInfo(workspace.id, {
+    first: 1,
+    offset: 0,
+    after: docs[0].createdAt.toISOString(),
+  });
+
+  t.is(count, 3);
+  t.is(docs.length, 1);
+  t.is(docs[0].docId, docId2);
+  t.false(docs[0].public);
+
+  // Migrated empty documents can share every source timestamp.
+  await t.context.module.get(PrismaClient).snapshot.updateMany({
+    where: { workspaceId: workspace.id },
+    data: {
+      createdAt: new Date(snapshot1.timestamp),
+      updatedAt: new Date(snapshot1.timestamp),
+    },
+  });
+  const expected = [docId1, docId2, docId3].sort();
+  for (const load of [
+    t.context.doc.paginateDocInfo.bind(t.context.doc),
+    t.context.doc.paginateDocInfoByUpdatedAt.bind(t.context.doc),
+  ]) {
+    const seen: string[] = [];
+    let after: string | undefined;
+    for (const expectedId of expected) {
+      const [total, page] = await load(workspace.id, {
+        first: 1,
+        offset: 0,
+        after,
+      });
+      t.is(total, 3);
+      t.is(page.length, 1);
+      t.is(page[0].docId, expectedId);
+      seen.push(page[0].docId);
+      after = page[0].cursor;
+    }
+    t.deepEqual(seen, expected);
+    t.is(
+      (await load(workspace.id, { first: 1, offset: 0, after }))[1].length,
+      0
+    );
+  }
+});
 // #endregion

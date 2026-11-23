@@ -14,13 +14,14 @@ export interface ViewportState {
 }
 
 export interface BlockLayout extends Record<string, unknown> {
+  blockId: string;
   type: string;
-  rect?: Rect;
-}
-
-export interface ViewportLayout {
-  blocks: BlockLayout[];
-  rect: Rect;
+  rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
 }
 
 export interface TextRect {
@@ -60,7 +61,7 @@ export type WorkerToHostMessage = MessageBitmapPainted | MessagePaintError;
 export type MessagePaint = {
   type: 'paintLayout';
   data: {
-    layout: ViewportLayout;
+    layout: ViewportLayoutTree;
     width: number;
     height: number;
     dpr: number;
@@ -81,6 +82,7 @@ export interface BlockLayoutPainter {
 export interface RendererOptions {
   zoomThreshold: number;
   debounceTime: number;
+  enableBitmapRendering?: boolean;
 }
 
 export interface TurboRendererConfig {
@@ -89,3 +91,15 @@ export interface TurboRendererConfig {
 }
 
 export type HostToWorkerMessage = MessagePaint;
+
+export interface BlockLayoutTreeNode {
+  blockId: string;
+  type: string;
+  layout: BlockLayout;
+  children: BlockLayoutTreeNode[];
+}
+
+export interface ViewportLayoutTree {
+  roots: BlockLayoutTreeNode[];
+  overallRect: BlockLayout['rect'];
+}

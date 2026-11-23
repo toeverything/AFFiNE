@@ -38,4 +38,11 @@ export class WorkspaceDialogService extends Service {
       })
     );
   }
+
+  closeAll() {
+    const dialogs = this.dialogs$.value;
+    dialogs.forEach(dialog => {
+      this.close(dialog.id);
+    });
+  }
 }

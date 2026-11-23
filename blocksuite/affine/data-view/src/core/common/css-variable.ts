@@ -1,3 +1,6 @@
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { unsafeCSS } from 'lit';
+
 export const dataViewCssVariable = () => {
   return `
   --data-view-cell-text-size:14px;
@@ -41,7 +44,7 @@ export const dataViewCommonStyle = (selector: string) => `
     fill: var(--affine-icon-color);
   }
   .dv-border{
-    border: 1px solid var(--affine-border-color);
+    border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
   .dv-round-4{
     border-radius: 4px;

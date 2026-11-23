@@ -1,4 +1,4 @@
-import { type Command, TextSelection } from '@blocksuite/block-std';
+import { type Command, TextSelection } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 export const clearAndSelectFirstModelCommand: Command<{

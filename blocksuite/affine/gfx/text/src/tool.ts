@@ -1,15 +1,16 @@
-import { insertEdgelessTextCommand } from '@blocksuite/affine-block-edgeless-text';
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import type { TextElementModel } from '@blocksuite/affine-model';
 import {
   FeatureFlagService,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import type { PointerEventState } from '@blocksuite/block-std';
-import { BaseTool, type GfxController } from '@blocksuite/block-std/gfx';
 import { Bound } from '@blocksuite/global/gfx';
+import type { PointerEventState } from '@blocksuite/std';
+import { BaseTool, type GfxController } from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
-import { mountTextElementEditor } from './mount-text-editor';
+import { insertEdgelessTextCommand } from './commands/insert-edgeless-text';
+import { mountTextElementEditor } from './edgeless-text-editor';
 
 function addText(gfx: GfxController, event: PointerEventState) {
   const [x, y] = gfx.viewport.toModelCoord(event.x, event.y);
@@ -49,8 +50,7 @@ export class TextTool extends BaseTool {
     if (textFlag) {
       const [x, y] = this.gfx.viewport.toModelCoord(e.x, e.y);
       this.gfx.std.command.exec(insertEdgelessTextCommand, { x, y });
-      // @ts-expect-error TODO: refactor gfx tool
-      this.gfx.tool.setTool('default');
+      this.gfx.tool.setTool(DefaultTool);
     } else {
       addText(this.gfx, e);
     }
@@ -62,11 +62,5 @@ export class TextTool extends BaseTool {
       segment: 'toolbar',
       type: 'text',
     });
-  }
-}
-
-declare module '@blocksuite/block-std/gfx' {
-  interface GfxToolsMap {
-    text: TextTool;
   }
 }

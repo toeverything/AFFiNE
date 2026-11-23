@@ -1,21 +1,18 @@
 import type {
-  BaseElementProps,
-  PointTestOptions,
-} from '@blocksuite/block-std/gfx';
-import {
-  field,
-  GfxLocalElementModel,
-  GfxPrimitiveElementModel,
-  local,
-  prop,
-} from '@blocksuite/block-std/gfx';
-import type {
   Bound,
   IBound,
   IVec,
   PointLocation,
   SerializedXYWH,
 } from '@blocksuite/global/gfx';
+import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
+import {
+  field,
+  GfxLocalElementModel,
+  GfxPrimitiveElementModel,
+  local,
+  prop,
+} from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
 import {

@@ -15,7 +15,7 @@ import {
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
-import { ZipTransformer } from '@blocksuite/affine/blocks/root';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   FrameworkScope,
   LiveData,
@@ -123,17 +123,20 @@ export const Component = (): ReactElement => {
   // if workspace is not found, we should retry
   const retryTimesRef = useRef(3);
   useEffect(() => {
-    retryTimesRef.current = 3; // reset retry times
-  }, [params.workspaceId]);
+    if (params.workspaceId) {
+      retryTimesRef.current = 3; // reset retry times
+      workspacesService.list.revalidate();
+    }
+  }, [params.workspaceId, workspacesService]);
   useEffect(() => {
     if (listLoading === false && meta === undefined) {
-      const timer = setInterval(() => {
+      const timer = setTimeout(() => {
         if (retryTimesRef.current > 0) {
           workspacesService.list.revalidate();
           retryTimesRef.current--;
         }
       }, 5000);
-      return () => clearInterval(timer);
+      return () => clearTimeout(timer);
     }
     return;
   }, [listLoading, meta, workspaceNotFound, workspacesService]);
@@ -250,21 +253,19 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
     };
   }, [meta, workspacesService]);
 
-  const isRootDocReady =
-    useLiveData(
-      useMemo(
-        () =>
-          workspace
-            ? LiveData.from(
-                workspace.engine.doc
-                  .docState$(workspace.id)
-                  .pipe(map(v => v.ready)),
-                false
-              )
-            : null,
-        [workspace]
-      )
-    ) ?? false;
+  const rootDocReady$ = useMemo(
+    () =>
+      workspace
+        ? LiveData.from(
+            workspace.engine.doc
+              .docState$(workspace.id)
+              .pipe(map(v => v.ready)),
+            false
+          )
+        : null,
+    [workspace]
+  );
+  const isRootDocReady = useLiveData(rootDocReady$) ?? false;
 
   useEffect(() => {
     if (workspace) {

@@ -1,17 +1,29 @@
-import { ConfigExtensionFactory } from '@blocksuite/block-std';
+import type { Container } from '@blocksuite/global/di';
+import { DisposableGroup } from '@blocksuite/global/disposable';
+import { IS_IOS } from '@blocksuite/global/env';
+import { ConfigExtensionFactory } from '@blocksuite/std';
 import {
+  getEffectiveDpr,
   type GfxController,
   GfxExtension,
   GfxExtensionIdentifier,
   type GfxViewportElement,
-} from '@blocksuite/block-std/gfx';
-import type { Container } from '@blocksuite/global/di';
-import { DisposableGroup } from '@blocksuite/global/disposable';
-import debounce from 'lodash-es/debounce';
+  viewportRuntimeConfig,
+} from '@blocksuite/std/gfx';
+import {
+  BehaviorSubject,
+  distinctUntilChanged,
+  merge,
+  Subject,
+  take,
+  tap,
+  timer,
+} from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 import {
   debugLog,
-  getViewportLayout,
+  getViewportLayoutTree,
   paintPlaceholder,
   syncCanvasSize,
 } from './renderer-utils';
@@ -20,31 +32,88 @@ import type {
   RendererOptions,
   RenderingState,
   TurboRendererConfig,
-  ViewportLayout,
+  ViewportLayoutTree,
   WorkerToHostMessage,
 } from './types';
 
 const debug = false; // Toggle for debug logs
+const IOS_LOW_ZOOM_SURVIVAL_THRESHOLD = 0.5;
 
-const defaultOptions: RendererOptions = {
+export function shouldPreferBitmapCacheDuringLowZoomGesture(params: {
+  isIOS: boolean;
+  zoom: number;
+  hasBitmap: boolean;
+}) {
+  return (
+    params.isIOS &&
+    params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD &&
+    params.hasBitmap
+  );
+}
+
+export function shouldIdleTurboBlocksDuringZooming(params: {
+  isIOS: boolean;
+  zoom: number;
+}) {
+  return !(params.isIOS && params.zoom <= IOS_LOW_ZOOM_SURVIVAL_THRESHOLD);
+}
+
+const defaultOptions = {
   zoomThreshold: 1, // With high enough zoom, fallback to DOM rendering
   debounceTime: 1000, // During this period, fallback to DOM
+  enableBitmapRendering: false, // When enabled, the bitmap rendering will be used
+  postZoomDelay: 100,
 };
 
 export const TurboRendererConfigFactory =
   ConfigExtensionFactory<TurboRendererConfig>('viewport-turbo-renderer');
 
+/**
+ * Manages the Turbo Rendering process for the viewport, coordinating between the main thread and a painter worker.
+ * Turbo Rendering optimizes performance by rendering block content onto a canvas bitmap,
+ * falling back to standard DOM rendering during interactions.
+ *
+ * To add Turbo Rendering support for a new block type (e.g., 'affine:my-block'):
+ *
+ * 1.  **In the block's package (e.g., `blocksuite/affine/blocks/my-block`):**
+ *   a.  Add `@blocksuite/affine/gfx/turbo-renderer` as a dependency in `package.json` and create a `src/turbo` directory.
+ *   b.  Implement the Layout Handler (e.g., `MyBlockLayoutHandlerExtension`) and Painter Worker (e.g., `MyBlockLayoutPainterExtension`). Refer to `ParagraphLayoutHandlerExtension` and `ParagraphLayoutPainterExtension` in `blocksuite/affine/blocks/block-paragraph` for implementation examples.
+ *   c.  Export the Layout Handler and Painter Worker extensions from the block package's main `src/index.ts` by adding these two explicit export statements:
+ *       ```typescript
+ *       export * from './turbo/my-block-layout-handler';
+ *       export * from './turbo/my-block-painter.worker';
+ *       ```
+ *   d.  Add an export mapping for the painter worker in `package.json` under the `exports` field (e.g., `"./turbo-painter": "./src/turbo/my-block-painter.worker.ts"`).
+ *   e.  Add a TypeScript project reference to `blocksuite/affine/gfx/turbo-renderer` in `tsconfig.json`.
+ *
+ * 2.  **In the application integration point (e.g., `packages/frontend/core/src/blocksuite/extensions` and `blocksuite/integration-test/src/__tests__/utils/renderer-entry.ts`):**
+ *   a.  In `turbo-renderer.ts` (or the file setting up `TurboRendererConfigFactory`):
+ *     - Import and add the new Layout Handler extension to the `patchTurboRendererExtension` array (or equivalent DI setup). See how `ParagraphLayoutHandlerExtension` is added as a reference.
+ *   b.  In `turbo-painter.worker.ts` (the painter worker entry point):
+ *     - Import and add the new Painter Worker extension to the `ViewportLayoutPainter` constructor's extension array. See how `ParagraphLayoutPainterExtension` is added as a reference.
+ *
+ * 3.  **Run `yarn affine init`** from the workspace root to update generated configuration files (`workspace.gen.ts`) and the lockfile (`yarn.lock`).
+ *
+ * **Note:** Always ensure the directory structure and export patterns match the `paragraph` block (`blocksuite/affine/blocks/block-paragraph`) for consistency.
+ */
 export class ViewportTurboRendererExtension extends GfxExtension {
   static override key = 'viewportTurboRenderer';
 
-  public state: RenderingState = 'inactive';
+  public readonly state$ = new BehaviorSubject<RenderingState>('inactive');
   public readonly canvas: HTMLCanvasElement = document.createElement('canvas');
+  public layoutCacheData: ViewportLayoutTree | null = null;
+  public optimizedBlockIds: string[] = [];
   private readonly worker: Worker;
   private readonly disposables = new DisposableGroup();
-  private layoutCacheData: ViewportLayout | null = null;
   private layoutVersion = 0;
   private bitmap: ImageBitmap | null = null;
   private viewportElement: GfxViewportElement | null = null;
+  private readonly refresh$ = new Subject<void>();
+  private readonly isRecentlyZoomed$ = new BehaviorSubject<boolean>(false);
+
+  public get currentState(): RenderingState {
+    return this.state$.value;
+  }
 
   constructor(gfx: GfxController) {
     super(gfx);
@@ -55,6 +124,21 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       throw new Error('TurboRendererConfig not found');
     }
     this.worker = config.painterWorkerEntry();
+
+    // Set up state change logging
+    this.state$
+      .pipe(
+        distinctUntilChanged(),
+        tap(state => this.debugLog(`State changed to: ${state}`))
+      )
+      .subscribe();
+
+    // Set up debounced refresh
+    this.refresh$
+      .pipe(debounceTime(this.options.debounceTime))
+      .subscribe(() => {
+        this.refresh().catch(console.error);
+      });
   }
 
   static override extendGfx(gfx: GfxController) {
@@ -84,39 +168,100 @@ export class ViewportTurboRendererExtension extends GfxExtension {
       mountPoint.append(this.canvas);
     }
 
-    const subscription = this.viewport.elementReady.subscribe(element => {
-      subscription.unsubscribe();
+    this.viewport.elementReady.pipe(take(1)).subscribe(element => {
       this.viewportElement = element;
-      syncCanvasSize(this.canvas, this.std.host);
-      this.setState('pending');
+      syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
+      this.state$.next('pending');
 
       this.disposables.add(
         this.viewport.sizeUpdated.subscribe(() => this.handleResize())
       );
+
       this.disposables.add(
         this.viewport.viewportUpdated.subscribe(() => {
+          if (
+            this.viewport.SKIP_REFRESH_DURING_GESTURE &&
+            (this.viewport.panning$.value || this.viewport.zooming$.value)
+          ) {
+            return;
+          }
           this.refresh().catch(console.error);
         })
       );
 
-      this.disposables.add({
-        dispose: this.viewport.zooming$.subscribe(isZooming => {
-          this.debugLog(`Zooming signal changed: ${isZooming}`);
-          if (isZooming) {
-            this.setState('zooming');
-          } else if (this.state === 'zooming') {
-            this.setState('pending');
-            this.refresh().catch(console.error);
+      this.disposables.add(
+        this.viewport.zooming$
+          .pipe(
+            tap(isZooming => {
+              this.debugLog(`Zooming signal changed: ${isZooming}`);
+              if (isZooming) {
+                if (!this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+                  this.state$.next('zooming');
+                }
+              } else if (this.state$.value === 'zooming') {
+                this.clearOptimizedBlocks();
+                this.isRecentlyZoomed$.next(true);
+                this.disposables.add(
+                  timer(defaultOptions.postZoomDelay).subscribe(() => {
+                    this.isRecentlyZoomed$.next(false);
+                  })
+                );
+
+                this.state$.next('pending');
+                this.refresh().catch(console.error);
+              }
+            })
+          )
+          .subscribe()
+      );
+
+      // Post-gesture refresh for SKIP mode
+      if (this.viewport.SKIP_REFRESH_DURING_GESTURE) {
+        let pendingTimerId: ReturnType<typeof setTimeout> | null = null;
+
+        const cancelRefresh = () => {
+          if (pendingTimerId !== null) {
+            clearTimeout(pendingTimerId);
+            pendingTimerId = null;
           }
-        }),
-      });
+        };
+
+        const scheduleRefresh = () => {
+          cancelRefresh();
+          pendingTimerId = setTimeout(() => {
+            pendingTimerId = null;
+            if (
+              !this.viewport.panning$.value &&
+              !this.viewport.zooming$.value
+            ) {
+              this.refresh().catch(console.error);
+            }
+          }, viewportRuntimeConfig.POST_GESTURE_REFRESH_DELAY);
+        };
+
+        this.disposables.add(
+          this.viewport.panning$.subscribe(panning => {
+            if (panning) cancelRefresh();
+            else if (!this.viewport.zooming$.value) scheduleRefresh();
+          })
+        );
+        this.disposables.add(
+          this.viewport.zooming$.subscribe(zooming => {
+            if (zooming) cancelRefresh();
+            else if (!this.viewport.panning$.value) scheduleRefresh();
+          })
+        );
+        this.disposables.add({ dispose: cancelRefresh });
+      }
     });
 
+    // Handle selection and block updates
+    const selectionUpdates$ = this.selection.slots.updated;
+    const blockUpdates$ = this.std.store.slots.blockUpdated;
+
+    // Combine all events that should trigger invalidation
     this.disposables.add(
-      this.selection.slots.updated.subscribe(() => this.invalidate())
-    );
-    this.disposables.add(
-      this.std.store.slots.blockUpdated.subscribe(() => this.invalidate())
+      merge(selectionUpdates$, blockUpdates$).subscribe(() => this.invalidate())
     );
   }
 
@@ -127,7 +272,9 @@ export class ViewportTurboRendererExtension extends GfxExtension {
     this.worker.terminate();
     this.canvas.remove();
     this.disposables.dispose();
-    this.setState('inactive');
+    this.state$.next('inactive');
+    this.state$.complete();
+    this.refresh$.complete();
   }
 
   get viewport() {
@@ -140,47 +287,56 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   get layoutCache() {
     if (this.layoutCacheData) return this.layoutCacheData;
-    const layout = getViewportLayout(this.std.host, this.viewport);
+    const layoutTree = getViewportLayoutTree(this.std.host, this.viewport);
     this.debugLog('Layout cache updated');
-    return (this.layoutCacheData = layout);
+    return (this.layoutCacheData = layoutTree);
   }
 
   async refresh() {
-    if (this.state === 'inactive') return;
+    if (this.state$.value === 'inactive') return;
 
     this.clearCanvas();
-    // -> pending
+
+    // Determine the next state based on current conditions
+    let nextState: RenderingState;
+
     if (this.viewport.zoom > this.options.zoomThreshold) {
       this.debugLog('Zoom above threshold, falling back to DOM rendering');
-      this.setState('pending');
+      nextState = 'pending';
       this.clearOptimizedBlocks();
-    }
-    // -> zooming
-    else if (this.isZooming()) {
-      this.debugLog('Currently zooming, using placeholder rendering');
-      this.setState('zooming');
-      this.paintPlaceholder();
-      this.updateOptimizedBlocks();
-    }
-    // -> ready
-    else if (this.canUseBitmapCache()) {
+    } else if (this.isZooming()) {
+      nextState = 'zooming';
+      if (
+        shouldPreferBitmapCacheDuringLowZoomGesture({
+          isIOS: IS_IOS,
+          zoom: this.viewport.zoom,
+          hasBitmap: !!this.bitmap,
+        })
+      ) {
+        this.debugLog('Currently zooming, reusing cached bitmap');
+        this.clearOptimizedBlocks();
+        this.drawCachedBitmap();
+      } else {
+        this.debugLog('Currently zooming, using placeholder rendering');
+        this.paintPlaceholder();
+        this.updateOptimizedBlocks();
+      }
+    } else if (this.canUseBitmapCache()) {
       this.debugLog('Using cached bitmap');
-      this.setState('ready');
+      nextState = 'ready';
       this.drawCachedBitmap();
-      this.updateOptimizedBlocks();
-    }
-    // -> rendering
-    else {
-      this.setState('rendering');
+    } else {
+      this.debugLog('Starting bitmap rendering');
+      nextState = 'rendering';
+      this.state$.next(nextState);
       await this.paintLayout();
       this.drawCachedBitmap();
-      this.updateOptimizedBlocks();
+      // After rendering completes, transition to ready state
+      nextState = 'ready';
     }
-  }
 
-  debouncedRefresh = debounce(() => {
-    this.refresh().catch(console.error);
-  }, this.options.debounceTime);
+    this.state$.next(nextState);
+  }
 
   invalidate() {
     this.layoutVersion++;
@@ -188,13 +344,13 @@ export class ViewportTurboRendererExtension extends GfxExtension {
     this.clearBitmap();
     this.clearCanvas();
     this.clearOptimizedBlocks();
-    this.setState('pending');
+    this.state$.next('pending');
     this.debugLog(`Invalidated renderer (layoutVersion=${this.layoutVersion})`);
   }
 
   private debugLog(message: string) {
     if (!debug) return;
-    debugLog(message, this.state);
+    debugLog(message, this.state$.value);
   }
 
   private clearBitmap() {
@@ -206,10 +362,13 @@ export class ViewportTurboRendererExtension extends GfxExtension {
 
   private async paintLayout(): Promise<void> {
     return new Promise(resolve => {
-      if (!this.worker) return;
+      if (!this.worker || !this.options.enableBitmapRendering) {
+        resolve();
+        return;
+      }
 
       const layout = this.layoutCache;
-      const dpr = window.devicePixelRatio;
+      const dpr = getEffectiveDpr(this.viewport.zoom);
       const currentVersion = this.layoutVersion;
 
       this.debugLog(`Requesting bitmap painting (version=${currentVersion})`);
@@ -217,8 +376,8 @@ export class ViewportTurboRendererExtension extends GfxExtension {
         type: 'paintLayout',
         data: {
           layout,
-          width: layout.rect.w,
-          height: layout.rect.h,
+          width: layout.overallRect.w,
+          height: layout.overallRect.h,
           dpr,
           zoom: this.viewport.zoom,
           version: currentVersion,
@@ -234,30 +393,29 @@ export class ViewportTurboRendererExtension extends GfxExtension {
             );
             this.clearBitmap();
             this.bitmap = e.data.bitmap;
-            this.setState('ready');
+            this.state$.next('ready');
             resolve();
           } else {
             this.debugLog(
               `Received outdated bitmap (got=${e.data.version}, current=${this.layoutVersion})`
             );
             e.data.bitmap.close();
-            this.setState('pending');
+            this.state$.next('pending');
             resolve();
           }
         } else if (e.data.type === 'paintError') {
           this.debugLog(
             `Paint error: ${e.data.error} for blockType: ${e.data.blockType}`
           );
-          this.setState('pending');
+          this.state$.next('pending');
           resolve();
         }
       };
     });
   }
 
-  private canUseBitmapCache(): boolean {
-    // Never use bitmap cache during zooming
-    if (this.isZooming()) return false;
+  public canUseBitmapCache(): boolean {
+    if (!this.options.enableBitmapRendering || this.isZooming()) return false;
     return !!(this.layoutCache && this.bitmap);
   }
 
@@ -273,9 +431,10 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   private drawCachedBitmap() {
-    if (!this.bitmap) {
-      this.debugLog('No cached bitmap available, requesting refresh');
-      this.debouncedRefresh();
+    if (!this.options.enableBitmapRendering || !this.bitmap) {
+      this.debugLog(
+        'Bitmap drawing skipped (disabled or no cached bitmap available)'
+      );
       return;
     }
 
@@ -285,66 +444,79 @@ export class ViewportTurboRendererExtension extends GfxExtension {
     if (!ctx) return;
 
     this.clearCanvas();
+
     const layoutViewCoord = this.viewport.toViewCoord(
-      layout.rect.x,
-      layout.rect.y
+      layout.overallRect.x,
+      layout.overallRect.y
     );
+
+    const dpr = getEffectiveDpr(this.viewport.zoom);
 
     ctx.drawImage(
       bitmap,
-      layoutViewCoord[0] * window.devicePixelRatio,
-      layoutViewCoord[1] * window.devicePixelRatio,
-      layout.rect.w * window.devicePixelRatio * this.viewport.zoom,
-      layout.rect.h * window.devicePixelRatio * this.viewport.zoom
+      layoutViewCoord[0] * dpr,
+      layoutViewCoord[1] * dpr,
+      layout.overallRect.w * dpr * this.viewport.zoom,
+      layout.overallRect.h * dpr * this.viewport.zoom
     );
 
     this.debugLog('Bitmap drawn to canvas');
   }
 
-  setState(newState: RenderingState) {
-    if (this.state === newState) return;
-    this.state = newState;
-    this.debugLog(`State change: ${this.state} -> ${newState}`);
-  }
-
   private canOptimize(): boolean {
+    if (this.isRecentlyZoomed$.value) return false;
+
     const isBelowZoomThreshold =
       this.viewport.zoom <= this.options.zoomThreshold;
-    return (
-      (this.state === 'ready' || this.state === 'zooming') &&
-      isBelowZoomThreshold
-    );
+    return this.state$.value === 'zooming' && isBelowZoomThreshold;
   }
 
   private updateOptimizedBlocks() {
+    if (!this.canOptimize()) return;
+    if (
+      !shouldIdleTurboBlocksDuringZooming({
+        isIOS: IS_IOS,
+        zoom: this.viewport.zoom,
+      })
+    ) {
+      this.clearOptimizedBlocks();
+      return;
+    }
+
     requestAnimationFrame(() => {
       if (!this.viewportElement || !this.layoutCache) return;
-      if (!this.canOptimize()) return;
-
       const blockElements = this.viewportElement.getModelsInViewport();
       const blockIds = Array.from(blockElements).map(model => model.id);
+
+      // Set all previously optimized blocks to active first
+      if (this.optimizedBlockIds.length > 0) {
+        this.viewportElement.setBlocksActive(this.optimizedBlockIds);
+      }
+      // Now set the new blocks to idle (hidden)
+      this.optimizedBlockIds = blockIds;
+      this.viewportElement.setBlocksIdle(blockIds);
+
       this.debugLog(`Optimized ${blockIds.length} blocks`);
     });
   }
 
   private clearOptimizedBlocks() {
+    if (!this.viewportElement || this.optimizedBlockIds.length === 0) return;
+
+    this.viewportElement.setBlocksActive(this.optimizedBlockIds);
+    this.optimizedBlockIds = [];
     this.debugLog('Cleared optimized blocks');
   }
 
   private handleResize() {
     this.debugLog('Container resized, syncing canvas size');
-    syncCanvasSize(this.canvas, this.std.host);
+    syncCanvasSize(this.canvas, this.std.host, this.viewport.zoom);
     this.invalidate();
-    this.debouncedRefresh();
+    this.refresh$.next();
   }
 
   private paintPlaceholder() {
-    paintPlaceholder(
-      this.std.host,
-      this.canvas,
-      this.layoutCache,
-      this.viewport
-    );
+    paintPlaceholder(this.canvas, this.layoutCache, this.viewport);
   }
 }
 

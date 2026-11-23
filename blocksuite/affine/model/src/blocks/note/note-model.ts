@@ -1,9 +1,9 @@
+import { Bound } from '@blocksuite/global/gfx';
 import type {
   GfxCompatibleProps,
   GfxElementGeometry,
-} from '@blocksuite/block-std/gfx';
-import { GfxCompatible } from '@blocksuite/block-std/gfx';
-import { Bound } from '@blocksuite/global/gfx';
+} from '@blocksuite/std/gfx';
+import { GfxCompatible } from '@blocksuite/std/gfx';
 import {
   BlockModel,
   BlockSchemaExtension,
@@ -69,6 +69,7 @@ export const NoteBlockSchema = defineBlockSchema({
         shadowType: DEFAULT_NOTE_SHADOW,
       },
     },
+    comments: undefined,
   }),
   metadata: {
     version: 1,
@@ -91,6 +92,7 @@ export type NoteProps = {
   background: Color;
   displayMode: NoteDisplayMode;
   edgeless: NoteEdgelessProps;
+  comments?: Record<string, boolean>;
   /**
    * @deprecated
    * use `displayMode` instead

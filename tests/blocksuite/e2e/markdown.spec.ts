@@ -37,9 +37,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'todo');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '[] ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   //FIXME: it just failed in playwright
   await focusRichText(page);
   await assertRichTexts(page, ['']);
@@ -49,9 +49,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'todo');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '[ ] ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   //FIXME: it just failed in playwright
   await focusRichText(page);
   await assertRichTexts(page, ['']);
@@ -61,9 +61,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'todo');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '[x] ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -71,9 +71,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'bulleted');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '* ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -81,9 +81,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'bulleted');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '- ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -91,9 +91,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'numbered');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '1. ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -101,9 +101,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'numbered');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '20. ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -111,9 +111,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h1');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '# ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -121,9 +121,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h2');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '## ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -131,9 +131,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h3');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '### ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -141,9 +141,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h4');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '#### ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -151,9 +151,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h5');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '##### ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -161,9 +161,9 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'h6');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '###### ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);
@@ -171,17 +171,17 @@ test('markdown shortcut', async ({ page }) => {
   await waitNextFrame(page);
   [id] = await getCursorBlockIdAndHeight(page);
   await assertBlockType(page, id, 'quote');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertText(page, '> ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   // testing various horizontal dividers
   await waitNextFrame(page);
   await type(page, '--- ');
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['--- ']);
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['']);
 
   await waitNextFrame(page);

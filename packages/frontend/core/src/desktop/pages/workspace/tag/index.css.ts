@@ -7,3 +7,8 @@ export const body = style({
   height: '100%',
   width: '100%',
 });
+
+export const scrollArea = style({
+  height: 0,
+  flexGrow: 1,
+});

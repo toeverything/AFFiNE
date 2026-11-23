@@ -2,7 +2,6 @@ import { AsyncCall } from 'async-call-rpc';
 
 import type { HelperToMain, MainToHelper } from '../shared/type';
 import { exposed } from './provide';
-import { encodeToMp3 } from './recording/encode';
 
 const helperToMainServer: HelperToMain = {
   getMeta: () => {
@@ -11,8 +10,6 @@ const helperToMainServer: HelperToMain = {
     }
     return exposed;
   },
-  // allow main process encode audio samples to mp3 buffer (because it is slow and blocking)
-  encodeToMp3,
 };
 
 export const mainRPC = AsyncCall<MainToHelper>(helperToMainServer, {
@@ -33,4 +30,5 @@ export const mainRPC = AsyncCall<MainToHelper>(helperToMainServer, {
       process.parentPort.postMessage(data);
     },
   },
+  log: false,
 });

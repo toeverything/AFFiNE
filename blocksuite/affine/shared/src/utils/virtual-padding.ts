@@ -1,4 +1,4 @@
-import type { BlockComponent } from '@blocksuite/block-std';
+import type { BlockComponent } from '@blocksuite/std';
 import { autoUpdate } from '@floating-ui/dom';
 import { signal } from '@preact/signals-core';
 import type { ReactiveController } from 'lit';

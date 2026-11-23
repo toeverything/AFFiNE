@@ -1,0 +1,19 @@
+query workspaceCalendars($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    calendars {
+      id
+      workspaceId
+      createdByUserId
+      displayNameOverride
+      colorOverride
+      enabled
+      items {
+        id
+        subscriptionId
+        sortOrder
+        colorOverride
+        enabled
+      }
+    }
+  }
+}

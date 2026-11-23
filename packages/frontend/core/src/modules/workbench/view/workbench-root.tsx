@@ -109,7 +109,7 @@ const WorkbenchView = ({ view }: { view: View }) => {
 };
 
 const MIN_SIDEBAR_WIDTH = 320;
-const MAX_SIDEBAR_WIDTH = 800;
+const MAX_SIDEBAR_WIDTH = 1400;
 
 const WorkbenchSidebar = () => {
   const { clientBorder } = useAtomValue(appSettingAtom);
@@ -117,6 +117,7 @@ const WorkbenchSidebar = () => {
   const [resizing, setResizing] = useState(false);
 
   const workbench = useService(WorkbenchService).workbench;
+  const sidebarWidth = useLiveData(workbench.sidebarWidth$);
   const [width, setWidth] = useState(workbench.sidebarWidth$.value ?? 0);
 
   const views = useLiveData(workbench.views$);
@@ -151,6 +152,11 @@ const WorkbenchSidebar = () => {
       window.removeEventListener('resize', onResize);
     };
   }, []);
+
+  useEffect(() => {
+    if (resizing) return;
+    setWidth(sidebarWidth ?? 0);
+  }, [resizing, sidebarWidth]);
 
   return (
     <ResizePanel

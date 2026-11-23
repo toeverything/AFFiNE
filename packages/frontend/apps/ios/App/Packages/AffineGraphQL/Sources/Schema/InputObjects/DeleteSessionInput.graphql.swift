@@ -11,7 +11,7 @@ public struct DeleteSessionInput: InputObject {
   }
 
   public init(
-    docId: String,
+    docId: GraphQLNullable<String> = nil,
     sessionIds: [String],
     workspaceId: String
   ) {
@@ -22,7 +22,7 @@ public struct DeleteSessionInput: InputObject {
     ])
   }
 
-  public var docId: String {
+  public var docId: GraphQLNullable<String> {
     get { __data["docId"] }
     set { __data["docId"] = newValue }
   }

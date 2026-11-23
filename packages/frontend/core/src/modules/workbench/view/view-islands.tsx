@@ -45,6 +45,7 @@ import {
 } from 'react';
 
 import { ViewService } from '../services/view';
+import { WorkbenchService } from '../services/workbench';
 
 interface ViewIslandRegistry {
   [key: string]: Island | undefined;
@@ -167,7 +168,12 @@ export const ViewSidebarTab = ({
   unmountOnInactive?: boolean;
 }>) => {
   const view = useService(ViewService).view;
+  const workbench = useService(WorkbenchService).workbench;
+  const sidebarOpened = useLiveData(workbench.sidebarOpen$);
   const activeTab = useLiveData(view.activeSidebarTab$);
+
+  const isActive = activeTab?.id === tabId && sidebarOpened;
+
   useEffect(() => {
     view.addSidebarTab(tabId);
     return () => {
@@ -179,7 +185,7 @@ export const ViewSidebarTab = ({
     <>
       <ViewIsland id={`${view.id}:sidebar:${tabId}:icon`}>{icon}</ViewIsland>
       <ViewIsland id={`${view.id}:sidebar:${tabId}:body`}>
-        {unmountOnInactive && activeTab?.id !== tabId ? null : children}
+        {unmountOnInactive && !isActive ? null : children}
       </ViewIsland>
     </>
   );

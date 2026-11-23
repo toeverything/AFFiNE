@@ -1,129 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { chunk } from 'lodash-es';
-import * as Y from 'yjs';
+import { Injectable } from '@nestjs/common';
 
-import {
-  CallMetric,
-  Config,
-  mergeUpdatesInApplyWay as yotcoMergeUpdates,
-  metrics,
-  Runtime,
-} from '../../base';
-import { QuotaService } from '../quota';
+import { Config } from '../../base';
+import { QuotaService } from '../quota/service';
+import { mergeUpdatesWithNative } from './merge-updates';
 import { DocStorageOptions as IDocStorageOptions } from './storage';
-
-function compare(yBinary: Buffer, jwstBinary: Buffer, strict = false): boolean {
-  if (yBinary.equals(jwstBinary)) {
-    return true;
-  }
-
-  if (strict) {
-    return false;
-  }
-
-  const doc = new Y.Doc();
-  Y.applyUpdate(doc, jwstBinary);
-
-  const yBinary2 = Buffer.from(Y.encodeStateAsUpdate(doc));
-
-  return compare(yBinary, yBinary2, true);
-}
 
 @Injectable()
 export class DocStorageOptions implements IDocStorageOptions {
-  private readonly logger = new Logger('DocStorageOptions');
-
   constructor(
     private readonly config: Config,
-    private readonly runtime: Runtime,
     private readonly quota: QuotaService
   ) {}
 
-  mergeUpdates = async (updates: Uint8Array[]) => {
-    const doc = await this.recoverDoc(updates);
-    const yjsResult = Buffer.from(Y.encodeStateAsUpdate(doc));
-
-    const useYocto = await this.runtime.fetch('doc/experimentalMergeWithYOcto');
-
-    if (useYocto) {
-      metrics.jwst.counter('codec_merge_counter').add(1);
-      let log = false;
-      let yoctoResult: Buffer | null = null;
-      try {
-        yoctoResult = yotcoMergeUpdates(updates.map(Buffer.from));
-        if (!compare(yjsResult, yoctoResult)) {
-          metrics.jwst.counter('codec_not_match').add(1);
-          this.logger.warn(`yocto codec result doesn't match yjs codec result`);
-          log = true;
-          if (this.config.node.dev) {
-            this.logger.warn(`Expected:\n  ${yjsResult.toString('hex')}`);
-            this.logger.warn(`Result:\n  ${yoctoResult.toString('hex')}`);
-          }
-        }
-      } catch (e) {
-        metrics.jwst.counter('codec_fails_counter').add(1);
-        this.logger.warn(`jwst apply update failed: ${e}`);
-        log = true;
-      }
-
-      if (log && this.config.node.dev) {
-        this.logger.warn(
-          `Updates: ${updates.map(u => Buffer.from(u).toString('hex')).join('\n')}`
-        );
-      }
-
-      if (
-        this.config.affine.canary &&
-        yoctoResult &&
-        yoctoResult.length > 2 /* simple test for non-empty yjs binary */
-      ) {
-        return yoctoResult;
-      }
-    }
-
-    return yjsResult;
-  };
+  mergeUpdates = (updates: Uint8Array[]) =>
+    mergeUpdatesWithNative(updates, 'doc.options.merge_updates');
 
   historyMaxAge = async (spaceId: string) => {
     const quota = await this.quota.getWorkspaceQuota(spaceId);
-    return quota.historyPeriod;
+    return quota.historyPeriod * 1000;
   };
 
   historyMinInterval = (_spaceId: string) => {
     return this.config.doc.history.interval;
   };
-
-  @CallMetric('doc', 'yjs_recover_updates_to_doc')
-  private recoverDoc(updates: Uint8Array[]): Promise<Y.Doc> {
-    const doc = new Y.Doc();
-    const chunks = chunk(updates, 10);
-    let i = 0;
-
-    return new Promise(resolve => {
-      Y.transact(doc, () => {
-        const next = () => {
-          const updates = chunks.at(i++);
-
-          if (updates?.length) {
-            updates.forEach(u => {
-              try {
-                Y.applyUpdate(doc, u);
-              } catch (e) {
-                this.logger.error('Failed to apply update', e);
-              }
-            });
-
-            // avoid applying too many updates in single round which will take the whole cpu time like dead lock
-            setImmediate(() => {
-              next();
-            });
-          } else {
-            resolve(doc);
-          }
-        };
-
-        next();
-      });
-    });
-  }
 }

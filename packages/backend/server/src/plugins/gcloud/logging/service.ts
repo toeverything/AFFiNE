@@ -9,11 +9,11 @@ const moreMetadata = format(info => {
   return info;
 });
 
-export const loggerProvider: Provider<LoggerService> = {
+export const LoggerProvider: Provider<LoggerService> = {
   provide: LoggerProvide,
   useFactory: () => {
     const instance = createLogger({
-      level: 'info',
+      level: env.namespaces.canary ? 'debug' : 'info',
       transports: [new transports.Console()],
       format: format.combine(moreMetadata(), format.json()),
     });

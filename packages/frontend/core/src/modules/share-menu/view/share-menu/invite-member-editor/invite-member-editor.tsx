@@ -98,7 +98,10 @@ export const InviteMemberEditor = ({
 
   const onInvite = useAsyncCallback(async () => {
     const selectedMemberIds = selectedMembers.map(member => member.id);
-    track.$.sharePanel.$.inviteUserDocRole({ control: 'member list' });
+    track.$.sharePanel.$.inviteUserDocRole({
+      control: 'member list',
+      role: inviteDocRoleType,
+    });
     try {
       await docGrantedUsersService.grantUsersRole(
         selectedMemberIds,

@@ -1,10 +1,10 @@
 import { DefaultTheme } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   BaseAdapter,
   type BlockSnapshot,
+  type DeltaInsert,
   type DocSnapshot,
   type ExtensionType,
   type FromBlockSnapshotResult,
@@ -94,28 +94,49 @@ export class NotionTextAdapter extends BaseAdapter<NotionText> {
     const notionText = JSON.parse(payload.file) as NotionTextSerialized;
     const content: SliceSnapshot['content'] = [];
     const deltas: DeltaInsert<AffineTextAttributes>[] = [];
+
+    // Check if the notionText.editing is an array
+    if (!Array.isArray(notionText.editing)) {
+      return null;
+    }
+
     for (const editing of notionText.editing) {
       const delta: DeltaInsert<AffineTextAttributes> = {
         insert: editing[0],
-        attributes: Object.create(null),
       };
-      for (const styleElement of editing[1]) {
-        switch (styleElement[0]) {
-          case 'b':
-            delta.attributes!.bold = true;
-            break;
-          case 'i':
-            delta.attributes!.italic = true;
-            break;
-          case '_':
-            delta.attributes!.underline = true;
-            break;
-          case 'c':
-            delta.attributes!.code = true;
-            break;
-          case 's':
-            delta.attributes!.strike = true;
-            break;
+
+      // Check if the stylesArray of editing[1] is an array
+      const stylesArray = editing[1];
+      if (Array.isArray(stylesArray)) {
+        for (const styleElement of stylesArray) {
+          // Skip invalid style entries
+          if (!styleElement || typeof styleElement[0] !== 'string') {
+            continue;
+          }
+
+          // Check if the delta.attributes exists, if not, create a new object
+          if (!delta.attributes) {
+            delta.attributes = Object.create(null);
+          }
+
+          // Add the style to the delta.attributes
+          switch (styleElement[0]) {
+            case 'b':
+              delta.attributes!.bold = true;
+              break;
+            case 'i':
+              delta.attributes!.italic = true;
+              break;
+            case '_':
+              delta.attributes!.underline = true;
+              break;
+            case 'c':
+              delta.attributes!.code = true;
+              break;
+            case 's':
+              delta.attributes!.strike = true;
+              break;
+          }
         }
       }
       deltas.push(delta);
@@ -163,8 +184,8 @@ export const NotionTextAdapterFactoryIdentifier =
 
 export const NotionTextAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(NotionTextAdapterFactoryIdentifier, () => ({
-      get: (job: Transformer) => new NotionTextAdapter(job),
+    di.addImpl(NotionTextAdapterFactoryIdentifier, provider => ({
+      get: (job: Transformer) => new NotionTextAdapter(job, provider),
     }));
   },
 };

@@ -3,6 +3,8 @@ import {
   deleteBackupWorkspace,
   deleteWorkspace,
   getDeletedWorkspaces,
+  listLocalWorkspaceIds,
+  recoverBackupWorkspace,
   trashWorkspace,
 } from './handlers';
 
@@ -18,4 +20,6 @@ export const workspaceHandlers = {
     return getDeletedWorkspaces();
   },
   deleteBackupWorkspace: async (id: string) => deleteBackupWorkspace(id),
+  recoverBackupWorkspace: async (id: string) => recoverBackupWorkspace(id),
+  listLocalWorkspaceIds: async () => listLocalWorkspaceIds(),
 };

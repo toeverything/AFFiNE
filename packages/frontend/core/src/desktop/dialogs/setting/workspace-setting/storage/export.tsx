@@ -2,12 +2,12 @@ import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { universalId } from '@affine/nbstore';
 import track from '@affine/track';
+import { ExportIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
 import { useState } from 'react';
 
@@ -18,14 +18,11 @@ interface ExportPanelProps {
 export const DesktopExportPanel = ({ workspace }: ExportPanelProps) => {
   const t = useI18n();
   const [saving, setSaving] = useState(false);
-  const isOnline = useSystemOnline();
   const desktopApi = useService(DesktopApiService);
   const isLocalWorkspace = workspace.flavour === 'local';
 
   const [fullSyncing, setFullSyncing] = useState(false);
-  const [fullSynced, setFullSynced] = useState(false);
-
-  const shouldWaitForFullSync = !isLocalWorkspace && isOnline && !fullSynced;
+  const [fullSynced, setFullSynced] = useState(isLocalWorkspace);
 
   const fullSync = useAsyncCallback(async () => {
     setFullSyncing(true);
@@ -65,36 +62,55 @@ export const DesktopExportPanel = ({ workspace }: ExportPanelProps) => {
     }
   }, [desktopApi, saving, t, workspace]);
 
-  if (shouldWaitForFullSync) {
+  if (fullSynced) {
     return (
-      <SettingRow name={t['Export']()} desc={t['Full Sync Description']()}>
+      <SettingRow
+        name={t['Full Backup']()}
+        desc={t['Full Backup Description']()}
+      >
         <Button
-          data-testid="export-affine-full-sync"
-          onClick={fullSync}
-          loading={fullSyncing}
+          variant="primary"
+          data-testid="export-affine-backup"
+          onClick={onExport}
+          disabled={saving}
         >
-          {t['Full Sync']()}
+          {t['Full Backup']()}
         </Button>
       </SettingRow>
     );
   }
 
-  const button =
-    isLocalWorkspace || isOnline ? t['Export']() : t['Export(Offline)']();
-  const desc =
-    isLocalWorkspace || isOnline
-      ? t['Export Description']()
-      : t['Export Description(Offline)']();
-
   return (
-    <SettingRow name={t['Export']()} desc={desc}>
-      <Button
-        data-testid="export-affine-backup"
-        onClick={onExport}
-        disabled={saving}
+    <>
+      <SettingRow
+        name={t['Full Backup']()}
+        desc={
+          fullSynced ? t['Full Backup Description']() : t['Full Backup Hint']()
+        }
       >
-        {button}
-      </Button>
-    </SettingRow>
+        <Button
+          variant="primary"
+          data-testid="export-affine-full-sync"
+          onClick={fullSync}
+          loading={fullSyncing}
+          disabled={fullSyncing}
+          prefix={<ExportIcon />}
+        >
+          {t['Full Backup']()}
+        </Button>
+      </SettingRow>
+      <SettingRow
+        name={t['Quick Export']()}
+        desc={t['Quick Export Description']()}
+      >
+        <Button
+          data-testid="export-affine-backup"
+          onClick={onExport}
+          disabled={saving}
+        >
+          {t['Quick Export']()}
+        </Button>
+      </SettingRow>
+    </>
   );
 };

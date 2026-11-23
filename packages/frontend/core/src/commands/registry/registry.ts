@@ -68,6 +68,20 @@ export const AffineCommandRegistry = new (class {
         window,
         {
           [keybinding]: (e: Event) => {
+            // Skip when Alt produces a locale input character (e.g. macOS
+            // Polish layout: Option+S → "ś"). The user is typing the
+            // character, not invoking the shortcut bound to the physical
+            // key. Matches the handling in blocksuite's keymap.ts.
+            if (
+              e instanceof KeyboardEvent &&
+              e.altKey &&
+              !e.metaKey &&
+              !e.ctrlKey &&
+              e.key.length === 1 &&
+              e.key.charCodeAt(0) > 0x7e
+            ) {
+              return;
+            }
             e.preventDefault();
             command.run()?.catch(e => {
               console.error(`Failed to run command [${command.id}]`, e);

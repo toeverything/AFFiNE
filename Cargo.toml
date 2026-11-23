@@ -10,76 +10,131 @@ members = [
 ]
 resolver = "3"
 
-[workspace.package]
-edition = "2024"
+  [workspace.package]
+  edition = "2024"
 
-[workspace.dependencies]
-affine_common          = { path = "./packages/common/native" }
-affine_nbstore         = { path = "./packages/frontend/native/nbstore" }
-anyhow                 = "1"
-base64-simd            = "0.8"
-block2                 = "0.6"
-chrono                 = "0.4"
-core-foundation        = "0.10"
-coreaudio-rs           = "0.12"
-criterion2             = { version = "3", default-features = false }
-dispatch2              = "0.2"
-docx-parser            = { git = "https://github.com/toeverything/docx-parser" }
-dotenvy                = "0.15"
-file-format            = { version = "0.26", features = ["reader"] }
-homedir                = "0.3"
-infer                  = { version = "0.19.0" }
-libc                   = "0.2"
-mimalloc               = "0.1"
-mp3lame-encoder        = "0.2"
-napi                   = { version = "3.0.0-alpha.31", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
-napi-build             = { version = "2" }
-napi-derive            = { version = "3.0.0-alpha.28" }
-notify                 = { version = "8", features = ["serde"] }
-objc2                  = "0.6"
-objc2-foundation       = "0.3"
-once_cell              = "1"
-parking_lot            = "0.12"
-path-ext               = "0.1.1"
-pdf-extract            = { git = "https://github.com/toeverything/pdf-extract" }
-rand                   = "0.9"
-rayon                  = "1.10"
-readability            = { version = "0.3.0", default-features = false }
-rubato                 = "0.16"
-screencapturekit       = "0.3"
-serde                  = "1"
-serde_json             = "1"
-sha3                   = "0.10"
-sqlx                   = { version = "0.8", default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-strum_macros           = "0.27.0"
-symphonia              = { version = "0.5", features = ["all", "opt-simd"] }
-text-splitter          = "0.24"
-thiserror              = "2"
-tiktoken-rs            = "0.6"
-tokio                  = "1.37"
-tree-sitter            = { version = "0.25" }
-tree-sitter-c          = { version = "0.23" }
-tree-sitter-c-sharp    = { version = "0.23" }
-tree-sitter-cpp        = { version = "0.23" }
-tree-sitter-go         = { version = "0.23" }
-tree-sitter-java       = { version = "0.23" }
-tree-sitter-javascript = { version = "0.23" }
-tree-sitter-kotlin-ng  = { version = "1.1" }
-tree-sitter-python     = { version = "0.23" }
-tree-sitter-rust       = { version = "0.23" }
-tree-sitter-scala      = { version = "0.23" }
-tree-sitter-typescript = { version = "0.23" }
-uniffi                 = "0.29"
-url                    = { version = "2.5" }
-uuid                   = "1.8"
-v_htmlescape           = "0.15"
-y-octo                 = { git = "https://github.com/y-crdt/y-octo.git", branch = "main" }
+  [workspace.dependencies]
+  aes-gcm = "0.10"
+  affine_common = { path = "./packages/common/native" }
+  affine_doc_loader = "0.4.0"
+  affine_importer = "0.4.0"
+  affine_nbstore = { path = "./packages/frontend/native/nbstore" }
+  affine_preview = { version = "0.1.0", default-features = false }
+  anyhow = "1"
+  assert-json-diff = "2.0"
+  base64 = "0.22.1"
+  base64-simd = "0.8"
+  block2 = "0.6"
+  bytes = "1"
+  chrono = "0.4"
+  core-foundation = "0.10"
+  coreaudio-rs = "0.12"
+  cpal = "0.15"
+  criterion = { version = "0.5", features = ["html_reports"] }
+  criterion2 = { version = "3", default-features = false }
+  crossbeam-channel = "0.5"
+  dispatch2 = "0.3"
+  doc_extractor = "0.1.1"
+  dotenvy = "0.15"
+  file-format = { version = "0.28", features = ["reader"] }
+  futures-util = "0.3"
+  hex = "0.4"
+  hkdf = "0.13"
+  homedir = "0.3"
+  image = { version = "0.25.9", default-features = false, features = [
+    "bmp",
+    "gif",
+    "jpeg",
+    "png",
+    "webp",
+  ] }
+  infer = { version = "0.19.0" }
+  libc = "0.2"
+  little_exif = "0.6.23"
+  llm_adapter = { version = "0.4", default-features = false }
+  llm_runtime = { version = "0.4", default-features = false }
+  lru = "0.16"
+  matroska = "0.30"
+  memory-indexer = "0.4.1"
+  mimalloc = "0.1"
+  mp4parse = "0.17"
+  napi = { version = "3.7.0", features = [
+    "async",
+    "chrono_date",
+    "error_anyhow",
+    "napi9",
+    "serde",
+  ] }
+  napi-build = { version = "2" }
+  napi-derive = { version = "3.4" }
+  objc2 = "0.6"
+  objc2-foundation = "0.3"
+  ogg = "0.9"
+  once_cell = "1"
+  p256 = { version = "0.13", features = ["ecdsa", "pem"] }
+  rand = "0.9"
+  rayon = "1.10"
+  redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }
+  rubato = "0.16"
+  safefetch = "0.1.0"
+  schemars = "1.2"
+  screencapturekit = "0.3"
+  serde = "1"
+  serde_json = "1"
+  sha2 = "0.11"
+  sha3 = "0.12"
+  sqlx = { version = "0.8", default-features = false, features = [
+    "chrono",
+    "macros",
+    "migrate",
+    "runtime-tokio",
+    "sqlite",
+  ] }
+  symphonia = { version = "0.5", features = ["all", "opt-simd"] }
+  thiserror = "2"
+  tiktoken-rs = "0.7"
+  tokio = "1.45"
+  uniffi = "0.29"
+  url = { version = "2.5" }
+  uuid = "1.8"
+  v_htmlescape = "0.15"
+  windows = { version = "0.62", features = [
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_Foundation",
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+    "Win32_System_Variant",
+    "Win32_UI_Shell_PropertiesSystem",
+  ] }
+  windows-core = { version = "0.62" }
+  y-octo = { version = "0.3.0", features = ["large_refs"] }
+  zeroize = "1.9"
+  zip = "9.0.5"
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
 
+# hashcash minting runs a PoW hash loop that is infeasible at opt-level 0
+[profile.dev.package.keccak]
+opt-level = 3
+
+[profile.dev.package.sha3]
+opt-level = 3
+
 [profile.release]
 codegen-units = 1
-lto           = true
+lto           = "fat"
 opt-level     = 3
 strip         = "symbols"
+
+  # android uniffi bindgen requires symbols
+  [profile.release.package.affine_mobile_native]
+  strip = "none"
+
+  # [patch.crates-io]
+  # llm_adapter = { path = "../llm_adapter/crates/llm_adapter" }
+  # llm_runtime = { path = "../llm_adapter/crates/llm_runtime" }

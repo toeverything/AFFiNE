@@ -8,7 +8,8 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import type { Subscription } from 'rxjs';
+import { EMPTY, exhaustMap, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { Member } from '../entities/members';
@@ -20,7 +21,19 @@ export class MemberSearchService extends Service {
     private readonly workspaceService: WorkspaceService
   ) {
     super();
+    this.subscription = this.store
+      .subscribeMembers(this.workspaceService.workspace.id)
+      .subscribe({
+        next: () => {
+          if (this.searchText$.value) {
+            this.search(this.searchText$.value);
+          }
+        },
+        error: error => this.error$.setValue(error),
+      });
   }
+
+  private readonly subscription: Subscription;
 
   readonly PAGE_SIZE = 8;
   readonly searchText$ = new LiveData<string>('');
@@ -43,11 +56,9 @@ export class MemberSearchService extends Service {
           signal
         );
       }).pipe(
-        mergeMap(data => {
+        tap(data => {
           this.result$.setValue([...this.result$.value, ...data.members]);
           this.hasMore$.setValue(data.members.length === this.PAGE_SIZE);
-
-          return EMPTY;
         }),
         smartRetry(),
         catchErrorInto(this.error$),
@@ -68,11 +79,13 @@ export class MemberSearchService extends Service {
   }
 
   search(searchText?: string) {
-    if (this.searchText$.value === searchText) {
-      return;
-    }
     this.reset();
     this.searchText$.setValue(searchText ?? '');
     this.loadMore();
+  }
+
+  override dispose(): void {
+    this.loadMore.unsubscribe();
+    this.subscription.unsubscribe();
   }
 }

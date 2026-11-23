@@ -7,7 +7,6 @@ import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
 
-import { DocRendererModule } from '../../core/doc-renderer';
 import { createTestingApp } from '../utils';
 
 const test = ava as TestFn<{
@@ -45,13 +44,11 @@ function initTestStaticFiles(staticPath: string) {
   }
 }
 
-test.before('init selfhost server', async t => {
+test.before(async t => {
   const staticPath = new Package('@affine/server').join('static').value;
   initTestStaticFiles(staticPath);
 
-  const app = await createTestingApp({
-    imports: [DocRendererModule],
-  });
+  const app = await createTestingApp();
 
   t.context.app = app;
 });
@@ -67,7 +64,7 @@ test('should render correct html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.a.js"></script>`
+      `<script src="https://app.affine.pro/main.a.js" crossorigin></script>`
     )
   );
 });
@@ -81,7 +78,7 @@ test.skip('should render correct mobile html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.c.js"></script>`
+      `<script src="https://app.affine.pro/main.c.js" crossorigin></script>`
     )
   );
 });

@@ -1,5 +1,7 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   ArrowDownBigIcon as ArrowDownIcon,
   ArrowUpBigIcon as ArrowUpIcon,
@@ -22,10 +24,9 @@ import {
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
+import { type ChatAction } from '../../components/ai-chat-messages';
 import { createTextRenderer } from '../../components/text-renderer';
-import type { ChatAction } from '../chat-context';
-import { renderImages } from '../components/images';
-import { HISTORY_IMAGE_ACTIONS } from '../const';
+import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 
 const icons: Record<string, TemplateResult<1>> = {
   'Fix spelling for it': DoneIcon(),
@@ -69,7 +70,7 @@ export class ActionWrapper extends WithDisposable(LitElement) {
       margin-bottom: 12px;
 
       svg {
-        color: var(--affine-primary-color);
+        color: ${unsafeCSSVar('primaryColor')};
       }
 
       div:last-child {
@@ -86,18 +87,21 @@ export class ActionWrapper extends WithDisposable(LitElement) {
 
     .answer-prompt {
       padding: 8px;
-      background-color: var(--affine-background-secondary-color);
+      background-color: ${unsafeCSSVarV2('block/callout/background/grey')};
       display: flex;
       flex-direction: column;
       gap: 4px;
       font-size: 14px;
       font-weight: 400;
-      color: var(--affine-text-primary-color);
+      color: ${unsafeCSSVarV2('text/primary')};
+      max-height: 500px;
+      overflow-y: auto;
+      border-radius: 4px;
 
       .subtitle {
         font-size: 12px;
         font-weight: 500;
-        color: var(--affine-text-secondary-color);
+        color: ${unsafeCSSVarV2('text/secondary')};
         height: 20px;
         line-height: 20px;
       }
@@ -105,6 +109,17 @@ export class ActionWrapper extends WithDisposable(LitElement) {
       .prompt {
         margin-top: 12px;
       }
+    }
+
+    .answer-prompt::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .answer-prompt::-webkit-scrollbar-thumb {
+      background-color: ${unsafeCSSVar('borderColor')};
+    }
+    .answer-prompt::-webkit-scrollbar-track {
+      background: transparent;
     }
   `;
 
@@ -128,6 +143,7 @@ export class ActionWrapper extends WithDisposable(LitElement) {
       <slot></slot>
       <div
         class="action-name"
+        data-testid="action-name"
         @click=${() => (this.promptShow = !this.promptShow)}
       >
         ${icons[item.action] ? icons[item.action] : DoneIcon()}
@@ -136,25 +152,43 @@ export class ActionWrapper extends WithDisposable(LitElement) {
           <div>${this.promptShow ? ArrowDownIcon() : ArrowUpIcon()}</div>
         </div>
       </div>
-      ${this.promptShow
-        ? html`
-            <div class="answer-prompt">
-              <div class="subtitle">Answer</div>
-              ${HISTORY_IMAGE_ACTIONS.includes(item.action)
-                ? images && renderImages(images)
-                : nothing}
-              ${answer
-                ? createTextRenderer(this.host, { customHeading: true })(answer)
-                : nothing}
-              ${originalText
-                ? html`<div class="subtitle prompt">Prompt</div>
-                    ${createTextRenderer(this.host, { customHeading: true })(
-                      item.messages[0].content + originalText
-                    )}`
-                : nothing}
-            </div>
-          `
-        : nothing} `;
+      ${
+        this.promptShow
+          ? html`
+              <div class="answer-prompt" data-testid="answer-prompt">
+                <div class="subtitle">Answer</div>
+                ${
+                  HISTORY_IMAGE_ACTIONS.includes(item.action)
+                    ? images &&
+                      html`<chat-content-images
+                        .images=${images}
+                        data-testid="generated-image"
+                      ></chat-content-images>`
+                    : nothing
+                }
+                ${
+                  answer
+                    ? createTextRenderer({
+                        customHeading: true,
+                        testId: 'chat-message-action-answer',
+                        theme: this.host.std.get(ThemeProvider).app$,
+                      })(answer)
+                    : nothing
+                }
+                ${
+                  originalText
+                    ? html`<div class="subtitle prompt">Prompt</div>
+                        ${createTextRenderer({
+                          customHeading: true,
+                          testId: 'chat-message-action-prompt',
+                          theme: this.host.std.get(ThemeProvider).app$,
+                        })(item.messages[0].content + originalText)}`
+                    : nothing
+                }
+              </div>
+            `
+          : nothing
+      } `;
   }
 }
 

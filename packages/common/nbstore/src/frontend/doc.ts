@@ -1,28 +1,35 @@
 import { groupBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
-import type { Subscription } from 'rxjs';
 import {
+  BehaviorSubject,
   combineLatest,
+  filter,
+  first,
+  lastValueFrom,
   map,
   Observable,
   ReplaySubject,
   share,
+  shareReplay,
+  startWith,
   Subject,
+  throttleTime,
 } from 'rxjs';
 import {
   applyUpdate,
   type Doc as YDoc,
   encodeStateAsUpdate,
   Map as YMap,
-  mergeUpdates,
   type Transaction as YTransaction,
 } from 'yjs';
 
-import type { DocRecord, DocStorage } from '../storage';
-import type { DocSync } from '../sync/doc';
+import type { DocRecord, DocStorage, PeerWorkspaceState } from '../storage';
+import type { DocSync, DocSyncState } from '../sync/doc';
 import { AsyncPriorityQueue } from '../utils/async-priority-queue';
 import { isEmptyUpdate } from '../utils/is-empty-update';
+import { takeUntilAbort } from '../utils/take-until-abort';
 import { MANUALLY_STOP, throwIfAborted } from '../utils/throw-if-aborted';
+import { mergeUpdates } from '../utils/yjs-codec';
 
 const NBSTORE_ORIGIN = 'nbstore-frontend';
 
@@ -87,6 +94,10 @@ export type DocFrontendState = {
    */
   loaded: number;
   /**
+   * some data is being applied to yjs doc instance, or some data is being saved to local doc storage
+   */
+  updating: boolean;
+  /**
    * number of docs that are syncing with remote peers
    */
   syncing: number;
@@ -102,6 +113,7 @@ export type DocFrontendState = {
    * the error message when syncing with remote peers
    */
   syncErrorMessage: string | null;
+  syncError?: DocSyncState['error'];
 };
 
 export class DocFrontend {
@@ -128,7 +140,67 @@ export class DocFrontend {
     readonly options: DocFrontendOptions = {}
   ) {}
 
-  docState$(docId: string): Observable<DocFrontendDocState> {
+  private readonly pendingCreates$ = new BehaviorSubject<string[]>([]);
+  private readonly stopped$ = new BehaviorSubject(false);
+  readonly workspaceState$ = combineLatest([
+    this.sync.workspaceState$.pipe(startWith(null)),
+    this.pendingCreates$,
+    this.stopped$,
+  ]).pipe(
+    map(([state, pending, stopped]): PeerWorkspaceState | null => {
+      if (stopped)
+        return state ? { ...state, ready: false, docs: [], clocks: {} } : null;
+      if (!state && pending.length === 0) return null;
+      const current = state ?? {
+        ready: false,
+        cacheToken: 0,
+        docs: [],
+        clocks: {},
+      };
+      const ids = new Set(current.docs.map(doc => doc.docId));
+      return {
+        ...current,
+        docs: [
+          ...current.docs,
+          ...pending
+            .filter(id => !ids.has(id))
+            .map(docId => ({
+              docId,
+              timestamp: Date.now(),
+              lifecycle: null,
+              lifecycleChangedAt: null,
+              pendingCreate: true,
+            })),
+        ],
+      };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  createDoc(docId: string) {
+    this.pendingCreates$.next([...this.pendingCreates$.value, docId]);
+    return this.sync.createDoc(docId).finally(() => {
+      this.pendingCreates$.next(
+        this.pendingCreates$.value.filter(id => id !== docId)
+      );
+    });
+  }
+
+  refreshWorkspaceState() {
+    return this.sync.refreshWorkspaceState();
+  }
+
+  async applyDocLifecycle(
+    docId: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
+    if (!this.storage.applyDocLifecycle) {
+      throw new Error('Document lifecycle is unavailable');
+    }
+    return this.storage.applyDocLifecycle(docId, lifecycle);
+  }
+
+  private _docState$(docId: string): Observable<DocFrontendDocState> {
     const frontendState$ = new Observable<{
       ready: boolean;
       loaded: boolean;
@@ -160,33 +232,55 @@ export class DocFrontend {
     );
   }
 
-  state$ = combineLatest([
-    new Observable<{ total: number; loaded: number }>(subscriber => {
-      const next = () => {
-        subscriber.next({
-          total: this.status.docs.size,
-          loaded: this.status.connectedDocs.size,
-        });
-      };
-      next();
-      return this.statusUpdatedSubject$.subscribe(() => {
+  docState$(docId: string): Observable<DocFrontendDocState> {
+    return this._docState$(docId).pipe(
+      throttleTime(1000, undefined, {
+        trailing: true,
+        leading: true,
+      })
+    );
+  }
+
+  private readonly _state$ = combineLatest([
+    new Observable<{ total: number; loaded: number; updating: boolean }>(
+      subscriber => {
+        const next = () => {
+          subscriber.next({
+            total: this.status.docs.size,
+            loaded: this.status.connectedDocs.size,
+            updating:
+              this.status.jobMap.size > 0 || this.status.currentJob !== null,
+          });
+        };
         next();
-      });
-    }),
+        return this.statusUpdatedSubject$.subscribe(() => {
+          next();
+        });
+      }
+    ),
     this.sync.state$,
   ]).pipe(
     map(([frontend, sync]) => ({
       total: sync.total ?? frontend.total,
       loaded: frontend.loaded,
+      updating: frontend.updating,
       syncing: sync.syncing,
       synced: sync.synced,
       syncRetrying: sync.retrying,
       syncErrorMessage: sync.errorMessage,
+      syncError: sync.error,
     })),
     share({
       connector: () => new ReplaySubject(1),
     })
   ) satisfies Observable<DocFrontendState>;
+
+  state$ = this._state$.pipe(
+    throttleTime(1000, undefined, {
+      leading: true,
+      trailing: true,
+    })
+  );
 
   start() {
     if (this.abort.signal.aborted) {
@@ -198,6 +292,7 @@ export class DocFrontend {
   }
 
   stop() {
+    this.stopped$.next(true);
     this.abort.abort(MANUALLY_STOP);
   }
 
@@ -205,6 +300,10 @@ export class DocFrontend {
     await this.storage.connection.waitForConnected(signal);
     const dispose = this.storage.subscribeDocUpdate((record, origin) => {
       this.event.onStorageUpdate(record, origin);
+    });
+    const disposeDelete = this.storage.subscribeDocDelete?.(docId => {
+      const doc = this.status.docs.get(docId);
+      if (doc) this.disconnectDoc(doc);
     });
     try {
       // wait for storage to connect
@@ -220,7 +319,7 @@ export class DocFrontend {
       while (true) {
         throwIfAborted(signal);
 
-        const docId = await this.status.jobDocQueue.asyncPop(signal);
+        const docId = await this.status.jobDocQueue.asyncPop(undefined, signal);
         const jobs = this.status.jobMap.get(docId);
         this.status.jobMap.delete(docId);
 
@@ -245,7 +344,14 @@ export class DocFrontend {
         }
 
         if (save?.length) {
-          await this.jobs.save(docId, save as any, signal);
+          try {
+            await this.jobs.save(docId, save as any, signal);
+          } catch (error) {
+            if (!(error instanceof Error) || error.name !== 'DOC_DELETED')
+              throw error;
+            const doc = this.status.docs.get(docId);
+            if (doc) this.disconnectDoc(doc);
+          }
         }
 
         this.status.currentJob = null;
@@ -253,6 +359,7 @@ export class DocFrontend {
       }
     } finally {
       dispose();
+      disposeDelete?.();
     }
   }
 
@@ -285,6 +392,7 @@ export class DocFrontend {
 
       const docRecord = await this.storage.getDoc(job.docId);
       throwIfAborted(signal);
+      if (this.status.docs.get(job.docId) !== doc) return;
 
       if (docRecord && !isEmptyUpdate(docRecord.bin)) {
         this.applyUpdate(job.docId, docRecord.bin);
@@ -363,14 +471,16 @@ export class DocFrontend {
   addPriority(id: string, priority: number) {
     const undoSyncPriority = this.sync?.addPriority(id, priority);
     const oldPriority = this.prioritySettings.get(id) ?? 0;
+    const newPriority = oldPriority + priority;
 
-    this.prioritySettings.set(id, priority);
-    this.status.jobDocQueue.setPriority(id, oldPriority + priority);
+    this.prioritySettings.set(id, newPriority);
+    this.status.jobDocQueue.setPriority(id, newPriority);
 
     return () => {
       const currentPriority = this.prioritySettings.get(id) ?? 0;
-      this.prioritySettings.set(id, currentPriority - priority);
-      this.status.jobDocQueue.setPriority(id, currentPriority - priority);
+      const restoredPriority = currentPriority - priority;
+      this.prioritySettings.set(id, restoredPriority);
+      this.status.jobDocQueue.setPriority(id, restoredPriority);
 
       undoSyncPriority?.();
     };
@@ -458,101 +568,49 @@ ${changedList}
   };
 
   protected mergeUpdates(updates: Uint8Array[]) {
-    const merge = this.options?.mergeUpdates ?? mergeUpdates;
-
-    return merge(updates.filter(bin => !isEmptyUpdate(bin)));
+    return mergeUpdates(
+      updates.filter(bin => !isEmptyUpdate(bin)),
+      this.options?.mergeUpdates
+    );
   }
 
-  async waitForSynced(abort?: AbortSignal) {
-    let sub: Subscription | undefined = undefined;
-    return Promise.race([
-      new Promise<void>(resolve => {
-        sub = this.state$?.subscribe(status => {
-          if (status.synced) {
-            resolve();
-          }
-        });
-      }),
-      new Promise<void>((_, reject) => {
-        if (abort?.aborted) {
-          reject(abort?.reason);
-        }
-        abort?.addEventListener('abort', () => {
-          reject(abort.reason);
-        });
-      }),
-    ]).finally(() => {
-      sub?.unsubscribe();
-    });
+  async waitForUpdated(docId?: string, abort?: AbortSignal) {
+    const source$: Observable<DocFrontendDocState | DocFrontendState> = docId
+      ? this._docState$(docId)
+      : this._state$;
+    await lastValueFrom(
+      source$.pipe(
+        filter(status => !status.updating),
+        takeUntilAbort(abort),
+        first()
+      )
+    );
+    return;
   }
 
   async waitForDocLoaded(docId: string, abort?: AbortSignal) {
-    let sub: Subscription | undefined = undefined;
-    return Promise.race([
-      new Promise<void>(resolve => {
-        sub = this.docState$(docId).subscribe(state => {
-          if (state.loaded) {
-            resolve();
-          }
-        });
-      }),
-      new Promise<void>((_, reject) => {
-        if (abort?.aborted) {
-          reject(abort?.reason);
-        }
-        abort?.addEventListener('abort', () => {
-          reject(abort.reason);
-        });
-      }),
-    ]).finally(() => {
-      sub?.unsubscribe();
-    });
+    await lastValueFrom(
+      this._docState$(docId).pipe(
+        filter(state => state.loaded),
+        takeUntilAbort(abort),
+        first()
+      )
+    );
   }
 
-  async waitForDocSynced(docId: string, abort?: AbortSignal) {
-    let sub: Subscription | undefined = undefined;
-    return Promise.race([
-      new Promise<void>(resolve => {
-        sub = this.docState$(docId).subscribe(state => {
-          if (state.synced && !state.updating) {
-            resolve();
-          }
-        });
-      }),
-      new Promise<void>((_, reject) => {
-        if (abort?.aborted) {
-          reject(abort?.reason);
-        }
-        abort?.addEventListener('abort', () => {
-          reject(abort.reason);
-        });
-      }),
-    ]).finally(() => {
-      sub?.unsubscribe();
-    });
+  async waitForSynced(docId?: string, abort?: AbortSignal) {
+    await this.waitForUpdated(docId, abort);
+    await this.sync.waitForSynced(docId, abort);
   }
 
   async waitForDocReady(docId: string, abort?: AbortSignal) {
-    let sub: Subscription | undefined = undefined;
-    return Promise.race([
-      new Promise<void>(resolve => {
-        sub = this.docState$(docId).subscribe(state => {
-          if (state.ready) {
-            resolve();
-          }
-        });
-      }),
-      new Promise<void>((_, reject) => {
-        if (abort?.aborted) {
-          reject(abort?.reason);
-        }
-        abort?.addEventListener('abort', () => {
-          reject(abort.reason);
-        });
-      }),
-    ]).finally(() => {
-      sub?.unsubscribe();
-    });
+    await lastValueFrom(
+      this._docState$(docId).pipe(
+        filter(state => state.ready),
+        takeUntilAbort(abort),
+        first()
+      )
+    );
   }
 
   async resetSync() {

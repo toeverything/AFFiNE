@@ -5,13 +5,7 @@ import {
   fromPromise,
   Service,
 } from '@toeverything/infra';
-import {
-  catchError,
-  distinctUntilChanged,
-  EMPTY,
-  mergeMap,
-  throttleTime,
-} from 'rxjs';
+import { catchError, distinctUntilChanged, EMPTY, throttleTime } from 'rxjs';
 
 import type { AIButtonProvider } from '../provider/ai-button';
 
@@ -37,7 +31,6 @@ export class AIButtonService extends Service {
         }
         return;
       }).pipe(
-        mergeMap(() => EMPTY),
         catchError(err => {
           logger.error('presentAIButton error', err);
           return EMPTY;

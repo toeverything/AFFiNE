@@ -13,6 +13,25 @@ public struct CreateCheckoutSessionInput: InputObject {
   public init(
     args: GraphQLNullable<JSONObject> = nil,
     coupon: GraphQLNullable<String> = nil,
+    plan: GraphQLNullable<GraphQLEnum<SubscriptionPlan>> = nil,
+    recurring: GraphQLNullable<GraphQLEnum<SubscriptionRecurring>> = nil,
+    successCallbackLink: String,
+    variant: GraphQLNullable<GraphQLEnum<SubscriptionVariant>> = nil
+  ) {
+    __data = InputDict([
+      "args": args,
+      "coupon": coupon,
+      "plan": plan,
+      "recurring": recurring,
+      "successCallbackLink": successCallbackLink,
+      "variant": variant
+    ])
+  }
+
+  @available(*, deprecated, message: "Argument 'idempotencyKey' is deprecated.")
+  public init(
+    args: GraphQLNullable<JSONObject> = nil,
+    coupon: GraphQLNullable<String> = nil,
     idempotencyKey: GraphQLNullable<String> = nil,
     plan: GraphQLNullable<GraphQLEnum<SubscriptionPlan>> = nil,
     recurring: GraphQLNullable<GraphQLEnum<SubscriptionRecurring>> = nil,
@@ -40,6 +59,7 @@ public struct CreateCheckoutSessionInput: InputObject {
     set { __data["coupon"] = newValue }
   }
 
+  @available(*, deprecated, message: "not required anymore")
   public var idempotencyKey: GraphQLNullable<String> {
     get { __data["idempotencyKey"] }
     set { __data["idempotencyKey"] = newValue }

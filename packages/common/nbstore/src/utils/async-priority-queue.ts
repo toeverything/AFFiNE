@@ -4,8 +4,11 @@ export class AsyncPriorityQueue extends PriorityQueue {
   private _resolveUpdate: (() => void) | null = null;
   private _waitForUpdate: Promise<void> | null = null;
 
-  async asyncPop(abort?: AbortSignal): Promise<string> {
-    const update = this.pop();
+  async asyncPop(
+    minimumPriority?: number,
+    abort?: AbortSignal
+  ): Promise<string> {
+    const update = this.pop(minimumPriority);
     if (update) {
       return update;
     } else {
@@ -27,7 +30,7 @@ export class AsyncPriorityQueue extends PriorityQueue {
         }),
       ]);
 
-      return this.asyncPop(abort);
+      return this.asyncPop(minimumPriority, abort);
     }
   }
 

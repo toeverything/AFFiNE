@@ -9,20 +9,20 @@ import {
   type TelemetryEvent,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { FONT_SM, FONT_XS } from '@blocksuite/affine-shared/styles';
+import { fontSMStyle, fontXSStyle } from '@blocksuite/affine-shared/styles';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
   listenClickAway,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { nextTick } from '@blocksuite/global/utils';
 import {
   type BlockComponent,
   type BlockStdScope,
   type EditorHost,
   EditorLifeCycleExtension,
-} from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { nextTick } from '@blocksuite/global/utils';
+} from '@blocksuite/std';
 import { autoUpdate, computePosition, flip, offset } from '@floating-ui/dom';
 import { computed, signal } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
@@ -90,8 +90,8 @@ export class EmbedCardEditModal extends SignalWatcher(
       background: transparent;
       border: 1px solid ${unsafeCSSVarV2('input/border/default')};
       color: var(--affine-text-primary-color);
-      ${FONT_SM};
     }
+    ${fontSMStyle('.row .input')}
     .input::placeholder {
       color: var(--affine-placeholder-color);
     }
@@ -117,9 +117,9 @@ export class EmbedCardEditModal extends SignalWatcher(
       border-radius: 4px;
       border: 1px solid ${unsafeCSSVarV2('button/innerBlackBorder')};
       background: ${unsafeCSSVarV2('button/secondary')};
-      ${FONT_XS};
       color: ${unsafeCSSVarV2('text/primary')};
     }
+    ${fontXSStyle('.row.actions .button')}
     .row.actions .button[disabled],
     .row.actions .button:disabled {
       pointer-events: none;
@@ -163,7 +163,10 @@ export class EmbedCardEditModal extends SignalWatcher(
 
     const std = blockComponent.std;
 
-    this.model.doc.updateBlock(this.model, { title: null, description: null });
+    this.model.store.updateBlock(this.model, {
+      title: null,
+      description: null,
+    });
 
     this.onReset?.(std, blockComponent);
 
@@ -192,8 +195,7 @@ export class EmbedCardEditModal extends SignalWatcher(
 
     const description = this.description$.value.trim();
 
-    const props: AliasInfo = { title };
-    if (description) props.description = description;
+    const props: AliasInfo = { title, description };
 
     this.onSave?.(std, blockComponent, props);
 

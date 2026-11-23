@@ -28,11 +28,13 @@ export const SignInPanel = ({
   server: initialServerBaseUrl,
   initStep,
   onAuthenticated,
+  redirectUrl,
 }: {
   onAuthenticated?: (status: AuthSessionStatus) => void;
   onSkip: () => void;
   server?: string;
   initStep?: SignInStep | undefined;
+  redirectUrl?: string;
 }) => {
   const [state, setState] = useState<SignInState>({
     step: initStep
@@ -41,6 +43,7 @@ export const SignInPanel = ({
         ? 'addSelfhosted'
         : 'signIn',
     initialServerBaseUrl: initialServerBaseUrl,
+    redirectUrl,
   });
 
   const defaultServerService = useService(DefaultServerService);

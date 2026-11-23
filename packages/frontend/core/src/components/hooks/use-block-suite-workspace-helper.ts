@@ -5,7 +5,7 @@ export function useDocCollectionHelper(docCollection: Workspace) {
   return useMemo(
     () => ({
       createDoc: (pageId?: string): Store => {
-        return docCollection.createDoc({ id: pageId });
+        return docCollection.createDoc(pageId).getStore();
       },
     }),
     [docCollection]

@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { sleep } from '@blocksuite/global/utils';
 import { expect, type Page } from '@playwright/test';
 
 import { dragBlockToPoint, popImageMoreMenu } from './utils/actions/drag.js';
@@ -15,7 +14,6 @@ import {
   pressShiftTab,
   pressTab,
   redoByKeyboard,
-  SHORT_KEY,
   type,
   undoByKeyboard,
 } from './utils/actions/keyboard.js';
@@ -71,10 +69,11 @@ function getAttachment(page: Page) {
     await type(page, 'file', 100);
     await expect(slashMenu).toBeVisible();
 
-    const fileChooser = page.waitForEvent('filechooser');
-    await pressEnter(page);
-    await sleep(100);
-    await (await fileChooser).setFiles(FILE_PATH);
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      slashMenu.getByTestId('Attachment').click(),
+    ]);
+    await fileChooser.setFiles(FILE_PATH);
 
     // Try to break the undo redo test
     await captureHistory(page);
@@ -113,11 +112,13 @@ function getAttachment(page: Page) {
       await attachment.click();
       await expect(toolbar).toBeVisible();
       await renameBtn.click();
-      await page.keyboard.press(`${SHORT_KEY}+a`, { delay: 50 });
-      await pressBackspace(page);
-      await type(page, newName);
+      await expect(renameInput).toBeVisible();
+      await renameInput.fill(newName);
       await pressEnter(page);
-      expect(await getName()).toContain(newName);
+      await expect(renameInput).not.toBeVisible();
+      if (newName.length > 0) {
+        await expect.poll(getName).toContain(newName);
+      }
     },
 
     // external
@@ -143,7 +144,7 @@ test('can insert attachment from slash menu', async ({ page }, testInfo) => {
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}.json`
@@ -167,7 +168,7 @@ test('should undo/redo works for attachment', async ({ page }, testInfo) => {
   );
 
   await undoByKeyboard(page);
-  await waitNextFrame(page);
+  await page.locator('affine-attachment').waitFor({ state: 'detached' });
 
   // The loading/error state should not be restored after undo
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
@@ -215,11 +216,11 @@ test('should rename attachment works', async ({ page }) => {
   await expect(renameInput).not.toBeVisible();
 
   await rename('new-name');
-  expect(await getName()).toBe('new-name.png');
+  await expect.poll(getName).toBe('new-name.png');
   await rename('');
-  expect(await getName()).toBe('.png');
+  await expect.poll(getName).toBe('.png');
   await rename('abc');
-  expect(await getName()).toBe('abc');
+  await expect.poll(getName).toBe('abc');
 });
 
 test('should turn attachment to image works', async ({ page }, testInfo) => {
@@ -285,7 +286,7 @@ test(`support dragging attachment block directly`, async ({
   await waitLoading();
 
   expect(await getName()).toBe(FILE_NAME);
-  expect(await getSize()).toBe('45.8 kB');
+  expect(await getSize()).toBe('44.73KB');
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_1.json`
@@ -322,14 +323,14 @@ test(`support dragging attachment block directly`, async ({
   await page.mouse.move(rect.x + 40, rect.y + rect.height + 80, { steps: 20 });
   await page.mouse.up();
 
-  const rects = page.locator('affine-block-selection').locator('visible=true');
+  const rects = page.locator('.affine-attachment-container.focused');
   await expect(rects).toHaveCount(1);
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_3.json`
   );
 });
 
-test('press backspace after bookmark block can select bookmark block', async ({
+test('press backspace after attachment block can select attachment block', async ({
   page,
 }) => {
   await enterPlaygroundRoom(page);

@@ -8,7 +8,6 @@ import {
 } from '@toeverything/infra';
 import {
   combineLatest,
-  EMPTY,
   exhaustMap,
   groupBy,
   map,
@@ -38,7 +37,7 @@ export class GuardService extends Service {
   >({});
 
   private readonly docPermissions$ = new LiveData<
-    Record<string, Partial<Record<DocPermissionActions, boolean>>>
+    Record<string, Partial<Record<DocPermissionActions, boolean>> | false>
   >({});
 
   private readonly isAdmin$ = LiveData.computed(get => {
@@ -56,41 +55,33 @@ export class GuardService extends Service {
    * guardService.can$('Workspace_Properties_Update');
    * guardService.can$('Doc_Update', docId);
    * ```
+   *
+   * @returns LiveData<boolean | undefined> the value is undefined if the permission is loading
    */
   can$<T extends WorkspacePermissionActions | DocPermissionActions>(
     action: T,
     ...args: T extends DocPermissionActions ? [string] : []
-  ): LiveData<boolean> {
+  ): LiveData<boolean | undefined> {
     const docId = args[0];
     return LiveData.from(
       new Observable(subscriber => {
-        // revalidate permission
-        if (docId) {
-          this.revalidateDocPermission(docId);
-        } else {
-          this.revalidateWorkspacePermission();
-        }
-        // revalidate workspace permission if it's not initialized
-        if (this.isAdmin$.value === null) {
-          this.workspacePermissionService.permission.revalidate();
-        }
-
-        let prev = false;
+        let prev: boolean | undefined = undefined;
 
         const subscription = combineLatest([
           (docId
             ? this.docPermissions$.pipe(
-                map(permissions => permissions[docId] ?? false)
+                map(permissions => permissions[docId] ?? {})
               )
-            : this.workspacePermissions$) as Observable<
-            Record<string, boolean>
+            : this.workspacePermissions$.asObservable()) as Observable<
+            Record<string, boolean> | false
           >,
           this.isAdmin$,
         ]).subscribe(([permissions, isAdmin]) => {
           if (isAdmin) {
             return subscriber.next(true);
           }
-          const current = permissions[action] ?? false;
+          const current =
+            permissions === false ? false : (permissions[action] ?? undefined);
           if (current !== prev) {
             prev = current;
             subscriber.next(current);
@@ -101,7 +92,7 @@ export class GuardService extends Service {
           subscription.unsubscribe();
         };
       }),
-      false
+      undefined
     );
   }
 
@@ -123,7 +114,32 @@ export class GuardService extends Service {
       ? this.loadDocPermission(docId)
       : this.loadWorkspacePermission());
 
-    return permissions[action as keyof typeof permissions] ?? false;
+    return permissions === false
+      ? false
+      : (permissions[action as keyof typeof permissions] ?? false);
+  }
+
+  revalidateCan<T extends WorkspacePermissionActions | DocPermissionActions>(
+    _action: T,
+    ...args: T extends DocPermissionActions ? [string] : []
+  ) {
+    // revalidate workspace permission if it's not initialized
+    if (this.isAdmin$.value === null) {
+      this.workspacePermissionService.permission.revalidate();
+    }
+
+    if (this.isAdmin$.value === true) {
+      // if the user is admin, the permission is always true
+      return;
+    }
+
+    const docId = args[0];
+    // revalidate permission
+    if (docId) {
+      this.revalidateDocPermission(docId);
+    } else {
+      this.revalidateWorkspacePermission();
+    }
   }
 
   private readonly revalidateWorkspacePermission = effect(
@@ -131,8 +147,7 @@ export class GuardService extends Service {
       fromPromise(() => this.guardStore.getWorkspacePermissions()).pipe(
         backoffRetry({
           count: Infinity,
-        }),
-        mergeMap(() => EMPTY)
+        })
       )
     )
   );
@@ -145,8 +160,7 @@ export class GuardService extends Service {
           fromPromise(() => this.loadDocPermission(docId)).pipe(
             backoffRetry({
               count: Infinity,
-            }),
-            mergeMap(() => EMPTY)
+            })
           )
         )
       )
@@ -157,6 +171,9 @@ export class GuardService extends Service {
     if (this.workspaceService.workspace.flavour === 'local') {
       return {} as Record<WorkspacePermissionActions, boolean>;
     }
+    if (this.workspaceService.workspace.openOptions.isSharedMode) {
+      return {};
+    }
     const permissions = await this.guardStore.getWorkspacePermissions();
     this.workspacePermissions$.next(permissions);
     return permissions;
@@ -165,6 +182,9 @@ export class GuardService extends Service {
   private readonly loadDocPermission = async (docId: string) => {
     if (this.workspaceService.workspace.flavour === 'local') {
       return {} as Record<DocPermissionActions, boolean>;
+    }
+    if (this.workspaceService.workspace.openOptions.isSharedMode) {
+      return {};
     }
     const permissions = await this.guardStore.getDocPermissions(docId);
     this.docPermissions$.next({

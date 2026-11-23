@@ -1,15 +1,14 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
-import { BlockComponent } from '@blocksuite/affine/block-std';
-import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
+/* oxlint-disable typescript/no-non-null-assertion */
 import {
   CanvasRenderer,
-  elementRenderers,
-  fitContent,
   type SurfaceBlockModel,
 } from '@blocksuite/affine/blocks/surface';
+import { fitContent } from '@blocksuite/affine/gfx/shape';
 import type { Bound } from '@blocksuite/affine/global/gfx';
 import type { Color, ShapeElementModel } from '@blocksuite/affine/model';
 import { ThemeProvider } from '@blocksuite/affine/shared/services';
+import { BlockComponent } from '@blocksuite/affine/std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import { html } from 'lit';
 import { query } from 'lit/decorators.js';
 
@@ -43,7 +42,7 @@ export class MindmapSurfaceBlock extends BlockComponent<SurfaceBlockModel> {
   }
 
   private _adjustNodeWidth() {
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       this.model.elementModels.forEach(element => {
         if (element.type === 'shape') {
           fitContent(element as ShapeElementModel);
@@ -98,6 +97,7 @@ export class MindmapSurfaceBlock extends BlockComponent<SurfaceBlockModel> {
 
     const themeService = this.std.get(ThemeProvider);
     this.renderer = new CanvasRenderer({
+      std: this.std,
       viewport: this.viewport,
       layerManager: this._layer,
       gridManager: this._grid,
@@ -124,7 +124,6 @@ export class MindmapSurfaceBlock extends BlockComponent<SurfaceBlockModel> {
             themeService.edgelessTheme
           ),
       },
-      elementRenderers,
       surfaceModel: this.model,
     });
     this._disposables.add(this.renderer);

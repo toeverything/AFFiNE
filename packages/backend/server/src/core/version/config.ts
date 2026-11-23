@@ -1,4 +1,4 @@
-import { defineRuntimeConfig, ModuleConfig } from '../../base/config';
+import { defineModuleConfig } from '../../base';
 
 export interface VersionConfig {
   versionControl: {
@@ -7,9 +7,9 @@ export interface VersionConfig {
   };
 }
 
-declare module '../../base/config' {
-  interface AppConfig {
-    client: ModuleConfig<never, VersionConfig>;
+declare global {
+  interface AppConfigSchema {
+    client: VersionConfig;
   }
 }
 
@@ -19,13 +19,13 @@ declare module '../../base/guard' {
   }
 }
 
-defineRuntimeConfig('client', {
+defineModuleConfig('client', {
   'versionControl.enabled': {
     desc: 'Whether check version of client before accessing the server.',
     default: false,
   },
   'versionControl.requiredVersion': {
     desc: "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.",
-    default: '>=0.20.0',
+    default: '>=0.25.0',
   },
 });

@@ -3,7 +3,7 @@ import { css, html } from 'lit';
 
 import { BaseGroup } from './base.js';
 
-export class BooleanGroupView extends BaseGroup<NonNullable<unknown>, boolean> {
+export class BooleanGroupView extends BaseGroup<boolean, NonNullable<unknown>> {
   static override styles = css`
     .data-view-group-title-boolean-view {
       display: flex;
@@ -16,10 +16,20 @@ export class BooleanGroupView extends BaseGroup<NonNullable<unknown>, boolean> {
   `;
 
   protected override render(): unknown {
+    // Handle null/undefined values
+    if (this.value == null) {
+      const displayName = `No ${this.group.property.name$.value ?? 'value'}`;
+      return html` <div class="data-view-group-title-boolean-view">
+        ${displayName}
+      </div>`;
+    }
+
     return html` <div class="data-view-group-title-boolean-view">
-      ${this.value
-        ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
-        : CheckBoxUnIcon()}
+      ${
+        this.value
+          ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
+          : CheckBoxUnIcon()
+      }
     </div>`;
   }
 }

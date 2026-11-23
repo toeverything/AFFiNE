@@ -2,99 +2,43 @@ use std::{ffi::c_void, ptr, sync::Arc};
 
 use block2::{Block, RcBlock};
 use core_foundation::{
-  array::CFArray,
   base::{CFType, ItemRef, TCFType},
-  boolean::CFBoolean,
   dictionary::CFDictionary,
   string::CFString,
   uuid::CFUUID,
 };
 use coreaudio::sys::{
-  kAudioAggregateDeviceIsPrivateKey, kAudioAggregateDeviceIsStackedKey,
-  kAudioAggregateDeviceMainSubDeviceKey, kAudioAggregateDeviceNameKey,
-  kAudioAggregateDeviceSubDeviceListKey, kAudioAggregateDeviceTapAutoStartKey,
-  kAudioAggregateDeviceTapListKey, kAudioAggregateDeviceUIDKey,
-  kAudioDevicePropertyAvailableNominalSampleRates, kAudioDevicePropertyNominalSampleRate,
-  kAudioHardwareNoError, kAudioHardwarePropertyDefaultInputDevice,
-  kAudioHardwarePropertyDefaultSystemOutputDevice, kAudioObjectPropertyElementMain,
-  kAudioObjectPropertyScopeGlobal, kAudioSubDeviceUIDKey, kAudioSubTapDriftCompensationKey,
-  kAudioSubTapUIDKey, AudioDeviceCreateIOProcIDWithBlock, AudioDeviceDestroyIOProcID,
-  AudioDeviceIOProcID, AudioDeviceStart, AudioDeviceStop, AudioHardwareCreateAggregateDevice,
-  AudioHardwareDestroyAggregateDevice, AudioObjectGetPropertyData, AudioObjectGetPropertyDataSize,
-  AudioObjectID, AudioObjectPropertyAddress, AudioObjectSetPropertyData, AudioTimeStamp, OSStatus,
+  AudioDeviceCreateIOProcIDWithBlock, AudioDeviceDestroyIOProcID, AudioDeviceIOProcID, AudioDeviceStart,
+  AudioDeviceStop, AudioHardwareCreateAggregateDevice, AudioHardwareDestroyAggregateDevice,
+  AudioObjectAddPropertyListenerBlock, AudioObjectGetPropertyDataSize, AudioObjectID, AudioObjectPropertyAddress,
+  AudioObjectRemovePropertyListenerBlock, AudioTimeStamp, OSStatus, kAudioAggregateDeviceClockDeviceKey,
+  kAudioAggregateDeviceIsPrivateKey, kAudioAggregateDeviceIsStackedKey, kAudioAggregateDeviceMainSubDeviceKey,
+  kAudioAggregateDeviceNameKey, kAudioAggregateDeviceSubDeviceListKey, kAudioAggregateDeviceTapAutoStartKey,
+  kAudioAggregateDeviceTapListKey, kAudioAggregateDeviceUIDKey, kAudioDevicePropertyDeviceIsAlive,
+  kAudioDevicePropertyNominalSampleRate, kAudioHardwareBadDeviceError, kAudioHardwareBadStreamError,
+  kAudioHardwareNoError, kAudioHardwarePropertyDefaultInputDevice, kAudioHardwarePropertyDefaultOutputDevice,
+  kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject, kAudioSubDeviceUIDKey,
+  kAudioSubTapUIDKey,
 };
-use napi::{
-  bindgen_prelude::Float32Array,
-  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Result,
-};
-use napi_derive::napi;
-use objc2::{runtime::AnyObject, Encode, Encoding, RefEncode};
+use napi::bindgen_prelude::Result;
+use objc2::runtime::AnyObject;
 
 use crate::{
-  audio_stream_basic_desc::read_audio_stream_basic_description,
+  audio_buffer::InputAndOutputAudioBufferList,
+  audio_callback::AudioCallback,
   ca_tap_description::CATapDescription,
-  device::{get_device_audio_id, get_device_uid},
+  cf_types::CFDictionaryBuilder,
+  device::get_device_uid,
   error::CoreAudioError,
   queue::create_audio_tap_queue,
-  screen_capture_kit::TappableApplication,
+  screen_capture_kit::ApplicationInfo,
+  utils::{cfstring_from_bytes_with_nul, get_global_main_property},
 };
 
-extern "C" {
-  fn AudioHardwareCreateProcessTap(
-    inDescription: *mut AnyObject,
-    outTapID: *mut AudioObjectID,
-  ) -> OSStatus;
+unsafe extern "C" {
+  fn AudioHardwareCreateProcessTap(inDescription: *mut AnyObject, outTapID: *mut AudioObjectID) -> OSStatus;
 
   fn AudioHardwareDestroyProcessTap(tapID: AudioObjectID) -> OSStatus;
-}
-
-/// [Apple's documentation](https://developer.apple.com/documentation/coreaudiotypes/audiobuffer?language=objc)
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(non_snake_case)]
-pub struct AudioBuffer {
-  pub mNumberChannels: u32,
-  pub mDataByteSize: u32,
-  pub mData: *mut c_void,
-}
-
-// Define a struct to represent sample rate ranges
-#[repr(C)]
-#[allow(non_snake_case)]
-struct AudioValueRange {
-  mMinimum: f64,
-  mMaximum: f64,
-}
-
-unsafe impl Encode for AudioBuffer {
-  const ENCODING: Encoding = Encoding::Struct(
-    "AudioBuffer",
-    &[<u32>::ENCODING, <u32>::ENCODING, <*mut c_void>::ENCODING],
-  );
-}
-
-unsafe impl RefEncode for AudioBuffer {
-  const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(non_snake_case)]
-pub struct AudioBufferList {
-  pub mNumberBuffers: u32,
-  pub mBuffers: [AudioBuffer; 1],
-}
-
-unsafe impl Encode for AudioBufferList {
-  const ENCODING: Encoding = Encoding::Struct(
-    "AudioBufferList",
-    &[<u32>::ENCODING, <[AudioBuffer; 1]>::ENCODING],
-  );
-}
-
-unsafe impl RefEncode for AudioBufferList {
-  const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
 }
 
 // Audio statistics structure to track audio format information
@@ -108,14 +52,14 @@ pub struct AggregateDevice {
   pub tap_id: AudioObjectID,
   pub id: AudioObjectID,
   pub audio_stats: Option<AudioStats>,
-  pub input_device_id: Option<AudioObjectID>,
-  pub output_device_id: Option<AudioObjectID>,
+  pub input_device_id: AudioObjectID,
+  pub output_device_id: AudioObjectID,
   pub input_proc_id: Option<AudioDeviceIOProcID>,
   pub output_proc_id: Option<AudioDeviceIOProcID>,
 }
 
 impl AggregateDevice {
-  pub fn new(app: &TappableApplication) -> Result<Self> {
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
     let object_id = app.object_id;
 
     let tap_description = CATapDescription::init_stereo_mixdown_of_processes(object_id)?;
@@ -127,15 +71,21 @@ impl AggregateDevice {
       return Err(CoreAudioError::CreateProcessTapFailed(status).into());
     }
 
-    let description_dict = Self::create_aggregate_description(tap_id, tap_description.get_uuid()?)?;
+    let (input_device_id, default_input_uid) = get_device_uid(kAudioHardwarePropertyDefaultInputDevice)?;
+
+    // Get the default output device ID
+    let (output_device_id, output_device_uid) = get_device_uid(kAudioHardwarePropertyDefaultOutputDevice)?;
+    let description_dict = Self::create_aggregate_description(
+      tap_id,
+      tap_description.get_uuid()?,
+      default_input_uid,
+      output_device_uid,
+    )?;
 
     let mut aggregate_device_id: AudioObjectID = 0;
 
     let status = unsafe {
-      AudioHardwareCreateAggregateDevice(
-        description_dict.as_concrete_TypeRef().cast(),
-        &mut aggregate_device_id,
-      )
+      AudioHardwareCreateAggregateDevice(description_dict.as_concrete_TypeRef().cast(), &mut aggregate_device_id)
     };
 
     if status != 0 {
@@ -146,44 +96,8 @@ impl AggregateDevice {
       tap_id,
       id: aggregate_device_id,
       audio_stats: None,
-      input_device_id: None,
-      output_device_id: None,
-      input_proc_id: None,
-      output_proc_id: None,
-    })
-  }
-
-  pub fn new_from_object_id(object_id: AudioObjectID) -> Result<Self> {
-    let mut tap_id: AudioObjectID = 0;
-
-    let tap_description = CATapDescription::init_stereo_mixdown_of_processes(object_id)?;
-    let status = unsafe { AudioHardwareCreateProcessTap(tap_description.inner, &mut tap_id) };
-
-    if status != 0 {
-      return Err(CoreAudioError::CreateProcessTapFailed(status).into());
-    }
-
-    let description_dict = Self::create_aggregate_description(tap_id, tap_description.get_uuid()?)?;
-
-    let mut aggregate_device_id: AudioObjectID = 0;
-
-    let status = unsafe {
-      AudioHardwareCreateAggregateDevice(
-        description_dict.as_concrete_TypeRef().cast(),
-        &mut aggregate_device_id,
-      )
-    };
-
-    if status != 0 {
-      return Err(CoreAudioError::CreateAggregateDeviceFailed(status).into());
-    }
-
-    Ok(Self {
-      tap_id,
-      id: aggregate_device_id,
-      audio_stats: None,
-      input_device_id: None,
-      output_device_id: None,
+      input_device_id,
+      output_device_id,
       input_proc_id: None,
       output_proc_id: None,
     })
@@ -191,8 +105,7 @@ impl AggregateDevice {
 
   pub fn create_global_tap_but_exclude_processes(processes: &[AudioObjectID]) -> Result<Self> {
     let mut tap_id: AudioObjectID = 0;
-    let tap_description =
-      CATapDescription::init_stereo_global_tap_but_exclude_processes(processes)?;
+    let tap_description = CATapDescription::init_stereo_global_tap_but_exclude_processes(processes)?;
     let status = unsafe { AudioHardwareCreateProcessTap(tap_description.inner, &mut tap_id) };
 
     if status != 0 {
@@ -200,20 +113,22 @@ impl AggregateDevice {
     }
 
     // Get the default input device (microphone) UID and ID
-    let input_device_id = get_device_audio_id(kAudioHardwarePropertyDefaultInputDevice)?;
+    let (input_device_id, default_input_uid) = get_device_uid(kAudioHardwarePropertyDefaultInputDevice)?;
 
     // Get the default output device ID
-    let output_device_id = get_device_audio_id(kAudioHardwarePropertyDefaultSystemOutputDevice)?;
+    let (output_device_id, output_device_uid) = get_device_uid(kAudioHardwarePropertyDefaultOutputDevice)?;
 
-    let description_dict = Self::create_aggregate_description(tap_id, tap_description.get_uuid()?)?;
+    let description_dict = Self::create_aggregate_description(
+      tap_id,
+      tap_description.get_uuid()?,
+      default_input_uid,
+      output_device_uid,
+    )?;
 
     let mut aggregate_device_id: AudioObjectID = 0;
 
     let status = unsafe {
-      AudioHardwareCreateAggregateDevice(
-        description_dict.as_concrete_TypeRef().cast(),
-        &mut aggregate_device_id,
-      )
+      AudioHardwareCreateAggregateDevice(description_dict.as_concrete_TypeRef().cast(), &mut aggregate_device_id)
     };
 
     // Check the status and return the appropriate result
@@ -226,15 +141,16 @@ impl AggregateDevice {
       tap_id,
       id: aggregate_device_id,
       audio_stats: None,
-      input_device_id: Some(input_device_id),
-      output_device_id: Some(output_device_id),
+      input_device_id,
+      output_device_id,
       input_proc_id: None,
       output_proc_id: None,
     };
 
-    // Configure the aggregate device to ensure proper handling of both input and
-    // output
-    device.configure_aggregate_device()?;
+    // Restore the activation logic as it seems necessary for audio flow
+    // Configure the aggregate device to ensure proper handling of both input
+    // and output
+    device.get_aggregate_device_stats()?;
 
     // Activate both the input and output devices and store their proc IDs
     let input_proc_id = device.activate_audio_device(input_device_id)?;
@@ -246,173 +162,14 @@ impl AggregateDevice {
     Ok(device)
   }
 
-  // Configures the aggregate device to ensure proper handling of both input and
-  // output streams
-  fn configure_aggregate_device(&self) -> Result<AudioStats> {
-    // Read the current audio format to ensure it's properly configured
-    let audio_format = read_audio_stream_basic_description(self.tap_id)?;
+  fn get_aggregate_device_stats(&self) -> Result<AudioStats> {
+    let mut sample_rate: f64 = 0.0;
+    get_global_main_property(self.id, kAudioDevicePropertyNominalSampleRate, &mut sample_rate)?;
 
-    // Create initial audio stats with the actual sample rate but always use mono
-    let initial_sample_rate = audio_format.0.mSampleRate;
-    let mut audio_stats = AudioStats {
-      sample_rate: initial_sample_rate,
-      channels: 1, // Always set to 1 channel (mono)
+    let audio_stats = AudioStats {
+      sample_rate,
+      channels: 2,
     };
-
-    // Set the preferred sample rate on the device
-    // This is similar to how Screen Capture Kit allows setting the sample rate
-    let preferred_sample_rate = initial_sample_rate; // Use the device's current sample rate
-
-    // First, check if the preferred sample rate is available
-    let mut is_sample_rate_available = false;
-    let mut best_available_rate = preferred_sample_rate; // Default to preferred rate
-
-    unsafe {
-      // Get the available sample rates
-      let address = AudioObjectPropertyAddress {
-        mSelector: kAudioDevicePropertyAvailableNominalSampleRates,
-        mScope: kAudioObjectPropertyScopeGlobal,
-        mElement: kAudioObjectPropertyElementMain,
-      };
-
-      // Get the size of the property data
-      let mut data_size: u32 = 0;
-      let status = AudioObjectGetPropertyDataSize(
-        self.id,
-        &address as *const AudioObjectPropertyAddress,
-        0,
-        std::ptr::null(),
-        &mut data_size as *mut u32,
-      );
-
-      if status == 0 && data_size > 0 {
-        // Calculate how many ranges we have
-        let range_count = data_size as usize / std::mem::size_of::<AudioValueRange>();
-
-        // Allocate memory for the ranges
-        let mut ranges: Vec<AudioValueRange> = Vec::with_capacity(range_count);
-        ranges.set_len(range_count);
-
-        // Get the available sample rates
-        let status = AudioObjectGetPropertyData(
-          self.id,
-          &address as *const AudioObjectPropertyAddress,
-          0,
-          std::ptr::null(),
-          &mut data_size as *mut u32,
-          ranges.as_mut_ptr() as *mut std::ffi::c_void,
-        );
-
-        if status == 0 {
-          // Check if our preferred sample rate is within any of the available ranges
-          for range in &ranges {
-            if preferred_sample_rate >= range.mMinimum && preferred_sample_rate <= range.mMaximum {
-              is_sample_rate_available = true;
-              break;
-            }
-          }
-
-          // If not available, find the best available rate
-          if !is_sample_rate_available && !ranges.is_empty() {
-            // Common preferred sample rates in order of preference
-            let common_rates = [48000.0, 44100.0, 96000.0, 88200.0, 24000.0, 22050.0];
-            let mut found_common_rate = false;
-
-            // First try to find a common rate that's available
-            for &rate in &common_rates {
-              for range in &ranges {
-                if rate >= range.mMinimum && rate <= range.mMaximum {
-                  best_available_rate = rate;
-                  found_common_rate = true;
-                  break;
-                }
-              }
-              if found_common_rate {
-                break;
-              }
-            }
-
-            // If no common rate is available, use the highest available rate
-            if !found_common_rate {
-              // Find the highest available rate
-              for range in &ranges {
-                // Use the maximum of the range as our best available rate
-                if range.mMaximum > best_available_rate {
-                  best_available_rate = range.mMaximum;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Set the sample rate to either the preferred rate or the best available rate
-    let sample_rate_to_set = if is_sample_rate_available {
-      preferred_sample_rate
-    } else {
-      best_available_rate
-    };
-
-    let status = unsafe {
-      // Note on scope usage:
-      // We use kAudioObjectPropertyScopeGlobal here because it works reliably for
-      // setting the nominal sample rate on the device. While
-      // kAudioObjectPropertyScopeInput or kAudioObjectPropertyScopeOutput might
-      // also work in some cases (as mentioned in the comments),
-      // kAudioObjectPropertyScopeGlobal is the most consistent approach.
-      //
-      // The CoreAudio documentation doesn't explicitly specify which scope to use
-      // with kAudioDevicePropertyNominalSampleRate, but in practice,
-      // kAudioObjectPropertyScopeGlobal ensures the sample rate is set for the
-      // entire device, affecting both input and output.
-      let address = AudioObjectPropertyAddress {
-        mSelector: kAudioDevicePropertyNominalSampleRate,
-        mScope: kAudioObjectPropertyScopeGlobal,
-        mElement: kAudioObjectPropertyElementMain,
-      };
-
-      // Set the sample rate property
-      AudioObjectSetPropertyData(
-        self.id,
-        &address as *const AudioObjectPropertyAddress,
-        0,
-        std::ptr::null(),
-        std::mem::size_of::<f64>() as u32,
-        &sample_rate_to_set as *const f64 as *const std::ffi::c_void,
-      )
-    };
-
-    // Update the audio_stats with the actual sample rate that was set if successful
-    if status == 0 {
-      audio_stats.sample_rate = sample_rate_to_set;
-
-      // Verify the actual sample rate by reading it back
-      unsafe {
-        let address = AudioObjectPropertyAddress {
-          mSelector: kAudioDevicePropertyNominalSampleRate,
-          mScope: kAudioObjectPropertyScopeGlobal,
-          mElement: kAudioObjectPropertyElementMain,
-        };
-
-        let mut actual_rate: f64 = 0.0;
-        let mut data_size = std::mem::size_of::<f64>() as u32;
-
-        let status = AudioObjectGetPropertyData(
-          self.id,
-          &address as *const AudioObjectPropertyAddress,
-          0,
-          std::ptr::null(),
-          &mut data_size as *mut u32,
-          &mut actual_rate as *mut f64 as *mut std::ffi::c_void,
-        );
-
-        if status == 0 {
-          // Update with the verified rate
-          audio_stats.sample_rate = actual_rate;
-        }
-      }
-    }
 
     Ok(audio_stats)
   }
@@ -448,6 +205,8 @@ impl AggregateDevice {
     // Start the device to activate it
     let status = unsafe { AudioDeviceStart(device_id, dummy_proc_id) };
     if status != 0 {
+      // Clean up the IO proc if AudioDeviceStart fails
+      let _ = unsafe { AudioDeviceDestroyIOProcID(device_id, dummy_proc_id) };
       return Err(CoreAudioError::AudioDeviceStartFailed(status).into());
     }
 
@@ -455,83 +214,78 @@ impl AggregateDevice {
     Ok(dummy_proc_id)
   }
 
+  /// Implementation for the AggregateDevice to start processing audio
   pub fn start(
     &mut self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    audio_stream_callback: AudioCallback,
+    // Add original_audio_stats to ensure consistent target rate
+    original_audio_stats: AudioStats,
   ) -> Result<AudioTapStream> {
-    // Configure the aggregate device and get audio stats before starting
-    let audio_stats = self.configure_aggregate_device()?;
-    self.audio_stats = Some(audio_stats);
-    let audio_stats_clone = audio_stats;
+    let mut current_audio_stats = self.get_aggregate_device_stats()?;
 
     let queue = create_audio_tap_queue();
     let mut in_proc_id: AudioDeviceIOProcID = None;
 
-    let in_io_block: RcBlock<
-      dyn Fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32,
-    > = RcBlock::new(
-      move |_in_now: *mut c_void,
-            in_input_data: *mut c_void,
-            in_input_time: *mut c_void,
-            _out_output_data: *mut c_void,
-            _in_output_time: *mut c_void| {
-        let AudioTimeStamp { mSampleTime, .. } = unsafe { &*in_input_time.cast() };
+    // Get the current input and output sample rates
+    let mut input_device_sample_rate: f64 = 0.0;
+    get_global_main_property(
+      self.input_device_id,
+      kAudioDevicePropertyNominalSampleRate,
+      &mut input_device_sample_rate,
+    )?;
 
-        // ignore pre-roll
-        if *mSampleTime < 0.0 {
-          return kAudioHardwareNoError as i32;
-        }
-        let AudioBufferList { mBuffers, .. } =
-          unsafe { &mut *in_input_data.cast::<AudioBufferList>() };
-        let [AudioBuffer {
-          mData,
-          mNumberChannels,
-          mDataByteSize,
-        }] = mBuffers;
-        // Only create slice if we have valid data
-        if !mData.is_null() && *mDataByteSize > 0 {
-          // Calculate total number of samples (total bytes / bytes per sample)
-          let total_samples = *mDataByteSize as usize / 4; // 4 bytes per f32
+    let output_sample_rate = current_audio_stats.sample_rate;
+    // Use the consistent original sample rate as the target for the IO block
+    let target_sample_rate = original_audio_stats.sample_rate;
 
-          // Create a slice of all samples
-          let samples: &[f32] =
-            unsafe { std::slice::from_raw_parts(mData.cast::<f32>(), total_samples) };
+    // Update the device's reported stats to the consistent one
+    current_audio_stats.sample_rate = target_sample_rate;
+    current_audio_stats.channels = original_audio_stats.channels;
+    self.audio_stats = Some(current_audio_stats);
 
-          // Check the channel count and data format
-          let channel_count = *mNumberChannels as usize;
+    // Use the consistent stats for the stream object returned
+    let audio_stats_for_stream = current_audio_stats;
 
-          // Process the audio based on channel count
-          let processed_samples: Vec<f32>;
+    let in_io_block: RcBlock<dyn Fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32>;
+    {
+      in_io_block = RcBlock::new(
+        move |_in_now: *mut c_void,
+              in_input_data: *mut c_void,
+              in_input_time: *mut c_void,
+              _in_output_data: *mut c_void,
+              _in_output_time: *mut c_void| {
+          let AudioTimeStamp { mSampleTime, .. } = unsafe { &*in_input_time.cast() };
 
-          if channel_count > 1 {
-            // For stereo, samples are interleaved: [L, R, L, R, ...]
-            // We need to average each pair to get mono
-            processed_samples = process_mixed_audio(samples, channel_count);
-          } else {
-            // For mono, just copy the samples
-            processed_samples = samples.to_vec();
+          // ignore pre-roll
+          if *mSampleTime < 0.0 {
+            return kAudioHardwareNoError as i32;
           }
+          let Ok(dua_audio_buffer_list) = (unsafe { InputAndOutputAudioBufferList::from_raw(in_input_data) }) else {
+            return kAudioHardwareBadDeviceError as i32;
+          };
 
-          // Send the processed audio data to JavaScript
-          audio_stream_callback.call(
-            Ok(processed_samples.into()),
-            ThreadsafeFunctionCallMode::NonBlocking,
-          );
-        }
+          let Ok(mixed_samples) = dua_audio_buffer_list.mix_input_and_output(
+            target_sample_rate,
+            input_device_sample_rate,
+            output_sample_rate,
+          ) else {
+            return kAudioHardwareBadStreamError as i32;
+          };
 
-        kAudioHardwareNoError as i32
-      },
-    );
+          // Send the processed audio data to the configured sink
+          audio_stream_callback.call(mixed_samples);
+
+          kAudioHardwareNoError as i32
+        },
+      );
+    }
 
     let status = unsafe {
       AudioDeviceCreateIOProcIDWithBlock(
         &mut in_proc_id,
         self.id,
-        queue.cast(),
-        (&*in_io_block
-          as *const Block<
-            dyn Fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32,
-          >)
+        dispatch2::DispatchRetained::as_ptr(&queue).as_ptr().cast(),
+        (&*in_io_block as *const Block<dyn Fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32>)
           .cast_mut()
           .cast(),
       )
@@ -539,8 +293,11 @@ impl AggregateDevice {
     if status != 0 {
       return Err(CoreAudioError::CreateIOProcIDWithBlockFailed(status).into());
     }
+
     let status = unsafe { AudioDeviceStart(self.id, in_proc_id) };
     if status != 0 {
+      // Attempt to clean up the IO proc if start failed
+      let _cleanup_status = unsafe { AudioDeviceDestroyIOProcID(self.id, in_proc_id) };
       return Err(CoreAudioError::AudioDeviceStartFailed(status).into());
     }
 
@@ -548,208 +305,680 @@ impl AggregateDevice {
       device_id: self.id,
       in_proc_id,
       stop_called: false,
-      audio_stats: audio_stats_clone, // Use the updated audio_stats with the actual sample rate
+      audio_stats: audio_stats_for_stream,
       input_device_id: self.input_device_id,
       output_device_id: self.output_device_id,
       input_proc_id: self.input_proc_id,
       output_proc_id: self.output_proc_id,
+      queue: Some(queue),
     })
   }
 
   fn create_aggregate_description(
     tap_id: AudioObjectID,
     tap_uuid_string: ItemRef<CFString>,
+    input_device_id: CFString,
+    output_device_id: CFString,
   ) -> Result<CFDictionary<CFType, CFType>> {
-    let system_output_uid = get_device_uid(kAudioHardwarePropertyDefaultSystemOutputDevice)?;
-    let default_input_uid = get_device_uid(kAudioHardwarePropertyDefaultInputDevice)?;
-
-    let aggregate_device_name = CFString::new(&format!("Tap-{}", tap_id));
+    let aggregate_device_name = CFString::new(&format!("Tap-{tap_id}"));
     let aggregate_device_uid: uuid::Uuid = CFUUID::new().into();
     let aggregate_device_uid_string = aggregate_device_uid.to_string();
 
-    // Sub-device UID key and dictionary
-    let sub_device_output_dict = CFDictionary::from_CFType_pairs(&[
-      (
-        cfstring_from_bytes_with_nul(kAudioSubDeviceUIDKey).as_CFType(),
-        system_output_uid.as_CFType(),
-      ),
-      // Explicitly mark this as an output device
-      (
-        CFString::new("com.apple.audio.roles").as_CFType(),
-        CFString::new("output").as_CFType(),
-      ),
-    ]);
+    let mut sub_device_input_dict = CFDictionaryBuilder::new();
+    sub_device_input_dict.add(kAudioSubDeviceUIDKey.as_slice(), &input_device_id);
 
-    let sub_device_input_dict = CFDictionary::from_CFType_pairs(&[
-      (
-        cfstring_from_bytes_with_nul(kAudioSubDeviceUIDKey).as_CFType(),
-        default_input_uid.as_CFType(),
-      ),
-      // Explicitly mark this as an input device
-      (
-        CFString::new("com.apple.audio.roles").as_CFType(),
-        CFString::new("input").as_CFType(),
-      ),
-    ]);
+    let tap_device_dict = CFDictionary::from_CFType_pairs(&[(
+      cfstring_from_bytes_with_nul(kAudioSubTapUIDKey).as_CFType(),
+      tap_uuid_string.as_CFType(),
+    )]);
 
-    let tap_device_dict = CFDictionary::from_CFType_pairs(&[
-      (
-        cfstring_from_bytes_with_nul(kAudioSubTapDriftCompensationKey).as_CFType(),
-        CFBoolean::false_value().as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioSubTapUIDKey).as_CFType(),
-        tap_uuid_string.as_CFType(),
-      ),
-    ]);
-
-    // Put input device first in the list to prioritize it
-    let capture_device_list = vec![sub_device_input_dict, sub_device_output_dict];
-
-    // Sub-device list
-    let sub_device_list = CFArray::from_CFTypes(&capture_device_list);
-
-    let tap_list = CFArray::from_CFTypes(&[tap_device_dict]);
+    let capture_device_list = vec![sub_device_input_dict.build()];
 
     // Create the aggregate device description dictionary with a balanced
     // configuration
-    let description_dict = CFDictionary::from_CFType_pairs(&[
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceNameKey).as_CFType(),
-        aggregate_device_name.as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceUIDKey).as_CFType(),
-        CFString::new(aggregate_device_uid_string.as_str()).as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceMainSubDeviceKey).as_CFType(),
-        // Use a balanced approach that includes both input and output
-        // but prioritize input for microphone capture
-        default_input_uid.as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceIsPrivateKey).as_CFType(),
-        CFBoolean::true_value().as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceIsStackedKey).as_CFType(),
-        CFBoolean::false_value().as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceTapAutoStartKey).as_CFType(),
-        CFBoolean::true_value().as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceSubDeviceListKey).as_CFType(),
-        sub_device_list.as_CFType(),
-      ),
-      (
-        cfstring_from_bytes_with_nul(kAudioAggregateDeviceTapListKey).as_CFType(),
-        tap_list.as_CFType(),
-      ),
-    ]);
-    Ok(description_dict)
+
+    let mut cf_dict_builder = CFDictionaryBuilder::new();
+
+    cf_dict_builder
+      .add(kAudioAggregateDeviceNameKey.as_slice(), aggregate_device_name)
+      .add(kAudioAggregateDeviceUIDKey.as_slice(), aggregate_device_uid_string)
+      .add(kAudioAggregateDeviceMainSubDeviceKey.as_slice(), &output_device_id)
+      .add(kAudioAggregateDeviceIsPrivateKey.as_slice(), true)
+      // can't be stacked because we're using a tap
+      .add(kAudioAggregateDeviceIsStackedKey.as_slice(), false)
+      .add(kAudioAggregateDeviceTapAutoStartKey.as_slice(), true)
+      .add(kAudioAggregateDeviceSubDeviceListKey.as_slice(), capture_device_list)
+      .add(kAudioAggregateDeviceClockDeviceKey.as_slice(), input_device_id)
+      .add(kAudioAggregateDeviceTapListKey.as_slice(), vec![tap_device_dict]);
+
+    Ok(cf_dict_builder.build())
   }
 }
 
-#[napi]
 pub struct AudioTapStream {
   device_id: AudioObjectID,
   in_proc_id: AudioDeviceIOProcID,
   stop_called: bool,
   audio_stats: AudioStats,
-  input_device_id: Option<AudioObjectID>,
-  output_device_id: Option<AudioObjectID>,
+  input_device_id: AudioObjectID,
+  output_device_id: AudioObjectID,
   input_proc_id: Option<AudioDeviceIOProcID>,
   output_proc_id: Option<AudioDeviceIOProcID>,
+  queue: Option<dispatch2::DispatchRetained<dispatch2::DispatchQueue>>,
 }
 
-#[napi]
 impl AudioTapStream {
-  #[napi]
   pub fn stop(&mut self) -> Result<()> {
     if self.stop_called {
       return Ok(());
     }
+
     self.stop_called = true;
 
-    // Stop the main aggregate device
-    let status = unsafe { AudioDeviceStop(self.device_id, self.in_proc_id) };
-    if status != 0 {
-      return Err(CoreAudioError::AudioDeviceStopFailed(status).into());
+    // Check if device exists before attempting to stop it
+    let mut device_exists = false;
+    let mut dummy_size: u32 = 0;
+    let device_check_status = unsafe {
+      AudioObjectGetPropertyDataSize(
+        self.device_id,
+        &AudioObjectPropertyAddress {
+          mSelector: kAudioDevicePropertyDeviceIsAlive,
+          mScope: kAudioObjectPropertyScopeGlobal,
+          mElement: kAudioObjectPropertyElementMain,
+        },
+        0,
+        ptr::null(),
+        &mut dummy_size,
+      )
+    };
+
+    if device_check_status == 0 {
+      device_exists = true;
+    }
+
+    // Stop the main aggregate device - ignore errors as device might already be
+    // stopped or disconnected
+    if device_exists {
+      let status = unsafe { AudioDeviceStop(self.device_id, self.in_proc_id) };
+      // Don't fail the whole stop process if this fails, just log the error and
+      // continue cleanup
+      if status != 0 {
+        // kAudioHardwareBadDeviceError (560227702 / 0x2166616E in hex)
+        // indicates the device is gone, which is expected in some
+        // scenarios (like device unplug). Treat this as non-existent.
+        if status == kAudioHardwareBadDeviceError as i32 {
+          device_exists = false; // Treat as non-existent for subsequent steps
+        }
+      }
     }
 
     // Stop the input device if it was activated
-    if let Some(input_id) = self.input_device_id {
-      if let Some(proc_id) = self.input_proc_id {
-        let _ = unsafe { AudioDeviceStop(input_id, proc_id) };
-        let _ = unsafe { AudioDeviceDestroyIOProcID(input_id, proc_id) };
+    if let Some(proc_id) = self.input_proc_id {
+      // Ignore errors as device might be disconnected
+      let status = unsafe { AudioDeviceStop(self.input_device_id, proc_id) };
+      if status != 0 {
+        println!("DEBUG: WARNING: Input device stop failed with status: {status}");
+      }
+
+      let status = unsafe { AudioDeviceDestroyIOProcID(self.input_device_id, proc_id) };
+      if status != 0 {
+        println!("DEBUG: WARNING: Input device destroy IO proc failed with status: {status}");
       }
     }
 
     // Stop the output device if it was activated
-    if let Some(output_id) = self.output_device_id {
-      if let Some(proc_id) = self.output_proc_id {
-        let _ = unsafe { AudioDeviceStop(output_id, proc_id) };
-        let _ = unsafe { AudioDeviceDestroyIOProcID(output_id, proc_id) };
+    if let Some(proc_id) = self.output_proc_id {
+      // Ignore errors as device might be disconnected
+      let status = unsafe { AudioDeviceStop(self.output_device_id, proc_id) };
+      if status != 0 {
+        println!("DEBUG: WARNING: Output device stop failed with status: {status}");
+      }
+
+      let status = unsafe { AudioDeviceDestroyIOProcID(self.output_device_id, proc_id) };
+      if status != 0 {
+        println!("DEBUG: WARNING: Output device destroy IO proc failed with status: {status}");
       }
     }
 
-    // Destroy the main IO proc
-    let status = unsafe { AudioDeviceDestroyIOProcID(self.device_id, self.in_proc_id) };
-    if status != 0 {
-      return Err(CoreAudioError::AudioDeviceDestroyIOProcIDFailed(status).into());
+    // Destroy the main IO proc if device still exists
+    if device_exists {
+      let status = unsafe { AudioDeviceDestroyIOProcID(self.device_id, self.in_proc_id) };
+      if status != 0 {
+        println!("DEBUG: WARNING: Destroy IO proc failed with status: {status}");
+      }
     }
-
-    // Destroy the aggregate device
     let status = unsafe { AudioHardwareDestroyAggregateDevice(self.device_id) };
     if status != 0 {
-      return Err(CoreAudioError::AudioHardwareDestroyAggregateDeviceFailed(status).into());
+      println!("DEBUG: WARNING: AudioHardwareDestroyAggregateDevice failed with status: {status}");
     }
 
-    // Destroy the process tap
+    // Destroy the process tap - don't fail if this fails
     let status = unsafe { AudioHardwareDestroyProcessTap(self.device_id) };
     if status != 0 {
-      return Err(CoreAudioError::AudioHardwareDestroyProcessTapFailed(status).into());
+      println!("DEBUG: WARNING: AudioHardwareDestroyProcessTap failed with status: {status}");
+    }
+
+    // destroy the queue
+    drop(self.queue.take());
+
+    // Always return success to prevent errors from bubbling up to JavaScript
+    // since we've made a best effort to clean up
+    Ok(())
+  }
+
+  pub fn get_sample_rate(&self) -> f64 {
+    self.audio_stats.sample_rate
+  }
+
+  /// Gets the actual sample rate of the current device
+  ///
+  /// This can be different from the original sample rate if the default device
+  /// has changed. The original sample rate is maintained for consistency in
+  /// audio processing, but applications might need to know the actual device
+  /// sample rate for certain operations.
+  pub fn get_actual_sample_rate(&self) -> Result<f64> {
+    let device_id = self.output_device_id;
+    let mut actual_sample_rate: f64 = 0.0;
+    let status = unsafe {
+      let address = AudioObjectPropertyAddress {
+        mSelector: kAudioDevicePropertyNominalSampleRate,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain,
+      };
+
+      let mut size = std::mem::size_of::<f64>() as u32;
+      coreaudio::sys::AudioObjectGetPropertyData(
+        device_id,
+        &address,
+        0,
+        ptr::null(),
+        &mut size,
+        &mut actual_sample_rate as *mut f64 as *mut c_void,
+      )
+    };
+
+    if status != 0 {
+      return Err(CoreAudioError::GetPropertyDataFailed(status).into());
+    }
+
+    Ok(actual_sample_rate)
+  }
+
+  pub fn get_channels(&self) -> u32 {
+    self.audio_stats.channels
+  }
+
+  /// Mark the stream as stopped without performing actual cleanup
+  /// This is used when the device is known to be in an invalid state
+  pub fn mark_stopped_without_cleanup(&mut self) {
+    self.stop_called = true;
+  }
+}
+
+/// A manager for audio device handling that automatically adapts to device
+/// changes
+pub struct AggregateDeviceManager {
+  device: AggregateDevice,
+  default_devices_listener: Option<*mut c_void>,
+  is_app_specific: bool,
+  app_id: Option<AudioObjectID>,
+  excluded_processes: Vec<AudioObjectID>,
+  active_stream: Option<Arc<std::sync::Mutex<Option<AudioTapStream>>>>,
+  audio_callback: Option<AudioCallback>,
+  original_audio_stats: Option<AudioStats>,
+}
+
+impl AggregateDeviceManager {
+  /// Creates a new AggregateDeviceManager for a specific application
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
+    let device = AggregateDevice::new(app)?;
+
+    Ok(Self {
+      device,
+      default_devices_listener: None,
+      is_app_specific: true,
+      app_id: Some(app.object_id),
+      excluded_processes: Vec::new(),
+      active_stream: None,
+      audio_callback: None,
+      original_audio_stats: None,
+    })
+  }
+
+  /// Creates a new AggregateDeviceManager for global audio with option to
+  /// exclude processes
+  pub fn new_global(excluded_processes: &[AudioObjectID]) -> Result<Self> {
+    let device = AggregateDevice::create_global_tap_but_exclude_processes(excluded_processes)?;
+    Ok(Self {
+      device,
+      default_devices_listener: None,
+      is_app_specific: false,
+      app_id: None,
+      excluded_processes: excluded_processes.to_vec(),
+      active_stream: None,
+      audio_callback: None,
+      original_audio_stats: None,
+    })
+  }
+
+  /// This sets up the initial stream and listeners.
+  pub fn start_capture(&mut self, audio_stream_callback: AudioCallback) -> Result<()> {
+    // Store the callback for potential device switch later
+    self.audio_callback = Some(audio_stream_callback.clone());
+
+    // Create a shared reference for the active stream
+    let stream_mutex = Arc::new(std::sync::Mutex::new(None));
+    self.active_stream = Some(stream_mutex.clone());
+
+    // Start the initial stream
+    // Pass the initially determined consistent audio stats
+    let original_audio_stats = self.device.get_aggregate_device_stats().unwrap_or(AudioStats {
+      sample_rate: 48000.0, // Match fallback in setup_device_change_listeners
+      channels: 2,
+    });
+    self.original_audio_stats = Some(original_audio_stats); // Store for listener use
+
+    let initial_audio_tap_stream = self.device.start(audio_stream_callback.clone(), original_audio_stats)?; // Pass clone of callback
+
+    // Setup device change listeners AFTER getting initial stats and stream
+    self.setup_device_change_listeners()?;
+
+    // Store a reference to the stream
+    if let Ok(mut stream_guard) = stream_mutex.lock() {
+      *stream_guard = Some(initial_audio_tap_stream);
+    } else {
+      println!("DEBUG: Failed to lock stream_mutex to store AudioTapStream reference");
+      // If we can't store the initial stream, something is wrong.
+      // Attempt to stop the stream we just created? Or just return error?
+      // For now, return an error.
+      return Err(napi::Error::from_reason(
+        "Failed to lock internal stream mutex during startup",
+      ));
     }
 
     Ok(())
   }
 
-  #[napi(getter)]
-  pub fn get_sample_rate(&self) -> f64 {
-    self.audio_stats.sample_rate
-  }
+  /// Sets up listeners for default device changes
+  fn setup_device_change_listeners(&mut self) -> Result<()> {
+    // We need to clean up any existing listeners first
+    self.cleanup_device_listeners();
 
-  #[napi(getter)]
-  pub fn get_channels(&self) -> u32 {
-    self.audio_stats.channels
-  }
-}
+    // Create a weak reference to self to avoid circular references
+    let stream_arc = self.active_stream.clone();
+    let callback_arc = self.audio_callback.clone();
+    let is_app_specific = self.is_app_specific;
+    let app_id = self.app_id;
+    let excluded_processes = self.excluded_processes.clone();
 
-fn cfstring_from_bytes_with_nul(bytes: &'static [u8]) -> CFString {
-  CFString::new(
-    unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(bytes) }
-      .to_string_lossy()
-      .as_ref(),
-  )
-}
+    // Retrieve the stored original audio stats
+    let Some(original_audio_stats) = self.original_audio_stats else {
+      return Err(napi::Error::from_reason(
+        "Internal error: Original audio stats not available for listener.",
+      ));
+    };
 
-// Process mixed audio from multiple channels
-fn process_mixed_audio(samples: &[f32], channel_count: usize) -> Vec<f32> {
-  // For stereo or multi-channel audio, we need to mix down to mono
-  let samples_per_channel = samples.len() / channel_count;
-  let mut mixed_samples = Vec::with_capacity(samples_per_channel);
+    // Create a block that will handle device changes
+    let device_changed_block = RcBlock::new(move |_in_number_addresses: u32, _in_addresses: *mut c_void| {
+      // Skip if we don't have all required information
+      let Some(stream_mutex) = stream_arc.as_ref() else {
+        return;
+      };
+      let Some(callback) = callback_arc.as_ref() else {
+        return;
+      };
 
-  for i in 0..samples_per_channel {
-    let mut sample_sum = 0.0;
-    for c in 0..channel_count {
-      sample_sum += samples[i * channel_count + c];
+      // Try to lock the stream mutex
+      let Ok(mut stream_guard) = stream_mutex.lock() else {
+        return;
+      };
+
+      // Create a new device with updated default devices
+      let result: Result<AggregateDevice> = {
+        if is_app_specific {
+          if let Some(id) = app_id {
+            // For device change listener, we need to create a minimal
+            // ApplicationInfo We don't have the name here, so we'll
+            // use an empty string
+            let app = ApplicationInfo::new(id as i32, String::new(), id);
+            AggregateDevice::new(&app)
+          } else {
+            Err(CoreAudioError::CreateProcessTapFailed(0).into())
+          }
+        } else {
+          AggregateDevice::create_global_tap_but_exclude_processes(&excluded_processes)
+        }
+      };
+
+      // If we successfully created a new device, stop the old stream and start
+      // a new one
+      match result {
+        Ok(mut new_device) => {
+          // Stop and drop the old stream if it exists
+          if let Some(mut old_stream) = stream_guard.take() {
+            // Explicitly drop the old stream's Box before creating the new
+            // device. The drop implementation handles cleanup.
+            // We call stop() directly.
+            let stop_result = old_stream.stop();
+            match stop_result {
+              Ok(_) => {}
+              Err(e) => println!("DEBUG: Error stopping old stream (proceeding anyway): {e}"),
+            };
+            drop(old_stream); // Ensure it's dropped now
+          }
+
+          match new_device.start(callback.clone(), original_audio_stats) {
+            Ok(new_stream) => {
+              // Use the existing stream_guard which already holds the lock
+              *stream_guard = Some(new_stream);
+            }
+            Err(e) => {
+              println!("DEBUG: Failed to start new stream: {e}");
+            }
+          }
+        }
+        Err(e) => {
+          println!("DEBUG: Failed to create new device: {e}");
+        }
+      }
+    });
+
+    // Create pointers to the device_changed_block that can be used in C
+    // functions
+    let block_ptr = &*device_changed_block as *const Block<dyn Fn(u32, *mut c_void)>;
+    let block_ptr_cast = block_ptr.cast_mut().cast();
+
+    // Register listeners for both input and output device changes
+    unsafe {
+      let status = AudioObjectAddPropertyListenerBlock(
+        kAudioObjectSystemObject,
+        &AudioObjectPropertyAddress {
+          mSelector: kAudioHardwarePropertyDefaultInputDevice,
+          mScope: kAudioObjectPropertyScopeGlobal,
+          mElement: kAudioObjectPropertyElementMain,
+        },
+        ptr::null_mut(),
+        block_ptr_cast,
+      );
+
+      if status != 0 {
+        println!("DEBUG: Failed to register input device listener, status: {status}");
+        return Err(CoreAudioError::AddPropertyListenerBlockFailed(status).into());
+      }
+
+      let status = AudioObjectAddPropertyListenerBlock(
+        kAudioObjectSystemObject,
+        &AudioObjectPropertyAddress {
+          mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+          mScope: kAudioObjectPropertyScopeGlobal,
+          mElement: kAudioObjectPropertyElementMain,
+        },
+        ptr::null_mut(),
+        block_ptr_cast,
+      );
+
+      if status != 0 {
+        println!("DEBUG: Failed to register output device listener, status: {status}");
+        // Clean up the first listener if the second one fails
+        AudioObjectRemovePropertyListenerBlock(
+          kAudioObjectSystemObject,
+          &AudioObjectPropertyAddress {
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain,
+          },
+          ptr::null_mut(),
+          block_ptr_cast,
+        );
+        return Err(CoreAudioError::AddPropertyListenerBlockFailed(status).into());
+      }
     }
-    // Average the samples from all channels
-    mixed_samples.push(sample_sum / channel_count as f32);
+
+    // Store the listener pointer for cleanup
+    self.default_devices_listener = Some(block_ptr_cast);
+
+    Ok(())
   }
 
-  mixed_samples
+  /// Cleans up device change listeners
+  fn cleanup_device_listeners(&mut self) {
+    if let Some(listener) = self.default_devices_listener.take() {
+      unsafe {
+        // Add a runtime check to ensure we're not in shutdown
+        let is_system_shutting_down = std::panic::catch_unwind(|| {
+          // Try a simple CoreAudio API call to see if the system is still
+          // responsive
+          let mut size: u32 = 0;
+          AudioObjectGetPropertyDataSize(
+            kAudioObjectSystemObject,
+            &AudioObjectPropertyAddress {
+              mSelector: kAudioHardwarePropertyDefaultInputDevice,
+              mScope: kAudioObjectPropertyScopeGlobal,
+              mElement: kAudioObjectPropertyElementMain,
+            },
+            0,
+            ptr::null(),
+            &mut size,
+          )
+        })
+        .is_err();
+
+        if is_system_shutting_down {
+          // Don't try to remove listeners if the system is shutting down
+          return;
+        }
+
+        // Remove input device change listener
+        let status = AudioObjectRemovePropertyListenerBlock(
+          kAudioObjectSystemObject,
+          &AudioObjectPropertyAddress {
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain,
+          },
+          ptr::null_mut(),
+          listener,
+        );
+        if status != 0 {
+          // Don't log errors during shutdown to avoid additional issues
+        }
+
+        let status = AudioObjectRemovePropertyListenerBlock(
+          kAudioObjectSystemObject,
+          &AudioObjectPropertyAddress {
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain,
+          },
+          ptr::null_mut(),
+          listener,
+        );
+        if status != 0 {
+          // Don't log errors during shutdown to avoid additional issues
+        }
+      }
+    }
+  }
+
+  /// Stops the active stream and cleans up listeners.
+  pub fn stop_capture(&mut self) -> Result<()> {
+    self.cleanup_device_listeners();
+
+    let stream_to_stop = if let Some(stream_mutex) = &self.active_stream {
+      if let Ok(mut stream_guard) = stream_mutex.lock() {
+        stream_guard.take() // Take ownership from the Option<Arc<Mutex<...>>>
+      } else {
+        println!("DEBUG: Failed to lock stream mutex during stop");
+        None
+      }
+    } else {
+      None
+    };
+
+    if let Some(mut stream) = stream_to_stop {
+      match stream.stop() {
+        Ok(_) => {}
+        Err(e) => println!("DEBUG: Error stopping stream in stop_capture (ignored): {e}"),
+      }
+      // Explicitly drop here after stopping
+      drop(stream);
+    }
+
+    // Clear related fields
+    self.active_stream = None;
+    self.audio_callback = None;
+    self.original_audio_stats = None;
+
+    Ok(())
+  }
+
+  /// Gets the stats of the currently active stream, if any.
+  pub fn get_current_stats(&self) -> Option<AudioStats> {
+    if let Some(stream_mutex) = &self.active_stream {
+      if let Ok(stream_guard) = stream_mutex.lock() {
+        // Borrow the stream Option, then map to get stats
+        stream_guard.as_ref().map(|stream| stream.audio_stats)
+      } else {
+        println!("DEBUG: Failed to lock stream mutex for get_current_stats");
+        None
+      }
+    } else {
+      None
+    }
+  }
+
+  /// Gets the actual sample rate of the currently active stream's output
+  /// device.
+  pub fn get_current_actual_sample_rate(&self) -> Result<Option<f64>> {
+    let maybe_stream_ref = if let Some(stream_mutex) = &self.active_stream {
+      match stream_mutex.lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+          println!("DEBUG: Failed to lock stream mutex for get_current_actual_sample_rate");
+          // Return Ok(None) or an error? Let's return None.
+          return Ok(None);
+        }
+      }
+    } else {
+      return Ok(None); // No active stream manager
+    };
+
+    if let Some(stream) = maybe_stream_ref.as_ref() {
+      // Call the existing non-napi method on AudioTapStream
+      match stream.get_actual_sample_rate() {
+        Ok(rate) => Ok(Some(rate)),
+        Err(e) => {
+          println!("DEBUG: Error getting actual sample rate from stream: {e}");
+          // Propagate the error
+          Err(e)
+        }
+      }
+    } else {
+      Ok(None) // No active stream
+    }
+  }
+}
+
+impl Drop for AggregateDeviceManager {
+  fn drop(&mut self) {
+    // Call stop_capture which handles listener cleanup and stream stopping
+    match self.stop_capture() {
+      Ok(_) => {}
+      Err(e) => println!("DEBUG: Error during stop_capture in Drop (ignored): {e}"),
+    }
+  }
+}
+
+pub struct AudioCaptureSession {
+  // Use Option<Box<...>> to allow taking ownership in stop()
+  manager: Option<Box<AggregateDeviceManager>>,
+  sample_rate: Option<f64>,
+  channels: Option<u32>,
+}
+
+impl AudioCaptureSession {
+  pub(crate) fn new(manager: Box<AggregateDeviceManager>) -> Self {
+    Self {
+      manager: Some(manager),
+      sample_rate: None,
+      channels: None,
+    }
+  }
+
+  pub fn stop(&mut self) -> Result<()> {
+    if let Some(manager) = self.manager.take() {
+      // Cache the stats before dropping
+      if let Some(stats) = manager.get_current_stats() {
+        self.sample_rate = Some(stats.sample_rate);
+        self.channels = Some(stats.channels);
+      }
+
+      // Drop the manager
+      drop(manager);
+      Ok(())
+    } else {
+      println!("DEBUG: AudioCaptureSession.stop() called, but manager was already taken");
+      // Return Ok even if called multiple times, idempotent behavior
+      Ok(())
+    }
+  }
+
+  pub fn get_sample_rate(&self) -> Result<f64> {
+    if let Some(manager) = &self.manager {
+      manager
+        .get_current_stats()
+        .map(|stats| stats.sample_rate)
+        .ok_or_else(|| napi::Error::from_reason("No active audio stream to get sample rate from"))
+    } else if let Some(cached_rate) = self.sample_rate {
+      // Return cached value when session is stopped
+      Ok(cached_rate)
+    } else {
+      Err(napi::Error::from_reason(
+        "Audio session is stopped and no cached sample rate available",
+      ))
+    }
+  }
+
+  pub fn get_channels(&self) -> Result<u32> {
+    if let Some(manager) = &self.manager {
+      manager
+        .get_current_stats()
+        .map(|stats| stats.channels)
+        .ok_or_else(|| napi::Error::from_reason("No active audio stream to get channels from"))
+    } else if let Some(cached_channels) = self.channels {
+      // Return cached value when session is stopped
+      Ok(cached_channels)
+    } else {
+      Err(napi::Error::from_reason(
+        "Audio session is stopped and no cached channels available",
+      ))
+    }
+  }
+
+  pub fn get_actual_sample_rate(&self) -> Result<f64> {
+    if let Some(manager) = &self.manager {
+      manager
+        .get_current_actual_sample_rate()? // Propagate CoreAudioError
+        .ok_or_else(|| napi::Error::from_reason("No active audio stream to get actual sample rate from"))
+    } else if let Some(cached_rate) = self.sample_rate {
+      // Return cached sample rate as the best approximation when session is
+      // stopped
+      Ok(cached_rate)
+    } else {
+      Err(napi::Error::from_reason(
+        "Audio session is stopped and no cached sample rate available",
+      ))
+    }
+  }
+}
+
+// Ensure the manager is dropped if the session object is dropped without
+// calling stop()
+impl Drop for AudioCaptureSession {
+  fn drop(&mut self) {
+    // Automatically calls drop on self.manager if it's Some
+    if let Some(manager) = self.manager.take() {
+      drop(manager);
+    }
+  }
 }

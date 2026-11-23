@@ -1,3 +1,0 @@
-query getIsAdmin($workspaceId: String!) {
-  isAdmin(workspaceId: $workspaceId)
-}

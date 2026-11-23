@@ -37,6 +37,11 @@ Table(PeerClocks)
 |------|-------|-----------|-----------|
 | str  |  str  |   Date    |   Date    |
 
+Table(IndexerSync)
+| docId | indexedClock | indexerVersion |
+|-------|--------------|----------------|
+| str   |   Date       |    number      |
+
 Table(BlobSync)
 | peer | key | uploadedAt |
 |------|-----|------------|
@@ -112,6 +117,12 @@ export interface DocStorageSchema extends DBSchema {
       clock: Date;
       pulledClock: Date;
       pushedClock: Date;
+      inventoryKind?: 'doc' | 'reserved';
+      lifecycle?: 'trashed' | null;
+      lifecycleChangedAt?: number | null;
+      pendingCreate?: boolean;
+      inventoryReady?: boolean;
+      cacheToken?: number;
     };
     indexes: {
       peer: string;
@@ -123,6 +134,44 @@ export interface DocStorageSchema extends DBSchema {
       key: string;
       lock: Date;
     };
+  };
+  indexerSync: {
+    key: string;
+    value: {
+      docId: string;
+      indexedClock: Date;
+      indexerVersion?: number;
+    };
+  };
+  indexerMetadata: {
+    key: string;
+    value: {
+      key: string;
+      value: any;
+    };
+  };
+  indexerRecords: {
+    key: number;
+    value: {
+      table: string;
+      id: string;
+      data: Map<string, string[]>;
+    };
+    indexes: { table: string; id: [string, string] };
+  };
+  invertedIndex: {
+    key: number;
+    value: {
+      table: string;
+      nid: number;
+      pos?: {
+        i: number /* index */;
+        l: number /* length */;
+        rs: [number, number][] /* ranges: [start, end] */;
+      }[];
+      key: ArrayBuffer;
+    };
+    indexes: { key: [string, ArrayBuffer]; nid: number };
   };
 }
 
@@ -199,13 +248,51 @@ const initBlobSync: Migrate = db => {
 
   blobSync.createIndex('peer', 'peer', { unique: false });
 };
+const initIndexer: Migrate = db => {
+  db.createObjectStore('indexerMetadata', {
+    keyPath: 'key',
+  });
+  const indexRecordsStore = db.createObjectStore('indexerRecords', {
+    autoIncrement: true,
+  });
+  indexRecordsStore.createIndex('table', 'table', {
+    unique: false,
+  });
+  indexRecordsStore.createIndex('id', ['table', 'id'], {
+    unique: true,
+  });
+  const invertedIndexStore = db.createObjectStore('invertedIndex', {
+    autoIncrement: true,
+  });
+  invertedIndexStore.createIndex('key', ['table', 'key'], {
+    unique: false,
+  });
+  invertedIndexStore.createIndex('nid', 'nid', { unique: false });
+  db.createObjectStore('indexerSync', {
+    keyPath: 'docId',
+    autoIncrement: false,
+  });
+};
 // END REGION
 
 // 1. all schema changed should be put in migrations
 // 2. order matters
-const migrations: Migrate[] = [init, initBlobSync];
+const migrations: Migrate[] = [init, initBlobSync, initIndexer];
 
 export const migrator = {
   version: migrations.length,
   migrate,
 };
+
+export function createPeerClock(
+  peer: string,
+  docId: string
+): DocStorageSchema['peerClocks']['value'] {
+  return {
+    peer,
+    docId,
+    clock: new Date(0),
+    pulledClock: new Date(0),
+    pushedClock: new Date(0),
+  };
+}

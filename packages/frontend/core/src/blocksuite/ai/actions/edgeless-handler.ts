@@ -1,9 +1,5 @@
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import {
-  GfxControllerIdentifier,
-  type GfxModel,
-} from '@blocksuite/affine/block-std/gfx';
 import { splitElements } from '@blocksuite/affine/blocks/root';
+import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import {
   CodeBlockModel,
   EdgelessTextBlockModel,
@@ -15,13 +11,18 @@ import {
   TextElementModel,
 } from '@blocksuite/affine/model';
 import { matchModels } from '@blocksuite/affine/shared/utils';
+import type { EditorHost } from '@blocksuite/affine/std';
+import {
+  GfxControllerIdentifier,
+  type GfxModel,
+} from '@blocksuite/affine/std/gfx';
 import { type BlockModel, Slice } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
 
 import { getContentFromSlice } from '../../utils';
 import { AIChatBlockModel } from '../blocks';
-import type { AIError } from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+import { type AIError } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -37,6 +38,7 @@ import {
   getSelections,
 } from '../utils/selection-utils';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
+import type { AIActionAnswer } from '../widgets/ai-panel/type';
 import type { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 import { actionToAnswerRenderer } from './answer-renderer';
 import { EXCLUDING_COPY_ACTIONS } from './consts';
@@ -45,14 +47,14 @@ import {
   actionToErrorResponse,
   actionToGenerating,
   actionToResponse,
-  getElementToolbar,
+  getToolbar,
 } from './edgeless-response';
 
 async function getContentFromEmbedSyncedDocModel(
   host: EditorHost,
   models: EmbedSyncedDocModel[]
 ) {
-  const slice = Slice.fromModels(host.doc, models);
+  const slice = Slice.fromModels(host.store, models);
   return (await getContentFromSlice(host, slice)).trim();
 }
 
@@ -63,7 +65,7 @@ async function getContentFromHubBlockModel(
   return (
     await Promise.all(
       models.map(model => {
-        const slice = Slice.fromModels(host.doc, model.children);
+        const slice = Slice.fromModels(host.store, model.children);
         return getContentFromSlice(host, slice);
       })
     )
@@ -129,6 +131,12 @@ export async function getContentFromSelected(
       }
     );
 
+  const hasPageBlock = notes.find(note => note.isPageBlock());
+  const title =
+    hasPageBlock && host.std.store.meta?.title
+      ? `# ${host.std.store.meta?.title}\n`
+      : '';
+
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
@@ -139,7 +147,7 @@ export async function getContentFromSelected(
     embedSyncedDocs
   );
 
-  return `${noteContent.join('\n')}
+  return `${title}${noteContent.join('\n')}
 ${edgelessTextContent.join('\n')}
 ${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
@@ -171,10 +179,6 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
   trackerOptions?: BlockSuitePresets.TrackerOptions,
   panelInput?: string
 ) {
-  const action = AIProvider.actions[id];
-
-  if (!action || typeof action !== 'function') return;
-
   if (extract && typeof extract === 'function') {
     return (host: EditorHost, ctx: AIContext): BlockSuitePresets.TextStream => {
       let stream: BlockSuitePresets.TextStream | undefined;
@@ -192,9 +196,9 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             where,
             models,
             host,
-            docId: host.doc.id,
-            workspaceId: host.doc.workspace.id,
-          } as Parameters<typeof action>[0];
+            docId: host.store.id,
+            workspaceId: host.store.workspace.id,
+          } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
           const content = ctx.get().content;
           if (typeof content === 'string' && !content.length && panelInput) {
@@ -207,8 +211,10 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             Object.assign(options, data);
           }
 
-          // @ts-expect-error TODO(@Peng): maybe fix this
-          stream = action(options);
+          stream = (await getAIRequestService().executeAction(
+            id,
+            options
+          )) as BlockSuitePresets.TextStream;
           if (!stream) return;
           yield* stream;
         },
@@ -233,12 +239,14 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           models,
           control: 'format-bar',
           host,
-          docId: host.doc.id,
-          workspaceId: host.doc.workspace.id,
-        } as Parameters<typeof action>[0];
+          docId: host.store.id,
+          workspaceId: host.store.workspace.id,
+        } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
-        // @ts-expect-error TODO(@Peng): maybe fix this
-        stream = action(options);
+        stream = (await getAIRequestService().executeAction(
+          id,
+          options
+        )) as BlockSuitePresets.TextStream;
         if (!stream) return;
         yield* stream;
       },
@@ -271,7 +279,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     }: {
       input: string;
       signal?: AbortSignal;
-      update: (text: string) => void;
+      update: (answer: AIActionAnswer) => void;
       finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     }) => {
       if (!extract) {
@@ -344,12 +352,12 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    reportResponse('result:discard');
+    reportResponse('result:discard', host);
   };
   config.hideCallback = () => {
     aiPanel.updateComplete
       .finally(() => {
-        edgelessCopilot.gfx.tool.setTool('default');
+        edgelessCopilot.gfx.tool.setTool(DefaultTool);
         edgelessCopilot.gfx.selection.set({
           elements: [],
           editing: false,
@@ -400,7 +408,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
       trackerOptions
     );
 
-    const elementToolbar = getElementToolbar(host);
+    const toolbar = getToolbar(host);
     const isEmpty = selectedElements.length === 0;
     const isCreateImageAction = id === 'createImage';
     const isMakeItRealAction = !isCreateImageAction && id === 'makeItReal';
@@ -411,8 +419,8 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
       referenceElement = selectedBlocks.at(-1);
     } else if (edgelessCopilot.visible && edgelessCopilot.selectionElem) {
       referenceElement = edgelessCopilot.selectionElem;
-    } else if (elementToolbar.toolbarVisible) {
-      referenceElement = getElementToolbar(host);
+    } else if (toolbar?.dataset.open) {
+      referenceElement = toolbar;
     } else if (!isEmpty) {
       const lastSelected = selectedElements.at(-1)?.id;
       if (!lastSelected) return;
@@ -422,7 +430,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     if (!referenceElement) {
       const gfx = host.std.get(GfxControllerIdentifier);
-      gfx?.tool.setTool({ type: 'default' });
+      gfx?.tool.setTool(DefaultTool);
       edgelessCopilot.lockToolbar(false);
       return;
     }
@@ -450,7 +458,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        aiPanel.toggle(referenceElement, isEmpty ? undefined : '', false);
+        aiPanel.toggle(referenceElement, isEmpty ? 'input' : 'generate');
       })
       .catch(console.error);
   };
@@ -462,7 +470,6 @@ export function noteBlockOrTextShowWhen(
   host: EditorHost
 ) {
   const selected = getCopilotSelectedElems(host);
-
   return selected.some(
     el =>
       el instanceof NoteBlockModel ||

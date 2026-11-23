@@ -27,25 +27,29 @@ type Typeof<F extends FieldSchemaBuilder> =
   F extends FieldSchemaBuilder<infer Type> ? Type : never;
 
 type RequiredFields<T extends TableSchemaBuilder> = {
-  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
-    any,
-    infer Optional
-  >
-    ? Optional extends false
-      ? K
+  [
+    K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+      any,
+      infer Optional
+    >
+      ? Optional extends false
+        ? K
+        : never
       : never
-    : never]: Typeof<T[K]>;
+  ]: Typeof<T[K]>;
 };
 
 type OptionalFields<T extends TableSchemaBuilder> = {
-  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
-    any,
-    infer Optional
-  >
-    ? Optional extends true
-      ? K
+  [
+    K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+      any,
+      infer Optional
+    >
+      ? Optional extends true
+        ? K
+        : never
       : never
-    : never]?: Typeof<T[K]> | null;
+  ]?: Typeof<T[K]> | null;
 };
 
 type PrimaryKeyField<T extends TableSchemaBuilder> = {
@@ -104,7 +108,9 @@ export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<
   MaybeDocumentEntityWrapper<
     T,
     {
-      [key in NonPrimaryKeyFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+      [
+        key in NonPrimaryKeyFieldNames<T>
+      ]?: key extends keyof TableDefinedEntity<T>
         ? TableDefinedEntity<T>[key]
         : never;
     }
@@ -115,7 +121,9 @@ export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<
   MaybeDocumentEntityWrapper<
     T,
     {
-      [key in TableDefinedFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+      [
+        key in TableDefinedFieldNames<T>
+      ]?: key extends keyof TableDefinedEntity<T>
         ?
             | TableDefinedEntity<T>[key]
             | { not: TableDefinedEntity<T>[key] | null }
@@ -266,6 +274,62 @@ export class Table<T extends TableSchemaBuilder> {
               .filter(({ value }) => value !== undefined),
         callback: data => {
           subscriber.next(data);
+        },
+      });
+
+      return unsubscribe;
+    });
+  }
+
+  select<Key extends keyof Entity<T>>(
+    selectKey: Key,
+    where?: FindEntityInput<T>
+  ): Pick<Entity<T>, Key | PrimaryKeyField<T>>[] {
+    const items = this.adapter.find({
+      where: !where
+        ? undefined
+        : Object.entries(where)
+            .map(([field, value]) => ({
+              field,
+              value,
+            }))
+            .filter(({ value }) => value !== undefined),
+    });
+
+    return items.map(item => {
+      const { [this.keyField]: key, [selectKey]: selected } = item;
+      return {
+        [this.keyField]: key,
+        [selectKey]: selected,
+      } as Pick<Entity<T>, Key | PrimaryKeyField<T>>;
+    });
+  }
+
+  select$<Key extends keyof Entity<T>>(
+    selectKey: Key,
+    where?: FindEntityInput<T>
+  ): Observable<Pick<Entity<T>, Key | PrimaryKeyField<T>>[]> {
+    return new Observable(subscriber => {
+      const unsubscribe = this.adapter.observe({
+        where: !where
+          ? undefined
+          : Object.entries(where)
+              .map(([field, value]) => ({
+                field,
+                value,
+              }))
+              .filter(({ value }) => value !== undefined),
+        select: [this.keyField, selectKey as string],
+        callback: data => {
+          subscriber.next(
+            data.map(item => {
+              const { [this.keyField]: key, [selectKey]: selected } = item;
+              return {
+                [this.keyField]: key,
+                [selectKey]: selected,
+              } as Pick<Entity<T>, Key | PrimaryKeyField<T>>;
+            })
+          );
         },
       });
 

@@ -250,11 +250,12 @@ export class LiveData<T = unknown>
   private isPoisoned = false;
   private poisonedError: PoisonedError | null = null;
 
+  private _signal: Signal<T> | undefined;
+  private _signalSubscription: Subscription | undefined;
+
   constructor(
     initialValue: T,
-    upstream:
-      | ((upstream: Observable<LiveDataOperation>) => Observable<T>)
-      | undefined = undefined
+    upstream?: (upstream: Observable<LiveDataOperation>) => Observable<T>
   ) {
     super();
     this.raw$ = new BehaviorSubject(initialValue);
@@ -302,12 +303,10 @@ export class LiveData<T = unknown>
     this.next(v);
   }
 
-  private _signal: Signal<T> | undefined;
-
   get signal(): ReadonlySignal<T> {
     if (!this._signal) {
       this._signal = signal(this.value);
-      this.subscribe(v => {
+      this._signalSubscription = this.subscribe(v => {
         // oxlint-disable-next-line no-non-null-assertion
         this._signal!.value = v;
       });
@@ -464,6 +463,7 @@ export class LiveData<T = unknown>
     this.ops$.complete();
     this.raw$.complete();
     this.upstreamSubscription?.unsubscribe();
+    this._signalSubscription?.unsubscribe();
   }
 
   /**
@@ -514,7 +514,7 @@ export class LiveData<T = unknown>
       const subscription = this.subscribe(v => {
         if (predicate(v)) {
           resolve(v as any);
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          // oxlint-disable-next-line typescript/no-floating-promises
           Promise.resolve().then(() => {
             subscription.unsubscribe();
           });
@@ -552,7 +552,7 @@ export class LiveData<T = unknown>
       throw this.poisonedError;
     }
     this.ops$.next('watch');
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- never throw
+    // oxlint-disable-next-line typescript/no-floating-promises -- never throw
     Promise.resolve().then(() => {
       this.ops$.next('unwatch');
     });
@@ -577,8 +577,8 @@ export type LiveDataOperation = 'set' | 'get' | 'watch' | 'unwatch';
 export type Unwrap<T> =
   T extends LiveData<infer Z>
     ? Unwrap<Z>
-    : T extends LiveData<infer A>[]
-      ? Unwrap<A>[]
+    : T extends readonly [...infer Elements]
+      ? { [K in keyof Elements]: Unwrap<Elements[K]> }
       : T;
 
 export type Flat<T> = T extends LiveData<infer P> ? LiveData<Unwrap<P>> : T;

@@ -1,6 +1,7 @@
 import { setTimeout } from 'node:timers/promises';
 
 import type { Locator, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 import fs from 'fs-extra';
 
 export async function waitForLogMessage(
@@ -69,4 +70,49 @@ export async function isContainedInBoundingBox(
     }
   }
   return true;
+}
+
+/**
+ * Click at a specific position relative to a locator's bounding box.
+ *  * Ratios are NOT clamped:
+ * - 0 ~ 1   : inside the bounding box
+ * - < 0     : outside (left / top of the box)
+ * - > 1     : outside (right / bottom of the box)
+ *
+ * @param locator The locator to click
+ * @param options Optional click position ratios
+ * @param options.xRatio Horizontal ratio relative to box width (not clamped), default is 0.5 (center)
+ * @param options.yRatio Vertical ratio relative to box height (not clamped), default is 0.5 (center)
+ */
+export async function clickLocatorByRatio(
+  page: Page,
+  locator: Locator,
+  { xRatio = 0.5, yRatio = 0.5 } = {}
+) {
+  const box = await getLocatorBox(locator);
+
+  await page.mouse.click(
+    box.x + box.width * xRatio,
+    box.y + box.height * yRatio
+  );
+}
+
+export async function dblclickLocatorByRatio(
+  page: Page,
+  locator: Locator,
+  { xRatio = 0.5, yRatio = 0.5 } = {}
+) {
+  const box = await getLocatorBox(locator);
+
+  await page.mouse.dblclick(
+    box.x + box.width * xRatio,
+    box.y + box.height * yRatio
+  );
+}
+
+async function getLocatorBox(locator: Locator) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`error getting locator's bounding box`);
+  return box;
 }

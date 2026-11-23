@@ -1,10 +1,11 @@
-import type { SurfaceBlockProps } from '@blocksuite/affine/block-std/gfx';
+import type { DocCreateOptions } from '@affine/core/modules/doc/types';
 import {
   NoteDisplayMode,
   type NoteProps,
   type ParagraphProps,
   type RootBlockProps,
 } from '@blocksuite/affine/model';
+import type { SurfaceBlockProps } from '@blocksuite/affine/std/gfx';
 import { type Store, Text } from '@blocksuite/affine/store';
 
 export interface DocProps {
@@ -22,11 +23,15 @@ export interface DocProps {
   ) => void;
 }
 
-export function initDocFromProps(doc: Store, props?: DocProps) {
+export function initDocFromProps(
+  doc: Store,
+  props?: DocProps,
+  options: DocCreateOptions = {}
+) {
   doc.load(() => {
     const pageBlockId = doc.addBlock(
       'affine:page',
-      props?.page || { title: new Text('') }
+      props?.page || { title: new Text(options.title || '') }
     );
     const surfaceId = doc.addBlock(
       'affine:surface' as never,
@@ -51,6 +56,6 @@ export function initDocFromProps(doc: Store, props?: DocProps) {
       paragraphId: paragraphBlockId,
       surfaceId,
     });
-    doc.history.clear();
+    doc.history.undoManager.clear();
   });
 }

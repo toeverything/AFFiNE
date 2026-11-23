@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { once } from 'lodash-es';
 
-import { ModuleScanner } from '../nestjs';
+import { ModuleScanner } from '../nestjs/scanner';
 import {
   type EventName,
   type EventOptions,

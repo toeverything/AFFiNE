@@ -1,18 +1,22 @@
-import { Button, IconButton, Tooltip } from '@affine/component';
-import type { AllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
 import {
-  AffineShapeIcon,
-  FilterList,
-  filterPageByRules,
-  List,
-  type ListItem,
-  ListScrollContainer,
-} from '@affine/core/components/page-list';
+  Button,
+  IconButton,
+  Masonry,
+  type MasonryGroup,
+  Tooltip,
+} from '@affine/component';
+import {
+  createDocExplorerContext,
+  DocExplorerContext,
+} from '@affine/core/components/explorer/context';
+import { DocListItemComponent } from '@affine/core/components/explorer/docs-view/docs-list';
+import { Filters } from '@affine/core/components/filter';
+import { AffineShapeIcon } from '@affine/core/components/page-list';
+import type { CollectionInfo } from '@affine/core/modules/collection';
+import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { DocsService } from '@affine/core/modules/doc';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
-import type { Collection } from '@affine/env/filter';
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { Trans, useI18n } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/affine/store';
 import {
   CloseIcon,
   EdgelessIcon,
@@ -23,7 +27,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import * as styles from './edit-collection.css';
 
@@ -33,50 +37,112 @@ export const RulesMode = ({
   reset,
   buttons,
   switchMode,
-  allPageListConfig,
 }: {
-  collection: Collection;
-  updateCollection: (collection: Collection) => void;
+  collection: CollectionInfo;
+  updateCollection: (collection: CollectionInfo) => void;
   reset: () => void;
   buttons: ReactNode;
   switchMode: ReactNode;
-  allPageListConfig: AllPageListConfig;
 }) => {
   const t = useI18n();
   const [showPreview, setShowPreview] = useState(true);
-  const allowListPages: DocMeta[] = [];
-  const rulesPages: DocMeta[] = [];
   const docsService = useService(DocsService);
-  const favAdapter = useService(CompatibleFavoriteItemsAdapter);
-  const favorites = useLiveData(favAdapter.favorites$);
-  allPageListConfig.allPages.forEach(meta => {
-    if (meta.trash) {
-      return;
-    }
-    const pageData = {
-      meta,
-      publicMode: allPageListConfig.getPublicMode(meta.id),
-      favorite: favorites.some(f => f.id === meta.id),
+  const collectionRulesService = useService(CollectionRulesService);
+  const [rulesPageIds, setRulesPageIds] = useState<string[]>([]);
+  const [docExplorerContextValue] = useState(() =>
+    createDocExplorerContext({
+      displayProperties: ['createdAt', 'updatedAt', 'tags'],
+      showDragHandle: false,
+      showMoreOperation: false,
+      quickFavorite: true,
+      groupBy: undefined,
+      orderBy: undefined,
+    })
+  );
+
+  useEffect(() => {
+    const subscription = collectionRulesService
+      .watch({
+        filters: collection.rules.filters,
+        extraFilters: [
+          {
+            type: 'system',
+            key: 'trash',
+            method: 'is',
+            value: 'false',
+          },
+          {
+            type: 'system',
+            key: 'empty-journal',
+            method: 'is',
+            value: 'false',
+          },
+        ],
+        orderBy: {
+          type: 'system',
+          key: 'updatedAt',
+          desc: true,
+        },
+      })
+      .subscribe(rules => {
+        setRulesPageIds(rules.groups.flatMap(group => group.items));
+      });
+    return () => {
+      subscription.unsubscribe();
     };
-    if (
-      collection.filterList.length &&
-      filterPageByRules(collection.filterList, [], pageData)
-    ) {
-      rulesPages.push(meta);
-    }
-    if (collection.allowList.includes(meta.id)) {
-      allowListPages.push(meta);
-    }
-  });
+  }, [collection, collectionRulesService]);
+
+  const masonryItems = useMemo(
+    () =>
+      [
+        {
+          id: 'rules-group',
+          height: 0,
+          children: null,
+          items: rulesPageIds.length
+            ? rulesPageIds.map(docId => {
+                return {
+                  id: docId,
+                  height: 42,
+                  Component: DocListItemComponent,
+                };
+              })
+            : [
+                {
+                  id: 'rules-empty',
+                  height: 300,
+                  children: (
+                    <RulesEmpty
+                      noRules={collection.rules.filters.length === 0}
+                      fullHeight
+                    />
+                  ),
+                },
+              ],
+        },
+        {
+          id: 'allow-list-group',
+          height: 30,
+          children: (
+            <div className={styles.includeListTitle}>
+              {t['com.affine.editCollection.rules.include.title']()}
+            </div>
+          ),
+          className: styles.includeListGroup,
+          items: collection.allowList.map(docId => {
+            return {
+              id: docId,
+              height: 42,
+              Component: DocListItemComponent,
+            };
+          }),
+        },
+      ] satisfies MasonryGroup[],
+    [collection.allowList, collection.rules.filters.length, rulesPageIds, t]
+  );
+
   const [expandInclude, setExpandInclude] = useState(
     collection.allowList.length > 0
-  );
-  const operationsRenderer = useCallback(
-    (item: ListItem) => {
-      const page = item as DocMeta;
-      return allPageListConfig.favoriteRender(page);
-    },
-    [allPageListConfig]
   );
 
   const tips = useMemo(
@@ -113,13 +179,17 @@ export const RulesMode = ({
                 overflowY: 'auto',
               }}
             >
-              <FilterList
-                propertiesMeta={allPageListConfig.docCollection.meta.properties}
-                value={collection.filterList}
-                onChange={useCallback(
-                  filterList => updateCollection({ ...collection, filterList }),
-                  [collection, updateCollection]
-                )}
+              <Filters
+                filters={collection.rules.filters}
+                onChange={filters => {
+                  updateCollection({
+                    ...collection,
+                    rules: {
+                      ...collection.rules,
+                      filters,
+                    },
+                  });
+                }}
               />
               <div className={styles.rulesContainerLeftContentInclude}>
                 {collection.allowList.length > 0 ? (
@@ -144,9 +214,6 @@ export const RulesMode = ({
                   }}
                 >
                   {collection.allowList.map(id => {
-                    const page = allPageListConfig.allPages.find(
-                      v => v.id === id
-                    );
                     return (
                       <div className={styles.includeItem} key={id}>
                         <div className={styles.includeItemContent}>
@@ -170,14 +237,7 @@ export const RulesMode = ({
                           <div className={styles.includeItemContentIs}>
                             {t['com.affine.editCollection.rules.include.is']()}
                           </div>
-                          <div
-                            className={clsx(
-                              styles.includeItemTitle,
-                              styles.ellipsis
-                            )}
-                          >
-                            {page?.title || t['Untitled']()}
-                          </div>
+                          <DocTitle id={id} />
                         </div>
                         <IconButton
                           size="14"
@@ -199,41 +259,19 @@ export const RulesMode = ({
             </div>
           </div>
         </div>
-        <ListScrollContainer
-          className={styles.rulesContainerRight}
-          style={{
-            display: showPreview ? 'flex' : 'none',
-          }}
-        >
-          {rulesPages.length > 0 ? (
-            <List
-              hideHeader
-              className={styles.resultPages}
-              items={rulesPages}
-              docCollection={allPageListConfig.docCollection}
-              operationsRenderer={operationsRenderer}
-            ></List>
-          ) : (
-            <RulesEmpty
-              noRules={collection.filterList.length === 0}
-              fullHeight={allowListPages.length === 0}
+        <div className={styles.rulesContainerRight}>
+          <DocExplorerContext.Provider value={docExplorerContextValue}>
+            <Masonry
+              items={masonryItems}
+              columns={1}
+              gapY={12}
+              virtualScroll
+              paddingX={12}
+              groupHeaderGapWithItems={12}
+              groupsGap={12}
             />
-          )}
-          {allowListPages.length > 0 ? (
-            <div>
-              <div className={styles.includeListTitle}>
-                {t['com.affine.editCollection.rules.include.title']()}
-              </div>
-              <List
-                hideHeader
-                className={styles.resultPages}
-                items={allowListPages}
-                docCollection={allPageListConfig.docCollection}
-                operationsRenderer={operationsRenderer}
-              ></List>
-            </div>
-          ) : null}
-        </ListScrollContainer>
+          </DocExplorerContext.Provider>
+        </div>
       </div>
       <div className={styles.rulesBottom}>
         <div className={styles.bottomLeft}>
@@ -251,8 +289,8 @@ export const RulesMode = ({
             <Trans
               i18nKey="com.affine.editCollection.rules.countTips"
               values={{
-                selectedCount: allowListPages.length,
-                filteredCount: rulesPages.length,
+                selectedCount: collection.allowList.length,
+                filteredCount: rulesPageIds.length,
               }}
             >
               Selected
@@ -315,3 +353,23 @@ const RulesEmpty = ({
     </div>
   );
 };
+
+const DocTitle = memo(function DocTitle({ id }: { id: string }) {
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const docsService = useService(DocsService);
+  const doc = useLiveData(docsService.list.doc$(id));
+  const trash = useLiveData(doc?.trash$);
+  const title = useLiveData(docDisplayMetaService.title$(id));
+
+  return (
+    <div
+      className={clsx(
+        styles.includeItemTitle,
+        trash && styles.trashTitle,
+        styles.ellipsis
+      )}
+    >
+      {title}
+    </div>
+  );
+});

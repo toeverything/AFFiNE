@@ -9,8 +9,8 @@ import type { User } from '@prisma/client';
 
 import {
   PublicUser,
-  Settings,
-  SettingsInput,
+  UserSettings,
+  UserSettingsInput,
   WorkspaceUser,
 } from '../../models';
 import { type CurrentUser } from '../auth/session';
@@ -115,12 +115,15 @@ export class RemoveAvatar {
 }
 
 @ObjectType()
-export class SettingsType implements Settings {
+export class UserSettingsType implements UserSettings {
   @Field({ description: 'Receive invitation email' })
   receiveInvitationEmail!: boolean;
 
   @Field({ description: 'Receive mention email' })
   receiveMentionEmail!: boolean;
+
+  @Field({ description: 'Receive comment email' })
+  receiveCommentEmail!: boolean;
 }
 
 @InputType()
@@ -139,10 +142,13 @@ export class ManageUserInput {
 }
 
 @InputType()
-export class UpdateSettingsInput implements SettingsInput {
+export class UpdateUserSettingsInput implements UserSettingsInput {
   @Field({ description: 'Receive invitation email', nullable: true })
   receiveInvitationEmail?: boolean;
 
   @Field({ description: 'Receive mention email', nullable: true })
   receiveMentionEmail?: boolean;
+
+  @Field({ description: 'Receive comment email', nullable: true })
+  receiveCommentEmail?: boolean;
 }

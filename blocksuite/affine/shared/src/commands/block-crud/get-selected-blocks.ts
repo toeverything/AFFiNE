@@ -1,10 +1,11 @@
 import type {
   BlockSelection,
   Command,
+  SurfaceSelection,
   TextSelection,
-} from '@blocksuite/block-std';
-import { BlockComponent } from '@blocksuite/block-std';
-import type { RoleType } from '@blocksuite/store';
+} from '@blocksuite/std';
+import { BlockComponent } from '@blocksuite/std';
+import type { BlockModel, RoleType } from '@blocksuite/store';
 
 import type { ImageSelection } from '../../selection/index.js';
 
@@ -13,11 +14,13 @@ export const getSelectedBlocksCommand: Command<
     currentTextSelection?: TextSelection;
     currentBlockSelections?: BlockSelection[];
     currentImageSelections?: ImageSelection[];
+    currentSurfaceSelection?: SurfaceSelection;
     textSelection?: TextSelection;
     blockSelections?: BlockSelection[];
     imageSelections?: ImageSelection[];
+    surfaceSelection?: SurfaceSelection;
     filter?: (el: BlockComponent) => boolean;
-    types?: Array<'image' | 'text' | 'block'>;
+    types?: Array<'image' | 'text' | 'block' | 'surface'>;
     roles?: RoleType[];
     mode?: 'all' | 'flat' | 'highest';
   },
@@ -26,7 +29,7 @@ export const getSelectedBlocksCommand: Command<
   }
 > = (ctx, next) => {
   const {
-    types = ['block', 'text', 'image'],
+    types = ['block', 'text', 'image', 'surface'],
     roles = ['content'],
     mode = 'flat',
   } = ctx;
@@ -113,36 +116,46 @@ export const getSelectedBlocksCommand: Command<
     dirtyResult.push(...selectedBlocks);
   }
 
+  const surfaceSelection = ctx.surfaceSelection ?? ctx.currentSurfaceSelection;
+  if (types.includes('surface') && surfaceSelection) {
+    const viewStore = ctx.std.view;
+    const selectedBlocks = surfaceSelection.elements
+      .map(id => viewStore.getBlock(id))
+      .filter(block => !!block);
+    dirtyResult.push(...selectedBlocks);
+  }
+
   if (ctx.filter) {
     dirtyResult = dirtyResult.filter(ctx.filter);
   }
 
+  const seen = new Set<BlockComponent>();
+
   // remove duplicate elements
-  const result: BlockComponent[] = dirtyResult
-    .filter((el, index) => dirtyResult.indexOf(el) === index)
-    // sort by document position
-    .sort((a, b) => {
-      if (a === b) {
-        return 0;
-      }
+  const result: BlockComponent[] = dirtyResult.filter(el => {
+    if (seen.has(el)) return false;
+    seen.add(el);
+    return true;
+  });
 
-      const position = a.compareDocumentPosition(b);
-      if (
-        position & Node.DOCUMENT_POSITION_FOLLOWING ||
-        position & Node.DOCUMENT_POSITION_CONTAINED_BY
-      ) {
-        return -1;
-      }
+  if (result.length > 1) {
+    const modelOrder = new Map<string, number>();
+    const visit = (model: BlockModel) => {
+      modelOrder.set(model.id, modelOrder.size);
+      model.children.forEach(visit);
+    };
+    const root = ctx.std.store.root;
+    if (root) {
+      visit(root);
+    }
 
-      if (
-        position & Node.DOCUMENT_POSITION_PRECEDING ||
-        position & Node.DOCUMENT_POSITION_CONTAINS
-      ) {
-        return 1;
-      }
-
-      return 0;
-    });
+    // sort by model tree position, which is the order used for paste/export
+    result.sort(
+      (a, b) =>
+        (modelOrder.get(a.blockId) ?? Number.MAX_SAFE_INTEGER) -
+        (modelOrder.get(b.blockId) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
 
   if (result.length === 0) return;
 

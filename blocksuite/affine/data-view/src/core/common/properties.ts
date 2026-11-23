@@ -3,11 +3,13 @@ import {
   popMenu,
   type PopupTarget,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { InvisibleIcon, ViewIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import type { Middleware } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
-import { css, html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -33,7 +35,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--affine-divider-color);
+      border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .properties-group-title {
@@ -52,6 +54,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
       font-weight: 500;
       border-radius: 4px;
       cursor: pointer;
+      color: ${unsafeCSS(cssVarV2.button.primary)};
     }
 
     .properties-group-op:hover {
@@ -132,7 +135,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
   accessor view!: SingleView;
 
   items$ = computed(() => {
-    return this.view.propertiesWithoutFilter$.value;
+    return this.view.propertiesRaw$.value.map(property => property.id);
   });
 
   renderProperty = (property: Property) => {
@@ -169,8 +172,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
         const activeIndex = properties.findIndex(id => id === activeId);
         const overIndex = properties.findIndex(id => id === over.id);
 
-        this.view.propertyMove(
-          activeId,
+        this.view.propertyGetOrCreate(activeId).move(
           activeIndex > overIndex
             ? {
                 before: true,
@@ -196,9 +198,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
   });
 
   private itemsGroup() {
-    return this.view.propertiesWithoutFilter$.value.map(id =>
-      this.view.propertyGet(id)
-    );
+    return this.view.propertiesRaw$.value;
   }
 
   override connectedCallback() {
@@ -236,22 +236,23 @@ export const popPropertiesSetting = (
     view: SingleView;
     onClose?: () => void;
     onBack?: () => void;
-  }
+  },
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
-  popMenu(target, {
+  const handler = popMenu(target, {
+    middleware,
     options: {
       title: {
         text: 'Properties',
         onBack: props.onBack,
+        onClose: props.onClose,
         postfix: () => {
-          const items = props.view.propertiesWithoutFilter$.value.map(id =>
-            props.view.propertyGet(id)
-          );
-          const isAllShowed = items.every(v => !v.hide$.value);
+          const items = props.view.propertiesRaw$.value;
+          const isAllShowed = items.every(property => !property.hide$.value);
           const clickChangeAll = () => {
-            props.view.propertiesWithoutFilter$.value.forEach(id => {
-              if (props.view.propertyCanHide(id)) {
-                props.view.propertyHideSet(id, isAllShowed);
+            items.forEach(property => {
+              if (property.hideCanSet) {
+                property.hideSet(isAllShowed);
               }
             });
           };
@@ -273,8 +274,10 @@ export const popPropertiesSetting = (
           ],
         }),
       ],
+      onClose: props.onClose,
     },
   });
+  handler.menu.menuElement.style.minHeight = '550px';
 
   // const view = new DataViewPropertiesSettingView();
   // view.view = props.view;

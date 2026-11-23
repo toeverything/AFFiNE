@@ -6,9 +6,9 @@ import type {
 import { Injectable } from '@nestjs/common';
 
 import {
+  Config,
   getRequestResponseFromContext,
   GuardProvider,
-  Runtime,
 } from '../../base';
 import { CaptchaService } from './service';
 
@@ -20,27 +20,28 @@ export class CaptchaGuardProvider
   name = 'captcha' as const;
 
   constructor(
-    private readonly captcha: CaptchaService,
-    private readonly runtime: Runtime
+    private readonly config: Config,
+    private readonly captcha: CaptchaService
   ) {
     super();
   }
 
   async canActivate(context: ExecutionContext) {
-    if (!(await this.runtime.fetch('plugins.captcha/enable'))) {
+    if (!this.config.captcha.enabled) {
       return true;
     }
 
     const { req } = getRequestResponseFromContext(context);
 
-    // require headers, old client send through query string
-    // x-captcha-token
-    // x-captcha-challenge
-    const token = req.headers['x-captcha-token'] ?? req.query['token'];
-    const challenge =
-      req.headers['x-captcha-challenge'] ?? req.query['challenge'];
+    const token = req.headers['x-captcha-token'];
+    const challenge = req.headers['x-captcha-challenge'];
+    const provider = req.headers['x-captcha-provider'];
 
-    const credential = this.captcha.assertValidCredential({ token, challenge });
+    const credential = this.captcha.assertValidCredential({
+      token,
+      challenge,
+      provider,
+    });
     await this.captcha.verifyRequest(credential, req);
 
     return true;

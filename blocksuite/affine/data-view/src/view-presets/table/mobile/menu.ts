@@ -5,13 +5,13 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { DeleteIcon, ExpandFullIcon } from '@blocksuite/icons/lit';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import type { SingleView } from '../../../core/index.js';
+import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
 
 export const popMobileRowMenu = (
   target: PopupTarget,
   rowId: string,
-  dataViewEle: DataViewRenderer,
+  tableViewLogic: MobileTableViewUILogic,
   view: SingleView
 ) => {
   popFilterableSimpleMenu(target, [
@@ -21,7 +21,7 @@ export const popMobileRowMenu = (
           name: 'Expand Row',
           prefix: ExpandFullIcon(),
           select: () => {
-            dataViewEle.openDetailPanel({
+            tableViewLogic.root.openDetailPanel({
               view: view,
               rowId: rowId,
             });
@@ -37,7 +37,8 @@ export const popMobileRowMenu = (
           class: { 'delete-item': true },
           prefix: DeleteIcon(),
           select: () => {
-            view.rowDelete([rowId]);
+            view.rowsDelete([rowId]);
+            tableViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],

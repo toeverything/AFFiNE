@@ -1,9 +1,11 @@
+import { WORKSPACE_SYNC_PROTOCOL_VERSION } from '@affine/nbstore/cloud';
 import type {
   StoreClient,
   WorkerInitOptions,
 } from '@affine/nbstore/worker/client';
 import { Entity } from '@toeverything/infra';
 
+import type { FeatureFlagService } from '../../feature-flag';
 import type { NbstoreService } from '../../storage';
 import { WorkspaceEngineBeforeStart } from '../events';
 import type { WorkspaceService } from '../services/workspace';
@@ -17,9 +19,20 @@ export class WorkspaceEngine extends Entity<{
 
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly nbstoreService: NbstoreService
+    private readonly nbstoreService: NbstoreService,
+    private readonly featureFlagService: FeatureFlagService
   ) {
     super();
+  }
+
+  get usesWorkspaceState() {
+    return Object.values(this.props.engineWorkerInitOptions.remotes).some(
+      remote =>
+        remote.doc?.name === 'CloudDocStorage' &&
+        (('protocolVersion' in remote.doc.opts
+          ? remote.doc.opts.protocolVersion
+          : undefined) ?? WORKSPACE_SYNC_PROTOCOL_VERSION) === 2
+    );
   }
 
   get doc() {
@@ -36,6 +49,13 @@ export class WorkspaceEngine extends Entity<{
     return this.client.blobFrontend;
   }
 
+  get indexer() {
+    if (!this.client) {
+      throw new Error('Engine is not initialized');
+    }
+    return this.client.indexerFrontend;
+  }
+
   get awareness() {
     if (!this.client) {
       throw new Error('Engine is not initialized');
@@ -49,11 +69,29 @@ export class WorkspaceEngine extends Entity<{
     }
     this.started = true;
 
+    const accountScope = Object.values(
+      this.props.engineWorkerInitOptions.remotes
+    )
+      .map(remote =>
+        remote.doc?.name === 'CloudDocStorage' && 'accountId' in remote.doc.opts
+          ? remote.doc.opts.accountId
+          : ''
+      )
+      .filter(Boolean)
+      .join(':');
     const { store, dispose } = this.nbstoreService.openStore(
       (this.props.isSharedMode ? 'shared:' : '') +
-        `workspace:${this.workspaceService.workspace.flavour}:${this.workspaceService.workspace.id}`,
+        `workspace:${this.workspaceService.workspace.flavour}:${this.workspaceService.workspace.id}:${accountScope}`,
       this.props.engineWorkerInitOptions
     );
+    if (
+      this.featureFlagService.flags.enable_battery_save_mode.value &&
+      this.workspaceService.workspace.flavour !== 'local'
+    ) {
+      store.enableBatterySaveMode().catch(err => {
+        console.error('error enabling battery save mode', err);
+      });
+    }
     this.client = store;
     this.disposables.push(dispose);
     this.eventBus.emit(WorkspaceEngineBeforeStart, this);
@@ -61,6 +99,7 @@ export class WorkspaceEngine extends Entity<{
     const rootDoc = this.workspaceService.workspace.docCollection.doc;
     // priority load root doc
     this.doc.addPriority(rootDoc.guid, 100);
+    this.indexer.addPriority(rootDoc.guid, 100);
     this.doc.start();
     this.disposables.push(() => this.doc.stop());
 

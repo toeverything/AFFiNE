@@ -1,13 +1,19 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { css } from 'lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
-import type { GroupData } from '../../../../core/group-by/trait.js';
-import type { TableColumn, TableSingleView } from '../../table-view-manager.js';
+import type { Group } from '../../../../core/group-by/trait.js';
+import type { Row } from '../../../../core/index.js';
+import type {
+  TableProperty,
+  TableSingleView,
+} from '../../table-view-manager.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class DataViewColumnPreview extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -22,38 +28,42 @@ export class DataViewColumnPreview extends SignalWatcher(
   `;
 
   get tableViewManager(): TableSingleView {
-    return this.column.view as TableSingleView;
+    return this.tableViewLogic.view;
   }
 
-  private renderGroup(rows: string[]) {
-    const columnIndex = this.tableViewManager.propertyIndexGet(this.column.id);
+  private renderGroup(rows: Row[]) {
+    const columnIndex = this.column.index$.value;
     return html`
       <div
-        style="background-color: var(--affine-background-primary-color);border-top: 1px solid var(--affine-border-color);box-shadow: var(--affine-shadow-2);"
+        style="background-color: var(--affine-background-primary-color);border-top: 1px solid ${unsafeCSS(
+          cssVarV2.layer.insideBorder.border
+        )};box-shadow: var(--affine-shadow-2);"
       >
         <affine-database-header-column
-          .tableViewManager="${this.tableViewManager}"
+          .tableViewLogic="${this.tableViewLogic}"
           .column="${this.column}"
         ></affine-database-header-column>
         ${repeat(rows, (id, index) => {
           const height = this.container.querySelector(
-            `affine-database-cell-container[data-row-id="${id}"]`
+            `dv-table-view-cell-container[data-row-id="${id}"]`
           )?.clientHeight;
           const style = styleMap({
             height: height + 'px',
           });
           return html`<div
-            style="border-top: 1px solid var(--affine-border-color)"
+            style="border-top: 1px solid ${unsafeCSS(
+              cssVarV2.layer.insideBorder.border
+            )}"
           >
             <div style="${style}">
-              <affine-database-cell-container
+              <dv-table-view-cell-container
                 .column="${this.column}"
-                .view="${this.tableViewManager}"
+                .tableViewLogic="${this.tableViewLogic}"
                 .rowId="${id}"
                 .columnId="${this.column.id}"
                 .rowIndex="${index}"
                 .columnIndex="${columnIndex}"
-              ></affine-database-cell-container>
+              ></dv-table-view-cell-container>
             </div>
           </div>`;
         })}
@@ -69,13 +79,16 @@ export class DataViewColumnPreview extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor container!: HTMLElement;
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor tableViewLogic!: TableViewUILogic;
 }
 
 declare global {

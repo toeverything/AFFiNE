@@ -59,15 +59,6 @@ export class StoreSelectionExtension extends StoreExtension {
         const all = change.updated.concat(change.added).concat(change.removed);
         const localClientID = this.store.awarenessStore.awareness.clientID;
         const exceptLocal = all.filter(id => id !== localClientID);
-        const hasLocal = all.includes(localClientID);
-        if (hasLocal) {
-          const localSelectionJson =
-            this.store.awarenessStore.getLocalSelection(this._id);
-          const localSelection = localSelectionJson.map(json => {
-            return this._jsonToSelection(json);
-          });
-          this._selections.value = localSelection;
-        }
 
         // Only consider remote selections from other clients
         if (exceptLocal.length > 0) {
@@ -103,8 +94,14 @@ export class StoreSelectionExtension extends StoreExtension {
       }
     );
 
-    this.store.history.on('stack-item-added', this._itemAdded);
-    this.store.history.on('stack-item-popped', this._itemPopped);
+    this.store.history.undoManager.on('stack-item-added', this._itemAdded);
+    this.store.history.undoManager.on('stack-item-popped', this._itemPopped);
+  }
+
+  override disposed() {
+    super.disposed();
+    this.store.history.undoManager.off('stack-item-added', this._itemAdded);
+    this.store.history.undoManager.off('stack-item-popped', this._itemPopped);
   }
 
   get value() {
@@ -162,12 +159,20 @@ export class StoreSelectionExtension extends StoreExtension {
       this._id,
       selections.map(s => s.toJSON())
     );
+    this._selections.value = selections;
     this.slots.changed.next(selections);
   }
 
   setGroup(group: string, selections: BaseSelection[]) {
     const current = this.value.filter(s => s.group !== group);
     this.set([...current, ...selections]);
+  }
+
+  // This method is used to clear **current editor's remote selections**
+  // When the editor is not active, the remote selections should be cleared
+  // So other editors won't see the remote selections from this editor
+  clearRemote() {
+    this.store.awarenessStore.setLocalSelection(this._id, []);
   }
 
   update(fn: (currentSelections: BaseSelection[]) => BaseSelection[]) {

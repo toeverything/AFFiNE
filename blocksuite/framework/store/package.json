@@ -3,7 +3,7 @@
   "description": "BlockSuite data store built for general purpose state management.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -11,26 +11,21 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/sync": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@types/lodash.ismatch": "^4.4.9",
-    "file-type": "^20.0.0",
-    "lib0": "^0.2.97",
-    "lodash.clonedeep": "^4.5.0",
+    "file-type": "^21.0.0",
+    "lib0": "^0.2.114",
     "lodash.ismatch": "^4.4.0",
-    "lodash.merge": "^4.6.2",
-    "minimatch": "^10.0.1",
-    "nanoid": "^5.0.7",
-    "rxjs": "^7.8.1",
+    "minimatch": "^11.0.4",
+    "nanoid": "^5.1.6",
+    "rxjs": "^7.8.2",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/lodash.clonedeep": "^4.5.9",
-    "@types/lodash.merge": "^4.6.9",
-    "vitest": "3.0.8"
+    "vitest": "^4.1.11"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -43,5 +38,5 @@
     "!dist/__tests__",
     "shim.d.ts"
   ],
-  "version": "0.20.0"
+  "version": "0.27.5"
 }

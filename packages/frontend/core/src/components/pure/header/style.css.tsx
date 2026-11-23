@@ -63,17 +63,13 @@ export const windowAppControl = style({
   WebkitAppRegion: 'no-drag',
   cursor: 'pointer',
   display: 'inline-flex',
-  width: '52px',
-  height: '52px',
+  width: '40px',
+  height: '40px',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: '0',
   color: 'var(--affine-icon-color)',
   selectors: {
-    '&[data-type="close"]': {
-      width: '56px',
-      paddingRight: '5px',
-    },
     '&[data-type="close"]:hover': {
       background: 'var(--affine-windows-close-button)',
       color: 'var(--affine-pure-white)',

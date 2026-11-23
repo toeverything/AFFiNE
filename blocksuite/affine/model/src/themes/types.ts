@@ -21,6 +21,7 @@ export const ThemeSchema = z.object({
   shapeFillColor: ColorSchema,
   connectorColor: ColorSchema,
   noteBackgrounColor: ColorSchema,
+  hightlighterColor: ColorSchema,
 
   // Universal color palettes
   Palettes: z.array(PaletteSchema),

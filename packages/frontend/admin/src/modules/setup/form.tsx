@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { affineFetch } from '../../fetch-utils';
 import { useRevalidateServerConfig, useServerConfig } from '../common';
 import { CreateAdmin } from './create-admin';
 
@@ -95,9 +96,10 @@ export const Form = () => {
 
   const createAdmin = useCallback(async () => {
     try {
-      const createResponse = await fetch('/api/setup/create-admin-user', {
+      const createResponse = await affineFetch('/api/setup/create-admin-user', {
         method: 'POST',
         body: JSON.stringify({
+          name: nameValue,
           email: emailValue,
           password: passwordValue,
         }),
@@ -119,7 +121,7 @@ export const Form = () => {
       console.error(err);
       throw err;
     }
-  }, [emailValue, passwordValue, refreshServerConfig]);
+  }, [nameValue, emailValue, passwordValue, refreshServerConfig]);
 
   const onNext = useAsyncCallback(async () => {
     if (isCreateAdminStep) {
@@ -164,7 +166,7 @@ export const Form = () => {
     passwordValue,
   ]);
 
-  const onPrevious = useCallback(() => {
+  const onPrevious = useAsyncCallback(async () => {
     if (current === count) {
       if (serverConfig.initialized === true) {
         return navigate('/admin', { replace: true });

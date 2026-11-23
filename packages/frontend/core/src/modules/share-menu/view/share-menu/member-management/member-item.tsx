@@ -8,12 +8,12 @@ import {
   Tooltip,
   useConfirmModal,
 } from '@affine/component';
+import { useGuard } from '@affine/core/components/guard';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocService } from '@affine/core/modules/doc';
 import {
   DocGrantedUsersService,
   type GrantedUser,
-  GuardService,
   WorkspacePermissionService,
 } from '@affine/core/modules/permissions';
 import { UserFriendlyError } from '@affine/error';
@@ -131,7 +131,6 @@ const Options = ({
   const t = useI18n();
   const docGrantedUsersService = useService(DocGrantedUsersService);
   const docService = useService(DocService);
-  const guardService = useService(GuardService);
   const workspacePermissionService = useService(WorkspacePermissionService);
   const isWorkspaceOwner = useLiveData(
     workspacePermissionService.permission.isOwner$
@@ -140,11 +139,8 @@ const Options = ({
   const { openConfirmModal } = useConfirmModal();
 
   const canTransferOwner =
-    useLiveData(guardService.can$('Doc_TransferOwner', docService.doc.id)) &&
-    !!isWorkspaceOwner;
-  const canManageUsers = useLiveData(
-    guardService.can$('Doc_Users_Manage', docService.doc.id)
-  );
+    useGuard('Doc_TransferOwner', docService.doc.id) && !!isWorkspaceOwner;
+  const canManageUsers = useGuard('Doc_Users_Manage', docService.doc.id);
 
   const updateUserRole = useCallback(
     async (userId: string, role: DocRole) => {

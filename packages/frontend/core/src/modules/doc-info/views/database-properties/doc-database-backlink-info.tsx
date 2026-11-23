@@ -6,11 +6,12 @@ import {
 } from '@affine/component';
 import { AffinePageReference } from '@affine/core/components/affine/reference-link';
 import { DocService } from '@affine/core/modules/doc';
+import { TemplateDocService } from '@affine/core/modules/template-doc';
 import { useI18n } from '@affine/i18n';
 import type { DatabaseBlockDataSource } from '@blocksuite/affine/blocks/database';
 import { DatabaseTableViewIcon, PageIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
-import { Fragment, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Observable } from 'rxjs';
 
 import { DocDatabaseBacklinksService } from '../../services/doc-database-backlinks';
@@ -84,7 +85,7 @@ const DatabaseBacklinkRow = ({
   row$,
   onChange,
 }: {
-  defaultOpen: boolean;
+  defaultOpen?: boolean;
   row$: Observable<DatabaseRow | undefined>;
   onChange?: (
     row: DatabaseRow,
@@ -96,13 +97,24 @@ const DatabaseBacklinkRow = ({
     useMemo(() => LiveData.from(row$, undefined), [row$])
   );
   const sortedCells = useMemo(() => {
-    return row?.cells.toSorted((a, b) => {
-      return (a.property.name$.value ?? '').localeCompare(
-        b.property.name$.value ?? ''
-      );
-    });
+    return row?.cells
+      .filter(cell => cell.property.id !== 'title')
+      .toSorted((a, b) => {
+        return (a.property.name$.value ?? '').localeCompare(
+          b.property.name$.value ?? ''
+        );
+      });
   }, [row?.cells]);
   const t = useI18n();
+  const templateDocService = useService(TemplateDocService);
+
+  const isTemplateDoc = useLiveData(
+    useMemo(
+      () =>
+        row?.docId ? templateDocService.list.isTemplate$(row.docId) : undefined,
+      [row, templateDocService.list]
+    )
+  );
 
   const pageRefParams = useMemo(() => {
     const params = new URLSearchParams();
@@ -112,52 +124,55 @@ const DatabaseBacklinkRow = ({
     return params;
   }, [row]);
 
-  if (!row || !sortedCells) {
+  if (!row || !sortedCells || sortedCells.length === 0 || isTemplateDoc) {
     return null;
   }
 
   return (
-    <PropertyCollapsibleSection
-      title={
-        <span className={styles.databaseNameWrapper}>
-          <span className={styles.databaseName}>
-            {row.databaseName || t['unnamed']()}
+    <>
+      <PropertyCollapsibleSection
+        title={
+          <span className={styles.databaseNameWrapper}>
+            <span className={styles.databaseName}>
+              {row.databaseName || t['unnamed']()}
+            </span>
+            {t['properties']()}
           </span>
-          {t['properties']()}
-        </span>
-      }
-      defaultCollapsed={!defaultOpen}
-      icon={<DatabaseTableViewIcon />}
-      suffix={
-        <AffinePageReference
-          className={
-            BUILD_CONFIG.isMobileEdition
-              ? styles.mobileDocRefLink
-              : styles.docRefLink
-          }
-          pageId={row.docId}
-          params={pageRefParams}
-          Icon={PageIcon}
-        />
-      }
-    >
-      <PropertyCollapsibleContent
-        className={styles.cellList}
-        collapsible={false}
+        }
+        defaultCollapsed={!defaultOpen}
+        icon={<DatabaseTableViewIcon />}
+        suffix={
+          <AffinePageReference
+            className={
+              BUILD_CONFIG.isMobileEdition
+                ? styles.mobileDocRefLink
+                : styles.docRefLink
+            }
+            pageId={row.docId}
+            params={pageRefParams}
+            Icon={PageIcon}
+          />
+        }
       >
-        {sortedCells.map(cell => {
-          return (
-            <DatabaseBacklinkCell
-              key={cell.id}
-              cell={cell}
-              dataSource={row.dataSource}
-              rowId={row.id}
-              onChange={value => onChange?.(row, cell, value)}
-            />
-          );
-        })}
-      </PropertyCollapsibleContent>
-    </PropertyCollapsibleSection>
+        <PropertyCollapsibleContent
+          className={styles.cellList}
+          collapsible={false}
+        >
+          {sortedCells.map(cell => {
+            return (
+              <DatabaseBacklinkCell
+                key={cell.id}
+                cell={cell}
+                dataSource={row.dataSource}
+                rowId={row.id}
+                onChange={value => onChange?.(row, cell, value)}
+              />
+            );
+          })}
+        </PropertyCollapsibleContent>
+      </PropertyCollapsibleSection>
+      <Divider size="thinner" className={styles.divider} />
+    </>
   );
 };
 
@@ -196,21 +211,19 @@ export const DocDatabaseBacklinkInfo = ({
   return (
     <div className={styles.root}>
       {rows.map(({ docId, databaseBlockId, rowId, row$ }) => (
-        <Fragment key={`${docId}-${rowId}`}>
-          <DatabaseBacklinkRow
-            defaultOpen={
-              defaultOpen?.some(
-                backlink =>
-                  backlink.databaseBlockId === databaseBlockId &&
-                  backlink.rowId === rowId &&
-                  backlink.docId === docId
-              ) ?? false
-            }
-            row$={row$}
-            onChange={onChange}
-          />
-          <Divider size="thinner" className={styles.divider} />
-        </Fragment>
+        <DatabaseBacklinkRow
+          key={`${docId}-${rowId}`}
+          defaultOpen={
+            defaultOpen?.some(
+              backlink =>
+                backlink.databaseBlockId === databaseBlockId &&
+                backlink.rowId === rowId &&
+                backlink.docId === docId
+            ) ?? false
+          }
+          row$={row$}
+          onChange={onChange}
+        />
       ))}
     </div>
   );

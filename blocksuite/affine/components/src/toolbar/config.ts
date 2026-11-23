@@ -1,4 +1,4 @@
-import { ConfigExtensionFactory } from '@blocksuite/block-std';
+import { ConfigExtensionFactory } from '@blocksuite/std';
 
 import type { ToolbarMoreMenuConfig } from './types';
 

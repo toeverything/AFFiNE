@@ -6,7 +6,10 @@ import { EventHandlerScanner } from './scanner';
 
 const EmitProvider = {
   provide: EventEmitter2,
-  useFactory: () => new EventEmitter2(),
+  useFactory: () =>
+    new EventEmitter2({
+      maxListeners: 100,
+    }),
 };
 
 @Global()

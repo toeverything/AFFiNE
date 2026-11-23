@@ -11,6 +11,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import clamp from 'lodash-es/clamp';
 
 import { AREA_CIRCLE_R, MATCHERS, SLIDER_CIRCLE_R } from './consts.js';
+import { TransparentIcon } from './icons.js';
 import { COLOR_PICKER_STYLE } from './styles.js';
 import type {
   Hsva,
@@ -509,7 +510,10 @@ export class EdgelessColorPicker extends SignalWatcher(
                 ?active=${this.modeType$.value === type}
                 @click=${() => this.#switchModeTab(type)}
               >
-                <div class="color"></div>
+                <div class="color-wrapper">
+                  ${TransparentIcon()}
+                  <div class="color"></div>
+                </div>
                 <div>${name}</div>
               </button>
             </div>

@@ -1,0 +1,1226 @@
+import { randomUUID } from 'node:crypto';
+
+import { Injectable, Logger } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
+import type { CalendarAccount, Prisma } from '@prisma/client';
+
+import {
+  CalendarProviderRequestError,
+  Config,
+  exponentialBackoffDelay,
+  GraphqlBadRequest,
+  URLHelper,
+} from '../../base';
+import { Models } from '../../models';
+import type { CalendarCalDAVProviderPreset } from './config';
+import {
+  CalendarProvider,
+  CalendarProviderEvent,
+  CalendarProviderEventTime,
+  CalendarProviderFactory,
+  CalendarProviderName,
+  CalendarSyncTokenInvalid,
+} from './providers';
+import type { LinkCalDAVAccountInput } from './types';
+
+const TOKEN_REFRESH_SKEW_MS = 60 * 1000;
+const DEFAULT_PAST_DAYS = 90;
+const DEFAULT_FUTURE_DAYS = 180;
+const SYNC_FAILURE_BACKOFF_BASE_MS = 5 * 60 * 1000;
+const SYNC_FAILURE_BACKOFF_MAX_MS = 6 * 60 * 60 * 1000;
+const DEFAULT_REFRESH_INTERVAL_MINUTES = 30;
+const CHANNEL_RENEW_RETRY_MS = 15 * 60 * 1000;
+const UNSUPPORTED_PUSH_CHANNEL_EXPIRATION = new Date(
+  '9999-12-31T23:59:59.999Z'
+);
+
+@Injectable()
+export class CalendarService {
+  private readonly logger = new Logger(CalendarService.name);
+  private generatedWebhookToken?: string;
+
+  constructor(
+    private readonly models: Models,
+    private readonly providerFactory: CalendarProviderFactory<CalendarProvider>,
+    private readonly config: Config,
+    private readonly url: URLHelper
+  ) {}
+
+  async listAccounts(userId: string) {
+    const accounts = await this.models.calendarAccount.listByUser(userId);
+    const accountIds = accounts.map(account => account.id);
+    const subscriptions =
+      await this.models.calendarSubscription.listByAccountIds(accountIds);
+    const counts = new Map<string, number>();
+    for (const subscription of subscriptions) {
+      counts.set(
+        subscription.accountId,
+        (counts.get(subscription.accountId) ?? 0) + 1
+      );
+    }
+
+    return accounts.map(account => ({
+      ...account,
+      calendarsCount: counts.get(account.id) ?? 0,
+    }));
+  }
+
+  async listAccountCalendars(userId: string, accountId: string) {
+    const account = await this.models.calendarAccount.get(accountId);
+    if (!account || account.userId !== userId) {
+      return [];
+    }
+
+    return await this.models.calendarSubscription.listByAccount(accountId);
+  }
+
+  async updateAccountRefreshInterval(
+    userId: string,
+    accountId: string,
+    refreshIntervalMinutes: number
+  ) {
+    const account = await this.models.calendarAccount.get(accountId);
+    if (!account || account.userId !== userId) {
+      return null;
+    }
+
+    const updatedAccount =
+      await this.models.calendarAccount.updateRefreshInterval(
+        accountId,
+        refreshIntervalMinutes
+      );
+    const subscriptions =
+      await this.models.calendarSubscription.listByAccountForSync(accountId);
+    await Promise.all(
+      subscriptions.map(subscription =>
+        this.models.calendarSubscription.updateSync(subscription.id, {
+          nextSyncAt: this.calculateNextSyncAt(
+            subscription.lastSyncAt ?? this.now(),
+            refreshIntervalMinutes
+          ),
+        })
+      )
+    );
+    return updatedAccount;
+  }
+
+  async unlinkAccount(userId: string, accountId: string) {
+    const account = await this.models.calendarAccount.get(accountId);
+    if (!account || account.userId !== userId) {
+      return false;
+    }
+
+    const provider = this.providerFactory.get(
+      account.provider as CalendarProviderName
+    );
+    const subscriptions =
+      await this.models.calendarSubscription.listByAccount(accountId);
+    const needToStopChannel = subscriptions.filter(
+      s => s.customChannelId && s.customResourceId
+    );
+
+    if (provider?.stopChannel && needToStopChannel.length > 0) {
+      const accountTokens = this.models.calendarAccount.decryptTokens(account);
+      const accessToken = accountTokens.accessToken;
+      if (accessToken) {
+        await Promise.allSettled(
+          needToStopChannel.map(async s => {
+            if (!s.customChannelId || !s.customResourceId) {
+              return;
+            }
+            return await provider.stopChannel?.({
+              accessToken,
+              channelId: s.customChannelId,
+              resourceId: s.customResourceId,
+            });
+          })
+        );
+      }
+    }
+
+    await this.models.calendarAccount.delete(accountId);
+    return true;
+  }
+
+  async handleOAuthCallback(params: {
+    provider: CalendarProviderName;
+    code: string;
+    redirectUri: string;
+    userId: string;
+  }) {
+    const provider = this.requireProvider(params.provider);
+    const tokens = await provider.exchangeCode(params.code, params.redirectUri);
+    const profile = await provider.getAccountProfile(tokens.accessToken);
+    await this.assertCanPersistProviderAccount(
+      params.userId,
+      params.provider,
+      profile.providerAccountId
+    );
+
+    const account = await this.models.calendarAccount.upsert({
+      userId: params.userId,
+      provider: params.provider,
+      providerAccountId: profile.providerAccountId,
+      displayName: profile.displayName ?? null,
+      email: profile.email ?? null,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresAt: tokens.expiresAt ?? null,
+      scope: tokens.scope ?? null,
+      status: 'active',
+      lastError: null,
+    });
+
+    try {
+      await this.syncAccountCalendars(account.id);
+    } catch (error) {
+      if (error instanceof CalendarProviderRequestError) {
+        await this.models.calendarAccount.updateStatus(
+          account.id,
+          'invalid',
+          error.message
+        );
+      }
+      throw error;
+    }
+    return account;
+  }
+
+  async linkCalDAVAccount(params: {
+    userId: string;
+    input: LinkCalDAVAccountInput;
+  }) {
+    const caldavConfig = this.config.calendar.caldav;
+    if (!caldavConfig?.enabled) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_disabled',
+        message: 'CalDAV integration is not enabled.',
+      });
+    }
+
+    const preset = caldavConfig.providers.find(
+      provider => provider.id === params.input.providerPresetId
+    );
+    if (!preset) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_not_found',
+        message: 'CalDAV provider is not available.',
+      });
+    }
+
+    const provider = this.requireProvider(CalendarProviderName.CalDAV);
+    if (!('discoverAccount' in provider)) {
+      throw new GraphqlBadRequest({
+        code: 'caldav_provider_unavailable',
+        message: 'CalDAV provider is not configured.',
+      });
+    }
+
+    const discovery = await (
+      provider as CalendarProvider & {
+        discoverAccount: (input: {
+          preset: CalendarCalDAVProviderPreset;
+          username: string;
+          password: string;
+        }) => Promise<{
+          providerAccountId: string;
+          serverUrl: string;
+          principalUrl: string;
+          calendarHomeUrl: string;
+          authType?: string | null;
+        }>;
+      }
+    ).discoverAccount({
+      preset,
+      username: params.input.username,
+      password: params.input.password,
+    });
+
+    const account = await this.models.calendarAccount.upsert({
+      userId: params.userId,
+      provider: CalendarProviderName.CalDAV,
+      providerAccountId: discovery.providerAccountId,
+      displayName: params.input.displayName ?? null,
+      email: params.input.username,
+      accessToken: params.input.password,
+      refreshToken: null,
+      expiresAt: null,
+      scope: null,
+      status: 'active',
+      lastError: null,
+      providerPresetId: params.input.providerPresetId,
+      serverUrl: discovery.serverUrl,
+      principalUrl: discovery.principalUrl,
+      calendarHomeUrl: discovery.calendarHomeUrl,
+      username: params.input.username,
+      authType: discovery.authType ?? null,
+    });
+
+    try {
+      await this.syncAccountCalendars(account.id);
+    } catch (error) {
+      if (error instanceof CalendarProviderRequestError) {
+        await this.models.calendarAccount.updateStatus(
+          account.id,
+          'invalid',
+          error.message
+        );
+      }
+      throw error;
+    }
+
+    const calendars = await this.models.calendarSubscription.listByAccount(
+      account.id
+    );
+    return { ...account, calendarsCount: calendars.length };
+  }
+
+  async syncAccountCalendars(accountId: string) {
+    const account = await this.models.calendarAccount.get(accountId);
+    if (!account) {
+      return;
+    }
+
+    const provider = this.providerFactory.get(
+      account.provider as CalendarProviderName
+    );
+    if (!provider) {
+      return;
+    }
+
+    const { accessToken } = await this.ensureAccessToken(account);
+    if (!accessToken) {
+      return;
+    }
+
+    const calendars = await provider.listCalendars({
+      accessToken,
+      account,
+    });
+    const upserted = [];
+    for (const calendar of calendars) {
+      upserted.push(
+        await this.models.calendarSubscription.upsert({
+          accountId: account.id,
+          provider: account.provider,
+          externalCalendarId: calendar.id,
+          displayName: calendar.summary ?? null,
+          timezone: calendar.timeZone ?? null,
+          color: calendar.colorId ?? null,
+          enabled: true,
+        })
+      );
+    }
+
+    for (const subscription of upserted) {
+      await this.syncSubscription(subscription.id, { reason: 'initial' });
+    }
+  }
+
+  async syncSubscription(
+    subscriptionId: string,
+    options?: { reason?: string; forceFull?: boolean; claimedUntil?: Date }
+  ) {
+    const claimedUntil =
+      options?.claimedUntil ??
+      (
+        await this.models.calendarSubscription.claimDueForSync(
+          this.now(),
+          1,
+          subscriptionId
+        )
+      )[0]?.claimedUntil;
+    if (!claimedUntil) return;
+    const subscription =
+      await this.models.calendarSubscription.listWithAccount(subscriptionId);
+    if (
+      !subscription ||
+      !subscription.enabled ||
+      subscription.syncClaimedUntil?.getTime() !== claimedUntil.getTime() ||
+      claimedUntil.getTime() <= this.nowMs()
+    ) {
+      return;
+    }
+
+    const account = subscription.account;
+    if (account.status !== 'active') {
+      return;
+    }
+
+    const provider = this.providerFactory.get(
+      account.provider as CalendarProviderName
+    );
+    if (!provider) {
+      return;
+    }
+
+    let accessToken: string | null = null;
+    try {
+      const tokens = await this.ensureAccessToken(account, {
+        id: subscription.id,
+        claimedUntil,
+      });
+      if (!tokens.accessToken) return;
+      accessToken = tokens.accessToken;
+    } catch (error) {
+      await this.handleSubscriptionSyncFailure({
+        claimedUntil,
+        error,
+        subscription,
+        account,
+        provider,
+      });
+      return;
+    }
+
+    const { timeMin, timeMax } = this.getSyncWindow();
+    const shouldUseSyncToken =
+      !!subscription.syncToken && options?.forceFull !== true;
+    let synced = false;
+
+    try {
+      synced = Boolean(
+        await this.syncWithProvider({
+          claimedUntil,
+          provider,
+          subscriptionId: subscription.id,
+          calendarId: subscription.externalCalendarId,
+          accessToken,
+          account,
+          syncToken: shouldUseSyncToken
+            ? (subscription.syncToken ?? undefined)
+            : undefined,
+          timeMin: shouldUseSyncToken ? undefined : timeMin,
+          timeMax: shouldUseSyncToken ? undefined : timeMax,
+          subscriptionTimezone: subscription.timezone ?? undefined,
+        })
+      );
+    } catch (error) {
+      if (error instanceof CalendarSyncTokenInvalid) {
+        const reset = await this.models.calendarSubscription.withSyncClaim(
+          subscription.id,
+          claimedUntil,
+          () =>
+            this.models.calendarSubscription.updateSync(subscription.id, {
+              syncToken: null,
+            })
+        );
+        if (!reset) return;
+        try {
+          synced = Boolean(
+            await this.syncWithProvider({
+              claimedUntil,
+              provider,
+              subscriptionId: subscription.id,
+              calendarId: subscription.externalCalendarId,
+              accessToken,
+              account,
+              timeMin,
+              timeMax,
+              subscriptionTimezone: subscription.timezone ?? undefined,
+            })
+          );
+        } catch (syncTokenRetryError) {
+          await this.handleSubscriptionSyncFailure({
+            claimedUntil,
+            error: syncTokenRetryError,
+            subscription,
+            account,
+            provider,
+            accessToken,
+            disableOnNotFound: true,
+          });
+          return;
+        }
+      } else {
+        await this.handleSubscriptionSyncFailure({
+          claimedUntil,
+          error,
+          subscription,
+          account,
+          provider,
+          accessToken,
+          disableOnNotFound: true,
+        });
+        return;
+      }
+    }
+
+    if (synced) {
+      const syncedAt = this.now();
+      let nextSyncAt = this.calculateNextSyncAt(
+        syncedAt,
+        account.refreshIntervalMinutes
+      );
+
+      try {
+        await this.ensureWebhookChannel(
+          subscription,
+          provider,
+          accessToken,
+          claimedUntil
+        );
+      } catch (error) {
+        nextSyncAt = this.calculateChannelRetryAt(nextSyncAt);
+        this.logger.warn(
+          `Failed to ensure webhook channel for subscription ${subscription.id}`,
+          this.toError(error)
+        );
+      }
+
+      await this.models.calendarSubscription.completeSync(
+        subscription.id,
+        claimedUntil,
+        {
+          lastSyncAt: syncedAt,
+          nextSyncAt,
+          syncRetryCount: 0,
+        }
+      );
+    }
+  }
+
+  async listWorkspaceEvents(params: {
+    workspaceCalendarId: string;
+    from: Date;
+    to: Date;
+  }) {
+    const items = await this.models.workspaceCalendar.listItems(
+      params.workspaceCalendarId
+    );
+    const subscriptionIds = items.map(item => item.subscriptionId);
+    const events = await this.models.calendarEvent.listBySubscriptionsInRange(
+      subscriptionIds,
+      params.from,
+      params.to
+    );
+
+    const subscriptions =
+      await this.models.calendarSubscription.listWithAccounts(subscriptionIds);
+    const staleSubscriptions = subscriptions.filter(
+      subscription =>
+        subscription.enabled &&
+        subscription.account.status === 'active' &&
+        subscription.nextSyncAt.getTime() <= this.nowMs()
+    );
+
+    Promise.allSettled(
+      staleSubscriptions.map(subscription =>
+        this.enqueueSyncSubscription(subscription.id, 'on-demand')
+      )
+    ).catch(error => {
+      this.logger.warn('Calendar on-demand sync failed', error as Error);
+    });
+
+    return events;
+  }
+
+  @Transactional()
+  async updateWorkspaceCalendars(params: {
+    workspaceId: string;
+    userId: string;
+    items: Array<{
+      subscriptionId: string;
+      sortOrder?: number | null;
+      colorOverride?: string | null;
+    }>;
+  }) {
+    const calendar = await this.models.workspaceCalendar.getOrCreateDefault(
+      params.workspaceId,
+      params.userId
+    );
+    await this.models.workspaceCalendar.updateItems(calendar.id, params.items);
+    return calendar;
+  }
+
+  async getWorkspaceCalendars(workspaceId: string) {
+    const calendars =
+      await this.models.workspaceCalendar.getByWorkspace(workspaceId);
+    if (calendars.length === 0) {
+      return [];
+    }
+
+    const items = await Promise.all(
+      calendars.map(calendar =>
+        this.models.workspaceCalendar.listItems(calendar.id)
+      )
+    );
+    return calendars.map((calendar, index) => ({
+      ...calendar,
+      items: items[index],
+    }));
+  }
+
+  async handleWebhook(providerName: CalendarProviderName, channelId: string) {
+    if (providerName !== CalendarProviderName.Google) {
+      return;
+    }
+
+    const subscription =
+      await this.models.calendarSubscription.getByChannelId(channelId);
+    if (!subscription) {
+      return;
+    }
+
+    await this.enqueueSyncSubscription(subscription.id, 'webhook');
+  }
+
+  getWebhookToken() {
+    const configured = this.config.calendar.google.webhookVerificationToken;
+    if (configured) {
+      return configured;
+    }
+    if (!this.generatedWebhookToken) {
+      this.generatedWebhookToken = randomUUID();
+    }
+    return this.generatedWebhookToken;
+  }
+
+  getWebhookAddress(provider: string) {
+    const externalWebhookUrl = this.config.calendar.google.externalWebhookUrl;
+    if (!externalWebhookUrl) {
+      return null;
+    }
+    return new URL(
+      `/api/calendar/webhook/${provider}`,
+      externalWebhookUrl
+    ).toString();
+  }
+
+  getCallbackUrl() {
+    return this.url.link('/api/calendar/oauth/callback');
+  }
+
+  isProviderAvailable(provider: CalendarProviderName) {
+    return this.isProviderAvailableFor(provider);
+  }
+
+  isProviderAvailableFor(
+    provider: CalendarProviderName,
+    options?: { oauth?: boolean }
+  ) {
+    const instance = this.providerFactory.get(provider);
+    if (!instance) {
+      return false;
+    }
+    if (options?.oauth) {
+      return instance.supportsOAuth;
+    }
+    return true;
+  }
+
+  async assertCanLinkProvider(userId: string, provider: CalendarProviderName) {
+    if (await this.canLinkProvider(userId, provider)) {
+      return;
+    }
+
+    throw this.providerLinkDisabledError(provider);
+  }
+
+  async canLinkProvider(
+    userId: string | null | undefined,
+    provider: CalendarProviderName
+  ) {
+    if (this.canCreateNewAccounts(provider)) {
+      return true;
+    }
+    if (!userId) {
+      return false;
+    }
+
+    const accounts = await this.models.calendarAccount.listByUser(userId);
+    return accounts.some(account => account.provider === provider);
+  }
+
+  getAuthUrl(
+    provider: CalendarProviderName,
+    state: string,
+    redirectUri: string
+  ) {
+    const instance = this.requireProvider(provider);
+    if (!instance.supportsOAuth) {
+      throw new GraphqlBadRequest({
+        code: 'calendar_provider_oauth_unsupported',
+        message: 'Selected calendar provider does not support OAuth.',
+      });
+    }
+    return instance.getAuthUrl(state, redirectUri);
+  }
+
+  private async assertCanPersistProviderAccount(
+    userId: string,
+    provider: CalendarProviderName,
+    providerAccountId: string
+  ) {
+    if (this.canCreateNewAccounts(provider)) {
+      return;
+    }
+
+    const account = await this.models.calendarAccount.getByProviderAccount(
+      userId,
+      provider,
+      providerAccountId
+    );
+    if (account) {
+      return;
+    }
+
+    throw this.providerLinkDisabledError(provider);
+  }
+
+  private canCreateNewAccounts(provider: CalendarProviderName) {
+    return (
+      provider !== CalendarProviderName.Google ||
+      this.config.calendar.google.allowNewAccounts !== false
+    );
+  }
+
+  private providerLinkDisabledError(provider: CalendarProviderName) {
+    return new GraphqlBadRequest({
+      code: 'calendar_provider_link_disabled',
+      message: `${provider} calendar account linking is disabled.`,
+    });
+  }
+
+  private async syncWithProvider(params: {
+    claimedUntil: Date;
+    provider: CalendarProvider;
+    subscriptionId: string;
+    calendarId: string;
+    accessToken: string;
+    account: CalendarAccount;
+    syncToken?: string;
+    timeMin?: string;
+    timeMax?: string;
+    subscriptionTimezone?: string;
+  }) {
+    const response = await params.provider.listEvents({
+      accessToken: params.accessToken,
+      calendarId: params.calendarId,
+      account: params.account,
+      syncToken: params.syncToken,
+      timeMin: params.timeMin,
+      timeMax: params.timeMax,
+    });
+
+    return await this.models.calendarSubscription.withSyncClaim(
+      params.subscriptionId,
+      params.claimedUntil,
+      async () => {
+        const cancelledEventIds: string[] = [];
+        const failedEventIds: string[] = [];
+        for (const event of response.events) {
+          if (event.status === 'cancelled') {
+            cancelledEventIds.push(event.id);
+            continue;
+          }
+
+          let mapped;
+          try {
+            mapped = this.mapProviderEvent(
+              params.subscriptionId,
+              event,
+              params.subscriptionTimezone
+            );
+          } catch {
+            failedEventIds.push(event.id);
+            continue;
+          }
+          await this.models.calendarEvent.upsert(mapped);
+        }
+
+        if (cancelledEventIds.length > 0) {
+          await this.models.calendarEvent.deleteByExternalIds(
+            params.subscriptionId,
+            cancelledEventIds
+          );
+        }
+        if (failedEventIds.length > 0) {
+          this.logger.warn(
+            `Failed to upsert ${failedEventIds.length} events for subscription ${params.subscriptionId}`,
+            { failedEventIds }
+          );
+        }
+
+        if (response.nextSyncToken) {
+          await this.models.calendarSubscription.updateSync(
+            params.subscriptionId,
+            {
+              syncToken: response.nextSyncToken,
+            }
+          );
+        }
+        return true;
+      }
+    );
+  }
+
+  private mapProviderEvent(
+    subscriptionId: string,
+    event: CalendarProviderEvent,
+    fallbackTimezone?: string
+  ) {
+    const { timeZone, start, end, allDay } = this.resolveEventTimes(
+      event,
+      fallbackTimezone
+    );
+
+    return {
+      subscriptionId,
+      externalEventId: event.id,
+      recurrenceId: this.resolveRecurrenceId(event),
+      etag: event.etag ?? null,
+      status: event.status ?? null,
+      title: event.summary ?? null,
+      description: event.description ?? null,
+      location: event.location ?? null,
+      startAtUtc: start,
+      endAtUtc: end,
+      originalTimezone: timeZone ?? null,
+      allDay,
+      providerUpdatedAt: event.updated ? new Date(event.updated) : null,
+      raw: event.raw as Prisma.InputJsonValue,
+    };
+  }
+
+  private resolveEventTimes(
+    event: CalendarProviderEvent,
+    fallbackTimezone?: string
+  ) {
+    const startTime = this.resolveEventTime(event.start, fallbackTimezone);
+    const endTime = this.resolveEventTime(event.end, fallbackTimezone);
+    const timeZone =
+      event.start.timeZone ?? event.end.timeZone ?? fallbackTimezone ?? null;
+
+    return {
+      start: startTime.date,
+      end: endTime.date,
+      allDay: startTime.allDay || endTime.allDay,
+      timeZone,
+    };
+  }
+
+  private resolveEventTime(
+    time: CalendarProviderEventTime,
+    fallbackTimezone?: string
+  ) {
+    if (time.dateTime) {
+      return {
+        date: new Date(time.dateTime),
+        allDay: false,
+      };
+    }
+
+    const zone = time.timeZone ?? fallbackTimezone ?? 'UTC';
+    if (!time.date) {
+      throw new Error('Calendar provider returned all-day event without date');
+    }
+    return {
+      date: this.convertDateToUtc(time.date, zone),
+      allDay: true,
+    };
+  }
+
+  private resolveRecurrenceId(event: CalendarProviderEvent) {
+    if (event.originalStartTime?.dateTime) {
+      return event.originalStartTime.dateTime;
+    }
+    if (event.originalStartTime?.date) {
+      return event.originalStartTime.date;
+    }
+    return null;
+  }
+
+  private convertDateToUtc(dateString: string, timeZone: string) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    const offsetMinutes = this.getTimeZoneOffset(utcDate, timeZone);
+    return new Date(utcDate.getTime() - offsetMinutes * 60 * 1000);
+  }
+
+  private getTimeZoneOffset(date: Date, timeZone: string) {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const lookup = (type: string) => {
+      const part = parts.find(item => item.type === type);
+      return part ? Number(part.value) : 0;
+    };
+    const asUtc = Date.UTC(
+      lookup('year'),
+      lookup('month') - 1,
+      lookup('day'),
+      lookup('hour'),
+      lookup('minute'),
+      lookup('second')
+    );
+    return (asUtc - date.getTime()) / 60000;
+  }
+
+  private getSyncWindow() {
+    const now = this.now();
+    const timeMin = new Date(now);
+    const timeMax = new Date(now);
+    timeMin.setDate(timeMin.getDate() - DEFAULT_PAST_DAYS);
+    timeMax.setDate(timeMax.getDate() + DEFAULT_FUTURE_DAYS);
+
+    return {
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+    };
+  }
+
+  private async ensureAccessToken(
+    account: CalendarAccount,
+    claim?: { id: string; claimedUntil: Date }
+  ) {
+    const provider = this.providerFactory.get(
+      account.provider as CalendarProviderName
+    );
+    if (!provider) {
+      return { accessToken: null };
+    }
+
+    const decrypted = this.models.calendarAccount.decryptTokens(account);
+    const accessToken = decrypted.accessToken;
+    if (
+      accessToken &&
+      account.expiresAt &&
+      account.expiresAt.getTime() > this.nowMs() + TOKEN_REFRESH_SKEW_MS
+    ) {
+      return { accessToken };
+    }
+
+    if (!decrypted.refreshToken) {
+      return { accessToken };
+    }
+
+    const refreshed = await provider.refreshTokens(decrypted.refreshToken);
+    const save = () =>
+      this.models.calendarAccount.updateTokens(account.id, {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken ?? decrypted.refreshToken,
+        expiresAt: refreshed.expiresAt ?? null,
+        scope: refreshed.scope ?? null,
+        status: 'active',
+        lastError: null,
+      });
+    if (claim) {
+      const saved = await this.models.calendarSubscription.withSyncClaim(
+        claim.id,
+        claim.claimedUntil,
+        save
+      );
+      if (!saved) return { accessToken: null };
+    } else {
+      await save();
+    }
+
+    return { accessToken: refreshed.accessToken };
+  }
+
+  private isTokenInvalidError(error: unknown) {
+    if (error instanceof CalendarProviderRequestError) {
+      const status = error.data?.status ?? error.status;
+      if (status === 401) {
+        return true;
+      }
+      return error.message.includes('invalid_grant');
+    }
+    if (error instanceof Error) {
+      return error.message.includes('invalid_grant');
+    }
+    return false;
+  }
+
+  private isPushUnsupportedError(error: unknown) {
+    if (!(error instanceof CalendarProviderRequestError)) {
+      return false;
+    }
+
+    const status = error.data?.status ?? error.status;
+    if (status !== 400) return false;
+
+    return error.data?.message?.includes(
+      'pushNotSupportedForRequestedResource'
+    );
+  }
+
+  private requireProvider(name: CalendarProviderName) {
+    const provider = this.providerFactory.get(name);
+    if (!provider) {
+      throw new Error(`Calendar provider ${name} not configured`);
+    }
+    return provider;
+  }
+
+  private async ensureWebhookChannel(
+    subscription: {
+      id: string;
+      externalCalendarId: string;
+      displayName: string | null;
+      customChannelId: string | null;
+      customResourceId: string | null;
+      lastSyncAt: Date | null;
+      channelExpiration: Date | null;
+    },
+    provider: CalendarProvider,
+    accessToken: string,
+    claimedUntil: Date
+  ) {
+    if (!provider.watchCalendar) {
+      return;
+    }
+
+    const address = this.getWebhookAddress(provider.provider);
+    if (!address) {
+      return;
+    }
+
+    const renewThreshold = this.nowMs() + 24 * 60 * 60 * 1000;
+    if (
+      subscription.channelExpiration &&
+      subscription.channelExpiration.getTime() > renewThreshold
+    ) {
+      return;
+    }
+
+    if (
+      provider.stopChannel &&
+      subscription.customChannelId &&
+      subscription.customResourceId
+    ) {
+      try {
+        await provider.stopChannel({
+          accessToken,
+          channelId: subscription.customChannelId,
+          resourceId: subscription.customResourceId,
+        });
+      } catch (error) {
+        if (!this.isNotFoundError(error)) {
+          throw error;
+        }
+      }
+
+      await this.models.calendarSubscription.withSyncClaim(
+        subscription.id,
+        claimedUntil,
+        () =>
+          this.models.calendarSubscription.updateChannel(subscription.id, {
+            customChannelId: null,
+            customResourceId: null,
+            channelExpiration: null,
+          })
+      );
+    }
+
+    const channelId = randomUUID();
+    const token = this.getWebhookToken();
+    let result: Awaited<ReturnType<NonNullable<typeof provider.watchCalendar>>>;
+    try {
+      result = await provider.watchCalendar({
+        accessToken,
+        calendarId: subscription.externalCalendarId,
+        address,
+        token,
+        channelId,
+      });
+    } catch (error) {
+      if (!this.isPushUnsupportedError(error)) {
+        throw error;
+      }
+
+      await this.models.calendarSubscription.withSyncClaim(
+        subscription.id,
+        claimedUntil,
+        () =>
+          this.models.calendarSubscription.updateChannel(subscription.id, {
+            customChannelId: null,
+            customResourceId: null,
+            channelExpiration: UNSUPPORTED_PUSH_CHANNEL_EXPIRATION,
+          })
+      );
+      this.logger.log(
+        `Calendar subscription ${subscription.id} (${subscription.displayName ?? subscription.externalCalendarId}) does not support push notifications; falling back to polling`
+      );
+      return;
+    }
+
+    await this.models.calendarSubscription.withSyncClaim(
+      subscription.id,
+      claimedUntil,
+      () =>
+        this.models.calendarSubscription.updateChannel(subscription.id, {
+          customChannelId: result.channelId,
+          customResourceId: result.resourceId,
+          channelExpiration: result.expiration ?? null,
+        })
+    );
+  }
+
+  private async handleSubscriptionSyncFailure(params: {
+    claimedUntil: Date;
+    error: unknown;
+    subscription: {
+      id: string;
+      externalCalendarId: string;
+      syncRetryCount: number;
+      customChannelId: string | null;
+      customResourceId: string | null;
+      lastSyncAt: Date | null;
+    };
+    account: CalendarAccount;
+    provider: CalendarProvider;
+    accessToken?: string;
+    disableOnNotFound?: boolean;
+  }) {
+    if (params.disableOnNotFound && this.isNotFoundError(params.error)) {
+      await this.disableSubscription({
+        claimedUntil: params.claimedUntil,
+        subscriptionId: params.subscription.id,
+        provider: params.provider,
+        accessToken: params.accessToken,
+        customChannelId: params.subscription.customChannelId,
+        customResourceId: params.subscription.customResourceId,
+      });
+      this.logger.warn(
+        `Calendar subscription ${params.subscription.id} was disabled because provider returned 404 for calendar ${params.subscription.externalCalendarId}`
+      );
+      return;
+    }
+
+    if (this.isTokenInvalidError(params.error)) {
+      await this.models.calendarSubscription.withSyncClaim(
+        params.subscription.id,
+        params.claimedUntil,
+        () =>
+          this.models.calendarAccount.invalidateAndPurge(
+            params.account.id,
+            this.formatSyncError(params.error)
+          )
+      );
+      return;
+    }
+
+    const attempt = params.subscription.syncRetryCount + 1;
+    const nextRetryAt = this.calculateFailureRetryAt(attempt);
+    await this.models.calendarSubscription.completeSync(
+      params.subscription.id,
+      params.claimedUntil,
+      {
+        lastSyncAt: params.subscription.lastSyncAt,
+        nextSyncAt: nextRetryAt,
+        syncRetryCount: attempt,
+      }
+    );
+    this.logger.warn(
+      `Calendar sync failed for subscription ${params.subscription.id}, attempt ${attempt}, next retry at ${nextRetryAt.toISOString()}`,
+      this.toError(params.error)
+    );
+  }
+
+  private isNotFoundError(error: unknown) {
+    if (!(error instanceof CalendarProviderRequestError)) {
+      return false;
+    }
+    const status = error.data?.status ?? error.status;
+    return status === 404;
+  }
+
+  private async disableSubscription(params: {
+    claimedUntil: Date;
+    subscriptionId: string;
+    provider: CalendarProvider;
+    accessToken?: string;
+    customChannelId: string | null;
+    customResourceId: string | null;
+  }) {
+    if (
+      params.provider.stopChannel &&
+      params.accessToken &&
+      params.customChannelId &&
+      params.customResourceId
+    ) {
+      try {
+        await params.provider.stopChannel({
+          accessToken: params.accessToken,
+          channelId: params.customChannelId,
+          resourceId: params.customResourceId,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to stop webhook channel for disabled calendar subscription ${params.subscriptionId}`,
+          this.toError(error)
+        );
+      }
+    }
+
+    await this.models.calendarSubscription.withSyncClaim(
+      params.subscriptionId,
+      params.claimedUntil,
+      () =>
+        this.models.calendarSubscription.disableAndPurge(params.subscriptionId)
+    );
+  }
+
+  async enqueueSyncSubscription(
+    subscriptionId: string,
+    _reason: 'polling' | 'webhook' | 'on-demand'
+  ) {
+    await this.models.calendarSubscription.updateSync(subscriptionId, {
+      nextSyncAt: this.now(),
+    });
+  }
+
+  private calculateNextSyncAt(base: Date, refreshIntervalMinutes?: number) {
+    const intervalMinutes =
+      refreshIntervalMinutes ?? DEFAULT_REFRESH_INTERVAL_MINUTES;
+    return new Date(base.getTime() + intervalMinutes * 60 * 1000);
+  }
+
+  private calculateChannelRetryAt(nextSyncAt: Date) {
+    return new Date(
+      Math.min(nextSyncAt.getTime(), this.nowMs() + CHANNEL_RENEW_RETRY_MS)
+    );
+  }
+
+  private calculateFailureRetryAt(attempt: number) {
+    return new Date(
+      this.nowMs() +
+        exponentialBackoffDelay(attempt - 1, {
+          baseDelayMs: SYNC_FAILURE_BACKOFF_BASE_MS,
+          maxDelayMs: SYNC_FAILURE_BACKOFF_MAX_MS,
+        })
+    );
+  }
+
+  private now() {
+    return new Date(this.nowMs());
+  }
+
+  private nowMs() {
+    return Date.now();
+  }
+
+  private formatSyncError(error: unknown) {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return String(error);
+  }
+
+  private toError(error: unknown) {
+    if (error instanceof Error) {
+      return error;
+    }
+    return new Error(this.formatSyncError(error));
+  }
+}

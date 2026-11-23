@@ -4,6 +4,7 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
+import timber.log.Timber
 
 @CapacitorPlugin(name = "AIButton")
 class AIButtonPlugin : Plugin() {
@@ -15,13 +16,19 @@ class AIButtonPlugin : Plugin() {
 
     @PluginMethod
     fun present(call: PluginCall) {
-        (activity as? Callback)?.present()
-        call.resolve()
+        launch {
+            Timber.i("present AIButton")
+            (activity as? Callback)?.present()
+            call.resolve()
+        }
     }
 
     @PluginMethod
     fun dismiss(call: PluginCall) {
-        (activity as? Callback)?.dismiss()
-        call.resolve()
+        launch {
+            Timber.i("dismiss AIButton")
+            (activity as? Callback)?.dismiss()
+            call.resolve()
+        }
     }
 }

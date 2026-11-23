@@ -8,12 +8,20 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import GraphQLUpload, {
+  type FileUpload,
+} from 'graphql-upload/GraphQLUpload.mjs';
 
-import { ActionForbidden, Config } from '../../base';
+import { toBuffer, UseNamedGuard } from '../../base';
 import { CurrentUser } from '../../core/auth';
-import { AccessController } from '../../core/permission';
+import { Admin } from '../../core/common';
+import { PermissionAccess } from '../../core/permission';
 import { WorkspaceType } from '../../core/workspaces';
-import { SubscriptionRecurring } from '../payment/types';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '../payment/types';
 import { LicenseService } from './service';
 
 @ObjectType()
@@ -23,6 +31,9 @@ export class License {
 
   @Field(() => SubscriptionRecurring)
   recurring!: string;
+
+  @Field(() => SubscriptionVariant, { nullable: true })
+  variant!: string | null;
 
   @Field(() => Date)
   installedAt!: Date;
@@ -34,12 +45,48 @@ export class License {
   expiredAt!: Date | null;
 }
 
+@ObjectType()
+export class AdminLicensePreview {
+  @Field()
+  id!: string;
+
+  @Field()
+  workspaceId!: string;
+
+  @Field(() => SubscriptionPlan)
+  plan!: string;
+
+  @Field(() => SubscriptionRecurring)
+  recurring!: string;
+
+  @Field(() => Int)
+  quantity!: number;
+
+  @Field(() => Date)
+  issuedAt!: Date;
+
+  @Field(() => Date)
+  expiresAt!: Date;
+
+  @Field(() => Date)
+  endAt!: Date;
+
+  @Field()
+  entity!: string;
+
+  @Field()
+  issuer!: string;
+
+  @Field()
+  valid!: boolean;
+}
+
+@UseNamedGuard('selfhost')
 @Resolver(() => WorkspaceType)
 export class LicenseResolver {
   constructor(
-    private readonly config: Config,
     private readonly service: LicenseService,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => License, {
@@ -51,13 +98,6 @@ export class LicenseResolver {
     @CurrentUser() user: CurrentUser,
     @Parent() workspace: WorkspaceType
   ): Promise<License | null> {
-    // NOTE(@forehalo):
-    //   we can't simply disable license resolver for non-selfhosted server
-    //   it will make the gql codegen messed up.
-    if (!this.config.isSelfhosted) {
-      return null;
-    }
-
     await this.ac
       .user(user.id)
       .workspace(workspace.id)
@@ -71,10 +111,6 @@ export class LicenseResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('license') license: string
   ) {
-    if (!this.config.isSelfhosted) {
-      throw new ActionForbidden();
-    }
-
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
@@ -88,16 +124,12 @@ export class LicenseResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    if (!this.config.isSelfhosted) {
-      throw new ActionForbidden();
-    }
-
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
       .assert('Workspace.Payment.Manage');
 
-    return this.service.deactivateTeamLicense(workspaceId);
+    return this.service.removeTeamLicense(workspaceId);
   }
 
   @Mutation(() => String)
@@ -105,10 +137,6 @@ export class LicenseResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
   ) {
-    if (!this.config.isSelfhosted) {
-      throw new ActionForbidden();
-    }
-
     await this.ac
       .user(user.id)
       .workspace(workspaceId)
@@ -117,5 +145,38 @@ export class LicenseResolver {
     const { url } = await this.service.createCustomerPortal(workspaceId);
 
     return url;
+  }
+
+  @Mutation(() => License)
+  async installLicense(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string,
+    @Args('license', { type: () => GraphQLUpload }) licenseFile: FileUpload
+  ) {
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Payment.Manage');
+
+    const buffer = await toBuffer(licenseFile.createReadStream());
+
+    const license = await this.service.installLicense(workspaceId, buffer);
+
+    return license;
+  }
+}
+
+@Admin()
+@Resolver(() => AdminLicensePreview)
+export class AdminLicenseResolver {
+  constructor(private readonly service: LicenseService) {}
+
+  @Mutation(() => AdminLicensePreview)
+  async previewLicense(
+    @Args('license', { type: () => GraphQLUpload }) licenseFile: FileUpload
+  ) {
+    const buffer = await toBuffer(licenseFile.createReadStream());
+
+    return this.service.previewLicense(buffer);
   }
 }

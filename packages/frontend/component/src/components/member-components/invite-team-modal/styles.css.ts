@@ -81,6 +81,12 @@ export const modalSubTitle = style({
   fontWeight: '500',
 });
 
+export const invitationLinkContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+});
+
 export const radioItem = style({
   display: 'flex',
   alignItems: 'center',
@@ -106,4 +112,9 @@ export const contentStyle = style({
 export const invitationLinkContent = style({
   display: 'flex',
   gap: '8px',
+});
+
+export const invitationLinkDescription = style({
+  color: cssVarV2('text/secondary'),
+  fontSize: cssVar('fontSm'),
 });

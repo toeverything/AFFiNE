@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { UserAvatarController } from './controller';
-import { UserEventsListener } from './event';
+import { UserRealtimeProvider } from './realtime';
 import {
   UserManagementResolver,
   UserResolver,
@@ -15,8 +15,8 @@ import {
   providers: [
     UserResolver,
     UserManagementResolver,
-    UserEventsListener,
     UserSettingsResolver,
+    UserRealtimeProvider,
   ],
   controllers: [UserAvatarController],
 })

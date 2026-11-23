@@ -1,7 +1,0 @@
-mutation addContextCategory($options: AddRemoveContextCategoryInput!) {
-  addContextCategory(options: $options) {
-    id
-    createdAt
-    type
-  }
-}

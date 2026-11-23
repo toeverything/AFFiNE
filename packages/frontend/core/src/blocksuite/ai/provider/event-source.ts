@@ -1,4 +1,5 @@
-import { handleError } from './copilot-client';
+import { handleError } from '../runtime/request/copilot-client';
+import { RequestTimeoutError } from './error';
 
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -85,7 +86,7 @@ export function toTextStream(
                   messagePromise,
                   delay(timeout).then(() => {
                     if (!signal?.aborted) {
-                      throw new Error('Timeout');
+                      throw new RequestTimeoutError();
                     }
                   }),
                 ])

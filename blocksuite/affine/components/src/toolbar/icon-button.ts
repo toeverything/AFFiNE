@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { Placement } from '@floating-ui/dom';
 import type { TemplateResult } from 'lit';
 import { css, html, LitElement, nothing } from 'lit';
@@ -19,7 +20,7 @@ export class EditorIconButton extends LitElement {
       display: flex;
       align-items: center;
       padding: var(--icon-container-padding);
-      color: var(--affine-icon-color);
+      color: ${unsafeCSSVarV2('icon/primary')};
       border-radius: 4px;
       cursor: pointer;
       white-space: nowrap;
@@ -57,7 +58,7 @@ export class EditorIconButton extends LitElement {
       padding: 0 4px;
       overflow: hidden;
       white-space: nowrap;
-      line-height: var(--label-height, inherit);
+      line-height: var(--label-height, var(--icon-size, 20px));
     }
     ::slotted(.label.padding0) {
       padding: 0;

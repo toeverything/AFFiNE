@@ -95,13 +95,6 @@ export function effect(...args: any[]) {
 
   function subscribe() {
     subscription = subject$.pipe.apply(subject$, args as any).subscribe({
-      next(value) {
-        const error = new EffectError('should not emit value', value);
-        // make a uncaught exception
-        setTimeout(() => {
-          throw error;
-        }, 0);
-      },
       complete() {
         const error = new EffectError('effect unexpected complete');
         // make a uncaught exception

@@ -1,13 +1,14 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { PlusIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, type TemplateResult } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
+import { cellDivider } from '../styles.js';
 import type { TableSingleView } from '../table-view-manager.js';
 
 export class MobileTableHeader extends SignalWatcher(
@@ -60,7 +61,7 @@ export class MobileTableHeader extends SignalWatcher(
                 .column="${column}"
                 .tableViewManager="${this.tableViewManager}"
               ></mobile-table-column-header>
-              <div class="cell-divider" style="height: auto;"></div>
+              <div class="${cellDivider}" style="height: auto;"></div>
             `;
           }
         )}

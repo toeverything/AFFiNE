@@ -21,7 +21,7 @@ export const AppSidebarJournalButton = () => {
   return (
     <MenuLinkItem
       data-testid="slider-bar-journals-button"
-      active={isJournal}
+      active={isJournal || location.pathname.startsWith('/journals')}
       to={'/journals'}
       icon={<Icon />}
     >

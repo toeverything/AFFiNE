@@ -9,10 +9,18 @@ export class IntegrationPropertyService extends Service {
     super();
   }
 
+  integrationType$ = this.docService.doc.properties$.selector(
+    p => p.integrationType
+  );
+
   schema$ = this.docService.doc.properties$
     .selector(p => p.integrationType)
     .map(type => (type ? INTEGRATION_PROPERTY_SCHEMA[type] : null));
 
+  integrationProperty$(
+    type: IntegrationType,
+    key: string
+  ): LiveData<Record<string, any> | undefined | null>;
   integrationProperty$<
     T extends IntegrationType,
     Key extends keyof IntegrationDocPropertiesMap[T],

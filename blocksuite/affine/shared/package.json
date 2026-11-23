@@ -3,7 +3,7 @@
   "description": "Default BlockSuite editable blocks.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
@@ -11,24 +11,24 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/affine-model": "workspace:*",
-    "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.6",
-    "@blocksuite/inline": "workspace:*",
+    "@blocksuite/icons": "^2.2.17",
+    "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
-    "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.12",
+    "@toeverything/theme": "^1.1.23",
+    "@types/bytes": "^3.1.5",
     "@types/hast": "^3.0.4",
     "@types/lodash-es": "^4.17.12",
     "@types/mdast": "^4.0.4",
-    "dompurify": "^3.2.4",
+    "bytes": "^3.1.2",
+    "dompurify": "^3.4.11",
     "fractional-indexing": "^3.2.0",
     "lit": "^3.2.0",
-    "lodash-es": "^4.17.21",
+    "lodash-es": "^4.17.23",
     "mdast-util-gfm-autolink-literal": "^2.0.1",
-    "mdast-util-gfm-footnote": "^2.0.0",
+    "mdast-util-gfm-footnote": "^2.1.0",
     "mdast-util-gfm-strikethrough": "^2.0.0",
     "mdast-util-gfm-table": "^2.0.0",
     "mdast-util-gfm-task-list-item": "^2.0.0",
@@ -38,16 +38,20 @@
     "micromark-extension-gfm-table": "^2.1.0",
     "micromark-extension-gfm-task-list-item": "^2.1.0",
     "micromark-util-combine-extensions": "^2.0.0",
-    "minimatch": "^10.0.1",
+    "pdfmake": "^0.2.20",
+    "quick-lru": "^7.3.0",
     "rehype-parse": "^9.0.0",
     "rehype-stringify": "^10.0.0",
     "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "rxjs": "^7.8.1",
+    "rxjs": "^7.8.2",
+    "tldts": "^7.0.19",
+    "ts-pattern": "^5.1.0",
     "unified": "^11.0.5",
-    "yjs": "^13.6.21",
-    "zod": "^3.23.8"
+    "unist-util-visit": "^5.0.0",
+    "yjs": "^13.6.27",
+    "zod": "^3.25.76"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -59,7 +63,8 @@
     "./theme": "./src/theme/index.ts",
     "./styles": "./src/styles/index.ts",
     "./services": "./src/services/index.ts",
-    "./adapters": "./src/adapters/index.ts"
+    "./adapters": "./src/adapters/index.ts",
+    "./test-utils": "./src/test-utils/index.ts"
   },
   "files": [
     "src",
@@ -68,7 +73,8 @@
     "!dist/__tests__"
   ],
   "devDependencies": {
-    "vitest": "3.0.8"
+    "@types/pdfmake": "^0.2.12",
+    "vitest": "^4.1.11"
   },
-  "version": "0.20.0"
+  "version": "0.27.5"
 }

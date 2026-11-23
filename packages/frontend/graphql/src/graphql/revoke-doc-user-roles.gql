@@ -1,3 +1,0 @@
-mutation revokeDocUserRoles($input: RevokeDocUserRoleInput!) {
-  revokeDocUserRoles(input: $input)
-}

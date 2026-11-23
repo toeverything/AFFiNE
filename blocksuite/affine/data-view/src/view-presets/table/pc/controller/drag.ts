@@ -4,20 +4,20 @@ import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import type { ReactiveController } from 'lit';
 
 import { startDrag } from '../../../../core/utils/drag.js';
-import { TableRow } from '../row/row.js';
-import type { DataViewTable } from '../table-view.js';
+import { TableRowView } from '../row/row.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class TableDragController implements ReactiveController {
-  dragStart = (row: TableRow, evt: PointerEvent) => {
-    const eleRect = row.getBoundingClientRect();
+  dragStart = (rowView: TableRowView, evt: PointerEvent) => {
+    const eleRect = rowView.getBoundingClientRect();
     const offsetLeft = evt.x - eleRect.left;
     const offsetTop = evt.y - eleRect.top;
     const preview = createDragPreview(
-      row,
+      rowView,
       evt.x - offsetLeft,
       evt.y - offsetTop
     );
-    const fromGroup = row.groupKey;
+    const fromGroup = rowView.groupKey;
 
     startDrag<
       | undefined
@@ -32,13 +32,13 @@ export class TableDragController implements ReactiveController {
       onDrag: () => undefined,
       onMove: evt => {
         preview.display(evt.x - offsetLeft, evt.y - offsetTop);
-        if (!this.host.contains(evt.target as Node)) {
-          const callback = this.host.props.onDrag;
+        if (!this.host?.contains(evt.target as Node)) {
+          const callback = this.logic.root.config.onDrag;
           if (callback) {
             this.dropPreview.remove();
             return {
               type: 'out',
-              callback: callback(evt, row.rowId),
+              callback: callback(evt, rowView.rowId),
             };
           }
           return;
@@ -66,12 +66,8 @@ export class TableDragController implements ReactiveController {
           return;
         }
         if (result.type === 'self') {
-          this.host.props.view.rowMove(
-            row.rowId,
-            result.position,
-            fromGroup,
-            result.groupKey
-          );
+          const row = this.logic.view.rowGetOrCreate(rowView.rowId);
+          row.move(result.position, fromGroup, result.groupKey);
         }
       },
     });
@@ -92,9 +88,9 @@ export class TableDragController implements ReactiveController {
     | undefined => {
     const y = evt.y;
     const tableRect = this.host
-      .querySelector('affine-data-view-table-group')
+      ?.querySelector('affine-data-view-table-group')
       ?.getBoundingClientRect();
-    const rows = this.host.querySelectorAll('data-view-table-row');
+    const rows = this.host?.querySelectorAll('data-view-table-row');
     if (!rows || !tableRect || y < tableRect.top) {
       return;
     }
@@ -128,21 +124,23 @@ export class TableDragController implements ReactiveController {
     return position;
   };
 
-  constructor(private readonly host: DataViewTable) {
-    this.host.addController(this);
+  constructor(private readonly logic: TableViewUILogic) {}
+
+  get host() {
+    return this.logic.ui$.value;
   }
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
-      return;
-    }
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
+    this.host?.disposables.add(
+      this.logic.handleEvent('dragStart', context => {
+        if (this.logic.view.readonly$.value) {
+          return;
+        }
         const event = context.get('pointerState').raw;
         const target = event.target;
         if (
           target instanceof Element &&
-          this.host.contains(target) &&
+          this.host?.contains(target) &&
           target.closest('.data-view-table-view-drag-handler')
         ) {
           event.preventDefault();
@@ -159,13 +157,12 @@ export class TableDragController implements ReactiveController {
   }
 }
 
-const createDragPreview = (row: TableRow, x: number, y: number) => {
+const createDragPreview = (row: TableRowView, x: number, y: number) => {
   const div = document.createElement('div');
-  const cloneRow = new TableRow();
-  cloneRow.view = row.view;
+  const cloneRow = new TableRowView();
   cloneRow.rowIndex = row.rowIndex;
   cloneRow.rowId = row.rowId;
-  cloneRow.dataViewEle = row.dataViewEle;
+  cloneRow.tableViewLogic = row.tableViewLogic;
   div.append(cloneRow);
   div.className = 'with-data-view-css-variable';
   div.style.width = `${row.getBoundingClientRect().width}px`;

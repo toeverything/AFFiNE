@@ -5,7 +5,6 @@ import {
   type PopupTarget,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
   ArrowDownSmallIcon,
@@ -15,8 +14,10 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
-import { css, html, nothing, type TemplateResult } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, nothing, type TemplateResult, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -162,17 +163,17 @@ export class FilterGroupView extends SignalWatcher(ShadowlessElement) {
     }
 
     .filter-group-border {
-      border: 1px dashed var(--affine-border-color);
+      border: 1px dashed ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .filter-group-bg-1 {
       background-color: var(--affine-background-secondary-color);
-      border: 1px solid var(--affine-border-color);
+      border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .filter-group-bg-2 {
       background-color: var(--affine-background-tertiary-color);
-      border: 1px solid var(--affine-border-color);
+      border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .hover-style {
@@ -373,25 +374,27 @@ export class FilterGroupView extends SignalWatcher(ShadowlessElement) {
             <div
               style="flex:1;display:flex;align-items:start;justify-content: space-between;gap: 8px;"
             >
-              ${filter.type === 'filter'
-                ? html`
-                    <filter-condition-view
-                      .vars="${this.vars}"
-                      .index="${i}"
-                      .value="${this.conditions$}"
-                      .onChange="${this.setConditions}"
-                    ></filter-condition-view>
-                  `
-                : html`
-                    <filter-group-view
-                      class="${groupClassList}"
-                      style="width: 100%;"
-                      .depth="${this.depth + 1}"
-                      .onChange="${(v: Filter) => this._setFilter(i, v)}"
-                      .vars="${this.vars}"
-                      .filterGroup="${computed(() => filter)}"
-                    ></filter-group-view>
-                  `}
+              ${
+                filter.type === 'filter'
+                  ? html`
+                      <filter-condition-view
+                        .vars="${this.vars}"
+                        .index="${i}"
+                        .value="${this.conditions$}"
+                        .onChange="${this.setConditions}"
+                      ></filter-condition-view>
+                    `
+                  : html`
+                      <filter-group-view
+                        class="${groupClassList}"
+                        style="width: 100%;"
+                        .depth="${this.depth + 1}"
+                        .onChange="${(v: Filter) => this._setFilter(i, v)}"
+                        .vars="${this.vars}"
+                        .filterGroup="${computed(() => filter)}"
+                      ></filter-group-view>
+                    `
+              }
               <div class="filter-group-item-ops" @click="${clickOps}">
                 ${MoreHorizontalIcon()}
               </div>

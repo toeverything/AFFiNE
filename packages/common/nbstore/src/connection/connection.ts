@@ -21,9 +21,9 @@ export interface Connection<T = any> {
   ): () => void;
 }
 
-export abstract class AutoReconnectConnection<T = any>
-  implements Connection<T>
-{
+export abstract class AutoReconnectConnection<
+  T = any,
+> implements Connection<T> {
   private readonly event = new EventEmitter2({
     maxListeners: 100,
   });
@@ -31,6 +31,9 @@ export abstract class AutoReconnectConnection<T = any>
   private _status: ConnectionStatus = 'idle';
   private _error: Error | undefined = undefined;
   retryDelay = 3000;
+  maxRetryDelay = 60000;
+  connectingTimeout = 15000;
+  private retryCount = 0;
   private refCount = 0;
   private connectingAbort?: AbortController;
   private reconnectingAbort?: AbortController;
@@ -89,12 +92,20 @@ export abstract class AutoReconnectConnection<T = any>
   private innerConnect() {
     if (this.status !== 'connecting') {
       this.setStatus('connecting');
-      this.connectingAbort = new AbortController();
-      const signal = this.connectingAbort.signal;
+      const connectingAbort = new AbortController();
+      this.connectingAbort = connectingAbort;
+      const signal = connectingAbort.signal;
+      const timeout = setTimeout(() => {
+        if (!signal.aborted) {
+          this.handleError(new Error('connecting timeout'));
+        }
+      }, this.connectingTimeout);
       this.doConnect(signal)
         .then(value => {
+          clearTimeout(timeout);
           if (!signal.aborted) {
             this._inner = value;
+            this.retryCount = 0;
             this.setStatus('connected');
           } else {
             try {
@@ -106,6 +117,7 @@ export abstract class AutoReconnectConnection<T = any>
         })
         .catch(error => {
           if (!signal.aborted) {
+            clearTimeout(timeout);
             console.error('failed to connect', error);
             this.handleError(error as any);
           }
@@ -132,16 +144,28 @@ export abstract class AutoReconnectConnection<T = any>
     // on error
     console.error('connection error, will reconnect', reason);
     this.innerDisconnect();
+    // if the connection is closed, do not reconnect
+    if (this.status === 'closed') {
+      return;
+    }
     this.setStatus('error', reason);
     // reconnect
 
     this.reconnectingAbort = new AbortController();
     const signal = this.reconnectingAbort.signal;
-    setTimeout(() => {
+    const retryDelay = this.getRetryDelay(this.retryCount++);
+    const timeout = setTimeout(() => {
       if (!signal.aborted) {
         this.innerConnect();
       }
-    }, this.retryDelay);
+    }, retryDelay);
+    signal.addEventListener('abort', () => {
+      clearTimeout(timeout);
+    });
+  }
+
+  protected getRetryDelay(retryCount: number) {
+    return Math.min(this.retryDelay * 2 ** retryCount, this.maxRetryDelay);
   }
 
   connect() {
@@ -159,6 +183,7 @@ export abstract class AutoReconnectConnection<T = any>
     }
     if (this.refCount === 0) {
       this.innerDisconnect();
+      this.retryCount = 0;
       this.setStatus('closed');
     }
   }
@@ -170,17 +195,27 @@ export abstract class AutoReconnectConnection<T = any>
         return;
       }
 
+      if (signal?.aborted) {
+        reject(signal.reason);
+        return;
+      }
+
       const off = this.onStatusChanged(status => {
         if (status === 'connected') {
           resolve();
-          off();
+          cleanup();
         }
       });
 
-      signal?.addEventListener('abort', reason => {
-        reject(reason);
+      const onAbort = () => {
+        reject(signal?.reason);
+        cleanup();
+      };
+      const cleanup = () => {
         off();
-      });
+        signal?.removeEventListener('abort', onAbort);
+      };
+      signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 

@@ -1,3 +1,4 @@
+import type { ServiceProvider } from '@blocksuite/global/di';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 
 import {
@@ -73,7 +74,10 @@ export abstract class BaseAdapter<AdapterTarget = unknown> {
     return this.job.adapterConfigs;
   }
 
-  constructor(job: Transformer) {
+  constructor(
+    job: Transformer,
+    readonly provider: ServiceProvider
+  ) {
     this.job = job;
   }
 

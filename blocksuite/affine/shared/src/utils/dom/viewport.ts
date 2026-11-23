@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/std';
 
 /**
  * Get editor viewport element.

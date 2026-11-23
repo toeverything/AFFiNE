@@ -7,6 +7,7 @@ import {
   nativeImage,
   Tray,
 } from 'electron';
+import { map, shareReplay } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
 import { applicationMenuSubjects } from '../application-menu';
@@ -14,15 +15,18 @@ import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
   appGroups$,
-  pauseRecording,
-  recordingStatus$,
-  resumeRecording,
+  checkCanRecordMeeting,
+  checkRecordingAvailable,
+  getCurrentRecordingStatus,
+  MeetingsSettingsState,
   startRecording,
   stopRecording,
-} from '../recording';
-import { getMainWindow } from '../windows-manager';
+  updateApplicationsPing$,
+} from '../recording/feature';
+import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
+import { globalStateStorage } from '../shared-storage/storage';
+import { showMainWindow } from '../windows-manager';
 import { icons } from './icons';
-
 export interface TrayMenuConfigItem {
   label: string;
   click?: () => void;
@@ -39,12 +43,10 @@ interface TrayMenuProvider {
   getConfig(): TrayMenuConfig;
 }
 
-function showMainWindow() {
-  getMainWindow()
-    .then(w => {
-      w.show();
-    })
-    .catch(err => logger.error('Failed to show main window:', err));
+function activateMainWindow() {
+  void showMainWindow().catch(err => {
+    logger.error('Failed to show main window:', err);
+  });
 }
 
 function buildMenuConfig(config: TrayMenuConfig): MenuItemConstructorOptions[] {
@@ -62,6 +64,10 @@ function buildMenuConfig(config: TrayMenuConfig): MenuItemConstructorOptions[] {
       }
       if (nativeIcon) {
         nativeIcon = nativeIcon.resize({ width: 20, height: 20 });
+        // string icon should be template image
+        if (typeof icon === 'string') {
+          nativeIcon.setTemplateImage(true);
+        }
       }
       const submenuConfig = submenu ? buildMenuConfig(submenu) : undefined;
       menuConfig.push({
@@ -75,19 +81,20 @@ function buildMenuConfig(config: TrayMenuConfig): MenuItemConstructorOptions[] {
   return menuConfig;
 }
 
-class TrayState {
+class TrayState implements Disposable {
   tray: Tray | null = null;
 
   // tray's icon
   icon: NativeImage = nativeImage
     .createFromPath(icons.tray)
-    .resize({ width: 16, height: 16 });
+    .resize({ width: 18, height: 18 });
 
   // tray's tooltip
   tooltip: string = 'AFFiNE';
 
   constructor() {
     this.icon.setTemplateImage(true);
+    this.init();
   }
 
   // sorry, no idea on better naming
@@ -100,7 +107,7 @@ class TrayState {
           icon: icons.journal,
           click: () => {
             logger.info('User action: Open Journal');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.openJournal$.next();
           },
         },
@@ -109,7 +116,7 @@ class TrayState {
           icon: icons.page,
           click: () => {
             logger.info('User action: New Page');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('page');
           },
         },
@@ -118,7 +125,7 @@ class TrayState {
           icon: icons.edgeless,
           click: () => {
             logger.info('User action: New Edgeless');
-            showMainWindow();
+            activateMainWindow();
             applicationMenuSubjects.newPageAction$.next('edgeless');
           },
         },
@@ -126,82 +133,117 @@ class TrayState {
     };
   }
 
-  getRecordingMenuProvider(): TrayMenuProvider {
-    const appGroups = appGroups$.value;
-    const runningAppGroups = appGroups.filter(appGroup => appGroup.isRunning);
-
-    const recordingStatus = recordingStatus$.value;
-
-    if (!recordingStatus || recordingStatus?.status === 'stopped') {
-      return {
-        key: 'recording',
-        getConfig: () => [
-          {
-            label: 'Start Recording Meeting',
-            icon: icons.record,
-            submenu: [
-              {
-                label: 'System audio (all audio will be recorded)',
-                icon: icons.monitor,
-                click: () => {
-                  logger.info(
-                    'User action: Start Recording Meeting (System audio)'
-                  );
-                  startRecording();
-                },
-              },
-              ...runningAppGroups.map(appGroup => ({
-                label: appGroup.name,
-                icon: appGroup.icon || undefined,
-                click: () => {
-                  logger.info(
-                    `User action: Start Recording Meeting (${appGroup.name})`
-                  );
-                  startRecording(appGroup);
-                },
-              })),
-            ],
-          },
-        ],
-      };
+  getRecordingMenuProvider(): TrayMenuProvider | null {
+    if (!checkRecordingAvailable()) {
+      return null;
     }
 
-    const recordingLabel = recordingStatus.appGroup?.name
-      ? `Recording (${recordingStatus.appGroup?.name})`
-      : 'Recording';
-
-    // recording is either started or paused
-    return {
-      key: 'recording',
-      getConfig: () => [
-        {
-          label: recordingLabel,
-          icon: icons.recording,
+    const getConfig = () => {
+      const items: TrayMenuConfig = [];
+      if (!MeetingsSettingsState.value.enabled) {
+        items.push({
+          label: 'Meetings are disabled',
           disabled: true,
-        },
-        recordingStatus.status === 'paused'
-          ? {
-              label: 'Resume',
+        });
+      } else if (!checkCanRecordMeeting()) {
+        items.push({
+          label: 'Required permissions not granted',
+          disabled: true,
+        });
+      } else {
+        const appGroups = appGroups$.value;
+        const runningAppGroups = appGroups.filter(
+          appGroup => appGroup.isRunning
+        );
+
+        const recordingStatus = getCurrentRecordingStatus();
+
+        if (
+          !recordingStatus ||
+          (recordingStatus.status !== 'starting' &&
+            recordingStatus.status !== 'recording' &&
+            recordingStatus.status !== 'finalizing')
+        ) {
+          const appMenuItems = runningAppGroups.map(appGroup => ({
+            label: appGroup.name,
+            icon: appGroup.icon || undefined,
+            click: () => {
+              logger.info(
+                `User action: Start Recording Meeting (${appGroup.name})`
+              );
+              startRecording(appGroup).catch(err => {
+                logger.error('Failed to start recording:', err);
+              });
+            },
+          }));
+
+          items.push(
+            {
+              label: 'Start Recording Meeting',
+              icon: icons.record,
+              submenu: [
+                {
+                  label: 'System audio (all audio will be recorded)',
+                  icon: icons.monitor,
+                  click: () => {
+                    logger.info(
+                      'User action: Start Recording Meeting (System audio)'
+                    );
+                    startRecording().catch(err => {
+                      logger.error('Failed to start recording:', err);
+                    });
+                  },
+                },
+                ...appMenuItems,
+              ],
+            },
+            ...appMenuItems
+          );
+        } else {
+          const recordingLabel = recordingStatus.appName
+            ? `Recording (${recordingStatus.appName})`
+            : 'Recording';
+
+          // recording is active
+          items.push(
+            {
+              label: recordingLabel,
+              icon: icons.recording,
+              disabled: true,
+            },
+            {
+              label: 'Stop',
+              disabled: recordingStatus.status !== 'recording',
               click: () => {
-                logger.info('User action: Resume Recording');
-                resumeRecording();
+                logger.info('User action: Stop Recording');
+                if (recordingStatus.status === 'recording') {
+                  stopRecording(recordingStatus.id).catch(err => {
+                    logger.error('Failed to stop recording:', err);
+                  });
+                }
               },
             }
-          : {
-              label: 'Pause',
-              click: () => {
-                logger.info('User action: Pause Recording');
-                pauseRecording();
-              },
-            },
-        {
-          label: 'Stop',
+          );
+        }
+      }
+      if (checkRecordingAvailable()) {
+        items.push({
+          label: `Meetings Settings...`,
           click: () => {
-            logger.info('User action: Stop Recording');
-            stopRecording();
+            activateMainWindow();
+            applicationMenuSubjects.openInSettingModal$.next({
+              activeTab: 'meetings',
+            });
           },
-        },
-      ],
+        });
+      }
+
+      return items;
+    };
+
+    return {
+      key: 'recording',
+      getConfig,
     };
   }
 
@@ -213,13 +255,26 @@ class TrayState {
           label: 'Open AFFiNE',
           click: () => {
             logger.info('User action: Open AFFiNE');
-            getMainWindow()
-              .then(w => {
-                w.show();
-              })
-              .catch(err => {
-                logger.error('Failed to open AFFiNE:', err);
-              });
+            activateMainWindow();
+          },
+        },
+        {
+          label: 'Menubar settings...',
+          click: () => {
+            activateMainWindow();
+            applicationMenuSubjects.openInSettingModal$.next({
+              activeTab: 'appearance',
+              scrollAnchor: 'menubar',
+            });
+          },
+        },
+        {
+          label: `About ${app.getName()}`,
+          click: () => {
+            activateMainWindow();
+            applicationMenuSubjects.openInSettingModal$.next({
+              activeTab: 'about',
+            });
           },
         },
         'separator',
@@ -248,6 +303,12 @@ class TrayState {
     return menu;
   }
 
+  disposables: (() => void)[] = [];
+
+  [Symbol.dispose]() {
+    this.disposables.forEach(d => d());
+  }
+
   update() {
     if (!this.tray) {
       this.tray = new Tray(this.icon);
@@ -256,16 +317,24 @@ class TrayState {
         logger.debug('User clicked on tray icon');
         this.update();
         if (!isMacOS()) {
-          this.tray?.popUpContextMenu();
+          if (
+            TraySettingsState.value.enabled &&
+            TraySettingsState.value.openOnLeftClick
+          ) {
+            activateMainWindow();
+          } else {
+            this.tray?.popUpContextMenu();
+          }
         }
+        updateApplicationsPing$.next(Date.now());
       };
       this.tray.on('click', clickHandler);
       const appGroupsSubscription = appGroups$.subscribe(() => {
         logger.debug('App groups updated, refreshing tray menu');
         this.update();
       });
-      beforeAppQuit(() => {
-        logger.info('Cleaning up tray before app quit');
+
+      this.disposables.push(() => {
         this.tray?.off('click', clickHandler);
         this.tray?.destroy();
         appGroupsSubscription.unsubscribe();
@@ -274,7 +343,7 @@ class TrayState {
 
     const providers = [
       this.getPrimaryMenuProvider(),
-      isMacOS() ? this.getRecordingMenuProvider() : null,
+      this.getRecordingMenuProvider(),
       this.getSecondaryMenuProvider(),
     ].filter(p => p !== null);
 
@@ -288,12 +357,39 @@ class TrayState {
   }
 }
 
-let _trayState: TrayState | undefined;
+const TraySettingsState = {
+  $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
+    map(v => MenubarStateSchema.parse(v ?? {})),
+    shareReplay(1)
+  ),
 
-export const getTrayState = () => {
-  if (!_trayState) {
+  get value() {
+    return MenubarStateSchema.parse(
+      globalStateStorage.get(MenubarStateKey) ?? {}
+    );
+  },
+};
+
+export const setupTrayState = () => {
+  let _trayState: TrayState | undefined;
+  if (TraySettingsState.value.enabled) {
     _trayState = new TrayState();
-    _trayState.init();
   }
-  return _trayState;
+
+  const updateTrayState = (state: MenubarStateSchema) => {
+    if (state.enabled) {
+      if (!_trayState) {
+        _trayState = new TrayState();
+      }
+    } else {
+      _trayState?.[Symbol.dispose]();
+      _trayState = undefined;
+    }
+  };
+
+  const subscription = TraySettingsState.$.subscribe(updateTrayState);
+
+  beforeAppQuit(() => {
+    subscription.unsubscribe();
+  });
 };

@@ -3,9 +3,9 @@ import {
   handleInlineAskAIAction,
   pageAIGroups,
 } from '@affine/core/blocksuite/ai';
+import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { DocsService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { TemplateDocService } from '@affine/core/modules/template-doc';
 import {
   TemplateListMenu,
@@ -59,7 +59,6 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
   const t = useI18n();
 
   const templateDocService = useService(TemplateDocService);
-  const featureFlagService = useService(FeatureFlagService);
   const docsService = useService(DocsService);
   const editorService = useService(EditorService);
 
@@ -71,7 +70,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
       [doc.id, templateDocService.list]
     )
   );
-  const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
+  const enableAI = useEnableAI();
 
   const handleSelectTemplate = useAsyncCallback(
     async (templateId: string) => {
@@ -96,7 +95,7 @@ const StarterBarNotEmpty = ({ doc }: { doc: Store }) => {
     const std = editorService.editor.editorContainer$.value?.std;
     if (!std) return;
 
-    const rootBlockId = std.host.doc.root?.id;
+    const rootBlockId = std.host.store.root?.id;
     if (!rootBlockId) return;
 
     const rootComponent = std.view.getBlock(rootBlockId);

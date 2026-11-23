@@ -12,8 +12,9 @@ import { when } from 'lit-html/directives/when.js';
 import type { EditorMenuButton } from '../toolbar/menu-button';
 import type { PickColorEvent } from './types';
 import {
+  calcCustomButtonStyle,
   keepColor,
-  packColorsWithColorScheme,
+  packColorsWith,
   preprocessColor,
   rgbaToHex8,
 } from './utils.js';
@@ -35,39 +36,20 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
   };
 
   get colorWithoutAlpha() {
-    return this.isCSSVariable ? this.color : keepColor(this.color);
-  }
-
-  get customButtonStyle() {
-    let b = 'transparent';
-    let c = 'transparent';
-
-    if (!this.isCustomColor) {
-      return { '--b': b, '--c': c };
-    }
-
-    if (this.isCSSVariable) {
-      if (!this.color.endsWith('transparent')) {
-        b = 'var(--affine-background-overlay-panel-color)';
-        c = keepColor(
-          rgbaToHex8(
+    return keepColor(
+      this.color.startsWith('--')
+        ? rgbaToHex8(
             preprocessColor(window.getComputedStyle(this))({
               type: 'normal',
               value: this.color,
             }).rgba
           )
-        );
-      }
-    } else {
-      b = 'var(--affine-background-overlay-panel-color)';
-      c = keepColor(this.color);
-    }
-
-    return { '--b': b, '--c': c };
+        : this.color
+    );
   }
 
-  get isCSSVariable() {
-    return this.color.startsWith('--');
+  get customButtonStyle() {
+    return calcCustomButtonStyle(this.color, this.isCustomColor, this);
   }
 
   get isCustomColor() {
@@ -160,7 +142,7 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
           [
             'custom',
             () => {
-              const packed = packColorsWithColorScheme(
+              const packed = packColorsWith(
                 this.theme,
                 this.color,
                 this.originalColor

@@ -5,14 +5,16 @@ plugins {
 
 dependencies {
     implementation libs.apollo.api
+    implementation libs.apollo.adapters.core
+    implementation libs.apollo.adapters.kotlinx.datetime
+    api libs.kotlinx.datetime
 }
 
 apollo {
     service("affine") {
+        srcDir("../../../../../common/graphql/src/graphql")
+        schemaFiles.from("../../../../../backend/server/src/schema.gql")
         packageName.set("com.affine.pro.graphql")
-        introspection {
-            endpointUrl.set("https://app.affine.pro/graphql")
-            schemaFile.set(file("src/main/graphql/affine/schema.graphqls"))
-        }
+        mapScalar("DateTime", "kotlinx.datetime.Instant", "com.apollographql.adapter.datetime.KotlinxInstantAdapter")
     }
 }

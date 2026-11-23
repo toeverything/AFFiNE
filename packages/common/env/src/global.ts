@@ -16,7 +16,10 @@ export function setupGlobal() {
     isPwa: false,
     isMobile: false,
     isSelfHosted: false,
+    // publicPath is the root of assets files
     publicPath: '/',
+    // subPath is the path to access the affine service
+    subPath: '',
   };
 
   if (globalThis.navigator) {

@@ -9,8 +9,9 @@
   "references": [
     { "path": "../../component" },
     { "path": "../../core" },
-    { "path": "../../i18n" },
+    { "path": "../../../common/env" },
     { "path": "../../../common/nbstore" },
+    { "path": "../../track" },
     { "path": "../../../../blocksuite/affine/all" },
     { "path": "../../../common/infra" }
   ]

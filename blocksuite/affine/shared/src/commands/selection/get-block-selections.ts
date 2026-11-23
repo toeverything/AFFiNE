@@ -1,4 +1,4 @@
-import { BlockSelection } from '@blocksuite/block-std';
+import { BlockSelection } from '@blocksuite/std';
 
 import type { GetSelectionCommand } from './types';
 

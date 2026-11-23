@@ -8,13 +8,14 @@ import {
   addTab,
   initAndShowMainWindow,
   reloadView,
-  showDevTools,
   showMainWindow,
   switchTab,
   switchToNextTab,
   switchToPreviousTab,
   undoCloseTab,
+  WebContentViewsManager,
 } from '../windows-manager';
+import { popupManager } from '../windows-manager/popup';
 import { WorkerManager } from '../worker/pool';
 import { applicationMenuSubjects } from './subject';
 
@@ -38,7 +39,9 @@ export function createApplicationMenu() {
                 label: `About ${app.getName()}`,
                 click: async () => {
                   await showMainWindow();
-                  applicationMenuSubjects.openAboutPageInSettingModal$.next();
+                  applicationMenuSubjects.openInSettingModal$.next({
+                    activeTab: 'about',
+                  });
                 },
               },
               { type: 'separator' },
@@ -64,7 +67,7 @@ export function createApplicationMenu() {
           click: async () => {
             await initAndShowMainWindow();
             // fixme: if the window is just created, the new page action will not be triggered
-            applicationMenuSubjects.newPageAction$.next('page');
+            applicationMenuSubjects.newPageAction$.next('default');
           },
         },
       ],
@@ -111,21 +114,55 @@ export function createApplicationMenu() {
           label: 'Open devtools',
           accelerator: isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I',
           click: () => {
-            showDevTools();
-          },
-        },
-        {
-          label: 'Open worker devtools',
-          click: () => {
+            const workerContents = Array.from(
+              WorkerManager.instance.workers.values()
+            ).map(
+              worker => [worker.key, worker.browserWindow.webContents] as const
+            );
+
+            const tabs = Array.from(
+              WebContentViewsManager.instance.tabViewsMap
+            ).map(view => {
+              const isActive = WebContentViewsManager.instance.isActiveTab(
+                view[0]
+              );
+              return [
+                view[0] + (isActive ? ' (active)' : ''),
+                view[1].webContents,
+              ] as const;
+            });
+
+            const popups = Array.from(popupManager.popupWindows$.value.values())
+              .filter(popup => popup.browserWindow)
+              .map(popup => {
+                // oxlint-disable-next-line no-non-null-assertion
+                return [popup.type, popup.browserWindow!.webContents] as const;
+              });
+
+            const allWebContents = [
+              ['tabs', tabs],
+              ['workers', workerContents],
+              ['popups', popups],
+            ] as const;
+
             Menu.buildFromTemplate(
-              Array.from(WorkerManager.instance.workers.values()).map(item => ({
-                label: `${item.key}`,
-                click: () => {
-                  item.browserWindow.webContents.openDevTools({
-                    mode: 'undocked',
-                  });
-                },
-              }))
+              allWebContents.flatMap(([type, contents]) => {
+                return [
+                  {
+                    label: type,
+                    enabled: false,
+                  },
+                  ...contents.map(([id, webContents]) => ({
+                    label: id,
+                    click: () => {
+                      webContents.openDevTools({
+                        mode: 'undocked',
+                      });
+                    },
+                  })),
+                  { type: 'separator' },
+                ];
+              })
             ).popup();
           },
         },
@@ -179,14 +216,14 @@ export function createApplicationMenu() {
         }),
         {
           label: 'Switch to next tab',
-          accelerator: 'CommandOrControl+Tab',
+          accelerator: 'Control+Tab',
           click: () => {
             switchToNextTab();
           },
         },
         {
           label: 'Switch to previous tab',
-          accelerator: 'CommandOrControl+Shift+Tab',
+          accelerator: 'Control+Shift+Tab',
           click: () => {
             switchToPreviousTab();
           },

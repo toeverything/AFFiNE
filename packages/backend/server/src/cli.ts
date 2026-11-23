@@ -1,0 +1,173 @@
+import { basename } from 'node:path';
+
+import { type INestApplicationContext, Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { Command, CommanderError } from 'commander';
+
+import { BackendRuntimeProvider } from './core/backend-runtime';
+import { CliAppModule } from './data/app';
+import { CreateCommand } from './data/commands/create';
+import { CutoverCommand } from './data/commands/cutover';
+import { ImportConfigCommand } from './data/commands/import';
+import { RootSourceCommand } from './data/commands/root-source';
+import { RevertCommand, RunCommand } from './data/commands/run';
+
+function getProgramName() {
+  return process.env.npm_lifecycle_event ?? basename(process.argv[1] ?? 'cli');
+}
+
+async function withCliApp(
+  logger: Logger,
+  callback: (app: INestApplicationContext) => Promise<void>
+) {
+  const app = await NestFactory.createApplicationContext(CliAppModule, {
+    logger,
+  });
+
+  try {
+    await callback(app);
+  } finally {
+    await app.close();
+  }
+}
+
+function buildProgram(logger: Logger) {
+  const program = new Command();
+
+  program
+    .name(getProgramName())
+    .description('AFFiNE server CLI')
+    .showHelpAfterError()
+    .showSuggestionAfterError();
+
+  program
+    .command('create [name]')
+    .description('create a data migration script')
+    .action(async name => {
+      await withCliApp(logger, async app => {
+        await app.get(CreateCommand).execute(name);
+      });
+    });
+
+  program
+    .command('run')
+    .description('Run all pending data migrations')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(RunCommand).execute();
+      });
+    });
+
+  program
+    .command('admit-legacy-context-blobs')
+    .description(
+      'Admit legacy context blobs before the cleanup schema migration'
+    )
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(RunCommand).admitLegacyContextBlobs();
+      });
+    });
+
+  program
+    .command('activate-workspace-lifecycle')
+    .description(
+      'Activate workspace lifecycle synchronization after all old writers and in-flight transactions have drained'
+    )
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const activated = await app
+          .get(BackendRuntimeProvider)
+          .activateWorkspaceLifecycleV1();
+        logger.log(
+          activated
+            ? 'Workspace lifecycle synchronization activated.'
+            : 'Workspace lifecycle synchronization is already active.'
+        );
+      });
+    });
+
+  program
+    .command('validate-cutover')
+    .description('Validate canonical authority data before server startup')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(CutoverCommand).execute();
+      });
+    });
+
+  program
+    .command('revert [name]')
+    .description('Revert one data migration with given name')
+    .action(async name => {
+      await withCliApp(logger, async app => {
+        await app.get(RevertCommand).execute(name);
+      });
+    });
+
+  program
+    .command('provision-stripe-catalog')
+    .description('explicitly provision the development Stripe price catalog')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const result = await app
+          .get(BackendRuntimeProvider)
+          .executePaymentCommandV1({ action: 'provision_stripe_catalog' });
+        logger.log(JSON.stringify(result));
+      });
+    });
+
+  program
+    .command('import-config [path]')
+    .description(
+      'import config from a file; changes take effect on the next server start'
+    )
+    .action(async path => {
+      await withCliApp(logger, async app => {
+        await app.get(ImportConfigCommand).execute(path);
+        logger.log(
+          'Config imported; changes take effect on the next server start.'
+        );
+      });
+    });
+
+  const rootSource = program
+    .command('root-source')
+    .description('Export original workspace root material');
+  rootSource
+    .command('inspect')
+    .requiredOption('--workspace <id>')
+    .requiredOption('--output <file>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app.get(RootSourceCommand).inspect(options.workspace, options.output)
+      );
+    });
+
+  return program;
+}
+
+export async function run() {
+  const logger = new Logger('Cli');
+
+  try {
+    const program = buildProgram(logger);
+    program.exitOverride();
+
+    const argv =
+      process.argv.length > 2 ? process.argv : [...process.argv, '--help'];
+    await program.parseAsync(argv);
+  } catch (error) {
+    if (error instanceof CommanderError) {
+      process.exitCode = error.exitCode;
+      return;
+    }
+
+    if (error instanceof Error) {
+      logger.error(error.message, error.stack);
+    } else {
+      logger.error(String(error));
+    }
+    process.exitCode = 1;
+  }
+}

@@ -4,7 +4,7 @@ use objc2::{
   runtime::{AnyClass, AnyObject},
 };
 
-use crate::{av_audio_format::AVAudioFormat, error::CoreAudioError, tap_audio::AudioBufferList};
+use crate::{audio_buffer::AudioBufferList, av_audio_format::AVAudioFormat, error::CoreAudioError};
 
 #[allow(unused)]
 pub(crate) struct AVAudioPCMBuffer {
@@ -13,12 +13,8 @@ pub(crate) struct AVAudioPCMBuffer {
 
 #[allow(unused)]
 impl AVAudioPCMBuffer {
-  pub(crate) fn new(
-    audio_format: &AVAudioFormat,
-    buffer_list: *const AudioBufferList,
-  ) -> Result<Self, CoreAudioError> {
-    let cls =
-      AnyClass::get(c"AVAudioPCMBuffer").ok_or(CoreAudioError::AVAudioPCMBufferClassNotFound)?;
+  pub(crate) fn new(audio_format: &AVAudioFormat, buffer_list: *const AudioBufferList) -> Result<Self, CoreAudioError> {
+    let cls = AnyClass::get(c"AVAudioPCMBuffer").ok_or(CoreAudioError::AVAudioPCMBufferClassNotFound)?;
     let obj: *mut AnyObject = unsafe { msg_send![cls, alloc] };
     if obj.is_null() {
       return Err(CoreAudioError::AllocAVAudioPCMBufferFailed);

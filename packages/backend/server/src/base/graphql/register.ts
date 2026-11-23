@@ -1,4 +1,3 @@
-import { Type } from '@nestjs/common';
 import { Field, FieldOptions, ObjectType } from '@nestjs/graphql';
 
 import { ApplyType } from '../utils/types';
@@ -7,7 +6,7 @@ export function registerObjectType<T>(
   fields: Record<
     string,
     {
-      type: () => Type<any>;
+      type: () => any;
       options?: FieldOptions;
     }
   >,

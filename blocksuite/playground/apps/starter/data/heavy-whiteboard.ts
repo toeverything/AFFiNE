@@ -50,16 +50,17 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
   const count = Number(params.get('count')) || SHAPES_COUNT;
   const enableShapes = !!params.get('shapes');
 
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id);
+  const store = doc.getStore();
   doc.load(() => {
     // Add root block and surface block at root level
-    const rootId = doc.addBlock('affine:page', {
+    const rootId = store.addBlock('affine:page', {
       title: new Text(),
     });
 
     const surfaceBlocks = enableShapes ? createShapes(count) : {};
 
-    doc.addBlock(
+    store.addBlock(
       'affine:surface',
       {
         elements: new Boxed(native2Y(surfaceBlocks, { deep: false })) as Boxed<
@@ -74,7 +75,7 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
     for (i = 0; i < count; i++) {
       const x = Math.random() * RANGE - RANGE / 2;
       const y = Math.random() * RANGE - RANGE / 2;
-      const noteId = doc.addBlock(
+      const noteId = store.addBlock(
         'affine:note',
         {
           xywh: `[${x}, ${y}, 100, 50]` as SerializedXYWH,
@@ -82,7 +83,7 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
         rootId
       );
       // Add paragraph block inside note block
-      doc.addBlock(
+      store.addBlock(
         'affine:paragraph',
         {
           text: new Text('Note #' + i),

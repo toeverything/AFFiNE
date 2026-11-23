@@ -2,7 +2,6 @@ import {
   DiscordIcon,
   GithubIcon,
   RedditIcon,
-  TelegramIcon,
   TwitterIcon,
   YouTubeIcon,
 } from './icons';
@@ -21,17 +20,12 @@ export const relatedLinks = [
   {
     icon: <DiscordIcon />,
     title: 'Discord',
-    link: 'https://discord.gg/Yjf5VFEn',
+    link: BUILD_CONFIG.discordUrl,
   },
   {
     icon: <YouTubeIcon />,
     title: 'YouTube',
     link: 'https://www.youtube.com/@affinepro',
-  },
-  {
-    icon: <TelegramIcon />,
-    title: 'Telegram',
-    link: 'https://t.me/affineworkos',
   },
   {
     icon: <RedditIcon />,

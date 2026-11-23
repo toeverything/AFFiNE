@@ -1,17 +1,6 @@
 import { DebugLogger } from '@affine/debug';
+import { isAllowedRedirectTarget } from '@toeverything/infra';
 import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
-
-const trustedDomain = [
-  'google.com',
-  'stripe.com',
-  'github.com',
-  'twitter.com',
-  'discord.gg',
-  'youtube.com',
-  't.me',
-  'reddit.com',
-  'affine.pro',
-];
 
 const logger = new DebugLogger('redirect_proxy');
 
@@ -29,24 +18,17 @@ export const loader: LoaderFunction = async ({ request }) => {
     return { allow: false };
   }
 
-  try {
-    const target = new URL(redirectUri);
-
-    if (
-      target.hostname === window.location.hostname ||
-      trustedDomain.some(domain =>
-        new RegExp(`.?${domain}$`).test(target.hostname)
-      )
-    ) {
-      location.href = redirectUri;
-      return { allow: true };
-    }
-  } catch (e) {
-    logger.error('Failed to parse redirect uri', e);
-    return { allow: false };
+  if (
+    isAllowedRedirectTarget(redirectUri, {
+      currentHostname: window.location.hostname,
+    })
+  ) {
+    location.href = redirectUri;
+    return { allow: true };
   }
 
-  return { allow: true };
+  logger.warn('Blocked redirect to untrusted domain', redirectUri);
+  return { allow: false };
 };
 
 export const Component = () => {

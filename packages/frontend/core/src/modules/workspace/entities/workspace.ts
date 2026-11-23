@@ -1,13 +1,23 @@
-import type { Workspace as WorkspaceInterface } from '@blocksuite/affine/store';
-import { Entity, LiveData } from '@toeverything/infra';
-import { Observable } from 'rxjs';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
+import { DebugLogger } from '@affine/debug';
+import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
+import type { Observable } from 'rxjs';
+import { Doc as YDoc, transact } from 'yjs';
 
+import { DocsService } from '../../doc/services/docs';
 import { WorkspaceImpl } from '../impls/workspace';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
 
+const BLOB_SOURCE_REFRESH_DELAY = 250;
+const logger = new DebugLogger('affine:workspace-blob-source');
+
 export class Workspace extends Entity {
-  constructor(public readonly scope: WorkspaceScope) {
+  constructor(
+    public readonly scope: WorkspaceScope,
+    public readonly featureFlagService: FeatureFlagService
+  ) {
     super();
   }
 
@@ -19,17 +29,68 @@ export class Workspace extends Entity {
 
   readonly flavour = this.meta.flavour;
 
-  _docCollection: WorkspaceInterface | null = null;
+  readonly rootYDoc = new YDoc({ guid: this.openOptions.metadata.id });
+
+  _docCollection: WorkspaceImpl | null = null;
+
+  private readonly blobSourceUpdateCleanups = new WeakMap<YDoc, () => void>();
+
+  private loadBlobSource(doc: YDoc) {
+    this.blobSourceUpdateCleanups.get(doc)?.();
+    const source = {
+      type: 'currentDoc' as const,
+      workspaceId: this.id,
+      docId: doc.guid,
+    };
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (refreshTimer) return;
+      refreshTimer = setTimeout(() => {
+        refreshTimer = undefined;
+        this.engine.blob
+          .registerSource(source)
+          .catch(error => logger.error('Failed to refresh blob source', error));
+      }, BLOB_SOURCE_REFRESH_DELAY);
+    };
+    doc.on('update', refresh);
+    this.blobSourceUpdateCleanups.set(doc, () => {
+      doc.off('update', refresh);
+      if (refreshTimer) clearTimeout(refreshTimer);
+      this.blobSourceUpdateCleanups.delete(doc);
+    });
+    this.engine.blob
+      .registerSource(source)
+      .catch(error => logger.error('Failed to register blob source', error));
+  }
+
+  private unloadBlobSource(doc: YDoc) {
+    this.blobSourceUpdateCleanups.get(doc)?.();
+    this.engine.blob
+      .unregisterSource({
+        type: 'currentDoc',
+        workspaceId: this.id,
+        docId: doc.guid,
+      })
+      .catch(error => logger.error('Failed to unregister blob source', error));
+  }
 
   get docCollection() {
     if (!this._docCollection) {
       this._docCollection = new WorkspaceImpl({
         id: this.openOptions.metadata.id,
+        rootDoc: this.rootYDoc,
+        inventory$:
+          !this.engine.usesWorkspaceState || this.openOptions.isSharedMode
+            ? undefined
+            : this.engine.doc.workspaceState$,
+        projectedTitles$:
+          this.flavour === 'local' ? undefined : this.engine.indexer.docTitles$,
+        featureFlagService: this.featureFlagService,
         blobSource: {
           get: async key => {
             const record = await this.engine.blob.get(key);
             return record
-              ? new Blob([record.data], { type: record.mime })
+              ? new Blob([toArrayBuffer(record.data)], { type: record.mime })
               : null;
           },
           delete: async () => {
@@ -46,19 +107,29 @@ export class Workspace extends Entity {
             });
             return id;
           },
+          blobState$: key => this.engine.blob.blobState$(key),
+          upload: key => this.engine.blob.upload(key),
           name: 'blob',
           readonly: false,
         },
-        onLoadDoc: doc => this.engine.doc.connectDoc(doc),
+        onLoadDoc: doc => {
+          this.loadBlobSource(doc);
+          this.engine.doc.connectDoc(doc);
+        },
+        onUnloadDoc: doc => {
+          this.unloadBlobSource(doc);
+        },
         onLoadAwareness: awareness =>
           this.engine.awareness.connectAwareness(awareness),
+        onCreateDoc: docId =>
+          this.docs.createDoc({ id: docId, skipInit: true }).id,
       });
     }
     return this._docCollection;
   }
 
-  get rootYDoc() {
-    return this.docCollection.doc;
+  get docs() {
+    return this.scope.get(DocsService);
   }
 
   get canGracefulStop() {
@@ -71,28 +142,38 @@ export class Workspace extends Entity {
   }
 
   name$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.name);
-      const subscription =
-        this.docCollection.meta.commonFieldsUpdated.subscribe(() => {
-          subscriber.next(this.docCollection.meta.name);
-        });
-      return subscription.unsubscribe.bind(subscription);
-    }),
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'name') as Observable<
+      string | undefined
+    >,
     undefined
   );
 
-  avatar$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.avatar);
-      const subscription =
-        this.docCollection.meta.commonFieldsUpdated.subscribe(() => {
-          subscriber.next(this.docCollection.meta.avatar);
-        });
-      return subscription.unsubscribe.bind(subscription);
-    }),
+  avatar$ = LiveData.from(
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'avatar') as Observable<
+      string | undefined
+    >,
     undefined
   );
+
+  setAvatar(avatar: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('avatar', avatar);
+      },
+      { force: true }
+    );
+  }
+
+  setName(name: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('name', name);
+      },
+      { force: true }
+    );
+  }
 
   override dispose(): void {
     this.docCollection.dispose();

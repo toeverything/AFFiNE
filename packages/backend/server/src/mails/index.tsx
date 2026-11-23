@@ -1,5 +1,7 @@
-import { render as rawRender } from '@react-email/components';
+import { type ComponentType, createElement } from 'react';
 
+import { Comment, CommentMention, Mention } from './docs';
+import { render } from './render';
 import {
   TeamBecomeAdmin,
   TeamBecomeCollaborator,
@@ -11,6 +13,7 @@ import {
   TeamWorkspaceDeleted,
   TeamWorkspaceUpgraded,
 } from './teams';
+import TestMail from './test-mail';
 import {
   ChangeEmail,
   ChangeEmailNotification,
@@ -38,146 +41,119 @@ type EmailContent = {
   html: string;
 };
 
-function render(component: React.ReactElement) {
-  return rawRender(component, {
-    pretty: AFFiNE.node.test,
-  });
-}
-
-type Props<T> = T extends React.FC<infer P> ? P : never;
+type Props<T> = T extends ComponentType<infer P> ? P : never;
 export type EmailRenderer<Props> = (props: Props) => Promise<EmailContent>;
 
-function make<T extends React.ComponentType<any>>(
+function make<T extends ComponentType<any>>(
   Component: T,
   subject: string | ((props: Props<T>) => string)
 ): EmailRenderer<Props<T>> {
   return async props => {
-    if (!props && AFFiNE.node.test) {
+    if (!props && env.testing) {
       // @ts-expect-error test only
       props = Component.PreviewProps;
     }
     return {
       subject: typeof subject === 'function' ? subject(props) : subject,
-      html: await render(<Component {...props} />),
+      html: await render(createElement(Component, props)),
     };
   };
 }
 
-// ================ User ================
-export const renderSignInMail = make(SignIn, 'Sign in to AFFiNE');
-export const renderSignUpMail = make(
-  SignUp,
-  'Your AFFiNE account is waiting for you!'
-);
-export const renderSetPasswordMail = make(
-  SetPassword,
-  'Set your AFFiNE password'
-);
-export const renderChangePasswordMail = make(
-  ChangePassword,
-  'Modify your AFFiNE password'
-);
-export const renderVerifyEmailMail = make(
-  VerifyEmail,
-  'Verify your email address'
-);
-export const renderChangeEmailMail = make(
-  ChangeEmail,
-  'Change your email address'
-);
-export const renderVerifyChangeEmailMail = make(
-  VerifyChangeEmail,
-  'Verify your new email address'
-);
-export const renderChangeEmailNotificationMail = make(
-  ChangeEmailNotification,
-  'Account email address changed'
-);
+export const Renderers = {
+  //#region Test
+  TestMail: make(TestMail, 'Test Email from AFFiNE'),
+  //#endregion
 
-// ================ Workspace ================
-export const renderMemberInvitationMail = make(
-  Invitation,
-  props => `${props.user.email} invited you to join ${props.workspace.name}`
-);
-export const renderMemberAcceptedMail = make(
-  InvitationAccepted,
-  props => `${props.user.email} accepted your invitation`
-);
-export const renderMemberLeaveMail = make(
-  MemberLeave,
-  props => `${props.user.email} left ${props.workspace.name}`
-);
-export const renderLinkInvitationReviewRequestMail = make(
-  LinkInvitationReviewRequest,
-  props => `New request to join ${props.workspace.name}`
-);
-export const renderLinkInvitationApproveMail = make(
-  LinkInvitationApproved,
-  props => `Your request to join ${props.workspace.name} has been approved`
-);
-export const renderLinkInvitationDeclineMail = make(
-  LinkInvitationReviewDeclined,
-  props => `Your request to join ${props.workspace.name} was declined`
-);
-export const renderMemberRemovedMail = make(
-  MemberRemoved,
-  props => `You have been removed from ${props.workspace.name}`
-);
-export const renderOwnershipTransferredMail = make(
-  OwnershipTransferred,
-  props => `Your ownership of ${props.workspace.name} has been transferred`
-);
-export const renderOwnershipReceivedMail = make(
-  OwnershipReceived,
-  props => `You are now the owner of ${props.workspace.name}`
-);
+  //#region User
+  SignIn: make(SignIn, 'Sign in to AFFiNE'),
+  SignUp: make(SignUp, 'Your AFFiNE account is waiting for you!'),
+  SetPassword: make(SetPassword, 'Set your AFFiNE password'),
+  ChangePassword: make(ChangePassword, 'Modify your AFFiNE password'),
+  VerifyEmail: make(VerifyEmail, 'Verify your email address'),
+  ChangeEmail: make(ChangeEmail, 'Change your email address'),
+  VerifyChangeEmail: make(VerifyChangeEmail, 'Verify your new email address'),
+  EmailChanged: make(ChangeEmailNotification, 'Account email address changed'),
+  //#endregion
 
-// ================ Team ================
-export const renderTeamWorkspaceUpgradedMail = make(
-  TeamWorkspaceUpgraded,
-  props =>
+  //#region Workspace
+  MemberInvitation: make(
+    Invitation,
+    'You were invited to join a workspace on AFFiNE'
+  ),
+  MemberAccepted: make(
+    InvitationAccepted,
+    'Your workspace invitation was accepted'
+  ),
+  MemberLeave: make(MemberLeave, 'A workspace member left'),
+  LinkInvitationReviewRequest: make(
+    LinkInvitationReviewRequest,
+    'New request to join a workspace'
+  ),
+  LinkInvitationApprove: make(
+    LinkInvitationApproved,
+    'Your request to join a workspace has been approved'
+  ),
+  LinkInvitationDecline: make(
+    LinkInvitationReviewDeclined,
+    'Your request to join a workspace was declined'
+  ),
+  MemberRemoved: make(MemberRemoved, 'You have been removed from a workspace'),
+  OwnershipTransferred: make(
+    OwnershipTransferred,
+    'Your workspace ownership has been transferred'
+  ),
+  OwnershipReceived: make(
+    OwnershipReceived,
+    'You are now the owner of a workspace'
+  ),
+  //#endregion
+
+  //#region Doc
+  Mention: make(Mention, 'You were mentioned in AFFiNE'),
+  Comment: make(Comment, 'New comment in AFFiNE'),
+  CommentMention: make(CommentMention, 'You were mentioned in a comment'),
+  //#endregion
+
+  //#region Team
+  TeamWorkspaceUpgraded: make(TeamWorkspaceUpgraded, props =>
     props.isOwner
       ? 'Your workspace has been upgraded to team workspace! 🎉'
-      : `${props.workspace.name} has been upgraded to team workspace! 🎉`
-);
+      : 'A workspace has been upgraded to team workspace! 🎉'
+  ),
+  TeamBecomeAdmin: make(TeamBecomeAdmin, 'You are now a workspace admin'),
+  TeamBecomeCollaborator: make(
+    TeamBecomeCollaborator,
+    'Your workspace role has been changed'
+  ),
+  TeamDeleteIn24Hours: make(
+    TeamDeleteIn24Hours,
+    '[Action Required] Final warning: Your workspace will be deleted in 24 hours'
+  ),
+  TeamDeleteInOneMonth: make(
+    TeamDeleteInOneMonth,
+    '[Action Required] Important: Your workspace will be deleted soon'
+  ),
+  TeamWorkspaceDeleted: make(
+    TeamWorkspaceDeleted,
+    'Your workspace has been deleted'
+  ),
+  TeamWorkspaceExpireSoon: make(
+    TeamExpireSoon,
+    '[Action Required] Your team workspace will expire soon'
+  ),
+  TeamWorkspaceExpired: make(TeamExpired, 'Your team workspace has expired'),
+  //#endregion
 
-export const renderTeamBecomeAdminMail = make(
-  TeamBecomeAdmin,
-  props => `You are now an admin of ${props.workspace.name}`
-);
+  //#region License
+  TeamLicense: make(
+    TeamLicense,
+    'Your AFFiNE Self-Hosted Team Workspace license is ready'
+  ),
+  //#endregion
+} as const;
 
-export const renderTeamBecomeCollaboratorMail = make(
-  TeamBecomeCollaborator,
-  props => `Your role has been changed in ${props.workspace.name}`
-);
-export const renderTeamDeleteIn24HoursMail = make(
-  TeamDeleteIn24Hours,
-  props =>
-    `[Action Required] Final warning: Your workspace ${props.workspace.name} will be deleted in 24 hours`
-);
-export const renderTeamDeleteIn1MonthMail = make(
-  TeamDeleteInOneMonth,
-  props =>
-    `[Action Required] Important: Your workspace ${props.workspace.name} will be deleted soon`
-);
-
-export const renderTeamWorkspaceDeletedMail = make(
-  TeamWorkspaceDeleted,
-  props => `Your workspace ${props.workspace.name} has been deleted`
-);
-
-export const renderTeamWorkspaceExpireSoonMail = make(
-  TeamExpireSoon,
-  props =>
-    `[Action Required] Your ${props.workspace.name} team workspace will expire soon`
-);
-
-export const renderTeamWorkspaceExpiredMail = make(
-  TeamExpired,
-  props => `Your ${props.workspace.name} team workspace has expired`
-);
-
-export const renderTeamLicenseMail = make(
-  TeamLicense,
-  'Your AFFiNE Self-Hosted Team Workspace license is ready'
-);
+export type MailName = keyof typeof Renderers;
+export type MailProps<T extends MailName> = Parameters<
+  (typeof Renderers)[T]
+>[0];

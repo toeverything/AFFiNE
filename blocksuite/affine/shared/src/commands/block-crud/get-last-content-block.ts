@@ -1,4 +1,4 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 type Role = 'content' | 'hub';
@@ -23,7 +23,7 @@ export const getLastBlockCommand: Command<
     lastBlock: BlockModel | null;
   }
 > = (ctx, next) => {
-  const root = ctx.root || ctx.std.host.doc.root;
+  const root = ctx.root || ctx.std.host.store.root;
   if (!root) {
     next({
       lastBlock: null,

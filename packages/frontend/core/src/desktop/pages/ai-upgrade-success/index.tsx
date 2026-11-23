@@ -17,9 +17,9 @@ export const Component = () => {
   const [params] = useSearchParams();
 
   const { jumpToIndex, jumpToOpenInApp } = useNavigateHelper();
-  const openAffine = useCallback(() => {
-    if (params.get('scheme')) {
-      jumpToOpenInApp('bring-to-front');
+  const openAFFiNE = useCallback(() => {
+    if (params.get('client')) {
+      return jumpToOpenInApp('bring-to-front');
     } else {
       jumpToIndex();
     }
@@ -49,7 +49,7 @@ export const Component = () => {
       title={t['com.affine.payment.ai-upgrade-success-page.title']()}
       subtitle={subtitle}
     >
-      <Button variant="primary" size="extraLarge" onClick={openAffine}>
+      <Button variant="primary" size="extraLarge" onClick={openAFFiNE}>
         {t['com.affine.other-page.nav.open-affine']()}
       </Button>
     </AuthPageContainer>

@@ -1,5 +1,5 @@
 import { ListBlockModel } from '@blocksuite/affine-model';
-import type { BlockStdScope } from '@blocksuite/block-std';
+import type { BlockStdScope } from '@blocksuite/std';
 import type { BlockModel, Store } from '@blocksuite/store';
 
 import { matchModels } from './checker.js';

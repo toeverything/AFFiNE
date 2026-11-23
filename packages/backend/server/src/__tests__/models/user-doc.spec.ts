@@ -81,7 +81,7 @@ test('should get a doc', async t => {
   const doc = await t.context.doc.upsert({
     spaceId: user.id,
     docId,
-    blob: Buffer.from('hello'),
+    blob: Uint8Array.from([1, 2, 3]),
     timestamp: Date.now(),
     editorId: user.id,
   });
@@ -89,7 +89,7 @@ test('should get a doc', async t => {
   const doc2 = await t.context.doc.get(user.id, docId);
   t.truthy(doc2);
   t.is(doc2!.docId, docId);
-  t.deepEqual(doc2!.blob, Buffer.from('hello'));
+  t.deepEqual(doc2!.blob, Uint8Array.from([1, 2, 3]));
   // get a non-exist doc
   const doc3 = await t.context.doc.get(user.id, randomUUID());
   t.is(doc3, null);

@@ -6,9 +6,10 @@ import type {
 import { Injectable } from '@nestjs/common';
 
 import {
+  Config,
+  getClientVersionFromRequest,
   getRequestResponseFromContext,
   GuardProvider,
-  Runtime,
 } from '../../base';
 import { VersionService } from './service';
 
@@ -20,20 +21,20 @@ export class VersionGuardProvider
   name = 'version' as const;
 
   constructor(
-    private readonly runtime: Runtime,
+    private readonly config: Config,
     private readonly version: VersionService
   ) {
     super();
   }
 
   async canActivate(context: ExecutionContext) {
-    if (!(await this.runtime.fetch('client/versionControl.enabled'))) {
+    if (!this.config.client.versionControl.enabled) {
       return true;
     }
 
     const { req } = getRequestResponseFromContext(context);
 
-    const version = req.headers['x-affine-version'] as string | undefined;
+    const version = getClientVersionFromRequest(req);
 
     return this.version.checkVersion(version);
   }

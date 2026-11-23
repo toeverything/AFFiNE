@@ -52,7 +52,7 @@ export class DataViewHeaderTools extends WidgetBase {
     return html` <div class="${classList}">
       ${repeat(tools ?? [], uni => {
         return renderUniLit(uni, {
-          dataViewInstance: this.dataViewInstance,
+          dataViewLogic: this.dataViewLogic,
         });
       })}
     </div>`;

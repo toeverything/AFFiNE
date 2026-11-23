@@ -1,0 +1,54 @@
+//
+//  ApplicationBridgedWindowScript.swift
+//  App
+//
+//  Created by 秋星桥 on 2025/1/8.
+//
+
+import Foundation
+import WebKit
+
+/*
+ packages/frontend/apps/ios/src/app.tsx
+ */
+
+enum ApplicationBridgedWindowScript: String {
+  case getCurrentDocContentInMarkdown = "return await window.getCurrentDocContentInMarkdown();"
+  case getCurrentServerBaseUrl = "window.getCurrentServerBaseUrl()"
+  case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
+  case getCurrentDocId = "window.getCurrentDocId();"
+  case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
+  case getCurrentUserIdentifier = "return await window.getCurrentUserIdentifier();"
+  case requestSignIn = "return await window.requestSignIn();"
+  case getCurrentThemeMode = "window.getCurrentThemeMode();"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
+
+  var requiresAsyncContext: Bool {
+    switch self {
+    case .getCurrentDocContentInMarkdown, .getCurrentUserIdentifier, .requestSignIn, .createNewDocByMarkdownInCurrentWorkspace: true
+    default: false
+    }
+  }
+}
+
+extension WKWebView {
+  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> Void) {
+    if script.requiresAsyncContext {
+      callAsyncJavaScript(
+        script.rawValue,
+        arguments: [:],
+        in: nil,
+        in: .page
+      ) { result in
+        switch result {
+        case let .success(input):
+          callback(input)
+        case .failure:
+          callback(nil)
+        }
+      }
+    } else {
+      evaluateJavaScript(script.rawValue) { output, _ in callback(output) }
+    }
+  }
+}

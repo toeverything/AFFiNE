@@ -6,7 +6,7 @@ import type {
 
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  fullyParallel: !process.env.CI,
+  fullyParallel: true,
   timeout: 120_000,
   outputDir: testResultDir,
   use: {
@@ -28,17 +28,18 @@ const config: PlaywrightTestConfig = {
   webServer: [
     {
       command: 'yarn run -T affine dev -p @affine/web',
-      port: 8080,
-      timeout: 120 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
       },
+      url: 'http://localhost:8080',
     },
     {
       command: 'yarn run -T affine dev -p @affine/server',
-      port: 3010,
-      timeout: 120 * 1000,
+      timeout: 240 * 1000,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -57,6 +58,7 @@ const config: PlaywrightTestConfig = {
         MAILER_USER: 'noreply@toeverything.info',
         MAILER_PASSWORD: 'affine',
       },
+      url: 'http://localhost:3010/graphql',
     },
   ],
 };

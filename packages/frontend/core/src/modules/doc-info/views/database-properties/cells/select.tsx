@@ -1,5 +1,3 @@
-/* eslint-disable rxjs/finnish */
-
 import { PropertyValue } from '@affine/component';
 import { type TagLike, TagsInlineEditor } from '@affine/core/components/tags';
 import { TagService } from '@affine/core/modules/tag';
@@ -115,7 +113,7 @@ const adapter = {
       ...options,
       {
         id: newTag.id,
-        value: newTag.value,
+        value: newTag.name,
         color: newTag.color,
       },
     ]);
@@ -156,9 +154,10 @@ const BlocksuiteDatabaseSelector = ({
   let tagOptions = useLiveData(adapter.getTagOptions$(selectCell));
 
   // adapt bs database old tag color to new tag color
-  tagOptions = useMemo(() => {
+  let adaptedTagOptions = useMemo(() => {
     return tagOptions.map(tag => ({
-      ...tag,
+      id: tag.id,
+      name: tag.value,
       color: databaseTagColorToV2(tag.color),
     }));
   }, [tagOptions]);
@@ -168,7 +167,7 @@ const BlocksuiteDatabaseSelector = ({
       // bs database uses --affine-tag-xxx colors
       const newTag = {
         id: nanoid(),
-        value: name,
+        name: name,
         color: color,
       };
       adapter.createTag(selectCell, dataSource, newTag);
@@ -228,7 +227,7 @@ const BlocksuiteDatabaseSelector = ({
     <TagsInlineEditor
       tagMode="db-label"
       className={styles.tagInlineEditor}
-      tags={tagOptions}
+      tags={adaptedTagOptions}
       selectedTags={selectedIds}
       onCreateTag={onCreateTag}
       onDeleteTag={onDeleteTag}

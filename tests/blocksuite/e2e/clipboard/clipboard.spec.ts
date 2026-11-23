@@ -5,10 +5,10 @@ import { expect } from '@playwright/test';
 import {
   captureHistory,
   copyByKeyboard,
-  dragBetweenCoords,
   dragOverTitle,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   focusTitle,
   getClipboardHTML,
   getClipboardSnapshot,
@@ -20,15 +20,18 @@ import {
   mockParseDocUrlService,
   pasteByKeyboard,
   pasteContent,
+  pressArrowRight,
   pressEnter,
   pressShiftTab,
   pressTab,
   resetHistory,
+  selectAllByKeyboard,
   setInlineRangeInSelectedRichText,
   setSelection,
   SHORT_KEY,
   type,
   undoByClick,
+  undoByKeyboard,
   waitNextFrame,
 } from '../utils/actions/index.js';
 import {
@@ -49,7 +52,8 @@ test(scoped`clipboard copy paste`, async ({ page }) => {
   await setInlineRangeInSelectedRichText(page, 0, 3);
   await waitNextFrame(page);
   await copyByKeyboard(page);
-  await focusRichText(page);
+  await expect.poll(() => getClipboardText(page)).toBe('tes');
+  await focusRichTextEnd(page);
   await page.keyboard.press(`${SHORT_KEY}+v`);
   await assertText(page, 'testtes');
 });
@@ -106,15 +110,15 @@ test(scoped`split block when paste`, async ({ page }) => {
 `,
   };
   await type(page, 'abc');
-  await captureHistory(page);
 
   await setInlineRangeInSelectedRichText(page, 1, 1);
+  await captureHistory(page);
   await pasteContent(page, clipData);
   await waitNextFrame(page);
 
   await assertRichTexts(page, ['atext', 'h1c']);
 
-  await undoByClick(page);
+  await undoByKeyboard(page);
   await assertRichTexts(page, ['abc']);
 
   await type(page, 'aa');
@@ -132,11 +136,12 @@ test(scoped`split block when paste`, async ({ page }) => {
   if (!bottomRight789) {
     throw new Error('bottomRight789 is not found');
   }
-  await dragBetweenCoords(page, topLeft123, bottomRight789);
+  await selectAllByKeyboard(page);
+  await pressArrowRight(page);
+  await pressEnter(page);
 
-  // FIXME see https://github.com/toeverything/blocksuite/pull/878
-  // await pasteContent(page, clipData);
-  // await assertRichTexts(page, ['aaa', 'bbc', 'text', 'h1']);
+  await pasteContent(page, clipData);
+  await assertRichTexts(page, ['aaa', 'bbc', 'text', 'h1']);
 });
 
 test(scoped`copy clipItems format`, async ({ page }) => {
@@ -224,7 +229,7 @@ test(scoped`auto identify url`, async ({ page }, testInfo) => {
 
   // set up clipboard data using html
   const clipData = {
-    'text/plain': `test https://www.google.com`,
+    'text/plain': 'test https://www.google.com',
   };
   await waitNextFrame(page);
   await page.evaluate(
@@ -339,7 +344,7 @@ test(scoped`paste parent block`, async ({ page }) => {
   await type(page, 'This is child 2');
   await setInlineRangeInSelectedRichText(page, 0, 3);
   await copyByKeyboard(page);
-  await focusRichText(page, 2);
+  await focusRichTextEnd(page, 2);
   await page.keyboard.press(`${SHORT_KEY}+v`);
   await assertRichTexts(page, [
     'This is parent',
@@ -360,7 +365,7 @@ test(scoped`clipboard copy multi selection`, async ({ page }) => {
   await waitNextFrame(page);
   await copyByKeyboard(page);
   await waitNextFrame(page);
-  await focusRichText(page, 1);
+  await focusRichTextEnd(page, 1);
   await pasteByKeyboard(page);
   await waitNextFrame(page);
   await type(page, 'cursor');

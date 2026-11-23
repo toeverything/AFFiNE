@@ -2,7 +2,13 @@ import path from 'node:path';
 
 import type { _AsyncVersionOf } from 'async-call-rpc';
 import { AsyncCall } from 'async-call-rpc';
-import type { UtilityProcess, WebContents } from 'electron';
+import type {
+  BaseWindow,
+  OpenDialogOptions,
+  SaveDialogOptions,
+  UtilityProcess,
+  WebContents,
+} from 'electron';
 import {
   app,
   dialog,
@@ -15,6 +21,7 @@ import type { HelperToMain, MainToHelper } from '../shared/type';
 import { MessageEventChannel } from '../shared/utils';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { openExternalSafely } from './security/open-external';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 
@@ -57,7 +64,6 @@ class HelperProcessManager {
     this.ready = new Promise((resolve, reject) => {
       helperProcess.once('spawn', () => {
         try {
-          this.#connectMain();
           logger.info('[helper] forked', helperProcess.pid);
           resolve();
         } catch (err) {
@@ -69,6 +75,16 @@ class HelperProcessManager {
 
     beforeAppQuit(() => {
       this.#process.kill();
+    });
+
+    this.#process.on('exit', code => {
+      logger.error('[helper] process exited', { code });
+      HelperProcessManager._instance = null;
+    });
+
+    this.#process.on('error', err => {
+      logger.error('[helper] process error', err);
+      HelperProcessManager._instance = null;
     });
   }
 
@@ -91,15 +107,19 @@ class HelperProcessManager {
 
   // bridge main <-> helper process
   // also set up the RPC to the helper process
-  #connectMain() {
-    const dialogMethods = pickAndBind(dialog, [
-      'showOpenDialog',
-      'showSaveDialog',
-    ]);
-    const shellMethods = pickAndBind(shell, [
-      'openExternal',
-      'showItemInFolder',
-    ]);
+  connectMain(window: BaseWindow) {
+    const dialogMethods = {
+      showOpenDialog: async (opts: OpenDialogOptions) => {
+        return dialog.showOpenDialog(window, opts);
+      },
+      showSaveDialog: async (opts: SaveDialogOptions) => {
+        return dialog.showSaveDialog(window, opts);
+      },
+    };
+    const shellMethods = {
+      openExternal: openExternalSafely as typeof shell.openExternal,
+      showItemInFolder: shell.showItemInFolder.bind(shell),
+    };
     const appMethods = pickAndBind(app, ['getPath']);
 
     const mainToHelperServer: MainToHelper = {
@@ -115,6 +135,7 @@ class HelperProcessManager {
         unknownMessage: false,
       },
       channel: new MessageEventChannel(this.#process),
+      log: false,
     });
   }
 }

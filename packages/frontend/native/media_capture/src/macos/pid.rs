@@ -1,10 +1,9 @@
 use std::{mem::MaybeUninit, ptr};
 
 use coreaudio::sys::{
-  kAudioHardwareNoError, kAudioHardwarePropertyProcessObjectList, kAudioObjectPropertyElementMain,
-  kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject, AudioObjectGetPropertyData,
-  AudioObjectGetPropertyDataSize, AudioObjectID, AudioObjectPropertyAddress,
-  AudioObjectPropertySelector,
+  AudioObjectGetPropertyData, AudioObjectGetPropertyDataSize, AudioObjectID, AudioObjectPropertyAddress,
+  AudioObjectPropertySelector, kAudioHardwareNoError, kAudioHardwarePropertyProcessObjectList,
+  kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject,
 };
 
 use crate::error::CoreAudioError;
@@ -17,15 +16,8 @@ pub fn audio_process_list() -> Result<Vec<AudioObjectID>, CoreAudioError> {
   };
 
   let mut data_size = 0u32;
-  let status = unsafe {
-    AudioObjectGetPropertyDataSize(
-      kAudioObjectSystemObject,
-      &address,
-      0,
-      ptr::null_mut(),
-      &mut data_size,
-    )
-  };
+  let status =
+    unsafe { AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &address, 0, ptr::null_mut(), &mut data_size) };
 
   if status != kAudioHardwareNoError as i32 {
     return Err(CoreAudioError::GetProcessObjectListSizeFailed(status));
@@ -63,9 +55,7 @@ pub fn get_process_property<T: Sized>(
   };
 
   let mut data_size = 0u32;
-  let status = unsafe {
-    AudioObjectGetPropertyDataSize(object_id, &address, 0, ptr::null_mut(), &mut data_size)
-  };
+  let status = unsafe { AudioObjectGetPropertyDataSize(object_id, &address, 0, ptr::null_mut(), &mut data_size) };
 
   if status != kAudioHardwareNoError as i32 {
     return Err(CoreAudioError::AudioObjectGetPropertyDataSizeFailed(status));

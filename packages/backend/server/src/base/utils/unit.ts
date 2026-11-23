@@ -1,4 +1,9 @@
 export const OneKB = 1024;
 export const OneMB = OneKB * OneKB;
 export const OneGB = OneKB * OneMB;
-export const OneDay = 1000 * 60 * 60 * 24;
+export const OneMinute = 1000 * 60;
+export const OneHour = OneMinute * 60;
+export const OneDay = OneHour * 24;
+export const OneWeek = OneDay * 7;
+export const OneMonth = OneDay * 30;
+export const OneYear = OneDay * 365;

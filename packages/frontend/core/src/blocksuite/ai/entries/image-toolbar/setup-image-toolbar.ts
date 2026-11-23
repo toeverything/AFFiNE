@@ -1,7 +1,11 @@
 import '../../components/ask-ai-button';
 
-import type { AffineImageToolbarWidget } from '@blocksuite/affine/blocks/root';
-import { ImageSelection } from '@blocksuite/affine/shared/selection';
+import { ImageBlockComponent } from '@blocksuite/affine/blocks/image';
+import {
+  ActionPlacement,
+  type ToolbarModuleConfig,
+} from '@blocksuite/affine/shared/services';
+import { BlockSelection } from '@blocksuite/affine/std';
 import { html } from 'lit';
 
 import { buildAIImageItemGroups } from '../../_common/config';
@@ -14,40 +18,34 @@ const buttonOptions: AskAIButtonOptions = {
   panelWidth: 300,
 };
 
-export function setupImageToolbarAIEntry(
-  imageToolbar: AffineImageToolbarWidget
-) {
-  imageToolbar.addPrimaryItems(
-    [
+export function imageToolbarAIEntryConfig(): ToolbarModuleConfig {
+  return {
+    actions: [
       {
-        type: 'ask-ai',
-        when: ({ doc }) => !doc.readonly,
-        generate: ({ host, blockComponent }) => {
-          return {
-            action: () => {
-              const { selection } = host;
-              selection.setGroup('note', [
-                selection.create(ImageSelection, {
-                  blockId: blockComponent.blockId,
+        placement: ActionPlacement.Start,
+        id: 'A.ai',
+        score: -1,
+        content: ctx => {
+          const block = ctx.getCurrentBlockByType(ImageBlockComponent);
+          if (!block) return null;
+
+          return html`<ask-ai-button
+            class="ask-ai inner-button"
+            .host=${ctx.host}
+            .actionGroups=${AIImageItemGroups}
+            .toggleType="${'click'}"
+            .options=${buttonOptions}
+            @click=${(e: MouseEvent) => {
+              e.stopPropagation();
+              ctx.selection.update(() => [
+                ctx.selection.create(BlockSelection, {
+                  blockId: block.blockId,
                 }),
               ]);
-            },
-            render: item =>
-              html`<ask-ai-button
-                class="image-toolbar-button ask-ai"
-                .host=${host}
-                .actionGroups=${AIImageItemGroups}
-                .toggleType=${'click'}
-                .options=${buttonOptions}
-                @click=${(e: MouseEvent) => {
-                  e.stopPropagation();
-                  item.action();
-                }}
-              ></ask-ai-button>`,
-          };
+            }}
+          ></ask-ai-button>`;
         },
       },
     ],
-    0
-  );
+  };
 }

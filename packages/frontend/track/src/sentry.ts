@@ -14,9 +14,9 @@ function createSentry() {
       if (!globalThis.SENTRY_RELEASE) {
         // https://docs.sentry.io/platforms/javascript/guides/react/#configure
         client = Sentry.init({
-          dsn: process.env.SENTRY_DSN,
+          dsn: BUILD_CONFIG.SENTRY_DSN,
           debug: BUILD_CONFIG.debug ?? false,
-          environment: process.env.BUILD_TYPE ?? 'development',
+          environment: BUILD_CONFIG.appBuildType,
           integrations: [
             Sentry.reactRouterV6BrowserTracingIntegration({
               useEffect,

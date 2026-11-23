@@ -14,7 +14,9 @@ import {
 import { PopupWindowProvider } from '@affine/core/modules/url';
 import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
 import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
+import { getWorkerUrl } from '@affine/env/worker';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
+import { setTelemetryTransport } from '@affine/track';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
@@ -22,25 +24,18 @@ import { RouterProvider } from 'react-router-dom';
 
 let storeManagerClient: StoreManagerClient;
 
+const workerUrl = getWorkerUrl('nbstore');
 if (window.SharedWorker) {
-  const worker = new SharedWorker(
-    new URL(/* webpackChunkName: "nbstore" */ './nbstore.ts', import.meta.url),
-    { name: 'affine-shared-worker' }
-  );
+  const worker = new SharedWorker(workerUrl, { name: 'affine-shared-worker' });
   storeManagerClient = new StoreManagerClient(new OpClient(worker.port));
 } else {
-  const worker = new Worker(
-    new URL(/* webpackChunkName: "nbstore" */ './nbstore.ts', import.meta.url)
-  );
+  const worker = new Worker(workerUrl);
   storeManagerClient = new StoreManagerClient(new OpClient(worker));
 }
+setTelemetryTransport(storeManagerClient.telemetry);
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -49,6 +44,7 @@ configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureMobileModules(framework);
 framework.impl(NbstoreProvider, {
+  realtime: storeManagerClient.realtime,
   openStore(key, options) {
     const { store, dispose } = storeManagerClient.open(key, options);
     return {
@@ -148,15 +144,11 @@ frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
   return (
-    <Suspense>
+    <Suspense fallback={<AppFallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
           <AffineContext store={getCurrentStore()}>
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
+            <RouterProvider router={router} />
           </AffineContext>
         </I18nProvider>
       </FrameworkRoot>

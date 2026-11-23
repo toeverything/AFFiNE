@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+BUILD_TYPE=$(ls /usr/lib | grep '^affine')
+install -Dm0644 /usr/lib/${BUILD_TYPE}/resources/affine.metainfo.xml /usr/share/metainfo/affine.metainfo.xml

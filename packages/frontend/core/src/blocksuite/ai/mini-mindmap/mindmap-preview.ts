@@ -1,12 +1,11 @@
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace.js';
-import { BlockStdScope, type EditorHost } from '@blocksuite/affine/block-std';
+import type { SurfaceBlockModel } from '@blocksuite/affine/blocks/surface';
 import {
   MindmapStyleFour,
   MindmapStyleOne,
   MindmapStyleThree,
   MindmapStyleTwo,
-  type SurfaceBlockModel,
-} from '@blocksuite/affine/blocks/surface';
+} from '@blocksuite/affine/gfx/mindmap';
 import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
@@ -14,12 +13,14 @@ import {
   MindmapStyle,
 } from '@blocksuite/affine/model';
 import { MarkdownAdapter } from '@blocksuite/affine/shared/adapters';
+import { BlockStdScope, type EditorHost } from '@blocksuite/affine/std';
 import { Schema, type Store } from '@blocksuite/affine/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import type { Root } from 'mdast';
+import type { Root, RootContent } from 'mdast';
+import { Doc as YDoc } from 'yjs';
 
 import { MiniMindmapSchema, MiniMindmapSpecs } from './spec.js';
 
@@ -101,9 +102,11 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
 
     const collection = new WorkspaceImpl({
       id: 'MINI_MINDMAP_TEMPORARY',
+      rootDoc: new YDoc({ guid: 'MINI_MINDMAP_TEMPORARY' }),
     });
     collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'doc:home' }).load();
+    const doc = collection.createDoc('doc:home').getStore();
+    doc.load();
     const rootId = doc.addBlock('affine:page', {});
     const surfaceId = doc.addBlock('affine:surface', {}, rootId);
     const surface = doc.getModelById(surfaceId) as SurfaceBlockModel;
@@ -131,7 +134,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
   }
 
   private _toMindmapNode(answer: string, doc: Store) {
-    return markdownToMindmap(answer, doc, this.host.std.provider);
+    return markdownToMindmap(answer, doc, this.host.std.store.provider);
   }
 
   override connectedCallback(): void {
@@ -181,23 +184,25 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
         }).render()}
       </div>
 
-      ${this.templateShow
-        ? html` <div class="select-template-title">Select template</div>
-            <div class="template">
-              ${repeat(
-                mindmapStyles,
-                ([style]) => style,
-                ([style, icon]) => {
-                  return html`<div
-                    class=${`template-item ${curStyle === style ? 'active' : ''}`}
-                    @click=${() => this._switchStyle(style as MindmapStyle)}
-                  >
-                    ${icon}
-                  </div>`;
-                }
-              )}
-            </div>`
-        : nothing}
+      ${
+        this.templateShow
+          ? html` <div class="select-template-title">Select template</div>
+              <div class="template">
+                ${repeat(
+                  mindmapStyles,
+                  ([style]) => style,
+                  ([style, icon]) => {
+                    return html`<div
+                      class=${`template-item ${curStyle === style ? 'active' : ''}`}
+                      @click=${() => this._switchStyle(style as MindmapStyle)}
+                    >
+                      ${icon}
+                    </div>`;
+                  }
+                )}
+              </div>`
+          : nothing
+      }
     </div>`;
   }
 
@@ -231,28 +236,77 @@ type Node = {
   children: Node[];
 };
 
+type MarkdownNode =
+  | RootContent
+  | { alt?: string | null; children?: MarkdownNode[]; value?: string };
+
 export const markdownToMindmap = (
   answer: string,
   doc: Store,
   provider: ServiceProvider
 ) => {
-  let result: Node | null = null;
   const transformer = doc.getTransformer();
   const markdown = new MarkdownAdapter(transformer, provider);
-  const ast: Root = markdown['_markdownToAst'](answer);
+  const astToMindmap = (ast: Root): Node | null => {
+    const findList = (
+      nodes: Root['children']
+    ): Unpacked<Root['children']> | null => {
+      for (const node of nodes) {
+        if (node.type === 'list') {
+          return node;
+        }
+
+        if (node.type === 'code' && node.value) {
+          const nestedAst: Root = markdown['_markdownToAst'](node.value);
+          const nestedList = findList(nestedAst.children);
+          if (nestedList) {
+            return nestedList;
+          }
+        }
+      }
+
+      return null;
+    };
+
+    const list = findList(ast.children);
+    if (!list) {
+      return null;
+    }
+
+    return traverse(list, true);
+  };
+
   const traverse = (
-    markdownNode: Unpacked<(typeof ast)['children']>,
+    markdownNode: Unpacked<Root['children']>,
     firstLevel = false
   ): Node | null => {
+    const toPlainText = (node: MarkdownNode): string => {
+      if ('value' in node && typeof node.value === 'string') {
+        return node.value;
+      }
+
+      if ('alt' in node && typeof node.alt === 'string') {
+        return node.alt;
+      }
+
+      if ('children' in node && Array.isArray(node.children)) {
+        return node.children
+          .map((child: MarkdownNode) => toPlainText(child))
+          .join('');
+      }
+
+      return '';
+    };
+
     switch (markdownNode.type) {
       case 'list':
         {
-          const listItems = markdownNode.children
+          const listItem = markdownNode.children
             .map(child => traverse(child))
-            .filter(val => val);
+            .find(val => val);
 
           if (firstLevel) {
-            return listItems[0];
+            return listItem ?? null;
           }
         }
         break;
@@ -264,11 +318,11 @@ export const markdownToMindmap = (
           children: [],
         };
 
-        if (
-          paragraph?.type === 'paragraph' &&
-          paragraph.children[0]?.type === 'text'
-        ) {
-          node.text = paragraph.children[0].value;
+        if (paragraph?.type === 'paragraph') {
+          node.text = paragraph.children
+            .map((child: MarkdownNode) => toPlainText(child))
+            .join('')
+            .trim();
         }
 
         if (list?.type === 'list') {
@@ -284,9 +338,5 @@ export const markdownToMindmap = (
     return null;
   };
 
-  if (ast?.children?.[0]?.type === 'list') {
-    result = traverse(ast.children[0], true);
-  }
-
-  return result;
+  return astToMindmap(markdown['_markdownToAst'](answer));
 };

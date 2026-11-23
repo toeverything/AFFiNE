@@ -1,0 +1,2 @@
+name                   = "blocksuite-docs"
+pages_build_output_dir = ".vitepress/dist"
