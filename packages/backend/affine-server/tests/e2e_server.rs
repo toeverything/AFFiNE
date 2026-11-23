@@ -415,7 +415,8 @@ fn startup_schema_gate_rejects_pre_0275_and_incomplete_existing_databases_withou
         .unwrap();
     assert!(still_missing, "existing-DB startup gate must NEVER mutate _data_migrations");
 
-    // Restore _data_migrations and delete `workspace_doc_lifecycle_activation`: MUST also fail & not re-seed.
+    // Restore _data_migrations and insert a non-active `workspace_doc_lifecycle_activation`:
+    // MUST also fail & not mutate the row.
     sqlx::query(
       r#"INSERT INTO "_data_migrations" (id, name, started_at, finished_at)
          VALUES (gen_random_uuid()::text, 'Guid1698398506533', now(), now())"#,
@@ -424,25 +425,29 @@ fn startup_schema_gate_rejects_pre_0275_and_incomplete_existing_databases_withou
     .await
     .unwrap();
     sqlx::query(
-      "DELETE FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global'",
+      "INSERT INTO storage_reconciliation_checkpoints
+         (kind, scope, status, cursor, updated_at, metadata)
+       VALUES
+         ('workspace_doc_lifecycle_activation', 'global', 'running', '{}'::jsonb, now(), '{}'::jsonb)
+       ON CONFLICT (kind, scope) DO UPDATE SET status = 'running'",
     )
     .execute(&pool)
     .await
     .unwrap();
     let err_lc = match serve_with_extension(fresh_cli, Arc::new(CommunityExtension::new()), CancellationToken::new()).await
     {
-      Ok(_) => panic!("expected rejection when workspace_doc_lifecycle_activation is missing"),
+      Ok(_) => panic!("expected rejection when workspace_doc_lifecycle_activation is non-active"),
       Err(e) => e,
     };
     assert!(matches!(err_lc, ServerError::Db(DbError::SteppingStoneRequired { .. })));
-    let lc_still_missing: bool = !sqlx::query_scalar::<_, bool>(
-      "SELECT EXISTS(SELECT 1 FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_doc_lifecycle_activation')",
+    let lc_status: String = sqlx::query_scalar(
+      "SELECT status FROM storage_reconciliation_checkpoints WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global'",
     )
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert!(
-      lc_still_missing,
+    assert_eq!(
+      lc_status, "running",
       "existing-DB startup gate must NEVER mutate storage_reconciliation_checkpoints"
     );
     pool.close().await;

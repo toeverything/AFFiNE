@@ -18,7 +18,12 @@
 //     [--out .artifacts/v0275-vs-vnew-parity] [--skip-coexistence]
 
 import { spawn } from 'node:child_process';
-import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
+import {
+  createHash,
+  generateKeyPairSync,
+  randomBytes,
+  randomUUID,
+} from 'node:crypto';
 import {
   createWriteStream,
   existsSync,
@@ -1013,10 +1018,456 @@ async function runCoexistencePhase(newBin, privateKey, migrations) {
       'Phase 2 Direction B (affine-server -> v0.27.5 distinct incremental Yjs update): PASS'
     );
 
+    // Phase 2B: Cross-gen native auth session bidirectional exchange, refresh,
+    // same-attempt recovery, non-UUID 400 validation, and 429 rate-limit parity on shared PG16.
+    const nativeHeaders = extra => ({
+      'content-type': 'application/json',
+      'x-affine-client-kind': 'native',
+      'x-affine-version': '0.27.5',
+      ...extra,
+    });
+    const signInNative = async port => {
+      const resp = await fetch(`http://127.0.0.1:${port}/api/auth/sign-in`, {
+        method: 'POST',
+        headers: nativeHeaders(),
+        body: JSON.stringify({
+          email: 'coex-admin@affine.test',
+          password: 'Coex-Admin-Passw0rd',
+        }),
+      });
+      const json = await resp.json();
+      if (resp.status !== 200 || typeof json?.exchangeCode !== 'string') {
+        throw new Error(
+          `Phase 2B native sign-in on :${port} failed: ${resp.status} ${JSON.stringify(json)}`
+        );
+      }
+      return json.exchangeCode;
+    };
+    const exchangeNative = async (port, code) => {
+      const resp = await fetch(
+        `http://127.0.0.1:${port}/api/auth/session/exchange`,
+        {
+          method: 'POST',
+          headers: nativeHeaders(),
+          body: JSON.stringify({
+            code,
+            installationId: randomUUID(),
+            platform: 'ios',
+            deviceName: 'Parity iPhone',
+          }),
+        }
+      );
+      const json = await resp.json();
+      if (
+        resp.status !== 201 ||
+        !json?.refreshToken?.startsWith('aff_rt_v1.') ||
+        'status' in json ||
+        'userId' in json ||
+        'isNewDevice' in json
+      ) {
+        throw new Error(
+          `Phase 2B exchange on :${port} mismatch: ${resp.status} ${JSON.stringify(json)}`
+        );
+      }
+      return json;
+    };
+    const refreshNative = async (port, refreshToken, attemptId) => {
+      const extra =
+        attemptId !== undefined
+          ? { 'x-affine-refresh-attempt': attemptId }
+          : {};
+      const resp = await fetch(
+        `http://127.0.0.1:${port}/api/auth/session/refresh`,
+        {
+          method: 'POST',
+          headers: nativeHeaders(extra),
+          body: JSON.stringify({ refreshToken }),
+        }
+      );
+      return { status: resp.status, json: await resp.json() };
+    };
+
+    // Direction 1: v0.27.5 issues -> affine-server rotates with UUID -> v0.27.5 recovers same successor.
+    const oldEx = await exchangeNative(
+      oldSide.port,
+      await signInNative(oldSide.port)
+    );
+    const attemptA = randomUUID();
+    const newRotA = await refreshNative(
+      newSide.port,
+      oldEx.refreshToken,
+      attemptA
+    );
+    if (
+      newRotA.status !== 201 ||
+      newRotA.json?.status !== 'rotated' ||
+      !newRotA.json?.refreshToken?.startsWith('aff_rt_v1.')
+    ) {
+      throw new Error(
+        `Phase 2B affine-server rotate failed: ${newRotA.status} ${JSON.stringify(newRotA.json)}`
+      );
+    }
+    const oldRecA = await refreshNative(
+      oldSide.port,
+      oldEx.refreshToken,
+      attemptA
+    );
+    if (
+      oldRecA.status !== 201 ||
+      oldRecA.json?.status !== 'rotated' ||
+      oldRecA.json?.refreshToken !== newRotA.json.refreshToken ||
+      oldRecA.json?.tokenType !== newRotA.json.tokenType ||
+      oldRecA.json?.expiresIn !== newRotA.json.expiresIn ||
+      oldRecA.json?.refreshExpiresAt !== newRotA.json.refreshExpiresAt ||
+      oldRecA.json?.session?.id !== newRotA.json.session.id ||
+      oldRecA.json?.session?.absoluteExpiresAt !==
+        newRotA.json.session.absoluteExpiresAt
+    ) {
+      throw new Error(
+        `Phase 2B v0.27.5 recover mismatch: old=${JSON.stringify(oldRecA)} new=${JSON.stringify(newRotA)}`
+      );
+    }
+
+    // Direction 2: affine-server issues & rotates -> v0.27.5 recovers same successor & rotates again.
+    const newEx = await exchangeNative(
+      newSide.port,
+      await signInNative(newSide.port)
+    );
+    const attemptB = randomUUID();
+    const newRotB = await refreshNative(
+      newSide.port,
+      newEx.refreshToken,
+      attemptB
+    );
+    const oldRecB = await refreshNative(
+      oldSide.port,
+      newEx.refreshToken,
+      attemptB
+    );
+    if (
+      newRotB.status !== 201 ||
+      oldRecB.status !== 201 ||
+      oldRecB.json?.refreshToken !== newRotB.json.refreshToken
+    ) {
+      throw new Error(
+        `Phase 2B reverse recover mismatch: new=${JSON.stringify(newRotB)} old=${JSON.stringify(oldRecB)}`
+      );
+    }
+    const oldNextB = await refreshNative(
+      oldSide.port,
+      oldRecB.json.refreshToken,
+      randomUUID()
+    );
+    if (oldNextB.status !== 201 || oldNextB.json?.status !== 'rotated') {
+      throw new Error(
+        `Phase 2B v0.27.5 next rotate failed: ${oldNextB.status} ${JSON.stringify(oldNextB.json)}`
+      );
+    }
+
+    // Non-UUID x-affine-refresh-attempt must be rejected with 400 on BOTH servers.
+    const [badOld, badNew] = await Promise.all([
+      refreshNative(oldSide.port, oldNextB.json.refreshToken, 'not-a-uuid'),
+      refreshNative(newSide.port, oldNextB.json.refreshToken, 'not-a-uuid'),
+    ]);
+    if (badOld.status !== 400 || badNew.status !== 400) {
+      throw new Error(
+        `Phase 2B non-UUID attempt must return 400 on both sides: old=${badOld.status} new=${badNew.status}`
+      );
+    }
+
+    // Exhausted per-token refresh rate limit (count = 30) returns 429 on BOTH servers
+    // without advancing token generation or revoking the session.
+    const rlToken = oldNextB.json.refreshToken;
+    const rlTokenId = rlToken.split('.')[1];
+    const rlScope = `auth:session_refresh:${rlTokenId}`;
+    const { PrismaClient } = req('@prisma/client');
+    const prisma = new PrismaClient({ datasourceUrl: sharedDb });
+    const decodeJwtTtl = token => {
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64url').toString('utf8')
+      );
+      return payload.exp - payload.iat;
+    };
+    const updateOldAppConfig = async (module, key, value) => {
+      const resp = await fetch(`http://127.0.0.1:${oldSide.port}/graphql`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: cookieHeader },
+        body: JSON.stringify({
+          query:
+            'mutation($updates: [UpdateAppConfigInput!]!) { updateAppConfig(updates: $updates) }',
+          variables: { updates: [{ module, key, value }] },
+        }),
+      });
+      const json = await resp.json();
+      if (resp.status !== 200 || json.errors) {
+        throw new Error(
+          `Phase 2B updateAppConfig(${module}.${key}=${value}) failed: ${resp.status} ${JSON.stringify(json)}`
+        );
+      }
+    };
+    try {
+      // Direction 3: v0.27.5 rotates with UUID -> affine-server recovers under non-default accessTokenTtl=300.
+      await updateOldAppConfig('auth', 'token.accessTokenTtl', 300);
+      try {
+        const ttlEx = await exchangeNative(
+          oldSide.port,
+          await signInNative(oldSide.port)
+        );
+        const attemptC = randomUUID();
+        const oldRotC = await refreshNative(
+          oldSide.port,
+          ttlEx.refreshToken,
+          attemptC
+        );
+        const newRecC = await refreshNative(
+          newSide.port,
+          ttlEx.refreshToken,
+          attemptC
+        );
+        if (
+          oldRotC.status !== 201 ||
+          newRecC.status !== 201 ||
+          oldRotC.json?.expiresIn !== 300 ||
+          newRecC.json?.expiresIn !== 300 ||
+          decodeJwtTtl(oldRotC.json.accessToken) !== 300 ||
+          decodeJwtTtl(newRecC.json.accessToken) !== 300 ||
+          newRecC.json?.refreshToken !== oldRotC.json.refreshToken
+        ) {
+          throw new Error(
+            `Phase 2B v0.27.5->affine-server recover (accessTokenTtl=300) mismatch: old=${JSON.stringify(oldRotC)} new=${JSON.stringify(newRecC)}`
+          );
+        }
+      } finally {
+        await updateOldAppConfig('auth', 'token.accessTokenTtl', 900);
+        await prisma.$executeRaw`DELETE FROM app_configs WHERE id IN ('auth', 'auth.token', 'auth.token.accessTokenTtl')`;
+      }
+
+      // Zod UUID & deviceName UTF-16 boundary parity on BOTH servers.
+      const countSessions = async () => {
+        const rows =
+          await prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM auth_sessions`;
+        return rows[0]?.cnt ?? 0;
+      };
+      const sessionsBefore = await countSessions();
+      const [codeForBadOld, codeForBadNew] = await Promise.all([
+        signInNative(oldSide.port),
+        signInNative(newSide.port),
+      ]);
+      const badPayloads = [
+        {
+          installationId: '550e8400e29b41d4a716446655440000',
+          platform: 'ios',
+        },
+        {
+          installationId: '{550e8400-e29b-41d4-a716-446655440000}',
+          platform: 'ios',
+        },
+        {
+          installationId: randomUUID(),
+          platform: 'ios',
+          deviceName: 'a'.repeat(201),
+        },
+        {
+          installationId: randomUUID(),
+          platform: 'ios',
+          deviceName: '\uFEFF',
+        },
+        {
+          installationId: randomUUID(),
+          platform: 'ios',
+          deviceName: `${'a'.repeat(200)}\u0085`,
+        },
+      ];
+      for (const bad of badPayloads) {
+        const [rOld, rNew] = await Promise.all([
+          fetch(`http://127.0.0.1:${oldSide.port}/api/auth/session/exchange`, {
+            method: 'POST',
+            headers: nativeHeaders(),
+            body: JSON.stringify({ code: codeForBadOld, ...bad }),
+          }),
+          fetch(`http://127.0.0.1:${newSide.port}/api/auth/session/exchange`, {
+            method: 'POST',
+            headers: nativeHeaders(),
+            body: JSON.stringify({ code: codeForBadNew, ...bad }),
+          }),
+        ]);
+        if (rOld.status !== 400 || rNew.status !== 400) {
+          throw new Error(
+            `Phase 2B boundary validation expected 400 on both sides for ${JSON.stringify(bad)}: old=${rOld.status} new=${rNew.status}`
+          );
+        }
+      }
+      const sessionsAfterBad = await countSessions();
+      if (sessionsAfterBad !== sessionsBefore) {
+        throw new Error(
+          `Phase 2B rejected exchange must write 0 auth_sessions: before=${sessionsBefore} after=${sessionsAfterBad}`
+        );
+      }
+      const cjk100 = '测'.repeat(100);
+      const [cjkOldResp, cjkNewResp] = await Promise.all([
+        fetch(`http://127.0.0.1:${oldSide.port}/api/auth/session/exchange`, {
+          method: 'POST',
+          headers: nativeHeaders(),
+          body: JSON.stringify({
+            code: codeForBadOld,
+            installationId: randomUUID(),
+            platform: 'ios',
+            deviceName: `  ${cjk100}  `,
+          }),
+        }),
+        fetch(`http://127.0.0.1:${newSide.port}/api/auth/session/exchange`, {
+          method: 'POST',
+          headers: nativeHeaders(),
+          body: JSON.stringify({
+            code: codeForBadNew,
+            installationId: randomUUID(),
+            platform: 'ios',
+            deviceName: `  ${cjk100}  `,
+          }),
+        }),
+      ]);
+      const [cjkOldJson, cjkNewJson] = await Promise.all([
+        cjkOldResp.json(),
+        cjkNewResp.json(),
+      ]);
+      if (cjkOldResp.status !== 201 || cjkNewResp.status !== 201) {
+        throw new Error(
+          `Phase 2B 100-CJK deviceName expected 201 on both sides: old=${cjkOldResp.status} new=${cjkNewResp.status}`
+        );
+      }
+      const cjkRows = await prisma.$queryRaw`
+        SELECT id, device_name FROM auth_sessions WHERE id IN (${cjkOldJson.session.id}, ${cjkNewJson.session.id})
+      `;
+      if (cjkRows.length !== 2 || cjkRows.some(r => r.device_name !== cjk100)) {
+        throw new Error(
+          `Phase 2B 100-CJK device_name DB mismatch: ${JSON.stringify(cjkRows)}`
+        );
+      }
+
+      // Whitespace-padded refresh token must return 401 REFRESH_TOKEN_INVALID on BOTH servers
+      // without marking the token used or inserting any successor row.
+      const padToken = cjkNewJson.refreshToken;
+      const padTokenId = padToken.split('.')[1];
+      const padCountBefore =
+        await prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM auth_refresh_tokens`;
+      const [padOld, padNew] = await Promise.all([
+        refreshNative(oldSide.port, ` ${padToken} `),
+        refreshNative(newSide.port, ` ${padToken} `),
+      ]);
+      const padRowAfter = await prisma.$queryRaw`
+        SELECT used_at, replaced_by_id FROM auth_refresh_tokens WHERE id = ${padTokenId}
+      `;
+      const padCountAfter =
+        await prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM auth_refresh_tokens`;
+      if (
+        padOld.status !== 401 ||
+        padNew.status !== 401 ||
+        padOld.json?.name !== 'REFRESH_TOKEN_INVALID' ||
+        padNew.json?.name !== 'REFRESH_TOKEN_INVALID' ||
+        padRowAfter[0]?.used_at !== null ||
+        padRowAfter[0]?.replaced_by_id !== null ||
+        padCountBefore[0]?.cnt !== padCountAfter[0]?.cnt
+      ) {
+        throw new Error(
+          `Phase 2B padded refresh token parity failed: old=${padOld.status} ${JSON.stringify(padOld.json)} new=${padNew.status} ${JSON.stringify(padNew.json)} row=${JSON.stringify(padRowAfter[0])}`
+        );
+      }
+
+      // Version-0 non-nil hyphenated UUID attempt must be accepted (201) on BOTH servers.
+      const ver0Uuid = '00000000-0000-0000-0000-000000000001';
+      const [ver0Old, ver0New] = await Promise.all([
+        refreshNative(oldSide.port, cjkOldJson.refreshToken, ver0Uuid),
+        refreshNative(newSide.port, cjkNewJson.refreshToken, ver0Uuid),
+      ]);
+      if (
+        ver0Old.status !== 201 ||
+        ver0New.status !== 201 ||
+        ver0Old.json?.status !== 'rotated' ||
+        ver0New.json?.status !== 'rotated'
+      ) {
+        throw new Error(
+          `Phase 2B version-0 non-nil UUID attempt parity failed: old=${ver0Old.status} ${JSON.stringify(ver0Old.json)} new=${ver0New.status} ${JSON.stringify(ver0New.json)}`
+        );
+      }
+
+      // Over-budget (>16 MiB) readable doc must return 500 INTERNAL_SERVER_ERROR on BOTH servers.
+      const overDocId = 'zzz-parity-over-budget-doc';
+      const hugeBuf = Buffer.alloc(16 * 1024 * 1024 + 1, 0);
+      await prisma.$executeRaw`
+        INSERT INTO snapshots (workspace_id, guid, blob, created_at, updated_at)
+        VALUES (${workspaceId}, ${overDocId}, ${hugeBuf}, clock_timestamp(), clock_timestamp())
+      `;
+      try {
+        const urls = [
+          `/api/workspaces/${workspaceId}/readable-blob-manifest/v1?limit=100`,
+          `/api/workspaces/${workspaceId}/blob-manifest/v1?sourceType=currentDoc&docId=${overDocId}`,
+        ];
+        for (const path of urls) {
+          const [mOld, mNew] = await Promise.all([
+            fetch(`http://127.0.0.1:${oldSide.port}${path}`, {
+              headers: { cookie: cookieHeader },
+            }),
+            fetch(`http://127.0.0.1:${newSide.port}${path}`, {
+              headers: { cookie: cookieHeader },
+            }),
+          ]);
+          const [jOld, jNew] = await Promise.all([mOld.json(), mNew.json()]);
+          if (
+            mOld.status !== 500 ||
+            mNew.status !== 500 ||
+            jOld?.name !== 'INTERNAL_SERVER_ERROR' ||
+            jNew?.name !== 'INTERNAL_SERVER_ERROR'
+          ) {
+            throw new Error(
+              `Phase 2B over-budget doc parity failed for ${path}: old=${mOld.status} ${JSON.stringify(jOld)} new=${mNew.status} ${JSON.stringify(jNew)}`
+            );
+          }
+        }
+      } finally {
+        await prisma.$executeRaw`
+          DELETE FROM snapshots WHERE workspace_id = ${workspaceId} AND guid = ${overDocId}
+        `;
+      }
+
+      await prisma.$executeRaw`
+        INSERT INTO runtime_rolling_quota_counters
+          (scope_key, window_seconds, bucket_start, count, expires_at, updated_at)
+        VALUES (${rlScope}, 60, date_trunc('minute', clock_timestamp()), 30, clock_timestamp() + interval '2 minutes', clock_timestamp())
+        ON CONFLICT (scope_key, window_seconds, bucket_start) DO UPDATE SET count = 30
+      `;
+      const beforeRows = await prisma.$queryRaw`
+        SELECT generation, used_at, revoked_at FROM auth_refresh_tokens WHERE id = ${rlTokenId}
+      `;
+      const [rlOld, rlNew] = await Promise.all([
+        refreshNative(oldSide.port, rlToken, randomUUID()),
+        refreshNative(newSide.port, rlToken, randomUUID()),
+      ]);
+      const afterRows = await prisma.$queryRaw`
+        SELECT generation, used_at, revoked_at FROM auth_refresh_tokens WHERE id = ${rlTokenId}
+      `;
+      if (
+        rlOld.status !== 429 ||
+        rlNew.status !== 429 ||
+        beforeRows[0]?.generation !== afterRows[0]?.generation ||
+        afterRows[0]?.used_at !== null ||
+        afterRows[0]?.revoked_at !== null
+      ) {
+        throw new Error(
+          `Phase 2B 429 rate-limit parity failed: old=${rlOld.status} new=${rlNew.status} before=${JSON.stringify(beforeRows[0])} after=${JSON.stringify(afterRows[0])}`
+        );
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
+    log(
+      'Phase 2B cross-gen native refresh bidirectional recover (incl. accessTokenTtl=300) + Zod/UTF-16 validation + over-budget 500 + 429 rate-limit parity: PASS'
+    );
+
     return {
       passed: true,
       direction_a: { spaceId: invA.spaceId, state: loadA.data.state },
       direction_b: { spaceId: invB.spaceId, state: loadB.data.state },
+      native_refresh_parity: true,
     };
   } finally {
     clientOld.disconnect();

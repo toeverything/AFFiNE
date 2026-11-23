@@ -22,6 +22,7 @@ publish      = false
 rust-version = "1.88"
 
 [workspace.dependencies]
+aes-gcm            = "0.10"
 arc-swap           = "1"
 argon2             = "0.5"
 async-graphql      = { version = "7", features = ["chrono", "uuid"] }
@@ -36,8 +37,10 @@ crc32fast          = "1"
 futures-util       = "0.3"
 hex                = "0.4"
 hickory-resolver   = "0.26.2"
+hkdf               = "0.12"
 hmac               = "0.12"
 http               = "1"
+image              = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "ico"] }
 lettre             = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
 lru                = "0.12"
 mailparse          = "0.16"
@@ -63,6 +66,7 @@ unicode_skeleton   = "0.1.1"
 url                = "2.5"
 uuid               = { version = "1", features = ["v4", "serde"] }
 y-octo             = { version = "0.4.0", features = ["large_refs"] }
+zeroize            = "1"
 
 affine-server   = { path = "affine-server" }
 frame-audit     = { path = "../../tools/frame-audit" }

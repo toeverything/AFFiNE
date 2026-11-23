@@ -18,6 +18,7 @@ base64.workspace             = true
 bytes.workspace              = true
 chrono.workspace             = true
 http.workspace               = true
+image.workspace              = true
 redis.workspace              = true
 serde.workspace              = true
 serde_json.workspace         = true
@@ -36,5 +37,7 @@ uuid.workspace               = true
 
 [dev-dependencies]
 async-trait.workspace     = true
+crc32fast.workspace       = true
 test-db-harness.workspace = true
 tower.workspace           = true
+y-octo.workspace          = true

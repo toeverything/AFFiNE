@@ -141,16 +141,18 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
       "fresh DB must seed all 10 completed v0.27.5 _data_migrations markers"
     );
 
-    let (lifecycle_status, lifecycle_meta): (String, serde_json::Value) = sqlx::query_as(
+    let lifecycle_row: Option<(String, serde_json::Value)> = sqlx::query_as(
       "SELECT status, metadata
        FROM storage_reconciliation_checkpoints
        WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global'",
     )
-    .fetch_one(conn.as_conn())
+    .fetch_optional(conn.as_conn())
     .await
     .unwrap();
-    assert_eq!(lifecycle_status, "active");
-    assert_eq!(lifecycle_meta, serde_json::json!({ "protocolVersion": 2 }));
+    assert!(
+      lifecycle_row.is_none(),
+      "fresh DB must default to v1 sync protocol without pre-activating workspace_doc_lifecycle_activation"
+    );
 
     let native_ledger: Vec<(String, i32, String)> =
       sqlx::query_as("SELECT component, version, checksum FROM native_schema_migrations ORDER BY component, version")

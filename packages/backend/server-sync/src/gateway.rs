@@ -60,6 +60,8 @@ struct GatewayRooms {
   active_socket_doc_actions: HashMap<String, HashMap<String, HashSet<DocAction>>>,
   /// `socket_id -> active_doc_key -> permission_generation`
   active_socket_doc_generations: HashMap<String, HashMap<String, i64>>,
+  /// `subscription_id -> (socket_id, room_name)` for `realtime:subscribe`
+  realtime_subscriptions: HashMap<String, (String, String)>,
 }
 
 impl GatewayRooms {
@@ -198,6 +200,7 @@ impl GatewayRooms {
     }
     self.active_socket_doc_actions.remove(socket_id);
     self.active_socket_doc_generations.remove(socket_id);
+    self.realtime_subscriptions.retain(|_, (sid, _)| sid != socket_id);
 
     if let Some(user_id) = self.socket_users.remove(socket_id)
       && let Some(count) = self.user_connection_counts.get_mut(&user_id)
@@ -319,6 +322,31 @@ impl SpaceSyncGateway {
               engine
                 .emit_to_socket(&sid, "space:broadcast-awareness-update", &body)
                 .await;
+            }
+          }
+          Ok(ClusterSyncEvent::RealtimeTopicChanged(payload)) => {
+            let recipients = {
+              let rooms = gateway.rooms.read().await;
+              rooms
+                .room_sockets
+                .get(&payload.room)
+                .map(|s| s.iter().cloned().collect::<Vec<_>>())
+                .unwrap_or_default()
+            };
+            let event_val = if payload.event.is_null() {
+              payload.payload
+            } else {
+              payload.event
+            };
+            let input_key = realtime_input_key(&payload.input);
+            let body = json!({
+              "topic": payload.topic,
+              "inputKey": input_key,
+              "sentAt": chrono::Utc::now().timestamp_millis(),
+              "event": event_val,
+            });
+            for sid in recipients {
+              engine.emit_to_socket(&sid, "realtime:event", &body).await;
             }
           }
           Ok(ClusterSyncEvent::WorkspaceInventoryChanged { workspace_id, doc_id }) => {
@@ -547,6 +575,57 @@ impl SpaceSyncGateway {
         .emit_inventory_invalidation(engine, SpaceType::Workspace, &ws_id)
         .await;
     }
+
+    // Revalidate realtime room subscriptions (`workspace:<ws>:config` and `workspace:<ws>:access`)
+    // and evict sockets that lost workspace membership or read access.
+    let rt_candidates: Vec<(String, String, String, String)> = {
+      let rooms = self.rooms.read().await;
+      rooms
+        .realtime_subscriptions
+        .iter()
+        .filter_map(|(sub_id, (sid, room))| {
+          let rest = room.strip_prefix("workspace:")?;
+          let (ws_id, kind) = rest.rsplit_once(':')?;
+          if !matches!(kind, "config" | "access") {
+            return None;
+          }
+          if let Some((filter_ws, _)) = filter
+            && filter_ws != ws_id
+          {
+            return None;
+          }
+          let user_id = rooms.socket_users.get(sid)?.clone();
+          Some((sub_id.clone(), sid.clone(), user_id, room.clone()))
+        })
+        .collect()
+    };
+
+    for (sub_id, sid, user_id, room) in rt_candidates {
+      let Some((ws_id, kind)) = room.strip_prefix("workspace:").and_then(|r| r.rsplit_once(':')) else {
+        continue;
+      };
+      let still_allowed = match kind {
+        "config" => self
+          .storage
+          .assert_space_accessible(SpaceType::Workspace, ws_id, &user_id)
+          .await
+          .is_ok(),
+        "access" => self.storage.assert_workspace_readable(ws_id, &user_id).await.is_ok(),
+        _ => true,
+      };
+      if !still_allowed {
+        let mut rooms = self.rooms.write().await;
+        if rooms.realtime_subscriptions.remove(&sub_id).is_some() {
+          let still_in_room = rooms
+            .realtime_subscriptions
+            .values()
+            .any(|(other_sid, other_room)| other_sid == &sid && other_room == &room);
+          if !still_in_room {
+            rooms.leave_room(&sid, &room);
+          }
+        }
+      }
+    }
   }
 
   async fn flush_active_users_minutely(&self) {
@@ -624,6 +703,9 @@ impl SpaceSyncGateway {
       "space:doc-lifecycle" => self.on_doc_lifecycle(socket_id, user, payload).await,
       "space:load-awarenesses" => self.on_load_awarenesses(engine, socket_id, payload).await,
       "space:update-awareness" => self.on_update_awareness(engine, socket_id, payload).await,
+      "realtime:request" => self.on_realtime_request(user, payload).await,
+      "realtime:subscribe" => self.on_realtime_subscribe(socket_id, user, payload).await,
+      "realtime:unsubscribe" => self.on_realtime_unsubscribe(socket_id, payload).await,
       other => Err(SyncError::BadRequest(format!("Unsupported event: {other}"))),
     };
 
@@ -1115,6 +1197,144 @@ impl SpaceSyncGateway {
     Ok(json!({ "data": data }))
   }
 
+  fn validate_realtime_client_version(payload: &Value) -> Result<(), SyncError> {
+    const REQUIRED: &str = ">=0.26.0";
+    let raw = payload
+      .get("clientVersion")
+      .and_then(Value::as_str)
+      .map(str::trim)
+      .filter(|s| !s.is_empty());
+    let Some(ver) = raw else {
+      return Err(SyncError::UnsupportedClientVersion {
+        client_version: "unset_or_invalid".to_owned(),
+        required_version: REQUIRED.to_owned(),
+      });
+    };
+    if is_supported_realtime_client_version(ver) {
+      Ok(())
+    } else {
+      Err(SyncError::UnsupportedClientVersion {
+        client_version: ver.to_owned(),
+        required_version: REQUIRED.to_owned(),
+      })
+    }
+  }
+
+  async fn on_realtime_request(&self, user: &SyncUser, payload: Value) -> Result<Value, SyncError> {
+    Self::validate_realtime_client_version(&payload)?;
+    let op = payload
+      .get("op")
+      .and_then(Value::as_str)
+      .ok_or_else(|| SyncError::BadRequest("Missing realtime request op".into()))?;
+    let input = payload.get("input").cloned().unwrap_or_else(|| json!({}));
+    match op {
+      "workspace.access.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let access = self
+          .storage
+          .get_workspace_access_snapshot(workspace_id, &user.id)
+          .await?;
+        Ok(json!({ "data": { "access": access } }))
+      }
+      "workspace.config.get" => {
+        let workspace_id = input
+          .get("workspaceId")
+          .and_then(Value::as_str)
+          .filter(|s| !s.is_empty())
+          .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+        let config = self
+          .storage
+          .get_workspace_config_snapshot(workspace_id, &user.id)
+          .await?;
+        Ok(json!({ "data": { "config": config } }))
+      }
+      other => Err(SyncError::BadRequest(format!("Unsupported realtime op: {other}"))),
+    }
+  }
+
+  async fn on_realtime_subscribe(&self, socket_id: &str, user: &SyncUser, payload: Value) -> Result<Value, SyncError> {
+    Self::validate_realtime_client_version(&payload)?;
+    let topic = payload
+      .get("topic")
+      .and_then(Value::as_str)
+      .ok_or_else(|| SyncError::BadRequest("Missing realtime topic".into()))?;
+    let input = payload.get("input").cloned().unwrap_or_else(|| json!({}));
+    let workspace_id = input
+      .get("workspaceId")
+      .and_then(Value::as_str)
+      .filter(|s| !s.is_empty())
+      .ok_or_else(|| SyncError::BadRequest("Missing workspaceId".into()))?;
+
+    let room = match topic {
+      "workspace.access.changed" => {
+        self.storage.assert_workspace_readable(workspace_id, &user.id).await?;
+        format!("workspace:{workspace_id}:access")
+      }
+      "workspace.config.changed" => {
+        self
+          .storage
+          .assert_space_accessible(SpaceType::Workspace, workspace_id, &user.id)
+          .await?;
+        format!("workspace:{workspace_id}:config")
+      }
+      other => return Err(SyncError::BadRequest(format!("Unsupported realtime topic: {other}"))),
+    };
+
+    let input_key = realtime_input_key(&input);
+    let subscription_id = format!("{socket_id}:{topic}:{input_key}");
+    {
+      const MAX_REALTIME_SUBSCRIPTIONS_PER_SOCKET: usize = 256;
+      let mut rooms = self.rooms.write().await;
+      if !rooms.realtime_subscriptions.contains_key(&subscription_id) {
+        let current_count = rooms
+          .realtime_subscriptions
+          .values()
+          .filter(|(sid, _)| sid == socket_id)
+          .count();
+        if current_count >= MAX_REALTIME_SUBSCRIPTIONS_PER_SOCKET {
+          return Err(SyncError::BadRequest("Too many realtime subscriptions".into()));
+        }
+      }
+      rooms.join_room(socket_id, &room);
+      rooms
+        .realtime_subscriptions
+        .insert(subscription_id.clone(), (socket_id.to_owned(), room));
+    }
+    Ok(json!({ "data": { "subscriptionId": subscription_id } }))
+  }
+
+  async fn on_realtime_unsubscribe(&self, socket_id: &str, payload: Value) -> Result<Value, SyncError> {
+    Self::validate_realtime_client_version(&payload)?;
+    let Some(subscription_id) = payload
+      .get("subscriptionId")
+      .and_then(Value::as_str)
+      .map(str::trim)
+      .filter(|s| !s.is_empty())
+    else {
+      return Ok(json!({ "data": { "ok": true } }));
+    };
+
+    let mut rooms = self.rooms.write().await;
+    let should_remove = rooms
+      .realtime_subscriptions
+      .get(subscription_id)
+      .is_some_and(|(owner_sid, _)| owner_sid == socket_id);
+    if should_remove && let Some((_, room)) = rooms.realtime_subscriptions.remove(subscription_id) {
+      let still_subscribed = rooms
+        .realtime_subscriptions
+        .values()
+        .any(|(sid, r)| sid == socket_id && r == &room);
+      if !still_subscribed {
+        rooms.leave_room(socket_id, &room);
+      }
+    }
+    Ok(json!({ "data": { "ok": true } }))
+  }
+
   async fn on_load_awarenesses(
     &self,
     engine: &Arc<EngineIoState>,
@@ -1393,4 +1613,62 @@ impl SpaceSyncGateway {
       _ => Err(SyncError::BadRequest("Sync protocol upgrade required.".into())),
     }
   }
+}
+
+/// Deterministic JSON serialization matching `getRealtimeInputKey` in
+/// `packages/common/realtime/src/index.ts`.
+fn realtime_input_key(input: &Value) -> String {
+  match input {
+    Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => {
+      serde_json::to_string(input).unwrap_or_else(|_| "null".to_owned())
+    }
+    Value::Array(items) => {
+      let inner = items.iter().map(realtime_input_key).collect::<Vec<_>>().join(",");
+      format!("[{inner}]")
+    }
+    Value::Object(map) => {
+      let mut keys: Vec<&str> = map.keys().map(String::as_str).collect();
+      keys.sort_unstable();
+      let inner = keys
+        .into_iter()
+        .map(|k| {
+          let ek = serde_json::to_string(k).unwrap_or_else(|_| "\"\"".to_owned());
+          format!("{ek}:{}", realtime_input_key(&map[k]))
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+      format!("{{{inner}}}")
+    }
+  }
+}
+
+/// Validates realtime `clientVersion` (`>= 0.26.0-0` or valid canary date version).
+fn is_supported_realtime_client_version(ver: &str) -> bool {
+  let trimmed = ver.trim().trim_start_matches('v');
+  if trimmed.is_empty() {
+    return false;
+  }
+  let (core, pre) = match trimmed.split_once('-') {
+    Some((c, p)) => (c, Some(p)),
+    None => (trimmed, None),
+  };
+  let core = core.split('+').next().unwrap_or(core);
+  let mut parts = core.split('.');
+  let (Some(maj_s), Some(min_s), Some(pat_s), None) = (parts.next(), parts.next(), parts.next(), parts.next()) else {
+    return false;
+  };
+  let (Ok(maj), Ok(min), Ok(_pat)) = (maj_s.parse::<u64>(), min_s.parse::<u64>(), pat_s.parse::<u64>()) else {
+    return false;
+  };
+  if maj > 0 || min >= 26 {
+    return true;
+  }
+  // Allow canary date versions (e.g. `0.0.0-canary.20260101` or `0.0.0-20260101`).
+  if let Some(pre) = pre {
+    let digits: String = pre.chars().filter(|c| c.is_ascii_digit()).collect();
+    if digits.len() >= 8 && pre.to_ascii_lowercase().contains("canary") {
+      return true;
+    }
+  }
+  false
 }

@@ -214,43 +214,17 @@ pub enum ReservedDocKind {
 }
 
 pub fn classify_reserved_doc(workspace_id: &str, doc_id: &str, actor_user_id: &str) -> ReservedDocKind {
-  if doc_id == workspace_id {
-    return ReservedDocKind::Root;
-  }
-  if let Some(rest) = doc_id.strip_prefix("db$") {
-    let Some((ws, table)) = rest.split_once('$') else {
-      return ReservedDocKind::InvalidOrForeign;
-    };
-    if ws != workspace_id {
-      return ReservedDocKind::InvalidOrForeign;
+  match server_domain::acl::classify_reserved_doc(workspace_id, doc_id) {
+    server_domain::acl::ReservedDocClass::Ordinary => ReservedDocKind::Ordinary,
+    server_domain::acl::ReservedDocClass::WorkspaceRoot => ReservedDocKind::Root,
+    server_domain::acl::ReservedDocClass::WorkspaceSystem => ReservedDocKind::WorkspaceDb,
+    server_domain::acl::ReservedDocClass::UserPrivate { owner_id } if owner_id == actor_user_id => {
+      ReservedDocKind::UserDataOwner
     }
-    return match table {
-      "folders" | "docProperties" | "docCustomPropertyInfo" | "pinnedCollections" | "explorerIcon" => {
-        ReservedDocKind::WorkspaceDb
-      }
-      _ => ReservedDocKind::InvalidOrForeign,
-    };
-  }
-  if let Some(rest) = doc_id.strip_prefix("userdata$") {
-    let parts: Vec<&str> = rest.split('$').collect();
-    if parts.len() != 3 {
-      return ReservedDocKind::InvalidOrForeign;
+    server_domain::acl::ReservedDocClass::UserPrivate { .. } | server_domain::acl::ReservedDocClass::Invalid => {
+      ReservedDocKind::InvalidOrForeign
     }
-    let (owner_id, ws, table) = (parts[0], parts[1], parts[2]);
-    if owner_id.is_empty()
-      || owner_id == "__local__"
-      || owner_id.contains('$')
-      || ws != workspace_id
-      || owner_id != actor_user_id
-    {
-      return ReservedDocKind::InvalidOrForeign;
-    }
-    return match table {
-      "favorite" | "settings" | "docIntegrationRef" => ReservedDocKind::UserDataOwner,
-      _ => ReservedDocKind::InvalidOrForeign,
-    };
   }
-  ReservedDocKind::Ordinary
 }
 
 /// Checks `clientVersion >= 0.27.5-0` (semver major.minor.patch comparison).

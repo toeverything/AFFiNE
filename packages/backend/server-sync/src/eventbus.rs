@@ -95,6 +95,19 @@ pub struct SyncAwarenessEventPayload {
   pub awareness_update: Option<String>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RealtimeTopicChangedPayload {
+  pub topic: String,
+  pub room: String,
+  #[serde(default)]
+  pub input: Value,
+  #[serde(default)]
+  pub event: Value,
+  #[serde(default)]
+  pub payload: Value,
+}
+
 /// Incoming cluster events delivered to the local `SpaceSyncGateway`.
 #[derive(Clone, Debug)]
 pub enum ClusterSyncEvent {
@@ -102,6 +115,7 @@ pub enum ClusterSyncEvent {
   PermissionsChanged(SyncPermissionsChangedPayload),
   AwarenessCollect(SyncAwarenessEventPayload),
   AwarenessUpdated(SyncAwarenessEventPayload),
+  RealtimeTopicChanged(RealtimeTopicChangedPayload),
   WorkspaceInventoryChanged {
     workspace_id: String,
     doc_id: Option<String>,
@@ -452,6 +466,15 @@ async fn run_subscriber_loop(
           debug!("ignoring malformed eventbus message");
           continue;
         };
+        if envelope.event == "realtime.topic.changed" {
+          if !filter.seen.contains(&envelope.id) {
+            filter.seen.put(envelope.id.clone(), ());
+            if let Ok(payload) = serde_json::from_value::<RealtimeTopicChangedPayload>(envelope.payload) {
+              let _ = incoming_tx.send(ClusterSyncEvent::RealtimeTopicChanged(payload));
+            }
+          }
+          continue;
+        }
         if !filter.accept(&envelope) {
           continue;
         }

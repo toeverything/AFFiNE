@@ -1,26 +1,34 @@
 //! `async-graphql 7` root schema aligned with `v0.27.5` `schema.gql`.
 
-use std::io::Read as _;
+pub mod admin;
+pub mod blob;
+pub mod user;
+pub mod workspace;
+
 use std::sync::Arc;
 
 use async_graphql::{
-  Context, EmptySubscription, Enum, ID, InputObject, InputValueError, InputValueResult, Object, Result, Scalar,
-  ScalarType, Schema, SimpleObject, Upload, Value,
+  Context, EmptySubscription, InputValueError, InputValueResult, Object, Result, Scalar, ScalarType, Schema, Upload,
+  Value,
 };
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use server_blob::PutBlobOutcome;
-use server_domain::app_config::AppConfigUpdate;
-use server_domain::events::InvalidationHintV1;
 use server_domain::users::CurrentUserView;
-use server_domain::workspaces::{WorkspaceRecord, WorkspaceRole};
-use server_mail::{MailSendResult, MailTemplate, SmtpConfig, SmtpMailer, TestMailProps};
-use server_types::{DeploymentMode, DomainError};
+use server_types::DomainError;
 
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
-use crate::legacy_compat::quota::{
-  UserQuotaType, WorkspaceQuotaType, user_quota_from_grant, workspace_quota_from_grant,
+
+pub use admin::{
+  CredentialsRequirementType, FeatureType, PasswordLimitsType, ServerConfigType, ServerDeploymentType, ServerFeature,
+  UpdateAppConfigInput,
+};
+pub use blob::{BlobUploadInit, BlobUploadMethod, BlobUploadedPart, ListedBlob};
+pub use user::{
+  LimitedUserType, PublicUserType, RemoveAvatar, UpdateUserInput, UserOrLimitedUser, UserType, WorkspaceUserType,
+};
+pub use workspace::{
+  InvitationType, InvitationWorkspaceType, InviteLink, InviteResult, InviteUserType, Permission, UpdateWorkspaceInput,
+  WorkspaceInviteLinkExpireTime, WorkspaceMemberStatus, WorkspacePermissions, WorkspaceType,
 };
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
@@ -73,8 +81,7 @@ pub struct AuthenticatedUser {
   pub user: Option<CurrentUserView>,
 }
 
-/// Request-scoped authorized workspace usage snapshot injected for unit tests
-/// (e.g. `SafeInt` overflow testing without seeding a live workspace).
+/// Request-scoped authorized workspace usage snapshot injected for unit tests.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AuthorizedWorkspaceUsage {
   pub workspace_id: String,
@@ -82,308 +89,15 @@ pub struct AuthorizedWorkspaceUsage {
   pub member_count: i32,
 }
 
-#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
-#[graphql(name = "ServerDeploymentType")]
-pub enum ServerDeploymentType {
-  #[graphql(name = "Affine")]
-  Affine,
-  #[graphql(name = "Selfhosted")]
-  Selfhosted,
+pub(crate) fn graphql_request_id(state: &AppState) -> String {
+  let deployment = match state.config.load().deployment_mode {
+    server_types::DeploymentMode::Cloud => "cloud",
+    server_types::DeploymentMode::Selfhosted => "selfhosted",
+  };
+  format!("{deployment}:graphql:{}", uuid::Uuid::new_v4())
 }
 
-#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
-#[graphql(name = "ServerFeature")]
-pub enum ServerFeature {
-  #[graphql(name = "Captcha")]
-  Captcha,
-  #[graphql(name = "Comment")]
-  Comment,
-  #[graphql(name = "Copilot")]
-  Copilot,
-  #[graphql(name = "CopilotEmbedding")]
-  CopilotEmbedding,
-  #[graphql(name = "Indexer")]
-  Indexer,
-  #[graphql(name = "LocalWorkspace")]
-  LocalWorkspace,
-  #[graphql(name = "OAuth")]
-  OAuth,
-  #[graphql(name = "Payment")]
-  Payment,
-}
-
-#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
-#[graphql(name = "FeatureType")]
-pub enum FeatureType {
-  #[graphql(name = "Admin")]
-  Admin,
-}
-
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "PasswordLimitsType")]
-pub struct PasswordLimitsType {
-  pub min_length: i32,
-  pub max_length: i32,
-}
-
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "CredentialsRequirementType")]
-pub struct CredentialsRequirementType {
-  pub password: PasswordLimitsType,
-}
-
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "ServerConfigType")]
-pub struct ServerConfigType {
-  pub version: String,
-  pub name: String,
-  #[graphql(name = "type")]
-  pub deployment_type: ServerDeploymentType,
-  pub initialized: bool,
-  pub base_url: String,
-  pub features: Vec<ServerFeature>,
-  pub credentials_requirement: CredentialsRequirementType,
-}
-
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "ListedBlob")]
-pub struct ListedBlob {
-  pub key: String,
-  pub size: i32,
-  pub mime: String,
-  pub created_at: String,
-}
-
-#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
-#[graphql(name = "InviteResult")]
-pub struct InviteResult {
-  pub email: String,
-  pub invite_id: Option<String>,
-  pub error: Option<JsonObjectScalar>,
-}
-
-#[derive(InputObject, Clone, Debug)]
-#[graphql(name = "UpdateAppConfigInput")]
-pub struct UpdateAppConfigInput {
-  pub module: String,
-  pub key: String,
-  pub value: Option<JsonScalar>,
-  pub clear: Option<bool>,
-}
-
-pub struct UserType {
-  view: CurrentUserView,
-}
-
-#[Object(name = "UserType")]
-impl UserType {
-  async fn id(&self) -> ID {
-    ID(self.view.id.clone())
-  }
-
-  async fn name(&self) -> &str {
-    &self.view.name
-  }
-
-  async fn email(&self) -> &str {
-    &self.view.email
-  }
-
-  async fn avatar_url(&self) -> Option<&str> {
-    self.view.avatar_url.as_deref()
-  }
-
-  async fn disabled(&self) -> bool {
-    self.view.disabled
-  }
-
-  async fn email_verified(&self) -> bool {
-    self.view.email_verified
-  }
-
-  async fn has_password(&self) -> Option<bool> {
-    Some(self.view.has_password)
-  }
-
-  async fn features(&self) -> Vec<FeatureType> {
-    if self.view.is_admin() {
-      vec![FeatureType::Admin]
-    } else {
-      vec![]
-    }
-  }
-
-  async fn quota(&self, ctx: &Context<'_>) -> Result<UserQuotaType> {
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let mut tx = state
-      .db
-      .begin_tiered(server_db::WorkloadTier::InteractiveRead)
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(e.to_string())))?;
-    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user quota clock: {e}"))))?;
-    let grant = state
-      .extension
-      .quota_gate()
-      .resolve_user_grant(tx.tx_mut(), &self.view.id, now)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-
-    let owned_workspaces: Vec<String> = sqlx::query_scalar(
-      "SELECT workspace_id FROM workspace_members WHERE user_id = $1 AND role = 'owner' AND state = 'active'",
-    )
-    .bind(&self.view.id)
-    .fetch_all(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load owned workspaces: {e}"))))?;
-
-    let mut personal_ws_ids = Vec::with_capacity(owned_workspaces.len());
-    for ws_id in owned_workspaces {
-      let ws_grant = state
-        .extension
-        .quota_gate()
-        .resolve_workspace_grant(tx.tx_mut(), &ws_id, now)
-        .await
-        .map_err(|e| domain_error_to_graphql(&e))?;
-      if ws_grant.billing_subject == server_types::BillingSubject::Owner {
-        personal_ws_ids.push(ws_id);
-      }
-    }
-
-    let used_storage_quota: i64 = if personal_ws_ids.is_empty() {
-      0
-    } else {
-      sqlx::query_scalar(
-        r#"SELECT (
-             COALESCE((
-               SELECT SUM(b.size)::bigint
-               FROM blobs b
-               WHERE b.workspace_id = ANY($1)
-                 AND b.deleted_at IS NULL
-                 AND (b.status = 'completed' OR (b.status = 'pending' AND b.reservation_expires_at > $2))
-             ), 0)
-             + COALESCE((
-               SELECT SUM(ca.size)::bigint
-               FROM comment_attachments ca
-               WHERE ca.workspace_id = ANY($1)
-                 AND ca.deleted_at IS NULL
-                 AND (ca.status = 'completed' OR (ca.status = 'pending' AND ca.reservation_expires_at > $2))
-             ), 0)
-           )::bigint"#,
-      )
-      .bind(&personal_ws_ids)
-      .bind(now)
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("load user storage usage: {e}"))))?
-    };
-    let _ = tx.rollback().await;
-    Ok(user_quota_from_grant(&grant, used_storage_quota))
-  }
-}
-
-pub struct WorkspaceType {
-  record: WorkspaceRecord,
-  used_storage_quota: i64,
-  member_count: i32,
-}
-
-#[Object(name = "WorkspaceType")]
-impl WorkspaceType {
-  async fn id(&self) -> ID {
-    ID(self.record.id.clone())
-  }
-
-  async fn public(&self) -> bool {
-    self.record.public
-  }
-
-  async fn enable_ai(&self) -> bool {
-    self.record.enable_ai
-  }
-
-  async fn enable_doc_embedding(&self) -> bool {
-    self.record.enable_doc_embedding
-  }
-
-  async fn enable_sharing(&self) -> bool {
-    self.record.enable_sharing
-  }
-
-  async fn enable_url_preview(&self) -> bool {
-    self.record.enable_url_preview
-  }
-
-  async fn created_at(&self) -> DateTime<Utc> {
-    self.record.created_at
-  }
-
-  async fn member_count(&self) -> i32 {
-    self.member_count
-  }
-
-  /// Resolves this workspace's quota through [`server_spi::QuotaGate`] inside a
-  /// `WorkloadTier::InteractiveRead` transaction.
-  async fn quota(&self, ctx: &Context<'_>) -> Result<WorkspaceQuotaType> {
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let mut tx = state
-      .db
-      .begin_tiered(server_db::WorkloadTier::InteractiveRead)
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Unavailable(e.to_string())))?;
-
-    let grant = state
-      .extension
-      .quota_gate()
-      .resolve_workspace_grant(tx.tx_mut(), &self.record.id, Utc::now())
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-
-    let _ = tx.rollback().await;
-    Ok(workspace_quota_from_grant(
-      &grant,
-      self.used_storage_quota,
-      self.member_count,
-    ))
-  }
-
-  async fn blobs(
-    &self,
-    ctx: &Context<'_>,
-    after: Option<String>,
-    #[graphql(default = 1000)] first: i32,
-  ) -> Result<Vec<ListedBlob>> {
-    let user = require_authenticated_user(ctx).await?;
-    if !(1..=1000).contains(&first) {
-      return Err(domain_error_to_graphql(&DomainError::Validation(
-        "Blob page size must be between 1 and 1000".into(),
-      )));
-    }
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let all = state
-      .blobs
-      .list_blobs_authorized(&user.id, &self.record.id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    let limit = usize::try_from(first).unwrap_or(0);
-    let filtered = all
-      .into_iter()
-      .filter(|b| after.as_deref().is_none_or(|cursor| b.key.as_str() > cursor))
-      .take(limit)
-      .map(|b| ListedBlob {
-        key: b.key,
-        size: i32::try_from(b.size).unwrap_or(i32::MAX),
-        mime: b.mime,
-        created_at: b.created_at.to_rfc3339(),
-      })
-      .collect();
-    Ok(filtered)
-  }
-}
-
-async fn require_authenticated_user(ctx: &Context<'_>) -> Result<CurrentUserView> {
+pub(crate) async fn require_authenticated_user(ctx: &Context<'_>) -> Result<CurrentUserView> {
   let Some(auth) = ctx.data_opt::<AuthenticatedUser>() else {
     return Err(domain_error_to_graphql(&DomainError::Unauthorized(
       "Authentication required".into(),
@@ -401,7 +115,7 @@ async fn require_authenticated_user(ctx: &Context<'_>) -> Result<CurrentUserView
     .ok_or_else(|| domain_error_to_graphql(&DomainError::Unauthorized("Authentication required".into())))
 }
 
-async fn require_admin_user(ctx: &Context<'_>) -> Result<CurrentUserView> {
+pub(crate) async fn require_admin_user(ctx: &Context<'_>) -> Result<CurrentUserView> {
   let user = require_authenticated_user(ctx).await?;
   if !user.is_admin() {
     return Err(domain_error_to_graphql(&DomainError::Forbidden(
@@ -416,218 +130,35 @@ pub struct QueryRoot;
 #[Object(name = "Query")]
 impl QueryRoot {
   async fn server_config(&self, ctx: &Context<'_>) -> Result<ServerConfigType> {
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let cfg = state.config.load();
-    let initialized = state
-      .auth
-      .is_server_initialized()
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-
-    let deployment_type = match cfg.deployment_mode {
-      DeploymentMode::Selfhosted => ServerDeploymentType::Selfhosted,
-      DeploymentMode::Cloud => ServerDeploymentType::Affine,
-    };
-
-    let features = match cfg.deployment_mode {
-      DeploymentMode::Selfhosted => vec![
-        ServerFeature::Comment,
-        ServerFeature::LocalWorkspace,
-        ServerFeature::CopilotEmbedding,
-      ],
-      DeploymentMode::Cloud => vec![
-        ServerFeature::Comment,
-        ServerFeature::LocalWorkspace,
-        ServerFeature::CopilotEmbedding,
-        ServerFeature::Payment,
-        ServerFeature::OAuth,
-      ],
-    };
-
-    Ok(ServerConfigType {
-      version: cfg.server_version.clone(),
-      name: cfg.server_name.clone(),
-      deployment_type,
-      initialized,
-      base_url: cfg.external_url.clone(),
-      features,
-      credentials_requirement: CredentialsRequirementType {
-        password: PasswordLimitsType {
-          min_length: i32::try_from(state.auth.config().password_min_length).unwrap_or(8),
-          max_length: i32::try_from(state.auth.config().password_max_length).unwrap_or(32),
-        },
-      },
-    })
+    admin::resolve_server_config(ctx).await
   }
 
-  /// Returns the currently authenticated user, or `null` for anonymous requests
-  /// (matches `v0.27.5` `Query.currentUser: UserType`).
   async fn current_user(&self, ctx: &Context<'_>) -> Option<UserType> {
-    let auth = ctx.data_opt::<AuthenticatedUser>()?;
-    if let Some(view) = &auth.user {
-      return Some(UserType { view: view.clone() });
-    }
-    Some(UserType {
-      view: CurrentUserView {
-        id: auth.user_id.clone(),
-        name: String::new(),
-        email: String::new(),
-        avatar_url: None,
-        disabled: false,
-        has_password: false,
-        email_verified: false,
-        features: Vec::new(),
-      },
-    })
+    user::resolve_current_user(ctx)
   }
 
-  /// Workspace root query (matches `v0.27.5` `Query.workspace(id: String!): WorkspaceType!`).
+  async fn user(&self, ctx: &Context<'_>, email: String) -> Result<Option<UserOrLimitedUser>> {
+    user::resolve_user_by_email(ctx, email).await
+  }
+
+  async fn public_user_by_id(&self, ctx: &Context<'_>, id: String) -> Result<Option<PublicUserType>> {
+    user::resolve_public_user_by_id(ctx, id).await
+  }
+
+  async fn workspaces(&self, ctx: &Context<'_>) -> Result<Vec<WorkspaceType>> {
+    workspace::resolve_workspaces(ctx).await
+  }
+
   async fn workspace(&self, ctx: &Context<'_>, id: String) -> Result<WorkspaceType> {
-    let Some(auth) = ctx.data_opt::<AuthenticatedUser>() else {
-      return Err(domain_error_to_graphql(&DomainError::Unauthorized(
-        "Authentication required".into(),
-      )));
-    };
+    workspace::resolve_workspace(ctx, id).await
+  }
 
-    // Context-injected usage path (used by unit tests for SafeInt overflow and
-    // schema isolation without seeding full workspace tables).
-    if let Some(usage) = ctx.data_opt::<AuthorizedWorkspaceUsage>() {
-      if usage.workspace_id != id {
-        return Err(domain_error_to_graphql(&DomainError::Forbidden(
-          "Workspace access denied".into(),
-        )));
-      }
-      return Ok(WorkspaceType {
-        record: WorkspaceRecord {
-          id,
-          sid: 0,
-          name: None,
-          avatar_key: None,
-          public: false,
-          enable_ai: true,
-          enable_doc_embedding: true,
-          enable_sharing: true,
-          enable_url_preview: false,
-          indexed: false,
-          created_at: Utc::now(),
-          last_check_embeddings: DateTime::<Utc>::UNIX_EPOCH,
-        },
-        used_storage_quota: usage.used_storage_quota,
-        member_count: usage.member_count,
-      });
-    }
-
-    // Fail closed when a unit test injected `AuthenticatedUser` without a full
-    // database-backed `CurrentUserView`.
-    if auth.user.is_none() {
-      return Err(domain_error_to_graphql(&DomainError::Forbidden(
-        "Workspace access denied".into(),
-      )));
-    }
-
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let record = state
-      .workspaces
-      .get_workspace_for_user(&id, Some(&auth.user_id))
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    let usage = state
-      .workspaces
-      .load_workspace_usage(&id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-
-    Ok(WorkspaceType {
-      record,
-      used_storage_quota: usage.used_storage_quota,
-      member_count: usage.member_count,
-    })
+  async fn get_invite_info(&self, ctx: &Context<'_>, invite_id: String) -> Result<InvitationType> {
+    workspace::resolve_get_invite_info(ctx, invite_id).await
   }
 
   async fn app_config(&self, ctx: &Context<'_>) -> Result<JsonObjectScalar> {
-    let _admin = require_admin_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let cfg = state
-      .app_config
-      .get_effective_app_config()
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(JsonObjectScalar(cfg))
-  }
-}
-
-async fn publish_quota_storage_invalidation(state: &AppState, workspace_id: &str) {
-  let owner_id: Option<String> = sqlx::query_scalar(
-    "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
-  )
-  .bind(workspace_id)
-  .fetch_optional(state.db.pool())
-  .await
-  .ok()
-  .flatten();
-
-  let _ = state
-    .invalidation
-    .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage {
-      subject: format!("workspace:{workspace_id}"),
-    })
-    .await;
-  if let Some(ref owner) = owner_id {
-    let _ = state
-      .invalidation
-      .publish_invalidation(&InvalidationHintV1::QuotaStorageUsage {
-        subject: format!("user:{owner}"),
-      })
-      .await;
-  }
-
-  let prefix = match state.config.load().deployment_mode {
-    DeploymentMode::Selfhosted => "selfhosted",
-    DeploymentMode::Cloud => "cloud",
-  };
-  let req1 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-  let _ = state
-    .event_bus
-    .publish_event(
-      "realtime.topic.changed",
-      serde_json::json!({
-        "event": { "changed": true, "reason": "runtime-invalidation" },
-        "input": { "workspaceId": workspace_id },
-        "room": format!("workspace:{workspace_id}:quota-state"),
-        "topic": "workspace.quota-state.changed",
-      }),
-      Some(&req1),
-    )
-    .await;
-  let req2 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-  let _ = state
-    .event_bus
-    .publish_event(
-      "realtime.topic.changed",
-      serde_json::json!({
-        "event": { "changed": true, "reason": "quota-state-changed" },
-        "input": { "workspaceId": workspace_id },
-        "room": format!("workspace:{workspace_id}:access"),
-        "topic": "workspace.access.changed",
-      }),
-      Some(&req2),
-    )
-    .await;
-  if let Some(ref owner) = owner_id {
-    let req3 = format!("{prefix}:event:{}", uuid::Uuid::new_v4());
-    let _ = state
-      .event_bus
-      .publish_event(
-        "realtime.topic.changed",
-        serde_json::json!({
-          "event": { "changed": true, "reason": "runtime-invalidation" },
-          "input": {},
-          "room": format!("user:{owner}:quota-state"),
-          "topic": "user.quota-state.changed",
-        }),
-        Some(&req3),
-      )
-      .await;
+    admin::resolve_app_config(ctx).await
   }
 }
 
@@ -635,64 +166,52 @@ pub struct MutationRoot;
 
 #[Object(name = "Mutation")]
 impl MutationRoot {
-  async fn create_workspace(&self, ctx: &Context<'_>) -> Result<WorkspaceType> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let record = state
-      .workspaces
-      .create_workspace(&user.id, None)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(WorkspaceType {
-      record,
-      used_storage_quota: 0,
-      member_count: 1,
-    })
+  async fn update_profile(&self, ctx: &Context<'_>, input: UpdateUserInput) -> Result<UserType> {
+    user::mutate_update_profile(ctx, input).await
   }
 
-  async fn update_app_config(&self, ctx: &Context<'_>, updates: Vec<UpdateAppConfigInput>) -> Result<JsonObjectScalar> {
-    let admin = require_admin_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let domain_updates: Vec<AppConfigUpdate> = updates
-      .into_iter()
-      .map(|u| {
-        let full_key = format!("{}.{}", u.module.trim(), u.key.trim());
-        let value = if u.clear.unwrap_or(false) {
-          None
-        } else {
-          u.value.map(|j| j.0)
-        };
-        AppConfigUpdate { key: full_key, value }
-      })
-      .collect();
-    let effective = state
-      .app_config
-      .update_app_config(Some(&admin.id), &domain_updates)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(JsonObjectScalar(effective))
+  async fn upload_avatar(&self, ctx: &Context<'_>, avatar: Upload) -> Result<UserType> {
+    user::mutate_upload_avatar(ctx, avatar).await
   }
 
-  async fn send_test_email(&self, ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {
-    let admin = require_admin_user(ctx).await?;
-    let smtp_cfg: SmtpConfig = serde_json::from_value(config.0)
-      .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid SMTP config: {e}"))))?;
-    let mailer = SmtpMailer::new(&smtp_cfg)
-      .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid SMTP config: {e}"))))?;
-    let rendered = MailTemplate::TestMail(TestMailProps {}).render();
-    match mailer.send(&admin.email, &rendered).await {
-      MailSendResult::Accepted { .. } => Ok(true),
-      MailSendResult::Rejected {
-        provider_response,
-        error_code,
-      } => Err(domain_error_to_graphql(&DomainError::Validation(format!(
-        "test email rejected ({error_code}): {}",
-        provider_response.unwrap_or_default()
-      )))),
-      MailSendResult::Failed { error_code, error, .. } => Err(domain_error_to_graphql(&DomainError::Unavailable(
-        format!("test email failed ({error_code}): {error}"),
-      ))),
-    }
+  async fn remove_avatar(&self, ctx: &Context<'_>) -> Result<RemoveAvatar> {
+    user::mutate_remove_avatar(ctx).await
+  }
+
+  async fn create_workspace(&self, ctx: &Context<'_>, init: Option<Upload>) -> Result<WorkspaceType> {
+    workspace::mutate_create_workspace(ctx, init).await
+  }
+
+  async fn update_workspace(&self, ctx: &Context<'_>, input: UpdateWorkspaceInput) -> Result<WorkspaceType> {
+    workspace::mutate_update_workspace(ctx, input).await
+  }
+
+  async fn delete_workspace(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    workspace::mutate_delete_workspace(ctx, id).await
+  }
+
+  async fn leave_workspace(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    send_leave_mail: Option<bool>,
+    workspace_name: Option<String>,
+  ) -> Result<bool> {
+    workspace::mutate_leave_workspace(ctx, workspace_id, send_leave_mail, workspace_name).await
+  }
+
+  async fn grant_member(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    user_id: String,
+    permission: Permission,
+  ) -> Result<bool> {
+    workspace::mutate_grant_member(ctx, workspace_id, user_id, permission).await
+  }
+
+  async fn approve_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
+    workspace::mutate_approve_member(ctx, workspace_id, user_id).await
   }
 
   async fn invite_members(
@@ -701,108 +220,57 @@ impl MutationRoot {
     workspace_id: String,
     emails: Vec<String>,
   ) -> Result<Vec<InviteResult>> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let resolved_source = if let Some(headers) = ctx.data_opt::<axum::http::HeaderMap>() {
-      let app_cfg = state
-        .app_config
-        .get_effective_app_config()
-        .await
-        .map_err(|e| domain_error_to_graphql(&e))?;
-      let trusted_cf = app_cfg
-        .pointer("/auth/trustedCloudflareHeaders")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-      Some(crate::rest::extract_request_source(headers, trusted_cf))
-    } else {
-      ctx.data_opt::<server_spi::RequestSource>().cloned()
-    };
-    let source = resolved_source.as_ref();
-    let batch = state
-      .workspaces
-      .invite_members_with_source(&user.id, &workspace_id, &emails, WorkspaceRole::Member, source)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    let results = batch
-      .into_iter()
-      .map(|(email, outcome)| match outcome {
-        Ok(inv) => InviteResult {
-          email,
-          invite_id: Some(inv.id),
-          error: None,
-        },
-        Err(err) => {
-          let env = crate::legacy_compat::errors::domain_error_to_envelope(&err);
-          InviteResult {
-            email,
-            invite_id: None,
-            error: Some(JsonObjectScalar(serde_json::to_value(env).unwrap_or_default())),
-          }
-        }
-      })
-      .collect();
-    Ok(results)
+    workspace::mutate_invite_members(ctx, workspace_id, emails).await
   }
 
   async fn revoke_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
-    let actor = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    state
-      .workspaces
-      .revoke_member(&actor.id, &workspace_id, &user_id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(true)
+    workspace::mutate_revoke_member(ctx, workspace_id, user_id).await
   }
 
   async fn accept_invite_by_id(
     &self,
     ctx: &Context<'_>,
     invite_id: String,
-    _send_accept_mail: Option<bool>,
-    _workspace_id: Option<String>,
+    send_accept_mail: Option<bool>,
+    workspace_id: Option<String>,
   ) -> Result<bool> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    state
-      .workspaces
-      .accept_invitation(&user.id, &invite_id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    Ok(true)
+    workspace::mutate_accept_invite_by_id(ctx, invite_id, send_accept_mail, workspace_id).await
+  }
+
+  async fn create_invite_link(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    expire_time: WorkspaceInviteLinkExpireTime,
+  ) -> Result<InviteLink> {
+    workspace::mutate_create_invite_link(ctx, workspace_id, expire_time).await
+  }
+
+  async fn revoke_invite_link(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
+    workspace::mutate_revoke_invite_link(ctx, workspace_id).await
+  }
+
+  async fn update_app_config(&self, ctx: &Context<'_>, updates: Vec<UpdateAppConfigInput>) -> Result<JsonObjectScalar> {
+    admin::mutate_update_app_config(ctx, updates).await
+  }
+
+  async fn send_test_email(&self, ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {
+    admin::mutate_send_test_email(ctx, config).await
+  }
+
+  async fn create_blob_upload(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    key: String,
+    size: i32,
+    mime: String,
+  ) -> Result<BlobUploadInit> {
+    blob::mutate_create_blob_upload(ctx, workspace_id, key, size, mime).await
   }
 
   async fn set_blob(&self, ctx: &Context<'_>, workspace_id: String, blob: Upload) -> Result<String> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    state
-      .workspaces
-      .require_active_member_role(&workspace_id, &user.id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    let mut upload = blob
-      .value(ctx)
-      .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("invalid blob upload: {e}"))))?;
-    let filename = upload.filename.clone();
-    let mime = upload
-      .content_type
-      .clone()
-      .filter(|s| !s.trim().is_empty())
-      .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let mut bytes = Vec::new();
-    upload
-      .content
-      .read_to_end(&mut bytes)
-      .map_err(|e| domain_error_to_graphql(&DomainError::Validation(format!("failed to read blob upload: {e}"))))?;
-    let outcome = state
-      .blobs
-      .put_blob(&workspace_id, &filename, &mime, bytes)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    if matches!(outcome, PutBlobOutcome::Created(_)) {
-      publish_quota_storage_invalidation(state, &workspace_id).await;
-    }
-    Ok(filename)
+    blob::mutate_set_blob(ctx, workspace_id, blob).await
   }
 
   async fn delete_blob(
@@ -813,39 +281,11 @@ impl MutationRoot {
     hash: Option<String>,
     #[graphql(default = false)] permanently: bool,
   ) -> Result<bool> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let Some(blob_key) = key.or(hash).filter(|k| !k.is_empty()) else {
-      state
-        .blobs
-        .check_blobs_manage(&user.id, &workspace_id)
-        .await
-        .map_err(|e| domain_error_to_graphql(&e))?;
-      return Ok(false);
-    };
-    let deleted = state
-      .blobs
-      .delete_blob_authorized(&user.id, &workspace_id, &blob_key, permanently)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    if deleted {
-      publish_quota_storage_invalidation(state, &workspace_id).await;
-    }
-    Ok(deleted)
+    blob::mutate_delete_blob(ctx, workspace_id, key, hash, permanently).await
   }
 
   async fn release_deleted_blobs(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
-    let user = require_authenticated_user(ctx).await?;
-    let state = ctx.data_unchecked::<Arc<AppState>>();
-    let released = state
-      .blobs
-      .release_deleted_blobs_authorized(&user.id, &workspace_id)
-      .await
-      .map_err(|e| domain_error_to_graphql(&e))?;
-    if released > 0 {
-      publish_quota_storage_invalidation(state, &workspace_id).await;
-    }
-    Ok(true)
+    blob::mutate_release_deleted_blobs(ctx, workspace_id).await
   }
 }
 
@@ -858,6 +298,7 @@ pub fn build_schema(state: Arc<AppState>) -> AppSchema {
 #[cfg(test)]
 mod tests {
   use async_graphql::{Request, Value};
+  use chrono::{DateTime, Utc};
   use server_db::{DbConfig, ServerDb};
   use server_spi::CommunityExtension;
   use server_types::ServerRole;

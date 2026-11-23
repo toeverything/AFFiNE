@@ -286,8 +286,8 @@ mod tests {
   use super::*;
   use crate::graphql::{MutationRoot, QueryRoot};
 
-  fn extract_gql_type_signatures(sdl: &str, type_name: &str) -> BTreeMap<String, String> {
-    let header = format!("type {type_name} {{");
+  fn extract_gql_block_signatures(sdl: &str, keyword: &str, type_name: &str) -> BTreeMap<String, String> {
+    let header = format!("{keyword} {type_name} {{");
     let start = sdl.find(&header).unwrap_or_else(|| panic!("missing `{header}` in SDL"));
     let body = &sdl[start + header.len()..];
     let end = body.find('}').expect("closing brace for GraphQL type");
@@ -309,6 +309,14 @@ mod tests {
       }
     }
     map
+  }
+
+  fn extract_gql_type_signatures(sdl: &str, type_name: &str) -> BTreeMap<String, String> {
+    extract_gql_block_signatures(sdl, "type", type_name)
+  }
+
+  fn extract_gql_input_signatures(sdl: &str, type_name: &str) -> BTreeMap<String, String> {
+    extract_gql_block_signatures(sdl, "input", type_name)
   }
 
   #[test]
@@ -451,6 +459,22 @@ mod tests {
         oracle_query.get(field_sig),
         Some(field_ty),
         "QueryRoot field `{field_sig}: {field_ty}` does not match v0.27.5 oracle schema"
+      );
+    }
+
+    // InputObject contracts: UpdateUserInput must match oracle 1:1 (no stray avatarUrl),
+    // and every field exposed on UpdateWorkspaceInput must match its oracle signature.
+    assert_eq!(
+      extract_gql_input_signatures(&generated_sdl, "UpdateUserInput"),
+      extract_gql_input_signatures(&oracle_sdl, "UpdateUserInput"),
+      "UpdateUserInput drifted from v0.27.5 oracle schema"
+    );
+    let oracle_update_ws = extract_gql_input_signatures(&oracle_sdl, "UpdateWorkspaceInput");
+    for (field_sig, field_ty) in extract_gql_input_signatures(&generated_sdl, "UpdateWorkspaceInput") {
+      assert_eq!(
+        oracle_update_ws.get(&field_sig),
+        Some(&field_ty),
+        "UpdateWorkspaceInput field `{field_sig}: {field_ty}` does not match v0.27.5 oracle schema"
       );
     }
   }

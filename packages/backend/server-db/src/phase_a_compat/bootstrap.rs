@@ -22,9 +22,10 @@ pub const V0275_DATA_MIGRATION_NAMES: [&str; 10] = [
   "DisableIncompleteManagedProfiles1790300000000",
 ];
 
-/// Idempotently seeds the 10 `v0.27.5` completed `_data_migrations` rows and
-/// the global `workspace_doc_lifecycle_activation` active checkpoint
-/// (`metadata = {"protocolVersion": 2}`) inside an existing transaction.
+/// Idempotently seeds the 10 `v0.27.5` completed `_data_migrations` rows inside
+/// an existing transaction, matching `v0.27.5` `prisma migrate deploy` +
+/// `data-migration run` (v1 sync protocol default; `workspace_doc_lifecycle_activation`
+/// is not pre-activated).
 pub async fn seed_fresh_0275_bootstrap_markers(tx: &mut Transaction<'_, Postgres>) -> Result<(), DbError> {
   for name in V0275_DATA_MIGRATION_NAMES {
     let id = Uuid::new_v4().to_string();
@@ -39,17 +40,6 @@ pub async fn seed_fresh_0275_bootstrap_markers(tx: &mut Transaction<'_, Postgres
     .await?;
   }
 
-  sqlx::query(
-    r#"INSERT INTO storage_reconciliation_checkpoints
-         (kind, scope, status, cursor, last_key, last_sid, completed_at, updated_at, metadata)
-       VALUES
-         ('workspace_doc_lifecycle_activation', 'global', 'active', '{}'::jsonb, NULL, NULL,
-          clock_timestamp(), clock_timestamp(), '{"protocolVersion": 2}'::jsonb)
-       ON CONFLICT (kind, scope) DO NOTHING"#,
-  )
-  .execute(&mut **tx)
-  .await?;
-
   Ok(())
 }
 
@@ -59,8 +49,9 @@ pub async fn seed_fresh_0275_bootstrap_markers(tx: &mut Transaction<'_, Postgres
 /// Enforces:
 /// 1. All 10 `V0275_DATA_MIGRATION_NAMES` rows exist in `_data_migrations` with
 ///    `finished_at IS NOT NULL`.
-/// 2. `storage_reconciliation_checkpoints` contains an `active` global
-///    `workspace_doc_lifecycle_activation` checkpoint.
+/// 2. `storage_reconciliation_checkpoints` global `workspace_doc_lifecycle_activation`
+///    is either absent (`v0.27.5` default v1 mode) or `status = 'active'` (v2 mode);
+///    any other status is rejected without mutating the database.
 /// 3. `check_cutover_invariants` reports zero ownerless workspaces and zero
 ///    active unsigned self-host entitlements.
 pub async fn verify_existing_0275_runtime_prerequisites(
@@ -98,21 +89,22 @@ pub async fn verify_existing_0275_runtime_prerequisites(
     });
   }
 
-  let lifecycle_active: bool = sqlx::query_scalar(
-    "SELECT EXISTS (
-       SELECT 1
+  let lifecycle_status: Option<String> = sqlx::query_scalar(
+    "SELECT status
        FROM storage_reconciliation_checkpoints
        WHERE kind = 'workspace_doc_lifecycle_activation'
-         AND scope = 'global'
-         AND status = 'active'
-     )",
+         AND scope = 'global'",
   )
-  .fetch_one(&mut *conn)
+  .fetch_optional(&mut *conn)
   .await?;
-  if !lifecycle_active {
+  if let Some(status) = lifecycle_status
+    && status != "active"
+  {
     return Err(DbError::SteppingStoneRequired {
       missing_migrations: Vec::new(),
-      message: "existing v0.27.5 database is missing active `workspace_doc_lifecycle_activation` checkpoint; run v0.27.5 CLI `run`, `validate-cutover`, and `activate-workspace-lifecycle` before starting affine-server".to_owned(),
+      message: format!(
+        "existing v0.27.5 database has non-active `workspace_doc_lifecycle_activation` checkpoint (status = `{status}`); finish `activate-workspace-lifecycle` before starting affine-server"
+      ),
     });
   }
 

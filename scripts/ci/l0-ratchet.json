@@ -1,15 +1,13 @@
 {
   "waitForTimeout": {
-    "total": 336,
+    "total": 312,
     "files": {
       "tests/affine-cloud-copilot/e2e/basic/chat.spec.ts": 3,
       "tests/affine-cloud-copilot/e2e/insertion/save-as-doc.spec.ts": 2,
       "tests/affine-cloud-copilot/e2e/utils/chat-panel-utils.ts": 2,
       "tests/affine-cloud-copilot/e2e/utils/editor-utils.ts": 5,
       "tests/affine-cloud-copilot/e2e/utils/settings-panel-utils.ts": 1,
-      "tests/affine-cloud/e2e/collaboration.spec.ts": 2,
       "tests/affine-cloud/e2e/comments.spec.ts": 2,
-      "tests/affine-cloud/e2e/login.spec.ts": 2,
       "tests/affine-cloud/e2e/share-page-1.spec.ts": 1,
       "tests/affine-desktop/e2e/basic.spec.ts": 6,
       "tests/affine-desktop/e2e/image.spec.ts": 3,
@@ -36,7 +34,6 @@
       "tests/affine-local/e2e/local-first-collections-items.spec.ts": 5,
       "tests/affine-local/e2e/local-first-favorite-page.spec.ts": 1,
       "tests/affine-local/e2e/local-first-workspace-list.spec.ts": 4,
-      "tests/affine-local/e2e/quick-search.spec.ts": 20,
       "tests/affine-local/e2e/router.spec.ts": 1,
       "tests/affine-mobile/e2e/back-button-visibility.spec.ts": 1,
       "tests/blocksuite/e2e/attachment.spec.ts": 4,

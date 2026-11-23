@@ -44,17 +44,10 @@ pub enum WorkspaceAction {
   BillingManage,
 }
 
-pub fn workspace_role_allows(
-  role: Option<WorkspaceRole>,
-  commercial: bool,
-  workspace_public: bool,
-  action: WorkspaceAction,
-) -> bool {
+pub fn workspace_role_allows(role: Option<WorkspaceRole>, commercial: bool, action: WorkspaceAction) -> bool {
   let effective = role.map(|r| r.effective(commercial));
   match action {
-    WorkspaceAction::Read | WorkspaceAction::OrganizeRead | WorkspaceAction::PropertiesRead => {
-      effective.is_some() || workspace_public
-    }
+    WorkspaceAction::Read | WorkspaceAction::OrganizeRead | WorkspaceAction::PropertiesRead => effective.is_some(),
     WorkspaceAction::Sync | WorkspaceAction::CreateDoc | WorkspaceAction::Update => {
       effective.is_some_and(|r| r >= WorkspaceRole::Member)
     }
@@ -153,44 +146,38 @@ pub struct DocRoleInput {
 ///    falls back to `member_default_role` when `active_member && member_default_role != None`.
 /// 3. `PublicPolicy`: `public_role` when `doc_sharing_enabled && doc_visibility_public && public_role != None`.
 pub fn resolve_effective_doc_role(input: DocRoleInput) -> DocRole {
-  let effective_ws = input.workspace_role.map(|r| r.effective(input.commercial));
-  let active_member = effective_ws.is_some_and(|r| r >= WorkspaceRole::Member);
-
-  let mut best = DocRole::None;
-
-  // 1. InheritedWorkspaceRole
-  let inherited = match effective_ws {
-    Some(WorkspaceRole::Owner) => DocRole::Owner,
-    Some(WorkspaceRole::Admin) => DocRole::Manager,
-    _ => DocRole::None,
+  fn to_domain_doc_role(r: DocRole) -> server_domain::acl::DocRole {
+    match r {
+      DocRole::None => server_domain::acl::DocRole::None,
+      DocRole::External => server_domain::acl::DocRole::External,
+      DocRole::Reader => server_domain::acl::DocRole::Reader,
+      DocRole::Commenter => server_domain::acl::DocRole::Commenter,
+      DocRole::Editor => server_domain::acl::DocRole::Editor,
+      DocRole::Manager => server_domain::acl::DocRole::Manager,
+      DocRole::Owner => server_domain::acl::DocRole::Owner,
+    }
+  }
+  let ws_role = match input.workspace_role {
+    Some(WorkspaceRole::Owner) => Some(server_domain::workspaces::WorkspaceRole::Owner),
+    Some(WorkspaceRole::Admin) => Some(server_domain::workspaces::WorkspaceRole::Admin),
+    Some(WorkspaceRole::Member) => Some(server_domain::workspaces::WorkspaceRole::Member),
+    Some(WorkspaceRole::External) | None => None,
   };
-  if inherited > best {
-    best = inherited;
+  match server_domain::acl::resolve_effective_doc_role(server_domain::acl::DocRoleInput {
+    workspace_role: ws_role,
+    commercial: input.commercial,
+    explicit_user_role: input.explicit_user_role.map(to_domain_doc_role),
+    member_default_role: to_domain_doc_role(input.member_default_role),
+    doc_sharing_enabled: input.doc_sharing_enabled,
+    doc_visibility_public: input.doc_visibility_public,
+    public_role: to_domain_doc_role(input.public_role),
+  }) {
+    server_domain::acl::DocRole::None => DocRole::None,
+    server_domain::acl::DocRole::External => DocRole::External,
+    server_domain::acl::DocRole::Reader => DocRole::Reader,
+    server_domain::acl::DocRole::Commenter => DocRole::Commenter,
+    server_domain::acl::DocRole::Editor => DocRole::Editor,
+    server_domain::acl::DocRole::Manager => DocRole::Manager,
+    server_domain::acl::DocRole::Owner => DocRole::Owner,
   }
-
-  // 2. DocGrant or MemberDefault fallback
-  match input.explicit_user_role {
-    Some(r) if r != DocRole::None => {
-      let effective_grant = if active_member { r } else { r.min(DocRole::Editor) };
-      if (active_member || input.doc_sharing_enabled) && effective_grant > best {
-        best = effective_grant;
-      }
-    }
-    _ => {
-      if active_member && input.member_default_role != DocRole::None && input.member_default_role > best {
-        best = input.member_default_role;
-      }
-    }
-  }
-
-  // 3. PublicPolicy
-  if input.doc_sharing_enabled
-    && input.doc_visibility_public
-    && input.public_role != DocRole::None
-    && input.public_role > best
-  {
-    best = input.public_role;
-  }
-
-  best
 }

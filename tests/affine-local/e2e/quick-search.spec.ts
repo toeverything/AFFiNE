@@ -137,7 +137,8 @@ test('Create a new page without keyword', async ({ page }) => {
   await openQuickSearchByShortcut(page);
   const addNewPage = page.getByText('New page', { exact: true });
   await addNewPage.click();
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
+  await waitForEditorLoad(page);
   await assertTitle(page, '');
 });
 
@@ -151,7 +152,8 @@ test('Create a new page with keyword', async ({ page }) => {
     '[cmdk-item] >> text=New ""test123456"" Page'
   );
   await addNewPage.click();
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
+  await waitForEditorLoad(page);
   await assertTitle(page, '"test123456"');
 });
 
@@ -170,28 +172,27 @@ test('Create a new page and search this page', async ({ page }) => {
   await openQuickSearchByShortcut(page);
   // input title and create new page
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(300);
   const addNewPage = page.locator('[cmdk-item] >> text=New "test123456" Page');
+  await expect(addNewPage).toBeVisible();
   await addNewPage.click();
 
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
+  await waitForEditorLoad(page);
   await assertTitle(page, 'test123456');
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
   await assertTitle(page, 'test123456');
 
   await page.reload();
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, 'test123456');
-  await page.waitForTimeout(1000);
   await assertResultList(page, ['test123456', 'test123456']);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(300);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
   await assertTitle(page, 'test123456');
 });
 
@@ -228,7 +229,7 @@ test('Autofocus input after select', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
-  await page.waitForTimeout(500); // wait for new page loaded
+  await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
   await page.keyboard.press('ArrowUp');
   const locator = page.locator('[cmdk-input]');
@@ -266,7 +267,7 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
-    await page.waitForTimeout(200);
+    await expect(title).toBeFocused();
     await title.pressSequentially('sgtokidoki', { delay: 100 });
     await expect(title).toHaveText('sgtokidoki');
   }
@@ -279,11 +280,10 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
-    await page.waitForTimeout(200);
+    await expect(title).toBeFocused();
     await title.pressSequentially('theliquidhorse', { delay: 100 });
     await expect(title).toHaveText('theliquidhorse');
   }
-  await page.waitForTimeout(200);
 
   // create thrid page
   await openQuickSearchByShortcut(page);
@@ -292,7 +292,7 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
-    await page.waitForTimeout(200);
+    await expect(title).toBeFocused();
     await title.pressSequentially('battlekot', { delay: 100 });
     await expect(title).toHaveText('battlekot');
   }
@@ -320,11 +320,10 @@ test('assert the recent browse pages are on the recent list', async ({
   {
     const title = getBlockSuiteEditorTitle(page);
     await title.click();
-    await page.waitForTimeout(200);
+    await expect(title).toBeFocused();
     await title.pressSequentially('affine is the best', { delay: 100 });
     await expect(title).toHaveText('affine is the best', { timeout: 500 });
   }
-  await page.waitForTimeout(1000);
   await openQuickSearchByShortcut(page);
   {
     const quickSearchItems = page.locator(
@@ -359,7 +358,6 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await page.getByTestId('confirm-modal-confirm').click();
   const restoreButton = page.getByTestId('page-restore-button');
   await expect(restoreButton).toBeVisible();
-  await page.waitForTimeout(100);
   await openQuickSearchByShortcut(page);
   expect(await commandsIsVisible(page, 'Move to trash')).toBe(false);
   expect(await commandsIsVisible(page, 'Restore from trash')).toBe(true);
@@ -388,7 +386,6 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   await clickSideBarAllPageButton(page);
   await openQuickSearchByShortcut(page);
   await insertInputText(page, '123456');
-  await page.waitForTimeout(1000);
   await assertResultList(page, [
     'this is a new page to search for content',
     '123456',
@@ -431,7 +428,7 @@ test('Create a new page with special characters in the title and search for this
     })
     .toBe(true);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(1000);
+  await expect(page.getByTestId('cmdk-quick-search')).toBeHidden();
   await assertTitle(page, specialTitle);
 });
 
@@ -498,15 +495,10 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   ).toContainText(docTitle);
 
   // focus on the note block
-  await page.waitForTimeout(500);
-  await page
-    .locator('affine-embed-edgeless-synced-doc-block')
-    .click({ force: true });
-  await page.waitForTimeout(500);
-  // double clock to show peek view
-  await page
-    .locator('affine-embed-edgeless-synced-doc-block')
-    .dblclick({ force: true });
+  const syncedDocBlock = page.locator('affine-embed-edgeless-synced-doc-block');
+  await syncedDocBlock.click({ force: true });
+  // double click to show peek view
+  await syncedDocBlock.dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
 

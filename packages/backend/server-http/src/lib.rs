@@ -13,10 +13,10 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
-use server_blob::{BlobService, LocalFsBlobStorage};
+use server_blob::{BlobService, BlobStorageBackend, LocalFsBlobStorage};
 use server_db::ServerDb;
 use server_db::phase_a_compat::sessions::PhaseASessionRepository;
 use server_domain::app_config::{AppConfigService, RuntimeAppConfigBaseline};
@@ -43,6 +43,7 @@ pub struct RuntimeConfig {
   pub redis_db_index: u8,
   pub session_redis_db_index: u8,
   pub graphql_playground: bool,
+  pub refresh_retention_secs: i64,
   pub smtp_password: String,
   pub app_config_baseline: RuntimeAppConfigBaseline,
 }
@@ -59,6 +60,7 @@ impl std::fmt::Debug for RuntimeConfig {
       .field("redis_db_index", &self.redis_db_index)
       .field("session_redis_db_index", &self.session_redis_db_index)
       .field("graphql_playground", &self.graphql_playground)
+      .field("refresh_retention_secs", &self.refresh_retention_secs)
       .field("smtp_password", &"[REDACTED]")
       .finish()
   }
@@ -76,6 +78,7 @@ impl Default for RuntimeConfig {
       redis_db_index: 0,
       session_redis_db_index: 2,
       graphql_playground: false,
+      refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
       smtp_password: String::new(),
       app_config_baseline: RuntimeAppConfigBaseline::default(),
     }
@@ -93,8 +96,10 @@ pub struct AppState {
   pub workspaces: WorkspaceService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
+  pub avatars: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
+  pub avatar_transcode_sem: Arc<tokio::sync::Semaphore>,
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -104,6 +109,7 @@ pub struct AppServices {
   pub workspaces: WorkspaceService,
   pub app_config: AppConfigService,
   pub blobs: BlobService,
+  pub avatars: Arc<dyn BlobStorageBackend>,
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
 }
@@ -132,11 +138,14 @@ impl AppState {
     let invalidation: Arc<dyn InvalidationPublisher> = noop.clone();
     let event_bus: Arc<dyn EventBusPublisher> = noop;
     let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
-      .with_rate_limit_policy(extension.rate_limit_policy());
+      .with_rate_limit_policy(extension.rate_limit_policy())
+      .with_redis(redis.clone());
     let app_config = AppConfigService::new(db.clone(), config.app_config_baseline.clone(), Arc::clone(&event_bus));
     let blob_root = std::env::temp_dir().join(format!("affine-server-blobs-{}", uuid::Uuid::new_v4()));
     let blob_root_str = blob_root.to_string_lossy();
     let storage = Arc::new(LocalFsBlobStorage::new(&blob_root_str, "blobs").expect("valid temp blob storage"));
+    let avatars: Arc<dyn BlobStorageBackend> =
+      Arc::new(LocalFsBlobStorage::new(&blob_root_str, "avatars").expect("valid temp avatar storage"));
     let blobs = BlobService::new(db.clone(), storage, extension.quota_gate());
 
     Self::with_services(
@@ -150,6 +159,7 @@ impl AppState {
         workspaces,
         app_config,
         blobs,
+        avatars,
         invalidation,
         event_bus,
       },
@@ -173,8 +183,10 @@ impl AppState {
       workspaces: services.workspaces,
       app_config: services.app_config,
       blobs: services.blobs,
+      avatars: services.avatars,
       invalidation: services.invalidation,
       event_bus: services.event_bus,
+      avatar_transcode_sem: Arc::new(tokio::sync::Semaphore::new(4)),
     })
   }
 
@@ -328,11 +340,16 @@ async fn handle_readyz(State(state): State<RouterState>) -> (StatusCode, Json<Re
 
 async fn handle_graphql_post(State(state): State<RouterState>, headers: HeaderMap, req: GraphQLRequest) -> Response {
   let mut gql_req = req.into_inner();
-  if let Ok(Some(principal)) = resolve_request_principal(&state, &headers).await {
-    gql_req = gql_req.data(AuthenticatedUser {
-      user_id: principal.user.id.clone(),
-      user: Some(principal.user),
-    });
+  match resolve_request_principal(&state, &headers).await {
+    Ok(Some(principal)) => {
+      let user = principal.into_user();
+      gql_req = gql_req.data(AuthenticatedUser {
+        user_id: user.id.clone(),
+        user: Some(user),
+      });
+    }
+    Ok(None) => {}
+    Err(err) => return err.into_http_response(),
   }
   gql_req = gql_req.data(headers);
   let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
@@ -394,14 +411,51 @@ pub fn build_router(app: Arc<AppState>) -> Router {
       .layer(axum::extract::DefaultBodyLimit::max(105 * 1024 * 1024));
     router = router
       .merge(graphql_route)
-      .route("/api/setup/create-admin-user", post(rest::handle_create_admin_user))
-      .route("/api/auth/session", get(rest::handle_get_session))
-      .route("/api/auth/sign-in", post(rest::handle_sign_in))
-      .route("/api/auth/sign-out", post(rest::handle_sign_out))
-      .route("/api/auth/magic-link", post(rest::handle_complete_magic_link))
+      .route(
+        "/api/setup/create-admin-user",
+        post(rest::auth::handle_create_admin_user),
+      )
+      .route("/api/auth/session", get(rest::auth::handle_get_session))
+      .route("/api/auth/session/exchange", post(rest::auth::handle_exchange_session))
+      .route("/api/auth/session/refresh", post(rest::auth::handle_refresh_session))
+      .route(
+        "/api/auth/session/revoke",
+        post(rest::auth::handle_revoke_current_session),
+      )
+      .route("/api/auth/sessions", get(rest::auth::handle_list_auth_sessions))
+      .route(
+        "/api/auth/sessions/revoke-all",
+        post(rest::auth::handle_revoke_all_sessions),
+      )
+      .route(
+        "/api/auth/sessions/{id}",
+        delete(rest::auth::handle_revoke_auth_session_by_id),
+      )
+      .route("/api/auth/preflight", post(rest::auth::handle_preflight))
+      .route("/api/auth/methods", get(rest::auth::handle_bound_methods))
+      .route("/api/auth/sign-in", post(rest::auth::handle_sign_in))
+      .route("/api/auth/sign-out", post(rest::auth::handle_sign_out))
+      .route("/api/auth/magic-link", post(rest::auth::handle_complete_magic_link))
+      .route("/api/avatars/{id}", get(rest::blobs::handle_get_avatar))
+      .route(
+        "/api/workspaces/{workspace_id}/blobs/v1/{name}",
+        get(rest::blobs::handle_get_blob_v1),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/blob-manifest/v1",
+        get(rest::blobs::handle_get_blob_manifest_v1),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/readable-blob-manifest/v1",
+        get(rest::blobs::handle_get_readable_blob_manifest_v1),
+      )
       .route(
         "/api/workspaces/{workspace_id}/blobs/{name}",
-        get(rest::handle_get_legacy_blob),
+        get(rest::blobs::handle_get_legacy_blob),
+      )
+      .route(
+        "/api/workspaces/{workspace_id}/docs/{doc_id}",
+        get(rest::blobs::handle_get_doc_snapshot),
       );
   }
 

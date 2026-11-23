@@ -3667,3 +3667,454 @@ async fn userspace_sync_server_operates_under_max_connections_one() {
   drop(db);
   drop_empty_db_off_runtime(empty).await;
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn realtime_workspace_access_public_nonmember_and_unsubscribe() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("realtime_public_nonmember").await;
+  let db = ServerDb::connect(DbConfig::new(&empty.url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+  let (_owner_id, _owner_session, ws_id) = seed_user_and_workspace(&db).await;
+
+  // Make the workspace public and seed an authenticated non-member.
+  sqlx::query(
+    "INSERT INTO workspace_access_policies(workspace_id, visibility, sharing_enabled, url_preview_enabled)
+     VALUES ($1, 'public', true, false)
+     ON CONFLICT (workspace_id) DO UPDATE SET visibility = 'public'",
+  )
+  .bind(&ws_id)
+  .execute(db.pool())
+  .await
+  .unwrap();
+
+  let outsider_id = Uuid::new_v4().to_string();
+  let outsider_session = Uuid::new_v4().to_string();
+  sqlx::query("INSERT INTO users(id, name, email, registered, disabled) VALUES ($1, 'Outsider', $2, true, false)")
+    .bind(&outsider_id)
+    .bind(format!("outsider-{}@affine.test", &outsider_id[..8]))
+    .execute(db.pool())
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO multiple_users_sessions(id) VALUES ($1)")
+    .bind(&outsider_session)
+    .execute(db.pool())
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO user_sessions(id, session_id, user_id, expires_at) VALUES ($1, $2, $3, now() + interval '15 days')",
+  )
+  .bind(Uuid::new_v4().to_string())
+  .bind(&outsider_session)
+  .bind(&outsider_id)
+  .execute(db.pool())
+  .await
+  .unwrap();
+
+  let (server, base_url, http_handle) = spawn_sync_server(db.clone(), redis.url()).await;
+
+  let script = r#"
+const { io } = require('socket.io-client');
+(async () => {
+  const sock = io(process.env.SYNC_URL, {
+    path: '/socket.io/',
+    transports: ['websocket'],
+    extraHeaders: { Cookie: process.env.OUTSIDER_COOKIE },
+  });
+  await new Promise((resolve, reject) => {
+    sock.on('connect', resolve);
+    sock.on('connect_error', reject);
+  });
+  const emitAck = (ev, payload) => new Promise(resolve => sock.emit(ev, payload, resolve));
+  const access = await emitAck('realtime:request', {
+    op: 'workspace.access.get',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+  const sub = await emitAck('realtime:subscribe', {
+    topic: 'workspace.access.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+  const unsub = await emitAck('realtime:unsubscribe', {
+    subscriptionId: sub?.data?.subscriptionId ?? '',
+    clientVersion: '0.27.5',
+  });
+  sock.disconnect();
+  console.log(JSON.stringify({ access, sub, unsub }));
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+"#;
+
+  let parsed = run_node_socketio_script(
+    script,
+    &[
+      ("SYNC_URL", &base_url),
+      ("OUTSIDER_COOKIE", &format!("affine_session={outsider_session}")),
+      ("WS_ID", &ws_id),
+    ],
+  )
+  .await;
+
+  let access = &parsed["access"]["data"]["access"];
+  assert_eq!(access["role"], "External");
+  assert_eq!(access["team"], false);
+
+  let perms = access["permissions"].as_object().expect("permissions object");
+  let mut keys: Vec<&str> = perms.keys().map(String::as_str).collect();
+  keys.sort_unstable();
+  assert_eq!(
+    keys,
+    vec![
+      "Workspace_Administrators_Manage",
+      "Workspace_Blobs_Manage",
+      "Workspace_Blobs_Upload",
+      "Workspace_Copilot",
+      "Workspace_CreateDoc",
+      "Workspace_Delete",
+      "Workspace_Organize_Read",
+      "Workspace_Payment_Manage",
+      "Workspace_Preview",
+      "Workspace_Properties_Create",
+      "Workspace_Properties_Delete",
+      "Workspace_Properties_Read",
+      "Workspace_Properties_Update",
+      "Workspace_Read",
+      "Workspace_Settings_Read",
+      "Workspace_Settings_Update",
+      "Workspace_Sync",
+      "Workspace_TransferOwner",
+      "Workspace_Users_Manage",
+      "Workspace_Users_Read",
+    ]
+  );
+  assert_eq!(perms["Workspace_Read"], true);
+  assert_eq!(perms["Workspace_Preview"], true);
+  assert_eq!(perms["Workspace_Blobs_Manage"], false);
+  assert_eq!(perms["Workspace_Blobs_Upload"], false);
+  assert_eq!(perms["Workspace_Administrators_Manage"], false);
+
+  assert!(
+    parsed["sub"]["data"]["subscriptionId"]
+      .as_str()
+      .is_some_and(|s| !s.is_empty()),
+    "public non-member must subscribe to workspace.access.changed: {parsed}"
+  );
+  assert_eq!(parsed["unsub"]["data"]["ok"], true);
+
+  server.shutdown().await;
+  http_handle.abort();
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn realtime_room_subscribe_fanout_unsubscribe_and_guards() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("realtime_rooms").await;
+  let db = ServerDb::connect(DbConfig::new(&empty.url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+  let (_owner_id, owner_session, ws_id) = seed_user_and_workspace(&db).await;
+
+  let (server, base_url, http_handle) = spawn_sync_server(db.clone(), redis.url()).await;
+
+  let script = r#"
+const { io } = require('socket.io-client');
+const net = require('node:net');
+(async () => {
+  const mk = () => io(process.env.SYNC_URL, {
+    path: '/socket.io/',
+    transports: ['websocket'],
+    extraHeaders: { Cookie: process.env.OWNER_COOKIE },
+  });
+  const s1 = mk();
+  const s2 = mk();
+  await Promise.all([s1, s2].map(s => new Promise((res, rej) => { s.on('connect', res); s.on('connect_error', rej); })));
+  const emitAck = (s, ev, payload) => new Promise(res => s.emit(ev, payload, res));
+
+  // 1. Unsupported clientVersion rejected
+  const badVer = await emitAck(s1, 'realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.25.0',
+  });
+  // 2. Unknown topic rejected
+  const badTopic = await emitAck(s1, 'realtime:subscribe', {
+    topic: 'unknown.topic',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+  // 3. Both subscribe to workspace.config.changed; duplicate subscribe on s1 returns identical subscriptionId.
+  const sub1 = await emitAck(s1, 'realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+  const sub1Dup = await emitAck(s1, 'realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+  const sub2 = await emitAck(s2, 'realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  });
+
+  const events1 = [];
+  const events2 = [];
+  s1.on('realtime:event', e => events1.push(e));
+  s2.on('realtime:event', e => events2.push(e));
+
+  const room = `workspace:${process.env.WS_ID}:config`;
+  const publishRaw = (event, payload, id) => new Promise((resolve, reject) => {
+    const u = new URL(process.env.REDIS_URL);
+    const chan = 'affine:eventbus:v1';
+    const msg = JSON.stringify({
+      v: 1,
+      id,
+      event,
+      originId: 'external-origin',
+      originChannel: 'v2:canary',
+      requestId: null,
+      payload,
+    });
+    const enc = s => `$${Buffer.byteLength(s)}\r\n${s}\r\n`;
+    const sock = net.createConnection({ host: u.hostname, port: Number(u.port || 6379) }, () => {
+      sock.write(`*3\r\n${enc('PUBLISH')}${enc(chan)}${enc(msg)}`);
+    });
+    sock.once('data', () => { sock.end(); resolve(); });
+    sock.once('error', reject);
+  });
+  const publish = (seq) => publishRaw('realtime.topic.changed', {
+    topic: 'workspace.config.changed',
+    room,
+    input: { workspaceId: process.env.WS_ID },
+    event: { seq },
+  }, `eb_rt_${seq}`);
+
+  await publish(1);
+  await new Promise(r => setTimeout(r, 250));
+  const unsub1 = await emitAck(s1, 'realtime:unsubscribe', {
+    subscriptionId: sub1.data.subscriptionId,
+    clientVersion: '0.27.5',
+  });
+  await publish(2);
+  await new Promise(r => setTimeout(r, 250));
+
+  s1.disconnect();
+  s2.disconnect();
+  console.log(JSON.stringify({ badVer, badTopic, sub1, sub1Dup, sub2, unsub1, events1, events2 }));
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+"#;
+
+  let parsed = run_node_socketio_script(
+    script,
+    &[
+      ("SYNC_URL", &base_url),
+      ("OWNER_COOKIE", &format!("affine_session={owner_session}")),
+      ("WS_ID", &ws_id),
+      ("REDIS_URL", redis.url()),
+    ],
+  )
+  .await;
+
+  let expected_input_key = format!("{{\"workspaceId\":\"{ws_id}\"}}");
+  assert_eq!(parsed["badVer"]["error"]["code"], "UNSUPPORTED_CLIENT_VERSION");
+  assert_eq!(parsed["badTopic"]["error"]["code"], "BAD_REQUEST");
+  assert!(parsed["sub1"]["data"]["subscriptionId"].is_string());
+  assert_eq!(
+    parsed["sub1"]["data"]["subscriptionId"], parsed["sub1Dup"]["data"]["subscriptionId"],
+    "duplicate subscribe must return deterministic identical subscriptionId"
+  );
+  assert_eq!(parsed["unsub1"]["data"]["ok"], true);
+  assert_eq!(parsed["events1"].as_array().unwrap().len(), 1);
+  assert_eq!(parsed["events1"][0]["topic"], "workspace.config.changed");
+  assert_eq!(parsed["events1"][0]["inputKey"], expected_input_key);
+  assert!(parsed["events1"][0]["sentAt"].as_i64().unwrap_or(0) > 0);
+  assert_eq!(parsed["events1"][0]["event"]["seq"], 1);
+  assert_eq!(parsed["events2"].as_array().unwrap().len(), 2);
+  assert_eq!(parsed["events2"][1]["inputKey"], expected_input_key);
+  assert_eq!(parsed["events2"][1]["event"]["seq"], 2);
+
+  // Verify permission revocation evicts realtime room subscriptions on sync.permissions.changed.
+  let member_id = uuid::Uuid::new_v4().to_string();
+  let member_session = uuid::Uuid::new_v4().to_string();
+  sqlx::query("INSERT INTO users (id, name, email, registered, disabled) VALUES ($1, 'Revoked', 'revoked@affine.test', true, false)")
+    .bind(&member_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+  sqlx::query("INSERT INTO multiple_users_sessions (id, created_at) VALUES ($1, clock_timestamp())")
+    .bind(&member_session)
+    .execute(db.pool())
+    .await
+    .unwrap();
+  sqlx::query(
+    "INSERT INTO user_sessions (id, session_id, user_id, expires_at, created_at)
+     VALUES ($1, $2, $3, clock_timestamp() + interval '1 day', clock_timestamp())",
+  )
+  .bind(uuid::Uuid::new_v4().to_string())
+  .bind(&member_session)
+  .bind(&member_id)
+  .execute(db.pool())
+  .await
+  .unwrap();
+  sqlx::query(
+    "INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source)
+     VALUES ($1, $2, $3, 'member', 'active', 'legacy')",
+  )
+  .bind(format!("perm_{}", uuid::Uuid::new_v4().simple()))
+  .bind(&ws_id)
+  .bind(&member_id)
+  .execute(db.pool())
+  .await
+  .unwrap();
+
+  let evict_script = r#"
+const { io } = require('socket.io-client');
+const mk = (cookie) => io(process.env.SYNC_URL, {
+  path: '/socket.io/',
+  transports: ['websocket'],
+  extraHeaders: { Cookie: cookie },
+});
+const bob = mk(process.env.MEMBER_COOKIE);
+const alice = mk(process.env.OWNER_COOKIE);
+const bobEvents = [];
+const aliceEvents = [];
+bob.on('realtime:event', e => bobEvents.push(e));
+alice.on('realtime:event', e => {
+  aliceEvents.push(e);
+  if (e?.event?.seq === 99) {
+    bob.emit('realtime:unsubscribe', { clientVersion: '0.27.5' }, () => {
+      console.log(JSON.stringify({ bobEvents, aliceEvents }));
+      bob.disconnect();
+      alice.disconnect();
+      process.exit(0);
+    });
+  }
+});
+let ready = 0;
+const onSub = (sub) => {
+  if (!sub?.data?.subscriptionId) process.exit(2);
+  ready += 1;
+  if (ready === 2) console.log('SUBSCRIBED');
+};
+bob.on('connect', () => {
+  bob.emit('realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  }, onSub);
+});
+alice.on('connect', () => {
+  alice.emit('realtime:subscribe', {
+    topic: 'workspace.config.changed',
+    input: { workspaceId: process.env.WS_ID },
+    clientVersion: '0.27.5',
+  }, onSub);
+});
+"#;
+  let node_root = locate_node_modules_root();
+  let mut child = Command::new("node")
+    .arg("--input-type=commonjs")
+    .arg("-e")
+    .arg(evict_script)
+    .env("NODE_PATH", node_root.join("node_modules"))
+    .env("SYNC_URL", &base_url)
+    .env("MEMBER_COOKIE", format!("affine_session={member_session}"))
+    .env("OWNER_COOKIE", format!("affine_session={owner_session}"))
+    .env("WS_ID", &ws_id)
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn realtime eviction node");
+  let mut stdout_reader = tokio::io::BufReader::new(child.stdout.take().unwrap());
+  let mut ready_line = String::new();
+  tokio::io::AsyncBufReadExt::read_line(&mut stdout_reader, &mut ready_line)
+    .await
+    .expect("read SUBSCRIBED");
+  assert_eq!(ready_line.trim(), "SUBSCRIBED");
+
+  // Remove member from workspace and publish sync.permissions.changed, then publish sentinel seq:99.
+  // Because Redis pubsub delivers in FIFO order on the same channel, waiting for the positive-control
+  // Owner client (Alice) to receive seq:99 deterministically guarantees sync.permissions.changed was
+  // processed without any fixed sleep.
+  sqlx::query("DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2")
+    .bind(&ws_id)
+    .bind(&member_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+  let redis_client = redis::Client::open(redis.url()).unwrap();
+  let mut redis_conn = redis_client.get_multiplexed_async_connection().await.unwrap();
+  let perm_msg = json!({
+    "v": 1,
+    "id": "eb_rt_perm_evict_1",
+    "event": "sync.permissions.changed",
+    "originId": "external-origin",
+    "originChannel": "v2:canary",
+    "requestId": null,
+    "payload": {
+      "spaceType": "workspace",
+      "spaceId": ws_id,
+    }
+  })
+  .to_string();
+  let _: () = redis_conn.publish(EVENTBUS_CHANNEL_V1, &perm_msg).await.unwrap();
+
+  let after_evict_msg = json!({
+    "v": 1,
+    "id": "eb_rt_after_evict_1",
+    "event": "realtime.topic.changed",
+    "originId": "external-origin",
+    "originChannel": "v2:canary",
+    "requestId": null,
+    "payload": {
+      "topic": "workspace.config.changed",
+      "room": format!("workspace:{ws_id}:config"),
+      "input": { "workspaceId": ws_id },
+      "event": { "seq": 99 }
+    }
+  })
+  .to_string();
+  let _: () = redis_conn.publish(EVENTBUS_CHANNEL_V1, &after_evict_msg).await.unwrap();
+
+  let mut out_line = String::new();
+  tokio::time::timeout(
+    Duration::from_secs(10),
+    tokio::io::AsyncBufReadExt::read_line(&mut stdout_reader, &mut out_line),
+  )
+  .await
+  .expect("timed out waiting for positive-control sentinel event")
+  .expect("read eviction json");
+  let status = child.wait().await.unwrap();
+  assert!(status.success(), "eviction node script failed");
+  let evict_json: Value = serde_json::from_str(out_line.trim()).unwrap();
+  assert_eq!(
+    evict_json["aliceEvents"].as_array().unwrap().len(),
+    1,
+    "positive-control owner must receive sentinel seq:99 event: {evict_json}"
+  );
+  assert_eq!(
+    evict_json["bobEvents"].as_array().unwrap().len(),
+    0,
+    "evicted member must not receive realtime:event after sync.permissions.changed: {evict_json}"
+  );
+
+  server.shutdown().await;
+  http_handle.abort();
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}

@@ -192,56 +192,28 @@ fn permission_matrix_matches_v0275_1_to_1() {
     );
   }
 
-  // 2. WorkspaceRole x WorkspaceAction table (including public non-member & non-commercial Admin downgrade).
+  // 2. WorkspaceRole x WorkspaceAction table (including non-commercial Admin downgrade).
   let ws_cases = [
-    // Public workspace non-member: Read allowed, Sync strictly denied!
-    (None, false, true, WorkspaceAction::Read, true),
-    (None, false, true, WorkspaceAction::OrganizeRead, true),
-    (None, false, true, WorkspaceAction::PropertiesRead, true),
-    (None, false, true, WorkspaceAction::Sync, false),
-    (None, false, true, WorkspaceAction::CreateDoc, false),
+    (None, false, WorkspaceAction::Read, false),
+    (Some(WorkspaceRole::External), false, WorkspaceAction::Read, true),
     // External cannot Sync
-    (Some(WorkspaceRole::External), true, false, WorkspaceAction::Sync, false),
+    (Some(WorkspaceRole::External), true, WorkspaceAction::Sync, false),
     // Member can Sync & CreateDoc
-    (Some(WorkspaceRole::Member), false, false, WorkspaceAction::Sync, true),
-    (
-      Some(WorkspaceRole::Member),
-      false,
-      false,
-      WorkspaceAction::CreateDoc,
-      true,
-    ),
-    (
-      Some(WorkspaceRole::Member),
-      false,
-      false,
-      WorkspaceAction::UsersManage,
-      false,
-    ),
+    (Some(WorkspaceRole::Member), false, WorkspaceAction::Sync, true),
+    (Some(WorkspaceRole::Member), false, WorkspaceAction::CreateDoc, true),
+    (Some(WorkspaceRole::Member), false, WorkspaceAction::UsersManage, false),
     // Non-commercial Admin downgrades to Member
-    (
-      Some(WorkspaceRole::Admin),
-      false,
-      false,
-      WorkspaceAction::UsersManage,
-      false,
-    ),
-    (
-      Some(WorkspaceRole::Admin),
-      true,
-      false,
-      WorkspaceAction::UsersManage,
-      true,
-    ),
+    (Some(WorkspaceRole::Admin), false, WorkspaceAction::UsersManage, false),
+    (Some(WorkspaceRole::Admin), true, WorkspaceAction::UsersManage, true),
     // Owner
-    (Some(WorkspaceRole::Owner), false, false, WorkspaceAction::Delete, true),
-    (Some(WorkspaceRole::Admin), true, false, WorkspaceAction::Delete, false),
+    (Some(WorkspaceRole::Owner), false, WorkspaceAction::Delete, true),
+    (Some(WorkspaceRole::Admin), true, WorkspaceAction::Delete, false),
   ];
-  for (role, commercial, public, action, expected) in ws_cases {
+  for (role, commercial, action, expected) in ws_cases {
     assert_eq!(
-      workspace_role_allows(role, commercial, public, action),
+      workspace_role_allows(role, commercial, action),
       expected,
-      "workspace_role_allows({role:?}, commercial={commercial}, public={public}, {action:?})"
+      "workspace_role_allows({role:?}, commercial={commercial}, {action:?})"
     );
   }
 

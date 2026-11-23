@@ -48,6 +48,21 @@ pub fn sync_error_to_ws_envelope(err: &SyncError, request_id: Option<String>) ->
       data: None,
       request_id,
     },
+    SyncError::UnsupportedClientVersion {
+      client_version,
+      required_version,
+    } => WebsocketErrorBody {
+      status: StatusCode::FORBIDDEN.as_u16(),
+      code: "UNSUPPORTED_CLIENT_VERSION".into(),
+      error_type: "ACTION_FORBIDDEN".into(),
+      name: "UNSUPPORTED_CLIENT_VERSION".into(),
+      message: format!("Unsupported client with version [{client_version}], required version is [{required_version}]."),
+      data: Some(json!({
+        "clientVersion": client_version,
+        "requiredVersion": required_version,
+      })),
+      request_id,
+    },
     SyncError::SpaceAccessDenied { space_id } => WebsocketErrorBody {
       status: StatusCode::FORBIDDEN.as_u16(),
       code: "SPACE_ACCESS_DENIED".into(),

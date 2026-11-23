@@ -505,3 +505,72 @@ jobs:
         run: |
           (cd blocksuite/framework/sync && ../../../node_modules/.bin/vitest run)
           (cd blocksuite/playground && ../../node_modules/.bin/vitest run)
+
+  cloud-e2e-rust-server:
+    name: Cloud E2E (Rust affine-server)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTUP_TOOLCHAIN: '1.98.1'
+      CARGO_ENCODED_RUSTFLAGS: ''
+      DATABASE_URL: postgresql://affine:affine@127.0.0.1:5432/affine
+      REDIS_URL: redis://127.0.0.1:6379/0
+      AFFINE_E2E_RUST_SERVER: '1'
+      AFFINE_SERVER_EXTERNAL_URL: http://localhost:8080
+    services:
+      postgres:
+        image: docker.io/pgvector/pgvector:pg16@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f
+        env:
+          POSTGRES_USER: affine
+          POSTGRES_PASSWORD: affine
+          POSTGRES_DB: affine
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: docker.io/library/redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and Playwright
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          playwright-install: true
+          full-cache: true
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Cache Cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/backend -> target
+          key: server-harness
+
+      - name: Build affine-server binary
+        working-directory: packages/backend
+        run: cargo build --locked -p affine-server --bin affine-server
+
+      - name: Generate Prisma client for test helpers
+        run: yarn affine @affine/server prisma generate
+
+      - name: Run core affine-cloud Playwright E2E against Rust affine-server
+        run: |
+          yarn --cwd tests/affine-cloud playwright test \
+            e2e/login.spec.ts \
+            e2e/workspace.spec.ts \
+            e2e/storage.spec.ts \
+            e2e/collaboration.spec.ts

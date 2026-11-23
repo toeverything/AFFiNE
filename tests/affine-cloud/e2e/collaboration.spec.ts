@@ -60,7 +60,6 @@ test.skip('can collaborate with other user and name should display when editing'
       delay: 50,
     });
   }
-  await page2.waitForTimeout(200);
   {
     const title = getBlockSuiteEditorTitle(page2);
     await expect(title).toHaveText('TEST TITLE');
@@ -156,7 +155,7 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
     delay: 50,
   });
   await page.keyboard.press('Enter', { delay: 50 });
-  await page.waitForTimeout(100);
+  await expect(page.locator('affine-paragraph').first()).toBeVisible();
   await page.keyboard.type('/', { delay: 50 });
   await expect(slashMenu).toBeVisible();
   await page.keyboard.type('image', { delay: 100 });

@@ -82,8 +82,12 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       status: StatusCode::TOO_MANY_REQUESTS.as_u16(),
       code: "Too Many Requests".into(),
       error_type: "TOO_MANY_REQUESTS".into(),
-      name: "TOO_MANY_REQUESTS".into(),
-      message: msg.clone(),
+      name: "TOO_MANY_REQUEST".into(),
+      message: if msg.is_empty() {
+        "Too many requests.".into()
+      } else {
+        msg.clone()
+      },
       data: None,
     },
     DomainError::Unavailable(msg) => LegacyErrorEnvelope {

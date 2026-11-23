@@ -343,7 +343,7 @@ impl SyncStorage {
     let role = member_role_str.as_deref().and_then(WorkspaceRole::parse);
     tx.commit().await?;
 
-    if !workspace_role_allows(role, grant.rights.commercial, false, WorkspaceAction::Sync) {
+    if !workspace_role_allows(role, grant.rights.commercial, WorkspaceAction::Sync) {
       return Err(SyncError::SpaceAccessDenied {
         space_id: space_id.to_owned(),
       });
@@ -757,7 +757,7 @@ impl SyncStorage {
       .fetch_optional(&mut **tx.tx_mut())
       .await?;
       let ws_role = member_role_str.as_deref().and_then(WorkspaceRole::parse);
-      if !workspace_role_allows(ws_role, grant.rights.commercial, false, WorkspaceAction::CreateDoc) {
+      if !workspace_role_allows(ws_role, grant.rights.commercial, WorkspaceAction::CreateDoc) {
         return Err(SyncError::AccessDenied("Document create access denied".into()));
       }
 
@@ -1280,7 +1280,7 @@ impl SyncStorage {
       .fetch_optional(&mut **tx.tx_mut())
       .await?;
       let role = member_role_str.as_deref().and_then(WorkspaceRole::parse);
-      if !workspace_role_allows(role, grant.rights.commercial, false, WorkspaceAction::Sync) {
+      if !workspace_role_allows(role, grant.rights.commercial, WorkspaceAction::Sync) {
         return Err(SyncError::DocActionDenied {
           action: "Doc.Delete".into(),
           doc_id: doc_id.to_owned(),
@@ -1396,6 +1396,136 @@ impl SyncStorage {
       .await?;
     tx.commit().await?;
     Ok(())
+  }
+
+  /// Verifies that `workspace_id` exists and `user_id` holds `Workspace.Read`
+  /// (either an active workspace member or a public workspace with sharing enabled).
+  pub async fn assert_workspace_readable(&self, workspace_id: &str, user_id: &str) -> Result<(), SyncError> {
+    let mut conn = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await?;
+    let ws_policy: Option<(bool, bool)> = sqlx::query_as(
+      "SELECT COALESCE(p.visibility = 'public', false),
+              COALESCE(p.sharing_enabled, true)
+       FROM workspaces w
+       LEFT JOIN workspace_access_policies p ON p.workspace_id = w.id
+       WHERE w.id = $1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(conn.as_conn())
+    .await?;
+    let Some((is_public, sharing_enabled)) = ws_policy else {
+      return Err(SyncError::SpaceAccessDenied {
+        space_id: workspace_id.to_owned(),
+      });
+    };
+    if is_public && sharing_enabled {
+      return Ok(());
+    }
+    let is_member: bool = sqlx::query_scalar(
+      "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_one(conn.as_conn())
+    .await?;
+    if !is_member {
+      return Err(SyncError::SpaceAccessDenied {
+        space_id: workspace_id.to_owned(),
+      });
+    }
+    Ok(())
+  }
+
+  /// Resolves the `workspace.access.get` realtime snapshot (`role`, `permissions`, `team`).
+  pub async fn get_workspace_access_snapshot(
+    &self,
+    workspace_id: &str,
+    user_id: &str,
+  ) -> Result<serde_json::Value, SyncError> {
+    let now = Utc::now();
+    let mut tx = self.db.begin_tiered(WorkloadTier::InteractiveRead).await?;
+    let ws_policy: Option<(bool, bool, bool)> = sqlx::query_as(
+      "SELECT COALESCE(p.visibility = 'public', false),
+              COALESCE(p.sharing_enabled, true),
+              COALESCE(p.url_preview_enabled, false)
+       FROM workspaces w
+       LEFT JOIN workspace_access_policies p ON p.workspace_id = w.id
+       WHERE w.id = $1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await?;
+    let Some((is_public, sharing_enabled, url_preview_enabled)) = ws_policy else {
+      return Err(SyncError::SpaceAccessDenied {
+        space_id: workspace_id.to_owned(),
+      });
+    };
+    let member_role_str: Option<String> = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await?;
+    let role = member_role_str.as_deref().and_then(WorkspaceRole::parse);
+    if role.is_none() && !(is_public && sharing_enabled) {
+      return Err(SyncError::SpaceAccessDenied {
+        space_id: workspace_id.to_owned(),
+      });
+    }
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await
+      .map_err(|e| SyncError::Internal(format!("quota grant resolution failed: {e}")))?;
+    tx.commit().await?;
+
+    let domain_role = match role {
+      Some(WorkspaceRole::Owner) => Some(server_domain::workspaces::WorkspaceRole::Owner),
+      Some(WorkspaceRole::Admin) => Some(server_domain::workspaces::WorkspaceRole::Admin),
+      Some(WorkspaceRole::Member) => Some(server_domain::workspaces::WorkspaceRole::Member),
+      Some(WorkspaceRole::External) | None => None,
+    };
+    let perms = server_domain::acl::WorkspacePermissionsView::for_role(
+      domain_role,
+      grant.rights.commercial,
+      is_public,
+      sharing_enabled,
+      url_preview_enabled,
+    );
+    let is_team = grant.billing_subject == server_types::BillingSubject::Workspace;
+    Ok(perms.to_realtime_access_json(is_team))
+  }
+
+  /// Resolves the `workspace.config.get` realtime snapshot.
+  pub async fn get_workspace_config_snapshot(
+    &self,
+    workspace_id: &str,
+    user_id: &str,
+  ) -> Result<serde_json::Value, SyncError> {
+    self
+      .assert_space_accessible(SpaceType::Workspace, workspace_id, user_id)
+      .await?;
+    let mut conn = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await?;
+    let row: Option<(bool, bool, bool, bool)> = sqlx::query_as(
+      "SELECT w.enable_ai,
+              COALESCE(p.sharing_enabled, true),
+              COALESCE(p.url_preview_enabled, false),
+              w.enable_doc_embedding
+       FROM workspaces w
+       LEFT JOIN workspace_access_policies p ON p.workspace_id = w.id
+       WHERE w.id = $1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(conn.as_conn())
+    .await?;
+    let (enable_ai, enable_sharing, enable_url_preview, enable_doc_embedding) =
+      row.unwrap_or((true, true, false, true));
+    Ok(serde_json::json!({
+      "enableAi": enable_ai,
+      "enableSharing": enable_sharing,
+      "enableUrlPreview": enable_url_preview,
+      "enableDocEmbedding": enable_doc_embedding,
+    }))
   }
 
   /// Upserts `public.sync_active_users_minutely` truncated to the current UTC minute.

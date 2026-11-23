@@ -765,6 +765,197 @@ pub fn new_owner_token(node_label: &str) -> String {
   format!("{node_label}:{}", uuid::Uuid::new_v4())
 }
 
+/// Runs `task` once while optionally holding a distributed `SessionRedis` mutex
+/// lease on `resource`. When a Redis lease is acquired, spawns a background
+/// renewal task every `ttl / 3` using atomic owner-verified Lua `PEXPIRE`; if
+/// renewal fails (lease expired or stolen), cancels the passed
+/// [`CancellationToken`] so the task stops further batches immediately.
+///
+/// Returns `Ok(Some(output))` when the task ran, or `Ok(None)` when another
+/// worker already holds the lock.
+pub async fn run_with_distributed_lock<T, E, F, Fut>(
+  mutex: Option<&RedisMutex>,
+  resource: &str,
+  owner_token: &str,
+  ttl_secs: u64,
+  task: F,
+) -> Result<Option<T>, E>
+where
+  F: FnOnce(CancellationToken) -> Fut,
+  Fut: std::future::Future<Output = Result<T, E>>,
+{
+  run_with_distributed_lock_ms(
+    mutex,
+    resource,
+    owner_token,
+    ttl_secs.max(1).saturating_mul(1_000),
+    CancellationToken::new(),
+    task,
+  )
+  .await
+}
+
+/// Millisecond-precision variant of [`run_with_distributed_lock`] that also
+/// links an external `parent_cancel` token (e.g. supervisor shutdown).
+pub async fn run_with_distributed_lock_ms<T, E, F, Fut>(
+  mutex: Option<&RedisMutex>,
+  resource: &str,
+  owner_token: &str,
+  ttl_ms: u64,
+  parent_cancel: CancellationToken,
+  task: F,
+) -> Result<Option<T>, E>
+where
+  F: FnOnce(CancellationToken) -> Fut,
+  Fut: std::future::Future<Output = Result<T, E>>,
+{
+  let ttl_ms = ttl_ms.max(30);
+  let lease = match mutex {
+    Some(m) => match m.try_acquire_ms(resource, owner_token, ttl_ms).await {
+      Ok(lease) => Some(lease),
+      Err(WorkerError::AlreadyLocked(_)) => return Ok(None),
+      Err(err) => {
+        tracing::warn!(resource, error = %err, "distributed lock unavailable; skipping tick");
+        return Ok(None);
+      }
+    },
+    None => None,
+  };
+
+  struct RenewDropGuard {
+    stop: CancellationToken,
+    handle: Option<tokio::task::JoinHandle<()>>,
+  }
+
+  impl Drop for RenewDropGuard {
+    fn drop(&mut self) {
+      self.stop.cancel();
+      if let Some(h) = self.handle.take() {
+        h.abort();
+      }
+    }
+  }
+
+  let lease_cancel = CancellationToken::new();
+  let renew_stop = CancellationToken::new();
+
+  let renew_handle = lease.as_ref().map(|active_lease| {
+    let lease_clone = active_lease.clone();
+    let cancel_on_loss = lease_cancel.clone();
+    let stop = renew_stop.clone();
+    let parent = parent_cancel.clone();
+    let res_name = resource.to_owned();
+    let renew_interval = Duration::from_millis((ttl_ms / 3).max(10));
+    tokio::spawn(async move {
+      loop {
+        tokio::select! {
+          () = stop.cancelled() => break,
+          () = parent.cancelled() => {
+            cancel_on_loss.cancel();
+            break;
+          }
+          () = tokio::time::sleep(renew_interval) => {
+            if let Err(err) = lease_clone.fence_and_renew_ms(ttl_ms).await {
+              tracing::warn!(resource = %res_name, error = %err, "distributed worker lock lease lost; cancelling task");
+              cancel_on_loss.cancel();
+              break;
+            }
+          }
+        }
+      }
+    })
+  });
+
+  // Also forward parent cancellation when running without Redis mutex.
+  let forward_handle = if renew_handle.is_none() {
+    let cancel = lease_cancel.clone();
+    let stop = renew_stop.clone();
+    let parent = parent_cancel.clone();
+    Some(tokio::spawn(async move {
+      tokio::select! {
+        () = stop.cancelled() => {}
+        () = parent.cancelled() => cancel.cancel(),
+      }
+    }))
+  } else {
+    None
+  };
+
+  let mut renew_guard = RenewDropGuard {
+    stop: renew_stop.clone(),
+    handle: renew_handle,
+  };
+  let mut forward_guard = RenewDropGuard {
+    stop: renew_stop.clone(),
+    handle: forward_handle,
+  };
+
+  let result = task(lease_cancel).await;
+  renew_stop.cancel();
+  if let Some(h) = renew_guard.handle.take() {
+    let _ = h.await;
+  }
+  if let Some(h) = forward_guard.handle.take() {
+    let _ = h.await;
+  }
+  drop(renew_guard);
+  drop(forward_guard);
+
+  if let Some(lease) = lease
+    && let Err(err) = lease.release().await
+  {
+    tracing::warn!(resource, error = %err, "failed to release distributed worker lock");
+  }
+  result.map(Some)
+}
+
+/// Spawns a supervised periodic background task on `supervisor` that acquires
+/// `MutexLock:<resource>` (when `session_mutex` is present) before each tick,
+/// renews the lease every `ttl / 3`, and cancels the task's
+/// [`CancellationToken`] on shutdown or lease loss.
+pub async fn spawn_locked_periodic_task<F, Fut>(
+  supervisor: &WorkerSupervisor,
+  session_mutex: Option<RedisMutex>,
+  resource: impl Into<String>,
+  owner_label: impl Into<String>,
+  interval: Duration,
+  lock_ttl_secs: u64,
+  task: F,
+) where
+  F: Fn(CancellationToken) -> Fut + Send + Sync + 'static,
+  Fut: std::future::Future<Output = ()> + Send + 'static,
+{
+  let resource = resource.into();
+  let owner_label = owner_label.into();
+  let ttl_ms = lock_ttl_secs.max(1).saturating_mul(1_000);
+  let task = Arc::new(task);
+  supervisor
+    .spawn(move |shutdown| async move {
+      loop {
+        tokio::select! {
+          () = shutdown.cancelled() => break,
+          () = tokio::time::sleep(interval) => {
+            let token = new_owner_token(&owner_label);
+            let task = Arc::clone(&task);
+            let _: Result<Option<()>, ()> = run_with_distributed_lock_ms(
+              session_mutex.as_ref(),
+              &resource,
+              &token,
+              ttl_ms,
+              shutdown.clone(),
+              |lease_cancel| async move {
+                task(lease_cancel).await;
+                Ok(())
+              },
+            )
+            .await;
+          }
+        }
+      }
+    })
+    .await;
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -789,5 +980,120 @@ mod tests {
 
     let test_ks = V2Keyspace::new("test:run1:");
     assert_eq!(test_ks.key(&["lease", "job-9"]), "test:run1:v2:lease:job-9");
+  }
+
+  #[tokio::test]
+  async fn distributed_lock_renews_in_background_cancels_on_loss_and_stops_on_abort() {
+    let redis = test_db_harness::redis::TestRedis::from_env_or_docker().expect("Redis 7");
+    let prefix = format!("test:renew:{}:", uuid::Uuid::new_v4().simple());
+    let mutex = RedisMutex::new(redis.url(), &prefix).expect("RedisMutex");
+
+    // 1. Background renewal keeps a 180ms TTL lease alive past its initial TTL:
+    // poll another worker's try_acquire until wall clock exceeds initial TTL (260ms).
+    let contender = mutex.clone();
+    let res: Option<bool> = run_with_distributed_lock_ms(
+      Some(&mutex),
+      "renew-job",
+      "owner-1",
+      180,
+      CancellationToken::new(),
+      |cancel| async move {
+        let start = tokio::time::Instant::now();
+        while start.elapsed() < Duration::from_millis(260) {
+          assert!(
+            matches!(
+              contender.try_acquire_ms("renew-job", "contender", 500).await,
+              Err(WorkerError::AlreadyLocked(_))
+            ),
+            "contender must not acquire while owner-1 renews"
+          );
+          tokio::task::yield_now().await;
+        }
+        Ok::<bool, ()>(cancel.is_cancelled())
+      },
+    )
+    .await
+    .unwrap();
+    assert_eq!(res, Some(false), "lease should stay alive via background Lua renewal");
+
+    // 2. External lease theft/deletion cancels the token and stops subsequent batches.
+    let thief_mutex = mutex.clone();
+    let batches_run = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let batches_clone = Arc::clone(&batches_run);
+    let cancelled: Option<bool> = run_with_distributed_lock_ms(
+      Some(&mutex),
+      "stolen-job",
+      "owner-2",
+      150,
+      CancellationToken::new(),
+      |cancel| async move {
+        batches_clone.fetch_add(1, Ordering::SeqCst);
+        let _ = thief_mutex.release_with_token("stolen-job", "owner-2").await;
+        let _other = thief_mutex
+          .try_acquire_ms("stolen-job", "owner-thief", 5_000)
+          .await
+          .expect("thief acquires lock");
+        tokio::select! {
+          () = cancel.cancelled() => {}
+          () = tokio::time::sleep(Duration::from_secs(2)) => {}
+        }
+        if !cancel.is_cancelled() {
+          batches_clone.fetch_add(1, Ordering::SeqCst);
+        }
+        Ok::<bool, ()>(cancel.is_cancelled())
+      },
+    )
+    .await
+    .unwrap();
+    assert_eq!(cancelled, Some(true), "lease loss must cancel task token");
+    assert_eq!(
+      batches_run.load(Ordering::SeqCst),
+      1,
+      "subsequent batch must not run after lease loss"
+    );
+
+    // 3. Aborting outer future while parent_cancel stays uncancelled must immediately
+    // abort background renewal so the short TTL expires and another worker acquires.
+    let entered = Arc::new(tokio::sync::Notify::new());
+    let entered_tx = Arc::clone(&entered);
+    let parent_cancel = CancellationToken::new();
+    let mutex_abort = mutex.clone();
+    let parent_clone = parent_cancel.clone();
+    let handle = tokio::spawn(async move {
+      let _: Result<Option<()>, ()> = run_with_distributed_lock_ms(
+        Some(&mutex_abort),
+        "abort-job",
+        "owner-abort",
+        120,
+        parent_clone,
+        |_cancel| async move {
+          entered_tx.notify_one();
+          std::future::pending::<()>().await;
+          Ok(())
+        },
+      )
+      .await;
+    });
+    entered.notified().await;
+    handle.abort();
+    let _ = handle.await;
+
+    // Parent token was never cancelled; if RenewDropGuard failed to abort renewal,
+    // the lock would stay held forever. Bounded poll verifies takeover after 120ms TTL.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+    let mut taken_over = false;
+    while tokio::time::Instant::now() < deadline {
+      if let Ok(lease) = mutex.try_acquire_ms("abort-job", "owner-next", 1_000).await {
+        let _ = lease.release().await;
+        taken_over = true;
+        break;
+      }
+      tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    assert!(
+      taken_over,
+      "another worker must acquire lock after outer future is aborted"
+    );
+    assert!(!parent_cancel.is_cancelled());
   }
 }

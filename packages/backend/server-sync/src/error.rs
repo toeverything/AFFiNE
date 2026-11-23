@@ -10,6 +10,12 @@ pub enum SyncError {
   #[error("bad request: {0}")]
   BadRequest(String),
 
+  #[error("unsupported client version: {client_version} (required {required_version})")]
+  UnsupportedClientVersion {
+    client_version: String,
+    required_version: String,
+  },
+
   #[error("space access denied: {space_id}")]
   SpaceAccessDenied { space_id: String },
 

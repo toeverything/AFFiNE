@@ -40,7 +40,7 @@ test.describe('login first', () => {
   test('exit successfully and re-login', async ({ page }) => {
     await page.reload();
     await clickSideBarAllPageButton(page);
-    await page.waitForTimeout(200);
+    await expect(page).toHaveURL(/\/all$/);
     const url = page.url();
     await createLocalWorkspace(
       {
@@ -53,8 +53,7 @@ test.describe('login first', () => {
     await clickUserInfoCard(page);
     await page.getByTestId('sign-out-button').click();
     await page.getByTestId('confirm-sign-out-button').click();
-    await page.waitForTimeout(5000);
-    expect(page.url()).toBe(url);
+    await expect(page).toHaveURL(url);
   });
 
   test('can sign out', async ({ page }) => {

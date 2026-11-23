@@ -4,6 +4,56 @@ import type {
   PlaywrightWorkerOptions,
 } from '@playwright/test';
 
+const useRustServer = process.env.AFFINE_E2E_RUST_SERVER === '1';
+const rustServerBin =
+  process.env.AFFINE_SERVER_BIN ??
+  '../../packages/backend/target/debug/affine-server';
+
+const backendWebServer = useRustServer
+  ? {
+      command: `${rustServerBin} --role allinone --port 3010`,
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe' as const,
+      stderr: 'pipe' as const,
+      env: {
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          'postgresql://affine:affine@localhost:5432/affine',
+        REDIS_URL: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379/0',
+        AFFINE_SERVER_EXTERNAL_URL:
+          process.env.AFFINE_SERVER_EXTERNAL_URL ?? 'http://localhost:8080',
+        MAILER_HOST: process.env.MAILER_HOST ?? '127.0.0.1',
+        MAILER_PORT: process.env.MAILER_PORT ?? '1025',
+        MAILER_SENDER: process.env.MAILER_SENDER ?? 'noreply@toeverything.info',
+        MAILER_USER: process.env.MAILER_USER ?? 'noreply@toeverything.info',
+        MAILER_PASSWORD: process.env.MAILER_PASSWORD ?? 'affine',
+        MAILER_IGNORE_TLS: process.env.MAILER_IGNORE_TLS ?? 'true',
+      },
+      url: 'http://localhost:3010/healthz',
+    }
+  : {
+      command: 'yarn run -T affine dev -p @affine/server',
+      timeout: 120 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          'postgresql://affine:affine@localhost:5432/affine',
+        NODE_ENV: 'test',
+        AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
+        DEBUG: 'affine:*',
+        FORCE_COLOR: 'true',
+        DEBUG_COLORS: 'true',
+        MAILER_HOST: '0.0.0.0',
+        MAILER_PORT: '1025',
+        MAILER_SENDER: 'noreply@toeverything.info',
+        MAILER_USER: 'noreply@toeverything.info',
+        MAILER_PASSWORD: 'affine',
+      },
+      url: 'http://localhost:3010/graphql',
+    };
+
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
   fullyParallel: !process.env.CI,
@@ -14,6 +64,13 @@ const config: PlaywrightTestConfig = {
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
       'chromium',
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? {
+          launchOptions: {
+            executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+          },
+        }
+      : {}),
     permissions: ['clipboard-read', 'clipboard-write'],
     viewport: { width: 1440, height: 800 },
     actionTimeout: 10 * 1000,
@@ -39,27 +96,7 @@ const config: PlaywrightTestConfig = {
       },
       url: 'http://localhost:8080',
     },
-    {
-      command: 'yarn run -T affine dev -p @affine/server',
-      timeout: 120 * 1000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        DATABASE_URL:
-          process.env.DATABASE_URL ??
-          'postgresql://affine:affine@localhost:5432/affine',
-        NODE_ENV: 'test',
-        AFFINE_ENV: process.env.AFFINE_ENV ?? 'dev',
-        DEBUG: 'affine:*',
-        FORCE_COLOR: 'true',
-        DEBUG_COLORS: 'true',
-        MAILER_HOST: '0.0.0.0',
-        MAILER_PORT: '1025',
-        MAILER_SENDER: 'noreply@toeverything.info',
-        MAILER_USER: 'noreply@toeverything.info',
-        MAILER_PASSWORD: 'affine',
-      },
-      url: 'http://localhost:3010/graphql',
-    },
+    backendWebServer,
   ],
 };
 

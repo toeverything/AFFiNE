@@ -23,6 +23,7 @@
 //! row soft-deleted until its object is gone, so a failed object delete can be
 //! retried and the key cannot be reused meanwhile.
 
+pub mod refs;
 mod s3;
 mod storage;
 
@@ -310,6 +311,7 @@ pub struct BlobService {
   storage: Arc<dyn BlobStorageBackend>,
   quota: Arc<dyn QuotaGate>,
   lock_permits: Arc<Semaphore>,
+  ref_cache: Arc<std::sync::Mutex<refs::BlobRefCache>>,
 }
 
 impl BlobService {
@@ -319,6 +321,7 @@ impl BlobService {
       storage,
       quota,
       lock_permits: Arc::new(Semaphore::new(DEFAULT_STORAGE_LOCK_CONCURRENCY)),
+      ref_cache: Arc::new(std::sync::Mutex::new(refs::BlobRefCache::new())),
     }
   }
 

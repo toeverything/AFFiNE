@@ -116,12 +116,100 @@ pub struct WorkspaceUsage {
   pub member_count: i32,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum EffectiveWorkspaceRole {
+  Owner,
+  Admin,
+  Collaborator,
+  External,
+}
+
+pub use crate::acl::WorkspacePermissionsView;
+
+const NANOID_ALPHABET: &[u8; 64] = b"useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+
+fn generate_invite_link_nanoid() -> String {
+  use rand::RngCore as _;
+  let mut buf = [0u8; 21];
+  rand::rng().fill_bytes(&mut buf);
+  buf
+    .iter()
+    .map(|&b| NANOID_ALPHABET[(b & 63) as usize] as char)
+    .collect()
+}
+
+const CREATE_INVITE_LINK_LUA: &str = r#"
+local ws_key = KEYS[1]
+local id_key = KEYS[2]
+local ws_val = ARGV[1]
+local id_val = ARGV[2]
+local ttl_ms = tonumber(ARGV[3])
+local existing = redis.call("GET", ws_key)
+if existing then
+  local pttl = redis.call("PTTL", ws_key)
+  if pttl > 0 then
+    return {existing, tostring(pttl)}
+  end
+end
+redis.call("SET", ws_key, ws_val, "PX", ttl_ms)
+redis.call("SET", id_key, id_val, "PX", ttl_ms)
+return {ws_val, tostring(ttl_ms)}
+"#;
+
+const REVOKE_INVITE_LINK_LUA: &str = r#"
+local ws_key = KEYS[1]
+local id_prefix = ARGV[1]
+local existing = redis.call("GET", ws_key)
+local deleted = redis.call("DEL", ws_key)
+if existing then
+  local ok, parsed = pcall(cjson.decode, existing)
+  if ok and type(parsed) == "table" and type(parsed["inviteId"]) == "string" and #parsed["inviteId"] > 0 then
+    redis.call("DEL", id_prefix .. parsed["inviteId"])
+  end
+end
+return deleted
+"#;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorkspaceMemberView {
+  pub id: String,
+  pub name: String,
+  pub email: String,
+  pub avatar_url: Option<String>,
+  pub email_verified: bool,
+  pub disabled: bool,
+  pub role: WorkspaceRole,
+  pub invite_id: String,
+  pub status: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorkspaceInviteLink {
+  pub invite_id: String,
+  pub workspace_id: String,
+  pub inviter_user_id: String,
+  pub expire_time: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InviteInfoView {
+  pub workspace_id: String,
+  pub workspace_name: String,
+  pub workspace_avatar_key: Option<String>,
+  pub owner: crate::users::CurrentUserView,
+  pub invitee: crate::users::CurrentUserView,
+  pub status: Option<String>,
+  pub is_link: bool,
+}
+
 #[derive(Clone)]
 pub struct WorkspaceService {
   db: ServerDb,
   quota_gate: Arc<dyn QuotaGate>,
   invalidation: Arc<dyn InvalidationPublisher>,
   rate_limit_policy: Arc<dyn RateLimitPolicy>,
+  redis: Option<redis::Client>,
+  fallback_invite_links: Arc<tokio::sync::RwLock<std::collections::HashMap<String, WorkspaceInviteLink>>>,
 }
 
 impl WorkspaceService {
@@ -131,11 +219,18 @@ impl WorkspaceService {
       quota_gate,
       invalidation,
       rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
+      redis: None,
+      fallback_invite_links: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     }
   }
 
   pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
     self.rate_limit_policy = rate_limit_policy;
+    self
+  }
+
+  pub fn with_redis(mut self, redis: Option<redis::Client>) -> Self {
+    self.redis = redis;
     self
   }
 
@@ -152,6 +247,27 @@ impl WorkspaceService {
     owner_user_id: &str,
     name: Option<&str>,
   ) -> Result<WorkspaceRecord, DomainError> {
+    self.create_workspace_with_init(owner_user_id, name, None).await
+  }
+
+  /// Atomically creates a workspace, its default private access policy, the
+  /// active owner membership, optional initial root Yjs snapshot, and marks
+  /// admin stats dirty inside one [`WorkloadTier::InteractiveWrite`] transaction.
+  pub async fn create_workspace_with_init(
+    &self,
+    owner_user_id: &str,
+    name: Option<&str>,
+    init_bytes: Option<&[u8]>,
+  ) -> Result<WorkspaceRecord, DomainError> {
+    const MAX_INIT_BYTES: usize = 16 * 1024 * 1024;
+    if let Some(bytes) = init_bytes {
+      if bytes.len() > MAX_INIT_BYTES {
+        return Err(DomainError::Validation("workspace init document is too large".into()));
+      }
+      y_octo::ReadDoc::from_full_update_v1(bytes.to_vec())
+        .map_err(|err| DomainError::Validation(format!("invalid Yjs document update: {err}")))?;
+    }
+
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -203,6 +319,21 @@ impl WorkspaceService {
     .execute(&mut **tx.tx_mut())
     .await
     .map_err(|e| DomainError::Internal(format!("insert workspace owner member: {e}")))?;
+
+    if let Some(bytes) = init_bytes {
+      sqlx::query(
+        r#"INSERT INTO snapshots (workspace_id, guid, blob, state, created_at, updated_at, created_by, updated_by)
+           VALUES ($1, $2, $3, NULL, $4, $4, $5, $5)"#,
+      )
+      .bind(&workspace_id)
+      .bind(&workspace_id)
+      .bind(bytes)
+      .bind(now)
+      .bind(owner_user_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("insert workspace init snapshot: {e}")))?;
+    }
 
     sqlx::query(
       r#"INSERT INTO workspace_admin_stats_dirty (workspace_id, updated_at)
@@ -271,7 +402,7 @@ impl WorkspaceService {
     .ok_or_else(|| DomainError::NotFound(format!("workspace {workspace_id} not found")))?;
 
     let workspace = row_to_workspace(row);
-    if !workspace.public {
+    if !(workspace.public && workspace.enable_sharing) {
       let Some(uid) = user_id else {
         return Err(DomainError::Unauthorized("authentication required".to_owned()));
       };
@@ -458,14 +589,6 @@ impl WorkspaceService {
     tx.commit()
       .await
       .map_err(|e| DomainError::Internal(format!("commit update_workspace: {e}")))?;
-
-    let _ = self
-      .invalidation
-      .publish_invalidation(&InvalidationHintV1::WorkspaceInventoryChanged {
-        workspace_id: workspace_id.to_owned(),
-        doc_id: None,
-      })
-      .await;
 
     Ok(row_to_workspace(row))
   }
@@ -844,12 +967,9 @@ impl WorkspaceService {
     )
   }
 
-  /// Accepts a pending workspace invitation for `invitee_user_id`, following the
-  /// exact `v0.27.5` `strict_quota/seat.rs` deadlock-free lock order
-  /// (`users (sorted) -> workspaces -> workspace_invitations`), re-verifying
-  /// owner stability, expiry, strict identity binding, and seat quota before
-  /// activating `workspace_members` with `id = invitation_id, source = kind`
-  /// and deleting the consumed `workspace_invitations` row.
+  /// Accepts a pending workspace invitation or joins via an active workspace
+  /// invite link (`workspace:inviteLinkId:<id>`), following the exact `v0.27.5`
+  /// `strict_quota/seat.rs` deadlock-free lock order.
   pub async fn accept_invitation(
     &self,
     invitee_user_id: &str,
@@ -861,12 +981,17 @@ impl WorkspaceService {
       .await
       .map_err(|e| DomainError::Internal(format!("begin accept_invitation: {e}")))?;
 
-    let inv_workspace_id: String = sqlx::query_scalar("SELECT workspace_id FROM workspace_invitations WHERE id = $1")
-      .bind(invitation_id)
-      .fetch_optional(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("load invitation workspace: {e}")))?
-      .ok_or_else(|| DomainError::NotFound("invitation not found".to_owned()))?;
+    let maybe_inv_workspace_id: Option<String> =
+      sqlx::query_scalar("SELECT workspace_id FROM workspace_invitations WHERE id = $1")
+        .bind(invitation_id)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load invitation workspace: {e}")))?;
+
+    let Some(inv_workspace_id) = maybe_inv_workspace_id else {
+      drop(tx);
+      return self.accept_invite_link(invitee_user_id, invitation_id).await;
+    };
 
     let owner_id: String = sqlx::query_scalar(
       "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
@@ -1028,7 +1153,8 @@ impl WorkspaceService {
     })
   }
 
-  /// Updates an active workspace member's role (including ownership transfer).
+  /// Updates an active workspace member's role (Admin or Member). Ownership
+  /// transfers must go through [`Self::transfer_workspace_ownership`].
   pub async fn update_member_role(
     &self,
     actor_user_id: &str,
@@ -1036,6 +1162,12 @@ impl WorkspaceService {
     target_user_id: &str,
     new_role: WorkspaceRole,
   ) -> Result<WorkspaceMemberRecord, DomainError> {
+    if new_role == WorkspaceRole::Owner {
+      return Err(DomainError::Forbidden(
+        "use transferWorkspaceOwnership to transfer workspace ownership".to_owned(),
+      ));
+    }
+
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
@@ -1058,11 +1190,6 @@ impl WorkspaceService {
     if target_role == WorkspaceRole::Owner {
       return Err(DomainError::Forbidden("workspace_owner_must_transfer".to_owned()));
     }
-    if new_role == WorkspaceRole::Owner && effective_actor_role != WorkspaceRole::Owner {
-      return Err(DomainError::Forbidden(
-        "only workspace owner may transfer ownership".to_owned(),
-      ));
-    }
     if !matches!(effective_actor_role, WorkspaceRole::Owner | WorkspaceRole::Admin) {
       return Err(DomainError::Forbidden(
         "insufficient permissions to change member role".to_owned(),
@@ -1072,19 +1199,6 @@ impl WorkspaceService {
       return Err(DomainError::Forbidden(
         "admin cannot modify another admin's role".to_owned(),
       ));
-    }
-
-    if new_role == WorkspaceRole::Owner {
-      sqlx::query(
-        "UPDATE workspace_members
-         SET role = 'admin', updated_at = clock_timestamp()
-         WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' AND user_id <> $2",
-      )
-      .bind(workspace_id)
-      .bind(target_user_id)
-      .execute(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| DomainError::Internal(format!("demote previous owner: {e}")))?;
     }
 
     let row = sqlx::query(
@@ -1217,6 +1331,1255 @@ impl WorkspaceService {
       .await;
 
     Ok(())
+  }
+
+  pub async fn is_workspace_initialized(&self, workspace_id: &str) -> Result<bool, DomainError> {
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire is_workspace_initialized: {e}")))?;
+    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $1)")
+      .bind(workspace_id)
+      .fetch_one(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("check workspace initialized: {e}")))
+  }
+
+  /// Resolves per-document ACL entry (including alias resolution, deleted state,
+  /// published public flag, and all 21 `DocPermissionsView` flags) in one transaction.
+  pub async fn resolve_doc_access(
+    &self,
+    workspace_id: &str,
+    actor_user_id: Option<&str>,
+    doc_id: &str,
+  ) -> Result<crate::acl::DocAccessEntry, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin resolve_doc_access: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load resolve_doc_access clock: {e}")))?;
+    let snapshot = crate::acl::load_workspace_docs_access_in(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      actor_user_id,
+      &[doc_id.to_owned()],
+      now,
+    )
+    .await?;
+    let _ = tx.rollback().await;
+    snapshot
+      .docs
+      .into_values()
+      .next()
+      .ok_or_else(|| DomainError::Internal("missing doc access entry".to_owned()))
+  }
+
+  /// Authorizes and loads the merged Yjs binary (`snapshots.blob` + `updates.blob`)
+  /// for `GET /api/workspaces/{ws}/docs/{doc_id}` inside a single
+  /// `REPEATABLE READ READ ONLY` transaction.
+  ///
+  /// Returns `Ok(Some((bytes, publish_mode)))` where `publish_mode` is `None`
+  /// for the workspace root doc and `Some("edgeless" | "page")` for non-root docs.
+  pub async fn get_doc_binary_for_actor(
+    &self,
+    workspace_id: &str,
+    actor_user_id: Option<&str>,
+    doc_id: &str,
+  ) -> Result<Option<(Vec<u8>, Option<&'static str>)>, DomainError> {
+    const MAX_UPDATES: i64 = 10_000;
+    const MAX_BYTES: usize = 16 * 1024 * 1024;
+
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin get_doc_binary_for_actor: {e}")))?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("set repeatable read: {e}")))?;
+
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load doc read clock: {e}")))?;
+
+    let acl = crate::acl::load_workspace_docs_access_in(
+      tx.tx_mut(),
+      self.quota_gate.as_ref(),
+      workspace_id,
+      actor_user_id,
+      &[doc_id.to_owned()],
+      now,
+    )
+    .await?;
+    let entry = acl
+      .docs
+      .get(doc_id)
+      .ok_or_else(|| DomainError::Internal("missing doc acl entry".to_owned()))?;
+
+    let is_root = entry.storage_doc_id == workspace_id;
+    let allowed = if is_root {
+      acl.workspace_permissions.read
+    } else {
+      !entry.deleted && entry.permissions.doc_read
+    };
+    if !allowed {
+      let _ = tx.rollback().await;
+      if entry.deleted {
+        return Ok(None);
+      }
+      return if actor_user_id.is_none() {
+        Err(DomainError::Unauthorized("Authentication required".to_owned()))
+      } else {
+        Err(DomainError::Forbidden("Document access denied".to_owned()))
+      };
+    }
+
+    let storage_doc_id = entry.storage_doc_id.clone();
+    let publish_mode = (!is_root).then_some(entry.publish_mode);
+
+    let snapshot_len: Option<i64> =
+      sqlx::query_scalar("SELECT octet_length(blob)::bigint FROM snapshots WHERE workspace_id = $1 AND guid = $2")
+        .bind(workspace_id)
+        .bind(&storage_doc_id)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("check snapshot size: {e}")))?;
+
+    let (update_count, update_bytes): (i64, i64) = sqlx::query_as(
+      "SELECT COUNT(*)::bigint, COALESCE(SUM(octet_length(blob)), 0)::bigint
+       FROM (
+         SELECT blob FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC LIMIT $3
+       ) sub",
+    )
+    .bind(workspace_id)
+    .bind(&storage_doc_id)
+    .bind(MAX_UPDATES + 1)
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("check updates budget: {e}")))?;
+
+    let total_bytes = snapshot_len.unwrap_or(0).saturating_add(update_bytes);
+    if update_count > MAX_UPDATES || total_bytes as usize > MAX_BYTES {
+      let _ = tx.rollback().await;
+      return Err(DomainError::Validation(
+        "document binary exceeds merge budget".to_owned(),
+      ));
+    }
+
+    let snapshot: Option<Vec<u8>> =
+      sqlx::query_scalar("SELECT blob FROM snapshots WHERE workspace_id = $1 AND guid = $2")
+        .bind(workspace_id)
+        .bind(&storage_doc_id)
+        .fetch_optional(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load doc snapshot bytes: {e}")))?;
+
+    let updates: Vec<Vec<u8>> =
+      sqlx::query_scalar("SELECT blob FROM updates WHERE workspace_id = $1 AND guid = $2 ORDER BY created_at ASC")
+        .bind(workspace_id)
+        .bind(&storage_doc_id)
+        .fetch_all(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load doc updates bytes: {e}")))?;
+
+    let _ = tx.rollback().await;
+
+    let mut buffers = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
+    if let Some(snap) = snapshot
+      && !snap.is_empty()
+    {
+      buffers.push(snap);
+    }
+    for upd in updates {
+      if !upd.is_empty() {
+        buffers.push(upd);
+      }
+    }
+    if buffers.is_empty() {
+      return Ok(None);
+    }
+
+    let merged = if buffers.len() == 1 {
+      buffers.into_iter().next().unwrap_or_default()
+    } else {
+      y_octo::merge_updates_v1(&buffers)
+        .and_then(|u| u.encode_v1())
+        .map_err(|e| DomainError::Internal(format!("merge doc updates: {e}")))?
+    };
+
+    Ok(Some((merged, publish_mode)))
+  }
+
+  pub async fn is_team_workspace(&self, workspace_id: &str) -> Result<bool, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin is_team_workspace: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load is_team_workspace clock: {e}")))?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    let _ = tx.rollback().await;
+    Ok(grant.billing_subject == server_types::BillingSubject::Workspace)
+  }
+
+  pub async fn get_workspace_owner(&self, workspace_id: &str) -> Result<crate::users::CurrentUserView, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin get_workspace_owner: {e}")))?;
+    let owner_id: String = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load workspace owner id: {e}")))?
+    .ok_or_else(|| DomainError::NotFound(format!("workspace {workspace_id} owner not found")))?;
+    let view = crate::users::load_current_user_in_tx(tx.tx_mut(), &owner_id)
+      .await?
+      .ok_or_else(|| DomainError::NotFound("workspace owner user not found".to_owned()))?;
+    let _ = tx.rollback().await;
+    Ok(view)
+  }
+
+  pub async fn resolve_workspace_permissions(
+    &self,
+    user_id: &str,
+    workspace_id: &str,
+  ) -> Result<WorkspacePermissionsView, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin resolve_workspace_permissions: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load permissions clock: {e}")))?;
+    let ws_policy: Option<(bool, bool, bool)> = sqlx::query_as(
+      r#"SELECT COALESCE(p.visibility = 'public', false),
+                COALESCE(p.sharing_enabled, true),
+                COALESCE(p.url_preview_enabled, false)
+         FROM workspaces w
+         LEFT JOIN workspace_access_policies p ON p.workspace_id = w.id
+         WHERE w.id = $1"#,
+    )
+    .bind(workspace_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load workspace visibility: {e}")))?;
+    let Some((ws_public, sharing_enabled, url_preview_enabled)) = ws_policy else {
+      return Err(DomainError::NotFound(format!("workspace {workspace_id} not found")));
+    };
+    let role_str: Option<String> = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active' LIMIT 1",
+    )
+    .bind(workspace_id)
+    .bind(user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load member role for permissions: {e}")))?;
+    let role = role_str.as_deref().map(WorkspaceRole::parse).transpose()?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    let _ = tx.rollback().await;
+    Ok(WorkspacePermissionsView::for_role(
+      role,
+      grant.rights.commercial,
+      ws_public,
+      sharing_enabled,
+      url_preview_enabled,
+    ))
+  }
+
+  pub async fn list_workspace_members(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    skip: i64,
+    take: i64,
+    query: Option<&str>,
+  ) -> Result<Vec<WorkspaceMemberView>, DomainError> {
+    if let Some(q) = query
+      && q.len() > 255
+    {
+      return Err(DomainError::Validation("query exceeds 255 characters".to_owned()));
+    }
+    let _ = self.require_active_member_role(workspace_id, actor_user_id).await?;
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire list_workspace_members: {e}")))?;
+
+    let pattern = query
+      .map(str::trim)
+      .filter(|s| !s.is_empty())
+      .map(|s| format!("%{}%", s.to_ascii_lowercase()));
+
+    let rows = sqlx::query(
+      r#"SELECT * FROM (
+           SELECT u.id AS user_id, u.name, u.email, u.avatar_url,
+                  (u.email_verified IS NOT NULL) AS email_verified,
+                  u.disabled,
+                  m.role::text AS role,
+                  m.id AS invite_id,
+                  'Accepted'::text AS status,
+                  m.created_at AS sort_at
+           FROM workspace_members m
+           JOIN users u ON u.id = m.user_id
+           WHERE m.workspace_id = $1 AND m.state = 'active'
+           UNION ALL
+           SELECT COALESCE(u.id, i.id) AS user_id,
+                  COALESCE(u.name, COALESCE(i.normalized_email, '')) AS name,
+                  COALESCE(u.email, COALESCE(i.normalized_email, '')) AS email,
+                  u.avatar_url,
+                  (u.email_verified IS NOT NULL) AS email_verified,
+                  COALESCE(u.disabled, false) AS disabled,
+                  i.requested_role::text AS role,
+                  i.id AS invite_id,
+                  CASE i.status::text
+                    WHEN 'pending' THEN 'Pending'
+                    WHEN 'waiting_review' THEN 'UnderReview'
+                    WHEN 'waiting_seat' THEN 'NeedMoreSeat'
+                    ELSE 'Pending'
+                  END AS status,
+                  i.created_at AS sort_at
+           FROM workspace_invitations i
+           LEFT JOIN users u ON u.id = i.invitee_user_id
+           WHERE i.workspace_id = $1
+             AND i.status::text = ANY($5)
+         ) combined
+         WHERE ($2::text IS NULL OR lower(combined.name) LIKE $2 OR lower(combined.email) LIKE $2)
+         ORDER BY combined.sort_at ASC, combined.user_id ASC
+         OFFSET $3 LIMIT $4"#,
+    )
+    .bind(workspace_id)
+    .bind(pattern.as_deref())
+    .bind(skip.max(0))
+    .bind(take.clamp(1, 500))
+    .bind(CHARGEABLE_INVITATION_STATUSES.as_slice())
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(|e| DomainError::Internal(format!("list workspace members: {e}")))?;
+
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+      let role_str: String = row.get("role");
+      out.push(WorkspaceMemberView {
+        id: row.get("user_id"),
+        name: row.get("name"),
+        email: row.get("email"),
+        avatar_url: row.get("avatar_url"),
+        email_verified: row.get("email_verified"),
+        disabled: row.get("disabled"),
+        role: WorkspaceRole::parse(&role_str)?,
+        invite_id: row.get("invite_id"),
+        status: row.get("status"),
+      });
+    }
+    Ok(out)
+  }
+
+  /// Permanently deletes a workspace (Owner only).
+  pub async fn delete_workspace(&self, actor_user_id: &str, workspace_id: &str) -> Result<(), DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin delete_workspace: {e}")))?;
+    lock_workspace_row(tx.tx_mut(), workspace_id).await?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    if actor_role != WorkspaceRole::Owner {
+      return Err(DomainError::Forbidden(
+        "only workspace owner may delete workspace".to_owned(),
+      ));
+    }
+    sqlx::query("DELETE FROM workspaces WHERE id = $1")
+      .bind(workspace_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("delete workspace: {e}")))?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit delete_workspace: {e}")))?;
+
+    let _ = self
+      .invalidation
+      .publish_invalidation(&InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.to_owned(),
+        doc_id: None,
+      })
+      .await;
+    Ok(())
+  }
+
+  /// Removes `actor_user_id` from `workspace_id`. Rejects Owners with
+  /// `workspace_owner_cannot_leave`.
+  pub async fn leave_workspace(&self, actor_user_id: &str, workspace_id: &str) -> Result<(), DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin leave_workspace: {e}")))?;
+    lock_workspace_row(tx.tx_mut(), workspace_id).await?;
+    let role: Option<String> = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active' FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .bind(actor_user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock leaving workspace member: {e}")))?;
+    let Some(role_str) = role else {
+      return Err(DomainError::NotFound("workspace_member_not_found".to_owned()));
+    };
+    if WorkspaceRole::parse(&role_str)? == WorkspaceRole::Owner {
+      return Err(DomainError::Forbidden("workspace_owner_cannot_leave".to_owned()));
+    }
+    sqlx::query("DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'")
+      .bind(workspace_id)
+      .bind(actor_user_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("delete leaving workspace member: {e}")))?;
+    sqlx::query("DELETE FROM workspace_invitations WHERE workspace_id = $1 AND invitee_user_id = $2")
+      .bind(workspace_id)
+      .bind(actor_user_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("delete leaving workspace invitation: {e}")))?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit leave_workspace: {e}")))?;
+
+    let _ = self
+      .invalidation
+      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+        workspace_id: workspace_id.to_owned(),
+      })
+      .await;
+    let _ = self
+      .invalidation
+      .publish_invalidation(&InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.to_owned(),
+        doc_id: None,
+      })
+      .await;
+    Ok(())
+  }
+
+  /// Transfers workspace ownership from `actor_user_id` (current Owner) to an
+  /// active member `target_user_id`.
+  ///
+  /// For commercial/team workspaces the previous Owner becomes `Admin`; for
+  /// non-commercial workspaces the previous Owner becomes `Member`. Emits
+  /// `QuotaOwnerMapping`, `WorkspaceInventoryChanged`, and `QuotaSeatUsage`.
+  pub async fn transfer_workspace_ownership(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    target_user_id: &str,
+  ) -> Result<WorkspaceMemberRecord, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin transfer_workspace_ownership: {e}")))?;
+    lock_workspace_row(tx.tx_mut(), workspace_id).await?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load transfer clock: {e}")))?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    if actor_role != WorkspaceRole::Owner {
+      return Err(DomainError::Forbidden(
+        "only workspace owner may transfer ownership".to_owned(),
+      ));
+    }
+    let target_active: Option<String> = sqlx::query_scalar(
+      "SELECT role::text FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active' FOR UPDATE",
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock target owner: {e}")))?;
+    if target_active.is_none() {
+      return Err(DomainError::Validation(
+        "new workspace owner must be an active member".to_owned(),
+      ));
+    }
+
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    if grant.limits.seat_limit <= 0 {
+      return Err(DomainError::QuotaExceeded {
+        kind: "seat_limit",
+        message: "workspace is in fail-closed readonly state".to_owned(),
+      });
+    }
+    let is_team = grant.rights.commercial || grant.billing_subject == server_types::BillingSubject::Workspace;
+    let fallback_role = if is_team {
+      WorkspaceRole::Admin
+    } else {
+      WorkspaceRole::Member
+    };
+
+    if actor_user_id != target_user_id {
+      sqlx::query(
+        "UPDATE workspace_members
+         SET role = $2, updated_at = clock_timestamp()
+         WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' AND user_id <> $3",
+      )
+      .bind(workspace_id)
+      .bind(fallback_role.as_str())
+      .bind(target_user_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("demote previous owner: {e}")))?;
+    }
+
+    let row = sqlx::query(
+      r#"UPDATE workspace_members
+         SET role = 'owner', updated_at = clock_timestamp()
+         WHERE workspace_id = $1 AND user_id = $2 AND state = 'active'
+         RETURNING id, workspace_id, user_id, role, state, source, created_at, updated_at"#,
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("promote new owner: {e}")))?;
+
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit transfer_workspace_ownership: {e}")))?;
+
+    for hint in [
+      InvalidationHintV1::QuotaOwnerMapping {
+        workspace_id: workspace_id.to_owned(),
+      },
+      InvalidationHintV1::QuotaStorageUsage {
+        subject: format!("workspace:{workspace_id}"),
+      },
+      InvalidationHintV1::QuotaStorageUsage {
+        subject: format!("user:{actor_user_id}"),
+      },
+      InvalidationHintV1::QuotaStorageUsage {
+        subject: format!("user:{target_user_id}"),
+      },
+      InvalidationHintV1::WorkspaceInventoryChanged {
+        workspace_id: workspace_id.to_owned(),
+        doc_id: None,
+      },
+      InvalidationHintV1::QuotaSeatUsage {
+        workspace_id: workspace_id.to_owned(),
+      },
+    ] {
+      let _ = self.invalidation.publish_invalidation(&hint).await;
+    }
+
+    Ok(WorkspaceMemberRecord {
+      id: row.get("id"),
+      workspace_id: row.get("workspace_id"),
+      user_id: row.get("user_id"),
+      role: WorkspaceRole::parse(&row.get::<String, _>("role"))?,
+      state: row.get("state"),
+      source: row.get("source"),
+      created_at: row.get("created_at"),
+      updated_at: row.get("updated_at"),
+    })
+  }
+
+  /// Approves a `waiting_review` invitation into an active member (Owner or commercial Admin).
+  pub async fn approve_member(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    target_user_id: &str,
+  ) -> Result<(), DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin approve_member: {e}")))?;
+    lock_workspace_row(tx.tx_mut(), workspace_id).await?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load approve_member clock: {e}")))?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    if !matches!(
+      actor_role.effective(grant.rights.commercial),
+      WorkspaceRole::Owner | WorkspaceRole::Admin
+    ) {
+      return Err(DomainError::Forbidden(
+        "only workspace owner or commercial admin may approve members".to_owned(),
+      ));
+    }
+
+    let inv = sqlx::query(
+      r#"SELECT id, requested_role::text AS requested_role, kind::text AS kind, status::text AS status
+         FROM workspace_invitations
+         WHERE workspace_id = $1 AND invitee_user_id = $2
+         FOR UPDATE"#,
+    )
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("lock invitation for approve: {e}")))?;
+
+    let Some(inv) = inv else {
+      let active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+      )
+      .bind(workspace_id)
+      .bind(target_user_id)
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("check already active member: {e}")))?;
+      if active {
+        return Ok(());
+      }
+      return Err(DomainError::NotFound("workspace_member_not_found".to_owned()));
+    };
+
+    let status: String = inv.get("status");
+    if status != "waiting_review" {
+      return Ok(());
+    }
+    let inv_id: String = inv.get("id");
+    let role_str: String = inv.get("requested_role");
+    let role = WorkspaceRole::parse(&role_str)?;
+    let source: String = inv.get("kind");
+
+    let current_charged_excluding_this = (count_charged_seats_in_tx(tx.tx_mut(), workspace_id).await? - 1).max(0);
+    self
+      .quota_gate
+      .check_seat_admission(tx.tx_mut(), workspace_id, current_charged_excluding_this, 1, now)
+      .await?;
+
+    sqlx::query(
+      r#"INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, 'active', $5, $6, $6)
+         ON CONFLICT (workspace_id, user_id, state) DO NOTHING"#,
+    )
+    .bind(&inv_id)
+    .bind(workspace_id)
+    .bind(target_user_id)
+    .bind(role.as_str())
+    .bind(&source)
+    .bind(now)
+    .execute(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("activate approved member: {e}")))?;
+
+    sqlx::query("DELETE FROM workspace_invitations WHERE id = $1")
+      .bind(&inv_id)
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("delete approved invitation: {e}")))?;
+
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit approve_member: {e}")))?;
+
+    let _ = self
+      .invalidation
+      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+        workspace_id: workspace_id.to_owned(),
+      })
+      .await;
+    Ok(())
+  }
+
+  /// Creates or returns an active workspace invite link (stored in Redis under
+  /// `workspace:inviteLink:<ws>` and `workspace:inviteLinkId:<id>` via atomic
+  /// Lua scripts to match `v0.27.5` 1:1).
+  pub async fn create_invite_link(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    expire_ms: i64,
+    source: Option<&RequestSource>,
+  ) -> Result<WorkspaceInviteLink, DomainError> {
+    if expire_ms <= 0 {
+      return Err(DomainError::Validation("expire_ms must be positive".to_owned()));
+    }
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin create_invite_link: {e}")))?;
+    let ws_name: Option<String> = sqlx::query_scalar("SELECT name FROM workspaces WHERE id = $1")
+      .bind(workspace_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load workspace for invite link: {e}")))?
+      .ok_or_else(|| DomainError::NotFound(format!("workspace {workspace_id} not found")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load invite link clock: {e}")))?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    if !matches!(
+      actor_role.effective(grant.rights.commercial),
+      WorkspaceRole::Owner | WorkspaceRole::Admin
+    ) {
+      return Err(DomainError::Forbidden(
+        "only workspace owner or commercial admin may create invite link".to_owned(),
+      ));
+    }
+    if let Some(name) = ws_name.as_deref()
+      && crate::content_policy::contains_url_or_domain(name)
+    {
+      return Err(DomainError::Forbidden(
+        "Workspace names containing links or domains cannot be used to invite members.".to_owned(),
+      ));
+    }
+    self
+      .rate_limit_policy
+      .check_workspace_invite_link(tx.tx_mut(), workspace_id, actor_user_id, source, now)
+      .await?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit create_invite_link rate limit: {e}")))?;
+
+    let candidate_id = generate_invite_link_nanoid();
+    let ttl_ms = expire_ms.max(1_000);
+
+    if let Some(client) = &self.redis {
+      let mut conn = client
+        .get_multiplexed_async_connection()
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis invite link connect: {e}")))?;
+      let ws_key = format!("workspace:inviteLink:{workspace_id}");
+      let id_key = format!("workspace:inviteLinkId:{candidate_id}");
+      let ws_val = serde_json::json!({ "inviteId": candidate_id }).to_string();
+      let id_val = serde_json::json!({
+        "workspaceId": workspace_id,
+        "inviterUserId": actor_user_id,
+      })
+      .to_string();
+      let res: Vec<String> = redis::Script::new(CREATE_INVITE_LINK_LUA)
+        .key(&ws_key)
+        .key(&id_key)
+        .arg(&ws_val)
+        .arg(&id_val)
+        .arg(ttl_ms)
+        .invoke_async(&mut conn)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis atomic create invite link: {e}")))?;
+      let raw_ws = res.first().map(String::as_str).unwrap_or(&ws_val);
+      let effective_ttl_ms = res
+        .get(1)
+        .and_then(|s| s.parse::<i64>().ok())
+        .filter(|&v| v > 0)
+        .unwrap_or(ttl_ms);
+      let parsed: serde_json::Value = serde_json::from_str(raw_ws).unwrap_or_default();
+      let effective_id = parsed
+        .get("inviteId")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&candidate_id)
+        .to_owned();
+      Ok(WorkspaceInviteLink {
+        invite_id: effective_id,
+        workspace_id: workspace_id.to_owned(),
+        inviter_user_id: actor_user_id.to_owned(),
+        expire_time: now + chrono::Duration::milliseconds(effective_ttl_ms),
+      })
+    } else {
+      let mut guard = self.fallback_invite_links.write().await;
+      if let Some(existing) = guard.get(workspace_id).filter(|l| l.expire_time > now) {
+        return Ok(existing.clone());
+      }
+      let link = WorkspaceInviteLink {
+        invite_id: candidate_id,
+        workspace_id: workspace_id.to_owned(),
+        inviter_user_id: actor_user_id.to_owned(),
+        expire_time: now + chrono::Duration::milliseconds(ttl_ms),
+      };
+      guard.insert(workspace_id.to_owned(), link.clone());
+      Ok(link)
+    }
+  }
+
+  pub async fn get_invite_link(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+  ) -> Result<Option<WorkspaceInviteLink>, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin get_invite_link: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load get_invite_link clock: {e}")))?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    let _ = tx.rollback().await;
+    if !matches!(
+      actor_role.effective(grant.rights.commercial),
+      WorkspaceRole::Owner | WorkspaceRole::Admin
+    ) {
+      return Err(DomainError::Forbidden(
+        "only workspace owner or commercial admin may read invite link".to_owned(),
+      ));
+    }
+
+    if let Some(client) = &self.redis {
+      let mut conn = client
+        .get_multiplexed_async_connection()
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis get invite link connect: {e}")))?;
+      let ws_key = format!("workspace:inviteLink:{workspace_id}");
+      let raw: Option<String> = redis::cmd("GET")
+        .arg(&ws_key)
+        .query_async(&mut conn)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis get invite link: {e}")))?;
+      let Some(raw) = raw else {
+        return Ok(None);
+      };
+      let pttl: i64 = redis::cmd("PTTL")
+        .arg(&ws_key)
+        .query_async(&mut conn)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis pttl invite link: {e}")))?;
+      if pttl <= 0 {
+        return Ok(None);
+      }
+      let parsed: serde_json::Value = serde_json::from_str(&raw).unwrap_or_default();
+      let Some(invite_id) = parsed.get("inviteId").and_then(|v| v.as_str()) else {
+        return Ok(None);
+      };
+      Ok(Some(WorkspaceInviteLink {
+        invite_id: invite_id.to_owned(),
+        workspace_id: workspace_id.to_owned(),
+        inviter_user_id: actor_user_id.to_owned(),
+        expire_time: Utc::now() + chrono::Duration::milliseconds(pttl),
+      }))
+    } else {
+      let guard = self.fallback_invite_links.read().await;
+      Ok(guard.get(workspace_id).filter(|l| l.expire_time > Utc::now()).cloned())
+    }
+  }
+
+  pub async fn revoke_invite_link(&self, actor_user_id: &str, workspace_id: &str) -> Result<bool, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin revoke_invite_link: {e}")))?;
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load revoke_invite_link clock: {e}")))?;
+    let actor_role = require_active_member_role(tx.tx_mut(), workspace_id, actor_user_id).await?;
+    let grant = self
+      .quota_gate
+      .resolve_workspace_grant(tx.tx_mut(), workspace_id, now)
+      .await?;
+    let _ = tx.rollback().await;
+    if !matches!(
+      actor_role.effective(grant.rights.commercial),
+      WorkspaceRole::Owner | WorkspaceRole::Admin
+    ) {
+      return Err(DomainError::Forbidden(
+        "only workspace owner or commercial admin may revoke invite link".to_owned(),
+      ));
+    }
+
+    if let Some(client) = &self.redis {
+      let mut conn = client
+        .get_multiplexed_async_connection()
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis revoke invite link connect: {e}")))?;
+      let ws_key = format!("workspace:inviteLink:{workspace_id}");
+      let deleted: i64 = redis::Script::new(REVOKE_INVITE_LINK_LUA)
+        .key(&ws_key)
+        .arg("workspace:inviteLinkId:")
+        .invoke_async(&mut conn)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis atomic revoke invite link: {e}")))?;
+      Ok(deleted > 0)
+    } else {
+      let mut guard = self.fallback_invite_links.write().await;
+      Ok(guard.remove(workspace_id).is_some())
+    }
+  }
+
+  async fn accept_invite_link(
+    &self,
+    invitee_user_id: &str,
+    invite_id: &str,
+  ) -> Result<WorkspaceMemberRecord, DomainError> {
+    let Some((ws_id, inviter_id)) = self.lookup_invite_link_by_id(invite_id).await? else {
+      return Err(DomainError::NotFound("invalid_invitation".to_owned()));
+    };
+
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin accept_invite_link: {e}")))?;
+
+    let owner_id: String = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(&ws_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("locate workspace owner for link accept: {e}")))?
+    .ok_or_else(|| DomainError::NotFound("workspace owner not found".to_owned()))?;
+
+    let mut users_to_lock = vec![owner_id.clone(), invitee_user_id.to_owned()];
+    users_to_lock.sort();
+    users_to_lock.dedup();
+    sqlx::query("SELECT id FROM users WHERE id = ANY($1) ORDER BY id FOR UPDATE")
+      .bind(&users_to_lock)
+      .fetch_all(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("lock accept_invite_link users: {e}")))?;
+
+    lock_workspace_row(tx.tx_mut(), &ws_id).await?;
+
+    let locked_owner_id: String = sqlx::query_scalar(
+      "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
+    )
+    .bind(&ws_id)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("verify locked owner for link accept: {e}")))?
+    .ok_or_else(|| DomainError::NotFound("workspace owner not found".to_owned()))?;
+    if locked_owner_id != owner_id {
+      return Err(DomainError::Conflict("workspace owner changed".to_owned()));
+    }
+
+    let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load link accept clock: {e}")))?;
+
+    let already_member: bool = sqlx::query_scalar(
+      "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+    )
+    .bind(&ws_id)
+    .bind(invitee_user_id)
+    .fetch_one(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("check existing member on link accept: {e}")))?;
+    if already_member {
+      return Err(DomainError::Conflict("already_in_space".to_owned()));
+    }
+
+    let user_email: String = sqlx::query_scalar("SELECT lower(email) FROM users WHERE id = $1")
+      .bind(invitee_user_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load link invitee email: {e}")))?
+      .ok_or_else(|| DomainError::NotFound("user not found".to_owned()))?;
+
+    let existing_inv = sqlx::query(
+      r#"SELECT id, requested_role::text AS requested_role, kind::text AS kind, status::text AS status
+         FROM workspace_invitations
+         WHERE workspace_id = $1
+           AND (invitee_user_id = $2 OR (invitee_user_id IS NULL AND lower(normalized_email) = lower($3)))
+         FOR UPDATE"#,
+    )
+    .bind(&ws_id)
+    .bind(invitee_user_id)
+    .bind(&user_email)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("load existing invitation on link accept: {e}")))?;
+
+    if let Some(inv) = existing_inv {
+      let status: String = inv.get("status");
+      if status == "pending" {
+        let inv_id: String = inv.get("id");
+        let role = WorkspaceRole::parse(&inv.get::<String, _>("requested_role"))?;
+        let source: String = inv.get("kind");
+        let current_charged_excl = (count_charged_seats_in_tx(tx.tx_mut(), &ws_id).await? - 1).max(0);
+        self
+          .quota_gate
+          .check_seat_admission(tx.tx_mut(), &ws_id, current_charged_excl, 1, now)
+          .await?;
+        sqlx::query(
+          r#"INSERT INTO workspace_members (id, workspace_id, user_id, role, state, source, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, 'active', $5, $6, $6)
+             ON CONFLICT (workspace_id, user_id, state) DO NOTHING"#,
+        )
+        .bind(&inv_id)
+        .bind(&ws_id)
+        .bind(invitee_user_id)
+        .bind(role.as_str())
+        .bind(&source)
+        .bind(now)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("activate pending invite via link: {e}")))?;
+        sqlx::query("DELETE FROM workspace_invitations WHERE id = $1")
+          .bind(&inv_id)
+          .execute(&mut **tx.tx_mut())
+          .await
+          .map_err(|e| DomainError::Internal(format!("consume pending invite via link: {e}")))?;
+        tx.commit()
+          .await
+          .map_err(|e| DomainError::Internal(format!("commit pending invite via link: {e}")))?;
+        let _ = self
+          .invalidation
+          .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+            workspace_id: ws_id.clone(),
+          })
+          .await;
+        return Ok(WorkspaceMemberRecord {
+          id: inv_id,
+          workspace_id: ws_id,
+          user_id: invitee_user_id.to_owned(),
+          role,
+          state: "active".to_owned(),
+          source,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+      if status == "waiting_review" || status == "waiting_seat" {
+        return Err(DomainError::Conflict("already_in_space".to_owned()));
+      }
+      // Clear stale non-chargeable invitation row before inserting waiting_review.
+      let stale_id: String = inv.get("id");
+      sqlx::query("DELETE FROM workspace_invitations WHERE id = $1")
+        .bind(&stale_id)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("delete stale invite on link accept: {e}")))?;
+    }
+
+    let current_charged = count_charged_seats_in_tx(tx.tx_mut(), &ws_id).await?;
+    self
+      .quota_gate
+      .check_seat_admission(tx.tx_mut(), &ws_id, current_charged, 1, now)
+      .await?;
+
+    let review_id = format!("inv_{}", Uuid::new_v4().simple());
+    let inviter_opt = (!inviter_id.is_empty()).then_some(inviter_id.as_str());
+    sqlx::query(
+      r#"INSERT INTO workspace_invitations
+           (id, workspace_id, invitee_user_id, normalized_email, inviter_user_id, requested_role, status, kind, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 'member', 'waiting_review', 'link', $6, $6)"#,
+    )
+    .bind(&review_id)
+    .bind(&ws_id)
+    .bind(invitee_user_id)
+    .bind(&user_email)
+    .bind(inviter_opt)
+    .bind(now)
+    .execute(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("insert waiting_review link invitation: {e}")))?;
+
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit waiting_review link invitation: {e}")))?;
+
+    let _ = self
+      .invalidation
+      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+        workspace_id: ws_id.clone(),
+      })
+      .await;
+
+    Ok(WorkspaceMemberRecord {
+      id: review_id,
+      workspace_id: ws_id,
+      user_id: invitee_user_id.to_owned(),
+      role: WorkspaceRole::Member,
+      state: "waiting_review".to_owned(),
+      source: "link".to_owned(),
+      created_at: now,
+      updated_at: now,
+    })
+  }
+
+  async fn lookup_invite_link_by_id(&self, invite_id: &str) -> Result<Option<(String, String)>, DomainError> {
+    if let Some(client) = &self.redis {
+      let mut conn = client
+        .get_multiplexed_async_connection()
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis lookup invite link: {e}")))?;
+      let raw: Option<String> = redis::cmd("GET")
+        .arg(format!("workspace:inviteLinkId:{invite_id}"))
+        .query_async(&mut conn)
+        .await
+        .map_err(|e| DomainError::Unavailable(format!("redis get invite link id: {e}")))?;
+      let Some(raw) = raw else {
+        return Ok(None);
+      };
+      let parsed: serde_json::Value = serde_json::from_str(&raw).unwrap_or_default();
+      let ws_id = parsed.get("workspaceId").and_then(|v| v.as_str());
+      let inviter_id = parsed.get("inviterUserId").and_then(|v| v.as_str());
+      Ok(ws_id.map(|w| (w.to_owned(), inviter_id.unwrap_or_default().to_owned())))
+    } else {
+      let guard = self.fallback_invite_links.read().await;
+      let now = Utc::now();
+      Ok(
+        guard
+          .values()
+          .find(|l| l.invite_id == invite_id && l.expire_time > now)
+          .map(|l| (l.workspace_id.clone(), l.inviter_user_id.clone())),
+      )
+    }
+  }
+
+  pub async fn get_invite_info(&self, actor_user_id: &str, invite_id: &str) -> Result<InviteInfoView, DomainError> {
+    let (workspace_id, invitee_user_id, is_link, status) =
+      if let Some((ws_id, _inviter_id)) = self.lookup_invite_link_by_id(invite_id).await? {
+        let mut conn = self
+          .db
+          .acquire_tiered(WorkloadTier::InteractiveRead)
+          .await
+          .map_err(|e| DomainError::Internal(format!("acquire get_invite_info link: {e}")))?;
+        let is_active: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+      )
+      .bind(&ws_id)
+      .bind(actor_user_id)
+      .fetch_one(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("check invitee active status: {e}")))?;
+        let status = if is_active {
+          Some("Accepted".to_owned())
+        } else {
+          let inv_status: Option<String> = sqlx::query_scalar(
+            "SELECT status::text FROM workspace_invitations WHERE workspace_id = $1 AND invitee_user_id = $2 LIMIT 1",
+          )
+          .bind(&ws_id)
+          .bind(actor_user_id)
+          .fetch_optional(&mut *conn)
+          .await
+          .map_err(|e| DomainError::Internal(format!("load link invitee status: {e}")))?;
+          inv_status.map(|s| match s.as_str() {
+            "waiting_review" => "UnderReview".to_owned(),
+            "waiting_seat" => "NeedMoreSeat".to_owned(),
+            _ => "Pending".to_owned(),
+          })
+        };
+        (ws_id, actor_user_id.to_owned(), true, status)
+      } else {
+        let mut conn = self
+          .db
+          .acquire_tiered(WorkloadTier::InteractiveRead)
+          .await
+          .map_err(|e| DomainError::Internal(format!("acquire get_invite_info email: {e}")))?;
+        let row = sqlx::query(
+          "SELECT workspace_id, invitee_user_id, normalized_email, status::text AS status
+           FROM workspace_invitations
+           WHERE id = $1",
+        )
+        .bind(invite_id)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(|e| DomainError::Internal(format!("load invitation by id: {e}")))?
+        .ok_or_else(|| DomainError::NotFound("Invitation not found".to_owned()))?;
+        let ws_id: String = row.get("workspace_id");
+        let invitee_uid: Option<String> = row.get("invitee_user_id");
+        if let Some(ref uid) = invitee_uid {
+          if uid != actor_user_id {
+            return Err(DomainError::Forbidden("invitation_account_mismatch".to_owned()));
+          }
+        } else {
+          let inv_email: Option<String> = row.get("normalized_email");
+          let actor_email: Option<String> = sqlx::query_scalar("SELECT lower(email) FROM users WHERE id = $1")
+            .bind(actor_user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .map_err(|e| DomainError::Internal(format!("load actor email for invite info: {e}")))?;
+          let matches = match (inv_email.as_deref(), actor_email.as_deref()) {
+            (Some(expected), Some(actual)) => expected.eq_ignore_ascii_case(actual),
+            _ => false,
+          };
+          if !matches {
+            return Err(DomainError::Forbidden("invitation_account_mismatch".to_owned()));
+          }
+        }
+        let raw_status: String = row.get("status");
+        let mapped = match raw_status.as_str() {
+          "waiting_review" => "UnderReview",
+          "waiting_seat" => "NeedMoreSeat",
+          _ => "Pending",
+        };
+        (
+          ws_id,
+          invitee_uid.unwrap_or_else(|| actor_user_id.to_owned()),
+          false,
+          Some(mapped.to_owned()),
+        )
+      };
+
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin get_invite_info details: {e}")))?;
+    let ws_row = sqlx::query("SELECT name, avatar_key FROM workspaces WHERE id = $1")
+      .bind(&workspace_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("load invite workspace info: {e}")))?
+      .ok_or_else(|| DomainError::NotFound("workspace not found".to_owned()))?;
+    let workspace_name: Option<String> = ws_row.get("name");
+    let workspace_avatar_key: Option<String> = ws_row.get("avatar_key");
+    let invitee = crate::users::load_current_user_in_tx(tx.tx_mut(), &invitee_user_id)
+      .await?
+      .ok_or_else(|| DomainError::NotFound("user not found".to_owned()))?;
+    let _ = tx.rollback().await;
+    let owner = self.get_workspace_owner(&workspace_id).await?;
+
+    Ok(InviteInfoView {
+      workspace_id,
+      workspace_name: workspace_name.unwrap_or_else(|| "AFFiNE".to_owned()),
+      workspace_avatar_key,
+      owner,
+      invitee,
+      status,
+      is_link,
+    })
   }
 
   /// Loads canonical workspace storage usage (sum of active/in-flight `blobs`

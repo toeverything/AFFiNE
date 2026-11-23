@@ -5,6 +5,7 @@
 //! Depends on no HTTP/GraphQL transport frameworks and no storage/protocol
 //! compatibility layers.
 
+pub mod acl;
 pub mod app_config;
 pub mod auth;
 pub mod content_policy;

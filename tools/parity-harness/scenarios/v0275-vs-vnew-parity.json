@@ -23,11 +23,11 @@
       "kind": "id"
     },
     {
-      "path": "/[A-Za-z_]*(At|_at|_ts)$|^/protocol/.*/attributes/expires$|/timestamp$|/email_verified$|/send_after$",
+      "path": "/[A-Za-z_]*(At|_at|_ts)$|^/protocol/.*/attributes/expires$|/timestamp$|/email_verified$|/send_after$|/expireTime$",
       "kind": "ts"
     },
     {
-      "path": "/headers/set-cookie/[0-9]+/value$|^/database/public\\.users/[0-9]+/password$|^/database/public\\.app_configs/.*/secret$",
+      "path": "/headers/set-cookie/[0-9]+/value$|^/database/public\\.users/[0-9]+/password$|^/database/public\\.app_configs/.*/secret$|/body/value/data/createInviteLink/link$",
       "kind": "token"
     }
   ],
@@ -277,6 +277,43 @@
       "variables": {
         "config": "{{smtp}}"
       }
+    },
+    {
+      "name": "list_workspaces",
+      "kind": "graphql",
+      "query": "query { workspaces { id public enableAi enableSharing enableUrlPreview } }"
+    },
+    {
+      "name": "update_workspace_settings",
+      "kind": "graphql",
+      "query": "mutation ($input: UpdateWorkspaceInput!) { updateWorkspace(input: $input) { id public enableUrlPreview } }",
+      "variables": {
+        "input": {
+          "id": "{{workspace}}",
+          "enableUrlPreview": true
+        }
+      }
+    },
+    {
+      "name": "update_user_profile",
+      "kind": "graphql",
+      "query": "mutation { updateProfile(input: { name: \"Parity Admin Updated\" }) { id name } }"
+    },
+    {
+      "name": "create_invite_link",
+      "kind": "graphql",
+      "query": "mutation ($workspaceId: String!) { createInviteLink(workspaceId: $workspaceId, expireTime: OneDay) { link expireTime } }",
+      "variables": {
+        "workspaceId": "{{workspace}}"
+      }
+    },
+    {
+      "name": "revoke_invite_link",
+      "kind": "graphql",
+      "query": "mutation ($workspaceId: String!) { revokeInviteLink(workspaceId: $workspaceId) }",
+      "variables": {
+        "workspaceId": "{{workspace}}"
+      }
     }
   ],
   "require": [
@@ -354,6 +391,22 @@
     },
     {
       "path": "/protocol/17/body/value/data/sendTestEmail",
+      "equals": true
+    },
+    {
+      "path": "/protocol/18/body/value/data/workspaces",
+      "length": 1
+    },
+    {
+      "path": "/protocol/19/body/value/data/updateWorkspace/enableUrlPreview",
+      "equals": true
+    },
+    {
+      "path": "/protocol/20/body/value/data/updateProfile/name",
+      "equals": "Parity Admin Updated"
+    },
+    {
+      "path": "/protocol/22/body/value/data/revokeInviteLink",
       "equals": true
     },
     {

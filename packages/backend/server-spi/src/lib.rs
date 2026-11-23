@@ -85,6 +85,17 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
     source: Option<&RequestSource>,
     now: DateTime<Utc>,
   ) -> Result<(), DomainError>;
+
+  async fn check_workspace_invite_link(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _workspace_id: &str,
+    _inviter_id: &str,
+    _source: Option<&RequestSource>,
+    _now: DateTime<Utc>,
+  ) -> Result<(), DomainError> {
+    Ok(())
+  }
 }
 
 pub trait ServerExtension: Send + Sync + 'static {

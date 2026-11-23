@@ -593,6 +593,7 @@ async fn build_server_with_bound_port(
     redis_db_index,
     session_redis_db_index,
     graphql_playground: cli.graphql_playground,
+    refresh_retention_secs: server_domain::auth::DEFAULT_REFRESH_RETENTION_SECS,
     smtp_password: cli.mailer_password.clone().unwrap_or_default(),
     app_config_baseline: app_config_baseline.clone(),
   };
@@ -628,7 +629,8 @@ async fn build_server_with_bound_port(
   .with_rate_limit_policy(ext.rate_limit_policy());
   let users = UserService::new(db.clone());
   let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
-    .with_rate_limit_policy(ext.rate_limit_policy());
+    .with_rate_limit_policy(ext.rate_limit_policy())
+    .with_redis(redis_client.clone());
   let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
@@ -637,6 +639,10 @@ async fn build_server_with_bound_port(
   let blob_root_str = blob_root.to_string_lossy();
   let storage = LocalFsBlobStorage::new(&blob_root_str, "blobs")
     .map_err(|e| ServerError::InvalidConfig(format!("invalid blob storage config: {e}")))?;
+  let avatars: Arc<dyn server_blob::BlobStorageBackend> = Arc::new(
+    LocalFsBlobStorage::new(&blob_root_str, "avatars")
+      .map_err(|e| ServerError::InvalidConfig(format!("invalid avatar storage config: {e}")))?,
+  );
   let blobs = BlobService::new(db.clone(), Arc::new(storage), ext.quota_gate());
 
   let state = AppState::with_services(
@@ -650,6 +656,7 @@ async fn build_server_with_bound_port(
       workspaces,
       app_config,
       blobs,
+      avatars,
       invalidation,
       event_bus,
     },
@@ -757,6 +764,47 @@ where
   }
 
   before_serve(&built).await?;
+
+  if matches!(built.role, ServerRole::Allinone | ServerRole::Worker) {
+    let cleanup_auth = built.state.auth.clone();
+    let cleanup_state = Arc::clone(&built.state);
+    server_worker::spawn_locked_periodic_task(
+      &built.supervisor,
+      built.session_mutex.clone(),
+      "auth:cleanup:expired-sessions",
+      "session-cleanup",
+      Duration::from_secs(3600),
+      300,
+      move |lease_cancel| {
+        let auth = cleanup_auth.clone();
+        let state = Arc::clone(&cleanup_state);
+        async move {
+          let fallback = state.config.load().refresh_retention_secs;
+          let effective_cfg = match state.app_config.get_effective_app_config().await {
+            Ok(cfg) => cfg,
+            Err(err) => {
+              tracing::warn!(
+                error = %err,
+                "skipping expired session cleanup tick: failed to load effective app config"
+              );
+              return;
+            }
+          };
+          let retention_secs = server_domain::auth::parse_refresh_retention_secs(
+            effective_cfg.pointer("/auth/token/refreshRetention"),
+            fallback,
+          );
+          if let Err(err) = auth
+            .cleanup_expired_sessions_cancellable(1_000, 100, retention_secs, || lease_cancel.is_cancelled())
+            .await
+          {
+            tracing::warn!(error = %err, "expired session cleanup tick failed");
+          }
+        }
+      },
+    )
+    .await;
+  }
 
   if matches!(built.role, ServerRole::Allinone | ServerRole::Worker)
     && let Some(host) = cli.mailer_host.as_deref().map(str::trim).filter(|s| !s.is_empty())

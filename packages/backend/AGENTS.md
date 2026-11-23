@@ -40,32 +40,34 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 
 - `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `RateLimitPolicy`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, and `CommunityExtension`.
 
-- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `AppConfigService`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
-  It has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.
+- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `AppConfigService`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
+  `AuthService` handles HS256 access tokens, `aff_rt_v1` refresh rotation, recovery, grace, preflight, and session cleanup.
+  `acl` defines workspace and document permissions and classifies reserved documents.
+  `server-domain` has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.
 
 - `server-mail` (library `server_mail`): 30 compiled `v0.27.5` HTML email templates, `SmtpMailer` (`lettre` + `rustls`), and `process_ready_mail_deliveries`.
   The worker filters direct-render rows, releases unsupported leases cleanly, reaps expired rows, redacts PII in errors, and anonymizes terminal rows.
 
-- `server-blob` (library `server_blob`): `BlobStorageBackend` (`LocalFsBlobStorage`, `S3BlobStorage`) and `BlobService` over `public.blobs`.
+- `server-blob` (library `server_blob`): `BlobStorageBackend` (`LocalFsBlobStorage`, `S3BlobStorage`), `BlobService` over `public.blobs`, and `refs` (`y-octo` source-scoped blob reference extraction and cursor-paginated readable manifests).
   Writes and deletes hold `StorageObjectLock` session advisory locks outside the `PgPool`.
   `list_blobs_authorized`, `delete_blob_authorized`, and `release_deleted_blobs_authorized` require `Owner` or commercial-grant `Admin` plus `!users.disabled` in one transaction.
   `put_blob` reserves under `workspaces ... FOR UPDATE`, checks `QuotaGate::resolve_workspace_grant`, writes the object, and completes its reservation.
   Storage failures surface only as `Unavailable("blob storage unavailable")`.
 
 - `server-sync` (library `server_sync`): pure-Rust Engine.IO v4 / Socket.IO v4 sync gateway mounted at `/socket.io/`.
-  It handles `y-octo` CRDT validation, merge, and diff over PostgreSQL using transaction-level advisory locks (`pg_advisory_xact_lock`) in `storage.rs`.
+  It validates, merges, and diffs `y-octo` CRDTs over PostgreSQL under `pg_advisory_xact_lock`, delegates reserved-doc classification and doc-role resolution to `server_domain::acl`, and serves realtime rooms.
   With `SessionRedis` active, userspace writes hold `MutexLock:userspace:<user_id>:<doc_id>` across the PostgreSQL transaction and release it via Lua.
   Empty-table creates use `ON CONFLICT DO NOTHING` with a merge fallback, and commits check the `SessionRedis` lease fence.
   Unmodified `v0.27.5` instances skip pre-commit lock checks after a 60s stall, so patch `canary` separately for legacy fencing.
   It isolates `legacy_compat::errors` and bridges Redis `affine:eventbus:v1` and invalidation events.
 
-- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, auth REST routes, and `/graphql`.
+- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, auth/preflight/bearer and native `/api/auth/session*` REST routes (`/api/auth/session/exchange`, `/api/auth/session/refresh`, `/api/auth/session/revoke`, `/api/auth/sessions`, `/api/auth/sessions/revoke-all`, `/api/auth/sessions/:id`), avatar and source-scoped blob REST routes (`/api/avatars/:id`, `/api/workspaces/:id/blobs/v1/:name`, `blob-manifest/v1`, `readable-blob-manifest/v1`, doc snapshot read), and `/graphql`.
   Blob management mutations require `Owner` or commercial-grant `Admin`.
   `legacy_compat::{quota, errors}` isolates external GraphQL quota labels and Apollo error extensions.
 
-- `server-worker` (library `server_worker`): `SessionRedis`-compatible mutex (`MutexLock:<key>` with atomic Lua lock, renew, fence, and release using millisecond `PX` TTL), `v2:` keyspace helper, `CancellationToken`, and `WorkerSupervisor`.
+- `server-worker` (library `server_worker`): `SessionRedis`-compatible mutex (`MutexLock:<key>` with atomic Lua lock, renew, fence, and release using millisecond `PX` TTL), `v2:` keyspace helper, `CancellationToken`, `run_with_distributed_lock`, `spawn_locked_periodic_task`, and `WorkerSupervisor`.
 
-- `affine-server`: single-binary multi-role CLI (`--role front|graphql|worker|script|allinone`, `SERVER_FLAVOR`, `--port 0`, `ensure_schema_ready()`, `spawn_mail_delivery_worker`, `/socket.io/`).
+- `affine-server`: single-binary multi-role CLI (`--role front|graphql|worker|script|allinone`, `SERVER_FLAVOR`, `--port 0`, `ensure_schema_ready()`, `spawn_mail_delivery_worker`, expired-session cleanup worker, avatar storage, `/socket.io/`).
   It exports `build_server`, `serve_with_extension`, `serve_with_extension_and_init`, and `build_app_and_serve` for any `Arc<dyn ServerExtension>`.
 
 Pin both test images to multi-arch index digests in `test-db-harness/src/pg.rs`, `test-db-harness/src/redis.rs`, `.github/workflows/native-playground.yml`, and `scripts/ci/check-l0-tier-a.mjs`.

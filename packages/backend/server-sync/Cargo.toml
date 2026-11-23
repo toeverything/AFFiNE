@@ -23,6 +23,7 @@ redis.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 server-db.workspace = true
+server-domain.workspace = true
 server-spi.workspace = true
 server-types.workspace = true
 server-worker.workspace = true
