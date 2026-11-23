@@ -1,3 +1,4 @@
+import { PeekViewExtension } from '@blocksuite/affine/components/peek';
 import {
   DatabaseBlockDataSource,
   databaseBlockProperties,
@@ -189,6 +190,32 @@ test.each([false, true])(
     model.yBlock.set('prop:url', 'https://www.youtube.com/watch?v=second');
     expect(model.props.videoId).toBe(readonly ? 'first' : 'second');
     detached.readonly = false;
+  }
+);
+
+test.each([
+  { type: 'application/pdf', readonly: false, peeked: true },
+  { type: 'application/zip', readonly: false, peeked: false },
+  { type: 'application/pdf', readonly: true, peeked: true },
+  { type: 'application/zip', readonly: true, peeked: true },
+])(
+  'double-clicking a $type attachment (readonly: $readonly) opens the peek view: $peeked',
+  async ({ type, readonly, peeked }) => {
+    const peek = vi.fn();
+    await setupEditor('page', [PeekViewExtension({ peek })]);
+    const noteId = addNote(doc);
+    const id = doc.addBlock(
+      'affine:attachment',
+      { name: 'file', type, size: 1 },
+      noteId
+    );
+    await wait();
+    doc.readonly = readonly;
+    editor
+      .host!.view.getBlock(id)!
+      .dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    doc.readonly = false;
+    expect(peek).toHaveBeenCalledTimes(peeked ? 1 : 0);
   }
 );
 
