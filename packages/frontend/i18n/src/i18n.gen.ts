@@ -1548,6 +1548,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.add-selfhosted.error"](): string;
     /**
+      * `This app only connects to servers on your local network over http. Use an https:// address, or the server's local IP address or .local name.`
+      */
+    ["com.affine.auth.sign.add-selfhosted.public-http"](): string;
+    /**
       * `Privacy policy`
       */
     ["com.affine.auth.sign.policy"](): string;
