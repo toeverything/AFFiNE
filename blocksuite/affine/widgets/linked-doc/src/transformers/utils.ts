@@ -215,10 +215,8 @@ export function download(blob: Blob, name: string) {
   element.style.display = 'none';
   document.body.append(element);
   element.click();
-  setTimeout(() => {
-    element.remove();
-    URL.revokeObjectURL(fileURL);
-  }, 100);
+  element.remove();
+  URL.revokeObjectURL(fileURL);
 }
 
 const metaMatcher = /(?<=---)(.*?)(?=---)/ms;

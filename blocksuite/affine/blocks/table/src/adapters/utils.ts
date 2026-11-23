@@ -65,7 +65,7 @@ type Row = {
   cells: Cell[];
 };
 type Cell = {
-  value: string | { delta: DeltaInsert[] };
+  value: { delta: DeltaInsert[] };
 };
 export const processTable = (
   columns: Record<string, TableColumn>,

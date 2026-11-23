@@ -62,11 +62,7 @@ export const tableBlockPlainTextAdapterMatcher: BlockPlainTextAdapterMatcher = {
       const table = processTable(columns, rows, cells);
       table.rows.forEach(v => {
         result.push(
-          v.cells.map(v =>
-            typeof v.value === 'string'
-              ? v.value
-              : deltaConverter.deltaToAST(v.value.delta).join('')
-          )
+          v.cells.map(v => deltaConverter.deltaToAST(v.value.delta).join(''))
         );
       });
 
