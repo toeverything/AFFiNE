@@ -28,3 +28,4 @@ describe('ai effects registration split', () => {
     expect(appTags.has('text-renderer')).toBe(true);
   });
 });
+
