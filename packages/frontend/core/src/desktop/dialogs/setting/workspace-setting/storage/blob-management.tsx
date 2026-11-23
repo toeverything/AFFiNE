@@ -94,6 +94,8 @@ export const BlobManagementPanel = () => {
     () => new Set()
   );
   const [deleting, setDeleting] = useState(false);
+  // read by the document click listener, which runs before React re-renders
+  const deletingRef = useRef(false);
   const unusedBlobsPage = useMemo(() => {
     return unusedBlobs.slice(skip, skip + PAGE_SIZE);
   }, [unusedBlobs, skip]);
@@ -211,18 +213,26 @@ export const BlobManagementPanel = () => {
             'com.affine.settings.workspace.storage.unused-blobs.delete.warning'
           ](),
         onConfirm: async () => {
+          deletingRef.current = true;
           setDeleting(true);
           track.$.settingsPanel.workspace.deleteUnusedBlob();
           const deletedBlobKeys = new Set<string>();
           const failedBlobKeys = new Set<string>();
 
           try {
+            const latestUnusedBlobs = await unusedBlobsEntity.getUnusedBlobs();
+            const latestUnusedBlobKeys = new Set(
+              latestUnusedBlobs.map(blob => blob.key)
+            );
+            const blobKeysToDelete = currentSelectedBlobKeys.filter(key =>
+              latestUnusedBlobKeys.has(key)
+            );
             for (
               let index = 0;
-              index < currentSelectedBlobKeys.length;
+              index < blobKeysToDelete.length;
               index += DELETE_BATCH_SIZE
             ) {
-              const batch = currentSelectedBlobKeys.slice(
+              const batch = blobKeysToDelete.slice(
                 index,
                 index + DELETE_BATCH_SIZE
               );
@@ -240,21 +250,25 @@ export const BlobManagementPanel = () => {
               });
             }
 
-            setUnusedBlobs(previous =>
-              previous.filter(blob => !deletedBlobKeys.has(blob.key))
+            setUnusedBlobs(
+              latestUnusedBlobs.filter(blob => !deletedBlobKeys.has(blob.key))
             );
             setSelectedBlobKeys(failedBlobKeys);
-
-            if (failedBlobKeys.size > 0) {
-              notify.error({
-                title:
-                  t[
-                    'com.affine.settings.workspace.storage.unused-blobs.delete.failed'
-                  ](),
-              });
-            }
+          } catch (error) {
+            console.error(error);
+            currentSelectedBlobKeys.forEach(key => failedBlobKeys.add(key));
           } finally {
+            deletingRef.current = false;
             setDeleting(false);
+          }
+
+          if (failedBlobKeys.size > 0) {
+            notify.error({
+              title:
+                t[
+                  'com.affine.settings.workspace.storage.unused-blobs.delete.failed'
+                ](),
+            });
           }
         },
         confirmText: t['Delete'](),
@@ -273,7 +287,10 @@ export const BlobManagementPanel = () => {
     if (blobPreviewGridRef.current) {
       const unselectBlobs = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-        if (!blobPreviewGridRef.current?.contains(target)) {
+        if (
+          !deletingRef.current &&
+          !blobPreviewGridRef.current?.contains(target)
+        ) {
           setSelectedBlobKeys(new Set());
           setSelectionAnchor(null);
         }

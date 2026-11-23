@@ -17,6 +17,7 @@ const deleteBlob = vi.hoisted(() =>
   vi.fn(async (_key: string, _permanent: boolean) => undefined)
 );
 const revalidate = vi.hoisted(() => vi.fn());
+const getUnusedBlobs = vi.hoisted(() => vi.fn());
 const notifyError = vi.hoisted(() => vi.fn());
 const blobManagementServiceToken = vi.hoisted(
   () => class BlobManagementService {}
@@ -53,7 +54,32 @@ vi.mock('@affine/component', () => ({
 }));
 
 vi.mock('@affine/component/setting-components', () => ({
-  Pagination: () => <div>Pagination</div>,
+  Pagination: ({
+    totalCount,
+    countPerPage,
+    pageNum,
+    onPageChange,
+  }: {
+    totalCount: number;
+    countPerPage: number;
+    pageNum?: number;
+    onPageChange: (skip: number, pageNum: number) => void;
+  }) => (
+    <div>
+      {Array.from(
+        { length: Math.ceil(totalCount / countPerPage) },
+        (_, index) => (
+          <button
+            key={index}
+            aria-current={index === pageNum ? 'page' : undefined}
+            onClick={() => onPageChange(index * countPerPage, index)}
+          >
+            {`Page ${index + 1}`}
+          </button>
+        )
+      )}
+    </div>
+  ),
 }));
 
 vi.mock('@affine/core/modules/blob-management/services', () => ({
@@ -117,6 +143,7 @@ vi.mock('@toeverything/infra', async importOriginal => {
     isLoading$: { value: false },
     deleteBlob,
     revalidate,
+    getUnusedBlobs,
   };
 
   return {
@@ -134,6 +161,8 @@ describe('BlobManagementPanel', () => {
     deleteBlob.mockReset();
     deleteBlob.mockResolvedValue(undefined);
     revalidate.mockClear();
+    getUnusedBlobs.mockReset();
+    getUnusedBlobs.mockResolvedValue(blobs);
     notifyError.mockClear();
   });
 
@@ -147,6 +176,9 @@ describe('BlobManagementPanel', () => {
     await waitFor(() => {
       expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(9);
     });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Page 2' }));
+    expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(1);
 
     fireEvent.click(screen.getAllByTestId('blob-preview-card')[0]);
     expect(screen.getByText('1 Selected')).toBeTruthy();
@@ -226,11 +258,57 @@ describe('BlobManagementPanel', () => {
     const selectAll = screen.getByRole('button', { name: 'Select all (10)' });
     expect(selectAll).toHaveProperty('disabled', true);
     fireEvent.click(selectAll);
+    fireEvent.click(document.body);
     expect(screen.getByText('1 Selected')).toBeTruthy();
 
+    await waitFor(() => {
+      expect(finishDeletion).toBeDefined();
+    });
     await act(async () => {
       finishDeletion?.();
       await deletion;
     });
+  });
+  test('skips selected blobs that became used before deletion', async () => {
+    getUnusedBlobs.mockResolvedValue(
+      blobs.filter(blob => blob.key !== 'blob-2')
+    );
+    render(<BlobManagementPanel />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(9);
+    });
+
+    fireEvent.click(screen.getAllByTestId('blob-preview-card')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Select all (10)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await act(async () => {
+      await openConfirmModal.mock.calls[0][0].onConfirm();
+    });
+
+    expect(deleteBlob.mock.calls.map(call => call[0])).toEqual(
+      blobs.filter(blob => blob.key !== 'blob-2').map(blob => blob.key)
+    );
+    expect(screen.getByText('Unused blobs (0)')).toBeTruthy();
+  });
+
+  test('moves back to the last page when deletion empties the current one', async () => {
+    render(<BlobManagementPanel />);
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(9);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Page 2' }));
+    fireEvent.click(screen.getAllByTestId('blob-preview-card')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await act(async () => {
+      await openConfirmModal.mock.calls[0][0].onConfirm();
+    });
+
+    expect(deleteBlob.mock.calls.map(call => call[0])).toEqual(['blob-10']);
+    expect(screen.getAllByTestId('blob-preview-card')).toHaveLength(9);
   });
 });
