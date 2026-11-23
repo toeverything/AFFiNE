@@ -5,7 +5,7 @@ use sqlx::{PgPool, Row};
 
 #[cfg(test)]
 use super::{AppConfigFile, deserialize_app_config};
-use super::{BackendRuntimeConfig, RuntimeError, RuntimeResult, ServerConfig, merge_config_value};
+use super::{BackendRuntimeConfig, Deployment, RuntimeError, RuntimeResult, ServerConfig, merge_config_value};
 use crate::runtime::object_storage::{ObjectStorageService, backends_from_flat_overrides};
 
 pub(crate) struct AppConfigChange {
@@ -115,6 +115,17 @@ pub(crate) async fn save_app_config_changes(
   actor: Option<&str>,
   changes: &[AppConfigChange],
 ) -> RuntimeResult<Vec<String>> {
+  // Remove after the old cloud readers have exited; profiles remain
+  // configurable through deployment files.
+  if config.deployment() == Deployment::Cloud
+    && changes
+      .iter()
+      .any(|change| change.key == "copilot.providers.profiles" && change.value.is_some())
+  {
+    return Err(RuntimeError::config(
+      "cloud managed provider profiles must use deployment configuration until older readers have exited",
+    ));
+  }
   let mut transaction = pool
     .begin()
     .await
@@ -269,6 +280,7 @@ pub(in crate::runtime) fn insert_flat_override(
 
 #[cfg(test)]
 mod tests {
+  use serde_json::Value;
   use sqlx::postgres::PgPoolOptions;
 
   use super::{AppConfigChange, ServerConfig, load_app_config_overrides_from_db, save_app_config_changes};
@@ -439,5 +451,102 @@ mod tests {
         .unwrap(),
       0
     );
+    let profiles_key = "copilot.providers.profiles";
+    for provider in ["openai", "openrouter", "perplexity"] {
+      for enabled in [false, true] {
+        let profiles = serde_json::json!([{
+          "id":"provider", "type":provider, "enabled":enabled, "models":[], "config":{"apiKey":"test"}
+        }]);
+        let error = save_app_config_changes(
+          &pool,
+          &config,
+          None,
+          None,
+          &[
+            node("server.name", Some(serde_json::json!("must-not-write"))),
+            native(profiles_key, Some(profiles.clone())),
+          ],
+        )
+        .await
+        .unwrap_err();
+        assert!(error.to_string().contains("older readers"));
+        assert_eq!(
+          sqlx::query_scalar::<_, i64>("SELECT count(*) FROM app_configs")
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+          0
+        );
+        sqlx::query("INSERT INTO app_configs(id,value) VALUES($1,$2)")
+          .bind(profiles_key)
+          .bind(&profiles)
+          .execute(&pool)
+          .await
+          .unwrap();
+        save_app_config_changes(
+          &pool,
+          &config,
+          None,
+          None,
+          &[node("server.name", Some(serde_json::json!("repair-allowed")))],
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+          sqlx::query_scalar::<_, Value>("SELECT value FROM app_configs WHERE id=$1")
+            .bind(profiles_key)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+          profiles
+        );
+        save_app_config_changes(
+          &pool,
+          &config,
+          None,
+          None,
+          &[native(profiles_key, None), node("server.name", None)],
+        )
+        .await
+        .unwrap();
+        for deployment in ["cloud", "selfhosted"] {
+          std::fs::write(
+            &path,
+            serde_json::json!({"deployment":{"type":deployment},"copilot":{"enabled":false,"providers":{"profiles":profiles}}}).to_string(),
+          )
+          .unwrap();
+          let mounted = ServerConfig::open(&path, None).unwrap();
+          save_app_config_changes(
+            &pool,
+            &mounted,
+            None,
+            None,
+            &[node("server.name", Some(serde_json::json!("mounted-profile")))],
+          )
+          .await
+          .unwrap();
+          if deployment == "selfhosted" {
+            save_app_config_changes(
+              &pool,
+              &mounted,
+              None,
+              None,
+              &[native(profiles_key, Some(profiles.clone()))],
+            )
+            .await
+            .unwrap();
+          }
+          save_app_config_changes(
+            &pool,
+            &mounted,
+            None,
+            None,
+            &[native(profiles_key, None), node("server.name", None)],
+          )
+          .await
+          .unwrap();
+        }
+      }
+    }
   }
 }

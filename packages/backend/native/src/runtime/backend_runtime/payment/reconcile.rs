@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::Row;
 
-use super::{PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope, PaymentSnapshot, SnapshotCoverage};
+use super::{
+  PaymentApplyResult, PaymentConnection, PaymentRuntime, PaymentScope, PaymentSnapshot, SnapshotCoverage,
+  parse_stored_plan,
+};
 use crate::runtime::{RuntimeError, RuntimeResult};
 
 const CURSOR_PURPOSE: &str = "payment_reconcile_cursor:source";
@@ -168,7 +171,7 @@ async fn source_candidate(runtime: &PaymentRuntime, namespace: &str) -> RuntimeR
   };
   let provider = Provider::parse(row.get::<String, _>("provider").as_str())
     .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment provider"))?;
-  let plan = Plan::parse(row.get::<String, _>("plan").as_str())
+  let plan = parse_stored_plan(row.get::<String, _>("plan").as_str())
     .ok_or_else(|| RuntimeError::invalid_state("unknown stored payment plan"))?;
   let candidate = SourceCandidate {
     provider,

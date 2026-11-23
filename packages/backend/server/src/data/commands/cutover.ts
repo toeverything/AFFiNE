@@ -86,6 +86,50 @@ export class CutoverCommand {
           );
         }
 
+        await tx.$executeRaw`
+          CREATE TABLE IF NOT EXISTS storage_reconciliation_checkpoints (
+            kind TEXT NOT NULL,
+            scope TEXT NOT NULL,
+            status TEXT NOT NULL,
+            cursor JSONB NOT NULL DEFAULT '{}',
+            last_key TEXT,
+            last_sid INTEGER,
+            completed_at TIMESTAMPTZ(3),
+            updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            metadata JSONB NOT NULL DEFAULT '{}',
+            PRIMARY KEY (kind, scope)
+          )
+        `;
+
+        await tx.$executeRaw`
+          INSERT INTO storage_reconciliation_checkpoints (
+            kind,
+            scope,
+            status,
+            completed_at,
+            updated_at,
+            metadata
+          )
+          VALUES (
+            'schema_baseline_0275',
+            'global',
+            'completed',
+            clock_timestamp(),
+            clock_timestamp(),
+            jsonb_build_object(
+              'baselineVersion',
+              '0.27.5',
+              'deployment',
+              ${deployment}::text
+            )
+          )
+          ON CONFLICT (kind, scope) DO UPDATE SET
+            status = EXCLUDED.status,
+            completed_at = EXCLUDED.completed_at,
+            updated_at = EXCLUDED.updated_at,
+            metadata = EXCLUDED.metadata
+        `;
+
         return result;
       },
       {

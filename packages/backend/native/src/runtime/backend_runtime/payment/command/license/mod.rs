@@ -187,7 +187,8 @@ impl PaymentRuntime {
     assert_license_access(connection.connection(), license_key, validate_key).await?;
     let customer: String = sqlx::query_scalar(
       "SELECT external_customer_id FROM provider_subscriptions WHERE provider_namespace=$1 AND target_type='instance' \
-       AND target_id=$2 AND plan='selfhost_team' AND external_customer_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1",
+       AND target_id=$2 AND plan IN ('selfhost_team','selfhostedteam') AND external_customer_id IS NOT NULL ORDER BY \
+       updated_at DESC LIMIT 1",
     )
     .bind(&namespace)
     .bind(license_key)
@@ -236,7 +237,8 @@ async fn license_connection(
 ) -> RuntimeResult<PaymentConnection> {
   let subscription = sqlx::query(
     "SELECT source_identity,external_customer_id FROM provider_subscriptions WHERE provider_namespace=$1 AND \
-     target_type='instance' AND target_id=$2 AND plan='selfhost_team' ORDER BY updated_at DESC LIMIT 1",
+     target_type='instance' AND target_id=$2 AND plan IN ('selfhost_team','selfhostedteam') ORDER BY updated_at DESC \
+     LIMIT 1",
   )
   .bind(namespace)
   .bind(license_key)
@@ -276,7 +278,7 @@ async fn active_license_subscription(
                 WHERE c.provider_namespace=provider_subscriptions.provider_namespace
                   AND c.stripe_customer_id=provider_subscriptions.external_customer_id) AS billing_email
        FROM provider_subscriptions
-       WHERE provider_namespace=$2 AND target_type='instance' AND target_id=$1 AND plan='selfhost_team'
+       WHERE provider_namespace=$2 AND target_type='instance' AND target_id=$1 AND plan IN ('selfhost_team','selfhostedteam')
        ORDER BY updated_at DESC LIMIT 1 FOR SHARE"#,
   )
   .bind(license_key)

@@ -30,9 +30,13 @@ impl PaymentRuntime {
       "user" if actor_user_id != Some(target_id) => {
         return Err(RuntimeError::invalid_input("payment actor does not match user target"));
       }
-      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
       _ => {}
     }
+    let workspace_actor = if target_type == "workspace" {
+      Some(actor_user_id.ok_or_else(|| RuntimeError::invalid_input("payment actor is required"))?)
+    } else {
+      None
+    };
     let plan = parse_plan(plan)?;
     let recurring = SubscriptionRecurring::parse(recurring)
       .ok_or_else(|| RuntimeError::invalid_input("invalid payment recurring"))?;
@@ -121,7 +125,10 @@ impl PaymentRuntime {
       target_id: Some(target_id.to_string()),
       steps,
     };
-    match self.execute_locked_stripe_operation(locked.connection, intent).await? {
+    match self
+      .execute_locked_stripe_operation(locked.connection, intent, workspace_actor)
+      .await?
+    {
       OperationExecution::Completed(result) => Ok(result),
       OperationExecution::Sent {
         connection,
@@ -172,9 +179,13 @@ impl PaymentRuntime {
       "user" if actor_user_id != Some(target_id) => {
         return Err(RuntimeError::invalid_input("payment actor does not match user target"));
       }
-      "workspace" => self.assert_workspace_payment(actor_user_id, target_id).await?,
       _ => {}
     }
+    let workspace_actor = if target_type == "workspace" {
+      Some(actor_user_id.ok_or_else(|| RuntimeError::invalid_input("payment actor is required"))?)
+    } else {
+      None
+    };
     let plan = parse_plan(plan)?;
     validate_subscription_mutation_target(
       plan,
@@ -274,7 +285,10 @@ impl PaymentRuntime {
       target_id: Some(target_id.to_string()),
       steps,
     };
-    match self.execute_locked_stripe_operation(locked.connection, intent).await? {
+    match self
+      .execute_locked_stripe_operation(locked.connection, intent, workspace_actor)
+      .await?
+    {
       OperationExecution::Completed(result) => Ok(result),
       OperationExecution::Sent {
         connection,

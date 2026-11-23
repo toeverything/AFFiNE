@@ -126,6 +126,35 @@ e2e('should ban account', async t => {
   t.true(preserved.disabled);
 
   const user = await app.create(Mockers.User);
+  const workspace = await app.create(Mockers.Workspace, { owner: user });
+  const doc = await app.create(Mockers.DocSnapshot, {
+    user,
+    workspaceId: workspace.id,
+  });
+  await app.create(Mockers.DocMeta, {
+    workspaceId: workspace.id,
+    docId: doc.id,
+    public: true,
+  });
+  const db = app.get(PrismaClient);
+  await db.$executeRaw`
+    INSERT INTO doc_blob_refs
+      (workspace_id, doc_id, blob_key, block_id, flavour, snapshot_updated_at, parser_version)
+    VALUES (${workspace.id}, ${doc.id}, 'ban-blob', 'block', 'affine:attachment', NOW(), 1)
+  `;
+  await db.$executeRaw`
+    INSERT INTO doc_blob_ref_projections (workspace_id, doc_id, parser_version, status)
+    VALUES (${workspace.id}, ${doc.id}, 1, 'pending')
+  `;
+  await db.$executeRaw`
+    INSERT INTO storage_reconciliation_runs (id, kind, mode, status, workspace_id)
+    VALUES (${user.id}::uuid, 'blob_cleanup_plan', 'plan', 'finished', ${workspace.id})
+  `;
+  await db.$executeRaw`
+    INSERT INTO blob_cleanup_candidates
+      (workspace_id, blob_key, reason, status, object_size, run_id)
+    VALUES (${workspace.id}, 'ban-blob', 'unreferenced', 'planned', 0, ${user.id}::uuid)
+  `;
 
   const { banUser } = await app.gql({
     query: disableUserMutation,
@@ -135,6 +164,35 @@ e2e('should ban account', async t => {
   });
 
   t.is(banUser.disabled, true);
+  const disabled = await db.user.findUniqueOrThrow({
+    where: { email: user.email },
+  });
+  t.not(disabled.id, user.id);
+  t.true(disabled.disabled);
+  t.is(await db.workspace.count({ where: { id: workspace.id } }), 0);
+  t.is(
+    await db.docAccessPolicy.count({ where: { workspaceId: workspace.id } }),
+    0
+  );
+  for (const table of [
+    'snapshots',
+    'updates',
+    'snapshot_histories',
+    'doc_blob_refs',
+    'doc_blob_ref_projections',
+    'blob_cleanup_candidates',
+    'storage_reconciliation_runs',
+  ]) {
+    const [result] = await db.$queryRawUnsafe<{ count: number }[]>(
+      `SELECT COUNT(*)::int AS count FROM ${table} WHERE workspace_id = $1`,
+      workspace.id
+    );
+    t.is(result.count, 0, table);
+  }
+  const response = await app
+    .GET(`/workspace/${workspace.id}/${doc.id}`)
+    .set('Accept', 'text/markdown');
+  t.is(response.status, 404);
 });
 
 e2e('should ban account with pending workspace invitation', async t => {

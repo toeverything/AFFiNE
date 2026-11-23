@@ -130,49 +130,51 @@ fn expands_module_config_paths_from_json_files() {
   assert_eq!(copilot.providers.profiles.len(), 1);
   assert_eq!(copilot.providers.profiles[0].id, "managed-openai");
 
-  let missing_models = app_config_from_flat_overrides([(
+  let without_models = app_config_from_flat_overrides([(
     "copilot.providers.profiles",
     serde_json::json!([{
       "id": "managed-openai",
       "type": "openai",
-      "config": {}
+      "config": { "apiKey": "test" }
     }]),
-  )]);
-  assert!(missing_models.is_err());
+  )])
+  .unwrap();
+  let copilot: CopilotRuntimeConfig = without_models.copilot.unwrap().try_into().unwrap();
+  assert!(validate_copilot_config(&copilot).is_ok());
 
   let app_config = app_config_from_flat_overrides([(
     "copilot.providers.profiles",
     serde_json::json!([{
       "id": "managed-openai",
       "type": "openai",
-      "models": [],
-      "config": {}
+      "models": ["model-only-known-to-a-newer-release"],
+      "config": { "apiKey": "test" }
     }]),
   )])
   .unwrap();
   let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
-  assert!(validate_copilot_config(&copilot).is_err());
+  assert!(validate_copilot_config(&copilot).is_ok());
 
   let app_config = app_config_from_flat_overrides([(
     "copilot.providers.profiles",
     serde_json::json!([
       {
-        "id": "anthropic-direct",
-        "type": "anthropic",
+        "id": "anthropic-first",
+        "type": "anthropicVertex",
         "models": ["claude-sonnet-4-6"],
-        "config": {}
+        "config": { "project": "test", "location": "global" }
       },
       {
         "id": "anthropic-vertex",
         "type": "anthropicVertex",
         "models": ["claude-sonnet-4-6"],
-        "config": {}
+        "config": { "project": "test", "location": "global" }
       }
     ]),
   )])
   .unwrap();
   let copilot: CopilotRuntimeConfig = app_config.copilot.unwrap().try_into().unwrap();
-  assert!(validate_copilot_config(&copilot).is_err());
+  assert!(validate_copilot_config(&copilot).is_ok());
 
   let directory = tempfile::tempdir().unwrap();
   let config_path = directory.path().join("config.json");

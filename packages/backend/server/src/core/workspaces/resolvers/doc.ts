@@ -11,11 +11,10 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import {
-  Cache,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
   DocIsNotPublic,
@@ -39,6 +38,7 @@ import {
   BackendRuntimeProvider,
 } from '../../backend-runtime';
 import { Editor } from '../../doc';
+import { DocReader } from '../../doc/reader';
 import {
   DOC_ACTIONS,
   DocAction,
@@ -93,10 +93,10 @@ class DocType {
   updatedAt?: Date;
 
   @Field(() => String, { nullable: true })
-  creatorId?: string;
+  creatorId?: string | null;
 
   @Field(() => String, { nullable: true })
-  lastUpdaterId?: string;
+  lastUpdaterId?: string | null;
 
   @Field(() => String, { nullable: true })
   title?: string | null;
@@ -307,15 +307,11 @@ export class WorkspaceDocResolver {
   private readonly logger = new Logger(WorkspaceDocResolver.name);
 
   constructor(
-    /**
-     * @deprecated migrate to models
-     */
-    private readonly prisma: PrismaClient,
     private readonly ac: PermissionAccess,
     private readonly models: Models,
-    private readonly cache: Cache,
     private readonly event: EventBus,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => WorkspaceDocMeta, {
@@ -328,6 +324,7 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('pageId') pageId: string
   ) {
+    pageId = await this.docReader.resolveStorageDocId(workspace.id, pageId);
     await this.ac.user(me.id).doc(workspace.id, pageId).assert('Doc.Read');
 
     const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
@@ -367,7 +364,7 @@ export class WorkspaceDocResolver {
       pagination
     );
 
-    return paginate(rows, 'createdAt', pagination, count);
+    return paginate(rows, 'cursor', pagination, count);
   }
 
   @ResolveField(() => PaginatedDocType, {
@@ -388,7 +385,7 @@ export class WorkspaceDocResolver {
         'Doc.Read'
       );
     const predicate = readable.length
-      ? Prisma.sql`"workspace_pages"."page_id" IN (${Prisma.join(readable.map(doc => doc.docId))})`
+      ? Prisma.sql`source.doc_id IN (SELECT jsonb_array_elements_text(${JSON.stringify(readable.map(doc => doc.docId))}::jsonb))`
       : Prisma.sql`FALSE`;
     const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
       workspace.id,
@@ -396,7 +393,7 @@ export class WorkspaceDocResolver {
       predicate
     );
 
-    return paginate(rows, 'updatedAt', pagination, count);
+    return paginate(rows, 'cursor', pagination, count);
   }
 
   @ResolveField(() => DocType, {
@@ -408,24 +405,11 @@ export class WorkspaceDocResolver {
     @Parent() workspace: WorkspaceType,
     @Args('docId') docId: string
   ): Promise<DocType> {
+    docId = await this.docReader.resolveStorageDocId(workspace.id, docId);
+    await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
     const doc = await this.models.doc.getDocInfo(workspace.id, docId);
-    if (doc) {
-      // check if doc is readable
-      await this.ac.user(me.id).doc(workspace.id, docId).assert('Doc.Read');
-      return doc;
-    }
-
-    await this.tryFixDocOwner(workspace.id, docId);
-
-    const isPublic = await this.models.doc.isPublic(workspace.id, docId);
-
-    return {
-      docId,
-      workspaceId: workspace.id,
-      mode: PublicDocMode.Page,
-      public: isPublic,
-      defaultRole: DocRole.Manager,
-    };
+    if (!doc) throw new DocNotFound({ spaceId: workspace.id, docId });
+    return doc;
   }
 
   @Mutation(() => DocType)
@@ -441,6 +425,7 @@ export class WorkspaceDocResolver {
     })
     mode: PublicDocMode
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     if (workspaceId === docId) {
       this.logger.error('Expect to publish doc, but it is a workspace', {
         workspaceId,
@@ -474,7 +459,7 @@ export class WorkspaceDocResolver {
       }
       throw error;
     }
-    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    const doc = await this.models.doc.getDocInfo(workspaceId, docId);
     if (!doc) {
       throw new DocNotFound({ spaceId: workspaceId, docId });
     }
@@ -493,6 +478,7 @@ export class WorkspaceDocResolver {
     @Args('workspaceId') workspaceId: string,
     @Args('docId') docId: string
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     if (workspaceId === docId) {
       this.logger.error('Expect to revoke public doc, but it is a workspace', {
         workspaceId,
@@ -525,7 +511,7 @@ export class WorkspaceDocResolver {
       }
       throw error;
     }
-    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    const doc = await this.models.doc.getDocInfo(workspaceId, docId);
     if (!doc) {
       throw new DocNotFound({ spaceId: workspaceId, docId });
     }
@@ -534,61 +520,6 @@ export class WorkspaceDocResolver {
     this.logger.log(`Revoke public doc ${docId} in workspace ${workspaceId}`);
 
     return doc;
-  }
-
-  private async tryFixDocOwner(workspaceId: string, docId: string) {
-    const allowed = await this.cache.setnx(
-      `fixingOwner:${workspaceId}:${docId}`,
-      1,
-      // TODO(@forehalo): we definitely need a timer helper
-      { ttl: 1000 * 60 * 60 * 24 }
-    );
-
-    // fixed by other instance
-    if (!allowed) {
-      return;
-    }
-
-    const exists = await this.models.doc.exists(workspaceId, docId);
-
-    // skip if doc not even exists
-    if (!exists) {
-      return;
-    }
-
-    const owner = await this.models.docUser.getOwner(workspaceId, docId);
-
-    // skip if owner already exists
-    if (owner) {
-      return;
-    }
-
-    // try snapshot.createdBy first
-    const snapshot = await this.prisma.snapshot.findUnique({
-      select: {
-        createdBy: true,
-      },
-      where: {
-        workspaceId_id: {
-          workspaceId,
-          id: docId,
-        },
-      },
-    });
-
-    let fixedOwner = snapshot?.createdBy;
-
-    // try workspace.owner
-    if (!fixedOwner) {
-      const owner = await this.models.workspaceUser.getOwner(workspaceId);
-      fixedOwner = owner.id;
-    }
-
-    await this.models.docUser.setOwner(workspaceId, docId, fixedOwner);
-
-    this.logger.debug(
-      `Fixed doc owner for ${docId} in workspace ${workspaceId}, new owner: ${fixedOwner}`
-    );
   }
 }
 
@@ -601,7 +532,8 @@ export class DocResolver {
     private readonly models: Models,
     private readonly grants: DocGrantsService,
     private readonly event: EventBus,
-    private readonly runtime: BackendRuntimeProvider
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => PublicUserType, {
@@ -735,6 +667,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: GrantDocUserRolesInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -792,6 +731,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: RevokeDocUserRoleInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -841,6 +787,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: UpdateDocUserRoleInput
   ): Promise<boolean> {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     const pairs = {
       spaceId: input.workspaceId,
       docId: input.docId,
@@ -907,6 +860,13 @@ export class DocResolver {
     @CurrentUser() user: CurrentUser,
     @Args('input') input: UpdateDocDefaultRoleInput
   ) {
+    input = {
+      ...input,
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
     if (input.role === DocRole.Owner) {
       this.logger.debug(
         `Doc default role can not be owner (${JSON.stringify(input)})`

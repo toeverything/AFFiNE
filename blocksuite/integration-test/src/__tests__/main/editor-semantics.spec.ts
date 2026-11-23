@@ -1,19 +1,28 @@
+import {
+  DatabaseBlockDataSource,
+  databaseBlockProperties,
+  EditorHostKey,
+} from '@blocksuite/affine-block-database';
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
 import type { AffineReference } from '@blocksuite/affine-inline-reference';
 import type {
+  DatabaseBlockModel,
   EmbedYoutubeModel,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
+import type { SingleViewBase } from '@blocksuite/data-view';
 import { SurfaceSelection, TextSelection } from '@blocksuite/std';
 import type { InlineMarkdownMatch } from '@blocksuite/std/inline';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { DatabaseTitle } from '../../../../affine/blocks/database/src/components/title/index.js';
 import type { TableBlockComponent } from '../../../../affine/blocks/table/src/table-block.js';
 import type { TableCell } from '../../../../affine/blocks/table/src/table-cell.js';
 import { defaultSlashMenuConfig } from '../../../../affine/widgets/slash-menu/src/config.js';
@@ -183,6 +192,57 @@ test.each([false, true])(
   }
 );
 
+test('typing into a sorted database title keeps editing the same row', async () => {
+  const noteId = addNote(doc);
+  const id = doc.addBlock('affine:database', {}, noteId);
+  const model = doc.getModelById(id) as DatabaseBlockModel;
+  const source = new DatabaseBlockDataSource(model, source => {
+    source.serviceSet(EditorHostKey, editor.host!);
+  });
+  const viewId = source.viewManager.viewAdd('table');
+  const titleId = source.properties$.value.find(
+    propertyId => source.propertyTypeGet(propertyId) === 'title'
+  )!;
+  const editedRow = source.rowAdd('end');
+  const otherRow = source.rowAdd('end');
+  doc.updateBlock(doc.getModelById(editedRow)!, { text: new Text('b') });
+  doc.updateBlock(doc.getModelById(otherRow)!, { text: new Text('c') });
+  source.viewDataUpdate(viewId, data => ({
+    ...data,
+    sort: {
+      manuallySort: [],
+      sortBy: [{ ref: { type: 'ref', name: titleId }, desc: false }],
+    },
+  }));
+  await wait();
+  const database = editor.host!.view.getBlock(id)!;
+  await database.updateComplete;
+  await wait();
+  const container = database.querySelector<
+    HTMLElement & { selectCurrentCell: (editing: boolean) => void }
+  >(
+    `dv-table-view-cell-container[data-row-id="${editedRow}"][data-column-id="${titleId}"]`
+  )!;
+
+  container.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  container.selectCurrentCell(false);
+  await wait();
+  container.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'z', bubbles: true, cancelable: true })
+  );
+  await wait();
+  await wait();
+
+  const titleCells = database.querySelectorAll<HTMLElement>(
+    `dv-table-view-cell-container[data-column-id="${titleId}"]`
+  );
+  expect(Array.from(titleCells, cell => cell.dataset.rowId)).toEqual([
+    editedRow,
+    otherRow,
+  ]);
+  expect(titleCells[0].dataset.editing).toBe('true');
+});
+
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',
   async mode => {
@@ -225,6 +285,106 @@ test.each(['page', 'edgeless'] as const)(
     expect(table.selectionController.getSelected()).toBeUndefined();
     expect(editor.std.selection.getGroup('gfx')).toEqual(
       mode === 'edgeless' ? [surfaceSelection] : []
+    );
+  }
+);
+
+test.each(
+  Object.values(databaseBlockProperties).filter(
+    property => !['title', 'created-time'].includes(property.type)
+  )
+)(
+  'database searches plain and linked titles despite malformed $type cells',
+  async property => {
+    const noteId = addNote(doc);
+    const id = doc.addBlock('affine:database', {}, noteId);
+    const model = doc.getModelById(id) as DatabaseBlockModel;
+    const source = new DatabaseBlockDataSource(model, source => {
+      source.serviceSet(EditorHostKey, editor.host!);
+    });
+    source.viewManager.viewAdd('table');
+    const propertyId = source.propertyAdd('end', { type: property.type })!;
+    const malformedRow = source.rowAdd('end');
+    const normalRow = source.rowAdd('end');
+    const linkedDoc = createDefaultDoc(collection, { title: 'Planning notes' });
+    const linkedRow = source.rowAdd('end');
+    const linkedText = new Text<AffineTextAttributes>([
+      {
+        insert: ' ',
+        attributes: { reference: { type: 'LinkedPage', pageId: linkedDoc.id } },
+      },
+    ]);
+    doc.updateBlock(doc.getModelById(linkedRow)!, { text: linkedText });
+    await wait();
+    const database = editor.host!.view.getBlock(id)!;
+    await database.updateComplete;
+    const title = database.querySelector<DatabaseTitle>(
+      'affine-database-title'
+    )!;
+    await title.updateComplete;
+    expect(title.querySelector('textarea')).not.toBeNull();
+    const defaultValue = property.config.rawValue.default();
+    source.cellValueChange(normalRow, propertyId, defaultValue);
+    expect(source.cellValueGet(normalRow, propertyId)).toEqual(defaultValue);
+    const invalidValue = { legacy: 'invalid' };
+    doc.updateBlock(model, {
+      cells: {
+        ...model.props.cells,
+        [malformedRow]: {
+          [propertyId]: { columnId: propertyId, value: invalidValue },
+        },
+      },
+    });
+    expect(source.cellValueGet(malformedRow, propertyId)).toEqual(defaultValue);
+    expect(model.props.cells[malformedRow][propertyId].value).toEqual(
+      invalidValue
+    );
+    const normal = doc.getModelById(normalRow) as ParagraphBlockModel;
+    normal.props.text.insert('needle', 0);
+    const view = source.viewManager.currentView$.value as SingleViewBase;
+    view.setSearch('needle');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([normalRow]);
+    view.setSearch('Planning');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    collection.meta.setDocMeta(linkedDoc.id, { title: 'Updated agenda' });
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([]);
+    view.setSearch('Updated');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    expect(linkedText.toString()).toBe(' ');
+    const titleCell = view.cellGetOrCreate(
+      linkedRow,
+      view.mainProperties$.value.titleColumn!
+    );
+    expect(titleCell.stringValue$.value).toBe('Updated agenda');
+    expect(titleCell.jsonValue$.value).toBe('Updated agenda');
+    linkedText.format(0, 1, {
+      reference: {
+        type: 'LinkedPage',
+        pageId: linkedDoc.id,
+        title: 'Roadmap alias',
+      },
+    });
+    view.setSearch('Roadmap');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    collection.meta.setDocMeta(linkedDoc.id, { title: 'Renamed again' });
+    expect(titleCell.stringValue$.value).toBe('Roadmap alias');
+    linkedText.insert('Topic: ', 0);
+    view.setSearch('Topic: Roadmap');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    linkedText.format(7, 1, {
+      reference: { type: 'LinkedPage', pageId: 'missing-document' },
+    });
+    view.setSearch('Topic: Deleted doc');
+    expect(view.rows$.value.map(row => row.rowId)).toEqual([linkedRow]);
+    expect(
+      databaseBlockProperties.titleColumnConfig.config.rawValue.toString({
+        value: linkedText,
+        data: {},
+      })
+    ).toBe('Topic:  ');
+    await wait();
+    expect(model.props.cells[malformedRow][propertyId].value).toEqual(
+      invalidValue
     );
   }
 );

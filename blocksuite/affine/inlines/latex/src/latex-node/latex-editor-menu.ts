@@ -3,6 +3,7 @@ import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { IS_MAC } from '@blocksuite/global/env';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { DoneIcon } from '@blocksuite/icons/lit';
@@ -154,6 +155,12 @@ export class LatexEditorMenu extends SignalWatcher(
         e.preventDefault();
         e.stopPropagation();
         this.abortController.abort();
+      }
+      // Firefox's native select all is dropped by the editor's range sync.
+      if (e.key === 'a' && (IS_MAC ? e.metaKey : e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.richText?.inlineEditor?.selectAll();
       }
     });
 

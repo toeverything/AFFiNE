@@ -18,10 +18,44 @@ const weekDayNames = Array.from({ length: 7 }, (_, index) =>
   )
 );
 
-export function suggestJournalDate(query: string): {
+type JournalDateSuggestion = {
   dateString: string;
   alias?: string;
-} | null {
+};
+
+const MATCH_NONE = 0;
+const MATCH_SUBSEQUENCE = 1;
+const MATCH_CONTAINS = 2;
+const MATCH_PREFIX = 3;
+
+function normalizeQuery(value: string) {
+  return value.trim().toLowerCase().split(' ').join('');
+}
+
+/**
+ * Scores how closely an alias answers the query. A prefix beats a contiguous run,
+ * a contiguous run beats a scattered subsequence, so "nextsa" reaches "next
+ * saturday" instead of stopping at the s and the a inside "sunday".
+ */
+function matchScore(alias: string, query: string) {
+  if (!fuzzyMatch(alias, query, true)) {
+    return MATCH_NONE;
+  }
+
+  const index = normalizeQuery(alias).indexOf(query);
+  if (index === 0) {
+    return MATCH_PREFIX;
+  }
+
+  return index > 0 ? MATCH_CONTAINS : MATCH_SUBSEQUENCE;
+}
+
+/**
+ * Suggests a journal date for a fuzzy query such as "next sa" or "dec 10".
+ */
+export function suggestJournalDate(
+  query: string
+): JournalDateSuggestion | null {
   // given a query string, suggest a journal date
   // if the query is empty or, starts with "t" AND matches today
   //   -> suggest today's date
@@ -36,7 +70,7 @@ export function suggestJournalDate(query: string): {
   //      -> suggest the date of the month
   //      -> otherwise, suggest the current day of the month
   // otherwise, return null
-  query = query.trim().toLowerCase().split(' ').join('');
+  query = normalizeQuery(query);
 
   if (query === '' || fuzzyMatch('today', query, true)) {
     return {
@@ -59,7 +93,7 @@ export function suggestJournalDate(query: string): {
     };
   }
 
-  // next week dates, start from monday
+  // next week dates, sunday first (dayjs startOf week)
   const nextWeekDates = Array.from({ length: 7 }, (_, index) =>
     dayjs()
       .add(1, 'week')
@@ -86,14 +120,18 @@ export function suggestJournalDate(query: string): {
     }),
   }));
 
+  let bestMatch: JournalDateSuggestion | null = null;
+  let bestScore = MATCH_NONE;
   for (const date of [...nextWeekDates, ...lastWeekDates]) {
-    const matched = fuzzyMatch(date.alias, query, true);
-    if (matched) {
-      return date;
+    const score = matchScore(date.alias, query);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = date;
     }
   }
 
-  // if query is a string that starts with alphabet letters and/or numbers
+  // month names can beat a loose weekday match: "no" is closer to "november"
+  // than to the n...o inside "next monday"
   const regex = new RegExp(`^([a-z]+)(\\d*)$`, 'i');
   const matched = query.match(regex);
 
@@ -102,20 +140,24 @@ export function suggestJournalDate(query: string): {
     const now = dayjs();
 
     for (const [monthIndex, month] of monthNames.entries()) {
-      const monthMatched = fuzzyMatch(month, letters, true);
-      if (monthMatched) {
-        const targetMonth = now.month(monthIndex);
-        const daysInMonth = targetMonth.daysInMonth();
-        const fallbackDay = Math.min(now.date(), daysInMonth);
-        const parsedDay = numbers ? parseInt(numbers) : fallbackDay;
-        const day =
-          parsedDay < 1 || parsedDay > daysInMonth ? fallbackDay : parsedDay;
-        return {
-          dateString: targetMonth.date(day).format(JOURNAL_DATE_FORMAT),
-        };
+      const score = matchScore(month, letters);
+      if (score <= bestScore) {
+        continue;
       }
+
+      const targetMonth = now.month(monthIndex);
+      const daysInMonth = targetMonth.daysInMonth();
+      const fallbackDay = Math.min(now.date(), daysInMonth);
+      const parsedDay = numbers ? parseInt(numbers) : fallbackDay;
+      const day =
+        parsedDay < 1 || parsedDay > daysInMonth ? fallbackDay : parsedDay;
+
+      bestScore = score;
+      bestMatch = {
+        dateString: targetMonth.date(day).format(JOURNAL_DATE_FORMAT),
+      };
     }
   }
 
-  return null;
+  return bestMatch;
 }

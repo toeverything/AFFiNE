@@ -230,6 +230,39 @@ export const adminMailDeliveriesQuery = {
 }`,
 };
 
+export const adminPaymentReconciliationQuery = {
+  id: 'adminPaymentReconciliationQuery' as const,
+  op: 'adminPaymentReconciliation',
+  query: `query adminPaymentReconciliation($input: AdminPaymentLookupInput!) {
+  adminPaymentReconciliation(input: $input) {
+    userId
+    planFamily
+    conflicted
+    boundProviderNamespace
+    boundSourceIdentity
+    sources {
+      id
+      provider
+      providerNamespace
+      sourceIdentity
+      externalCustomerId
+      externalSubscriptionId
+      externalRef
+      status
+    }
+    attempts {
+      id
+      provider
+      providerNamespace
+      status
+      productId
+      transactionId
+      sessionId
+    }
+  }
+}`,
+};
+
 export const adminServerConfigQuery = {
   id: 'adminServerConfigQuery' as const,
   op: 'adminServerConfig',
@@ -513,6 +546,25 @@ export const listUsersQuery = {
 }`,
 };
 
+export const reconcileAdminPaymentMutation = {
+  id: 'reconcileAdminPaymentMutation' as const,
+  op: 'reconcileAdminPayment',
+  query: `mutation reconcileAdminPayment($input: ReconcileAdminPaymentInput!) {
+  reconcileAdminPayment(input: $input) {
+    requestId
+    status
+    reason
+    userId
+    planFamily
+    conflicted
+    boundProviderNamespace
+    boundSourceIdentity
+    attemptId
+    attemptStatus
+  }
+}`,
+};
+
 export const rotateAuthSigningKeyMutation = {
   id: 'rotateAuthSigningKeyMutation' as const,
   op: 'rotateAuthSigningKey',
@@ -577,6 +629,18 @@ export const validateConfigQuery = {
     value
     valid
     error
+  }
+}`,
+};
+
+export const appStorePurchaseMutation = {
+  id: 'appStorePurchaseMutation' as const,
+  op: 'appStorePurchase',
+  query: `mutation appStorePurchase($input: AppStorePurchaseInput!) {
+  appStorePurchase(input: $input) {
+    status
+    attemptId
+    provider
   }
 }`,
 };
@@ -887,6 +951,14 @@ export const changePasswordMutation = {
   op: 'changePassword',
   query: `mutation changePassword($token: String!, $userId: String!, $newPassword: String!) {
   changePassword(token: $token, userId: $userId, newPassword: $newPassword)
+}`,
+};
+
+export const checkoutAttemptQuery = {
+  id: 'checkoutAttemptQuery' as const,
+  op: 'checkoutAttempt',
+  query: `query checkoutAttempt($plan: SubscriptionPlan!) {
+  checkoutAttempt(plan: $plan)
 }`,
 };
 
@@ -1671,6 +1743,14 @@ export const getDocRolePermissionsQuery = {
       }
     }
   }
+}`,
+};
+
+export const expireCheckoutMutation = {
+  id: 'expireCheckoutMutation' as const,
+  op: 'expireCheckout',
+  query: `mutation expireCheckout($plan: SubscriptionPlan!, $attemptId: String!) {
+  expireCheckout(plan: $plan, attemptId: $attemptId)
 }`,
 };
 
@@ -2619,16 +2699,38 @@ export const subscriptionQuery = {
   query: `query subscription {
   currentUser {
     id
-    subscriptions {
-      id
-      status
-      plan
-      recurring
-      start
-      end
-      nextBillAt
-      canceledAt
-      variant
+    subscriptionBilling {
+      subscriptions {
+        id
+        status
+        plan
+        recurring
+        start
+        end
+        nextBillAt
+        canceledAt
+        variant
+        provider
+        iapStore
+      }
+      conflicts {
+        plan
+        sources {
+          id
+          provider
+          iapStore
+          recurring
+        }
+      }
+      manageable {
+        plan
+        sources {
+          id
+          provider
+          iapStore
+          recurring
+        }
+      }
     }
   }
 }`,

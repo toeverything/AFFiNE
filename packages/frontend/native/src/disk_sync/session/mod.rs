@@ -18,13 +18,13 @@ use tokio::{sync::Mutex, task::JoinHandle};
 use super::{
   DiskDocClock, DiskDocUpdateInput, DiskSessionOptions, DiskSyncDocUpdateEvent, DiskSyncEvent,
   frontmatter::{normalize_tags, parse_frontmatter, render_frontmatter},
-  root_meta::{build_root_meta_update, extract_all_root_meta, extract_root_meta_for_doc},
+  root_meta::{RootMetaUpdateError, build_root_meta_update, extract_all_root_meta, extract_root_meta_for_doc},
   state_db::StateDb,
   types::{FrontmatterMeta, SourceCheckpoint},
   utils::{
     collect_markdown_files, derive_title_from_markdown, derive_title_from_path, generate_missing_doc_id, hash_meta,
-    hash_string, is_empty_update, merge_frontend_update_binary, merge_root_update_binary, merge_update_binary,
-    now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_file,
+    hash_string, is_empty_update, markdown_merge_sources, merge_frontend_update_binary, merge_root_update_binary,
+    merge_update_binary, now_naive, paths_equal, same_update_state, sanitize_file_stem, write_new_file,
   },
 };
 
@@ -341,5 +341,6 @@ fn normalized_meta_for_file(doc_id: &str, path: &Path, meta: FrontmatterMeta, bo
     tags: normalize_tags(meta.tags),
     favorite: Some(meta.favorite.unwrap_or(false)),
     trash: Some(meta.trash.unwrap_or(false)),
+    extra: meta.extra,
   }
 }

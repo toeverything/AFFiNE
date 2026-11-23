@@ -227,7 +227,7 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
       if (!sourceId) return null;
       const blob = await host.store.blobSync.get(sourceId);
       if (!blob) return null;
-      return new File([blob], sourceId);
+      return new File([blob], sourceId, { type: blob.type });
     }) ?? []
   );
   return blobs.filter((blob): blob is File => !!blob);

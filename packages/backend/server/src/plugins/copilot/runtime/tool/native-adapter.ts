@@ -24,6 +24,9 @@ import {
 
 export type NativeProviderAdapterOptions = {
   maxSteps?: number;
+  formatDocumentFootnotes?: (
+    documents: DocSource[]
+  ) => string | Promise<string>;
   nodeTextMiddleware?: NodeTextMiddleware[];
   onUsage?: (input: {
     providerId: string;
@@ -39,6 +42,9 @@ type NativeStreamDispatch = ConstructorParameters<
 export class NativeProviderAdapter {
   readonly logger = new Logger(NativeProviderAdapter.name);
   readonly #runtime: NativeRuntimeAdapter;
+  readonly #formatDocumentFootnotes: NonNullable<
+    NativeProviderAdapterOptions['formatDocumentFootnotes']
+  >;
   readonly #enableCallout: boolean;
   readonly #enableCitationFootnote: boolean;
   readonly #onUsage?: NativeProviderAdapterOptions['onUsage'];
@@ -48,6 +54,8 @@ export class NativeProviderAdapter {
     options: NativeProviderAdapterOptions = {}
   ) {
     this.#runtime = new NativeRuntimeAdapter(dispatchWithTools);
+    this.#formatDocumentFootnotes =
+      options.formatDocumentFootnotes ?? formatDocumentFootnotes;
     const enabledNodeTextMiddlewares = new Set(
       options.nodeTextMiddleware ?? ['citation_footnote', 'callout']
     );
@@ -227,7 +235,9 @@ export class NativeProviderAdapter {
               })
             : '';
           const documents = documentFootnotes.size
-            ? formatDocumentFootnotes([...documentFootnotes.values()])
+            ? await this.#formatDocumentFootnotes([
+                ...documentFootnotes.values(),
+              ])
             : '';
           const tails = [citations, attachments, documents, footnotes]
             .filter(Boolean)
@@ -363,7 +373,7 @@ export class NativeProviderAdapter {
           if (fallbackDocumentFootnotes.size > 0) {
             yield {
               type: 'text-delta',
-              textDelta: formatDocumentFootnotes([
+              textDelta: await this.#formatDocumentFootnotes([
                 ...fallbackDocumentFootnotes.values(),
               ]),
             };

@@ -514,84 +514,96 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 public protocol DocStoragePoolProtocol: AnyObject, Sendable {
-
-    func clearClocks(universalId: String) async throws
-
-    func clearDocIndexedClock(universalId: String, docId: String) async throws
-
+    
+    func clearClocks(universalId: String) async throws 
+    
+    func clearDocIndexedClock(universalId: String, docId: String) async throws 
+    
+    func confirmPeerDocCreate(universalId: String, peer: String, docId: String) async throws 
+    
     /**
      * Initialize the database and run migrations.
      */
-    func connect(universalId: String, path: String) async throws
-
+    func connect(universalId: String, path: String) async throws 
+    
     func crawlDocData(universalId: String, docId: String) async throws  -> CrawlResult
-
-    func deleteBlob(universalId: String, key: String, permanently: Bool) async throws
-
-    func deleteDoc(universalId: String, docId: String) async throws
-
-    func disconnect(universalId: String) async throws
-
+    
+    func deleteBlob(universalId: String, key: String, permanently: Bool) async throws 
+    
+    func deleteDoc(universalId: String, docId: String) async throws 
+    
+    func disconnect(universalId: String) async throws 
+    
     func getBlob(universalId: String, key: String) async throws  -> Blob?
-
+    
     func getBlobUploadedAt(universalId: String, peer: String, blobId: String) async throws  -> Int64?
-
+    
     func getDoc(universalId: String, docId: String) async throws  -> DocRecord?
-
+    
     func getDocClock(universalId: String, docId: String) async throws  -> DocClock?
-
+    
     func getDocClocks(universalId: String, after: Int64?) async throws  -> [DocClock]
-
+    
+    func getDocDiff(universalId: String, docId: String, state: String?) async throws  -> DocDiff?
+    
     func getDocIndexedClock(universalId: String, docId: String) async throws  -> DocIndexedClock?
-
+    
     func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
-
+    
     func getPeerPulledRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
-
+    
     func getPeerPushedClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
-
+    
     func getPeerPushedClocks(universalId: String, peer: String) async throws  -> [DocClock]
-
+    
     func getPeerRemoteClock(universalId: String, peer: String, docId: String) async throws  -> DocClock?
-
+    
     func getPeerRemoteClocks(universalId: String, peer: String) async throws  -> [DocClock]
-
+    
+    func getPeerWorkspaceState(universalId: String, peer: String, rootDocId: String) async throws  -> String
+    
     func indexAggregate(universalId: String, table: String, query: String, field: String, limit: UInt32, offset: UInt32, hits: String?) async throws  -> IndexAggregateResult
-
-    func indexDelete(universalId: String, table: String, docId: String) async throws
-
+    
+    func indexDelete(universalId: String, table: String, docId: String) async throws 
+    
     func indexDeleteByQuery(universalId: String, table: String, query: String) async throws  -> UInt32
-
-    func indexFlush(universalId: String) async throws
-
+    
+    func indexFlush(universalId: String) async throws 
+    
     func indexSearch(universalId: String, table: String, query: String, options: String) async throws  -> IndexSearchResult
-
-    func indexUpsert(universalId: String, table: String, document: String) async throws
-
+    
+    func indexUpsert(universalId: String, table: String, document: String) async throws 
+    
     func indexVersion() async throws  -> UInt32
-
+    
+    func installPeerWorkspaceState(universalId: String, peer: String, rootDocId: String, cacheToken: Int64, docs: String, clocks: String) async throws  -> Bool
+    
+    func invalidatePeerWorkspaceState(universalId: String, peer: String, rootDocId: String) async throws 
+    
     func listBlobs(universalId: String) async throws  -> [ListedBlob]
-
-    func pushUpdate(universalId: String, docId: String, update: String) async throws  -> Int64
-
-    func releaseBlobs(universalId: String) async throws
-
-    func setBlob(universalId: String, blob: SetBlob) async throws
-
-    func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?) async throws
-
-    func setDocIndexedClock(universalId: String, clock: DocIndexedClock) async throws
-
-    func setDocIndexedClocks(universalId: String, clocks: [DocIndexedClock]) async throws
-
-    func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-    func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-    func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws
-
-    func setSpaceId(universalId: String, spaceId: String) async throws
-
+    
+    func mergeUpdates(updates: [String]) throws  -> String
+    
+    func pushUpdate(universalId: String, docId: String, update: String, createForPeer: String?) async throws  -> Int64
+    
+    func releaseBlobs(universalId: String) async throws 
+    
+    func setBlob(universalId: String, blob: SetBlob) async throws 
+    
+    func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?) async throws 
+    
+    func setDocIndexedClock(universalId: String, clock: DocIndexedClock) async throws 
+    
+    func setDocIndexedClocks(universalId: String, clocks: [DocIndexedClock]) async throws 
+    
+    func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64) async throws 
+    
+    func setSpaceId(universalId: String, spaceId: String) async throws 
+    
 }
 open class DocStoragePool: DocStoragePoolProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -642,9 +654,9 @@ open class DocStoragePool: DocStoragePoolProtocol, @unchecked Sendable {
         try! rustCall { uniffi_affine_mobile_native_fn_free_docstoragepool(pointer, $0) }
     }
 
+    
 
-
-
+    
 open func clearClocks(universalId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -661,7 +673,7 @@ open func clearClocks(universalId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func clearDocIndexedClock(universalId: String, docId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -678,7 +690,24 @@ open func clearDocIndexedClock(universalId: String, docId: String)async throws  
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
+open func confirmPeerDocCreate(universalId: String, peer: String, docId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_confirm_peer_doc_create(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(docId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
     /**
      * Initialize the database and run migrations.
      */
@@ -698,7 +727,7 @@ open func connect(universalId: String, path: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func crawlDocData(universalId: String, docId: String)async throws  -> CrawlResult  {
     return
         try  await uniffiRustCallAsync(
@@ -715,7 +744,7 @@ open func crawlDocData(universalId: String, docId: String)async throws  -> Crawl
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func deleteBlob(universalId: String, key: String, permanently: Bool)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -732,7 +761,7 @@ open func deleteBlob(universalId: String, key: String, permanently: Bool)async t
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func deleteDoc(universalId: String, docId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -749,7 +778,7 @@ open func deleteDoc(universalId: String, docId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func disconnect(universalId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -766,7 +795,7 @@ open func disconnect(universalId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getBlob(universalId: String, key: String)async throws  -> Blob?  {
     return
         try  await uniffiRustCallAsync(
@@ -783,7 +812,7 @@ open func getBlob(universalId: String, key: String)async throws  -> Blob?  {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getBlobUploadedAt(universalId: String, peer: String, blobId: String)async throws  -> Int64?  {
     return
         try  await uniffiRustCallAsync(
@@ -800,7 +829,7 @@ open func getBlobUploadedAt(universalId: String, peer: String, blobId: String)as
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getDoc(universalId: String, docId: String)async throws  -> DocRecord?  {
     return
         try  await uniffiRustCallAsync(
@@ -817,7 +846,7 @@ open func getDoc(universalId: String, docId: String)async throws  -> DocRecord? 
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getDocClock(universalId: String, docId: String)async throws  -> DocClock?  {
     return
         try  await uniffiRustCallAsync(
@@ -834,7 +863,7 @@ open func getDocClock(universalId: String, docId: String)async throws  -> DocClo
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getDocClocks(universalId: String, after: Int64?)async throws  -> [DocClock]  {
     return
         try  await uniffiRustCallAsync(
@@ -851,7 +880,24 @@ open func getDocClocks(universalId: String, after: Int64?)async throws  -> [DocC
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
+open func getDocDiff(universalId: String, docId: String, state: String?)async throws  -> DocDiff?  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_diff(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterOptionString.lower(state)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterOptionTypeDocDiff.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
 open func getDocIndexedClock(universalId: String, docId: String)async throws  -> DocIndexedClock?  {
     return
         try  await uniffiRustCallAsync(
@@ -868,7 +914,7 @@ open func getDocIndexedClock(universalId: String, docId: String)async throws  ->
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
     return
         try  await uniffiRustCallAsync(
@@ -885,7 +931,7 @@ open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: Str
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerPulledRemoteClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
     return
         try  await uniffiRustCallAsync(
@@ -902,7 +948,7 @@ open func getPeerPulledRemoteClocks(universalId: String, peer: String)async thro
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerPushedClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
     return
         try  await uniffiRustCallAsync(
@@ -919,7 +965,7 @@ open func getPeerPushedClock(universalId: String, peer: String, docId: String)as
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerPushedClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
     return
         try  await uniffiRustCallAsync(
@@ -936,7 +982,7 @@ open func getPeerPushedClocks(universalId: String, peer: String)async throws  ->
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerRemoteClock(universalId: String, peer: String, docId: String)async throws  -> DocClock?  {
     return
         try  await uniffiRustCallAsync(
@@ -953,7 +999,7 @@ open func getPeerRemoteClock(universalId: String, peer: String, docId: String)as
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func getPeerRemoteClocks(universalId: String, peer: String)async throws  -> [DocClock]  {
     return
         try  await uniffiRustCallAsync(
@@ -970,7 +1016,24 @@ open func getPeerRemoteClocks(universalId: String, peer: String)async throws  ->
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
+open func getPeerWorkspaceState(universalId: String, peer: String, rootDocId: String)async throws  -> String  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_workspace_state(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(rootDocId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_rust_buffer,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
+            liftFunc: FfiConverterString.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
 open func indexAggregate(universalId: String, table: String, query: String, field: String, limit: UInt32, offset: UInt32, hits: String?)async throws  -> IndexAggregateResult  {
     return
         try  await uniffiRustCallAsync(
@@ -987,7 +1050,7 @@ open func indexAggregate(universalId: String, table: String, query: String, fiel
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexDelete(universalId: String, table: String, docId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1004,7 +1067,7 @@ open func indexDelete(universalId: String, table: String, docId: String)async th
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexDeleteByQuery(universalId: String, table: String, query: String)async throws  -> UInt32  {
     return
         try  await uniffiRustCallAsync(
@@ -1021,7 +1084,7 @@ open func indexDeleteByQuery(universalId: String, table: String, query: String)a
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexFlush(universalId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1038,7 +1101,7 @@ open func indexFlush(universalId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexSearch(universalId: String, table: String, query: String, options: String)async throws  -> IndexSearchResult  {
     return
         try  await uniffiRustCallAsync(
@@ -1055,7 +1118,7 @@ open func indexSearch(universalId: String, table: String, query: String, options
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexUpsert(universalId: String, table: String, document: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1072,14 +1135,14 @@ open func indexUpsert(universalId: String, table: String, document: String)async
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func indexVersion()async throws  -> UInt32  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_affine_mobile_native_fn_method_docstoragepool_index_version(
                     self.uniffiClonePointer()
-
+                    
                 )
             },
             pollFunc: ffi_affine_mobile_native_rust_future_poll_u32,
@@ -1089,7 +1152,41 @@ open func indexVersion()async throws  -> UInt32  {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
+open func installPeerWorkspaceState(universalId: String, peer: String, rootDocId: String, cacheToken: Int64, docs: String, clocks: String)async throws  -> Bool  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_install_peer_workspace_state(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(rootDocId),FfiConverterInt64.lower(cacheToken),FfiConverterString.lower(docs),FfiConverterString.lower(clocks)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_i8,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_i8,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_i8,
+            liftFunc: FfiConverterBool.lift,
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
+open func invalidatePeerWorkspaceState(universalId: String, peer: String, rootDocId: String)async throws   {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_affine_mobile_native_fn_method_docstoragepool_invalidate_peer_workspace_state(
+                    self.uniffiClonePointer(),
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(peer),FfiConverterString.lower(rootDocId)
+                )
+            },
+            pollFunc: ffi_affine_mobile_native_rust_future_poll_void,
+            completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
+            freeFunc: ffi_affine_mobile_native_rust_future_free_void,
+            liftFunc: { $0 },
+            errorHandler: FfiConverterTypeUniffiError_lift
+        )
+}
+    
 open func listBlobs(universalId: String)async throws  -> [ListedBlob]  {
     return
         try  await uniffiRustCallAsync(
@@ -1106,14 +1203,22 @@ open func listBlobs(universalId: String)async throws  -> [ListedBlob]  {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
-open func pushUpdate(universalId: String, docId: String, update: String)async throws  -> Int64  {
+    
+open func mergeUpdates(updates: [String])throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeUniffiError_lift) {
+    uniffi_affine_mobile_native_fn_method_docstoragepool_merge_updates(self.uniffiClonePointer(),
+        FfiConverterSequenceString.lower(updates),$0
+    )
+})
+}
+    
+open func pushUpdate(universalId: String, docId: String, update: String, createForPeer: String?)async throws  -> Int64  {
     return
         try  await uniffiRustCallAsync(
             rustFutureFunc: {
                 uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(
                     self.uniffiClonePointer(),
-                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterString.lower(update)
+                    FfiConverterString.lower(universalId),FfiConverterString.lower(docId),FfiConverterString.lower(update),FfiConverterOptionString.lower(createForPeer)
                 )
             },
             pollFunc: ffi_affine_mobile_native_rust_future_poll_i64,
@@ -1123,7 +1228,7 @@ open func pushUpdate(universalId: String, docId: String, update: String)async th
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func releaseBlobs(universalId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1140,7 +1245,7 @@ open func releaseBlobs(universalId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setBlob(universalId: String, blob: SetBlob)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1157,7 +1262,7 @@ open func setBlob(universalId: String, blob: SetBlob)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setBlobUploadedAt(universalId: String, peer: String, blobId: String, uploadedAt: Int64?)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1174,7 +1279,7 @@ open func setBlobUploadedAt(universalId: String, peer: String, blobId: String, u
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setDocIndexedClock(universalId: String, clock: DocIndexedClock)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1191,7 +1296,7 @@ open func setDocIndexedClock(universalId: String, clock: DocIndexedClock)async t
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setDocIndexedClocks(universalId: String, clocks: [DocIndexedClock])async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1208,7 +1313,7 @@ open func setDocIndexedClocks(universalId: String, clocks: [DocIndexedClock])asy
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setPeerPulledRemoteClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1225,7 +1330,7 @@ open func setPeerPulledRemoteClock(universalId: String, peer: String, docId: Str
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setPeerPushedClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1242,7 +1347,7 @@ open func setPeerPushedClock(universalId: String, peer: String, docId: String, c
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setPeerRemoteClock(universalId: String, peer: String, docId: String, clock: Int64)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1259,7 +1364,7 @@ open func setPeerRemoteClock(universalId: String, peer: String, docId: String, c
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 open func setSpaceId(universalId: String, spaceId: String)async throws   {
     return
         try  await uniffiRustCallAsync(
@@ -1276,7 +1381,7 @@ open func setSpaceId(universalId: String, spaceId: String)async throws   {
             errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
-
+    
 
 }
 
@@ -1394,10 +1499,10 @@ public struct FfiConverterTypeBlob: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Blob {
         return
             try Blob(
-                key: FfiConverterString.read(from: &buf),
-                data: FfiConverterString.read(from: &buf),
-                mime: FfiConverterString.read(from: &buf),
-                size: FfiConverterInt64.read(from: &buf),
+                key: FfiConverterString.read(from: &buf), 
+                data: FfiConverterString.read(from: &buf), 
+                mime: FfiConverterString.read(from: &buf), 
+                size: FfiConverterInt64.read(from: &buf), 
                 createdAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -1512,14 +1617,14 @@ public struct FfiConverterTypeBlockInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlockInfo {
         return
             try BlockInfo(
-                blockId: FfiConverterString.read(from: &buf),
-                flavour: FfiConverterString.read(from: &buf),
-                content: FfiConverterOptionSequenceString.read(from: &buf),
-                blob: FfiConverterOptionSequenceString.read(from: &buf),
-                refDocId: FfiConverterOptionSequenceString.read(from: &buf),
-                refInfo: FfiConverterOptionSequenceString.read(from: &buf),
-                parentFlavour: FfiConverterOptionString.read(from: &buf),
-                parentBlockId: FfiConverterOptionString.read(from: &buf),
+                blockId: FfiConverterString.read(from: &buf), 
+                flavour: FfiConverterString.read(from: &buf), 
+                content: FfiConverterOptionSequenceString.read(from: &buf), 
+                blob: FfiConverterOptionSequenceString.read(from: &buf), 
+                refDocId: FfiConverterOptionSequenceString.read(from: &buf), 
+                refInfo: FfiConverterOptionSequenceString.read(from: &buf), 
+                parentFlavour: FfiConverterOptionString.read(from: &buf), 
+                parentBlockId: FfiConverterOptionString.read(from: &buf), 
                 additional: FfiConverterOptionString.read(from: &buf)
         )
     }
@@ -1602,8 +1707,8 @@ public struct FfiConverterTypeCrawlResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CrawlResult {
         return
             try CrawlResult(
-                blocks: FfiConverterSequenceTypeBlockInfo.read(from: &buf),
-                title: FfiConverterString.read(from: &buf),
+                blocks: FfiConverterSequenceTypeBlockInfo.read(from: &buf), 
+                title: FfiConverterString.read(from: &buf), 
                 summary: FfiConverterString.read(from: &buf)
         )
     }
@@ -1674,7 +1779,7 @@ public struct FfiConverterTypeDocClock: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocClock {
         return
             try DocClock(
-                docId: FfiConverterString.read(from: &buf),
+                docId: FfiConverterString.read(from: &buf), 
                 timestamp: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -1698,6 +1803,92 @@ public func FfiConverterTypeDocClock_lift(_ buf: RustBuffer) throws -> DocClock 
 #endif
 public func FfiConverterTypeDocClock_lower(_ value: DocClock) -> RustBuffer {
     return FfiConverterTypeDocClock.lower(value)
+}
+
+
+public struct DocDiff {
+    public var docId: String
+    public var missing: String
+    public var state: String
+    public var timestamp: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(docId: String, missing: String, state: String, timestamp: Int64) {
+        self.docId = docId
+        self.missing = missing
+        self.state = state
+        self.timestamp = timestamp
+    }
+}
+
+#if compiler(>=6)
+extension DocDiff: Sendable {}
+#endif
+
+
+extension DocDiff: Equatable, Hashable {
+    public static func ==(lhs: DocDiff, rhs: DocDiff) -> Bool {
+        if lhs.docId != rhs.docId {
+            return false
+        }
+        if lhs.missing != rhs.missing {
+            return false
+        }
+        if lhs.state != rhs.state {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(docId)
+        hasher.combine(missing)
+        hasher.combine(state)
+        hasher.combine(timestamp)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDocDiff: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocDiff {
+        return
+            try DocDiff(
+                docId: FfiConverterString.read(from: &buf), 
+                missing: FfiConverterString.read(from: &buf), 
+                state: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DocDiff, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.docId, into: &buf)
+        FfiConverterString.write(value.missing, into: &buf)
+        FfiConverterString.write(value.state, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDocDiff_lift(_ buf: RustBuffer) throws -> DocDiff {
+    return try FfiConverterTypeDocDiff.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDocDiff_lower(_ value: DocDiff) -> RustBuffer {
+    return FfiConverterTypeDocDiff.lower(value)
 }
 
 
@@ -1750,8 +1941,8 @@ public struct FfiConverterTypeDocIndexedClock: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocIndexedClock {
         return
             try DocIndexedClock(
-                docId: FfiConverterString.read(from: &buf),
-                timestamp: FfiConverterInt64.read(from: &buf),
+                docId: FfiConverterString.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf), 
                 indexerVersion: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -1828,8 +2019,8 @@ public struct FfiConverterTypeDocRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocRecord {
         return
             try DocRecord(
-                docId: FfiConverterString.read(from: &buf),
-                bin: FfiConverterString.read(from: &buf),
+                docId: FfiConverterString.read(from: &buf), 
+                bin: FfiConverterString.read(from: &buf), 
                 timestamp: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -1900,7 +2091,7 @@ public struct FfiConverterTypeIndexAggregateResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexAggregateResult {
         return
             try IndexAggregateResult(
-                total: FfiConverterUInt32.read(from: &buf),
+                total: FfiConverterUInt32.read(from: &buf), 
                 buckets: FfiConverterSequenceTypeIndexBucket.read(from: &buf)
         )
     }
@@ -1982,9 +2173,9 @@ public struct FfiConverterTypeIndexBucket: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexBucket {
         return
             try IndexBucket(
-                key: FfiConverterString.read(from: &buf),
-                count: FfiConverterUInt32.read(from: &buf),
-                score: FfiConverterDouble.read(from: &buf),
+                key: FfiConverterString.read(from: &buf), 
+                count: FfiConverterUInt32.read(from: &buf), 
+                score: FfiConverterDouble.read(from: &buf), 
                 hits: FfiConverterSequenceTypeIndexHit.read(from: &buf)
         )
     }
@@ -2056,7 +2247,7 @@ public struct FfiConverterTypeIndexField: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexField {
         return
             try IndexField(
-                field: FfiConverterString.read(from: &buf),
+                field: FfiConverterString.read(from: &buf), 
                 values: FfiConverterSequenceString.read(from: &buf)
         )
     }
@@ -2126,7 +2317,7 @@ public struct FfiConverterTypeIndexHighlight: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexHighlight {
         return
             try IndexHighlight(
-                field: FfiConverterString.read(from: &buf),
+                field: FfiConverterString.read(from: &buf), 
                 values: FfiConverterSequenceTypeIndexHighlightValue.read(from: &buf)
         )
     }
@@ -2196,7 +2387,7 @@ public struct FfiConverterTypeIndexHighlightValue: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexHighlightValue {
         return
             try IndexHighlightValue(
-                valueIndex: FfiConverterUInt32.read(from: &buf),
+                valueIndex: FfiConverterUInt32.read(from: &buf), 
                 spans: FfiConverterSequenceTypeIndexSpan.read(from: &buf)
         )
     }
@@ -2278,9 +2469,9 @@ public struct FfiConverterTypeIndexHit: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexHit {
         return
             try IndexHit(
-                id: FfiConverterString.read(from: &buf),
-                score: FfiConverterDouble.read(from: &buf),
-                fields: FfiConverterSequenceTypeIndexField.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                score: FfiConverterDouble.read(from: &buf), 
+                fields: FfiConverterSequenceTypeIndexField.read(from: &buf), 
                 highlights: FfiConverterSequenceTypeIndexHighlight.read(from: &buf)
         )
     }
@@ -2352,7 +2543,7 @@ public struct FfiConverterTypeIndexSearchResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexSearchResult {
         return
             try IndexSearchResult(
-                total: FfiConverterUInt32.read(from: &buf),
+                total: FfiConverterUInt32.read(from: &buf), 
                 hits: FfiConverterSequenceTypeIndexHit.read(from: &buf)
         )
     }
@@ -2422,7 +2613,7 @@ public struct FfiConverterTypeIndexSpan: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IndexSpan {
         return
             try IndexSpan(
-                start: FfiConverterUInt32.read(from: &buf),
+                start: FfiConverterUInt32.read(from: &buf), 
                 end: FfiConverterUInt32.read(from: &buf)
         )
     }
@@ -2504,9 +2695,9 @@ public struct FfiConverterTypeListedBlob: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListedBlob {
         return
             try ListedBlob(
-                key: FfiConverterString.read(from: &buf),
-                size: FfiConverterInt64.read(from: &buf),
-                mime: FfiConverterString.read(from: &buf),
+                key: FfiConverterString.read(from: &buf), 
+                size: FfiConverterInt64.read(from: &buf), 
+                mime: FfiConverterString.read(from: &buf), 
                 createdAt: FfiConverterInt64.read(from: &buf)
         )
     }
@@ -2584,8 +2775,8 @@ public struct FfiConverterTypeSetBlob: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SetBlob {
         return
             try SetBlob(
-                key: FfiConverterString.read(from: &buf),
-                data: FfiConverterString.read(from: &buf),
+                key: FfiConverterString.read(from: &buf), 
+                data: FfiConverterString.read(from: &buf), 
                 mime: FfiConverterString.read(from: &buf)
         )
     }
@@ -2615,8 +2806,8 @@ public func FfiConverterTypeSetBlob_lower(_ value: SetBlob) -> RustBuffer {
 
 public enum UniffiError: Swift.Error {
 
-
-
+    
+    
     case Err(String
     )
     case Base64DecodingError(String
@@ -2635,9 +2826,9 @@ public struct FfiConverterTypeUniffiError: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
 
+        
 
-
-
+        
         case 1: return .Err(
             try FfiConverterString.read(from: &buf)
             )
@@ -2653,23 +2844,23 @@ public struct FfiConverterTypeUniffiError: FfiConverterRustBuffer {
     public static func write(_ value: UniffiError, into buf: inout [UInt8]) {
         switch value {
 
+        
 
-
-
-
+        
+        
         case let .Err(v1):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(v1, into: &buf)
-
-
+            
+        
         case let .Base64DecodingError(v1):
             writeInt(&buf, Int32(2))
             FfiConverterString.write(v1, into: &buf)
-
-
+            
+        
         case .TimestampDecodingError:
             writeInt(&buf, Int32(3))
-
+        
         }
     }
 }
@@ -2819,6 +3010,30 @@ fileprivate struct FfiConverterOptionTypeDocClock: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeDocClock.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeDocDiff: FfiConverterRustBuffer {
+    typealias SwiftType = DocDiff?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDocDiff.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDocDiff.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -3283,6 +3498,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_doc_indexed_clock() != 61151) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_confirm_peer_doc_create() != 26473) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_connect() != 19047) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3313,6 +3531,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks() != 46082) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_diff() != 22717) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_indexed_clock() != 17668) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3332,6 +3553,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks() != 14523) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_workspace_state() != 59705) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_index_aggregate() != 55736) {
@@ -3355,10 +3579,19 @@ private let initializationResult: InitializationResult = {
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_index_version() != 60393) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_install_peer_workspace_state() != 44437) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_invalidate_peer_workspace_state() != 39671) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs() != 6777) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 20688) {
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_merge_updates() != 49313) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 60089) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_affine_mobile_native_checksum_method_docstoragepool_release_blobs() != 2203) {

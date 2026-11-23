@@ -1,10 +1,13 @@
 import path from 'node:path';
 
-import { DocStorage, ValidationResult } from '@affine/native';
+import {
+  DocStorage,
+  parseWorkspaceRootDocMeta,
+  ValidationResult,
+} from '@affine/native';
 import { parseUniversalId } from '@affine/nbstore';
 import fs from 'fs-extra';
 import { nanoid } from 'nanoid';
-import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import {
   normalizeWorkspaceIdForPath,
@@ -23,6 +26,17 @@ import {
   getWorkspaceDBPath,
   getWorkspaceMeta,
 } from './meta';
+
+// On Windows a SQLite file can stay locked for a moment after its connection
+// is closed, so removing its directory needs a few retries.
+async function removeWorkspaceDir(dir: string) {
+  await fs.rm(dir, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100,
+  });
+}
 
 async function deleteWorkspaceV1(workspaceId: string) {
   try {
@@ -44,7 +58,7 @@ export async function deleteWorkspace(universalId: string) {
   const dbPath = await getSpaceDBPath(peer, type, id);
   try {
     await getDocStoragePool().disconnect(universalId);
-    await fs.remove(path.dirname(dbPath));
+    await removeWorkspaceDir(path.dirname(dbPath));
   } catch (e) {
     logger.error('deleteWorkspace', e);
   }
@@ -75,7 +89,10 @@ export async function trashWorkspace(universalId: string) {
     await fs.copy(path.dirname(dbPath), movedPath, {
       overwrite: true,
     });
-    await fs.remove(path.dirname(dbPath));
+    // If the original still cannot be removed, it stays hidden from
+    // listLocalWorkspaceIds while its backup exists and is removed together
+    // with the backup in deleteBackupWorkspace.
+    await removeWorkspaceDir(path.dirname(dbPath));
   } catch (error) {
     logger.error('trashWorkspace', error);
   }
@@ -155,15 +172,18 @@ async function getWorkspaceDocMetaV1(
     await db.init();
     await db.checkpoint();
     const meta = await db.getWorkspaceMeta();
+    if (meta.pageCount == null) {
+      return null;
+    }
     const dbFileSize = await fs.stat(dbPath);
     return {
       id: workspaceId,
-      name: meta.name,
-      avatar: await db.getBlob(meta.avatar),
+      name: meta.name ?? '',
+      avatar: meta.avatar ? await db.getBlob(meta.avatar) : null,
       fileSize: dbFileSize.size,
       updatedAt: dbFileSize.mtime,
       createdAt: dbFileSize.birthtime,
-      docCount: meta.pages.length,
+      docCount: meta.pageCount,
       dbPath,
     };
   } catch {
@@ -181,26 +201,25 @@ async function getWorkspaceDocMeta(
     const { snapshot, updates: pendingUpdates } =
       await pool.readDocRecordsReadonly(dbPath, workspaceId);
     if (snapshot || pendingUpdates.length) {
-      const ydoc = new YDoc();
-      if (snapshot) {
-        applyUpdate(ydoc, snapshot.bin);
+      const meta = parseWorkspaceRootDocMeta([
+        ...(snapshot ? [snapshot.bin] : []),
+        ...pendingUpdates.map(update => update.bin),
+      ]);
+      if (meta.pageCount == null) {
+        throw new Error('Missing workspace pages metadata');
       }
-      pendingUpdates.forEach(update => {
-        applyUpdate(ydoc, update.bin);
-      });
-      const meta = ydoc.getMap('meta').toJSON();
       const dbFileStat = await fs.stat(dbPath);
       const blob = meta.avatar
         ? await pool.readBlobReadonly(dbPath, meta.avatar)
         : null;
       return {
         id: workspaceId,
-        name: meta.name,
+        name: meta.name ?? '',
         avatar: blob ? blob.data : null,
         fileSize: dbFileStat.size,
         updatedAt: dbFileStat.mtime,
         createdAt: dbFileStat.birthtime,
-        docCount: meta.pages.length,
+        docCount: meta.pageCount,
         dbPath,
       };
     }
@@ -318,6 +337,14 @@ async function importWorkspaceDb(originalPath: string) {
 }
 
 export async function deleteBackupWorkspace(id: string) {
+  // Remove what trashWorkspace could not remove before the backup that hides
+  // it, so a failure keeps the workspace in the backup list instead of bringing
+  // it back as a local workspace.
+  const leftoverPath = path.dirname(
+    await getSpaceDBPath('local', 'workspace', id)
+  );
+  await removeWorkspaceDir(leftoverPath);
+
   const basePath = await getDeletedWorkspacesBasePath();
   const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
   await fs.remove(workspacePath);

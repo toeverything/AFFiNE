@@ -1,18 +1,31 @@
 import 'fake-indexeddb/auto';
 
+import { readFileSync } from 'node:fs';
+
 import * as reader from '@affine/reader';
-import { OpConsumer } from '@toeverything/infra/op';
-import { firstValueFrom, NEVER } from 'rxjs';
+import { OpClient, OpConsumer } from '@toeverything/infra/op';
+import { BehaviorSubject, firstValueFrom, NEVER } from 'rxjs';
 import { afterEach, expect, test, vi } from 'vitest';
-import { Doc as YDoc, encodeStateAsUpdate, encodeStateVector } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  encodeStateVector,
+  Map as YMap,
+  mergeUpdates,
+} from 'yjs';
 
 import { DummyConnection } from '../connection';
+import { DocFrontend } from '../frontend/doc';
 import {
   IndexedDBBlobStorage,
   IndexedDBBlobSyncStorage,
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
+  IndexedDBIndexerStorage,
 } from '../impls/idb';
+import { IndexedDBV1DocStorage } from '../impls/idb/v1';
 import {
   type AggregateOptions,
   type AggregateResult,
@@ -24,14 +37,17 @@ import {
   type DocRecord,
   type DocStorage,
   type DocUpdate,
-  type IndexerDocument,
+  IndexerDocument,
   type IndexerSchema,
+  type IndexerStorage,
   IndexerStorageBase,
   IndexerSyncStorageBase,
+  type PeerWorkspaceState,
   type Query,
   type SearchOptions,
   type SearchResult,
   SpaceStorage,
+  type WorkspaceState,
 } from '../storage';
 import { DummyAwarenessStorage } from '../storage/dummy/awareness';
 import { DummyBlobStorage } from '../storage/dummy/blob';
@@ -39,10 +55,16 @@ import { DummyBlobSyncStorage } from '../storage/dummy/blob-sync';
 import { Sync } from '../sync';
 import { BlobSyncImpl } from '../sync/blob';
 import { BlobSyncPeer } from '../sync/blob/peer';
+import { DocSyncImpl } from '../sync/doc';
 import { DocSyncPeer } from '../sync/doc/peer';
 import { IndexerSyncImpl } from '../sync/indexer';
+import { StoreClient } from '../worker/client';
 import { StoreManagerConsumer } from '../worker/consumer';
-import type { StoreInitOptions, WorkerManagerOps } from '../worker/ops';
+import type {
+  StoreInitOptions,
+  WorkerManagerOps,
+  WorkerOps,
+} from '../worker/ops';
 import { StoreConsumer } from '../worker/store';
 import { expectYjsEqual } from './utils';
 
@@ -400,7 +422,9 @@ test.each(['persistent', 'connection'] as const)(
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     {
-      expect(remoteDiff.mock.calls[0]?.[0]).toBe(workspaceId);
+      expect(remoteDiff.mock.calls.some(([id]) => id === workspaceId)).toBe(
+        true
+      );
       const b = await peerB.get('doc').getDoc('doc1');
       expectYjsEqual(b!.bin, {
         test: {
@@ -619,182 +643,384 @@ test('blob', async () => {
   expect((await a.get('retry'))?.data).toEqual(new Uint8Array([1, 2, 3]));
 });
 
-test('doc sync peer stops retrying a doc when remote denies permission', async () => {
-  const local = new IndexedDBDocStorage({
-    id: 'ws-denied',
-    flavour: 'local-denied',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id: 'ws-denied',
-    flavour: 'local-denied',
-    type: 'workspace',
-  });
-  const remote = new PermissionDeniedRemoteDocStorage('ws-denied');
-  const peer = new DocSyncPeer('remote-denied', local, syncMetadata, remote);
-  const abort = new AbortController();
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  await local.connection.waitForConnected();
-  await syncMetadata.connection.waitForConnected();
-
-  const doc = new YDoc();
-  doc.getMap('test').set('hello', 'world');
-  await local.pushDocUpdate({
-    docId: 'doc-denied',
-    bin: encodeStateAsUpdate(doc),
-  });
-
-  try {
-    void peer.mainLoop(abort.signal);
-
-    await vi.waitFor(() => {
-      expect(remote.pushCount).toBe(1);
+test.each([
+  'permission',
+  'local',
+  'remote',
+  'snapshot',
+  'readonly',
+  'partial',
+] as const)(
+  'doc sync peer isolates errors and recovers %s sources',
+  async mode => {
+    const options = { id: `ws-recovery-${mode}`, type: 'workspace' as const };
+    const local = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'recovery-local',
     });
-
-    await vi.waitFor(() => {
-      let state:
-        | {
-            syncing: boolean;
-            synced: boolean;
-            retrying: boolean;
-            errorMessage: string | null;
-          }
-        | undefined;
-      const dispose = peer.docState$('doc-denied').subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-
-      expect(state).toMatchObject({
-        syncing: false,
-        synced: false,
-        retrying: false,
-        errorMessage: expect.stringContaining('No permission'),
-      });
+    const syncMetadata = new IndexedDBDocSyncStorage({
+      ...options,
+      flavour: 'recovery-local',
     });
-
-    await vi.waitFor(() => {
-      let state:
-        | {
-            synced: boolean;
-            errorMessage: string | null;
-          }
-        | undefined;
-      const dispose = peer.peerState$.subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-
-      expect(state).toMatchObject({
-        synced: false,
-        errorMessage: expect.stringContaining('No permission'),
-      });
+    const remote = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'recovery-remote',
+      readonlyMode: mode === 'readonly',
     });
+    const peer = new DocSyncPeer('remote', local, syncMetadata, remote);
+    const abort = new AbortController();
+    const doc = new YDoc();
+    const remoteEditor = new YDoc();
+    const pending = new YDoc();
+    const entered = deferred();
+    const release = deferred();
+    let hold = false;
+    let broken = mode !== 'permission' && mode !== 'snapshot';
+    let running: Promise<void> | undefined;
 
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    expect(remote.pushCount).toBe(1);
-  } finally {
-    abort.abort();
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-  }
-});
-
-test('Markdown review pauses only its doc and resumes after source acceptance', async () => {
-  const local = new IndexedDBDocStorage({
-    id: 'ws-disk-review',
-    flavour: 'local-disk-review',
-    type: 'workspace',
-  });
-  const syncMetadata = new IndexedDBDocSyncStorage({
-    id: 'ws-disk-review',
-    flavour: 'local-disk-review',
-    type: 'workspace',
-  });
-  const remote = new TestDocStorage(
-    'ws-disk-review',
-    new Map(),
-    async () => null
-  );
-  const pushRemote = remote.pushDocUpdate.bind(remote);
-  let needsReview = true;
-  const push = vi
-    .spyOn(remote, 'pushDocUpdate')
-    .mockImplementation((update, origin) => {
-      if (update.docId === 'doc-review' && needsReview) {
-        const error = new Error('Review Markdown source candidate');
-        error.name = 'DISK_SOURCE_REVIEW_REQUIRED';
-        throw error;
-      }
-      return pushRemote(update, origin);
-    });
-  const peer = new DocSyncPeer('disk-review', local, syncMetadata, remote);
-  const abort = new AbortController();
-
-  local.connection.connect();
-  syncMetadata.connection.connect();
-  await Promise.all([
-    local.connection.waitForConnected(),
-    syncMetadata.connection.waitForConnected(),
-  ]);
-  const doc = new YDoc();
-  doc.getMap('test').set('value', 1);
-  for (const docId of ['doc-review', 'doc-healthy']) {
-    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
-  }
-
-  const running = peer.mainLoop(abort.signal);
-  try {
-    await vi.waitFor(async () => {
-      expect(await remote.getDocTimestamp('doc-healthy')).not.toBeNull();
-      let state: { errorMessage: string | null; retrying: boolean } | undefined;
-      const dispose = peer.docState$('doc-review').subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-      expect(state?.errorMessage).toContain('Review Markdown source candidate');
-      expect(state?.retrying).toBe(false);
-    });
-
-    const attempts = push.mock.calls.filter(
-      ([update]) => update.docId === 'doc-review'
-    ).length;
-    doc.getMap('test').set('value', 2);
-    await local.pushDocUpdate({
-      docId: 'doc-review',
-      bin: encodeStateAsUpdate(doc),
-    });
-    await vi.waitFor(() => {
-      expect(
-        push.mock.calls.filter(([update]) => update.docId === 'doc-review')
-          .length
-      ).toBeGreaterThan(attempts);
-    });
-
-    needsReview = false;
-    await pushRemote(
-      { docId: 'doc-review', bin: new Uint8Array([0, 0]) },
-      'disk:source-discovered'
+    for (const storage of [local, syncMetadata, remote])
+      storage.connection.connect();
+    await Promise.all(
+      [local, syncMetadata, remote].map(storage =>
+        storage.connection.waitForConnected()
+      )
     );
-    await vi.waitFor(async () => {
-      expect(await remote.getDocTimestamp('doc-review')).not.toBeNull();
-      let state: { errorMessage: string | null; synced: boolean } | undefined;
-      const dispose = peer.docState$('doc-review').subscribe(next => {
-        state = next;
-      });
-      dispose.unsubscribe();
-      expect(state).toMatchObject({ errorMessage: null, synced: true });
+    const publish = remote.pushDocUpdate.bind(remote);
+    const pushes = vi.spyOn(remote, 'pushDocUpdate');
+    const getRemote = remote.getDocDiff.bind(remote);
+    vi.spyOn(remote, 'getDocDiff').mockImplementation(async (id, state) => {
+      if (id === 'doc-recover') {
+        if (mode === 'permission') {
+          throw Object.assign(new Error('No permission'), {
+            name: 'DOC_ACTION_DENIED',
+          });
+        }
+        if (hold) {
+          hold = false;
+          entered.resolve();
+          await release.promise;
+        }
+      }
+      return getRemote(id, state);
     });
-  } finally {
-    abort.abort();
-    await running;
-    local.connection.disconnect();
-    syncMetadata.connection.disconnect();
-    doc.destroy();
+    const getLocal = local.getDoc.bind(local);
+    const localReads = vi.spyOn(local, 'getDoc').mockImplementation(id => {
+      if (id === 'doc-recover' && broken) throw new Error('invalid_binary');
+      return getLocal(id);
+    });
+
+    try {
+      doc.getMap('test').set('hello', 'world');
+      const initial = encodeStateAsUpdate(doc);
+      applyUpdate(remoteEditor, initial);
+      await local.pushDocUpdate({ docId: 'doc-recover', bin: initial });
+      await local.pushDocUpdate({ docId: 'doc-good', bin: initial });
+      await publish({ docId: 'doc-recover', bin: initial });
+      await publish({ docId: 'doc-good', bin: initial });
+      if (mode === 'snapshot') {
+        const transaction = local.db.transaction(
+          ['snapshots', 'updates'],
+          'readwrite'
+        );
+        await transaction.objectStore('snapshots').put({
+          docId: 'doc-recover',
+          bin: new Uint8Array([255]),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        for (const update of await transaction
+          .objectStore('updates')
+          .index('docId')
+          .getAll('doc-recover')) {
+          await transaction
+            .objectStore('updates')
+            .delete([update.docId, update.createdAt]);
+        }
+        await transaction.done;
+      }
+      if (mode === 'partial') {
+        pending.getMap('pending').set('prefix', true);
+        const state = encodeStateVector(pending);
+        pending.getMap('pending').set('tail', true);
+        pending.getMap('pending').delete('prefix');
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(pending, state),
+        });
+      }
+      running = peer.mainLoop(abort.signal);
+      await vi.waitFor(async () => {
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
+          syncing: false,
+          synced: false,
+          retrying: false,
+          errorMessage: expect.stringContaining(
+            mode === 'permission' ? 'No permission' : 'invalid_binary'
+          ),
+        });
+        expect(await firstValueFrom(peer.docState$('doc-good'))).toMatchObject({
+          synced: true,
+        });
+      });
+      expect(await firstValueFrom(peer.peerState$)).toMatchObject({
+        synced: false,
+      });
+
+      if (mode === 'readonly') {
+        // Empty client state takes the raw remote path; its state vector alone
+        // cannot detect this truncated delete set.
+        for (const storage of [local, remote]) {
+          const transaction = storage.db.transaction(
+            ['snapshots', 'updates'],
+            'readwrite'
+          );
+          await transaction.objectStore('snapshots').delete('doc-recover');
+          for (const update of await transaction
+            .objectStore('updates')
+            .index('docId')
+            .getAll('doc-recover')) {
+            await transaction
+              .objectStore('updates')
+              .delete([update.docId, update.createdAt]);
+          }
+          await transaction.done;
+        }
+        await remote.db.put('snapshots', {
+          docId: 'doc-recover',
+          bin: new Uint8Array([0, 1]),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        broken = false;
+        await publish({ docId: 'doc-recover', bin: new Uint8Array([0, 0]) });
+        await vi.waitFor(async () => {
+          expect((await getLocal('doc-recover'))?.bin).toEqual(
+            new Uint8Array([0, 1])
+          );
+          expect(
+            await firstValueFrom(peer.docState$('doc-recover'))
+          ).toMatchObject({
+            syncing: false,
+            synced: false,
+            errorMessage: 'invalid_binary',
+          });
+        });
+        broken = true;
+        await local.db.delete('snapshots', 'doc-recover');
+        await remote.db.delete('snapshots', 'doc-recover');
+      }
+
+      const readsBeforeRetry = localReads.mock.calls.filter(
+        ([id]) => id === 'doc-recover'
+      ).length;
+      doc.getMap('test').set('duringError', true);
+      await local.pushDocUpdate({
+        docId: 'doc-recover',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(async () => {
+        if (mode !== 'permission') {
+          expect(
+            localReads.mock.calls.filter(([id]) => id === 'doc-recover').length
+          ).toBeGreaterThan(readsBeforeRetry);
+        }
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
+          syncing: false,
+          synced: false,
+          errorMessage: expect.stringContaining(
+            mode === 'permission' ? 'No permission' : 'invalid_binary'
+          ),
+        });
+      });
+      if (mode === 'permission') {
+        await publish({ docId: 'doc-recover', bin: initial });
+        expect(
+          pushes.mock.calls.filter(([update]) => update.docId === 'doc-recover')
+        ).toHaveLength(0);
+        return;
+      }
+      if (mode === 'snapshot') {
+        // Preserve edits made while paused; remove only the injected corrupt snapshot.
+        await local.db.delete('snapshots', 'doc-recover');
+      }
+      broken = false;
+      if (mode === 'local') {
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(doc),
+        });
+      } else {
+        hold = true;
+        remoteEditor.getMap('test').set('remoteRepair', true);
+        await publish({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(remoteEditor),
+        });
+        await entered.promise;
+        doc.getMap('test').set('duringRecovery', true);
+        await local.pushDocUpdate({
+          docId: 'doc-recover',
+          bin: encodeStateAsUpdate(doc),
+        });
+        release.resolve();
+      }
+      await vi.waitFor(async () => {
+        expect(
+          await firstValueFrom(peer.docState$('doc-recover'))
+        ).toMatchObject({
+          synced: true,
+          errorMessage: null,
+        });
+      });
+      doc.getMap('test').set('afterRecovery', true);
+      await local.pushDocUpdate({
+        docId: 'doc-recover',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(async () => {
+        const actual = new YDoc();
+        try {
+          applyUpdate(actual, (await remote.getDoc('doc-recover'))!.bin);
+          expect(actual.getMap('test').get('duringError')).toBe(
+            mode === 'readonly' ? undefined : true
+          );
+          expect(actual.getMap('test').get('afterRecovery')).toBe(
+            mode === 'readonly' ? undefined : true
+          );
+          if (mode !== 'local' && mode !== 'readonly')
+            expect(actual.getMap('test').get('duringRecovery')).toBe(true);
+          if (mode === 'partial') {
+            expect(actual.store.pendingStructs).not.toBeNull();
+            expect(actual.store.pendingDs).not.toBeNull();
+          }
+        } finally {
+          actual.destroy();
+        }
+      });
+      if (mode === 'readonly') {
+        expect(pushes).not.toHaveBeenCalled();
+      }
+    } finally {
+      release.resolve();
+      abort.abort();
+      await running;
+      doc.destroy();
+      remoteEditor.destroy();
+      pending.destroy();
+      for (const storage of [local, syncMetadata, remote])
+        storage.connection.disconnect();
+    }
   }
-});
+);
+
+test.each(['DISK_SOURCE_REVIEW_REQUIRED', 'DISK_SOURCE_EXPORT_FAILED'])(
+  'source %s pauses only its doc and resumes after source acceptance',
+  async errorName => {
+    const local = new IndexedDBDocStorage({
+      id: 'ws-disk-review',
+      flavour: 'local-disk-review',
+      type: 'workspace',
+    });
+    const syncMetadata = new IndexedDBDocSyncStorage({
+      id: 'ws-disk-review',
+      flavour: 'local-disk-review',
+      type: 'workspace',
+    });
+    const remote = new TestDocStorage(
+      'ws-disk-review',
+      new Map(),
+      async () => null
+    );
+    const pushRemote = remote.pushDocUpdate.bind(remote);
+    let needsReview = true;
+    const push = vi
+      .spyOn(remote, 'pushDocUpdate')
+      .mockImplementation((update, origin) => {
+        if (update.docId === 'doc-review' && needsReview) {
+          const error = new Error('Review Markdown source candidate');
+          error.name = errorName;
+          throw error;
+        }
+        return pushRemote(update, origin);
+      });
+    const peer = new DocSyncPeer('disk-review', local, syncMetadata, remote);
+    const abort = new AbortController();
+
+    local.connection.connect();
+    syncMetadata.connection.connect();
+    await Promise.all([
+      local.connection.waitForConnected(),
+      syncMetadata.connection.waitForConnected(),
+    ]);
+    const doc = new YDoc();
+    doc.getMap('test').set('value', 1);
+    for (const docId of ['doc-review', 'doc-healthy']) {
+      await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(doc) });
+    }
+
+    const running = peer.mainLoop(abort.signal);
+    try {
+      await vi.waitFor(async () => {
+        expect(await remote.getDocTimestamp('doc-healthy')).not.toBeNull();
+        let state:
+          | { errorMessage: string | null; retrying: boolean }
+          | undefined;
+        const dispose = peer.docState$('doc-review').subscribe(next => {
+          state = next;
+        });
+        dispose.unsubscribe();
+        expect(state?.errorMessage).toContain(
+          'Review Markdown source candidate'
+        );
+        expect(state?.retrying).toBe(false);
+      });
+
+      expect((await firstValueFrom(peer.peerState$)).error).toMatchObject({
+        docId: 'doc-review',
+        name: errorName,
+      });
+      const attempts = push.mock.calls.filter(
+        ([update]) => update.docId === 'doc-review'
+      ).length;
+      doc.getMap('test').set('value', 2);
+      await local.pushDocUpdate({
+        docId: 'doc-review',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await vi.waitFor(() => {
+        expect(
+          push.mock.calls.filter(([update]) => update.docId === 'doc-review')
+            .length
+        ).toBeGreaterThan(attempts);
+      });
+
+      needsReview = false;
+      await pushRemote(
+        { docId: 'doc-review', bin: new Uint8Array([0, 0]) },
+        'disk:source-discovered'
+      );
+      await vi.waitFor(async () => {
+        expect(await remote.getDocTimestamp('doc-review')).not.toBeNull();
+        let state: { errorMessage: string | null; synced: boolean } | undefined;
+        const dispose = peer.docState$('doc-review').subscribe(next => {
+          state = next;
+        });
+        dispose.unsubscribe();
+        expect(state).toMatchObject({ errorMessage: null, synced: true });
+      });
+    } finally {
+      abort.abort();
+      await running;
+      local.connection.disconnect();
+      syncMetadata.connection.disconnect();
+      doc.destroy();
+    }
+  }
+);
 
 test('doc sync peer stops retrying when remote connection denies permission', async () => {
   const local = new IndexedDBDocStorage({
@@ -908,126 +1134,481 @@ test('doc sync peer resolves on terminal permission error without abort signal',
   }
 });
 
-test('indexer defers indexed clock persistence until a refresh happens on delayed refresh storages', async () => {
-  const calls: string[] = [];
-  const docsInRootDoc = new Map([['doc1', { title: 'Doc 1' }]]);
-  const docStorage = new TestDocStorage(
-    'workspace-id',
-    new Map([['doc1', new Date('2026-01-01T00:00:00.000Z')]]),
-    async () => ({
-      title: 'Doc 1',
-      summary: 'summary',
-      blocks: [
-        { blockId: 'block-1', flavour: 'affine:image', blob: ['blob-1'] },
-      ],
-    })
-  );
-  const indexer = new TrackingIndexerStorage(calls, 30_000);
-  const update = vi.spyOn(indexer, 'update');
-  const indexerSyncStorage = new TrackingIndexerSyncStorage(calls);
-  const sync = new IndexerSyncImpl(
-    docStorage,
-    {
-      local: indexer,
-      remotes: {},
-    },
-    indexerSyncStorage
-  );
-
-  vi.spyOn(reader, 'readAllDocsFromRootDoc').mockImplementation(
-    () => new Map(docsInRootDoc)
-  );
-
-  try {
-    sync.start();
-    await sync.waitForCompleted();
-
-    const docUpdate = update.mock.calls.find(([table]) => table === 'doc');
-    expect(docUpdate).toBeDefined();
-    expect([...(docUpdate?.[1].fields ?? [])]).toEqual(
-      expect.arrayContaining([
-        ['docId', ['doc1']],
-        ['title', ['Doc 1']],
-        ['summary', ['summary']],
-      ])
-    );
-    expect(calls).not.toContain('setClock:doc1');
-
-    await sync.stop();
-
-    await vi.waitFor(() => {
-      expect(calls).toContain('setClock:doc1');
-    });
-
-    const lastRefreshIndex = calls.lastIndexOf('refresh');
-    const setClockIndex = calls.indexOf('setClock:doc1');
-
-    expect(lastRefreshIndex).toBeGreaterThanOrEqual(0);
-    expect(setClockIndex).toBeGreaterThan(lastRefreshIndex);
-  } finally {
-    await sync.stop();
-  }
-});
-
-test('indexer completion waits for the current job to finish', async () => {
-  const docsInRootDoc = new Map([['doc1', { title: 'Doc 1' }]]);
-  const crawlStarted = deferred<void>();
-  const releaseCrawl = deferred<void>();
-  const docStorage = new TestDocStorage(
-    'workspace-id',
-    new Map([['doc1', new Date('2026-01-01T00:00:00.000Z')]]),
-    async () => {
-      crawlStarted.resolve();
-      await releaseCrawl.promise;
-      return {
+test.each([
+  'complete',
+  'partial',
+  'malformed',
+  'empty-id',
+  'duplicate',
+  'any',
+  'meta-sequence',
+  'inventory',
+  'inventory-partial',
+] as const)(
+  'indexer defers indexed clocks and reconciles %s root members from durable snapshots',
+  async rootMode => {
+    const cloud = rootMode === 'inventory' || rootMode === 'inventory-partial';
+    const authoritative =
+      cloud || rootMode === 'complete' || rootMode === 'any';
+    const partialRoot =
+      rootMode === 'partial' || rootMode === 'inventory-partial';
+    const calls: string[] = [];
+    const root = new YDoc();
+    const pages = new YArray<YMap<unknown>>();
+    root.getMap('meta').set('pages', pages);
+    const page = new YMap<unknown>();
+    page.set('id', 'doc1');
+    page.set('title', 'Doc 1');
+    if (cloud) page.set('trash', true);
+    pages.push([page]);
+    if (
+      rootMode === 'malformed' ||
+      rootMode === 'empty-id' ||
+      rootMode === 'duplicate'
+    ) {
+      const invalid = new YMap<unknown>();
+      invalid.set(
+        'id',
+        rootMode === 'duplicate' ? 'doc1' : rootMode === 'empty-id' ? '' : 1
+      );
+      pages.push([invalid]);
+    }
+    if (rootMode === 'any')
+      root.getMap('meta').set('pages', [{ id: 'doc1', title: 'Doc 1' }]);
+    const missingPrefix = new YDoc();
+    missingPrefix.getMap('unrelated').set('prefix', true);
+    const prefixClock = encodeStateVector(missingPrefix);
+    missingPrefix.getMap('unrelated').set('tail', true);
+    const partial = encodeStateAsUpdate(missingPrefix, prefixClock);
+    const sequenceRoot = new YDoc();
+    sequenceRoot.getArray('meta').push([{}]);
+    const sequence = encodeStateAsUpdate(sequenceRoot);
+    let rootBin = mergeUpdates([
+      encodeStateAsUpdate(root),
+      ...(partialRoot ? [partial] : []),
+      ...(rootMode === 'meta-sequence' ? [sequence] : []),
+    ]);
+    const docStorage = new TestDocStorage(
+      'workspace-id',
+      new Map([
+        ['doc1', new Date('2026-01-01T00:00:00.000Z')],
+        ['doc2', new Date('2026-01-01T00:00:00.000Z')],
+        ['retained', new Date('2026-01-01T00:00:00.000Z')],
+      ]),
+      async () => ({
         title: 'Doc 1',
         summary: 'summary',
         blocks: [
           { blockId: 'block-1', flavour: 'affine:image', blob: ['blob-1'] },
         ],
-      };
+      })
+    );
+    const indexer = new TrackingIndexerStorage(calls, 30_000);
+    const update = vi.spyOn(indexer, 'update');
+    const cachedDocs: SearchResult<'doc', { fields: ['docId', 'title'] }> = {
+      pagination: { count: 1, limit: 1, skip: 0, hasMore: false },
+      nodes: [
+        {
+          id: 'retained',
+          score: 0,
+          fields: { docId: 'retained', title: 'Retained' },
+        },
+      ],
+    };
+    vi.spyOn(indexer, 'search').mockResolvedValue(cachedDocs);
+    const originalGetDoc = docStorage.getDoc.bind(docStorage);
+    vi.spyOn(docStorage, 'getDoc').mockImplementation(async docId =>
+      docId === 'workspace-id'
+        ? { docId, bin: rootBin, timestamp: new Date() }
+        : originalGetDoc(docId)
+    );
+    const indexerSyncStorage = new TrackingIndexerSyncStorage(calls);
+    const inventory = new BehaviorSubject<PeerWorkspaceState | null>({
+      ready: true,
+      cacheToken: 1,
+      clocks: {},
+      docs: [
+        {
+          docId: 'doc1',
+          timestamp: 1,
+          lifecycle: null,
+          lifecycleChangedAt: null,
+        },
+      ],
+    });
+    const sync = new IndexerSyncImpl(
+      docStorage,
+      {
+        local: indexer,
+        remotes: {},
+      },
+      indexerSyncStorage,
+      cloud ? inventory : undefined
+    );
+
+    try {
+      sync.start();
+      await sync.waitForCompleted();
+
+      const docUpdate = update.mock.calls.find(
+        ([table, doc]) => table === 'doc' && doc.id === 'doc1'
+      );
+      expect(docUpdate).toBeDefined();
+      expect([...(docUpdate?.[1].fields ?? [])]).toEqual(
+        expect.arrayContaining([
+          ['docId', ['doc1']],
+          ['title', ['Doc 1']],
+          ['summary', ['summary']],
+        ])
+      );
+      expect(calls).not.toContain('setClock:doc1');
+      expect(calls.includes('delete:doc:retained')).toBe(authoritative);
+      expect(calls.includes('insert:block:retained:block-1')).toBe(
+        !authoritative
+      );
+      const timestamps = vi.spyOn(docStorage, 'getDocTimestamp');
+
+      if (rootMode !== 'any') page.set('title', 'Renamed');
+      const addedPage = new YMap<unknown>();
+      addedPage.set('id', 'doc2');
+      if (rootMode !== 'any') pages.push([addedPage]);
+      if (rootMode === 'any')
+        root
+          .getMap('meta')
+          .set('pages', [{ id: 'doc1', title: 'Renamed' }, { id: 'doc2' }]);
+      rootBin = mergeUpdates([
+        encodeStateAsUpdate(root),
+        ...(partialRoot ? [partial] : []),
+        ...(rootMode === 'meta-sequence' ? [sequence] : []),
+      ]);
+      await docStorage.pushDocUpdate({
+        docId: 'workspace-id',
+        bin: encodeStateAsUpdate(new YDoc()),
+      });
+      if (cloud) {
+        await sync.waitForCompleted();
+        expect(calls).not.toContain('insert:doc:doc2');
+        inventory.next({
+          ...inventory.value!,
+          docs: [
+            ...inventory.value!.docs,
+            {
+              docId: 'doc2',
+              timestamp: 1,
+              lifecycle: null,
+              lifecycleChangedAt: null,
+            },
+          ],
+        });
+      }
+      await vi.waitFor(() => {
+        expect(calls).toContain('insert:doc:doc2');
+        expect(calls).toContain('insert:block:doc2:block-1');
+        expect(timestamps.mock.calls.map(([id]) => id)).toEqual(['doc2']);
+        expect(update).toHaveBeenCalledWith(
+          'doc',
+          expect.objectContaining({
+            fields: new Map([
+              ['docId', ['doc1']],
+              ['title', [cloud ? 'Doc 1' : 'Renamed']],
+              ['summary', ['summary']],
+            ]),
+          })
+        );
+      });
+      expect(calls.includes('delete:doc:retained')).toBe(authoritative);
+      if (cloud) {
+        const bodyTitle = update.mock.calls.find(
+          ([table, doc]) => table === 'doc' && doc.id === 'doc2'
+        );
+        expect([...(bodyTitle?.[1].fields ?? [])]).toEqual(
+          expect.arrayContaining([['title', ['Doc 1']]])
+        );
+      }
+
+      if (rootMode !== 'any') pages.delete(0, 1);
+      if (
+        rootMode === 'malformed' ||
+        rootMode === 'empty-id' ||
+        rootMode === 'duplicate'
+      )
+        pages.delete(0, 1);
+      if (rootMode === 'any')
+        root.getMap('meta').set('pages', [{ id: 'doc2' }]);
+      rootBin = encodeStateAsUpdate(root);
+      await docStorage.pushDocUpdate({
+        docId: 'workspace-id',
+        bin: encodeStateAsUpdate(new YDoc()),
+      });
+      if (cloud) {
+        await sync.waitForCompleted();
+        expect(calls).not.toContain('delete:doc:doc1');
+        inventory.next({
+          ...inventory.value!,
+          docs: inventory.value!.docs.filter(doc => doc.docId !== 'doc1'),
+        });
+      }
+      await vi.waitFor(() => {
+        expect(calls).toContain('delete:doc:doc1');
+        expect(calls).toContain('clearClock:doc1');
+        expect(calls).toContain('delete:doc:retained');
+      });
+
+      await sync.stop();
+
+      await vi.waitFor(() => {
+        expect(calls).toContain('setClock:doc1');
+      });
+
+      const setClockIndex = calls.indexOf('setClock:doc1');
+      const lastRefreshIndex = calls
+        .slice(0, setClockIndex)
+        .lastIndexOf('refresh');
+
+      expect(lastRefreshIndex).toBeGreaterThanOrEqual(0);
+      expect(setClockIndex).toBeGreaterThan(lastRefreshIndex);
+    } finally {
+      await sync.stop();
     }
-  );
-  const sync = new IndexerSyncImpl(
-    docStorage,
-    {
-      local: new TrackingIndexerStorage([], 30_000),
-      remotes: {},
-    },
-    new TrackingIndexerSyncStorage([])
-  );
-
-  vi.spyOn(reader, 'readAllDocsFromRootDoc').mockImplementation(
-    () => new Map(docsInRootDoc)
-  );
-
-  try {
-    sync.start();
-    await crawlStarted.promise;
-
-    let completed = false;
-    let docCompleted = false;
-
-    const waitForCompleted = sync.waitForCompleted().then(() => {
-      completed = true;
-    });
-    const waitForDocCompleted = sync.waitForDocCompleted('doc1').then(() => {
-      docCompleted = true;
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 20));
-
-    expect(completed).toBe(false);
-    expect(docCompleted).toBe(false);
-
-    releaseCrawl.resolve();
-
-    await waitForCompleted;
-    await waitForDocCompleted;
-  } finally {
-    await sync.stop();
   }
-});
+);
+
+test.each([
+  'native',
+  'fallback',
+  'partial',
+  'malformed',
+  'reader-error',
+  'empty',
+  'rootless',
+  'storage-error',
+  'root-read-error',
+] as const)(
+  'indexer completion waits for the current job and preserves failed %s sources',
+  async mode => {
+    const readAllBlocksFromDoc = reader.readAllBlocksFromDoc;
+    const docsInRootDoc = new Map([
+      ['doc1', { title: 'Doc 1' }],
+      ['doc2', { title: 'Doc 2' }],
+    ]);
+    let recovered = false;
+    const calls: string[] = [];
+    const crawlStarted = deferred<void>();
+    const releaseCrawl = deferred<void>();
+    const failedParseStarted = deferred<void>();
+    const releaseFailedParse = deferred<void>();
+    const docStorage = new TestDocStorage(
+      'workspace-id',
+      new Map([
+        ['doc1', new Date('2026-01-01T00:00:00.000Z')],
+        ['doc2', new Date('2026-01-01T00:00:00.000Z')],
+      ]),
+      async docId => {
+        if (docId === 'doc1') {
+          crawlStarted.resolve();
+          await releaseCrawl.promise;
+          if (mode !== 'native') throw new Error('Native parser unavailable');
+        }
+        return {
+          title: 'Doc 1',
+          summary: 'summary',
+          blocks: [
+            { blockId: 'block-1', flavour: 'affine:image', blob: ['blob-1'] },
+          ],
+        };
+      }
+    );
+    const root = new YDoc();
+    root.getMap('meta').set(
+      'pages',
+      [...docsInRootDoc].map(([id, metadata]) => ({ id, ...metadata }))
+    );
+    const prefix = new YDoc();
+    prefix.getMap('test').set('prefix', true);
+    const prefixClock = encodeStateVector(prefix);
+    prefix.getMap('test').set('tail', true);
+    const pendingBin = encodeStateAsUpdate(prefix, prefixClock);
+    const rootless = new YDoc();
+    const image = new YMap();
+    image.set('sys:flavour', 'affine:image');
+    image.set('prop:sourceId', 'blob-1');
+    rootless.getMap('blocks').set('image', image);
+    const getDoc = vi
+      .spyOn(docStorage, 'getDoc')
+      .mockImplementation(async docId => {
+        if (
+          docId === 'workspace-id' &&
+          mode === 'root-read-error' &&
+          !recovered
+        )
+          throw new Error('invalid_binary');
+        if (docId === 'doc1' && mode === 'storage-error' && !recovered)
+          throw new Error('invalid_binary');
+        const doc = {
+          docId,
+          bin: encodeStateAsUpdate(
+            docId === 'workspace-id' ? root : new YDoc()
+          ),
+          timestamp: new Date('2026-01-01T00:00:00.000Z'),
+        };
+        if (docId !== 'doc1' || recovered) return doc;
+        return {
+          ...doc,
+          bin:
+            mode === 'partial'
+              ? mergeUpdates([
+                  readFileSync(
+                    `${process.cwd()}/packages/common/reader/__tests__/__fixtures__/test-doc.snapshot.bin`
+                  ),
+                  pendingBin,
+                ])
+              : mode === 'malformed'
+                ? new Uint8Array([255])
+                : mode === 'rootless'
+                  ? encodeStateAsUpdate(rootless)
+                  : doc.bin,
+        };
+      });
+    const crawl = vi
+      .spyOn(reader, 'readAllBlocksFromDoc')
+      .mockImplementation(async options => {
+        if (mode === 'partial' || mode === 'rootless')
+          return readAllBlocksFromDoc(options);
+        if (mode === 'reader-error' && !recovered) {
+          failedParseStarted.resolve();
+          await releaseFailedParse.promise;
+          throw new Error('Unreadable blocks');
+        }
+        if (mode === 'empty') return undefined;
+        return { blocks: [], title: 'Doc 1', summary: 'Fallback summary' };
+      });
+    const indexer = new TrackingIndexerStorage(calls, 0);
+    if (mode === 'root-read-error') {
+      const cachedDocs: SearchResult<'doc', { fields: ['docId', 'title'] }> = {
+        pagination: { count: 2, limit: 2, skip: 0, hasMore: false },
+        nodes: [...docsInRootDoc].map(([id, metadata]) => ({
+          id,
+          score: 0,
+          fields: { docId: id, ...metadata },
+        })),
+      };
+      vi.spyOn(indexer, 'search').mockResolvedValue(cachedDocs);
+    }
+    const deleteBlocks = vi.spyOn(indexer, 'deleteByQuery');
+    const metadata = new TrackingIndexerSyncStorage(calls);
+    await metadata.setDocIndexedClock({
+      docId: 'doc1',
+      timestamp: new Date(0),
+      indexerVersion: 1,
+    });
+    calls.length = 0;
+    const sync = new IndexerSyncImpl(
+      docStorage,
+      {
+        local: indexer,
+        remotes: {},
+      },
+      metadata
+    );
+
+    try {
+      sync.start();
+      await crawlStarted.promise;
+
+      let completed = false;
+      let docCompleted = false;
+
+      const waitForCompleted = sync.waitForCompleted().then(() => {
+        completed = true;
+      });
+      const waitForDocCompleted = sync.waitForDocCompleted('doc1').then(() => {
+        docCompleted = true;
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      expect(completed).toBe(false);
+      expect(docCompleted).toBe(false);
+
+      releaseCrawl.resolve();
+
+      if (mode === 'reader-error') {
+        await failedParseStarted.promise;
+        expect(await metadata.getDocIndexedClock('doc1')).toMatchObject({
+          timestamp: new Date(0),
+        });
+        expect(
+          deleteBlocks.mock.calls.some(
+            ([, query]) => 'match' in query && query.match === 'doc1'
+          )
+        ).toBe(false);
+        recovered = true;
+        await docStorage.pushDocUpdate({
+          docId: 'doc1',
+          bin: encodeStateAsUpdate(prefix),
+        });
+        releaseFailedParse.resolve();
+      }
+      if (mode === 'malformed' || mode === 'storage-error') {
+        await sync.waitForDocCompleted('doc2');
+        expect(completed).toBe(false);
+        expect(docCompleted).toBe(false);
+        expect(await metadata.getDocIndexedClock('doc1')).toMatchObject({
+          timestamp: new Date(0),
+        });
+        expect(
+          calls.filter(call => call === 'deleteByQuery:block')
+        ).toHaveLength(1);
+        expect(crawl).not.toHaveBeenCalled();
+        recovered = true;
+        await docStorage.pushDocUpdate({
+          docId: 'doc1',
+          bin: encodeStateAsUpdate(prefix),
+        });
+      }
+      if (mode === 'root-read-error') {
+        await waitForDocCompleted;
+        await sync.waitForDocCompleted('doc2');
+        expect(completed).toBe(false);
+        expect(calls).toContain('setClock:doc1');
+        expect(calls).toContain('setClock:doc2');
+        recovered = true;
+        await docStorage.pushDocUpdate({
+          docId: 'workspace-id',
+          bin: encodeStateAsUpdate(root),
+        });
+      }
+      await waitForCompleted;
+      await waitForDocCompleted;
+      expect((await firstValueFrom(sync.state$)).errorMessage).toBeNull();
+      if (mode === 'partial') {
+        expect(crawl).toHaveBeenCalled();
+        expect(
+          calls.filter(call => call.startsWith('insert:block:doc1:'))
+        ).toHaveLength(42);
+      }
+      if (mode === 'rootless') {
+        expect(deleteBlocks).toHaveBeenCalledWith('block', {
+          type: 'match',
+          field: 'docId',
+          match: 'doc1',
+        });
+        expect(
+          calls.filter(call => call.startsWith('insert:block:doc1:'))
+        ).toHaveLength(0);
+      }
+      if (mode === 'native')
+        expect(getDoc.mock.calls.map(([id]) => id)).toEqual(['workspace-id']);
+      expect(await metadata.getDocIndexedClock('doc1')).toMatchObject({
+        timestamp: new Date('2026-01-01T00:00:00.000Z'),
+      });
+    } finally {
+      releaseFailedParse.resolve();
+      releaseCrawl.resolve();
+      await sync.stop();
+    }
+  }
+);
 
 test('indexer priority requests accumulate', async () => {
   const docsInRootDoc = new Map([
@@ -1048,6 +1629,16 @@ test('indexer priority requests accumulate', async () => {
       return { title: docId, summary: 'summary', blocks: [] };
     }
   );
+  const root = new YDoc();
+  root.getMap('meta').set(
+    'pages',
+    [...docsInRootDoc].map(([id, metadata]) => ({ id, ...metadata }))
+  );
+  vi.spyOn(docStorage, 'getDoc').mockImplementation(async docId => ({
+    docId,
+    bin: encodeStateAsUpdate(root),
+    timestamp: new Date(0),
+  }));
   const indexer = new TrackingIndexerStorage([], 30_000);
   // hold the loop inside the root doc crawl, so both docs stay queued while
   // their priorities are changed
@@ -1066,10 +1657,6 @@ test('indexer priority requests accumulate', async () => {
       remotes: {},
     },
     new TrackingIndexerSyncStorage([])
-  );
-
-  vi.spyOn(reader, 'readAllDocsFromRootDoc').mockImplementation(
-    () => new Map(docsInRootDoc)
   );
 
   try {
@@ -1290,7 +1877,7 @@ test('remote replacement preserves subscriptions, priorities, sources and sync i
   }
 });
 
-test('store opens serialize A to B to A, propagate failures and drain before close', async () => {
+test('store opens serialize changes and drain writes before deletion and close', async () => {
   const channel = new MessageChannel();
   const consumer = new OpConsumer<WorkerManagerOps>(channel.port1);
   const register = vi.spyOn(consumer, 'registerAll');
@@ -1353,6 +1940,215 @@ test('store opens serialize A to B to A, propagate failures and drain before clo
     await handlers.close('a2', context);
     await handlers.close('recovered', context);
     expect(destroyed).toHaveBeenCalledTimes(1);
+
+    const store = new StoreConsumer([IndexedDBDocStorage], {
+      local: {
+        doc: {
+          name: 'IndexedDBDocStorage',
+          opts: { id: 'delete-drain', flavour: 'local', type: 'workspace' },
+        },
+      },
+      remotes: {
+        cloud: {
+          doc: {
+            name: 'IndexedDBDocStorage',
+            opts: { id: 'delete-drain', flavour: 'remote', type: 'workspace' },
+          },
+        },
+      },
+    });
+    const clients = [0, 1].map(() => {
+      const ports = new MessageChannel();
+      channels.push(ports);
+      store.bindConsumer(new OpConsumer<WorkerOps>(ports.port1));
+      const client = new StoreClient(new OpClient<WorkerOps>(ports.port2));
+      client.docFrontend.start();
+      return client;
+    });
+    const disconnects = clients.map(client =>
+      vi.spyOn(client.docFrontend, 'disconnectDoc')
+    );
+    const local = store.docStorage;
+    const remote = store.docSync.storages.remotes.cloud;
+    const docs = clients.map(() => new YDoc({ guid: 'P' }));
+    const rpcEntered = deferred();
+    const rpcRelease = deferred();
+    const readEntered = deferred();
+    const readRelease = deferred();
+    const mergeEntered = deferred();
+    const mergeRelease = deferred();
+    let holdMerge = false;
+    const lateFrontend = new DocFrontend(
+      clients[1].docFrontend.storage,
+      DocSyncImpl.dummy,
+      {
+        mergeUpdates: async updates => {
+          if (holdMerge) {
+            holdMerge = false;
+            mergeEntered.resolve();
+            await mergeRelease.promise;
+          }
+          return mergeUpdates(updates);
+        },
+      }
+    );
+    const lateDoc = new YDoc({ guid: 'P' });
+    const otherDoc = new YDoc({ guid: 'other-ui' });
+    lateFrontend.start();
+    try {
+      await local.connection.waitForConnected();
+      await remote.connection.waitForConnected();
+      const source = new YDoc();
+      source.getMap('test').set('content', 'retained');
+      await remote.pushDocUpdate({
+        docId: 'P',
+        bin: encodeStateAsUpdate(source),
+      });
+      await remote.pushDocUpdate({
+        docId: 'G',
+        bin: encodeStateAsUpdate(source),
+      });
+      clients.forEach((client, i) => client.docFrontend.connectDoc(docs[i]));
+      await vi.waitFor(async () =>
+        expect(await local.getDoc('G')).not.toBeNull()
+      );
+      await store.docSync.waitForSynced('P');
+      await Promise.all(
+        clients.map(client => client.docFrontend.waitForUpdated('P'))
+      );
+      lateFrontend.connectDoc(lateDoc);
+      await lateFrontend.waitForDocReady('P');
+      await lateFrontend.waitForUpdated('P');
+      holdMerge = true;
+      lateDoc.getMap('test').set('editing', true);
+      await mergeEntered.promise;
+      const getDiff = remote.getDocDiff.bind(remote);
+      vi.spyOn(remote, 'getDocDiff').mockImplementationOnce(async (...args) => {
+        const captured = await getDiff(...args);
+        readEntered.resolve();
+        await readRelease.promise;
+        return captured;
+      });
+      await remote.pushDocUpdate({ docId: 'P', bin: new Uint8Array() });
+      await readEntered.promise;
+      const append = local.pushDocUpdate.bind(local);
+      vi.spyOn(local, 'pushDocUpdate').mockImplementation(
+        async (update, origin) => {
+          if (origin === 'held-rpc') {
+            rpcEntered.resolve();
+            await rpcRelease.promise;
+          }
+          return append(update, origin);
+        }
+      );
+      const writing = clients[1].docFrontend.storage.pushDocUpdate(
+        { docId: 'P', bin: encodeStateAsUpdate(source) },
+        'held-rpc'
+      );
+      await rpcEntered.promise;
+      Object.assign(remote, {
+        applyDocLifecycle: vi.fn(async () => ({
+          timestamp: new Date(),
+          deletedDocIds: ['P', 'G'],
+        })),
+      });
+      const purge = vi.spyOn(local, 'deleteDoc');
+      const deleting = clients[0].docFrontend.applyDocLifecycle('P', 'delete');
+      await vi.waitFor(() => expect(store.docSync.isDeleted('P')).toBe(true));
+      await expect(
+        clients[1].docFrontend.storage.pushDocUpdate({
+          docId: 'P',
+          bin: encodeStateAsUpdate(source),
+        })
+      ).rejects.toMatchObject({ name: 'DOC_DELETED' });
+      expect(purge).not.toHaveBeenCalled();
+      rpcRelease.resolve();
+      await writing;
+      expect(purge).not.toHaveBeenCalled();
+      readRelease.resolve();
+      await deleting;
+      mergeRelease.resolve();
+      await lateFrontend.waitForUpdated('P');
+      otherDoc.getMap('test').set('still-saving', true);
+      lateFrontend.connectDoc(otherDoc);
+      await lateFrontend.waitForUpdated('other-ui');
+      expectYjsEqual((await local.getDoc('other-ui'))!.bin, {
+        test: { 'still-saving': true },
+      });
+      expect(await local.getDoc('P')).toBeNull();
+      expect(await local.getDoc('G')).toBeNull();
+      await vi.waitFor(() => {
+        disconnects.forEach((disconnect, i) =>
+          expect(disconnect).toHaveBeenCalledWith(docs[i])
+        );
+      });
+      docs.forEach(doc => doc.getMap('test').set('late', true));
+      await clients[1].docFrontend.storage.pushDocUpdate({
+        docId: 'other',
+        bin: encodeStateAsUpdate(source),
+      });
+      expect(await local.getDoc('P')).toBeNull();
+      expect(await local.getDoc('other')).not.toBeNull();
+      source.destroy();
+    } finally {
+      rpcRelease.resolve();
+      readRelease.resolve();
+      mergeRelease.resolve();
+      lateFrontend.stop();
+      lateDoc.destroy();
+      otherDoc.destroy();
+      clients.forEach(client => client.docFrontend.stop());
+      docs.forEach(doc => doc.destroy());
+      await store.destroy();
+    }
+    for (const flavour of ['affine-cloud', 'local']) {
+      const legacyStore = new StoreConsumer(
+        [IndexedDBDocStorage, IndexedDBV1DocStorage],
+        {
+          local: {
+            doc: {
+              name: 'IndexedDBDocStorage',
+              opts: { id: `delete-v1-${flavour}`, flavour, type: 'workspace' },
+            },
+          },
+          remotes: {
+            v1: {
+              doc: {
+                name: 'IndexedDBV1DocStorage',
+                opts: { id: `delete-v1-${flavour}`, type: 'workspace' },
+              },
+            },
+          },
+        }
+      );
+      const ports = new MessageChannel();
+      channels.push(ports);
+      legacyStore.bindConsumer(new OpConsumer<WorkerOps>(ports.port1));
+      const client = new StoreClient(new OpClient<WorkerOps>(ports.port2));
+      const source = new YDoc({ guid: 'local-doc' });
+      source.getMap('test').set('content', 'local');
+      try {
+        await legacyStore.docStorage.connection.waitForConnected();
+        await client.docFrontend.storage.pushDocUpdate({
+          docId: source.guid,
+          bin: encodeStateAsUpdate(source),
+        });
+        if (flavour === 'local') {
+          await client.docFrontend.applyDocLifecycle(source.guid, 'delete');
+          expect(await legacyStore.docStorage.getDoc(source.guid)).toBeNull();
+        } else {
+          await expect(
+            client.docFrontend.applyDocLifecycle(source.guid, 'delete')
+          ).rejects.toThrow('Document lifecycle is unavailable');
+          expect(
+            await legacyStore.docStorage.getDoc(source.guid)
+          ).not.toBeNull();
+        }
+      } finally {
+        source.destroy();
+        await legacyStore.destroy();
+      }
+    }
   } finally {
     gate.resolve();
     channel.port1.close();
@@ -1361,5 +2157,694 @@ test('store opens serialize A to B to A, propagate failures and drain before clo
       ports.port1.close();
       ports.port2.close();
     }
+  }
+});
+
+test.each(['none', 'local', 'remote'])(
+  'sync preserves durable updates through %s upload interleavings',
+  async evidence => {
+    const options = {
+      id: `root-notification-order-${evidence}`,
+      type: 'workspace' as const,
+    };
+    const local = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'root-order-local',
+    });
+    const remote = new IndexedDBDocStorage({
+      ...options,
+      flavour: 'root-order-remote',
+    });
+    const metadata = new IndexedDBDocSyncStorage({
+      ...options,
+      flavour: 'root-order-metadata',
+    });
+    let notify: Parameters<DocStorage['subscribeDocUpdate']>[0] | undefined;
+    vi.spyOn(local, 'subscribeDocUpdate').mockImplementation(callback => {
+      notify = callback;
+      return () => {};
+    });
+    for (const storage of [local, remote, metadata])
+      storage.connection.connect();
+    await Promise.all(
+      [local, remote, metadata].map(storage =>
+        storage.connection.waitForConnected()
+      )
+    );
+    const doc = new YDoc();
+    doc.getMap('meta').set('name', 'base');
+    await local.pushDocUpdate({
+      docId: options.id,
+      bin: encodeStateAsUpdate(doc),
+    });
+    const peer = new DocSyncPeer('root-order', local, metadata, remote);
+    const abort = new AbortController();
+    const running = peer.mainLoop(abort.signal);
+    try {
+      await vi.waitFor(async () => {
+        expectYjsEqual((await remote.getDoc(options.id))!.bin, {
+          meta: { name: 'base' },
+        });
+      });
+      await vi.waitFor(async () =>
+        expect(
+          await metadata.getPeerPushedClock('root-order', options.id)
+        ).not.toBeNull()
+      );
+      const uploading = deferred();
+      const release = deferred();
+      const push = remote.pushDocUpdate.bind(remote);
+      if (evidence !== 'none') {
+        vi.spyOn(remote, 'pushDocUpdate').mockImplementationOnce(
+          async (update, origin) => {
+            uploading.resolve();
+            await release.promise;
+            return push(update, origin);
+          }
+        );
+      }
+      let state = encodeStateVector(doc);
+      doc.getMap('meta').set('name', 'A');
+      await local.pushDocUpdate({
+        docId: options.id,
+        bin: encodeStateAsUpdate(doc, state),
+      });
+      state = encodeStateVector(doc);
+      doc.getMap('meta').set('avatar', 'B');
+      const update = encodeStateAsUpdate(doc, state);
+      const clock = await local.pushDocUpdate({
+        docId: options.id,
+        bin: update,
+      });
+      notify!({ docId: options.id, bin: update, timestamp: clock.timestamp });
+      if (evidence !== 'none') {
+        await uploading.promise;
+        doc.getMap('meta').set('duringFlight', evidence);
+        if (evidence === 'local') {
+          const bin = encodeStateAsUpdate(doc);
+          const next = await local.pushDocUpdate({ docId: options.id, bin });
+          notify!({ docId: options.id, bin, timestamp: next.timestamp });
+        } else {
+          await push(
+            { docId: options.id, bin: encodeStateAsUpdate(doc) },
+            'other-source'
+          );
+        }
+        release.resolve();
+      }
+      await vi.waitFor(async () => {
+        expectYjsEqual((await remote.getDoc(options.id))!.bin, {
+          meta: {
+            name: 'A',
+            avatar: 'B',
+            ...(evidence === 'none' ? {} : { duringFlight: evidence }),
+          },
+        });
+        expectYjsEqual((await local.getDoc(options.id))!.bin, {
+          meta: {
+            name: 'A',
+            avatar: 'B',
+            ...(evidence === 'none' ? {} : { duringFlight: evidence }),
+          },
+        });
+        let synced = false;
+        const state = peer.docState$(options.id).subscribe(value => {
+          synced = value.synced;
+        });
+        state.unsubscribe();
+        expect(synced).toBe(true);
+      });
+    } finally {
+      abort.abort();
+      await running;
+      for (const storage of [local, remote, metadata])
+        storage.connection.disconnect();
+    }
+  }
+);
+
+test.each(['same-millisecond', 'clock-backwards', 'transaction-abort'])(
+  'IDB preserves %s writes after compaction',
+  async mode => {
+    const storage = new IndexedDBDocStorage({
+      id: `clock-${mode}`,
+      flavour: 'clock-regression',
+      type: 'workspace',
+    });
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    const doc = new YDoc();
+    const now = new Date('2026-11-10T00:00:00.000Z');
+    vi.setSystemTime(now);
+    try {
+      doc.getMap('meta').set('value', 'first');
+      const first = await storage.pushDocUpdate({
+        docId: 'doc',
+        bin: encodeStateAsUpdate(doc),
+      });
+      await storage.getDoc('doc');
+      if (mode === 'clock-backwards')
+        vi.setSystemTime(new Date(now.getTime() - 1000));
+      doc.getMap('meta').set('value', 'second');
+      if (mode === 'transaction-abort') {
+        const transaction = storage.db.transaction('updates', 'readwrite');
+        await transaction.store.add({
+          docId: 'doc',
+          bin: encodeStateAsUpdate(doc),
+          createdAt: new Date(first.timestamp.getTime() + 1),
+        });
+        transaction.commit();
+        await transaction.done;
+        const listener = vi.fn();
+        const unsubscribe = storage.subscribeDocUpdate(listener);
+        try {
+          await expect(
+            storage.pushDocUpdate({
+              docId: 'doc',
+              bin: encodeStateAsUpdate(doc),
+              createForPeer: 'rolled-back-account',
+            })
+          ).rejects.toMatchObject({ name: 'ConstraintError' });
+          expect(listener).not.toHaveBeenCalled();
+          expect(
+            await storage.db.get('peerClocks', ['rolled-back-account', 'doc'])
+          ).toBeUndefined();
+          expect((await storage.getDocTimestamp('doc'))?.timestamp).toEqual(
+            first.timestamp
+          );
+        } finally {
+          unsubscribe();
+        }
+        return;
+      }
+      const second = await storage.pushDocUpdate({
+        docId: 'doc',
+        bin: encodeStateAsUpdate(doc),
+      });
+      expect(second.timestamp.getTime()).toBe(first.timestamp.getTime() + 1);
+      expect((await storage.getDocTimestamp('doc'))?.timestamp).toEqual(
+        second.timestamp
+      );
+      expectYjsEqual((await storage.getDoc('doc'))!.bin, {
+        meta: { value: 'second' },
+      });
+      expectYjsEqual((await storage.getDoc('doc'))!.bin, {
+        meta: { value: 'second' },
+      });
+    } finally {
+      vi.useRealTimers();
+      storage.connection.disconnect();
+      doc.destroy();
+    }
+  }
+);
+
+test('a recovered connection clears its transient message without masking a subsequent doc error', async () => {
+  const options = {
+    id: 'reconnect-error-message',
+    flavour: 'reconnect-error-message',
+    type: 'workspace' as const,
+  };
+  const local = new IndexedDBDocStorage(options);
+  const metadata = new IndexedDBDocSyncStorage(options);
+  const remote = new PermissionDeniedRemoteDocStorage(options.id);
+  vi.spyOn(remote.connection, 'waitForConnected').mockRejectedValueOnce(
+    new Error('temporary connection error')
+  );
+  local.connection.connect();
+  metadata.connection.connect();
+  await Promise.all([
+    local.connection.waitForConnected(),
+    metadata.connection.waitForConnected(),
+  ]);
+  const doc = new YDoc();
+  doc.getMap('test').set('value', 'kept');
+  const peer = new DocSyncPeer(
+    'reconnect-error-message',
+    local,
+    metadata,
+    remote
+  );
+  const abort = new AbortController();
+  const running = peer.mainLoop(abort.signal);
+  try {
+    await vi.waitFor(async () => {
+      expect((await firstValueFrom(peer.peerState$)).errorMessage).toContain(
+        'temporary connection error'
+      );
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.retrying).toBe(false);
+        expect(state.errorMessage).toBeNull();
+        expect(state.error).toBeUndefined();
+      },
+      { timeout: 6500 }
+    );
+    await local.pushDocUpdate({
+      docId: 'doc-denied-after-reconnect',
+      bin: encodeStateAsUpdate(doc),
+    });
+    await vi.waitFor(
+      async () => {
+        const state = await firstValueFrom(peer.peerState$);
+        expect(state.errorMessage).toContain('No permission to update doc');
+        expect(state.errorMessage).not.toContain('temporary connection error');
+        expect(state.retrying).toBe(false);
+        expect(state.error?.name).toBe('DOC_ACTION_DENIED');
+      },
+      { timeout: 6500 }
+    );
+  } finally {
+    abort.abort();
+    await running;
+    local.connection.disconnect();
+    metadata.connection.disconnect();
+    doc.destroy();
+  }
+}, 10000);
+
+test('cloud inventory replaces membership, fences stale installs and preserves explicit offline creates', async () => {
+  const options = {
+    id: 'inventory-workspace',
+    flavour: 'inventory-local',
+    type: 'workspace' as const,
+  };
+  const local = new IndexedDBDocStorage(options);
+  const metadata = new IndexedDBDocSyncStorage(options);
+  const otherTab = new IndexedDBDocSyncStorage(options);
+  const localIndexer = new IndexedDBIndexerStorage(options);
+  const remoteStorage = new IndexedDBDocStorage({
+    ...options,
+    flavour: 'inventory-remote',
+  });
+  for (const storage of [
+    local,
+    metadata,
+    otherTab,
+    remoteStorage,
+    localIndexer,
+  ])
+    storage.connection.connect();
+  await Promise.all(
+    [local, metadata, otherTab, remoteStorage, localIndexer].map(storage =>
+      storage.connection.waitForConnected()
+    )
+  );
+  const body = new YDoc();
+  body.getMap('content').set('value', 42);
+  const liveClock = await remoteStorage.pushDocUpdate({
+    docId: 'live',
+    bin: encodeStateAsUpdate(body),
+  });
+  for (const docId of [
+    'orphan-cache',
+    'constructor',
+    'toString',
+    'db$unknown',
+    'userdata$other$settings',
+    'db$folders',
+  ]) {
+    await local.pushDocUpdate({ docId, bin: encodeStateAsUpdate(body) });
+  }
+  let state: WorkspaceState = {
+    docs: [
+      {
+        docId: 'live',
+        timestamp: liveClock.timestamp.getTime(),
+        lifecycle: null,
+        lifecycleChangedAt: null,
+      },
+    ],
+    clocks: {},
+  };
+  let invalidated: (() => void) | undefined;
+  const getState = vi.fn(async () => structuredClone(state));
+  const remote = Object.assign(remoteStorage, {
+    workspaceStateScope: 'account-a',
+    localReservedDocIds: ['db$folders', 'userdata$account-a$settings'],
+    getWorkspaceState: getState,
+    subscribeWorkspaceStateInvalidation: (callback: () => void) => {
+      invalidated = callback;
+      return () => {
+        invalidated = undefined;
+      };
+    },
+  });
+  const originalPush = remote.pushDocUpdate.bind(remote);
+  const pushes = vi
+    .spyOn(remote, 'pushDocUpdate')
+    .mockImplementation(async (update, origin) => {
+      const clock = await originalPush(update, origin);
+      if (
+        update.intent === 'create' &&
+        !state.docs.some(doc => doc.docId === update.docId)
+      ) {
+        state.docs.push({
+          docId: update.docId,
+          timestamp: clock.timestamp.getTime(),
+          lifecycle: null,
+          lifecycleChangedAt: null,
+        });
+      }
+      return clock;
+    });
+  const peer = new DocSyncPeer('cloud', local, metadata, remote);
+  const abort = new AbortController();
+  const running = peer.mainLoop(abort.signal);
+  const pullFetched = deferred();
+  const releasePull = deferred();
+  try {
+    await vi.waitFor(async () => {
+      expect(peer.workspaceState$.value?.ready).toBe(true);
+      expect(await local.getDoc('live')).not.toBeNull();
+      expect((await firstValueFrom(peer.peerState$)).synced).toBe(true);
+    });
+    await vi.waitFor(async () =>
+      expect(await remote.getDoc('db$folders')).not.toBeNull()
+    );
+    await local.pushDocUpdate({
+      docId: 'userdata$account-a$settings',
+      bin: encodeStateAsUpdate(body),
+    });
+    await vi.waitFor(async () =>
+      expect(await remote.getDoc('userdata$account-a$settings')).not.toBeNull()
+    );
+    expect(
+      pushes.mock.calls.find(([update]) => update.docId === 'db$folders')?.[0]
+        .intent
+    ).toBe('update');
+    for (const docId of [
+      'constructor',
+      'toString',
+      'db$unknown',
+      'userdata$other$settings',
+    ]) {
+      peer.addPriority(docId, 100);
+      expect(await remote.getDoc(docId)).toBeNull();
+    }
+    peer.addPriority('orphan-cache', 100);
+    expect(await remote.getDoc('orphan-cache')).toBeNull();
+    expect(
+      pushes.mock.calls.some(([update]) => update.docId === 'orphan-cache')
+    ).toBe(false);
+    await peer.createDoc('created');
+    await vi.waitFor(async () => {
+      expect(await remote.getDoc('created')).not.toBeNull();
+      expect(
+        peer.workspaceState$.value?.docs.find(doc => doc.docId === 'created')
+          ?.pendingCreate
+      ).toBe(false);
+    });
+    expect(
+      pushes.mock.calls.find(([update]) => update.docId === 'created')?.[0]
+        .intent
+    ).toBe('create');
+
+    await vi.waitFor(async () =>
+      expect((await firstValueFrom(peer.peerState$)).synced).toBe(true)
+    );
+    const getDiff = remote.getDocDiff.bind(remote);
+    vi.spyOn(remote, 'getDocDiff').mockImplementationOnce(async (...args) => {
+      expect(args[0]).toBe('live');
+      const result = await getDiff(...args);
+      pullFetched.resolve();
+      await releasePull.promise;
+      return result;
+    });
+    await originalPush({ docId: 'live', bin: new Uint8Array([0, 0]) });
+    await pullFetched.promise;
+
+    const fetched = deferred();
+    const release = deferred();
+    getState.mockImplementationOnce(async () => {
+      const stale = structuredClone(state);
+      fetched.resolve();
+      await release.promise;
+      return stale;
+    });
+    const refresh = peer.refreshWorkspaceState();
+    await fetched.promise;
+    state = {
+      docs: [
+        {
+          docId: 'created',
+          timestamp: 2000,
+          lifecycle: 'trashed',
+          lifecycleChangedAt: 3000,
+        },
+      ],
+      clocks: {},
+    };
+    await otherTab.invalidatePeerWorkspaceState('account-a', options.id);
+    const before = await otherTab.getPeerWorkspaceState(
+      'account-a',
+      options.id
+    );
+    expect(
+      await otherTab.installPeerWorkspaceState(
+        'account-a',
+        options.id,
+        before.cacheToken,
+        state
+      )
+    ).toBe(true);
+    release.resolve();
+    await refresh;
+    expect(peer.workspaceState$.value?.docs.map(doc => doc.docId)).toEqual([
+      'created',
+    ]);
+    expect(peer.workspaceState$.value?.docs[0].lifecycle).toBe('trashed');
+    expect((await firstValueFrom(peer.peerState$)).synced).toBe(false);
+    expect((await firstValueFrom(peer.docState$('live'))).synced).toBe(false);
+    releasePull.resolve();
+    await vi.waitFor(async () =>
+      expect((await firstValueFrom(peer.docState$('live'))).synced).toBe(true)
+    );
+    expect(await local.getDoc('live')).not.toBeNull();
+    expect(
+      await metadata.getPeerPulledRemoteClock('account-a', 'live')
+    ).not.toBeNull();
+    expect(
+      (await metadata.getPeerWorkspaceState('account-b', options.id)).docs
+    ).toEqual([]);
+    await originalPush({ docId: 'live', bin: encodeStateAsUpdate(body) });
+    invalidated?.();
+    await peer.refreshWorkspaceState();
+    expect(peer.workspaceState$.value?.docs.map(doc => doc.docId)).toEqual([
+      'created',
+    ]);
+    const denied = Object.assign(new Error('Workspace access revoked'), {
+      name: 'SPACE_ACCESS_DENIED',
+    });
+    getState.mockRejectedValueOnce(denied);
+    await expect(peer.refreshWorkspaceState()).rejects.toBe(denied);
+    expect(peer.workspaceState$.value?.docs).toEqual([]);
+    expect(await local.getDoc('live')).not.toBeNull();
+    await peer.refreshWorkspaceState();
+    await local.deleteDoc('live');
+    expect(await local.getDoc('live')).toBeNull();
+  } finally {
+    releasePull.resolve();
+    abort.abort();
+    await running;
+  }
+
+  const queryInventory = new BehaviorSubject<PeerWorkspaceState | null>({
+    ready: false,
+    cacheToken: 0,
+    docs: [],
+    clocks: {},
+  });
+  const querySync = new IndexerSyncImpl(
+    local,
+    { local: localIndexer, remotes: {} },
+    new TrackingIndexerSyncStorage([]),
+    queryInventory
+  );
+  const indexWriter: IndexerStorage = localIndexer;
+  for (const docId of ['private-a', 'visible-b']) {
+    await indexWriter.insert(
+      'doc',
+      IndexerDocument.from<'doc'>(docId, {
+        docId,
+        title: docId,
+        summary: `${docId}-summary`,
+      })
+    );
+    await indexWriter.insert(
+      'block',
+      IndexerDocument.from<'block'>(`${docId}:block`, {
+        docId,
+        blockId: 'block',
+        flavour: `${docId}-flavour`,
+      })
+    );
+  }
+  await localIndexer.refresh('doc');
+  await localIndexer.refresh('block');
+  expect(
+    (await localIndexer.search('doc', { type: 'all' })).nodes
+  ).toHaveLength(2);
+  expect((await querySync.search('doc', { type: 'all' })).nodes).toEqual([]);
+  queryInventory.next({
+    ready: true,
+    cacheToken: 1,
+    docs: [
+      {
+        docId: 'visible-b',
+        timestamp: 1,
+        lifecycle: null,
+        lifecycleChangedAt: null,
+      },
+    ],
+    clocks: {},
+  });
+  const scoped = await querySync.search(
+    'doc',
+    { type: 'all' },
+    { pagination: { limit: 1 }, fields: ['docId', 'summary'] }
+  );
+  expect(scoped.pagination.count).toBe(1);
+  expect(scoped.nodes[0].fields).toMatchObject({
+    docId: 'visible-b',
+    summary: 'visible-b-summary',
+  });
+  expect(
+    (
+      await querySync.aggregate('block', { type: 'all' }, 'flavour')
+    ).buckets.map(bucket => bucket.key)
+  ).toEqual(['visible-b-flavour']);
+  const observed = new BehaviorSubject<string[]>([]);
+  const querySubscription = querySync
+    .search$('doc', { type: 'all' })
+    .subscribe(result => observed.next(result.nodes.map(node => node.id)));
+  await vi.waitFor(() => expect(observed.value).toEqual(['visible-b']));
+  queryInventory.next({
+    ready: true,
+    cacheToken: 2,
+    docs: [
+      {
+        docId: 'visible-b',
+        timestamp: 1,
+        lifecycle: 'trashed',
+        lifecycleChangedAt: 2,
+      },
+    ],
+    clocks: {},
+  });
+  expect(await firstValueFrom(querySync.docTitles$)).toEqual({
+    'visible-b': 'visible-b',
+  });
+  expect((await querySync.search('doc', { type: 'all' })).nodes).toEqual([]);
+  queryInventory.next({ ready: true, cacheToken: 3, docs: [], clocks: {} });
+  await vi.waitFor(() => expect(observed.value).toEqual([]));
+  expect(
+    (await localIndexer.search('doc', { type: 'all' })).nodes
+  ).toHaveLength(2);
+  expect(await firstValueFrom(querySync.docTitles$)).toEqual({});
+  querySubscription.unsubscribe();
+  queryInventory.complete();
+  await querySync.stop();
+
+  const lateFetchStarted = deferred();
+  const releaseLateFetch = deferred();
+  getState.mockImplementationOnce(async () => {
+    lateFetchStarted.resolve();
+    await releaseLateFetch.promise;
+    return {
+      docs: [
+        {
+          docId: 'late-old-session',
+          timestamp: 1,
+          lifecycle: null,
+          lifecycleChangedAt: null,
+        },
+      ],
+      clocks: {},
+    };
+  });
+  const cached = new DocSyncImpl(
+    { local, remotes: { cloud: remote } },
+    metadata
+  );
+  const frontend = new DocFrontend(local, cached);
+  const view = new BehaviorSubject<PeerWorkspaceState | null>(null);
+  const subscription = frontend.workspaceState$.subscribe(view);
+  cached.start();
+  try {
+    await lateFetchStarted.promise;
+    await vi.waitFor(() =>
+      expect(view.value?.docs.map(doc => doc.docId)).toEqual(['created'])
+    );
+    const oldReadStarted = deferred();
+    const releaseOldRead = deferred();
+    const read = metadata.getPeerWorkspaceState.bind(metadata);
+    vi.spyOn(metadata, 'getPeerWorkspaceState').mockImplementationOnce(
+      async (...args) => {
+        const captured = await read(...args);
+        oldReadStarted.resolve();
+        await releaseOldRead.promise;
+        return captured;
+      }
+    );
+    const olderCreate = frontend.createDoc('offline-retracted');
+    expect(
+      view.value?.docs.some(doc => doc.docId === 'offline-retracted')
+    ).toBe(true);
+    await oldReadStarted.promise;
+    const beforeConfirm = await read('account-a', options.id);
+    await metadata.confirmPeerDocCreate('account-a', 'offline-retracted');
+    expect((await read('account-a', options.id)).cacheToken).toBeGreaterThan(
+      beforeConfirm.cacheToken
+    );
+    await frontend.createDoc('offline-created');
+    releaseOldRead.resolve();
+    await olderCreate;
+    expect(
+      view.value?.docs.some(doc => doc.docId === 'offline-retracted')
+    ).toBe(false);
+    expect(view.value?.docs.some(doc => doc.docId === 'offline-created')).toBe(
+      true
+    );
+    expect(
+      (await metadata.getPeerWorkspaceState('account-a', options.id)).docs.some(
+        doc => doc.docId === 'offline-created' && doc.pendingCreate
+      )
+    ).toBe(true);
+    expect(await local.getDoc('offline-created')).not.toBeNull();
+    const beforeDelete = await metadata.getPeerWorkspaceState(
+      'account-a',
+      options.id
+    );
+    await local.deleteDoc('offline-created');
+    await vi.waitFor(() =>
+      expect(
+        view.value?.docs.some(doc => doc.docId === 'offline-created')
+      ).toBe(false)
+    );
+    const afterDelete = await metadata.getPeerWorkspaceState(
+      'account-a',
+      options.id
+    );
+    expect(afterDelete.cacheToken).toBeGreaterThan(beforeDelete.cacheToken);
+    expect(await local.getDoc('offline-created')).toBeNull();
+  } finally {
+    frontend.stop();
+    expect(view.value?.docs).toEqual([]);
+    const stopping = cached.stop();
+    releaseLateFetch.resolve();
+    await stopping;
+    expect(view.value?.docs).toEqual([]);
+    expect(
+      (await metadata.getPeerWorkspaceState('account-a', options.id)).docs.some(
+        doc => doc.docId === 'late-old-session'
+      )
+    ).toBe(false);
+    subscription.unsubscribe();
+    for (const storage of [local, metadata, otherTab, remote, localIndexer])
+      storage.connection.disconnect();
+    body.destroy();
   }
 });

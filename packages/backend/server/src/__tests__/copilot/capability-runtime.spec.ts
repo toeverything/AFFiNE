@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { CopilotQuotaExceeded } from '../../base';
 import type { BackendRuntimeProvider } from '../../core/backend-runtime';
+import type { DocReader } from '../../core/doc';
 import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import type { Models } from '../../models';
 import type { ByokEntitlementPolicy } from '../../plugins/copilot/byok';
@@ -89,8 +90,7 @@ function runtimeFixture(streamError?: string, enabled = true) {
     },
   } as unknown as BackendRuntimeProvider;
   const entitlement = {
-    hasServerEntitlement: async () => true,
-    hasLocalEntitlement: async () => true,
+    hasEntitlement: async () => [true, true],
     hasAiPlan: async () => false,
   } as unknown as ByokEntitlementPolicy;
   const conversation = {
@@ -126,7 +126,8 @@ function runtimeFixture(streamError?: string, enabled = true) {
       conversation,
       tools,
       consumer,
-      new AttachmentAdmissionHost(materializer, storage)
+      new AttachmentAdmissionHost(materializer, storage),
+      { getDocIdAliases: async () => new Map() } as unknown as DocReader
     ),
   };
 }

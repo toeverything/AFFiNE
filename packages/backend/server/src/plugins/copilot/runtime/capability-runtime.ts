@@ -5,6 +5,7 @@ import { Injectable } from '@nestjs/common';
 
 import { CopilotPromptInvalid } from '../../../base/error/errors.gen';
 import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { DocReader } from '../../../core/doc';
 import {
   buildLlmEmbeddingRequest,
   buildLlmImageRequestFromMessages,
@@ -35,6 +36,7 @@ import {
   type PromptMessage,
   type StreamObject,
 } from '../providers/types';
+import type { DocSource } from '../tools/types';
 import {
   buildToolContracts,
   type RequiredStructuredOutputContract,
@@ -52,6 +54,7 @@ import {
   preparePromptMessagesForNativeRequest,
 } from './native-request-runtime';
 import { executeToolCall } from './tool/bridge';
+import { formatDocumentFootnotes } from './tool/footnotes';
 import { NativeProviderAdapter } from './tool/native-adapter';
 import { ToolRuntime } from './tool-runtime';
 
@@ -80,8 +83,35 @@ export class CapabilityRuntime {
     private readonly conversations: ConversationPolicy,
     private readonly tools: ToolRuntime,
     private readonly events: CopilotRuntimeEventConsumer,
-    private readonly attachments: AttachmentAdmissionHost
+    private readonly attachments: AttachmentAdmissionHost,
+    private readonly docReader: DocReader
   ) {}
+
+  private async documentFootnotes(documents: DocSource[]) {
+    const aliases = new Map(
+      await Promise.all(
+        [...new Set(documents.map(document => document.workspace_id))].map(
+          async workspaceId => {
+            const ids = await this.docReader.getDocIdAliases(workspaceId);
+            return [
+              workspaceId,
+              new Map(
+                [...ids].map(([logical, physical]) => [physical, logical])
+              ),
+            ] as const;
+          }
+        )
+      )
+    );
+    return formatDocumentFootnotes(
+      documents.map(document => ({
+        ...document,
+        doc_id:
+          aliases.get(document.workspace_id)?.get(document.doc_id) ??
+          document.doc_id,
+      }))
+    );
+  }
 
   private async prepareMessages(
     messages: PromptMessage[],
@@ -101,14 +131,15 @@ export class CapabilityRuntime {
     const workspaceId = options.workspace;
     const featureKind = (options.featureKind ?? 'chat') as ByokFeatureKind;
     const coverage = getByokSourceCoverage(featureKind);
-    const [serverByok, localByok, premium] = workspaceId
-      ? await Promise.all([
-          coverage.server && this.entitlement.hasServerEntitlement(workspaceId),
-          coverage.local &&
-            this.entitlement.hasLocalEntitlement(workspaceId, options.user),
-          this.entitlement.hasAiPlan(options.user),
-        ])
-      : [false, false, await this.entitlement.hasAiPlan(options.user)];
+    const [[serverByok, localByok], premium] = await Promise.all([
+      workspaceId && (coverage.server || coverage.local)
+        ? this.entitlement.hasEntitlement(
+            workspaceId,
+            coverage.local ? options.user : undefined
+          )
+        : ([false, false] as const),
+      this.entitlement.hasAiPlan(options.user),
+    ]);
     const routeAllowed =
       options.quotaBackedRoutesAllowed ??
       (!getCopilotFeatureAccess(featureKind).quotaMetered ||
@@ -117,8 +148,8 @@ export class CapabilityRuntime {
     return {
       routeAllowed,
       managedTier: premium ? ('Premium' as const) : ('Standard' as const),
-      serverByok,
-      localByok,
+      serverByok: coverage.server && serverByok,
+      localByok: coverage.local && localByok,
     };
   }
 
@@ -270,11 +301,9 @@ export class CapabilityRuntime {
     _filter?: ProviderFilter
   ) {
     const prepared = await this.stream('prompt.text', cond, messages, options);
-    return await new NativeProviderAdapter(() => prepared.stream).text(
-      prepared.request,
-      options.signal,
-      messages
-    );
+    return await new NativeProviderAdapter(() => prepared.stream, {
+      formatDocumentFootnotes: documents => this.documentFootnotes(documents),
+    }).text(prepared.request, options.signal, messages);
   }
 
   async *streamText(
@@ -284,11 +313,9 @@ export class CapabilityRuntime {
     _filter?: ProviderFilter
   ): AsyncIterableIterator<string> {
     const prepared = await this.stream('chat.default', cond, messages, options);
-    yield* new NativeProviderAdapter(() => prepared.stream).streamText(
-      prepared.request,
-      options.signal,
-      messages
-    );
+    yield* new NativeProviderAdapter(() => prepared.stream, {
+      formatDocumentFootnotes: documents => this.documentFootnotes(documents),
+    }).streamText(prepared.request, options.signal, messages);
   }
 
   async *streamObject(
@@ -298,11 +325,9 @@ export class CapabilityRuntime {
     _filter?: ProviderFilter
   ): AsyncIterableIterator<StreamObject> {
     const prepared = await this.stream('chat.default', cond, messages, options);
-    yield* new NativeProviderAdapter(() => prepared.stream).streamObject(
-      prepared.request,
-      options.signal,
-      messages
-    );
+    yield* new NativeProviderAdapter(() => prepared.stream, {
+      formatDocumentFootnotes: documents => this.documentFootnotes(documents),
+    }).streamObject(prepared.request, options.signal, messages);
   }
 
   async generateStructured(

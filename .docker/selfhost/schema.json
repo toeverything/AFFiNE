@@ -763,11 +763,6 @@
       "type": "object",
       "description": "Configuration for doc module",
       "properties": {
-        "experimental.yocto": {
-          "type": "boolean",
-          "description": "Use `y-octo` to merge updates at the same time when merging using Yjs.\n@default false",
-          "default": false
-        },
         "history.interval": {
           "type": "number",
           "description": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated.\n@default 600000",
@@ -1683,6 +1678,20 @@
           "description": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.\n@default false",
           "default": false,
           "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
             "CopilotByokRuntimeConfig": {
               "properties": {
                 "allowCustomEndpoint": {
@@ -1712,47 +1721,461 @@
               },
               "type": "object"
             },
-            "CopilotGoogleAuthOptionsFile": {
-              "properties": {
-                "credentials": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotGoogleCredentialsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "client_email": {
-                  "type": "string"
-                },
-                "private_key": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "client_email",
-                "private_key"
-              ],
-              "type": "object"
-            },
             "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
-                },
-                "displayName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "additionalProperties": true,
+                  "type": "object"
                 },
                 "enabled": {
                   "default": true,
@@ -1761,150 +2184,22 @@
                 "id": {
                   "type": "string"
                 },
-                "middleware": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "models": {
+                  "default": [],
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "priority": {
-                  "format": "double",
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
                 "type": {
-                  "$ref": "#/definitions/CopilotManagedProvider"
+                  "$ref": "#/definitions/BackendProvider"
                 }
               },
               "required": [
                 "id",
                 "type",
-                "models",
                 "config"
               ],
-              "type": "object"
-            },
-            "CopilotManagedProvider": {
-              "enum": [
-                "anthropic",
-                "anthropicVertex",
-                "cloudflareWorkersAi",
-                "fal",
-                "gemini",
-                "geminiVertex",
-                "openai"
-              ],
-              "type": "string"
-            },
-            "CopilotManagedProviderSettingsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiKey": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiToken": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "baseURL": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "googleAuthOptions": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "project": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeMiddlewareConfigFile": {
-              "properties": {
-                "text": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeTextMiddleware": {
-              "enum": [
-                "citation_footnote",
-                "callout",
-                "thinking_format"
-              ],
-              "type": "string"
-            },
-            "CopilotProviderMiddlewareConfigFile": {
-              "properties": {
-                "node": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "rust": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "type": "object"
             },
             "CopilotProvidersRuntimeConfigFile": {
@@ -1918,46 +2213,6 @@
                 }
               },
               "type": "object"
-            },
-            "CopilotRustMiddlewareConfigFile": {
-              "properties": {
-                "request": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                },
-                "stream": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotRustRequestMiddleware": {
-              "enum": [
-                "normalize_messages",
-                "clamp_max_tokens",
-                "tool_schema_rewrite",
-                "openai_request_compat",
-                "omit_tool_choice"
-              ],
-              "type": "string"
-            },
-            "CopilotRustStreamMiddleware": {
-              "enum": [
-                "stream_event_normalize",
-                "citation_indexing"
-              ],
-              "type": "string"
             }
           }
         },
@@ -1966,6 +2221,20 @@
           "description": "Allow workspace owners and admins to configure AI provider keys through AI BYOK.\n@default true",
           "default": true,
           "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
             "CopilotByokRuntimeConfig": {
               "properties": {
                 "allowCustomEndpoint": {
@@ -1995,47 +2264,461 @@
               },
               "type": "object"
             },
-            "CopilotGoogleAuthOptionsFile": {
-              "properties": {
-                "credentials": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotGoogleCredentialsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "client_email": {
-                  "type": "string"
-                },
-                "private_key": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "client_email",
-                "private_key"
-              ],
-              "type": "object"
-            },
             "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
-                },
-                "displayName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "additionalProperties": true,
+                  "type": "object"
                 },
                 "enabled": {
                   "default": true,
@@ -2044,150 +2727,22 @@
                 "id": {
                   "type": "string"
                 },
-                "middleware": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "models": {
+                  "default": [],
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "priority": {
-                  "format": "double",
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
                 "type": {
-                  "$ref": "#/definitions/CopilotManagedProvider"
+                  "$ref": "#/definitions/BackendProvider"
                 }
               },
               "required": [
                 "id",
                 "type",
-                "models",
                 "config"
               ],
-              "type": "object"
-            },
-            "CopilotManagedProvider": {
-              "enum": [
-                "anthropic",
-                "anthropicVertex",
-                "cloudflareWorkersAi",
-                "fal",
-                "gemini",
-                "geminiVertex",
-                "openai"
-              ],
-              "type": "string"
-            },
-            "CopilotManagedProviderSettingsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiKey": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiToken": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "baseURL": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "googleAuthOptions": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "project": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeMiddlewareConfigFile": {
-              "properties": {
-                "text": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeTextMiddleware": {
-              "enum": [
-                "citation_footnote",
-                "callout",
-                "thinking_format"
-              ],
-              "type": "string"
-            },
-            "CopilotProviderMiddlewareConfigFile": {
-              "properties": {
-                "node": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "rust": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "type": "object"
             },
             "CopilotProvidersRuntimeConfigFile": {
@@ -2201,46 +2756,6 @@
                 }
               },
               "type": "object"
-            },
-            "CopilotRustMiddlewareConfigFile": {
-              "properties": {
-                "request": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                },
-                "stream": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotRustRequestMiddleware": {
-              "enum": [
-                "normalize_messages",
-                "clamp_max_tokens",
-                "tool_schema_rewrite",
-                "openai_request_compat",
-                "omit_tool_choice"
-              ],
-              "type": "string"
-            },
-            "CopilotRustStreamMiddleware": {
-              "enum": [
-                "stream_event_normalize",
-                "citation_indexing"
-              ],
-              "type": "string"
             }
           }
         },
@@ -2254,6 +2769,20 @@
             "fal"
           ],
           "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
             "CopilotByokRuntimeConfig": {
               "properties": {
                 "allowCustomEndpoint": {
@@ -2283,47 +2812,461 @@
               },
               "type": "object"
             },
-            "CopilotGoogleAuthOptionsFile": {
-              "properties": {
-                "credentials": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotGoogleCredentialsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "client_email": {
-                  "type": "string"
-                },
-                "private_key": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "client_email",
-                "private_key"
-              ],
-              "type": "object"
-            },
             "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
-                },
-                "displayName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "additionalProperties": true,
+                  "type": "object"
                 },
                 "enabled": {
                   "default": true,
@@ -2332,150 +3275,22 @@
                 "id": {
                   "type": "string"
                 },
-                "middleware": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "models": {
+                  "default": [],
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "priority": {
-                  "format": "double",
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
                 "type": {
-                  "$ref": "#/definitions/CopilotManagedProvider"
+                  "$ref": "#/definitions/BackendProvider"
                 }
               },
               "required": [
                 "id",
                 "type",
-                "models",
                 "config"
               ],
-              "type": "object"
-            },
-            "CopilotManagedProvider": {
-              "enum": [
-                "anthropic",
-                "anthropicVertex",
-                "cloudflareWorkersAi",
-                "fal",
-                "gemini",
-                "geminiVertex",
-                "openai"
-              ],
-              "type": "string"
-            },
-            "CopilotManagedProviderSettingsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiKey": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiToken": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "baseURL": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "googleAuthOptions": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "project": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeMiddlewareConfigFile": {
-              "properties": {
-                "text": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeTextMiddleware": {
-              "enum": [
-                "citation_footnote",
-                "callout",
-                "thinking_format"
-              ],
-              "type": "string"
-            },
-            "CopilotProviderMiddlewareConfigFile": {
-              "properties": {
-                "node": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "rust": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "type": "object"
             },
             "CopilotProvidersRuntimeConfigFile": {
@@ -2489,46 +3304,6 @@
                 }
               },
               "type": "object"
-            },
-            "CopilotRustMiddlewareConfigFile": {
-              "properties": {
-                "request": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                },
-                "stream": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotRustRequestMiddleware": {
-              "enum": [
-                "normalize_messages",
-                "clamp_max_tokens",
-                "tool_schema_rewrite",
-                "openai_request_compat",
-                "omit_tool_choice"
-              ],
-              "type": "string"
-            },
-            "CopilotRustStreamMiddleware": {
-              "enum": [
-                "stream_event_normalize",
-                "citation_indexing"
-              ],
-              "type": "string"
             }
           },
           "items": {
@@ -2546,6 +3321,20 @@
           "description": "Allow AI BYOK keys to use a custom provider endpoint.\n@default false",
           "default": false,
           "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
             "CopilotByokRuntimeConfig": {
               "properties": {
                 "allowCustomEndpoint": {
@@ -2575,47 +3364,461 @@
               },
               "type": "object"
             },
-            "CopilotGoogleAuthOptionsFile": {
-              "properties": {
-                "credentials": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotGoogleCredentialsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "client_email": {
-                  "type": "string"
-                },
-                "private_key": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "client_email",
-                "private_key"
-              ],
-              "type": "object"
-            },
             "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
-                },
-                "displayName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "additionalProperties": true,
+                  "type": "object"
                 },
                 "enabled": {
                   "default": true,
@@ -2624,150 +3827,22 @@
                 "id": {
                   "type": "string"
                 },
-                "middleware": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "models": {
+                  "default": [],
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "priority": {
-                  "format": "double",
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
                 "type": {
-                  "$ref": "#/definitions/CopilotManagedProvider"
+                  "$ref": "#/definitions/BackendProvider"
                 }
               },
               "required": [
                 "id",
                 "type",
-                "models",
                 "config"
               ],
-              "type": "object"
-            },
-            "CopilotManagedProvider": {
-              "enum": [
-                "anthropic",
-                "anthropicVertex",
-                "cloudflareWorkersAi",
-                "fal",
-                "gemini",
-                "geminiVertex",
-                "openai"
-              ],
-              "type": "string"
-            },
-            "CopilotManagedProviderSettingsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiKey": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiToken": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "baseURL": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "googleAuthOptions": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "project": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeMiddlewareConfigFile": {
-              "properties": {
-                "text": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeTextMiddleware": {
-              "enum": [
-                "citation_footnote",
-                "callout",
-                "thinking_format"
-              ],
-              "type": "string"
-            },
-            "CopilotProviderMiddlewareConfigFile": {
-              "properties": {
-                "node": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "rust": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "type": "object"
             },
             "CopilotProvidersRuntimeConfigFile": {
@@ -2781,46 +3856,6 @@
                 }
               },
               "type": "object"
-            },
-            "CopilotRustMiddlewareConfigFile": {
-              "properties": {
-                "request": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                },
-                "stream": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotRustRequestMiddleware": {
-              "enum": [
-                "normalize_messages",
-                "clamp_max_tokens",
-                "tool_schema_rewrite",
-                "openai_request_compat",
-                "omit_tool_choice"
-              ],
-              "type": "string"
-            },
-            "CopilotRustStreamMiddleware": {
-              "enum": [
-                "stream_event_normalize",
-                "citation_indexing"
-              ],
-              "type": "string"
             }
           }
         },
@@ -2829,6 +3864,20 @@
           "description": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network.\n@default false",
           "default": false,
           "definitions": {
+            "BackendProvider": {
+              "enum": [
+                "openai",
+                "anthropic",
+                "anthropicVertex",
+                "gemini",
+                "geminiVertex",
+                "fal",
+                "cloudflareWorkersAi",
+                "openrouter",
+                "perplexity"
+              ],
+              "type": "string"
+            },
             "CopilotByokRuntimeConfig": {
               "properties": {
                 "allowCustomEndpoint": {
@@ -2858,47 +3907,461 @@
               },
               "type": "object"
             },
-            "CopilotGoogleAuthOptionsFile": {
-              "properties": {
-                "credentials": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleCredentialsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotGoogleCredentialsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "client_email": {
-                  "type": "string"
-                },
-                "private_key": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "client_email",
-                "private_key"
-              ],
-              "type": "object"
-            },
             "CopilotManagedProfileConfigFile": {
+              "allOf": [
+                {
+                  "else": {
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "openaiDialect": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "responses",
+                                      "chat_completions"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openai"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropic"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "anthropicVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "gemini"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "googleAuthOptions": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "credentials": {
+                                        "anyOf": [
+                                          {
+                                            "properties": {
+                                              "client_email": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              },
+                                              "private_key": {
+                                                "minLength": 1,
+                                                "pattern": "\\S",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "client_email",
+                                              "private_key"
+                                            ],
+                                            "type": "object"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "location": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "project": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "project",
+                              "location"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "geminiVertex"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "fal"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "accountId": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "apiToken": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiToken",
+                              "accountId"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "cloudflareWorkersAi"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "openrouter"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "config": {
+                            "properties": {
+                              "apiKey": {
+                                "minLength": 1,
+                                "pattern": "\\S",
+                                "type": "string"
+                              },
+                              "baseURL": {
+                                "anyOf": [
+                                  {
+                                    "pattern": "^\\s*[hH][tT][tT][pP][sS]?://[^/@?#]+(?:[/?#].*)?\\s*$",
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "apiKey"
+                            ],
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "perplexity"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "config"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "if": {
+                    "properties": {
+                      "enabled": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "enabled"
+                    ]
+                  }
+                }
+              ],
               "properties": {
                 "config": {
-                  "$ref": "#/definitions/CopilotManagedProviderSettingsFile"
-                },
-                "displayName": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "additionalProperties": true,
+                  "type": "object"
                 },
                 "enabled": {
                   "default": true,
@@ -2907,150 +4370,22 @@
                 "id": {
                   "type": "string"
                 },
-                "middleware": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotProviderMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "models": {
+                  "default": [],
                   "items": {
                     "type": "string"
                   },
                   "type": "array"
                 },
-                "priority": {
-                  "format": "double",
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
                 "type": {
-                  "$ref": "#/definitions/CopilotManagedProvider"
+                  "$ref": "#/definitions/BackendProvider"
                 }
               },
               "required": [
                 "id",
                 "type",
-                "models",
                 "config"
               ],
-              "type": "object"
-            },
-            "CopilotManagedProvider": {
-              "enum": [
-                "anthropic",
-                "anthropicVertex",
-                "cloudflareWorkersAi",
-                "fal",
-                "gemini",
-                "geminiVertex",
-                "openai"
-              ],
-              "type": "string"
-            },
-            "CopilotManagedProviderSettingsFile": {
-              "additionalProperties": true,
-              "properties": {
-                "accountId": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiKey": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "apiToken": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "baseURL": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "googleAuthOptions": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotGoogleAuthOptionsFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "project": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeMiddlewareConfigFile": {
-              "properties": {
-                "text": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotNodeTextMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotNodeTextMiddleware": {
-              "enum": [
-                "citation_footnote",
-                "callout",
-                "thinking_format"
-              ],
-              "type": "string"
-            },
-            "CopilotProviderMiddlewareConfigFile": {
-              "properties": {
-                "node": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotNodeMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "rust": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/CopilotRustMiddlewareConfigFile"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              },
               "type": "object"
             },
             "CopilotProvidersRuntimeConfigFile": {
@@ -3064,46 +4399,6 @@
                 }
               },
               "type": "object"
-            },
-            "CopilotRustMiddlewareConfigFile": {
-              "properties": {
-                "request": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustRequestMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                },
-                "stream": {
-                  "items": {
-                    "$ref": "#/definitions/CopilotRustStreamMiddleware"
-                  },
-                  "type": [
-                    "array",
-                    "null"
-                  ]
-                }
-              },
-              "type": "object"
-            },
-            "CopilotRustRequestMiddleware": {
-              "enum": [
-                "normalize_messages",
-                "clamp_max_tokens",
-                "tool_schema_rewrite",
-                "openai_request_compat",
-                "omit_tool_choice"
-              ],
-              "type": "string"
-            },
-            "CopilotRustStreamMiddleware": {
-              "enum": [
-                "stream_event_normalize",
-                "citation_indexing"
-              ],
-              "type": "string"
             }
           }
         },

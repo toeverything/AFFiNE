@@ -179,6 +179,24 @@ impl PermissionAuthorizer {
     Ok(doc_decisions(decision))
   }
 
+  pub(in crate::runtime::backend_runtime) async fn authorize_workspace_sync_docs_in(
+    &self,
+    transaction: &mut Transaction<'_, Postgres>,
+    workspace_id: &str,
+    actor_user_id: &str,
+    doc_ids: &[String],
+  ) -> RuntimeResult<BTreeMap<String, Decision>> {
+    let mut request = doc_request(doc_ids, DocAction::Read);
+    request.workspace_actions.push(WorkspaceAction::Sync.into());
+    let decision = self
+      .authorize_typed_request_in(transaction, workspace_id, Some(actor_user_id), request)
+      .await?;
+    if !decision.workspace.first().is_some_and(|decision| decision.allowed) {
+      return Err(RuntimeError::invalid_input("space_access_denied"));
+    }
+    Ok(doc_decisions(decision))
+  }
+
   async fn authorize_typed(
     &self,
     workspace_id: &str,
@@ -221,49 +239,84 @@ impl PermissionAuthorizer {
     command: &DomainCommand,
     quota: Option<CommandQuotaFacts<'_>>,
   ) -> RuntimeResult<CommandAuthorizationDecision> {
+    Ok(
+      self
+        .authorize_commands_in(
+          transaction,
+          actor_user_id,
+          workspace_id,
+          doc_id,
+          std::slice::from_ref(command),
+          quota,
+        )
+        .await?
+        .pop()
+        .expect("single command decision"),
+    )
+  }
+
+  pub(in crate::runtime::backend_runtime) async fn authorize_commands_in(
+    &self,
+    transaction: &mut Transaction<'_, Postgres>,
+    actor_user_id: &str,
+    workspace_id: &str,
+    doc_id: Option<&str>,
+    commands: &[DomainCommand],
+    quota: Option<CommandQuotaFacts<'_>>,
+  ) -> RuntimeResult<Vec<CommandAuthorizationDecision>> {
     let snapshot = self
       .store
       .command_snapshot_in(transaction, workspace_id, actor_user_id, doc_id)
       .await?;
-    let decision = authorize_command(
-      command,
-      CommandFacts {
-        acl: &snapshot.facts,
-        access_grant: &snapshot.grant,
-        quota,
-      },
-    );
-    if decision.allowed {
-      Ok(decision)
-    } else {
-      Err(RuntimeError::invalid_input(match (decision.denial_reason, command) {
-        (Some(CommandDenialReason::WorkspaceOwnerCannotLeave), _) => "workspace_owner_cannot_leave".to_string(),
-        (Some(CommandDenialReason::CannotRevokeSelf), _) => "cannot_revoke_self".to_string(),
-        (Some(CommandDenialReason::OwnerMustTransfer), DomainCommand::TransitionDocRole { .. }) => {
-          "doc_owner_must_transfer".to_string()
-        }
-        (Some(CommandDenialReason::OwnerMustTransfer), _) => "workspace_owner_must_transfer".to_string(),
-        (Some(CommandDenialReason::TargetMemberMustBeActive), _) => "target_member_not_active".to_string(),
-        (Some(CommandDenialReason::ActiveMemberRequired), _) => "active_member_required".to_string(),
-        (Some(CommandDenialReason::WorkspaceNotFound), _) => "workspace_not_found".to_string(),
-        (Some(CommandDenialReason::WorkspaceReadonly), _) => "workspace_readonly".to_string(),
-        (Some(CommandDenialReason::QuotaFactsUnavailable), _) => "command_quota_unavailable".to_string(),
-        (
-          Some(CommandDenialReason::Permission(_)),
-          DomainCommand::MutateComment { .. } | DomainCommand::MutateReply { .. },
-        ) => "comment_mutation_denied".to_string(),
-        (Some(CommandDenialReason::Permission(permission)), _) => {
-          format!(
-            "domain_permission_denied:{}",
-            match permission {
-              CommandPermission::Workspace(action) => action.as_str(),
-              CommandPermission::Doc(action) => action.as_str(),
-            }
-          )
-        }
-        (None, _) => "domain_permission_denied".to_string(),
-      }))
+    if doc_id.is_some_and(|doc_id| snapshot.deleted_docs.iter().any(|deleted| deleted == doc_id)) {
+      return Err(RuntimeError::invalid_input("doc_not_found"));
     }
+    if doc_id.is_some_and(|doc_id| snapshot.subject_denied_docs.iter().any(|denied| denied == doc_id)) {
+      return Err(RuntimeError::invalid_input("domain_permission_denied"));
+    }
+    let mut decisions = Vec::with_capacity(commands.len());
+    for command in commands {
+      let decision = authorize_command(
+        command,
+        CommandFacts {
+          acl: &snapshot.facts,
+          access_grant: &snapshot.grant,
+          quota,
+        },
+      );
+      if decision.allowed {
+        decisions.push(decision);
+      } else {
+        return Err(RuntimeError::invalid_input(match (decision.denial_reason, command) {
+          (Some(CommandDenialReason::WorkspaceOwnerCannotLeave), _) => "workspace_owner_cannot_leave".to_string(),
+          (Some(CommandDenialReason::CannotRevokeSelf), _) => "cannot_revoke_self".to_string(),
+          (Some(CommandDenialReason::OwnerMustTransfer), DomainCommand::TransitionDocRole { .. }) => {
+            "doc_owner_must_transfer".to_string()
+          }
+          (Some(CommandDenialReason::OwnerMustTransfer), _) => "workspace_owner_must_transfer".to_string(),
+          (Some(CommandDenialReason::TargetMemberMustBeActive), _) => "target_member_not_active".to_string(),
+          (Some(CommandDenialReason::ActiveMemberRequired), _) => "active_member_required".to_string(),
+          (Some(CommandDenialReason::WorkspaceNotFound), _) => "workspace_not_found".to_string(),
+          (Some(CommandDenialReason::WorkspaceReadonly), _) => "workspace_readonly".to_string(),
+          (Some(CommandDenialReason::QuotaFactsUnavailable), _) => "command_quota_unavailable".to_string(),
+          (
+            Some(CommandDenialReason::Permission(_)),
+            DomainCommand::MutateComment { .. } | DomainCommand::MutateReply { .. },
+          ) => "comment_mutation_denied".to_string(),
+          (Some(CommandDenialReason::Permission(permission)), _) => {
+            format!(
+              "domain_permission_denied:{}",
+              match permission {
+                CommandPermission::Workspace(action) => action.as_str(),
+                CommandPermission::Doc(action) => action.as_str(),
+              }
+            )
+          }
+          (None, _) => "domain_permission_denied".to_string(),
+        }));
+      }
+    }
+    Ok(decisions)
   }
 
   pub(in crate::runtime::backend_runtime) async fn authorize_search(
@@ -327,7 +380,18 @@ impl PermissionAuthorizer {
 }
 
 fn evaluate_snapshot(snapshot: PermissionSnapshot) -> RuntimeResult<AuthorizedPermission> {
-  let decision = authorize(&snapshot.request, &snapshot.facts, &snapshot.grant);
+  let mut decision = authorize(&snapshot.request, &snapshot.facts, &snapshot.grant);
+  for doc in &mut decision.docs {
+    if snapshot.deleted_docs.contains(&doc.doc_id) || snapshot.subject_denied_docs.contains(&doc.doc_id) {
+      doc.effective_role = None;
+      doc.preview = None;
+      for action in &mut doc.decisions {
+        action.allowed = false;
+        action.source = None;
+        action.denial_reason = None;
+      }
+    }
+  }
   let effective_workspace_role = decision.effective_workspace_role;
   let output = permission_evaluation_output(decision.clone());
   Ok(AuthorizedPermission {

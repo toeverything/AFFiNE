@@ -68,7 +68,7 @@ test('should update doc content to database when doc is updated', async t => {
 
   const docId = randomUUID();
   await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates);
-  await adapter.getDocBinNative(workspace.id, docId);
+  await adapter.getDoc(workspace.id, docId);
 
   mock.method(docReader, 'parseDocContent', () => {
     return {

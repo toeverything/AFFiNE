@@ -48,34 +48,76 @@ pub(super) async fn apply_payment_snapshot(
   deployment: Deployment,
   mail_hash_key: &[u8; 32],
 ) -> Result<PaymentApplyResult, PaymentApplyError> {
-  validate_snapshot(&snapshot)?;
-  let namespace = snapshot.namespace.canonical_key().map_err(payment_rule_error)?;
-  let required = snapshot_scopes(&snapshot, &namespace)?;
-  let expansion = required_scope_expansion(connection.scopes(), required);
+  let (namespace, expansion) = check_snapshot_scopes(connection, &snapshot).await?;
   if !expansion.is_empty() {
     return Err(PaymentApplyError::LockSetExpanded(expansion));
   }
   let held_scopes = connection.scopes().to_vec();
-  let discovered_scopes = discover_payment_scopes(connection, &snapshot, &namespace).await?;
-  let expansion = required_scope_expansion(&held_scopes, discovered_scopes);
-  if !expansion.is_empty() {
-    return Err(PaymentApplyError::LockSetExpanded(expansion));
-  }
   let mut tx = connection.begin().await?;
-  let outcome = async {
-    sqlx::query("SET LOCAL statement_timeout = '5s'")
-      .execute(&mut *tx)
-      .await
-      .map_err(|error| RuntimeError::database("set payment transaction timeout", error))?;
-
-    if lock_receipts_and_operation(&mut tx, &snapshot, &namespace).await? == ReceiptDisposition::AlreadyProcessed {
-      return Ok(PaymentApplyResult {
-        targets: Vec::new(),
-        owner_ids: Vec::new(),
-      });
+  let outcome = apply_locked_snapshots(
+    &mut tx,
+    &[(snapshot, namespace)],
+    &held_scopes,
+    deployment,
+    mail_hash_key,
+    None,
+  )
+  .await;
+  match outcome {
+    Ok(result) => {
+      tx.commit()
+        .await
+        .map_err(|error| RuntimeError::database("commit payment snapshot", error))?;
+      Ok(result)
     }
-    let stored = lock_subscription_rows(&mut tx, &snapshot, &namespace).await?;
-    validate_ownership_transfers(&snapshot, &stored)?;
+    Err(error) => {
+      tx.rollback()
+        .await
+        .map_err(|rollback| RuntimeError::database("rollback payment snapshot", rollback))?;
+      Err(error)
+    }
+  }
+}
+
+pub(super) async fn check_snapshot_scopes(
+  connection: &mut PaymentConnection,
+  snapshot: &PaymentSnapshot,
+) -> RuntimeResult<(String, Vec<PaymentScope>)> {
+  validate_snapshot(snapshot)?;
+  let namespace = snapshot.namespace.canonical_key().map_err(payment_rule_error)?;
+  let mut required = snapshot_scopes(snapshot, &namespace)?;
+  required.extend(discover_payment_scopes(connection, snapshot, &namespace).await?);
+  let expansion = required_scope_expansion(connection.scopes(), required);
+  Ok((namespace, expansion))
+}
+
+pub(super) async fn apply_locked_snapshots(
+  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  snapshots: &[(PaymentSnapshot, String)],
+  held_scopes: &[PaymentScope],
+  deployment: Deployment,
+  mail_hash_key: &[u8; 32],
+  settlement: Option<&super::BindingSettlement<'_>>,
+) -> Result<PaymentApplyResult, PaymentApplyError> {
+  sqlx::query("SET LOCAL statement_timeout = '5s'")
+    .execute(&mut **tx)
+    .await
+    .map_err(|error| RuntimeError::database("set payment transaction timeout", error))?;
+
+  let mut targets = Vec::new();
+  if let Some(settlement) = settlement.as_ref() {
+    targets.push(RuntimeEntitlementTarget {
+      target_type: "user".to_string(),
+      target_id: settlement.user_id.to_string(),
+    });
+  }
+  let mut locked = Vec::with_capacity(snapshots.len());
+  for (snapshot, namespace) in snapshots {
+    if lock_receipts_and_operation(tx, snapshot, namespace).await? == ReceiptDisposition::AlreadyProcessed {
+      continue;
+    }
+    let stored = lock_subscription_rows(tx, snapshot, namespace).await?;
+    validate_ownership_transfers(snapshot, &stored)?;
     let mut discovered_scopes = Vec::new();
     for row in &stored {
       discovered_scopes.push(PaymentScope::source(&row.namespace, &row.source_id)?);
@@ -93,15 +135,16 @@ pub(super) async fn apply_payment_snapshot(
         )?);
       }
     }
-    let expansion = required_scope_expansion(&held_scopes, discovered_scopes);
+    let expansion = required_scope_expansion(held_scopes, discovered_scopes);
     if !expansion.is_empty() {
       return Err(PaymentApplyError::LockSetExpanded(expansion));
     }
-    let mut targets = stored
-      .iter()
-      .filter(|row| row.target.target_type != "instance")
-      .map(|row| row.target.clone())
-      .collect::<Vec<_>>();
+    targets.extend(
+      stored
+        .iter()
+        .filter(|row| row.target.target_type != "instance")
+        .map(|row| row.target.clone()),
+    );
     targets.extend(
       snapshot
         .subscriptions
@@ -116,12 +159,16 @@ pub(super) async fn apply_payment_snapshot(
       target_type: "user".to_string(),
       target_id: customer.user_id.clone(),
     }));
-    targets.sort();
-    targets.dedup();
-    let owner_ids = lock_targets(&mut tx, &targets).await?;
-    let now = load_decision_time(&mut tx, "payment decision clock").await?;
-    let before = transition_before(&mut tx, &targets, deployment, now).await?;
-    upsert_customers(&mut tx, &snapshot, &namespace).await?;
+    locked.push((snapshot, namespace, stored));
+  }
+
+  targets.sort();
+  targets.dedup();
+  let owner_ids = lock_targets(tx, &targets).await?;
+  let now = load_decision_time(tx, "payment decision clock").await?;
+  let before = transition_before(tx, &targets, deployment, now).await?;
+  for (snapshot, namespace, stored) in &locked {
+    upsert_customers(tx, snapshot, namespace).await?;
     for subscription in &snapshot.subscriptions {
       let normalized = normalize_provider_subscription(ProviderSubscriptionFacts {
         collection_pauses: Vec::new(),
@@ -137,44 +184,22 @@ pub(super) async fn apply_payment_snapshot(
         will_renew: subscription.will_renew,
       })
       .map_err(payment_rule_error)?;
-      upsert_subscription(
-        &mut tx,
-        &snapshot,
-        &namespace,
-        subscription,
-        normalized.access.quantity,
-        now,
-      )
-      .await?;
+      upsert_subscription(tx, snapshot, namespace, subscription, normalized.access.quantity, now).await?;
     }
-
-    expire_missing_sources(&mut tx, &snapshot, &stored, now).await?;
-    upsert_trials(&mut tx, &snapshot, &namespace, now).await?;
-    upsert_invoices(&mut tx, &snapshot, &namespace, now).await?;
-    upsert_licenses(&mut tx, &snapshot, now).await?;
-    upsert_financial_facts(&mut tx, &snapshot, &namespace, now).await?;
-    super::reconcile_cloud_winners(&mut tx, &targets, now).await?;
-    apply_transitions(&mut tx, &before, deployment, now).await?;
-    reserve_workspace_upgrade_mails(&mut tx, &before, deployment, mail_hash_key, now).await?;
-    reserve_snapshot_mails(&mut tx, &snapshot, mail_hash_key, now).await?;
-    complete_receipts_and_operation(&mut tx, &snapshot, &namespace, now).await?;
-    Ok(PaymentApplyResult { targets, owner_ids })
+    expire_missing_sources(tx, snapshot, stored, now).await?;
+    upsert_trials(tx, snapshot, namespace, now).await?;
+    upsert_invoices(tx, snapshot, namespace, now).await?;
+    upsert_licenses(tx, snapshot, now).await?;
+    upsert_financial_facts(tx, snapshot, namespace, now).await?;
   }
-  .await;
-  match outcome {
-    Ok(result) => {
-      tx.commit()
-        .await
-        .map_err(|error| RuntimeError::database("commit payment snapshot", error))?;
-      Ok(result)
-    }
-    Err(error) => {
-      tx.rollback()
-        .await
-        .map_err(|rollback| RuntimeError::database("rollback payment snapshot", rollback))?;
-      Err(error)
-    }
+  super::reconcile_cloud_bindings(tx, &targets, held_scopes, now, settlement).await?;
+  apply_transitions(tx, &before, deployment, now).await?;
+  reserve_workspace_upgrade_mails(tx, &before, deployment, mail_hash_key, now).await?;
+  for (snapshot, namespace, _) in locked {
+    reserve_snapshot_mails(tx, snapshot, mail_hash_key, now).await?;
+    complete_receipts_and_operation(tx, snapshot, namespace, now).await?;
   }
+  Ok(PaymentApplyResult { targets, owner_ids })
 }
 
 fn validate_snapshot(snapshot: &PaymentSnapshot) -> RuntimeResult<()> {
@@ -375,7 +400,11 @@ pub(super) fn snapshot_scopes(snapshot: &PaymentSnapshot, namespace: &str) -> Ru
     }
   }
   for trial in &snapshot.trials {
-    if snapshot.customer_id.is_none() && snapshot.subscriptions.is_empty() && snapshot.financial_facts.is_empty() {
+    if snapshot.customer_id.is_none()
+      && snapshot.subscriptions.is_empty()
+      && snapshot.financial_facts.is_empty()
+      && snapshot.operation.is_none()
+    {
       scopes.push(PaymentScope::billing_target(
         namespace,
         &trial.target_type,

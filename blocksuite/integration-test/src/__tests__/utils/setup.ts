@@ -67,7 +67,8 @@ function initCollection(collection: TestWorkspace) {
 async function createEditor(
   collection: TestWorkspace,
   mode: DocMode = 'page',
-  extensions: ExtensionType[] = []
+  extensions: ExtensionType[] = [],
+  editorStyle?: Partial<CSSStyleDeclaration>
 ) {
   const app = document.createElement('div');
   const blockCollection = collection.docs.values().next().value;
@@ -88,6 +89,7 @@ async function createEditor(
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];
+  Object.assign(editor.style, editorStyle);
   app.append(editor);
 
   window.editor = editor;
@@ -116,6 +118,7 @@ export function createPainterWorker() {
 type SetupEditorOptions = {
   extensions?: ExtensionType[];
   enableDomRenderer?: boolean;
+  editorStyle?: Partial<CSSStyleDeclaration>;
 };
 
 export async function setupEditor(
@@ -143,7 +146,12 @@ export async function setupEditor(
     featureFlagService?.setFlag('enable_dom_renderer', true);
   }
 
-  const appElement = await createEditor(collection, mode, extensions);
+  const appElement = await createEditor(
+    collection,
+    mode,
+    extensions,
+    options.editorStyle
+  );
 
   return async () => {
     await cleanup();

@@ -2,10 +2,10 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
 import { decodeWithJson, encodeWithJson } from '../../base/graphql';
+import { DocReader } from '../doc/reader';
 import { PermissionAccess } from '../permission';
 import {
   realtimeCommentRoom,
-  RealtimePublisher,
   RealtimeRegistry,
   registerRealtimeLiveQuery,
 } from '../realtime';
@@ -21,7 +21,8 @@ export class CommentRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly service: CommentService,
     private readonly ac: PermissionAccess,
-    private readonly registry: RealtimeRegistry
+    private readonly registry: RealtimeRegistry,
+    private readonly docReader: DocReader
   ) {}
 
   onModuleInit() {
@@ -37,12 +38,16 @@ export class CommentRealtimeProvider implements OnModuleInit {
         name: 'comment.changes.get',
         input,
         handle: async (user, payload) => {
-          await this.assertRead(user.id, payload.workspaceId, payload.docId);
+          const docId = await this.docReader.resolveStorageDocId(
+            payload.workspaceId,
+            payload.docId
+          );
+          await this.assertRead(user.id, payload.workspaceId, docId);
           const cursor: CommentCursor = decodeWithJson(payload.after) ?? {};
           const limit = payload.first;
           const changes = await this.service.listCommentChanges(
             payload.workspaceId,
-            payload.docId,
+            docId,
             {
               commentUpdatedAt: cursor.commentUpdatedAt,
               replyUpdatedAt: cursor.replyUpdatedAt,
@@ -78,7 +83,11 @@ export class CommentRealtimeProvider implements OnModuleInit {
           docId: z.string(),
         }),
         authorize: async (user, payload) => {
-          await this.assertRead(user.id, payload.workspaceId, payload.docId);
+          const docId = await this.docReader.resolveStorageDocId(
+            payload.workspaceId,
+            payload.docId
+          );
+          await this.assertRead(user.id, payload.workspaceId, docId);
         },
         room: (_user, payload) =>
           commentRoom(payload.workspaceId, payload.docId),
@@ -93,16 +102,4 @@ export class CommentRealtimeProvider implements OnModuleInit {
       .doc(docId)
       .assert('Doc.Comments.Read');
   }
-}
-
-export function publishCommentChanged(
-  publisher: RealtimePublisher | undefined,
-  workspaceId: string,
-  docId: string
-) {
-  publisher?.publish(
-    'comment.changed',
-    { workspaceId, docId },
-    { changed: true }
-  );
 }

@@ -1263,6 +1263,37 @@ describe('notion html to snapshot', () => {
       });
       expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
     });
+
+    const userAvatar = `<span class="user"><img src="${originalUrl}" class="icon user-icon" />Alice</span>`;
+
+    test.each([
+      {
+        location: 'a database person cell',
+        body: `<table class="collection-content">
+          <thead><tr><th>Name</th><th>Person</th></tr></thead>
+          <tbody><tr><td class="cell-title"><a>Row</a></td><td>${userAvatar}</td></tr></tbody>
+        </table>`,
+      },
+      {
+        location: 'a paragraph',
+        body: `<p>${userAvatar}</p>`,
+      },
+    ])(
+      'does not import a user avatar in $location as an image',
+      async ({ body }) => {
+        const adapter = new NotionHtmlAdapter(createJob(), provider);
+        const snapshot = await adapter.toBlockSnapshot({
+          file: `<div class="page-body">${body}</div>`,
+          assets: new AssetsManager({ blob: new MemoryBlobCRUD() }),
+        });
+
+        const flavours = (block: BlockSnapshot): string[] => [
+          block.flavour,
+          ...block.children.flatMap(flavours),
+        ];
+        expect(flavours(snapshot)).not.toContain('affine:image');
+      }
+    );
   });
 
   test('bookmark', async () => {

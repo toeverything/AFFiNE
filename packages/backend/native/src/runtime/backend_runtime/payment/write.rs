@@ -420,16 +420,51 @@ pub(super) async fn complete_receipts_and_operation(
   namespace: &str,
   now: chrono::DateTime<chrono::Utc>,
 ) -> RuntimeResult<()> {
-  sqlx::query(
-    "UPDATE payment_events SET processing_status='processed',processed_at=$3,last_error=NULL,updated_at=$3 WHERE \
-     provider_namespace=$1 AND external_event_id=ANY($2) AND processing_status IN ('pending','processing','failed')",
-  )
-  .bind(namespace)
-  .bind(&snapshot.captured_event_ids)
-  .bind(now)
-  .execute(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("complete payment inbox receipts", error))?;
+  if let Some((claimed_event_id, expected_attempt)) = &snapshot.claimed_attempt {
+    let fenced = sqlx::query(
+      "UPDATE payment_events SET processing_status='processed',processed_at=$3,last_error=NULL,updated_at=$3 WHERE \
+       provider_namespace=$1 AND external_event_id=$2 AND processing_status='processing' AND processing_attempts=$4",
+    )
+    .bind(namespace)
+    .bind(claimed_event_id)
+    .bind(now)
+    .bind(expected_attempt)
+    .execute(&mut **tx)
+    .await
+    .map_err(|error| RuntimeError::database("complete claimed payment inbox receipt", error))?;
+    if fenced.rows_affected() != 1 {
+      return Err(RuntimeError::invalid_state(super::read::RECEIPT_ATTEMPT_FENCED_ERROR));
+    }
+    let remaining = snapshot
+      .captured_event_ids
+      .iter()
+      .filter(|id| *id != claimed_event_id)
+      .cloned()
+      .collect::<Vec<_>>();
+    if !remaining.is_empty() {
+      sqlx::query(
+        "UPDATE payment_events SET processing_status='processed',processed_at=$3,last_error=NULL,updated_at=$3 WHERE \
+         provider_namespace=$1 AND external_event_id=ANY($2) AND processing_status IN ('pending','failed')",
+      )
+      .bind(namespace)
+      .bind(&remaining)
+      .bind(now)
+      .execute(&mut **tx)
+      .await
+      .map_err(|error| RuntimeError::database("complete payment inbox receipts", error))?;
+    }
+  } else {
+    sqlx::query(
+      "UPDATE payment_events SET processing_status='processed',processed_at=$3,last_error=NULL,updated_at=$3 WHERE \
+       provider_namespace=$1 AND external_event_id=ANY($2) AND processing_status IN ('pending','failed')",
+    )
+    .bind(namespace)
+    .bind(&snapshot.captured_event_ids)
+    .bind(now)
+    .execute(&mut **tx)
+    .await
+    .map_err(|error| RuntimeError::database("complete payment inbox receipts", error))?;
+  }
   if let Some(operation) = &snapshot.operation {
     let state = sqlx::query(
       "SELECT status,result,steps FROM payment_operations WHERE id=$1 AND provider_namespace=$2 FOR UPDATE",
@@ -447,16 +482,17 @@ pub(super) async fn complete_receipts_and_operation(
           "completed payment operation result changed",
         ));
       }
-    } else if matches!(status.as_str(), "pending" | "blocked") {
+    } else if matches!(status.as_str(), "pending" | "blocked" | "waiting") {
       let steps = serde_json::from_value::<Vec<super::PaymentStepState>>(state.get("steps"))
         .map_err(|error| RuntimeError::json("decode completed payment operation steps", error))?;
       if steps.iter().any(|step| step.result.is_none()) {
         return Err(RuntimeError::invalid_state("payment operation has unfinished steps"));
       }
       sqlx::query(
-        "UPDATE payment_operations SET \
-         status='completed',result=$3,last_error_code=NULL,last_error=NULL,next_attempt_at=NULL,updated_at=$4 WHERE \
-         id=$1 AND provider_namespace=$2",
+        "UPDATE payment_operations SET status=CASE WHEN operation_type='purchase_checkout' AND status='pending' THEN \
+         'waiting' ELSE 'completed' END,result=$3,last_error_code=NULL,last_error=NULL,next_attempt_at=CASE WHEN \
+         operation_type='purchase_checkout' AND status='pending' THEN $4::timestamptz + INTERVAL '1 minute' \
+         END,updated_at=$4 WHERE id=$1 AND provider_namespace=$2",
       )
       .bind(&operation.operation_id)
       .bind(namespace)

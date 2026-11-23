@@ -1,5 +1,11 @@
 use super::*;
 
+enum PreparedRootMetaUpdate {
+  Applied(Vec<u8>, Vec<u8>),
+  NoChange,
+  DeferredInvalidRootShape(String),
+}
+
 impl DiskSession {
   pub(crate) async fn replay_pending_updates(&self) -> Result<(), String> {
     for (doc_id, bin) in self.state_db.pending_source_updates().await? {
@@ -48,7 +54,7 @@ impl DiskSession {
         let current = if same_update_state(&checkpoint.snapshot, local)? {
           local.to_vec()
         } else {
-          merge_update_binary(Some(&checkpoint.snapshot), local)?
+          merge_frontend_update_binary(Some(local), &checkpoint.snapshot)?
         };
         self.docs.lock().await.insert(doc_id.to_string(), current);
       } else {
@@ -57,17 +63,19 @@ impl DiskSession {
         let (meta, body) = parse_frontmatter(&raw);
         let source = export_markdown_source(local, doc_id, None)
           .map_err(|err| format!("failed to project local doc {}: {}", doc_id, err))?;
+        let (source_before, source_after) = markdown_merge_sources(&source.markdown, &body, &body)
+          .map_err(|err| format!("markdown source for {} has no verified checkpoint: {}", doc_id, err))?;
         let verified = merge_markdown(MarkdownMergeRequest {
           baseline: local,
           current: local,
-          source_before: &body,
-          source_after: &body,
+          source_before: &source_before,
+          source_after: &source_after,
           doc_id,
           scope: &source.scope,
           profile: source.profile,
         })
         .map_err(|err| format!("markdown source for {} has no verified checkpoint: {}", doc_id, err))?;
-        if verified.delta.is_some() || verified.markdown != body {
+        if verified.delta.is_some() || verified.markdown != source_after {
           return Err(format!("markdown source for {} has no verified checkpoint", doc_id));
         }
         if fs::read_to_string(&file_path)
@@ -157,17 +165,22 @@ impl DiskSession {
     let (page_update, next_checkpoint) = match existing_checkpoint.clone() {
       Some(checkpoint) => {
         let current = current.as_deref().unwrap_or(&checkpoint.snapshot);
+        let projection = export_markdown_source(&checkpoint.snapshot, &doc_id, Some(&checkpoint.scope))
+          .map_err(|err| format!("failed to export markdown source for {}: {}", doc_id, err))?;
+        let (source_before, source_after) =
+          markdown_merge_sources(&projection.markdown, &checkpoint.markdown, &body)
+            .map_err(|err| format!("failed to merge markdown source for {}: {}", doc_id, err))?;
         let result = merge_markdown(MarkdownMergeRequest {
           baseline: &checkpoint.snapshot,
           current,
-          source_before: &checkpoint.markdown,
-          source_after: &body,
+          source_before: &source_before,
+          source_after: &source_after,
           doc_id: &doc_id,
           scope: &checkpoint.scope,
           profile: checkpoint.profile,
         })
         .map_err(|err| format!("failed to merge markdown source for {}: {}", doc_id, err))?;
-        if result.markdown != body {
+        if result.markdown != source_after {
           let candidate = self.write_candidate(&doc_id, &render_frontmatter(&normalized_meta, &result.markdown))?;
           return Err(format!(
             "markdown source for {} has concurrent edits; review {}",
@@ -179,7 +192,7 @@ impl DiskSession {
           result.delta.unwrap_or_default(),
           SourceCheckpoint {
             snapshot: result.snapshot,
-            markdown: result.markdown,
+            markdown: body.clone(),
             scope: result.scope,
             profile: result.profile,
             meta_hash: meta_hash.clone(),
@@ -194,11 +207,13 @@ impl DiskSession {
           .map_err(|err| format!("failed to build doc from markdown {}: {}", doc_id, err))?;
         let source = export_markdown_source(&snapshot, &doc_id, None)
           .map_err(|err| format!("failed to export markdown source for {}: {}", doc_id, err))?;
+        let (source_before, source_after) = markdown_merge_sources(&source.markdown, &body, &body)
+          .map_err(|err| format!("failed to verify initial markdown source for {}: {}", doc_id, err))?;
         let verified = merge_markdown(MarkdownMergeRequest {
           baseline: &snapshot,
           current: &snapshot,
-          source_before: &body,
-          source_after: &body,
+          source_before: &source_before,
+          source_after: &source_after,
           doc_id: &doc_id,
           scope: &source.scope,
           profile: source.profile,
@@ -230,9 +245,21 @@ impl DiskSession {
       return Err(format!("markdown file changed during import: {}", file_path.display()));
     }
 
-    let root_update = self
+    let mut next_checkpoint = next_checkpoint;
+    let prepared_root = self
       .prepare_root_meta_from_file(&doc_id, &normalized_meta, existing_checkpoint.as_ref())
       .await?;
+    let (root_update, deferred_root_reason) = match prepared_root {
+      PreparedRootMetaUpdate::Applied(snapshot, delta) => (Some((snapshot, delta)), None),
+      PreparedRootMetaUpdate::NoChange => (None, None),
+      PreparedRootMetaUpdate::DeferredInvalidRootShape(reason) => {
+        next_checkpoint.meta_hash = existing_checkpoint
+          .as_ref()
+          .map(|checkpoint| checkpoint.meta_hash.clone())
+          .unwrap_or_default();
+        (None, Some(reason))
+      }
+    };
 
     let id_candidate = if has_doc_id {
       None
@@ -307,6 +334,15 @@ impl DiskSession {
       path_bindings.insert(file_path.to_path_buf(), doc_id.clone());
     }
 
+    if let Some(reason) = deferred_root_reason {
+      self
+        .queue_error_event(format!(
+          "deferred root metadata sync for {}: workspace root requires coordinated migration ({})",
+          doc_id, reason
+        ))
+        .await;
+    }
+
     if let Some(candidate) = id_candidate {
       self
         .queue_error_event(format!(
@@ -325,19 +361,25 @@ impl DiskSession {
     doc_id: &str,
     meta: &FrontmatterMeta,
     baseline: Option<&SourceCheckpoint>,
-  ) -> Result<Option<(Vec<u8>, Vec<u8>)>, String> {
+  ) -> Result<PreparedRootMetaUpdate, String> {
     if !self.validate_root_meta_from_file(doc_id, meta, baseline).await? {
-      return Ok(None);
+      return Ok(PreparedRootMetaUpdate::NoChange);
     }
     let current_root = self.root_doc.lock().await.clone();
-    let delta = build_root_meta_update(&current_root, &self.workspace_id, doc_id, meta)?;
+    let delta = match build_root_meta_update(&current_root, &self.workspace_id, doc_id, meta) {
+      Ok(delta) => delta,
+      Err(RootMetaUpdateError::InvalidRootShape(reason)) => {
+        return Ok(PreparedRootMetaUpdate::DeferredInvalidRootShape(reason));
+      }
+      Err(RootMetaUpdateError::Other(err)) => return Err(err),
+    };
 
     if is_empty_update(&delta) {
-      return Ok(None);
+      return Ok(PreparedRootMetaUpdate::NoChange);
     }
 
     let merged = merge_update_binary(Some(&current_root), &delta)?;
-    Ok(Some((merged, delta)))
+    Ok(PreparedRootMetaUpdate::Applied(merged, delta))
   }
 
   async fn validate_root_meta_from_file(

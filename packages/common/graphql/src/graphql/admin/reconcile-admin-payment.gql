@@ -1,0 +1,14 @@
+mutation reconcileAdminPayment($input: ReconcileAdminPaymentInput!) {
+  reconcileAdminPayment(input: $input) {
+    requestId
+    status
+    reason
+    userId
+    planFamily
+    conflicted
+    boundProviderNamespace
+    boundSourceIdentity
+    attemptId
+    attemptStatus
+  }
+}

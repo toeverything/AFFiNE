@@ -1,4 +1,3 @@
-use affine_core::access_control::LicenseVerifier;
 use chrono::{DateTime, Utc};
 use napi::{Error, Result, Status, bindgen_prelude::Buffer};
 use sqlx::{Postgres, Row, Transaction};
@@ -8,6 +7,7 @@ use super::{
   apply_transitions, load_decision_time, lock_sources, lock_targets, normalize_license, publish_changes,
   transition_before, upsert,
 };
+use crate::license_v2::{VerifiedAnyLicense, verify_any_license};
 
 pub(super) struct RuntimeLicenseInstallInput {
   pub(super) workspace_id: String,
@@ -99,22 +99,22 @@ pub(super) async fn lock_license(
   Ok(owners)
 }
 
-pub(super) fn verify(
-  payload: &[u8],
-  workspace_id: &str,
-  now: DateTime<Utc>,
-) -> Result<affine_core::access_control::VerifiedLicenseClaims> {
-  let key = AFFINE_PRO_PUBLIC_KEY.ok_or_else(|| Error::new(Status::GenericFailure, "license_public_key_missing"))?;
-  LicenseVerifier::verify(payload, key, Some(workspace_id), now).map_err(|e| {
-    Error::new(
-      if e == affine_core::access_control::LicenseError::InvalidPublicKey {
-        Status::GenericFailure
-      } else {
-        Status::InvalidArg
-      },
-      format!("license_{}", e.code()),
-    )
-  })
+pub(super) fn verify(payload: &[u8], workspace_id: &str, now: DateTime<Utc>) -> Result<VerifiedAnyLicense> {
+  verify_any_license(payload, AFFINE_PRO_PUBLIC_KEY, Some(workspace_id), now)
+    .and_then(|verified| {
+      verified.ensure_workspace_commercial()?;
+      Ok(verified)
+    })
+    .map_err(|e| {
+      Error::new(
+        if e.is_server_config_error() {
+          Status::GenericFailure
+        } else {
+          Status::InvalidArg
+        },
+        format!("license_{}", e.code()),
+      )
+    })
 }
 
 async fn revoke_workspace_entitlements(
@@ -197,7 +197,7 @@ impl BackendRuntime {
     .await
     .map_err(|e| RuntimeError::database("install license row", e))?;
     revoke_workspace_entitlements(&mut tx, &input.workspace_id, now).await?;
-    upsert(&mut tx,EntitlementWrite{target:&target,source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(normalized.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.validate_key,"variant":variant,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
+    upsert(&mut tx,EntitlementWrite{target:&target,source:"selfhost_license",subject_id:claims.license_id(),plan:claims.plan_name(),status:"active",quantity:Some(claims.seat_quantity()),payload:Some(normalized.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.validate_key,"variant":variant,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:claims.expires_at(),grace_until:None},now).await?;
     apply_transitions(&mut tx, &before, deployment, now).await?;
     tx.commit()
       .await
@@ -277,7 +277,7 @@ impl BackendRuntime {
     .await
     .map_err(|e| RuntimeError::database("refresh installed license", e))?;
     let Some(row) = row else { return Ok(None) };
-    upsert(&mut tx,EntitlementWrite{target:&targets[0],source:"selfhost_license",subject_id:claims.license_id(),plan:"selfhost_team",status:"active",quantity:Some(claims.seat_quantity()),payload:Some(input.license.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.expected_validate_key,"variant":null,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:Some(claims.expires_at()),grace_until:None},now).await?;
+    upsert(&mut tx,EntitlementWrite{target:&targets[0],source:"selfhost_license",subject_id:claims.license_id(),plan:claims.plan_name(),status:"active",quantity:Some(claims.seat_quantity()),payload:Some(input.license.as_ref()),metadata:serde_json::json!({"recurring":recurring,"validateKey":input.expected_validate_key,"variant":null,"errorCode":null,"errorMessage":null}),starts_at:None,expires_at:claims.expires_at(),grace_until:None},now).await?;
     apply_transitions(&mut tx, &before, deployment, now).await?;
     tx.commit()
       .await
@@ -381,5 +381,17 @@ impl BackendRuntime {
       .map_err(|error| RuntimeError::database("commit license denial", error))?;
     publish_changes(self, &targets, &owners).await;
     Ok(true)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  #[test]
+  fn installation_rejects_public_community_certificate_before_any_database_write() {
+    let now = chrono::DateTime::parse_from_rfc3339("2026-11-22T00:00:00Z")
+      .unwrap()
+      .with_timezone(&chrono::Utc);
+    let error = super::verify(crate::license_v2::DEFAULT_SELFHOST_LICENSE_BYTES, "ws-123", now).unwrap_err();
+    assert_eq!(error.reason, "license_invalid_claims");
   }
 }

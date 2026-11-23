@@ -217,6 +217,7 @@ pub(super) struct PaymentSnapshot {
   pub licenses: Vec<LicenseSnapshot>,
   pub mails: Vec<MailSnapshot>,
   pub captured_event_ids: Vec<String>,
+  pub claimed_attempt: Option<(String, i32)>,
   pub operation: Option<OperationCompletion>,
 }
 

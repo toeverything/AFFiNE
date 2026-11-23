@@ -11,6 +11,7 @@ pub mod storage;
 #[cfg(not(feature = "use-as-lib"))]
 use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
+pub use doc::merge_updates;
 use napi::bindgen_prelude::*;
 #[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
@@ -48,9 +49,42 @@ pub struct DocRecord {
 }
 
 #[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct DocDiff {
+  pub doc_id: String,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub missing: Data,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub state: Data,
+  pub timestamp: NaiveDateTime,
+}
+
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct ReadonlyDocRecords {
   pub snapshot: Option<DocRecord>,
   pub updates: Vec<DocUpdate>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object, use_nullable = true))]
+pub struct WorkspaceDoc {
+  pub doc_id: String,
+  pub timestamp: i64,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "'trashed'"))]
+  pub lifecycle: Option<String>,
+  pub lifecycle_changed_at: Option<i64>,
+  #[serde(default)]
+  pub pending_create: bool,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct PeerWorkspaceState {
+  pub cache_token: i64,
+  pub ready: bool,
+  pub docs: Vec<WorkspaceDoc>,
+  pub clocks: std::collections::HashMap<String, i64>,
 }
 
 #[derive(Debug)]
@@ -152,13 +186,109 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn push_update(&self, universal_id: String, doc_id: String, update: Uint8Array) -> Result<NaiveDateTime> {
-    Ok(self.get(universal_id).await?.push_update(doc_id, update).await?)
+  pub async fn push_update(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    update: Uint8Array,
+    create_for_peer: Option<String>,
+  ) -> Result<NaiveDateTime> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .push_update_with_peer(doc_id, update, create_for_peer)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn get_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+  ) -> Result<PeerWorkspaceState> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_peer_workspace_state(peer, root_doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn invalidate_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+  ) -> Result<()> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .invalidate_peer_workspace_state(peer, root_doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn install_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+    cache_token: i64,
+    docs: Vec<WorkspaceDoc>,
+    clocks: std::collections::HashMap<String, i64>,
+  ) -> Result<bool> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .install_peer_workspace_state(peer, root_doc_id, cache_token, docs, clocks)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn confirm_peer_doc_create(&self, universal_id: String, peer: String, doc_id: String) -> Result<()> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .confirm_peer_doc_create(peer, doc_id)
+        .await?,
+    )
   }
 
   #[napi]
   pub async fn get_doc(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
     Ok(self.get(universal_id).await?.get_doc(doc_id).await?)
+  }
+
+  #[napi]
+  pub fn merge_updates(&self, updates: Vec<Uint8Array>) -> Result<Uint8Array> {
+    let slices: Vec<&[u8]> = updates.iter().map(|u| u.as_ref()).collect();
+    Ok(Uint8Array::new(doc::merge_updates(&slices)?))
+  }
+
+  #[napi]
+  pub async fn get_doc_diff(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    state: Option<Uint8Array>,
+  ) -> Result<Option<DocDiff>> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_doc_diff(doc_id, state.map(|s| s.to_vec()))
+        .await?,
+    )
   }
 
   #[napi]

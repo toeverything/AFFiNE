@@ -57,6 +57,10 @@ impl DiskSession {
       self.export_root_meta_for_doc(&doc_id, &meta).await?;
     }
 
+    // Invalidate scan_cache so any files with deferred root metadata are
+    // retried on the next scan without needing another filesystem edit.
+    self.scan_cache.lock().await.files.clear();
+
     Ok(())
   }
 
@@ -94,8 +98,14 @@ impl DiskSession {
         err
       )
     })?;
-    let (_, body) = parse_frontmatter(&existing);
-    let rendered = render_frontmatter(&meta_with_id, &body);
+    let (existing_meta, body) = parse_frontmatter(&existing);
+    let rendered = render_frontmatter(
+      &FrontmatterMeta {
+        extra: existing_meta.extra,
+        ..meta_with_id
+      },
+      &body,
+    );
     if existing != rendered {
       let candidate = self.write_candidate(doc_id, &rendered)?;
       self
@@ -140,9 +150,21 @@ impl DiskSession {
     let markdown = export_markdown_source(&merged_doc, &doc_id, None)
       .map_err(|err| PageExportError::Unexportable(format!("failed to export doc {}: {}", doc_id, err)))?;
 
-    let title = parse_doc_to_markdown(merged_doc.clone(), doc_id.clone(), true, None)
-      .ok()
-      .map(|result| result.title);
+    let title = doc_title(&merged_doc, &doc_id);
+
+    // Changes the Markdown source cannot carry, such as a block's collapsed
+    // state, leave the checkpointed file as it is.
+    let checkpoint = self.checkpoints.lock().await.get(&doc_id).cloned();
+    let bound_path = self.bindings.lock().await.get(&doc_id).cloned();
+    if let Some(checkpoint) = checkpoint
+      && bound_path.is_some_and(|path| path.exists())
+      && export_markdown_source(&checkpoint.snapshot, &doc_id, Some(&checkpoint.scope))
+        .is_ok_and(|source| source.markdown == markdown.markdown)
+      && doc_title(&checkpoint.snapshot, &doc_id) == title
+    {
+      return Ok(None);
+    }
+
     let meta = self.meta_for_doc(&doc_id, title).await?;
     let file_path = self.resolve_file_path(&doc_id, meta.title.as_deref()).await?;
 
@@ -161,11 +183,17 @@ impl DiskSession {
       return Ok(None);
     }
 
-    let meta_with_id = meta.clone().with_id(doc_id.clone());
+    let existing = file_path
+      .exists()
+      .then(|| fs::read_to_string(&file_path))
+      .transpose()
+      .map_err(|err| format!("failed to read markdown file {}: {}", file_path.display(), err))?;
+    let mut meta_with_id = meta.clone().with_id(doc_id.clone());
+    if let Some(existing) = &existing {
+      meta_with_id.extra = parse_frontmatter(existing).0.extra;
+    }
     let rendered = render_frontmatter(&meta_with_id, &markdown.markdown);
-    if file_path.exists() {
-      let existing = fs::read_to_string(&file_path)
-        .map_err(|err| format!("failed to read markdown file {}: {}", file_path.display(), err))?;
+    if let Some(existing) = existing {
       if existing != rendered {
         let candidate = self.write_candidate(&doc_id, &rendered)?;
         self
@@ -234,6 +262,7 @@ impl DiskSession {
       tags: normalize_tags(meta.tags.clone()),
       favorite: Some(meta.favorite.unwrap_or(false)),
       trash: Some(meta.trash.unwrap_or(false)),
+      extra: Vec::new(),
     };
 
     let meta_hash = hash_meta(&normalized_meta);
@@ -308,4 +337,10 @@ impl DiskSession {
       return Ok(candidate);
     }
   }
+}
+
+fn doc_title(doc: &[u8], doc_id: &str) -> Option<String> {
+  parse_doc_to_markdown(doc.to_vec(), doc_id.to_string(), true, None)
+    .ok()
+    .map(|result| result.title)
 }

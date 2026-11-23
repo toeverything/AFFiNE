@@ -1,9 +1,11 @@
 import { Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { EntitlementService } from '../entitlement';
 
 export async function createDevUsers(
   models: Models,
-  entitlement: EntitlementService
+  entitlement: EntitlementService,
+  runtime: BackendRuntimeProvider
 ) {
   const devUsers: {
     email: string;
@@ -71,12 +73,12 @@ export async function createDevUsers(
         ).some(Boolean);
         if (!hasTeamWorkspace) {
           const workspace = await models.workspace.create(devUser.id);
-          await models.doc.upsert({
-            spaceId: workspace.id,
+          await runtime.appendWorkspaceDocUpdatesV1({
+            workspaceId: workspace.id,
             docId: workspace.id,
-            blob: devWorkspaceBlob,
-            timestamp: Date.now(),
-            editorId: devUser.id,
+            updates: [devWorkspaceBlob],
+            actorUserId: devUser.id,
+            writeIntent: 'update_doc',
           });
           await entitlement.upsertAdminGrant({
             targetType: 'workspace',

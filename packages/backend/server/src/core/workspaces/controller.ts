@@ -218,7 +218,11 @@ export class WorkspacesController {
     @Param('guid') guid: string,
     @Res() res: Response
   ) {
-    const docId = canonicalizeDocumentIdentity(guid, ws);
+    const identity = canonicalizeDocumentIdentity(guid, ws);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(ws, identity.docId),
+      ws
+    );
     if (docId.isWorkspace) {
       await this.ac
         .user(user?.id ?? 'anonymous')
@@ -291,6 +295,7 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
@@ -312,6 +317,7 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
@@ -352,18 +358,33 @@ export class WorkspacesController {
     @Param('docId') docId: string,
     @Res() res: Response
   ) {
+    const requestedDocId = docId;
+    const rootDoc = await this.docReader.getDoc(workspaceId, workspaceId);
+    const aliases = await this.docReader.getDocIdAliases(workspaceId, rootDoc);
+    docId = aliases.get(docId) ?? docId;
     await this.assertCanReadPublicDoc(
       user?.id ?? 'anonymous',
       workspaceId,
       docId
     );
 
-    const rootDoc = await this.getDocBinaryOrThrow(workspaceId, workspaceId);
+    if (!rootDoc) {
+      throw new DocNotFound({ spaceId: workspaceId, docId: workspaceId });
+    }
+    const displayIds = new Map(
+      [...aliases].map(([logicalId, storageId]) => [storageId, logicalId])
+    );
 
     const publicDocs = await this.models.doc.findPublics(workspaceId);
     const publicRootDoc = buildPublicRootDoc(
       Buffer.from(rootDoc.bin),
-      publicDocs.map(doc => ({ id: doc.docId, title: doc.title ?? undefined }))
+      publicDocs.map(doc => ({
+        id:
+          doc.docId === docId
+            ? requestedDocId
+            : (displayIds.get(doc.docId) ?? doc.docId),
+        title: doc.title ?? undefined,
+      }))
     );
 
     res.setHeader('content-type', 'application/octet-stream');
@@ -379,7 +400,11 @@ export class WorkspacesController {
     @Param('timestamp') timestamp: string,
     @Res() res: Response
   ) {
-    const docId = canonicalizeDocumentIdentity(guid, ws);
+    const identity = canonicalizeDocumentIdentity(guid, ws);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(ws, identity.docId),
+      ws
+    );
     const ts = new Date(timestamp);
     if (Number.isNaN(ts.getTime())) {
       throw new InvalidHistoryTimestamp({ timestamp });
@@ -431,6 +456,7 @@ export class WorkspacesController {
     @Param('key') key: string,
     @Res() res: Response
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Read');
 
     const { body, metadata } = await this.commentAttachmentStorage.get({

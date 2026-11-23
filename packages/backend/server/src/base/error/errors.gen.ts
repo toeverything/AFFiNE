@@ -458,6 +458,30 @@ export class DocActionDenied extends UserFriendlyError {
     super('no_permission', 'doc_action_denied', message, args);
   }
 }
+
+export class DocUpdateInvalid extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_update_invalid', message);
+  }
+}
+
+export class DocUpdateTooLarge extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'doc_update_too_large', message);
+  }
+}
+
+export class WorkspaceSyncUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('service_unavailable', 'workspace_sync_unavailable', message);
+  }
+}
+
+export class DocValidationUnavailable extends UserFriendlyError {
+  constructor(message?: string) {
+    super('service_unavailable', 'doc_validation_unavailable', message);
+  }
+}
 @ObjectType()
 class DocUpdateBlockedDataType {
   @Field() spaceId!: string
@@ -642,6 +666,18 @@ export class UnsupportedSubscriptionPlan extends UserFriendlyError {
 export class FailedToCheckout extends UserFriendlyError {
   constructor(message?: string) {
     super('internal_server_error', 'failed_to_checkout', message);
+  }
+}
+
+export class PurchaseInProgress extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'purchase_in_progress', message);
+  }
+}
+
+export class PurchaseNeedsVerification extends UserFriendlyError {
+  constructor(message?: string) {
+    super('action_forbidden', 'purchase_needs_verification', message);
   }
 }
 
@@ -1281,6 +1317,10 @@ export enum ErrorNames {
   CAN_NOT_REVOKE_YOURSELF,
   DOC_NOT_FOUND,
   DOC_ACTION_DENIED,
+  DOC_UPDATE_INVALID,
+  DOC_UPDATE_TOO_LARGE,
+  WORKSPACE_SYNC_UNAVAILABLE,
+  DOC_VALIDATION_UNAVAILABLE,
   DOC_UPDATE_BLOCKED,
   VERSION_REJECTED,
   INVALID_HISTORY_TIMESTAMP,
@@ -1304,6 +1344,8 @@ export enum ErrorNames {
   NO_MORE_SEAT,
   UNSUPPORTED_SUBSCRIPTION_PLAN,
   FAILED_TO_CHECKOUT,
+  PURCHASE_IN_PROGRESS,
+  PURCHASE_NEEDS_VERIFICATION,
   INVALID_CHECKOUT_PARAMETERS,
   SUBSCRIPTION_ALREADY_EXISTS,
   INVALID_SUBSCRIPTION_PARAMETERS,

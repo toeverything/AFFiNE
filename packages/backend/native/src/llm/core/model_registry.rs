@@ -80,6 +80,25 @@ mod tests {
     }
 
     let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
+      backend_kind: Some("openrouter".to_string()),
+      model_id: "gpt-6-luna".to_string(),
+    })
+    .unwrap();
+    let variant = response.variant.unwrap();
+    assert_eq!(variant.backend_kind, "openrouter");
+    assert_eq!(variant.raw_model_id, "openai/gpt-6-luna");
+    assert_eq!(
+      variant.route_overrides.unwrap()["text"].request_layers.as_deref(),
+      Some(
+        &[
+          "openrouter_responses".to_string(),
+          "openrouter_chat_completions".to_string(),
+          "openrouter_anthropic".to_string()
+        ][..]
+      )
+    );
+
+    let response = llm_resolve_model_registry_variant(ModelRegistryResolveRequest {
       backend_kind: Some("gemini_api".to_string()),
       model_id: "gemini-3.7-flash".to_string(),
     })
@@ -169,7 +188,6 @@ mod tests {
     let variant = response.variant.unwrap();
 
     assert_eq!(variant.raw_model_id, "kimi-k2.7-code-highspeed");
-    assert_eq!(variant.protocol.as_deref(), Some("openai_chat"));
     assert_eq!(variant.request_layer.as_deref(), Some("chat_completions"));
     assert_eq!(
       variant.behavior_flags.as_deref(),
@@ -221,7 +239,6 @@ mod tests {
     let variant = response.variant.unwrap();
 
     assert_eq!(variant.raw_model_id, "gemini-embedding-2");
-    assert_eq!(variant.protocol.as_deref(), Some("gemini"));
     assert_eq!(variant.request_layer.as_deref(), Some("gemini_api"));
     assert_eq!(variant.display_name.as_deref(), Some("Gemini Embedding 2"));
   }
@@ -263,7 +280,6 @@ mod tests {
     .unwrap()
     .variant
     .unwrap();
-    assert_eq!(openai.protocol.as_deref(), Some("openai_images"));
     assert_eq!(openai.request_layer.as_deref(), Some("openai_images"));
 
     let fal = llm_match_model_registry(ModelRegistryMatchRequest {
@@ -280,7 +296,6 @@ mod tests {
     .unwrap()
     .variant
     .unwrap();
-    assert_eq!(fal.protocol.as_deref(), Some("fal_image"));
     assert_eq!(fal.request_layer.as_deref(), Some("fal"));
 
     let gemini = llm_match_model_registry(ModelRegistryMatchRequest {
@@ -297,7 +312,6 @@ mod tests {
     .unwrap()
     .variant
     .unwrap();
-    assert_eq!(gemini.protocol.as_deref(), Some("gemini"));
     assert_eq!(gemini.request_layer.as_deref(), Some("gemini_api"));
 
     let generic_gemini_image = llm_match_model_registry(ModelRegistryMatchRequest {

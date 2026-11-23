@@ -206,6 +206,49 @@ class CreateCheckoutSessionInput implements z.infer<typeof CheckoutParams> {
   args!: { workspaceId?: string; quantity?: number } | null;
 }
 
+enum AppStorePurchaseAction {
+  Prepare = 'prepare',
+  Claim = 'claim',
+  Cancel = 'cancel',
+  Submit = 'submit',
+  Restore = 'restore',
+}
+
+registerEnumType(AppStorePurchaseAction, { name: 'AppStorePurchaseAction' });
+
+@InputType()
+class AppStorePurchaseInput {
+  @Field(() => AppStorePurchaseAction)
+  purchaseAction!: AppStorePurchaseAction;
+
+  @Field(() => String)
+  expectedUserId!: string;
+
+  @Field(() => String)
+  productId!: string;
+
+  @Field(() => String, { nullable: true })
+  intentId?: string;
+
+  @Field(() => String, { nullable: true })
+  attemptId?: string;
+
+  @Field(() => String, { nullable: true })
+  transactionId?: string;
+}
+
+@ObjectType()
+class AppStorePurchaseResult {
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => String, { nullable: true })
+  attemptId?: string;
+
+  @Field(() => String, { nullable: true })
+  provider?: string;
+}
+
 @Resolver(() => SubscriptionType)
 export class SubscriptionResolver {
   constructor(
@@ -326,6 +369,45 @@ export class SubscriptionResolver {
     }
 
     return session.url;
+  }
+
+  @Query(() => String, { nullable: true })
+  async checkoutAttempt(
+    @CurrentUser() user: CurrentUser,
+    @Args('plan', { type: () => SubscriptionPlan }) plan: SubscriptionPlan
+  ) {
+    return this.service.checkoutAttempt(user.id, plan);
+  }
+
+  @Mutation(() => Boolean)
+  async expireCheckout(
+    @CurrentUser() user: CurrentUser,
+    @Args('plan', { type: () => SubscriptionPlan }) plan: SubscriptionPlan,
+    @Args('attemptId') attemptId: string
+  ) {
+    return this.service.expireCheckout(user.id, plan, attemptId);
+  }
+
+  @Mutation(() => AppStorePurchaseResult)
+  async appStorePurchase(
+    @CurrentUser() user: CurrentUser,
+    @Args('input', { type: () => AppStorePurchaseInput })
+    input: AppStorePurchaseInput
+  ): Promise<AppStorePurchaseResult> {
+    const { expectedUserId, ...purchase } = input;
+    if (expectedUserId !== user.id) {
+      throw new ActionForbidden();
+    }
+    if (
+      env.namespaces.canary &&
+      env.prod &&
+      !this.feature.isStaff(user.email) &&
+      (purchase.purchaseAction === AppStorePurchaseAction.Prepare ||
+        purchase.purchaseAction === AppStorePurchaseAction.Claim)
+    ) {
+      throw new ActionForbidden();
+    }
+    return this.service.appStorePurchase(user.id, purchase);
   }
 
   @Mutation(() => String, {

@@ -11,6 +11,27 @@ enum IdentifyOutcome {
 }
 
 impl PaymentRuntime {
+  pub(super) async fn refresh_subscriptions(
+    &self,
+    changes: &mut super::super::PaymentApplyResult,
+    user_id: &str,
+  ) -> RuntimeResult<Value> {
+    let current = self.list_subscriptions("user", user_id).await?;
+    if self.revenuecat.is_some()
+      && current.should_refresh_revenuecat()
+      && let Ok(result) = self.sync_revenuecat_subscriptions(user_id).await
+    {
+      changes.extend(result);
+      return self.list_subscriptions("user", user_id).await?.into_value();
+    }
+    current.into_value()
+  }
+
+  async fn sync_revenuecat_subscriptions(&self, user_id: &str) -> RuntimeResult<super::super::PaymentApplyResult> {
+    let snapshot = self.observe_revenuecat_customer(user_id).await?;
+    self.apply_snapshot(snapshot).await
+  }
+
   pub(super) async fn request_apply_revenuecat(
     &self,
     changes: &mut super::super::PaymentApplyResult,
@@ -34,7 +55,7 @@ impl PaymentRuntime {
       .await
       .map_err(provider_runtime_error)?;
     if subscriptions.is_empty() {
-      return self.list_subscriptions("user", user_id).await;
+      return self.list_subscriptions("user", user_id).await?.into_value();
     }
     let source_customers = subscriptions
       .iter()
@@ -62,7 +83,7 @@ impl PaymentRuntime {
     for subscription in &mut provisional {
       subscription.customer_id = Some(user_id.to_string());
     }
-    let mut snapshot = super::super::snapshot::revenuecat_customer_snapshot(
+    let mut snapshot = revenuecat_customer_snapshot(
       &self.pool,
       client,
       config,
@@ -93,7 +114,7 @@ impl PaymentRuntime {
         IdentifyOutcome::Pending => {}
       }
     }
-    self.list_subscriptions("user", user_id).await
+    self.list_subscriptions("user", user_id).await?.into_value()
   }
 
   async fn identify_revenuecat_customer(
@@ -232,7 +253,7 @@ impl PaymentRuntime {
     }
     let verified =
       super::super::worker::verified_missing_revenuecat_sources(self, client, user_id, &subscriptions).await?;
-    let mut snapshot = super::super::snapshot::revenuecat_customer_snapshot(
+    let mut snapshot = revenuecat_customer_snapshot(
       &self.pool,
       client,
       config,

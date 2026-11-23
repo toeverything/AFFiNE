@@ -1,12 +1,8 @@
 import { createHash } from 'node:crypto';
 
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {
-  type FileUpload,
-  ImageFormatNotSupported,
-  sniffMime,
-} from '../../../base';
+import { BadRequest, type FileUpload, sniffMime } from '../../../base';
 import { processImage } from '../../../native';
 import { CopilotAccessService, type CopilotScopeMode } from '../access';
 import { CompatSubmissionStore } from '../compat/submission-store';
@@ -58,7 +54,7 @@ export class ConversationInboxService {
         ? session.config.focus.selectors.length > 0
         : Array.isArray(focusSelectors) && focusSelectors.length > 0);
     if (hasWorkspaceContext && mode !== 'canonical') {
-      throw new BadRequestException(
+      throw new BadRequest(
         "Local workspaces don't support attachments or references."
       );
     }
@@ -81,8 +77,15 @@ export class ConversationInboxService {
             true
           );
           attachmentMimeType = 'image/webp';
-        } catch {
-          throw new ImageFormatNotSupported({ format: detectedMime });
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            'code' in error &&
+            error.code === 'InvalidArg'
+          ) {
+            throw new BadRequest(`Invalid image: ${error.message}`);
+          }
+          throw error;
         }
       }
 
@@ -99,7 +102,7 @@ export class ConversationInboxService {
         [options.sessionId]
       );
       if (terminalMode !== 'canonical') {
-        throw new BadRequestException(
+        throw new BadRequest(
           "Local workspaces don't support attachments or references."
         );
       }

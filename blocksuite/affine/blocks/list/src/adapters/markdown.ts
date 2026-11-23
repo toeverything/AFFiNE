@@ -85,6 +85,15 @@ export const listBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
         // if true, add the list item to the list
       } else {
         // if false, create a new list
+        // a numbered list may not start at 1, e.g. when it continues after
+        // a code block, so keep its start number
+        const order = o.node.props.order;
+        const start =
+          o.node.props.type === 'numbered' &&
+          typeof order === 'number' &&
+          order > 1
+            ? order
+            : undefined;
         walkerContext
           .openNode(
             {
@@ -92,6 +101,7 @@ export const listBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher = {
               ordered: o.node.props.type === 'numbered',
               spread: false,
               children: [],
+              ...(start ? { start } : {}),
             },
             'children'
           )

@@ -15,9 +15,7 @@ const PROVIDERS = [
 ] as const;
 
 const PROVIDER_IDS = PROVIDERS.map(provider => `copilot.providers.${provider}`);
-const DEFAULT_PROFILE_IDS = new Set(
-  PROVIDERS.map(provider => `${provider}-default`)
-);
+// Keep legacy model declarations until 0.27.4 readers leave the shared database.
 const PROVIDER_MODELS: Record<(typeof PROVIDERS)[number], string[]> = {
   openai: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
   cloudflareWorkersAi: ['@cf/baai/bge-reranker-base'],
@@ -65,24 +63,6 @@ export class ConvergeManagedProviderProfiles1786810000000 {
       const byId = new Map(rows.map(row => [row.id, row]));
       const profileRow = byId.get(PROFILE_KEY);
       const profiles = readProfiles(profileRow?.value);
-      const assignedModels = new Set(
-        profiles.flatMap(profile =>
-          isRecord(profile) &&
-          typeof profile.id === 'string' &&
-          !DEFAULT_PROFILE_IDS.has(profile.id) &&
-          profile.enabled !== false &&
-          Array.isArray(profile.models) &&
-          serverNativeModule.validateAppConfigValue(
-            'copilot',
-            'providers.profiles',
-            [profile]
-          ).length === 0
-            ? profile.models.filter(
-                (model): model is string => typeof model === 'string'
-              )
-            : []
-        )
-      );
       let converged = false;
 
       for (const [index, provider] of PROVIDERS.entries()) {
@@ -105,19 +85,6 @@ export class ConvergeManagedProviderProfiles1786810000000 {
           existing.models.length > 0
             ? existing.models
             : PROVIDER_MODELS[provider];
-        const canEnable =
-          !isRecord(existing) ||
-          existing.enabled === undefined ||
-          existing.enabled === true;
-        const modelsAreValid = configuredModels.every(
-          model => typeof model === 'string'
-        );
-        const availableModels =
-          canEnable && modelsAreValid
-            ? configuredModels.filter(model => !assignedModels.has(model))
-            : configuredModels;
-        const hasConflict = canEnable && availableModels.length === 0;
-        const models = hasConflict ? configuredModels : availableModels;
         const profile: Prisma.JsonObject = {
           ...(legacy
             ? {
@@ -130,18 +97,12 @@ export class ConvergeManagedProviderProfiles1786810000000 {
           ...(isRecord(existing) ? existing : {}),
           id,
           type: provider,
-          models,
-          ...(hasConflict ? { enabled: false } : {}),
+          models: configuredModels,
         };
         if (profileIndex === -1) {
           profiles.push(profile);
         } else {
           profiles[profileIndex] = profile;
-        }
-        if (canEnable && !hasConflict) {
-          models.forEach(model => {
-            if (typeof model === 'string') assignedModels.add(model);
-          });
         }
       }
 

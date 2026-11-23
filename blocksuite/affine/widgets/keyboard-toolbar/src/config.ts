@@ -305,7 +305,13 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
         'affine:edgeless-text'
       );
     },
-    action: ({ rootComponent: { model }, std }) => {
+    action: ({ std }) => {
+      const [_, { selectedModels }] = std.command.exec(
+        getSelectedModelsCommand
+      );
+      const model = selectedModels?.[0];
+      if (!model) return;
+
       const { store } = model;
       const parent = store.getParent(model);
       if (!parent) return;
@@ -950,6 +956,32 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
   },
 ];
 
+const highlightColors = [
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'teal',
+  'blue',
+  'purple',
+  'grey',
+] as const;
+
+const formatHighlight = (
+  std: BlockStdScope,
+  styles: AffineTextStyleAttributes
+) => {
+  const payload = { styles };
+  std.command
+    .chain()
+    .try(chain => [
+      chain.pipe(getTextSelectionCommand).pipe(formatTextCommand, payload),
+      chain.pipe(getBlockSelectionsCommand).pipe(formatBlockCommand, payload),
+      chain.pipe(formatNativeCommand, payload),
+    ])
+    .run();
+};
+
 const highlightToolPanel: KeyboardToolPanelConfig = {
   icon: ({ std }) => {
     const [_, { textAttributes }] = std.command.exec(getTextAttributes);
@@ -966,40 +998,15 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
         {
           name: 'Default Color',
           icon: TextColorIcon(cssVarV2('text/highlight/fg/orange')),
+          action: ({ std }) => formatHighlight(std, { color: null }),
         },
-        ...(
-          [
-            'red',
-            'orange',
-            'yellow',
-            'green',
-            'teal',
-            'blue',
-            'purple',
-            'grey',
-          ] as const
-        ).map<KeyboardToolbarActionItem>(color => ({
+        ...highlightColors.map<KeyboardToolbarActionItem>(color => ({
           name: color.charAt(0).toUpperCase() + color.slice(1),
           icon: TextColorIcon(cssVarV2(`text/highlight/fg/${color}`)),
-          action: ({ std }) => {
-            const payload = {
-              styles: {
-                color: cssVarV2(`text/highlight/fg/${color}`),
-              } satisfies AffineTextStyleAttributes,
-            };
-            std.command
-              .chain()
-              .try(chain => [
-                chain
-                  .pipe(getTextSelectionCommand)
-                  .pipe(formatTextCommand, payload),
-                chain
-                  .pipe(getBlockSelectionsCommand)
-                  .pipe(formatBlockCommand, payload),
-                chain.pipe(formatNativeCommand, payload),
-              ])
-              .run();
-          },
+          action: ({ std }) =>
+            formatHighlight(std, {
+              color: cssVarV2(`text/highlight/fg/${color}`),
+            }),
         })),
       ],
     },
@@ -1009,42 +1016,17 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
         {
           name: 'Default Color',
           icon: TextBackgroundDuotoneIcon(cssVarV2('text/highlight/bg/orange')),
+          action: ({ std }) => formatHighlight(std, { background: null }),
         },
-        ...(
-          [
-            'red',
-            'orange',
-            'yellow',
-            'green',
-            'teal',
-            'blue',
-            'purple',
-            'grey',
-          ] as const
-        ).map<KeyboardToolbarActionItem>(color => ({
+        ...highlightColors.map<KeyboardToolbarActionItem>(color => ({
           name: color.charAt(0).toUpperCase() + color.slice(1),
           icon: TextBackgroundDuotoneIcon(
             cssVarV2(`text/highlight/bg/${color}`)
           ),
-          action: ({ std }) => {
-            const payload = {
-              styles: {
-                background: cssVarV2(`text/highlight/bg/${color}`),
-              } satisfies AffineTextStyleAttributes,
-            };
-            std.command
-              .chain()
-              .try(chain => [
-                chain
-                  .pipe(getTextSelectionCommand)
-                  .pipe(formatTextCommand, payload),
-                chain
-                  .pipe(getBlockSelectionsCommand)
-                  .pipe(formatBlockCommand, payload),
-                chain.pipe(formatNativeCommand, payload),
-              ])
-              .run();
-          },
+          action: ({ std }) =>
+            formatHighlight(std, {
+              background: cssVarV2(`text/highlight/bg/${color}`),
+            }),
         })),
       ],
     },

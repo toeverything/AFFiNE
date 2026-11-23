@@ -1662,6 +1662,82 @@ hhh
     expect(target.file).toEqual(markdown);
   });
 
+  test('numbered list not starting at 1', async () => {
+    const listBlock = (id: string, insert: string, order: number) => ({
+      type: 'block' as const,
+      id,
+      flavour: 'affine:list',
+      props: {
+        type: 'numbered',
+        text: {
+          '$blocksuite:internal:text$': true,
+          delta: [{ insert }],
+        },
+        checked: false,
+        collapsed: false,
+        order,
+      },
+      children: [],
+    });
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:m5hvdXHXS2',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:1Ll22zT992',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            listBlock('block:Fd0ZCYB7a4', 'aaa', 1),
+            {
+              type: 'block',
+              id: 'block:8-GeKDc06x',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [{ insert: 'bbb' }],
+                },
+              },
+              children: [],
+            },
+            listBlock('block:f0dFVu0Qnm', 'ccc', 3),
+            listBlock('block:Rjdm_SRsxY', 'ddd', 4),
+          ],
+        },
+      ],
+    };
+
+    const markdown = `1. aaa
+
+bbb
+
+3. ccc
+4. ddd
+`;
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toEqual(markdown);
+  });
+
   test('different list', async () => {
     const blockSnapshot: BlockSnapshot = {
       type: 'block',

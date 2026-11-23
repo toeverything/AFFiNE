@@ -410,6 +410,7 @@ export class TableHotkeysController implements ReactiveController {
             this.selectionController
           ),
           updateSelection: sel => (this.selectionController.selection = sel),
+          lockRows: lock => this.logic.view.lockRows(lock),
           getColumn: cell => cell.column,
         });
       })

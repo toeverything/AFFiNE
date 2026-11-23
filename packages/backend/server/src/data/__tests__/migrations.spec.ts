@@ -20,7 +20,7 @@ interface Context {
   models: Models;
 }
 
-const test = ava as TestFn<Context>;
+const test = ava.serial as TestFn<Context>;
 
 test.before(async t => {
   t.context.module = await createTestingModule();
@@ -344,6 +344,37 @@ test('managed provider migration preserves explicit profiles and converts legacy
       models: ['gpt-4o-mini'],
       config: {},
       enabled: false,
+    },
+  ]);
+
+  const channelProfile = {
+    id: 'custom-openai',
+    type: 'openai',
+    models: ['model-only-known-to-a-newer-release'],
+    config: { apiKey: 'custom-key', baseURL: null },
+  };
+  await t.context.db.appConfig.update({
+    where: { id: 'copilot.providers.profiles' },
+    data: { value: [channelProfile] },
+  });
+  await t.context.db.appConfig.create({
+    data: {
+      id: 'copilot.providers.openai',
+      value: { apiKey: 'legacy-key' },
+    },
+  });
+  await ConvergeManagedProviderProfiles1786810000000.up(t.context.db);
+  const channels = await t.context.db.appConfig.findUniqueOrThrow({
+    where: { id: 'copilot.providers.profiles' },
+  });
+  t.deepEqual(channels.value, [
+    channelProfile,
+    {
+      id: 'openai-default',
+      type: 'openai',
+      priority: 7,
+      models: ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-image-1', 'gpt-4o-mini'],
+      config: { apiKey: 'legacy-key' },
     },
   ]);
 

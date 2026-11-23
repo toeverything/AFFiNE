@@ -4,9 +4,9 @@ use schemars::generate::SchemaSettings;
 use serde_json::{Value, from_value, json, to_value};
 
 use super::{
-  AuthConfigFile, CopilotRuntimeConfig, CopilotRuntimeConfigFile, CryptoConfigFile, MANAGED_PROFILE_REQUIREMENTS,
-  OAuthProviderConfigFile, PaymentRuntimeConfigFile, RedisRuntimeConfigFile, RuntimeError, SUPPORTED_BYOK_PROVIDERS,
-  SearchRuntimeConfigFile, auth_limit, insert_flat_override, valid_search_endpoint, validate_copilot_config,
+  AuthConfigFile, CopilotRuntimeConfig, CopilotRuntimeConfigFile, CryptoConfigFile, OAuthProviderConfigFile,
+  PaymentRuntimeConfigFile, RedisRuntimeConfigFile, RuntimeError, SUPPORTED_BYOK_PROVIDERS, SearchRuntimeConfigFile,
+  auth_limit, insert_flat_override, valid_search_endpoint, validate_copilot_config,
 };
 use crate::runtime::object_storage::{
   StorageBackendConfig, default_storage_provider_config, storage_provider_schema, types::StorageProviderConfig,
@@ -90,7 +90,11 @@ fn descriptors() -> Vec<AppConfigDescriptor> {
        owners and admins to send provider probe requests to the private network.",
       false,
     ),
-    ("providers.profiles", "The profile list for copilot providers.", true),
+    (
+      "providers.profiles",
+      "Credentials, endpoints and optional model preferences for built-in copilot API routes.",
+      true,
+    ),
   ]
   .into_iter()
   .map(|(key, description, internal)| {
@@ -107,26 +111,7 @@ fn descriptors() -> Vec<AppConfigDescriptor> {
     if key == "byok.allowedProviders" {
       schema["items"]["enum"] = json!(SUPPORTED_BYOK_PROVIDERS);
     }
-    if key == "providers.profiles" {
-      let profile = &mut schema["definitions"]["CopilotManagedProfileConfigFile"];
-      let requirements = MANAGED_PROFILE_REQUIREMENTS
-        .iter()
-        .map(|(provider, fields)| {
-          let properties = fields
-            .iter()
-            .map(|field| ((*field).to_string(), json!({ "type": "string", "pattern": "\\S" })))
-            .collect::<serde_json::Map<_, _>>();
-          json!({
-            "if": { "properties": { "type": { "const": provider } }, "required": ["type"] },
-            "then": { "properties": { "config": { "required": fields, "properties": properties } } }
-          })
-        })
-        .collect::<Vec<_>>();
-      profile["allOf"] = json!([{
-        "if": { "properties": { "enabled": { "const": false } }, "required": ["enabled"] },
-        "else": { "allOf": requirements }
-      }]);
-    }
+
     AppConfigDescriptor {
       key: key.to_string(),
       description: description.to_string(),
@@ -736,24 +721,15 @@ mod tests {
       .build(&descriptors[5].schema)
       .unwrap();
     for (profile, accepted) in [
+      (json!({"id":"openai","type":"openai","config":{"apiKey":"test"}}), true),
+      (json!({"id":"openai","type":"openai","config":{}}), false),
+      (json!({"id":"openai","type":"openai","enabled":false,"config":{}}), true),
       (
-        json!({"id":"openai","type":"openai","models":["gpt-5.6-luna"],"config":{"apiKey":"test"}}),
-        true,
-      ),
-      (
-        json!({"id":"openai","type":"openai","models":["gpt-5.6-luna"],"config":{}}),
+        json!({"id":"cloudflare","type":"cloudflareWorkersAi","config":{"apiToken":"test"}}),
         false,
       ),
       (
-        json!({"id":"openai","type":"openai","enabled":false,"models":["gpt-5.6-luna"],"config":{}}),
-        true,
-      ),
-      (
-        json!({"id":"cloudflare","type":"cloudflareWorkersAi","models":["@cf/baai/bge-reranker-base"],"config":{"apiToken":"test"}}),
-        false,
-      ),
-      (
-        json!({"id":"vertex","type":"geminiVertex","models":["gemini-3.7-flash"],"config":{"project":"test","location":"global"}}),
+        json!({"id":"vertex","type":"geminiVertex","config":{"project":"test","location":"global"}}),
         true,
       ),
     ] {
@@ -789,7 +765,7 @@ mod tests {
           "displayName": "OpenAI",
           "priority": 1,
           "enabled": true,
-          "models": ["gpt-5.6-luna"],
+          "models": ["model-only-known-to-a-newer-release"],
           "middleware": {
             "rust": { "request": ["normalize_messages"] },
             "node": { "text": ["citation_footnote"] }

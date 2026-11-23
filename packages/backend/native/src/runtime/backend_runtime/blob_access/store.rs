@@ -1,15 +1,14 @@
-use affine_doc_loader::blob_refs::{MAX_SOURCE_BINARY_BYTES, MAX_SOURCE_UPDATES, page_workspace_doc_ids};
+use affine_doc_loader::blob_refs::{MAX_SOURCE_BINARY_BYTES, MAX_SOURCE_UPDATES};
 use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Postgres, Row, Transaction};
-use y_octo::Doc;
 
 use super::{
-  SourceIdentity,
+  SourceIdentity, load_workspace_doc_states_page_in,
   types::{LoadedSource, ManifestEntry},
 };
-use crate::runtime::{RuntimeError, RuntimeResult, blob_ref_projection_error_code};
+use crate::runtime::{RuntimeError, RuntimeResult};
 
 pub(super) struct BlobAccessStore {
   pool: PgPool,
@@ -114,14 +113,13 @@ impl BlobAccessStore {
     include_cursor: bool,
     limit: i64,
   ) -> RuntimeResult<Vec<String>> {
-    let identity = SourceIdentity::CurrentDoc {
-      workspace_id: workspace_id.to_string(),
-      doc_id: workspace_id.to_string(),
-    };
-    let root = Self::load_source(transaction, &identity).await?;
-    let limit = usize::try_from(limit).map_err(|_| RuntimeError::invalid_input("blob_page_limit_invalid"))?;
-    page_workspace_doc_ids(root.blob, workspace_id, cursor, include_cursor, limit)
-      .map_err(|error| RuntimeError::invalid_state(blob_ref_projection_error_code(error)))
+    Ok(
+      load_workspace_doc_states_page_in(transaction, workspace_id, cursor, include_cursor, Some(limit))
+        .await?
+        .into_iter()
+        .map(|state| state.doc_id)
+        .collect(),
+    )
   }
 }
 
@@ -191,7 +189,7 @@ async fn load_current(
     return Err(RuntimeError::invalid_input("blob_source_not_found"));
   }
   let mut source_times = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
-  let mut doc = Doc::default();
+  let mut parts = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
   if let Some(snapshot) = snapshot {
     let blob: Vec<u8> = snapshot
       .try_get("blob")
@@ -201,9 +199,7 @@ async fn load_current(
         .try_get("source_time")
         .map_err(|error| RuntimeError::database("decode current blob source timestamp", error))?,
     );
-    doc
-      .apply_update_from_binary_v1(&blob)
-      .map_err(|_| RuntimeError::invalid_state("blob_source_parse_failed"))?;
+    parts.push(blob);
   }
   for update in updates {
     let blob: Vec<u8> = update
@@ -214,12 +210,10 @@ async fn load_current(
         .try_get("source_time")
         .map_err(|error| RuntimeError::database("decode current blob update timestamp", error))?,
     );
-    doc
-      .apply_update_from_binary_v1(&blob)
-      .map_err(|_| RuntimeError::invalid_state("blob_source_parse_failed"))?;
+    parts.push(blob);
   }
-  let blob = doc
-    .encode_update_v1()
+  let blob = y_octo::merge_updates_v1(parts.iter().map(Vec::as_slice))
+    .and_then(|update| update.encode_v1())
     .map_err(|_| RuntimeError::invalid_state("blob_source_parse_failed"))?;
   if blob.len() > MAX_SOURCE_BINARY_BYTES {
     return Err(RuntimeError::invalid_state("blob_ref_source_too_large"));

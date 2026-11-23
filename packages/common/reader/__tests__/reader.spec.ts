@@ -30,6 +30,44 @@ const docSnapshotWithAiEditable = readFileSync(
   )
 );
 
+test.each(['missing-child', 'parent-cycle'])(
+  'reads remaining blocks once with a %s',
+  async mode => {
+    const doc = new YDoc();
+    const blocks = doc.getMap('blocks');
+    blocks.set(
+      'page',
+      new YMap<unknown>([
+        ['sys:id', 'page'],
+        ['sys:flavour', 'affine:page'],
+        ['prop:title', new YText('Title')],
+        [
+          'sys:children',
+          YArray.from(
+            mode === 'missing-child' ? ['missing', 'image'] : ['image']
+          ),
+        ],
+      ])
+    );
+    blocks.set(
+      'image',
+      new YMap<unknown>([
+        ['sys:id', 'image'],
+        ['sys:flavour', 'affine:image'],
+        ['prop:sourceId', 'image-blob'],
+        ['sys:children', YArray.from(mode === 'parent-cycle' ? ['page'] : [])],
+      ])
+    );
+    const result = await readAllBlocksFromDoc({ ydoc: doc, spaceId: 'space' });
+    expect(result?.blocks.map(block => block.blockId)).toEqual([
+      'page',
+      'image',
+    ]);
+    expect(result?.blocks[1].blob).toEqual(['image-blob']);
+    doc.destroy();
+  }
+);
+
 test('should read doc blocks work', async () => {
   const rootDoc = new YDoc({
     guid: 'test-root-doc',
@@ -239,6 +277,67 @@ test('should index references from database rich-text cells', async () => {
   const dbBlock = result?.blocks.find(block => block.blockId === 'db');
   expect(dbBlock?.refDocId).toEqual(['target-doc']);
   expect(dbBlock?.ref).toEqual([
+    JSON.stringify({ docId: 'target-doc', mode: 'page' }),
+  ]);
+});
+
+test('should index references from table cells', async () => {
+  const doc = new YDoc({
+    guid: 'table-doc',
+  });
+  const blocks = doc.getMap('blocks');
+
+  const pageTitle = new YText();
+  pageTitle.insert(0, 'Page');
+  const page = new YMap();
+  page.set('sys:id', 'page');
+  page.set('sys:flavour', 'affine:page');
+  page.set('sys:children', YArray.from(['note']));
+  page.set('prop:title', pageTitle);
+  blocks.set('page', page);
+
+  const note = new YMap();
+  note.set('sys:id', 'note');
+  note.set('sys:flavour', 'affine:note');
+  note.set('sys:children', YArray.from(['table']));
+  note.set('prop:displayMode', 'page');
+  blocks.set('note', note);
+
+  const table = new YMap();
+  table.set('sys:id', 'table');
+  table.set('sys:flavour', 'affine:table');
+  table.set('sys:children', new YArray());
+
+  const plainText = new YText();
+  plainText.insert(0, 'Plain');
+  table.set('prop:cells.row1:col1.text', plainText);
+
+  const refText = new YText();
+  refText.applyDelta([
+    { insert: 'See ' },
+    {
+      insert: 'Target',
+      attributes: {
+        reference: {
+          pageId: 'target-doc',
+          params: { mode: 'page' },
+        },
+      },
+    },
+  ]);
+  table.set('prop:cells.row1:col2.text', refText);
+
+  blocks.set('table', table);
+
+  const result = await readAllBlocksFromDoc({
+    ydoc: doc,
+    spaceId: 'test-space',
+  });
+
+  const tableBlock = result?.blocks.find(block => block.blockId === 'table');
+  expect(tableBlock?.content).toEqual(['Plain', 'See Target']);
+  expect(tableBlock?.refDocId).toEqual(['target-doc']);
+  expect(tableBlock?.ref).toEqual([
     JSON.stringify({ docId: 'target-doc', mode: 'page' }),
   ]);
 });

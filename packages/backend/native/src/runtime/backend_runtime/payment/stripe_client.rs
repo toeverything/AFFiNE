@@ -147,6 +147,9 @@ pub(super) struct StripeCheckoutSession {
   pub customer: Option<StripeExpandedId>,
   pub subscription: Option<StripeExpandedId>,
   pub status: Option<String>,
+  pub payment_status: Option<String>,
+  pub payment_intent: Option<StripeExpandedId>,
+  pub invoice: Option<StripeExpandedId>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

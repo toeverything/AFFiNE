@@ -11,6 +11,7 @@ import timber.log.Timber
 import uniffi.affine_mobile_native.DocIndexedClock
 import uniffi.affine_mobile_native.IndexHit
 import uniffi.affine_mobile_native.SetBlob
+import uniffi.affine_mobile_native.UniffiException
 import uniffi.affine_mobile_native.newDocStoragePool
 
 private const val ANDROID_INDEXER_VERSION_OFFSET = 1u
@@ -96,7 +97,8 @@ class NbStorePlugin : Plugin() {
         val timestamp = docStoragePool.pushUpdate(
           universalId = id,
           docId = docId,
-          update = data
+          update = data,
+          createForPeer = call.getString("createForPeer")
         )
         call.resolve(JSObject().put("timestamp", timestamp))
       } catch (e: Exception) {
@@ -121,7 +123,56 @@ class NbStorePlugin : Plugin() {
           )
         } ?: call.resolve()
       } catch (e: Exception) {
-        call.reject("Failed to get doc, ${e.message}", null, e)
+        if (e is UniffiException.Err && e.v1 == "invalid_binary") {
+          call.reject("invalid_binary", null, e)
+        } else {
+          call.reject("Failed to get doc, ${e.message}", null, e)
+        }
+      }
+    }
+  }
+
+  @PluginMethod
+  fun getDocDiff(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val id = call.getStringEnsure("id")
+        val docId = call.getStringEnsure("docId")
+        val state = call.getString("state")
+        val diff = docStoragePool.getDocDiff(universalId = id, docId = docId, state = state)
+        diff?.let {
+          call.resolve(
+            JSObject()
+              .put("docId", it.docId)
+              .put("missing", it.missing)
+              .put("state", it.state)
+              .put("timestamp", it.timestamp)
+          )
+        } ?: call.resolve()
+      } catch (e: Exception) {
+        if (e is UniffiException.Err && e.v1 == "invalid_binary") {
+          call.reject("invalid_binary", null, e)
+        } else {
+          call.reject("Failed to get doc diff, ${e.message}", null, e)
+        }
+      }
+    }
+  }
+
+  @PluginMethod
+  fun mergeUpdates(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val values = call.getArray("updates") ?: throw IllegalArgumentException("updates is required")
+        val updates = (0 until values.length()).map { index -> values.getString(index) }
+        val merged = docStoragePool.mergeUpdates(updates = updates)
+        call.resolve(JSObject().put("bin", merged))
+      } catch (e: Exception) {
+        if (e is UniffiException.Err && e.v1 == "invalid_binary") {
+          call.reject("invalid_binary", null, e)
+        } else {
+          call.reject("Failed to merge updates, ${e.message}", null, e)
+        }
       }
     }
   }
@@ -265,6 +316,54 @@ class NbStorePlugin : Plugin() {
         call.resolve(JSObject().put("blobs", mapped))
       } catch (e: Exception) {
         call.reject("Failed to list blobs: ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun getPeerWorkspaceState(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val value = docStoragePool.getPeerWorkspaceState(universalId = call.getStringEnsure("id"), peer = call.getStringEnsure("peer"), rootDocId = call.getStringEnsure("rootDocId"))
+        call.resolve(JSObject().put("state", value))
+      } catch (e: Exception) {
+        call.reject("Failed to getPeerWorkspaceState, ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun invalidatePeerWorkspaceState(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        docStoragePool.invalidatePeerWorkspaceState(universalId = call.getStringEnsure("id"), peer = call.getStringEnsure("peer"), rootDocId = call.getStringEnsure("rootDocId"))
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to invalidatePeerWorkspaceState, ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun installPeerWorkspaceState(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        val value = docStoragePool.installPeerWorkspaceState(universalId = call.getStringEnsure("id"), peer = call.getStringEnsure("peer"), rootDocId = call.getStringEnsure("rootDocId"), cacheToken = call.getLongEnsure("cacheToken"), docs = call.getStringEnsure("docs"), clocks = call.getStringEnsure("clocks"))
+        call.resolve(JSObject().put("installed", value))
+      } catch (e: Exception) {
+        call.reject("Failed to installPeerWorkspaceState, ${e.message}", null, e)
+      }
+    }
+  }
+
+  @PluginMethod
+  fun confirmPeerDocCreate(call: PluginCall) {
+    launch(Dispatchers.IO) {
+      try {
+        docStoragePool.confirmPeerDocCreate(universalId = call.getStringEnsure("id"), peer = call.getStringEnsure("peer"), docId = call.getStringEnsure("docId"))
+        call.resolve()
+      } catch (e: Exception) {
+        call.reject("Failed to confirmPeerDocCreate, ${e.message}", null, e)
       }
     }
   }

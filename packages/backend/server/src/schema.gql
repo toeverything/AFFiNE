@@ -115,6 +115,66 @@ type AdminMailDeliverySummary {
   total: Int!
 }
 
+type AdminPaymentAttempt {
+  id: String!
+  productId: String
+  provider: String!
+  providerNamespace: String!
+  sessionId: String
+  status: String!
+  transactionId: String
+}
+
+type AdminPaymentCase {
+  attempts: [AdminPaymentAttempt!]!
+  boundProviderNamespace: String
+  boundSourceIdentity: String
+  conflicted: Boolean!
+  planFamily: AdminPaymentPlanFamily!
+  sources: [AdminPaymentSource!]!
+  userId: String!
+}
+
+input AdminPaymentLookupInput {
+  planFamily: AdminPaymentPlanFamily
+  providerIdentity: String
+  userId: String
+}
+
+enum AdminPaymentPlanFamily {
+  AI
+  Pro
+}
+
+type AdminPaymentResolution {
+  attemptId: String
+  attemptStatus: String
+  boundProviderNamespace: String
+  boundSourceIdentity: String
+  conflicted: Boolean!
+  planFamily: AdminPaymentPlanFamily!
+  reason: String
+  requestId: String!
+  status: AdminPaymentResolutionStatus!
+  userId: String!
+}
+
+enum AdminPaymentResolutionStatus {
+  Pending
+  Resolved
+}
+
+type AdminPaymentSource {
+  externalCustomerId: String
+  externalRef: String
+  externalSubscriptionId: String
+  id: String!
+  provider: String!
+  providerNamespace: String
+  sourceIdentity: String
+  status: String!
+}
+
 type AdminSharedLinkTopItem {
   docId: String!
   guestViews: SafeInt!
@@ -257,6 +317,29 @@ type AppConfigValidateResult {
   module: String!
   valid: Boolean!
   value: JSON
+}
+
+enum AppStorePurchaseAction {
+  Cancel
+  Claim
+  Prepare
+  Restore
+  Submit
+}
+
+input AppStorePurchaseInput {
+  attemptId: String
+  expectedUserId: String!
+  intentId: String
+  productId: String!
+  purchaseAction: AppStorePurchaseAction!
+  transactionId: String
+}
+
+type AppStorePurchaseResult {
+  attemptId: String
+  provider: String
+  status: String!
 }
 
 input AudioSliceManifestItemInput {
@@ -989,6 +1072,9 @@ enum ErrorNames {
   DOC_IS_NOT_PUBLIC
   DOC_NOT_FOUND
   DOC_UPDATE_BLOCKED
+  DOC_UPDATE_INVALID
+  DOC_UPDATE_TOO_LARGE
+  DOC_VALIDATION_UNAVAILABLE
   EMAIL_ALREADY_USED
   EMAIL_SERVICE_NOT_CONFIGURED
   EMAIL_TOKEN_NOT_FOUND
@@ -1047,6 +1133,8 @@ enum ErrorNames {
   OAUTH_STATE_EXPIRED
   OWNER_CAN_NOT_LEAVE_WORKSPACE
   PASSWORD_REQUIRED
+  PURCHASE_IN_PROGRESS
+  PURCHASE_NEEDS_VERIFICATION
   QUERY_TOO_LONG
   REFRESH_TOKEN_INVALID
   REFRESH_TOKEN_REUSED
@@ -1088,6 +1176,7 @@ enum ErrorNames {
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION
   WORKSPACE_LICENSE_ALREADY_EXISTS
   WORKSPACE_PERMISSION_NOT_FOUND
+  WORKSPACE_SYNC_UNAVAILABLE
   WRONG_SIGN_IN_CREDENTIALS
   WRONG_SIGN_IN_METHOD
 }
@@ -1556,6 +1645,7 @@ type Mutation {
 
   """Update workspace flags for admin"""
   adminUpdateWorkspace(input: AdminUpdateWorkspaceInput!): AdminWorkspace
+  appStorePurchase(input: AppStorePurchaseInput!): AppStorePurchaseResult!
   approveMember(userId: String!, workspaceId: String!): Boolean!
 
   """Ban an user"""
@@ -1617,6 +1707,7 @@ type Mutation {
 
   """Reenable an banned user"""
   enableUser(id: String!): UserType!
+  expireCheckout(attemptId: String!, plan: SubscriptionPlan!): Boolean!
 
   """Create a chat session"""
   forkCopilotSession(options: ForkChatSessionInput!): String!
@@ -1645,6 +1736,7 @@ type Mutation {
 
   """mark notification as read"""
   readNotification(id: String!): Boolean!
+  reconcileAdminPayment(input: ReconcileAdminPaymentInput!): AdminPaymentResolution!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!
 
   """Refresh current user subscriptions and return latest."""
@@ -1947,6 +2039,7 @@ type Query {
 
   """Aggregate mail delivery timeline facts for admin panel"""
   adminMailDeliveries(input: AdminMailDeliveriesInput): AdminMailDeliveryAnalytics!
+  adminPaymentReconciliation(input: AdminPaymentLookupInput!): [AdminPaymentCase!]!
 
   """Get workspace detail for admin"""
   adminWorkspace(id: String!): AdminWorkspace
@@ -1963,6 +2056,7 @@ type Query {
   """get app configuration value sources and secret status"""
   appConfigMetadata: JSONObject!
   authSigningKeys: [AuthSigningKeyType!]!
+  checkoutAttempt(plan: SubscriptionPlan!): String
 
   """Get current user"""
   currentUser: UserType
@@ -2031,6 +2125,15 @@ input QueryChatSessionsInput {
 
 type QueryTooLongDataType {
   max: Int!
+}
+
+input ReconcileAdminPaymentInput {
+  attemptId: String
+  evidence: String!
+  planFamily: AdminPaymentPlanFamily!
+  requestId: String!
+  transactionId: String
+  userId: String!
 }
 
 type ReleaseVersionType {
@@ -2325,6 +2428,24 @@ input SubmitAudioTranscriptionInput {
 
 type SubscriptionAlreadyExistsDataType {
   plan: String!
+}
+
+type SubscriptionBillingGroup {
+  plan: SubscriptionPlan!
+  sources: [SubscriptionBillingSource!]!
+}
+
+type SubscriptionBillingInfo {
+  conflicts: [SubscriptionBillingGroup!]!
+  manageable: [SubscriptionBillingGroup!]!
+  subscriptions: [SubscriptionType!]!
+}
+
+type SubscriptionBillingSource {
+  iapStore: String
+  id: String!
+  provider: String!
+  recurring: SubscriptionRecurring
 }
 
 type SubscriptionNotExistsDataType {
@@ -2651,6 +2772,7 @@ type UserType {
 
   """Get user settings"""
   settings: UserSettingsType!
+  subscriptionBilling: SubscriptionBillingInfo!
   subscriptions: [SubscriptionType!]!
   token: tokenType! @deprecated(reason: "use auth session exchange instead")
 }

@@ -77,8 +77,15 @@ export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations
   async executeDomainCommandV1(
     input: DomainCommandInputV1
   ): Promise<DomainCommandOutputV1> {
-    return await this.measured('executeDomainCommandV1', runtime =>
-      this.permissionRuntime(runtime).executeDomainCommandV1(input)
+    return await this.measured(
+      'executeDomainCommandV1',
+      runtime => this.permissionRuntime(runtime).executeDomainCommandV1(input),
+      'workspaceId' in input
+        ? {
+            workspaceId: input.workspaceId,
+            docId: 'docId' in input ? input.docId : input.workspaceId,
+          }
+        : undefined
     );
   }
 
@@ -103,6 +110,7 @@ export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations
   async compileTurnScope(
     input: CompileScopeInput
   ): Promise<RuntimeTurnScopeSnapshot> {
+    await this.ensureWorkspaceLifecycleV1(input.workspaceId);
     return await this.measured('compileTurnScope', runtime =>
       runtime.compileTurnScope(input)
     );
@@ -126,8 +134,10 @@ export class BackendRuntimeSearchOperations extends BackendRuntimeCoreOperations
   }
 
   async syncEmbeddingState(input: SyncEmbeddingStateInput) {
-    return await this.measured('syncEmbeddingState', runtime =>
-      runtime.syncEmbeddingState(input)
+    return await this.measured(
+      'syncEmbeddingState',
+      runtime => runtime.syncEmbeddingState(input),
+      { workspaceId: input.workspaceId, docId: input.workspaceId }
     );
   }
 

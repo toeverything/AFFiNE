@@ -9,7 +9,6 @@ import { StorageRuntimeProvider } from '../storage-runtime';
 
 const WORKSPACE_BATCH_SIZE = 25;
 const OBJECT_BATCH_SIZE = 1_000;
-const DOCUMENT_CLEANUP_BATCH_SIZE = 100;
 const RECONCILIATION_LEASE_MS = 30 * 60 * 1000;
 
 type SweepScope = 'metadata' | 'documents';
@@ -39,7 +38,6 @@ export class StorageBlobJob {
         this.reconcileWorkspaceNamespaces(),
         this.reconcileWorkspaceBatch(),
         this.backfillBlobMetadata(),
-        this.executeDocumentCleanup(),
       ]).then(results => {
         for (const result of results) {
           if (result.status === 'rejected') {
@@ -98,7 +96,6 @@ export class StorageBlobJob {
     return await this.runWorkspaceSweep(
       'documents',
       async (workspaceId, sid) => {
-        await this.rt.reconcileWorkspaceDocuments(workspaceId);
         const refs = await this.rt.rebuildWorkspaceDocBlobRefs(
           workspaceId,
           OBJECT_BATCH_SIZE
@@ -122,22 +119,6 @@ export class StorageBlobJob {
         );
       }
     );
-  }
-
-  async executeDocumentCleanup() {
-    const result = await this.rt.executeDocumentCleanupCandidates(
-      undefined,
-      30,
-      DOCUMENT_CLEANUP_BATCH_SIZE
-    );
-    metrics.storage
-      .counter('document_cleanup_serialization_retry_total')
-      .add(result.serializationRetries);
-    metrics.storage
-      .counter('document_cleanup_execute_failure_total')
-      .add(result.failed);
-    await this.recordDocumentCleanupHealth();
-    return result;
   }
 
   private async runWorkspaceSweep(
@@ -250,40 +231,6 @@ export class StorageBlobJob {
         completed_at = EXCLUDED.completed_at,
         updated_at = CURRENT_TIMESTAMP
     `;
-  }
-
-  private async recordDocumentCleanupHealth() {
-    const [health] = await this.db.$queryRaw<
-      {
-        marked: bigint;
-        failed: bigint;
-        failedWorkspaceCheckpoints: bigint;
-        oldestFailedSeconds: number | null;
-      }[]
-    >`
-      SELECT
-        COUNT(*) FILTER (WHERE status = 'marked') AS marked,
-        COUNT(*) FILTER (WHERE status = 'failed') AS failed,
-        EXTRACT(EPOCH FROM CURRENT_TIMESTAMP -
-          MIN(updated_at) FILTER (WHERE status = 'failed'))::double precision AS "oldestFailedSeconds",
-        (SELECT COUNT(*) FROM storage_reconciliation_checkpoints
-          WHERE kind = 'document_cleanup' AND status = 'failed') AS "failedWorkspaceCheckpoints"
-      FROM document_cleanup_candidates
-    `;
-    if (!health) return;
-    for (const [name, value] of [
-      ['document_cleanup_marked', health.marked],
-      ['document_cleanup_failed', health.failed],
-      [
-        'document_cleanup_failed_workspace_checkpoints',
-        health.failedWorkspaceCheckpoints,
-      ],
-    ] as const) {
-      metrics.storage.gauge(name).record(Number(value));
-    }
-    metrics.storage
-      .gauge('document_cleanup_oldest_failed_seconds')
-      .record(health.oldestFailedSeconds ?? 0);
   }
 
   private async emitBlobUpdates(workspaceIds: string[]) {

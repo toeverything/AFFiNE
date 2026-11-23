@@ -4,6 +4,7 @@ import {
   type Connection,
   ConnectorElementModel,
   ConnectorMode,
+  FrameBlockModel,
   GroupElementModel,
   type LocalConnectorElementModel,
 } from '@blocksuite/affine-model';
@@ -974,6 +975,14 @@ export class ConnectionOverlay extends Overlay {
       const rotateBound = Bound.from(getBoundWithRotation(rBound(connectable)));
       // FIXME: the real path needs to be expanded: diamod, ellipse, trangle.
       if (!rotateBound.expand(10).isPointInBound(point)) continue;
+
+      // A frame only connects at its border, so endpoints inside it stay free.
+      if (
+        connectable instanceof FrameBlockModel &&
+        Vec.dist(connectable.getNearestPoint(point), point) >= 8
+      ) {
+        continue;
+      }
 
       // then check if closes to anchors
       const anchors = getAnchors(connectable);

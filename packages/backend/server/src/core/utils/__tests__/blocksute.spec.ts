@@ -171,12 +171,17 @@ test('can parse doc to markdown from doc snapshot with ai editable', async t => 
 
   t.regex(
     result.markdown,
-    /<!-- block_id=([^ ]+) flavour=affine:database -->[\s\S]*?<!-- block_id=\1 flavour=affine:database end -->\n<!-- block_id=[^ ]+ flavour=affine:paragraph -->/
+    /<!-- block_id=([^ ]+) flavour=affine:database -->[\s\S]*?<!-- block_id=\1 flavour=affine:database end -->\n\n<!-- block_id=[^ ]+ flavour=affine:paragraph -->/
   );
   t.deepEqual(
     {
       ...result,
-      markdown: result.markdown.replace(/^<!-- block_id=.* -->\n/gm, ''),
+      markdown: result.markdown
+        .replace(
+          /^<!-- block_id=[^ ]+ flavour=affine:database end -->\n\n/gm,
+          ''
+        )
+        .replace(/^<!-- block_id=.* -->\n/gm, ''),
     },
     parseDocToMarkdownFromDocSnapshot(
       workspace.id,

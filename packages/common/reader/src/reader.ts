@@ -562,7 +562,9 @@ export async function readAllBlocksFromDoc({
     predicate: (block: YMap<any>) => boolean
   ) => {
     let current: string | null = blockId;
-    while (current) {
+    const visited = new Set<string>();
+    while (current && !visited.has(current)) {
+      visited.add(current);
       const block = blocks.get(current);
       if (block && predicate(block)) {
         return block;
@@ -589,7 +591,7 @@ export async function readAllBlocksFromDoc({
   }
 
   const queue: { parent?: string; id: string }[] = [{ id: rootBlockId }];
-  const visited = new Set<string>(); // avoid loop
+  const visited = new Set<string>([rootBlockId]); // avoid loop
 
   const pushChildren = (id: string, block: YMap<any>) => {
     const children = block.get('sys:children');
@@ -615,7 +617,7 @@ export async function readAllBlocksFromDoc({
     const block = blockId ? blocks.get(blockId) : null;
     const parentBlock = parentBlockId ? blocks.get(parentBlockId) : null;
     if (!block) {
-      break;
+      continue;
     }
 
     const flavour = block.get('sys:flavour')?.toString();
@@ -845,17 +847,32 @@ export async function readAllBlocksFromDoc({
         content: block.get('prop:latex')?.toString() ?? '',
       });
     } else if (flavour === 'affine:table') {
-      const contents = Array.from<string>(block.keys())
-        .map(key => {
-          if (key.startsWith('prop:cells.') && key.endsWith('.text')) {
-            return block.get(key)?.toString() ?? '';
-          }
-          return '';
-        })
-        .filter(Boolean);
+      const contents: string[] = [];
+      const tableRefs: { refDocId: string; ref: string }[] = [];
+      for (const key of block.keys()) {
+        if (!key.startsWith('prop:cells.') || !key.endsWith('.text')) {
+          continue;
+        }
+        const cellText = block.get(key);
+        const text = cellText?.toString() ?? '';
+        if (text) {
+          contents.push(text);
+        }
+        const deltas = getTextDeltasFromCellValue(cellText);
+        if (deltas?.length) {
+          tableRefs.push(...collectInlineReferences(deltas));
+        }
+      }
+      const refs = uniqBy(tableRefs, item => item.ref);
       blockDocuments.push({
         ...commonBlockProps,
         content: contents,
+        ...(refs.length
+          ? {
+              refDocId: refs.map(item => item.refDocId),
+              ref: refs.map(item => item.ref),
+            }
+          : {}),
       });
     } else if (bookmarkFlavours.has(flavour)) {
       blockDocuments.push({ ...commonBlockProps });

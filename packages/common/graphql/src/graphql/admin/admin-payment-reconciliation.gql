@@ -1,0 +1,28 @@
+query adminPaymentReconciliation($input: AdminPaymentLookupInput!) {
+  adminPaymentReconciliation(input: $input) {
+    userId
+    planFamily
+    conflicted
+    boundProviderNamespace
+    boundSourceIdentity
+    sources {
+      id
+      provider
+      providerNamespace
+      sourceIdentity
+      externalCustomerId
+      externalSubscriptionId
+      externalRef
+      status
+    }
+    attempts {
+      id
+      provider
+      providerNamespace
+      status
+      productId
+      transactionId
+      sessionId
+    }
+  }
+}

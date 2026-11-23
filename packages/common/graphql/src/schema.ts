@@ -160,6 +160,70 @@ export interface AdminMailDeliverySummary {
   total: Scalars['Int']['output'];
 }
 
+export interface AdminPaymentAttempt {
+  __typename?: 'AdminPaymentAttempt';
+  id: Scalars['String']['output'];
+  productId: Maybe<Scalars['String']['output']>;
+  provider: Scalars['String']['output'];
+  providerNamespace: Scalars['String']['output'];
+  sessionId: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  transactionId: Maybe<Scalars['String']['output']>;
+}
+
+export interface AdminPaymentCase {
+  __typename?: 'AdminPaymentCase';
+  attempts: Array<AdminPaymentAttempt>;
+  boundProviderNamespace: Maybe<Scalars['String']['output']>;
+  boundSourceIdentity: Maybe<Scalars['String']['output']>;
+  conflicted: Scalars['Boolean']['output'];
+  planFamily: AdminPaymentPlanFamily;
+  sources: Array<AdminPaymentSource>;
+  userId: Scalars['String']['output'];
+}
+
+export interface AdminPaymentLookupInput {
+  planFamily?: InputMaybe<AdminPaymentPlanFamily>;
+  providerIdentity?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+}
+
+export enum AdminPaymentPlanFamily {
+  AI = 'AI',
+  Pro = 'Pro',
+}
+
+export interface AdminPaymentResolution {
+  __typename?: 'AdminPaymentResolution';
+  attemptId: Maybe<Scalars['String']['output']>;
+  attemptStatus: Maybe<Scalars['String']['output']>;
+  boundProviderNamespace: Maybe<Scalars['String']['output']>;
+  boundSourceIdentity: Maybe<Scalars['String']['output']>;
+  conflicted: Scalars['Boolean']['output'];
+  planFamily: AdminPaymentPlanFamily;
+  reason: Maybe<Scalars['String']['output']>;
+  requestId: Scalars['String']['output'];
+  status: AdminPaymentResolutionStatus;
+  userId: Scalars['String']['output'];
+}
+
+export enum AdminPaymentResolutionStatus {
+  Pending = 'Pending',
+  Resolved = 'Resolved',
+}
+
+export interface AdminPaymentSource {
+  __typename?: 'AdminPaymentSource';
+  externalCustomerId: Maybe<Scalars['String']['output']>;
+  externalRef: Maybe<Scalars['String']['output']>;
+  externalSubscriptionId: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  provider: Scalars['String']['output'];
+  providerNamespace: Maybe<Scalars['String']['output']>;
+  sourceIdentity: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+}
+
 export interface AdminSharedLinkTopItem {
   __typename?: 'AdminSharedLinkTopItem';
   docId: Scalars['String']['output'];
@@ -315,6 +379,30 @@ export interface AppConfigValidateResult {
   module: Scalars['String']['output'];
   valid: Scalars['Boolean']['output'];
   value: Maybe<Scalars['JSON']['output']>;
+}
+
+export enum AppStorePurchaseAction {
+  Cancel = 'Cancel',
+  Claim = 'Claim',
+  Prepare = 'Prepare',
+  Restore = 'Restore',
+  Submit = 'Submit',
+}
+
+export interface AppStorePurchaseInput {
+  attemptId?: InputMaybe<Scalars['String']['input']>;
+  expectedUserId: Scalars['String']['input'];
+  intentId?: InputMaybe<Scalars['String']['input']>;
+  productId: Scalars['String']['input'];
+  purchaseAction: AppStorePurchaseAction;
+  transactionId?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface AppStorePurchaseResult {
+  __typename?: 'AppStorePurchaseResult';
+  attemptId: Maybe<Scalars['String']['output']>;
+  provider: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
 }
 
 export interface AudioSliceManifestItemInput {
@@ -1190,6 +1278,9 @@ export enum ErrorNames {
   DOC_IS_NOT_PUBLIC = 'DOC_IS_NOT_PUBLIC',
   DOC_NOT_FOUND = 'DOC_NOT_FOUND',
   DOC_UPDATE_BLOCKED = 'DOC_UPDATE_BLOCKED',
+  DOC_UPDATE_INVALID = 'DOC_UPDATE_INVALID',
+  DOC_UPDATE_TOO_LARGE = 'DOC_UPDATE_TOO_LARGE',
+  DOC_VALIDATION_UNAVAILABLE = 'DOC_VALIDATION_UNAVAILABLE',
   EMAIL_ALREADY_USED = 'EMAIL_ALREADY_USED',
   EMAIL_SERVICE_NOT_CONFIGURED = 'EMAIL_SERVICE_NOT_CONFIGURED',
   EMAIL_TOKEN_NOT_FOUND = 'EMAIL_TOKEN_NOT_FOUND',
@@ -1248,6 +1339,8 @@ export enum ErrorNames {
   OAUTH_STATE_EXPIRED = 'OAUTH_STATE_EXPIRED',
   OWNER_CAN_NOT_LEAVE_WORKSPACE = 'OWNER_CAN_NOT_LEAVE_WORKSPACE',
   PASSWORD_REQUIRED = 'PASSWORD_REQUIRED',
+  PURCHASE_IN_PROGRESS = 'PURCHASE_IN_PROGRESS',
+  PURCHASE_NEEDS_VERIFICATION = 'PURCHASE_NEEDS_VERIFICATION',
   QUERY_TOO_LONG = 'QUERY_TOO_LONG',
   REFRESH_TOKEN_INVALID = 'REFRESH_TOKEN_INVALID',
   REFRESH_TOKEN_REUSED = 'REFRESH_TOKEN_REUSED',
@@ -1289,6 +1382,7 @@ export enum ErrorNames {
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION = 'WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION',
   WORKSPACE_LICENSE_ALREADY_EXISTS = 'WORKSPACE_LICENSE_ALREADY_EXISTS',
   WORKSPACE_PERMISSION_NOT_FOUND = 'WORKSPACE_PERMISSION_NOT_FOUND',
+  WORKSPACE_SYNC_UNAVAILABLE = 'WORKSPACE_SYNC_UNAVAILABLE',
   WRONG_SIGN_IN_CREDENTIALS = 'WRONG_SIGN_IN_CREDENTIALS',
   WRONG_SIGN_IN_METHOD = 'WRONG_SIGN_IN_METHOD',
 }
@@ -1753,6 +1847,7 @@ export interface Mutation {
   addWorkspaceArtifact: CopilotWorkspaceArtifact;
   /** Update workspace flags for admin */
   adminUpdateWorkspace: Maybe<AdminWorkspace>;
+  appStorePurchase: AppStorePurchaseResult;
   approveMember: Scalars['Boolean']['output'];
   /** Ban an user */
   banUser: UserType;
@@ -1803,6 +1898,7 @@ export interface Mutation {
   deleteWorkspaceByokProfile: Scalars['Boolean']['output'];
   /** Reenable an banned user */
   enableUser: UserType;
+  expireCheckout: Scalars['Boolean']['output'];
   /** Create a chat session */
   forkCopilotSession: Scalars['String']['output'];
   generateLicenseKey: Scalars['String']['output'];
@@ -1826,6 +1922,7 @@ export interface Mutation {
   readAllNotifications: Scalars['Boolean']['output'];
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
+  reconcileAdminPayment: AdminPaymentResolution;
   recoverDoc: Scalars['DateTime']['output'];
   /** Refresh current user subscriptions and return latest. */
   refreshUserSubscriptions: Array<SubscriptionType>;
@@ -1916,6 +2013,10 @@ export interface MutationAddWorkspaceArtifactArgs {
 
 export interface MutationAdminUpdateWorkspaceArgs {
   input: AdminUpdateWorkspaceInput;
+}
+
+export interface MutationAppStorePurchaseArgs {
+  input: AppStorePurchaseInput;
 }
 
 export interface MutationApproveMemberArgs {
@@ -2060,6 +2161,11 @@ export interface MutationEnableUserArgs {
   id: Scalars['String']['input'];
 }
 
+export interface MutationExpireCheckoutArgs {
+  attemptId: Scalars['String']['input'];
+  plan: SubscriptionPlan;
+}
+
 export interface MutationForkCopilotSessionArgs {
   options: ForkChatSessionInput;
 }
@@ -2137,6 +2243,10 @@ export interface MutationPublishDocArgs {
 
 export interface MutationReadNotificationArgs {
   id: Scalars['String']['input'];
+}
+
+export interface MutationReconcileAdminPaymentArgs {
+  input: ReconcileAdminPaymentInput;
 }
 
 export interface MutationRecoverDocArgs {
@@ -2583,6 +2693,7 @@ export interface Query {
   adminDashboard: AdminDashboard;
   /** Aggregate mail delivery timeline facts for admin panel */
   adminMailDeliveries: AdminMailDeliveryAnalytics;
+  adminPaymentReconciliation: Array<AdminPaymentCase>;
   /** Get workspace detail for admin */
   adminWorkspace: Maybe<AdminWorkspace>;
   /** List workspaces for admin */
@@ -2594,6 +2705,7 @@ export interface Query {
   /** get app configuration value sources and secret status */
   appConfigMetadata: Scalars['JSONObject']['output'];
   authSigningKeys: Array<AuthSigningKeyType>;
+  checkoutAttempt: Maybe<Scalars['String']['output']>;
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
@@ -2642,6 +2754,10 @@ export interface QueryAdminMailDeliveriesArgs {
   input?: InputMaybe<AdminMailDeliveriesInput>;
 }
 
+export interface QueryAdminPaymentReconciliationArgs {
+  input: AdminPaymentLookupInput;
+}
+
 export interface QueryAdminWorkspaceArgs {
   id: Scalars['String']['input'];
 }
@@ -2652,6 +2768,10 @@ export interface QueryAdminWorkspacesArgs {
 
 export interface QueryAdminWorkspacesCountArgs {
   filter: ListWorkspaceInput;
+}
+
+export interface QueryCheckoutAttemptArgs {
+  plan: SubscriptionPlan;
 }
 
 export interface QueryErrorArgs {
@@ -2726,6 +2846,15 @@ export interface QueryChatSessionsInput {
 export interface QueryTooLongDataType {
   __typename?: 'QueryTooLongDataType';
   max: Scalars['Int']['output'];
+}
+
+export interface ReconcileAdminPaymentInput {
+  attemptId?: InputMaybe<Scalars['String']['input']>;
+  evidence: Scalars['String']['input'];
+  planFamily: AdminPaymentPlanFamily;
+  requestId: Scalars['String']['input'];
+  transactionId?: InputMaybe<Scalars['String']['input']>;
+  userId: Scalars['String']['input'];
 }
 
 export interface ReleaseVersionType {
@@ -3013,6 +3142,27 @@ export interface SubmitAudioTranscriptionInput {
 export interface SubscriptionAlreadyExistsDataType {
   __typename?: 'SubscriptionAlreadyExistsDataType';
   plan: Scalars['String']['output'];
+}
+
+export interface SubscriptionBillingGroup {
+  __typename?: 'SubscriptionBillingGroup';
+  plan: SubscriptionPlan;
+  sources: Array<SubscriptionBillingSource>;
+}
+
+export interface SubscriptionBillingInfo {
+  __typename?: 'SubscriptionBillingInfo';
+  conflicts: Array<SubscriptionBillingGroup>;
+  manageable: Array<SubscriptionBillingGroup>;
+  subscriptions: Array<SubscriptionType>;
+}
+
+export interface SubscriptionBillingSource {
+  __typename?: 'SubscriptionBillingSource';
+  iapStore: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  provider: Scalars['String']['output'];
+  recurring: Maybe<SubscriptionRecurring>;
 }
 
 export interface SubscriptionNotExistsDataType {
@@ -3341,6 +3491,7 @@ export interface UserType {
   quotaUsage: UserQuotaUsageType;
   /** Get user settings */
   settings: UserSettingsType;
+  subscriptionBilling: SubscriptionBillingInfo;
   subscriptions: Array<SubscriptionType>;
   /** @deprecated use auth session exchange instead */
   token: TokenType;
@@ -4003,6 +4154,43 @@ export type AdminMailDeliveriesQuery = {
   };
 };
 
+export type AdminPaymentReconciliationQueryVariables = Exact<{
+  input: AdminPaymentLookupInput;
+}>;
+
+export type AdminPaymentReconciliationQuery = {
+  __typename?: 'Query';
+  adminPaymentReconciliation: Array<{
+    __typename?: 'AdminPaymentCase';
+    userId: string;
+    planFamily: AdminPaymentPlanFamily;
+    conflicted: boolean;
+    boundProviderNamespace: string | null;
+    boundSourceIdentity: string | null;
+    sources: Array<{
+      __typename?: 'AdminPaymentSource';
+      id: string;
+      provider: string;
+      providerNamespace: string | null;
+      sourceIdentity: string | null;
+      externalCustomerId: string | null;
+      externalSubscriptionId: string | null;
+      externalRef: string | null;
+      status: string;
+    }>;
+    attempts: Array<{
+      __typename?: 'AdminPaymentAttempt';
+      id: string;
+      provider: string;
+      providerNamespace: string;
+      status: string;
+      productId: string | null;
+      transactionId: string | null;
+      sessionId: string | null;
+    }>;
+  }>;
+};
+
 export type AdminServerConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type AdminServerConfigQuery = {
@@ -4299,6 +4487,27 @@ export type ListUsersQuery = {
   }>;
 };
 
+export type ReconcileAdminPaymentMutationVariables = Exact<{
+  input: ReconcileAdminPaymentInput;
+}>;
+
+export type ReconcileAdminPaymentMutation = {
+  __typename?: 'Mutation';
+  reconcileAdminPayment: {
+    __typename?: 'AdminPaymentResolution';
+    requestId: string;
+    status: AdminPaymentResolutionStatus;
+    reason: string | null;
+    userId: string;
+    planFamily: AdminPaymentPlanFamily;
+    conflicted: boolean;
+    boundProviderNamespace: string | null;
+    boundSourceIdentity: string | null;
+    attemptId: string | null;
+    attemptStatus: string | null;
+  };
+};
+
 export type RotateAuthSigningKeyMutationVariables = Exact<{
   expectedActiveKeyId: Scalars['String']['input'];
 }>;
@@ -4380,6 +4589,20 @@ export type ValidateConfigQuery = {
     valid: boolean;
     error: string | null;
   }>;
+};
+
+export type AppStorePurchaseMutationVariables = Exact<{
+  input: AppStorePurchaseInput;
+}>;
+
+export type AppStorePurchaseMutation = {
+  __typename?: 'Mutation';
+  appStorePurchase: {
+    __typename?: 'AppStorePurchaseResult';
+    status: string;
+    attemptId: string | null;
+    provider: string | null;
+  };
 };
 
 export type DeleteBlobMutationVariables = Exact<{
@@ -4734,6 +4957,15 @@ export type ChangePasswordMutationVariables = Exact<{
 export type ChangePasswordMutation = {
   __typename?: 'Mutation';
   changePassword: boolean;
+};
+
+export type CheckoutAttemptQueryVariables = Exact<{
+  plan: SubscriptionPlan;
+}>;
+
+export type CheckoutAttemptQuery = {
+  __typename?: 'Query';
+  checkoutAttempt: string | null;
 };
 
 export type ListCommentChangesQueryVariables = Exact<{
@@ -6018,6 +6250,16 @@ export type GetDocRolePermissionsQuery = {
   };
 };
 
+export type ExpireCheckoutMutationVariables = Exact<{
+  plan: SubscriptionPlan;
+  attemptId: Scalars['String']['input'];
+}>;
+
+export type ExpireCheckoutMutation = {
+  __typename?: 'Mutation';
+  expireCheckout: boolean;
+};
+
 export type CopilotChatHistoryFragment = {
   __typename?: 'CopilotHistories';
   sessionId: string;
@@ -7210,18 +7452,45 @@ export type SubscriptionQuery = {
   currentUser: {
     __typename?: 'UserType';
     id: string;
-    subscriptions: Array<{
-      __typename?: 'SubscriptionType';
-      id: string | null;
-      status: SubscriptionStatus;
-      plan: SubscriptionPlan;
-      recurring: SubscriptionRecurring;
-      start: string;
-      end: string | null;
-      nextBillAt: string | null;
-      canceledAt: string | null;
-      variant: SubscriptionVariant | null;
-    }>;
+    subscriptionBilling: {
+      __typename?: 'SubscriptionBillingInfo';
+      subscriptions: Array<{
+        __typename?: 'SubscriptionType';
+        id: string | null;
+        status: SubscriptionStatus;
+        plan: SubscriptionPlan;
+        recurring: SubscriptionRecurring;
+        start: string;
+        end: string | null;
+        nextBillAt: string | null;
+        canceledAt: string | null;
+        variant: SubscriptionVariant | null;
+        provider: string | null;
+        iapStore: string | null;
+      }>;
+      conflicts: Array<{
+        __typename?: 'SubscriptionBillingGroup';
+        plan: SubscriptionPlan;
+        sources: Array<{
+          __typename?: 'SubscriptionBillingSource';
+          id: string;
+          provider: string;
+          iapStore: string | null;
+          recurring: SubscriptionRecurring | null;
+        }>;
+      }>;
+      manageable: Array<{
+        __typename?: 'SubscriptionBillingGroup';
+        plan: SubscriptionPlan;
+        sources: Array<{
+          __typename?: 'SubscriptionBillingSource';
+          id: string;
+          provider: string;
+          iapStore: string | null;
+          recurring: SubscriptionRecurring | null;
+        }>;
+      }>;
+    };
   } | null;
 };
 
@@ -7755,6 +8024,11 @@ export type Queries =
       response: AdminMailDeliveriesQuery;
     }
   | {
+      name: 'adminPaymentReconciliationQuery';
+      variables: AdminPaymentReconciliationQueryVariables;
+      response: AdminPaymentReconciliationQuery;
+    }
+  | {
       name: 'adminServerConfigQuery';
       variables: AdminServerConfigQueryVariables;
       response: AdminServerConfigQuery;
@@ -7828,6 +8102,11 @@ export type Queries =
       name: 'workspaceCalendarsQuery';
       variables: WorkspaceCalendarsQueryVariables;
       response: WorkspaceCalendarsQuery;
+    }
+  | {
+      name: 'checkoutAttemptQuery';
+      variables: CheckoutAttemptQueryVariables;
+      response: CheckoutAttemptQuery;
     }
   | {
       name: 'listCommentChangesQuery';
@@ -8152,6 +8431,11 @@ export type Mutations =
       response: ImportUsersMutation;
     }
   | {
+      name: 'reconcileAdminPaymentMutation';
+      variables: ReconcileAdminPaymentMutationVariables;
+      response: ReconcileAdminPaymentMutation;
+    }
+  | {
       name: 'rotateAuthSigningKeyMutation';
       variables: RotateAuthSigningKeyMutationVariables;
       response: RotateAuthSigningKeyMutation;
@@ -8175,6 +8459,11 @@ export type Mutations =
       name: 'updateAppConfigMutation';
       variables: UpdateAppConfigMutationVariables;
       response: UpdateAppConfigMutation;
+    }
+  | {
+      name: 'appStorePurchaseMutation';
+      variables: AppStorePurchaseMutationVariables;
+      response: AppStorePurchaseMutation;
     }
   | {
       name: 'deleteBlobMutation';
@@ -8380,6 +8669,11 @@ export type Mutations =
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
+    }
+  | {
+      name: 'expireCheckoutMutation';
+      variables: ExpireCheckoutMutationVariables;
+      response: ExpireCheckoutMutation;
     }
   | {
       name: 'generateLicenseKeyMutation';
