@@ -115,7 +115,9 @@ pub(super) fn validate_vectors(chunks: &[MaterializedChunk], dimensions: u32) ->
 
 pub(super) fn failure_class(code: &str) -> FailureClass {
   match code {
-    "provider_unavailable" | "provider_unauthorized" | "provider_rate_limited" => FailureClass::RetryableIndex,
+    "provider_unavailable" | "provider_unauthorized" | "provider_model_not_found" | "provider_rate_limited" => {
+      FailureClass::RetryableIndex
+    }
     "object_not_found" | "object_changed" | "storage_unavailable" | "commit_failed" => {
       FailureClass::RetryableProjection
     }
@@ -149,8 +151,12 @@ mod tests {
   #[test]
   fn errors_have_one_retry_owner() {
     assert_eq!(failure_class("provider_unavailable"), FailureClass::RetryableIndex);
+    assert_eq!(failure_class("provider_unauthorized"), FailureClass::RetryableIndex);
+    assert_eq!(failure_class("provider_model_not_found"), FailureClass::RetryableIndex);
+    assert_eq!(failure_class("provider_rate_limited"), FailureClass::RetryableIndex);
     assert_eq!(failure_class("object_changed"), FailureClass::RetryableProjection);
     assert_eq!(failure_class("unsupported_format"), FailureClass::Terminal);
     assert_eq!(failure_class("input_too_large"), FailureClass::Terminal);
+    assert_eq!(failure_class("invalid_embedding_vector"), FailureClass::Terminal);
   }
 }
