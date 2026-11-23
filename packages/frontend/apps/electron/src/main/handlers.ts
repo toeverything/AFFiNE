@@ -28,7 +28,7 @@ export const debugHandlers = {
 
 export const i18nHandlers = {
   changeLanguage: async (_: Electron.IpcMainInvokeEvent, language: string) => {
-    return I18n.changeLanguage(language);
+    await I18n.changeLanguage(language);
   },
 };
 
