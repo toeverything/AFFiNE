@@ -210,7 +210,8 @@ impl InvalidationRuntime {
   }
 
   // Failure recording and recovery's final epoch check share only this short
-  // critical section; no network or cache loading runs under the publisher lock.
+  // critical section; no network or cache loading runs under the publisher
+  // lock.
   fn record_publish_failure(&self, publisher: &mut Option<MultiplexedConnection>) {
     publisher.take();
     self.health.publish_failures.fetch_add(1, Ordering::Relaxed);
@@ -254,7 +255,8 @@ impl InvalidationRuntime {
 
   async fn connect_publisher(&self) {
     let Some(client) = self.client.as_ref() else { return };
-    // Only recovery attempts serialize here. Publishers never acquire this lock.
+    // Only recovery attempts serialize here. Publishers never acquire this
+    // lock.
     let _reconnecting = self.reconnecting.lock().await;
     let (epoch, recovering) = {
       let publisher = self.publisher.lock().await;
@@ -507,7 +509,8 @@ mod tests {
       })),
     )
     .await;
-    // Always restore the isolated Redis even when the concurrency assertion fails.
+    // Always restore the isolated Redis even when the concurrency assertion
+    // fails.
     redis::cmd("CLIENT")
       .arg("UNPAUSE")
       .query_async::<()>(&mut control)

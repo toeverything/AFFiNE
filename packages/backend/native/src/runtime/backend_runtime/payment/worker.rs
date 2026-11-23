@@ -527,8 +527,17 @@ mod tests {
       format!("failed-{marker}"),
     ];
     for (id, status) in ids.iter().zip(["processing", "processing", "pending", "failed"]) {
-      sqlx::query("INSERT INTO payment_events(id,provider,provider_namespace,event_type,external_event_id,processing_status,processing_attempts) VALUES($1,'stripe',$2,'customer.updated',$1,$3,2)")
-        .bind(id).bind(&namespace).bind(status).execute(&pool).await.unwrap();
+      sqlx::query(
+        "INSERT INTO \
+         payment_events(id,provider,provider_namespace,event_type,external_event_id,processing_status,\
+         processing_attempts) VALUES($1,'stripe',$2,'customer.updated',$1,$3,2)",
+      )
+      .bind(id)
+      .bind(&namespace)
+      .bind(status)
+      .execute(&pool)
+      .await
+      .unwrap();
     }
     let ns = affine_core::payment::ProviderNamespace {
       provider: affine_core::payment::Provider::Stripe,
@@ -546,8 +555,14 @@ mod tests {
       .await
       .unwrap();
     tx.commit().await.unwrap();
-    let states: Vec<(String, String)> = sqlx::query_as("SELECT external_event_id,processing_status FROM payment_events WHERE provider_namespace=$1 ORDER BY external_event_id")
-      .bind(&namespace).fetch_all(&pool).await.unwrap();
+    let states: Vec<(String, String)> = sqlx::query_as(
+      "SELECT external_event_id,processing_status FROM payment_events WHERE provider_namespace=$1 ORDER BY \
+       external_event_id",
+    )
+    .bind(&namespace)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
     for id in &ids {
       let state = &states.iter().find(|(event, _)| event == id).unwrap().1;
       assert_eq!(state, if id == &ids[1] { "processing" } else { "processed" });
@@ -597,7 +612,8 @@ mod tests {
     .await
     .unwrap();
 
-    // Simulate worker 2 taking over after timeout (attempt=2) and completing the receipt.
+    // Simulate worker 2 taking over after timeout (attempt=2) and completing
+    // the receipt.
     sqlx::query("UPDATE payment_events SET processing_attempts=2, processing_status='processing' WHERE id=$1")
       .bind(&row_id)
       .execute(&pool)
@@ -665,7 +681,8 @@ mod tests {
       .unwrap();
     tx2.commit().await.unwrap();
 
-    // Old worker 1 wakes up with attempt=1: lock_receipts_and_operation must fence it.
+    // Old worker 1 wakes up with attempt=1: lock_receipts_and_operation must
+    // fence it.
     let mut tx1 = pool.begin().await.unwrap();
     let err = super::super::lock_receipts_and_operation(&mut tx1, &worker1_snapshot, &namespace)
       .await

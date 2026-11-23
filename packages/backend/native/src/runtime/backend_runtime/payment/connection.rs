@@ -108,6 +108,7 @@ impl PaymentConnection {
       .await
       .map_err(|error| RuntimeError::database("acquire dedicated payment connection", error))?;
     connection.close_on_drop();
+    let mut acquired_any = false;
     for scope in &scopes {
       let acquired: bool = sqlx::query_scalar("SELECT pg_try_advisory_lock($1)")
         .bind(scope.advisory_key())
@@ -115,8 +116,15 @@ impl PaymentConnection {
         .await
         .map_err(|error| RuntimeError::database("acquire payment session lock", error))?;
       if !acquired {
+        if acquired_any {
+          let _ = sqlx::query("SELECT pg_advisory_unlock_all()")
+            .execute(&mut *connection)
+            .await;
+        }
+        let _ = connection.close().await;
         return Ok(None);
       }
+      acquired_any = true;
     }
     Ok(Some(Self { connection, scopes }))
   }
@@ -125,9 +133,19 @@ impl PaymentConnection {
     &self.scopes
   }
 
+  pub(super) async fn release(mut self) -> RuntimeResult<()> {
+    let unlock_res = sqlx::query("SELECT pg_advisory_unlock_all()")
+      .execute(&mut *self.connection)
+      .await;
+    let _ = self.connection.close().await;
+    unlock_res
+      .map(|_| ())
+      .map_err(|error| RuntimeError::database("release payment session locks", error))
+  }
+
   pub(super) async fn reacquire_with(self, pool: &PgPool, required: Vec<PaymentScope>) -> RuntimeResult<Option<Self>> {
     let scopes = self.scopes.iter().cloned().chain(required).collect::<Vec<_>>();
-    drop(self);
+    self.release().await?;
     Self::try_acquire(pool, scopes).await
   }
 
