@@ -330,6 +330,7 @@ dependencies = [
  "uuid",
  "v_htmlescape",
  "webpki-roots 1.0.10",
+ "xmlparser",
  "y-octo",
  "zeroize",
 ]

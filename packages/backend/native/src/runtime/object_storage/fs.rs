@@ -446,6 +446,47 @@ mod tests {
   }
 
   #[test]
+  fn fs_backend_roundtrips_svg_mime_and_preserves_declared_types() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = FsStorageConfig {
+      provider: "fs".to_string(),
+      root: temp.path().to_string_lossy().to_string(),
+      bucket: "bucket".to_string(),
+    };
+    for (body, declared, expected) in [
+      ("<svg xmlns=\"http://www.w3.org/2000/svg\"/>", None, "image/svg+xml"),
+      ("<?xml version=\"1.0\"?><svg/>", None, "image/svg+xml"),
+      ("<?xml version=\"1.0\"?><document/>", None, "text/xml"),
+      ("<?xml version=\"1.0\"?><svg/>", Some("image/svg+xml"), "image/svg+xml"),
+      ("<?xml version=\"1.0\"?><svg/>", Some("text/xml"), "text/xml"),
+    ] {
+      let metadata = fs_put(
+        &config,
+        "workspace/blob",
+        body.as_bytes().to_vec(),
+        ObjectPutMetadata {
+          content_type: declared.map(str::to_string),
+          content_length: None,
+          checksum_crc32: None,
+        },
+      )
+      .unwrap();
+      assert_eq!(metadata.content_type, expected);
+      assert_eq!(
+        fs_head(&config, "workspace/blob").unwrap().unwrap().content_type,
+        expected
+      );
+      let object = fs_get(&config, "workspace/blob").unwrap().unwrap();
+      assert_eq!(object.metadata.content_type, expected);
+      assert_eq!(object.body, body.as_bytes());
+    }
+    assert_eq!(
+      infer::get(b"<?xml version=\"1.0\"?><svg/>").unwrap().mime_type(),
+      "text/xml"
+    );
+  }
+
+  #[test]
   fn fs_backend_preserves_sidecar_metadata_format() {
     let temp = tempfile::tempdir().unwrap();
     let config = FsStorageConfig {

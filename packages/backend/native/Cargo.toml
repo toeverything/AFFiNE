@@ -89,6 +89,7 @@ url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }
 webpki-roots = "1.0"
+xmlparser = "0.13.6"
 y-octo = { workspace = true }
 zeroize = { workspace = true }
 
