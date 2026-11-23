@@ -22,6 +22,7 @@ export declare class BackendRuntime {
   deleteByokProfile(workspaceId: string, profileId: string): Promise<boolean>
   reorderByokProfiles(input: ReorderByokProfilesInput): Promise<Array<ByokProfileOutput>>
   createByokLocalLease(input: CreateByokLocalLeaseInput): Promise<ByokLocalLeaseOutput>
+  saveAppConfig(actor: string | undefined | null, commands: Array<AppConfigCommand>): Promise<Array<string>>
   getUserQuotaStateV1(userId: string): Promise<RuntimeUserQuotaState>
   getWorkspaceQuotaStateV1(workspaceId: string): Promise<RuntimeWorkspaceQuotaState>
   getSyncPermissionGenerationV1(workspaceId: string): Promise<number>
@@ -29,26 +30,29 @@ export declare class BackendRuntime {
   runMigrations(): Promise<void>
   searchAuthorized(actorUserId: string, workspaceId: string, request: RuntimeSearchRequest): Promise<SearchOperationOutput>
   aggregateAuthorized(actorUserId: string, workspaceId: string, request: RuntimeAggregateRequest): Promise<SearchOperationOutput>
+  searchEnabled(): boolean
+  copilotEnabled(): boolean
+  nodeCryptoPrivateKey(): string
   reconcileSearchProjection(limit?: number | undefined | null): Promise<number>
   authorizePermissionV1(input: any): Promise<any>
   executeDomainCommandV1(input: any): Promise<any>
   searchStatus(): Promise<any>
+  getCopilotRouteOptions(name: string): BuiltInRouteOptions | null
   executeCopilotStream(input: CopilotExecuteInput, maxSteps: number, callback: ((err: Error | null, arg: string) => void), toolCallback: ((err: Error | null, arg: string) => Promise<string>)): Promise<CopilotStreamHandle>
   executeCopilot(input: CopilotExecuteInput): Promise<string>
   assertCopilotRoute(input: CopilotRouteCheckInput): Promise<void>
   /**
    * Merge pending doc updates with y-octo and persist the merged snapshot.
    *
-   * Do not use this for snapshots that will be sent back to yjs clients until
-   * the y-octo/yjs round-trip compatibility issue is resolved.
-   *
    * The caller must pass the canonical history retention period resolved for
    * this workspace. The compactor does not make quota decisions.
    */
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
-  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
+  getCurrentWorkspaceDocV1(workspaceId: string, docId: string): Promise<RuntimeDocRecord | null>
+  getWorkspaceDocCreatorV1(workspaceId: string, docId: string): Promise<string | null>
+  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null, creatorId?: string | undefined | null, fromInitialUpdates?: boolean | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
-  appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<number>
+  appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<WorkspaceDocWriteResultV1>
   appendWorkspaceDocUpdatesTrustedV1(input: AppendWorkspaceDocUpdatesTrustedInputV1): Promise<number>
   embeddingHealth(): Promise<EmbeddingHealth>
   syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
@@ -79,11 +83,13 @@ export declare class BackendRuntime {
   cleanupExpiredRuntimeGates(limit: number): Promise<number>
   cleanupExpiredUserSessions(limit: number): Promise<number>
   cleanupExpiredSnapshotHistories(limit: number): Promise<number>
-  configureObjectStorage(configJson: string): void
   start(): Promise<void>
   stop(): Promise<void>
-  reloadConfig(privateKey?: string | undefined | null, objectStorageConfig?: string | undefined | null, inlineConfig?: string | undefined | null): Promise<void>
+  reloadConfig(): Promise<void>
   health(): Promise<BackendRuntimeHealth>
+  paymentEnabled(): boolean
+  stripeEnabled(): boolean
+  listPaymentSubscriptionsV1(targetType: string, targetId: string): Promise<any>
   executePaymentCommandV1(input: any): Promise<any>
   createPaymentCustomerPortalV1(actorUserId: string): Promise<string>
   createLicenseCustomerPortalV1(licenseKey: string, validateKey?: string | undefined | null): Promise<string>
@@ -110,7 +116,7 @@ export declare class BackendRuntime {
   revokeWorkspaceInviteLink(workspaceId: string): Promise<boolean>
   cleanupExpiredRuntimeStates(limit: number): Promise<number>
   cleanupExpiredStorageReservationsV1(limit: number): Promise<number>
-  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string): Promise<Array<RuntimeManagedBlob>>
+  listManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number, after?: string | undefined | null): Promise<Array<RuntimeManagedBlob>>
   manageWorkspaceBlobV1(input: RuntimeBlobManagementInput): Promise<boolean>
   releaseManagedWorkspaceBlobsV1(actorUserId: string, workspaceId: string, limit: number): Promise<number>
   finalizeStorageReservationV1(input: RuntimeStorageReservationMutation): Promise<boolean>
@@ -119,11 +125,32 @@ export declare class BackendRuntime {
   activateWorkspaceSeatV1(input: RuntimeSeatActivationInput): Promise<boolean>
   reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
   reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
-  constructor(privateKey?: string | undefined | null, configPaths?: Array<string> | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, inlineConfig?: string | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
+  getWorkspaceLifecycleActiveV1(): Promise<boolean>
+  activateWorkspaceLifecycleV1(): Promise<boolean>
+  listWorkspaceLifecycleMigrationCandidatesV1(afterWorkspaceId?: string | undefined | null): Promise<Array<string>>
+  prepareWorkspaceLifecycleMigrationV1(workspaceId: string): Promise<WorkspaceLifecycleMigrationSourceV1>
+  migrateWorkspaceLifecycleV1(input: WorkspaceLifecycleMigrationInputV1): Promise<boolean>
+  getWorkspaceStateV1(workspaceId: string, actorUserId: string): Promise<any>
+  constructor(serverConfig: ServerConfigHandle, privateKey?: string | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
 }
 
 export declare class CopilotStreamHandle {
   abort(): void
+}
+
+export declare class ServerConfigHandle {
+  constructor(path: string, legacyDeploymentType?: string | undefined | null)
+  get path(): string
+  get deploymentType(): string
+  nodeOwnedJson(): string
+  publicNativeBaselineJson(): string
+  hasBaselineConfigKey(key: string): boolean
+  baselineConfigKeyConfigured(key: string): boolean
+  nativeAppConfigKeys(): Array<string>
+  nativeSecretAppConfigKeys(): Array<string>
+  staticAppConfigKeys(): Array<string>
+  redisUrl(): string | null
+  redisNodeOptionsJson(): string
 }
 
 export declare class StorageRuntime {
@@ -131,17 +158,19 @@ export declare class StorageRuntime {
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   rebuildDocBlobRefs(workspaceId: string, docId: string, sourceRevision: number): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
-  reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
-  executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
   deleteWorkspaceObjects(workspaceId: string, userIds?: Array<string> | undefined | null): Promise<number>
   reconcileWorkspaceStorage(limit: number): Promise<RuntimeWorkspaceStorageReconcileResult>
-  constructor()
+  constructor(serverConfig: ServerConfigHandle)
   start(): Promise<void>
-  configure(configJson: string): void
+  reloadConfig(): Promise<void>
   stop(): Promise<void>
   runMigrations(): Promise<void>
   health(): Promise<StorageRuntimeHealth>
   providerCapabilities(scope: string): Promise<StorageProviderCapabilities>
+  isLocalStorage(scope: string): boolean
+  uploadUrlConfig(scope: string): StorageUploadUrlConfig | null
+  signUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number): string | null
+  verifyUploadToken(scope: string, path: string, fields: Array<any>, expiresAt: number, token: string): boolean
   putObject(scope: string, key: string, body: Buffer, metadata?: RuntimeObjectStoragePutOptions | undefined | null): Promise<RuntimeObjectMetadata>
   headObject(scope: string, key: string): Promise<RuntimeObjectMetadata | null>
   getObject(scope: string, key: string): Promise<RuntimeObjectGetResult | null>
@@ -187,12 +216,22 @@ export interface AggregateOptions {
   pagination: SearchPagination
 }
 
+export interface AppConfigCommand {
+  key: string
+  owner: string
+  operation: string
+  valueJson?: string
+}
+
 export interface AppConfigDescriptor {
   key: string
   description: string
   defaultValue: any
   schema: any
   internal: boolean
+  envName?: string
+  envType?: string
+  link?: string
 }
 
 export declare function appConfigDescriptors(module: string): Array<AppConfigDescriptor>
@@ -203,8 +242,9 @@ export interface AppendWorkspaceDocUpdatesInputV1 {
   updates: Array<Buffer>
   actorUserId: string
   writeIntent: WorkspaceDocWriteIntentV1
-  permissionDocId?: string
   expectedPermissionGeneration?: number
+  protocolVersion?: number
+  expectedCurrentTimestamp?: number
 }
 
 export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
@@ -212,6 +252,7 @@ export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
   docId: string
   updates: Array<Buffer>
   editorId?: string
+  expectedCurrentTimestamp?: number
 }
 
 export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
@@ -225,6 +266,8 @@ export declare function authorizeReservedDocSubject(userId: string, workspaceId:
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
+  baselineVersion: string
+  redisDb?: number
   embedding: EmbeddingHealth
   invalidation: InvalidationHealth
 }
@@ -572,14 +615,16 @@ export interface CreateByokProfileInput {
  * # Returns
  * A Buffer containing the y-octo document update binary
  */
-export declare function createDocWithMarkdown(title: string, markdown: string, docId: string): Buffer
+export declare function createDocWithMarkdown(title: string, markdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
+
+export declare function diffDocUpdateV1(update: Buffer, stateVector: Buffer): Buffer
 
 export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
   sourceHash: string
+  skipReason?: string
   units: Array<DocumentEmbeddingUnitInput>
-  deleted?: boolean
 }
 
 export interface DocumentEmbeddingUnitInput {
@@ -591,6 +636,11 @@ export interface DocumentEmbeddingUnitInput {
   frameId?: string
 }
 
+export interface DocWriteContext {
+  actorUserId: string
+  timestampMs: number
+}
+
 export interface EmbeddingHealth {
   enabled: boolean
   state: string
@@ -599,6 +649,8 @@ export interface EmbeddingHealth {
   schemaVersion?: number
   workerRunning: boolean
 }
+
+export declare function encodeStateVectorFromUpdateV1(update: Buffer): Buffer
 
 export interface EnsureWorkspaceBlobArtifactInput {
   workspaceId: string
@@ -612,6 +664,12 @@ export interface EnsureWorkspaceBlobArtifactInput {
 export declare function evaluateLocalRedirect(input: string, baseUrl: string, allowedBases: Array<string>): string
 
 export declare function evaluateRedirectUri(input: string, baseUrl: string, allowedOrigins: Array<string>, trustedDomains: Array<string>, queryPairs: Array<UrlQueryPair>): string
+
+export declare function extractDocRecoveryFacts(docBin: Buffer, propertiesBin: Buffer | undefined | null, targetDocId: string): NativeDocRecoveryFacts
+
+export declare function extractRootDocIdAliases(rootDocBin: Buffer): Record<string, string>
+
+export declare function extractWorkspaceLifecycleRootPages(rootDocBin: Buffer, maxStructs?: number | undefined | null): Array<NativeLifecycleRootPage>
 
 export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
 
@@ -645,6 +703,8 @@ export interface InvalidationHealth {
   published: number
   publishFailures: number
 }
+
+export declare function isOrdinaryWorkspaceDoc(workspaceId: string, docId: string): boolean
 
 export interface IssueLicenseInput {
   licenseId: string
@@ -682,8 +742,6 @@ export interface LlmEmbeddingRequestContract {
 }
 
 export declare function llmGetBuiltInPromptSpec(name: string): BuiltInPromptSpec | null
-
-export declare function llmGetBuiltInRouteOptions(name: string): BuiltInRouteOptions | null
 
 export declare function llmGetByokCatalog(): ByokCatalogOutput
 
@@ -804,11 +862,9 @@ export interface MatchEmbeddingCandidatesInput {
   limit?: number
 }
 
-/**
- * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
- * result binary.
- */
-export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
+export declare function mergeUpdates(updates: Array<Buffer>): Buffer
+
+export declare function migrateRootDocPages(rootDocBin: Buffer): Buffer | null
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
@@ -822,7 +878,7 @@ export interface ModelConditionsContract {
 }
 
 export interface ModelRegistryMatchRequest {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   cond: ModelConditionsContract
 }
 
@@ -831,7 +887,7 @@ export interface ModelRegistryMatchResponse {
 }
 
 export interface ModelRegistryResolveRequest {
-  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind?: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   modelId: string
 }
 
@@ -841,20 +897,18 @@ export interface ModelRegistryResolveResponse {
 }
 
 export interface ModelRegistryRouteContract {
-  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayers?: Array<string>
 }
 
 export interface ModelRegistryVariantContract {
-  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'
+  backendKind: 'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | 'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | 'openrouter'
   canonicalKey: string
   rawModelId: string
   displayName?: string
   aliases: Array<string>
   legacyAliases?: Array<string>
   capabilities: Array<CapabilityModelCapability>
-  protocol?: 'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'
-  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'
+  requestLayer?: 'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | 'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex' | 'openai_embeddings' | 'openrouter_responses' | 'openrouter_chat_completions' | 'openrouter_anthropic' | 'perplexity_sonar'
   routeOverrides?: Record<string, ModelRegistryRouteContract>
   behaviorFlags?: Array<string>
 }
@@ -906,6 +960,12 @@ export interface NativeDocBounds {
   height: number
 }
 
+export interface NativeDocRecoveryFacts {
+  title: string
+  existingCreatedBy?: string
+  existingUpdatedBy?: string
+}
+
 export interface NativeDocumentSearchProjection {
   version: number
   docId: string
@@ -933,6 +993,11 @@ export interface NativeDocumentSearchUnit {
   text: string
 }
 
+export interface NativeLifecycleRootPage {
+  docId: string
+  trashed: boolean
+}
+
 export interface NativeMarkdownResult {
   title: string
   markdown: string
@@ -953,6 +1018,11 @@ export interface NativeProjectionWarning {
 export interface NativeWorkspaceDocContent {
   name: string
   avatarKey: string
+}
+
+export interface NativeWorkspaceRootProjection {
+  complete: boolean
+  docIds: Array<string>
 }
 
 export interface ParsedDoc {
@@ -996,6 +1066,8 @@ export declare function processImage(input: Buffer, maxEdge: number, keepExif: b
 export declare function projectDocCanvasFromBinary(docBin: Buffer, docId: string, revision: string): NativeCanvasProjection
 
 export declare function projectDocSearchFromBinary(docBin: Buffer, docId: string, revision: string): NativeDocumentSearchProjection
+
+export declare function projectWorkspaceRootFromBinary(docBin: Buffer): NativeWorkspaceRootProjection
 
 export type PromptBuiltin =  'Date'|
 'Language'|
@@ -1175,6 +1247,8 @@ export interface ResolveEntitlementInput {
 
 export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
 
+export declare function revertDocUpdateV1(currentSnapshot: Buffer, targetSnapshot: Buffer): Buffer
+
 export interface RotateByokCredentialInput {
   workspaceId: string
   profileId: string
@@ -1274,21 +1348,10 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
-export interface RuntimeDocumentCleanupExecuteResult {
-  scannedCandidates: number
-  serializationRetries: number
-  executed: number
-  recovered: number
-  reset: number
-  failed: number
-  deletedRows: number
-}
-
-export interface RuntimeDocumentCleanupReconcileResult {
-  scannedDocs: number
-  marked: number
-  reset: number
-  recovered: number
+export interface RuntimeDocRecord {
+  bin: Buffer
+  timestamp: number
+  editor?: string
 }
 
 export interface RuntimeEmbeddingCandidate {
@@ -1746,6 +1809,8 @@ export interface SearchPagination {
 export type SearchTable =  'doc'|
 'block';
 
+export declare function splitTranscriptAudio(data: Buffer): Promise<Array<TranscriptAudioSlice>>
+
 export interface StorageProviderCapabilities {
   put: boolean
   get: boolean
@@ -1768,11 +1833,15 @@ export interface StorageRuntimeHealth {
   bucket?: string
 }
 
+export interface StorageUploadUrlConfig {
+  proxyUpload: boolean
+  urlPrefix?: string
+}
+
 export interface SyncEmbeddingStateInput {
   workspaceId: string
   enabled: boolean
   documents?: Array<DocumentEmbeddingProjectionInput>
-  reconcileDocuments?: boolean
   priority?: number
   waitForReadyMs?: number
 }
@@ -1781,6 +1850,12 @@ export interface ToolContract {
   name: string
   description?: string
   parameters: any
+}
+
+export interface TranscriptAudioSlice {
+  data: Buffer
+  startSec: number
+  durationSec: number
 }
 
 /**
@@ -1824,7 +1899,9 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  * # Returns
  * A Buffer containing only the delta (changes) as a y-octo update binary
  */
-export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string): Buffer
+export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
+
+export declare function updateExistingRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer | null
 
 /**
  * Updates a document title in the workspace root doc's meta.pages array.
@@ -1858,3 +1935,27 @@ export declare function verifyChallengeResponse(response: string, bits: number, 
 
 export type WorkspaceDocWriteIntentV1 =  'update_doc'|
 'create_doc';
+
+export interface WorkspaceDocWriteResultV1 {
+  timestamp: number
+  created: boolean
+}
+
+export interface WorkspaceLegacyDocV1 {
+  docId: string
+  trashed: boolean
+}
+
+export interface WorkspaceLifecycleMigrationInputV1 {
+  workspaceId: string
+  sourceRevision: string
+  rootStatus: string
+  docs: Array<WorkspaceLegacyDocV1>
+}
+
+export interface WorkspaceLifecycleMigrationSourceV1 {
+  revision: string
+  bin?: Buffer
+  completed: boolean
+  rootStatus: string
+}

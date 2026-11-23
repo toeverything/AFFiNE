@@ -24,9 +24,7 @@ impl PaymentRuntime {
     if target_type == "user" && actor_user_id != target_id {
       return Err(RuntimeError::invalid_input("payment actor does not match user target"));
     }
-    if target_type == "workspace" {
-      self.assert_workspace_payment(Some(actor_user_id), target_id).await?;
-    }
+    let workspace_actor = (target_type == "workspace").then_some(actor_user_id);
     let plan = parse_plan(plan)?;
     let mutation = match mutation {
       "cancel" => SubscriptionMutation::Cancel,
@@ -103,7 +101,10 @@ impl PaymentRuntime {
       &path,
       form,
     );
-    match self.execute_locked_stripe_operation(locked.connection, intent).await? {
+    match self
+      .execute_locked_stripe_operation(locked.connection, intent, workspace_actor)
+      .await?
+    {
       OperationExecution::Completed(result) => Ok(result),
       OperationExecution::Sent {
         connection,

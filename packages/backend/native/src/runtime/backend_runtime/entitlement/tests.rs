@@ -2,7 +2,9 @@ use super::{
   license::{RuntimeLicenseInstallInput, RuntimeLicenseRefreshInput},
   *,
 };
-use crate::runtime::{backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK};
+use crate::runtime::{
+  BackendRuntimeConfig, backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK,
+};
 
 pub(super) async fn fixture(runtime: &BackendRuntime) -> (String, String) {
   let owner = uuid::Uuid::new_v4().to_string();
@@ -171,9 +173,10 @@ async fn license_upgrade_recovers_installed_files_and_online_renewals_before_wor
     }
   }
   runtime.stop().await.unwrap();
-  std::sync::Arc::get_mut(&mut runtime.config.write().unwrap())
-    .unwrap()
-    .deployment = Deployment::SelfHosted;
+  let directory = tempfile::tempdir().unwrap();
+  let config_path = directory.path().join("config.json");
+  std::fs::write(&config_path, r#"{"deployment":{"type":"selfhosted"}}"#).unwrap();
+  runtime.server_config = std::sync::Arc::new(crate::runtime::config::ServerConfig::open(&config_path, None).unwrap());
   runtime.start().await.unwrap();
   assert!(runtime.license_health_worker.lock().await.is_none());
   assert_eq!(remote.requests().len(), 1);
@@ -455,10 +458,9 @@ async fn license_install_revoke_rollback_and_stale_fences() {
     .unwrap();
   assert!(
     !runtime
-      .get_byok_entitlement_v1(workspace.clone(), None)
+      .has_workspace_commercial_entitlement_v1(workspace.clone())
       .await
       .unwrap()
-      .server
   );
   let status: String = sqlx::query_scalar("SELECT status FROM entitlements WHERE subject_id=$1")
     .bind(&key)
@@ -761,12 +763,29 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
     .upsert_admin_grant_v1(RuntimeAdminGrantInput {
       target_type: "user".into(),
       target_id: owner.clone(),
+      plan: "pro".into(),
+      quantity: None,
+    })
+    .await
+    .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  assert!(
+    runtime
+      .get_byok_entitlement_v1(workspace.clone(), Some(owner.clone()))
+      .await
+      .unwrap()
+      .local
+  );
+  runtime
+    .upsert_admin_grant_v1(RuntimeAdminGrantInput {
+      target_type: "user".into(),
+      target_id: owner.clone(),
       plan: "ai".into(),
       quantity: None,
     })
     .await
     .unwrap();
-  assert!(runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
   let access = runtime
     .get_byok_entitlement_v1(workspace.clone(), Some(owner.clone()))
     .await
@@ -774,11 +793,89 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
   assert!(access.local && access.server);
   assert!(
     !runtime
-      .get_byok_entitlement_v1("missing".into(), Some(owner))
+      .get_byok_entitlement_v1("missing".into(), Some(owner.clone()))
       .await
       .unwrap()
       .local
   );
+  let subscription = uuid::Uuid::new_v4().to_string();
+  let mut tx = pool.begin().await.unwrap();
+  let now = load_decision_time(&mut tx, "test").await.unwrap();
+  upsert(
+    &mut tx,
+    EntitlementWrite {
+      target: &RuntimeEntitlementTarget {
+        target_type: "user".into(),
+        target_id: owner.clone(),
+      },
+      source: "cloud_subscription",
+      subject_id: &subscription,
+      plan: "ai",
+      status: "active",
+      quantity: None,
+      payload: None,
+      metadata: serde_json::json!({
+        "paidFrom": now + chrono::Duration::days(7),
+      }),
+      starts_at: None,
+      expires_at: None,
+      grace_until: None,
+    },
+    now,
+  )
+  .await
+  .unwrap();
+  tx.commit().await.unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+
+  sqlx::query(
+    "UPDATE entitlements SET metadata=jsonb_build_object('paidFrom',statement_timestamp()) WHERE subject_id=$1",
+  )
+  .bind(&subscription)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+
+  sqlx::query(
+    "UPDATE entitlements SET expires_at=date_trunc('milliseconds',statement_timestamp()) WHERE subject_id=$1",
+  )
+  .bind(&subscription)
+  .execute(&pool)
+  .await
+  .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  sqlx::query("UPDATE entitlements SET expires_at=NULL WHERE subject_id=$1")
+    .bind(&subscription)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+  sqlx::query("UPDATE entitlements SET status='revoked' WHERE source='cloud_subscription' AND target_id=$1")
+    .bind(&owner)
+    .execute(&pool)
+    .await
+    .unwrap();
+  assert!(!runtime.has_ai_entitlement_v1(owner.clone()).await.unwrap());
+  let cloud_config = runtime.config().unwrap();
+  *runtime.config.write().unwrap() = std::sync::Arc::new(BackendRuntimeConfig {
+    database_url: cloud_config.database_url.clone(),
+    auth: cloud_config.auth.clone(),
+    invite_quota: cloud_config.invite_quota.clone(),
+    private_key: std::sync::Arc::clone(&cloud_config.private_key),
+    deployment: Deployment::SelfHosted,
+    copilot: cloud_config.copilot.clone(),
+    search: cloud_config.search.clone(),
+    redis: cloud_config.redis.clone(),
+    payment: cloud_config.payment.clone(),
+  });
+  let access = runtime.get_byok_entitlement_v1(workspace.clone(), None).await.unwrap();
+  assert!(access.server && access.local);
+  let access = runtime
+    .get_byok_entitlement_v1(workspace.clone(), Some(owner))
+    .await
+    .unwrap();
+  assert!(access.server && access.local);
   sqlx::query("DELETE FROM workspace_members WHERE workspace_id=$1 AND role='owner'")
     .bind(&workspace)
     .execute(&pool)

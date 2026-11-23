@@ -54,8 +54,8 @@ const styles = css`
 export class ToggleSwitch extends LitElement {
   static override styles = styles;
 
-  private _toggleSwitch() {
-    this.on = !this.on;
+  private _toggleSwitch(event: Event) {
+    this.on = (event.target as HTMLInputElement).checked;
     if (this.onChange) {
       this.onChange(this.on);
     }
@@ -63,11 +63,14 @@ export class ToggleSwitch extends LitElement {
 
   override render() {
     return html`
-      <label class=${this.on ? 'on' : ''}>
+      <label
+        class=${this.on ? 'on' : ''}
+        @click=${(event: MouseEvent) => event.stopPropagation()}
+      >
         <input
           type="checkbox"
           class="switch"
-          ?checked=${this.on}
+          .checked=${this.on}
           @change=${this._toggleSwitch}
         />
       </label>

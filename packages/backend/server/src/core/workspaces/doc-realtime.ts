@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { OnEvent, PaginationInput } from '../../base';
 import { DocRole, Models, PublicDocMode } from '../../models';
+import { DocReader } from '../doc/reader';
 import { PermissionAccess } from '../permission';
 import { registerRealtimeLiveQuery } from '../realtime/provider';
 import { RealtimePublisher } from '../realtime/publisher';
@@ -26,6 +27,7 @@ export class DocShareRealtimeProvider implements OnModuleInit {
   constructor(
     private readonly ac: PermissionAccess,
     private readonly models: Models,
+    private readonly docReader: DocReader,
     @Optional() private readonly registry?: RealtimeRegistry,
     @Optional() private readonly publisher?: RealtimePublisher
   ) {}
@@ -49,7 +51,11 @@ export class DocShareRealtimeProvider implements OnModuleInit {
         name: 'doc.share-state.changed',
         input: docInput,
         authorize: async (user, input) => {
-          await this.assertRead(user.id, input.workspaceId, input.docId);
+          const docId = await this.docReader.resolveStorageDocId(
+            input.workspaceId,
+            input.docId
+          );
+          await this.assertRead(user.id, input.workspaceId, docId);
         },
         room: (_user, input) =>
           realtimeDocShareStateRoom(input.workspaceId, input.docId),
@@ -58,19 +64,19 @@ export class DocShareRealtimeProvider implements OnModuleInit {
   }
 
   @OnEvent('doc.public_state.changed', { suppressError: true })
-  onPublicStateChanged({
+  async onPublicStateChanged({
     workspaceId,
     docId,
   }: Events['doc.public_state.changed']) {
-    this.publish(workspaceId, docId, 'public-state-changed');
+    await this.publish(workspaceId, docId, 'public-state-changed');
   }
 
   @OnEvent('doc.default_role.changed', { suppressError: true })
-  onDefaultRoleChanged({
+  async onDefaultRoleChanged({
     workspaceId,
     docId,
   }: Events['doc.default_role.changed']) {
-    this.publish(workspaceId, docId, 'default-role-changed');
+    await this.publish(workspaceId, docId, 'default-role-changed');
   }
 
   private async getShareState(
@@ -78,8 +84,9 @@ export class DocShareRealtimeProvider implements OnModuleInit {
     workspaceId: string,
     docId: string
   ): Promise<DocShareStateSnapshot | null> {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertRead(userId, workspaceId, docId);
-    const doc = await this.models.doc.getMeta(workspaceId, docId);
+    const doc = await this.models.doc.getDocInfo(workspaceId, docId);
     if (!doc) return null;
     return {
       public: doc.public,
@@ -92,13 +99,20 @@ export class DocShareRealtimeProvider implements OnModuleInit {
     await this.ac.user(userId).doc(workspaceId, docId).assert('Doc.Read');
   }
 
-  private publish(workspaceId: string, docId: string, reason: string) {
-    this.publisher?.publishChanged(
-      'doc.share-state.changed',
-      { workspaceId, docId },
-      reason,
-      { room: realtimeDocShareStateRoom(workspaceId, docId) }
-    );
+  private async publish(workspaceId: string, docId: string, reason: string) {
+    const aliases = await this.docReader.getDocIdAliases(workspaceId);
+    const ids = new Set([docId]);
+    for (const [logicalId, physicalId] of aliases) {
+      if (physicalId === docId) ids.add(logicalId);
+    }
+    for (const docId of ids) {
+      this.publisher?.publishChanged(
+        'doc.share-state.changed',
+        { workspaceId, docId },
+        reason,
+        { room: realtimeDocShareStateRoom(workspaceId, docId) }
+      );
+    }
   }
 }
 
@@ -108,6 +122,7 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
     private readonly ac: PermissionAccess,
     private readonly models: Models,
     private readonly grants: DocGrantsService,
+    private readonly docReader: DocReader,
     @Optional() private readonly registry?: RealtimeRegistry,
     @Optional() private readonly publisher?: RealtimePublisher
   ) {}
@@ -142,7 +157,11 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
         name: 'doc.grants.changed',
         input: docInput,
         authorize: async (user, input) => {
-          await this.assertRead(user.id, input.workspaceId, input.docId);
+          const docId = await this.docReader.resolveStorageDocId(
+            input.workspaceId,
+            input.docId
+          );
+          await this.assertRead(user.id, input.workspaceId, docId);
         },
         room: (_user, input) =>
           realtimeDocGrantsRoom(input.workspaceId, input.docId),
@@ -151,13 +170,13 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
   }
 
   @OnEvent('doc.grants.changed', { suppressError: true })
-  onGrantsChanged({ workspaceId, docId }: Events['doc.grants.changed']) {
-    this.publish(workspaceId, docId, 'grants-changed');
+  async onGrantsChanged({ workspaceId, docId }: Events['doc.grants.changed']) {
+    await this.publish(workspaceId, docId, 'grants-changed');
   }
 
   @OnEvent('doc.owner.changed', { suppressError: true })
-  onOwnerChanged({ workspaceId, docId }: Events['doc.owner.changed']) {
-    this.publish(workspaceId, docId, 'owner-changed');
+  async onOwnerChanged({ workspaceId, docId }: Events['doc.owner.changed']) {
+    await this.publish(workspaceId, docId, 'owner-changed');
   }
 
   @OnEvent('user.updated', { suppressError: true })
@@ -166,7 +185,7 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
       user.id
     );
     for (const grant of grants) {
-      this.publish(grant.workspaceId, grant.docId, 'user-updated');
+      await this.publish(grant.workspaceId, grant.docId, 'user-updated');
     }
   }
 
@@ -176,6 +195,7 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
     docId: string,
     input: PaginationInput
   ): Promise<PaginatedDocGrantedUsersSnapshot> {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertRead(userId, workspaceId, docId);
     const pagination = PaginationInput.decode.transform(input, {} as never);
     const page = await this.grants.paginateGrantedUsers(
@@ -208,12 +228,19 @@ export class DocGrantsRealtimeProvider implements OnModuleInit {
     await this.ac.user(userId).doc(workspaceId, docId).assert('Doc.Users.Read');
   }
 
-  private publish(workspaceId: string, docId: string, reason: string) {
-    this.publisher?.publishChanged(
-      'doc.grants.changed',
-      { workspaceId, docId },
-      reason,
-      { room: realtimeDocGrantsRoom(workspaceId, docId) }
-    );
+  private async publish(workspaceId: string, docId: string, reason: string) {
+    const aliases = await this.docReader.getDocIdAliases(workspaceId);
+    const ids = new Set([docId]);
+    for (const [logicalId, physicalId] of aliases) {
+      if (physicalId === docId) ids.add(logicalId);
+    }
+    for (const docId of ids) {
+      this.publisher?.publishChanged(
+        'doc.grants.changed',
+        { workspaceId, docId },
+        reason,
+        { room: realtimeDocGrantsRoom(workspaceId, docId) }
+      );
+    }
   }
 }

@@ -35,6 +35,8 @@ const DEFAULT_VALUE = {
 
 export class AIDraftService extends Service {
   private state: AIDraftState | null = null;
+  private loadingState: Promise<void> | null = null;
+  private writes = Promise.resolve();
 
   constructor(
     private readonly globalStateService: GlobalStateService,
@@ -43,19 +45,20 @@ export class AIDraftService extends Service {
     super();
   }
 
-  setDraft = async (data: Partial<AIDraftState>) => {
-    const state = await this.getState();
-    const newState = {
-      ...state,
-      ...data,
-    };
-    this.state = newState;
-    await this.saveDraft(newState);
+  setDraft = (data: Partial<AIDraftState>) => {
+    const write = this.writes.then(async () => {
+      const state = await this.getState();
+      const newState = { ...state, ...data };
+      this.state = newState;
+      await this.saveDraft(newState);
+    });
+    this.writes = write.catch(() => undefined);
+    return write;
   };
 
   getDraft = async () => {
-    const state = await this.getState();
-    return state;
+    await this.writes;
+    return await this.getState();
   };
 
   private readonly saveDraft = async (state: AIDraftState) => {
@@ -94,9 +97,6 @@ export class AIDraftService extends Service {
   };
 
   private readonly initState = async () => {
-    if (this.state) {
-      return;
-    }
     const draft =
       this.globalStateService.globalState.get<AIDraftGlobal>(AI_DRAFTS_KEY);
     if (draft) {
@@ -113,7 +113,12 @@ export class AIDraftService extends Service {
   };
 
   private readonly getState = async () => {
-    await this.initState();
+    if (!this.state) {
+      this.loadingState ??= this.initState().finally(() => {
+        this.loadingState = null;
+      });
+      await this.loadingState;
+    }
     return this.state as AIDraftState;
   };
 

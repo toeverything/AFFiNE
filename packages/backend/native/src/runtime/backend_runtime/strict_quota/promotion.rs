@@ -124,6 +124,8 @@ pub(super) fn final_storage_locator(
 
 #[cfg(test)]
 mod tests {
+  use std::sync::Arc;
+
   use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
   use sha2::{Digest, Sha256};
 
@@ -132,13 +134,19 @@ mod tests {
   #[tokio::test]
   async fn promotes_valid_blob_and_rejects_late_overwrite() {
     let temp = tempfile::tempdir().unwrap();
-    let runtime = BackendRuntime::new(None, None, None, None, None).unwrap();
-    runtime
-      .configure_object_storage(format!(
-        r#"{{"storages":{{"blob.storage":{{"provider":"fs","bucket":"promotion","config":{{"path":{}}}}}}}}}"#,
+    let config_path = temp.path().join("config.json");
+    std::fs::write(
+      &config_path,
+      format!(
+        r#"{{"deployment":{{"type":"cloud"}},"storages":{{"blob.storage":{{"provider":"fs","bucket":"promotion","config":{{"path":{}}}}}}}}}"#,
         serde_json::to_string(temp.path()).unwrap()
-      ))
-      .unwrap();
+      ),
+    )
+    .unwrap();
+    let config = crate::runtime::config::ServerConfigHandle {
+      inner: Arc::new(crate::runtime::config::ServerConfig::open(&config_path, None).unwrap()),
+    };
+    let runtime = BackendRuntime::new(&config, None, None, None).unwrap();
     let body = b"immutable blob".to_vec();
     let key = URL_SAFE_NO_PAD.encode(Sha256::digest(&body));
     let reservation_id = Uuid::new_v4();

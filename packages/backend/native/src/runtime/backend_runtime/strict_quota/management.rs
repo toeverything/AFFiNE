@@ -11,7 +11,7 @@ use crate::runtime::{
   types::{RuntimeBlobManagementInput, RuntimeManagedBlob},
 };
 
-const MAX_MANAGED_BLOB_INVENTORY: i64 = 1_000;
+const MAX_MANAGED_BLOB_PAGE_SIZE: i64 = 1_000;
 
 #[napi_derive::napi]
 impl BackendRuntime {
@@ -20,7 +20,12 @@ impl BackendRuntime {
     &self,
     actor_user_id: String,
     workspace_id: String,
+    limit: i64,
+    after: Option<String>,
   ) -> Result<Vec<RuntimeManagedBlob>> {
+    if !(1..=MAX_MANAGED_BLOB_PAGE_SIZE).contains(&limit) {
+      return Err(RuntimeError::invalid_input("invalid_blob_page_size").into());
+    }
     let pool = self.pool().await?;
     let deployment = self.config()?.deployment;
     let authorizer = PermissionAuthorizer::with_telemetry(pool.clone(), deployment, self.permission_telemetry.clone());
@@ -31,16 +36,14 @@ impl BackendRuntime {
     assert_manage_allowed(&mut tx, &authorizer, &workspace_id, &actor_user_id, false).await?;
     let rows = sqlx::query(
       "SELECT key,mime,size,created_at FROM blobs WHERE workspace_id=$1 AND status='completed' AND deleted_at IS NULL \
-       ORDER BY key LIMIT $2",
+       AND ($3::text IS NULL OR key > $3) ORDER BY key LIMIT $2",
     )
     .bind(&workspace_id)
-    .bind(MAX_MANAGED_BLOB_INVENTORY + 1)
+    .bind(limit)
+    .bind(after)
     .fetch_all(&mut *tx)
     .await
     .map_err(|error| RuntimeError::database("list managed workspace blobs", error))?;
-    if rows.len() > usize::try_from(MAX_MANAGED_BLOB_INVENTORY).expect("managed blob cap fits usize") {
-      return Err(RuntimeError::invalid_state("managed_blob_inventory_too_large").into());
-    }
     tx.commit()
       .await
       .map_err(|error| RuntimeError::database("commit managed blob inventory", error))?;

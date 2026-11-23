@@ -7,6 +7,7 @@ import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
+import { AdminPaymentResolver } from './admin-resolver';
 import { StripeWebhookController } from './controller';
 import { PaymentEventHandlers } from './event';
 import {
@@ -30,6 +31,7 @@ import { SubscriptionService } from './service';
     ServerConfigModule,
   ],
   providers: [
+    AdminPaymentResolver,
     SubscriptionService,
     SubscriptionResolver,
     UserSubscriptionResolver,

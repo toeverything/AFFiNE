@@ -39,20 +39,19 @@ export class AFFiNELogger extends ConsoleLogger {
     return stackOrError;
   }
 
-  /**
-   * Nestjs ConsoleLogger.error() will not print the stack trace if the error is an instance of Error
-   * This method is a workaround to print the stack trace
-   *
-   * Usage:
-   * ```
-   * this.logger.error('some error happens', errInstance);
-   * ```
-   */
-  override error(
-    message: any,
-    stackOrError?: Error | string | unknown,
-    context?: string
-  ) {
-    super.error(message, AFFiNELogger.formatStack(stackOrError), context);
+  static formatError(message: unknown, details: unknown) {
+    if (details && typeof details === 'object' && !(details instanceof Error)) {
+      const { error, ...fields } = details as Record<string, unknown>;
+      return {
+        message: { ...fields, message },
+        stack: AFFiNELogger.formatStack(error),
+      };
+    }
+    return { message, stack: AFFiNELogger.formatStack(details) };
+  }
+
+  override error(message: unknown, details?: unknown, context?: string) {
+    const formatted = AFFiNELogger.formatError(message, details);
+    super.error(formatted.message, formatted.stack, context);
   }
 }

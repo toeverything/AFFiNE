@@ -20,6 +20,8 @@ pub(super) enum AuthSessionCommand {
   Refresh {
     #[serde(rename = "refreshToken")]
     refresh_token: String,
+    #[serde(rename = "attemptId")]
+    attempt_id: Option<String>,
     #[serde(rename = "appVersion")]
     app_version: Option<String>,
   },

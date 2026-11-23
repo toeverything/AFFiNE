@@ -105,7 +105,11 @@ function storage(endpoint: string) {
   };
 }
 
-async function refresh(endpoint: string, refreshToken: string) {
+async function refresh(
+  endpoint: string,
+  refreshToken: string,
+  attemptId?: string
+) {
   const response = await authFetch(
     new URL('/api/auth/session/refresh', endpoint).toString(),
     {
@@ -114,6 +118,7 @@ async function refresh(endpoint: string, refreshToken: string) {
         'content-type': 'application/json',
         'x-affine-client-kind': 'native',
         'x-affine-version': BUILD_CONFIG.appVersion,
+        ...(attemptId ? { 'x-affine-refresh-attempt': attemptId } : {}),
       },
       body: JSON.stringify({ refreshToken }),
       signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT),
@@ -136,7 +141,7 @@ export function getAuthSessionBroker(endpoint: string) {
   let broker = brokers.get(normalized);
   if (!broker) {
     broker = new AuthTokenBroker(storage(normalized), {
-      refresh: (token: string) => refresh(normalized, token),
+      refresh: (token, attemptId) => refresh(normalized, token, attemptId),
     });
     brokers.set(normalized, broker);
   }

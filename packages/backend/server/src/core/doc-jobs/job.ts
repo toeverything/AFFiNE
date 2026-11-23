@@ -33,6 +33,7 @@ export class DocJobRunner {
   @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
   async run() {
     await Promise.allSettled([
+      this.runtime.runWorkspaceLifecycleMigrationsV1(),
       this.compactPendingDocUpdates(),
       this.syncEmbeddingDocuments(),
       this.recordPendingDocUpdatesCount(),
@@ -49,66 +50,51 @@ export class DocJobRunner {
   async syncEmbeddingDocuments() {
     if (!(await this.runtime.embeddingHealth()).enabled) {
       return {
-        reconciledWorkspaces: 0,
         scannedDocuments: 0,
         syncedDocuments: 0,
       };
     }
 
-    const roots = await this.prisma.$queryRaw<
-      { id: string; lastCheckEmbeddings: Date }[]
-    >`
-      SELECT workspace.id, workspace.last_check_embeddings AS "lastCheckEmbeddings"
-      FROM workspaces workspace
-      JOIN snapshots root
-        ON root.workspace_id = workspace.id AND root.guid = workspace.id
-      WHERE workspace.last_check_embeddings <= root.updated_at
-      ORDER BY workspace.last_check_embeddings, workspace.sid
-      LIMIT ${WORKSPACE_BATCH_SIZE}
-    `;
-    let reconciledWorkspaces = 0;
-    for (const workspace of roots) {
-      const claimedAt = new Date();
-      const claimed = await this.prisma.workspace.updateMany({
-        where: {
-          id: workspace.id,
-          lastCheckEmbeddings: workspace.lastCheckEmbeddings,
-        },
-        data: { lastCheckEmbeddings: claimedAt },
-      });
-      if (!claimed.count) continue;
-      try {
-        await this.embedding.reconcileDocuments(workspace.id);
-        reconciledWorkspaces++;
-      } catch (error) {
-        await this.prisma.workspace.updateMany({
-          where: { id: workspace.id, lastCheckEmbeddings: claimedAt },
-          data: { lastCheckEmbeddings: new Date(0) },
-        });
-        this.logger.error(
-          `embedding workspace reconciliation failed workspace=${workspace.id}`,
-          error
-        );
-      }
-    }
-
     const documents = await this.prisma.$queryRaw<
-      { workspaceId: string; docId: string }[]
+      { workspaceId: string; docId: string; revision: string }[]
     >`
-      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId"
-      FROM snapshots snapshot
+      WITH lifecycle_mode AS (
+        SELECT EXISTS (
+          SELECT 1 FROM storage_reconciliation_checkpoints
+          WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global' AND status = 'active'
+        ) AS active
+      ), current_sources AS (
+        SELECT workspace_id, guid, max(timestamp) AS updated_at
+        FROM (
+          SELECT workspace_id, guid, updated_at AS timestamp FROM snapshots
+          UNION ALL
+          SELECT workspace_id, guid, created_at AS timestamp FROM updates
+        ) sources GROUP BY workspace_id, guid
+      )
+      SELECT snapshot.workspace_id AS "workspaceId", snapshot.guid AS "docId",
+        ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text AS revision
+      FROM current_sources snapshot CROSS JOIN lifecycle_mode
       JOIN workspaces workspace ON workspace.id = snapshot.workspace_id
+      LEFT JOIN current_sources root ON root.workspace_id = snapshot.workspace_id AND root.guid = snapshot.workspace_id
+      LEFT JOIN workspace_pages page ON page.workspace_id = snapshot.workspace_id AND page.page_id = snapshot.guid
       LEFT JOIN embedding_sources source
         ON source.workspace_id = snapshot.workspace_id
         AND source.source_kind = 'document'
         AND source.source_key = snapshot.guid
       WHERE workspace.enable_doc_embedding
+        AND (NOT lifecycle_mode.active OR EXISTS (
+          SELECT 1 FROM storage_reconciliation_checkpoints checkpoint
+          WHERE checkpoint.kind = 'workspace_doc_lifecycle'
+            AND checkpoint.scope = snapshot.workspace_id AND checkpoint.status = 'completed'
+        ))
+        AND (NOT lifecycle_mode.active OR page.lifecycle_state IS NULL)
         AND snapshot.guid <> snapshot.workspace_id
         AND snapshot.guid NOT LIKE 'db$%'
         AND snapshot.guid NOT LIKE 'userdata$%'
         AND (
           source.id IS NULL
           OR source.deleted_at IS NOT NULL
+          OR (NOT lifecycle_mode.active AND split_part(source.descriptor_revision, ':', 1) <> COALESCE(((extract(epoch FROM root.updated_at) * 1000)::bigint)::text, '0'))
           OR source.content_revision <> ((extract(epoch FROM snapshot.updated_at) * 1000)::bigint)::text
         )
       ORDER BY snapshot.updated_at, snapshot.workspace_id, snapshot.guid
@@ -117,17 +103,20 @@ export class DocJobRunner {
     let syncedDocuments = 0;
     for (const document of documents) {
       try {
-        await this.embedding.syncDocument(document.workspaceId, document.docId);
+        await this.embedding.syncDocument(
+          document.workspaceId,
+          document.docId,
+          document.revision
+        );
         syncedDocuments++;
       } catch (error) {
-        this.logger.error(
-          `document embedding sync failed workspace=${document.workspaceId} doc=${document.docId}`,
-          error
-        );
+        this.logger.error('document embedding sync failed', {
+          ...document,
+          error,
+        });
       }
     }
     return {
-      reconciledWorkspaces,
       scannedDocuments: documents.length,
       syncedDocuments,
     };
@@ -168,10 +157,11 @@ export class DocJobRunner {
           });
         }
       } catch (error) {
-        this.logger.error(
-          `document compaction failed workspace=${group.workspaceId} doc=${group.id}`,
-          error
-        );
+        this.logger.error('document compaction failed', {
+          workspaceId: group.workspaceId,
+          docId: group.id,
+          error,
+        });
       }
     }
     return { scanned: groups.length, merged };
@@ -211,10 +201,11 @@ export class DocJobRunner {
           await this.models.doc.upsertMeta(workspace.id, docId, content);
           fixed++;
         } catch (error) {
-          this.logger.error(
-            `document summary repair failed workspace=${workspace.id} doc=${docId}`,
-            error
-          );
+          this.logger.error('document summary repair failed', {
+            workspaceId: workspace.id,
+            docId,
+            error,
+          });
         }
       }
     }

@@ -97,6 +97,7 @@ pub(super) struct StripeSubscription {
   pub customer: StripeExpandedId,
   pub status: String,
   pub cancel_at_period_end: bool,
+  pub latest_invoice: Option<StripeExpandedId>,
   pub current_period_start: i64,
   pub current_period_end: i64,
   pub trial_start: Option<i64>,
@@ -146,6 +147,9 @@ pub(super) struct StripeCheckoutSession {
   pub customer: Option<StripeExpandedId>,
   pub subscription: Option<StripeExpandedId>,
   pub status: Option<String>,
+  pub payment_status: Option<String>,
+  pub payment_intent: Option<StripeExpandedId>,
+  pub invoice: Option<StripeExpandedId>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -330,7 +330,11 @@ impl ArtifactService {
     .await
     .map_err(|error| RuntimeError::database("complete workspace artifact failed", error))?;
     if updated.rows_affected() != 1 {
-      return Err(RuntimeError::invalid_state("artifact_reservation_changed"));
+      let row = self.get(workspace_id, content_hash).await?;
+      if row.status != "ready" || row.storage_scope != locator.scope.as_str() || row.storage_key != locator.key.as_str()
+      {
+        return Err(RuntimeError::invalid_state("artifact_reservation_changed"));
+      }
     }
     Ok(())
   }

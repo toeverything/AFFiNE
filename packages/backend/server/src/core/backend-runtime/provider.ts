@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   Logger,
   type OnApplicationBootstrap,
@@ -7,9 +6,14 @@ import {
   Optional,
 } from '@nestjs/common';
 
-import { Config, EventBus, OnEvent } from '../../base';
+import { EventBus, OnEvent } from '../../base';
 import { metrics } from '../../base/metrics';
-import { BackendRuntime, type BackendRuntimeHealth } from '../../native';
+import {
+  type AppConfigCommand,
+  BackendRuntime,
+  type BackendRuntimeHealth,
+  ServerConfigHandle,
+} from '../../native';
 import { BackendRuntimeOperations } from './copilot-operations';
 import { recordPermissionTelemetry } from './telemetry';
 
@@ -33,10 +37,6 @@ export type {
   RuntimeWorkspaceInviteQuotaUsage,
 } from './contracts';
 
-export const BACKEND_RUNTIME_CONFIG_PATHS = Symbol(
-  'BACKEND_RUNTIME_CONFIG_PATHS'
-);
-
 export type RuntimeInvalidation =
   | {
       version: 1;
@@ -48,17 +48,27 @@ export type RuntimeInvalidation =
       kind: 'quotaOwnerMapping' | 'quotaSeatUsage';
       workspaceId: string;
     }
-  | { version: 1; kind: 'blobSource'; source: unknown };
+  | { version: 1; kind: 'blobSource'; source: unknown }
+  | {
+      version: 1;
+      kind: 'workspaceInventoryChanged';
+      workspaceId: string;
+      docId?: string;
+    }
+  | {
+      version: 1;
+      kind: 'workspaceRootChanged';
+      workspaceId: string;
+      timestampMs: number;
+    };
 
 declare global {
   interface Events {
     'backendRuntime.invalidation': RuntimeInvalidation;
+    'backendRuntime.configApplied': {
+      updates: DeepPartial<AppConfig>;
+    };
   }
-}
-
-function runtimeAuthConfig(config?: Config) {
-  if (!config) return undefined;
-  return JSON.stringify({ auth: config.auth, oauth: config.oauth });
 }
 
 @Injectable()
@@ -70,18 +80,14 @@ export class BackendRuntimeProvider
   private migrationsStarted = false;
 
   constructor(
-    @Optional() private readonly config?: Config,
-    @Optional()
-    @Inject(BACKEND_RUNTIME_CONFIG_PATHS)
-    configPaths?: string[],
-    @Optional() event?: EventBus
+    serverConfig: ServerConfigHandle,
+    @Optional() private readonly event?: EventBus
   ) {
     const runtime = new BackendRuntime(
-      config?.crypto.privateKey,
-      configPaths,
+      serverConfig,
+      undefined,
       (error: Error | null, event: string) =>
         recordPermissionTelemetry(error, event),
-      runtimeAuthConfig(config),
       (error: Error | null, value: string) => {
         if (error || !event) return;
         event.emit(
@@ -91,7 +97,6 @@ export class BackendRuntimeProvider
       }
     );
     super(runtime);
-    this.configureObjectStorage();
   }
 
   async onApplicationBootstrap() {
@@ -103,10 +108,21 @@ export class BackendRuntimeProvider
   }
 
   async start() {
-    this.configureObjectStorage();
     await this.runtime.start();
+    if (!env.flavors.script) this.startWorkspaceLifecycleMigrations();
+    await this.event?.emitAsync('backendRuntime.configApplied', {
+      updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
+    });
     const health = await this.health();
-    this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+    this.logger.log(
+      `backend runtime started: db=${health.databaseConnected}, baseline=${health.baselineVersion}, redisDb=${health.redisDb ?? 'disabled'}`
+    );
+  }
+
+  async saveAppConfig(actor: string | null, commands: AppConfigCommand[]) {
+    return await this.measured('saveAppConfig', runtime =>
+      runtime.saveAppConfig(actor, commands)
+    );
   }
 
   /**
@@ -118,6 +134,7 @@ export class BackendRuntimeProvider
   }
 
   async stop() {
+    await this.stopWorkspaceLifecycleMigrations();
     await this.runtime.stop();
     this.logger.log('backend runtime stopped');
   }
@@ -129,17 +146,21 @@ export class BackendRuntimeProvider
       !updates.crypto &&
       !updates.db &&
       !updates.auth &&
+      !updates.oauth &&
       !updates.payment &&
       !updates.indexer &&
       !updates.storages
     ) {
       return;
     }
-    await this.runtime.reloadConfig(
-      this.config?.crypto.privateKey,
-      this.objectStorageConfig(),
-      runtimeAuthConfig(this.config)
-    );
+    try {
+      await this.runtime.reloadConfig();
+      await this.event?.emitAsync('backendRuntime.configApplied', { updates });
+    } catch (error) {
+      this.logger.error(
+        `Failed to apply committed native config: ${error instanceof Error ? error.name : 'unknown'}`
+      );
+    }
   }
 
   async health(): Promise<BackendRuntimeHealth> {
@@ -164,22 +185,6 @@ export class BackendRuntimeProvider
       metrics.invalidation.gauge(name).record(value);
     }
     return health;
-  }
-
-  private configureObjectStorage() {
-    const config = this.objectStorageConfig();
-    if (config) this.runtime.configureObjectStorage(config);
-  }
-
-  private objectStorageConfig() {
-    if (!this.config) return undefined;
-    return JSON.stringify({
-      storages: {
-        'blob.storage': this.config.storages.blob.storage,
-        'avatar.storage': this.config.storages.avatar.storage,
-      },
-      copilot: { storage: this.config.copilot.storage },
-    });
   }
 
   private async runMigrationsOnce() {

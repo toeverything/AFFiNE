@@ -211,7 +211,9 @@ export type RuntimeMailDeliveryQuotaDecision = {
 export type RuntimeQuotaMethods = RuntimeInstance & {
   listManagedWorkspaceBlobsV1(
     actorUserId: string,
-    workspaceId: string
+    workspaceId: string,
+    first: number,
+    after?: string
   ): Promise<
     Array<{ key: string; mime: string; size: number; createdAt: string }>
   >;

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use llm_adapter::{
-  backend::{BackendError, DefaultHttpClient},
+  backend::{BackendError, BackendProvider, DefaultHttpClient},
   capability::{
     AttachmentKind, AttachmentSource, ModelFeature, ModelInput, ModelOutput, ModelRequirements, declared_model_matches,
   },
@@ -9,14 +9,12 @@ use llm_adapter::{
     CoreContent, CoreMessage, CoreRequest, CoreRole, CoreToolChoice, CoreToolDefinition, EmbeddingRequest,
     ImageOptions, ImageProviderOptions, ImageRequest, RerankCandidate, RerankRequest, StructuredRequest,
   },
-  router::{ExecutablePreparedRoute, ExecutableRequest, ExecutableResponse, dispatch_prepared_route},
-  target::{
-    BackendCredential, BackendEndpoint, BackendOperation, BackendTargetInput, EgressPolicy, compile_backend_target,
-  },
+  router::{ExecutableRequest, ExecutableResponse, dispatch_prepared_route},
+  target::{BackendCredential, BackendOperation, EgressPolicy, prepare_backend_target},
 };
 use serde_json::json;
 
-use super::{RuntimeError, RuntimeResult, backend_provider, executable_protocol};
+use super::{RuntimeError, RuntimeResult};
 use crate::llm::{
   ByokModelProbeCheckOutput, ByokModelProbeOutput, ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput,
   byok::{ByokEndpoint, ByokPolicy, ByokProfileDefinition, SensitiveCredential, definition_fingerprint},
@@ -129,36 +127,37 @@ fn dispatch_check(
     "image" => BackendOperation::Image,
     _ => return not_tested(),
   };
-  let target = compile_backend_target(BackendTargetInput {
-    provider: match backend_provider(provider) {
-      Ok(provider) => provider,
-      Err(_) => return failed(checked_at, "unsupported_provider"),
-    },
-    operation: operation_kind,
-    endpoint: match endpoint {
-      ByokEndpoint::ProviderDefault => BackendEndpoint::ProviderDefault,
-      ByokEndpoint::OpenAiCompatible { url, .. } => BackendEndpoint::Custom(url.clone()),
-    },
-    openai_dialect: match endpoint {
-      ByokEndpoint::ProviderDefault => None,
-      ByokEndpoint::OpenAiCompatible { dialect, .. } => Some(*dialect),
-    },
-    model: model_id.to_string(),
-    credential: BackendCredential::new(credential),
-    timeout_ms: Some(15_000),
-    egress_policy,
-  });
+  let provider = match provider.parse::<BackendProvider>() {
+    Ok(provider) => provider,
+    Err(_) => return failed(checked_at, "unsupported_provider"),
+  };
+  let dialect = match endpoint {
+    ByokEndpoint::ProviderDefault => None,
+    ByokEndpoint::OpenAiCompatible { dialect, .. } => Some(*dialect),
+  };
+  let target = (|| {
+    let layer = provider.default_request_layer(operation_kind, dialect)?;
+    let endpoint = match endpoint {
+      ByokEndpoint::ProviderDefault => provider.endpoint(&json!({}))?,
+      ByokEndpoint::OpenAiCompatible { url, .. } => url.clone(),
+    };
+    prepare_backend_target(
+      layer,
+      operation_kind,
+      model_id.to_string(),
+      &endpoint,
+      Some(15_000),
+      egress_policy,
+    )
+  })();
   let target = match target {
     Ok(target) => target,
     Err(_) => return failed(checked_at, "unsupported_operation"),
   };
-  let route = ExecutablePreparedRoute::new(
-    executable_protocol(target.protocol),
-    target.model,
-    target.config,
+  let route = match target.bind(
+    BackendCredential::new(credential),
     probe_request_for_operation(operation),
-  );
-  let route = match route {
+  ) {
     Ok(route) => route,
     Err(_) => return failed(checked_at, "invalid_probe_request"),
   };

@@ -16,6 +16,7 @@ type IntegrationCard = {
   icon: ReactNode;
   cloud?: boolean;
   byok?: boolean;
+  copilot?: boolean;
 } & ({ setting: ReactNode } | { link: string });
 
 const INTEGRATION_LIST = [
@@ -41,6 +42,7 @@ const INTEGRATION_LIST = [
     icon: <img src={MCPIcon} />,
     setting: <McpServerSettingPanel />,
     cloud: true,
+    copilot: true,
   },
   {
     id: 'web-clipper' as const,
@@ -70,11 +72,13 @@ export type IntegrationItem = Exclude<IntegrationCard, 'id'> & {
 
 export function getAllowedIntegrationList(
   isCloudWorkspace: boolean,
-  showByok: boolean
+  showByok: boolean,
+  copilotEnabled: boolean
 ) {
   return INTEGRATION_LIST.filter(item => {
     if (!item) return false;
     if ('byok' in item && item.byok && !showByok) return false;
+    if ('copilot' in item && item.copilot && !copilotEnabled) return false;
     const requiredCloud = 'cloud' in item && item.cloud;
     if (requiredCloud && !isCloudWorkspace) return false;
     return true;

@@ -5,30 +5,28 @@ use std::{
 
 use gcp_auth::{CustomServiceAccount, TokenProvider};
 use llm_adapter::{
-  backend::{BackendError, DefaultHttpClient},
+  backend::{BackendError, CredentialPlan, DefaultHttpClient},
   capability::{AttachmentKind, AttachmentSource},
   core::{CoreContent, ImageInput, ImageRequest},
-  router::{ExecutablePreparedRoute, ExecutableProtocol, ExecutableRequest, ExecutableResponse},
-  target::{
-    BackendCredential, BackendOperation, BackendProtocol, BackendProvider, BackendTargetInput, compile_backend_target,
-  },
+  router::{ExecutableRequest, ExecutableResponse},
+  target::{BackendCredential, prepare_backend_target},
 };
 use llm_runtime::{CompiledPlan, CompiledRoute, RuntimeRouteEvent, RuntimeUsage, dispatch_compiled_plan};
 use serde::Serialize;
 use uuid::Uuid;
 use zeroize::Zeroizing;
 
-use super::{COPILOT_REQUEST_TIMEOUT, RuntimeError, RuntimeResult, context};
+use super::{COPILOT_REQUEST_TIMEOUT, RuntimeError, RuntimeResult};
 use crate::{
   llm::{
     LlmImageRequestContract,
-    byok::CredentialEnvelopeKey,
+    byok::{ByokEndpoint, CredentialEnvelopeKey},
     route::{
-      AuthorizedProviderProfile, AuthorizedTargetRef, CatalogSlot, CredentialRef, RouteOperation,
+      AuthorizedProviderProfile, AuthorizedRouteTargets, CatalogSlot, CredentialRef, RouteOperation,
       with_request_requirements,
     },
   },
-  runtime::{BackendRuntimeConfig, CopilotManagedProfileConfig},
+  runtime::BackendRuntimeConfig,
 };
 
 #[derive(Serialize)]
@@ -105,10 +103,10 @@ pub(super) fn execute(
   slot: CatalogSlot,
   request: ExecutableRequest,
   profiles: Vec<AuthorizedProviderProfile>,
-  candidates: Vec<AuthorizedTargetRef>,
-  managed_credentials: HashMap<String, Zeroizing<String>>,
+  targets: AuthorizedRouteTargets,
+  managed_credential: Option<Zeroizing<String>>,
 ) -> RuntimeResult<CopilotExecutionResult> {
-  let execution = compile_execution(&config, slot, request, &profiles, &candidates, &managed_credentials)?;
+  let execution = compile_execution(&config, slot, request, &profiles, &targets, managed_credential.as_ref())?;
   let mut runtime_events = Vec::new();
   let response = dispatch_compiled_plan(&DefaultHttpClient::default(), &execution.plan, |event| {
     runtime_events.push(event)
@@ -129,10 +127,10 @@ pub(super) fn execute_embeddings(
   slot: CatalogSlot,
   request: ExecutableRequest,
   profiles: Vec<AuthorizedProviderProfile>,
-  candidates: Vec<AuthorizedTargetRef>,
-  managed_credentials: HashMap<String, Zeroizing<String>>,
+  targets: AuthorizedRouteTargets,
+  managed_credential: Option<Zeroizing<String>>,
 ) -> RuntimeResult<Vec<Vec<f32>>> {
-  let output = execute(config, slot, request, profiles, candidates, managed_credentials)?;
+  let output = execute(config, slot, request, profiles, targets, managed_credential)?;
   let response: llm_adapter::core::EmbeddingResponse = serde_json::from_value(output.result)
     .map_err(|error| RuntimeError::json("decode embedding response failed", error))?;
   response
@@ -152,50 +150,81 @@ pub(super) fn compile_execution(
   slot: CatalogSlot,
   request: ExecutableRequest,
   profiles: &[AuthorizedProviderProfile],
-  candidates: &[AuthorizedTargetRef],
-  managed_credentials: &HashMap<String, Zeroizing<String>>,
+  targets: &AuthorizedRouteTargets,
+  managed_credential: Option<&Zeroizing<String>>,
 ) -> RuntimeResult<CompiledExecution> {
-  let key = CredentialEnvelopeKey::derive(config.private_key.as_bytes())
-    .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))?;
-  let mut identities = HashMap::new();
-  let mut routes = Vec::with_capacity(candidates.len());
-  for candidate in candidates {
-    let profile = profiles
-      .get(candidate.profile_index)
-      .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route profile"))?;
-    let model = profile
-      .models
-      .get(candidate.model_index)
-      .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route model"))?;
-    let credential = resolve_credential(&key, profile, managed_credentials)?;
-    let target = compile_backend_target(BackendTargetInput {
-      provider: provider(&profile.provider)?,
-      operation: operation(slot.operation),
-      endpoint: profile.endpoint.clone(),
-      openai_dialect: profile.openai_dialect,
-      model: model.model_id.clone(),
-      credential: BackendCredential::new(credential),
-      timeout_ms: Some(COPILOT_REQUEST_TIMEOUT.as_millis() as u64),
-      egress_policy: profile.egress_policy,
-    })
-    .map_err(|error| RuntimeError::invalid_state(error.to_string()))?;
-    let route_id = Uuid::new_v4().to_string();
-    identities.insert(
-      route_id.clone(),
-      RouteIdentity {
-        profile_id: profile.profile_id.clone(),
-        source: match profile.source {
-          crate::llm::route::ProfileSource::Server => "server",
-          crate::llm::route::ProfileSource::Local => "local",
-          crate::llm::route::ProfileSource::Managed => "affine_cloud",
+  let compiled = match targets {
+    AuthorizedRouteTargets::Managed(managed) => {
+      let credential =
+        managed_credential.ok_or_else(|| RuntimeError::invalid_state("managed copilot credential unavailable"))?;
+      let route = managed
+        .target
+        .bind(BackendCredential::new(credential.as_str().to_string()), request.clone())
+        .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
+      vec![(
+        RouteIdentity {
+          profile_id: managed.profile_id.clone(),
+          source: "affine_cloud",
+          provider: managed.provider.as_str().to_string(),
+          model: managed.target.wire_model().to_string(),
         },
-        provider: profile.provider.clone(),
-        model: target.model.clone(),
-      },
-    );
-    let protocol = protocol(target.protocol);
-    let route = ExecutablePreparedRoute::new(protocol, target.model, target.config, request.clone())
-      .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
+        route,
+      )]
+    }
+    AuthorizedRouteTargets::Byok(candidates) => {
+      let key = CredentialEnvelopeKey::derive(config.private_key.as_bytes())
+        .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))?;
+      candidates
+        .iter()
+        .map(|candidate| {
+          let profile = profiles
+            .get(candidate.profile_index)
+            .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route profile"))?;
+          let model = profile
+            .models
+            .get(candidate.model_index)
+            .ok_or_else(|| RuntimeError::invalid_state("invalid authorized route model"))?;
+          let provider = profile.provider.parse::<llm_adapter::backend::BackendProvider>()?;
+          let (endpoint, dialect) = match &profile.endpoint {
+            ByokEndpoint::ProviderDefault => (provider.endpoint(&serde_json::json!({}))?, None),
+            ByokEndpoint::OpenAiCompatible { url, dialect } => (url.clone(), Some(*dialect)),
+          };
+          let layer = provider.default_request_layer(slot.operation.into(), dialect)?;
+          let target = prepare_backend_target(
+            layer,
+            slot.operation.into(),
+            model.model_id.clone(),
+            &endpoint,
+            Some(COPILOT_REQUEST_TIMEOUT.as_millis() as u64),
+            profile.egress_policy,
+          )?;
+          let route = target
+            .bind(
+              BackendCredential::new(resolve_credential(&key, profile)?),
+              request.clone(),
+            )
+            .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
+          Ok((
+            RouteIdentity {
+              profile_id: profile.profile_id.clone(),
+              source: match profile.source {
+                crate::llm::route::ProfileSource::Server => "server",
+                crate::llm::route::ProfileSource::Local => "local",
+              },
+              provider: profile.provider.clone(),
+              model: target.wire_model().to_string(),
+            },
+            route,
+          ))
+        })
+        .collect::<RuntimeResult<Vec<_>>>()?
+    }
+  };
+  let mut identities = HashMap::new();
+  let mut routes = Vec::with_capacity(compiled.len());
+  for (identity, route) in compiled {
+    let route_id = Uuid::new_v4().to_string();
+    identities.insert(route_id.clone(), identity);
     routes.push(CompiledRoute::new(route_id, route));
   }
   Ok(CompiledExecution {
@@ -272,114 +301,77 @@ fn collect_message_attachments(
   }
 }
 
-fn resolve_credential(
-  key: &CredentialEnvelopeKey,
-  profile: &AuthorizedProviderProfile,
-  managed_credentials: &HashMap<String, Zeroizing<String>>,
+fn resolve_credential(key: &CredentialEnvelopeKey, profile: &AuthorizedProviderProfile) -> RuntimeResult<String> {
+  let CredentialRef { encrypted, aad } = &profile.credential_ref;
+  key
+    .decrypt(encrypted, aad)
+    .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))
+    .and_then(|credential| {
+      String::from_utf8(credential.expose().to_vec()).map_err(|_| RuntimeError::invalid_state("credential_unavailable"))
+    })
+}
+
+pub(super) async fn managed_credential(
+  plan: &CredentialPlan,
+  config: &serde_json::Value,
+  token_provider: Option<Arc<dyn TokenProvider>>,
 ) -> RuntimeResult<String> {
-  match &profile.credential_ref {
-    CredentialRef::Envelope { encrypted, aad } => key
-      .decrypt(encrypted, aad)
-      .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))
-      .and_then(|credential| {
-        String::from_utf8(credential.expose().to_vec())
-          .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))
-      }),
-    CredentialRef::Managed { profile_id } => managed_credentials
-      .get(profile_id)
-      .map(|credential| credential.as_str().to_string())
+  match plan {
+    CredentialPlan::GoogleOAuth { scopes, .. } => {
+      let scopes = scopes.iter().map(String::as_str).collect::<Vec<_>>();
+      token_provider
+        .ok_or_else(|| RuntimeError::invalid_state("managed Google credential unavailable"))?
+        .token(&scopes)
+        .await
+        .map(|token| token.as_str().to_string())
+        .map_err(|_| RuntimeError::invalid_state("managed Google credential unavailable"))
+    }
+    CredentialPlan::Field { field } => config
+      .get(field)
+      .and_then(serde_json::Value::as_str)
+      .map(str::to_string)
       .ok_or_else(|| RuntimeError::invalid_state("managed copilot credential unavailable")),
   }
 }
 
-pub(super) async fn managed_credential(
-  profile: &CopilotManagedProfileConfig,
-  token_provider: Option<Arc<dyn TokenProvider>>,
-) -> RuntimeResult<String> {
-  if matches!(profile.provider.as_str(), "geminiVertex" | "anthropicVertex") {
-    return token_provider
-      .ok_or_else(|| RuntimeError::invalid_state("managed Vertex credential unavailable"))?
-      .token(&["https://www.googleapis.com/auth/cloud-platform"])
-      .await
-      .map(|token| token.as_str().to_string())
-      .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"));
-  }
-  let field = if profile.provider == "cloudflareWorkersAi" {
-    "apiToken"
-  } else {
-    "apiKey"
+pub(super) async fn create_google_token_provider(plan: &CredentialPlan) -> RuntimeResult<Arc<dyn TokenProvider>> {
+  let CredentialPlan::GoogleOAuth {
+    project, credentials, ..
+  } = plan
+  else {
+    return Err(RuntimeError::invalid_state("managed Google credential unavailable"));
   };
-  Ok(context::required_config_text(profile, field)?.to_string())
-}
-
-pub(super) async fn create_vertex_token_provider(
-  profile: &CopilotManagedProfileConfig,
-) -> RuntimeResult<Arc<dyn TokenProvider>> {
-  if let Some(credentials) = profile.config.pointer("/googleAuthOptions/credentials") {
-    let project = context::required_config_text(profile, "project")?.to_string();
+  if let Some(credentials) = credentials {
     let mut credentials = credentials.clone();
     let object = credentials
       .as_object_mut()
-      .ok_or_else(|| RuntimeError::invalid_state("managed Vertex credentials must be an object"))?;
+      .ok_or_else(|| RuntimeError::invalid_state("managed Google credentials must be an object"))?;
     object
       .entry("type")
-      .or_insert_with(|| serde_json::Value::String("service_account".to_string()));
-    object
-      .entry("project_id")
-      .or_insert_with(|| serde_json::Value::String(project));
+      .or_insert_with(|| serde_json::json!("service_account"));
+    object.entry("project_id").or_insert_with(|| serde_json::json!(project));
     object
       .entry("token_uri")
-      .or_insert_with(|| serde_json::Value::String("https://oauth2.googleapis.com/token".to_string()));
+      .or_insert_with(|| serde_json::json!("https://oauth2.googleapis.com/token"));
     let json = serde_json::to_string(&credentials)
-      .map_err(|error| RuntimeError::json("serialize managed Vertex credentials failed", error))?;
+      .map_err(|error| RuntimeError::json("serialize managed Google credentials failed", error))?;
     return CustomServiceAccount::from_json(&json)
       .map(|provider| Arc::new(provider) as Arc<dyn TokenProvider>)
-      .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"));
+      .map_err(|_| RuntimeError::invalid_state("managed Google credential unavailable"));
   }
   gcp_auth::provider()
     .await
-    .map_err(|_| RuntimeError::invalid_state("managed Vertex credential unavailable"))
-}
-
-pub(in crate::runtime::backend_runtime) fn provider(value: &str) -> RuntimeResult<BackendProvider> {
-  match value {
-    "openai" => Ok(BackendProvider::OpenAi),
-    "anthropic" => Ok(BackendProvider::Anthropic),
-    "anthropicVertex" => Ok(BackendProvider::AnthropicVertex),
-    "gemini" => Ok(BackendProvider::Gemini),
-    "geminiVertex" => Ok(BackendProvider::GeminiVertex),
-    "cloudflareWorkersAi" => Ok(BackendProvider::CloudflareWorkersAi),
-    "fal" => Ok(BackendProvider::Fal),
-    _ => Err(RuntimeError::invalid_state("unsupported copilot provider")),
-  }
-}
-
-fn operation(value: RouteOperation) -> BackendOperation {
-  match value {
-    RouteOperation::Chat => BackendOperation::Chat,
-    RouteOperation::Structured | RouteOperation::Transcription => BackendOperation::Structured,
-    RouteOperation::Embedding => BackendOperation::Embedding,
-    RouteOperation::Rerank => BackendOperation::Rerank,
-    RouteOperation::Image => BackendOperation::Image,
-  }
-}
-
-pub(in crate::runtime::backend_runtime) fn protocol(value: BackendProtocol) -> ExecutableProtocol {
-  match value {
-    BackendProtocol::Chat(value) => ExecutableProtocol::Chat(value),
-    BackendProtocol::Structured(value) => ExecutableProtocol::Structured(value),
-    BackendProtocol::Embedding(value) => ExecutableProtocol::Embedding(value),
-    BackendProtocol::Rerank(value) => ExecutableProtocol::Rerank(value),
-    BackendProtocol::Image(value) => ExecutableProtocol::Image(value),
-  }
+    .map_err(|_| RuntimeError::invalid_state("managed Google credential unavailable"))
 }
 
 fn project_event(event: RuntimeRouteEvent, identities: &HashMap<String, RouteIdentity>) -> RuntimeResult<ProductEvent> {
   match event {
-    RuntimeRouteEvent::Selected { route_id } => Ok(ProductEvent::RouteSelected {
+    RuntimeRouteEvent::Selected { route_id, .. } => Ok(ProductEvent::RouteSelected {
       route: identity(identities, &route_id)?,
     }),
-    RuntimeRouteEvent::Failed { route_id, error_kind } => Ok(ProductEvent::RouteFailed {
+    RuntimeRouteEvent::Failed {
+      route_id, error_kind, ..
+    } => Ok(ProductEvent::RouteFailed {
       route: identity(identities, &route_id)?,
       error_kind,
     }),
@@ -420,15 +412,24 @@ impl From<BackendError> for RuntimeError {
   }
 }
 
+impl From<llm_adapter::target::TargetCompileError> for RuntimeError {
+  fn from(error: llm_adapter::target::TargetCompileError) -> Self {
+    RuntimeError::invalid_state(error.to_string())
+  }
+}
+
 #[cfg(test)]
 mod tests {
+  use std::sync::atomic::{AtomicUsize, Ordering};
+
+  use futures_util::future::BoxFuture;
   use serde_json::json;
 
   use super::*;
   use crate::llm::route::slot;
 
-  #[test]
-  fn image_dispatch_accepts_napi_request_contract() {
+  #[tokio::test]
+  async fn dispatch_keeps_managed_and_byok_targets_and_credentials_bound() {
     let (_, request) = request_and_slot(
       slot("action.image.filter.pixel").unwrap(),
       json!({
@@ -460,5 +461,220 @@ mod tests {
     };
     assert!(request.is_edit());
     assert_eq!(request.images()[0].media_type(), Some("image/png"));
+
+    struct FailedClient {
+      attempts: std::cell::Cell<usize>,
+      status: u16,
+      expected_url: &'static str,
+    }
+    impl llm_adapter::backend::BackendHttpClient for FailedClient {
+      fn post_json(
+        &self,
+        request: llm_adapter::backend::HttpRequest,
+      ) -> Result<llm_adapter::backend::HttpResponse, BackendError> {
+        self.attempts.set(self.attempts.get() + 1);
+        assert_eq!(request.url, self.expected_url);
+        if self.status == 0 {
+          Err(BackendError::Timeout {
+            message: "fixture".into(),
+            context: None,
+          })
+        } else {
+          Ok(llm_adapter::backend::HttpResponse {
+            status: self.status,
+            body: json!({"error":"fixture"}),
+          })
+        }
+      }
+      fn post_sse(
+        &self,
+        _: llm_adapter::backend::HttpRequest,
+        _: &mut dyn FnMut(&str) -> Result<(), BackendError>,
+      ) -> Result<(), BackendError> {
+        unreachable!("non-streaming fixture");
+      }
+    }
+    let mut copilot: crate::runtime::CopilotRuntimeConfig = serde_json::from_value(json!({
+      "providers":{"profiles":[
+        {"id":"first","type":"openai","config":{"apiKey":"old-key"}},
+        {"id":"second","type":"openai","config":{"apiKey":"another-key"}}
+      ]}
+    }))
+    .unwrap();
+    copilot.initialize_managed_routes().unwrap();
+    let target = copilot
+      .managed_routes
+      .iter()
+      .find(|binding| {
+        binding.target.model_id == "gpt-6-luna" && binding.operation == llm_adapter::target::BackendOperation::Chat
+      })
+      .unwrap()
+      .resolved
+      .clone();
+    copilot.providers.profiles.clear();
+    let mut config = BackendRuntimeConfig {
+      database_url: "postgresql://unused".into(),
+      auth: Default::default(),
+      invite_quota: Default::default(),
+      private_key: Arc::new(Zeroizing::new(String::new())),
+      deployment: crate::runtime::Deployment::Cloud,
+      copilot,
+      search: Default::default(),
+      redis: Default::default(),
+      payment: Default::default(),
+    };
+    let (slot, request) = request_and_slot(
+      slot("chat.default").unwrap(),
+      json!({
+        "model":"ignored", "messages":[{"role":"user","content":[{"type":"text","text":"hello"}]}]
+      }),
+    )
+    .unwrap();
+    let targets = AuthorizedRouteTargets::Managed(target);
+    let credential =
+      super::super::resolve_managed_credential(&targets, &super::super::ManagedTokenProviderCache::default())
+        .await
+        .unwrap();
+    assert_eq!(credential.as_ref().unwrap().as_str(), "old-key");
+    let execution = compile_execution(&config, slot, request, &[], &targets, credential.as_ref()).unwrap();
+    assert_eq!(execution.plan.route_ids().count(), 1);
+    struct RefreshingTokenProvider(AtomicUsize);
+    impl TokenProvider for RefreshingTokenProvider {
+      fn token<'a, 'b, 'c, 'future>(
+        &'a self,
+        scopes: &'b [&'c str],
+      ) -> BoxFuture<'future, Result<Arc<gcp_auth::Token>, gcp_auth::Error>>
+      where
+        'a: 'future,
+        'b: 'future,
+        'c: 'future,
+        Self: 'future,
+      {
+        Box::pin(async move {
+          assert_eq!(scopes, ["https://www.googleapis.com/auth/cloud-platform"]);
+          let sequence = self.0.fetch_add(1, Ordering::Relaxed);
+          Ok(Arc::new(
+            serde_json::from_value(json!({
+              "access_token": format!("token-{sequence}"),
+              "expires_in": 0
+            }))
+            .unwrap(),
+          ))
+        })
+      }
+
+      fn project_id<'a, 'future>(&'a self) -> BoxFuture<'future, Result<Arc<str>, gcp_auth::Error>>
+      where
+        'a: 'future,
+        Self: 'future,
+      {
+        Box::pin(async { Ok(Arc::from("fixture-project")) })
+      }
+    }
+    let provider: Arc<dyn TokenProvider> = Arc::new(RefreshingTokenProvider(AtomicUsize::new(0)));
+    let plan = CredentialPlan::GoogleOAuth {
+      scopes: vec!["https://www.googleapis.com/auth/cloud-platform".into()],
+      project: "fixture-project".into(),
+      credentials: None,
+    };
+    for expected in ["token-0", "token-1"] {
+      assert_eq!(
+        managed_credential(&plan, &json!({}), Some(Arc::clone(&provider)))
+          .await
+          .unwrap(),
+        expected
+      );
+    }
+    for status in [401, 429, 404, 0] {
+      let client = FailedClient {
+        attempts: std::cell::Cell::new(0),
+        status,
+        expected_url: "https://api.openai.com/v1/responses",
+      };
+      assert!(dispatch_compiled_plan(&client, &execution.plan, |_| {}).is_err());
+      assert_eq!(client.attempts.get(), 1);
+    }
+    use crate::llm::{
+      byok::{ByokModelDeclaration, SensitiveCredential},
+      route::{self, ProfileSource},
+    };
+    config.private_key = Arc::new(Zeroizing::new("fixture-root-key".into()));
+    let key = CredentialEnvelopeKey::derive(config.private_key.as_bytes()).unwrap();
+    let credential_ref = CredentialRef {
+      encrypted: key
+        .encrypt(&SensitiveCredential::new("byok-key".as_bytes()), b"fixture")
+        .unwrap(),
+      aad: b"fixture".to_vec(),
+    };
+    for (provider, slot_id, request, expected_url) in [
+      (
+        "openai",
+        "chat.default",
+        json!({"model":"ignored", "messages":[]}),
+        "https://api.openai.com/v1/responses",
+      ),
+      (
+        "anthropic",
+        "chat.default",
+        json!({"model":"ignored", "messages":[]}),
+        "https://api.anthropic.com/v1/messages",
+      ),
+      (
+        "gemini",
+        "chat.default",
+        json!({"model":"ignored", "messages":[]}),
+        "https://generativelanguage.googleapis.com/v1beta/models/opaque-model:generateContent",
+      ),
+      (
+        "fal",
+        "image.generate",
+        json!({"model":"ignored", "operation":"generate", "prompt":"fixture"}),
+        "https://fal.run/fal-ai/opaque-model",
+      ),
+    ] {
+      let (slot, request) = request_and_slot(route::slot(slot_id).unwrap(), request).unwrap();
+      let profile = AuthorizedProviderProfile {
+        profile_id: "fixture-profile".into(),
+        source: ProfileSource::Server,
+        provider: provider.into(),
+        endpoint: ByokEndpoint::ProviderDefault,
+        egress_policy: llm_adapter::target::EgressPolicy::PublicOnly,
+        models: vec![ByokModelDeclaration {
+          model_id: "opaque-model".into(),
+          enabled: true,
+          capabilities: vec![llm_adapter::capability::DeclaredModelCapability {
+            input: slot.requirements.input.clone(),
+            output: slot.requirements.output.clone(),
+            features: vec![],
+            attachment_kinds: vec![],
+            attachment_sources: vec![],
+          }],
+        }],
+        sort_order: 0,
+        credential_ref: credential_ref.clone(),
+      };
+      let profiles = [profile];
+      let route::RouteDecision::Ready(targets) = route::decide(route::RoutePolicyInput {
+        slot: &slot,
+        deployment: config.deployment,
+        byok_enabled: true,
+        access_available: true,
+        profiles: &profiles,
+        managed_target: None,
+        target_override: None,
+        target_override_managed: false,
+      }) else {
+        panic!("default-endpoint BYOK route should resolve");
+      };
+      let execution = compile_execution(&config, slot, request, &profiles, &targets, None).unwrap();
+      let client = FailedClient {
+        attempts: std::cell::Cell::new(0),
+        status: 0,
+        expected_url,
+      };
+      assert!(dispatch_compiled_plan(&client, &execution.plan, |_| {}).is_err());
+      assert_eq!(client.attempts.get(), 1);
+      assert_eq!(execution.identities.values().next().unwrap().model, "opaque-model");
+    }
   }
 }

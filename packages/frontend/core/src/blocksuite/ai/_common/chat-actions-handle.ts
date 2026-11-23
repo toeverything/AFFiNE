@@ -501,9 +501,11 @@ export const SAVE_AS_DOC = {
     let complete = false;
     (function addContent() {
       if (complete) return;
-      const newHost = document.querySelector('editor-host');
+      const newHost = [
+        ...document.querySelectorAll<EditorHost>('editor-host'),
+      ].find(candidate => candidate.store.id === newDoc.id);
       // FIXME: this is a hack to wait for the host to be ready, now we don't have a way to know if the new host is ready
-      if (!newHost || newHost === host) {
+      if (!newHost) {
         setTimeout(addContent, 100);
         return;
       }

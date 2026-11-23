@@ -1,22 +1,19 @@
 use affine_core::access_control::{
-  DocAction, QuotaUsage, STORAGE_RESERVATION_MINUTES, StorageAuthorizationFacts, StorageLedgerFacts,
-  StorageMutationIntent, StorageObjectFacts, StorageReservationDenial, StorageReservationError,
-  StorageReservationFacts, StorageReservationPlan, StorageReservationRequest, StorageResource, WorkspaceAction,
-  plan_storage_reservation,
+  QuotaUsage, STORAGE_RESERVATION_MINUTES, StorageLedgerFacts, StorageMutationIntent, StorageObjectFacts,
+  StorageReservationDenial, StorageReservationError, StorageReservationFacts, StorageReservationPlan,
+  StorageReservationRequest, StorageResource, plan_storage_reservation,
 };
 use chrono::{DateTime, Utc};
 use napi::Result;
-use sqlx::{Connection, Postgres, Row, Transaction};
+use sqlx::{Connection, Row};
 use uuid::Uuid;
 
 use super::{
-  super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, permission::PermissionAuthorizer},
-  ChargeSubject, StorageOperation, chargeable_invitation_statuses, invalidate_storage_usage, load_decision_time,
-  promotion::final_storage_locator,
-  resolve_quota_charge, storage_usage,
+  super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error},
+  PermissionAuthorizer, StorageOperation, chargeable_invitation_statuses, final_storage_locator,
+  invalidate_storage_usage, lock_subject, storage_usage, temporary_storage_locator,
 };
 use crate::runtime::{
-  Deployment,
   object_storage::types::ObjectMetadata,
   types::{RuntimeStorageReservationDecision, RuntimeStorageReservationInput},
 };
@@ -27,93 +24,6 @@ pub(super) fn storage_resource(kind: &str) -> RuntimeResult<StorageResource> {
     "comment_attachment" => Ok(StorageResource::CommentAttachment),
     _ => Err(RuntimeError::invalid_input("invalid storage reservation kind")),
   }
-}
-
-async fn storage_authorization_in(
-  tx: &mut Transaction<'_, Postgres>,
-  authorizer: &PermissionAuthorizer,
-  workspace_id: &str,
-  actor_user_id: &str,
-  resource: StorageResource,
-  doc_id: Option<&str>,
-) -> RuntimeResult<StorageAuthorizationFacts> {
-  match resource {
-    StorageResource::Blob => Ok(StorageAuthorizationFacts {
-      workspace_upload: authorizer
-        .authorize_workspace_action_in(tx, workspace_id, Some(actor_user_id), WorkspaceAction::BlobsUpload)
-        .await?
-        .allowed,
-      doc_read: false,
-      doc_comment_create: false,
-    }),
-    StorageResource::CommentAttachment => {
-      let doc_id =
-        doc_id.ok_or_else(|| RuntimeError::invalid_input("comment attachment reservation requires docId"))?;
-      let decisions = authorizer
-        .authorize_doc_actions_in(
-          tx,
-          workspace_id,
-          Some(actor_user_id),
-          doc_id,
-          &[DocAction::Read, DocAction::CommentsCreate],
-        )
-        .await?;
-      Ok(StorageAuthorizationFacts {
-        workspace_upload: false,
-        doc_read: decisions
-          .iter()
-          .find(|(action, _)| *action == DocAction::Read)
-          .is_some_and(|(_, decision)| decision.allowed),
-        doc_comment_create: decisions
-          .iter()
-          .find(|(action, _)| *action == DocAction::CommentsCreate)
-          .is_some_and(|(_, decision)| decision.allowed),
-      })
-    }
-  }
-}
-
-pub(super) async fn lock_subject(
-  tx: &mut Transaction<'_, Postgres>,
-  workspace_id: &str,
-  actor_user_id: &str,
-  resource: StorageResource,
-  doc_id: Option<&str>,
-  deployment: Deployment,
-  authorizer: &PermissionAuthorizer,
-) -> RuntimeResult<(ChargeSubject, DateTime<Utc>, StorageAuthorizationFacts)> {
-  let owner_id: String = sqlx::query_scalar(
-    "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
-  )
-  .bind(workspace_id)
-  .fetch_optional(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("load workspace quota owner", error))?
-  .ok_or_else(|| RuntimeError::invalid_input("workspace owner not found"))?;
-  sqlx::query("SELECT id FROM users WHERE id=$1 FOR UPDATE")
-    .bind(&owner_id)
-    .fetch_one(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("lock quota owner", error))?;
-  sqlx::query("SELECT id FROM workspaces WHERE id=$1 FOR UPDATE")
-    .bind(workspace_id)
-    .fetch_one(&mut **tx)
-    .await
-    .map_err(|error| RuntimeError::database("lock quota workspace", error))?;
-  let locked_owner_id: String = sqlx::query_scalar(
-    "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active' LIMIT 1",
-  )
-  .bind(workspace_id)
-  .fetch_one(&mut **tx)
-  .await
-  .map_err(|error| RuntimeError::database("verify storage quota owner", error))?;
-  if locked_owner_id != owner_id {
-    return Err(RuntimeError::invalid_input("storage_quota_subject_changed"));
-  }
-  let authorization = storage_authorization_in(tx, authorizer, workspace_id, actor_user_id, resource, doc_id).await?;
-  let now = load_decision_time(tx, "load strict storage decision clock").await?;
-  let subject = resolve_quota_charge(tx, deployment, workspace_id, owner_id, now).await?;
-  Ok((subject, now, authorization))
 }
 
 #[napi_derive::napi]
@@ -184,7 +94,8 @@ impl BackendRuntime {
         .map_err(|error| RuntimeError::database("load strict storage seat usage", error))?;
         let mut resume_id = None;
         let ledger = if let Some(existing) = existing.as_ref() {
-          if existing.get::<Option<DateTime<Utc>>, _>("deleted_at").is_some() {
+          let deleted = existing.get::<Option<DateTime<Utc>>, _>("deleted_at").is_some();
+          if deleted && existing.get::<String, _>("status") != "pending" {
             StorageLedgerFacts::Deleted
           } else {
             let status: String = existing.get("status");
@@ -197,11 +108,12 @@ impl BackendRuntime {
               "pending" => {
                 resume_id = Some(existing.get::<Uuid, _>("reservation_id"));
                 StorageLedgerFacts::Pending {
-                  live: existing
-                    .try_get::<Option<DateTime<Utc>>, _>("reservation_expires_at")
-                    .ok()
-                    .flatten()
-                    .is_some_and(|expires_at| expires_at > now),
+                  live: !deleted
+                    && existing
+                      .try_get::<Option<DateTime<Utc>>, _>("reservation_expires_at")
+                      .ok()
+                      .flatten()
+                      .is_some_and(|expires_at| expires_at > now),
                   size_matches,
                   mime_matches,
                   owner_matches,
@@ -379,6 +291,55 @@ impl BackendRuntime {
             }));
           }
         };
+        if intent == StorageMutationIntent::ReplaceExpired
+          && existing
+            .as_ref()
+            .is_some_and(|row| row.get::<Option<DateTime<Utc>>, _>("deleted_at").is_some())
+        {
+          tx.commit()
+            .await
+            .map_err(|error| RuntimeError::database("commit aborted reservation observation", error))?;
+          let old_id = resume_id.ok_or_else(|| napi_error("missing pending reservation id"))?;
+          let temporary = temporary_storage_locator(
+            &input.kind,
+            &input.workspace_id,
+            input.doc_id.as_deref(),
+            &input.key,
+            old_id,
+          )?;
+          // Keep the tombstone until both objects are removed, under the object
+          // lifecycle lock.
+          let storage = self.object_storage()?;
+          storage.delete(&temporary).await?;
+          storage.delete(&final_locator).await?;
+          let deleted = if resource == StorageResource::Blob {
+            sqlx::query(
+              "DELETE FROM blobs WHERE workspace_id=$1 AND key=$2 AND reservation_id=$3 AND status='pending' AND \
+               deleted_at IS NOT NULL",
+            )
+            .bind(&input.workspace_id)
+            .bind(&input.key)
+            .bind(old_id)
+            .execute(operation.connection())
+            .await
+          } else {
+            sqlx::query(
+              "DELETE FROM comment_attachments WHERE workspace_id=$1 AND doc_id=$2 AND key=$3 AND reservation_id=$4 \
+               AND status='pending' AND deleted_at IS NOT NULL",
+            )
+            .bind(&input.workspace_id)
+            .bind(input.doc_id.as_deref())
+            .bind(&input.key)
+            .bind(old_id)
+            .execute(operation.connection())
+            .await
+          }
+          .map_err(|error| RuntimeError::database("delete aborted storage reservation", error))?;
+          if deleted.rows_affected() != 1 {
+            return Err(napi_error("storage reservation changed"));
+          }
+          continue;
+        }
         let reservation_id = Uuid::new_v4();
         if resource == StorageResource::Blob && intent == StorageMutationIntent::RepairMissingObject {
           let updated = sqlx::query(

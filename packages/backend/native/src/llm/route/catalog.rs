@@ -2,12 +2,14 @@ use llm_adapter::capability::{
   AttachmentKind, AttachmentSource, ModelFeature, ModelInput, ModelOutput, ModelRequirements,
 };
 
+pub(crate) use crate::llm::prompt_catalog::ManagedTarget;
 use crate::llm::{
-  prompt_catalog::{built_in_managed_target, built_in_managed_targets},
+  prompt_catalog::{built_in_managed_catalog, built_in_managed_target, built_in_managed_targets, managed_model},
   route::CopilotManagedTier,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub(crate) enum RouteOperation {
   Chat,
   Structured,
@@ -15,6 +17,18 @@ pub(crate) enum RouteOperation {
   Rerank,
   Image,
   Transcription,
+}
+
+impl From<RouteOperation> for llm_adapter::target::BackendOperation {
+  fn from(operation: RouteOperation) -> Self {
+    match operation {
+      RouteOperation::Chat => Self::Chat,
+      RouteOperation::Structured | RouteOperation::Transcription => Self::Structured,
+      RouteOperation::Embedding => Self::Embedding,
+      RouteOperation::Rerank => Self::Rerank,
+      RouteOperation::Image => Self::Image,
+    }
+  }
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -45,28 +59,49 @@ pub(crate) fn managed_targets(
   slot: &CatalogSlot,
   built_in_route_id: Option<&str>,
   managed_tier: CopilotManagedTier,
-) -> Option<Vec<String>> {
+) -> Option<Vec<ManagedTarget>> {
   if let Some(route_id) = built_in_route_id {
-    return built_in_managed_targets(route_id, managed_tier == CopilotManagedTier::Premium).map(<[String]>::to_vec);
+    return built_in_managed_targets(route_id, managed_tier == CopilotManagedTier::Premium)
+      .map(<[ManagedTarget]>::to_vec);
   }
   match slot.id {
-    "index.embedding" => Some(vec!["gemini-embedding-001".to_string()]),
-    "search.rerank" => Some(vec!["gpt-4o-mini".to_string()]),
+    "index.embedding" => Some(vec![managed_model("embedding").unwrap().clone()]),
+    "search.rerank" => Some(vec![managed_model("rerank").unwrap().clone()]),
     _ => None,
   }
+}
+
+pub(crate) fn managed_catalog() -> Vec<(ManagedTarget, llm_adapter::target::BackendOperation)> {
+  let mut targets = built_in_managed_catalog();
+  for id in ["index.embedding", "search.rerank"] {
+    let system_slot = slot(id).unwrap();
+    targets.extend(
+      managed_targets(&system_slot, None, CopilotManagedTier::Standard)
+        .unwrap()
+        .into_iter()
+        .map(|target| (target, system_slot.operation.into())),
+    );
+  }
+  let mut unique = Vec::new();
+  for target in targets {
+    if !unique.contains(&target) {
+      unique.push(target);
+    }
+  }
+  unique
 }
 
 pub(crate) fn managed_selected_target(
   built_in_route_id: Option<&str>,
   target_id: &str,
   managed_tier: CopilotManagedTier,
-) -> Option<String> {
+) -> Option<ManagedTarget> {
   built_in_managed_target(
     built_in_route_id?,
     target_id,
     managed_tier == CopilotManagedTier::Premium,
   )
-  .map(|target| target.model_id.clone())
+  .map(|target| target.target.clone())
 }
 
 pub(crate) fn slot(id: &str) -> Option<CatalogSlot> {
@@ -245,7 +280,13 @@ mod tests {
     let prompt_slot = slot("prompt.text").unwrap();
     assert_eq!(
       managed_targets(&prompt_slot, Some("Summary as title"), CopilotManagedTier::Standard).unwrap(),
-      ["gpt-5.6-luna"]
+      [ManagedTarget {
+        api_shapes: vec![
+          llm_adapter::backend::ApiShape::Responses,
+          llm_adapter::backend::ApiShape::ChatCompletions
+        ],
+        model_id: "gpt-6-luna".into()
+      }]
     );
     assert!(
       managed_targets(
@@ -262,15 +303,55 @@ mod tests {
         CopilotManagedTier::Premium
       )
       .unwrap(),
-      ["gemini-3.7-flash"]
+      [ManagedTarget {
+        api_shapes: vec![
+          llm_adapter::backend::ApiShape::GeminiApi,
+          llm_adapter::backend::ApiShape::GeminiVertex
+        ],
+        model_id: "gemini-3.8-flash".into()
+      }]
     );
     assert_eq!(
       managed_targets(&slot("index.embedding").unwrap(), None, CopilotManagedTier::Standard).unwrap(),
-      ["gemini-embedding-001"]
+      [ManagedTarget {
+        api_shapes: vec![
+          llm_adapter::backend::ApiShape::GeminiApi,
+          llm_adapter::backend::ApiShape::GeminiVertex
+        ],
+        model_id: "gemini-embedding-001".into()
+      }]
     );
     assert_eq!(
       managed_targets(&slot("search.rerank").unwrap(), None, CopilotManagedTier::Standard).unwrap(),
-      ["gpt-4o-mini"]
+      [ManagedTarget {
+        api_shapes: vec![llm_adapter::backend::ApiShape::ChatCompletions],
+        model_id: "gpt-4o-mini".into()
+      }]
+    );
+    let inventory = managed_catalog();
+    assert!(
+      inventory
+        .iter()
+        .any(|(target, operation)| target.model_id == "gpt-image-2.6-flare"
+          && *operation == llm_adapter::target::BackendOperation::Image)
+    );
+    assert!(
+      !inventory
+        .iter()
+        .any(|(target, operation)| target.model_id == "gpt-image-2.6-flare"
+          && *operation == llm_adapter::target::BackendOperation::Chat)
+    );
+    assert!(
+      inventory
+        .iter()
+        .any(|(target, operation)| target.model_id == "gemini-3.5-flash-lite"
+          && *operation == llm_adapter::target::BackendOperation::Structured)
+    );
+    assert!(
+      !inventory
+        .iter()
+        .any(|(target, operation)| target.model_id == "gemini-3.5-flash-lite"
+          && *operation == llm_adapter::target::BackendOperation::Image)
     );
     assert!(matches!(
       quota_policy(&prompt_slot, Some("Summary as title")),

@@ -93,6 +93,21 @@ impl BackendRuntime {
   }
 
   #[napi]
+  pub fn search_enabled(&self) -> Result<bool> {
+    Ok(self.config()?.search.enabled)
+  }
+
+  #[napi]
+  pub fn copilot_enabled(&self) -> Result<bool> {
+    Ok(self.config()?.copilot.enabled)
+  }
+
+  #[napi]
+  pub fn node_crypto_private_key(&self) -> Result<String> {
+    Ok(self.config()?.private_key.as_str().to_string())
+  }
+
+  #[napi]
   pub async fn reconcile_search_projection(&self, limit: Option<i32>) -> Result<i32> {
     self.require_background()?;
     self

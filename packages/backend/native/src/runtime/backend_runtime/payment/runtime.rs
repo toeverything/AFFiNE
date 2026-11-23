@@ -5,12 +5,13 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::sync::{Mutex, Semaphore};
+use zeroize::Zeroizing;
 
 use super::{
   super::{BackendRuntime, to_napi_error},
   PaymentApplyResult, PaymentConnection, PaymentSnapshot, RevenueCatClient, StripeClient,
   apply::{PaymentApplyError, snapshot_scopes},
-  apply_payment_snapshot,
+  apply_payment_snapshot, list_subscriptions, refresh_subscriptions_user,
 };
 use crate::runtime::{Deployment, PaymentRuntimeConfig, RuntimeError, RuntimeResult};
 
@@ -22,6 +23,7 @@ pub(in crate::runtime::backend_runtime) struct PaymentRuntime {
   pub(super) deployment: Deployment,
   pub(super) revenuecat_config: Option<crate::runtime::RevenueCatRuntimeConfig>,
   pub(super) mail_hash_key: [u8; 32],
+  pub(super) license_issuer_private_key: Option<Arc<Zeroizing<String>>>,
   pub(super) worker: Mutex<Option<super::PaymentWorker>>,
 }
 
@@ -32,10 +34,11 @@ impl PaymentRuntime {
     deployment: Deployment,
     private_key: &str,
   ) -> RuntimeResult<Self> {
+    let connect_options = crate::runtime::pg_connect_options(database_url, deployment, "payment")?;
     let pool = PgPoolOptions::new()
       .max_connections(8)
       .acquire_timeout(std::time::Duration::from_secs(5))
-      .connect(database_url)
+      .connect_with(connect_options)
       .await
       .map_err(|error| RuntimeError::database("payment runtime failed to connect postgres", error))?;
     Ok(Self {
@@ -51,6 +54,9 @@ impl PaymentRuntime {
       deployment,
       revenuecat_config: config.revenuecat.clone(),
       mail_hash_key: Sha256::digest(private_key.as_bytes()).into(),
+      license_issuer_private_key: std::env::var("AFFINE_PRO_LICENSE_PRIVATE_KEY")
+        .ok()
+        .map(|key| Arc::new(Zeroizing::new(key))),
       worker: Mutex::new(None),
     })
   }
@@ -185,38 +191,18 @@ impl PaymentRuntime {
         .await?
       }
       affine_core::payment::Provider::RevenueCat => {
-        let client = self
+        self
           .revenuecat
           .as_ref()
           .filter(|client| client.namespace() == &stale.namespace)
           .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider namespace changed"))?;
-        let config = self
-          .revenuecat_config
-          .as_ref()
-          .ok_or_else(|| RuntimeError::invalid_state("RevenueCat payment provider is not configured"))?;
-        let subscriptions = client
-          .customer_subscriptions(customer_id)
-          .await
-          .map_err(|error| RuntimeError::invalid_state(error.code))?;
-        let verified =
-          super::worker::verified_missing_revenuecat_sources(self, client, customer_id, &subscriptions).await?;
-        let mut snapshot = super::snapshot::revenuecat_customer_snapshot(
-          &self.pool,
-          client,
-          config,
-          customer_id,
-          subscriptions,
-          super::SnapshotCoverage::Complete {
-            verified_missing_revenuecat_sources: verified,
-          },
-          stale.captured_event_ids.clone(),
-        )
-        .await?;
+        let mut snapshot = self.observe_revenuecat_customer(customer_id).await?;
         snapshot.operation = stale.operation.clone();
         snapshot
       }
     };
     refreshed.captured_event_ids = stale.captured_event_ids.clone();
+    refreshed.claimed_attempt = stale.claimed_attempt.clone();
     Ok(refreshed)
   }
 }
@@ -224,15 +210,52 @@ impl PaymentRuntime {
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
-  pub async fn execute_payment_command_v1(&self, input: Value) -> napi::Result<Value> {
-    let outcome = self
-      .payment_runtime()
-      .await?
-      .execute(input)
+  pub fn payment_enabled(&self) -> napi::Result<bool> {
+    let config = self
+      .config
+      .read()
+      .map_err(|_| napi::Error::from_reason("BackendRuntime config lock poisoned"))?;
+    Ok(config.payment.enabled)
+  }
+
+  #[napi]
+  pub fn stripe_enabled(&self) -> napi::Result<bool> {
+    let config = self
+      .config
+      .read()
+      .map_err(|_| napi::Error::from_reason("BackendRuntime config lock poisoned"))?;
+    Ok(config.payment.enabled && config.payment.stripe.is_some())
+  }
+
+  #[napi]
+  pub async fn list_payment_subscriptions_v1(&self, target_type: String, target_id: String) -> napi::Result<Value> {
+    let deployment = self
+      .config
+      .read()
+      .map_err(|_| napi::Error::from_reason("BackendRuntime config lock poisoned"))?
+      .deployment;
+    let pool = self.pool().await.map_err(to_napi_error)?;
+    list_subscriptions(&pool, deployment, &target_type, &target_id)
       .await
-      .map_err(to_napi_error)?;
-    super::super::entitlement::publish_changes(self, &outcome.changes.targets, &outcome.changes.owner_ids).await;
-    Ok(outcome.value)
+      .and_then(|subscriptions| subscriptions.into_value())
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub async fn execute_payment_command_v1(&self, input: Value) -> napi::Result<Value> {
+    let runtime = match self.payment_runtime().await {
+      Ok(runtime) => runtime,
+      Err(error) => {
+        let Some(user_id) = refresh_subscriptions_user(input) else {
+          return Err(error);
+        };
+        return self.list_payment_subscriptions_v1("user".to_string(), user_id).await;
+      }
+    };
+    let mut changes = PaymentApplyResult::default();
+    let result = runtime.execute(input, &mut changes).await;
+    super::super::entitlement::publish_changes(self, &changes.targets, &changes.owner_ids).await;
+    result.map_err(to_napi_error)
   }
 
   #[napi]

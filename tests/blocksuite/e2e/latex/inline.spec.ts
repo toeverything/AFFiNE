@@ -107,7 +107,12 @@ test('update inline latex by clicking the node', async ({ page }, testInfo) => {
   expect(await latexEditorLine.isVisible()).not.toBeTruthy();
   await latexElement.click();
   expect(await latexEditorLine.isVisible()).toBeTruthy();
-  await pressBackspace(page, 6);
+  await expect(
+    page.locator('latex-editor-menu [contenteditable="true"]')
+  ).toBeFocused();
+  await selectAllByKeyboard(page);
+  await pressBackspace(page);
+  await expect(latexEditorLine).toHaveText(ZERO_WIDTH_FOR_EMPTY_LINE);
   await type(page, String.raw`\def\arraystretch{1.5}`);
   await pressShiftEnter(page);
   await type(page, String.raw`\begin{array}{c:c:c}`);

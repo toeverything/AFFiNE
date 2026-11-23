@@ -9,6 +9,7 @@ import { createElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TimeoutError } from 'rxjs';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 import { SharePage } from '../desktop/pages/workspace/share/share-page';
 import {
@@ -19,6 +20,7 @@ import {
   isSharePageTimeoutError,
   parsePublishMode,
 } from '../desktop/pages/workspace/share/share-page.utils';
+import { WorkspaceMetaImpl } from '../modules/workspace/impls/meta';
 
 const sharePageMocks = vi.hoisted(() => ({
   services: new Map<string, unknown>(),
@@ -161,9 +163,29 @@ describe('share workspace lifecycle', () => {
     sharePageMocks.services.clear();
   });
 
-  test.each(['workspace-id', 'doc-id'])(
-    'aborts %s loading before disposing after unmount',
-    async pendingDocId => {
+  test.each([
+    ['workspace-id', 'P'],
+    ['P', 'P'],
+    ['G', 'G'],
+  ])(
+    'aborts %s loading for public route %s before disposing after unmount',
+    async (pendingDocId, requestedId) => {
+      const root = new YDoc({ guid: 'workspace-id' });
+      const pages = new YArray();
+      root.getMap('meta').set('pages', pages);
+      pages.push([
+        new YMap([
+          ['id', requestedId],
+          ['title', 'Shared page'],
+        ]),
+      ]);
+      const meta = new WorkspaceMetaImpl(root, false);
+      const findRecord = vi.fn((id: string) => ({
+        value: meta.getDocMeta(id),
+      }));
+      const openDoc = vi.fn(() => ({
+        doc: { blockSuiteDoc: { load: vi.fn(), readonly: false } },
+      }));
       const lifecycle: string[] = [];
       let resolvePending!: () => void;
       let rejectPending!: (reason: unknown) => void;
@@ -179,10 +201,8 @@ describe('share workspace lifecycle', () => {
         }
         if (token.name === 'DocsService') {
           return {
-            list: { doc$: () => ({ value: { id: 'doc-id' } }) },
-            open: () => ({
-              doc: { blockSuiteDoc: { load: vi.fn(), readonly: false } },
-            }),
+            list: { doc$: findRecord },
+            open: openDoc,
           };
         }
         throw new Error(`Unexpected scope service: ${token.name}`);
@@ -221,10 +241,10 @@ describe('share workspace lifecycle', () => {
       const view = render(
         createElement(
           MemoryRouter,
-          { initialEntries: ['/share/workspace-id/doc-id?mode=page'] },
+          { initialEntries: [`/share/workspace-id/${requestedId}?mode=page`] },
           createElement(SharePage, {
             workspaceId: 'workspace-id',
-            docId: 'doc-id',
+            docId: requestedId,
           })
         )
       );
@@ -234,7 +254,13 @@ describe('share workspace lifecycle', () => {
           sharedWorkspace.engine.doc.waitForDocLoaded
         ).toHaveBeenCalledWith(pendingDocId, expect.any(AbortSignal))
       );
+      if (pendingDocId !== 'workspace-id') {
+        expect(findRecord).toHaveBeenCalledWith(requestedId);
+        expect(openDoc).toHaveBeenCalledExactlyOnceWith(requestedId);
+        expect(meta.getDocMeta(requestedId)?.id).toBe(requestedId);
+      }
       view.unmount();
+      root.destroy();
       await act(async () => {
         resolvePending();
         await settled;
@@ -249,7 +275,7 @@ describe('share workspace lifecycle', () => {
       ).toBe(true);
       expect(
         scopeGet.mock.calls.filter(([token]) => token.name === 'DocsService')
-      ).toHaveLength(pendingDocId === 'doc-id' ? 1 : 0);
+      ).toHaveLength(pendingDocId !== 'workspace-id' ? 1 : 0);
 
       const engineOptions = open.mock.calls[0]?.[1];
       if (!engineOptions) {

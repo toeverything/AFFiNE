@@ -50,7 +50,7 @@
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^3.0.6",
-    "react-router-dom": "^7.18.2",
+    "react-router-dom": "^7.18.4",
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "swr": "^2.3.7",
@@ -64,7 +64,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   },
   "scripts": {
     "build": "affine bundle",

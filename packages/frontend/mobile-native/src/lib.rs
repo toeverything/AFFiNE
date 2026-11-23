@@ -14,7 +14,7 @@ use affine_common::hashcash::Stamp;
 pub(crate) use error::Result;
 pub use error::UniffiError;
 pub use ffi_types::{
-  Blob, BlockInfo, CrawlResult, DocClock, DocIndexedClock, DocRecord, DocUpdate, IndexAggregateResult, IndexBucket,
+  Blob, BlockInfo, CrawlResult, DocClock, DocDiff, DocIndexedClock, DocRecord, IndexAggregateResult, IndexBucket,
   IndexField, IndexHighlight, IndexHighlightValue, IndexHit, IndexSearchResult, IndexSpan, ListedBlob, SetBlob,
 };
 #[cfg(any(target_os = "android", target_os = "ios"))]

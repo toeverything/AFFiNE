@@ -1663,6 +1663,82 @@ hhh
     expect(target.file).toEqual(markdown);
   });
 
+  test('numbered list not starting at 1', async () => {
+    const listBlock = (id: string, insert: string, order: number) => ({
+      type: 'block' as const,
+      id,
+      flavour: 'affine:list',
+      props: {
+        type: 'numbered',
+        text: {
+          '$blocksuite:internal:text$': true,
+          delta: [{ insert }],
+        },
+        checked: false,
+        collapsed: false,
+        order,
+      },
+      children: [],
+    });
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'block:m5hvdXHXS2',
+      flavour: 'affine:page',
+      props: {
+        title: {
+          '$blocksuite:internal:text$': true,
+          delta: [],
+        },
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'block:1Ll22zT992',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: NoteDisplayMode.DocAndEdgeless,
+          },
+          children: [
+            listBlock('block:Fd0ZCYB7a4', 'aaa', 1),
+            {
+              type: 'block',
+              id: 'block:8-GeKDc06x',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [{ insert: 'bbb' }],
+                },
+              },
+              children: [],
+            },
+            listBlock('block:f0dFVu0Qnm', 'ccc', 3),
+            listBlock('block:Rjdm_SRsxY', 'ddd', 4),
+          ],
+        },
+      ],
+    };
+
+    const markdown = `1. aaa
+
+bbb
+
+3. ccc
+4. ddd
+`;
+
+    const mdAdapter = new MarkdownAdapter(createJob(), provider);
+    const target = await mdAdapter.fromBlockSnapshot({
+      snapshot: blockSnapshot,
+    });
+    expect(target.file).toEqual(markdown);
+  });
+
   test('different list', async () => {
     const blockSnapshot: BlockSnapshot = {
       type: 'block',
@@ -4959,106 +5035,50 @@ bbb
 
   describe('inline latex', () => {
     test.each([
-      ['dollar sign syntax', 'inline $E=mc^2$ latex\n'],
-      ['dollar sign syntax starting with digit', 'inline $1f + 2f$ latex\n'],
-      ['backslash syntax', 'inline \\(E=mc^2\\) latex\n'],
-    ])('should convert %s correctly', async (name, markdown) => {
-      const latex =
-        name === 'dollar sign syntax starting with digit'
-          ? '1f + 2f'
-          : 'E=mc^2';
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert: 'inline ',
-                  },
-                  {
-                    insert: ' ',
-                    attributes: {
-                      latex,
-                    },
-                  },
-                  {
-                    insert: ' latex',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
+      [
+        'dollar sign syntax',
+        'inline $E=mc^2$ latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
         ],
-      };
-
+      ],
+      [
+        'backslash syntax',
+        'inline \\(E=mc^2\\) latex\n',
+        [
+          { insert: 'inline ' },
+          { insert: ' ', attributes: { latex: 'E=mc^2' } },
+          { insert: ' latex' },
+        ],
+      ],
+      [
+        'digit-prefixed expressions',
+        '$(\\mathbb Z^+,|)$ has $4\\vee 6=12$ and $4\\wedge 6=2$.\n',
+        [
+          { insert: ' ', attributes: { latex: '(\\mathbb Z^+,|)' } },
+          { insert: ' has ' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+          { insert: ' and ' },
+          { insert: ' ', attributes: { latex: '4\\wedge 6=2' } },
+          { insert: '.' },
+        ],
+      ],
+      [
+        'an even backslash run before the delimiter',
+        '\\\\$4\\vee 6=12$\n',
+        [
+          { insert: '\\' },
+          { insert: ' ', attributes: { latex: '4\\vee 6=12' } },
+        ],
+      ],
+    ])('should convert %s correctly', async (_, markdown, expectedDelta) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
-    });
-
-    test('should convert inline latex mixed with CJK text and bold text', async () => {
-      const markdown =
-        '如果你提到的 $1f + 2f$ 信号是一个**理想的、无限长**的正弦波组合：\n\n' +
-        '此时的功率谱密度确实不是连续曲线，而是两个**狄拉克脉冲（$\\delta$ 函数）**。\n\n' +
-        '* **频谱图**：在 $f$ 和 $2f$ 处有两个离散的柱子（幅度谱）。\n';
-
-      const mdAdapter = new MarkdownAdapter(createJob(), provider);
-      const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
-        file: markdown,
-      });
-      const children = rawBlockSnapshot?.children ?? [];
-
-      expect(children[0]?.flavour).toBe('affine:paragraph');
-      expect(children[0]?.props.text.delta).toContainEqual({
-        insert: ' ',
-        attributes: {
-          latex: '1f + 2f',
-        },
-      });
-      expect(children[1]?.flavour).toBe('affine:paragraph');
-      expect(children[1]?.props.text.delta).toContainEqual({
-        insert: ' ',
-        attributes: {
-          bold: true,
-          latex: '\\delta',
-        },
-      });
-      expect(children[2]?.flavour).toBe('affine:list');
-      expect(children[2]?.props.text.delta).toEqual(
-        expect.arrayContaining([
-          {
-            insert: ' ',
-            attributes: {
-              latex: 'f',
-            },
-          },
-          {
-            insert: ' ',
-            attributes: {
-              latex: '2f',
-            },
-          },
-        ])
-      );
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual(expectedDelta);
     });
   });
 
@@ -5159,46 +5179,29 @@ bbb
       expect(children?.[1]?.props.latex).toBe('    E = mc^2');
     });
 
-    test('escapes dollar signs followed by a digit or space and digit', async () => {
-      const markdown =
-        'The price of the T-shirt is $9.15 and the price of the hat is $ 8\n';
-      const blockSnapshot: BlockSnapshot = {
-        type: 'block',
-        id: 'matchesReplaceMap[0]',
-        flavour: 'affine:note',
-        props: {
-          xywh: '[0,0,800,95]',
-          background: DefaultTheme.noteBackgrounColor,
-          index: 'a0',
-          hidden: false,
-          displayMode: NoteDisplayMode.DocAndEdgeless,
-        },
-        children: [
-          {
-            type: 'block',
-            id: 'matchesReplaceMap[1]',
-            flavour: 'affine:paragraph',
-            props: {
-              type: 'text',
-              text: {
-                '$blocksuite:internal:text$': true,
-                delta: [
-                  {
-                    insert:
-                      'The price of the T-shirt is $9.15 and the price of the hat is $ 8',
-                  },
-                ],
-              },
-            },
-            children: [],
-          },
-        ],
-      };
+  });
+
+  describe('dollar currency', () => {
+    test.each([
+      [
+        'plain prices',
+        'The T-shirt is $9.15 and the hat is $ 8\n',
+        'The T-shirt is $9.15 and the hat is $ 8',
+      ],
+      ['adjacent amounts', '$100$200\n', '$100$200'],
+      ['an escaped dollar', 'costs \\$4 today\n', 'costs $4 today'],
+      ['an escaped closing dollar', '$5\\$ and $10\n', '$5$ and $10'],
+      ['an escaped opening dollar', '\\$5 and x$\n', '$5 and x$'],
+      ['an odd backslash run', '\\\\\\$4\n', '\\$4'],
+      ['an even backslash run', 'costs \\\\$4 today\n', 'costs \\$4 today'],
+    ])('keeps %s as text', async (_, markdown, expectedText) => {
       const mdAdapter = new MarkdownAdapter(createJob(), provider);
       const rawBlockSnapshot = await mdAdapter.toBlockSnapshot({
         file: markdown,
       });
-      expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+      expect(collectSnapshotDeltas(rawBlockSnapshot)).toEqual([
+        { insert: expectedText },
+      ]);
     });
   });
 

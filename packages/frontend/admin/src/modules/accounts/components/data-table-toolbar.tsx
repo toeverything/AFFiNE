@@ -20,6 +20,7 @@ import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { ExportUsersDialog } from './export-users-dialog';
 import { ImportUsersDialog } from './import-users';
+import { PaymentReviewPanel } from './payment-review';
 import { CreateUserForm } from './user-form';
 
 interface DataTableToolbarProps<TData> {
@@ -40,7 +41,7 @@ export function DataTableToolbar<TData>({
   onFeaturesChange,
 }: DataTableToolbarProps<TData>) {
   const [value, setValue] = useState(keyword);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingPanel, setPendingPanel] = useState<'create' | 'payment'>();
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const debouncedValue = useDebouncedValue(value, 500);
@@ -55,27 +56,17 @@ export function DataTableToolbar<TData>({
   const serverConfig = useServerConfig();
   const availableFeatures = serverConfig.availableUserFeatures ?? [];
 
-  const handleConfirm = useCallback(() => {
+  const openCreateUser = useCallback(() => {
     setPanelContent(
       <CreateUserForm
         onComplete={closePanel}
         onDirtyChange={setHasDirtyChanges}
       />
     );
-    if (dialogOpen) {
-      setDialogOpen(false);
-    }
     if (!isOpen) {
       openPanel();
     }
-  }, [
-    setPanelContent,
-    closePanel,
-    dialogOpen,
-    isOpen,
-    openPanel,
-    setHasDirtyChanges,
-  ]);
+  }, [setPanelContent, closePanel, isOpen, openPanel, setHasDirtyChanges]);
 
   useEffect(() => {
     setValue(keyword);
@@ -96,16 +87,24 @@ export function DataTableToolbar<TData>({
     [onFeaturesChange]
   );
 
-  const handleCancel = useCallback(() => {
-    setDialogOpen(false);
-  }, []);
-
-  const handleOpenConfirm = useCallback(() => {
+  const openPaymentReview = () => {
+    setPanelContent(<PaymentReviewPanel key={crypto.randomUUID()} />);
+    openPanel();
+  };
+  const openAccountPanel = (panel: 'create' | 'payment') => {
     if (hasDirtyChanges) {
-      return setDialogOpen(true);
+      setPendingPanel(panel);
+    } else if (panel === 'create') {
+      openCreateUser();
+    } else {
+      openPaymentReview();
     }
-    return handleConfirm();
-  }, [handleConfirm, hasDirtyChanges]);
+  };
+  const handleDiscardConfirm = () => {
+    setPendingPanel(undefined);
+    if (pendingPanel === 'create') openCreateUser();
+    if (pendingPanel === 'payment') openPaymentReview();
+  };
 
   const handleExportUsers = useCallback(() => {
     if (!table) return;
@@ -162,6 +161,15 @@ export function DataTableToolbar<TData>({
           open={importDialogOpen}
           onOpenChange={setImportDialogOpen}
         />
+        {!environment.isSelfHosted && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openAccountPanel('payment')}
+          >
+            Payment review
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-y-2 flex-wrap justify-end gap-2">
@@ -181,17 +189,19 @@ export function DataTableToolbar<TData>({
         </div>
         <Button
           className="h-8 px-2 lg:px-3 space-x-[6px] text-sm font-medium"
-          onClick={handleOpenConfirm}
+          onClick={() => openAccountPanel('create')}
         >
           <PlusIcon fontSize={20} /> <span>Add User</span>
         </Button>
       </div>
 
       <DiscardChanges
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onClose={handleCancel}
-        onConfirm={handleConfirm}
+        open={!!pendingPanel}
+        onOpenChange={open => {
+          if (!open) setPendingPanel(undefined);
+        }}
+        onClose={() => setPendingPanel(undefined)}
+        onConfirm={handleDiscardConfirm}
       />
     </div>
   );

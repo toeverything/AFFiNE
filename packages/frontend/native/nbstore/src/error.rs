@@ -14,8 +14,12 @@ pub enum Error {
   InvalidOperation,
   #[error("Index is rebuilding")]
   IndexNotReady,
+  #[error("invalid_binary")]
+  InvalidBinary,
   #[error("Serialization Error: {0}")]
   Serialization(String),
+  #[error("Document changed during compaction")]
+  ConcurrentModification,
   #[error(transparent)]
   Indexer(#[from] memory_indexer::Error),
   #[error(transparent)]

@@ -48,13 +48,13 @@ export class IndexerService implements OnApplicationBootstrap {
     this.syncFeature();
   }
 
-  @OnEvent('config.changed.broadcast')
-  async onConfigChanged({ updates }: Events['config.changed.broadcast']) {
+  @OnEvent('backendRuntime.configApplied')
+  async onConfigApplied({ updates }: Events['backendRuntime.configApplied']) {
     if (updates.indexer) this.syncFeature();
   }
 
   private syncFeature() {
-    if (this.server.getConfig().indexer.enabled) {
+    if (this.runtime.searchEnabled()) {
       this.server.enableFeature(ServerFeature.Indexer);
     } else {
       this.server.disableFeature(ServerFeature.Indexer);

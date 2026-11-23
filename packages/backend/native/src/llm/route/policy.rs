@@ -1,33 +1,33 @@
-use llm_adapter::{
-  capability::declared_model_matches,
-  target::{BackendEndpoint, EgressPolicy, OpenAiDialect},
-};
+use llm_adapter::{capability::declared_model_matches, target::EgressPolicy};
 
-use super::CatalogSlot;
-use crate::{llm::byok::ByokModelDeclaration, runtime::Deployment};
+use super::{CatalogSlot, ResolvedManagedTarget};
+use crate::{
+  llm::byok::{ByokEndpoint, ByokModelDeclaration},
+  runtime::Deployment,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ProfileSource {
   Server,
   Local,
-  Managed,
 }
 
+#[derive(Clone)]
 pub(crate) struct AuthorizedProviderProfile {
   pub(crate) profile_id: String,
   pub(crate) source: ProfileSource,
   pub(crate) provider: String,
-  pub(crate) endpoint: BackendEndpoint,
-  pub(crate) openai_dialect: Option<OpenAiDialect>,
+  pub(crate) endpoint: ByokEndpoint,
   pub(crate) egress_policy: EgressPolicy,
   pub(crate) models: Vec<ByokModelDeclaration>,
   pub(crate) sort_order: i32,
   pub(crate) credential_ref: CredentialRef,
 }
 
-pub(crate) enum CredentialRef {
-  Envelope { encrypted: String, aad: Vec<u8> },
-  Managed { profile_id: String },
+#[derive(Clone)]
+pub(crate) struct CredentialRef {
+  pub(crate) encrypted: String,
+  pub(crate) aad: Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -46,9 +46,14 @@ pub(crate) enum RouteDecisionReason {
 }
 
 pub(crate) enum RouteDecision {
-  Ready(Vec<AuthorizedTargetRef>),
+  Ready(AuthorizedRouteTargets),
   Denied(RouteDecisionReason),
   NoRoute(RouteDecisionReason),
+}
+
+pub(crate) enum AuthorizedRouteTargets {
+  Byok(Vec<AuthorizedTargetRef>),
+  Managed(ResolvedManagedTarget),
 }
 
 pub(crate) struct AuthorizedTargetRef {
@@ -62,6 +67,7 @@ pub(crate) struct RoutePolicyInput<'a> {
   pub(crate) byok_enabled: bool,
   pub(crate) access_available: bool,
   pub(crate) profiles: &'a [AuthorizedProviderProfile],
+  pub(crate) managed_target: Option<&'a ResolvedManagedTarget>,
   pub(crate) target_override: Option<&'a TargetOverride>,
   pub(crate) target_override_managed: bool,
 }
@@ -78,10 +84,14 @@ pub(crate) fn decide(input: RoutePolicyInput<'_>) -> RouteDecision {
     if !input.access_available {
       return RouteDecision::Denied(RouteDecisionReason::AccessUnavailable);
     }
+    return match input.managed_target.filter(|target| target.supports(input.slot)) {
+      Some(target) => RouteDecision::Ready(AuthorizedRouteTargets::Managed(target.clone())),
+      None => RouteDecision::Denied(RouteDecisionReason::ExplicitTargetUnavailable),
+    };
   }
 
   if let Some(target) = input.target_override {
-    let mut selected = compatible_targets(&input, input.target_override_managed);
+    let mut selected = compatible_targets(&input);
     selected.retain(|candidate| {
       let profile = &input.profiles[candidate.profile_index];
       let model = &profile.models[candidate.model_index];
@@ -90,35 +100,28 @@ pub(crate) fn decide(input: RoutePolicyInput<'_>) -> RouteDecision {
     return if selected.is_empty() {
       RouteDecision::Denied(RouteDecisionReason::ExplicitTargetUnavailable)
     } else {
-      RouteDecision::Ready(selected)
+      RouteDecision::Ready(AuthorizedRouteTargets::Byok(selected))
     };
   }
-  let byok = compatible_targets(&input, false);
+  let byok = compatible_targets(&input);
   if !byok.is_empty() {
-    return RouteDecision::Ready(byok);
+    return RouteDecision::Ready(AuthorizedRouteTargets::Byok(byok));
   }
   if !input.access_available {
     return RouteDecision::Denied(RouteDecisionReason::AccessUnavailable);
   }
   if input.deployment == Deployment::Cloud {
-    let managed = compatible_targets(&input, true);
-    if managed.is_empty() {
-      RouteDecision::NoRoute(RouteDecisionReason::ManagedPresetUnavailable)
-    } else {
-      RouteDecision::Ready(managed)
+    match input.managed_target.filter(|target| target.supports(input.slot)) {
+      Some(target) => RouteDecision::Ready(AuthorizedRouteTargets::Managed(target.clone())),
+      None => RouteDecision::NoRoute(RouteDecisionReason::ManagedPresetUnavailable),
     }
   } else {
     RouteDecision::NoRoute(RouteDecisionReason::NoCompatibleTarget)
   }
 }
 
-fn compatible_targets(input: &RoutePolicyInput<'_>, managed: bool) -> Vec<AuthorizedTargetRef> {
-  let mut profiles = input
-    .profiles
-    .iter()
-    .enumerate()
-    .filter(|(_, profile)| (profile.source == ProfileSource::Managed) == managed)
-    .collect::<Vec<_>>();
+fn compatible_targets(input: &RoutePolicyInput<'_>) -> Vec<AuthorizedTargetRef> {
+  let mut profiles = input.profiles.iter().enumerate().collect::<Vec<_>>();
   profiles.sort_by_key(|(_, profile)| profile.sort_order);
   profiles
     .into_iter()
@@ -141,18 +144,20 @@ mod tests {
   use llm_adapter::capability::{DeclaredModelCapability, ModelInput, ModelOutput};
 
   use super::*;
-  use crate::llm::{byok::ByokModelDeclaration, route::catalog};
+  use crate::llm::route::slot;
 
-  fn profile(id: &str, source: ProfileSource, model: &str, output: ModelOutput) -> AuthorizedProviderProfile {
+  fn profile(model: &str, output: ModelOutput) -> AuthorizedProviderProfile {
     AuthorizedProviderProfile {
-      profile_id: id.to_string(),
-      source,
-      provider: "openai".to_string(),
-      endpoint: BackendEndpoint::Custom("https://example.test/v1".to_string()),
-      openai_dialect: Some(OpenAiDialect::Responses),
+      profile_id: "byok".into(),
+      source: ProfileSource::Server,
+      provider: "openai".into(),
+      endpoint: ByokEndpoint::OpenAiCompatible {
+        url: "https://example.test/v1".into(),
+        dialect: llm_adapter::target::OpenAiDialect::Responses,
+      },
       egress_policy: EgressPolicy::PublicOnly,
       models: vec![ByokModelDeclaration {
-        model_id: model.to_string(),
+        model_id: model.into(),
         enabled: true,
         capabilities: vec![DeclaredModelCapability {
           input: vec![ModelInput::Text],
@@ -163,130 +168,114 @@ mod tests {
         }],
       }],
       sort_order: 0,
-      credential_ref: CredentialRef::Managed {
-        profile_id: id.to_string(),
+      credential_ref: CredentialRef {
+        encrypted: String::new(),
+        aad: Vec::new(),
       },
     }
   }
 
+  fn managed() -> ResolvedManagedTarget {
+    let mut config: crate::runtime::CopilotRuntimeConfig = serde_json::from_value(serde_json::json!({
+      "providers": {"profiles": [{"id": "managed", "type": "openai", "config": {"apiKey": "test"}}]}
+    }))
+    .unwrap();
+    config.initialize_managed_routes().unwrap();
+    config
+      .managed_routes
+      .iter()
+      .find(|binding| {
+        binding.target.model_id == "gpt-6-luna" && binding.operation == llm_adapter::target::BackendOperation::Chat
+      })
+      .unwrap()
+      .resolved
+      .clone()
+  }
+
   #[test]
   fn deployment_matrix_and_unsupported_only_fallback() {
-    let slot = catalog::slot("chat.default").unwrap();
-    let cases = [
-      (
-        Deployment::Cloud,
-        true,
-        vec![profile("managed", ProfileSource::Managed, "A", ModelOutput::Text)],
-        true,
-      ),
-      (
-        Deployment::SelfHosted,
-        false,
-        vec![profile("managed", ProfileSource::Managed, "A", ModelOutput::Text)],
-        false,
-      ),
+    let slot = slot("chat.default").unwrap();
+    let managed = managed();
+    for (deployment, byok_enabled, profiles, ready) in [
+      (Deployment::Cloud, true, vec![], true),
+      (Deployment::SelfHosted, false, vec![], false),
       (Deployment::SelfHosted, true, vec![], false),
       (
         Deployment::Cloud,
         true,
-        vec![
-          profile("byok", ProfileSource::Server, "B", ModelOutput::Image),
-          profile("managed", ProfileSource::Managed, "A", ModelOutput::Text),
-        ],
+        vec![profile("opaque", ModelOutput::Image)],
         true,
       ),
-    ];
-    for (deployment, byok_enabled, profiles, ready) in cases {
+    ] {
       let decision = decide(RoutePolicyInput {
         slot: &slot,
         deployment,
         byok_enabled,
         access_available: true,
         profiles: &profiles,
+        managed_target: Some(&managed),
         target_override: None,
         target_override_managed: false,
       });
       assert_eq!(matches!(decision, RouteDecision::Ready(_)), ready);
     }
-
-    let profiles = vec![
-      profile("byok", ProfileSource::Server, "B", ModelOutput::Text),
-      profile("managed", ProfileSource::Managed, "A", ModelOutput::Text),
-    ];
-    assert!(matches!(
-      decide(RoutePolicyInput {
+    let profiles = [profile("vendor/opaque", ModelOutput::Text)];
+    for (profiles, expected_byok) in [(&profiles[..], true), (&[][..], false)] {
+      let decision = decide(RoutePolicyInput {
         slot: &slot,
         deployment: Deployment::Cloud,
         byok_enabled: true,
         access_available: false,
-        profiles: &profiles,
+        profiles,
+        managed_target: Some(&managed),
         target_override: None,
         target_override_managed: false,
-      }),
-      RouteDecision::Ready(_)
-    ));
-    assert!(matches!(
-      decide(RoutePolicyInput {
-        slot: &slot,
-        deployment: Deployment::Cloud,
-        byok_enabled: true,
-        access_available: false,
-        profiles: &profiles[1..],
-        target_override: None,
-        target_override_managed: false,
-      }),
-      RouteDecision::Denied(RouteDecisionReason::AccessUnavailable)
-    ));
+      });
+      if expected_byok {
+        assert!(matches!(
+          decision,
+          RouteDecision::Ready(AuthorizedRouteTargets::Byok(_))
+        ));
+      } else {
+        assert!(matches!(
+          decision,
+          RouteDecision::Denied(RouteDecisionReason::AccessUnavailable)
+        ));
+      }
+    }
   }
 
   #[test]
   fn override_is_complete_and_custom_model_is_not_replaced_by_managed_model() {
-    let slot = catalog::slot("chat.default").unwrap();
-    let profiles = vec![
-      profile("byok", ProfileSource::Server, "vendor/model:B", ModelOutput::Text),
-      profile("managed", ProfileSource::Managed, "model:A", ModelOutput::Text),
-    ];
+    let slot = slot("chat.default").unwrap();
+    let managed = managed();
+    let profiles = vec![profile("vendor/model:B", ModelOutput::Text)];
     let target = TargetOverride {
-      profile_id: "byok".to_string(),
-      model_id: "vendor/model:B".to_string(),
+      profile_id: "byok".into(),
+      model_id: "vendor/model:B".into(),
     };
-    let RouteDecision::Ready(candidates) = decide(RoutePolicyInput {
+    let input = |explicit| RoutePolicyInput {
       slot: &slot,
       deployment: Deployment::Cloud,
       byok_enabled: true,
       access_available: true,
       profiles: &profiles,
+      managed_target: Some(&managed),
       target_override: Some(&target),
-      target_override_managed: false,
-    }) else {
-      panic!("override should resolve");
+      target_override_managed: explicit,
+    };
+    let RouteDecision::Ready(AuthorizedRouteTargets::Byok(candidates)) = decide(input(false)) else {
+      panic!("BYOK override should resolve");
     };
     assert_eq!(
       profiles[candidates[0].profile_index].models[candidates[0].model_index].model_id,
       "vendor/model:B"
     );
-
-    let managed_target = TargetOverride {
-      profile_id: "managed".to_string(),
-      model_id: "model:A".to_string(),
-    };
-    let RouteDecision::Ready(candidates) = decide(RoutePolicyInput {
-      slot: &slot,
-      deployment: Deployment::Cloud,
-      byok_enabled: true,
-      access_available: true,
-      profiles: &profiles,
-      target_override: Some(&managed_target),
-      target_override_managed: true,
-    }) else {
+    let RouteDecision::Ready(AuthorizedRouteTargets::Managed(selected)) = decide(input(true)) else {
       panic!("managed selection should resolve");
     };
-    assert!(matches!(
-      profiles[candidates[0].profile_index].source,
-      ProfileSource::Managed
-    ));
-
-    let mut disabled = profile("disabled", ProfileSource::Server, "model:C", ModelOutput::Text);
+    assert_eq!(selected.profile_id, "managed");
+    let mut disabled = profile("model:C", ModelOutput::Text);
     disabled.models[0].enabled = false;
     assert!(matches!(
       decide(RoutePolicyInput {
@@ -295,10 +284,18 @@ mod tests {
         byok_enabled: true,
         access_available: true,
         profiles: &[disabled],
+        managed_target: None,
         target_override: None,
         target_override_managed: false,
       }),
       RouteDecision::NoRoute(RouteDecisionReason::NoCompatibleTarget)
+    ));
+    assert!(matches!(
+      decide(RoutePolicyInput {
+        managed_target: None,
+        ..input(true)
+      }),
+      RouteDecision::Denied(RouteDecisionReason::ExplicitTargetUnavailable)
     ));
   }
 }

@@ -1,14 +1,15 @@
-use std::{env, fs};
+use std::env;
 
 use serde::Deserialize;
 use sqlx::PgPool;
 
 use super::{ObjectStorageService, RuntimeError, RuntimeResult};
+use crate::runtime::config::ServerConfig;
 
 #[derive(Clone, Debug)]
-pub(super) struct StorageRuntimeConfig {
-  pub(super) database_url: String,
-  pub(super) object_storage: ObjectStorageService,
+pub(in crate::runtime) struct StorageRuntimeConfig {
+  pub(in crate::runtime) database_url: String,
+  pub(in crate::runtime) object_storage: ObjectStorageService,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -23,17 +24,19 @@ struct DbConfigFile {
 }
 
 impl StorageRuntimeConfig {
-  pub(super) fn from_config_files() -> RuntimeResult<Self> {
-    let app_config = storage_runtime_config_from_files()?;
+  pub(in crate::runtime) fn from_server_config(config: &ServerConfig) -> RuntimeResult<Self> {
+    let app_config: StorageRuntimeAppConfig = serde_json::from_value(config.baseline().clone())
+      .map_err(|err| RuntimeError::json("invalid storage runtime config", err))?;
     let database_url = database_url_from_env()
       .or(app_config.database_url())
       .unwrap_or_else(|| "postgresql://localhost:5432/affine".to_string());
     Ok(Self {
       database_url,
-      object_storage: ObjectStorageService::from_config_files()?,
+      object_storage: config.object_storage().clone(),
     })
   }
 
+  #[cfg(test)]
   pub(super) fn from_config_json(config_json: &str) -> RuntimeResult<Self> {
     let app_config: StorageRuntimeAppConfig =
       serde_json::from_str(config_json).map_err(|err| RuntimeError::json("invalid storage runtime config", err))?;
@@ -61,12 +64,6 @@ impl StorageRuntimeAppConfig {
       .and_then(|db| db.datasource_url.clone())
       .and_then(non_empty_string)
   }
-
-  fn merge(&mut self, config: Self) {
-    if config.db.is_some() {
-      self.db = config.db;
-    }
-  }
 }
 
 fn database_url_from_env() -> Option<String> {
@@ -75,17 +72,4 @@ fn database_url_from_env() -> Option<String> {
 
 fn non_empty_string(value: String) -> Option<String> {
   if value.trim().is_empty() { None } else { Some(value) }
-}
-
-fn storage_runtime_config_from_files() -> RuntimeResult<StorageRuntimeAppConfig> {
-  let mut merged = StorageRuntimeAppConfig::default();
-  for path in crate::runtime::config::config_json_paths() {
-    if !path.exists() {
-      continue;
-    }
-    let raw = fs::read_to_string(&path).map_err(|err| RuntimeError::io("failed to read config file", err))?;
-    let config = serde_json::from_str(&raw).map_err(|err| RuntimeError::json("failed to parse config file", err))?;
-    merged.merge(config);
-  }
-  Ok(merged)
 }

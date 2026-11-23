@@ -1,11 +1,6 @@
 import serverNativeModule from '@affine/server-native';
 
-import {
-  defineNativeModuleConfig,
-  StorageJSONSchema,
-  StorageProviderConfig,
-} from '../../base';
-import { CopilotProviderType } from './providers/types';
+import { defineNativeModuleConfig, StorageProviderConfig } from '../../base';
 
 export type ProviderSpecificConfig = Record<string, unknown>;
 
@@ -30,17 +25,11 @@ export type ProviderMiddlewareConfig = {
   node?: { text?: NodeTextMiddleware[] };
 };
 
-type CopilotProviderProfileCommon = {
+export type CopilotProviderProfile = {
   id: string;
-  displayName?: string;
-  priority?: number;
+  type: string;
   enabled?: boolean;
   models?: string[];
-  middleware?: ProviderMiddlewareConfig;
-};
-
-export type CopilotProviderProfile = CopilotProviderProfileCommon & {
-  type: CopilotProviderType;
   config: ProviderSpecificConfig;
 };
 
@@ -75,10 +64,6 @@ defineNativeModuleConfig(
   serverNativeModule.appConfigDescriptors('copilot'),
   serverNativeModule.validateAppConfigValue,
   {
-    enabled: {
-      desc: 'Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK.',
-      default: false,
-    },
     unsplash: {
       desc: 'The config for the unsplash key.',
       default: {
@@ -90,17 +75,6 @@ defineNativeModuleConfig(
       default: {
         key: '',
       },
-    },
-    storage: {
-      desc: 'The config for the storage provider.',
-      default: {
-        provider: 'fs',
-        bucket: 'copilot',
-        config: {
-          path: '~/.affine/storage',
-        },
-      },
-      schema: StorageJSONSchema,
     },
   }
 );

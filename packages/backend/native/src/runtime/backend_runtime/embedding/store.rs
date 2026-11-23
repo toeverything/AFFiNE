@@ -39,101 +39,6 @@ pub(super) async fn queue_counts(pool: &PgPool) -> RuntimeResult<EmbeddingQueueC
   .map_err(|error| RuntimeError::database("load embedding queue counts failed", error))
 }
 
-pub(super) async fn claim_projection(pool: &PgPool, owner: &str) -> RuntimeResult<Option<ProjectionClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT projection.source_id,projection.index_id
-      FROM embedding_projections projection
-      JOIN embedding_sources source ON source.id=projection.source_id
-      JOIN embedding_workspace_states state ON state.workspace_id=source.workspace_id
-        AND state.active_index_id=projection.index_id
-      JOIN embedding_indexes index_fact ON index_fact.id=projection.index_id AND index_fact.health_status='ready'
-      WHERE state.runtime_state='active' AND source.deleted_at IS NULL AND(
-        projection.status='pending'
-        OR projection.status='retry_wait' AND projection.next_attempt_at<=clock_timestamp()
-        OR projection.status='running' AND projection.lease_until<=clock_timestamp()
-        OR projection.status='ready' AND(
-          projection.applied_content_revision IS DISTINCT FROM source.content_revision
-          OR projection.applied_descriptor_revision IS DISTINCT FROM source.descriptor_revision
-          OR projection.applied_recipe_revision IS DISTINCT FROM source.recipe_revision))
-      AND NOT EXISTS(
-        SELECT 1 FROM embedding_projections running
-        JOIN embedding_sources running_source ON running_source.id=running.source_id
-        WHERE running.status='running' AND running.lease_until>clock_timestamp()
-          AND running_source.workspace_id=source.workspace_id)
-      ORDER BY projection.priority DESC,projection.next_attempt_at NULLS FIRST,projection.updated_at
-      FOR UPDATE OF projection SKIP LOCKED LIMIT 1
-    ),claimed AS(
-      UPDATE embedding_projections projection SET
-        status='running',lease_owner=$1,lease_token=projection.lease_token+1,
-        lease_until=clock_timestamp()+interval '5 minutes',updated_at=now()
-      FROM candidate WHERE projection.source_id=candidate.source_id AND projection.index_id=candidate.index_id
-      RETURNING projection.*
-    ) SELECT claimed.source_id,claimed.index_id,source.workspace_id,state.index_epoch,
-      source.source_kind,source.source_key,source.content_revision,source.descriptor_revision,source.recipe_revision,
-      source.storage_scope,source.storage_key,source.file_name,source.mime_type,
-      source.document_projection::text AS document_projection,
-      claimed.lease_token,claimed.lease_until,index_fact.fingerprint AS index_fingerprint
-    FROM claimed JOIN embedding_sources source ON source.id=claimed.source_id
-    JOIN embedding_workspace_states state ON state.workspace_id=source.workspace_id
-    JOIN embedding_indexes index_fact ON index_fact.id=claimed.index_id"#,
-  )
-  .bind(owner)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding projection failed", error))
-}
-
-pub(super) async fn claim_index_probe(pool: &PgPool, owner: &str) -> RuntimeResult<Option<IndexProbeClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT index_fact.id FROM embedding_indexes index_fact
-      JOIN embedding_workspace_states state ON state.active_index_id=index_fact.id
-      WHERE state.runtime_state='active' AND(
-        index_fact.health_status='pending'
-        OR index_fact.health_status='retry_wait' AND index_fact.next_probe_at<=clock_timestamp()
-        OR index_fact.probe_lease_until<=clock_timestamp())
-      ORDER BY index_fact.next_probe_at NULLS FIRST,index_fact.updated_at
-      FOR UPDATE OF index_fact SKIP LOCKED LIMIT 1
-    ) UPDATE embedding_indexes index_fact SET probe_lease_owner=$1,
-      probe_lease_until=clock_timestamp()+interval '2 minutes',updated_at=now()
-    FROM candidate WHERE index_fact.id=candidate.id
-    RETURNING index_fact.id,index_fact.workspace_id,index_fact.fingerprint,index_fact.probe_lease_owner"#,
-  )
-  .bind(owner)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding index probe failed", error))
-}
-
-#[cfg(test)]
-pub(super) async fn claim_index_probe_for_workspace(
-  pool: &PgPool,
-  owner: &str,
-  workspace_id: &str,
-) -> RuntimeResult<Option<IndexProbeClaim>> {
-  sqlx::query_as(
-    r#"WITH candidate AS(
-      SELECT index_fact.id FROM embedding_indexes index_fact
-      JOIN embedding_workspace_states state ON state.active_index_id=index_fact.id
-      WHERE state.workspace_id=$2 AND state.runtime_state='active' AND(
-        index_fact.health_status='pending'
-        OR index_fact.health_status='retry_wait' AND index_fact.next_probe_at<=clock_timestamp()
-        OR index_fact.probe_lease_until<=clock_timestamp())
-      ORDER BY index_fact.next_probe_at NULLS FIRST,index_fact.updated_at
-      FOR UPDATE OF index_fact SKIP LOCKED LIMIT 1
-    ) UPDATE embedding_indexes index_fact SET probe_lease_owner=$1,
-      probe_lease_until=clock_timestamp()+interval '2 minutes',updated_at=now()
-    FROM candidate WHERE index_fact.id=candidate.id
-    RETURNING index_fact.id,index_fact.workspace_id,index_fact.fingerprint,index_fact.probe_lease_owner"#,
-  )
-  .bind(owner)
-  .bind(workspace_id)
-  .fetch_optional(pool)
-  .await
-  .map_err(|error| RuntimeError::database("claim embedding index probe for workspace failed", error))
-}
-
 pub(super) async fn complete_index_probe(pool: &PgPool, claim: &IndexProbeClaim) -> RuntimeResult<()> {
   sqlx::query(
     "UPDATE embedding_indexes SET \
@@ -408,20 +313,53 @@ fn vector_literal(vector: &[f32]) -> String {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use super::{super::claim_projection, *};
 
   #[tokio::test]
-  async fn leases_fence_stale_commits_and_gc_old_tokens_and_indexes() {
+  async fn source_reconciliation_fences_leases_and_gc_preserves_current_facts() {
     let Ok(database_url) = std::env::var("DATABASE_URL") else {
       return;
     };
     let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     assert!(
       crate::runtime::migrations::migrate_embedding_tables(&pool)
         .await
         .enabled
     );
+    for table in ["embedding_projections", "embedding_indexes"] {
+      let mut blocker = pool.begin().await.unwrap();
+      sqlx::query(&format!("LOCK TABLE {table} IN ACCESS EXCLUSIVE MODE"))
+        .execute(&mut *blocker)
+        .await
+        .unwrap();
+      let result = tokio::time::timeout(std::time::Duration::from_secs(8), async {
+        if table == "embedding_projections" {
+          claim_projection(&pool, "blocked-worker").await.map(|_| ())
+        } else {
+          super::super::claim_index_probe(&pool, "blocked-worker")
+            .await
+            .map(|_| ())
+        }
+      })
+      .await
+      .expect("claim must be bounded by a database timeout");
+      assert!(result.unwrap_err().to_string().contains("statement timeout"));
+      blocker.rollback().await.unwrap();
+    }
+    let timeout: String = sqlx::query_scalar("SHOW statement_timeout")
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(timeout, "0");
     sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id LIKE 'rust-test-store-%'")
       .execute(&pool)
       .await
@@ -435,6 +373,18 @@ mod tests {
       .await
       .unwrap();
     let workspace_id = format!("rust-test-store-{}", Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,'doc',decode('0000','hex'),to_timestamp(1))",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
     let index_id = Uuid::new_v4();
     let source_id = Uuid::new_v4();
     sqlx::query(
@@ -460,7 +410,7 @@ mod tests {
       r#"INSERT INTO embedding_sources(
         id,workspace_id,source_kind,source_key,content_revision,
         descriptor_revision,recipe_revision,document_projection)
-      VALUES($1,$2,'document','doc','content-1','descriptor','recipe','{}')"#,
+      VALUES($1,$2,'document','doc','1000','descriptor','recipe','{}')"#,
     )
     .bind(source_id)
     .bind(&workspace_id)
@@ -476,7 +426,16 @@ mod tests {
     .await
     .unwrap();
 
+    let cancelled = claim_projection(&pool, "cancelled-worker").await.unwrap().unwrap();
+    super::super::release_projection(&pool, &cancelled).await.unwrap();
+    let attempts: i32 = sqlx::query_scalar("SELECT attempt_count FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(attempts, 0);
     let stale = claim_projection(&pool, "worker-a").await.unwrap().unwrap();
+    super::super::release_projection(&pool, &cancelled).await.unwrap();
     let lease_owner: Option<String> =
       sqlx::query_scalar("SELECT lease_owner FROM embedding_projections WHERE source_id=$1 AND index_id=$2")
         .bind(source_id)
@@ -534,11 +493,11 @@ mod tests {
     );
     let first_token = commit_token(&pool, &current, &[chunk("first")]).await.unwrap();
     let requested = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      skip_reason: None,
       doc_id: "doc".to_string(),
-      revision: "content-1".to_string(),
+      revision: "1000".to_string(),
       source_hash: "descriptor".to_string(),
       units: Vec::new(),
-      deleted: None,
     }];
     assert_eq!(
       super::super::source::document_readiness(&pool, &workspace_id, &requested)
@@ -568,21 +527,64 @@ mod tests {
       revision: "not-current".to_string(),
       ..requested[0].clone()
     }];
-    assert_eq!(
+    assert!(
       super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
         .await
-        .unwrap(),
-      (0, 0)
+        .unwrap_err()
+        .to_string()
+        .contains("embedding_selected_sources_processing")
     );
 
-    sqlx::query("UPDATE embedding_sources SET content_revision='content-2' WHERE id=$1")
+    sqlx::query("UPDATE embedding_sources SET content_revision=content_revision WHERE id=$1")
       .bind(source_id)
       .execute(&pool)
       .await
       .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "ready");
+    sqlx::query("UPDATE embedding_sources SET content_revision='2000' WHERE id=$1")
+      .bind(source_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "pending");
     let refreshed = claim_projection(&pool, "worker-c").await.unwrap().unwrap();
     let second_token = commit_token(&pool, &refreshed, &[chunk("second")]).await.unwrap();
     assert_ne!(first_token, second_token);
+    sqlx::query("UPDATE snapshots SET updated_at=to_timestamp(2) WHERE workspace_id=$1 AND guid='doc'")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let updated = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "2000".to_string(),
+      ..requested[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &updated, i32::MAX)
+      .await
+      .unwrap();
+    let recipe_changed = claim_projection(&pool, "worker-d").await.unwrap().unwrap();
+    commit_token(&pool, &recipe_changed, &[chunk("updated recipe")])
+      .await
+      .unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &updated, i32::MAX)
+      .await
+      .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(status, "ready");
     sqlx::query("UPDATE embedding_chunks SET created_at=now()-interval '2 hours' WHERE generation_token=$1")
       .bind(Uuid::parse_str(&first_token).unwrap())
       .execute(&pool)
@@ -604,30 +606,345 @@ mod tests {
     assert_eq!(result.chunks, 1);
     assert_eq!(result.indexes, 1);
 
-    sqlx::query("DELETE FROM embedding_workspace_states WHERE workspace_id=$1")
+    sqlx::query("UPDATE snapshots SET updated_at=to_timestamp(3) WHERE workspace_id=$1 AND guid='doc'")
       .bind(&workspace_id)
       .execute(&pool)
       .await
       .unwrap();
+    let skipped = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "3000".to_string(),
+      skip_reason: Some("document_contains_nul".to_string()),
+      ..updated[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &skipped, i32::MAX)
+      .await
+      .unwrap();
+    let skipped_state: (String, Option<String>, String) = sqlx::query_as(
+      "SELECT projection.status,projection.last_error_code,source.content_revision FROM embedding_projections \
+       projection JOIN embedding_sources source ON source.id=projection.source_id WHERE source.id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      skipped_state,
+      ("failed".into(), Some("document_contains_nul".into()), "3000".into())
+    );
+    assert!(claim_projection(&pool, "skip-check").await.unwrap().is_none());
+    sqlx::query("UPDATE snapshots SET updated_at=to_timestamp(4) WHERE workspace_id=$1 AND guid='doc'")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let repaired = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      revision: "4000".to_string(),
+      ..updated[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    let stale_failure = [crate::runtime::types::DocumentEmbeddingProjectionInput {
+      skip_reason: Some("invalid_document".into()),
+      ..skipped[0].clone()
+    }];
+    super::super::source::sync_documents(&pool, &workspace_id, &stale_failure, i32::MAX)
+      .await
+      .unwrap();
+    let current: (String, Option<String>) = sqlx::query_as(
+      "SELECT source.content_revision,projection.last_error_code FROM embedding_sources source JOIN \
+       embedding_projections projection ON projection.source_id=source.id WHERE source.id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(current, ("4000".into(), Some("document_contains_nul".into())));
+    let repaired_claim = claim_projection(&pool, "repaired-worker").await.unwrap().unwrap();
+    assert_eq!(repaired_claim.content_revision, "4000");
+    assert_eq!(repaired_claim.source_id, source_id);
+
+    for root in [vec![0xffu8], vec![0u8, 0]] {
+      sqlx::query(
+        "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now()) ON \
+         CONFLICT(workspace_id,guid) DO UPDATE SET blob=excluded.blob",
+      )
+      .bind(&workspace_id)
+      .bind(root)
+      .execute(&pool)
+      .await
+      .unwrap();
+      super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+        .await
+        .unwrap();
+      let deleted: bool = sqlx::query_scalar("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+      assert!(!deleted);
+    }
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    let skipped_legacy: (String, Option<String>) = sqlx::query_as(
+      "SELECT descriptor_revision,document_projection->>'skipReason' FROM embedding_sources WHERE id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(skipped_legacy.1.as_deref(), Some("legacy_inactive"));
+    let needs_membership_refresh = "SELECT split_part(source.descriptor_revision,':',1) <> ((extract(epoch FROM \
+                                    root.updated_at)*1000)::bigint)::text FROM embedding_sources source JOIN \
+                                    snapshots root ON root.workspace_id=source.workspace_id AND \
+                                    root.guid=root.workspace_id WHERE source.id=$1";
+    assert!(
+      !sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    let restored_root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), "doc", None).unwrap();
+    sqlx::query(
+      "UPDATE snapshots SET blob=$2,updated_at=updated_at+interval '1 second' WHERE workspace_id=$1 AND guid=$1",
+    )
+    .bind(&workspace_id)
+    .bind(restored_root)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(
+      sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    let restored_legacy: (String, Option<String>) = sqlx::query_as(
+      "SELECT descriptor_revision,document_projection->>'skipReason' FROM embedding_sources WHERE id=$1",
+    )
+    .bind(source_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_ne!(skipped_legacy.0, restored_legacy.0);
+    assert_eq!(restored_legacy.1, None);
+    assert!(
+      !sqlx::query_scalar::<_, bool>(needs_membership_refresh)
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active')",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let mut trash = pool.begin().await.unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_pages(workspace_id,page_id,lifecycle_state,lifecycle_changed_at) \
+       VALUES($1,'doc','trashed',now())",
+    )
+    .bind(&workspace_id)
+    .execute(&mut *trash)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE embedding_sources SET deleted_at=now() WHERE id=$1")
+      .bind(source_id)
+      .execute(&mut *trash)
+      .await
+      .unwrap();
+    trash.commit().await.unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    assert!(
+      sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    sqlx::query(
+      "UPDATE workspace_pages SET lifecycle_state=NULL,lifecycle_changed_at=now() WHERE workspace_id=$1 AND \
+       page_id='doc'",
+    )
+    .bind(&workspace_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    super::super::source::sync_documents(&pool, &workspace_id, &requested, i32::MAX)
+      .await
+      .unwrap();
+    assert!(
+      sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+    super::super::source::sync_documents(&pool, &workspace_id, &repaired, i32::MAX)
+      .await
+      .unwrap();
+    assert!(
+      !sqlx::query_scalar::<_, bool>("SELECT deleted_at IS NOT NULL FROM embedding_sources WHERE id=$1")
+        .bind(source_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+
+    let repaired_claim = claim_projection(&pool, "cleanup-worker").await.unwrap().unwrap();
+    assert_eq!(repaired_claim.source_id, source_id);
+
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let cleanup_claim = repaired_claim;
+    let commit_pool = sqlx::postgres::PgPoolOptions::new()
+      .max_connections(1)
+      .connect(&database_url)
+      .await
+      .unwrap();
+    let commit_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+      .fetch_one(&commit_pool)
+      .await
+      .unwrap();
+    let mut state_blocker = pool.begin().await.unwrap();
+    sqlx::query("SELECT workspace_id FROM embedding_workspace_states WHERE workspace_id=$1 FOR UPDATE")
+      .bind(&workspace_id)
+      .execute(&mut *state_blocker)
+      .await
+      .unwrap();
+    let claim = cleanup_claim.clone();
+    let committing = tokio::spawn(async move {
+      let result = commit_token(&commit_pool, &claim, &[chunk("finishing during workspace cleanup")]).await;
+      commit_pool.close().await;
+      result
+    });
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar("SELECT cardinality(pg_blocking_pids($1)) > 0")
+          .bind(commit_pid)
+          .fetch_one(&pool)
+          .await
+          .unwrap();
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("embedding commit must reach its state fence after inserting chunks");
+    let config_dir = tempfile::tempdir().unwrap();
+    let config_path = config_dir.path().join("config.json");
+    let storage = |bucket: &str| {
+      serde_json::json!({
+        "provider": "fs", "bucket": bucket, "config": { "path": config_dir.path() }
+      })
+    };
+    std::fs::write(
+      &config_path,
+      serde_json::to_vec(&serde_json::json!({
+        "deployment": { "type": "cloud" },
+        "db": { "datasourceUrl": database_url },
+        "storages": { "blob.storage": storage("blobs"), "avatar.storage": storage("avatars") },
+        "copilot": { "storage": storage("copilot") }
+      }))
+      .unwrap(),
+    )
+    .unwrap();
+    let config =
+      crate::runtime::config::ServerConfigHandle::new(config_path.to_string_lossy().into_owned(), None).unwrap();
+    let runtime = crate::runtime::storage_runtime::StorageRuntime::new(&config).unwrap();
+    runtime.start().await.unwrap();
+    let cleanup_workspace = workspace_id.clone();
+    let deleting = tokio::spawn(async move { runtime.delete_workspace_objects(cleanup_workspace, None).await });
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      loop {
+        let waiting: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE query LIKE 'DELETE FROM embedding_sources%' AND \
+           $1=ANY(pg_blocking_pids(pid)))",
+        )
+        .bind(commit_pid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if waiting {
+          break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .expect("workspace cleanup must wait for the in-flight generation's source reference");
+    state_blocker.rollback().await.unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      committing.await.unwrap().unwrap();
+      deleting.await.unwrap().unwrap();
+    })
+    .await
+    .expect("workspace cleanup and embedding commit must complete without a lock cycle");
+    assert!(
+      commit_token(&pool, &cleanup_claim, &[chunk("must not resurrect")])
+        .await
+        .is_err()
+    );
+    for table in [
+      "embedding_sources",
+      "embedding_projections",
+      "embedding_chunks",
+      "embedding_indexes",
+      "embedding_workspace_states",
+    ] {
+      let (column, value) = if table == "embedding_projections" {
+        ("source_id::text", source_id.to_string())
+      } else {
+        ("workspace_id", workspace_id.clone())
+      };
+      let count: i64 = sqlx::query_scalar(&format!("SELECT count(*) FROM {table} WHERE {column}=$1"))
+        .bind(value)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+      assert_eq!(count, 0, "workspace cleanup left rows in {table}");
+    }
     let unavailable = [crate::runtime::types::DocumentEmbeddingProjectionInput {
-      revision: "content-2".to_string(),
+      revision: "2000".to_string(),
       ..requested[0].clone()
     }];
-    assert_eq!(
+    assert!(
       super::super::source::document_readiness(&pool, &workspace_id, &unavailable)
         .await
-        .unwrap(),
-      (0, 0)
+        .unwrap_err()
+        .to_string()
+        .contains("embedding_selected_sources_processing")
     );
-    sqlx::query("DELETE FROM embedding_sources WHERE workspace_id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
-    sqlx::query("DELETE FROM embedding_indexes WHERE workspace_id=$1")
-      .bind(&workspace_id)
-      .execute(&pool)
-      .await
-      .unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

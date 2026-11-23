@@ -63,6 +63,7 @@ pub(super) fn empty_snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: Vec::new(),
+    claimed_attempt: None,
     operation: Some(OperationCompletion { operation_id, result }),
   }
 }
@@ -142,7 +143,8 @@ impl PaymentRuntime {
     let discovery = sqlx::query(
       r#"SELECT source_identity,external_customer_id
          FROM provider_subscriptions
-         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3 AND plan=$4
+         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
+           AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
            AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
          ORDER BY updated_at DESC LIMIT 1"#,
     )
@@ -173,7 +175,8 @@ impl PaymentRuntime {
       r#"SELECT source_identity,external_customer_id,external_subscription_id,recurring,canceled_at,
                 period_start,metadata,quantity
          FROM provider_subscriptions
-         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3 AND plan=$4
+         WHERE provider='stripe' AND provider_namespace=$1 AND target_type=$2 AND target_id=$3
+           AND (plan=$4 OR ($4='selfhost_team' AND plan='selfhostedteam'))
            AND status IN ('active','trialing','past_due') AND (period_end IS NULL OR period_end>clock_timestamp())
          ORDER BY updated_at DESC LIMIT 1"#,
     )
@@ -280,7 +283,10 @@ pub(super) fn subscription_mutation_error(error: SubscriptionMutationError) -> R
   }
 }
 
-pub(super) fn validate_target(target_type: &str, target_id: &str) -> RuntimeResult<()> {
+pub(in crate::runtime::backend_runtime::payment) fn validate_target(
+  target_type: &str,
+  target_id: &str,
+) -> RuntimeResult<()> {
   if !matches!(target_type, "user" | "workspace" | "instance") {
     return Err(RuntimeError::invalid_input("invalid payment target type"));
   }
@@ -295,7 +301,7 @@ pub(super) fn validate_intent(intent_id: &str) -> RuntimeResult<()> {
   Ok(())
 }
 
-pub(super) fn validate_identity(value: &str, label: &str) -> RuntimeResult<()> {
+pub(in crate::runtime::backend_runtime::payment) fn validate_identity(value: &str, label: &str) -> RuntimeResult<()> {
   if value.is_empty() || value != value.trim() || value.len() > 255 {
     return Err(RuntimeError::invalid_input(format!("invalid {label}")));
   }

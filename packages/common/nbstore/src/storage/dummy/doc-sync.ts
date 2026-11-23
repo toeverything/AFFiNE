@@ -1,5 +1,10 @@
 import { DummyConnection } from '../../connection';
-import type { DocClock, DocClocks } from '../doc';
+import type {
+  DocClock,
+  DocClocks,
+  PeerWorkspaceState,
+  WorkspaceState,
+} from '../doc';
 import { DocSyncStorageBase } from '../doc-sync';
 
 export class DummyDocSyncStorage extends DocSyncStorageBase {
@@ -46,4 +51,38 @@ export class DummyDocSyncStorage extends DocSyncStorageBase {
     return Promise.resolve();
   }
   override connection = new DummyConnection();
+  private readonly inventories = new Map<string, PeerWorkspaceState>();
+  override async getPeerWorkspaceState(peer: string, _rootDocId: string) {
+    return (
+      this.inventories.get(peer) ?? {
+        cacheToken: 0,
+        ready: false,
+        docs: [],
+        clocks: {},
+      }
+    );
+  }
+  override async invalidatePeerWorkspaceState(peer: string, rootDocId: string) {
+    const state = await this.getPeerWorkspaceState(peer, rootDocId);
+    this.inventories.set(peer, { ...state, cacheToken: state.cacheToken + 1 });
+  }
+  override async installPeerWorkspaceState(
+    peer: string,
+    rootDocId: string,
+    cacheToken: number,
+    state: WorkspaceState
+  ) {
+    if (
+      (await this.getPeerWorkspaceState(peer, rootDocId)).cacheToken !==
+      cacheToken
+    )
+      return false;
+    this.inventories.set(peer, {
+      ...state,
+      ready: true,
+      cacheToken: cacheToken + 1,
+    });
+    return true;
+  }
+  override async confirmPeerDocCreate(_peer: string, _docId: string) {}
 }

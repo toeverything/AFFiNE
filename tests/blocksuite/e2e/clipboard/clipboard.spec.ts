@@ -52,7 +52,8 @@ test(scoped`clipboard copy paste`, async ({ page }) => {
   await setInlineRangeInSelectedRichText(page, 0, 3);
   await waitNextFrame(page);
   await copyByKeyboard(page);
-  await focusRichText(page);
+  await expect.poll(() => getClipboardText(page)).toBe('tes');
+  await focusRichTextEnd(page);
   await page.keyboard.press(`${SHORT_KEY}+v`);
   await assertText(page, 'testtes');
 });

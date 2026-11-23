@@ -52,6 +52,8 @@ CARGO_PROFILE_FLAG=
 if [[ "${BUILDVARIANT}" != "debug" ]]; then
     RELFLAG=release
     CARGO_PROFILE_FLAG=--release
+    # Xcode 27 can produce unloadable host proc macros when their symbols are stripped.
+    export CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none
 fi
 
 IS_SIMULATOR=0
@@ -104,7 +106,7 @@ else
   exit 1
 fi
 
-$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --library "$BINDGEN_LIB" --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi
+$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
 
 if [ $IS_SIMULATOR -eq 0 ]; then
   cp "$DEVICE_ARM64_LIB" "$OUTPUT_LIB"

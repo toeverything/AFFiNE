@@ -1,19 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { ConfigFactory, InvalidAppConfigInput } from '../../base';
-import { Models } from '../../models';
+import { ServerService } from '../../core/config';
 
 @Injectable()
 export class ImportConfigCommand {
-  logger = new Logger(ImportConfigCommand.name);
-
-  constructor(
-    private readonly models: Models,
-    private readonly configFactory: ConfigFactory
-  ) {}
+  constructor(private readonly server: ServerService) {}
 
   async execute(path?: string): Promise<void> {
     if (!path) {
@@ -26,35 +20,21 @@ export class ImportConfigCommand {
       readFileSync(path, 'utf-8')
     );
 
-    const forValidation: { module: string; key: string; value: any }[] = [];
-    const forSaving: { key: string; value: any }[] = [];
+    const updates: { module: string; key: string; value: any }[] = [];
     Object.entries(overrides).forEach(([module, config]) => {
       if (module === '$schema') {
         return;
       }
 
       Object.entries(config).forEach(([key, value]) => {
-        forValidation.push({
+        updates.push({
           module,
           key,
-          value,
-        });
-        forSaving.push({
-          key: `${module}.${key}`,
           value,
         });
       });
     });
 
-    const errors = this.configFactory.validate(forValidation);
-
-    if (errors?.length) {
-      throw new InvalidAppConfigInput({
-        message: errors.map(error => error.message).join('\n '),
-      });
-    }
-
-    // @ts-expect-error null as user id
-    await this.models.appConfig.save(null, forSaving);
+    await this.server.updateConfig(null, updates, false);
   }
 }

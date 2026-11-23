@@ -56,6 +56,7 @@ pub(super) struct SubscriptionSnapshot {
 
 #[derive(Clone, Debug)]
 pub(super) struct FinancialSnapshot {
+  pub observed_at: DateTime<Utc>,
   pub fact: FinancialFact,
   pub external_id: String,
   pub source_id: Option<String>,
@@ -216,6 +217,7 @@ pub(super) struct PaymentSnapshot {
   pub licenses: Vec<LicenseSnapshot>,
   pub mails: Vec<MailSnapshot>,
   pub captured_event_ids: Vec<String>,
+  pub claimed_attempt: Option<(String, i32)>,
   pub operation: Option<OperationCompletion>,
 }
 

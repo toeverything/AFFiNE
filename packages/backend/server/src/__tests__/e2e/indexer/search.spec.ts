@@ -4,7 +4,7 @@ import {
   SearchTable,
 } from '@affine/graphql';
 
-import { Config } from '../../../base';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { DocRole } from '../../../models';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
@@ -15,7 +15,9 @@ import {
   reconcileSearchProjection,
 } from '../test';
 
-const indexerE2e = app.get(Config).indexer.enabled ? e2e.serial : e2e.skip;
+const indexerE2e = app.get(BackendRuntimeProvider).searchEnabled()
+  ? e2e.serial
+  : e2e.skip;
 
 async function indexDoc(
   workspaceId: string,

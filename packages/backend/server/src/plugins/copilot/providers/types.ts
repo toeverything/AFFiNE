@@ -1,7 +1,6 @@
 import { AiSessionMessageRole } from '@prisma/client';
 import { z } from 'zod';
 
-import { JSONSchema } from '../../../base';
 import type {
   CapabilityAttachmentContract,
   CapabilityModelCapability,
@@ -12,13 +11,6 @@ import {
   StreamObjectSchema,
 } from '../runtime/contracts/runtime-event-contract';
 import { RetrievalScopeSchema } from '../runtime/contracts/shared';
-
-// Owner map:
-// - provider/profile/config schemas in this file are backend host ingress.
-// - prompt/message/attachment Zod schemas validate Node host ingress and
-//   persistence surfaces before values cross into native prompt DTOs.
-// - model condition/capability types are native-generated facades.
-// - StreamObject is app-facing projection, not runtime event truth.
 
 // ========== provider ==========
 
@@ -31,45 +23,6 @@ export enum CopilotProviderType {
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
 }
-
-export const CopilotProviderSchema = z.object({
-  type: z.nativeEnum(CopilotProviderType),
-});
-
-export const VertexSchema: JSONSchema = {
-  type: 'object',
-  description: 'The config for the google vertex provider.',
-  properties: {
-    location: {
-      type: 'string',
-      description: 'The location of the google vertex provider.',
-    },
-    project: {
-      type: 'string',
-      description: 'The project name of the google vertex provider.',
-    },
-    googleAuthOptions: {
-      type: 'object',
-      description: 'The google auth options for the google vertex provider.',
-      properties: {
-        credentials: {
-          type: 'object',
-          description: 'The credentials for the google vertex provider.',
-          properties: {
-            client_email: {
-              type: 'string',
-              description: 'The client email for the google vertex provider.',
-            },
-            private_key: {
-              type: 'string',
-              description: 'The private key for the google vertex provider.',
-            },
-          },
-        },
-      },
-    },
-  },
-};
 
 // ========== prompt ==========
 

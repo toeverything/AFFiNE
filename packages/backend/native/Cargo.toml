@@ -9,23 +9,23 @@ version      = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-affine_core = "0.0.4"
 aes-gcm = { workspace = true }
 affine_common = { workspace = true, features = ["hashcash", "napi"] }
+affine_core = "0.0.14"
 affine_doc_loader = { workspace = true }
 anyhow = { workspace = true }
-argon2 = "0.5"
+argon2 = "0.6"
 assetpack-core = "0.1.0"
 assetpack-transform-precomp2 = "0.1.0"
 base64 = { workspace = true }
 chrono = { workspace = true }
-crc32fast = "1.5.0"
+crc32fast = "1.5.2"
 doc_extractor = { workspace = true }
 file-format = { workspace = true }
 futures-util = { workspace = true }
 gcp_auth = { version = "0.12.7", features = ["webpki-roots"] }
 hex = { workspace = true }
-hickory-resolver = "0.26.1"
+hickory-resolver = "0.26.2"
 hkdf = { workspace = true }
 hmac = "0.13"
 homedir = { workspace = true }
@@ -43,6 +43,7 @@ memory-indexer = { workspace = true }
 mp4parse = { workspace = true }
 napi = { workspace = true, features = ["async", "serde-json"] }
 napi-derive = { workspace = true }
+ogg = { workspace = true }
 p256 = { workspace = true }
 rand = { workspace = true }
 redis = { workspace = true }
@@ -64,7 +65,6 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 sha3 = { workspace = true }
-subtle = "2"
 sqlx = { workspace = true, default-features = false, features = [
   "chrono",
   "json",
@@ -74,6 +74,7 @@ sqlx = { workspace = true, default-features = false, features = [
   "runtime-tokio",
   "uuid",
 ] }
+subtle = "2"
 thiserror.workspace = true
 tiktoken-rs = { workspace = true }
 tokio = { workspace = true, features = [
@@ -88,7 +89,8 @@ url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 v_htmlescape = { workspace = true }
 webpki-roots = "1.0"
-y-octo = { workspace = true, features = ["large_refs"] }
+xmlparser = "0.13.6"
+y-octo = { workspace = true }
 zeroize = { workspace = true }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]

@@ -12,6 +12,7 @@ import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/tran
 import type { CopilotTranscriptionRetryService } from '../../../plugins/copilot/transcript/retry';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
+import type { DocReader } from '../../doc/reader';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
 import {
   DocRole,
@@ -72,6 +73,12 @@ function createGateway(registry: RealtimeRegistry) {
     publishLocal() {},
   } as unknown as RealtimePublisher);
 }
+
+const docReader = {
+  resolveStorageDocId: async (_workspaceId: string, docId: string) =>
+    docId === 'logical-doc' ? 'doc' : docId,
+  getDocIdAliases: async () => new Map([['logical-doc', 'doc']]),
+} as unknown as DocReader;
 
 test('registry rejects duplicate request and topic handlers', t => {
   const registry = new RealtimeRegistry();
@@ -420,12 +427,14 @@ test('front and sync realtime gateway required handlers are registered by lightw
   new DocShareRealtimeProvider(
     {} as never,
     {} as never,
+    docReader,
     registry
   ).onModuleInit();
   new DocGrantsRealtimeProvider(
     {} as never,
     {} as never,
     {} as never,
+    docReader,
     registry
   ).onModuleInit();
   new UserRealtimeProvider({} as never, registry).onModuleInit();
@@ -433,7 +442,8 @@ test('front and sync realtime gateway required handlers are registered by lightw
   new CommentRealtimeProvider(
     {} as never,
     {} as never,
-    registry
+    registry,
+    docReader
   ).onModuleInit();
   new CopilotEmbeddingRealtimeProvider(
     {} as never,
@@ -628,6 +638,7 @@ test('workspace realtime providers register access, config, members and invite l
 test('doc realtime providers register share state and grants handlers', async t => {
   const registry = new RealtimeRegistry();
   const assertedActions: string[] = [];
+  let revoked = false;
   const ac = {
     user(userId: string) {
       return {
@@ -642,6 +653,7 @@ test('doc realtime providers register share state and grants handlers', async t 
                   docId: 'doc',
                 }
               );
+              if (revoked) throw new Error('revoked physical grant');
               assertedActions.push(action);
             },
           };
@@ -651,7 +663,7 @@ test('doc realtime providers register share state and grants handlers', async t 
   } as unknown as PermissionAccess;
   const models = {
     doc: {
-      getMeta: async () => ({
+      getDocInfo: async () => ({
         public: true,
         mode: PublicDocMode.Page,
         defaultRole: DocRole.Reader,
@@ -702,18 +714,43 @@ test('doc realtime providers register share state and grants handlers', async t 
     }),
   };
 
-  new DocShareRealtimeProvider(ac, models as never, registry).onModuleInit();
+  new DocShareRealtimeProvider(
+    ac,
+    models as never,
+    docReader,
+    registry
+  ).onModuleInit();
   new DocGrantsRealtimeProvider(
     ac,
     models as never,
     grants as never,
+    docReader,
     registry
+  ).onModuleInit();
+
+  new CommentRealtimeProvider(
+    {
+      listCommentChanges: async (workspaceId: string, docId: string) => {
+        t.is(workspaceId, 'space');
+        t.is(docId, 'doc');
+        return [];
+      },
+    } as never,
+    {
+      user: (userId: string) => ({
+        workspace: (workspaceId: string) => ({
+          doc: (docId: string) => ac.user(userId).doc(workspaceId, docId),
+        }),
+      }),
+    } as never,
+    registry,
+    docReader
   ).onModuleInit();
 
   t.deepEqual(
     await registry.getRequest('doc.share-state.get').handle(user, {
       workspaceId: 'space',
-      docId: 'doc',
+      docId: 'logical-doc',
     }),
     {
       state: {
@@ -726,23 +763,64 @@ test('doc realtime providers register share state and grants handlers', async t 
   t.like(
     await registry.getRequest('doc.grants.get').handle(user, {
       workspaceId: 'space',
-      docId: 'doc',
+      docId: 'logical-doc',
       pagination: { first: 10 },
     }),
     { totalCount: 1 }
   );
   t.deepEqual(assertedActions, ['Doc.Read', 'Doc.Users.Read']);
+  t.like(
+    await registry
+      .getRequest('comment.changes.get')
+      .handle(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    { changes: [] }
+  );
+  t.is(
+    registry
+      .getTopic('comment.changed')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeCommentRoom('space', 'logical-doc')
+  );
   t.is(
     registry
       .getTopic('doc.share-state.changed')
-      .room(user, { workspaceId: 'space', docId: 'doc' }),
-    realtimeDocShareStateRoom('space', 'doc')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeDocShareStateRoom('space', 'logical-doc')
   );
   t.is(
     registry
       .getTopic('doc.grants.changed')
-      .room(user, { workspaceId: 'space', docId: 'doc' }),
-    realtimeDocGrantsRoom('space', 'doc')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeDocGrantsRoom('space', 'logical-doc')
+  );
+  const input = { workspaceId: 'space', docId: 'logical-doc' };
+  for (const topic of [
+    'doc.share-state.changed',
+    'doc.grants.changed',
+    'comment.changed',
+  ] as const) {
+    await registry.getTopic(topic).authorize(user, input);
+  }
+  revoked = true;
+  for (const topic of [
+    'doc.share-state.changed',
+    'doc.grants.changed',
+    'comment.changed',
+  ] as const) {
+    await t.throwsAsync(registry.getTopic(topic).authorize(user, input), {
+      message: 'revoked physical grant',
+    });
+  }
+  await t.throwsAsync(
+    registry.getRequest('doc.share-state.get').handle(user, input)
+  );
+  await t.throwsAsync(
+    registry.getRequest('comment.changes.get').handle(user, input)
+  );
+  await t.throwsAsync(
+    registry
+      .getRequest('doc.grants.get')
+      .handle(user, { ...input, pagination: { first: 10 } })
   );
 });
 
@@ -808,7 +886,7 @@ test('user realtime provider snapshots private profile settings and access token
   });
 });
 
-test('new realtime providers publish changed events from domain events', t => {
+test('new realtime providers publish changed events from domain events', async t => {
   const published: unknown[][] = [];
   const publisher = {
     publish: (...args: unknown[]) => published.push(args),
@@ -856,19 +934,21 @@ test('new realtime providers publish changed events from domain events', t => {
   const docShare = new DocShareRealtimeProvider(
     {} as never,
     {} as never,
+    docReader,
     undefined,
     publisher
   );
-  docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
+  await docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
 
   const docGrants = new DocGrantsRealtimeProvider(
     {} as never,
     {} as never,
     {} as never,
+    docReader,
     undefined,
     publisher
   );
-  docGrants.onOwnerChanged({
+  await docGrants.onOwnerChanged({
     workspaceId: 'space',
     docId: 'doc',
     userId: 'u2',
@@ -885,7 +965,27 @@ test('new realtime providers publish changed events from domain events', t => {
       'workspace.config.changed',
       'workspace.invite-link.changed',
       'doc.share-state.changed',
+      'doc.share-state.changed',
       'doc.grants.changed',
+      'doc.grants.changed',
+    ]
+  );
+  t.deepEqual(
+    published.slice(-4).map(args => args[1]),
+    [
+      { workspaceId: 'space', docId: 'doc' },
+      { workspaceId: 'space', docId: 'logical-doc' },
+      { workspaceId: 'space', docId: 'doc' },
+      { workspaceId: 'space', docId: 'logical-doc' },
+    ]
+  );
+  t.deepEqual(
+    published.slice(-4).map(args => args[3]),
+    [
+      { room: realtimeDocShareStateRoom('space', 'doc') },
+      { room: realtimeDocShareStateRoom('space', 'logical-doc') },
+      { room: realtimeDocGrantsRoom('space', 'doc') },
+      { room: realtimeDocGrantsRoom('space', 'logical-doc') },
     ]
   );
 });
@@ -978,13 +1078,14 @@ test('copilot embedding realtime provider uses native health and progress', asyn
     health: async () => ({ enabled: true }),
     progress: async () => ({ total: 5, embedded: 3 }),
   };
-  const config = { copilot: { enabled: true } };
+  let enabled = true;
+  const runtime = { copilotEnabled: () => enabled };
 
   const provider = new CopilotEmbeddingRealtimeProvider(
     ac,
     embedding as never,
     registry,
-    config as never
+    runtime as never
   );
   provider.onModuleInit();
 
@@ -997,7 +1098,7 @@ test('copilot embedding realtime provider uses native health and progress', asyn
       embedded: 3,
     }
   );
-  config.copilot.enabled = false;
+  enabled = false;
   await t.throwsAsync(
     registry
       .getRequest('workspace.embedding.progress.get')
@@ -1064,7 +1165,7 @@ test('copilot transcript realtime provider registers task live query handlers', 
     },
   } as unknown as CopilotTranscriptionRetryService;
   new CopilotTranscriptRealtimeProvider(access, transcript, retry, registry, {
-    copilot: { enabled: true },
+    copilotEnabled: () => true,
   } as never).onModuleInit();
 
   t.deepEqual(

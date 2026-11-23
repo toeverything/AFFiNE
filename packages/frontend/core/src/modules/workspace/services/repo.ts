@@ -31,6 +31,15 @@ export class WorkspaceRepositoryService extends Service {
     },
   });
 
+  closeFlavour(flavour: string) {
+    for (const [key, { obj }] of this.pool.objects) {
+      if (obj.flavour === flavour) {
+        this.pool.objects.delete(key);
+        obj.scope.dispose();
+      }
+    }
+  }
+
   /**
    * open workspace reference by metadata.
    *

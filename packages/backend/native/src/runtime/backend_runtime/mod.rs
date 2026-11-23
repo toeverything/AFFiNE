@@ -4,6 +4,7 @@ mod auth_session;
 mod blob_access;
 mod byok;
 mod byok_api;
+mod config_command;
 mod constants;
 mod control_plane;
 mod copilot;
@@ -17,6 +18,7 @@ mod entitlement;
 mod gate;
 mod housekeeping;
 mod invalidation;
+mod legacy_workspace;
 mod lifecycle;
 mod payment;
 mod permission;
@@ -29,14 +31,17 @@ mod search;
 mod strict_quota;
 #[cfg(test)]
 mod tests;
+mod workspace_state;
 use std::{
   sync::{Arc, RwLock},
   time::Duration,
 };
 
 use byok::LocalLeasePayload;
-use copilot::{backend_provider, executable_protocol};
+use doc_writer::append_updates_in;
+pub(super) use doc_writer::{lock_permission_generation, validate_doc_updates};
 use embedding::register_artifact_source;
+pub(super) use legacy_workspace::{LegacyWorkspace, load_legacy_workspace_in};
 use napi::{Result, Status, bindgen_prelude::Buffer, threadsafe_function::ThreadsafeFunction};
 #[cfg(test)]
 pub(crate) use search::SEARCH_TEST_LOCK;
@@ -44,6 +49,8 @@ use search::SearchRuntime;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use tokio::sync::Mutex;
+pub(super) use workspace_state::{completed as workspace_lifecycle_completed, ensure_migration_active};
+use zeroize::Zeroizing;
 
 use self::{
   blob_access::SourceIdentity,
@@ -59,14 +66,22 @@ use self::{
 use super::object_storage::ObjectStorageService;
 pub(crate) use super::types;
 pub(super) use super::{
-  BackendRuntimeConfig, ConfigSource, InviteQuotaConfig, RedisRuntimeConfig, RuntimeError, RuntimeResult,
+  BackendRuntimeConfig, InviteQuotaConfig, RedisRuntimeConfig, RuntimeError, RuntimeResult, WorkspaceDocState,
+  ensure_doc_not_deleted_in, ensure_workspace_sync_protocol_in, is_ordinary_workspace_doc, load_doc_states_in,
+  load_workspace_doc_states_in, load_workspace_doc_states_page_in,
   migrations::{embedding_schema_health, migrate_all_tables},
-  napi_error, to_napi_error, webpki_tls_config,
+  napi_error, to_napi_error, webpki_tls_config, workspace_lifecycle_active_in,
 };
-use crate::llm::{
-  ByokLocalLeaseOutput, ByokPolicyOutput, ByokProbeResultOutput, ByokProfileOutput, CreateByokLocalLeaseInput,
-  CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
-  ReplaceByokProfileInput, RotateByokCredentialInput,
+pub(super) use crate::runtime::storage_runtime::{load_current_doc_in, load_current_doc_parts_in, merge_current_doc};
+use crate::{
+  blocking,
+  doc::try_validation_slot,
+  llm::{
+    ByokLocalLeaseOutput, ByokPolicyOutput, ByokProbeResultOutput, ByokProfileOutput, CreateByokLocalLeaseInput,
+    CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
+    ReplaceByokProfileInput, RotateByokCredentialInput,
+  },
+  runtime::config::{AppConfigChange, ServerConfig, ServerConfigHandle, save_app_config_changes},
 };
 
 pub(super) fn token_hash(token: &str) -> String {
@@ -104,8 +119,8 @@ fn search_operation_output(result: RuntimeResult<serde_json::Value>) -> SearchOp
 #[derive(Clone)]
 #[napi_derive::napi]
 pub struct BackendRuntime {
-  config_source: ConfigSource,
-  inline_config: Arc<RwLock<Option<serde_json::Value>>>,
+  server_config: Arc<ServerConfig>,
+  bootstrap_private_key: Option<Arc<Zeroizing<String>>>,
   role: ServerRole,
   script_mode: bool,
   config: Arc<RwLock<Arc<BackendRuntimeConfig>>>,
@@ -130,25 +145,18 @@ pub struct BackendRuntime {
 impl BackendRuntime {
   #[napi(constructor)]
   pub fn new(
+    server_config: &ServerConfigHandle,
     private_key: Option<String>,
-    config_paths: Option<Vec<String>>,
     permission_telemetry: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
-    inline_config: Option<String>,
     invalidation_events: Option<ThreadsafeFunction<String, (), String, Status, true, true, 1024>>,
   ) -> Result<Self> {
-    let config_source = ConfigSource::new(config_paths);
     let (role, script_mode) = ServerRole::from_environment().map_err(napi_error)?;
-    let inline_config = inline_config
-      .map(|value| serde_json::from_str(&value))
-      .transpose()
-      .map_err(|error| to_napi_error(RuntimeError::json("decode inline runtime config", error)))?;
     let config =
-      BackendRuntimeConfig::from_config_source_with_inline(private_key, &config_source, inline_config.as_ref())
-        .map_err(to_napi_error)?;
-    let object_storage = ObjectStorageService::from_config_source(&config_source).map_err(to_napi_error)?;
+      BackendRuntimeConfig::from_server_config(private_key.clone(), &server_config.inner).map_err(to_napi_error)?;
+    let object_storage = server_config.inner.object_storage().clone();
     Ok(Self {
-      config_source,
-      inline_config: Arc::new(RwLock::new(inline_config)),
+      server_config: Arc::clone(&server_config.inner),
+      bootstrap_private_key: private_key.map(|key| Arc::new(Zeroizing::new(key))),
       role,
       script_mode,
       config: Arc::new(RwLock::new(Arc::new(config))),
@@ -213,7 +221,6 @@ impl BackendRuntime {
         workspace_id: workspace_id.to_string(),
         enabled,
         documents: None,
-        reconcile_documents: None,
         priority: None,
         wait_for_ready_ms: None,
       })
@@ -322,3 +329,25 @@ impl BackendRuntime {
 }
 
 use super::{entitlement_input_error, parse_quantity, parse_target_type};
+
+pub(in crate::runtime) async fn lock_current_doc_read(
+  transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<()> {
+  domain_command::lock_workspace_storage_shared(transaction, workspace_id).await?;
+  domain_command::lock_workspace_doc_update(transaction, workspace_id, doc_id).await
+}
+
+pub(super) async fn try_lock_current_doc_read(
+  transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  workspace_id: &str,
+  doc_id: &str,
+) -> RuntimeResult<bool> {
+  if !super::try_lock_workspace_storage_shared_transaction(transaction, workspace_id).await? {
+    return Ok(false);
+  }
+  domain_command::try_lock_workspace_doc_update(transaction, workspace_id, doc_id).await
+}
+
+pub(super) use super::{CurrentDoc, CurrentDocUpdate};

@@ -25,6 +25,8 @@ pub(in crate::runtime::backend_runtime) struct AuthorizedSearchScope {
 }
 
 pub(super) struct PermissionSnapshot {
+  pub(super) subject_denied_docs: Vec<String>,
+  pub(super) deleted_docs: Vec<String>,
   pub(super) request: AuthorizationRequest,
   pub(super) facts: AclFacts,
   pub(super) grant: AccessGrant,

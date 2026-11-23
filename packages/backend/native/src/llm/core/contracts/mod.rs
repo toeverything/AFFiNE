@@ -231,7 +231,8 @@ pub struct CapabilityMatchResponse {
 pub struct ModelRegistryResolveRequest {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | \
+               'openrouter'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub backend_kind: Option<String>,
@@ -245,7 +246,8 @@ pub struct ModelRegistryResolveRequest {
 pub struct ModelRegistryMatchRequest {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | \
+               'openrouter'"
   )]
   pub backend_kind: String,
   pub cond: ModelConditionsContract,
@@ -258,7 +260,8 @@ pub struct ModelRegistryMatchRequest {
 pub struct ModelRegistryVariantContract {
   #[napi(
     ts_type = "'openai_chat' | 'openai_responses' | 'anthropic' | 'cloudflare_workers_ai' | 'gemini_api' | \
-               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen'"
+               'gemini_vertex' | 'fal' | 'anthropic_vertex' | 'deepseek' | 'kimi' | 'opencode_go' | 'opencode_zen' | \
+               'openrouter'"
   )]
   pub backend_kind: String,
   pub canonical_key: String,
@@ -269,12 +272,10 @@ pub struct ModelRegistryVariantContract {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub legacy_aliases: Option<Vec<String>>,
   pub capabilities: Vec<CapabilityModelCapability>,
-  #[napi(ts_type = "'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'")]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub protocol: Option<String>,
   #[napi(
     ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
-               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
+               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex' | 'openai_embeddings' | \
+               'openrouter_responses' | 'openrouter_chat_completions' | 'openrouter_anthropic' | 'perplexity_sonar'"
   )]
   #[serde(skip_serializing_if = "Option::is_none")]
   pub request_layer: Option<String>,
@@ -289,15 +290,8 @@ pub struct ModelRegistryVariantContract {
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct ModelRegistryRouteContract {
-  #[napi(ts_type = "'openai_chat' | 'openai_responses' | 'openai_images' | 'anthropic' | 'gemini' | 'fal_image'")]
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub protocol: Option<String>,
-  #[napi(
-    ts_type = "'anthropic' | 'chat_completions' | 'cloudflare_workers_ai' | 'responses' | 'openai_images' | 'fal' | \
-               'vertex' | 'vertex_anthropic' | 'gemini_api' | 'gemini_vertex'"
-  )]
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub request_layer: Option<String>,
+  pub request_layers: Option<Vec<String>>,
 }
 
 #[napi(object)]

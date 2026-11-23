@@ -68,6 +68,10 @@ import {
   WorkspaceServerService,
 } from '../../cloud';
 import { assertSupportedServerVersion } from '../../cloud/stores/server-config';
+import {
+  AFFiNE_WORKSPACE_DB_SCHEMA,
+  AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA,
+} from '../../db/schema';
 import { type GlobalState, NbstoreService } from '../../storage';
 import type {
   Workspace,
@@ -77,6 +81,7 @@ import type {
   WorkspaceProfileInfo,
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
+import { WorkspaceRepositoryService } from '../../workspace/services/repo';
 import { getWorkspaceProfileWorker } from './out-worker';
 
 const getCloudWorkspaceCacheKey = (serverId: string) => {
@@ -104,6 +109,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
+        this.server.scope
+          .get(WorkspaceRepositoryService)
+          .closeFlavour(this.flavour);
         this.revalidate();
       }
     );
@@ -183,6 +191,11 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       id: workspaceId,
       flavour: this.flavour,
       type: 'workspace',
+      creationPeer: JSON.stringify([
+        this.server.serverMetadata.baseUrl,
+        workspaceId,
+        this.authService.session.account$.value?.id ?? '',
+      ]),
     });
     docStorage.connection.connect();
     await docStorage.connection.waitForConnected();
@@ -230,9 +243,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         await docStorage.pushDocUpdate({
           docId: subdocs.guid,
           bin: encodeStateAsUpdate(subdocs),
+          intent: subdocs.guid === workspaceId ? 'update' : 'create',
         });
       }
 
+      for (const docId of docCollection.docs.keys()) {
+        if (!(await docStorage.getDoc(docId))) {
+          await docStorage.pushDocUpdate({
+            docId,
+            bin: new Uint8Array([0, 0]),
+            intent: 'create',
+          });
+        }
+      }
       const accountId = this.authService.session.account$.value?.id;
       await this.writeInitialDocProperties(
         workspaceId,
@@ -564,6 +587,16 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           doc: {
             name: 'CloudDocStorage',
             opts: {
+              accountId: this.authService.session.account$.value?.id ?? '',
+              localReservedDocIds: [
+                ...Object.keys(AFFiNE_WORKSPACE_DB_SCHEMA).map(
+                  table => `db$${table}`
+                ),
+                ...Object.keys(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA).map(
+                  table =>
+                    `userdata$${this.authService.session.account$.value?.id ?? ''}$${table}`
+                ),
+              ],
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,

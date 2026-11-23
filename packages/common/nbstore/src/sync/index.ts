@@ -19,6 +19,10 @@ export interface SyncState {
   doc?: DocSyncState;
 }
 
+export interface SyncOptions {
+  mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
+}
+
 export class Sync {
   readonly doc: DocSyncImpl;
   readonly blob: BlobSyncImpl;
@@ -27,7 +31,10 @@ export class Sync {
 
   readonly state$: Observable<SyncState>;
 
-  constructor(readonly storages: PeerStorageOptions<SpaceStorage>) {
+  constructor(
+    readonly storages: PeerStorageOptions<SpaceStorage>,
+    options?: SyncOptions
+  ) {
     const doc = storages.local.get('doc');
     const blob = storages.local.get('blob');
     const docSync = storages.local.get('docSync');
@@ -46,7 +53,8 @@ export class Sync {
           ])
         ),
       },
-      docSync
+      docSync,
+      { mergeUpdates: options?.mergeUpdates }
     );
     this.blob = new BlobSyncImpl(
       {
@@ -80,7 +88,8 @@ export class Sync {
           ])
         ),
       },
-      indexerSync
+      indexerSync,
+      this.doc.workspaceState$
     );
 
     this.state$ = this.doc.state$.pipe(map(doc => ({ doc })));
@@ -92,9 +101,51 @@ export class Sync {
     this.indexer?.start();
   }
 
-  stop() {
-    this.doc?.stop();
-    this.blob?.stop();
-    this.indexer?.stop();
+  async reconfigure(remotes: Record<string, SpaceStorage>) {
+    try {
+      await Promise.all([
+        this.doc.stop(),
+        this.blob.reconfigure(
+          Object.fromEntries(
+            Object.entries(remotes).map(([id, storage]) => [
+              id,
+              storage.get('blob'),
+            ])
+          )
+        ),
+      ]);
+      this.doc.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('doc'),
+          ])
+        )
+      );
+      this.awareness.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('awareness'),
+          ])
+        )
+      );
+      this.indexer.setRemotes(
+        Object.fromEntries(
+          Object.entries(remotes).map(([id, storage]) => [
+            id,
+            storage.get('indexer'),
+          ])
+        )
+      );
+      this.storages.remotes = remotes;
+    } finally {
+      this.doc.start();
+      this.blob.start();
+    }
+  }
+
+  async stop() {
+    await Promise.all([this.doc.stop(), this.blob.stop(), this.indexer.stop()]);
   }
 }

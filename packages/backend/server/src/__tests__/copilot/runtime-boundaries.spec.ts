@@ -15,6 +15,7 @@ import {
   SearchProviderUnavailable,
 } from '../../base';
 import { ServerFeature, type ServerService } from '../../core';
+import type { BackendRuntimeProvider } from '../../core/backend-runtime';
 import type { DocReader } from '../../core/doc';
 import type { PermissionAccess } from '../../core/permission';
 import { type RealtimePublisher, RealtimeRegistry } from '../../core/realtime';
@@ -52,6 +53,7 @@ import {
 import { ActionStreamHost } from '../../plugins/copilot/runtime/hosts/action-stream-host';
 import { AttachmentAdmissionHost } from '../../plugins/copilot/runtime/hosts/attachment-admission';
 import { ImageResultHost } from '../../plugins/copilot/runtime/hosts/image-result-host';
+import { mapNativeSemanticError } from '../../plugins/copilot/runtime/native-errors';
 import {
   collectAttachmentFootnotes,
   collectDocumentFootnotes,
@@ -70,6 +72,7 @@ import {
   createArtifactSearchTool,
 } from '../../plugins/copilot/tools/artifact';
 import { buildDocCanvasGetter } from '../../plugins/copilot/tools/doc-canvas-read';
+import { buildDocContentGetter } from '../../plugins/copilot/tools/doc-read';
 import { buildDocumentSearch } from '../../plugins/copilot/tools/doc-search';
 import type { IndexerService } from '../../plugins/indexer/service';
 
@@ -442,7 +445,10 @@ test('canvas reads expose top-level and frame-owned canvas blocks', async t => {
         workspace: () => ({ doc: () => ({ can: async () => true }) }),
       }),
     } as unknown as PermissionAccess,
-    { getDocCanvas: async () => projection } as unknown as DocReader,
+    {
+      getDocCanvas: async () => projection,
+      resolveStorageDocId: async (_w: string, id: string) => id,
+    } as unknown as DocReader,
     {
       workspace: { get: async () => ({ id: 'workspace-1' }) },
     } as unknown as Models
@@ -482,7 +488,7 @@ test('canvas reads expose top-level and frame-owned canvas blocks', async t => {
 
   const scopedGetter = buildDocCanvasGetter(
     {} as PermissionAccess,
-    {} as DocReader,
+    { resolveStorageDocId: async (_w: string, id: string) => id } as DocReader,
     {} as Models,
     { mode: 'selected', allowedDocIds: ['doc-2'] }
   );
@@ -494,6 +500,66 @@ test('canvas reads expose top-level and frame-owned canvas blocks', async t => {
     50
   );
   t.like(outsideScope, { code: 'DOC_SCOPE_DENIED' });
+  let allowed = false;
+  const reads: string[] = [];
+  const sourceReader = {
+    resolveStorageDocId: async (_workspaceId: string, id: string) =>
+      id === 'logical-doc' ? 'doc-1' : id,
+    getDocCanvas: async (_workspaceId: string, id: string) => {
+      reads.push(id);
+      return projection;
+    },
+    getDocMarkdown: async (_workspaceId: string, id: string) => {
+      reads.push(id);
+      return { markdown: 'physical body', title: 'Physical', revision: '1' };
+    },
+  } as unknown as DocReader;
+  const sourceAccess = {
+    user: () => ({
+      workspace: () => ({
+        doc: (id: string) => ({
+          can: async () => id === 'logical-doc' || allowed,
+        }),
+      }),
+    }),
+  } as unknown as PermissionAccess;
+  const sourceModels = {
+    workspace: { get: async () => ({}) },
+    doc: { getAuthors: async () => ({}) },
+  } as unknown as Models;
+  for (const scope of [
+    undefined,
+    { mode: 'selected' as const, allowedDocIds: ['doc-1'] },
+  ]) {
+    const read = buildDocContentGetter(
+      sourceAccess,
+      sourceReader,
+      sourceModels,
+      scope
+    );
+    const canvas = buildDocCanvasGetter(
+      sourceAccess,
+      sourceReader,
+      sourceModels,
+      scope
+    );
+    allowed = false;
+    t.like(await read(options, 'logical-doc'), { code: 'DOC_ACCESS_DENIED' });
+    t.like(
+      await canvas(options, 'logical-doc', { kind: 'overview' }, undefined, 50),
+      { code: 'DOC_ACCESS_DENIED' }
+    );
+    allowed = true;
+    t.like(await read(options, 'logical-doc'), {
+      doc_id: 'doc-1',
+      markdown: 'physical body',
+    });
+    t.like(
+      await canvas(options, 'logical-doc', { kind: 'overview' }, undefined, 50),
+      { doc_id: 'doc-1' }
+    );
+  }
+  t.deepEqual(reads, ['doc-1', 'doc-1', 'doc-1', 'doc-1']);
 });
 
 test('document tools enforce the user-selected hard scope', async t => {
@@ -958,27 +1024,30 @@ test('document tools enforce the user-selected hard scope', async t => {
   );
 });
 
-test('copilot config controls the server feature and request admission', t => {
-  const config = { copilot: { enabled: false } } as Config;
+test('copilot runtime controls the server feature and request admission', t => {
+  let enabled = false;
+  const runtime = {
+    copilotEnabled: () => enabled,
+  } as unknown as BackendRuntimeProvider;
   const features = new Set<ServerFeature>();
   const server = {
     enableFeature: (feature: ServerFeature) => features.add(feature),
     disableFeature: (feature: ServerFeature) => features.delete(feature),
   } as unknown as ServerService;
-  const feature = new CopilotFeatureService(config, server);
+  const feature = new CopilotFeatureService(runtime, server);
   const guard = new CopilotFeatureGuard(feature);
 
   feature.onConfigInit();
   t.false(features.has(ServerFeature.Copilot));
   t.throws(() => guard.canActivate(), { message: 'Copilot is disabled.' });
 
-  config.copilot.enabled = true;
-  feature.onConfigChanged({ updates: { copilot: { enabled: true } } });
+  enabled = true;
+  feature.onConfigApplied({ updates: { copilot: { enabled: true } } });
   t.true(features.has(ServerFeature.Copilot));
   t.true(guard.canActivate());
 
-  config.copilot.enabled = false;
-  feature.onConfigChanged({ updates: { copilot: { enabled: false } } });
+  enabled = false;
+  feature.onConfigApplied({ updates: { copilot: { enabled: false } } });
   t.false(features.has(ServerFeature.Copilot));
 });
 
@@ -1298,40 +1367,50 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
     { message: 'failed' }
   );
 
-  const adapter = new NativeProviderAdapter(async function* () {
-    yield {
-      type: 'citation',
-      index: 1,
-      url: 'https://affine.pro',
-    };
-    yield {
-      type: 'tool_result',
-      call_id: 'call-1',
-      name: 'artifact_read',
-      arguments: {},
-      output: {
-        artifactId: 'artifact-1',
-        fileName: 'notes.txt',
-        fileType: 'text/plain',
-      },
-    };
-    yield {
-      type: 'tool_result',
-      call_id: 'call-2',
-      name: 'frontend_read_selection',
-      arguments: {},
-      output: {
-        text: 'live content',
-        source: {
-          type: 'document',
-          workspace_id: 'workspace-1',
-          doc_id: 'doc-1',
-          revision: 'state-1',
+  const adapter = new NativeProviderAdapter(
+    async function* () {
+      yield {
+        type: 'citation',
+        index: 1,
+        url: 'https://affine.pro',
+      };
+      yield {
+        type: 'tool_result',
+        call_id: 'call-1',
+        name: 'artifact_read',
+        arguments: {},
+        output: {
+          artifactId: 'artifact-1',
+          fileName: 'notes.txt',
+          fileType: 'text/plain',
         },
+      };
+      yield {
+        type: 'tool_result',
+        call_id: 'call-2',
+        name: 'frontend_read_selection',
+        arguments: {},
+        output: {
+          text: 'live content',
+          source: {
+            type: 'document',
+            workspace_id: 'workspace-1',
+            doc_id: 'doc-1',
+            revision: 'state-1',
+          },
+        },
+      };
+      yield { type: 'done' };
+    },
+    {
+      formatDocumentFootnotes: async documents => {
+        t.is(documents[0].doc_id, 'doc-1');
+        return formatDocumentFootnotes(
+          documents.map(document => ({ ...document, doc_id: 'logical-doc' }))
+        );
       },
-    };
-    yield { type: 'done' };
-  });
+    }
+  );
   const streamObjects = [];
   for await (const item of adapter.streamObject({
     model: 'test',
@@ -1341,7 +1420,7 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
   }
   t.deepEqual(streamObjects.at(-1), {
     type: 'text-delta',
-    textDelta: '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"doc-1"}',
+    textDelta: '\n\n[^doc-1]\n\n[^doc-1]: {"type":"doc","docId":"logical-doc"}',
   });
   const streamOutput = streamObjects
     .filter(item => item.type === 'text-delta')
@@ -1350,6 +1429,11 @@ test('text stream parser keeps reasoning and tool output distinct from answer te
   t.true(streamOutput.includes('"url":"https%3A%2F%2Faffine.pro"'));
   t.true(streamOutput.includes('[^attachment-1]'));
   t.true(streamOutput.includes('"artifactId":"artifact-1"'));
+
+  let mappedText = '';
+  for await (const chunk of adapter.streamText({ model: 'test', messages: [] }))
+    mappedText += chunk;
+  t.true(mappedText.includes('[^doc-1]: {"type":"doc","docId":"logical-doc"}'));
 
   const textAdapter = new NativeProviderAdapter(async function* () {
     yield {
@@ -1500,6 +1584,18 @@ test.serial(
       deleteObject: async (_scope: string, key: string) => deleted.push(key),
     };
     const storage = new CopilotStorage(runtime as never);
+
+    const pixels = Buffer.from([0, 255, 16]);
+    const inline = await storage.putGeneratedImage(
+      'user-1',
+      'workspace-1',
+      pixels,
+      'image/webp'
+    );
+    t.is(inline, 'data:image/webp;base64,AP8Q');
+    t.is(written.length, 1);
+    t.deepEqual(deleted, []);
+    written.length = 0;
 
     const missingSigner = await t.throwsAsync(
       storage.put(
@@ -1856,6 +1952,25 @@ test('controller projects successful streams and preparation failures to SSE eve
     ),
     { type: 'message', id: 'message-1', data: 'hello' }
   );
+  for (const message of [
+    'managed_target_unavailable',
+    '[affine-runtime:invalid_input] target_unavailable',
+  ]) {
+    orchestrator.streamText = async () => {
+      throw mapNativeSemanticError(new Error(message));
+    };
+    t.like(
+      await firstValueFrom(
+        await controller.chatStream(
+          { id: 'user-1' } as never,
+          request,
+          'session-1',
+          {}
+        )
+      ),
+      { type: 'error', data: { status: 400, name: 'COPILOT_PROMPT_INVALID' } }
+    );
+  }
   t.like(
     await firstValueFrom(
       await controller.actionStream(

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { z } from 'zod';
 
-import { Config } from '../../../base/config';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
 import { PermissionAccess } from '../../../core/permission';
 import {
   RealtimeRegistry,
@@ -17,7 +17,7 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
     private readonly ac: PermissionAccess,
     private readonly embedding: NativeEmbeddingService,
     private readonly registry: RealtimeRegistry,
-    private readonly config: Config
+    private readonly runtime: BackendRuntimeProvider
   ) {}
 
   onModuleInit() {
@@ -47,7 +47,7 @@ export class CopilotEmbeddingRealtimeProvider implements OnModuleInit {
   }
 
   private async assertCopilot(userId: string, workspaceId: string) {
-    assertCopilotEnabled(this.config);
+    assertCopilotEnabled(this.runtime.copilotEnabled());
     await this.ac
       .user(userId)
       .workspace(workspaceId)

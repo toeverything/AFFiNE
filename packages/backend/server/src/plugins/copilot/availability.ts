@@ -1,8 +1,7 @@
-import type { Config } from '../../base/config';
 import { ActionForbidden } from '../../base/error/errors.gen';
 
-export function assertCopilotEnabled(config: Config) {
-  if (!config.copilot.enabled) {
+export function assertCopilotEnabled(enabled: boolean) {
+  if (!enabled) {
     throw new ActionForbidden('Copilot is disabled.');
   }
 }

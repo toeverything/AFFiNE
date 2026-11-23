@@ -44,7 +44,11 @@ test('auth session adapter maps protocol dates and refresh events', async t => {
     platform: 'ios',
     grace: false,
   });
-  const refreshed = await t.context.sessions.refresh('source-token', '1.0.1');
+  const refreshed = await t.context.sessions.refresh(
+    'source-token',
+    '1.0.1',
+    '00000000-0000-4000-8000-000000000001'
+  );
   t.is(refreshed.status, 'rotated');
   if (refreshed.status !== 'rotated') return;
   t.true(refreshed.refreshExpiresAt instanceof Date);
@@ -54,6 +58,7 @@ test('auth session adapter maps protocol dates and refresh events', async t => {
       action: 'refresh',
       refreshToken: 'source-token',
       appVersion: '1.0.1',
+      attemptId: '00000000-0000-4000-8000-000000000001',
     })
   );
   t.true(

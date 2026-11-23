@@ -4,7 +4,6 @@ import serverNativeModule, {
   type BuiltInPromptRenderContract,
   type BuiltInPromptSessionContract,
   type BuiltInPromptSpec,
-  type BuiltInRouteOptions,
   type CanonicalChatRequestContract,
   type CanonicalStructuredRequestContract,
   type CapabilityAttachmentContract,
@@ -68,6 +67,7 @@ import serverNativeModule, {
 } from '@affine/server-native';
 
 export type {
+  AppConfigCommand,
   BuiltInManagedTarget,
   BuiltInManagedTargetTier,
   BuiltInRouteOptions,
@@ -205,7 +205,21 @@ import type {
   ToolCallResult,
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
-export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const mergeUpdates = serverNativeModule.mergeUpdates;
+export const diffDocUpdateV1 = serverNativeModule.diffDocUpdateV1;
+export const encodeStateVectorFromUpdateV1 =
+  serverNativeModule.encodeStateVectorFromUpdateV1;
+export const extractDocRecoveryFacts =
+  serverNativeModule.extractDocRecoveryFacts;
+export const extractRootDocIdAliases =
+  serverNativeModule.extractRootDocIdAliases;
+export const extractWorkspaceLifecycleRootPages =
+  serverNativeModule.extractWorkspaceLifecycleRootPages;
+export type {
+  NativeDocRecoveryFacts,
+  NativeLifecycleRootPage,
+} from '@affine/server-native';
+export const isOrdinaryWorkspaceDoc = serverNativeModule.isOrdinaryWorkspaceDoc;
 export const authorizeReservedDocSubject =
   serverNativeModule.authorizeReservedDocSubject;
 export const canonicalizeDocumentIdentity =
@@ -300,18 +314,23 @@ export function getTokenEncoder(model?: string | null): Tokenizer | null {
   }
 }
 
+export const splitTranscriptAudio = serverNativeModule.splitTranscriptAudio;
 export const getMime = serverNativeModule.getMime;
 export const inspectImageForProxy = serverNativeModule.inspectImageForProxy;
 export const fetchRemoteAttachment = serverNativeModule.fetchRemoteAttachment;
 export const inferRemoteMimeType = serverNativeModule.inferRemoteMimeType;
 export const assertSafeUrl = serverNativeModule.assertSafeUrl;
 export const scanContentPolicyV1 = serverNativeModule.scanContentPolicyV1;
-export const safeFetch = serverNativeModule.safeFetch;
+export const safeFetch: typeof serverNativeModule.safeFetch = (...args) =>
+  serverNativeModule.safeFetch(...args);
 export const parseDoc = serverNativeModule.parseDoc;
 export const htmlSanitize = serverNativeModule.htmlSanitize;
 export const processImage = serverNativeModule.processImage;
 export const projectDocCanvasFromBinary =
   serverNativeModule.projectDocCanvasFromBinary;
+export const projectWorkspaceRootFromBinary =
+  serverNativeModule.projectWorkspaceRootFromBinary;
+
 export const projectDocSearchFromBinary =
   serverNativeModule.projectDocSearchFromBinary;
 export const parseYDocToMarkdown = serverNativeModule.parseDocToMarkdown;
@@ -321,6 +340,8 @@ export const readAllDocIdsFromRootDoc =
   serverNativeModule.readAllDocIdsFromRootDoc;
 export const AFFINE_PRO_PUBLIC_KEY = serverNativeModule.AFFINE_PRO_PUBLIC_KEY;
 export const BackendRuntime = serverNativeModule.BackendRuntime;
+export const ServerConfigHandle = serverNativeModule.ServerConfigHandle;
+export type ServerConfigHandle = InstanceType<typeof ServerConfigHandle>;
 export const StorageRuntime = serverNativeModule.StorageRuntime;
 
 export type PermissionWorkspaceRole = 'external' | 'member' | 'admin' | 'owner';
@@ -438,6 +459,8 @@ export type DomainCommandInputV1 =
       workspaceId: string;
       docId: string;
       lifecycle: 'trash' | 'restore' | 'delete';
+      logicalDocId?: string;
+      requireDeleted?: boolean;
     }
   | {
       command: 'append_root_update';
@@ -519,6 +542,9 @@ export const buildPublicRootDoc = serverNativeModule.buildPublicRootDoc;
 export const updateDocTitle = serverNativeModule.updateDocTitle;
 export const updateDocProperties = serverNativeModule.updateDocProperties;
 export const updateRootDocMetaTitle = serverNativeModule.updateRootDocMetaTitle;
+export const updateExistingRootDocMetaTitle =
+  serverNativeModule.updateExistingRootDocMetaTitle;
+export const migrateRootDocPages = serverNativeModule.migrateRootDocPages;
 
 const nativeLlmModule = serverNativeModule;
 
@@ -805,12 +831,6 @@ export function llmGetBuiltInPromptSpec(
     throw new Error('native built-in prompt spec lookup is not available');
   }
   return nativeLlmModule.llmGetBuiltInPromptSpec(name);
-}
-
-export function llmGetBuiltInRouteOptions(
-  name: string
-): BuiltInRouteOptions | null {
-  return nativeLlmModule.llmGetBuiltInRouteOptions(name);
 }
 
 export const llmGetByokCatalog = nativeLlmModule.llmGetByokCatalog;

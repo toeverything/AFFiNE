@@ -84,16 +84,34 @@ async fn parse_demo_snapshot_matches_fixture() {
     .await
     .unwrap();
   let result = storage.crawl_doc_data("demo-doc").await.unwrap();
-  let mut expected: Value = serde_json::from_slice(DEMO_JSON).unwrap();
-  let mut actual = serde_json::to_value(&result).unwrap();
-  for document in [&mut expected, &mut actual] {
-    for block in document["blocks"].as_array_mut().unwrap() {
-      if let Some(additional) = block["additional"].as_str() {
-        block["additional"] = serde_json::from_str(additional).unwrap();
+  assert!(storage.get_doc_updates("demo-doc".into()).await.unwrap().is_empty());
+  let source = y_octo::DocOptions::new().with_client_id(543).build();
+  let mut marker = source.get_or_create_text("recovery-marker").unwrap();
+  marker.insert(0, "before").unwrap();
+  let prefix = y_octo::merge_updates_v1([DEMO_BIN.to_vec(), source.encode_update_v1().unwrap()])
+    .unwrap()
+    .encode_v1()
+    .unwrap();
+  let state = source.get_state_vector();
+  marker.insert(6, " after").unwrap();
+  let partial = source.encode_state_as_update_v1(&state).unwrap();
+  storage.push_update("recovered-doc".into(), &partial).await.unwrap();
+  let pending = storage.get_doc("recovered-doc".into()).await.unwrap().unwrap();
+  assert_eq!(pending.bin.as_ref(), partial);
+  storage.push_update("recovered-doc".into(), prefix).await.unwrap();
+  let recovered = storage.crawl_doc_data("recovered-doc").await.unwrap();
+  for result in [result, recovered] {
+    let mut expected: Value = serde_json::from_slice(DEMO_JSON).unwrap();
+    let mut actual = serde_json::to_value(&result).unwrap();
+    for document in [&mut expected, &mut actual] {
+      for block in document["blocks"].as_array_mut().unwrap() {
+        if let Some(additional) = block["additional"].as_str() {
+          block["additional"] = serde_json::from_str(additional).unwrap();
+        }
       }
     }
+    assert_json_eq!(expected, actual);
   }
-  assert_json_eq!(expected, actual);
   storage.close().await;
   cleanup(&db_path).await;
 }
@@ -193,6 +211,33 @@ async fn index_tables_support_terminal_queries_and_restart() {
     .unwrap();
   assert_eq!(aggregate.total, 2);
   assert_eq!(aggregate.buckets.len(), 2);
+
+  for id in 2..=10_001 {
+    let id = format!("doc-{id}");
+    storage
+      .index_upsert("doc", document(&id, &[("docId", &[&id]), ("title", &["title"])]))
+      .await
+      .unwrap();
+  }
+  let mut all_options = options(&["docId", "title"], &[]);
+  all_options.limit = u32::MAX;
+  let all = storage
+    .index_search("doc", query("all", None, None), all_options.clone())
+    .await
+    .unwrap();
+  assert_eq!(all.total, 10_001);
+  assert_eq!(all.hits.len(), 10_001);
+  assert!(all.hits.iter().all(|hit| hit.fields.len() == 2));
+  all_options.offset = 10_000;
+  assert_eq!(
+    storage
+      .index_search("doc", query("all", None, None), all_options)
+      .await
+      .unwrap()
+      .hits
+      .len(),
+    1
+  );
 
   let clock = DocIndexedClock {
     doc_id: "doc-1".into(),

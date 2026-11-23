@@ -1,9 +1,14 @@
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row};
+use tokio::sync::Semaphore;
 
+use super::blocking;
 use crate::{
   permission::doc_role_allows,
-  runtime::{RuntimeError, RuntimeResult, storage_runtime::load_current_doc},
+  runtime::{
+    RuntimeError, RuntimeResult,
+    storage_runtime::{CurrentDoc, load_current_doc_parts, merge_current_doc},
+  },
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -13,34 +18,60 @@ pub(super) struct ProjectionInput {
   pub(super) payload: Value,
 }
 
+static SEARCH_PROJECTION_SLOT: Semaphore = Semaphore::const_new(1);
+
+pub(in crate::runtime::backend_runtime) async fn project_current_doc<T: Send + 'static>(
+  pool: &PgPool,
+  workspace_id: &str,
+  doc_id: &str,
+  project: impl FnOnce(CurrentDoc) -> RuntimeResult<T> + Send + 'static,
+) -> RuntimeResult<Option<T>> {
+  let (snapshot, updates) = load_current_doc_parts(pool, workspace_id, doc_id).await?;
+  let permit = SEARCH_PROJECTION_SLOT
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::invalid_state(format!("search projection admission failed: {error}")))?;
+  blocking::spawn(permit, move || {
+    let current = merge_current_doc(snapshot, updates).map_err(|error| match error {
+      RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
+      error => error,
+    })?;
+    current.map(project).transpose()
+  })
+  .await
+  .map_err(|error| RuntimeError::invalid_state(format!("search projection task failed: {error}")))?
+}
+
 pub(super) async fn project_document(
   pool: &PgPool,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<(ProjectionInput, Vec<ProjectionInput>)>> {
-  let Some(current) = load_current_doc(pool, workspace_id, doc_id)
-    .await
-    .map_err(|error| match error {
-      RuntimeError::InvalidState(message) => RuntimeError::SearchSourceInvalid(message),
-      error => error,
-    })?
+  let projection_doc_id = doc_id.to_string();
+  let Some(projection) = project_current_doc(pool, workspace_id, doc_id, move |current| {
+    let revision = current.updated_at.timestamp_millis();
+    affine_doc_loader::project_document_search(current.blob, projection_doc_id, revision.to_string())
+      .map_err(|error| RuntimeError::SearchSourceInvalid(format!("document projection failed: {error}")))
+  })
+  .await?
   else {
     return Ok(None);
   };
-  let revision = current.updated_at.timestamp_millis();
-  let projection =
-    affine_doc_loader::project_document_search(current.blob, doc_id.to_string(), revision.to_string())
-      .map_err(|error| RuntimeError::SearchSourceInvalid(format!("document projection failed: {error}")))?;
   let Some(metadata) = sqlx::query(
-    r#"SELECT snapshot.created_at,snapshot.updated_at,snapshot.created_by,snapshot.updated_by,
-       coalesce(doc_policy.visibility,'private') AS visibility,
-       doc_policy.public_role,
-       coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role,'manager') AS member_default_role
-       FROM snapshots snapshot
-       LEFT JOIN workspace_access_policies workspace_policy ON workspace_policy.workspace_id=snapshot.workspace_id
-       LEFT JOIN doc_access_policies doc_policy
-         ON doc_policy.workspace_id=snapshot.workspace_id AND doc_policy.doc_id=snapshot.guid
-       WHERE snapshot.workspace_id=$1 AND snapshot.guid=$2"#,
+    r#"WITH records AS (
+         SELECT created_at,updated_at,created_by,updated_by FROM snapshots WHERE workspace_id=$1 AND guid=$2
+         UNION ALL SELECT created_at,created_at,created_by,created_by FROM updates WHERE workspace_id=$1 AND guid=$2
+       ), source AS (
+         SELECT min(created_at) AS created_at,max(updated_at) AS updated_at,
+           (array_agg(created_by ORDER BY created_at))[1] AS created_by,
+           (array_agg(updated_by ORDER BY updated_at DESC))[1] AS updated_by
+         FROM records HAVING count(*) > 0
+       )
+       SELECT source.*,coalesce(doc_policy.visibility,'private') AS visibility,doc_policy.public_role,
+         coalesce(doc_policy.member_default_role,workspace_policy.member_default_doc_role,'manager') AS member_default_role
+       FROM source
+       LEFT JOIN workspace_access_policies workspace_policy ON workspace_policy.workspace_id=$1
+       LEFT JOIN doc_access_policies doc_policy ON doc_policy.workspace_id=$1 AND doc_policy.doc_id=$2"#,
   )
   .bind(workspace_id)
   .bind(doc_id)
@@ -196,6 +227,65 @@ fn input(workspace_id: &str, doc_id: &str, payload: Value) -> ProjectionInput {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[tokio::test]
+  async fn canceled_caller_keeps_projection_slot_until_computation_finishes() {
+    let _guard = super::super::SEARCH_TEST_LOCK.lock().await;
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let id = uuid::Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$1,$2,now())")
+      .bind(&id)
+      .bind(affine_doc_loader::build_full_doc("test", "body", &id).unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    let (started, started_rx) = tokio::sync::oneshot::channel();
+    let (release, release_rx) = std::sync::mpsc::channel::<()>();
+    let first_pool = pool.clone();
+    let first_id = id.clone();
+    let first = tokio::spawn(async move {
+      project_current_doc(&first_pool, &first_id, &first_id, move |_| {
+        started.send(()).unwrap();
+        release_rx.recv_timeout(std::time::Duration::from_secs(10)).unwrap();
+        Ok(())
+      })
+      .await
+    });
+    started_rx.await.unwrap();
+    first.abort();
+    assert!(first.await.unwrap_err().is_cancelled());
+
+    let (next_started, mut next_started_rx) = tokio::sync::oneshot::channel();
+    let next_pool = pool.clone();
+    let next_id = id.clone();
+    let next = tokio::spawn(async move {
+      project_current_doc(&next_pool, &next_id, &next_id, move |_| {
+        next_started.send(()).unwrap();
+        Ok(())
+      })
+      .await
+    });
+    assert!(
+      tokio::time::timeout(std::time::Duration::from_millis(200), &mut next_started_rx)
+        .await
+        .is_err()
+    );
+    release.send(()).unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(5), next_started_rx)
+      .await
+      .unwrap()
+      .unwrap();
+    assert_eq!(next.await.unwrap().unwrap(), Some(()));
+    sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+      .bind(&id)
+      .execute(&pool)
+      .await
+      .unwrap();
+  }
 
   #[test]
   fn invalid_acl_role_is_a_permanent_search_source_error() {

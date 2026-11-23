@@ -154,28 +154,6 @@ test('should create history if time diff is larger than interval config and stat
   t.truthy(history);
 });
 
-test('should create history with force flag even if time diff in small', async t => {
-  const timestamp = new Date();
-
-  // @ts-expect-error private method
-  Sinon.stub(adapter, 'lastDocHistory').resolves({
-    timestamp: new Date(timestamp.getTime() - 1),
-    state: Buffer.from([0, 1]),
-  });
-
-  // @ts-expect-error private method
-  await adapter.createDocHistory(getSnapshot(timestamp), true);
-
-  const history = await db.snapshotHistory.findFirst({
-    where: {
-      workspaceId: '1',
-      id: 'doc1',
-    },
-  });
-
-  t.truthy(history);
-});
-
 test('should correctly list all history records', async t => {
   const timestamp = Date.now();
 
@@ -222,7 +200,7 @@ test('should be able to get history data', async t => {
   const timestamp = Date.now();
 
   // @ts-expect-error private method
-  await adapter.createDocHistory(getSnapshot(timestamp), true);
+  await adapter.createDocHistory(getSnapshot(timestamp));
 
   const history = await adapter.getDocHistory(
     snapshot.workspaceId,
@@ -259,37 +237,4 @@ test('should be able to get last history record', async t => {
 
   t.truthy(history);
   t.is(history?.timestamp, timestamp + 9);
-});
-
-test('should be able to recover from history', async t => {
-  await db.snapshot.create({
-    data: {
-      ...snapshot,
-      blob: Buffer.from([1, 1]),
-      state: Buffer.from([1, 1]),
-    },
-  });
-  const history1Timestamp = snapshot.updatedAt.getTime() - 10;
-
-  // @ts-expect-error private method
-  await adapter.createDocHistory(getSnapshot(history1Timestamp));
-
-  await adapter.rollbackDoc(
-    snapshot.workspaceId,
-    snapshot.id,
-    history1Timestamp
-  );
-
-  const [history1, history2] = await db.snapshotHistory.findMany({
-    where: {
-      workspaceId: snapshot.workspaceId,
-      id: snapshot.id,
-    },
-  });
-
-  t.is(history1.timestamp.getTime(), history1Timestamp);
-  t.is(history2.timestamp.getTime(), snapshot.updatedAt.getTime());
-
-  // new history data force created with snapshot state before recovered
-  t.deepEqual(history2.blob, Uint8Array.from([1, 1]));
 });

@@ -28,6 +28,14 @@ pub(super) async fn freeze_operation(
   connection: &mut PaymentConnection,
   intent: &OperationIntent,
 ) -> RuntimeResult<FrozenOperation> {
+  freeze_stripe_operation(connection, intent, None).await
+}
+
+pub(super) async fn freeze_stripe_operation(
+  connection: &mut PaymentConnection,
+  intent: &OperationIntent,
+  workspace_auth: Option<(&super::super::permission::PermissionAuthorizer, &str)>,
+) -> RuntimeResult<FrozenOperation> {
   let namespace = intent
     .namespace
     .canonical_key()
@@ -68,6 +76,25 @@ pub(super) async fn freeze_operation(
     .execute(&mut *tx)
     .await
     .map_err(|error| RuntimeError::database("set payment operation timeout", error))?;
+  if let Some((authorizer, actor)) = workspace_auth {
+    let workspace = intent
+      .target_id
+      .as_deref()
+      .ok_or_else(|| RuntimeError::invalid_input("payment workspace is required"))?;
+    super::super::domain_command::lock_workspace(&mut tx, workspace).await?;
+    if !authorizer
+      .authorize_workspace_action_in(
+        &mut tx,
+        workspace,
+        Some(actor),
+        affine_core::access_control::WorkspaceAction::PaymentManage,
+      )
+      .await?
+      .allowed
+    {
+      return Err(RuntimeError::invalid_state("workspace_payment_denied"));
+    }
+  }
   let existing = sqlx::query(
     "SELECT id,status,operation_type,primary_resource_key,resource_keys,target_type,target_id,steps,result FROM \
      payment_operations WHERE provider_namespace=$1 AND intent_id=$2 FOR UPDATE",
@@ -104,15 +131,20 @@ pub(super) async fn freeze_operation(
       .map_err(|error| RuntimeError::database("commit existing payment operation", error))?;
     return Ok(result);
   }
-  let overlap: Option<String> = sqlx::query_scalar(
-    "SELECT id FROM payment_operations WHERE provider_namespace=$1 AND status IN ('pending','blocked') AND \
-     resource_keys && $2 ORDER BY id LIMIT 1 FOR UPDATE",
-  )
-  .bind(&namespace)
-  .bind(&resource_keys)
-  .fetch_optional(&mut *tx)
-  .await
-  .map_err(|error| RuntimeError::database("check unfinished payment resource", error))?;
+  let overlap: Option<String> = if intent.operation_type == "purchase_checkout" {
+    None
+  } else {
+    sqlx::query_scalar(
+      "SELECT id FROM payment_operations WHERE provider_namespace=$1 AND status IN ('pending','blocked') AND \
+       resource_keys && $2 AND operation_type NOT IN ('purchase_checkout','app_store_purchase')
+     ORDER BY id LIMIT 1 FOR UPDATE",
+    )
+    .bind(&namespace)
+    .bind(&resource_keys)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|error| RuntimeError::database("check unfinished payment resource", error))?
+  };
   if overlap.is_some() {
     return Err(RuntimeError::invalid_state("payment resource has unfinished operation"));
   }

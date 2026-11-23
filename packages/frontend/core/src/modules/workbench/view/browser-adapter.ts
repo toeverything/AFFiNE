@@ -45,12 +45,14 @@ export function useBindWorkbenchToBrowserRouter(
         browserLocation.search
       );
 
-      navigate(newBrowserLocation, {
-        state: 'fromView,' + newBrowserLocation.key,
-        replace:
-          update.action === 'REPLACE' ||
-          newBrowserLocation.state === 'fromBrowser',
-      });
+      Promise.resolve(
+        navigate(newBrowserLocation, {
+          state: 'fromView,' + newBrowserLocation.key,
+          replace:
+            update.action === 'REPLACE' ||
+            newBrowserLocation.state === 'fromBrowser',
+        })
+      ).catch(console.error);
     });
   }, [basename, browserLocation, navigate, view]);
 

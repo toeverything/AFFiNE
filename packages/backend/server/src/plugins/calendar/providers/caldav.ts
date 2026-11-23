@@ -849,24 +849,17 @@ export class CalDAVProvider extends CalendarProvider {
       params.preset.authType ?? 'auto'
     );
 
-    const discoveryUrl = await this.resolveDiscoveryUrl(
+    const { discoveryUrl, principalUrl } = await this.fetchCurrentUserPrincipal(
       client,
       params.preset.serverUrl
     );
-    const principalUrl = await this.fetchCurrentUserPrincipal(
-      client,
-      discoveryUrl
-    );
     const calendarHomeUrl = await this.fetchCalendarHomeSet(
       client,
-      principalUrl,
-      discoveryUrl
+      principalUrl
     );
-    const providerAccountId =
-      principalUrl || `${params.username}@${new URL(discoveryUrl).hostname}`;
 
     return {
-      providerAccountId,
+      providerAccountId: principalUrl,
       serverUrl: discoveryUrl,
       principalUrl,
       calendarHomeUrl,
@@ -1005,25 +998,9 @@ export class CalDAVProvider extends CalendarProvider {
     return [403, 404, 409, 410, 501].includes(status);
   }
 
-  private async resolveDiscoveryUrl(client: CalDAVClient, serverUrl: string) {
-    const wellKnownUrl = new URL('/.well-known/caldav', serverUrl).toString();
-    const response = await client.request(wellKnownUrl, { method: 'GET' });
-    if (response.ok) {
-      return response.url;
-    }
-    if ([400, 404, 405, 501].includes(response.status)) {
-      return serverUrl;
-    }
-    const text = await response.text();
-    throw new CalendarProviderRequestError({
-      status: response.status,
-      message: text,
-    });
-  }
-
   private async fetchCurrentUserPrincipal(
     client: CalDAVClient,
-    baseUrl: string
+    serverUrl: string
   ) {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <D:propfind xmlns:D="DAV:">
@@ -1032,14 +1009,22 @@ export class CalDAVProvider extends CalendarProvider {
   </D:prop>
 </D:propfind>`;
 
-    const response = await client.request(baseUrl, {
+    const init: RequestInit = {
       method: 'PROPFIND',
       headers: {
         Depth: '0',
         'Content-Type': 'application/xml; charset=utf-8',
       },
       body,
-    });
+    };
+    const wellKnownUrl = new URL('/.well-known/caldav', serverUrl).toString();
+    let response = await client.request(wellKnownUrl, init);
+    if (
+      [400, 404, 405, 501].includes(response.status) &&
+      wellKnownUrl !== serverUrl
+    ) {
+      response = await client.request(serverUrl, init);
+    }
 
     const text = await response.text();
     if (!response.ok) {
@@ -1054,7 +1039,7 @@ export class CalDAVProvider extends CalendarProvider {
     const prop = getPropstat(first);
     const principal = extractHrefValue(
       prop?.['current-user-principal'] ?? prop?.['principal-url'],
-      baseUrl
+      response.url
     );
     if (!principal) {
       throw new CalendarProviderRequestError({
@@ -1062,13 +1047,12 @@ export class CalDAVProvider extends CalendarProvider {
         message: 'CalDAV principal not found.',
       });
     }
-    return principal;
+    return { discoveryUrl: response.url, principalUrl: principal };
   }
 
   private async fetchCalendarHomeSet(
     client: CalDAVClient,
-    principalUrl: string,
-    baseUrl: string
+    principalUrl: string
   ) {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <D:propfind xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
@@ -1097,7 +1081,7 @@ export class CalDAVProvider extends CalendarProvider {
     const { responses } = parseMultistatus(text);
     const first = responses[0];
     const prop = getPropstat(first);
-    const home = extractHrefValue(prop?.['calendar-home-set'], baseUrl);
+    const home = extractHrefValue(prop?.['calendar-home-set'], response.url);
     if (!home) {
       throw new CalendarProviderRequestError({
         status: 500,

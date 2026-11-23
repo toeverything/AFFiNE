@@ -11,10 +11,10 @@
     "@sentry/react": "^10.53.1",
     "nanoid": "^5.1.6",
     "react": "^19.2.1",
-    "react-router-dom": "^6.30.4"
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@types/react": "^19.0.1",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.11"
   }
 }

@@ -22,6 +22,7 @@ struct Fixture {
 async fn setup() -> Option<Fixture> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
+  crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
   assert!(
     crate::runtime::migrations::migrate_embedding_tables(&pool)
       .await
@@ -125,6 +126,7 @@ async fn setup() -> Option<Fixture> {
 
 async fn teardown(fixture: &Fixture) {
   for table in [
+    "runtime_doc_creators",
     "updates",
     "snapshot_histories",
     "snapshots",
@@ -186,6 +188,14 @@ fn root_with_avatar(page_doc_id: &str, avatar_key: &str) -> Vec<u8> {
   page.insert("id".to_string(), page_doc_id).unwrap();
   pages.push(page).unwrap();
   meta.insert("pages".to_string(), pages).unwrap();
+  let mut image = root.create_map().unwrap();
+  image.insert("sys:flavour".into(), "affine:image").unwrap();
+  image.insert("prop:sourceId".into(), "arbitrary-completed").unwrap();
+  root
+    .get_or_create_map("blocks")
+    .unwrap()
+    .insert("image".into(), image)
+    .unwrap();
   root.encode_update_v1().unwrap()
 }
 
@@ -241,6 +251,123 @@ async fn source_acl_history_and_live_ledger_are_enforced_together() {
     service.manifest(None, current(&fixture)).await.unwrap().entries.len(),
     1
   );
+  sqlx::query("INSERT INTO workspace_members(workspace_id,user_id,role,state) VALUES($1,$2,'member','active')")
+    .bind(&fixture.workspace_id)
+    .bind(&fixture.direct_user_id)
+    .execute(&fixture.pool)
+    .await
+    .unwrap();
+  let userdata_id = affine_core::access_control::userdata_document_id(
+    &fixture.member_user_id,
+    &fixture.workspace_id,
+    affine_core::access_control::UserdataTable::Settings,
+  )
+  .unwrap();
+  let global_id = format!("db${}$folders", fixture.workspace_id);
+  let later_id = format!("zz-ordinary-{}", Uuid::new_v4().simple());
+  let invalid_id = format!("db${}$invalid00", fixture.workspace_id);
+  let mut sources = vec![
+    (userdata_id.clone(), "userdata-key"),
+    (global_id.clone(), "global-key"),
+    (later_id.clone(), "later-ordinary-key"),
+  ];
+  sources.extend((0..SOURCE_PAGE_LIMIT * 2 + 2).map(|index| {
+    (
+      format!("db${}$invalid{index:02}", fixture.workspace_id),
+      "invalid-reserved-key",
+    )
+  }));
+  let timestamp = chrono::DateTime::from_timestamp_millis(fixture.history_timestamp_ms).unwrap();
+  for (doc_id, key) in sources {
+    let blob = affine_doc_loader::build_full_doc("Reserved source", &format!("![ref](blob://{key})"), &doc_id).unwrap();
+    sqlx::query(
+      "WITH snapshot AS (INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,now()) RETURNING \
+       workspace_id,guid,blob) INSERT INTO snapshot_histories(workspace_id,guid,blob,timestamp,expired_at) SELECT \
+       workspace_id,guid,blob,$4,now()+interval '1 day' FROM snapshot",
+    )
+    .bind(&fixture.workspace_id)
+    .bind(&doc_id)
+    .bind(blob)
+    .bind(timestamp)
+    .execute(&fixture.pool)
+    .await
+    .unwrap();
+  }
+  for key in [
+    "userdata-key",
+    "global-key",
+    "later-ordinary-key",
+    "invalid-reserved-key",
+  ] {
+    sqlx::query("INSERT INTO blobs(workspace_id,key,size,mime,status) VALUES($1,$2,7,'image/png','completed')")
+      .bind(&fixture.workspace_id)
+      .bind(key)
+      .execute(&fixture.pool)
+      .await
+      .unwrap();
+  }
+  for actor in [&fixture.member_user_id, &fixture.direct_user_id] {
+    for (doc_id, key, allowed) in [
+      (&userdata_id, "userdata-key", actor == &fixture.member_user_id),
+      (&global_id, "global-key", true),
+      (&later_id, "later-ordinary-key", true),
+      (&invalid_id, "invalid-reserved-key", false),
+    ] {
+      for source in [
+        SourceIdentity::CurrentDoc {
+          workspace_id: fixture.workspace_id.clone(),
+          doc_id: doc_id.clone(),
+        },
+        SourceIdentity::History {
+          workspace_id: fixture.workspace_id.clone(),
+          doc_id: doc_id.clone(),
+          timestamp_ms: fixture.history_timestamp_ms,
+        },
+      ] {
+        let result = service.manifest(Some(actor), source).await;
+        if allowed {
+          assert_eq!(result.unwrap().entries[0].key, key);
+        } else {
+          assert!(result.is_err(), "reserved source must deny {actor}");
+        }
+      }
+    }
+    let entries = tokio::time::timeout(Duration::from_secs(10), async {
+      let mut entries = Vec::new();
+      let mut cursor = None;
+      let mut cursors = HashSet::new();
+      loop {
+        let page = service
+          .workspace_manifest(WorkspaceManifestRequestV1 {
+            actor_user_id: actor.clone(),
+            workspace_id: fixture.workspace_id.clone(),
+            cursor,
+            limit: Some(1),
+          })
+          .await
+          .unwrap();
+        entries.extend(page.entries);
+        let Some(next) = page.next_cursor else {
+          break;
+        };
+        assert!(
+          cursors.insert(next.clone()),
+          "denied source pages must advance the cursor"
+        );
+        cursor = Some(next);
+      }
+      entries
+    })
+    .await
+    .unwrap();
+    let keys = entries.iter().map(|entry| entry.key.as_str()).collect::<HashSet<_>>();
+    assert!(keys.contains("completed-key"));
+    assert!(keys.contains("global-key"));
+    assert!(keys.contains("later-ordinary-key"));
+    assert!(!keys.contains("invalid-reserved-key"));
+    assert_eq!(keys.contains("userdata-key"), actor == &fixture.member_user_id);
+    assert_eq!(entries.len(), if actor == &fixture.member_user_id { 4 } else { 3 });
+  }
   teardown(&fixture).await;
 }
 
@@ -260,7 +387,7 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
     .execute(&fixture.pool)
     .await
     .unwrap();
-  for key in ["avatar-old", "avatar-new", "arbitrary-completed"] {
+  for key in ["avatar-old", "avatar-new", "pending-avatar", "arbitrary-completed"] {
     sqlx::query("INSERT INTO blobs(workspace_id,key,size,mime,status) VALUES($1,$2,7,'image/png','completed')")
       .bind(&fixture.workspace_id)
       .bind(key)
@@ -295,11 +422,23 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
     ["avatar-old"]
   );
 
+  let peer = Doc::with_client(42);
+  let mut peer_meta = peer.get_or_create_map("meta").unwrap();
+  peer_meta.insert("name".into(), "missing").unwrap();
+  let state = peer.get_state_vector();
+  peer_meta.insert("avatar".into(), "pending-avatar").unwrap();
+  let delta = peer.encode_state_as_update_v1(&state).unwrap();
+  let snapshot = root_with_avatar(&fixture.doc_id, "avatar-new");
+  let partial_root = y_octo::merge_updates_v1([snapshot.as_slice(), delta.as_slice()])
+    .unwrap()
+    .encode_v1()
+    .unwrap();
+  assert!(Doc::try_from_binary_v1(&partial_root).unwrap().has_pending_updates());
   sqlx::query(
     "UPDATE snapshots SET blob=$2,updated_at=updated_at + interval '1 millisecond' WHERE workspace_id=$1 AND guid=$1",
   )
   .bind(&fixture.workspace_id)
-  .bind(root_with_avatar(&fixture.doc_id, "avatar-new"))
+  .bind(partial_root)
   .execute(&fixture.pool)
   .await
   .unwrap();
@@ -315,12 +454,12 @@ async fn workspace_root_uses_workspace_acl_and_only_exposes_current_avatar_ref()
       .collect::<Vec<_>>(),
     ["avatar-new"]
   );
-  assert!(
-    service
-      .open_read(Some(&fixture.member_user_id), source, "arbitrary-completed".to_string())
-      .await
-      .is_err()
-  );
+  for denied in ["avatar-old", "pending-avatar", "arbitrary-completed"] {
+    assert!(matches!(
+      service.open_read(Some(&fixture.member_user_id), source.clone(), denied.into()).await,
+      Err(RuntimeError::InvalidInput(code)) if code == "blob_not_referenced"
+    ));
+  }
   teardown(&fixture).await;
 }
 
@@ -380,8 +519,15 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
   let publisher = InvalidationRuntime::start(&config, false, Arc::new(NoopInvalidationTarget)).await;
   tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
-  let redis_update =
-    affine_doc_loader::update_doc(&initial_blob, "![redis](blob://redis-key)", &fixture.doc_id).unwrap();
+  let initial_markdown = affine_doc_loader::export_markdown_source(&initial_blob, &fixture.doc_id, None)
+    .unwrap()
+    .markdown;
+  let redis_update = affine_doc_loader::update_doc(
+    &initial_blob,
+    &format!("{initial_markdown}\n![redis](blob://redis-key)"),
+    &fixture.doc_id,
+  )
+  .unwrap();
   append_updates(
     &fixture.pool,
     Some(publisher.clone()),
@@ -389,6 +535,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![redis_update.into()],
+    None,
     None,
   )
   .await
@@ -413,8 +560,15 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     .authorize_and_load(Some(&fixture.member_user_id), current(&fixture))
     .await
     .unwrap();
-  let loss_update =
-    affine_doc_loader::update_doc(&current_source.blob, "![loss](blob://loss-key)", &fixture.doc_id).unwrap();
+  let current_markdown = affine_doc_loader::export_markdown_source(&current_source.blob, &fixture.doc_id, None)
+    .unwrap()
+    .markdown;
+  let loss_update = affine_doc_loader::update_doc(
+    &current_source.blob,
+    &format!("{current_markdown}\n![loss](blob://loss-key)"),
+    &fixture.doc_id,
+  )
+  .unwrap();
   append_updates(
     &fixture.pool,
     None,
@@ -422,6 +576,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
     fixture.workspace_id.clone(),
     fixture.doc_id.clone(),
     vec![loss_update.into()],
+    None,
     None,
   )
   .await
@@ -436,7 +591,7 @@ async fn doc_append_invalidation_fences_inflight_refresh_and_stamp_covers_redis_
 }
 
 #[tokio::test]
-async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshots() {
+async fn workspace_page_uses_body_identity_independently_of_root_directory() {
   let _guard = BLOB_ACCESS_TEST_LOCK.lock().await;
   let Some(fixture) = setup().await else {
     return;
@@ -488,6 +643,15 @@ async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshot
     .execute(&fixture.pool)
     .await
     .unwrap();
+  sqlx::query(
+    "INSERT INTO workspace_pages(workspace_id,page_id,lifecycle_state,lifecycle_changed_at) \
+     VALUES($1,$2,'trashed',now())",
+  )
+  .bind(&fixture.workspace_id)
+  .bind(&orphan_id)
+  .execute(&fixture.pool)
+  .await
+  .unwrap();
   let output = service(&fixture)
     .workspace_manifest(WorkspaceManifestRequestV1 {
       actor_user_id: fixture.member_user_id.clone(),
@@ -509,7 +673,7 @@ async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshot
       .is_err(),
     "a direct document grant must not bypass the workspace member-only manifest gate"
   );
-  assert!(output.entries.iter().all(|entry| entry.key != "orphan-key"));
+  assert!(output.entries.iter().any(|entry| entry.key == "orphan-key"));
   let same_key_sources = output
     .entries
     .iter()
@@ -564,7 +728,7 @@ async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshot
     let Some(next) = page.next_cursor else { break };
     cursor = Some(next);
   }
-  assert_eq!(paged.len(), 5);
+  assert_eq!(paged.len(), 6);
   assert_eq!(paged.iter().filter(|(_, key)| key == "completed-key").count(), 2);
 
   let mut complete_root = Doc::default();
@@ -621,7 +785,7 @@ async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshot
     })
     .await
     .unwrap();
-  assert_eq!(bounded.entries.len(), source_count + 5);
+  assert_eq!(bounded.entries.len(), source_count + 6);
   assert!(bounded.next_cursor.is_none());
 
   sqlx::query("DELETE FROM doc_grants WHERE workspace_id=$1 AND doc_id=$2 AND principal_id=$3")
@@ -674,16 +838,45 @@ async fn workspace_page_uses_complete_root_live_set_and_excludes_orphan_snapshot
   .execute(&fixture.pool)
   .await
   .unwrap();
-  assert!(
-    service(&fixture)
-      .workspace_manifest(WorkspaceManifestRequestV1 {
-        actor_user_id: fixture.member_user_id.clone(),
-        workspace_id: fixture.workspace_id.clone(),
-        cursor: None,
-        limit: Some(100),
-      })
+  let mut transaction = fixture.pool.begin().await.unwrap();
+  let ids = BlobAccessStore::page_doc_ids(&mut transaction, &fixture.workspace_id, None, false, 100)
+    .await
+    .unwrap();
+  assert!(ids.contains(&orphan_id));
+  assert!(ids.contains(&live_doc_id));
+  let full = crate::runtime::document_state::load_workspace_doc_states_in(&mut transaction, &fixture.workspace_id)
+    .await
+    .unwrap();
+  assert_eq!(ids, full.into_iter().map(|state| state.doc_id).collect::<Vec<_>>());
+  let mut cursor = None;
+  let mut paged_ids = Vec::new();
+  loop {
+    let page = BlobAccessStore::page_doc_ids(&mut transaction, &fixture.workspace_id, cursor.as_deref(), false, 2)
       .await
-      .is_err()
+      .unwrap();
+    if page.is_empty() {
+      break;
+    }
+    cursor = page.last().cloned();
+    paged_ids.extend(page);
+  }
+  assert_eq!(paged_ids, ids);
+  transaction.commit().await.unwrap();
+  let manifest = service(&fixture)
+    .workspace_manifest(WorkspaceManifestRequestV1 {
+      actor_user_id: fixture.member_user_id.clone(),
+      workspace_id: fixture.workspace_id.clone(),
+      cursor: None,
+      limit: Some(100),
+    })
+    .await
+    .unwrap();
+  assert_eq!(manifest.entries.len(), bounded.entries.len());
+  assert!(
+    manifest
+      .entries
+      .iter()
+      .all(|entry| entry.source.doc_id() != fixture.workspace_id)
   );
   teardown(&fixture).await;
 }

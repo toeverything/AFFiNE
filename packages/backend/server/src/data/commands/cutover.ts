@@ -3,11 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 
 interface CutoverValidationResult {
   normalizedUnsignedSelfhostEntitlements: number;
-  normalizedMalformedBlobReservations: number;
-  normalizedMalformedCommentAttachmentReservations: number;
   ownerlessWorkspaces: number;
-  malformedBlobReservations: number;
-  malformedCommentAttachmentReservations: number;
   activeUnsignedSelfhostEntitlements: number;
 }
 
@@ -41,29 +37,11 @@ export class CutoverCommand {
                   AND status IN ('active', 'grace')
               `
             : 0;
-        const normalizedMalformedBlobReservations = await tx.$executeRaw`
-          UPDATE blobs
-          SET deleted_at = clock_timestamp()
-          WHERE status = 'pending'
-            AND reservation_expires_at IS NULL
-            AND deleted_at IS NULL
-        `;
-        const normalizedMalformedCommentAttachmentReservations =
-          await tx.$executeRaw`
-            UPDATE comment_attachments
-            SET deleted_at = clock_timestamp()
-            WHERE status = 'pending'
-              AND reservation_expires_at IS NULL
-              AND deleted_at IS NULL
-          `;
-
         const [validation] = await tx.$queryRaw<
           Array<
             Omit<
               CutoverValidationResult,
-              | 'normalizedUnsignedSelfhostEntitlements'
-              | 'normalizedMalformedBlobReservations'
-              | 'normalizedMalformedCommentAttachmentReservations'
+              'normalizedUnsignedSelfhostEntitlements'
             >
           >
         >`
@@ -81,20 +59,6 @@ export class CutoverCommand {
             ) AS "ownerlessWorkspaces",
             (
               SELECT count(*)::int
-              FROM blobs
-              WHERE status = 'pending'
-                AND reservation_expires_at IS NULL
-                AND deleted_at IS NULL
-            ) AS "malformedBlobReservations",
-            (
-              SELECT count(*)::int
-              FROM comment_attachments
-              WHERE status = 'pending'
-                AND reservation_expires_at IS NULL
-                AND deleted_at IS NULL
-            ) AS "malformedCommentAttachmentReservations",
-            (
-              SELECT count(*)::int
               FROM entitlements
               WHERE ${deployment} = 'selfhosted'
                 AND source = 'selfhost_license'
@@ -109,8 +73,6 @@ export class CutoverCommand {
 
         const result = {
           normalizedUnsignedSelfhostEntitlements,
-          normalizedMalformedBlobReservations,
-          normalizedMalformedCommentAttachmentReservations,
           ...validation,
         };
         const failures = Object.entries(result).filter(
@@ -124,6 +86,50 @@ export class CutoverCommand {
           );
         }
 
+        await tx.$executeRaw`
+          CREATE TABLE IF NOT EXISTS storage_reconciliation_checkpoints (
+            kind TEXT NOT NULL,
+            scope TEXT NOT NULL,
+            status TEXT NOT NULL,
+            cursor JSONB NOT NULL DEFAULT '{}',
+            last_key TEXT,
+            last_sid INTEGER,
+            completed_at TIMESTAMPTZ(3),
+            updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            metadata JSONB NOT NULL DEFAULT '{}',
+            PRIMARY KEY (kind, scope)
+          )
+        `;
+
+        await tx.$executeRaw`
+          INSERT INTO storage_reconciliation_checkpoints (
+            kind,
+            scope,
+            status,
+            completed_at,
+            updated_at,
+            metadata
+          )
+          VALUES (
+            'schema_baseline_0275',
+            'global',
+            'completed',
+            clock_timestamp(),
+            clock_timestamp(),
+            jsonb_build_object(
+              'baselineVersion',
+              '0.27.5',
+              'deployment',
+              ${deployment}::text
+            )
+          )
+          ON CONFLICT (kind, scope) DO UPDATE SET
+            status = EXCLUDED.status,
+            completed_at = EXCLUDED.completed_at,
+            updated_at = EXCLUDED.updated_at,
+            metadata = EXCLUDED.metadata
+        `;
+
         return result;
       },
       {
@@ -134,7 +140,7 @@ export class CutoverCommand {
     );
 
     this.logger.log(
-      `Canonical cutover validation passed for ${deployment}; normalized ${result.normalizedUnsignedSelfhostEntitlements} unsigned self-hosted entitlements, ${result.normalizedMalformedBlobReservations} blob reservations, and ${result.normalizedMalformedCommentAttachmentReservations} comment attachment reservations.`
+      `Canonical cutover validation passed for ${deployment}; normalized ${result.normalizedUnsignedSelfhostEntitlements} unsigned self-hosted entitlements.`
     );
     return result;
   }

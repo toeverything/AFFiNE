@@ -8,7 +8,7 @@ mod subscription;
 
 use affine_core::access_control::{
   AccessContext, AccessGrant, Deployment as CoreDeployment, EntitlementFact, QuotaSubject, TargetType,
-  resolve_entitlements, resolve_quota_subject,
+  resolve_quota_subject,
 };
 use chrono::{DateTime, Utc};
 use license::{
@@ -24,7 +24,7 @@ use sqlx::{Postgres, Row, Transaction};
 
 use super::{
   BackendRuntime, InvalidationHintV1, RuntimeError, RuntimeResult, entitlement_input_error, parse_quantity,
-  parse_target_type,
+  parse_target_type, payment::has_paid_ai_subscription,
 };
 use crate::{AFFINE_PRO_PUBLIC_KEY, license_import::normalize_license, runtime::Deployment};
 
@@ -107,7 +107,7 @@ fn resolve_grant(
       signed_payload: row.signed_payload.as_deref(),
     })
     .collect::<Vec<_>>();
-  resolve_entitlements(
+  crate::license_v2::resolve_entitlements_with_v2(
     &AccessContext {
       deployment: match deployment {
         Deployment::Cloud => CoreDeployment::Cloud,

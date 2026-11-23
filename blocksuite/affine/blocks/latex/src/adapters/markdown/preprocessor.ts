@@ -32,16 +32,6 @@ function normalizeSingleLineBlockLatex(text: string) {
   );
 }
 
-function protectInlineDollarLatex(text: string, latexExpressions: string[]) {
-  return text.replace(
-    /(^|[^\\$])\$(?!\$|\s)((?:\\.|[^\n\\$])*?[^\s\\$])\$(?!\$)/g,
-    (_, prefix: string, latex: string) => {
-      latexExpressions.push(`$${latex}$`);
-      return `${prefix}<<LATEX_${latexExpressions.length - 1}>>`;
-    }
-  );
-}
-
 /**
  * Preprocess the content to protect code blocks and LaTeX expressions
  * reference issue: https://github.com/remarkjs/react-markdown/issues/785
@@ -63,22 +53,22 @@ function preprocessLatex(content: string) {
 
   preprocessedContent = normalizeSingleLineBlockLatex(preprocessedContent);
 
-  // Protect existing LaTeX expressions
+  // Protect existing LaTeX expressions. Inline delimiters use Pandoc's
+  // whitespace and digit rules, with backslash parity preserved.
   const latexExpressions: string[] = [];
   preprocessedContent = preprocessedContent.replace(
-    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\))/g,
+    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\(.*?\\\)|(?<!\\)(?:\\\\)*\$(?!\s)(?:[^\n$\\]|\\.)*?(?<!\s)\$(?!\d))/g,
     match => {
       latexExpressions.push(match);
       return `<<LATEX_${latexExpressions.length - 1}>>`;
     }
   );
-  preprocessedContent = protectInlineDollarLatex(
-    preprocessedContent,
-    latexExpressions
-  );
 
-  // Escape dollar signs that are likely currency indicators
-  preprocessedContent = preprocessedContent.replace(/\$(?=\d)/g, '\\$');
+  // An odd backslash run already escapes the dollar sign.
+  preprocessedContent = preprocessedContent.replace(
+    /(?<!\\)((?:\\\\)*)\$(?=\d)/g,
+    '$1\\$'
+  );
 
   // Restore LaTeX expressions
   preprocessedContent = preprocessedContent.replace(

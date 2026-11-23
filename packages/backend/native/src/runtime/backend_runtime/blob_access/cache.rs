@@ -5,16 +5,44 @@ use std::{
   time::{Duration, Instant},
 };
 
-use affine_doc_loader::blob_refs::{MAX_SOURCE_BINARY_BYTES, live_blob_keys};
+use affine_doc_loader::blob_refs::{BlobRefProjectionError, MAX_SOURCE_BINARY_BYTES, live_blob_keys};
 use tokio::sync::{Mutex, OwnedSemaphorePermit, Semaphore};
 
-use super::{SourceIdentity, types::LoadedSource};
+use super::{SourceIdentity, blocking, types::LoadedSource};
 use crate::runtime::{
   RuntimeError, RuntimeResult, backend_runtime::permission::PermissionTelemetry, blob_ref_projection_error_code,
 };
 
 const DEFAULT_MAX_BYTES: usize = 64 * 1024 * 1024;
 const HARD_TTL: Duration = Duration::from_secs(5 * 60);
+
+fn workspace_avatar_keys(blob: Vec<u8>) -> Result<Vec<Box<str>>, BlobRefProjectionError> {
+  use y_octo::{Any, Doc, ReadDoc, ReadError, ReadValue, Value};
+
+  let blob = Arc::<[u8]>::from(blob);
+  let avatar = match ReadDoc::from_full_update_v1(Arc::clone(&blob)) {
+    Ok(doc) => match doc.map("meta").and_then(|meta| meta.get("avatar")) {
+      Some(ReadValue::Any(value)) => value.as_str().map(str::to_owned),
+      Some(ReadValue::Text(text)) => Some(text.to_string()),
+      _ => None,
+    },
+    Err(ReadError::IncompleteSnapshot(_)) => {
+      let doc = Doc::try_from_binary_v1(&blob).map_err(|_| BlobRefProjectionError::InvalidBinary)?;
+      match doc.get_map("meta").ok().and_then(|meta| meta.get("avatar")) {
+        Some(Value::Any(Any::String(key))) => Some(key),
+        Some(Value::Text(text)) => Some(text.to_string()),
+        _ => None,
+      }
+    }
+    Err(ReadError::ResourceLimit(_)) => return Err(BlobRefProjectionError::Unsupported),
+    Err(ReadError::InvalidUpdate(_)) => return Err(BlobRefProjectionError::InvalidBinary),
+  };
+  match avatar {
+    Some(key) if key.len() > 1024 => Err(BlobRefProjectionError::KeyTooLarge),
+    Some(key) if !key.is_empty() => Ok(vec![key.into_boxed_str()]),
+    _ => Ok(Vec::new()),
+  }
+}
 
 #[derive(Clone)]
 struct Entry {
@@ -138,15 +166,21 @@ impl BlobRefCache {
       self.remove_flight(&identity, &stamp, &flight).await;
       return Ok(keys);
     }
-    let Ok(_parse) = self.parse_slots.clone().acquire_owned().await else {
+    let Ok(permit) = self.parse_slots.clone().acquire_owned().await else {
       self.remove_flight(&identity, &stamp, &flight).await;
       return Err(RuntimeError::invalid_state("blob_ref_parse_unavailable"));
     };
     let workspace_root = identity.is_workspace_root();
-    let parsed = tokio::task::spawn_blocking(move || live_blob_keys(blob, workspace_root)).await;
-    drop(_parse);
-    let (keys, parser) = match parsed {
-      Ok(Ok((keys, parser))) => (Arc::<[Box<str>]>::from(keys), parser),
+    let parsed = blocking::spawn(permit, move || {
+      if workspace_root {
+        workspace_avatar_keys(blob)
+      } else {
+        live_blob_keys(blob, false)
+      }
+    })
+    .await;
+    let keys = match parsed {
+      Ok(Ok(keys)) => Arc::<[Box<str>]>::from(keys),
       Ok(Err(error)) => {
         let reason = blob_ref_projection_error_code(error);
         self.remove_flight(&identity, &stamp, &flight).await;
@@ -159,7 +193,16 @@ impl BlobRefCache {
         return Err(RuntimeError::invalid_state("parse_task_failed"));
       }
     };
-    self.record("parse", parser.label()).await;
+    self
+      .record(
+        "parse",
+        if workspace_root {
+          "workspace_avatar"
+        } else {
+          "immutable"
+        },
+      )
+      .await;
     let result = confirm().await;
     if result.is_ok() {
       self
@@ -430,41 +473,79 @@ mod tests {
     assert_eq!(cache.generations().await, 0);
   }
 
-  #[tokio::test]
-  async fn concurrent_misses_share_one_parsed_result() {
-    let cache = Arc::new(BlobRefCache::with_limits(4096, 1, 1));
-    let source = loaded_source("stamp", "blob");
-    let confirmation_started = Arc::new(tokio::sync::Notify::new());
-    let release_confirmation = Arc::new(tokio::sync::Notify::new());
-    let left = {
-      let cache = Arc::clone(&cache);
-      let source = source.clone();
-      let confirmation_started = Arc::clone(&confirmation_started);
-      let release_confirmation = Arc::clone(&release_confirmation);
-      tokio::spawn(async move {
-        cache
-          .refs(source, || async {
-            confirmation_started.notify_one();
-            release_confirmation.notified().await;
-            Ok(())
+  #[test]
+  fn shared_parses_hold_capacity_through_cancellation() {
+    tokio::runtime::Builder::new_current_thread()
+      .enable_all()
+      .max_blocking_threads(1)
+      .build()
+      .unwrap()
+      .block_on(async {
+        let cache = Arc::new(BlobRefCache::with_limits(4096, 1, 1));
+        let source = loaded_source("stamp", "blob");
+        let confirmation_started = Arc::new(tokio::sync::Notify::new());
+        let release_confirmation = Arc::new(tokio::sync::Notify::new());
+        let left = {
+          let cache = Arc::clone(&cache);
+          let source = source.clone();
+          let confirmation_started = Arc::clone(&confirmation_started);
+          let release_confirmation = Arc::clone(&release_confirmation);
+          tokio::spawn(async move {
+            cache
+              .refs(source, || async {
+                confirmation_started.notify_one();
+                release_confirmation.notified().await;
+                Ok(())
+              })
+              .await
           })
+        };
+        confirmation_started.notified().await;
+        let right = {
+          let cache = Arc::clone(&cache);
+          let source = source.clone();
+          tokio::spawn(async move { cache.refs(source, || async { Ok(()) }).await })
+        };
+        tokio::task::yield_now().await;
+        assert_eq!(cache.flights().await, 1);
+        release_confirmation.notify_one();
+        let left = left.await.unwrap().unwrap();
+        let right = right.await.unwrap().unwrap();
+        assert!(Arc::ptr_eq(&left, &right));
+        assert!(cache.hit(&source.identity, &source.stamp).await.is_some());
+        assert_eq!(cache.flights().await, 0);
+        let (release_worker, blocked_worker) = std::sync::mpsc::channel();
+        let (worker_started, worker_entered) = tokio::sync::oneshot::channel();
+        let worker = tokio::task::spawn_blocking(move || {
+          worker_started.send(()).unwrap();
+          blocked_worker.recv().unwrap();
+        });
+        worker_entered.await.unwrap();
+        let cancelled = {
+          let cache = Arc::clone(&cache);
+          tokio::spawn(async move {
+            cache
+              .refs(loaded_source("cancelled", "other-blob"), || async { Ok(()) })
+              .await
+          })
+        };
+        tokio::time::timeout(Duration::from_secs(1), async {
+          while cache.parse_slots.available_permits() != 0 {
+            tokio::task::yield_now().await;
+          }
+        })
+        .await
+        .unwrap();
+        cancelled.abort();
+        assert!(cancelled.await.unwrap_err().is_cancelled());
+        assert!(cache.parse_slots.clone().try_acquire_owned().is_err());
+        release_worker.send(()).unwrap();
+        worker.await.unwrap();
+        let _permit = tokio::time::timeout(Duration::from_secs(1), cache.parse_slots.clone().acquire_owned())
           .await
-      })
-    };
-    confirmation_started.notified().await;
-    let right = {
-      let cache = Arc::clone(&cache);
-      let source = source.clone();
-      tokio::spawn(async move { cache.refs(source, || async { Ok(()) }).await })
-    };
-    tokio::task::yield_now().await;
-    assert_eq!(cache.flights().await, 1);
-    release_confirmation.notify_one();
-    let left = left.await.unwrap().unwrap();
-    let right = right.await.unwrap().unwrap();
-    assert!(Arc::ptr_eq(&left, &right));
-    assert!(cache.hit(&source.identity, &source.stamp).await.is_some());
-    assert_eq!(cache.flights().await, 0);
+          .unwrap()
+          .unwrap();
+      });
   }
 
   #[tokio::test]

@@ -40,7 +40,7 @@ const MobileRouteContainer = ({ route }: { route: Route }) => {
 };
 
 const warpedRoutes = workbenchRoutes.map((originalRoute: RouteObject) => {
-  if (originalRoute.Component || !originalRoute.lazy) {
+  if (originalRoute.Component || typeof originalRoute.lazy !== 'function') {
     return originalRoute;
   }
 

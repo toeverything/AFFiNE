@@ -4,30 +4,31 @@ mod capabilities;
 mod config;
 mod current_doc;
 mod doc_blob_refs;
-mod document_cleanup;
-mod document_cleanup_execution;
 mod workspace_cleanup;
 mod workspace_cleanup_checkpoint;
 mod workspace_cleanup_namespace;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 pub use capabilities::StorageProviderCapabilities;
 use capabilities::storage_provider_capabilities;
-use config::StorageRuntimeConfig;
+pub(in crate::runtime) use config::StorageRuntimeConfig;
 pub(super) use current_doc::load_current_doc;
-pub(in crate::runtime) use current_doc::{CurrentDoc, CurrentDocUpdate, merge_current_doc};
-use current_doc::{load_canonical_doc, load_workspace_canonical_doc_ids, load_workspace_live_doc_ids};
+pub(in crate::runtime) use current_doc::{
+  CurrentDoc, CurrentDocUpdate, load_current_doc_in, load_current_doc_parts, load_current_doc_parts_in,
+  merge_current_doc,
+};
 use napi::bindgen_prelude::Buffer;
+use serde_json::Value;
 use sqlx::{PgPool, Row, postgres::PgPoolOptions};
 use tokio::sync::Mutex;
 
 pub(super) use super::{
-  BlobRefProjectionError, RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs,
+  RuntimeError, RuntimeResult, blob_ref_projection_error_code, extract_blob_refs, load_workspace_doc_states_in,
+  lock_current_doc_read,
   migrations::migrate_runtime_tables,
   napi_error, to_napi_error,
   types::{
-    RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult,
-    RuntimeDocumentCleanupExecuteResult, RuntimeDocumentCleanupReconcileResult, RuntimeMultipartUploadInit,
+    RuntimeBlobCleanupResult, RuntimeBlobMetadataBackfillResult, RuntimeDocBlobRefsResult, RuntimeMultipartUploadInit,
     RuntimeMultipartUploadPart, RuntimeObjectGetResult, RuntimeObjectMetadata, RuntimeObjectStoragePutOptions,
     RuntimePresignedObjectRequest, RuntimeWorkspaceStorageReconcileResult,
   },
@@ -39,19 +40,12 @@ use super::{
     types::{ObjectDeleteOutcome, ObjectKey, ObjectLocator, ObjectPrefix, StorageScope},
   },
 };
+use crate::runtime::config::{ServerConfig, ServerConfigHandle};
 
 type Result<T> = RuntimeResult<T>;
 
-#[derive(sqlx::FromRow)]
-pub(super) struct DocumentCleanupCandidate {
-  pub(super) workspace_id: String,
-  pub(super) doc_id: String,
-  pub(super) last_doc_activity_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-use document_cleanup_execution::{DocumentCleanupOutcome, execute_document_cleanup_candidate};
 use workspace_cleanup_checkpoint::{
-  delete_orphan_storage_rows, load_integer_cursor, load_object_cursor, mark_checkpoint_failed,
+  delete_orphan_storage_rows, embedding_tables_exist, load_integer_cursor, load_object_cursor, mark_checkpoint_failed,
   reconcile_orphan_storage_rows, save_integer_cursor, save_object_cursor,
 };
 use workspace_cleanup_namespace::{
@@ -67,18 +61,27 @@ pub struct StorageRuntimeHealth {
   pub bucket: Option<String>,
 }
 
+#[napi_derive::napi(object)]
+pub struct StorageUploadUrlConfig {
+  pub proxy_upload: bool,
+  pub url_prefix: Option<String>,
+}
+
 #[napi_derive::napi]
 pub struct StorageRuntime {
   config: RwLock<StorageRuntimeConfig>,
+  server_config: Arc<ServerConfig>,
   pool: Mutex<Option<PgPool>>,
 }
 
 #[napi_derive::napi]
 impl StorageRuntime {
   #[napi(constructor)]
-  pub fn new() -> napi::Result<Self> {
+  pub fn new(server_config: &ServerConfigHandle) -> napi::Result<Self> {
+    let config = StorageRuntimeConfig::from_server_config(&server_config.inner).map_err(to_napi_error)?;
     Ok(Self {
-      config: RwLock::new(StorageRuntimeConfig::from_config_files().map_err(to_napi_error)?),
+      config: RwLock::new(config),
+      server_config: Arc::clone(&server_config.inner),
       pool: Mutex::new(None),
     })
   }
@@ -88,12 +91,6 @@ impl StorageRuntime {
     self.start_inner().await.map_err(to_napi_error)
   }
 
-  #[napi]
-  pub fn configure(&self, config_json: String) -> napi::Result<()> {
-    let config = StorageRuntimeConfig::from_config_json(&config_json).map_err(to_napi_error)?;
-    self.update_config(config).map_err(to_napi_error)
-  }
-
   async fn start_inner(&self) -> RuntimeResult<()> {
     let mut guard = self.pool.lock().await;
     if guard.is_some() {
@@ -101,10 +98,12 @@ impl StorageRuntime {
     }
 
     let database_url = self.config()?.database_url;
+    let connect_options =
+      crate::runtime::pg_connect_options(&database_url, self.server_config.deployment(), "storage")?;
     let pool = PgPoolOptions::new()
       .max_connections(5)
       .acquire_timeout(std::time::Duration::from_secs(5))
-      .connect(&database_url)
+      .connect_with(connect_options)
       .await
       .map_err(|err| RuntimeError::database("StorageRuntime failed to connect postgres", err))?;
 
@@ -113,10 +112,19 @@ impl StorageRuntime {
       .await
       .map_err(|err| RuntimeError::database("StorageRuntime postgres health check failed", err))?;
 
-    let config = self.config()?.with_db_overrides(&pool).await?;
+    let baseline = StorageRuntimeConfig::from_server_config(&self.server_config)?;
+    let config = baseline.with_db_overrides(&pool).await?;
     self.update_config(config)?;
     *guard = Some(pool);
     Ok(())
+  }
+
+  #[napi]
+  pub async fn reload_config(&self) -> napi::Result<()> {
+    let pool = self.pool().await.map_err(to_napi_error)?;
+    let baseline = StorageRuntimeConfig::from_server_config(&self.server_config).map_err(to_napi_error)?;
+    let config = baseline.with_db_overrides(&pool).await.map_err(to_napi_error)?;
+    self.update_config(config).map_err(to_napi_error)
   }
 
   #[napi]
@@ -167,6 +175,63 @@ impl StorageRuntime {
       .backend_for_scope(&scope)
       .map(|backend| storage_provider_capabilities(&backend))
       .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub fn is_local_storage(&self, scope: String) -> napi::Result<bool> {
+    self
+      .backend_for_scope(&scope)
+      .map(|backend| {
+        matches!(
+          backend,
+          StorageBackendConfig::Fs(_) | StorageBackendConfig::Assetpack(_)
+        )
+      })
+      .map_err(to_napi_error)
+  }
+
+  #[napi]
+  pub fn upload_url_config(&self, scope: String) -> napi::Result<Option<StorageUploadUrlConfig>> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) if config.use_presigned_url => Ok(Some(StorageUploadUrlConfig {
+        proxy_upload: config.proxy_upload,
+        url_prefix: config.upload_url_prefix,
+      })),
+      _ => Ok(None),
+    }
+  }
+
+  #[napi]
+  pub fn sign_upload_token(
+    &self,
+    scope: String,
+    path: String,
+    fields: Vec<Value>,
+    expires_at: i64,
+  ) -> napi::Result<Option<String>> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) => config
+        .proxy_upload_token(&path, &fields, expires_at)
+        .map_err(|err| to_napi_error(err.into())),
+      _ => Ok(None),
+    }
+  }
+
+  #[napi]
+  pub fn verify_upload_token(
+    &self,
+    scope: String,
+    path: String,
+    fields: Vec<Value>,
+    expires_at: i64,
+    token: String,
+  ) -> napi::Result<bool> {
+    match self.backend_for_scope(&scope).map_err(to_napi_error)? {
+      StorageBackendConfig::S3(config) => config
+        .verify_proxy_upload_token(&path, &fields, expires_at, &token)
+        .map_err(|err| to_napi_error(err.into())),
+      _ => Ok(false),
+    }
   }
 
   #[napi]

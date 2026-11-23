@@ -211,6 +211,7 @@ export const buildDocCanvasGetter = (
         retryable: false,
       });
     }
+    docId = await docReader.resolveStorageDocId(options.workspace, docId);
     if (!isDocumentInScope(documentScope, docId)) {
       return toolError(
         'Doc Canvas Read Failed',

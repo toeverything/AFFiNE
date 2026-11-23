@@ -152,10 +152,10 @@ impl BackendRuntime {
         }];
         let before = transition_before(&mut tx, &targets, Deployment::SelfHosted, now).await?;
         upsert(&mut tx, EntitlementWrite {
-          target: &targets[0], source: "selfhost_license", subject_id: claims.license_id(), plan: "selfhost_team",
+          target: &targets[0], source: "selfhost_license", subject_id: claims.license_id(), plan: claims.plan_name(),
           status: "active", quantity: Some(claims.seat_quantity()), payload: Some(&normalized),
           metadata: serde_json::json!({ "recurring": license.recurring, "validateKey": license.validate_key, "variant": "onetime" }),
-          starts_at: None, expires_at: Some(claims.expires_at()), grace_until: None,
+          starts_at: None, expires_at: claims.expires_at(), grace_until: None,
         }, now).await?;
         apply_transitions(&mut tx, &before, Deployment::SelfHosted, now).await?;
         tx.commit()
@@ -231,7 +231,7 @@ impl BackendRuntime {
     }];
     let before = transition_before(&mut tx, &targets, Deployment::SelfHosted, now).await?;
     let quantity = claims.as_ref().filter(|_| valid).map(|claims| claims.seat_quantity());
-    let expires_at = claims.as_ref().filter(|_| valid).map(|claims| claims.expires_at());
+    let expires_at = claims.as_ref().filter(|_| valid).and_then(|claims| claims.expires_at());
     let recurring = claims
       .as_ref()
       .filter(|_| valid)

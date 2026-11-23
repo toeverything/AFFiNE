@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   sync::{
     Arc, Mutex,
     atomic::{AtomicBool, Ordering},
@@ -28,7 +27,7 @@ use super::{BackendRuntime, COPILOT_REQUEST_TIMEOUT, RuntimeError, dispatch, to_
 use crate::{
   llm::{
     CopilotExecuteInput,
-    route::{AuthorizedProviderProfile, AuthorizedTargetRef, CatalogSlot},
+    route::{AuthorizedProviderProfile, AuthorizedRouteTargets, CatalogSlot},
   },
   runtime::BackendRuntimeConfig,
 };
@@ -38,8 +37,8 @@ pub(super) type PreparedCopilotExecution = (
   CatalogSlot,
   ExecutableRequest,
   Vec<AuthorizedProviderProfile>,
-  Vec<AuthorizedTargetRef>,
-  HashMap<String, Zeroizing<String>>,
+  AuthorizedRouteTargets,
+  Option<Zeroizing<String>>,
 );
 
 const STREAM_END: &str = "__AFFINE_COPILOT_STREAM_END__";
@@ -69,7 +68,7 @@ impl BackendRuntime {
     callback: ThreadsafeFunction<String, ()>,
     tool_callback: ThreadsafeFunction<String, PromiseRaw<'static, String>>,
   ) -> Result<CopilotStreamHandle> {
-    let (config, slot, request, profiles, candidates, managed_credentials) =
+    let (config, slot, request, profiles, targets, managed_credential) =
       self.prepare_copilot(input).await.map_err(to_napi_error)?;
     let messages = match &request {
       ExecutableRequest::Chat(request) => request.messages.clone(),
@@ -80,7 +79,7 @@ impl BackendRuntime {
       }
     };
     let mut execution =
-      dispatch::compile_execution(&config, slot, request, &profiles, &candidates, &managed_credentials)
+      dispatch::compile_execution(&config, slot, request, &profiles, &targets, managed_credential.as_ref())
         .map_err(to_napi_error)?;
     let aborted = Arc::new(AtomicBool::new(false));
     let worker_aborted = aborted.clone();
@@ -166,7 +165,7 @@ fn emit_json(
 }
 
 fn transport_error(message: String) -> BackendError {
-  BackendError::Transport { message }
+  BackendError::Transport { message, context: None }
 }
 
 fn execute_tool(

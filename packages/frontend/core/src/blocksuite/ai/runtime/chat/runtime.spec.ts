@@ -148,11 +148,27 @@ describe('AIChatRuntime', () => {
     const runtime = createRuntime(request);
     await runtime.dispatch({ type: 'initialize' });
 
-    const firstSend = runtime.dispatch({ type: 'send', input: 'hello' });
+    const onAccepted = vi.fn(() => runtime.getSnapshot());
+    const firstSend = runtime.dispatch({
+      type: 'send',
+      input: 'hello',
+      onAccepted,
+    });
+    expect(onAccepted).toHaveBeenCalledOnce();
+    const acceptedSnapshot = onAccepted.mock.results[0]?.value;
+    expect(acceptedSnapshot?.messages[0]?.content).toBe('hello');
+    expect(acceptedSnapshot?.status).toBe('loading');
     await waitUntil(() => {
       expect(request.executeAction).toHaveBeenCalled();
     });
-    await runtime.dispatch({ type: 'send', input: 'again' });
+    const rejected = vi.fn();
+    await runtime.dispatch({
+      type: 'send',
+      input: 'again',
+      onAccepted: rejected,
+    });
+    expect(rejected).not.toHaveBeenCalled();
+    expect(onAccepted).toHaveBeenCalledOnce();
     release();
     await firstSend;
 
@@ -189,6 +205,31 @@ describe('AIChatRuntime', () => {
     );
     expect(fallbackRuntime.getSnapshot().status).toBe('success');
     consoleError.mockRestore();
+  });
+
+  test('send completes when the acceptance callback throws', async () => {
+    const error = new Error('Draft cleanup failed');
+    using consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const request = createRequest();
+    const runtime = createRuntime(request);
+    await runtime.dispatch({ type: 'initialize' });
+
+    await runtime.dispatch({
+      type: 'send',
+      input: 'question',
+      onAccepted: () => {
+        throw error;
+      },
+    });
+
+    expect(consoleError).toHaveBeenCalledWith(error);
+    expect(request.executeAction).toHaveBeenCalledOnce();
+    expect(runtime.getSnapshot()).toMatchObject({
+      status: 'success',
+      uiPolicy: { canSend: true },
+    });
   });
 
   test('send binds an unbound session to the active doc after success', async () => {

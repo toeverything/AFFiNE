@@ -20,6 +20,7 @@ import {
   EmailTokenNotFound,
   getClientVersionFromRequest,
   getRequestCookie,
+  getRequestHeader,
   InvalidAuthState,
   InvalidEmail,
   NetworkError,
@@ -37,6 +38,7 @@ import {
   isNativeClientRequest,
   MagicLinkBodySchema,
   OpenAppSignInBodySchema,
+  RefreshAttemptSchema,
   SessionIdSchema,
   SignInBodySchema,
 } from './input';
@@ -274,7 +276,10 @@ export class AuthController {
     return await this.sessionExchange.refresh(
       req,
       input.refreshToken,
-      getClientVersionFromRequest(req) ?? undefined
+      getClientVersionFromRequest(req) ?? undefined,
+      RefreshAttemptSchema.parse(
+        getRequestHeader(req, 'x-affine-refresh-attempt')
+      )
     );
   }
 

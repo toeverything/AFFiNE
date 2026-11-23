@@ -496,8 +496,10 @@ export class EditorUtils {
       generateHeadings: this.createAction(page, () =>
         page.getByTestId('action-generate-headings').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
+      generateImage: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-image').click(),
+        { responseTimeoutMs: 300000 }
       ),
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
@@ -693,8 +695,10 @@ export class EditorUtils {
       generateHeadings: this.createAction(page, () =>
         page.getByTestId('action-generate-headings').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
+      generateImage: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-image').click(),
+        { responseTimeoutMs: 300000 }
       ),
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()

@@ -1,5 +1,8 @@
 {
   "$schema": "https://github.com/toeverything/affine/releases/latest/download/config.schema.json",
+  "deployment": {
+    "type": "selfhosted"
+  },
   "server": {
     "name": "AFFiNE Self Hosted Server"
   },

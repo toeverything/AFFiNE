@@ -43,6 +43,9 @@ pub fn byok_catalog() -> ByokCatalogOutput {
     let Some(provider) = provider_for_backend(&variant.backend_kind) else {
       continue;
     };
+    if provider == "openai" && variant.raw_model_id == "gpt-image-1" {
+      continue;
+    }
     let Some(capabilities) = provider_default_capability_upper_bound(provider, &variant.raw_model_id) else {
       continue;
     };
@@ -104,6 +107,7 @@ mod tests {
       for model in &provider.models {
         assert!(!model.model_id.is_empty());
         assert!(!model.capabilities.is_empty());
+        assert!(provider.provider != "openai" || model.model_id != "gpt-image-1");
       }
     }
   }

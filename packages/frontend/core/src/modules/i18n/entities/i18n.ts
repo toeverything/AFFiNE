@@ -16,11 +16,12 @@ export type LanguageInfo = {
   name: string;
   originalName: string;
   completeness: number;
+  rtl: boolean;
 };
 
 const logger = new DebugLogger('i18n');
 
-function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
+export function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
   const languageInfo = SUPPORTED_LANGUAGES[language];
 
   return {
@@ -28,6 +29,7 @@ function mapLanguageInfo(language: Language = 'en'): LanguageInfo {
     name: languageInfo.name,
     originalName: languageInfo.originalName,
     completeness: i18nCompletenesses[language],
+    rtl: languageInfo.rtl ?? false,
   };
 }
 

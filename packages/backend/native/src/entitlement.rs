@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use affine_core::access_control::{
   AccessGrant, Deployment, EntitlementInput, EntitlementInputError, LicenseIssuance, LicenseIssuanceError,
-  LicenseIssuer, LicenseVerifier, Limits, Plan, Rights, TargetType, ValidatedEntitlement, describe_plan,
-  validate_entitlement_input,
+  LicenseIssuer, Limits, Plan, Rights, TargetType, ValidatedEntitlement, describe_plan, validate_entitlement_input,
 };
 use chrono::{DateTime, Utc};
 use napi::{Error as NapiError, Result, Status, bindgen_prelude::Buffer};
@@ -191,31 +190,38 @@ fn resolve_selfhost_license(input: ResolveEntitlementInput, now: DateTime<Utc>) 
   let payload = input
     .signed_payload
     .ok_or_else(|| NapiError::new(Status::InvalidArg, "signedPayload is required"))?;
-  let Some(public_key) = input.public_key else {
-    return invalid_arg("publicKey is required for signed payload verification");
-  };
 
   let normalized = match crate::license_import::normalize_license(payload.as_ref()) {
     Ok(payload) => payload,
     Err(error) if error.status == Status::GenericFailure => return Err(error),
     Err(error) => return Ok(invalid_license(&error.reason, &error.reason)),
   };
-  let claims = match LicenseVerifier::verify(normalized.as_ref(), &public_key, input.target_id.as_deref(), now) {
+  let claims = match crate::license_v2::verify_any_license(
+    normalized.as_ref(),
+    input.public_key.as_deref(),
+    input.target_id.as_deref(),
+    now,
+  ) {
     Ok(claims) => claims,
     Err(error) => return Ok(invalid_license(error.code(), &error.to_string())),
   };
-  let grant: AccessGrant = describe_plan(Plan::SelfHostedTeam, Some(claims.seat_quantity()))
-    .map_err(entitlement_input_error)?
-    .into();
+  let grant: AccessGrant = match &claims {
+    crate::license_v2::VerifiedAnyLicense::V2(v2) => v2.to_access_grant(),
+    crate::license_v2::VerifiedAnyLicense::LegacyOrV1(legacy) => {
+      describe_plan(Plan::SelfHostedTeam, Some(legacy.seat_quantity()))
+        .map_err(entitlement_input_error)?
+        .into()
+    }
+  };
   let mut entitlement = active_with_grant(
     grant.plan,
     grant.quantity,
     grant.limits,
     grant.rights,
-    Some(claims.expires_at().to_rfc3339()),
+    claims.expires_at().map(|dt| dt.to_rfc3339()),
   );
   entitlement.subject_id = Some(claims.license_id().to_string());
-  entitlement.target_id = Some(claims.workspace_id().to_string());
+  entitlement.target_id = claims.workspace_id().map(str::to_string);
   entitlement.issued_at = Some(claims.issued_at().to_rfc3339());
   entitlement.recurring = claims.recurring().map(str::to_string);
   entitlement.entity = Some(claims.audience().to_string());
@@ -435,6 +441,19 @@ pub(crate) mod tests {
       public_key: Some(TEST_PUBLIC_KEY.to_string()),
       now: "2026-05-14T00:00:00Z".to_string(),
     }
+  }
+
+  #[test]
+  fn community_v2_entitlement_does_not_require_commercial_public_key() {
+    let mut input = license_input(
+      crate::license_v2::DEFAULT_SELFHOST_LICENSE_BYTES.to_vec(),
+      TEST_WORKSPACE_ID,
+    );
+    input.public_key = None;
+    let resolved = resolve_entitlement_v1(input).unwrap();
+    assert!(resolved.valid);
+    assert_eq!(resolved.plan, "selfhost_free");
+    assert_eq!(resolved.quota.seat_limit, Some(10));
   }
 
   #[test]
