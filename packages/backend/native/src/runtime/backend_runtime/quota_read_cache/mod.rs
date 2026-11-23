@@ -345,7 +345,8 @@ mod tests {
     release.notify_one();
     assert_eq!(inflight.await.unwrap(), "stale-v1");
 
-    // A read after invalidate_all must NOT observe the stale in-flight writeback.
+    // A read after invalidate_all must NOT observe the stale in-flight
+    // writeback.
     let fresh = cache
       .get_or_load("ws-1", 16, || async { Ok("fresh-v2") })
       .await

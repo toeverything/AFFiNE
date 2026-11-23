@@ -356,6 +356,24 @@ async fn payment_session_locks_are_sorted_nonblocking_and_connection_bound() {
   );
   drop(first);
 
+  let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+  loop {
+    let held: bool =
+      sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid = $1 AND locktype = 'advisory')")
+        .bind(first_pid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    if !held {
+      break;
+    }
+    assert!(
+      tokio::time::Instant::now() < deadline,
+      "dropped payment connection backend {first_pid} still holds advisory locks"
+    );
+    tokio::time::sleep(Duration::from_millis(5)).await;
+  }
+
   let mut replacement = PaymentConnection::try_acquire(&pool, vec![source])
     .await
     .unwrap()
@@ -366,6 +384,16 @@ async fn payment_session_locks_are_sorted_nonblocking_and_connection_bound() {
     .unwrap()
     .get("pid");
   assert_ne!(first_pid, replacement_pid);
+
+  for step in 0..32 {
+    let extra = PaymentScope::source(namespace(), &format!("sub-lock-reacquire-{step}")).unwrap();
+    replacement = replacement
+      .reacquire_with(&pool, vec![extra.clone()])
+      .await
+      .unwrap()
+      .expect("reacquire_with must not collide with its own released session locks");
+    assert!(replacement.scopes().contains(&extra));
+  }
 }
 
 #[tokio::test]
@@ -1400,12 +1428,13 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     result: json!({"source": source_id}),
   });
   let replay = first.clone();
+  first.claimed_attempt = Some((event_id.clone(), receipt_attempts));
   let applied: PaymentApplyResult = apply_payment_snapshot(&mut connection, first, Deployment::Cloud)
     .await
     .unwrap();
   assert_eq!(applied.targets.len(), 1);
   assert!(applied.owner_ids.is_empty());
-  drop(connection);
+  connection.release().await.unwrap();
   let processed_receipt = super::webhook::capture_stripe(&pool, &webhook_client, raw_event.as_bytes(), &signature)
     .await
     .unwrap();
@@ -1776,7 +1805,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
   .await
   .unwrap();
   assert_eq!(targets, (user_a.clone(), user_a.clone()));
-  drop(connection);
+  connection.release().await.unwrap();
 
   let mut incomplete_lock_set = PaymentConnection::try_acquire(&pool, vec![customer_scope.clone()])
     .await
@@ -1795,7 +1824,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
       .await
       .is_err()
   );
-  drop(incomplete_lock_set);
+  incomplete_lock_set.release().await.unwrap();
   let mut complete_lock_set = PaymentConnection::try_acquire(
     &pool,
     vec![
@@ -1827,7 +1856,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .await
     .unwrap();
   assert_eq!(status, "revoked");
-  drop(complete_lock_set);
+  complete_lock_set.release().await.unwrap();
 
   let now = Utc::now().timestamp();
   let stripe_subscription = json!({
