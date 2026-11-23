@@ -33,8 +33,6 @@ runs:
       with:
         toolchain: '${{ steps.rustup-version.outputs.RUST_TOOLCHAIN_VERSION }}'
         targets: ${{ inputs.target }}
-      env:
-        CARGO_INCREMENTAL: '1'
 
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
@@ -43,7 +41,6 @@ runs:
         toolchain: '${{ steps.rustup-version.outputs.RUST_TOOLCHAIN_VERSION }}'
         targets: ${{ inputs.target }}
       env:
-        CARGO_INCREMENTAL: '1'
         CARGO_HOME: ${{ env.DEV_DRIVE }}/.cargo
         RUSTUP_HOME: ${{ env.DEV_DRIVE }}/.rustup
 
