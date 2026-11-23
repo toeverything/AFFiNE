@@ -543,6 +543,7 @@ mod tests {
 
   use super::*;
   use crate::runtime::{
+    EmbeddingRuntimeConfig,
     migrations::{DATABASE_TEST_LOCK, migrate_all_tables},
     object_storage::types::{ObjectKey, ObjectLocator, ObjectPutMetadata},
   };
@@ -773,7 +774,8 @@ mod tests {
       .connect(&database_url)
       .await
       .unwrap();
-    assert!(migrate_all_tables(&pool).await.unwrap().enabled);
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
+    assert!(migrate_all_tables(&pool, dims).await.unwrap().enabled);
     *runtime.pool.lock().await = Some(pool.clone());
     let live_workspace = format!("workspace-cleanup-live-{}", uuid::Uuid::new_v4());
     sqlx::query("INSERT INTO workspaces(id,created_at) VALUES($1,now())")

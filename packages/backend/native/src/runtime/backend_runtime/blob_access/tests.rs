@@ -23,8 +23,9 @@ async fn setup() -> Option<Fixture> {
   let database_url = std::env::var("DATABASE_URL").ok()?;
   let pool = PgPool::connect(&database_url).await.unwrap();
   crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+  let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
   assert!(
-    crate::runtime::migrations::migrate_embedding_tables(&pool)
+    crate::runtime::migrations::migrate_embedding_tables(&pool, dims)
       .await
       .enabled
   );

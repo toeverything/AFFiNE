@@ -54,7 +54,8 @@ impl BackendRuntime {
   #[napi]
   pub async fn run_migrations(&self) -> Result<()> {
     let pool = self.pool().await?;
-    let embedding_health = migrate_all_tables(&pool).await.map_err(to_napi_error)?;
+    let dimensions = self.config().map_err(to_napi_error)?.embedding.dimensions;
+    let embedding_health = migrate_all_tables(&pool, dimensions).await.map_err(to_napi_error)?;
     self
       .apply_embedding_health(pool, embedding_health)
       .await

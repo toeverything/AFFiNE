@@ -857,7 +857,8 @@ mod tests {
       "previous-owner"
     );
 
-    let embedding_health = crate::runtime::migrations::migrate_all_tables(&pool).await?;
+    let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
+    let embedding_health = crate::runtime::migrations::migrate_all_tables(&pool, dims).await?;
     *runtime.embedding_health.write().unwrap() = embedding_health;
     assert!(runtime.embedding_schema_ready()?);
     let embedding_source = Uuid::new_v4();

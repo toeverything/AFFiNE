@@ -6,6 +6,7 @@ use super::{RuntimeError, RuntimeResult, types::EmbeddingHealth};
 pub(crate) const RUNTIME_MIGRATIONS: &str = include_str!("sql/runtime_migrations.sql");
 const EMBEDDING_MIGRATION: &str = include_str!("sql/embedding.sql");
 const EMBEDDING_V2_MIGRATION: &str = include_str!("sql/embedding_v2.sql");
+const EMBEDDING_V3_MIGRATION: &str = include_str!("sql/embedding_v3.sql");
 const SEARCH_PROJECTION_MIGRATION: &str = include_str!("sql/search_projection.sql");
 const SEARCH_PROJECTION_V2_MIGRATION: &str = include_str!("sql/search_projection_v2.sql");
 const SEARCH_PROJECTION_V3_MIGRATION: &str = include_str!("sql/search_projection_v3.sql");
@@ -26,16 +27,16 @@ pub(crate) async fn migrate_runtime_tables(pool: &PgPool) -> RuntimeResult<()> {
   Ok(())
 }
 
-pub(crate) async fn migrate_all_tables(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
+pub(crate) async fn migrate_all_tables(pool: &PgPool, dimensions: u32) -> RuntimeResult<EmbeddingHealth> {
   migrate_runtime_tables(pool).await?;
-  let embedding = migrate_embedding_tables_inner(pool).await?;
+  let embedding = migrate_embedding_tables_inner(pool, dimensions).await?;
   migrate_search_tables(pool).await?;
   Ok(embedding)
 }
 
 #[cfg(test)]
-pub(crate) async fn migrate_embedding_tables(pool: &PgPool) -> EmbeddingHealth {
-  match migrate_embedding_tables_inner(pool).await {
+pub(crate) async fn migrate_embedding_tables(pool: &PgPool, dimensions: u32) -> EmbeddingHealth {
+  match migrate_embedding_tables_inner(pool, dimensions).await {
     Ok(health) => health,
     Err(_) => EmbeddingHealth::disabled("schema_migration_failed", pgvector_version(pool).await.ok().flatten()),
   }
@@ -55,6 +56,7 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
       AND to_regclass('embedding_sources') IS NOT NULL
       AND to_regclass('embedding_projections') IS NOT NULL
       AND to_regclass('embedding_chunks') IS NOT NULL
+      AND to_regclass('embedding_schema_config') IS NOT NULL
       AND to_regclass('native_schema_migrations') IS NOT NULL",
   )
   .fetch_one(pool)
@@ -64,11 +66,12 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
     return Ok(EmbeddingHealth::disabled("schema_not_migrated", Some(version)));
   }
   let migrations_ready: bool = sqlx::query_scalar(
-    "SELECT count(*)=2 FROM native_schema_migrations WHERE component='embedding' AND ((version=1 AND checksum=$1) OR \
-     (version=2 AND checksum=$2))",
+    "SELECT count(*)=3 FROM native_schema_migrations WHERE component='embedding' AND ((version=1 AND checksum=$1) OR \
+     (version=2 AND checksum=$2) OR (version=3 AND checksum=$3))",
   )
   .bind(migration_checksum(&[EMBEDDING_MIGRATION]))
   .bind(migration_checksum(&[EMBEDDING_V2_MIGRATION]))
+  .bind(migration_checksum(&[EMBEDDING_V3_MIGRATION]))
   .fetch_one(pool)
   .await
   .map_err(|error| RuntimeError::database("Embedding migration health check failed", error))?;
@@ -81,7 +84,7 @@ pub(crate) async fn embedding_schema_health(pool: &PgPool) -> RuntimeResult<Embe
     state: "ready".to_string(),
     reason: None,
     pgvector_version: Some(version),
-    schema_version: Some(2),
+    schema_version: Some(3),
     worker_running: false,
   })
 }
@@ -103,7 +106,7 @@ pub(crate) async fn migrate_search_tables(pool: &PgPool) -> RuntimeResult<()> {
   Ok(())
 }
 
-async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<EmbeddingHealth> {
+async fn migrate_embedding_tables_inner(pool: &PgPool, dimensions: u32) -> RuntimeResult<EmbeddingHealth> {
   let Some(version) = pgvector_version(pool).await? else {
     return Ok(EmbeddingHealth::disabled("pgvector_unavailable", None));
   };
@@ -115,18 +118,89 @@ async fn migrate_embedding_tables_inner(pool: &PgPool) -> RuntimeResult<Embeddin
     pool,
     "embedding",
     EMBEDDING_ADVISORY_LOCK,
-    &[(1, &[EMBEDDING_MIGRATION]), (2, &[EMBEDDING_V2_MIGRATION])],
+    &[
+      (1, &[EMBEDDING_MIGRATION]),
+      (2, &[EMBEDDING_V2_MIGRATION]),
+      (3, &[EMBEDDING_V3_MIGRATION]),
+    ],
   )
   .await?;
+  ensure_embedding_storage(pool, dimensions).await?;
 
   Ok(EmbeddingHealth {
     enabled: true,
     state: "ready".to_string(),
     reason: None,
     pgvector_version: Some(version),
-    schema_version: Some(2),
+    schema_version: Some(3),
     worker_running: false,
   })
+}
+
+/// Build (once) or verify the dimension-bound storage for the configured space.
+/// A stored configuration that no longer matches aborts the migration; rebuilds
+/// are explicit, never silent.
+async fn ensure_embedding_storage(pool: &PgPool, dimensions: u32) -> RuntimeResult<()> {
+  use super::embedding_storage::{render_rebuild_statements, render_record_statement, storage_vector_type};
+
+  let storage = storage_vector_type(dimensions);
+  let mut transaction = pool
+    .begin()
+    .await
+    .map_err(|error| RuntimeError::database("Embedding storage transaction failed", error))?;
+  transaction
+    .execute("SET LOCAL lock_timeout = '5s'")
+    .await
+    .map_err(|error| RuntimeError::database("Embedding storage lock timeout failed", error))?;
+  sqlx::query("SELECT pg_advisory_xact_lock($1)")
+    .bind(EMBEDDING_ADVISORY_LOCK)
+    .execute(&mut *transaction)
+    .await
+    .map_err(|error| RuntimeError::database("Embedding storage lock failed", error))?;
+  let stored: Option<(i32, String)> =
+    sqlx::query_as("SELECT configured_dims, vector_type FROM embedding_schema_config WHERE id = 1")
+      .fetch_optional(&mut *transaction)
+      .await
+      .map_err(|error| RuntimeError::database("Embedding storage config read failed", error))?;
+  match stored {
+    Some((dims, vector_type)) if dims == dimensions as i32 && vector_type == storage => {}
+    Some((dims, vector_type)) => {
+      return Err(RuntimeError::invalid_state(format!(
+        "embedding storage was built for {dims} dimensions ({vector_type}) but the configured dimensions are now \
+         {dimensions} ({storage}); restore the previous value, or wipe and rebuild with DELETE FROM \
+         embedding_schema_config WHERE id = 1 followed by a restart (all vectors will be re-embedded)"
+      )));
+    }
+    None => {
+      // No recorded configuration yet: adopt the storage as-is when it
+      // already matches (plain upgrade, no data loss), rebuild otherwise.
+      // Compare the bare type name plus the raw typmod: format_type()
+      // output varies with search_path, while these two do not.
+      let current: (String, i32) = sqlx::query_as(
+        "SELECT t.typname, a.atttypmod FROM pg_attribute a JOIN pg_type t ON t.oid = a.atttypid WHERE a.attrelid = \
+         to_regclass('embedding_chunks') AND a.attname = 'embedding'",
+      )
+      .fetch_one(&mut *transaction)
+      .await
+      .map_err(|error| RuntimeError::database("Embedding storage inspect failed", error))?;
+      if current.0 != storage || current.1 != dimensions as i32 {
+        for statement in render_rebuild_statements(dimensions) {
+          transaction
+            .execute(statement.as_str())
+            .await
+            .map_err(|error| RuntimeError::database("Embedding storage rebuild failed", error))?;
+        }
+      }
+      transaction
+        .execute(render_record_statement(dimensions).as_str())
+        .await
+        .map_err(|error| RuntimeError::database("Embedding storage record failed", error))?;
+    }
+  }
+  transaction
+    .commit()
+    .await
+    .map_err(|error| RuntimeError::database("Embedding storage commit failed", error))
 }
 
 async fn migrate_component(
@@ -235,6 +309,7 @@ fn pgvector_at_least_0_8(version: &str) -> bool {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::runtime::{EmbeddingRuntimeConfig, embedding_storage::storage_vector_type};
 
   #[test]
   fn pgvector_version_gate_requires_0_8() {
@@ -261,6 +336,58 @@ mod tests {
       assert!(EMBEDDING_MIGRATION.contains(&format!("CREATE TABLE {table}")));
     }
     assert!(EMBEDDING_MIGRATION.contains("source_kind IN ('document', 'artifact')"));
+  }
+
+  async fn seed_embedding_migration_fixture(
+    pool: &PgPool,
+    index_id: uuid::Uuid,
+    source_id: uuid::Uuid,
+    generation_token: uuid::Uuid,
+  ) {
+    sqlx::query("DELETE FROM embedding_projections WHERE source_id=$1")
+      .bind(source_id)
+      .execute(pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM embedding_indexes WHERE id=$1")
+      .bind(index_id)
+      .execute(pool)
+      .await
+      .unwrap();
+    sqlx::query("DELETE FROM embedding_sources WHERE id=$1")
+      .bind(source_id)
+      .execute(pool)
+      .await
+      .unwrap();
+    sqlx::query(
+      "INSERT INTO \
+       embedding_indexes(id,workspace_id,fingerprint,route_source,provider,model_id,endpoint_fingerprint,\
+       contract_version,health_status) \
+       VALUES($1,'migration-workspace','fingerprint','managed','openai','model','endpoint',1,'ready')",
+    )
+    .bind(index_id)
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO \
+       embedding_sources(id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,recipe_revision,\
+       document_projection) VALUES($1,'migration-workspace','document','doc','content','descriptor','recipe','{}')",
+    )
+    .bind(source_id)
+    .execute(pool)
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO embedding_projections(source_id,index_id,status,active_generation_token,next_attempt_at) \
+       VALUES($1,$2,'ready',$3,now() + interval '1 day')",
+    )
+    .bind(source_id)
+    .bind(index_id)
+    .bind(generation_token)
+    .execute(pool)
+    .await
+    .unwrap();
   }
 
   #[tokio::test]
@@ -297,42 +424,15 @@ mod tests {
     let index_id = uuid::Uuid::new_v4();
     let source_id = uuid::Uuid::new_v4();
     let generation_token = uuid::Uuid::new_v4();
-    sqlx::query(
-      "INSERT INTO \
-       embedding_indexes(id,workspace_id,fingerprint,route_source,provider,model_id,endpoint_fingerprint,\
-       contract_version,health_status) \
-       VALUES($1,'migration-workspace','fingerprint','managed','openai','model','endpoint',1,'ready')",
-    )
-    .bind(index_id)
-    .execute(&pool)
-    .await
-    .unwrap();
-    sqlx::query(
-      "INSERT INTO \
-       embedding_sources(id,workspace_id,source_kind,source_key,content_revision,descriptor_revision,recipe_revision,\
-       document_projection) VALUES($1,'migration-workspace','document','doc','content','descriptor','recipe','{}')",
-    )
-    .bind(source_id)
-    .execute(&pool)
-    .await
-    .unwrap();
-    sqlx::query(
-      "INSERT INTO embedding_projections(source_id,index_id,status,active_generation_token,next_attempt_at) \
-       VALUES($1,$2,'ready',$3,now() + interval '1 day')",
-    )
-    .bind(source_id)
-    .bind(index_id)
-    .bind(generation_token)
-    .execute(&pool)
-    .await
-    .unwrap();
+    seed_embedding_migration_fixture(&pool, index_id, source_id, generation_token).await;
 
     let mut projection_reader = pool.begin().await.unwrap();
     sqlx::query("SELECT source_id FROM embedding_projections LIMIT 1")
       .fetch_one(&mut *projection_reader)
       .await
       .unwrap();
-    let error = migrate_embedding_tables_inner(&pool).await.unwrap_err();
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
+    let error = migrate_embedding_tables_inner(&pool, dims).await.unwrap_err();
     assert!(error.to_string().contains("lock timeout"), "{error}");
     let versions: Vec<i32> =
       sqlx::query_scalar("SELECT version FROM native_schema_migrations WHERE component='embedding' ORDER BY version")
@@ -370,8 +470,9 @@ mod tests {
       .fetch_one(&migration_pool)
       .await
       .unwrap();
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
     let migration = tokio::spawn(async move {
-      let health = migrate_embedding_tables_inner(&migration_pool).await;
+      let health = migrate_embedding_tables_inner(&migration_pool, dims).await;
       migration_pool.close().await;
       health
     });
@@ -404,9 +505,13 @@ mod tests {
     .unwrap();
     writer.commit().await.unwrap();
     let health = migration.await.unwrap().unwrap();
-    assert_eq!(health.schema_version, Some(2));
-    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(2));
-    for version in [1, 2] {
+    assert_eq!(health.schema_version, Some(3));
+    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(3));
+    // The storage rebuild wipes dimension-bound rows when the configured space
+    // differs from the migrated one; reseed so the trigger sections below run
+    // on identical state under every configuration.
+    seed_embedding_migration_fixture(&pool, index_id, source_id, generation_token).await;
+    for version in [1, 2, 3] {
       sqlx::query(
         "UPDATE native_schema_migrations SET checksum=repeat('0',64) WHERE component='embedding' AND version=$1",
       )
@@ -420,8 +525,10 @@ mod tests {
       assert_eq!(health.schema_version, None);
       let sql = if version == 1 {
         EMBEDDING_MIGRATION
-      } else {
+      } else if version == 2 {
         EMBEDDING_V2_MIGRATION
+      } else {
+        EMBEDDING_V3_MIGRATION
       };
       sqlx::query("UPDATE native_schema_migrations SET checksum=$2 WHERE component='embedding' AND version=$1")
         .bind(version)
@@ -430,22 +537,24 @@ mod tests {
         .await
         .unwrap();
     }
-    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(2));
+    assert_eq!(embedding_schema_health(&pool).await.unwrap().schema_version, Some(3));
     let applied: Vec<(i32, String, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
       "SELECT version,checksum,applied_at FROM native_schema_migrations WHERE component='embedding' ORDER BY version",
     )
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(applied.len(), 2);
-    for (row, (version, sql)) in applied
-      .iter()
-      .zip([(1, EMBEDDING_MIGRATION), (2, EMBEDDING_V2_MIGRATION)])
-    {
+    assert_eq!(applied.len(), 3);
+    for (row, (version, sql)) in applied.iter().zip([
+      (1, EMBEDDING_MIGRATION),
+      (2, EMBEDDING_V2_MIGRATION),
+      (3, EMBEDDING_V3_MIGRATION),
+    ]) {
       assert_eq!(row.0, version);
       assert_eq!(row.1, migration_checksum(&[sql]));
     }
-    migrate_embedding_tables_inner(&pool).await.unwrap();
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
+    migrate_embedding_tables_inner(&pool, dims).await.unwrap();
     migrate_component(
       &pool,
       "embedding",
@@ -475,6 +584,7 @@ mod tests {
         "embedding_chunks",
         "embedding_indexes",
         "embedding_projections",
+        "embedding_schema_config",
         "embedding_sources",
         "embedding_workspace_states",
       ]
@@ -485,7 +595,13 @@ mod tests {
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(dimensions, 1024);
+    assert_eq!(dimensions, dims as i32);
+    let stored: (i32, String) =
+      sqlx::query_as("SELECT configured_dims, vector_type FROM embedding_schema_config WHERE id = 1")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, (dims as i32, storage_vector_type(dims).to_string()));
     let claim_index: String = sqlx::query_scalar(
       "SELECT indexdef FROM pg_indexes WHERE schemaname=$1 AND indexname='embedding_projection_claim_idx'",
     )

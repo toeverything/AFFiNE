@@ -335,7 +335,8 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
     .connect(&database_url)
     .await
     .context("connect postgres for backend runtime tests")?;
-  crate::runtime::migrations::migrate_all_tables(&pool)
+  let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
+  crate::runtime::migrations::migrate_all_tables(&pool, dims)
     .await
     .map_err(|err| anyhow!(err.to_string()))?;
   sqlx::query(

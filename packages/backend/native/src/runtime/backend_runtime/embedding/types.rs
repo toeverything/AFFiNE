@@ -107,10 +107,10 @@ pub(super) struct EmbeddingGcResult {
   pub(super) chunks: u64,
 }
 
-pub(super) fn validate_vectors(chunks: &[MaterializedChunk]) -> bool {
+pub(super) fn validate_vectors(chunks: &[MaterializedChunk], dimensions: u32) -> bool {
   chunks
     .iter()
-    .all(|chunk| chunk.embedding.len() == 1024 && chunk.embedding.iter().all(|value| value.is_finite()))
+    .all(|chunk| chunk.embedding.len() == dimensions as usize && chunk.embedding.iter().all(|value| value.is_finite()))
 }
 
 pub(super) fn failure_class(code: &str) -> FailureClass {
@@ -126,6 +126,7 @@ pub(super) fn failure_class(code: &str) -> FailureClass {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::runtime::EmbeddingRuntimeConfig;
 
   #[test]
   fn vectors_require_exact_finite_dimension() {
@@ -137,11 +138,12 @@ mod tests {
         artifact_id: uuid::Uuid::nil(),
       },
     };
-    assert!(validate_vectors(&[chunk(vec![0.0; 1024])]));
-    assert!(!validate_vectors(&[chunk(vec![0.0; 1023])]));
-    let mut invalid = vec![0.0; 1024];
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
+    assert!(validate_vectors(&[chunk(vec![0.0; dims as usize])], dims));
+    assert!(!validate_vectors(&[chunk(vec![0.0; dims as usize - 1])], dims));
+    let mut invalid = vec![0.0; dims as usize];
     invalid[3] = f32::NAN;
-    assert!(!validate_vectors(&[chunk(invalid)]));
+    assert!(!validate_vectors(&[chunk(invalid)], dims));
   }
 
   #[test]
@@ -149,5 +151,6 @@ mod tests {
     assert_eq!(failure_class("provider_unavailable"), FailureClass::RetryableIndex);
     assert_eq!(failure_class("object_changed"), FailureClass::RetryableProjection);
     assert_eq!(failure_class("unsupported_format"), FailureClass::Terminal);
+    assert_eq!(failure_class("input_too_large"), FailureClass::Terminal);
   }
 }

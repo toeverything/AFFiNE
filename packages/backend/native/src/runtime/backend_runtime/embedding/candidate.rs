@@ -3,7 +3,10 @@ use tokio::sync::watch;
 use uuid::Uuid;
 
 use super::{BackgroundEmbeddingProvider, RuntimeError, RuntimeResult, legacy_document_ids};
-use crate::runtime::types::{MatchEmbeddingCandidatesInput, RuntimeEmbeddingCandidate};
+use crate::runtime::{
+  embedding_storage::storage_vector_type,
+  types::{MatchEmbeddingCandidatesInput, RuntimeEmbeddingCandidate},
+};
 
 const EXACT_SCOPE_LIMIT: usize = 64;
 
@@ -27,6 +30,7 @@ pub(super) async fn match_candidates(
   pool: &PgPool,
   provider: &BackgroundEmbeddingProvider,
   input: &MatchEmbeddingCandidatesInput,
+  dimensions: u32,
   abort: Option<&mut watch::Receiver<bool>>,
 ) -> RuntimeResult<Vec<RuntimeEmbeddingCandidate>> {
   validate(input)?;
@@ -66,18 +70,18 @@ pub(super) async fn match_candidates(
   let vector = vectors
     .into_iter()
     .next()
-    .filter(|vector| vector.len() == 1024)
+    .filter(|vector| vector.len() == dimensions as usize)
     .ok_or_else(|| RuntimeError::invalid_state("embedding_query_vector_invalid"))?;
   let vector = vector_literal(&vector);
   let limit = i64::from(input.limit.unwrap_or(5).clamp(1, 20));
   let rows = if input.retrieval.mode == "required" {
     if required.len() <= EXACT_SCOPE_LIMIT {
-      exact_candidates(pool, input, index_id, &required, &vector, limit, allowed.as_deref()).await?
+      exact_candidates(pool, input, index_id, &vector, limit, dimensions, allowed.as_deref()).await?
     } else {
-      large_required_candidates(pool, input, index_id, &required, &vector, limit, allowed.as_deref()).await?
+      large_required_candidates(pool, input, index_id, &vector, limit, dimensions, allowed.as_deref()).await?
     }
   } else {
-    workspace_candidates(pool, input, index_id, &vector, limit, allowed.as_deref()).await?
+    workspace_candidates(pool, input, index_id, &vector, limit, dimensions, allowed.as_deref()).await?
   };
   Ok(rows.into_iter().map(Into::into).collect())
 }
@@ -107,11 +111,12 @@ async fn exact_candidates(
   pool: &PgPool,
   input: &MatchEmbeddingCandidatesInput,
   index_id: Uuid,
-  required: &[String],
   vector: &str,
   limit: i64,
+  dimensions: u32,
   allowed: Option<&[String]>,
 ) -> RuntimeResult<Vec<CandidateRow>> {
+  let required = required_ids(input);
   let mut transaction = pool
     .begin()
     .await
@@ -120,9 +125,9 @@ async fn exact_candidates(
     .execute(&mut *transaction)
     .await
     .map_err(|error| RuntimeError::database("configure exact embedding search failed", error))?;
-  let rows = sqlx::query_as(
+  let rows = sqlx::query_as(&format!(
     r#"SELECT source.source_kind,source.source_key,chunk.content,
-      (chunk.embedding <=> $5::vector)::float8 AS distance,chunk.doc_id,chunk.artifact_id,
+      (chunk.embedding <=> $5::{vector_type})::float8 AS distance,chunk.doc_id,chunk.artifact_id,
       chunk.unit_id,chunk.visibility,chunk.block_id,chunk.element_id,chunk.frame_id,chunk.chunk_index AS chunk
     FROM embedding_chunks chunk
     JOIN embedding_sources source ON source.id=chunk.source_id
@@ -133,12 +138,13 @@ async fn exact_candidates(
     WHERE chunk.workspace_id=$1 AND chunk.index_id=$2 AND chunk.source_kind=$3
       AND source.source_key=ANY($4::text[]) AND source.deleted_at IS NULL
       AND ($7::text[] IS NULL OR source.source_key=ANY($7::text[]))
-    ORDER BY chunk.embedding <=> $5::vector,source.source_key,chunk.chunk_index LIMIT $6"#,
-  )
+    ORDER BY chunk.embedding <=> $5::{vector_type},source.source_key,chunk.chunk_index LIMIT $6"#,
+    vector_type = storage_vector_type(dimensions),
+  ))
   .bind(&input.workspace_id)
   .bind(index_id)
   .bind(&input.source_kind)
-  .bind(required)
+  .bind(required.as_slice())
   .bind(vector)
   .bind(limit)
   .bind(allowed)
@@ -156,14 +162,15 @@ async fn large_required_candidates(
   pool: &PgPool,
   input: &MatchEmbeddingCandidatesInput,
   index_id: Uuid,
-  required: &[String],
   vector: &str,
   limit: i64,
+  dimensions: u32,
   allowed: Option<&[String]>,
 ) -> RuntimeResult<Vec<CandidateRow>> {
-  sqlx::query_as(
+  let required = required_ids(input);
+  sqlx::query_as(&format!(
     r#"SELECT source.source_kind,source.source_key,chunk.content,
-      (chunk.embedding <=> $5::vector)::float8 AS distance,chunk.doc_id,chunk.artifact_id,
+      (chunk.embedding <=> $5::{vector_type})::float8 AS distance,chunk.doc_id,chunk.artifact_id,
       chunk.unit_id,chunk.visibility,chunk.block_id,chunk.element_id,chunk.frame_id,chunk.chunk_index AS chunk
     FROM embedding_chunks chunk
     JOIN embedding_sources source ON source.id=chunk.source_id
@@ -174,12 +181,13 @@ async fn large_required_candidates(
     WHERE chunk.workspace_id=$1 AND chunk.index_id=$2 AND chunk.source_kind=$3
       AND source.source_key=ANY($4::text[]) AND source.deleted_at IS NULL
       AND ($7::text[] IS NULL OR source.source_key=ANY($7::text[]))
-    ORDER BY chunk.embedding <=> $5::vector,source.source_key,chunk.chunk_index LIMIT $6"#,
-  )
+    ORDER BY chunk.embedding <=> $5::{vector_type},source.source_key,chunk.chunk_index LIMIT $6"#,
+    vector_type = storage_vector_type(dimensions),
+  ))
   .bind(&input.workspace_id)
   .bind(index_id)
   .bind(&input.source_kind)
-  .bind(required)
+  .bind(required.as_slice())
   .bind(vector)
   .bind(limit)
   .bind(allowed)
@@ -194,11 +202,12 @@ async fn workspace_candidates(
   index_id: Uuid,
   vector: &str,
   limit: i64,
+  dimensions: u32,
   allowed: Option<&[String]>,
 ) -> RuntimeResult<Vec<CandidateRow>> {
-  sqlx::query_as(
+  sqlx::query_as(&format!(
     r#"SELECT source.source_kind,source.source_key,chunk.content,
-      (chunk.embedding <=> $4::vector)::float8 AS distance,chunk.doc_id,chunk.artifact_id,
+      (chunk.embedding <=> $4::{vector_type})::float8 AS distance,chunk.doc_id,chunk.artifact_id,
       chunk.unit_id,chunk.visibility,chunk.block_id,chunk.element_id,chunk.frame_id,chunk.chunk_index AS chunk
     FROM embedding_chunks chunk
     JOIN embedding_sources source ON source.id=chunk.source_id
@@ -213,9 +222,10 @@ async fn workspace_candidates(
         WHERE artifact.workspace_id=chunk.workspace_id AND artifact.id=chunk.artifact_id
           AND artifact.status='ready' AND artifact.library_owned
       ))
-    ORDER BY (source.source_key=ANY($5::text[])) DESC,chunk.embedding <=> $4::vector,
+    ORDER BY (source.source_key=ANY($5::text[])) DESC,chunk.embedding <=> $4::{vector_type},
       source.source_key,chunk.chunk_index LIMIT $6"#,
-  )
+    vector_type = storage_vector_type(dimensions),
+  ))
   .bind(&input.workspace_id)
   .bind(index_id)
   .bind(&input.source_kind)
@@ -290,8 +300,9 @@ mod tests {
     };
     let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
     assert!(
-      crate::runtime::migrations::migrate_embedding_tables(&pool)
+      crate::runtime::migrations::migrate_embedding_tables(&pool, dims)
         .await
         .enabled
     );
@@ -381,31 +392,31 @@ mod tests {
     }
     let mut request = input("document", "workspace");
     request.workspace_id = workspace_id.clone();
-    let required = vec!["hidden".to_string(), "visible".to_string()];
+    request.retrieval.required_doc_ids = vec!["hidden".to_string(), "visible".to_string()];
     let allowed = legacy_document_ids(&pool, &workspace_id).await.unwrap().unwrap();
     assert_eq!(
-      workspace_candidates(&pool, &request, index_id, &vector, 1, None)
+      workspace_candidates(&pool, &request, index_id, &vector, 1, dims, None)
         .await
         .unwrap()[0]
         .source_key,
       "hidden"
     );
     assert_eq!(
-      workspace_candidates(&pool, &request, index_id, &vector, 1, Some(&allowed))
+      workspace_candidates(&pool, &request, index_id, &vector, 1, dims, Some(&allowed))
         .await
         .unwrap()[0]
         .source_key,
       "visible"
     );
     assert_eq!(
-      exact_candidates(&pool, &request, index_id, &required, &vector, 1, Some(&allowed))
+      exact_candidates(&pool, &request, index_id, &vector, 1, dims, Some(&allowed))
         .await
         .unwrap()[0]
         .source_key,
       "visible"
     );
     assert_eq!(
-      large_required_candidates(&pool, &request, index_id, &required, &vector, 1, Some(&allowed))
+      large_required_candidates(&pool, &request, index_id, &vector, 1, dims, Some(&allowed))
         .await
         .unwrap()[0]
         .source_key,
@@ -447,7 +458,7 @@ mod tests {
         } else {
           None
         };
-        workspace_candidates(&pool, &request, index_id, &vector, 1, allowed.as_deref())
+        workspace_candidates(&pool, &request, index_id, &vector, 1, dims, allowed.as_deref())
           .await
           .unwrap();
       }

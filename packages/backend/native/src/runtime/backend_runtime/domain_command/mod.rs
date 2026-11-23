@@ -403,8 +403,9 @@ mod test_support {
   pub(super) async fn owner_workspace() -> Option<(PgPool, String, String)> {
     let pool = PgPool::connect(&std::env::var("DATABASE_URL").ok()?).await.unwrap();
     crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
+    let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
     assert!(
-      crate::runtime::migrations::migrate_embedding_tables(&pool)
+      crate::runtime::migrations::migrate_embedding_tables(&pool, dims)
         .await
         .enabled
     );

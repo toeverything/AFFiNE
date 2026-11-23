@@ -6,6 +6,7 @@ use super::{
   ChunkLocator, EmbeddingFailure, EmbeddingGcResult, EmbeddingQueueCounts, FailureClass, IndexProbeClaim,
   MaterializedChunk, ProjectionClaim, RuntimeError, RuntimeResult, validate_vectors,
 };
+use crate::runtime::embedding_storage::storage_vector_type;
 
 pub(super) async fn queue_counts(pool: &PgPool) -> RuntimeResult<EmbeddingQueueCounts> {
   sqlx::query_as(
@@ -74,8 +75,9 @@ pub(super) async fn commit_token(
   pool: &PgPool,
   claim: &ProjectionClaim,
   chunks: &[MaterializedChunk],
+  dimensions: u32,
 ) -> RuntimeResult<String> {
-  if chunks.is_empty() || chunks.len() > 2048 || !validate_vectors(chunks) {
+  if chunks.is_empty() || chunks.len() > 2048 || !validate_vectors(chunks, dimensions) {
     return Err(RuntimeError::invalid_input("invalid embedding token"));
   }
   for (index, chunk) in chunks.iter().enumerate() {
@@ -89,7 +91,7 @@ pub(super) async fn commit_token(
     .await
     .map_err(|error| RuntimeError::database("embedding token transaction failed", error))?;
   for chunk in chunks {
-    insert_chunk(&mut transaction, token, claim, chunk).await?;
+    insert_chunk(&mut transaction, token, claim, chunk, dimensions).await?;
   }
   let state =
     sqlx::query("SELECT active_index_id,index_epoch FROM embedding_workspace_states WHERE workspace_id=$1 FOR UPDATE")
@@ -161,6 +163,7 @@ async fn insert_chunk(
   token: Uuid,
   claim: &ProjectionClaim,
   chunk: &MaterializedChunk,
+  dimensions: u32,
 ) -> RuntimeResult<()> {
   let vector = vector_literal(&chunk.embedding);
   let (doc_id, artifact_id, unit_id, visibility, block_id, element_id, frame_id) = match &chunk.locator {
@@ -182,12 +185,13 @@ async fn insert_chunk(
     ),
     ChunkLocator::Artifact { artifact_id } => (None, Some(*artifact_id), None, None, None, None, None),
   };
-  sqlx::query(
+  sqlx::query(&format!(
     r#"INSERT INTO embedding_chunks(
       generation_token,workspace_id,index_id,source_id,chunk_index,content,embedding,
       source_kind,doc_id,artifact_id,unit_id,visibility,block_id,element_id,frame_id
-    ) VALUES($1,$2,$3,$4,$5,$6,$7::vector,$8,$9,$10,$11,$12,$13,$14,$15)"#,
-  )
+    ) VALUES($1,$2,$3,$4,$5,$6,$7::{vector_type},$8,$9,$10,$11,$12,$13,$14,$15)"#,
+    vector_type = storage_vector_type(dimensions),
+  ))
   .bind(token)
   .bind(&claim.workspace_id)
   .bind(claim.index_id)
@@ -314,6 +318,7 @@ fn vector_literal(vector: &[f32]) -> String {
 #[cfg(test)]
 mod tests {
   use super::{super::claim_projection, *};
+  use crate::runtime::EmbeddingRuntimeConfig;
 
   #[tokio::test]
   async fn source_reconciliation_fences_leases_and_gc_preserves_current_facts() {
@@ -322,6 +327,7 @@ mod tests {
     };
     let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    let dims = EmbeddingRuntimeConfig::default().dimensions;
     sqlx::query(
       "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
        VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
@@ -331,7 +337,7 @@ mod tests {
     .await
     .unwrap();
     assert!(
-      crate::runtime::migrations::migrate_embedding_tables(&pool)
+      crate::runtime::migrations::migrate_embedding_tables(&pool, dims)
         .await
         .enabled
     );
@@ -451,10 +457,10 @@ mod tests {
       .unwrap();
     let current = claim_projection(&pool, "worker-b").await.unwrap().unwrap();
     assert!(current.lease_token > stale.lease_token);
-    let chunk = |content: &str| MaterializedChunk {
+    let chunk = move |content: &str| MaterializedChunk {
       index: 0,
       content: content.to_string(),
-      embedding: vec![0.0; 1024],
+      embedding: vec![0.0; dims as usize],
       locator: ChunkLocator::Document {
         doc_id: "doc".to_string(),
         unit_id: "unit".to_string(),
@@ -464,7 +470,7 @@ mod tests {
         frame_id: None,
       },
     };
-    assert!(commit_token(&pool, &stale, &[chunk("stale")]).await.is_err());
+    assert!(commit_token(&pool, &stale, &[chunk("stale")], dims).await.is_err());
     fail_projection(
       &pool,
       &stale,
@@ -491,7 +497,7 @@ mod tests {
       current_state,
       ("running".to_string(), Some("worker-b".to_string()), "ready".to_string())
     );
-    let first_token = commit_token(&pool, &current, &[chunk("first")]).await.unwrap();
+    let first_token = commit_token(&pool, &current, &[chunk("first")], dims).await.unwrap();
     let requested = [crate::runtime::types::DocumentEmbeddingProjectionInput {
       skip_reason: None,
       doc_id: "doc".to_string(),
@@ -558,7 +564,7 @@ mod tests {
       .unwrap();
     assert_eq!(status, "pending");
     let refreshed = claim_projection(&pool, "worker-c").await.unwrap().unwrap();
-    let second_token = commit_token(&pool, &refreshed, &[chunk("second")]).await.unwrap();
+    let second_token = commit_token(&pool, &refreshed, &[chunk("second")], dims).await.unwrap();
     assert_ne!(first_token, second_token);
     sqlx::query("UPDATE snapshots SET updated_at=to_timestamp(2) WHERE workspace_id=$1 AND guid='doc'")
       .bind(&workspace_id)
@@ -573,7 +579,7 @@ mod tests {
       .await
       .unwrap();
     let recipe_changed = claim_projection(&pool, "worker-d").await.unwrap().unwrap();
-    commit_token(&pool, &recipe_changed, &[chunk("updated recipe")])
+    commit_token(&pool, &recipe_changed, &[chunk("updated recipe")], dims)
       .await
       .unwrap();
     super::super::source::sync_documents(&pool, &workspace_id, &updated, i32::MAX)
@@ -836,7 +842,13 @@ mod tests {
       .unwrap();
     let claim = cleanup_claim.clone();
     let committing = tokio::spawn(async move {
-      let result = commit_token(&commit_pool, &claim, &[chunk("finishing during workspace cleanup")]).await;
+      let result = commit_token(
+        &commit_pool,
+        &claim,
+        &[chunk("finishing during workspace cleanup")],
+        dims,
+      )
+      .await;
       commit_pool.close().await;
       result
     });
@@ -905,7 +917,7 @@ mod tests {
     .await
     .expect("workspace cleanup and embedding commit must complete without a lock cycle");
     assert!(
-      commit_token(&pool, &cleanup_claim, &[chunk("must not resurrect")])
+      commit_token(&pool, &cleanup_claim, &[chunk("must not resurrect")], dims)
         .await
         .is_err()
     );

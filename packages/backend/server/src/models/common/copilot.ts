@@ -70,7 +70,20 @@ export type IgnoredDoc = {
   updatedBy: string | undefined;
 };
 
-export const EMBEDDING_DIMENSIONS = 1024;
+// Fallback for requests without explicit dimensions (test mock). Mirrors the
+// native embedding storage-space contract: AFFINE_EMBEDDING_SPACE_DIMENSIONS,
+// default 1024.
+function parseEmbeddingDimensions(): number {
+  const parsed = Number.parseInt(
+    process.env.AFFINE_EMBEDDING_SPACE_DIMENSIONS ?? '',
+    10
+  );
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= 4000
+    ? parsed
+    : 1024;
+}
+
+export const EMBEDDING_DIMENSIONS = parseEmbeddingDimensions();
 
 const FILTER_PREFIX = [
   'Title: ',

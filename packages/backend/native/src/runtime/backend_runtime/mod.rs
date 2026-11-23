@@ -291,7 +291,12 @@ impl BackendRuntime {
           Arc::clone(&self.config),
           Arc::clone(&self.managed_token_providers),
         );
-        *service = Some(embedding::EmbeddingService::new(pool, self.object_storage()?, provider));
+        *service = Some(embedding::EmbeddingService::new(
+          pool,
+          self.object_storage()?,
+          provider,
+          self.config()?.embedding.clone(),
+        ));
       }
       let embedding = service
         .as_ref()

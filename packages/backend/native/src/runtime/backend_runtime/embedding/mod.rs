@@ -24,7 +24,7 @@ use super::{
   domain_command::{lock_workspace_doc_update, lock_workspace_storage_shared},
   is_ordinary_workspace_doc, load_doc_states_in, load_legacy_workspace_in, workspace_lifecycle_active_in,
 };
-use crate::runtime::object_storage::ObjectStorageService;
+use crate::runtime::{EmbeddingRuntimeConfig, object_storage::ObjectStorageService};
 
 async fn legacy_document_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<Vec<String>>> {
   let mut connection = pool
@@ -57,6 +57,7 @@ pub(super) struct EmbeddingService {
   provider: BackgroundEmbeddingProvider,
   wake: Notify,
   candidate_cancellations: StdMutex<HashMap<String, Option<tokio::sync::watch::Sender<bool>>>>,
+  embedding: EmbeddingRuntimeConfig,
 }
 
 pub(super) struct EmbeddingWorker {
@@ -86,6 +87,7 @@ impl EmbeddingService {
     pool: PgPool,
     object_storage: Arc<ObjectStorageService>,
     provider: BackgroundEmbeddingProvider,
+    embedding: EmbeddingRuntimeConfig,
   ) -> Arc<Self> {
     Arc::new(Self {
       pool,
@@ -93,6 +95,7 @@ impl EmbeddingService {
       provider,
       wake: Notify::new(),
       candidate_cancellations: StdMutex::new(HashMap::new()),
+      embedding,
     })
   }
 
@@ -180,7 +183,7 @@ impl EmbeddingService {
     input: &crate::runtime::types::MatchEmbeddingCandidatesInput,
   ) -> RuntimeResult<Vec<crate::runtime::types::RuntimeEmbeddingCandidate>> {
     let Some(request_id) = input.request_id.as_deref() else {
-      return candidate::match_candidates(&self.pool, &self.provider, input, None).await;
+      return candidate::match_candidates(&self.pool, &self.provider, input, self.embedding.dimensions, None).await;
     };
     if request_id.is_empty() || request_id.len() > 128 {
       return Err(RuntimeError::invalid_input("embedding_candidate_request_id_invalid"));
@@ -196,7 +199,14 @@ impl EmbeddingService {
       }
       cancellations.insert(request_id.to_string(), Some(sender));
     }
-    let result = candidate::match_candidates(&self.pool, &self.provider, input, Some(&mut receiver)).await;
+    let result = candidate::match_candidates(
+      &self.pool,
+      &self.provider,
+      input,
+      self.embedding.dimensions,
+      Some(&mut receiver),
+    )
+    .await;
     self
       .candidate_cancellations
       .lock()
@@ -235,7 +245,7 @@ impl EmbeddingService {
   }
 
   async fn commit(&self, claim: &ProjectionClaim, chunks: &[MaterializedChunk]) -> RuntimeResult<String> {
-    store::commit_token(&self.pool, claim, chunks).await
+    store::commit_token(&self.pool, claim, chunks, self.embedding.dimensions).await
   }
 
   async fn fail(&self, claim: &ProjectionClaim, failure: EmbeddingFailure) -> RuntimeResult<()> {

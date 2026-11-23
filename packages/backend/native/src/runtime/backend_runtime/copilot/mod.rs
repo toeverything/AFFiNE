@@ -20,7 +20,10 @@ use crate::{
     CopilotExecuteInput, CopilotRouteCheckInput,
     route::{self, AuthorizedRouteTargets, ResolvedManagedTarget},
   },
-  runtime::BackendRuntimeConfig,
+  runtime::{
+    BackendRuntimeConfig,
+    embedding_storage::{EMBEDDING_CONTRACT_VERSION, storage_vector_type},
+  },
 };
 
 pub(super) type ManagedTokenProviderCache = RwLock<HashMap<String, Arc<OnceCell<Arc<dyn TokenProvider>>>>>;
@@ -139,7 +142,7 @@ impl BackgroundEmbeddingProvider {
     let request = llm_adapter::router::ExecutableRequest::Embedding(llm_adapter::core::EmbeddingRequest {
       model: target.model_id,
       inputs,
-      dimensions: Some(1024),
+      dimensions: Some(authorized.config.embedding.dimensions),
       task_type: Some(task_type.to_string()),
     });
     let config = authorized.config;
@@ -193,7 +196,12 @@ fn target_from_route(authorized: &AuthorizedCopilotRoute) -> RuntimeResult<Embed
     }
   };
   let endpoint_fingerprint = hex::encode(Sha256::digest(endpoint_identity.as_bytes()));
-  let identity = format!("{route_source}|{provider}|{endpoint_fingerprint}|{model_id}|1024|cosine|1");
+  let dimensions = authorized.config.embedding.dimensions;
+  let identity = format!(
+    "{route_source}|{provider}|{endpoint_fingerprint}|{model_id}|{dimensions}|{}|cosine|{}",
+    storage_vector_type(dimensions),
+    EMBEDDING_CONTRACT_VERSION
+  );
   Ok(EmbeddingTarget {
     fingerprint: hex::encode(Sha256::digest(identity.as_bytes())),
     route_source,

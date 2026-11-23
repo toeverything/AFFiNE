@@ -400,25 +400,25 @@ mod tests {
         "gemini",
         json!({"apiKey": "test"}),
         "https://generativelanguage.googleapis.com/v1beta",
-        "f8e2b5973b9bdb9430eb770bf13e08f759c9c4cbded97dbfea4c01050d32aef1",
+        "67bfd6f4a16fc00307d0b8aefbdabec4a5ab049dfaa9e11eefd280040085e469",
       ),
       (
         "gemini",
         json!({"apiKey": "test", "baseURL": "https://custom.example/v1"}),
         "https://custom.example/v1",
-        "47ab6847e37db8d443a5482402964bba977301e37f7ebbf065988f765c0327b6",
+        "49172480e5c8958bebfc771307dc5448f696b03e39958d797ee9f3c799e64671",
       ),
       (
         "geminiVertex",
         json!({"project": "affine-us", "location": "global"}),
         "https://aiplatform.googleapis.com/v1/projects/affine-us/locations/global/publishers/google",
-        "f9a42da40743503700bd4806b2c337d1ebc5d4a3499b97db7956a2401e9c2fec",
+        "309504d5556003f0135430f8c482a525f6a40ed1f78b3cc9b8a6d3713da9a60b",
       ),
       (
         "geminiVertex",
         json!({"project": "affine-us", "location": "us-central1"}),
         "https://us-central1-aiplatform.googleapis.com/v1/projects/affine-us/locations/us-central1/publishers/google",
-        "0945a331a8d982aca94191af38496db3048920c0a0b7294883af103c92089da5",
+        "65178229469cb413e59502f75dffd73b5fcc8972f2ba753946fd4cb715bd19d5",
       ),
     ] {
       let mut copilot: CopilotRuntimeConfig = serde_json::from_value(json!({

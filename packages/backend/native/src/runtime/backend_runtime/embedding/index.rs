@@ -2,6 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::{EmbeddingTarget, RuntimeError, RuntimeResult, WorkspaceEmbeddingState};
+use crate::runtime::embedding_storage::EMBEDDING_CONTRACT_VERSION;
 
 pub(super) async fn sync_workspace(
   pool: &PgPool,
@@ -37,19 +38,20 @@ pub(super) async fn sync_workspace(
   let (active_index, runtime_state, reason_code) = if !enabled {
     (None, "disabled", Some("workspace_embedding_disabled"))
   } else if let Some(target) = target {
-    let id = sqlx::query_scalar::<_, Uuid>(
+    let id = sqlx::query_scalar::<_, Uuid>(&format!(
       r#"
       INSERT INTO embedding_indexes (
         id, workspace_id, fingerprint, route_source, provider, model_id,
         endpoint_fingerprint, contract_version, health_status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 'pending')
+      VALUES ($1, $2, $3, $4, $5, $6, $7, {contract_version}, 'pending')
       ON CONFLICT (workspace_id, fingerprint) DO UPDATE
       SET inactive_at = NULL, activated_at = now(), updated_at = now()
       WHERE embedding_indexes.inactive_at IS NOT NULL
       RETURNING id
       "#,
-    )
+      contract_version = EMBEDDING_CONTRACT_VERSION
+    ))
     .bind(Uuid::new_v4())
     .bind(workspace_id)
     .bind(&target.fingerprint)
@@ -155,8 +157,9 @@ mod tests {
     };
     let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    let dims = crate::runtime::EmbeddingRuntimeConfig::default().dimensions;
     assert!(
-      crate::runtime::migrations::migrate_embedding_tables(&pool)
+      crate::runtime::migrations::migrate_embedding_tables(&pool, dims)
         .await
         .enabled
     );
