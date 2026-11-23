@@ -23,7 +23,7 @@ import type { TemplateResult } from 'lit';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { getAttachmentBlob } from './utils';
+import { getAttachmentBlob, readVideoSize } from './utils';
 
 export type AttachmentEmbedConfig = {
   name: string;
@@ -214,10 +214,14 @@ const embedConfig: AttachmentEmbedConfig[] = [
     shouldShowStatus: true,
     check: (model, maxFileSize) =>
       model.props.type.startsWith('video/') && model.props.size <= maxFileSize,
-    action: model => {
+    async action(model) {
+      const blob = await getAttachmentBlob(model);
+      const size = blob ? await readVideoSize(blob) : null;
       const bound = Bound.deserialize(model.props.xywh);
       bound.w = EMBED_CARD_WIDTH.video;
-      bound.h = EMBED_CARD_HEIGHT.video;
+      bound.h = size
+        ? (bound.w * size.height) / size.width
+        : EMBED_CARD_HEIGHT.video;
       model.store.updateBlock(model, {
         embed: true,
         style: 'video',
@@ -228,8 +232,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
       html`<video
         style=${styleMap({
           display: 'flex',
-          objectFit: 'cover',
-          backgroundSize: 'cover',
+          objectFit: 'contain',
           width: '100%',
           height: '100%',
         })}
