@@ -305,7 +305,13 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
         'affine:edgeless-text'
       );
     },
-    action: ({ rootComponent: { model }, std }) => {
+    action: ({ std }) => {
+      const [_, { selectedModels }] = std.command.exec(
+        getSelectedModelsCommand
+      );
+      const model = selectedModels?.[0];
+      if (!model) return;
+
       const { store } = model;
       const parent = store.getParent(model);
       if (!parent) return;
