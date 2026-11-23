@@ -1,6 +1,7 @@
 import { expect, type Locator } from '@playwright/test';
 
 import {
+  dragBlockToPoint,
   enterPlaygroundRoom,
   focusRichText,
   initEmptyParagraphState,
@@ -8,6 +9,7 @@ import {
   pressTab,
   type,
 } from './utils/actions/index.js';
+import { assertRichTexts } from './utils/asserts.js';
 import { test } from './utils/playwright.js';
 
 const ARABIC = 'مرحبا بالعالم';
@@ -135,5 +137,75 @@ test.describe('per-block automatic text direction', () => {
     const icon = await box(wrapper.locator('.heading-icon'));
     const heading = await box(wrapper);
     expect(icon.x).toBeGreaterThanOrEqual(heading.x + heading.width);
+  });
+
+  test('a lettered marker does not decide the direction of a nested numbered list', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyParagraphState(page);
+    await focusRichText(page);
+    await type(page, '1. ');
+    await type(page, ARABIC);
+    await pressEnter(page);
+    await pressTab(page);
+    await type(page, ARABIC);
+
+    const nested = page.locator(
+      '.affine-list-block-container .affine-list-block-container'
+    );
+    const marker = nested.locator('.affine-list-block__numbered');
+    await expect(marker).toHaveText('a.');
+    expect(await direction(nested)).toBe('rtl');
+    // the marker itself still follows the block direction
+    expect(await direction(marker.locator('bdi'))).toBe('rtl');
+  });
+
+  test.describe('dropping onto an Arabic list item', () => {
+    const ITEMS = ['واحد', 'اثنان', 'ثلاثة'];
+
+    const initList = async (page: Parameters<typeof type>[0]) => {
+      await enterPlaygroundRoom(page);
+      await initEmptyParagraphState(page);
+      await focusRichText(page);
+      await type(page, '- ');
+      await type(page, ITEMS[0]);
+      await pressEnter(page);
+      await type(page, ITEMS[1]);
+      await pressEnter(page);
+      await type(page, ITEMS[2]);
+      await assertRichTexts(page, ITEMS);
+
+      const lists = page.locator('affine-list');
+      const sourceId = await lists.nth(2).getAttribute('data-block-id');
+      if (!sourceId) throw new Error('missing block id');
+      return { sourceId, target: await box(lists.nth(0)) };
+    };
+
+    test('nests it when dropped on the left (inline-end) edge', async ({
+      page,
+    }) => {
+      const { sourceId, target } = await initList(page);
+      await dragBlockToPoint(page, sourceId, {
+        x: target.x + 2,
+        y: target.y + target.height / 2,
+      });
+
+      await assertRichTexts(page, [ITEMS[0], ITEMS[2], ITEMS[1]]);
+      await expect(page.locator('affine-list affine-list')).toHaveCount(1);
+    });
+
+    test('keeps it a sibling when dropped on the right (inline-start) edge', async ({
+      page,
+    }) => {
+      const { sourceId, target } = await initList(page);
+      await dragBlockToPoint(page, sourceId, {
+        x: target.x + target.width - 2,
+        y: target.y + target.height / 2,
+      });
+
+      await assertRichTexts(page, [ITEMS[0], ITEMS[2], ITEMS[1]]);
+      await expect(page.locator('affine-list affine-list')).toHaveCount(0);
+    });
   });
 });

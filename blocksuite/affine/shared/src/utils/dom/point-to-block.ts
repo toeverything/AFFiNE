@@ -269,6 +269,18 @@ export function getRectByBlockComponent(element: Element | BlockComponent) {
 }
 
 /**
+ * Whether the block lays out right-to-left.
+ *
+ * A block resolves its own direction from its text (`dir="auto"` on the block
+ * container), so the direction has to be read from inside the block rather
+ * than from the block element itself.
+ */
+export function isRTLBlock(element: Element | BlockComponent) {
+  const text = element.querySelector('rich-text') ?? element;
+  return getComputedStyle(text).direction === 'rtl';
+}
+
+/**
  * Returns block elements excluding their subtrees.
  * Only keep block elements of same level.
  */

@@ -20,6 +20,11 @@ export const listPrefix = css`
     margin-inline-start: 2px;
   }
 
+  /* excluded from dir=auto resolution, but still laid out in the block's direction */
+  .affine-list-block__numbered bdi {
+    direction: inherit;
+  }
+
   .affine-list-block__todo-prefix {
     display: flex;
     align-items: center;

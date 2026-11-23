@@ -50,7 +50,16 @@ export function getListIcon(
         class="affine-list-block__prefix affine-list-block__numbered"
         @click=${onClick}
       >
-        ${model.props.order ? getNumberPrefix(model.props.order, deep) : '1.'}
+        <!--
+          The marker can start with a Latin letter ("a.", "IV."). <bdi> keeps
+          it out of the container's dir=auto resolution, so only the item's
+          own text decides the block direction.
+        -->
+        <bdi
+          >${
+            model.props.order ? getNumberPrefix(model.props.order, deep) : '1.'
+          }</bdi
+        >
       </div>`;
     case 'todo':
       return html`<div

@@ -34,6 +34,7 @@ import {
   getBlockComponentsExcludeSubtrees,
   getRectByBlockComponent,
   getScrollContainer,
+  isRTLBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
 import {
@@ -215,7 +216,11 @@ export class DragEventWatcher {
     const scale = this.widget.scale.peek();
     let result: DropResult | null = null;
 
-    if (edge === 'right' && matchModels(dropModel, [ListBlockModel])) {
+    // dropping on the inline-end edge of a list nests the blocks under it
+    const isDropOnList = matchModels(dropModel, [ListBlockModel]);
+    const rtl = isDropOnList && isRTLBlock(dropBlock);
+
+    if (isDropOnList && edge === (rtl ? 'left' : 'right')) {
       const domRect = getRectByBlockComponent(dropBlock);
       const placement = 'in';
 
@@ -224,8 +229,9 @@ export class DragEventWatcher {
           schema.safeValidate(block.flavour, 'affine:list')
         )
       ) {
+        // children are indented from the inline-start edge
         const rect = Rect.fromLWTH(
-          domRect.left + BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
+          domRect.left + (rtl ? 0 : BLOCK_CHILDREN_CONTAINER_PADDING_LEFT),
           domRect.width - BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
           domRect.top + domRect.height,
           3 * scale

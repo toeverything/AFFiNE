@@ -7,6 +7,7 @@ import { BLOCK_CHILDREN_CONTAINER_PADDING_LEFT } from '../../consts/index.js';
 import {
   getClosestBlockComponentByElement,
   getRectByBlockComponent,
+  isRTLBlock,
 } from '../dom/index.js';
 import { matchModels } from '../model/index.js';
 import { getDropRectByPoint } from './get-drop-rect-by-point.js';
@@ -116,6 +117,9 @@ export function calcDropTarget(
 
   placement = before ? 'before' : 'after';
   let offsetY = 4;
+  // children are indented from the inline-start edge, which is the right edge
+  // of an RTL block
+  let rtl = false;
 
   if (placement === 'before') {
     // before
@@ -148,13 +152,14 @@ export function calcDropTarget(
     // If drop in target has children, we can use insert before or after of that children
     // to achieve the same effect.
     const hasChild = (element as BlockComponent).childBlocks.length;
-    if (
-      allowSublist &&
-      matchModels(model, [ListBlockModel]) &&
-      !hasChild &&
-      point.x > domRect.x + BLOCK_CHILDREN_CONTAINER_PADDING_LEFT
-    ) {
-      placement = 'in';
+    if (allowSublist && matchModels(model, [ListBlockModel]) && !hasChild) {
+      rtl = isRTLBlock(element);
+      const pastIndent = rtl
+        ? point.x < domRect.right - BLOCK_CHILDREN_CONTAINER_PADDING_LEFT
+        : point.x > domRect.x + BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
+      if (pastIndent) {
+        placement = 'in';
+      }
     }
     // after
     let next;
@@ -192,7 +197,9 @@ export function calcDropTarget(
   }
 
   if (placement === 'in') {
-    domRect.x += BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
+    if (!rtl) {
+      domRect.x += BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
+    }
     domRect.width -= BLOCK_CHILDREN_CONTAINER_PADDING_LEFT;
   }
 
