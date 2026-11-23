@@ -207,6 +207,7 @@ dependencies = [
  "napi-build",
  "napi-derive",
  "once_cell",
+ "pulldown-cmark 0.13.1",
  "serde_json",
  "sha3 0.12.0",
  "sqlx",

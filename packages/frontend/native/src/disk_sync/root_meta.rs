@@ -65,6 +65,7 @@ pub(crate) fn extract_all_root_meta(root_bin: &[u8]) -> Result<HashMap<String, F
         tags: page.tags,
         favorite: page.favorite,
         trash: page.trash,
+        extra: Vec::new(),
       },
     );
   }

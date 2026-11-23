@@ -3,7 +3,7 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use affine_doc_loader::{build_full_doc, update_doc};
+use affine_doc_loader::{build_full_doc, parse_doc_to_markdown, update_doc};
 use chrono::Utc;
 use napi::bindgen_prelude::Uint8Array;
 use uuid::Uuid;
@@ -14,7 +14,7 @@ use super::{
   frontmatter::{parse_frontmatter, render_frontmatter},
   root_meta::build_root_meta_update,
   types::FrontmatterMeta,
-  utils::collect_markdown_files,
+  utils::{collect_markdown_files, markdown_merge_sources, sanitize_file_stem},
 };
 
 #[test]
@@ -263,6 +263,8 @@ Body.
     "first\nsecond",
     "first\n---\nsecond",
     "'quoted'",
+    "bell\u{7} escape\u{1b}",
+    "Café 会议",
   ] {
     let expected = FrontmatterMeta {
       id: Some("doc-1".to_string()),
@@ -270,6 +272,7 @@ Body.
       tags: Some(vec![value.to_string()]),
       favorite: Some(true),
       trash: Some(false),
+      extra: Vec::new(),
     };
     let (actual, parsed_body) = parse_frontmatter(&render_frontmatter(&expected, "Body"));
     assert_eq!(actual.title, expected.title, "title: {value:?}");
@@ -291,6 +294,283 @@ Body
   let (meta, _) = parse_frontmatter(raw);
   assert_eq!(meta.id.as_deref(), Some("doc-empty-title"));
   assert_eq!(meta.title.as_deref(), Some(""));
+}
+
+#[test]
+fn parse_frontmatter_accepts_empty_blocks_closing_delimiters_and_yaml_escapes() {
+  for (raw, title, body) in [
+    ("---\n---\n# Hello\n", None, "# Hello\n"),
+    ("---\n---", None, ""),
+    ("---\ntitle: Only\n---", Some("Only"), ""),
+    (
+      "---\ntitle: \"Caf\\u00e9 \\x41\\U0001F600\"\n---\nBody\n",
+      Some("Café A😀"),
+      "Body\n",
+    ),
+    (
+      "---\ntitle: \"a\\tb\\a\\/\\q\"\n---\nBody\n",
+      Some("a\tb\u{7}/\\q"),
+      "Body\n",
+    ),
+  ] {
+    let (meta, parsed_body) = parse_frontmatter(raw);
+    assert_eq!((meta.title.as_deref(), parsed_body.as_str()), (title, body), "{raw:?}");
+  }
+}
+
+#[test]
+fn frontmatter_keeps_unknown_lines_verbatim() {
+  let raw = "---\nid: doc-1\ntitle: Notes\naliases:\n  - Note\n- indentless\ndate: 2026-01-01\n# comment\n---\nBody\n";
+  let (meta, body) = parse_frontmatter(raw);
+  assert_eq!(
+    meta.extra,
+    ["aliases:", "  - Note", "- indentless", "date: 2026-01-01", "# comment"]
+  );
+
+  let renamed = FrontmatterMeta {
+    title: Some("Renamed".to_string()),
+    ..meta
+  };
+  assert_eq!(
+    render_frontmatter(&renamed, &body),
+    "---\nid: doc-1\ntitle: Renamed\naliases:\n  - Note\n- indentless\ndate: 2026-01-01\n# comment\n---\nBody\n"
+  );
+}
+
+#[test]
+fn file_stems_keep_unicode_letters() {
+  for (title, stem) in [
+    ("会议记录", "会议记录"),
+    ("Überblick Notes", "überblick-notes"),
+    ("Q3/plan: v2", "q3plan-v2"),
+    ("!!!", "doc"),
+  ] {
+    assert_eq!(sanitize_file_stem(title), stem, "{title:?}");
+  }
+}
+
+#[test]
+fn markdown_merge_sources_mark_unchanged_opaque_blocks() {
+  let projection = "<!-- block_id=p flavour=affine:paragraph -->\nbefore\n\n<!-- block_id=t flavour=affine:table \
+                    opaque=true -->\n<!-- block_id=t flavour=affine:table end -->\n\n";
+  let previous = "before\n\n| A |\n| --- |\n| one |\n";
+  let marker = "<!-- block_id=t flavour=affine:table opaque=true -->\n<!-- block_id=t flavour=affine:table end -->\n";
+
+  for (name, projection, body, expected) in [
+    (
+      "paragraph edit keeps the table",
+      projection,
+      "after\n\n| A |\n| --- |\n| one |\n".to_string(),
+      Some((projection.to_string(), format!("after\n\n{marker}"))),
+    ),
+    (
+      "appended paragraph keeps the table",
+      projection,
+      "before\n\n| A |\n| --- |\n| one |\n\nmore\n".to_string(),
+      Some((projection.to_string(), format!("before\n\n{marker}\nmore\n"))),
+    ),
+    (
+      "table edit is rejected",
+      projection,
+      "before\n\n| A |\n| --- |\n| two |\n".to_string(),
+      None,
+    ),
+    (
+      "source without opaque blocks is merged as written",
+      "<!-- block_id=p flavour=affine:paragraph -->\nbefore\n\n",
+      "after\n".to_string(),
+      Some((previous.to_string(), "after\n".to_string())),
+    ),
+    (
+      "exported source is merged as written",
+      projection,
+      format!("<!-- block_id=p flavour=affine:paragraph -->\nafter\n\n{marker}"),
+      Some((
+        previous.to_string(),
+        format!("<!-- block_id=p flavour=affine:paragraph -->\nafter\n\n{marker}"),
+      )),
+    ),
+  ] {
+    assert_eq!(
+      markdown_merge_sources(projection, previous, &body).ok(),
+      expected,
+      "{name}"
+    );
+  }
+}
+
+#[tokio::test]
+async fn markdown_tables_import_and_accept_edits_around_them() {
+  let dir = temp_dir();
+  let md_path = dir.join("table.md");
+  let source = "---\nid: doc-table\ntitle: Table\n---\n\n# Table\n\nold\n\n| A | B |\n| --- | --- |\n| one | two |\n";
+  fs::write(&md_path, source).expect("write table markdown");
+
+  let sync = DiskSync::new();
+  let session_id = "markdown-table";
+  sync
+    .start_session(
+      session_id.to_string(),
+      DiskSessionOptions {
+        workspace_id: "ws-markdown-table".to_string(),
+        sync_folder: dir.to_string_lossy().to_string(),
+      },
+    )
+    .await
+    .expect("start session");
+
+  let mut snapshot = sync
+    .prepare_source_doc(session_id.to_string(), "doc-table".to_string(), None, None)
+    .await
+    .expect("prepare table source")
+    .expect("table source snapshot");
+  let clock = sync
+    .apply_local_update(
+      session_id.to_string(),
+      DiskDocUpdateInput {
+        doc_id: "doc-table".to_string(),
+        bin: Uint8Array::new(snapshot.as_ref().to_vec()),
+        editor: None,
+      },
+    )
+    .await
+    .expect("replay imported table snapshot");
+  assert!(clock.review_required.is_none());
+  let _ = sync.pull_events(session_id.to_string()).await.expect("drain import");
+
+  for edited in [
+    source.replace("old", "new"),
+    format!("{}\nappended paragraph\n", source.replace("old", "new")),
+  ] {
+    fs::write(&md_path, &edited).expect("edit markdown around the table");
+    let _ = sync.pull_events(session_id.to_string()).await.expect("discover edit");
+    snapshot = sync
+      .prepare_source_doc(session_id.to_string(), "doc-table".to_string(), Some(snapshot), None)
+      .await
+      .expect("merge edit around the table")
+      .expect("merged snapshot");
+    let events = sync.pull_events(session_id.to_string()).await.expect("pull merge");
+    assert!(
+      events.iter().any(|event| event.r#type == "doc-update"
+        && event.update.as_ref().is_some_and(|update| update.doc_id == "doc-table")),
+      "{edited:?}"
+    );
+  }
+  let markdown = parse_doc_to_markdown(snapshot.as_ref().to_vec(), "doc-table".to_string(), true, None)
+    .expect("render merged doc")
+    .markdown;
+  assert!(markdown.contains("new") && markdown.contains("appended paragraph") && markdown.contains("two"));
+
+  fs::write(&md_path, source.replace("two", "three")).expect("edit the table");
+  let _ = sync
+    .pull_events(session_id.to_string())
+    .await
+    .expect("discover table edit");
+  let Err(error) = sync
+    .prepare_source_doc(session_id.to_string(), "doc-table".to_string(), Some(snapshot), None)
+    .await
+  else {
+    panic!("table edits are not merged");
+  };
+  assert!(error.reason.contains("affine:table"), "{}", error.reason);
+
+  teardown(&sync, session_id, &dir).await;
+}
+
+#[tokio::test]
+async fn local_edits_to_hand_written_markdown_need_review_only_when_the_source_changes() {
+  fn set_collapsed(block: &mut y_octo::Map, collapsed: bool) {
+    block
+      .insert(
+        "prop:collapsed".to_string(),
+        if collapsed { Any::True } else { Any::False },
+      )
+      .expect("set collapsed");
+  }
+
+  type Edit = fn(&mut y_octo::Map);
+  let cases: [(&str, Edit, bool); 3] = [
+    (
+      "editor default collapsed state",
+      |block| set_collapsed(block, false),
+      false,
+    ),
+    ("collapsed block", |block| set_collapsed(block, true), false),
+    (
+      "text edit",
+      |block| {
+        block
+          .get("prop:text")
+          .and_then(|value| value.to_text())
+          .expect("paragraph text")
+          .insert(0, "edited ")
+          .expect("edit text");
+      },
+      true,
+    ),
+  ];
+  for (index, (name, edit, needs_review)) in cases.into_iter().enumerate() {
+    let dir = temp_dir();
+    let doc_id = format!("doc-hand-written-{index}");
+    fs::write(
+      dir.join("notes.md"),
+      format!("---\nid: {doc_id}\n---\n\n# Notes\n\none\n"),
+    )
+    .expect("write markdown");
+    let sync = DiskSync::new();
+    let session_id = format!("hand-written-{index}");
+    sync
+      .start_session(
+        session_id.clone(),
+        DiskSessionOptions {
+          workspace_id: format!("ws-hand-written-{index}"),
+          sync_folder: dir.to_string_lossy().to_string(),
+        },
+      )
+      .await
+      .expect("start session");
+    let imported = sync
+      .prepare_source_doc(session_id.clone(), doc_id.clone(), None, None)
+      .await
+      .expect("prepare source")
+      .expect("imported snapshot");
+
+    let source = affine_doc_loader::export_markdown_source(imported.as_ref(), &doc_id, None).expect("export source");
+    let block_id = source
+      .markdown
+      .lines()
+      .rev()
+      .find_map(|line| line.strip_prefix("<!-- block_id=")?.split_whitespace().next())
+      .expect("paragraph marker")
+      .to_string();
+    let mut doc = DocOptions::new().with_guid(doc_id.clone()).build();
+    doc
+      .apply_update_from_binary_v1(imported.as_ref())
+      .expect("load imported snapshot");
+    let before = doc.get_state_vector();
+    let mut block = doc
+      .get_map("blocks")
+      .expect("blocks")
+      .get(&block_id)
+      .and_then(|value| value.to_map())
+      .expect("paragraph block");
+    edit(&mut block);
+
+    let clock = sync
+      .apply_local_update(
+        session_id.clone(),
+        DiskDocUpdateInput {
+          doc_id,
+          bin: Uint8Array::new(doc.encode_state_as_update_v1(&before).expect("encode edit")),
+          editor: None,
+        },
+      )
+      .await
+      .expect("apply local edit");
+    assert_eq!(clock.review_required.is_some(), needs_review, "{name}");
+
+    teardown(&sync, &session_id, &dir).await;
+  }
 }
 
 #[tokio::test]
@@ -681,6 +961,7 @@ async fn apply_local_root_update_skips_metadata_only_placeholder_without_doc_bod
       tags: Some(vec!["alpha".to_string()]),
       favorite: Some(true),
       trash: Some(false),
+      extra: Vec::new(),
     },
   )
   .expect("build root meta update");
