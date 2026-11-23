@@ -14,6 +14,8 @@ type PdfFontSource = {
   style: FontStyle;
 };
 
+// The editor ships no CJK font, so when the CDN is unreachable this falls back
+// to Inter and CJK characters in the exported PDF render as missing glyphs.
 const sarasa: PdfFontSource = {
   file: 'SarasaGothicCL-Regular.ttf',
   weight: FontWeight.Regular,

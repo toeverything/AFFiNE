@@ -66,8 +66,26 @@ describe('createPdfFontLoader', () => {
       italics: 'Inter-Italic.woff2',
       bolditalics: 'Inter-SemiBoldItalic.woff2',
     });
-    expect(fonts.SarasaGothicCL?.bold).toBe('Inter-Regular.woff2');
     expect(decode(vfs['Inter-Italic.woff2'])).toBe('Inter-Italic.woff2');
+  });
+
+  test('replaces the CJK font with Inter regular when the CDN is blocked', async () => {
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.startsWith('https://cdn.affine.pro/')) {
+        throw new TypeError('Failed to fetch');
+      }
+      return fontResponse(url);
+    });
+    const load = createPdfFontLoader(fetcher as unknown as typeof fetch);
+
+    const { fonts } = await load(editorFontConfig);
+
+    expect(fonts.SarasaGothicCL).toEqual({
+      normal: 'Inter-Regular.woff2',
+      bold: 'Inter-Regular.woff2',
+      italics: 'Inter-Regular.woff2',
+      bolditalics: 'Inter-Regular.woff2',
+    });
   });
 
   test('rejects when a font cannot be loaded from anywhere', async () => {
