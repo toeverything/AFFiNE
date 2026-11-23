@@ -1,6 +1,10 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import test from 'ava';
 
-import { Env } from '../env';
+import { DeploymentType, Env } from '../env';
 
 const envs = { ...process.env };
 test.beforeEach(() => {
@@ -29,7 +33,7 @@ test('should read NODE_ENV', t => {
     },
     {
       message:
-        'Invalid value "unknown" for environment variable NODE_ENV, expected one of ["development","test","production"]',
+        'Invalid NODE_ENV environment. `unknown` is not a valid NODE_ENV value.',
     }
   );
 });
@@ -64,16 +68,42 @@ test('should read DEPLOYMENT_TYPE', t => {
     process.env.DEPLOYMENT_TYPE = 'unknown';
     new Env();
   });
+
+  const directory = mkdtempSync(join(tmpdir(), 'affine-env-config-'));
+  try {
+    const configPath = join(directory, 'config.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({ deployment: { type: 'selfhosted' } })
+    );
+    process.env.DEPLOYMENT_TYPE = 'affine';
+    const selected = new Env(configPath);
+    t.is(selected.serverConfigHandle.deploymentType, 'selfhosted');
+    t.is(selected.DEPLOYMENT_TYPE, DeploymentType.Selfhosted);
+    t.true(selected.selfhosted);
+    process.env.DEPLOYMENT_TYPE = 'unknown';
+    t.is(new Env(configPath).DEPLOYMENT_TYPE, DeploymentType.Selfhosted);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('should read FLAVOR', t => {
   t.deepEqual(
-    ['allinone', 'graphql', 'sync', 'renderer', 'doc', 'script'].map(envVal => {
+    [
+      'allinone',
+      'graphql',
+      'sync',
+      'renderer',
+      'front',
+      'worker',
+      'script',
+    ].map(envVal => {
       process.env.SERVER_FLAVOR = envVal;
       const env = new Env();
       return env.FLAVOR;
     }),
-    ['allinone', 'graphql', 'sync', 'renderer', 'doc', 'script']
+    ['allinone', 'graphql', 'sync', 'renderer', 'front', 'worker', 'script']
   );
 
   t.throws(
@@ -83,7 +113,7 @@ test('should read FLAVOR', t => {
     },
     {
       message:
-        'Invalid value "unknown" for environment variable SERVER_FLAVOR, expected one of ["allinone","graphql","sync","renderer","doc","script"]',
+        'Invalid value "unknown" for environment variable SERVER_FLAVOR, expected one of ["allinone","graphql","sync","renderer","front","worker","script"]',
     }
   );
 });
@@ -110,7 +140,8 @@ test('should tell flavors correctly', t => {
     graphql: true,
     sync: true,
     renderer: true,
-    doc: true,
+    front: false,
+    worker: true,
     script: false,
   });
 
@@ -119,7 +150,18 @@ test('should tell flavors correctly', t => {
     graphql: true,
     sync: false,
     renderer: false,
-    doc: false,
+    front: false,
+    worker: false,
+    script: false,
+  });
+
+  process.env.SERVER_FLAVOR = 'front';
+  t.deepEqual(new Env().flavors, {
+    graphql: false,
+    sync: false,
+    renderer: false,
+    front: true,
+    worker: false,
     script: false,
   });
 
@@ -128,7 +170,8 @@ test('should tell flavors correctly', t => {
     graphql: false,
     sync: false,
     renderer: false,
-    doc: false,
+    front: false,
+    worker: false,
     script: true,
   });
 });

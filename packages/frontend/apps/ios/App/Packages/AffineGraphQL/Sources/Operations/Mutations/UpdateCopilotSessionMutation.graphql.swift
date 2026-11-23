@@ -26,6 +26,9 @@ public class UpdateCopilotSessionMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateCopilotSession", String.self, arguments: ["options": .variable("options")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateCopilotSessionMutation.Data.self
+    ] }
 
     /// Update a chat session
     public var updateCopilotSession: String { __data["updateCopilotSession"] }

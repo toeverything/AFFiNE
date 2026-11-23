@@ -1,4 +1,8 @@
-import { Container, Img, Link, Row, Section } from '@react-email/components';
+import { Container } from '@react-email/container';
+import { Img } from '@react-email/img';
+import { Link } from '@react-email/link';
+import { Row } from '@react-email/row';
+import { Section } from '@react-email/section';
 import type { CSSProperties } from 'react';
 
 import { BasicTextStyle } from './common';
@@ -24,24 +28,19 @@ export const Footer = () => {
     >
       <Section align="center" width="auto" style={{ margin: '1px auto' }}>
         <Row>
-          {[
-            'Github',
-            'Twitter',
-            'Discord',
-            'Youtube',
-            'Telegram',
-            'Reddit',
-          ].map(platform => (
-            <td key={platform} style={{ padding: '0 10px' }}>
-              <Link href={`https://affine.pro/${platform.toLowerCase()}`}>
-                <Img
-                  src={`https://cdn.affine.pro/mail/2023-8-9/${platform}.png`}
-                  alt={`affine ${platform.toLowerCase()} link`}
-                  height="16px"
-                />
-              </Link>
-            </td>
-          ))}
+          {['Github', 'Twitter', 'Discord', 'Youtube', 'Reddit'].map(
+            platform => (
+              <td key={platform} style={{ padding: '0 10px' }}>
+                <Link href={`https://affine.pro/${platform.toLowerCase()}`}>
+                  <Img
+                    src={`https://cdn.affine.pro/mail/2023-8-9/${platform}.png`}
+                    alt={`affine ${platform.toLowerCase()} link`}
+                    height="16px"
+                  />
+                </Link>
+              </td>
+            )
+          )}
         </Row>
       </Section>
       <Section align="center" width="auto">

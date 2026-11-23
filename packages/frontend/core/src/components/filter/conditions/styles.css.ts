@@ -6,7 +6,7 @@ export const filterTypeStyle = style({
   fontSize: cssVar('fontSm'),
   display: 'flex',
   alignItems: 'center',
-  padding: '0px 4px',
+  padding: '0px 4px 0 0',
   lineHeight: '22px',
   color: cssVar('textPrimaryColor'),
 });
@@ -24,6 +24,9 @@ export const filterValueStyle = style({
       cursor: 'pointer',
       background: cssVar('hoverColor'),
       borderRadius: '4px',
+    },
+    '&:empty': {
+      display: 'none',
     },
   },
 });

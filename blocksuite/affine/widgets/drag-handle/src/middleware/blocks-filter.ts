@@ -40,7 +40,7 @@ export const gfxBlocksFilter = (
   }
 
   return ({ slots, transformerConfigs }) => {
-    slots.beforeExport.subscribe(payload => {
+    const beforeExportSubscription = slots.beforeExport.subscribe(payload => {
       if (payload.type !== 'block') {
         return;
       }
@@ -54,7 +54,7 @@ export const gfxBlocksFilter = (
       }
     });
 
-    slots.afterExport.subscribe(payload => {
+    const afterExportSubscription = slots.afterExport.subscribe(payload => {
       if (payload.type !== 'block') {
         return;
       }
@@ -110,5 +110,10 @@ export const gfxBlocksFilter = (
         });
       }
     });
+
+    return () => {
+      beforeExportSubscription.unsubscribe();
+      afterExportSubscription.unsubscribe();
+    };
   };
 };

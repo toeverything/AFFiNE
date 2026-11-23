@@ -1,3 +1,4 @@
+import { CommentInlineSpecExtension } from '@blocksuite/affine-inline-comment';
 import { FootNoteInlineSpecExtension } from '@blocksuite/affine-inline-footnote';
 import { LatexInlineSpecExtension } from '@blocksuite/affine-inline-latex';
 import { LinkInlineSpecExtension } from '@blocksuite/affine-inline-link';
@@ -32,5 +33,6 @@ export const DefaultInlineManagerExtension =
       LinkInlineSpecExtension.identifier,
       FootNoteInlineSpecExtension.identifier,
       MentionInlineSpecExtension.identifier,
+      CommentInlineSpecExtension.identifier,
     ],
   });

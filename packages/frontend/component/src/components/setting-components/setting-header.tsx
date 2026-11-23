@@ -2,8 +2,10 @@ import type { HTMLAttributes, ReactNode } from 'react';
 
 import { settingHeader, settingHeaderBeta } from './share.css';
 
-interface SettingHeaderProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+interface SettingHeaderProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   title: ReactNode;
   subtitle?: ReactNode;
   beta?: boolean;

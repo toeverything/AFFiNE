@@ -50,8 +50,8 @@ export type GfxCommonBlockProps = GfxCompatibleProps & {
  * You can use `GfxCompatibleBlockModel` to convert a BlockModel to a subclass that extends it.
  */
 export class GfxBlockElementModel<
-    Props extends GfxCompatibleProps = GfxCompatibleProps,
-  >
+  Props extends GfxCompatibleProps = GfxCompatibleProps,
+>
   extends BlockModel<Props>
   implements GfxCompatibleInterface
 {
@@ -116,7 +116,19 @@ export class GfxBlockElementModel<
    */
   responseExtension: [number, number] = [0, 0];
 
-  rotate = 0;
+  get rotate() {
+    if ('rotate' in this.props) {
+      return this.props.rotate as number;
+    }
+
+    return 0;
+  }
+
+  set rotate(rotate: number) {
+    if ('rotate' in this.props) {
+      this.props.rotate = rotate;
+    }
+  }
 
   get deserializedXYWH() {
     if (this._cacheDeserKey !== this.xywh || !this._cacheDeserXYWH) {

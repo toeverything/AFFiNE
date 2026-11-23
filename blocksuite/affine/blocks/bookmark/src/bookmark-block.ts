@@ -8,15 +8,19 @@ import type {
 } from '@blocksuite/affine-model';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import {
+  BlockElementCommentManager,
+  CitationProvider,
   DocModeProvider,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
 } from '@blocksuite/affine-shared/services';
+import { normalizeUrl } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/std';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
+import { filter } from 'rxjs/operators';
 
 import { refreshBookmarkUrlData } from './utils.js';
 
@@ -72,8 +76,8 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     this.loading = true;
     this.error = false;
 
-    this.std.store
-      .get(LinkPreviewerService)
+    this.std
+      .get(LinkPreviewServiceIdentifier)
       .query(this.model.props.url, this._fetchAbortController.signal)
       .then(data => {
         this._localLinkPreview$.value = {
@@ -99,12 +103,14 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     selectionManager.setGroup('note', [blockSelection]);
   };
 
+  get link() {
+    return normalizeUrl(this.model.props.url);
+  }
+
   open = () => {
-    let link = this.model.props.url;
-    if (!link.match(/^[a-zA-Z]+:\/\//)) {
-      link = 'https://' + link;
-    }
-    window.open(link, '_blank');
+    const link = this.link;
+    if (!link) return;
+    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   refreshData = () => {
@@ -113,15 +119,24 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     );
   };
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   get isCitation() {
-    return (
-      !!this.model.props.footnoteIdentifier &&
-      this.model.props.style === 'citation'
-    );
+    return this.citationService.isCitationModel(this.model);
   }
 
   get imageProxyService() {
     return this.std.get(ImageProxyService);
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   handleClick = (event: MouseEvent) => {
@@ -165,6 +180,31 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
     ></bookmark-card>`;
   };
 
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
+    );
+  };
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -202,6 +242,8 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
         }
       })
     );
+
+    this._trackCitationDeleteEvent();
   }
 
   override disconnectedCallback(): void {

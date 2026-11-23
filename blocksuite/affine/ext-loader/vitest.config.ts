@@ -8,7 +8,7 @@ export default defineConfig({
     include: ['src/__tests__/**/*.unit.spec.ts'],
     testTimeout: 500,
     coverage: {
-      provider: 'istanbul', // or 'c8'
+      provider: 'istanbul',
       reporter: ['lcov'],
       reportsDirectory: '../../../.coverage/ext-loader',
     },

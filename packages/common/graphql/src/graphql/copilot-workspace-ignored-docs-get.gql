@@ -1,4 +1,7 @@
-query getWorkspaceEmbeddingIgnoredDocs($workspaceId: String!, $pagination: PaginationInput!) {
+query getWorkspaceEmbeddingIgnoredDocs(
+  $workspaceId: String!
+  $pagination: PaginationInput!
+) {
   workspace(id: $workspaceId) {
     embedding {
       ignoredDocs(pagination: $pagination) {

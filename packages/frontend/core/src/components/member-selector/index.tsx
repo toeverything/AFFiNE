@@ -1,13 +1,29 @@
-import { Avatar, Divider, Menu, RowInput, Scrollable } from '@affine/component';
+import {
+  Avatar,
+  Divider,
+  Menu,
+  MenuItem,
+  type MenuRef,
+  RowInput,
+  Scrollable,
+} from '@affine/component';
 import {
   type Member,
   MemberSearchService,
 } from '@affine/core/modules/permissions';
+import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { clamp, debounce } from 'lodash-es';
 import type { KeyboardEvent, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { ConfigModal } from '../mobile';
 import { InlineMemberList } from './inline-member-list';
@@ -26,6 +42,8 @@ export interface MemberSelectorInlineProps extends MemberSelectorProps {
   readonly?: boolean;
   title?: ReactNode; // only used for mobile
   placeholder?: ReactNode;
+  ref?: React.Ref<MenuRef>;
+  onEditorClose?: () => void;
 }
 
 interface MemberSelectItemProps {
@@ -90,7 +108,6 @@ export const MemberSelector = ({
       if (value.length > 0) {
         setFocusedInlineIndex(selected.length);
       }
-      console.log('onInputChange', value);
       debouncedSearch(value.trim());
     },
     [debouncedSearch, selected.length]
@@ -220,9 +237,15 @@ export const MemberSelector = ({
           />
         </InlineMemberList>
         {BUILD_CONFIG.isMobileEdition ? null : (
-          <Divider size="thinner" className={styles.memberDivider} />
+          <MenuItem
+            className={styles.memberSelectorDoneButton}
+            prefixIcon={<DoneIcon />}
+          />
         )}
       </div>
+      {BUILD_CONFIG.isMobileEdition ? null : (
+        <Divider size="thinner" className={styles.memberDivider} />
+      )}
       <div className={styles.memberSelectorBody}>
         <Scrollable.Root>
           <Scrollable.Viewport
@@ -268,9 +291,24 @@ const MobileMemberSelectorInline = ({
   className,
   title,
   style,
+  onEditorClose,
+  ref,
   ...props
 }: MemberSelectorInlineProps) => {
   const [editing, setEditing] = useState(false);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      changeOpen: (open: boolean) => {
+        setEditing(open);
+        if (!open) {
+          onEditorClose?.();
+        }
+      },
+    }),
+    [onEditorClose]
+  );
 
   const empty = !props.selected || props.selected.length === 0;
   return (
@@ -279,7 +317,10 @@ const MobileMemberSelectorInline = ({
         title={title}
         open={editing}
         onOpenChange={setEditing}
-        onBack={() => setEditing(false)}
+        onBack={() => {
+          setEditing(false);
+          onEditorClose?.();
+        }}
       >
         <MemberSelector {...props} />
       </ConfigModal>
@@ -304,11 +345,14 @@ const DesktopMemberSelectorInline = ({
   menuClassName,
   style,
   selected,
+  ref,
+  onEditorClose,
   ...props
 }: MemberSelectorInlineProps) => {
   const empty = !selected || selected.length === 0;
   return (
     <Menu
+      ref={ref}
       contentOptions={{
         side: 'bottom',
         align: 'start',
@@ -322,6 +366,7 @@ const DesktopMemberSelectorInline = ({
       rootOptions={{
         open: readonly ? false : undefined,
         modal: modalMenu,
+        onClose: onEditorClose,
       }}
       items={<MemberSelector selected={selected} {...props} />}
     >

@@ -66,7 +66,12 @@ export function PDFViewerEmbedded({ model }: AttachmentViewerProps) {
     useMemo(() => (pageEntity ? pageEntity.page.bitmap$ : null), [pageEntity])
   );
 
-  const [name, setName] = useState(model.props.name);
+  const name = useLiveData(
+    useMemo(() => LiveData.fromSignal(model.props.name$), [model])
+  );
+  const blobId = useLiveData(
+    useMemo(() => LiveData.fromSignal(model.props.sourceId$), [model])
+  );
   const [cursor, setCursor] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [visibility, setVisibility] = useState(false);
@@ -106,8 +111,6 @@ export function PDFViewerEmbedded({ model }: AttachmentViewerProps) {
       },
     };
   }, [cursor, meta, peek]);
-
-  useEffect(() => model.props.name$.subscribe(val => setName(val)), [model]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -163,8 +166,9 @@ export function PDFViewerEmbedded({ model }: AttachmentViewerProps) {
 
   useEffect(() => {
     if (!visibility) return;
+    if (!blobId) return;
 
-    const pdfEntity = pdfService.get(model);
+    const pdfEntity = pdfService.get(blobId);
 
     setPdfEntity(pdfEntity);
 
@@ -172,7 +176,7 @@ export function PDFViewerEmbedded({ model }: AttachmentViewerProps) {
       pdfEntity.release();
       setPdfEntity(null);
     };
-  }, [model, pdfService, visibility]);
+  }, [blobId, pdfService, visibility]);
 
   useEffect(() => {
     const viewer = viewerRef.current;

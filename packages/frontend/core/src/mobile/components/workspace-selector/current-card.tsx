@@ -10,8 +10,7 @@ import { forwardRef, type HTMLAttributes } from 'react';
 
 import { card, dropdownIcon, label } from './card.css';
 
-export interface CurrentWorkspaceCardProps
-  extends HTMLAttributes<HTMLDivElement> {}
+export interface CurrentWorkspaceCardProps extends HTMLAttributes<HTMLDivElement> {}
 
 export const CurrentWorkspaceCard = forwardRef<
   HTMLDivElement,
@@ -26,6 +25,7 @@ export const CurrentWorkspaceCard = forwardRef<
       ref={ref}
       onClick={onClick}
       className={clsx(card, className)}
+      data-testid="workspace-selector-trigger"
       {...attrs}
     >
       {currentWorkspace ? (

@@ -5,6 +5,7 @@ import ApolloAPI
 
 /// User permission in doc
 public enum DocRole: String, EnumType {
+  case commenter = "Commenter"
   case editor = "Editor"
   case external = "External"
   case manager = "Manager"

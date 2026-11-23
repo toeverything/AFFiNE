@@ -170,10 +170,7 @@ pub struct AudioBufferList {
 }
 
 unsafe impl Encode for AudioBufferList {
-  const ENCODING: Encoding = Encoding::Struct(
-    "AudioBufferList",
-    &[<u32>::ENCODING, <[AudioBuffer; 1]>::ENCODING],
-  );
+  const ENCODING: Encoding = Encoding::Struct("AudioBufferList", &[<u32>::ENCODING, <[AudioBuffer; 1]>::ENCODING]);
 }
 
 unsafe impl RefEncode for AudioBufferList {
@@ -324,8 +321,8 @@ mod tests {
 
   #[test]
   fn test_mix_audio_samples_custom_weights() {
-    // Note: We're using the constant weights so we can't really test custom values
-    // directly
+    // Note: We're using the constant weights so we can't really test custom
+    // values directly
     let input = vec![0.1, 0.2, 0.3];
     let output = vec![0.5, 0.4, 0.3];
     let mixed = mix_audio_samples(&input, &output);

@@ -59,7 +59,7 @@ abstract class ToolbarContextBase {
   }
 
   get history() {
-    return this.store.history;
+    return this.store.history.undoManager;
   }
 
   get view() {

@@ -4,9 +4,9 @@ import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
 import { LEFT_TOOL_BAR_WIDTH, STATS_BAR_HEIGHT } from '../consts.js';
-import type { TableSingleView } from '../table-view-manager.js';
+import type { TableViewUILogic } from '../pc/table-view-ui-logic.js';
 
 const styles = css`
   affine-database-column-stats {
@@ -38,10 +38,14 @@ export class DataBaseColumnStats extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
 
   @property({ attribute: false })
-  accessor view!: TableSingleView;
+  accessor tableViewLogic!: TableViewUILogic;
+
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

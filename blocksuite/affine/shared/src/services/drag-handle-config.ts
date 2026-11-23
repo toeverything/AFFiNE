@@ -47,6 +47,7 @@ export class DNDAPIExtension extends Extension {
       ...options.props,
       ...(blockId ? { blockId } : {}),
       pageId: docId,
+      style: flavour === 'affine:embed-synced-doc' ? 'syncedDoc' : 'vertical',
     };
     return {
       ...snapshot,

@@ -11,8 +11,9 @@ import {
   NativeClipboardProvider,
 } from '@blocksuite/affine-shared/services';
 import {
+  convertToPng,
+  formatSize,
   getBlockProps,
-  humanFileSize,
   isInsidePageEditor,
   readImageSize,
   transformModel,
@@ -109,28 +110,6 @@ export async function resetImageSize(
   const props: Partial<ImageBlockProps> = { ...imageSize, xywh };
 
   block.store.updateBlock(model, props);
-}
-
-function convertToPng(blob: Blob): Promise<Blob | null> {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.addEventListener('load', _ => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.width;
-        c.height = img.height;
-        const ctx = c.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0);
-        c.toBlob(resolve, 'image/png');
-      };
-      img.onerror = () => resolve(null);
-      img.src = reader.result as string;
-    });
-    reader.addEventListener('error', () => resolve(null));
-    reader.readAsDataURL(blob);
-  });
 }
 
 export async function copyImageBlob(
@@ -241,7 +220,7 @@ function hasExceeded(
   const exceeded = files.some(file => file.size > maxFileSize);
 
   if (exceeded) {
-    const size = humanFileSize(maxFileSize, true, 0);
+    const size = formatSize(maxFileSize);
     toast(std.host, `You can only upload files less than ${size}`);
   }
 

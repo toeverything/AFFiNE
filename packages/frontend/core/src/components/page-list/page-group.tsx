@@ -1,22 +1,15 @@
 import { shallowEqual } from '@affine/component';
-import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import type { CollectionMeta } from '@affine/core/modules/collection';
 import { useI18n } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/affine/store';
 import { ToggleRightIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
-import { useLiveData, useService } from '@toeverything/infra';
-import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import type { MouseEventHandler } from 'react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 import { CollectionListItem } from './collections/collection-list-item';
-import { PageListItem } from './docs/page-list-item';
-import { PagePreview } from './page-content-preview';
 import * as styles from './page-group.css';
 import {
   groupCollapseStateAtom,
-  groupsAtom,
   listPropsAtom,
   selectionStateAtom,
   useAtom,
@@ -25,11 +18,9 @@ import {
 import { TagListItem } from './tags/tag-list-item';
 import type {
   CollectionListItemProps,
-  CollectionMeta,
   ItemGroupProps,
   ListItem,
   ListProps,
-  PageListItemProps,
   TagListItemProps,
   TagMeta,
 } from './types';
@@ -111,82 +102,6 @@ export const ItemGroupHeader = memo(function ItemGroupHeader<
   ) : null;
 });
 
-export const ItemGroup = <T extends ListItem>({
-  id,
-  items,
-  label,
-}: ItemGroupProps<T>) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const onExpandedClicked: MouseEventHandler = useCallback(e => {
-    e.stopPropagation();
-    e.preventDefault();
-    setCollapsed(v => !v);
-  }, []);
-  const selectionState = useAtomValue(selectionStateAtom);
-  const selectedItems = useMemo(() => {
-    const selectedIds = selectionState.selectedIds ?? [];
-    return items.filter(item => selectedIds.includes(item.id));
-  }, [items, selectionState.selectedIds]);
-  const onSelectAll = useCallback(() => {
-    const nonCurrentGroupIds =
-      selectionState.selectedIds?.filter(
-        id => !items.map(item => item.id).includes(id)
-      ) ?? [];
-
-    selectionState.onSelectedIdsChange?.([
-      ...nonCurrentGroupIds,
-      ...items.map(item => item.id),
-    ]);
-  }, [items, selectionState]);
-  const t = useI18n();
-  return (
-    <Collapsible.Root
-      data-testid="page-list-group"
-      data-group-id={id}
-      open={!collapsed}
-      className={clsx(styles.root)}
-    >
-      {label ? (
-        <div data-testid="page-list-group-header" className={styles.header}>
-          <Collapsible.Trigger
-            role="button"
-            onClick={onExpandedClicked}
-            data-testid="page-list-group-header-collapsed-button"
-            className={styles.collapsedIconContainer}
-          >
-            <ToggleRightIcon
-              className={styles.collapsedIcon}
-              data-collapsed={collapsed !== false}
-            />
-          </Collapsible.Trigger>
-          <div className={styles.headerLabel}>{label}</div>
-          {selectionState.selectionActive ? (
-            <div className={styles.headerCount}>
-              {selectedItems.length}/{items.length}
-            </div>
-          ) : null}
-          <div className={styles.spacer} />
-          {selectionState.selectionActive ? (
-            <button className={styles.selectAllButton} onClick={onSelectAll}>
-              {t['com.affine.page.group-header.select-all']()}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      <Collapsible.Content
-        className={styles.collapsibleContent}
-        data-state={!collapsed ? 'open' : 'closed'}
-      >
-        <div className={styles.collapsibleContentInner}>
-          {items.map(item => (
-            <PageListItemRenderer key={item.id} {...item} />
-          ))}
-        </div>
-      </Collapsible.Content>
-    </Collapsible.Root>
-  );
-};
-
 // TODO(@Peng): optimize how to render page meta list item
 const requiredPropNames = [
   'docCollection',
@@ -213,30 +128,6 @@ const listsPropsAtom = selectAtom(
   },
   shallowEqual
 );
-
-export const PageListItemRenderer = memo(function PageListItemRenderer(
-  item: ListItem
-) {
-  const props = useAtomValue(listsPropsAtom);
-  const { selectionActive } = useAtomValue(selectionStateAtom);
-  const groups = useAtomValue(groupsAtom);
-  const pageItems = groups.flatMap(group => group.items).map(item => item.id);
-
-  const page = item as DocMeta;
-  return (
-    <PageListItem
-      {...pageMetaToListItemProp(
-        page,
-        {
-          ...props,
-
-          selectable: !!selectionActive,
-        },
-        pageItems
-      )}
-    />
-  );
-});
 
 export const CollectionListItemRenderer = memo((item: ListItem) => {
   const props = useAtomValue(listsPropsAtom);
@@ -269,62 +160,6 @@ export const TagListItemRenderer = memo(function TagListItemRenderer(
     />
   );
 });
-
-const PageTitle = ({ id }: { id: string }) => {
-  const i18n = useI18n();
-  const docDisplayMetaService = useService(DocDisplayMetaService);
-  const title = useLiveData(docDisplayMetaService.title$(id));
-  return i18n.t(title);
-};
-
-const UnifiedPageIcon = ({ id }: { id: string }) => {
-  const docDisplayMetaService = useService(DocDisplayMetaService);
-  const Icon = useLiveData(docDisplayMetaService.icon$(id));
-  return <Icon />;
-};
-
-function pageMetaToListItemProp(
-  item: DocMeta,
-  props: RequiredProps<DocMeta>,
-  pageIds?: string[]
-): PageListItemProps {
-  const toggleSelection = props.onSelectedIdsChange
-    ? () => {
-        if (!props.selectedIds) {
-          throw new Error('selectedIds is not found');
-        }
-        const prevSelected = props.selectedIds.includes(item.id);
-        const shouldAdd = !prevSelected;
-        const shouldRemove = prevSelected;
-
-        if (shouldAdd) {
-          props.onSelectedIdsChange?.([...props.selectedIds, item.id]);
-        } else if (shouldRemove) {
-          props.onSelectedIdsChange?.(
-            props.selectedIds.filter(id => id !== item.id)
-          );
-        }
-      }
-    : undefined;
-  const itemProps: PageListItemProps = {
-    pageId: item.id,
-    pageIds,
-    title: <PageTitle id={item.id} />,
-    preview: <PagePreview pageId={item.id} />,
-    createDate: new Date(item.createDate),
-    updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
-    to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
-    onClick: toggleSelection,
-    icon: <UnifiedPageIcon id={item.id} />,
-    operations: props.operationsRenderer?.(item),
-    selectable: props.selectable,
-    selected: props.selectedIds?.includes(item.id),
-    onSelectedChange: toggleSelection,
-    draggable: props.draggable,
-    isPublicPage: !!item.isPublic,
-  };
-  return itemProps;
-}
 
 function collectionMetaToListItemProp(
   item: CollectionMeta,

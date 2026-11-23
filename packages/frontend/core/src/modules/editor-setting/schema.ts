@@ -5,6 +5,14 @@ export const BSEditorSettingSchema = GeneralSettingSchema;
 
 export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
 export type EdgelessDefaultTheme = 'auto' | 'dark' | 'light' | 'specified';
+export const newDocDateTitleFormatOptions = [
+  'DD-MM-YYYY',
+  'MM-DD-YYYY',
+  'YYYY-MM-DD',
+  'journal',
+] as const;
+export type NewDocDateTitleFormat =
+  (typeof newDocDateTitleFormatOptions)[number];
 
 export const fontStyleOptions = [
   { key: 'Sans', value: 'var(--affine-font-sans-family)' },
@@ -19,7 +27,13 @@ export const fontStyleOptions = [
 const AffineEditorSettingSchema = z.object({
   fontFamily: z.enum(['Sans', 'Serif', 'Mono', 'Custom']).default('Sans'),
   customFontFamily: z.string().default(''),
+  fontSize: z.number().min(12).max(24).default(16),
   newDocDefaultMode: z.enum(['edgeless', 'page', 'ask']).default('page'),
+  autoTitleNewDocWithCurrentDate: z.boolean().default(false),
+  newDocDateTitleFormat: z
+    .enum(newDocDateTitleFormatOptions)
+    .default('DD-MM-YYYY'),
+  displayAddIconOption: z.boolean().default(true),
   fullWidthLayout: z.boolean().default(false),
   displayDocInfo: z.boolean().default(true),
   displayBiDirectionalLink: z.boolean().default(true),
@@ -36,6 +50,7 @@ const AffineEditorSettingSchema = z.object({
     .default('open-in-active-view'),
   // linux only:
   enableMiddleClickPaste: z.boolean().default(false),
+  codeBlockLineNumbers: z.boolean().default(true),
 });
 
 export const EditorSettingSchema = BSEditorSettingSchema.merge(

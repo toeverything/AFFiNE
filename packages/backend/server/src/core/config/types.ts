@@ -5,8 +5,12 @@ import { DeploymentType } from '../../env';
 export enum ServerFeature {
   Captcha = 'captcha',
   Copilot = 'copilot',
+  CopilotEmbedding = 'copilot_embedding',
   Payment = 'payment',
   OAuth = 'oauth',
+  Indexer = 'indexer',
+  Comment = 'comment',
+  LocalWorkspace = 'local_workspace',
 }
 
 registerEnumType(ServerFeature, {

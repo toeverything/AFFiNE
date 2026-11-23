@@ -2,7 +2,7 @@ import type {
   EmbedGithubBlockUrlData,
   EmbedGithubModel,
 } from '@blocksuite/affine-model';
-import type { LinkPreviewerService } from '@blocksuite/affine-shared/services';
+import type { LinkPreviewProvider } from '@blocksuite/affine-shared/services';
 import { isAbortError } from '@blocksuite/affine-shared/utils';
 import { nothing } from 'lit';
 
@@ -19,7 +19,7 @@ import {
 
 export async function queryEmbedGithubData(
   embedGithubModel: EmbedGithubModel,
-  linkPreviewer: LinkPreviewerService,
+  linkPreviewer: LinkPreviewProvider,
   signal?: AbortSignal
 ): Promise<Partial<EmbedGithubBlockUrlData>> {
   const [githubApiData, openGraphData] = await Promise.all([

@@ -9,7 +9,9 @@ export const LatexInlineSpecExtension =
     const std = provider.get(StdIdentifier);
     return {
       name: 'latex',
-      schema: z.string().optional().nullable().catch(undefined),
+      schema: z.object({
+        latex: z.string().optional().nullable().catch(undefined),
+      }),
       match: delta => typeof delta.attributes?.latex === 'string',
       renderer: ({ delta, selected, editor, startOffset, endOffset }) => {
         return html`<affine-latex-node
@@ -28,7 +30,9 @@ export const LatexInlineSpecExtension =
 export const LatexEditorUnitSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
     name: 'latex-editor-unit',
-    schema: z.undefined(),
+    schema: z.object({
+      'latex-editor-unit': z.undefined(),
+    }),
     match: () => true,
     renderer: ({ delta }) => {
       return html`<latex-editor-unit .delta=${delta}></latex-editor-unit>`;

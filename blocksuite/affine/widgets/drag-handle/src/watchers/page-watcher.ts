@@ -13,10 +13,6 @@ export class PageWatcher {
     const { disposables } = this.widget;
 
     disposables.add(
-      this.widget.store.slots.blockUpdated.subscribe(() => this.widget.hide())
-    );
-
-    disposables.add(
       this.pageViewportService.subscribe(() => {
         this.widget.hide();
       })

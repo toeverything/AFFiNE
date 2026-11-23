@@ -9,6 +9,25 @@ export interface EmbedIframeUrlValidationOptions {
   hostnames: string[]; // Allowed hostnames, e.g. ['docs.google.com']
 }
 
+function isLocalOrIpHostname(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (
+    lower === 'localhost' ||
+    lower.endsWith('.localhost') ||
+    lower === '0.0.0.0' ||
+    lower === '::' ||
+    lower === '::1'
+  ) {
+    return true;
+  }
+
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(lower)) {
+    return true;
+  }
+
+  return lower.startsWith('[') && lower.endsWith(']');
+}
+
 /**
  * Validate the url is allowed to embed in the iframe
  * @param url URL to validate
@@ -23,6 +42,15 @@ export function validateEmbedIframeUrl(
     const parsedUrl = new URL(url);
 
     const { protocols, hostnames } = options;
+    if (
+      parsedUrl.username ||
+      parsedUrl.password ||
+      parsedUrl.port ||
+      isLocalOrIpHostname(parsedUrl.hostname)
+    ) {
+      return false;
+    }
+
     return (
       protocols.includes(parsedUrl.protocol) &&
       hostnames.includes(parsedUrl.hostname)

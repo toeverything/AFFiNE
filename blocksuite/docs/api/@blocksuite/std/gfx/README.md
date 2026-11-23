@@ -28,19 +28,23 @@
 - [gfxGroupCompatibleSymbol](variables/gfxGroupCompatibleSymbol.md)
 - [SURFACE\_TEXT\_UNIQ\_IDENTIFIER](variables/SURFACE_TEXT_UNIQ_IDENTIFIER.md)
 - [SURFACE\_YMAP\_UNIQ\_IDENTIFIER](variables/SURFACE_YMAP_UNIQ_IDENTIFIER.md)
+- [viewportRuntimeConfig](variables/viewportRuntimeConfig.md)
 
 ## Functions
 
 - [canSafeAddToContainer](functions/canSafeAddToContainer.md)
 - [compareLayer](functions/compareLayer.md)
 - [convert](functions/convert.md)
+- [createRafCoalescer](functions/createRafCoalescer.md)
 - [derive](functions/derive.md)
 - [generateKeyBetween](functions/generateKeyBetween.md)
 - [generateKeyBetweenV2](functions/generateKeyBetweenV2.md)
 - [generateNKeysBetween](functions/generateNKeysBetween.md)
+- [getEffectiveDpr](functions/getEffectiveDpr.md)
 - [getTopElements](functions/getTopElements.md)
 - [GfxCompatible](functions/GfxCompatible.md)
 - [isGfxGroupCompatibleModel](functions/isGfxGroupCompatibleModel.md)
 - [local](functions/local.md)
+- [measureOperation](functions/measureOperation.md)
 - [observe](functions/observe.md)
 - [watch](functions/watch.md)

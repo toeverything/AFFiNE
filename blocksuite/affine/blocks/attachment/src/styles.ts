@@ -15,6 +15,10 @@ export const styles = css`
     }
   }
 
+  .affine-attachment-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
   .affine-attachment-card {
     display: flex;
     gap: 12px;
@@ -47,11 +51,10 @@ export const styles = css`
 
   .affine-attachment-content-title-icon {
     display: flex;
-    width: 16px;
-    height: 16px;
     align-items: center;
     justify-content: center;
     color: var(--affine-text-primary-color);
+    font-size: 16px;
   }
 
   .affine-attachment-content-title-text {
@@ -92,6 +95,7 @@ export const styles = css`
     font-size: var(--affine-font-xs);
     font-style: normal;
     font-weight: 500;
+    text-transform: capitalize;
     line-height: 20px;
 
     svg {
@@ -107,7 +111,7 @@ export const styles = css`
 
   .affine-attachment-card.loading {
     .affine-attachment-content-title-text {
-      color: var(--affine-placeholder-color);
+      color: ${unsafeCSSVarV2('text/placeholder')};
     }
   }
 
@@ -141,6 +145,12 @@ export const styles = css`
     position: relative;
     width: 100%;
     height: 100%;
+  }
+
+  .affine-attachment-embed-status {
+    position: absolute;
+    left: 14px;
+    bottom: 64px;
   }
 
   .affine-attachment-embed-event-mask {

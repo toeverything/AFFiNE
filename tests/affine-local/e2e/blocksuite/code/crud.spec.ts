@@ -22,16 +22,12 @@ test.describe('Code Block Autocomplete Operations', () => {
 test.describe('Code Block Preview', () => {
   test('enable html preview', async ({ page }) => {
     const code = page.locator('affine-code');
-    const htmlPreview = page.locator('html-preview');
 
     await openHomePage(page);
     await createNewPage(page);
     await waitForEditorLoad(page);
     await gotoContentFromTitle(page);
     await type(page, '```html aaa');
-    await page.waitForTimeout(3000);
-    // web container can not load as expected at the first time in playwright, not sure why
-    await page.reload();
     await code.hover({
       position: {
         x: 155,
@@ -39,21 +35,50 @@ test.describe('Code Block Preview', () => {
       },
     });
     await page.getByText('Preview').click();
-
-    await expect(
-      page
-        .locator('iframe[title="HTML Preview"]')
-        .contentFrame()
-        .getByText('aaa')
-    ).toBeHidden();
-    await expect(htmlPreview).toHaveText('Rendering the code...');
-    await page.waitForTimeout(20000);
     await expect(
       page
         .locator('iframe[title="HTML Preview"]')
         .contentFrame()
         .getByText('aaa')
     ).toBeVisible();
+  });
+
+  test('enable mermaid preview', async ({ page }) => {
+    const code = page.locator('affine-code');
+    const mermaidSvg = page.locator('mermaid-preview .mermaid-preview-svg svg');
+
+    await openHomePage(page);
+    await createNewPage(page);
+    await waitForEditorLoad(page);
+    await gotoContentFromTitle(page);
+    await type(page, '```mermaid graph TD;A-->B');
+    await code.hover({
+      position: {
+        x: 155,
+        y: 65,
+      },
+    });
+    await page.getByText('Preview').click();
+    await expect(mermaidSvg).toBeVisible();
+  });
+
+  test('enable typst preview', async ({ page }) => {
+    const code = page.locator('affine-code');
+    const typstPreview = page.locator('typst-preview');
+
+    await openHomePage(page);
+    await createNewPage(page);
+    await waitForEditorLoad(page);
+    await gotoContentFromTitle(page);
+    await type(page, '```typst = Title');
+    await code.hover({
+      position: {
+        x: 155,
+        y: 65,
+      },
+    });
+    await page.getByText('Preview').click();
+    await expect(typstPreview).toBeVisible();
   });
 
   test('change lang without preview', async ({ page }) => {

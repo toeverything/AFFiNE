@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html } from 'lit';
 
 export const EMBED_HTML_MIN_WIDTH = 370;
@@ -15,9 +16,9 @@ export const styles = css`
     gap: 20px;
 
     border-radius: 12px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
-    background: var(--affine-background-primary-color);
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 

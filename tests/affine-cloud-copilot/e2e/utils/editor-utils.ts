@@ -6,7 +6,10 @@ import {
   pressEscape,
   selectAllByKeyboard,
 } from '@affine-test/kit/utils/keyboard';
-import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  getBlockSuiteEditorTitle,
+} from '@affine-test/kit/utils/page-logic';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type {
   MindmapElementModel,
@@ -15,6 +18,37 @@ import type {
 import type { GfxModel } from '@blocksuite/std/gfx';
 import { type Page } from '@playwright/test';
 export class EditorUtils {
+  public static async waitForCurrentDocSynced(page: Page) {
+    await page.evaluate(async () => {
+      const [, , workspaceId, docId] = location.pathname.split('/');
+      const workspace = (
+        window as typeof window & {
+          currentWorkspace?: {
+            engine: {
+              doc: {
+                waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+              };
+            };
+          };
+        }
+      ).currentWorkspace;
+      if (!workspaceId || !docId || !workspace) {
+        throw new Error('Current document is unavailable');
+      }
+      const abort = AbortSignal.timeout(60_000);
+      await Promise.all([
+        workspace.engine.doc.waitForSynced(docId, abort),
+        workspace.engine.doc.waitForSynced('db$docProperties', abort),
+      ]);
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/docs/${docId}`
+      );
+      if (!response.ok) {
+        throw new Error('Current document could not be persisted');
+      }
+    });
+  }
+
   public static async focusToEditor(page: Page) {
     const title = getBlockSuiteEditorTitle(page);
     await title.focus();
@@ -78,23 +112,40 @@ export class EditorUtils {
     return page.getByTestId('title-edit-button').innerText();
   }
 
-  public static async waitForAiAnswer(page: Page) {
-    const answer = await page.getByTestId('ai-penel-answer');
-    await answer.waitFor({
-      state: 'visible',
-      timeout: 2 * 60000,
-    });
+  public static async waitForAiAnswer(page: Page, timeout = 2 * 60000) {
+    const answer = page.getByTestId('ai-penel-answer').last();
+    await answer.waitFor({ state: 'visible', timeout });
     return answer;
   }
 
-  private static createAction(page: Page, action: () => Promise<void>) {
+  private static createAction(
+    page: Page,
+    action: () => Promise<void>,
+    options?: { responseTimeoutMs?: number }
+  ) {
     return async () => {
+      const responseTimeoutMs = options?.responseTimeoutMs ?? 60000;
+
       await action();
+      await this.waitForAiAnswer(page, responseTimeoutMs);
+      await page.getByTestId('ai-generating').waitFor({
+        state: 'hidden',
+        timeout: responseTimeoutMs,
+      });
+
       const responses = new Set<string>();
       const answer = await this.waitForAiAnswer(page);
       const responsesMenu = answer.getByTestId('answer-responses');
-      await responsesMenu.isVisible();
-      await responsesMenu.scrollIntoViewIfNeeded({ timeout: 60000 });
+      await responsesMenu.waitFor({
+        state: 'visible',
+        timeout: responseTimeoutMs,
+      });
+      await responsesMenu.scrollIntoViewIfNeeded({
+        timeout: responseTimeoutMs,
+      });
+      await responsesMenu
+        .getByTestId('answer-insert-below-loading')
+        .waitFor({ state: 'hidden', timeout: responseTimeoutMs });
 
       if (await responsesMenu.getByTestId('answer-insert-below').isVisible()) {
         responses.add('insert-below');
@@ -288,6 +339,19 @@ export class EditorUtils {
     await page.waitForTimeout(100);
   }
 
+  public static async createDoc(page: Page, title: string, docContent: string) {
+    await clickNewPageButton(page);
+    await page.keyboard.insertText(title);
+    await this.focusToEditor(page);
+    const texts = docContent.split('\n');
+    for (const [index, line] of texts.entries()) {
+      await page.keyboard.insertText(line);
+      if (index !== texts.length - 1) {
+        await page.keyboard.press('Enter');
+      }
+    }
+  }
+
   public static async createCollectionAndDoc(
     page: Page,
     collectionName: string,
@@ -318,6 +382,7 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
+    await this.waitForCurrentDocSynced(page);
   }
 
   public static async createTagAndDoc(
@@ -346,6 +411,8 @@ export class EditorUtils {
         await page.keyboard.press('Enter');
       }
     }
+    // sleep 1 sec to wait the doc sync
+    await page.waitForTimeout(1000);
   }
 
   public static async selectElementInEdgeless(page: Page, elements: string[]) {
@@ -366,14 +433,18 @@ export class EditorUtils {
     );
   }
 
+  public static async removeAll(page: Page) {
+    await selectAllByKeyboard(page);
+    await page.keyboard.press('Delete');
+  }
+
   public static async askAIWithEdgeless(
     page: Page,
     createBlock: () => Promise<void>,
     afterSelected?: () => Promise<void>
   ) {
     await this.switchToEdgelessMode(page);
-    await selectAllByKeyboard(page);
-    await page.keyboard.press('Delete');
+    await this.removeAll(page);
     await createBlock();
     await pressEscape(page, 5);
     await selectAllByKeyboard(page);
@@ -425,14 +496,18 @@ export class EditorUtils {
       generateHeadings: this.createAction(page, () =>
         page.getByTestId('action-generate-headings').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
+      generateImage: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-image').click(),
+        { responseTimeoutMs: 300000 }
       ),
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()
@@ -527,22 +602,43 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
+      generateImage: this.createAction(
+        page,
+        async () => {
+          await page.getByTestId('action-generate-image').click();
+          const input = page.locator(
+            'affine-ai-panel-widget .ai-panel-container textarea'
+          );
+          await input.waitFor({ state: 'visible' });
+          await input.fill('generate an image');
+          await page.getByTestId('ai-panel-input-send').waitFor({
+            state: 'visible',
+          });
+          await page.getByTestId('ai-panel-input-send').click();
+        },
+        { responseTimeoutMs: 4 * 60000 }
       ),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
       imageProcessing: (type: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-image-processing').hover();
-          await page.getByTestId(`action-image-processing-${type}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-image-processing').hover();
+            await page.getByTestId(`action-image-processing-${type}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
       imageFilter: (style: string) =>
-        this.createAction(page, async () => {
-          await page.getByTestId('action-ai-image-filter').hover();
-          await page.getByTestId(`action-image-filter-${style}`).click();
-        })(),
+        this.createAction(
+          page,
+          async () => {
+            await page.getByTestId('action-ai-image-filter').hover();
+            await page.getByTestId(`action-image-filter-${style}`).click();
+          },
+          { responseTimeoutMs: 4 * 60000 }
+        )(),
     };
   }
 
@@ -599,14 +695,18 @@ export class EditorUtils {
       generateHeadings: this.createAction(page, () =>
         page.getByTestId('action-generate-headings').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
+      generateImage: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-image').click(),
+        { responseTimeoutMs: 300000 }
       ),
       generateOutline: this.createAction(page, () =>
         page.getByTestId('action-generate-outline').click()
       ),
-      generatePresentation: this.createAction(page, () =>
-        page.getByTestId('action-generate-presentation').click()
+      generatePresentation: this.createAction(
+        page,
+        () => page.getByTestId('action-generate-presentation').click(),
+        { responseTimeoutMs: 120000 }
       ),
       imageProcessing: this.createAction(page, () =>
         page.getByTestId('action-image-processing').click()

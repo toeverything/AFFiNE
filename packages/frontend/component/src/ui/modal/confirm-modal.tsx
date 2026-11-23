@@ -1,7 +1,12 @@
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import clsx from 'clsx';
-import type { PropsWithChildren } from 'react';
-import { createContext, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';
@@ -21,6 +26,11 @@ export interface ConfirmModalProps extends ModalProps {
   cancelText?: React.ReactNode;
   cancelButtonOptions?: Omit<ButtonProps, 'children'>;
   reverseFooter?: boolean;
+  /**
+   * Whether to use row layout for mobile footer
+   * @default false
+   */
+  rowFooter?: boolean;
   /**
    * Auto focus on confirm button when modal opened
    * @default true
@@ -45,6 +55,7 @@ export const ConfirmModal = ({
   descriptionClassName,
   childrenContentClassName,
   contentOptions,
+  rowFooter = false,
   ...props
 }: ConfirmModalProps) => {
   const onConfirmClick = useCallback(() => {
@@ -84,13 +95,17 @@ export const ConfirmModal = ({
       <div
         className={clsx(styles.footer, {
           modalFooterWithChildren: !!children,
-          reverse: reverseFooter,
+          reverse: reverseFooter && !rowFooter,
+          row: rowFooter,
+          rowReverse: reverseFooter && rowFooter,
         })}
       >
         {onCancel !== false ? (
           <DialogTrigger asChild>
             <Button
-              className={styles.action}
+              className={clsx(styles.action, {
+                row: rowFooter,
+              })}
               onClick={handleCancel}
               data-testid="confirm-modal-cancel"
               {...cancelButtonOptions}
@@ -108,7 +123,9 @@ export const ConfirmModal = ({
           <CustomConfirmButton data-testid="confirm-modal-confirm" />
         ) : (
           <Button
-            className={styles.action}
+            className={clsx(styles.action, {
+              row: rowFooter,
+            })}
             onClick={onConfirmClick}
             data-testid="confirm-modal-confirm"
             autoFocus={autoFocusConfirm}
@@ -139,7 +156,7 @@ const ConfirmModalContext = createContext<ConfirmModalContextProps>({
   openConfirmModal: () => {},
   closeConfirmModal: () => {},
 });
-export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
+export const ConfirmModalProvider = ({ children }: React.PropsWithChildren) => {
   const [modalProps, setModalProps] = useState<ConfirmModalProps>({
     open: false,
   });
@@ -188,11 +205,13 @@ export const ConfirmModalProvider = ({ children }: PropsWithChildren) => {
     },
     [modalProps]
   );
+  const confirmModalContextValue = useMemo(
+    () => ({ openConfirmModal, closeConfirmModal, modalProps }),
+    [closeConfirmModal, modalProps, openConfirmModal]
+  );
 
   return (
-    <ConfirmModalContext.Provider
-      value={{ openConfirmModal, closeConfirmModal, modalProps }}
-    >
+    <ConfirmModalContext.Provider value={confirmModalContextValue}>
       {children}
       {/* TODO(@catsjuice): multi-instance support(unnecessary for now) */}
       <ConfirmModal {...modalProps} onOpenChange={onOpenChange} />

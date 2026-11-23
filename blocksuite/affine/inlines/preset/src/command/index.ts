@@ -10,8 +10,8 @@ export { formatBlockCommand } from './format-block.js';
 export { formatNativeCommand } from './format-native.js';
 export { formatTextCommand } from './format-text.js';
 export {
-  getTextStyle,
-  isTextStyleActive,
+  getTextAttributes,
+  isTextAttributeActive,
   toggleBold,
   toggleCode,
   toggleItalic,

@@ -3,6 +3,7 @@ import {
   pasteMiddleware,
   replaceIdMiddleware,
   surfaceRefToEmbed,
+  uploadMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import {
   clearAndSelectFirstModelCommand,
@@ -34,14 +35,17 @@ export class PageClipboard extends ReadOnlyClipboard {
     // When pastina a surface-ref block to another doc
     const surfaceRefToEmbedMiddleware = surfaceRefToEmbed(this.std);
     const replaceId = replaceIdMiddleware(this.std.store.workspace.idGenerator);
+    const upload = uploadMiddleware(this.std);
     this.std.clipboard.use(paste);
     this.std.clipboard.use(surfaceRefToEmbedMiddleware);
     this.std.clipboard.use(replaceId);
+    this.std.clipboard.use(upload);
     this._disposables.add({
       dispose: () => {
         this.std.clipboard.unuse(paste);
         this.std.clipboard.unuse(surfaceRefToEmbedMiddleware);
         this.std.clipboard.unuse(replaceId);
+        this.std.clipboard.unuse(upload);
       },
     });
   };
@@ -82,6 +86,7 @@ export class PageClipboard extends ReadOnlyClipboard {
 
     if (this.std.store.readonly) return;
     this.std.store.captureSync();
+    let hasPasteTarget = false;
     this.std.command
       .chain()
       .try<{}>(cmd => [
@@ -140,18 +145,39 @@ export class PageClipboard extends ReadOnlyClipboard {
         if (!ctx.parentBlock) {
           return;
         }
+        hasPasteTarget = true;
         this.std.clipboard
           .paste(
             e,
             this.std.store,
             ctx.parentBlock.model.id,
-            ctx.blockIndex ? ctx.blockIndex + 1 : 1
+            ctx.blockIndex !== undefined ? ctx.blockIndex + 1 : 1
           )
           .catch(console.error);
 
         return next();
       })
       .run();
+
+    if (hasPasteTarget) return;
+
+    // If no valid selection target exists (for example, stale block selection
+    // right after cut), create/focus the default paragraph and paste after it.
+    const firstParagraphId = document
+      .querySelector('affine-page-root')
+      ?.focusFirstParagraph?.()?.id;
+    const parentModel = firstParagraphId
+      ? this.std.store.getParent(firstParagraphId)
+      : null;
+    const paragraphIndex =
+      firstParagraphId && parentModel
+        ? parentModel.children.findIndex(child => child.id === firstParagraphId)
+        : -1;
+    const insertIndex = paragraphIndex >= 0 ? paragraphIndex + 1 : undefined;
+
+    this.std.clipboard
+      .paste(e, this.std.store, parentModel?.id, insertIndex)
+      .catch(console.error);
   };
 
   override mounted() {

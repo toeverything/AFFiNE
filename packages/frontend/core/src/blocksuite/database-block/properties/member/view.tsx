@@ -4,7 +4,7 @@ import {
   type CellRenderProps,
   createIcon,
   type DataViewCellLifeCycle,
-  HostContextKey,
+  EditorHostKey,
 } from '@blocksuite/affine/blocks/database';
 import {
   UserListProvider,
@@ -17,12 +17,12 @@ import {
   forwardRef,
   type ForwardRefRenderFunction,
   type ReactNode,
-  useEffect,
   useImperativeHandle,
   useMemo,
 } from 'react';
 
 import { useSignalValue } from '../../../../modules/doc-info/utils';
+import { useMemberInfo } from '../../hooks/use-member-info';
 import type {
   MemberCellJsonValueType,
   MemberCellRawValueType,
@@ -55,7 +55,7 @@ class MemberManager {
     this.cell = props.cell;
     this.selectCurrentCell = props.selectCurrentCell;
     this.isEditing = props.isEditing$;
-    const host = this.cell.view.contextGet(HostContextKey);
+    const host = this.cell.view.serviceGet(EditorHostKey);
     this.userService = host?.std.getOptional(UserProvider);
     this.userListService = host?.std.getOptional(UserListProvider);
   }
@@ -69,8 +69,10 @@ const MemberCellComponent: ForwardRefRenderFunction<
   DataViewCellLifeCycle,
   CellRenderProps<{}, MemberCellRawValueType, MemberCellJsonValueType>
 > = (props, ref): ReactNode => {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const manager = useMemo(() => new MemberManager(props), []);
+  const manager = useMemo(
+    () => new MemberManager(props), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
+    [] // oxlint-disable-line react/exhaustive-deps
+  );
 
   useImperativeHandle(
     ref,
@@ -140,13 +142,6 @@ const MemberCellComponent: ForwardRefRenderFunction<
   );
 };
 
-const useMemberInfo = (id: string, memberManager: MemberManager) => {
-  useEffect(() => {
-    memberManager.userService?.revalidateUserInfo(id);
-  }, [id, memberManager.userService]);
-  return useSignalValue(memberManager.userService?.userInfo$(id));
-};
-
 const MemberPreview = ({
   memberId,
   memberManager,
@@ -154,7 +149,7 @@ const MemberPreview = ({
   memberId: string;
   memberManager: MemberManager;
 }) => {
-  const userInfo = useMemberInfo(memberId, memberManager);
+  const userInfo = useMemberInfo(memberId, memberManager.userService);
   if (!userInfo) {
     return null;
   }

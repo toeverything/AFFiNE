@@ -2,7 +2,6 @@ import { cssVar } from '@toeverything/theme';
 import { createContainer, style } from '@vanilla-extract/css';
 
 import { root as collectionItemRoot } from './collections/collection-list-item.css';
-import { root as pageItemRoot } from './docs/page-list-item.css';
 import { root as tagItemRoot } from './tags/tag-list-item.css';
 export const listRootContainer = createContainer('list-root-container');
 export const pageListScrollContainer = style({
@@ -50,7 +49,7 @@ export const favoriteCell = style({
   flexShrink: 0,
   opacity: 0,
   selectors: {
-    [`&[data-favorite], ${pageItemRoot}:hover &, ${collectionItemRoot}:hover &, ${tagItemRoot}:hover &`]:
+    [`&[data-favorite], ${collectionItemRoot}:hover &, ${tagItemRoot}:hover &`]:
       {
         opacity: 1,
       },

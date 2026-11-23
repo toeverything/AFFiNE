@@ -1,32 +1,40 @@
-import { randomUUID } from 'node:crypto';
-
 import { Injectable, Logger } from '@nestjs/common';
 import type { Request } from 'express';
-import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
-import { CaptchaVerificationFailed, Config, OnEvent } from '../../base';
+import {
+  CaptchaVerificationFailed,
+  Config,
+  getRequestClientIp,
+  metrics,
+  NetworkError,
+  OnEvent,
+} from '../../base';
 import { ServerFeature, ServerService } from '../../core';
-import { Models, TokenType } from '../../models';
-import { verifyChallengeResponse } from '../../native';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { CaptchaConfig } from './types';
 
 const validator = z
-  .object({ token: z.string(), challenge: z.string().optional() })
+  .object({
+    token: z.string().min(1).max(2048),
+    challenge: z.string().min(1).max(128).optional(),
+    provider: z.enum(['hashcash', 'turnstile']),
+  })
   .strict();
 type Credential = z.infer<typeof validator>;
 
 @Injectable()
 export class CaptchaService {
   private readonly logger = new Logger(CaptchaService.name);
-  private readonly captcha: CaptchaConfig;
 
   constructor(
     private readonly config: Config,
-    private readonly models: Models,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly server: ServerService
-  ) {
-    this.captcha = config.captcha.config;
+  ) {}
+
+  private get captcha(): CaptchaConfig {
+    return this.config.captcha.config;
   }
 
   @OnEvent('config.init')
@@ -41,96 +49,85 @@ export class CaptchaService {
     }
   }
 
-  private async verifyCaptchaToken(token: any, ip: string) {
-    if (typeof token !== 'string' || !token) return false;
-
-    const formData = new FormData();
-    formData.append('secret', this.captcha.turnstile.secret);
-    formData.append('response', token);
-    formData.append('remoteip', ip);
-    // prevent replay attack
-    formData.append('idempotency_key', nanoid());
-
-    const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-    const result = await fetch(url, {
-      body: formData,
-      method: 'POST',
-    });
-    const outcome: any = await result.json();
-
-    return (
-      !!outcome.success &&
-      // skip hostname check in dev mode
-      (env.dev || outcome.hostname === this.config.server.host)
-    );
-  }
-
-  private async verifyChallengeResponse(response: any, resource: string) {
-    return verifyChallengeResponse(
-      response,
-      this.captcha.challenge.bits,
-      resource
-    );
-  }
-
-  async getChallengeToken() {
-    const resource = randomUUID();
-    const challenge = await this.models.verificationToken.create(
-      TokenType.Challenge,
-      resource,
-      5 * 60
-    );
-
-    return {
-      challenge,
-      resource,
-    };
+  async getClientConfig(nativeClient: boolean) {
+    const provider = nativeClient
+      ? ('hashcash' as const)
+      : ('turnstile' as const);
+    if (provider === 'turnstile') {
+      return {
+        provider,
+        siteKey: this.captcha.turnstile.siteKey,
+        action: this.captcha.turnstile.action,
+      };
+    }
+    return { provider, ...(await this.runtime.createAuthCaptchaChallengeV1()) };
   }
 
   assertValidCredential(credential: any): Credential {
     try {
       return validator.parse(credential);
     } catch {
+      metrics.auth.counter('captcha_verification').add(1, {
+        provider:
+          credential?.provider === 'hashcash' ||
+          credential?.provider === 'turnstile'
+            ? credential.provider
+            : 'unknown',
+        result: 'invalid_credential',
+      });
       throw new CaptchaVerificationFailed('Invalid Credential');
     }
   }
 
   async verifyRequest(credential: Credential, req: Request) {
-    const challenge = credential.challenge;
-    let resource: string | null = null;
-    if (typeof challenge === 'string' && challenge) {
-      resource = await this.models.verificationToken
-        .get(TokenType.Challenge, challenge)
-        .then(token => token?.credential || null);
-    }
-
-    if (resource) {
-      const isChallengeVerified = await this.verifyChallengeResponse(
-        credential.token,
-        resource
-      );
-
-      this.logger.debug(
-        `Challenge: ${challenge}, Resource: ${resource}, Response: ${credential.token}, isChallengeVerified: ${isChallengeVerified}`
-      );
-
-      if (!isChallengeVerified) {
-        throw new CaptchaVerificationFailed('Invalid Challenge Response');
+    let verified: boolean;
+    try {
+      verified = await this.runtime.verifyAuthCaptchaV1({
+        provider: credential.provider,
+        token: credential.token,
+        challenge: credential.challenge,
+        bits: this.captcha.challenge.bits,
+        secret: this.captcha.turnstile.secret,
+        action: this.captcha.turnstile.action,
+        ip: getRequestClientIp(req),
+        hosts: [...this.config.server.hosts, this.config.server.host],
+        dev: env.dev,
+      });
+    } catch (error) {
+      if (String(error).includes('captcha_provider_unavailable')) {
+        metrics.auth.counter('captcha_verification').add(1, {
+          provider: credential.provider,
+          result: 'unavailable',
+        });
+        throw new NetworkError('Captcha verification temporarily unavailable');
       }
-    } else {
-      const isTokenVerified = await this.verifyCaptchaToken(
-        credential.token,
-        req.headers['CF-Connecting-IP'] as string
-      );
-
-      if (!isTokenVerified) {
-        throw new CaptchaVerificationFailed('Invalid Captcha Response');
-      }
+      metrics.auth.counter('captcha_verification').add(1, {
+        provider: credential.provider,
+        result: 'runtime_error',
+      });
+      this.logger.error('Captcha verification runtime failed', error);
+      verified = false;
     }
+    if (!verified) {
+      metrics.auth.counter('captcha_verification').add(1, {
+        provider: credential.provider,
+        result: 'failed',
+      });
+      throw new CaptchaVerificationFailed('Invalid Captcha Response');
+    }
+    metrics.auth.counter('captcha_verification').add(1, {
+      provider: credential.provider,
+      result: 'success',
+    });
   }
 
   private setup() {
     if (this.config.captcha.enabled) {
+      if (!this.captcha.turnstile.secret || !this.captcha.turnstile.siteKey) {
+        throw new Error(
+          'Enabled captcha requires Turnstile secret and site key.'
+        );
+      }
       this.server.enableFeature(ServerFeature.Captcha);
     } else {
       this.server.disableFeature(ServerFeature.Captcha);

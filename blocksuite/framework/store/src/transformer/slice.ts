@@ -1,9 +1,6 @@
-import {
-  BlockModel,
-  type DraftModel,
-  type Store,
-  toDraftModel,
-} from '../model/index';
+import { BlockModel } from '../model/block/block-model.js';
+import { type DraftModel, toDraftModel } from '../model/block/draft.js';
+import type { Store } from '../model/store/store.js';
 
 type SliceData = {
   content: DraftModel[];

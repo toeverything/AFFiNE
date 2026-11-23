@@ -37,17 +37,27 @@ export const QuotaCheck = ({
   const isOwner = profile?.isOwner;
   const isTeam = profile?.isTeam;
   const workspaceDialogService = useService(WorkspaceDialogService);
+  const dialog = useLiveData(workspaceDialogService.dialogs$);
   const t = useI18n();
 
   const onConfirm = useCallback(() => {
     if (!isOwner) {
       return;
     }
+    if (
+      dialog.some(
+        d =>
+          (d.type === 'setting' && d.props.activeTab === 'plans') ||
+          (d.type === 'setting' && d.props.activeTab === 'workspace:license')
+      )
+    ) {
+      return;
+    }
     workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
-  }, [workspaceDialogService, isOwner]);
+  }, [dialog, isOwner, workspaceDialogService]);
 
   useEffect(() => {
     workspaceQuota?.revalidate();

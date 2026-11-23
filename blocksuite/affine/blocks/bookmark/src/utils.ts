@@ -1,4 +1,4 @@
-import { LinkPreviewerService } from '@blocksuite/affine-shared/services';
+import { LinkPreviewServiceIdentifier } from '@blocksuite/affine-shared/services';
 import { isAbortError } from '@blocksuite/affine-shared/utils';
 
 import type { BookmarkBlockComponent } from './bookmark-block.js';
@@ -15,7 +15,7 @@ export async function refreshBookmarkUrlData(
   try {
     bookmarkElement.loading = true;
 
-    const linkPreviewer = bookmarkElement.store.get(LinkPreviewerService);
+    const linkPreviewer = bookmarkElement.std.get(LinkPreviewServiceIdentifier);
     const bookmarkUrlData = await linkPreviewer.query(
       bookmarkElement.model.props.url,
       signal

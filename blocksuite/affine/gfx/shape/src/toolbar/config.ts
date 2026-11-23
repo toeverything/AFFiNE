@@ -15,6 +15,7 @@ import {
   isTransparent,
   LineWidth,
   MindmapElementModel,
+  type Palette,
   resolveColor,
   ShapeElementModel,
   type ShapeName,
@@ -167,56 +168,53 @@ export const shapeToolbarConfig = {
         const strokeStyle =
           getMostCommonValue(mapped, 'strokeStyle') ?? StrokeStyle.Solid;
 
-        const onPickFillColor = (e: CustomEvent<PickColorEvent>) => {
-          e.stopPropagation();
+        const pickColorWrapper =
+          (field: string, pickCallback: (palette: Palette) => void) =>
+          (e: CustomEvent<PickColorEvent>) => {
+            e.stopPropagation();
 
-          const d = e.detail;
-
-          const field = 'fillColor';
-
-          if (d.type === 'pick') {
-            const value = d.detail.value;
-            const filled = isTransparent(value);
-            for (const model of models) {
-              const props = packColor(field, value);
-              // If `filled` can be set separately, this logic can be removed
-              if (field && !model.filled) {
-                const color = getTextColor(value, filled);
-                Object.assign(props, { filled, color });
-              }
-              ctx.std
-                .get(EdgelessCRUDIdentifier)
-                .updateElement(model.id, props);
+            switch (e.detail.type) {
+              case 'pick':
+                pickCallback(e.detail.detail);
+                break;
+              case 'start':
+                ctx.store.captureSync();
+                models.forEach(model => {
+                  model.stash(field);
+                });
+                break;
+              case 'end':
+                ctx.store.transact(() => {
+                  models.forEach(model => {
+                    model.pop(field);
+                  });
+                });
             }
-            return;
-          }
+          };
 
-          for (const model of models) {
-            model[d.type === 'start' ? 'stash' : 'pop'](field);
-          }
-        };
-        const onPickStrokeColor = (e: CustomEvent<PickColorEvent>) => {
-          e.stopPropagation();
-
-          const d = e.detail;
-
-          const field = 'strokeColor';
-
-          if (d.type === 'pick') {
-            const value = d.detail.value;
-            for (const model of models) {
-              const props = packColor(field, value);
-              ctx.std
-                .get(EdgelessCRUDIdentifier)
-                .updateElement(model.id, props);
+        const onPickFillColor = pickColorWrapper('fillColor', palette => {
+          const value = palette.value;
+          const filled = isTransparent(value);
+          const props = packColor('fillColor', value);
+          const crud = ctx.std.get(EdgelessCRUDIdentifier);
+          models.forEach(model => {
+            if (filled && !model.filled) {
+              const color = getTextColor(value, filled);
+              Object.assign(props, { filled, color });
             }
-            return;
-          }
+            crud.updateElement(model.id, props);
+          });
+        });
 
-          for (const model of models) {
-            model[d.type === 'start' ? 'stash' : 'pop'](field);
-          }
-        };
+        const onPickStrokeColor = pickColorWrapper('strokeColor', palette => {
+          const value = palette.value;
+          const props = packColor('strokeColor', value);
+          const crud = ctx.std.get(EdgelessCRUDIdentifier);
+          models.forEach(model => {
+            crud.updateElement(model.id, props);
+          });
+        });
+
         const onPickStrokeStyle = (e: CustomEvent<LineDetailType>) => {
           e.stopPropagation();
 

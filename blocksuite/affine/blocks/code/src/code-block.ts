@@ -6,7 +6,9 @@ import {
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
 import {
+  BlockElementCommentManager,
   DocModeProvider,
+  EditorSettingProvider,
   NotificationProvider,
 } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
@@ -38,7 +40,23 @@ import { codeBlockStyles } from './styles.js';
 export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
   static override styles = codeBlockStyles;
 
+  private _highlightRequestId = 0;
+
   private _inlineRangeProvider: InlineRangeProvider | null = null;
+
+  private readonly _localPreview$ = signal<boolean | null>(null);
+
+  preview$: Signal<boolean> = computed(() => {
+    const modelPreview = !!this.model.props.preview$.value;
+    if (this.store.readonly) {
+      return this._localPreview$.value ?? modelPreview;
+    }
+    return modelPreview;
+  });
+
+  collapsed$: Signal<boolean> = computed(
+    () => !!this.model.props.collapsed$.value
+  );
 
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
@@ -82,6 +100,16 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     return this.std.get(CodeBlockHighlighter);
   }
 
+  /** Whether line numbers are currently shown for this block, accounting for the global setting and feature flags. */
+  get showLineNumbers(): boolean {
+    // Feature flag: mobile (or any other consumer) can hard-disable via CodeBlockConfigExtension.
+    const featureEnabled =
+      this.std.getOptional(CodeBlockConfigExtension.identifier)
+        ?.showLineNumbers ?? true;
+    if (!featureEnabled) return false;
+    // Per-block prop overrides the global default; global defaults to true.
+    return this.model.props.lineNumber ?? this._showLineNumbersGlobal$.value;
+  }
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
       return this.closest<BlockComponent>(
@@ -92,6 +120,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   private _updateHighlightTokens() {
+    const requestId = ++this._highlightRequestId;
     const modelLang = this.model.props.language$.value;
     if (modelLang === null) {
       this.highlightTokens$.value = [];
@@ -122,9 +151,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
       const loadedLanguages = highlighter.getLoadedLanguages();
       if (!loadedLanguages.includes(lang)) {
-        highlighter
-          .loadLanguage(langImport)
+        this.highlighter
+          .loadLanguage(lang, langImport)
           .then(() => {
+            if (requestId !== this._highlightRequestId) return;
             this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
               lang,
               theme,
@@ -144,8 +174,31 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     }
   }
 
+  /**
+   * Stable signal: true when the global editor setting enables line numbers.
+   * Defaults to true. Updated reactively by an effect in connectedCallback.
+   * Using a writable signal (not reassigned to computed) keeps the reference
+   * stable so any downstream computed/effect that captures it stays correct.
+   */
+  private readonly _showLineNumbersGlobal$: Signal<boolean> = signal(true);
+
   override connectedCallback() {
     super.connectedCallback();
+
+    // Reactively sync the global line-number preference from EditorSettingProvider
+    // into the stable _showLineNumbersGlobal$ signal. Using effect() keeps the
+    // signal reference constant (no identity change) while still tracking updates.
+    const editorSetting = this.std.getOptional(EditorSettingProvider);
+    if (editorSetting) {
+      this.disposables.add(
+        effect(() => {
+          const val = (
+            editorSetting.setting$.value as Record<string, unknown>
+          )?.['codeBlockLineNumbers'];
+          this._showLineNumbersGlobal$.value = val !== false;
+        })
+      );
+    }
 
     // set highlight options getter used by "exportToHtml"
     this.disposables.add(
@@ -380,6 +433,14 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       });
   }
 
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
+  }
+
   override async getUpdateComplete() {
     const result = await super.getUpdateComplete();
     await this._richTextElement?.updateComplete;
@@ -387,22 +448,24 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   override renderBlock(): TemplateResult<1> {
-    const showLineNumbers =
-      this.std.getOptional(CodeBlockConfigExtension.identifier)
-        ?.showLineNumbers ?? true;
+    const showLineNumbers = this.showLineNumbers;
 
-    const preview = !!this.model.props.preview;
+    const preview = this.preview$.value;
     const previewContext = this.std.getOptional(
       CodeBlockPreviewIdentifier(this.model.props.language ?? '')
     );
     const shouldRenderPreview = preview && previewContext;
+    const collapsed = this.collapsed$.value;
 
     return html`
       <div
         class=${classMap({
           'affine-code-block-container': true,
+          'highlight-comment': this.isCommentHighlighted,
           mobile: IS_MOBILE,
           wrap: this.model.props.wrap,
+          'disable-line-numbers': !showLineNumbers,
+          collapsed,
         })}
       >
         <rich-text
@@ -411,7 +474,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           })}
           .yText=${this.model.props.text.yText}
           .inlineEventSource=${this.topContenteditableElement ?? nothing}
-          .undoManager=${this.store.history}
+          .undoManager=${this.store.history.undoManager}
           .attributesSchema=${this.inlineManager.getSchema()}
           .attributeRenderer=${this.inlineManager.getRenderer()}
           .readonly=${this.store.readonly}
@@ -420,26 +483,29 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           .enableUndoRedo=${false}
           .wrapText=${this.model.props.wrap}
           .verticalScrollContainerGetter=${() => getViewportElement(this.host)}
-          .vLineRenderer=${showLineNumbers
-            ? (vLine: VLine) => {
-                return html`
-                  <span contenteditable="false" class="line-number"
-                    >${vLine.index + 1}</span
-                  >
-                  ${vLine.renderVElements()}
-                `;
-              }
-            : undefined}
+          .vLineRenderer=${(vLine: VLine) => {
+            return html`
+              <span contenteditable="false" class="line-number"
+                >${vLine.index + 1}</span
+              >
+              ${vLine.renderVElements()}
+            `;
+          }}
         >
         </rich-text>
+        ${
+          collapsed
+            ? html`<div class="code-collapsed-fade" aria-hidden="true"></div>`
+            : nothing
+        }
         <div
           style=${styleMap({
-            display: shouldRenderPreview ? undefined : 'none',
+            display: shouldRenderPreview && !collapsed ? undefined : 'none',
           })}
           contenteditable="false"
           class="affine-code-block-preview"
         >
-          ${previewContext?.renderer(this.model)}
+          ${shouldRenderPreview && previewContext?.renderer(this.model)}
         </div>
         ${this.renderChildren(this.model)} ${Object.values(this.widgets)}
       </div>
@@ -448,6 +514,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
   setWrap(wrap: boolean) {
     this.store.updateBlock(this.model, { wrap });
+  }
+
+  setCollapsed(collapsed: boolean) {
+    this.store.updateBlock(this.model, { collapsed });
   }
 
   @query('rich-text')
@@ -460,6 +530,14 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   override accessor useCaptionEditor = true;
 
   override accessor useZeroWidth = true;
+
+  setPreviewState(preview: boolean) {
+    if (this.store.readonly) {
+      this._localPreview$.value = preview;
+    } else {
+      this.store.updateBlock(this.model, { preview });
+    }
+  }
 }
 
 declare global {

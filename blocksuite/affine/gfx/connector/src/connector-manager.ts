@@ -884,7 +884,7 @@ export class ConnectionOverlay extends Overlay {
   private _setupThemeListener(): void {
     const themeService = this.gfx.std.get(ThemeProvider);
     this._themeDisposer = effect(() => {
-      themeService.theme$;
+      void themeService.theme$.value;
       this._emphasisColor = this._getEmphasisColor();
     });
   }
@@ -963,7 +963,7 @@ export class ConnectionOverlay extends Overlay {
     this._clearRect();
 
     let result: Connection | null = null;
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line typescript/prefer-for-of
     for (let i = 0; i < connectables.length; i++) {
       const connectable = connectables[i];
       // first check if in excluedIds

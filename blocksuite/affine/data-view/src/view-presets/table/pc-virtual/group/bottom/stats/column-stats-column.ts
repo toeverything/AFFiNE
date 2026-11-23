@@ -15,7 +15,7 @@ import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { typeSystem } from '../../../../../../core';
-import type { GroupData } from '../../../../../../core/group-by/trait';
+import type { Group } from '../../../../../../core/group-by/trait';
 import { statsFunctions } from '../../../../../../core/statistics';
 import type { StatisticsConfig } from '../../../../../../core/statistics/types';
 import type { TableProperty } from '../../../../table-view-manager';
@@ -57,12 +57,12 @@ const styles = css`
     margin-inline: 5px;
   }
 
-  .label {
+  .stats-cell .label {
     text-transform: uppercase;
     color: var(--affine-text-secondary-color);
   }
 
-  .value {
+  .stats-cell .value {
     color: var(--affine-text-primary-color);
   }
 `;
@@ -225,18 +225,20 @@ export class VirtualDatabaseColumnStatsCell extends SignalWatcher(
       class="stats-cell"
     >
       <div class="content">
-        ${!this.statsResult$.value
-          ? html`Calculate ${ArrowDownSmallIcon()}`
-          : html`
-              <span class="label">${this.statsResult$.value.name}</span>
-              <span class="value">${this.statsResult$.value.value} </span>
-            `}
+        ${
+          !this.statsResult$.value
+            ? html`Calculate ${ArrowDownSmallIcon()}`
+            : html`
+                <span class="label">${this.statsResult$.value.name}</span>
+                <span class="value">${this.statsResult$.value.value} </span>
+              `
+        }
       </div>
     </div>`;
   }
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
 }
 
 declare global {

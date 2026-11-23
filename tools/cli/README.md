@@ -40,9 +40,9 @@ yarn affine init
 
 ## Tricks
 
-### Define scripts to run a .ts files without `--loader ts-node/esm/transpile-only`
+### Define scripts to run a .ts files without manually wiring a TypeScript loader
 
-`affine run` will automatically inject `ts-node`'s transpile service(swc used) for your scripts
+`affine run` will automatically inject `tsx` for your scripts
 
 ```json
 {

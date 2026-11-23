@@ -3,6 +3,7 @@ import {
   RENDER_CARD_THROTTLE_MS,
 } from '@blocksuite/affine-block-embed';
 import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { isPeekable, Peekable } from '@blocksuite/affine-components/peek';
 import { RefNodeSlotsProvider } from '@blocksuite/affine-inline-reference';
 import type {
@@ -16,6 +17,7 @@ import {
   REFERENCE_NODE,
 } from '@blocksuite/affine-shared/consts';
 import {
+  CitationProvider,
   DocDisplayMetaProvider,
   DocModeProvider,
   OpenDocExtensionIdentifier,
@@ -31,6 +33,7 @@ import {
   referenceToNode,
 } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
+import { ResetIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 import { Text } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
@@ -41,6 +44,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import throttle from 'lodash-es/throttle';
+import { filter } from 'rxjs/operators';
 import * as Y from 'yjs';
 
 import { renderLinkedDocInCard } from '../common/render-linked-doc';
@@ -252,14 +256,15 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     return this.store.readonly;
   }
 
-  get isCitation() {
-    return (
-      !!this.model.props.footnoteIdentifier &&
-      this.model.props.style === 'citation'
-    );
+  get citationService() {
+    return this.std.get(CitationProvider);
   }
 
-  private _handleDoubleClick(event: MouseEvent) {
+  get isCitation() {
+    return this.citationService.isCitationModel(this.model);
+  }
+
+  private readonly _handleDoubleClick = (event: MouseEvent) => {
     event.stopPropagation();
     const openDocService = this.std.get(OpenDocExtensionIdentifier);
     const shouldOpenInPeek =
@@ -270,7 +275,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         : 'open-in-active-view',
       event,
     });
-  }
+  };
 
   private _isDocEmpty() {
     const linkedDoc = this.linkedDoc;
@@ -311,13 +316,15 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         .citationIdentifier=${footnoteIdentifier}
         .active=${this.selected$.value}
         .onClickCallback=${this._handleClick}
+        .onDoubleClickCallback=${this._handleDoubleClick}
       ></affine-citation-card>
     </div> `;
   };
 
   private readonly _renderEmbedView = () => {
     const linkedDoc = this.linkedDoc;
-    const isDeleted = !linkedDoc;
+    const trash = linkedDoc?.meta?.trash;
+    const isDeleted = trash || !linkedDoc;
     const isLoading = this._loading;
     const isError = this.isError;
     const isEmpty = this._isDocEmpty() && this.isBannerEmpty;
@@ -332,12 +339,11 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       'note-empty': this.isNoteContentEmpty,
       'in-canvas': inCanvas,
       [this._cardStyle]: true,
+      'comment-highlighted': this.isCommentHighlighted,
     });
 
     const theme = this.std.get(ThemeProvider).theme;
     const {
-      LoadingIcon,
-      ReloadIcon,
       LinkedDocDeletedBanner,
       LinkedDocEmptyBanner,
       SyncedDocErrorBanner,
@@ -346,7 +352,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     const icon = isError
       ? SyncedDocErrorIcon
       : isLoading
-        ? LoadingIcon
+        ? LoadingIcon()
         : this.icon$.value;
     const title = isLoading ? 'Loading...' : this.title$;
     const description = this.model.props.description$;
@@ -383,10 +389,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       () => html`
         <div
           class="affine-embed-linked-doc-block ${cardClassMap}"
-          style=${styleMap({
-            transform: `scale(${this._scale})`,
-            transformOrigin: '0 0',
-          })}
           @click=${this._handleClick}
           @dblclick=${this._handleDoubleClick}
         >
@@ -425,35 +427,64 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
                   `
                 )
             )}
-            ${isError
-              ? html`
-                  <div class="affine-embed-linked-doc-card-content-reload">
-                    <div
-                      class="affine-embed-linked-doc-card-content-reload-button"
-                      @click=${this.refreshData}
-                    >
-                      ${ReloadIcon} <span>Reload</span>
+            ${
+              isError
+                ? html`
+                    <div class="affine-embed-linked-doc-card-content-reload">
+                      <div
+                        class="affine-embed-linked-doc-card-content-reload-button"
+                        @click=${this.refreshData}
+                      >
+                        ${ResetIcon()} <span>Reload</span>
+                      </div>
                     </div>
-                  </div>
-                `
-              : html`
-                  <div class="affine-embed-linked-doc-content-date">
-                    <span>Updated</span>
+                  `
+                : html`
+                    <div class="affine-embed-linked-doc-content-date">
+                      <span>Updated</span>
 
-                    <span>${dateText}</span>
-                  </div>
-                `}
+                      <span>${dateText}</span>
+                    </div>
+                  `
+            }
           </div>
 
-          ${showDefaultBanner
-            ? html`
-                <div class="affine-embed-linked-doc-banner default">
-                  ${defaultBanner}
-                </div>
-              `
-            : nothing}
+          ${
+            showDefaultBanner
+              ? html`
+                  <div class="affine-embed-linked-doc-banner default">
+                    ${defaultBanner}
+                  </div>
+                `
+              : nothing
+          }
         </div>
       `
+    );
+  };
+
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
     );
   };
 
@@ -470,14 +501,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
 
     const linkedDoc = this.linkedDoc;
     if (linkedDoc) {
-      this.disposables.add(
-        linkedDoc.workspace.slots.docListUpdated.subscribe(() => {
-          this._load().catch(e => {
-            console.error(e);
-            this.isError = true;
-          });
-        })
-      );
       // Should throttle the blockUpdated event to avoid too many re-renders
       // Because the blockUpdated event is triggered too frequently at some cases
       this.disposables.add(
@@ -503,11 +526,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       );
 
       this._setDocUpdatedAt();
-      this.disposables.add(
-        this.store.workspace.slots.docListUpdated.subscribe(() => {
-          this._setDocUpdatedAt();
-        })
-      );
 
       if (this._referenceToNode) {
         this._linkedDocMode = this.model.props.params?.mode ?? 'page';
@@ -535,6 +553,15 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         }
       })
     );
+
+    this.disposables.add(
+      this.store.workspace.slots.docListUpdated.subscribe(() => {
+        this._setDocUpdatedAt();
+        this.refreshData();
+      })
+    );
+
+    this._trackCitationDeleteEvent();
   }
 
   getInitialState(): {

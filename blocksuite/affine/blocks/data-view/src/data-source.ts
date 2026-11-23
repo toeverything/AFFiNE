@@ -171,8 +171,12 @@ export class BlockQueryDataSource extends DataSourceBase {
 
   propertyAdd(
     insertToPosition: InsertToPosition,
-    type: string | undefined
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string {
+    const { type } = ops ?? {};
     const doc = this.block.store;
     doc.captureSync();
     const column = DatabaseBlockDataSource.propertiesMap.value[

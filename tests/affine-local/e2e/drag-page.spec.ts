@@ -30,7 +30,11 @@ const dragToFavourites = async (
   const favourites = page.getByTestId(
     'navigation-panel-favorite-category-divider'
   );
-  await dragTo(page, dragItem, favourites);
+  if (type === 'collection') {
+    await dragItem.dragTo(favourites);
+  } else {
+    await dragTo(page, dragItem, favourites);
+  }
   const item = page
     .getByTestId(`navigation-panel-favorites`)
     .locator(`[data-testid="navigation-panel-${type}-${id}"]`);
@@ -106,7 +110,7 @@ test('drag a page from "All pages" list to favourites, then drag to trash', asyn
 
   const favouritePage = await dragToFavourites(
     page,
-    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`),
+    page.locator(`[data-testid="doc-list-item"]:has-text("${title}")`),
     pageId
   );
 
@@ -124,7 +128,7 @@ test('drag a page from "All pages" list to collections, then drag to trash', asy
 
   const collectionPage = await dragToCollection(
     page,
-    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`)
+    page.locator(`[data-testid="doc-list-item"]:has-text("${title}")`)
   );
 
   await dragToTrash(page, title, collectionPage);
@@ -140,7 +144,7 @@ test('drag a page from "All pages" list to trash', async ({ page }) => {
   await dragToTrash(
     page,
     title,
-    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`)
+    page.locator(`[data-testid="doc-list-item"]:has-text("${title}")`)
   );
 });
 
@@ -155,7 +159,7 @@ test('drag a page from favourites to collection', async ({ page }) => {
   // drag to favourites
   const favouritePage = await dragToFavourites(
     page,
-    page.locator(`[data-testid="page-list-item"]:has-text("${title}")`),
+    page.locator(`[data-testid="doc-list-item"]:has-text("${title}")`),
     pageId
   );
 
@@ -168,7 +172,12 @@ test('drag a collection to favourites', async ({ page }) => {
   await page.waitForTimeout(500);
   const collection = await createCollection(page, 'test collection');
   const collectionId = getCurrentCollectionIdFromUrl(page);
-  await dragToFavourites(page, collection, collectionId, 'collection');
+  await dragToFavourites(
+    page,
+    collection.locator('[data-affine-draggable]'),
+    collectionId,
+    'collection'
+  );
 });
 
 test('items in favourites can be reordered by dragging', async ({ page }) => {
@@ -183,7 +192,12 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
   {
     const collection = await createCollection(page, 'test collection');
     const collectionId = getCurrentCollectionIdFromUrl(page);
-    await dragToFavourites(page, collection, collectionId, 'collection');
+    await dragToFavourites(
+      page,
+      collection.locator('[data-affine-draggable]'),
+      collectionId,
+      'collection'
+    );
   }
 
   // assert the order of the items in favourites
@@ -231,7 +245,7 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 });
 
 // some how this test always timeout, so we skip it
-test.skip('drag a page link in editor to favourites', async ({ page }) => {
+test('drag a page link in editor to favourites', async ({ page }) => {
   await clickNewPageButton(page);
   await page.waitForTimeout(500);
   await page.keyboard.press('Enter');

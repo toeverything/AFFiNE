@@ -1,4 +1,4 @@
-// oxlint-disable-next-line @typescript-eslint/triple-slash-reference
+// oxlint-disable-next-line typescript/triple-slash-reference
 /// <reference path="./effects.ts" />
 export * from './consts.js';
 export { GRID_GAP_MAX, GRID_GAP_MIN } from './consts.js';
@@ -8,6 +8,7 @@ export {
 } from './element-model/base.js';
 export { CanvasElementType } from './element-model/index.js';
 export { CanvasRenderer } from './renderer/canvas-renderer.js';
+export { DomRenderer } from './renderer/dom-renderer.js';
 export type { ElementRenderer } from './renderer/elements/index.js';
 export * from './renderer/elements/type.js';
 export { Overlay, OverlayIdentifier } from './renderer/overlay.js';
@@ -27,10 +28,6 @@ export {
   SurfaceBlockSchema,
   SurfaceBlockSchemaExtension,
 } from './surface-model.js';
-export {
-  EdgelessSurfaceBlockSpec,
-  PageSurfaceBlockSpec,
-} from './surface-spec.js';
 export { SurfaceBlockTransformer } from './surface-transformer.js';
 export * from './tool/default-tool.js';
 export {

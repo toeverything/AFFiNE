@@ -7,7 +7,7 @@ import { effect, signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 
 import { type TocContext, tocContext } from '../config';
-import { getNotesFromDoc } from '../utils/query';
+import { getNotesFromStore } from '../utils/query';
 import * as styles from './outline-notice.css';
 
 export const AFFINE_OUTLINE_NOTICE = 'affine-outline-notice';
@@ -31,7 +31,7 @@ export class OutlineNotice extends SignalWatcher(
         }
 
         const shouldShowNotice =
-          getNotesFromDoc(this._context.editor$.value.store, [
+          getNotesFromStore(this._context.editor$.value.store, [
             NoteDisplayMode.DocOnly,
           ]).length > 0;
 

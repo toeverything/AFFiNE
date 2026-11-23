@@ -22,6 +22,7 @@ import {
   type LinkedWidgetConfig,
   LinkedWidgetUtils,
 } from '@blocksuite/affine/widgets/linked-doc';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import {
   DateTimeIcon,
   NewXxxEdgelessIcon,
@@ -31,6 +32,8 @@ import {
 import { computed, Signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
+import type { FuseResultMatch } from 'fuse.js';
+import Fuse from 'fuse.js';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 import {
@@ -46,6 +49,7 @@ import { type JournalService, suggestJournalDate } from '../../journal';
 import { NotificationService } from '../../notification';
 import type { GuardService, MemberSearchService } from '../../permissions';
 import type { DocGrantedUsersService } from '../../permissions/services/doc-granted-users';
+import { highlighter } from '../../quicksearch/utils/highlighter';
 import type { SearchMenuService } from '../../search-menu/services';
 
 function resolveSignal<T>(data: T | Signal<T>): T {
@@ -327,6 +331,32 @@ export class AtMenuConfigService extends Service {
     return result;
   }
 
+  private highlightFuseTitle(
+    matches: readonly FuseResultMatch[] | undefined,
+    title: string,
+    key: string
+  ): string {
+    if (!matches) {
+      return title;
+    }
+    const normalizedRange = ([start, end]: [number, number]) =>
+      [
+        start,
+        end + 1 /* in fuse, the `end` is different from the `substring` */,
+      ] as [number, number];
+    const titleMatches = matches
+      ?.filter(match => match.key === key)
+      .flatMap(match => match.indices.map(normalizedRange));
+    return (
+      highlighter(
+        title,
+        `<span style="color: ${cssVarV2('text/emphasis')}">`,
+        '</span>',
+        titleMatches ?? []
+      ) ?? title
+    );
+  }
+
   private memberGroup(
     query: string,
     close: () => void,
@@ -350,9 +380,10 @@ export class AtMenuConfigService extends Service {
         ? html`<img style=${avatarStyle} src="${avatar}" />`
         : UserIcon();
 
+      let displayName = name ?? 'Unknown';
       return {
         key: id,
-        name: name ?? 'Unknown',
+        name: html`${unsafeHTML(displayName)}`,
         icon,
         action: () => {
           const root = inlineEditor.rootElement;
@@ -567,15 +598,34 @@ export class AtMenuConfigService extends Service {
         ];
       }
 
+      // Create a single Fuse instance for all members
+      const fuse = new Fuse(members, {
+        keys: ['name'],
+        includeMatches: true,
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.0,
+      });
+      const searchResults = fuse.search(query);
+
       return [
-        ...members.map(member =>
-          getMenuItem(
-            member.id,
-            member.name,
-            member.avatarUrl,
-            member.id !== currentUser?.id
-          )
-        ),
+        ...searchResults.map(result => {
+          const member = result.item;
+          const displayName = this.highlightFuseTitle(
+            result.matches,
+            member.name ?? 'Unknown',
+            'name'
+          );
+          return {
+            ...getMenuItem(
+              member.id,
+              member.name,
+              member.avatarUrl,
+              member.id !== currentUser?.id
+            ),
+            name: html`${unsafeHTML(displayName)}`,
+          };
+        }),
         ...(canUserManage ? [inviteItem] : []),
       ];
     });
@@ -594,6 +644,14 @@ export class AtMenuConfigService extends Service {
       items,
       loading: this.memberSearchService.isLoading$.signal,
       hidden,
+      maxDisplay: 3,
+      overflowText: computed(() => {
+        const totalCount = this.memberSearchService.result$.signal.value.length;
+        const remainingCount = totalCount - 3;
+        return I18n.t('com.affine.editor.at-menu.more-members-hint', {
+          count: remainingCount,
+        });
+      }),
     };
   }
 

@@ -1,34 +1,64 @@
-import { PropertyValue } from '@affine/component';
+import { type MenuRef, PropertyValue } from '@affine/component';
 import { PublicUserLabel } from '@affine/core/modules/cloud/views/public-user';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
-import { DocService } from '@affine/core/modules/doc';
+import { type DocRecord, DocService } from '@affine/core/modules/doc';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { useCallback, useMemo } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
+import type { GroupHeaderProps } from '../explorer/types';
 import { MemberSelectorInline } from '../member-selector';
-import { userWrapper } from './created-updated-by.css';
+import * as styles from './created-updated-by.css';
+
+const CreatedUsernameTip = ({ userName }: { userName: string }) => {
+  const i18n = useI18n();
+  return i18n.t('com.affine.page-properties.property.createdBy.tip', {
+    userName,
+  });
+};
+const UpdatedUsernameTip = ({ userName }: { userName: string }) => {
+  const i18n = useI18n();
+  return i18n.t('com.affine.page-properties.property.updatedBy.tip', {
+    userName,
+  });
+};
 
 const CreatedByUpdatedByAvatar = (props: {
   type: 'CreatedBy' | 'UpdatedBy';
+  doc: DocRecord;
+  size?: number;
+  showName?: boolean;
+  emptyFallback?: ReactNode;
 }) => {
-  const docService = useService(DocService);
+  const doc = props.doc;
+
   const userId = useLiveData(
-    props.type === 'CreatedBy'
-      ? docService.doc.createdBy$
-      : docService.doc.updatedBy$
+    props.type === 'CreatedBy' ? doc?.createdBy$ : doc?.updatedBy$
   );
 
   if (userId) {
     return (
-      <div className={userWrapper}>
-        <PublicUserLabel id={userId} />
+      <div className={styles.userWrapper}>
+        <PublicUserLabel
+          id={userId}
+          size={props.size}
+          showName={props.showName}
+          align="center"
+          tooltip={
+            props.type === 'CreatedBy' ? CreatedUsernameTip : UpdatedUsernameTip
+          }
+        />
       </div>
     );
   }
-  return <NoRecordValue />;
+  return props.emptyFallback === undefined ? (
+    <NoRecordValue />
+  ) : (
+    props.emptyFallback
+  );
 };
 
 const NoRecordValue = () => {
@@ -46,6 +76,7 @@ const LocalUserValue = () => {
 };
 
 export const CreatedByValue = () => {
+  const doc = useService(DocService).doc.record;
   const workspaceService = useService(WorkspaceService);
   const isCloud = workspaceService.workspace.flavour !== 'local';
 
@@ -59,12 +90,13 @@ export const CreatedByValue = () => {
 
   return (
     <PropertyValue readonly>
-      <CreatedByUpdatedByAvatar type="CreatedBy" />
+      <CreatedByUpdatedByAvatar type="CreatedBy" doc={doc} />
     </PropertyValue>
   );
 };
 
 export const UpdatedByValue = () => {
+  const doc = useService(DocService).doc.record;
   const workspaceService = useService(WorkspaceService);
   const isCloud = workspaceService.workspace.flavour !== 'local';
 
@@ -78,19 +110,30 @@ export const UpdatedByValue = () => {
 
   return (
     <PropertyValue readonly>
-      <CreatedByUpdatedByAvatar type="UpdatedBy" />
+      <CreatedByUpdatedByAvatar type="UpdatedBy" doc={doc} />
     </PropertyValue>
   );
 };
 
 export const CreatedByUpdatedByFilterValue = ({
   filter,
+  isDraft,
+  onDraftCompleted,
   onChange,
 }: {
   filter: FilterParams;
-  onChange: (filter: FilterParams) => void;
+  isDraft?: boolean;
+  onDraftCompleted?: () => void;
+  onChange?: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
+  const menuRef = useRef<MenuRef>(null);
+
+  useEffect(() => {
+    if (isDraft) {
+      menuRef.current?.changeOpen(true);
+    }
+  }, [isDraft]);
 
   const selected = useMemo(
     () => filter.value?.split(',').filter(Boolean) ?? [],
@@ -99,7 +142,7 @@ export const CreatedByUpdatedByFilterValue = ({
 
   const handleChange = useCallback(
     (selected: string[]) => {
-      onChange({
+      onChange?.({
         ...filter,
         value: selected.join(','),
       });
@@ -116,6 +159,53 @@ export const CreatedByUpdatedByFilterValue = ({
       }
       selected={selected}
       onChange={handleChange}
+      ref={menuRef}
+      onEditorClose={onDraftCompleted}
+      menuClassName={styles.filterValueMenu}
     />
+  );
+};
+
+export const CreatedByDocListInlineProperty = ({ doc }: { doc: DocRecord }) => {
+  return (
+    <CreatedByUpdatedByAvatar
+      doc={doc}
+      type="CreatedBy"
+      size={20}
+      emptyFallback={null}
+      showName={false}
+    />
+  );
+};
+
+export const UpdatedByDocListInlineProperty = ({ doc }: { doc: DocRecord }) => {
+  return (
+    <CreatedByUpdatedByAvatar
+      type="UpdatedBy"
+      doc={doc}
+      showName={false}
+      size={20}
+      emptyFallback={null}
+    />
+  );
+};
+
+export const ModifiedByGroupHeader = ({
+  groupId,
+  docCount,
+}: GroupHeaderProps) => {
+  const userId = groupId;
+
+  return (
+    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+      <div className={styles.userLabelContainer}>
+        <PublicUserLabel
+          id={userId}
+          size={20}
+          showName={false}
+          align="center"
+        />
+      </div>
+    </PlainTextDocGroupHeader>
   );
 };

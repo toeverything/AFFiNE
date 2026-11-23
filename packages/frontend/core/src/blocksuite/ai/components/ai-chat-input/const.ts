@@ -1,1 +1,1 @@
-export const MAX_IMAGE_COUNT = 32;
+export const MAX_IMAGE_COUNT = 9;

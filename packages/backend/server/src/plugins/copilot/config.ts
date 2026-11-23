@@ -1,18 +1,50 @@
-import {
-  defineModuleConfig,
-  StorageJSONSchema,
-  StorageProviderConfig,
-} from '../../base';
-import { AnthropicConfig } from './providers/anthropic';
-import type { FalConfig } from './providers/fal';
-import { GeminiConfig } from './providers/gemini';
-import { OpenAIConfig } from './providers/openai';
-import { PerplexityConfig } from './providers/perplexity';
+import serverNativeModule from '@affine/server-native';
+
+import { defineNativeModuleConfig, StorageProviderConfig } from '../../base';
+
+export type ProviderSpecificConfig = Record<string, unknown>;
+
+export type RustRequestMiddleware =
+  | 'normalize_messages'
+  | 'clamp_max_tokens'
+  | 'tool_schema_rewrite'
+  | 'openai_request_compat'
+  | 'omit_tool_choice';
+
+export type RustStreamMiddleware =
+  | 'stream_event_normalize'
+  | 'citation_indexing';
+
+export type NodeTextMiddleware =
+  | 'citation_footnote'
+  | 'callout'
+  | 'thinking_format';
+
+export type ProviderMiddlewareConfig = {
+  rust?: { request?: RustRequestMiddleware[]; stream?: RustStreamMiddleware[] };
+  node?: { text?: NodeTextMiddleware[] };
+};
+
+export type CopilotProviderProfile = {
+  id: string;
+  type: string;
+  enabled?: boolean;
+  models?: string[];
+  config: ProviderSpecificConfig;
+};
 
 declare global {
   interface AppConfigSchema {
     copilot: {
       enabled: boolean;
+      byok: {
+        enabled: ConfigItem<boolean>;
+        allowedProviders: ConfigItem<
+          Array<'openai' | 'anthropic' | 'gemini' | 'fal'>
+        >;
+        allowCustomEndpoint: ConfigItem<boolean>;
+        allowPrivateEndpoint: ConfigItem<boolean>;
+      };
       unsplash: ConfigItem<{
         key: string;
       }>;
@@ -21,73 +53,28 @@ declare global {
       }>;
       storage: ConfigItem<StorageProviderConfig>;
       providers: {
-        openai: ConfigItem<OpenAIConfig>;
-        fal: ConfigItem<FalConfig>;
-        gemini: ConfigItem<GeminiConfig>;
-        perplexity: ConfigItem<PerplexityConfig>;
-        anthropic: ConfigItem<AnthropicConfig>;
+        profiles: ConfigItem<CopilotProviderProfile[]>;
       };
     };
   }
 }
 
-defineModuleConfig('copilot', {
-  enabled: {
-    desc: 'Whether to enable the copilot plugin.',
-    default: false,
-  },
-  'providers.openai': {
-    desc: 'The config for the openai provider.',
-    default: {
-      apiKey: '',
-    },
-    link: 'https://github.com/openai/openai-node',
-  },
-  'providers.fal': {
-    desc: 'The config for the fal provider.',
-    default: {
-      apiKey: '',
-    },
-  },
-  'providers.gemini': {
-    desc: 'The config for the gemini provider.',
-    default: {
-      apiKey: '',
-    },
-  },
-  'providers.perplexity': {
-    desc: 'The config for the perplexity provider.',
-    default: {
-      apiKey: '',
-    },
-  },
-  'providers.anthropic': {
-    desc: 'The config for the anthropic provider.',
-    default: {
-      apiKey: '',
-    },
-  },
-  unsplash: {
-    desc: 'The config for the unsplash key.',
-    default: {
-      key: '',
-    },
-  },
-  exa: {
-    desc: 'The config for the exa web search key.',
-    default: {
-      key: '',
-    },
-  },
-  storage: {
-    desc: 'The config for the storage provider.',
-    default: {
-      provider: 'fs',
-      bucket: 'copilot',
-      config: {
-        path: '~/.affine/storage',
+defineNativeModuleConfig(
+  'copilot',
+  serverNativeModule.appConfigDescriptors('copilot'),
+  serverNativeModule.validateAppConfigValue,
+  {
+    unsplash: {
+      desc: 'The config for the unsplash key.',
+      default: {
+        key: '',
       },
     },
-    schema: StorageJSONSchema,
-  },
-});
+    exa: {
+      desc: 'The config for the exa web search key.',
+      default: {
+        key: '',
+      },
+    },
+  }
+);

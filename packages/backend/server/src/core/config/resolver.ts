@@ -12,9 +12,10 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSON, GraphQLJSONObject } from 'graphql-scalars';
 
-import { Config, URLHelper } from '../../base';
-import { Namespace } from '../../env';
+import { Config, hasNewerVersion, URLHelper } from '../../base';
+import { DeploymentType, Namespace } from '../../env';
 import { Feature } from '../../models';
+import { ServerConfigHandle } from '../../native';
 import { CurrentUser, Public } from '../auth';
 import { Admin } from '../common';
 import { AvailableUserFeatureConfig } from '../features';
@@ -63,8 +64,13 @@ export class ServerConfigResolver {
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper,
-    private readonly server: ServerService
+    private readonly server: ServerService,
+    private readonly serverConfigHandle: ServerConfigHandle
   ) {}
+
+  private get selfhosted() {
+    return this.serverConfigHandle.deploymentType === 'selfhosted';
+  }
 
   @Public()
   @Query(() => ServerConfigType, {
@@ -74,16 +80,16 @@ export class ServerConfigResolver {
     return {
       name:
         this.config.server.name ??
-        (env.selfhosted
-          ? 'AFFiNE Selfhosted Cloud'
+        (this.selfhosted
+          ? 'AFFiNE Self-hosted'
           : env.namespaces.canary
             ? 'AFFiNE Canary Cloud'
             : env.namespaces.beta
               ? 'AFFiNE Beta Cloud'
               : 'AFFiNE Cloud'),
       version: env.version,
-      baseUrl: this.url.home,
-      type: env.DEPLOYMENT_TYPE,
+      baseUrl: this.url.requestBaseUrl,
+      type: this.selfhosted ? DeploymentType.Selfhosted : DeploymentType.Affine,
       features: this.server.features,
     };
   }
@@ -112,7 +118,7 @@ export class ServerConfigResolver {
     description: 'fetch latest available upgradable release of server',
   })
   async availableUpgrade(): Promise<ReleaseVersionType | null> {
-    if (!env.selfhosted) {
+    if (!this.selfhosted) {
       return null;
     }
 
@@ -138,19 +144,19 @@ export class ServerConfigResolver {
       const releases = (await response.json()) as Array<{
         name: string;
         url: string;
-        body: string;
+        body: string | null;
         published_at: string;
       }>;
 
       const latest = releases.at(0);
-      if (!latest || latest.name === env.version) {
+      if (!latest || !hasNewerVersion(env.version, latest.name)) {
         return null;
       }
 
       return {
         version: latest.name,
         url: latest.url,
-        changelog: latest.body,
+        changelog: latest.body ?? '',
         publishedAt: new Date(latest.published_at),
       };
     } catch (e) {
@@ -178,8 +184,29 @@ class UpdateAppConfigInput {
   @Field()
   key!: string;
 
-  @Field(() => GraphQLJSON)
-  value!: any;
+  @Field(() => GraphQLJSON, { nullable: true })
+  value?: any;
+
+  @Field(() => Boolean, { nullable: true })
+  clear?: boolean;
+}
+
+@ObjectType()
+class AppConfigValidateResult {
+  @Field()
+  module!: string;
+
+  @Field()
+  key!: string;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  value?: any;
+
+  @Field()
+  valid!: boolean;
+
+  @Field(() => String, { nullable: true })
+  error?: string;
 }
 
 @Admin()
@@ -188,10 +215,17 @@ export class AppConfigResolver {
   constructor(private readonly service: ServerService) {}
 
   @Query(() => GraphQLJSONObject, {
-    description: 'get the whole app configuration',
+    description: 'get visible app configuration values',
   })
-  appConfig() {
-    return this.service.getConfig();
+  async appConfig(): Promise<DeepPartial<AppConfig>> {
+    return await this.service.getEffectiveAdminConfig();
+  }
+
+  @Query(() => GraphQLJSONObject, {
+    description: 'get app configuration value sources and secret status',
+  })
+  appConfigMetadata() {
+    return this.service.getAdminConfigMetadata();
   }
 
   @Mutation(() => GraphQLJSONObject, {
@@ -203,5 +237,43 @@ export class AppConfigResolver {
     updates: UpdateAppConfigInput[]
   ): Promise<DeepPartial<AppConfig>> {
     return await this.service.updateConfig(me.id, updates);
+  }
+
+  @Query(() => [AppConfigValidateResult], {
+    description: 'validate app configuration',
+  })
+  async validateAppConfig(
+    @Args('updates', { type: () => [UpdateAppConfigInput] })
+    updates: UpdateAppConfigInput[]
+  ): Promise<AppConfigValidateResult[]> {
+    return this.validateConfigInternal(updates);
+  }
+
+  private validateConfigInternal(
+    updates: UpdateAppConfigInput[]
+  ): AppConfigValidateResult[] {
+    const errors = this.service.validateConfig(updates);
+
+    return updates.map(update => {
+      const error = errors?.find(
+        error =>
+          error.data.module === update.module && error.data.key === update.key
+      );
+      return {
+        module: update.module,
+        key: update.key,
+        value: this.service.getAdminConfigValue(
+          update.module,
+          update.key,
+          update.value
+        ),
+        valid: !error,
+        error: error
+          ? this.service.isSecretConfigKey(update.module, update.key)
+            ? 'Invalid value'
+            : error.data.hint
+          : undefined,
+      };
+    });
   }
 }

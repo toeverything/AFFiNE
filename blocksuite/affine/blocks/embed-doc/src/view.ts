@@ -6,12 +6,14 @@ import {
 import { effects } from './effects';
 import {
   EdgelessClipboardEmbedLinkedDocConfig,
+  EmbedLinkedDocInteraction,
   EmbedLinkedDocViewExtensions,
 } from './embed-linked-doc-block';
 import {
   EdgelessClipboardEmbedSyncedDocConfig,
   EmbedSyncedDocViewExtensions,
 } from './embed-synced-doc-block';
+import { EmbedSyncedDocInteraction } from './embed-synced-doc-block/configs/edgeless-interaction';
 
 export class EmbedDocViewExtension extends ViewExtensionProvider {
   override name = 'affine-embed-doc-block';
@@ -30,6 +32,8 @@ export class EmbedDocViewExtension extends ViewExtensionProvider {
       context.register([
         EdgelessClipboardEmbedLinkedDocConfig,
         EdgelessClipboardEmbedSyncedDocConfig,
+        EmbedLinkedDocInteraction,
+        EmbedSyncedDocInteraction,
       ]);
     }
   }

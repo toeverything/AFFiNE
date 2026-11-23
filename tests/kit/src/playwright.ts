@@ -71,13 +71,21 @@ export const test = baseTest.extend<{
     await use(page);
   },
   context: async ({ context }, use) => {
+    // Force-mark the body so global.css knows we are in a test.
+    // This keeps animations ON (0.1s) for tests, but OFF (0ms) for battery users.
+    await context.addInitScript(() => {
+      window.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('playwright-test');
+      });
+    });
+
     // workaround for skipping onboarding redirect on the web
     await skipOnboarding(context);
 
     if (enableCoverage) {
       await context.addInitScript(() =>
         window.addEventListener('beforeunload', () =>
-          // @ts-expect-error
+          // @ts-expect-error window.__coverage__ is not typed
           window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
         )
       );
@@ -103,7 +111,7 @@ export const test = baseTest.extend<{
     if (enableCoverage) {
       for (const page of context.pages()) {
         await page.evaluate(() =>
-          // @ts-expect-error
+          // @ts-expect-error window.__coverage__ is not typed
           window.collectIstanbulCoverage(JSON.stringify(window.__coverage__))
         );
       }

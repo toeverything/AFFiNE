@@ -19,6 +19,7 @@ import {
   getScrollContainer,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
+import { IS_ANDROID } from '@blocksuite/global/env';
 import { Point } from '@blocksuite/global/gfx';
 import type { PointerEventState } from '@blocksuite/std';
 import { BlockComponent, BlockSelection, TextSelection } from '@blocksuite/std';
@@ -305,7 +306,10 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       );
 
       // make sure there is a block can be focused
-      if (notes.length === 0 || notes[notes.length - 1].children.length === 0) {
+      if (
+        !this.store.readonly$.value &&
+        (notes.length === 0 || notes[notes.length - 1].children.length === 0)
+      ) {
         this.std.command.exec(appendParagraphCommand);
         return;
       }
@@ -322,7 +326,7 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
         parseFloat(paddingLeft),
         parseFloat(paddingRight)
       );
-      if (!isClickOnBlankArea) {
+      if (!isClickOnBlankArea && !this.store.readonly$.value) {
         const lastBlock = notes[notes.length - 1].lastChild();
         if (
           !lastBlock ||
@@ -410,7 +414,10 @@ export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
       return !(isNote && displayOnEdgeless);
     });
 
-    this.contentEditable = String(!this.store.readonly$.value);
+    // Android IMEs can target this outer editable root instead of a block's
+    // inline editor, leaving composition text in the DOM without committing it
+    // to the document model. Keep only the block editors editable on Android.
+    this.contentEditable = String(!this.store.readonly$.value && !IS_ANDROID);
 
     return html`
       <div class="affine-page-root-block-container">${children} ${widgets}</div>

@@ -13,9 +13,13 @@ import { UnknownFilterCondition } from './unknown';
 
 export const PropertyFilterCondition = ({
   filter,
+  isDraft,
+  onDraftCompleted,
   onChange,
 }: {
   filter: FilterParams;
+  isDraft?: boolean;
+  onDraftCompleted?: () => void;
   onChange: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
@@ -34,19 +38,27 @@ export const PropertyFilterCondition = ({
   const Value = type?.filterValue;
 
   if (!propertyInfo || !type || !methods) {
-    return <UnknownFilterCondition filter={filter} />;
+    return (
+      <UnknownFilterCondition
+        isDraft={isDraft}
+        onDraftCompleted={onDraftCompleted}
+        filter={filter}
+      />
+    );
   }
 
   return (
     <Condition
       filter={filter}
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       icon={<WorkspacePropertyIcon propertyInfo={propertyInfo} />}
       name={<WorkspacePropertyName propertyInfo={propertyInfo} />}
       methods={Object.entries(methods).map(([key, i18nKey]) => [
         key,
         t.t(i18nKey as string),
       ])}
-      value={Value && <Value filter={filter} onChange={onChange} />}
+      value={Value}
       onChange={onChange}
     />
   );

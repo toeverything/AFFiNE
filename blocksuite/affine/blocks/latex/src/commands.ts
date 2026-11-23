@@ -1,4 +1,8 @@
 import type { LatexProps } from '@blocksuite/affine-model';
+import {
+  DocModeProvider,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import type { Command } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
@@ -48,6 +52,21 @@ export const insertLatexBlockCommand: Command<
         if (blockComponent instanceof LatexBlockComponent) {
           await blockComponent.updateComplete;
           blockComponent.toggleEditor();
+
+          const mode = std.get(DocModeProvider).getEditorMode() ?? 'page';
+          const ifEdgelessText = blockComponent.closest('affine-edgeless-text');
+          std.getOptional(TelemetryProvider)?.track('Latex', {
+            from:
+              mode === 'page'
+                ? 'doc'
+                : ifEdgelessText
+                  ? 'edgeless text'
+                  : 'edgeless note',
+            page: mode === 'page' ? 'doc' : 'edgeless',
+            segment: mode === 'page' ? 'doc' : 'whiteboard',
+            module: 'equation',
+            control: 'create equation',
+          });
         }
       }
       return result[0];

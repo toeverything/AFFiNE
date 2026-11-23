@@ -47,6 +47,7 @@ export class FlatSyncController {
     }
 
     const model = schema.model.toModel?.() ?? new BlockModel<object>();
+    const defaultProps = schema.model.props?.(internalPrimitives);
     model.schema = schema;
 
     model.id = this.id;
@@ -55,7 +56,8 @@ export class FlatSyncController {
     const reactive = new ReactiveFlatYMap(
       this.yBlock,
       model.deleted,
-      this.onChange
+      this.onChange,
+      defaultProps
     );
     this._reactive = reactive;
     const proxy = reactive.proxy;
@@ -64,17 +66,6 @@ export class FlatSyncController {
     model.pop = this.pop;
     if (this.doc) {
       model.store = this.doc;
-    }
-
-    const defaultProps = schema.model.props?.(internalPrimitives);
-    if (defaultProps) {
-      Object.entries(defaultProps).forEach(([key, value]) => {
-        if (key in proxy) {
-          return;
-        }
-        if (value === undefined) return;
-        proxy[key] = value;
-      });
     }
 
     return model;

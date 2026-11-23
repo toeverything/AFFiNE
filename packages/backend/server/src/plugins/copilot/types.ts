@@ -1,63 +1,122 @@
-import { type Tokenizer } from '@affine/server-native';
 import { z } from 'zod';
 
-import { OneMB } from '../../base';
-import { fromModelName } from '../../native';
-import type { ChatPrompt } from './prompt';
-import { PromptMessageSchema, PureMessageSchema } from './providers';
+import type { Turn } from './core/types';
+import type { ResolvedPrompt } from './prompt';
+import { PromptMessageSchema, PureMessageSchema } from './providers/types';
+import {
+  type SessionFocus,
+  TurnScopeSnapshotSchema,
+} from './runtime/contracts/shared';
 
-export enum AvailableModels {
-  // text to text
-  Gpt4Omni = 'gpt-4o',
-  Gpt4Omni0806 = 'gpt-4o-2024-08-06',
-  Gpt4OmniMini = 'gpt-4o-mini',
-  Gpt4OmniMini0718 = 'gpt-4o-mini-2024-07-18',
-  Gpt41 = 'gpt-4.1',
-  Gpt410414 = 'gpt-4.1-2025-04-14',
-  Gpt41Mini = 'gpt-4.1-mini',
-  // embeddings
-  TextEmbedding3Large = 'text-embedding-3-large',
-  TextEmbedding3Small = 'text-embedding-3-small',
-  TextEmbeddingAda002 = 'text-embedding-ada-002',
-  // moderation
-  TextModerationLatest = 'text-moderation-latest',
-  TextModerationStable = 'text-moderation-stable',
-  // text to image
-  DallE3 = 'dall-e-3',
-}
+const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 
-export type AvailableModel = keyof typeof AvailableModels;
+const zBool = z.preprocess(val => {
+  const s = String(takeFirst(val)).toLowerCase();
+  return ['true', '1', 'yes'].includes(s);
+}, z.boolean().default(false));
 
-export function getTokenEncoder(model?: string | null): Tokenizer | null {
-  if (!model) return null;
-  const modelStr = AvailableModels[model as AvailableModel];
-  if (!modelStr) return null;
-  if (modelStr.startsWith('gpt')) {
-    return fromModelName(modelStr);
-  } else if (modelStr.startsWith('dall')) {
-    // dalle don't need to calc the token
-    return null;
-  } else {
-    // c100k based model
-    return fromModelName('gpt-4');
-  }
-}
+const zMaybeString = z.preprocess(val => {
+  const s = takeFirst(val);
+  return s === '' || s == null ? undefined : s;
+}, z.string().min(1).optional());
+
+const ToolsConfigSchema = z.preprocess(
+  val => {
+    // if val is a string, try to parse it as JSON
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return {};
+      }
+    }
+    return val || {};
+  },
+  z.record(z.enum(['searchWorkspace', 'readingDocs']), z.boolean()).default({})
+);
+
+export type ToolsConfig = z.infer<typeof ToolsConfigSchema>;
+
+export const ChatQuerySchema = z
+  .object({
+    messageId: zMaybeString,
+    profileId: zMaybeString,
+    modelId: zMaybeString,
+    routeTargetId: zMaybeString,
+    byokLeaseId: zMaybeString,
+    retry: zBool,
+    reasoning: zBool,
+    webSearch: zBool,
+    toolsConfig: ToolsConfigSchema,
+  })
+  .catchall(z.string())
+  .superRefine((value, context) => {
+    if (!!value.profileId !== !!value.modelId) {
+      context.addIssue({
+        code: 'custom',
+        message: 'profileId and modelId must be provided together',
+      });
+    }
+    for (const field of ['requirements', 'deployment', 'profiles', 'presets']) {
+      if (Object.hasOwn(value, field)) {
+        context.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `${field} is owned by the native route policy`,
+        });
+      }
+    }
+  })
+  .transform(
+    ({
+      messageId,
+      profileId,
+      modelId,
+      routeTargetId,
+      byokLeaseId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
+      ...params
+    }) => ({
+      messageId,
+      profileId,
+      modelId,
+      routeTargetId,
+      byokLeaseId,
+      retry,
+      reasoning,
+      webSearch,
+      toolsConfig,
+      params,
+    })
+  );
 
 // ======== ChatMessage ========
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
   id: z.string().optional(),
+  scopeSnapshot: TurnScopeSnapshotSchema.nullable().optional(),
   createdAt: z.date(),
 }).strict();
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatHistorySchema = z
   .object({
+    userId: z.string(),
     sessionId: z.string(),
+    workspaceId: z.string(),
+    docId: z.string().nullable(),
+    parentSessionId: z.string().nullable(),
+    pinned: z.boolean(),
+    title: z.string().nullable(),
+
     action: z.string().nullable(),
-    tokens: z.number(),
+    promptName: z.string(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
+    updatedAt: z.date(),
   })
   .strict();
 
@@ -71,51 +130,31 @@ export type SubmittedMessage = z.infer<typeof SubmittedMessageSchema>;
 
 // ======== Chat Session ========
 
-export interface ChatSessionOptions {
-  // connect ids
+export type ChatSessionOptions = {
   userId: string;
   workspaceId: string;
+  docId: string | null;
+  promptName: string;
+  pinned: boolean;
+  reuseLatestChat?: boolean;
+  personal?: boolean;
+};
+
+export type ChatSessionForkOptions = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
   docId: string;
-  promptName: string;
-}
-
-export interface ChatSessionPromptUpdateOptions
-  extends Pick<ChatSessionState, 'sessionId' | 'userId'> {
-  promptName: string;
-}
-
-export interface ChatSessionForkOptions
-  extends Omit<ChatSessionOptions, 'promptName'> {
-  sessionId: string;
-  latestMessageId: string;
-}
-
-export interface ChatSessionState
-  extends Omit<ChatSessionOptions, 'promptName'> {
-  // connect ids
-  sessionId: string;
-  parentSessionId: string | null;
-  // states
-  prompt: ChatPrompt;
-  messages: ChatMessage[];
-}
-
-export type ListHistoriesOptions = {
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
-  sessionId: string | undefined;
-  withPrompt: boolean | undefined;
+  latestMessageId?: string;
+  personal?: boolean;
 };
 
-export type CopilotContextFile = {
-  id: string; // fileId
-  created_at: number;
-  // embedding status
-  status: 'in_progress' | 'completed' | 'failed';
+export type ChatSessionState = {
+  userId: string;
+  sessionId: string;
+  workspaceId: string;
+  docId: string | null;
+  turns: Turn[];
+  focus: SessionFocus;
+  prompt: ResolvedPrompt;
 };
-
-export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;

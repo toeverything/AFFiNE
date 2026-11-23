@@ -1,23 +1,37 @@
 package app.affine.pro
 
 import android.content.res.ColorStateList
+import android.content.ComponentCallbacks2
+import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.webkit.WebSettings
+import android.webkit.WebView
+import androidx.activity.enableEdgeToEdge
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateMargins
 import androidx.lifecycle.lifecycleScope
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
 import app.affine.pro.ai.AIActivity
 import app.affine.pro.plugin.AIButtonPlugin
-import app.affine.pro.plugin.AffineThemePlugin
+import app.affine.pro.plugin.AFFiNEThemePlugin
 import app.affine.pro.plugin.AuthPlugin
 import app.affine.pro.plugin.HashCashPlugin
 import app.affine.pro.plugin.NbStorePlugin
+import app.affine.pro.plugin.MobileBackPlugin
+import app.affine.pro.plugin.PreviewPlugin
 import app.affine.pro.service.GraphQLService
 import app.affine.pro.service.SSEService
 import app.affine.pro.service.WebService
-import app.affine.pro.utils.dp
+import app.affine.pro.utils.px2dp
+import app.affine.pro.utils.dp2px
 import com.getcapacitor.BridgeActivity
+import com.getcapacitor.WebViewListener
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -25,7 +39,7 @@ import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugin.Callback,
+class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AFFiNEThemePlugin.Callback,
     View.OnClickListener {
 
     @Inject
@@ -40,11 +54,13 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
     init {
         registerPlugins(
             listOf(
-                AffineThemePlugin::class.java,
+                AFFiNEThemePlugin::class.java,
                 AIButtonPlugin::class.java,
                 AuthPlugin::class.java,
                 HashCashPlugin::class.java,
                 NbStorePlugin::class.java,
+                MobileBackPlugin::class.java,
+                PreviewPlugin::class.java,
             )
         )
     }
@@ -52,21 +68,87 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
     private val fab: FloatingActionButton by lazy {
         FloatingActionButton(this).apply {
             visibility = View.GONE
-            layoutParams = CoordinatorLayout.LayoutParams(dp(52), dp(52)).apply {
+            layoutParams = CoordinatorLayout.LayoutParams(dp2px(52), dp2px(52)).apply {
                 gravity = Gravity.END or Gravity.BOTTOM
-                updateMargins(0, 0, dp(24), dp(86))
+                updateMargins(0, 0, dp2px(24), dp2px(86))
             }
-            customSize = dp(52)
+            customSize = dp2px(52)
             setImageResource(R.drawable.ic_ai)
+            setImageDrawable(
+                VectorDrawableCompat.create(resources, R.drawable.ic_ai, theme)?.apply {
+                    DrawableCompat.setTint(
+                        this,
+                        ContextCompat.getColor(context, R.color.affine_primary)
+                    )
+                })
             setOnClickListener(this@MainActivity)
             val parent = bridge.webView.parent as CoordinatorLayout
             parent.addView(this)
         }
     }
 
+    private var navHeight = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+            navHeight = px2dp(insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
+            ViewCompat.onApplyWindowInsets(v, insets)
+        }
+    }
+
     override fun load() {
         super.load()
+        configureAndroidIMEBridge()
         AuthInitializer.initialize(bridge)
+        configureEditorWebView()
+    }
+
+    private fun configureAndroidIMEBridge() {
+        val trustedOrigin = normalizeAffineOrigin(bridge.localUrl)
+        bridge.setWebViewClient(AffineWebViewClient(bridge, trustedOrigin))
+        bridge.addWebViewListener(object : WebViewListener() {
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                (view as? AffineEditorWebView)?.updateAndroidIMEBridge(url, trustedOrigin)
+            }
+        })
+
+        (bridge.webView as? AffineEditorWebView)?.updateAndroidIMEBridge(
+            bridge.webView.url ?: bridge.localUrl,
+            trustedOrigin,
+        )
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            bridge.webView.evaluateJavascript(
+                "window.dispatchEvent(new Event('affine:memory-pressure'))",
+                null,
+            )
+        }
+    }
+
+    private fun configureEditorWebView() {
+        bridge.webView.apply {
+            overScrollMode = View.OVER_SCROLL_NEVER
+            isHorizontalScrollBarEnabled = false
+            isVerticalScrollBarEnabled = false
+            settings.apply {
+                // Debug builds may point CAP_SERVER_URL at an HTTP dev server; release builds
+                // should keep mixed content blocked.
+                mixedContentMode = if (BuildConfig.DEBUG) {
+                    WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                } else {
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                }
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+            }
+        }
     }
 
     override fun present() {
@@ -94,6 +176,10 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
                 )
             )
         }
+    }
+
+    override fun getSystemNavBarHeight(): Int {
+        return navHeight
     }
 
     override fun onClick(v: View) {

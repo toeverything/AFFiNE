@@ -10,8 +10,8 @@ import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
-import type { KanbanColumn, KanbanSingleView } from '../kanban-view-manager.js';
+import type { KanbanColumn } from '../kanban-view-manager.js';
+import type { MobileKanbanViewUILogic } from './kanban-view-ui-logic.js';
 import { popCardMenu } from './menu.js';
 
 const styles = css`
@@ -94,7 +94,7 @@ export class MobileKanbanCard extends SignalWatcher(
 
   private readonly clickCenterPeek = (e: MouseEvent) => {
     e.stopPropagation();
-    this.dataViewEle.openDetailPanel({
+    this.kanbanViewLogic.root.openDetailPanel({
       view: this.view,
       rowId: this.cardId,
     });
@@ -104,10 +104,9 @@ export class MobileKanbanCard extends SignalWatcher(
     e.stopPropagation();
     popCardMenu(
       popupTargetFromElement(e.currentTarget as HTMLElement),
-      this.view,
       this.groupKey,
       this.cardId,
-      this.dataViewEle
+      this.kanbanViewLogic
     );
   };
 
@@ -126,10 +125,10 @@ export class MobileKanbanCard extends SignalWatcher(
           return html` <mobile-kanban-cell
             .contentOnly="${false}"
             data-column-id="${column.id}"
-            .view="${this.view}"
             .groupKey="${this.groupKey}"
             .column="${column}"
             .cardId="${this.cardId}"
+            .kanbanViewLogic="${this.kanbanViewLogic}"
           ></mobile-kanban-cell>`;
         }
       )}
@@ -184,10 +183,10 @@ export class MobileKanbanCard extends SignalWatcher(
       <mobile-kanban-cell
         .contentOnly="${true}"
         data-column-id="${title.id}"
-        .view="${this.view}"
         .groupKey="${this.groupKey}"
         .column="${title}"
         .cardId="${this.cardId}"
+        .kanbanViewLogic="${this.kanbanViewLogic}"
       ></mobile-kanban-cell>
     </div>`;
   }
@@ -206,16 +205,17 @@ export class MobileKanbanCard extends SignalWatcher(
   accessor cardId!: string;
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
-
-  @property({ attribute: false })
   accessor groupKey!: string;
 
   @state()
   accessor isFocus = false;
 
   @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  accessor kanbanViewLogic!: MobileKanbanViewUILogic;
+
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

@@ -1,4 +1,4 @@
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type { AffineTextStyleAttributes } from '@blocksuite/affine-shared/types';
 import { PropTypes, requiredProperties } from '@blocksuite/std';
 import { LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -20,7 +20,10 @@ const colors = [
   'grey',
 ] as const;
 
-type HighlightType = 'color' | 'background';
+export type HighlightType = Pick<
+  AffineTextStyleAttributes,
+  'color' | 'background'
+>;
 
 // TODO(@fundon): these recent settings should be added to the dropdown menu
 // tests/blocksutie/e2e/format-bar.spec.ts#253
@@ -33,13 +36,13 @@ type HighlightType = 'color' | 'background';
 })
 export class HighlightDropdownMenu extends LitElement {
   @property({ attribute: false })
-  accessor updateHighlight!: (styles: AffineTextAttributes) => void;
+  accessor updateHighlight!: (styles: HighlightType) => void;
 
-  private readonly _update = (value: string | null, type: HighlightType) => {
+  private readonly _update = (style: HighlightType) => {
     // latestHighlightColor = value;
     // latestHighlightType = type;
 
-    this.updateHighlight({ [`${type}`]: value });
+    this.updateHighlight(style);
   };
 
   override render() {
@@ -71,7 +74,7 @@ export class HighlightDropdownMenu extends LitElement {
             return html`
               <editor-menu-action
                 data-testid="foreground-${color}"
-                @click=${() => this._update(value, 'color')}
+                @click=${() => this._update({ color: value })}
               >
                 <affine-text-duotone-icon
                   style=${styleMap({
@@ -92,7 +95,7 @@ export class HighlightDropdownMenu extends LitElement {
             return html`
               <editor-menu-action
                 data-testid="background-${color}"
-                @click=${() => this._update(value, 'background')}
+                @click=${() => this._update({ background: value })}
               >
                 <affine-text-duotone-icon
                   style=${styleMap({

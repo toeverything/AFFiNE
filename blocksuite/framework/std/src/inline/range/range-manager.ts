@@ -33,10 +33,17 @@ export class RangeManager extends LifeCycleWatcher {
     if (!selection) return;
     selection.removeAllRanges();
 
+    if (document.activeElement === this.std.host) {
+      return;
+    }
+
     const topContenteditableElement = this.std.host.querySelector(
       '[contenteditable="true"]'
     );
-    if (topContenteditableElement instanceof HTMLElement) {
+    if (
+      topContenteditableElement instanceof HTMLElement &&
+      topContenteditableElement.contains(document.activeElement)
+    ) {
       topContenteditableElement.blur();
     }
     if (document.activeElement instanceof HTMLElement) {

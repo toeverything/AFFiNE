@@ -5,6 +5,7 @@ export enum DocRole {
   None = -(1 << 15),
   External = 0,
   Reader = 10,
+  Commenter = 15,
   Editor = 20,
   Manager = 30,
   Owner = 99,

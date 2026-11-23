@@ -106,4 +106,65 @@ describe('notion-text to snapshot', () => {
     });
     expect(nanoidReplacement(target!)).toEqual(sliceSnapshot);
   });
+
+  test('notion text with empty styles array', () => {
+    const notionText =
+      '{"blockType":"text","editing":[["a "],["bold text",[["b"]]],[" hello world"]],"selection":{"startIndex":0,"endIndex":23},"action":"copy"}';
+
+    const sliceSnapshot: SliceSnapshot = {
+      type: 'slice',
+      content: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[0]',
+          flavour: 'affine:note',
+          props: {
+            xywh: '[0,0,800,95]',
+            background: DefaultTheme.noteBackgrounColor,
+            index: 'a0',
+            hidden: false,
+            displayMode: 'both',
+          },
+          children: [
+            {
+              type: 'block',
+              id: 'matchesReplaceMap[1]',
+              flavour: 'affine:paragraph',
+              props: {
+                type: 'text',
+                text: {
+                  '$blocksuite:internal:text$': true,
+                  delta: [
+                    {
+                      insert: 'a ',
+                    },
+                    {
+                      insert: 'bold text',
+                      attributes: {
+                        bold: true,
+                      },
+                    },
+                    {
+                      insert: ' hello world',
+                    },
+                  ],
+                },
+              },
+              children: [],
+            },
+          ],
+        },
+      ],
+      workspaceId: '',
+      pageId: '',
+    };
+
+    const ntAdapter = new NotionTextAdapter(createJob(), provider);
+    const target = ntAdapter.toSliceSnapshot({
+      file: notionText,
+      workspaceId: '',
+      pageId: '',
+    });
+    expect(nanoidReplacement(target!)).toEqual(sliceSnapshot);
+  });
 });

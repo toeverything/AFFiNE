@@ -13,6 +13,7 @@ import {
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
+  BlockElementCommentManager,
   DocModeProvider,
   EditPropsStore,
   type OpenDocMode,
@@ -76,6 +77,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       border-color: ${unsafeCSSVarV2('edgeless/frame/border/active')};
     }
 
+    .affine-surface-ref.comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+    }
+
     @media print {
       .affine-surface-ref {
         outline: none !important;
@@ -135,6 +140,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   get referenceModel() {
     return this._referencedModel;
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private readonly _handleClick = () => {
@@ -374,6 +387,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
     const { w, h } = Bound.deserialize(this._referenceXYWH$.value);
     const aspectRatio = h !== 0 ? w / h : 1;
     const _previewSpec = this._previewSpec.concat(this._runtimePreviewExt);
+    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     return html`<div class="ref-content">
       <div
@@ -381,6 +395,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         style=${styleMap({
           aspectRatio: `${aspectRatio}`,
         })}
+        data-theme=${edgelessTheme}
       >
         ${guard(this._previewDoc, () => {
           return this._previewDoc
@@ -440,21 +455,22 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
     const { _referencedModel, model } = this;
     const isEmpty = !_referencedModel || !_referencedModel.xywh;
+    const theme = this.std.get(ThemeProvider).theme$.value;
     const content = isEmpty
       ? html`<surface-ref-placeholder
           .referenceModel=${_referencedModel}
           .refFlavour=${model.props.refFlavour$.value}
+          .theme=${theme}
         ></surface-ref-placeholder>`
       : this._renderRefContent();
-    const edgelessTheme = this.std.get(ThemeProvider).edgeless$.value;
 
     return html`
       <div
         class=${classMap({
           'affine-surface-ref': true,
           focused: this.selected$.value,
+          'comment-highlighted': this.isCommentHighlighted,
         })}
-        data-theme=${edgelessTheme}
         @click=${this._handleClick}
       >
         ${content}

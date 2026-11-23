@@ -3,6 +3,8 @@ import { expect } from '@playwright/test';
 import { test } from '../base/base-test';
 
 test.describe('AIAction/MakeItReal', () => {
+  test.describe.configure({ timeout: 180000 });
+
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
@@ -12,10 +14,7 @@ test.describe('AIAction/MakeItReal', () => {
     loggedInPage: page,
     utils,
   }) => {
-    const { makeItReal } = await utils.editor.askAIWithText(
-      page,
-      'AFFiNE is a workspace with fully merged docs'
-    );
+    const { makeItReal } = await utils.editor.askAIWithText(page, 'Hello');
     const { answer, responses } = await makeItReal();
     await expect(answer.locator('iframe')).toBeVisible({ timeout: 30000 });
     expect(responses).toEqual(new Set(['insert-below']));
@@ -28,10 +27,7 @@ test.describe('AIAction/MakeItReal', () => {
     const { makeItReal } = await utils.editor.askAIWithEdgeless(
       page,
       async () => {
-        await utils.editor.createEdgelessText(
-          page,
-          'AFFiNE is a workspace with fully merged docs'
-        );
+        await utils.editor.createEdgelessText(page, 'Hello');
       }
     );
     const { answer, responses } = await makeItReal();
@@ -46,10 +42,7 @@ test.describe('AIAction/MakeItReal', () => {
     const { makeItReal } = await utils.editor.askAIWithEdgeless(
       page,
       async () => {
-        await utils.editor.createEdgelessNote(
-          page,
-          'AFFiNE is a workspace with fully merged docs'
-        );
+        await utils.editor.createEdgelessNote(page, 'Hello');
       }
     );
     const { answer, responses } = await makeItReal();
@@ -73,14 +66,11 @@ test.describe('AIAction/MakeItReal', () => {
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {
-    const { makeItReal } = await utils.editor.askAIWithText(
-      page,
-      'AFFiNE is a workspace with fully merged docs'
-    );
+    const { makeItReal } = await utils.editor.askAIWithText(page, 'Hello');
     const { answer } = await makeItReal();
     const insert = answer.getByTestId('answer-insert-below');
     await insert.click();

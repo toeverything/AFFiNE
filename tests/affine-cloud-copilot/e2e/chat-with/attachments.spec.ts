@@ -2,6 +2,8 @@ import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('AIChatWith/Attachments', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
@@ -24,56 +26,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer,
         },
       ],
-      'What is AttachmentEEee?'
+      'What is AttachmentEEee? Answer with a citation.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is AttachmentEEee?',
-      },
-      {
-        role: 'assistant',
-        status: 'success',
-      },
-    ]);
-
-    await expect(async () => {
-      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/EEee/);
-    }).toPass({ timeout: 10000 });
-  });
-
-  test('support chat with multiple attachments', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    const textContent1 = 'AttachmentEEee is a cute cat';
-    const textContent2 = 'AttachmentFFff is a cute dog';
-    const buffer1 = Buffer.from(textContent1);
-    const buffer2 = Buffer.from(textContent2);
-
-    await utils.chatPanel.chatWithAttachments(
-      page,
-      [
-        {
-          name: 'document1.txt',
-          mimeType: 'text/plain',
-          buffer: buffer1,
-        },
-        {
-          name: 'document2.txt',
-          mimeType: 'text/plain',
-          buffer: buffer2,
-        },
-      ],
-      'What is AttachmentEEee? What is AttachmentFFff?'
-    );
-
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: 'What is AttachmentEEee? What is AttachmentFFff?',
+        content: 'What is AttachmentEEee? Answer with a citation.',
       },
       {
         role: 'assistant',
@@ -84,9 +43,75 @@ test.describe('AIChatWith/Attachments', () => {
     await expect(async () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/AttachmentEEee/);
-      expect(content).toMatch(/AttachmentFFff/);
-      expect(await message.locator('affine-footnote-node').count()).toBe(2);
+      expect(content).toMatch(/EEee/);
+      const references = await message
+        .locator('affine-footnote-node')
+        .evaluateAll(nodes =>
+          nodes.map(
+            node =>
+              (
+                node as HTMLElement & {
+                  footnote?: { reference?: Record<string, unknown> };
+                }
+              ).footnote?.reference
+          )
+        );
+      expect(references).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'attachment',
+            artifactId: expect.any(String),
+          }),
+        ])
+      );
+    }).toPass({ timeout: 10000 });
+  });
+
+  test('support chat with multiple attachments', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    const textContent1 = 'This attachment describes a cute cat.';
+    const textContent2 = 'This attachment describes a cute dog.';
+    const buffer1 = Buffer.from(textContent1);
+    const buffer2 = Buffer.from(textContent2);
+    const firstName = 'cat-document.txt';
+    const secondName = 'dog-document.txt';
+
+    await utils.chatPanel.chatWithAttachments(
+      page,
+      [
+        {
+          name: firstName,
+          mimeType: 'text/plain',
+          buffer: buffer1,
+        },
+        {
+          name: secondName,
+          mimeType: 'text/plain',
+          buffer: buffer2,
+        },
+      ],
+      `Which animal is described in ${firstName} and which animal is described in ${secondName}? Answer with both attachment names.`
+    );
+
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content: `Which animal is described in ${firstName} and which animal is described in ${secondName}? Answer with both attachment names.`,
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+
+    await expect(async () => {
+      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
+      expect(content).toContain(firstName);
+      expect(content).toContain(secondName);
+      expect(content).toMatch(/cat/i);
+      expect(content).toMatch(/dog/i);
     }).toPass({ timeout: 20000 });
   });
 });

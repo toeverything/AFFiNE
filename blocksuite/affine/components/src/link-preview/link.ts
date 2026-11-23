@@ -1,4 +1,8 @@
-import { getHostName } from '@blocksuite/affine-shared/utils';
+import {
+  getHostName,
+  isValidUrl,
+  normalizeUrl,
+} from '@blocksuite/affine-shared/utils';
 import { PropTypes, requiredProperties } from '@blocksuite/std';
 import { css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -44,15 +48,27 @@ export class LinkPreview extends LitElement {
 
   override render() {
     const { url } = this;
+    const normalizedUrl = normalizeUrl(url);
+    const safeUrl =
+      normalizedUrl && isValidUrl(normalizedUrl) ? normalizedUrl : null;
+    const hostName = getHostName(safeUrl ?? url);
+
+    if (!safeUrl) {
+      return html`
+        <span class="affine-link-preview">
+          <span>${hostName}</span>
+        </span>
+      `;
+    }
 
     return html`
       <a
         class="affine-link-preview"
         rel="noopener noreferrer"
         target="_blank"
-        href=${url}
+        href=${safeUrl}
       >
-        <span>${getHostName(url)}</span>
+        <span>${hostName}</span>
       </a>
     `;
   }

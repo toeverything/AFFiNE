@@ -15,6 +15,7 @@ import { Avatar } from '@affine/component/ui/avatar';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { BackupService } from '@affine/core/modules/backup/services';
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { i18nTime, useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import {
@@ -47,7 +48,7 @@ const BlobAvatar = ({
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!blob) return;
-    const url = URL.createObjectURL(new Blob([blob]));
+    const url = URL.createObjectURL(new Blob([toArrayBuffer(blob)]));
     setUrl(url);
     return () => {
       URL.revokeObjectURL(url);
@@ -80,7 +81,7 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
   const handleImport = useAsyncCallback(async () => {
     setImporting(true);
     track.$.settingsPanel.archivedWorkspaces.recoverArchivedWorkspace();
-    const workspaceId = await backupService.recoverBackupWorkspace(item.dbPath);
+    const workspaceId = await backupService.recoverBackupWorkspace(item.id);
     if (!workspaceId) {
       setImporting(false);
       return;
@@ -101,7 +102,7 @@ const BackupWorkspaceItem = ({ item }: { item: BackupWorkspaceItem }) => {
     });
     setMenuOpen(false);
     setImporting(false);
-  }, [backupService, item.dbPath, jumpToPage, t]);
+  }, [backupService, item.id, jumpToPage, t]);
 
   const handleDelete = useCallback(
     (backupWorkspaceId: string) => {

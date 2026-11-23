@@ -185,9 +185,34 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(console.error);
     }
+
+    // Reset the flag when fully exiting presentation mode
+    this.edgeless.std
+      .get(EditPropsStore)
+      .setStorage('presentNoFrameToastShown', false);
   }
 
-  private _moveToCurrentFrame() {
+  private _moveToCurrentFrame(forceMove = false) {
+    const currentToolOption = this.gfx.tool.currentToolOption$.value;
+    const toolOptions = currentToolOption?.options;
+
+    // If PresentTool is being activated after a temporary pan (indicated by restoredAfterPan)
+    // and a forced move isn't explicitly requested, skip moving to the current frame.
+    // This preserves the user's panned position instead of resetting to the frame's default view.
+    if (
+      currentToolOption?.toolType === PresentTool &&
+      toolOptions?.restoredAfterPan &&
+      !forceMove
+    ) {
+      // Clear the flag so future navigations behave normally
+      // Here we modify the tool's activated option to avoid triggering setTool update
+      const currentTool = this.gfx.tool.currentTool$.peek();
+      if (currentTool?.activatedOption) {
+        currentTool.activatedOption.restoredAfterPan = false;
+      }
+      return;
+    }
+
     const current = this._currentFrameIndex;
     const viewport = this.gfx.viewport;
     const frame = this._frames[current];
@@ -263,28 +288,56 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
 
     _disposables.add(
       effect(() => {
-        const currentTool = this.gfx.tool.currentToolOption$.value;
-        const selection = this.gfx.selection;
+        const currentToolOption = this.gfx.tool.currentToolOption$.value;
 
-        if (currentTool?.toolType === PresentTool) {
-          this._cachedIndex = this._currentFrameIndex;
-          this._navigatorMode =
-            (currentTool.options as ToolOptions<PresentTool>)?.mode ??
-            this._navigatorMode;
-          if (isFrameBlock(selection.selectedElements[0])) {
-            this._cachedIndex = this._frames.findIndex(
-              frame => frame.id === selection.selectedElements[0].id
-            );
+        if (currentToolOption?.toolType === PresentTool) {
+          const opts = currentToolOption.options as
+            | ToolOptions<PresentTool>
+            | undefined;
+
+          const isAlreadyFullscreen = !!document.fullscreenElement;
+
+          if (!isAlreadyFullscreen) {
+            this._toggleFullScreen();
+          } else {
+            this._fullScreenMode = true;
           }
-          if (this._frames.length === 0)
-            toast(
-              this.host,
-              'The presentation requires at least 1 frame. You can firstly create a frame.',
-              5000
-            );
-          this._toggleFullScreen();
-        }
 
+          this._cachedIndex = this._currentFrameIndex;
+          this._navigatorMode = opts?.mode ?? this._navigatorMode;
+
+          const selection = this.gfx.selection;
+          if (
+            selection.selectedElements.length > 0 &&
+            isFrameBlock(selection.selectedElements[0])
+          ) {
+            const selectedFrameId = selection.selectedElements[0].id;
+            const indexOfSelectedFrame = this._frames.findIndex(
+              frame => frame.id === selectedFrameId
+            );
+            if (indexOfSelectedFrame !== -1) {
+              this._cachedIndex = indexOfSelectedFrame;
+            }
+          }
+
+          const store = this.edgeless.std.get(EditPropsStore);
+          if (this._frames.length === 0) {
+            if (!store.getStorage('presentNoFrameToastShown')) {
+              toast(
+                this.host,
+                'The presentation requires at least 1 frame. You can firstly create a frame.',
+                5000
+              );
+              store.setStorage('presentNoFrameToastShown', true);
+            }
+          } else {
+            // If frames exist, and the flag was set, reset it.
+            // This allows the toast to show again if all frames are subsequently deleted.
+            if (store.getStorage('presentNoFrameToastShown')) {
+              store.setStorage('presentNoFrameToastShown', false);
+            }
+          }
+        }
         this.requestUpdate();
       })
     );
@@ -305,12 +358,10 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
 
     _disposables.addFromEvent(document, 'fullscreenchange', () => {
       if (document.fullscreenElement) {
-        // When enter fullscreen, we need to set current frame to the cached index
         this._timer = setTimeout(() => {
           this._currentFrameIndex = this._cachedIndex;
         }, 400);
       } else {
-        // When exit fullscreen, we need to clear the timer
         clearTimeout(this._timer);
         if (
           this.edgelessTool.toolType === PresentTool &&
@@ -324,7 +375,7 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
         }
       }
 
-      setTimeout(() => this._moveToCurrentFrame(), 400);
+      setTimeout(() => this._moveToCurrentFrame(true), 400);
       this.slots.fullScreenToggled.next();
     });
 
@@ -356,15 +407,17 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
       </edgeless-tool-icon-button>
 
       <div class="edgeless-frame-navigator ${this.dense ? 'dense' : ''}">
-        ${this.dense
-          ? nothing
-          : html`<span
-              style="color: ${cssVar('textPrimaryColor')}"
-              class="edgeless-frame-navigator-title"
-              @click=${() => this._moveToCurrentFrame()}
-            >
-              ${frame?.props.title ?? 'no frame'}
-            </span>`}
+        ${
+          this.dense
+            ? nothing
+            : html`<span
+                style="color: ${cssVar('textPrimaryColor')}"
+                class="edgeless-frame-navigator-title"
+                @click=${() => this._moveToCurrentFrame()}
+              >
+                ${frame?.props.title ?? 'no frame'}
+              </span>`
+        }
 
         <span class="edgeless-frame-navigator-count">
           ${frames.length === 0 ? 0 : current + 1} / ${frames.length}
@@ -384,9 +437,11 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
 
       <div class="config-buttons">
         <edgeless-tool-icon-button
-          .tooltip=${document.fullscreenElement
-            ? 'Exit Full Screen'
-            : 'Enter Full Screen'}
+          .tooltip=${
+            document.fullscreenElement
+              ? 'Exit Full Screen'
+              : 'Enter Full Screen'
+          }
           @click=${() => this._toggleFullScreen()}
           .iconContainerPadding=${0}
           .iconContainerWidth=${'24px'}
@@ -395,14 +450,16 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
           ${document.fullscreenElement ? ExpandCloseIcon() : ExpandFullIcon()}
         </edgeless-tool-icon-button>
 
-        ${this.dense
-          ? nothing
-          : html`<edgeless-frame-order-button
-              .popperShow=${this.frameMenuShow}
-              .setPopperShow=${this.setFrameMenuShow}
-              .edgeless=${this.edgeless}
-            >
-            </edgeless-frame-order-button>`}
+        ${
+          this.dense
+            ? nothing
+            : html`<edgeless-frame-order-button
+                .popperShow=${this.frameMenuShow}
+                .setPopperShow=${this.setFrameMenuShow}
+                .edgeless=${this.edgeless}
+              >
+              </edgeless-frame-order-button>`
+        }
 
         <edgeless-navigator-setting-button
           .edgeless=${this.edgeless}
@@ -430,11 +487,29 @@ export class PresentationToolbar extends EdgelessToolbarToolMixin(
   }
 
   protected override updated(changedProperties: PropertyValues) {
-    if (
-      changedProperties.has('_currentFrameIndex') &&
-      this.edgelessTool.toolType === PresentTool
-    ) {
-      this._moveToCurrentFrame();
+    const currentToolOption = this.gfx.tool.currentToolOption$.value;
+    const isPresentToolActive = currentToolOption?.toolType === PresentTool;
+    const toolOptions = currentToolOption?.options;
+    const isRestoredAfterPan = !!(
+      isPresentToolActive && toolOptions?.restoredAfterPan
+    );
+
+    if (changedProperties.has('_currentFrameIndex') && isPresentToolActive) {
+      // When the current frame index changes (e.g., user navigates), a viewport update is needed.
+      // However, if PresentTool is merely being restored after a pan (isRestoredAfterPan = true)
+      // without an explicit index change in this update cycle, we avoid forcing a move to preserve the panned position.
+      // Thus, `forceMove` is true unless it's a pan restoration.
+      const shouldForceMove = !isRestoredAfterPan;
+      this._moveToCurrentFrame(shouldForceMove);
+    } else if (isPresentToolActive && changedProperties.has('edgelessTool')) {
+      // Handles cases where the tool is set/switched to PresentTool (e.g., initial activation or returning from another tool).
+      // Similar to frame index changes, avoid forcing a viewport move if restoring after a pan.
+      const currentToolIsPresentTool =
+        this.edgelessTool.toolType === PresentTool;
+      if (currentToolIsPresentTool) {
+        const shouldForceMoveOnToolChange = !isRestoredAfterPan;
+        this._moveToCurrentFrame(shouldForceMoveOnToolChange);
+      }
     }
   }
 

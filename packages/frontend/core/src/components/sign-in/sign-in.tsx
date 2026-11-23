@@ -8,9 +8,12 @@ import {
 } from '@affine/component/auth-components';
 import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { AuthService, ServerService } from '@affine/core/modules/cloud';
+import {
+  AuthService,
+  getSelfHostedServerName,
+  ServerService,
+} from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import {
@@ -28,6 +31,7 @@ import {
   useState,
 } from 'react';
 
+import { useSelfhostLoginVersionGuard } from '../hooks/affine/use-selfhost-login-version-guard';
 import type { SignInState } from '.';
 import { Back } from './back';
 import * as style from './style.css';
@@ -55,16 +59,16 @@ export const SignInStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const versionError = useSelfhostLoginVersionGuard(serverService.server);
   const isSelfhosted = useLiveData(
     serverService.server.config$.selector(
       c => c.type === ServerDeploymentType.Selfhosted
     )
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
   const authService = useService(AuthService);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableMultipleCloudServers = useLiveData(
-    featureFlagService.flags.enable_multiple_cloud_servers.$
-  );
   const [isMutating, setIsMutating] = useState(false);
 
   const [email, setEmail] = useState('');
@@ -93,7 +97,9 @@ export const SignInStep = ({
     setIsMutating(true);
 
     try {
-      const { hasPassword } = await authService.checkUserByEmail(email);
+      const { methods } = await authService.checkUserByEmail(email);
+      const hasPassword = methods.password.available;
+      const canUseMagicLink = methods.magicLink.available;
 
       if (hasPassword) {
         changeState(prev => ({
@@ -102,13 +108,18 @@ export const SignInStep = ({
           step: 'signInWithPassword',
           hasPassword: true,
         }));
-      } else {
+      } else if (canUseMagicLink) {
         changeState(prev => ({
           ...prev,
           email,
           step: 'signInWithEmail',
           hasPassword: false,
         }));
+      } else {
+        notify.error({
+          title: 'Failed to sign in',
+          message: 'This email is not available for sign in.',
+        });
       }
     } catch (err: any) {
       console.error(err);
@@ -130,41 +141,65 @@ export const SignInStep = ({
     }));
   }, [changeState]);
 
+  if (versionError && isSelfhosted) {
+    return (
+      <AuthContainer>
+        <AuthHeader
+          title={t['com.affine.auth.sign.in']()}
+          subTitle={signInServerName}
+        />
+        <AuthContent>
+          <div>{versionError}</div>
+        </AuthContent>
+      </AuthContainer>
+    );
+  }
+
   return (
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>
         <OAuth redirectUrl={state.redirectUrl} />
 
-        <AuthInput
-          className={style.authInput}
-          label={t['com.affine.settings.email']()}
-          placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          onChange={setEmail}
-          error={!isValidEmail}
-          errorHint={
-            isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
-          }
-          onEnter={onContinue}
-        />
-
-        <Button
-          className={style.signInButton}
-          style={{ width: '100%' }}
-          size="extraLarge"
-          data-testid="continue-login-button"
-          block
-          loading={isMutating}
-          suffix={<ArrowRightBigIcon />}
-          suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
-          onClick={onContinue}
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            onContinue();
+          }}
         >
-          {t['com.affine.auth.sign.email.continue']()}
-        </Button>
+          <AuthInput
+            className={style.authInput}
+            label={t['com.affine.settings.email']()}
+            placeholder={t['com.affine.auth.sign.email.placeholder']()}
+            onChange={setEmail}
+            error={!isValidEmail}
+            errorHint={
+              isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
+            }
+            onEnter={onContinue}
+            type="email"
+            name="username"
+            autoComplete="username"
+          />
+
+          <Button
+            className={style.signInButton}
+            style={{ width: '100%' }}
+            size="extraLarge"
+            data-testid="continue-login-button"
+            block
+            loading={isMutating}
+            disabled={isMutating}
+            suffix={<ArrowRightBigIcon />}
+            suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
+          >
+            {t['com.affine.auth.sign.email.continue']()}
+          </Button>
+        </form>
 
         {!isSelfhosted && (
           <>
@@ -181,7 +216,7 @@ export const SignInStep = ({
               <div className={style.skipDividerLine} />
             </div>
             <div className={style.skipSection}>
-              {BUILD_CONFIG.isElectron && enableMultipleCloudServers ? (
+              {BUILD_CONFIG.isNative ? (
                 <Button
                   variant="plain"
                   className={style.addSelfhostedButton}

@@ -57,7 +57,7 @@ import {
   rowTopIndicatorStyle,
   threePointerIconDotStyle,
   threePointerIconStyle,
-} from './table-cell.css';
+} from './table-cell-css';
 import type { TableDataManager } from './table-data-manager';
 export const TableCellComponentName = 'affine-table-cell';
 export class TableCell extends SignalWatcher(
@@ -138,9 +138,9 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${item.color ??
-                        cssVarV2.layer.background
-                          .primary};display: flex;align-items: center;justify-content: center;"
+                        style="color: ${
+                          item.color ?? cssVarV2.layer.background.primary
+                        };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
                       </div>`,
@@ -264,9 +264,9 @@ export class TableCell extends SignalWatcher(
                   ].map(item =>
                     menu.action({
                       prefix: html`<div
-                        style="color: ${item.color ??
-                        cssVarV2.layer.background
-                          .primary};display: flex;align-items: center;justify-content: center;"
+                        style="color: ${
+                          item.color ?? cssVarV2.layer.background.primary
+                        };display: flex;align-items: center;justify-content: center;"
                       >
                         ${TextBackgroundDuotoneIcon}
                       </div>`,
@@ -376,9 +376,9 @@ export class TableCell extends SignalWatcher(
         items: [{ name: 'Default', color: undefined }, ...colorList].map(item =>
           menu.action({
             prefix: html`<div
-              style="color: ${item.color ??
-              cssVarV2.layer.background
-                .primary};display: flex;align-items: center;justify-content: center;"
+              style="color: ${
+                item.color ?? cssVarV2.layer.background.primary
+              };display: flex;align-items: center;justify-content: center;"
             >
               ${TextBackgroundDuotoneIcon}
             </div>`,
@@ -418,6 +418,7 @@ export class TableCell extends SignalWatcher(
                   name: 'Paste',
                   prefix: PasteIcon(),
                   select: () => {
+                    // oxlint-disable-next-line typescript/no-floating-promises
                     navigator.clipboard.readText().then(text => {
                       this.selectionController.doPaste(text, selected);
                     });
@@ -500,12 +501,16 @@ export class TableCell extends SignalWatcher(
       return nothing;
     }
     return html`
-      ${this.rowIndex === 0
-        ? this.renderColumnOptions(this.column, this.columnIndex)
-        : nothing}
-      ${this.columnIndex === 0
-        ? this.renderRowOptions(this.row, this.rowIndex)
-        : nothing}
+      ${
+        this.rowIndex === 0
+          ? this.renderColumnOptions(this.column, this.columnIndex)
+          : nothing
+      }
+      ${
+        this.columnIndex === 0
+          ? this.renderRowOptions(this.row, this.rowIndex)
+          : nothing
+      }
     `;
   }
 
@@ -647,6 +652,13 @@ export class TableCell extends SignalWatcher(
     return this.richText$.value?.inlineEditor;
   }
 
+  private readonly _handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape' && e.key === 'Tab') {
+      e.preventDefault();
+      return;
+    }
+  };
+
   override connectedCallback() {
     super.connectedCallback();
     if (this.readonly) {
@@ -659,10 +671,7 @@ export class TableCell extends SignalWatcher(
         this.inlineEditor?.selectAll();
       }
     };
-    this.addEventListener('keydown', selectAll);
-    this.disposables.add(() => {
-      this.removeEventListener('keydown', selectAll);
-    });
+    this.disposables.addFromEvent(this, 'keydown', selectAll);
     this.disposables.addFromEvent(this, 'click', (e: MouseEvent) => {
       e.stopPropagation();
       requestAnimationFrame(() => {
@@ -679,6 +688,13 @@ export class TableCell extends SignalWatcher(
     }
     this.richText$.value?.updateComplete
       .then(() => {
+        const inlineEditor = this.inlineEditor;
+        if (inlineEditor) {
+          this.disposables.add(
+            inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+          );
+        }
+
         this.disposables.add(
           effect(() => {
             const richText = this.richText$.value;
@@ -745,7 +761,7 @@ export class TableCell extends SignalWatcher(
             padding: '8px 12px',
           })}
           .yText="${this.text}"
-          .inlineEventSource="${this.topContenteditableElement}"
+          .inlineEventSource="${this.topContenteditableElement ?? nothing}"
           .attributesSchema="${this.inlineManager?.getSchema()}"
           .attributeRenderer="${this.inlineManager?.getRenderer()}"
           .embedChecker="${this.inlineManager?.embedChecker}"

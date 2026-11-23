@@ -1,4 +1,15 @@
-import type { ContextEmbedStatus } from '@affine/graphql';
+import type {
+  AIDraftService,
+  AIModelService,
+  AIToolsConfigService,
+} from '@affine/core/modules/ai-button';
+import type {
+  ServerService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
@@ -8,15 +19,15 @@ import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { ConnectorMode } from '@blocksuite/affine/model';
 import {
   DocModeProvider,
+  NotificationProvider,
   TelemetryProvider,
 } from '@blocksuite/affine/shared/services';
-import type { Signal } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
-import { signal } from '@preact/signals-core';
-import { html, LitElement, nothing } from 'lit';
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { throttle } from 'lodash-es';
 
 import {
   ChatBlockPeekViewActions,
@@ -24,19 +35,21 @@ import {
   queryHistoryMessages,
 } from '../_common/chat-actions-handle';
 import { type AIChatBlockModel } from '../blocks';
-import type {
-  DocDisplayConfig,
-  SearchMenuConfig,
-} from '../components/ai-chat-chips';
-import type {
-  AINetworkSearchConfig,
-  AIReasoningConfig,
-} from '../components/ai-chat-input';
+import type { SearchMenuConfig } from '../components/ai-chat-add-context';
+import type { DocDisplayConfig } from '../components/ai-chat-chips';
+import type { AIReasoningConfig } from '../components/ai-chat-input';
 import type { ChatMessage } from '../components/ai-chat-messages';
 import { ChatMessagesSchema } from '../components/ai-chat-messages';
 import type { TextRendererOptions } from '../components/text-renderer';
 import { AIChatErrorRenderer } from '../messages/error';
-import { type AIError, AIProvider } from '../provider';
+import { AIAppEvents, type AIError } from '../provider';
+import {
+  AIChatRuntime,
+  type AIChatSnapshot,
+  ChatBlockAIChatSessionStrategy,
+} from '../runtime/chat';
+import { getAIRequestService } from '../runtime/request';
+import { mergeStreamContent } from '../utils/stream-objects';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
@@ -72,9 +85,9 @@ export class AIChatBlockPeekView extends LitElement {
 
   private _forkBlockId: string | undefined = undefined;
 
-  private _forkSessionId: string | undefined = undefined;
+  private runtime: AIChatRuntime | null = null;
 
-  accessor isComposerVisible: Signal<boolean | undefined> = signal(true);
+  private disposeRuntime: (() => void) | null = null;
 
   private readonly _deserializeHistoryChatMessages = (
     historyMessagesString: string
@@ -95,15 +108,15 @@ export class AIChatBlockPeekView extends LitElement {
 
   private readonly _constructBranchChatBlockMessages = async (
     rootWorkspaceId: string,
-    rootDocId: string,
-    forkSessionId: string
+    forkSessionId: string,
+    docId?: string
   ) => {
-    const currentUserInfo = await AIProvider.userInfo;
-    const forkMessages = await queryHistoryMessages(
+    const currentUserInfo = AIAppEvents.userInfo.value;
+    const forkMessages = (await queryHistoryMessages(
       rootWorkspaceId,
-      rootDocId,
-      forkSessionId
-    );
+      forkSessionId,
+      docId
+    )) as ChatMessage[];
     const forkLength = forkMessages.length;
     const historyLength = this._historyMessages.length;
 
@@ -141,30 +154,30 @@ export class AIChatBlockPeekView extends LitElement {
       messages: [],
     });
     this._forkBlockId = undefined;
-    this._forkSessionId = undefined;
   };
 
-  private readonly _getSessionId = async () => {
-    return this._forkSessionId ?? this._sessionId;
-  };
-
-  private readonly _createSessionId = async () => {
-    if (this._forkSessionId) {
-      return this._forkSessionId;
-    }
-
-    const lastMessage = this._historyMessages.at(-1);
-    if (!lastMessage) return;
-
-    const { store } = this.host;
-    const forkSessionId = await AIProvider.forkChat?.({
-      workspaceId: store.workspace.id,
-      docId: store.id,
-      sessionId: this._sessionId,
-      latestMessageId: lastMessage.id,
+  private createRuntime() {
+    return new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'chat-block',
+        workspaceId: this.rootWorkspaceId,
+        docId: this.rootDocId,
+        blockId: this.blockId,
+        parentSessionId: this._sessionId,
+        latestMessageId: this._historyMessages.at(-1)?.id,
+      },
+      strategy: new ChatBlockAIChatSessionStrategy(),
     });
-    this._forkSessionId = forkSessionId;
-    return this._forkSessionId;
+  }
+
+  private readonly initSession = async () => {
+    const runtime = this.createRuntime();
+    try {
+      this.session = (await runtime.loadInitialSession()) ?? null;
+    } finally {
+      runtime.dispose();
+    }
   };
 
   private readonly _onChatSuccess = async () => {
@@ -191,7 +204,8 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     // If there is no session id or chat messages, do not create a new chat block
-    if (!this._forkSessionId || !this.chatContext.messages.length) {
+    const forkSessionId = this.forkSession?.sessionId;
+    if (!forkSessionId || !this.chatContext.messages.length) {
       return;
     }
 
@@ -208,8 +222,8 @@ export class AIChatBlockPeekView extends LitElement {
     const { rootWorkspaceId, rootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
       rootWorkspaceId,
-      rootDocId,
-      this._forkSessionId
+      forkSessionId,
+      rootDocId
     );
     if (!messages.length) {
       return;
@@ -223,7 +237,7 @@ export class AIChatBlockPeekView extends LitElement {
       {
         xywh: bound.serialize(),
         messages: JSON.stringify(messages),
-        sessionId: this._forkSessionId,
+        sessionId: forkSessionId,
         rootWorkspaceId: rootWorkspaceId,
         rootDocId: rootDocId,
       },
@@ -258,7 +272,8 @@ export class AIChatBlockPeekView extends LitElement {
    * Update the current chat messages with the new message
    */
   updateChatBlockMessages = async () => {
-    if (!this._forkBlockId || !this._forkSessionId) {
+    const forkSessionId = this.forkSession?.sessionId;
+    if (!this._forkBlockId || !forkSessionId) {
       return;
     }
 
@@ -270,8 +285,8 @@ export class AIChatBlockPeekView extends LitElement {
     const { rootWorkspaceId, rootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
       rootWorkspaceId,
-      rootDocId,
-      this._forkSessionId
+      forkSessionId,
+      rootDocId
     );
     if (!messages.length) {
       return;
@@ -285,11 +300,37 @@ export class AIChatBlockPeekView extends LitElement {
     this.chatContext = { ...this.chatContext, ...context };
   };
 
-  private readonly _updateEmbeddingProgress = (
-    count: Record<ContextEmbedStatus, number>
-  ) => {
-    const total = count.finished + count.processing + count.failed;
-    this.embeddingProgress = [count.finished, total];
+  private readonly syncContextFromRuntime = () => {
+    const snapshot = this.runtimeSnapshot;
+    if (!snapshot) return;
+    const activeSession = snapshot.sessions.find(
+      session => session.sessionId === snapshot.activeSessionId
+    );
+    this.forkSession = activeSession ?? this.forkSession;
+    this.chatContext = {
+      ...this.chatContext,
+      messages: snapshot.messages as ChatMessage[],
+      status: snapshot.status,
+      error: snapshot.error as AIError | null,
+    };
+  };
+
+  private readonly ensureRuntime = () => {
+    if (this.runtime || !this.session || !this._historyMessages.length) return;
+    this.runtime = this.createRuntime();
+    this.disposeRuntime = this.runtime.subscribe(() => {
+      this.runtimeSnapshot = this.runtime?.getSnapshot() ?? null;
+      this.syncContextFromRuntime();
+    });
+    this.runtimeSnapshot = this.runtime.getSnapshot();
+    if (this.forkSession) {
+      this.runtime
+        .dispatch({
+          type: 'openSessionObject',
+          session: this.forkSession,
+        })
+        .catch(console.error);
+    }
   };
 
   /**
@@ -316,53 +357,32 @@ export class AIChatBlockPeekView extends LitElement {
     this._resetContext();
   };
 
+  private readonly _scrollToEnd = () => {
+    requestAnimationFrame(() => {
+      if (!this._chatMessagesContainer) return;
+      this._chatMessagesContainer.scrollTo({
+        top: this._chatMessagesContainer.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+  };
+
+  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 600);
+
   /**
    * Retry the last chat message
    */
   retry = async () => {
-    try {
-      const { _forkBlockId, _forkSessionId } = this;
-      if (!_forkBlockId || !_forkSessionId) return;
-      if (!AIProvider.actions.chat) return;
-
-      const abortController = new AbortController();
-      const messages = [...this.chatContext.messages];
-      const last = messages[messages.length - 1];
-      if ('content' in last) {
-        last.content = '';
-        last.id = '';
-        last.createdAt = new Date().toISOString();
-      }
-      this.updateContext({ messages, status: 'loading', error: null });
-
-      const { store } = this.host;
-      const stream = await AIProvider.actions.chat({
-        sessionId: _forkSessionId,
-        retry: true,
-        docId: store.id,
-        workspaceId: store.workspace.id,
-        host: this.host,
-        stream: true,
-        signal: abortController.signal,
-        where: 'ai-chat-block',
-        control: 'chat-send',
+    if (this.runtime) {
+      const lastAssistantMessage = this.chatContext.messages.findLast(
+        message => message.role === 'assistant'
+      );
+      await this.runtime.dispatch({
+        type: 'retry',
+        messageId: lastAssistantMessage?.id ?? '',
       });
-
-      this.updateContext({ abortController });
-      for await (const text of stream) {
-        const messages = [...this.chatContext.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
-        this.updateContext({ messages, status: 'transmitting' });
-      }
-
-      this.updateContext({ status: 'success' });
-      // Update new chat block messages if there are contents returned from AI
       await this.updateChatBlockMessages();
-    } catch (error) {
-      this.updateContext({ status: 'error', error: error as AIError });
-    } finally {
-      this.updateContext({ abortController: null });
+      return;
     }
   };
 
@@ -376,7 +396,7 @@ export class AIChatBlockPeekView extends LitElement {
 
     return html`${repeat(
       currentMessages,
-      message => message.id || message.createdAt,
+      (_, index) => index,
       (message, idx) => {
         const { status, error } = this.chatContext;
         const isAssistantMessage = message.role === 'assistant';
@@ -390,50 +410,56 @@ export class AIChatBlockPeekView extends LitElement {
         const isNotReady = status === 'transmitting' || status === 'loading';
         const shouldRenderCopyMore =
           isAssistantMessage && !(isLastReply && isNotReady);
-        const shouldRenderActions =
-          isLastReply && !!message.content && !isNotReady;
+        const markdown = message.streamObjects?.length
+          ? mergeStreamContent(message.streamObjects)
+          : message.content;
+        const shouldRenderActions = isLastReply && !!markdown && !isNotReady;
 
         const messageClasses = classMap({
           'assistant-message-container': isAssistantMessage,
         });
 
-        const { attachments, role, content, userId, userName, avatarUrl } =
-          message;
+        if (status === 'loading' && isLastReply) {
+          return html`<ai-loading></ai-loading>`;
+        }
+
+        const notificationService = this.host.std.get(NotificationProvider);
 
         return html`<div class=${messageClasses}>
-          <ai-chat-message
+          <ai-chat-block-message
             .host=${host}
             .state=${messageState}
-            .content=${content}
-            .attachments=${attachments}
-            .messageRole=${role}
-            .userId=${userId}
-            .userName=${userName}
-            .avatarUrl=${avatarUrl}
+            .message=${message}
             .textRendererOptions=${this._textRendererOptions}
-          ></ai-chat-message>
-          ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
-          ${shouldRenderCopyMore
-            ? html` <chat-copy-more
-                .host=${host}
-                .actions=${actions}
-                .content=${message.content}
-                .isLast=${isLastReply}
-                .getSessionId=${this._getSessionId}
-                .messageId=${message.id ?? undefined}
-                .retry=${() => this.retry()}
-              ></chat-copy-more>`
-            : nothing}
-          ${shouldRenderActions
-            ? html`<chat-action-list
-                .host=${host}
-                .actions=${actions}
-                .content=${message.content}
-                .getSessionId=${this._getSessionId}
-                .messageId=${message.id ?? undefined}
-                .layoutDirection=${'horizontal'}
-              ></chat-action-list>`
-            : nothing}
+          ></ai-chat-block-message>
+          ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
+          ${
+            shouldRenderCopyMore
+              ? html` <chat-copy-more
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .isLast=${isLastReply}
+                  .messageId=${message.id ?? undefined}
+                  .retry=${() => this.retry()}
+                  .notificationService=${notificationService}
+                ></chat-copy-more>`
+              : nothing
+          }
+          ${
+            shouldRenderActions
+              ? html`<chat-action-list
+                  .host=${host}
+                  .session=${this.forkSession}
+                  .actions=${actions}
+                  .content=${markdown}
+                  .messageId=${message.id ?? undefined}
+                  .layoutDirection=${'horizontal'}
+                  .notificationService=${notificationService}
+                ></chat-action-list>`
+              : nothing
+          }
         </div>`;
       }
     )}`;
@@ -441,16 +467,20 @@ export class AIChatBlockPeekView extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.initSession().catch(console.error);
     const extensions = this.host.std
       .get(ViewExtensionManagerIdentifier)
       .get('preview-page');
 
-    this._textRendererOptions = { extensions };
+    this._textRendererOptions = {
+      extensions,
+      affineFeatureFlagService: this.affineFeatureFlagService,
+    };
     this._historyMessages = this._deserializeHistoryChatMessages(
       this.historyMessagesString
     );
-    const { rootWorkspaceId, rootDocId, _sessionId } = this;
-    queryHistoryMessages(rootWorkspaceId, rootDocId, _sessionId)
+    const { rootWorkspaceId, _sessionId } = this;
+    queryHistoryMessages(rootWorkspaceId, _sessionId)
       .then(messages => {
         this._historyMessages = this._historyMessages.map((message, idx) => {
           return {
@@ -458,20 +488,48 @@ export class AIChatBlockPeekView extends LitElement {
             attachments: messages[idx]?.attachments ?? [],
           };
         });
+        this.ensureRuntime();
       })
       .catch((err: Error) => {
         console.error('Query history messages failed', err);
       });
   }
 
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.disposeRuntime?.();
+    this.runtime?.dispose();
+    this.disposeRuntime = null;
+    this.runtime = null;
+  }
+
   override firstUpdated() {
-    // first time render, scroll ai-chat-messages-container to bottom
-    requestAnimationFrame(() => {
-      if (this._chatMessagesContainer) {
-        this._chatMessagesContainer.scrollTop =
-          this._chatMessagesContainer.scrollHeight;
-      }
-    });
+    this._scrollToEnd();
+  }
+
+  protected override updated(changedProperties: PropertyValues) {
+    if (
+      changedProperties.has('session') ||
+      changedProperties.has('_historyMessages')
+    ) {
+      this.ensureRuntime();
+    }
+
+    if (
+      changedProperties.has('chatContext') &&
+      (this.chatContext.status === 'loading' ||
+        this.chatContext.status === 'error' ||
+        this.chatContext.status === 'success')
+    ) {
+      setTimeout(this._scrollToEnd, 500);
+    }
+
+    if (
+      changedProperties.has('chatContext') &&
+      this.chatContext.status === 'transmitting'
+    ) {
+      this._throttledScrollToEnd();
+    }
   }
 
   override render() {
@@ -482,48 +540,56 @@ export class AIChatBlockPeekView extends LitElement {
 
     const latestHistoryMessage = _historyMessages[_historyMessages.length - 1];
     const latestMessageCreatedAt = latestHistoryMessage.createdAt;
-    const {
-      chatContext,
-      updateContext,
-      networkSearchConfig,
-      _textRendererOptions,
-    } = this;
+    const { chatContext, updateContext, _textRendererOptions } = this;
 
     const { messages: currentChatMessages } = chatContext;
+    const notificationService = this.host.std.get(NotificationProvider);
 
     return html`<div class="ai-chat-block-peek-view-container">
+      <div class="history-clear-container">
+        <ai-history-clear
+          .doc=${this.host.store}
+          .session=${this.forkSession}
+          .onClearHistory=${async (sessionIds: string[]) => {
+            for (const sessionId of sessionIds) {
+              await this.runtime?.dispatch({
+                type: 'deleteSession',
+                sessionId,
+              });
+            }
+          }}
+          .onHistoryCleared=${this._onHistoryCleared}
+          .chatContextValue=${chatContext}
+          .notificationService=${notificationService}
+        ></ai-history-clear>
+      </div>
       <div class="ai-chat-messages-container">
-        <ai-chat-messages
+        <ai-chat-block-messages
           .host=${host}
           .messages=${_historyMessages}
           .textRendererOptions=${_textRendererOptions}
-        ></ai-chat-messages>
+        ></ai-chat-block-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
         <div class="new-chat-messages-container">
           ${this.CurrentMessages(currentChatMessages)}
         </div>
-        <div class="history-clear-container">
-          <ai-history-clear
-            .host=${this.host}
-            .doc=${this.host.store}
-            .getSessionId=${this._getSessionId}
-            .onHistoryCleared=${this._onHistoryCleared}
-            .chatContextValue=${chatContext}
-          ></ai-history-clear>
-        </div>
       </div>
       <ai-chat-composer
         .host=${host}
-        .doc=${this.host.store}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
+        .workspaceId=${this.rootWorkspaceId}
+        .docId=${this.rootDocId}
+        .session=${this.forkSession ?? this.session}
+        .runtime=${this.runtime}
+        .runtimeSnapshot=${this.runtimeSnapshot}
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
-        .isVisible=${this.isComposerVisible}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
-        .networkSearchConfig=${networkSearchConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+        .notificationService=${notificationService}
+        .aiToolsConfigService=${this.aiToolsConfigService}
+        .aiModelService=${this.aiModelService}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
         .onChatSuccess=${this._onChatSuccess}
         .trackOptions=${{
           where: 'ai-chat-block',
@@ -531,6 +597,9 @@ export class AIChatBlockPeekView extends LitElement {
         }}
         .portalContainer=${this.parentElement}
         .reasoningConfig=${this.reasoningConfig}
+        .serverService=${this.serverService}
+        .subscriptionService=${this.subscriptionService}
+        .onAISubscribe=${this.onAISubscribe}
       ></ai-chat-composer>
     </div> `;
   }
@@ -545,16 +614,37 @@ export class AIChatBlockPeekView extends LitElement {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor networkSearchConfig!: AINetworkSearchConfig;
+  accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor reasoningConfig!: AIReasoningConfig;
+  accessor serverService!: ServerService;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
   accessor searchMenuConfig!: SearchMenuConfig;
+
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
+  @property({ attribute: false })
+  accessor aiDraftService!: AIDraftService;
+
+  @property({ attribute: false })
+  accessor aiToolsConfigService!: AIToolsConfigService;
+
+  @property({ attribute: false })
+  accessor aiModelService!: AIModelService;
+
+  @property({ attribute: false })
+  accessor subscriptionService!: SubscriptionService;
+
+  @property({ attribute: false })
+  accessor onAISubscribe!: () => Promise<void>;
 
   @state()
   accessor _historyMessages: ChatMessage[] = [];
@@ -569,7 +659,13 @@ export class AIChatBlockPeekView extends LitElement {
   };
 
   @state()
-  accessor embeddingProgress: [number, number] = [0, 0];
+  accessor runtimeSnapshot: AIChatSnapshot | null = null;
+
+  @state()
+  accessor session: CopilotChatHistoryFragment | null | undefined;
+
+  @state()
+  accessor forkSession: CopilotChatHistoryFragment | null | undefined;
 }
 
 declare global {
@@ -583,15 +679,29 @@ export const AIChatBlockPeekViewTemplate = (
   host: EditorHost,
   docDisplayConfig: DocDisplayConfig,
   searchMenuConfig: SearchMenuConfig,
-  networkSearchConfig: AINetworkSearchConfig,
-  reasoningConfig: AIReasoningConfig
+  reasoningConfig: AIReasoningConfig,
+  serverService: ServerService,
+  affineFeatureFlagService: FeatureFlagService,
+  affineWorkspaceDialogService: WorkspaceDialogService,
+  aiDraftService: AIDraftService,
+  aiToolsConfigService: AIToolsConfigService,
+  aiModelService: AIModelService,
+  subscriptionService: SubscriptionService,
+  onAISubscribe: (() => Promise<void>) | undefined
 ) => {
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
     .host=${host}
-    .networkSearchConfig=${networkSearchConfig}
     .docDisplayConfig=${docDisplayConfig}
     .searchMenuConfig=${searchMenuConfig}
     .reasoningConfig=${reasoningConfig}
+    .serverService=${serverService}
+    .affineFeatureFlagService=${affineFeatureFlagService}
+    .affineWorkspaceDialogService=${affineWorkspaceDialogService}
+    .aiDraftService=${aiDraftService}
+    .aiToolsConfigService=${aiToolsConfigService}
+    .aiModelService=${aiModelService}
+    .subscriptionService=${subscriptionService}
+    .onAISubscribe=${onAISubscribe}
   ></ai-chat-block-peek-view>`;
 };

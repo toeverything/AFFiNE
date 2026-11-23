@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -5,11 +6,12 @@ import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import isMobile from 'is-mobile';
 
-import { Config, metrics } from '../../base';
+import { Config, getRequestTrackerId, metrics } from '../../base';
 import { Models } from '../../models';
-import { htmlSanitize } from '../../native';
+import { type DocPreviewExposure, htmlSanitize } from '../../native';
 import { Public } from '../auth';
 import { DocReader } from '../doc';
+import { PermissionService } from '../permission';
 
 interface RenderOptions {
   title: string;
@@ -43,6 +45,12 @@ const staticPaths = new Set([
   'trash',
 ]);
 
+const markdownType = new Set([
+  'text/markdown',
+  'application/markdown',
+  'text/x-markdown',
+]);
+
 @Controller('/workspace')
 export class DocRendererController {
   private readonly logger = new Logger(DocRendererController.name);
@@ -52,12 +60,20 @@ export class DocRendererController {
   constructor(
     private readonly doc: DocReader,
     private readonly models: Models,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly permission: PermissionService
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
       join(env.projectRoot, 'static/mobile')
     );
+  }
+
+  private buildVisitorId(req: Request, workspaceId: string, docId: string) {
+    const tracker = getRequestTrackerId(req);
+    return createHash('sha256')
+      .update(`${workspaceId}:${docId}:${tracker}`)
+      .digest('hex');
   }
 
   @Public()
@@ -72,72 +88,139 @@ export class DocRendererController {
         : this.webAssets;
 
     let opts: RenderOptions | null = null;
+    let previewExposure: DocPreviewExposure = 'denied';
     // /workspace/:workspaceId/{:docId | staticPaths}
-    const [, , workspaceId, subPath, ...restPaths] = req.path.split('/');
+    const [, , workspaceId, sub, ...rest] = req.path.split('/');
+    const isWorkspace =
+      workspaceId && sub && !staticPaths.has(sub) && rest.length === 0;
+    const isDocPath = isWorkspace && workspaceId !== sub;
+
+    if (
+      isDocPath &&
+      req.accepts().some(t => markdownType.has(t.toLowerCase()))
+    ) {
+      try {
+        const docId = await this.doc.resolveStorageDocId(workspaceId, sub);
+        const canReadMarkdown = await this.permission.canDoc({
+          workspaceId,
+          docId,
+          action: 'Doc.Read',
+        });
+        if (!canReadMarkdown) {
+          res.status(404).end();
+          return;
+        }
+
+        const markdown = await this.doc.getDocMarkdown(
+          workspaceId,
+          docId,
+          false
+        );
+        if (markdown) {
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+          res.send(markdown.markdown);
+          return;
+        }
+      } catch (e) {
+        this.logger.error('failed to render markdown page', e);
+      }
+
+      res.status(404).end();
+      return;
+    }
 
     // /:workspaceId/:docId
-    if (workspaceId && !staticPaths.has(subPath) && restPaths.length === 0) {
+    if (isWorkspace) {
       try {
-        opts =
-          workspaceId === subPath
-            ? await this.getWorkspaceContent(workspaceId)
-            : await this.getPageContent(workspaceId, subPath);
+        if (isDocPath) {
+          const preview = await this.getPageContent(workspaceId, sub);
+          opts = preview.options;
+          previewExposure = preview.exposure;
+        } else {
+          const preview = await this.getWorkspaceContent(workspaceId);
+          opts = preview.options;
+          previewExposure = preview.exposure;
+        }
         metrics.doc.counter('render').add(1);
+
+        if (opts && isDocPath) {
+          void this.models.workspaceAnalytics
+            .recordDocView({
+              workspaceId,
+              docId: sub,
+              visitorId: this.buildVisitorId(req, workspaceId, sub),
+              isGuest: true,
+            })
+            .catch(error => {
+              this.logger.warn(
+                `Failed to record shared page view: ${workspaceId}/${sub}`,
+                error as Error
+              );
+            });
+        }
       } catch (e) {
         this.logger.error('failed to render page', e);
       }
     }
 
     res.setHeader('Content-Type', 'text/html');
-    if (!opts) {
+    const indexable = previewExposure === 'public_indexable';
+    if (!indexable) {
       res.setHeader('X-Robots-Tag', 'noindex');
     }
 
-    res.send(this._render(opts, assets));
+    res.send(this._render(opts, assets, indexable));
   }
 
   private async getPageContent(
     workspaceId: string,
     docId: string
-  ): Promise<RenderOptions | null> {
-    let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
-
-    if (!allowUrlPreview) {
-      // if page is private, but workspace url preview is on
-      allowUrlPreview =
-        await this.models.workspace.allowUrlPreview(workspaceId);
+  ): Promise<{ options: RenderOptions | null; exposure: DocPreviewExposure }> {
+    docId = await this.doc.resolveStorageDocId(workspaceId, docId);
+    const exposure = await this.permission.docPreviewExposure({
+      workspaceId,
+      docId,
+    });
+    if (exposure !== 'denied') {
+      return {
+        options: await this.doc.getDocContent(workspaceId, docId),
+        exposure,
+      };
     }
 
-    if (allowUrlPreview) {
-      return this.doc.getDocContent(workspaceId, docId);
-    }
-
-    return null;
+    return { options: null, exposure };
   }
 
   private async getWorkspaceContent(
     workspaceId: string
-  ): Promise<RenderOptions | null> {
-    const allowUrlPreview =
-      await this.models.workspace.allowUrlPreview(workspaceId);
+  ): Promise<{ options: RenderOptions | null; exposure: DocPreviewExposure }> {
+    const exposure = await this.permission.workspacePreviewExposure({
+      workspaceId,
+    });
+    if (exposure === 'denied') return { options: null, exposure };
 
-    if (allowUrlPreview) {
-      const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
+    const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
 
-      if (workspaceContent) {
-        return {
+    if (workspaceContent) {
+      return {
+        options: {
           title: workspaceContent.name,
           summary: '',
           avatar: workspaceContent.avatarUrl,
-        };
-      }
+        },
+        exposure,
+      };
     }
 
-    return null;
+    return { options: null, exposure };
   }
 
   // @TODO(@forehalo): pre-compile html template to accelerate serializing
-  _render(opts: RenderOptions | null, assets: HtmlAssets): string {
+  _render(
+    opts: RenderOptions | null,
+    assets: HtmlAssets,
+    indexable: boolean
+  ): string {
     // TODO(@forehalo): how can we enable the type reference to @affine/env
     const envMeta: Record<string, any> = {
       publicPath: assets.publicPath,
@@ -171,6 +254,7 @@ export class DocRendererController {
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    ${env.selfhosted ? '' : '<meta name="apple-itunes-app" content="app-id=6736937980" />'}
 
     <title>${title}</title>
     <meta name="theme-color" content="#fafafa" />
@@ -178,9 +262,9 @@ export class DocRendererController {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />
-    ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
+    ${indexable ? '' : '<meta name="robots" content="noindex, nofollow" />'}
     <meta
       name="twitter:title"
       content="${title}"

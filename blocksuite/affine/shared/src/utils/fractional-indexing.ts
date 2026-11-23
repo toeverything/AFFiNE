@@ -65,7 +65,12 @@ export function generateFractionalIndexingKeyBetween(
     // generate a key between a and b
     if (hasSamePrefix(aSubkey, bSubkey) && a !== null && b !== null) {
       // conflict, if the subkeys are the same, generate a key between fullkeys
-      return generateKeyBetween(a, b) + '0' + postfix();
+      let key = generateKeyBetween(a, b);
+      // the postfix would sort the key after b if b continues with key + '0'
+      while (b.startsWith(key + '0')) {
+        key = generateKeyBetween(key, b);
+      }
+      return key + '0' + postfix();
     } else {
       return generateKeyBetween(aSubkey, bSubkey) + '0' + postfix();
     }

@@ -1,13 +1,18 @@
 import path from 'node:path';
 
-import { DocStorage } from '@affine/native';
 import {
-  parseUniversalId,
-  universalId as generateUniversalId,
-} from '@affine/nbstore';
+  DocStorage,
+  parseWorkspaceRootDocMeta,
+  ValidationResult,
+} from '@affine/native';
+import { parseUniversalId } from '@affine/nbstore';
 import fs from 'fs-extra';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import { nanoid } from 'nanoid';
 
+import {
+  normalizeWorkspaceIdForPath,
+  resolveExistingPathInBase,
+} from '../../shared/utils';
 import { logger } from '../logger';
 import { getDocStoragePool } from '../nbstore';
 import { ensureSQLiteDisconnected } from '../nbstore/v1/ensure-db';
@@ -15,8 +20,10 @@ import { WorkspaceSQLiteDB } from '../nbstore/v1/workspace-db-adapter';
 import type { WorkspaceMeta } from '../type';
 import {
   getDeletedWorkspacesBasePath,
+  getSpaceBasePath,
   getSpaceDBPath,
   getWorkspaceBasePathV1,
+  getWorkspaceDBPath,
   getWorkspaceMeta,
 } from './meta';
 
@@ -24,7 +31,7 @@ async function deleteWorkspaceV1(workspaceId: string) {
   try {
     await ensureSQLiteDisconnected('workspace', workspaceId);
     const basePath = await getWorkspaceBasePathV1('workspace', workspaceId);
-    await fs.rmdir(basePath, { recursive: true });
+    await fs.remove(basePath);
   } catch (error) {
     logger.error('deleteWorkspaceV1', error);
   }
@@ -40,7 +47,7 @@ export async function deleteWorkspace(universalId: string) {
   const dbPath = await getSpaceDBPath(peer, type, id);
   try {
     await getDocStoragePool().disconnect(universalId);
-    await fs.rmdir(path.dirname(dbPath), { recursive: true });
+    await fs.remove(path.dirname(dbPath));
   } catch (e) {
     logger.error('deleteWorkspace', e);
   }
@@ -57,7 +64,7 @@ export async function trashWorkspace(universalId: string) {
 
   const dbPath = await getSpaceDBPath(peer, type, id);
   const basePath = await getDeletedWorkspacesBasePath();
-  const movedPath = path.join(basePath, `${id}`);
+  const movedPath = path.join(basePath, normalizeWorkspaceIdForPath(id));
   try {
     const storage = new DocStorage(dbPath);
     if (await storage.validate()) {
@@ -71,7 +78,7 @@ export async function trashWorkspace(universalId: string) {
     await fs.copy(path.dirname(dbPath), movedPath, {
       overwrite: true,
     });
-    await fs.rmdir(path.dirname(dbPath), { recursive: true });
+    await fs.remove(path.dirname(dbPath));
   } catch (error) {
     logger.error('trashWorkspace', error);
   }
@@ -96,6 +103,41 @@ export async function storeWorkspaceMeta(
   }
 }
 
+export async function listLocalWorkspaceIds(): Promise<string[]> {
+  const localWorkspaceBasePath = path.join(
+    await getSpaceBasePath('workspace'),
+    'local'
+  );
+  if (!(await fs.pathExists(localWorkspaceBasePath))) {
+    return [];
+  }
+
+  const deletedWorkspaceBasePath = await getDeletedWorkspacesBasePath();
+  const deletedWorkspaceIds = new Set<string>(
+    (await fs.readdir(deletedWorkspaceBasePath).catch(() => [])).filter(Boolean)
+  );
+
+  const entries = await fs.readdir(localWorkspaceBasePath);
+  const ids = await Promise.all(
+    entries.map(async entry => {
+      if (deletedWorkspaceIds.has(entry)) {
+        return null;
+      }
+      const workspacePath = path.join(localWorkspaceBasePath, entry);
+      const stat = await fs.stat(workspacePath).catch(() => null);
+      if (!stat?.isDirectory()) {
+        return null;
+      }
+      if (!(await fs.pathExists(path.join(workspacePath, 'storage.db')))) {
+        return null;
+      }
+      return entry;
+    })
+  );
+
+  return ids.filter((id): id is string => typeof id === 'string');
+}
+
 type WorkspaceDocMeta = {
   id: string;
   name: string;
@@ -116,15 +158,18 @@ async function getWorkspaceDocMetaV1(
     await db.init();
     await db.checkpoint();
     const meta = await db.getWorkspaceMeta();
+    if (meta.pageCount == null) {
+      return null;
+    }
     const dbFileSize = await fs.stat(dbPath);
     return {
       id: workspaceId,
-      name: meta.name,
-      avatar: await db.getBlob(meta.avatar),
+      name: meta.name ?? '',
+      avatar: meta.avatar ? await db.getBlob(meta.avatar) : null,
       fileSize: dbFileSize.size,
       updatedAt: dbFileSize.mtime,
       createdAt: dbFileSize.birthtime,
-      docCount: meta.pages.length,
+      docCount: meta.pageCount,
       dbPath,
     };
   } catch {
@@ -138,44 +183,35 @@ async function getWorkspaceDocMeta(
   dbPath: string
 ): Promise<WorkspaceDocMeta | null> {
   const pool = getDocStoragePool();
-  const universalId = generateUniversalId({
-    peer: 'deleted-local',
-    type: 'workspace',
-    id: workspaceId,
-  });
   try {
-    await pool.connect(universalId, dbPath);
-    await pool.checkpoint(universalId);
-    const snapshot = await pool.getDocSnapshot(universalId, workspaceId);
-    const pendingUpdates = await pool.getDocUpdates(universalId, workspaceId);
-    if (snapshot) {
-      const updates = snapshot.bin;
-      const ydoc = new YDoc();
-      applyUpdate(ydoc, updates);
-      pendingUpdates.forEach(update => {
-        applyUpdate(ydoc, update.bin);
-      });
-      const meta = ydoc.getMap('meta').toJSON();
+    const { snapshot, updates: pendingUpdates } =
+      await pool.readDocRecordsReadonly(dbPath, workspaceId);
+    if (snapshot || pendingUpdates.length) {
+      const meta = parseWorkspaceRootDocMeta([
+        ...(snapshot ? [snapshot.bin] : []),
+        ...pendingUpdates.map(update => update.bin),
+      ]);
+      if (meta.pageCount == null) {
+        throw new Error('Missing workspace pages metadata');
+      }
       const dbFileStat = await fs.stat(dbPath);
       const blob = meta.avatar
-        ? await pool.getBlob(universalId, meta.avatar)
+        ? await pool.readBlobReadonly(dbPath, meta.avatar)
         : null;
       return {
         id: workspaceId,
-        name: meta.name,
+        name: meta.name ?? '',
         avatar: blob ? blob.data : null,
         fileSize: dbFileStat.size,
         updatedAt: dbFileStat.mtime,
         createdAt: dbFileStat.birthtime,
-        docCount: meta.pages.length,
+        docCount: meta.pageCount,
         dbPath,
       };
     }
   } catch {
     // try using v1
     return await getWorkspaceDocMetaV1(workspaceId, dbPath);
-  } finally {
-    await pool.disconnect(universalId);
   }
   return null;
 }
@@ -222,12 +258,88 @@ export async function getDeletedWorkspaces() {
   };
 }
 
+async function importLegacyWorkspaceDb(
+  originalPath: string,
+  workspaceId: string
+) {
+  const { SqliteConnection } = await import('@affine/native');
+
+  const validationResult = await SqliteConnection.validate(originalPath);
+  if (validationResult !== ValidationResult.Valid) {
+    return {};
+  }
+
+  const connection = new SqliteConnection(originalPath);
+  if (!(await connection.validateImportSchema())) {
+    return {};
+  }
+
+  const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
+  await fs.ensureDir(path.parse(internalFilePath).dir);
+  await connection.vacuumInto(internalFilePath);
+  logger.info(
+    `recoverBackupWorkspace, vacuum: ${originalPath} -> ${internalFilePath}`
+  );
+
+  await storeWorkspaceMeta(workspaceId, {
+    id: workspaceId,
+    mainDBPath: internalFilePath,
+  });
+
+  return {
+    workspaceId,
+  };
+}
+
+async function importWorkspaceDb(originalPath: string) {
+  const workspaceId = nanoid(10);
+  let storage = new DocStorage(originalPath);
+
+  if (!(await storage.validate())) {
+    return await importLegacyWorkspaceDb(originalPath, workspaceId);
+  }
+
+  if (!(await storage.validateImportSchema())) {
+    return {};
+  }
+
+  const internalFilePath = await getSpaceDBPath(
+    'local',
+    'workspace',
+    workspaceId
+  );
+  await fs.ensureDir(path.parse(internalFilePath).dir);
+  await storage.vacuumInto(internalFilePath);
+  logger.info(
+    `recoverBackupWorkspace, vacuum: ${originalPath} -> ${internalFilePath}`
+  );
+
+  storage = new DocStorage(internalFilePath);
+  await storage.setSpaceId(workspaceId);
+
+  return {
+    workspaceId,
+  };
+}
+
 export async function deleteBackupWorkspace(id: string) {
   const basePath = await getDeletedWorkspacesBasePath();
-  const workspacePath = path.join(basePath, id);
-  await fs.rmdir(workspacePath, { recursive: true });
+  const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
+  await fs.remove(workspacePath);
   logger.info(
     'deleteBackupWorkspace',
     `Deleted backup workspace: ${workspacePath}`
   );
+}
+
+export async function recoverBackupWorkspace(id: string) {
+  const basePath = await getDeletedWorkspacesBasePath();
+  const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
+  const dbPath = await resolveExistingPathInBase(
+    basePath,
+    path.join(workspacePath, 'storage.db'),
+    { label: 'backup workspace filepath' }
+  );
+
+  return await importWorkspaceDb(dbPath);
 }

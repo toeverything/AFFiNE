@@ -91,15 +91,11 @@ export class KeyboardControl {
     const disposables = new DisposableGroup();
     if (IS_ANDROID) {
       disposables.add(
-        this._dispatcher.add(
-          'beforeInput',
-          ctx => {
-            if (this.composition) return false;
-            const binding = androidBindKeymapPatch(keymap);
-            return binding(ctx);
-          },
-          options
-        )
+        this._dispatcher.add('beforeInput', ctx => {
+          if (this.composition) return false;
+          const binding = androidBindKeymapPatch(keymap);
+          return binding(ctx);
+        })
       );
     }
 

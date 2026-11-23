@@ -6,7 +6,7 @@ import {
   type IModelCoord,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
-import { TextElementModel } from '@blocksuite/affine-model';
+import { DefaultTheme, TextElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
@@ -418,13 +418,14 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
     const lineHeight = getLineHeight(fontFamily, fontSize, fontWeight);
     const rect = getSelectedRect([this.element]);
 
-    const { translateX, translateY, zoom } = this.gfx.viewport;
+    const { translateX, translateY, zoom, viewScale } = this.gfx.viewport;
     const [visualX, visualY] = this.getVisualPosition(this.element);
     const containerOffset = this.getContainerOffset();
+    // Compensate for outer CSS scale, matching GfxBlockComponent.getCSSTransform.
     const transformOperation = [
-      `translate(${translateX}px, ${translateY}px)`,
-      `translate(${visualX * zoom}px, ${visualY * zoom}px)`,
-      `scale(${zoom})`,
+      `translate(${translateX / viewScale}px, ${translateY / viewScale}px)`,
+      `translate(${(visualX * zoom) / viewScale}px, ${(visualY * zoom) / viewScale}px)`,
+      `scale(${zoom / viewScale})`,
       `rotate(${rotate}deg)`,
       `translate(${containerOffset})`,
     ];
@@ -432,7 +433,7 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
     const isEmpty = !text.length && !this._isComposition;
     const color = this.std
       .get(ThemeProvider)
-      .generateColorProperty(this.element.color, '#000000');
+      .generateColorProperty(this.element.color, DefaultTheme.textColor);
 
     return html`<div
       style=${styleMap({
@@ -454,21 +455,25 @@ export class EdgelessTextEditor extends WithDisposable(ShadowlessElement) {
         .yText=${text}
         .enableFormat=${false}
         .enableAutoScrollHorizontally=${false}
-        style=${isEmpty
-          ? styleMap({
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
+        style=${
+          isEmpty
+            ? styleMap({
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                padding: `${EdgelessTextEditor.PADDING_VERTICAL}px
         ${EdgelessTextEditor.PADDING_HORIZONTAL}px`,
-            })
-          : nothing}
+              })
+            : nothing
+        }
       ></rich-text>
-      ${isEmpty
-        ? html`<span class="edgeless-text-editor-placeholder">
-            Type from here
-          </span>`
-        : nothing}
+      ${
+        isEmpty
+          ? html`<span class="edgeless-text-editor-placeholder">
+              Type from here
+            </span>`
+          : nothing
+      }
     </div>`;
   }
 

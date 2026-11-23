@@ -61,8 +61,16 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
     const link = basename + stringTo;
     const handleClick = useAsyncCallback(
       async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        // a trick to prevent click from modal overlay propagation
+        if (!event.currentTarget.contains(event.target as Node)) {
+          return;
+        }
+
         onClick?.(event);
         if (event.defaultPrevented) {
+          return;
+        }
+        if (event.button !== 0 && event.button !== 1) {
           return;
         }
         const at = inferOpenAt(event);

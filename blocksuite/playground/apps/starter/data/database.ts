@@ -45,10 +45,10 @@ export const database: InitFn = (collection: Workspace, id: string) => {
       const datasource = new DatabaseBlockDataSource(database);
       datasource.viewManager.viewAdd('table');
       database.props.title = new Text(title);
-      const richTextId = datasource.propertyAdd(
-        'end',
-        databaseBlockProperties.richTextColumnConfig.type
-      );
+      const richTextId = datasource.propertyAdd('end', {
+        type: databaseBlockProperties.richTextColumnConfig.type,
+        name: 'Rich Text',
+      });
       Object.values([
         propertyPresets.multiSelectPropertyConfig,
         propertyPresets.datePropertyConfig,
@@ -57,7 +57,10 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         propertyPresets.checkboxPropertyConfig,
         propertyPresets.progressPropertyConfig,
       ]).forEach(column => {
-        datasource.propertyAdd('end', column.type);
+        datasource.propertyAdd('end', {
+          type: column.type,
+          name: column.config.name,
+        });
       });
       if (group) {
         const groupTrait =

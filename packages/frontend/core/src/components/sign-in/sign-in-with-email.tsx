@@ -86,7 +86,6 @@ export const SignInWithEmailStep = ({
     setIsSending(true);
     try {
       setResendCountDown(60);
-      captchaService.revalidate();
       await authService.sendEmailMagicLink(
         email,
         verifyToken,
@@ -100,6 +99,7 @@ export const SignInWithEmailStep = ({
         title: 'Failed to sign in',
         message: t[`error.${error.name}`](error.data),
       });
+      captchaService.revalidate();
     }
     setIsSending(false);
   }, [
@@ -182,6 +182,7 @@ export const SignInWithEmailStep = ({
           errorHint={otpError}
           onEnter={onContinue}
           type="text"
+          autoComplete="one-time-code"
           required={true}
           maxLength={6}
         />

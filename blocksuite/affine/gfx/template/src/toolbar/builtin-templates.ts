@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/await-thenable */
 import type {
   Template,
   TemplateCategory,
@@ -43,7 +44,7 @@ export const builtInTemplates = {
       await Promise.all(extendTemplate.map(manager => manager.list(category)))
     );
 
-    // eslint-disable-next-line sonarjs/no-empty-collection
+    // oxlint-disable-next-line sonarjs/no-empty-collection
     const cate = templates.find(cate => cate.name === category);
     if (!cate) return extendTemplates;
 
@@ -60,7 +61,7 @@ export const builtInTemplates = {
       await Promise.all(extendTemplate.map(manager => manager.categories()))
     );
 
-    // eslint-disable-next-line sonarjs/no-empty-collection
+    // oxlint-disable-next-line sonarjs/no-empty-collection
     return templates.map(cate => cate.name).concat(extendCates);
   },
 
@@ -74,7 +75,7 @@ export const builtInTemplates = {
     keyword = keyword.trim().toLocaleLowerCase();
 
     await Promise.all(
-      // eslint-disable-next-line sonarjs/no-empty-collection
+      // oxlint-disable-next-line sonarjs/no-empty-collection
       templates.map(async categroy => {
         if (cateName && cateName !== categroy.name) {
           return;

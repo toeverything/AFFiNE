@@ -5,25 +5,12 @@ import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
-import { EmbedFigmaBlockAdapterExtensions } from './adapters/extension';
 import { embedFigmaSlashMenuConfig } from './configs/slash-menu';
+import { EmbedFigmaBlockInteraction } from './embed-edgeless-figma-block';
 import { EmbedFigmaBlockComponent } from './embed-figma-block';
 import { EmbedFigmaBlockOptionConfig } from './embed-figma-service';
 
 const flavour = EmbedFigmaBlockSchema.model.flavour;
-
-export const EmbedFigmaBlockSpec: ExtensionType[] = [
-  FlavourExtension(flavour),
-  BlockViewExtension(flavour, model => {
-    return model.parent?.flavour === 'affine:surface'
-      ? literal`affine-embed-edgeless-figma-block`
-      : literal`affine-embed-figma-block`;
-  }),
-  EmbedFigmaBlockAdapterExtensions,
-  EmbedFigmaBlockOptionConfig,
-  createBuiltinToolbarConfigExtension(flavour, EmbedFigmaBlockComponent),
-  SlashMenuConfigExtension(flavour, embedFigmaSlashMenuConfig),
-].flat();
 
 export const EmbedFigmaViewExtensions: ExtensionType[] = [
   FlavourExtension(flavour),
@@ -35,4 +22,5 @@ export const EmbedFigmaViewExtensions: ExtensionType[] = [
   EmbedFigmaBlockOptionConfig,
   createBuiltinToolbarConfigExtension(flavour, EmbedFigmaBlockComponent),
   SlashMenuConfigExtension(flavour, embedFigmaSlashMenuConfig),
+  EmbedFigmaBlockInteraction,
 ].flat();

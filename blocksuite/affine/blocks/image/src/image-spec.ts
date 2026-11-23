@@ -6,6 +6,7 @@ import { literal } from 'lit/static-html.js';
 
 import { imageSlashMenuConfig } from './configs/slash-menu';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
+import { ImageEdgelessBlockInteraction } from './image-edgeless-block';
 import { ImageDropOption } from './image-service';
 
 const flavour = ImageBlockSchema.model.flavour;
@@ -22,6 +23,7 @@ export const ImageBlockSpec: ExtensionType[] = [
     return literal`affine-image`;
   }),
   ImageDropOption,
+  ImageEdgelessBlockInteraction,
   createBuiltinToolbarConfigExtension(flavour),
   SlashMenuConfigExtension(flavour, imageSlashMenuConfig),
 ].flat();

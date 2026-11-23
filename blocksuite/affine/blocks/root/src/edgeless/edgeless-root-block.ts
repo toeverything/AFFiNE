@@ -1,7 +1,6 @@
 import { NoteConfigExtension } from '@blocksuite/affine-block-note';
 import {
   DefaultTool,
-  EdgelessLegacySlotIdentifier,
   getBgGridGap,
   normalizeWheelDeltaY,
   type SurfaceBlockComponent,
@@ -45,7 +44,6 @@ import { css, html } from 'lit';
 import { query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { EdgelessSelectedRectWidget } from './components/rects/edgeless-selected-rect.js';
 import { EdgelessPageKeyboardManager } from './edgeless-keyboard.js';
 import type { EdgelessRootService } from './edgeless-root-service.js';
 import { isCanvasElement } from './utils/query.js';
@@ -121,27 +119,8 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   keyboardManager: EdgelessPageKeyboardManager | null = null;
 
-  get dispatcher() {
-    return this.std.event;
-  }
-
-  get fontLoader() {
-    return this.std.get(FontLoaderService);
-  }
-
   get gfx() {
     return this.std.get(GfxControllerIdentifier);
-  }
-
-  get selectedRectWidget() {
-    return this.host.view.getWidget(
-      'edgeless-selected-rect',
-      this.host.id
-    ) as EdgelessSelectedRectWidget;
-  }
-
-  get slots() {
-    return this.std.get(EdgelessLegacySlotIdentifier);
   }
 
   get surfaceBlockModel() {
@@ -154,10 +133,13 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     return this.std.get(ViewportElementProvider).viewportElement;
   }
 
+  get fontLoader() {
+    return this.std.get(FontLoaderService);
+  }
+
   private _initFontLoader() {
-    this.std
-      .get(FontLoaderService)
-      .ready.then(() => {
+    this.fontLoader.ready
+      .then(() => {
         this.surface.refresh();
       })
       .catch(console.error);
@@ -181,7 +163,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   private _initPanEvent() {
     this.disposables.add(
-      this.dispatcher.add('pan', ctx => {
+      this.std.event.add('pan', ctx => {
         const { viewport } = this.gfx;
         if (viewport.locked) return;
 
@@ -205,7 +187,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   private _initPinchEvent() {
     this.disposables.add(
-      this.dispatcher.add('pinch', ctx => {
+      this.std.event.add('pinch', ctx => {
         const { viewport } = this.gfx;
         if (viewport.locked) return;
 
@@ -230,7 +212,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           currentCenter.y
         );
 
-        viewport.setZoom(zoom, new Point(baseX, baseY));
+        viewport.setZoom(zoom, new Point(baseX, baseY), false, true, true);
 
         return false;
       })
@@ -348,7 +330,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
 
   private _initWheelEvent() {
     this._disposables.add(
-      this.dispatcher.add('wheel', ctx => {
+      this.std.event.add('wheel', ctx => {
         const config = this.std.getOptional(EditorSettingProvider)?.setting$;
         const state = ctx.get('defaultState');
         const e = state.event as WheelEvent;
@@ -369,12 +351,16 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           );
 
           const zoom = normalizeWheelDeltaY(e.deltaY, viewport.zoom);
-          viewport.setZoom(zoom, new Point(baseX, baseY), true);
+          viewport.setZoom(zoom, new Point(baseX, baseY), true, true, true);
           e.stopPropagation();
         }
         // pan
         else {
-          const simulateHorizontalScroll = IS_WINDOWS && e.shiftKey;
+          // Enable Shift+wheel horizontal scroll on Windows (no native deltaX),
+          // and on any platform when using a mouse without horizontal scroll
+          // (deltaX === 0 means no native horizontal input, e.g. external mouse on macOS/Linux).
+          const simulateHorizontalScroll =
+            e.shiftKey && (IS_WINDOWS || e.deltaX === 0);
           const dx = simulateHorizontalScroll
             ? e.deltaY / viewport.zoom
             : e.deltaX / viewport.zoom;
@@ -502,7 +488,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
           .viewport=${this.gfx.viewport}
           .getModelsInViewport=${() => {
             const blocks = this.gfx.grid.search(
-              this.gfx.viewport.viewportBounds,
+              this.gfx.viewport.overscanBlockBounds,
               {
                 useSet: true,
                 filter: ['block'],

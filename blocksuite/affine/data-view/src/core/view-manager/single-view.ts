@@ -1,7 +1,7 @@
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
+import type { GeneralServiceIdentifier } from '@blocksuite/global/di';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 
-import type { DataViewContextKey } from '../data-source/context.js';
 import type { Variable } from '../expression/types.js';
 import type { PropertyMetaConfig } from '../property/property-config.js';
 import type { TraitKey } from '../traits/key.js';
@@ -20,6 +20,7 @@ export type MainProperties = {
 };
 
 export interface SingleView {
+  data$: any;
   readonly id: string;
   readonly type: string;
   readonly manager: ViewManager;
@@ -58,10 +59,14 @@ export interface SingleView {
 
   propertyAdd(
     toAfterOfProperty: InsertToPosition,
-    type?: string
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string | undefined;
 
-  contextGet<T>(key: DataViewContextKey<T>): T;
+  serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null;
+  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T;
 
   traitGet<T>(key: TraitKey<T>): T | undefined;
 
@@ -74,8 +79,7 @@ export interface SingleView {
 
 export abstract class SingleViewBase<
   ViewData extends DataViewDataType = DataViewDataType,
-> implements SingleView
-{
+> implements SingleView {
   private readonly searchString = signal('');
 
   private readonly traitMap = new Map<symbol, unknown>();
@@ -124,6 +128,7 @@ export abstract class SingleViewBase<
   );
 
   rowsDelete(rows: string[]): void {
+    this.lockRows(false);
     this.dataSource.rowDelete(rows);
   }
 
@@ -201,8 +206,12 @@ export abstract class SingleViewBase<
     return new CellBase(this, propertyId, rowId);
   }
 
-  contextGet<T>(key: DataViewContextKey<T>): T {
-    return this.dataSource.contextGet(key);
+  serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null {
+    return this.dataSource.serviceGet(key);
+  }
+
+  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T {
+    return this.dataSource.serviceGetOrCreate(key, create);
   }
 
   dataUpdate(updater: (viewData: ViewData) => Partial<ViewData>): void {
@@ -231,8 +240,14 @@ export abstract class SingleViewBase<
     });
   }
 
-  propertyAdd(position: InsertToPosition, type?: string): string | undefined {
-    const id = this.dataSource.propertyAdd(position, type);
+  propertyAdd(
+    position: InsertToPosition,
+    ops?: {
+      type?: string;
+      name?: string;
+    }
+  ): string | undefined {
+    const id = this.dataSource.propertyAdd(position, ops);
     if (!id) {
       return;
     }
@@ -244,6 +259,7 @@ export abstract class SingleViewBase<
   abstract propertyGetOrCreate(propertyId: string): Property;
 
   rowAdd(insertPosition: InsertToPosition | number): string {
+    this.lockRows(false);
     return this.dataSource.rowAdd(insertPosition);
   }
 

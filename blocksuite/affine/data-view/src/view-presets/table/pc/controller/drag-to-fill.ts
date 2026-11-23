@@ -8,7 +8,7 @@ import * as Y from 'yjs';
 
 import { t } from '../../../../core/index.js';
 import type { TableViewAreaSelection } from '../../selection';
-import type { DataViewTable } from '../table-view.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class DragToFillElement extends ShadowlessElement {
   static override styles = css`
@@ -49,12 +49,12 @@ export class DragToFillElement extends ShadowlessElement {
 }
 
 export function fillSelectionWithFocusCellData(
-  host: DataViewTable,
+  logic: TableViewUILogic,
   selection: TableViewAreaSelection
 ) {
   const { groupKey, rowsSelection, columnsSelection, focus } = selection;
 
-  const focusCell = host.selectionController.getCellContainer(
+  const focusCell = logic.selectionController.getCellContainer(
     groupKey,
     focus.rowIndex,
     focus.columnIndex
@@ -78,7 +78,7 @@ export function fillSelectionWithFocusCellData(
     for (let i = start; i <= end; i++) {
       if (i === focus.rowIndex) continue;
 
-      const cellContainer = host.selectionController.getCellContainer(
+      const cellContainer = logic.selectionController.getCellContainer(
         groupKey,
         i,
         draggingColIdx

@@ -5,12 +5,14 @@ import { expect } from '@playwright/test';
 import { test } from '../base/base-test';
 
 test.describe('AIChatWith/EdgelessMindMap', () => {
+  test.describe.configure({ timeout: 180000 });
+
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support replace mindmap with the regenerated one', async ({
+  test('should preview the regenerated mindmap before replacing it', async ({
     loggedInPage: page,
     utils,
   }) => {
@@ -21,29 +23,74 @@ test.describe('AIChatWith/EdgelessMindMap', () => {
         id = await utils.editor.createMindmap(page);
       },
       async () => {
-        const { id: rootId } = await utils.editor.getMindMapNode(page, id!, [
-          0,
-        ]);
+        const { id: rootId } = await utils.editor.getMindMapNode(
+          page,
+          id!,
+          [0]
+        );
         await utils.editor.selectElementInEdgeless(page, [rootId]);
       }
     );
 
-    const { answer } = await regenerateMindMap();
-    await expect(answer.locator('mini-mindmap-preview')).toBeVisible();
-    const replace = answer.getByTestId('answer-replace');
-    await replace.click();
+    const { answer, responses } = await regenerateMindMap();
+    expect(responses).toEqual(new Set(['replace-selection']));
+    const preview = answer.locator('mini-mindmap-preview');
+    const surface = preview
+      .locator('mini-mindmap-root-block')
+      .locator('mini-mindmap-surface-block')
+      .locator('.affine-mini-mindmap-surface');
+    await expect(surface).toBeVisible({ timeout: 15_000 });
+    await expect
+      .poll(
+        () =>
+          surface
+            .locator('canvas:visible')
+            .evaluateAll<boolean, HTMLCanvasElement>(canvases =>
+              canvases.some(canvas => {
+                const { width, height } = canvas;
+                if (!width || !height) return false;
 
-    // Expect original mindmap to be replaced
-    const mindmaps = await page.evaluate(() => {
-      const edgelessBlock = document.querySelector(
-        'affine-edgeless-root'
-      ) as EdgelessRootBlockComponent;
-      const mindmaps = edgelessBlock?.gfx.gfxElements
-        .filter((el: GfxModel) => 'type' in el && el.type === 'mindmap')
-        .map((el: GfxModel) => el.id);
-      return mindmaps;
-    });
-    expect(mindmaps).toHaveLength(1);
-    expect(mindmaps?.[0]).not.toBe(id!);
+                const pixels = canvas
+                  .getContext('2d')
+                  ?.getImageData(0, 0, width, height).data;
+                return pixels?.some(
+                  (value, index) => index % 4 === 3 && value > 0
+                );
+              })
+            ),
+        {
+          message: 'Mind map preview should draw visible pixels',
+          timeout: 15_000,
+        }
+      )
+      .toBe(true);
+    const replace = answer.getByTestId('answer-replace');
+    await expect(replace).toBeVisible();
+    await replace.click({ force: true });
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(originalId => {
+            const edgelessBlock = document.querySelector(
+              'affine-edgeless-root'
+            ) as EdgelessRootBlockComponent;
+            const mindmaps = edgelessBlock?.gfx.gfxElements.filter(
+              (el: GfxModel) => 'type' in el && el.type === 'mindmap'
+            ) as unknown as Array<{
+              id: string;
+              tree: { children?: unknown[] };
+            }>;
+            const mindmap = mindmaps?.[0];
+
+            return {
+              count: mindmaps?.length ?? 0,
+              replaced: !!mindmap && mindmap.id !== originalId,
+              hasChildren: (mindmap?.tree.children?.length ?? 0) > 0,
+            };
+          }, id!),
+        { timeout: 15_000 }
+      )
+      .toEqual({ count: 1, replaced: true, hasChildren: true });
   });
 });

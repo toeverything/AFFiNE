@@ -68,19 +68,30 @@ export const brushToolbarConfig = {
             resolveColor(color, theme)
           ) ?? resolveColor(DefaultTheme.black, theme);
         const onPick = (e: PickColorEvent) => {
-          if (e.type === 'pick') {
-            const color = e.detail.value;
-            for (const model of models) {
-              const props = packColor(field, color);
-              ctx.std
-                .get(EdgelessCRUDIdentifier)
-                .updateElement(model.id, props);
-            }
-            return;
-          }
-
-          for (const model of models) {
-            model[e.type === 'start' ? 'stash' : 'pop'](field);
+          switch (e.type) {
+            case 'pick':
+              {
+                const color = e.detail.value;
+                const props = packColor(field, color);
+                const crud = ctx.std.get(EdgelessCRUDIdentifier);
+                models.forEach(model => {
+                  crud.updateElement(model.id, props);
+                });
+              }
+              break;
+            case 'start':
+              ctx.store.captureSync();
+              models.forEach(model => {
+                model.stash(field);
+              });
+              break;
+            case 'end':
+              ctx.store.transact(() => {
+                models.forEach(model => {
+                  model.pop(field);
+                });
+              });
+              break;
           }
         };
 

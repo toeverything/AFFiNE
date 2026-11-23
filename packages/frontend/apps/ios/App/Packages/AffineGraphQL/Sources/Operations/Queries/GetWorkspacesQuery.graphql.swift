@@ -20,6 +20,9 @@ public class GetWorkspacesQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspaces", [Workspace].self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetWorkspacesQuery.Data.self
+    ] }
 
     /// Get all accessible workspaces for current user
     public var workspaces: [Workspace] { __data["workspaces"] }
@@ -38,6 +41,9 @@ public class GetWorkspacesQuery: GraphQLQuery {
         .field("initialized", Bool.self),
         .field("team", Bool.self),
         .field("owner", Owner.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetWorkspacesQuery.Data.Workspace.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -59,6 +65,9 @@ public class GetWorkspacesQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("id", AffineGraphQL.ID.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetWorkspacesQuery.Data.Workspace.Owner.self
         ] }
 
         public var id: AffineGraphQL.ID { __data["id"] }

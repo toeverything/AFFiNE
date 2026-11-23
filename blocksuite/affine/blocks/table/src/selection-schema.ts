@@ -67,6 +67,8 @@ export class TableSelection extends BaseSelection {
 
   static override type = 'table';
 
+  static override recoverable = true;
+
   readonly data: TableSelectionData;
 
   constructor({

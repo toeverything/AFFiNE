@@ -5,123 +5,132 @@
 //  Created by 秋星桥 on 2025/1/8.
 //
 
-import ChidoriMenu
 import Intelligents
 import UIKit
+import WebKit
 
-extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApertureViewDelegate {
+extension AFFiNEViewController: IntelligentsButtonDelegate {
+  private static let aiConsentKey = "com.affine.intelligents.userConsented"
+
+  private var hasUserConsented: Bool {
+    UserDefaults.standard.bool(forKey: Self.aiConsentKey)
+  }
+
   func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
+    button.beginProgress()
+    Task { @MainActor [weak self, weak button] in
+      guard let self else {
+        button?.stopProgress()
+        return
+      }
+      await self.handleIntelligentsButtonTapped(tappedButton: button)
+    }
+  }
+
+  @MainActor
+  private func handleIntelligentsButtonTapped(tappedButton: IntelligentsButton?) async {
     guard let webView else {
-      assertionFailure() // ? wdym ?
+      tappedButton?.stopProgress()
       return
     }
 
-    button.beginProgress()
+    do {
+      let isSignedIn = try await PaywallAuthGuard.ensureSignedIn(using: webView)
+      guard isSignedIn else {
+        tappedButton?.stopProgress()
+        dismissIntelligentsButton()
+        return
+      }
 
-    let group = DispatchGroup()
+      if try await PaywallAuthGuard.hasAISubscription(in: webView) {
+        tappedButton?.stopProgress()
+        continueToIntelligentsController()
+        return
+      }
 
-    group.enter()
-    webView.evaluateScript(.getCurrentServerBaseUrl) { result in
-      self.baseUrl = result as? String
-      print("[*] setting baseUrl: \(self.baseUrl ?? "")")
-      group.leave()
+      tappedButton?.stopProgress()
+      presentAIPaywall(bindWebView: webView)
+    } catch {
+      tappedButton?.stopProgress()
+      showAIErrorAlert(error)
     }
+  }
 
-    group.enter()
-    webView.evaluateScript(.getCurrentDocId) { result in
-      self.documentID = result as? String
-      print("[*] setting documentID: \(self.documentID ?? "")")
-      group.leave()
+  @MainActor
+  private func continueToIntelligentsController() {
+    if hasUserConsented {
+      prepareAndPresentIntelligentsController()
+      return
     }
-
-    group.enter()
-    webView.evaluateScript(.getCurrentWorkspaceId) { result in
-      self.workspaceID = result as? String
-      print("[*] setting workspaceID: \(self.workspaceID ?? "")")
-      group.leave()
+    showAIConsentAlert { [weak self] in
+      self?.prepareAndPresentIntelligentsController()
     }
+  }
 
-    group.enter()
-    webView.evaluateScript(.getCurrentDocContentInMarkdown) { input in
-      self.documentContent = input as? String
-      print("[*] setting documentContent: \(self.documentContent?.count ?? 0) chars")
-      group.leave()
-    }
-
-    DispatchQueue.global().asyncAfter(deadline: .now()) {
-      group.wait()
+  @MainActor
+  private func prepareAndPresentIntelligentsController() {
+    intelligentsButton?.beginProgress()
+    IntelligentContext.shared.webView = webView
+    IntelligentContext.shared.preparePresent { [weak self] result in
       DispatchQueue.main.async {
-        button.stopProgress()
-        webView.resignFirstResponder()
-        self.openIntelligentsSheet()
+        guard let self else { return }
+        self.intelligentsButton?.stopProgress()
+        switch result {
+        case .success:
+          self.presentIntelligentsController()
+        case let .failure(error):
+          self.showAIErrorAlert(error)
+        }
       }
     }
   }
 
-  @discardableResult
-  func openIntelligentsSheet() -> IntelligentsFocusApertureView? {
-    dismissIntelligentsButton()
-    view.resignFirstResponder()
-    // stop scroll on webview
-    if let contentOffset = webView?.scrollView.contentOffset {
-      webView?.scrollView.contentOffset = contentOffset
+  @MainActor
+  private func presentIntelligentsController() {
+    let controller = IntelligentsController()
+    present(controller, animated: true)
+  }
+
+  @MainActor
+  private func presentAIPaywall(bindWebView webView: WKWebView) {
+    guard presentedViewController == nil else { return }
+
+    let paywallController = AppPaywallViewController()
+    paywallController.initialPlan = .ai
+    paywallController.bindWebView = webView
+    paywallController.modalPresentationStyle = .fullScreen
+    paywallController.modalTransitionStyle = .coverVertical
+    paywallController.onPurchaseCompleted = { [weak self] in
+      Task { @MainActor in
+        self?.continueToIntelligentsController()
+      }
     }
-    let focus = IntelligentsFocusApertureView()
-    focus.prepareAnimationWith(
-      capturingTargetContentView: webView ?? .init(),
-      coveringRootViewController: self
+    present(paywallController, animated: true)
+  }
+
+  @MainActor
+  private func showAIConsentAlert(onContinue: @escaping () -> Void) {
+    let alert = UIAlertController(
+      title: "AI Feature Data Usage",
+      message: "To provide AI-powered features, your input (such as document content and conversation messages) will be sent to our third-party AI service providers (Google, Anthropic, or OpenAI, based on your choice) for processing. This data is used solely to generate responses and is not used for any other purpose.\n\nBy continuing, you agree to share this data with these AI services.",
+      preferredStyle: .alert
     )
-    focus.delegate = self
-    focus.executeAnimationKickIn()
-    dismissIntelligentsButton()
-    return focus
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    alert.addAction(UIAlertAction(title: "Agree & Continue", style: .default) { _ in
+      UserDefaults.standard.set(true, forKey: Self.aiConsentKey)
+      onContinue()
+    })
+    present(alert, animated: true)
   }
 
-  func openSimpleChat() {
-    let targetController = IntelligentsChatController()
-    presentIntoCurrentContext(withTargetController: targetController)
-  }
-
-  func focusApertureRequestAction(
-    from view: IntelligentsFocusApertureView,
-    actionType: IntelligentsFocusApertureViewActionType
-  ) {
-    switch actionType {
-    case .translateTo:
-      var actions: [UIAction] = []
-      for lang in IntelligentsEphemeralActionController.EphemeralAction.Language.allCases {
-        actions.append(.init(title: lang.rawValue) { [weak self] _ in
-          guard let self else { return }
-          let controller = IntelligentsEphemeralActionController(
-            action: .translate(to: lang)
-          )
-          controller.workspaceID = workspaceID ?? ""
-          controller.documentID = documentID ?? ""
-          controller.documentContent = documentContent ?? ""
-          controller.configure(previewImage: view.capturedImage ?? .init())
-          presentIntoCurrentContext(withTargetController: controller)
-        })
-      }
-      view.present(menu: .init(children: actions)) { controller in
-        controller.overrideUserInterfaceStyle = .dark
-      } controllerDidPresent: { _ in }
-    case .summary:
-      let controller = IntelligentsEphemeralActionController(
-        action: .summarize
-      )
-      controller.configure(previewImage: view.capturedImage ?? .init())
-      controller.workspaceID = workspaceID ?? ""
-      controller.documentID = documentID ?? ""
-      controller.documentContent = documentContent ?? ""
-      presentIntoCurrentContext(withTargetController: controller)
-    case .chatWithAI:
-      let controller = IntelligentsChatController()
-      controller.metadata[.documentID] = documentID
-      controller.metadata[.workspaceID] = workspaceID
-      controller.metadata[.content] = documentContent
-      presentIntoCurrentContext(withTargetController: controller)
-    case .dismiss:
-      presentIntelligentsButton()
-    }
+  @MainActor
+  private func showAIErrorAlert(_ error: Error) {
+    let alert = UIAlertController(
+      title: "Unable to open AFFiNE AI",
+      message: error.localizedDescription,
+      preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(title: "OK", style: .cancel))
+    present(alert, animated: true)
   }
 }

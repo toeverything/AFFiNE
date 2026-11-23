@@ -105,7 +105,7 @@ export class ChatPanelCandidatesPopover extends SignalWatcher(
   private readonly _addDocChip = (docId: string) => {
     this.addChip({
       docId,
-      state: 'processing',
+      state: 'finished',
     });
   };
 

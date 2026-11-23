@@ -5,6 +5,7 @@ import {
 import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import {
+  FrameworkScope,
   useLiveData,
   useService,
   useServiceOptional,
@@ -16,7 +17,7 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../components/hooks/use-navigate-helper';
-import { AuthService } from '../../../modules/cloud';
+import { ServersService } from '../../../modules/cloud';
 import { SignIn } from '../auth/sign-in';
 
 /**
@@ -27,9 +28,15 @@ export const PageNotFound = ({
 }: {
   noPermission?: boolean;
 }): ReactElement => {
-  const authService = useService(AuthService);
+  const serversService = useService(ServersService);
+  const serversWithAccount = useLiveData(serversService.serversWithAccount$);
+
   const desktopApi = useServiceOptional(DesktopApiService);
-  const account = useLiveData(authService.session.account$);
+
+  // Check all servers for any logged in accounts to avoid showing sign-in page if user has an active session on any server
+  const firstLogged = serversWithAccount.find(
+    ({ account }) => account !== null
+  );
   const { jumpToIndex } = useNavigateHelper();
   const openSignOutModal = useSignOut();
 
@@ -46,19 +53,23 @@ export const PageNotFound = ({
   // strip the origin
   const currentUrl = window.location.href.replace(window.location.origin, '');
 
-  return noPermission ? (
-    <NoPermissionOrNotFound
-      user={account}
-      onBack={handleBackButtonClick}
-      onSignOut={openSignOutModal}
-      signInComponent={<SignIn redirectUrl={currentUrl} />}
-    />
-  ) : (
-    <NotFoundPage
-      user={account}
-      onBack={handleBackButtonClick}
-      onSignOut={openSignOutModal}
-    />
+  return (
+    <FrameworkScope scope={firstLogged?.server.scope}>
+      {noPermission ? (
+        <NoPermissionOrNotFound
+          user={firstLogged?.account}
+          onBack={handleBackButtonClick}
+          onSignOut={openSignOutModal}
+          signInComponent={<SignIn redirectUrl={currentUrl} />}
+        />
+      ) : (
+        <NotFoundPage
+          user={firstLogged?.account}
+          onBack={handleBackButtonClick}
+          onSignOut={openSignOutModal}
+        />
+      )}
+    </FrameworkScope>
   );
 };
 

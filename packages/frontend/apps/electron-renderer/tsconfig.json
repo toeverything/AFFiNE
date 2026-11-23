@@ -16,7 +16,6 @@
     { "path": "../../../common/nbstore" },
     { "path": "../../track" },
     { "path": "../../../../blocksuite/affine/all" },
-    { "path": "../../../common/infra" },
-    { "path": "../../../../tools/utils" }
+    { "path": "../../../common/infra" }
   ]
 }

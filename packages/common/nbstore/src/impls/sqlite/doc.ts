@@ -1,7 +1,8 @@
 import { share } from '../../connection';
 import {
+  type BlockInfo,
+  type CrawlResult,
   type DocClocks,
-  type DocRecord,
   DocStorageBase,
   type DocUpdate,
 } from '../../storage';
@@ -15,8 +16,26 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
     return this.connection.apis;
   }
 
+  override getDoc(docId: string) {
+    return this.db.getDoc(docId);
+  }
+
+  override async getDocDiff(docId: string, state?: Uint8Array) {
+    if (this.db.getDocDiff) {
+      return this.db.getDocDiff(docId, state);
+    }
+    return super.getDocDiff(docId, state);
+  }
+
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
-    const timestamp = await this.db.pushUpdate(update.docId, update.bin);
+    const createForPeer =
+      update.createForPeer ??
+      (update.intent === 'create' ? this.options.creationPeer : undefined);
+    const timestamp = await this.db.pushUpdate(
+      update.docId,
+      update.bin,
+      createForPeer
+    );
 
     this.emit(
       'update',
@@ -25,6 +44,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
         bin: update.bin,
         timestamp,
         editor: update.editor,
+        createForPeer: createForPeer,
       },
       origin
     );
@@ -34,6 +54,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   override async deleteDoc(docId: string) {
     await this.db.deleteDoc(docId);
+    this.emit('delete', docId);
   }
 
   override async getDocTimestamps(after?: Date) {
@@ -49,34 +70,126 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
     return this.db.getDocClock(docId);
   }
 
-  protected override async getDocSnapshot(docId: string) {
-    const snapshot = await this.db.getDocSnapshot(docId);
+  override async crawlDocData(docId: string): Promise<CrawlResult | null> {
+    const result = await this.db.crawlDocData(docId);
+    return normalizeNativeCrawlResult(result);
+  }
+}
 
-    if (!snapshot) {
-      return null;
+function normalizeNativeCrawlResult(result: unknown): CrawlResult | null {
+  if (!isRecord(result)) {
+    console.warn('[nbstore] crawlDocData returned non-object result');
+    return null;
+  }
+
+  if (
+    typeof result.title !== 'string' ||
+    typeof result.summary !== 'string' ||
+    !Array.isArray(result.blocks)
+  ) {
+    console.warn('[nbstore] crawlDocData result missing basic fields');
+    return null;
+  }
+
+  const { title, summary } = result as { title: string; summary: string };
+  const rawBlocks = result.blocks as unknown[];
+
+  const blocks: BlockInfo[] = [];
+  for (const block of rawBlocks) {
+    const normalized = normalizeBlock(block);
+    if (normalized) {
+      blocks.push(normalized);
     }
-
-    return snapshot;
   }
 
-  protected override async setDocSnapshot(
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    return this.db.setDocSnapshot({
-      docId: snapshot.docId,
-      bin: snapshot.bin,
-      timestamp: snapshot.timestamp,
-    });
+  if (blocks.length === 0) {
+    console.warn('[nbstore] crawlDocData has no valid blocks');
+    return null;
   }
 
-  protected override async getDocUpdates(docId: string) {
-    return this.db.getDocUpdates(docId);
+  return {
+    blocks,
+    title,
+    summary,
+  };
+}
+
+function normalizeBlock(block: unknown): BlockInfo | null {
+  if (!isRecord(block)) {
+    return null;
   }
 
-  protected override markUpdatesMerged(docId: string, updates: DocRecord[]) {
-    return this.db.markUpdatesMerged(
-      docId,
-      updates.map(update => update.timestamp)
+  const blockId = readStringField(block, 'blockId');
+  const flavour = readStringField(block, 'flavour');
+
+  if (!blockId || !flavour) {
+    return null;
+  }
+
+  return {
+    blockId,
+    flavour,
+    content: readStringArrayField(block, 'content'),
+    blob: readStringArrayField(block, 'blob'),
+    refDocId: readStringArrayField(block, 'refDocId'),
+    refInfo: readStringArrayField(block, 'refInfo'),
+    parentFlavour: readStringField(block, 'parentFlavour'),
+    parentBlockId: readStringField(block, 'parentBlockId'),
+    additional: safeAdditionalField(block),
+  };
+}
+
+function readStringField(
+  target: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const value = readField(target, key);
+  return typeof value === 'string' && value ? value : undefined;
+}
+
+function readStringArrayField(
+  target: Record<string, unknown>,
+  key: string
+): string[] | undefined {
+  const value = readField(target, key);
+  if (Array.isArray(value)) {
+    const filtered = value.filter(
+      (item): item is string => typeof item === 'string' && item.length > 0
     );
+    return filtered.length ? filtered : undefined;
   }
+  if (typeof value === 'string' && value.length > 0) {
+    return [value];
+  }
+  return undefined;
+}
+
+function safeAdditionalField(
+  target: Record<string, unknown>
+): string | undefined {
+  const value = readField(target, 'additional');
+  if (typeof value !== 'string' || value.length === 0) {
+    return undefined;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    return JSON.stringify(parsed);
+  } catch {
+    console.warn(
+      '[nbstore] ignore invalid additional payload in crawlDocData block'
+    );
+    return undefined;
+  }
+}
+
+function readField(target: Record<string, unknown>, key: string) {
+  return target[key] ?? target[toSnakeCase(key)];
+}
+
+function toSnakeCase(key: string) {
+  return key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }

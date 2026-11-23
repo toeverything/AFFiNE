@@ -37,6 +37,9 @@ public class ChangeEmailMutation: GraphQLMutation {
         "email": .variable("email")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ChangeEmailMutation.Data.self
+    ] }
 
     public var changeEmail: ChangeEmail { __data["changeEmail"] }
 
@@ -52,6 +55,9 @@ public class ChangeEmailMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
         .field("email", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ChangeEmailMutation.Data.ChangeEmail.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

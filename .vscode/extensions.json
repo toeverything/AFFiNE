@@ -1,7 +1,7 @@
 {
   "recommendations": [
     "ms-playwright.playwright",
-    "esbenp.prettier-vscode",
+    "oxc.oxc-vscode",
     "deepscan.vscode-deepscan",
     "streetsidesoftware.code-spell-checker"
   ]

@@ -16,6 +16,7 @@ import { property } from 'lit/decorators.js';
 import type { Variable } from '../../../core/expression/types.js';
 import type { Filter, FilterGroup } from '../../../core/filter/types.js';
 import { popCreateFilter } from '../../../core/index.js';
+import type { DataViewUILogicBase } from '../../../core/view/data-view-base.js';
 import { popFilterGroup } from './group-panel-view.js';
 
 export class FilterBar extends SignalWatcher(ShadowlessElement) {
@@ -87,6 +88,9 @@ export class FilterBar extends SignalWatcher(ShadowlessElement) {
   };
 
   private readonly addFilter = (e: MouseEvent) => {
+    if (this.dataViewLogic.root.config.dataSource.readonly$.peek()) {
+      return;
+    }
     const element = popupTargetFromElement(e.target as HTMLElement);
     popCreateFilter(element, {
       vars: this.vars,
@@ -99,6 +103,7 @@ export class FilterBar extends SignalWatcher(ShadowlessElement) {
         requestAnimationFrame(() => {
           this.expandGroup(element, index);
         });
+        this.dataViewLogic.eventTrace('CreateDatabaseFilter', {});
       },
     });
   };
@@ -206,6 +211,9 @@ export class FilterBar extends SignalWatcher(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor vars!: ReadonlySignal<Variable[]>;
+
+  @property({ attribute: false })
+  accessor dataViewLogic!: DataViewUILogicBase;
 }
 
 declare global {

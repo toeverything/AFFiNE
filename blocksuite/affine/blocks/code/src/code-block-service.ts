@@ -6,6 +6,7 @@ import {
   createHighlighterCore,
   createOnigurumaEngine,
   type HighlighterCore,
+  type LanguageInput,
   type MaybeGetter,
 } from 'shiki';
 import getWasm from 'shiki/wasm';
@@ -19,8 +20,13 @@ import {
 export class CodeBlockHighlighter extends LifeCycleWatcher {
   static override key = 'code-block-highlighter';
 
-  private _darkThemeKey: string | undefined;
+  // Singleton highlighter instance
+  private static _sharedHighlighter: HighlighterCore | null = null;
+  private static _highlighterPromise: Promise<HighlighterCore> | null = null;
+  private static readonly _languagePromises = new Map<string, Promise<void>>();
+  private static _refCount = 0;
 
+  private _darkThemeKey: string | undefined;
   private _lightThemeKey: string | undefined;
 
   highlighter$: Signal<HighlighterCore | null> = signal(null);
@@ -32,30 +38,86 @@ export class CodeBlockHighlighter extends LifeCycleWatcher {
       : this._lightThemeKey;
   }
 
+  loadLanguage(lang: string, input: LanguageInput) {
+    const highlighter = this.highlighter$.value;
+    if (!highlighter) return Promise.resolve();
+
+    let promise = CodeBlockHighlighter._languagePromises.get(lang);
+    if (!promise) {
+      promise = highlighter.loadLanguage(input).finally(() => {
+        CodeBlockHighlighter._languagePromises.delete(lang);
+      });
+      CodeBlockHighlighter._languagePromises.set(lang, promise);
+    }
+    return promise;
+  }
+
   private readonly _loadTheme = async (
     highlighter: HighlighterCore
   ): Promise<void> => {
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
+      return;
+    }
+
     const config = this.std.getOptional(CodeBlockConfigExtension.identifier);
     const darkTheme = config?.theme?.dark ?? CODE_BLOCK_DEFAULT_DARK_THEME;
     const lightTheme = config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
     this._darkThemeKey = (await normalizeGetter(darkTheme)).name;
     this._lightThemeKey = (await normalizeGetter(lightTheme)).name;
+
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
+      return;
+    }
+
     await highlighter.loadTheme(darkTheme, lightTheme);
+
+    if (!CodeBlockHighlighter._isHighlighterInUse(highlighter)) {
+      return;
+    }
+
     this.highlighter$.value = highlighter;
   };
+
+  private static async _getOrCreateHighlighter(): Promise<HighlighterCore> {
+    if (CodeBlockHighlighter._sharedHighlighter) {
+      return CodeBlockHighlighter._sharedHighlighter;
+    }
+
+    if (!CodeBlockHighlighter._highlighterPromise) {
+      CodeBlockHighlighter._highlighterPromise = createHighlighterCore({
+        engine: createOnigurumaEngine(() => getWasm),
+      }).then(highlighter => {
+        CodeBlockHighlighter._sharedHighlighter = highlighter;
+        return highlighter;
+      });
+    }
+
+    return CodeBlockHighlighter._highlighterPromise;
+  }
 
   override mounted(): void {
     super.mounted();
 
-    createHighlighterCore({
-      engine: createOnigurumaEngine(() => getWasm),
-    })
+    CodeBlockHighlighter._refCount++;
+
+    CodeBlockHighlighter._getOrCreateHighlighter()
       .then(this._loadTheme)
       .catch(console.error);
   }
 
   override unmounted(): void {
-    this.highlighter$.value?.dispose();
+    CodeBlockHighlighter._refCount = Math.max(
+      0,
+      CodeBlockHighlighter._refCount - 1
+    );
+    this.highlighter$.value = null;
+  }
+
+  private static _isHighlighterInUse(highlighter: HighlighterCore) {
+    return (
+      CodeBlockHighlighter._refCount > 0 &&
+      CodeBlockHighlighter._sharedHighlighter === highlighter
+    );
   }
 }
 

@@ -12,6 +12,7 @@ export type AttributeRenderer<
   startOffset: number;
   endOffset: number;
   lineIndex: number;
+  children?: TemplateResult<1>;
 }) => TemplateResult<1>;
 
 export interface InlineRange {

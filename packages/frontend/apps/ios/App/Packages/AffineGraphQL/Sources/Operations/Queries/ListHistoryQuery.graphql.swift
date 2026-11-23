@@ -42,6 +42,9 @@ public class ListHistoryQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListHistoryQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -62,6 +65,9 @@ public class ListHistoryQuery: GraphQLQuery {
           "before": .variable("before")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListHistoryQuery.Data.Workspace.self
+      ] }
 
       public var histories: [History] { __data["histories"] }
 
@@ -78,6 +84,9 @@ public class ListHistoryQuery: GraphQLQuery {
           .field("id", String.self),
           .field("timestamp", AffineGraphQL.DateTime.self),
           .field("editor", Editor?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListHistoryQuery.Data.Workspace.History.self
         ] }
 
         public var id: String { __data["id"] }
@@ -96,6 +105,9 @@ public class ListHistoryQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("name", String.self),
             .field("avatarUrl", String?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListHistoryQuery.Data.Workspace.History.Editor.self
           ] }
 
           public var name: String { __data["name"] }

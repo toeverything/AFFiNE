@@ -1,7 +1,21 @@
+import {
+  DefaultTool,
+  EdgelessLegacySlotIdentifier,
+} from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
-import { BaseTool, MouseButton } from '@blocksuite/std/gfx';
+import {
+  BaseTool,
+  createRafCoalescer,
+  MouseButton,
+  type ToolOptions,
+} from '@blocksuite/std/gfx';
 import { Signal } from '@preact/signals-core';
+
+interface RestorablePresentToolOptions {
+  mode?: string; // 'fit' | 'fill', simplified to string for local use
+  restoredAfterPan?: boolean;
+}
 
 export type PanToolOption = {
   panning: boolean;
@@ -12,13 +26,30 @@ export class PanTool extends BaseTool<PanToolOption> {
 
   private _lastPoint: [number, number] | null = null;
 
+  private _pendingDelta: [number, number] = [0, 0];
+
+  private readonly _deltaFlushCoalescer = createRafCoalescer<void>(() => {
+    this._flushPendingDelta();
+  });
+
   readonly panning$ = new Signal<boolean>(false);
+
+  private _flushPendingDelta() {
+    if (this._pendingDelta[0] === 0 && this._pendingDelta[1] === 0) {
+      return;
+    }
+
+    const [deltaX, deltaY] = this._pendingDelta;
+    this._pendingDelta = [0, 0];
+    this.gfx.viewport.applyDeltaCenter(deltaX, deltaY);
+  }
 
   override get allowDragWithRightButton(): boolean {
     return true;
   }
 
   override dragEnd(_: PointerEventState): void {
+    this._deltaFlushCoalescer.flush();
     this._lastPoint = null;
     this.panning$.value = false;
   }
@@ -34,12 +65,14 @@ export class PanTool extends BaseTool<PanToolOption> {
     const deltaY = lastY - e.y;
 
     this._lastPoint = [e.x, e.y];
-
-    viewport.applyDeltaCenter(deltaX / zoom, deltaY / zoom);
+    this._pendingDelta[0] += deltaX / zoom;
+    this._pendingDelta[1] += deltaY / zoom;
+    this._deltaFlushCoalescer.schedule(undefined);
   }
 
   override dragStart(e: PointerEventState): void {
     this._lastPoint = [e.x, e.y];
+    this._pendingDelta = [0, 0];
     this.panning$.value = true;
   }
 
@@ -51,17 +84,51 @@ export class PanTool extends BaseTool<PanToolOption> {
         return;
       }
 
+      const currentTool = this.controller.currentToolOption$.peek();
+      const { toolType, options: originalToolOptions } = currentTool;
+
+      if (toolType?.toolName === PanTool.toolName) {
+        return;
+      }
+
       evt.raw.preventDefault();
 
-      const selection = this.gfx.selection.surfaceSelections;
-      const currentTool = this.controller.currentToolOption$.peek();
+      const selectionToRestore = this.gfx.selection.surfaceSelections.slice();
+
       const restoreToPrevious = () => {
-        const { toolType, options } = currentTool;
-        if (toolType && options) {
-          this.controller.setTool(toolType, options);
-          this.gfx.selection.set(selection);
+        this.gfx.selection.set(selectionToRestore);
+
+        if (!toolType) return;
+        // restore to DefaultTool if previous tool is CopilotTool
+        if (toolType.toolName === 'copilot') {
+          this.controller.setTool(DefaultTool);
+          return;
         }
+
+        let finalOptions: ToolOptions<BaseTool<any>> | undefined =
+          originalToolOptions;
+        if (toolType.toolName === 'frameNavigator') {
+          // When restoring PresentTool (frameNavigator) after a temporary pan (e.g., via middle mouse button),
+          // set 'restoredAfterPan' to true. This allows PresentTool to avoid an unwanted viewport reset
+          // and maintain the panned position.
+          const currentPresentOptions = originalToolOptions as
+            | RestorablePresentToolOptions
+            | undefined;
+          finalOptions = {
+            ...currentPresentOptions,
+            restoredAfterPan: true,
+          } as RestorablePresentToolOptions;
+        }
+        this.controller.setTool(toolType, finalOptions);
       };
+
+      // If in presentation mode, disable black background after middle mouse drag
+      if (toolType?.toolName === 'frameNavigator') {
+        const slots = this.std.get(EdgelessLegacySlotIdentifier);
+        slots.navigatorSettingUpdated.next({
+          blackBackground: false,
+        });
+      }
 
       this.controller.setTool(PanTool, {
         panning: true,
@@ -70,11 +137,15 @@ export class PanTool extends BaseTool<PanToolOption> {
       const dispose = on(document, 'pointerup', evt => {
         if (evt.button === MouseButton.MIDDLE) {
           restoreToPrevious();
-          dispose();
         }
+        dispose();
       });
 
       return false;
     });
+  }
+
+  override unmounted(): void {
+    this._deltaFlushCoalescer.cancel();
   }
 }

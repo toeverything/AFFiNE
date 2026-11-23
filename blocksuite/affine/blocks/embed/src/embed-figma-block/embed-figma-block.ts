@@ -6,7 +6,6 @@ import type {
 import { BlockSelection } from '@blocksuite/std';
 import { html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { EmbedBlockComponent } from '../common/embed-block-element.js';
 import { FigmaIcon, styles } from './styles.js';
@@ -76,10 +75,6 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
             'affine-embed-figma-block': true,
             selected: this.selected$.value,
           })}
-          style=${styleMap({
-            transform: `scale(${this._scale})`,
-            transformOrigin: '0 0',
-          })}
           @click=${this._handleClick}
           @dblclick=${this._handleDoubleClick}
         >
@@ -87,7 +82,8 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
             <div class="affine-embed-figma-iframe-container">
               <iframe
                 src=${`https://www.figma.com/embed?embed_host=blocksuite&url=${url}`}
-                allowfullscreen
+                sandbox="allow-same-origin allow-scripts allow-presentation"
+                allow="fullscreen"
                 loading="lazy"
                 credentialless
               ></iframe>
@@ -112,11 +108,13 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
               </div>
             </div>
 
-            ${description
-              ? html`<div class="affine-embed-figma-content-description">
-                  ${description}
-                </div>`
-              : nothing}
+            ${
+              description
+                ? html`<div class="affine-embed-figma-content-description">
+                    ${description}
+                  </div>`
+                : nothing
+            }
 
             <div class="affine-embed-figma-content-url" @click=${this.open}>
               <span>www.figma.com</span>

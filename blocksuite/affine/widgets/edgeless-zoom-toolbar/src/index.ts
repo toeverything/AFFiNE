@@ -1,5 +1,6 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import type { RootBlockModel } from '@blocksuite/affine-model';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { WidgetComponent, WidgetViewExtension } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
@@ -14,13 +15,18 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<RootBlockMo
   static override styles = css`
     :host {
       position: absolute;
-      bottom: 20px;
+      bottom: var(--affine-edgeless-zoom-toolbar-bottom, 20px);
       left: 12px;
       z-index: var(--affine-z-index-popover);
       display: flex;
       justify-content: center;
+      pointer-events: none;
       -webkit-user-select: none;
       user-select: none;
+    }
+
+    mobile-zoom-ruler {
+      pointer-events: auto;
     }
 
     @container viewport (width <= 1200px) {
@@ -73,8 +79,12 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<RootBlockMo
   }
 
   override render() {
-    if (this._hide || !this.edgeless) {
+    if (this._hide) {
       return nothing;
+    }
+
+    if (IS_MOBILE) {
+      return html`<mobile-zoom-ruler .std=${this.std}></mobile-zoom-ruler>`;
     }
 
     return html`

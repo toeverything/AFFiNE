@@ -5,8 +5,7 @@ query getCurrentUser {
     email
     emailVerified
     avatarUrl
-    token {
-      sessionToken
-    }
+    hasPassword
+    features
   }
 }

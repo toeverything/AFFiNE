@@ -26,10 +26,9 @@ import {
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 import { consume } from '@lit/context';
-import { computed } from '@preact/signals-core';
-import { html, nothing } from 'lit';
+import { computed, effect } from '@preact/signals-core';
+import { nothing } from 'lit';
 import { property } from 'lit/decorators.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import { NoteConfigExtension } from '../config';
 import * as styles from './edgeless-note-background.css';
@@ -150,15 +149,20 @@ export class EdgelessNoteBackground extends SignalWatcher(
     return header;
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    this.classList.add(styles.background);
+    this.disposables.add(
+      effect(() => {
+        Object.assign(this.style, this.backgroundStyle$.value);
+      })
+    );
+    this.disposables.addFromEvent(this, 'pointerdown', stopPropagation);
+    this.disposables.addFromEvent(this, 'click', this._handleClickAtBackground);
+  }
+
   override render() {
-    return html`<div
-      class=${styles.background}
-      style=${styleMap(this.backgroundStyle$.value)}
-      @pointerdown=${stopPropagation}
-      @click=${this._handleClickAtBackground}
-    >
-      ${this.note.isPageBlock() ? this._renderHeader() : nothing}
-    </div>`;
+    return this.note.isPageBlock() ? this._renderHeader() : nothing;
   }
 
   @consume({ context: stdContext })

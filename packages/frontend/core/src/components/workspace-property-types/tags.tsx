@@ -1,14 +1,17 @@
-import { PropertyValue } from '@affine/component';
+import { type MenuRef, PropertyValue } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
-import { DocService } from '@affine/core/modules/doc';
-import { TagService } from '@affine/core/modules/tag';
+import { type DocRecord, DocService } from '@affine/core/modules/doc';
+import { type Tag, TagService } from '@affine/core/modules/tag';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { TagsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
+import { StackProperty } from '../explorer/docs-view/stack-property';
+import type { GroupHeaderProps } from '../explorer/types';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import type { PropertyValueProps } from '../properties/types';
 import {
@@ -48,14 +51,25 @@ export const TagsValue = ({ readonly }: PropertyValueProps) => {
 
 export const TagsFilterValue = ({
   filter,
+  isDraft,
+  onDraftCompleted,
   onChange,
 }: {
   filter: FilterParams;
+  isDraft?: boolean;
+  onDraftCompleted?: () => void;
   onChange: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
   const tagService = useService(TagService);
   const allTagMetas = useLiveData(tagService.tagList.tagMetas$);
+  const menuRef = useRef<MenuRef>(null);
+
+  useEffect(() => {
+    if (isDraft) {
+      menuRef.current?.changeOpen(true);
+    }
+  }, [isDraft]);
 
   const selectedTags = useMemo(
     () =>
@@ -84,6 +98,16 @@ export const TagsFilterValue = ({
     },
     [filter, onChange, selectedTags]
   );
+
+  useEffect(() => {
+    if (
+      isDraft &&
+      (filter.method === 'is-not-empty' || filter.method === 'is-empty')
+    ) {
+      onDraftCompleted?.();
+    }
+  }, [isDraft, filter.method, onDraftCompleted]);
+
   return filter.method !== 'is-not-empty' && filter.method !== 'is-empty' ? (
     <WorkspaceTagsInlineEditor
       placeholder={
@@ -94,7 +118,10 @@ export const TagsFilterValue = ({
       selectedTags={selectedTags}
       onSelectTag={handleSelectTag}
       onDeselectTag={handleDeselectTag}
+      menuClassName={styles.filterValueMenu}
       tagMode="inline-tag"
+      ref={menuRef}
+      onEditorClose={onDraftCompleted}
     />
   ) : undefined;
 };
@@ -162,5 +189,87 @@ const TagsInlineEditor = ({
         </>
       }
     />
+  );
+};
+
+const TagName = ({ tag }: { tag: Tag }) => {
+  const name = useLiveData(tag.value$);
+  return name;
+};
+const TagIcon = ({ tag, size = 8 }: { tag: Tag; size?: number }) => {
+  const color = useLiveData(tag.color$);
+  return (
+    <div
+      style={{
+        backgroundColor: color,
+        width: size,
+        height: size,
+        borderRadius: '50%',
+      }}
+    />
+  );
+};
+
+export const TagsDocListProperty = ({ doc }: { doc: DocRecord }) => {
+  const max = 3;
+  const t = useI18n();
+  const tagList = useService(TagService).tagList;
+  const tags = useLiveData(tagList.tagsByPageId$(doc.id));
+
+  const showRest = tags.length > max + 1;
+  const visibleTags = tags.length === max + 1 ? max + 1 : max;
+
+  return (
+    <>
+      {tags.slice(0, visibleTags).map(tag => {
+        return (
+          <StackProperty icon={<TagIcon tag={tag} />} key={tag.id}>
+            <TagName tag={tag} />
+          </StackProperty>
+        );
+      })}
+      {showRest ? (
+        <StackProperty icon={null}>
+          <span>+{tags.length - max}</span>
+          <span className={styles.moreTagsLabel}>{t['Tags']()}</span>
+        </StackProperty>
+      ) : null}
+    </>
+  );
+};
+
+export const TagsGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+  const t = useI18n();
+  const tagService = useService(TagService);
+  const tag = useLiveData(tagService.tagList.tagByTagId$(groupId));
+
+  if (!tag) {
+    return (
+      <PlainTextDocGroupHeader
+        groupId={groupId}
+        docCount={docCount}
+        icon={
+          <div
+            style={{
+              backgroundColor: cssVarV2.icon.secondary,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+            }}
+          />
+        }
+      >
+        {t['com.affine.page.display.grouping.group-by-tag.untagged']()}
+      </PlainTextDocGroupHeader>
+    );
+  }
+  return (
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      icon={<TagIcon tag={tag} />}
+    >
+      <TagName tag={tag} />
+    </PlainTextDocGroupHeader>
   );
 };

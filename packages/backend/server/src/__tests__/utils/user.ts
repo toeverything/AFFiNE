@@ -34,12 +34,11 @@ export async function getPublicUserById(
 
 export async function sendChangeEmail(
   app: TestingApp,
-  email: string,
   callbackUrl: string
 ): Promise<boolean> {
   const res = await app.gql(`
     mutation {
-      sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+      sendChangeEmail(callbackUrl: "${callbackUrl}")
     }
   `);
 
@@ -121,7 +120,11 @@ export async function deleteAccount(app: TestingApp) {
   return res.deleteAccount.success;
 }
 
-export async function updateAvatar(app: TestingApp, avatar: Buffer) {
+export async function updateAvatar(
+  app: TestingApp,
+  avatar: Buffer,
+  options: { filename?: string; contentType?: string } = {}
+) {
   return app
     .POST('/graphql')
     .field(
@@ -138,7 +141,7 @@ export async function updateAvatar(app: TestingApp, avatar: Buffer) {
     )
     .field('map', JSON.stringify({ '0': ['variables.avatar'] }))
     .attach('0', avatar, {
-      filename: 'test.png',
-      contentType: 'image/png',
+      filename: options.filename || 'test.png',
+      contentType: options.contentType || 'image/png',
     });
 }

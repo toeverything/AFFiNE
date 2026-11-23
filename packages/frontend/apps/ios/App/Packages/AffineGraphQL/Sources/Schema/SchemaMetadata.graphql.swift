@@ -18,73 +18,146 @@ where Schema == AffineGraphQL.SchemaMetadata {}
 public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
   public static let configuration: any ApolloAPI.SchemaConfiguration.Type = SchemaConfiguration.self
 
+  private static let objectTypeMap: [String: ApolloAPI.Object] = [
+    "AdminAllSharedLink": AffineGraphQL.Objects.AdminAllSharedLink,
+    "AdminAllSharedLinkEdge": AffineGraphQL.Objects.AdminAllSharedLinkEdge,
+    "AdminDashboard": AffineGraphQL.Objects.AdminDashboard,
+    "AdminDashboardMinutePoint": AffineGraphQL.Objects.AdminDashboardMinutePoint,
+    "AdminDashboardValueDayPoint": AffineGraphQL.Objects.AdminDashboardValueDayPoint,
+    "AdminLicensePreview": AffineGraphQL.Objects.AdminLicensePreview,
+    "AdminMailDeliveryAnalytics": AffineGraphQL.Objects.AdminMailDeliveryAnalytics,
+    "AdminMailDeliveryPoint": AffineGraphQL.Objects.AdminMailDeliveryPoint,
+    "AdminMailDeliverySeries": AffineGraphQL.Objects.AdminMailDeliverySeries,
+    "AdminMailDeliverySummary": AffineGraphQL.Objects.AdminMailDeliverySummary,
+    "AdminSharedLinkTopItem": AffineGraphQL.Objects.AdminSharedLinkTopItem,
+    "AdminWorkspace": AffineGraphQL.Objects.AdminWorkspace,
+    "AdminWorkspaceMember": AffineGraphQL.Objects.AdminWorkspaceMember,
+    "AdminWorkspaceSharedLink": AffineGraphQL.Objects.AdminWorkspaceSharedLink,
+    "AggregateBucketHitsObjectType": AffineGraphQL.Objects.AggregateBucketHitsObjectType,
+    "AggregateBucketObjectType": AffineGraphQL.Objects.AggregateBucketObjectType,
+    "AggregateResultObjectType": AffineGraphQL.Objects.AggregateResultObjectType,
+    "AppConfigValidateResult": AffineGraphQL.Objects.AppConfigValidateResult,
+    "AudioSliceManifestItemType": AffineGraphQL.Objects.AudioSliceManifestItemType,
+    "AuthSigningKeyType": AffineGraphQL.Objects.AuthSigningKeyType,
+    "BlobUploadInit": AffineGraphQL.Objects.BlobUploadInit,
+    "BlobUploadPart": AffineGraphQL.Objects.BlobUploadPart,
+    "BlobUploadedPart": AffineGraphQL.Objects.BlobUploadedPart,
+    "CalendarAccountObjectType": AffineGraphQL.Objects.CalendarAccountObjectType,
+    "CalendarCalDAVProviderPresetObjectType": AffineGraphQL.Objects.CalendarCalDAVProviderPresetObjectType,
+    "CalendarEventObjectType": AffineGraphQL.Objects.CalendarEventObjectType,
+    "CalendarSubscriptionObjectType": AffineGraphQL.Objects.CalendarSubscriptionObjectType,
+    "ChatMessage": AffineGraphQL.Objects.ChatMessage,
+    "CommentChangeObjectType": AffineGraphQL.Objects.CommentChangeObjectType,
+    "CommentChangeObjectTypeEdge": AffineGraphQL.Objects.CommentChangeObjectTypeEdge,
+    "CommentObjectType": AffineGraphQL.Objects.CommentObjectType,
+    "CommentObjectTypeEdge": AffineGraphQL.Objects.CommentObjectTypeEdge,
+    "Copilot": AffineGraphQL.Objects.Copilot,
+    "CopilotHistories": AffineGraphQL.Objects.CopilotHistories,
+    "CopilotHistoriesTypeEdge": AffineGraphQL.Objects.CopilotHistoriesTypeEdge,
+    "CopilotQuota": AffineGraphQL.Objects.CopilotQuota,
+    "CopilotRouteOptions": AffineGraphQL.Objects.CopilotRouteOptions,
+    "CopilotRouteTarget": AffineGraphQL.Objects.CopilotRouteTarget,
+    "CopilotWorkspaceArtifact": AffineGraphQL.Objects.CopilotWorkspaceArtifact,
+    "CopilotWorkspaceArtifactTypeEdge": AffineGraphQL.Objects.CopilotWorkspaceArtifactTypeEdge,
+    "CopilotWorkspaceConfig": AffineGraphQL.Objects.CopilotWorkspaceConfig,
+    "CopilotWorkspaceIgnoredDoc": AffineGraphQL.Objects.CopilotWorkspaceIgnoredDoc,
+    "CopilotWorkspaceIgnoredDocTypeEdge": AffineGraphQL.Objects.CopilotWorkspaceIgnoredDocTypeEdge,
+    "CreateWorkspaceByokLocalLeaseResultType": AffineGraphQL.Objects.CreateWorkspaceByokLocalLeaseResultType,
+    "CredentialsRequirementType": AffineGraphQL.Objects.CredentialsRequirementType,
+    "DeleteAccount": AffineGraphQL.Objects.DeleteAccount,
+    "DocHistoryType": AffineGraphQL.Objects.DocHistoryType,
+    "DocMemberLastAccess": AffineGraphQL.Objects.DocMemberLastAccess,
+    "DocMemberLastAccessEdge": AffineGraphQL.Objects.DocMemberLastAccessEdge,
+    "DocPageAnalytics": AffineGraphQL.Objects.DocPageAnalytics,
+    "DocPageAnalyticsPoint": AffineGraphQL.Objects.DocPageAnalyticsPoint,
+    "DocPageAnalyticsSummary": AffineGraphQL.Objects.DocPageAnalyticsSummary,
+    "DocPermissions": AffineGraphQL.Objects.DocPermissions,
+    "DocType": AffineGraphQL.Objects.DocType,
+    "DocTypeEdge": AffineGraphQL.Objects.DocTypeEdge,
+    "EditorType": AffineGraphQL.Objects.EditorType,
+    "InvitationType": AffineGraphQL.Objects.InvitationType,
+    "InvitationWorkspaceType": AffineGraphQL.Objects.InvitationWorkspaceType,
+    "InviteLink": AffineGraphQL.Objects.InviteLink,
+    "InviteResult": AffineGraphQL.Objects.InviteResult,
+    "InvoiceType": AffineGraphQL.Objects.InvoiceType,
+    "License": AffineGraphQL.Objects.License,
+    "LimitedUserType": AffineGraphQL.Objects.LimitedUserType,
+    "ListedBlob": AffineGraphQL.Objects.ListedBlob,
+    "McpCredentialType": AffineGraphQL.Objects.McpCredentialType,
+    "MeetingActionItemType": AffineGraphQL.Objects.MeetingActionItemType,
+    "MeetingSummaryV2Type": AffineGraphQL.Objects.MeetingSummaryV2Type,
+    "Mutation": AffineGraphQL.Objects.Mutation,
+    "NormalizedTranscriptSegmentType": AffineGraphQL.Objects.NormalizedTranscriptSegmentType,
+    "NotificationObjectType": AffineGraphQL.Objects.NotificationObjectType,
+    "NotificationObjectTypeEdge": AffineGraphQL.Objects.NotificationObjectTypeEdge,
+    "PageInfo": AffineGraphQL.Objects.PageInfo,
+    "PaginatedAdminAllSharedLink": AffineGraphQL.Objects.PaginatedAdminAllSharedLink,
+    "PaginatedCommentChangeObjectType": AffineGraphQL.Objects.PaginatedCommentChangeObjectType,
+    "PaginatedCommentObjectType": AffineGraphQL.Objects.PaginatedCommentObjectType,
+    "PaginatedCopilotHistoriesType": AffineGraphQL.Objects.PaginatedCopilotHistoriesType,
+    "PaginatedCopilotWorkspaceArtifactType": AffineGraphQL.Objects.PaginatedCopilotWorkspaceArtifactType,
+    "PaginatedDocMemberLastAccess": AffineGraphQL.Objects.PaginatedDocMemberLastAccess,
+    "PaginatedDocType": AffineGraphQL.Objects.PaginatedDocType,
+    "PaginatedIgnoredDocsType": AffineGraphQL.Objects.PaginatedIgnoredDocsType,
+    "PaginatedNotificationObjectType": AffineGraphQL.Objects.PaginatedNotificationObjectType,
+    "PasswordLimitsType": AffineGraphQL.Objects.PasswordLimitsType,
+    "PublicUserType": AffineGraphQL.Objects.PublicUserType,
+    "Query": AffineGraphQL.Objects.Query,
+    "ReleaseVersionType": AffineGraphQL.Objects.ReleaseVersionType,
+    "RemoveAvatar": AffineGraphQL.Objects.RemoveAvatar,
+    "ReplyObjectType": AffineGraphQL.Objects.ReplyObjectType,
+    "RevealedMcpCredentialType": AffineGraphQL.Objects.RevealedMcpCredentialType,
+    "SearchDocObjectType": AffineGraphQL.Objects.SearchDocObjectType,
+    "SearchNodeObjectType": AffineGraphQL.Objects.SearchNodeObjectType,
+    "SearchResultObjectType": AffineGraphQL.Objects.SearchResultObjectType,
+    "SearchResultPagination": AffineGraphQL.Objects.SearchResultPagination,
+    "ServerConfigType": AffineGraphQL.Objects.ServerConfigType,
+    "StreamObject": AffineGraphQL.Objects.StreamObject,
+    "SubscriptionBillingGroup": AffineGraphQL.Objects.SubscriptionBillingGroup,
+    "SubscriptionBillingInfo": AffineGraphQL.Objects.SubscriptionBillingInfo,
+    "SubscriptionBillingSource": AffineGraphQL.Objects.SubscriptionBillingSource,
+    "SubscriptionPrice": AffineGraphQL.Objects.SubscriptionPrice,
+    "SubscriptionType": AffineGraphQL.Objects.SubscriptionType,
+    "TimeWindow": AffineGraphQL.Objects.TimeWindow,
+    "TranscriptionItemType": AffineGraphQL.Objects.TranscriptionItemType,
+    "TranscriptionQualityType": AffineGraphQL.Objects.TranscriptionQualityType,
+    "TranscriptionResultType": AffineGraphQL.Objects.TranscriptionResultType,
+    "TranscriptionSourceAudioType": AffineGraphQL.Objects.TranscriptionSourceAudioType,
+    "UserImportFailedType": AffineGraphQL.Objects.UserImportFailedType,
+    "UserQuotaHumanReadableType": AffineGraphQL.Objects.UserQuotaHumanReadableType,
+    "UserQuotaType": AffineGraphQL.Objects.UserQuotaType,
+    "UserQuotaUsageType": AffineGraphQL.Objects.UserQuotaUsageType,
+    "UserSettingsType": AffineGraphQL.Objects.UserSettingsType,
+    "UserType": AffineGraphQL.Objects.UserType,
+    "WorkspaceByokCapabilityType": AffineGraphQL.Objects.WorkspaceByokCapabilityType,
+    "WorkspaceByokCatalogModelType": AffineGraphQL.Objects.WorkspaceByokCatalogModelType,
+    "WorkspaceByokCatalogProviderType": AffineGraphQL.Objects.WorkspaceByokCatalogProviderType,
+    "WorkspaceByokCatalogType": AffineGraphQL.Objects.WorkspaceByokCatalogType,
+    "WorkspaceByokEndpointType": AffineGraphQL.Objects.WorkspaceByokEndpointType,
+    "WorkspaceByokModelDeclarationType": AffineGraphQL.Objects.WorkspaceByokModelDeclarationType,
+    "WorkspaceByokModelProbeCheckType": AffineGraphQL.Objects.WorkspaceByokModelProbeCheckType,
+    "WorkspaceByokModelProbeType": AffineGraphQL.Objects.WorkspaceByokModelProbeType,
+    "WorkspaceByokPolicyType": AffineGraphQL.Objects.WorkspaceByokPolicyType,
+    "WorkspaceByokProbeResultType": AffineGraphQL.Objects.WorkspaceByokProbeResultType,
+    "WorkspaceByokProbeStatusType": AffineGraphQL.Objects.WorkspaceByokProbeStatusType,
+    "WorkspaceByokProfileDefinitionType": AffineGraphQL.Objects.WorkspaceByokProfileDefinitionType,
+    "WorkspaceByokProfileType": AffineGraphQL.Objects.WorkspaceByokProfileType,
+    "WorkspaceByokSettingsType": AffineGraphQL.Objects.WorkspaceByokSettingsType,
+    "WorkspaceByokUsagePointType": AffineGraphQL.Objects.WorkspaceByokUsagePointType,
+    "WorkspaceByokValidationType": AffineGraphQL.Objects.WorkspaceByokValidationType,
+    "WorkspaceCalendarItemObjectType": AffineGraphQL.Objects.WorkspaceCalendarItemObjectType,
+    "WorkspaceCalendarObjectType": AffineGraphQL.Objects.WorkspaceCalendarObjectType,
+    "WorkspaceDocMeta": AffineGraphQL.Objects.WorkspaceDocMeta,
+    "WorkspacePermissions": AffineGraphQL.Objects.WorkspacePermissions,
+    "WorkspaceQuotaHumanReadableType": AffineGraphQL.Objects.WorkspaceQuotaHumanReadableType,
+    "WorkspaceQuotaType": AffineGraphQL.Objects.WorkspaceQuotaType,
+    "WorkspaceRolePermissions": AffineGraphQL.Objects.WorkspaceRolePermissions,
+    "WorkspaceType": AffineGraphQL.Objects.WorkspaceType,
+    "WorkspaceUserType": AffineGraphQL.Objects.WorkspaceUserType
+  ]
+
   public static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
-    switch typename {
-    case "ChatMessage": return AffineGraphQL.Objects.ChatMessage
-    case "ContextMatchedDocChunk": return AffineGraphQL.Objects.ContextMatchedDocChunk
-    case "ContextMatchedFileChunk": return AffineGraphQL.Objects.ContextMatchedFileChunk
-    case "ContextWorkspaceEmbeddingStatus": return AffineGraphQL.Objects.ContextWorkspaceEmbeddingStatus
-    case "Copilot": return AffineGraphQL.Objects.Copilot
-    case "CopilotContext": return AffineGraphQL.Objects.CopilotContext
-    case "CopilotContextCategory": return AffineGraphQL.Objects.CopilotContextCategory
-    case "CopilotContextDoc": return AffineGraphQL.Objects.CopilotContextDoc
-    case "CopilotContextFile": return AffineGraphQL.Objects.CopilotContextFile
-    case "CopilotDocType": return AffineGraphQL.Objects.CopilotDocType
-    case "CopilotHistories": return AffineGraphQL.Objects.CopilotHistories
-    case "CopilotPromptConfigType": return AffineGraphQL.Objects.CopilotPromptConfigType
-    case "CopilotPromptMessageType": return AffineGraphQL.Objects.CopilotPromptMessageType
-    case "CopilotPromptType": return AffineGraphQL.Objects.CopilotPromptType
-    case "CopilotQuota": return AffineGraphQL.Objects.CopilotQuota
-    case "CopilotSessionType": return AffineGraphQL.Objects.CopilotSessionType
-    case "CredentialsRequirementType": return AffineGraphQL.Objects.CredentialsRequirementType
-    case "DeleteAccount": return AffineGraphQL.Objects.DeleteAccount
-    case "DocHistoryType": return AffineGraphQL.Objects.DocHistoryType
-    case "DocPermissions": return AffineGraphQL.Objects.DocPermissions
-    case "DocType": return AffineGraphQL.Objects.DocType
-    case "EditorType": return AffineGraphQL.Objects.EditorType
-    case "GrantedDocUserType": return AffineGraphQL.Objects.GrantedDocUserType
-    case "GrantedDocUserTypeEdge": return AffineGraphQL.Objects.GrantedDocUserTypeEdge
-    case "InvitationType": return AffineGraphQL.Objects.InvitationType
-    case "InvitationWorkspaceType": return AffineGraphQL.Objects.InvitationWorkspaceType
-    case "InviteLink": return AffineGraphQL.Objects.InviteLink
-    case "InviteResult": return AffineGraphQL.Objects.InviteResult
-    case "InviteUserType": return AffineGraphQL.Objects.InviteUserType
-    case "InvoiceType": return AffineGraphQL.Objects.InvoiceType
-    case "License": return AffineGraphQL.Objects.License
-    case "LimitedUserType": return AffineGraphQL.Objects.LimitedUserType
-    case "ListedBlob": return AffineGraphQL.Objects.ListedBlob
-    case "Mutation": return AffineGraphQL.Objects.Mutation
-    case "NotificationObjectType": return AffineGraphQL.Objects.NotificationObjectType
-    case "NotificationObjectTypeEdge": return AffineGraphQL.Objects.NotificationObjectTypeEdge
-    case "PageInfo": return AffineGraphQL.Objects.PageInfo
-    case "PaginatedGrantedDocUserType": return AffineGraphQL.Objects.PaginatedGrantedDocUserType
-    case "PaginatedNotificationObjectType": return AffineGraphQL.Objects.PaginatedNotificationObjectType
-    case "PasswordLimitsType": return AffineGraphQL.Objects.PasswordLimitsType
-    case "PublicUserType": return AffineGraphQL.Objects.PublicUserType
-    case "Query": return AffineGraphQL.Objects.Query
-    case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
-    case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
-    case "ServerConfigType": return AffineGraphQL.Objects.ServerConfigType
-    case "SubscriptionPrice": return AffineGraphQL.Objects.SubscriptionPrice
-    case "SubscriptionType": return AffineGraphQL.Objects.SubscriptionType
-    case "TranscriptionItemType": return AffineGraphQL.Objects.TranscriptionItemType
-    case "TranscriptionResultType": return AffineGraphQL.Objects.TranscriptionResultType
-    case "UserImportFailedType": return AffineGraphQL.Objects.UserImportFailedType
-    case "UserQuotaHumanReadableType": return AffineGraphQL.Objects.UserQuotaHumanReadableType
-    case "UserQuotaType": return AffineGraphQL.Objects.UserQuotaType
-    case "UserQuotaUsageType": return AffineGraphQL.Objects.UserQuotaUsageType
-    case "UserSettingsType": return AffineGraphQL.Objects.UserSettingsType
-    case "UserType": return AffineGraphQL.Objects.UserType
-    case "WorkspacePageMeta": return AffineGraphQL.Objects.WorkspacePageMeta
-    case "WorkspacePermissions": return AffineGraphQL.Objects.WorkspacePermissions
-    case "WorkspaceQuotaHumanReadableType": return AffineGraphQL.Objects.WorkspaceQuotaHumanReadableType
-    case "WorkspaceQuotaType": return AffineGraphQL.Objects.WorkspaceQuotaType
-    case "WorkspaceRolePermissions": return AffineGraphQL.Objects.WorkspaceRolePermissions
-    case "WorkspaceType": return AffineGraphQL.Objects.WorkspaceType
-    case "WorkspaceUserType": return AffineGraphQL.Objects.WorkspaceUserType
-    case "tokenType": return AffineGraphQL.Objects.TokenType
-    default: return nil
-    }
+    objectTypeMap[typename]
   }
 }
 

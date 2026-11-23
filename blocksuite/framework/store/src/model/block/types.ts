@@ -19,3 +19,5 @@ export type BlockSysProps = {
   children?: BlockModel[];
 };
 export type BlockProps = BlockSysProps & Record<string, unknown>;
+
+export type PropsOfModel<T> = T extends BlockModel<infer P> ? P : never;

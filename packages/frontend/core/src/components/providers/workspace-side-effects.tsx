@@ -1,11 +1,11 @@
-import { toast } from '@affine/component';
+import { notify, toast } from '@affine/component';
 import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import {
-  AIProvider,
-  CopilotClient,
+  AIAppEvents,
+  createAIRequestService,
   setupAIProvider,
 } from '@affine/core/blocksuite/ai';
 import { useRegisterFindInPageCommands } from '@affine/core/components/hooks/affine/use-register-find-in-page-commands';
@@ -14,8 +14,8 @@ import { OverCapacityNotification } from '@affine/core/components/over-capacity'
 import {
   AuthService,
   EventSourceService,
-  FetchService,
   GraphQLService,
+  RealtimeService,
 } from '@affine/core/modules/cloud';
 import {
   GlobalDialogService,
@@ -25,6 +25,7 @@ import { DocsService } from '@affine/core/modules/doc';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useRegisterNavigationCommands } from '@affine/core/modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '@affine/core/modules/quicksearch';
+import { NbstoreService } from '@affine/core/modules/storage';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import {
   getAFFiNEWorkspaceSchema,
@@ -39,6 +40,7 @@ import {
   fromPromise,
   onStart,
   throwIfAborted,
+  useLiveData,
   useService,
   useServices,
 } from '@toeverything/infra';
@@ -104,7 +106,7 @@ export const WorkspaceSideEffects = () => {
       })
     );
 
-    const disposable = AIProvider.slots.requestInsertTemplate.subscribe(
+    const disposable = AIAppEvents.requestInsertTemplate.subscribe(
       ({ template, mode }) => {
         insertTemplate({ template, mode });
       }
@@ -127,7 +129,7 @@ export const WorkspaceSideEffects = () => {
   const globalDialogService = useService(GlobalDialogService);
 
   useEffect(() => {
-    const disposable = AIProvider.slots.requestUpgradePlan.subscribe(() => {
+    const disposable = AIAppEvents.requestUpgradePlan.subscribe(() => {
       workspaceDialogService.open('setting', {
         activeTab: 'billing',
       });
@@ -140,15 +142,46 @@ export const WorkspaceSideEffects = () => {
 
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
-  const fetchService = useService(FetchService);
   const authService = useService(AuthService);
+  const nbstoreService = useService(NbstoreService);
+  const realtimeConnectionError = useLiveData(
+    useService(RealtimeService).connectionError$
+  );
+
+  useEffect(() => {
+    if (!realtimeConnectionError) return;
+    const message = {
+      authentication:
+        t['com.affine.realtime.connection-error.authentication'](),
+      network: t['com.affine.realtime.connection-error.network'](),
+      server: t['com.affine.realtime.connection-error.server'](),
+      timeout: t['com.affine.realtime.connection-error.timeout'](),
+    }[realtimeConnectionError.type];
+    const id = notify.warning(
+      {
+        title: t['com.affine.realtime.connection-error.title'](),
+        message,
+      },
+      { id: `realtime-connection-error:${realtimeConnectionError.endpoint}` }
+    );
+    return () => {
+      notify.dismiss(id);
+    };
+  }, [realtimeConnectionError, t]);
 
   useEffect(() => {
     const dispose = setupAIProvider(
-      new CopilotClient(
+      createAIRequestService(
         graphqlService.gql,
-        fetchService.fetch,
-        eventSourceService.eventSource
+        eventSourceService.eventSource,
+        nbstoreService.realtime,
+        async docIds => {
+          await Promise.all(
+            [currentWorkspace.id, 'db$docProperties', ...docIds].map(docId =>
+              currentWorkspace.engine.doc.waitForSynced(docId)
+            )
+          );
+        }
       ),
       globalDialogService,
       authService
@@ -157,9 +190,10 @@ export const WorkspaceSideEffects = () => {
       dispose();
     };
   }, [
+    currentWorkspace.engine.doc,
+    currentWorkspace.id,
     eventSourceService,
-    fetchService,
-    workspaceDialogService,
+    nbstoreService,
     graphqlService,
     globalDialogService,
     authService,

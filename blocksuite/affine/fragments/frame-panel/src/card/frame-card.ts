@@ -193,24 +193,28 @@ export class FrameCard extends WithDisposable(ShadowlessElement) {
       class="frame-card-container ${this.status ?? ''}"
       style=${containerStyle}
     >
-      ${this.status === 'dragging'
-        ? nothing
-        : html`<affine-frame-card-title
-            .cardIndex=${this.cardIndex}
-            .frame=${this.frame}
-          ></affine-frame-card-title>`}
+      ${
+        this.status === 'dragging'
+          ? nothing
+          : html`<affine-frame-card-title
+              .cardIndex=${this.cardIndex}
+              .frame=${this.frame}
+            ></affine-frame-card-title>`
+      }
       <div
         class="frame-card-body"
         @click=${this._dispatchSelectEvent}
         @dblclick=${this._dispatchFitViewEvent}
         @mousedown=${this._dispatchDragEvent}
       >
-        ${this.status === 'dragging' && stackOrder !== 0
-          ? nothing
-          : html`<frame-preview
-              .frame=${this.frame}
-              .std=${this.std}
-            ></frame-preview>`}
+        ${
+          this.status === 'dragging' && stackOrder !== 0
+            ? nothing
+            : html`<frame-preview
+                .frame=${this.frame}
+                .std=${this.std}
+              ></frame-preview>`
+        }
         ${this._DraggingCardNumber()}
       </div>
     </div>`;

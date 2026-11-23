@@ -13,7 +13,7 @@ import type { ExtensionType } from '@blocksuite/store';
 export const BoldItalicMarkdown = InlineMarkdownExtension<AffineTextAttributes>(
   {
     name: 'bolditalic',
-    pattern: /.*\*{3}([^\s*][^*]*[^\s*])\*{3}$|.*\*{3}([^\s*])\*{3}$/,
+    pattern: /.*\*{3}([^\s*][^*]*[^\s*])\*{3}\s$|.*\*{3}([^\s*])\*{3}\s$/,
     action: ({
       inlineEditor,
       prefixText,
@@ -25,20 +25,11 @@ export const BoldItalicMarkdown = InlineMarkdownExtension<AffineTextAttributes>(
       if (!match) return;
 
       const targetText = match[1] ?? match[2];
-      const annotatedText = match[0].slice(-targetText.length - 3 * 2);
-      const startIndex = inlineRange.index - annotatedText.length;
-
-      inlineEditor.insertText(
-        {
-          index: startIndex + annotatedText.length,
-          length: 0,
-        },
-        ' '
+      const annotatedText = match[0].slice(
+        -(targetText.length + 3 * 2 + 1),
+        -1
       );
-      inlineEditor.setInlineRange({
-        index: startIndex + annotatedText.length + 1,
-        length: 0,
-      });
+      const startIndex = inlineRange.index - annotatedText.length - 1;
 
       undoManager.stopCapturing();
 
@@ -54,18 +45,13 @@ export const BoldItalicMarkdown = InlineMarkdownExtension<AffineTextAttributes>(
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: startIndex + annotatedText.length - 3,
-        length: 3,
+        index: inlineRange.index - 4,
+        length: 4,
       });
       inlineEditor.deleteText({
         index: startIndex,
         length: 3,
       });
-
       inlineEditor.setInlineRange({
         index: startIndex + annotatedText.length - 6,
         length: 0,
@@ -76,26 +62,14 @@ export const BoldItalicMarkdown = InlineMarkdownExtension<AffineTextAttributes>(
 
 export const BoldMarkdown = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'bold',
-  pattern: /.*\*{2}([^\s][^*]*[^\s*])\*{2}$|.*\*{2}([^\s*])\*{2}$/,
+  pattern: /.*\*{2}([^\s][^*]*[^\s*])\*{2}\s$|.*\*{2}([^\s*])\*{2}\s$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
     const targetText = match[1] ?? match[2];
-    const annotatedText = match[0].slice(-targetText.length - 2 * 2);
-    const startIndex = inlineRange.index - annotatedText.length;
-
-    inlineEditor.insertText(
-      {
-        index: startIndex + annotatedText.length,
-        length: 0,
-      },
-      ' '
-    );
-    inlineEditor.setInlineRange({
-      index: startIndex + annotatedText.length + 1,
-      length: 0,
-    });
+    const annotatedText = match[0].slice(-(targetText.length + 2 * 2 + 1), -1);
+    const startIndex = inlineRange.index - annotatedText.length - 1;
 
     undoManager.stopCapturing();
 
@@ -110,18 +84,13 @@ export const BoldMarkdown = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 2,
-      length: 2,
+      index: inlineRange.index - 3,
+      length: 3,
     });
     inlineEditor.deleteText({
       index: startIndex,
       length: 2,
     });
-
     inlineEditor.setInlineRange({
       index: startIndex + annotatedText.length - 4,
       length: 0,
@@ -131,26 +100,14 @@ export const BoldMarkdown = InlineMarkdownExtension<AffineTextAttributes>({
 
 export const ItalicExtension = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'italic',
-  pattern: /.*\*{1}([^\s][^*]*[^\s*])\*{1}$|.*\*{1}([^\s*])\*{1}$/,
+  pattern: /.*\*{1}([^\s][^*]*[^\s*])\*{1}\s$|.*\*{1}([^\s*])\*{1}\s$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
     const targetText = match[1] ?? match[2];
-    const annotatedText = match[0].slice(-targetText.length - 1 * 2);
-    const startIndex = inlineRange.index - annotatedText.length;
-
-    inlineEditor.insertText(
-      {
-        index: startIndex + annotatedText.length,
-        length: 0,
-      },
-      ' '
-    );
-    inlineEditor.setInlineRange({
-      index: startIndex + annotatedText.length + 1,
-      length: 0,
-    });
+    const annotatedText = match[0].slice(-(targetText.length + 1 * 2 + 1), -1);
+    const startIndex = inlineRange.index - annotatedText.length - 1;
 
     undoManager.stopCapturing();
 
@@ -165,18 +122,13 @@ export const ItalicExtension = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 1,
-      length: 1,
+      index: inlineRange.index - 2,
+      length: 2,
     });
     inlineEditor.deleteText({
       index: startIndex,
       length: 1,
     });
-
     inlineEditor.setInlineRange({
       index: startIndex + annotatedText.length - 2,
       length: 0,
@@ -187,7 +139,7 @@ export const ItalicExtension = InlineMarkdownExtension<AffineTextAttributes>({
 export const StrikethroughExtension =
   InlineMarkdownExtension<AffineTextAttributes>({
     name: 'strikethrough',
-    pattern: /.*~{2}([^\s][^~]*[^\s])~{2}$|.*~{2}([^\s~])~{2}$/,
+    pattern: /.*~{2}([^\s][^~]*[^\s])~{2}\s$|.*~{2}([^\s~])~{2}\s$/,
     action: ({
       inlineEditor,
       prefixText,
@@ -199,20 +151,11 @@ export const StrikethroughExtension =
       if (!match) return;
 
       const targetText = match[1] ?? match[2];
-      const annotatedText = match[0].slice(-targetText.length - 2 * 2);
-      const startIndex = inlineRange.index - annotatedText.length;
-
-      inlineEditor.insertText(
-        {
-          index: startIndex + annotatedText.length,
-          length: 0,
-        },
-        ' '
+      const annotatedText = match[0].slice(
+        -targetText.length - (2 * 2 + 1),
+        -1
       );
-      inlineEditor.setInlineRange({
-        index: startIndex + annotatedText.length + 1,
-        length: 0,
-      });
+      const startIndex = inlineRange.index - annotatedText.length - 1;
 
       undoManager.stopCapturing();
 
@@ -227,12 +170,8 @@ export const StrikethroughExtension =
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: startIndex + annotatedText.length - 2,
-        length: 2,
+        index: inlineRange.index - 3,
+        length: 3,
       });
       inlineEditor.deleteText({
         index: startIndex,
@@ -249,7 +188,7 @@ export const StrikethroughExtension =
 export const UnderthroughExtension =
   InlineMarkdownExtension<AffineTextAttributes>({
     name: 'underthrough',
-    pattern: /.*~{1}([^\s][^~]*[^\s~])~{1}$|.*~{1}([^\s~])~{1}$/,
+    pattern: /.*~{1}([^\s][^~]*[^\s~])~{1}\s$|.*~{1}([^\s~])~{1}\s$/,
     action: ({
       inlineEditor,
       prefixText,
@@ -261,20 +200,11 @@ export const UnderthroughExtension =
       if (!match) return;
 
       const targetText = match[1] ?? match[2];
-      const annotatedText = match[0].slice(-targetText.length - 1 * 2);
-      const startIndex = inlineRange.index - annotatedText.length;
-
-      inlineEditor.insertText(
-        {
-          index: startIndex + annotatedText.length,
-          length: 0,
-        },
-        ' '
+      const annotatedText = match[0].slice(
+        -(targetText.length + 1 * 2 + 1),
+        -1
       );
-      inlineEditor.setInlineRange({
-        index: startIndex + annotatedText.length + 1,
-        length: 0,
-      });
+      const startIndex = inlineRange.index - annotatedText.length - 1;
 
       undoManager.stopCapturing();
 
@@ -289,12 +219,8 @@ export const UnderthroughExtension =
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: inlineRange.index - 1,
-        length: 1,
+        index: inlineRange.index - 2,
+        length: 2,
       });
       inlineEditor.deleteText({
         index: startIndex,
@@ -310,26 +236,14 @@ export const UnderthroughExtension =
 
 export const CodeExtension = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'code',
-  pattern: /.*`([^\s][^`]*[^\s])`$|.*`([^\s`])`$/,
+  pattern: /.*`([^\s][^`]*[^\s])`\s$|.*`([^\s`])`\s$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
     const targetText = match[1] ?? match[2];
-    const annotatedText = match[0].slice(-targetText.length - 1 * 2);
-    const startIndex = inlineRange.index - annotatedText.length;
-
-    inlineEditor.insertText(
-      {
-        index: startIndex + annotatedText.length,
-        length: 0,
-      },
-      ' '
-    );
-    inlineEditor.setInlineRange({
-      index: startIndex + annotatedText.length + 1,
-      length: 0,
-    });
+    const annotatedText = match[0].slice(-(targetText.length + 1 * 2 + 1), -1);
+    const startIndex = inlineRange.index - annotatedText.length - 1;
 
     undoManager.stopCapturing();
 
@@ -344,12 +258,8 @@ export const CodeExtension = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 1,
-      length: 1,
+      index: inlineRange.index - 2,
+      length: 2,
     });
     inlineEditor.deleteText({
       index: startIndex,

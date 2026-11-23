@@ -15,9 +15,11 @@ public struct QueryChatHistoriesInput: InputObject {
     fork: GraphQLNullable<Bool> = nil,
     limit: GraphQLNullable<Int> = nil,
     messageOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> = nil,
+    pinned: GraphQLNullable<Bool> = nil,
     sessionId: GraphQLNullable<String> = nil,
     sessionOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> = nil,
     skip: GraphQLNullable<Int> = nil,
+    withMessages: GraphQLNullable<Bool> = nil,
     withPrompt: GraphQLNullable<Bool> = nil
   ) {
     __data = InputDict([
@@ -25,9 +27,11 @@ public struct QueryChatHistoriesInput: InputObject {
       "fork": fork,
       "limit": limit,
       "messageOrder": messageOrder,
+      "pinned": pinned,
       "sessionId": sessionId,
       "sessionOrder": sessionOrder,
       "skip": skip,
+      "withMessages": withMessages,
       "withPrompt": withPrompt
     ])
   }
@@ -52,6 +56,11 @@ public struct QueryChatHistoriesInput: InputObject {
     set { __data["messageOrder"] = newValue }
   }
 
+  public var pinned: GraphQLNullable<Bool> {
+    get { __data["pinned"] }
+    set { __data["pinned"] = newValue }
+  }
+
   public var sessionId: GraphQLNullable<String> {
     get { __data["sessionId"] }
     set { __data["sessionId"] = newValue }
@@ -65,6 +74,11 @@ public struct QueryChatHistoriesInput: InputObject {
   public var skip: GraphQLNullable<Int> {
     get { __data["skip"] }
     set { __data["skip"] = newValue }
+  }
+
+  public var withMessages: GraphQLNullable<Bool> {
+    get { __data["withMessages"] }
+    set { __data["withMessages"] = newValue }
   }
 
   public var withPrompt: GraphQLNullable<Bool> {

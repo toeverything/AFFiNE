@@ -30,6 +30,7 @@ export type FrameBlockProps = {
   background: Color;
   childElementIds?: Record<string, boolean>;
   presentationIndex?: string;
+  comments?: Record<string, boolean>;
 } & GfxCompatibleProps;
 
 export const FrameZodSchema = z
@@ -50,6 +51,7 @@ export const FrameBlockSchema = defineBlockSchema({
     childElementIds: Object.create(null),
     presentationIndex: generateKeyBetweenV2(null, null),
     lockedBySelf: false,
+    comments: undefined,
   }),
   metadata: {
     version: 1,
@@ -153,9 +155,22 @@ export class FrameBlockModel
   }
 
   removeChild(element: GfxModel): void {
+    this.removeChildren([element]);
+  }
+
+  removeChildren(elements: GfxModel[]): void {
+    const childIds = [...new Set(elements.map(element => element.id))];
+    if (!this.props.childElementIds || childIds.length === 0) {
+      return;
+    }
+
     this.store.transact(() => {
-      this.props.childElementIds &&
-        delete this.props.childElementIds[element.id];
+      const childElementIds = this.props.childElementIds;
+      if (!childElementIds) return;
+
+      childIds.forEach(childId => {
+        delete childElementIds[childId];
+      });
     });
   }
 }

@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
@@ -18,6 +19,7 @@ export const QuickSearchContainer = () => {
   const loading = useLiveData(quickSearch.isLoading$);
   const loadingProgress = useLiveData(quickSearch.loadingProgress$);
   const items = useLiveData(quickSearch.items$);
+  const error = useLiveData(quickSearch.error$);
   const options = useLiveData(quickSearch.options$);
   const i18n = useI18n();
 
@@ -79,6 +81,7 @@ export const QuickSearchContainer = () => {
       <CMDK
         query={query}
         groups={groups}
+        error={error ? UserFriendlyError.fromAny(error).message : null}
         loading={loading}
         loadingProgress={loadingProgress}
         onQueryChange={handleChangeQuery}

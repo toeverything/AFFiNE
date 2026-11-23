@@ -10,6 +10,13 @@ import {
 import { AffineErrorComponent } from '../components/affine/affine-error-boundary/affine-error-fallback';
 import { NavigateContext } from '../components/hooks/use-navigate-helper';
 import { RootWrapper } from './pages/root';
+import {
+  CATCH_ALL_ROUTE_PATH,
+  getWorkspaceDocPath,
+  NOT_FOUND_ROUTE_PATH,
+  SHARE_ROUTE_PATH,
+  WORKSPACE_ROUTE_PATH,
+} from './route-paths';
 
 export function RootRouter() {
   const navigate = useNavigate();
@@ -38,17 +45,19 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/index'),
       },
       {
-        path: '/workspace/:workspaceId/*',
+        path: WORKSPACE_ROUTE_PATH,
         lazy: () => import('./pages/workspace/index'),
       },
       {
-        path: '/share/:workspaceId/:pageId',
+        path: SHARE_ROUTE_PATH,
         loader: ({ params }) => {
-          return redirect(`/workspace/${params.workspaceId}/${params.pageId}`);
+          return redirect(
+            getWorkspaceDocPath(params.workspaceId ?? '', params.pageId ?? '')
+          );
         },
       },
       {
-        path: '/404',
+        path: NOT_FOUND_ROUTE_PATH,
         lazy: () => import('./pages/404'),
       },
       {
@@ -175,7 +184,7 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/open-app'),
       },
       {
-        path: '*',
+        path: CATCH_ALL_ROUTE_PATH,
         lazy: () => import('./pages/404'),
       },
     ],

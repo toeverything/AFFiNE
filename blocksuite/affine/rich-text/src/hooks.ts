@@ -65,7 +65,7 @@ function handleExtendedAttributes(
 ) {
   const { data, inlineEditor, inlineRange } = ctx;
   const deltas = inlineEditor.getDeltasByInlineRange(inlineRange);
-  // eslint-disable-next-line sonarjs/no-collapsible-if
+  // oxlint-disable-next-line sonarjs/no-collapsible-if
   if (data && data.length > 0 && data !== '\n') {
     if (
       // cursor is in the between of two deltas

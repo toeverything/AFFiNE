@@ -1,8 +1,5 @@
 import { CategoryDivider } from '@affine/core/modules/app-sidebar/views';
-import {
-  type CollapsibleSectionName,
-  NavigationPanelService,
-} from '@affine/core/modules/navigation-panel';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -17,7 +14,7 @@ import {
 import { content, header, root } from './collapsible-section.css';
 
 interface CollapsibleSectionProps extends PropsWithChildren {
-  name: CollapsibleSectionName;
+  path: string[];
   title: string;
   actions?: ReactNode;
 
@@ -33,7 +30,7 @@ interface CollapsibleSectionProps extends PropsWithChildren {
 }
 
 export const CollapsibleSection = ({
-  name,
+  path,
   title,
   actions,
   children,
@@ -48,15 +45,15 @@ export const CollapsibleSection = ({
   contentClassName,
   contentStyle,
 }: CollapsibleSectionProps) => {
-  const section = useService(NavigationPanelService).sections[name];
+  const navigationPanelService = useService(NavigationPanelService);
 
-  const collapsed = useLiveData(section.collapsed$);
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
 
   const setCollapsed = useCallback(
     (v: boolean) => {
-      section.setCollapsed(v);
+      navigationPanelService.setCollapsed(path, v);
     },
-    [section]
+    [navigationPanelService, path]
   );
 
   return (

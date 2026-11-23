@@ -9,17 +9,24 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { buildAppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, JobQueue } from '../../base';
+import { AFFiNELogger, ConfigFactory } from '../../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../../base/config/factory';
+import { getDefaultConfig } from '../../base/config/register';
 import { GqlModule } from '../../base/graphql';
 import { ServerConfigModule } from '../../core';
 import { AuthGuard, AuthModule } from '../../core/auth';
 import { Mailer, MailModule } from '../../core/mail';
 import { ModelsModule } from '../../models';
+import { ServerConfigHandle } from '../../native';
 // for jsdoc inference
 // oxlint-disable-next-line no-unused-vars
 import type { createModule } from '../create-module';
-import { createFactory, MockJobQueue } from '../mocks';
+import { createFactory } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from './runtime-config';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
 interface TestingModuleMetadata extends ModuleMetadata {
@@ -30,7 +37,6 @@ export interface TestingModule extends BaseTestingModule {
   initTestingDB(): Promise<void>;
   create: ReturnType<typeof createFactory>;
   mails: MockMailer;
-  queue: MockJobQueue;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
@@ -48,6 +54,10 @@ function dedupeModules(modules: NonNullable<ModuleMetadata['imports']>) {
   return Array.from(map.values());
 }
 
+function testingFunctionalityModules() {
+  return [...FunctionalityModules];
+}
+
 @Resolver(() => String)
 class MockResolver {
   @Query(() => String)
@@ -63,14 +73,19 @@ export async function createTestingModule(
   moduleDef: TestingModuleMetadata = {},
   autoInitialize = true
 ): Promise<TestingModule> {
+  const config = getDefaultConfig();
+  const runtimeConfig = await createTestRuntimeConfig(
+    config.db.datasourceUrl,
+    config.indexer
+  );
   // setting up
   let imports = moduleDef.imports ?? [buildAppModule(globalThis.env)];
   imports =
-    // @ts-expect-error
+    // @ts-expect-error ignore the type error
     imports[0].module?.name === 'AppModule'
       ? imports
       : dedupeModules([
-          ...FunctionalityModules,
+          ...testingFunctionalityModules(),
           ModelsModule,
           AuthModule,
           GqlModule,
@@ -93,12 +108,50 @@ export async function createTestingModule(
   });
 
   builder.overrideProvider(Mailer).useClass(MockMailer);
-  builder.overrideProvider(JobQueue).useClass(MockJobQueue);
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
   if (moduleDef.tapModule) {
     moduleDef.tapModule(builder);
   }
 
-  const module = await builder.compile();
+  let module: BaseTestingModule;
+  try {
+    module = await builder.compile();
+  } catch (error) {
+    await runtimeConfig.cleanup();
+    throw error;
+  }
+  module.get(ConfigFactory).override({
+    storages: {
+      avatar: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'avatars',
+          config: { path: runtimeConfig.storagePath },
+        },
+      },
+      blob: {
+        storage: {
+          provider: 'assetpack',
+          bucket: 'blobs',
+          config: { path: runtimeConfig.storagePath },
+        },
+      },
+    },
+    copilot: {
+      enabled: true,
+      storage: {
+        provider: 'assetpack',
+        bucket: 'copilot',
+        config: { path: runtimeConfig.storagePath },
+      },
+    },
+  });
 
   const testingModule = module as TestingModule;
 
@@ -110,12 +163,20 @@ export async function createTestingModule(
     module.get(PrismaClient, { strict: false })
   );
 
-  testingModule[Symbol.asyncDispose] = async () => {
-    await module.close();
+  const close = testingModule.close.bind(testingModule);
+  let closePromise: Promise<void> | undefined;
+  testingModule.close = () => {
+    return (closePromise ??= (async () => {
+      try {
+        await close();
+      } finally {
+        await runtimeConfig.cleanup();
+      }
+    })());
   };
+  testingModule[Symbol.asyncDispose] = () => testingModule.close();
 
   testingModule.mails = module.get(Mailer, { strict: false }) as MockMailer;
-  testingModule.queue = module.get(JobQueue, { strict: false }) as MockJobQueue;
 
   const logger = new AFFiNELogger();
   // we got a lot smoking tests try to break nestjs
@@ -124,8 +185,13 @@ export async function createTestingModule(
   module.useLogger(logger);
 
   if (autoInitialize) {
-    await testingModule.initTestingDB();
-    await testingModule.init();
+    try {
+      await testingModule.initTestingDB();
+      await testingModule.init();
+    } catch (error) {
+      await testingModule.close();
+      throw error;
+    }
   }
   return testingModule;
 }

@@ -6,6 +6,7 @@
 !.yarn/releases
 !.yarn/sdks
 .yarn/versions
+.corepack-bin
 
 # compiled output
 *dist
@@ -33,6 +34,9 @@ node_modules
 !.vscode/launch.template.json
 !.vscode/extensions.json
 
+# Kiro
+.kiro
+
 # misc
 /.sass-cache
 /connect.lock
@@ -44,6 +48,10 @@ testem.log
 .pnpm-debug.log
 /typings
 tsconfig.tsbuildinfo
+.context
+/*.md
+.codex
+.cursor
 
 # System Files
 .DS_Store
@@ -65,7 +73,6 @@ playwright/.cache
 download
 
 # Cache
-.eslintcache
 next-env.d.ts
 .rollup.cache
 
@@ -88,3 +95,9 @@ af.cmd
 
 # playwright
 storageState.json
+/.understand-anything
+
+# local test/browser artifacts
+/.playwright-browsers/
+**/.vitest-attachments/
+/blocksuite/framework/std/src/__tests__/gfx/__screenshots__/

@@ -11,11 +11,10 @@ import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
 import { dragHandler } from '../../../core/utils/wc-dnd/dnd-context.js';
-import type { KanbanSingleView } from '../kanban-view-manager.js';
+import type { KanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 const styles = css`
   affine-data-view-kanban-group {
@@ -99,41 +98,37 @@ export class KanbanGroup extends SignalWatcher(
   private readonly clickAddCard = () => {
     const id = this.view.addCard('end', this.group.key);
     requestAnimationFrame(() => {
-      const kanban = this.closest('affine-data-view-kanban');
-      if (kanban) {
-        const columnId =
-          this.view.mainProperties$.value.titleColumn ||
-          this.view.propertyIds$.value[0];
-        if (!columnId) return;
-        kanban.selectionController.selection = {
-          selectionType: 'cell',
-          groupKey: this.group.key,
-          cardId: id,
-          columnId,
-          isEditing: true,
-        };
-      }
+      const columnId =
+        this.view.mainProperties$.value.titleColumn ||
+        this.view.propertyIds$.value[0];
+      if (!columnId) return;
+      this.kanbanViewLogic.selectionController.selection = {
+        selectionType: 'cell',
+        groupKey: this.group.key,
+        cardId: id,
+        columnId,
+        isEditing: true,
+      };
     });
+    this.requestUpdate();
   };
 
   private readonly clickAddCardInStart = () => {
     const id = this.view.addCard('start', this.group.key);
     requestAnimationFrame(() => {
-      const kanban = this.closest('affine-data-view-kanban');
-      if (kanban) {
-        const columnId =
-          this.view.mainProperties$.value.titleColumn ||
-          this.view.propertyIds$.value[0];
-        if (!columnId) return;
-        kanban.selectionController.selection = {
-          selectionType: 'cell',
-          groupKey: this.group.key,
-          cardId: id,
-          columnId,
-          isEditing: true,
-        };
-      }
+      const columnId =
+        this.view.mainProperties$.value.titleColumn ||
+        this.view.propertyIds$.value[0];
+      if (!columnId) return;
+      this.kanbanViewLogic.selectionController.selection = {
+        selectionType: 'cell',
+        groupKey: this.group.key,
+        cardId: id,
+        columnId,
+        isEditing: true,
+      };
     });
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -146,12 +141,14 @@ export class KanbanGroup extends SignalWatcher(
           this.group.rows.forEach(row => {
             this.group.manager.removeFromGroup(row.rowId, this.group.key);
           });
+          this.requestUpdate();
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
           this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
@@ -176,35 +173,37 @@ export class KanbanGroup extends SignalWatcher(
               <affine-data-view-kanban-card
                 data-card-id="${row.rowId}"
                 .groupKey="${this.group.key}"
-                .dataViewEle="${this.dataViewEle}"
-                .view="${this.view}"
+                .kanbanViewLogic="${this.kanbanViewLogic}"
                 .cardId="${row.rowId}"
               ></affine-data-view-kanban-card>
             `;
           }
         )}
-        ${this.view.readonly$.value
-          ? nothing
-          : html`<div class="add-card" @click="${this.clickAddCard}">
-              <div
-                style="margin-right: 4px;width: 16px;height: 16px;display:flex;align-items:center;"
-              >
-                ${AddCursorIcon()}
-              </div>
-              Add
-            </div>`}
+        ${
+          this.view.readonly$.value
+            ? nothing
+            : html`<div class="add-card" @click="${this.clickAddCard}">
+                <div
+                  style="margin-right: 4px;width: 16px;height: 16px;display:flex;align-items:center;"
+                >
+                  ${AddCursorIcon()}
+                </div>
+                Add
+              </div>`
+        }
       </div>
     `;
   }
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
+  accessor group!: Group;
 
   @property({ attribute: false })
-  accessor group!: GroupData;
+  accessor kanbanViewLogic!: KanbanViewUILogic;
 
-  @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

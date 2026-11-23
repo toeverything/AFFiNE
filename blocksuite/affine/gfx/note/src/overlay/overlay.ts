@@ -1,5 +1,5 @@
 import {
-  type SurfaceBlockComponent,
+  getSurfaceComponent,
   ToolOverlay,
 } from '@blocksuite/affine-block-surface';
 import { type Color, DefaultTheme } from '@blocksuite/affine-model';
@@ -36,7 +36,8 @@ export class NoteOverlay extends ToolOverlay {
         if (this.gfx.tool.currentToolName$.value !== 'affine:note') return;
         const tool = this.gfx.tool.currentTool$.peek() as NoteTool;
         this.text = this._getOverlayText(tool.activatedOption.tip);
-        (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+        const surface = getSurfaceComponent(this.gfx.std);
+        surface?.refresh();
       })
     );
   }
@@ -139,7 +140,8 @@ export class DraggingNoteOverlay extends NoteOverlay {
     this.disposables.add(
       this.slots.draggingNoteUpdated.subscribe(({ xywh }) => {
         [this.x, this.y, this.width, this.height] = xywh;
-        (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+        const surface = getSurfaceComponent(this.gfx.std);
+        surface?.refresh();
       })
     );
   }

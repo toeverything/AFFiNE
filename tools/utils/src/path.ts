@@ -1,4 +1,11 @@
-import { existsSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -39,6 +46,22 @@ export class Path {
 
   exists() {
     return existsSync(this.path);
+  }
+
+  rm(opts: { recursive?: boolean } = {}) {
+    rmSync(this.path, { ...opts, force: true });
+  }
+
+  mkdir() {
+    mkdirSync(this.path, { recursive: true });
+  }
+
+  readAsFile() {
+    return readFileSync(this.path);
+  }
+
+  writeFile(content: Buffer | string) {
+    writeFileSync(this.path, content);
   }
 
   stats() {

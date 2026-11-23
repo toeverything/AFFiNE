@@ -1,14 +1,14 @@
 {
   "name": "@affine/copilot-result",
-  "version": "0.21.0",
+  "version": "0.27.5",
   "type": "module",
   "main": "index.js",
   "private": true,
   "description": "Send copilot result to slack",
   "dependencies": {
-    "@slack/web-api": "^7.8.0",
+    "@slack/web-api": "^8.0.0",
     "jsx-slack": "^6.1.2",
-    "marked": "^15.0.3"
+    "marked": "^15.0.12"
   },
   "devDependencies": {
     "@types/node": "^22.0.0"

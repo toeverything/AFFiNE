@@ -1,11 +1,14 @@
-import { mixpanel, track } from '@affine/track';
+import { track, tracker } from '@affine/track';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxPrimitiveElementModel } from '@blocksuite/affine/std/gfx';
 import type { BlockModel } from '@blocksuite/affine/store';
 import { lowerCase, omit } from 'lodash-es';
-import type { Subject } from 'rxjs';
 
-import { AIProvider } from './ai-provider';
+import type {
+  AIRequestActionEvent,
+  AIRequestService,
+} from '../runtime/request';
+import { AIAppEvents } from './ai-app-events';
 
 type ElementModel = GfxPrimitiveElementModel;
 
@@ -16,7 +19,7 @@ type AIActionEventName =
   | 'AI result accepted';
 
 type AIActionEventProperties = {
-  page: 'doc' | 'edgeless';
+  page: 'doc' | 'edgeless' | 'unknown';
   segment:
     | 'AI action panel'
     | 'right side bar'
@@ -58,13 +61,9 @@ type AIActionEventProperties = {
     | 'other';
   category: string;
   other: Record<string, unknown>;
-  docId: string;
+  docId?: string;
   workspaceId: string;
 };
-
-type SubjectValue<T> = T extends Subject<infer U> ? U : never;
-
-type BlocksuiteActionEvent = SubjectValue<typeof AIProvider.slots.actions>;
 
 const trackAction = ({
   eventName,
@@ -73,7 +72,7 @@ const trackAction = ({
   eventName: AIActionEventName;
   properties: AIActionEventProperties;
 }) => {
-  mixpanel.track(eventName, properties);
+  tracker.track(eventName, properties);
 };
 
 const inferPageMode = (host: EditorHost) => {
@@ -106,7 +105,7 @@ function isBlockModel(model: BlockModel | ElementModel): model is BlockModel {
   return 'flavour' in model;
 }
 
-function inferObjectType(event: BlocksuiteActionEvent) {
+function inferObjectType(event: AIRequestActionEvent) {
   const models: (BlockModel | ElementModel)[] | undefined =
     event.options.models;
   if (!models) {
@@ -135,7 +134,7 @@ function inferObjectType(event: BlocksuiteActionEvent) {
 }
 
 function inferSegment(
-  event: BlocksuiteActionEvent
+  event: AIRequestActionEvent
 ): AIActionEventProperties['segment'] {
   if (event.options.where === 'inline-chat-panel') {
     return 'inline chat panel';
@@ -151,7 +150,7 @@ function inferSegment(
 }
 
 function inferModule(
-  event: BlocksuiteActionEvent
+  event: AIRequestActionEvent
 ): AIActionEventProperties['module'] {
   if (event.options.where === 'chat-panel') {
     return 'AI chat panel';
@@ -168,9 +167,7 @@ function inferModule(
   }
 }
 
-function inferEventName(
-  event: BlocksuiteActionEvent
-): AIActionEventName | null {
+function inferEventName(event: AIRequestActionEvent): AIActionEventName | null {
   if (['result:discard', 'result:retry'].includes(event.event)) {
     return 'AI result discarded';
   } else if (event.event.startsWith('result:')) {
@@ -184,7 +181,7 @@ function inferEventName(
 }
 
 function inferControl(
-  event: BlocksuiteActionEvent
+  event: AIRequestActionEvent
 ): AIActionEventProperties['control'] {
   if (event.event === 'aborted:stop') {
     return 'stop button';
@@ -222,7 +219,7 @@ function inferControl(
 }
 
 const toTrackedOptions = (
-  event: BlocksuiteActionEvent
+  event: AIRequestActionEvent
 ): {
   eventName: AIActionEventName;
   properties: AIActionEventProperties;
@@ -231,7 +228,9 @@ const toTrackedOptions = (
 
   if (!eventName) return null;
 
-  const pageMode = inferPageMode(event.options.host);
+  const pageMode = event.options.host
+    ? inferPageMode(event.options.host)
+    : 'unknown';
   const otherProperties = omit(event.options, defaultActionOptions);
   const type = inferObjectType(event);
   const segment = inferSegment(event);
@@ -255,19 +254,25 @@ const toTrackedOptions = (
   };
 };
 
-export function setupTracker() {
-  AIProvider.slots.requestUpgradePlan.subscribe(() => {
+export function setupTracker(requestService: AIRequestService) {
+  const upgradeSubscription = AIAppEvents.requestUpgradePlan.subscribe(() => {
     track.$.paywall.aiAction.viewPlans();
   });
 
-  AIProvider.slots.requestLogin.subscribe(() => {
+  const loginSubscription = AIAppEvents.requestLogin.subscribe(() => {
     track.doc.editor.aiActions.requestSignIn();
   });
 
-  AIProvider.slots.actions.subscribe(event => {
+  const actionSubscription = requestService.actionEvents$.subscribe(event => {
     const properties = toTrackedOptions(event);
     if (properties) {
       trackAction(properties);
     }
   });
+
+  return () => {
+    upgradeSubscription.unsubscribe();
+    loginSubscription.unsubscribe();
+    actionSubscription.unsubscribe();
+  };
 }

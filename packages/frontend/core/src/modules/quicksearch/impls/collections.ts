@@ -30,7 +30,7 @@ export class CollectionsQuickSearchSession
     LiveData.computed(get => {
       const query = get(this.query$);
 
-      const collections = get(this.collectionService.collections$);
+      const collections = get(this.collectionService.collectionMetas$);
 
       const fuse = new Fuse(collections, {
         keys: ['name'],

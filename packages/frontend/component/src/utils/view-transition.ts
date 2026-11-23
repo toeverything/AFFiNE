@@ -3,6 +3,20 @@ const setScope = (scope: string) =>
 const rmScope = (scope: string) =>
   document.body.removeAttribute(`data-${scope}`);
 
+export async function startViewTransition(cb: () => Promise<void> | void) {
+  if (typeof document === 'undefined') return;
+
+  if (typeof document.startViewTransition !== 'function') {
+    await cb();
+    return;
+  }
+
+  const transition = document.startViewTransition(cb);
+  // Skipping the animation rejects ready even when the DOM update succeeds.
+  void transition.ready.catch(() => {});
+  await transition.finished;
+}
+
 /**
  * A wrapper around `document.startViewTransition` that adds a scope attribute to the body element.
  */
@@ -19,16 +33,16 @@ export function startScopedViewTransition(
 
     scopes.forEach(setScope);
 
-    const vt = document.startViewTransition(cb);
+    const finished = startViewTransition(cb);
     const timeoutPromise = new Promise<void>((_, reject) => {
       setTimeout(() => reject(new Error('View transition timeout')), timeout);
     });
 
-    Promise.race([vt.finished, timeoutPromise])
+    Promise.race([finished, timeoutPromise])
       .catch(err => console.error(`View transition[${scope}] failed: ${err}`))
       .finally(() => scopes.forEach(rmScope));
   } else {
-    cb()?.catch(console.error);
+    startViewTransition(cb).catch(console.error);
   }
 }
 

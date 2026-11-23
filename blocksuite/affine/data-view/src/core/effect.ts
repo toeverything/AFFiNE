@@ -2,7 +2,7 @@ import { DataViewPropertiesSettingView } from './common/properties.js';
 import { Button } from './component/button/button.js';
 import { Overflow } from './component/overflow/overflow.js';
 import { MultiTagSelect, MultiTagView } from './component/tags/index.js';
-import { DataViewRenderer } from './data-view.js';
+import { DataViewRootUI } from './data-view.js';
 import { RecordDetail } from './detail/detail.js';
 import { RecordField } from './detail/field.js';
 import { VariableRefView } from './expression/ref/ref-view.js';
@@ -15,7 +15,7 @@ import { AffineLitIcon, UniAnyRender, UniLit } from './index.js';
 import { AnyRender } from './utils/uni-component/render-template.js';
 
 export function coreEffects() {
-  customElements.define('affine-data-view-renderer', DataViewRenderer);
+  customElements.define('affine-data-view-renderer', DataViewRootUI);
   customElements.define('any-render', AnyRender);
   customElements.define(
     'data-view-properties-setting',

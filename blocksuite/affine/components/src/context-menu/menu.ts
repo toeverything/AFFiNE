@@ -15,7 +15,7 @@ export type MenuOptions = {
   onClose?: () => void;
   title?: {
     text: string;
-    onBack?: (menu: Menu) => void;
+    onBack?: (menu: Menu) => boolean | void;
     onClose?: () => void;
     postfix?: () => TemplateResult;
   };
@@ -23,6 +23,7 @@ export type MenuOptions = {
     placeholder?: string;
   };
   items: MenuConfig[];
+  testId?: string;
 };
 
 // Global menu open listener type
@@ -72,6 +73,9 @@ export class Menu {
       ? document.createElement('mobile-menu')
       : document.createElement('affine-menu');
     this.menuElement.menu = this;
+    if (this.options.testId) {
+      this.menuElement.dataset.testid = this.options.testId;
+    }
 
     // Call global menu open listeners
     menuOpenListeners.forEach(listener => {
@@ -145,7 +149,7 @@ export class Menu {
 
   renderItems(items: MenuConfig[]) {
     const result = [];
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    // oxlint-disable-next-line typescript/prefer-for-of
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const template = item(this, result.length);

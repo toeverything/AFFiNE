@@ -1,4 +1,3 @@
-import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { DocsService } from '@affine/core/modules/doc';
@@ -17,12 +16,6 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
     frameworkProvider.get(LifecycleService).applicationFocus();
   });
   frameworkProvider.get(LifecycleService).applicationStart();
-  window.addEventListener('unload', () => {
-    frameworkProvider
-      .get(DesktopApiService)
-      .api.handler.ui.pingAppLayoutReady(false)
-      .catch(console.error);
-  });
 
   events?.applicationMenu.openInSettingModal(({ activeTab, scrollAnchor }) => {
     using currentWorkspace = getCurrentWorkspace(frameworkProvider);
@@ -53,7 +46,10 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
         const { workspace } = currentWorkspace;
         const docsService = workspace.scope.get(DocsService);
 
-        const page = docsService.createDoc({ primaryMode: type });
+        const page =
+          type === 'default'
+            ? docsService.createDoc()
+            : docsService.createDoc({ primaryMode: type });
         workspace.scope.get(WorkbenchService).workbench.openDoc(page.id);
       })
       .catch(err => {

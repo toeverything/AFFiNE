@@ -15,6 +15,7 @@ import {
   computePosition,
   type Middleware,
   offset,
+  type Placement,
   type ReferenceElement,
   shift,
 } from '@floating-ui/dom';
@@ -37,7 +38,9 @@ export class MenuComponent
       display: flex;
       flex-direction: column;
       user-select: none;
-      min-width: 180px;
+      min-width: 320px;
+      max-width: 320px;
+      max-height: 700px;
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       border-radius: 4px;
       background-color: ${unsafeCSSVarV2('layer/background/overlayPanel')};
@@ -108,8 +111,10 @@ export class MenuComponent
         }
         const onBack = this.menu.options.title?.onBack;
         if (e.key === 'Backspace' && onBack && !this.menu.showSearch$.value) {
-          this.menu.close();
-          onBack(this.menu);
+          const result = onBack(this.menu);
+          if (result !== false) {
+            this.menu.close();
+          }
           return;
         }
         if (e.key === 'Enter' && !e.isComposing) {
@@ -160,9 +165,11 @@ export class MenuComponent
     return html`
       ${this.renderTitle()} ${this.renderSearch()}
       <div class="affine-menu-body">
-        ${result.length === 0 && this.menu.enableSearch
-          ? html` <div class="no-results">No Results</div>`
-          : ''}
+        ${
+          result.length === 0 && this.menu.enableSearch
+            ? html` <div class="no-results">No Results</div>`
+            : ''
+        }
         ${result}
       </div>
     `;
@@ -208,33 +215,39 @@ export class MenuComponent
         style="display:flex;align-items:center;gap: 4px;padding:3px 4px 3px 2px"
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
-        ${title.onBack
-          ? html` <div
-              @click="${() => {
-                title.onBack?.(this.menu);
-                this.menu.close();
-              }}"
-              class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
-              style="display:flex;"
-            >
-              ${ArrowLeftBigIcon()}
-            </div>`
-          : nothing}
+        ${
+          title.onBack
+            ? html` <div
+                @click="${() => {
+                  const result = title.onBack?.(this.menu);
+                  if (result !== false) {
+                    this.menu.close();
+                  }
+                }}"
+                class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
+                style="display:flex;"
+              >
+                ${ArrowLeftBigIcon()}
+              </div>`
+            : nothing
+        }
         <div
           style="flex:1;font-weight:500;font-size: 14px;line-height: 22px;color: var(--affine-text-primary-color)"
         >
           ${title.text}
         </div>
         ${title.postfix?.()}
-        ${title.onClose
-          ? html` <div
-              @click="${title.onClose}"
-              class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
-              style="display:flex;"
-            >
-              ${CloseIcon()}
-            </div>`
-          : nothing}
+        ${
+          title.onClose
+            ? html` <div
+                @click="${title.onClose}"
+                class="dv-icon-20 dv-hover dv-pd-2 dv-round-4"
+                style="display:flex;"
+              >
+                ${CloseIcon()}
+              </div>`
+            : nothing
+        }
       </div>
     `;
   }
@@ -316,21 +329,23 @@ export class MobileMenuComponent
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
         <div style="width: 50px;flex-shrink: 0;margin-left: 10px;">
-          ${title?.onBack
-            ? html` <div
-                @click="${() => {
-                  title.onBack?.(this.menu);
-                  this.menu.close();
-                }}"
-                style="
+          ${
+            title?.onBack
+              ? html` <div
+                  @click="${() => {
+                    title.onBack?.(this.menu);
+                    this.menu.close();
+                  }}"
+                  style="
                 display:flex;
                 font-size: 24px;
                 align-items:center;
 "
-              >
-                ${ArrowLeftSmallIcon()}
-              </div>`
-            : nothing}
+                >
+                  ${ArrowLeftSmallIcon()}
+                </div>`
+              : nothing
+          }
         </div>
         <div
           style="
@@ -439,6 +454,7 @@ export const createPopup = (
     onClose?: () => void;
     middleware?: Array<Middleware | null | undefined | false>;
     container?: HTMLElement;
+    placement?: Placement;
   }
 ) => {
   const close = () => {
@@ -448,6 +464,7 @@ export const createPopup = (
   const modal = createModal(target.root);
   autoUpdate(target.targetRect, content, () => {
     computePosition(target.targetRect, content, {
+      placement: options?.placement,
       middleware: options?.middleware ?? [shift({ crossAxis: true })],
     })
       .then(({ x, y }) => {
@@ -520,6 +537,7 @@ export const popMenu = (
     options: MenuOptions;
     middleware?: Array<Middleware | null | undefined | false>;
     container?: HTMLElement;
+    placement?: Placement;
   }
 ): MenuHandler => {
   if (IS_MOBILE) {
@@ -549,8 +567,10 @@ export const popMenu = (
         ],
       }),
       offset(4),
+      shift({ padding: 8 }),
     ],
     container: props.container,
+    placement: props.placement,
   });
   return {
     close: closePopup,
@@ -563,12 +583,14 @@ export const popMenu = (
 export const popFilterableSimpleMenu = (
   target: PopupTarget,
   options: MenuConfig[],
-  onClose?: () => void
+  onClose?: () => void,
+  placement: Placement = 'bottom-start'
 ) => {
   popMenu(target, {
     options: {
       items: options,
       onClose,
     },
+    placement,
   });
 };

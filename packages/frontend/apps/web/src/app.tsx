@@ -14,6 +14,7 @@ import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspac
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { getWorkerUrl } from '@affine/env/worker';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
+import { setTelemetryTransport } from '@affine/track';
 import { CacheProvider } from '@emotion/react';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
@@ -38,13 +39,19 @@ if (
   const worker = new Worker(workerUrl);
   storeManagerClient = new StoreManagerClient(new OpClient(worker));
 }
+setTelemetryTransport(storeManagerClient.telemetry);
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
+window.addEventListener('focus', () => {
+  storeManagerClient.resume();
+});
+window.addEventListener('click', () => {
+  storeManagerClient.resume();
+});
+window.addEventListener('blur', () => {
+  storeManagerClient.pause();
+});
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -52,6 +59,7 @@ configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 framework.impl(NbstoreProvider, {
+  realtime: storeManagerClient.realtime,
   openStore(key, options) {
     return storeManagerClient.open(key, options);
   },
@@ -85,16 +93,12 @@ frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
   return (
-    <Suspense>
+    <Suspense fallback={<AppContainer fallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
-              <RouterProvider
-                fallbackElement={<AppContainer fallback />}
-                router={router}
-                future={future}
-              />
+              <RouterProvider router={router} />
             </AffineContext>
           </I18nProvider>
         </CacheProvider>

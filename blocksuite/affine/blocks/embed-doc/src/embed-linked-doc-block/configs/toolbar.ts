@@ -13,7 +13,6 @@ import {
   ActionPlacement,
   DocDisplayMetaProvider,
   EditorSettingProvider,
-  FeatureFlagService,
   type LinkEventType,
   type OpenDocMode,
   type ToolbarAction,
@@ -216,12 +215,7 @@ const conversionsActionGroup = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(EmbedLinkedDocBlockComponent);
 
-        if (
-          ctx.std
-            .get(FeatureFlagService)
-            .getFlag('enable_embed_doc_with_alias') &&
-          isGfxBlockComponent(block)
-        ) {
+        if (isGfxBlockComponent(block)) {
           const editorSetting = ctx.std.getOptional(EditorSettingProvider);
           editorSetting?.set?.(
             'docCanvasPreferView',
@@ -253,7 +247,7 @@ const conversionsActionGroup = {
         @toggle=${onToggle}
         .actions=${actions}
         .context=${ctx}
-        .viewType$=${viewType$}
+        .viewTypeSignal=${viewType$}
       ></affine-view-dropdown-menu>`
     )}`;
   },
@@ -265,18 +259,18 @@ const builtinToolbarConfig = {
     conversionsActionGroup,
     {
       id: 'c.style',
-      actions: [
-        {
-          id: 'horizontal',
-          label: 'Large horizontal style',
-        },
-        {
-          id: 'list',
-          label: 'Small horizontal style',
-        },
-      ].filter(action =>
-        EmbedLinkedDocStyles.includes(action.id as EmbedCardStyle)
-      ),
+      actions: (
+        [
+          {
+            id: 'horizontal',
+            label: 'Large horizontal style',
+          },
+          {
+            id: 'list',
+            label: 'Small horizontal style',
+          },
+        ] as const
+      ).filter(action => EmbedLinkedDocStyles.includes(action.id)),
       content(ctx) {
         const model = ctx.getCurrentModelByType(EmbedLinkedDocModel);
         if (!model) return null;
@@ -305,7 +299,7 @@ const builtinToolbarConfig = {
             @toggle=${onToggle}
             .actions=${actions}
             .context=${ctx}
-            .style$=${model.props.style$}
+            .styleSignal=${model.props.style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },
@@ -374,26 +368,26 @@ const builtinSurfaceToolbarConfig = {
     conversionsActionGroup,
     {
       id: 'c.style',
-      actions: [
-        {
-          id: 'horizontal',
-          label: 'Large horizontal style',
-        },
-        {
-          id: 'list',
-          label: 'Small horizontal style',
-        },
-        {
-          id: 'vertical',
-          label: 'Large vertical style',
-        },
-        {
-          id: 'cube',
-          label: 'Small vertical style',
-        },
-      ].filter(action =>
-        EmbedLinkedDocStyles.includes(action.id as EmbedCardStyle)
-      ),
+      actions: (
+        [
+          {
+            id: 'horizontal',
+            label: 'Large horizontal style',
+          },
+          {
+            id: 'list',
+            label: 'Small horizontal style',
+          },
+          {
+            id: 'vertical',
+            label: 'Large vertical style',
+          },
+          {
+            id: 'cube',
+            label: 'Small vertical style',
+          },
+        ] as const
+      ).filter(action => EmbedLinkedDocStyles.includes(action.id)),
       content(ctx) {
         const model = ctx.getCurrentModelByType(EmbedLinkedDocModel);
         if (!model) return null;
@@ -429,7 +423,7 @@ const builtinSurfaceToolbarConfig = {
             @toggle=${onToggle}
             .actions=${actions}
             .context=${ctx}
-            .style$=${style$}
+            .styleSignal=${style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },
@@ -485,7 +479,7 @@ const builtinSurfaceToolbarConfig = {
             @select=${onSelect}
             @toggle=${onToggle}
             .format=${format}
-            .size$=${scale$}
+            .sizeSignal=${scale$}
           ></affine-size-dropdown-menu>`
         )}`;
       },

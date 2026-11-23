@@ -11,14 +11,12 @@ export function getSelectedRect(selected: GfxModel[]): DOMRect {
     return new DOMRect();
   }
 
-  const lockedElementsByFrame = selected
-    .map(selectable => {
-      if (selectable instanceof FrameBlockModel && selectable.isLocked()) {
-        return selectable.descendantElements;
-      }
-      return [];
-    })
-    .flat();
+  const lockedElementsByFrame = selected.flatMap(selectable => {
+    if (selectable instanceof FrameBlockModel && selectable.isLocked()) {
+      return selectable.descendantElements;
+    }
+    return [];
+  });
 
   selected = [...new Set([...selected, ...lockedElementsByFrame])];
 

@@ -2,6 +2,7 @@ import {
   defaultImageProxyMiddleware,
   docLinkBaseURLMiddleware,
   fileNameMiddleware,
+  filePathMiddleware,
   HtmlAdapter,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
@@ -15,6 +16,7 @@ import type {
 } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
+import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 import { createAssetsArchive, download, Unzip } from './utils.js';
 
 type ImportHTMLToDocOptions = {
@@ -143,9 +145,9 @@ async function importHTMLZip({
   await unzip.load(imported);
 
   const docIds: string[] = [];
-  const pendingAssets = new Map<string, File>();
-  const pendingPathBlobIdMap = new Map<string, string>();
-  const htmlBlobs: [string, Blob][] = [];
+  const pendingAssets: AssetMap = new Map();
+  const pendingPathBlobIdMap: PathBlobIdMap = new Map();
+  const htmlBlobs: ImportedFileEntry[] = [];
 
   for (const { path, content: blob } of unzip) {
     if (path.includes('__MACOSX') || path.includes('.DS_Store')) {
@@ -154,7 +156,11 @@ async function importHTMLZip({
 
     const fileName = path.split('/').pop() ?? '';
     if (fileName.endsWith('.html')) {
-      htmlBlobs.push([fileName, blob]);
+      htmlBlobs.push({
+        filename: fileName,
+        contentBlob: blob,
+        fullPath: path,
+      });
     } else {
       const ext = path.split('.').at(-1) ?? '';
       const mime = extMimeMap.get(ext) ?? '';
@@ -165,8 +171,9 @@ async function importHTMLZip({
   }
 
   await Promise.all(
-    htmlBlobs.map(async ([fileName, blob]) => {
-      const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+    htmlBlobs.map(async htmlFile => {
+      const { filename, contentBlob, fullPath } = htmlFile;
+      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
       const job = new Transformer({
         schema,
         blobCRUD: collection.blobSync,
@@ -179,18 +186,19 @@ async function importHTMLZip({
           defaultImageProxyMiddleware,
           fileNameMiddleware(fileNameWithoutExt),
           docLinkBaseURLMiddleware(collection.id),
+          filePathMiddleware(fullPath),
         ],
       });
       const assets = job.assets;
       const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-      for (const [key, value] of pendingAssets.entries()) {
-        assets.set(key, value);
-      }
-      for (const [key, value] of pendingPathBlobIdMap.entries()) {
-        pathBlobIdMap.set(key, value);
+      for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
+        pathBlobIdMap.set(assetPath, key);
+        if (pendingAssets.get(key)) {
+          assets.set(key, pendingAssets.get(key)!);
+        }
       }
       const htmlAdapter = new HtmlAdapter(job, provider);
-      const html = await blob.text();
+      const html = await contentBlob.text();
       const doc = await htmlAdapter.toDoc({
         file: html,
         assets: job.assetsManager,

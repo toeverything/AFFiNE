@@ -60,14 +60,7 @@ impl ToCoreFoundation for CFDictionary<CFType, CFType> {
 
 impl<T: ToCoreFoundation> ToCoreFoundation for Vec<T> {
   fn to_cf(&self) -> CFType {
-    CFArray::from_CFTypes(
-      self
-        .iter()
-        .map(|t| t.to_cf())
-        .collect::<Vec<_>>()
-        .as_slice(),
-    )
-    .as_CFType()
+    CFArray::from_CFTypes(self.iter().map(|t| t.to_cf()).collect::<Vec<_>>().as_slice()).as_CFType()
   }
 }
 

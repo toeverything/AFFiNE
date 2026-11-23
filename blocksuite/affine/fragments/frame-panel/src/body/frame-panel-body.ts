@@ -268,11 +268,13 @@ export class FramePanelBody extends SignalWatcher(
           .std=${this.editorHost.std}
           .cardIndex=${cardIndex}
           .frameIndex=${frameIndex}
-          .status=${selectedFrames.has(frame.id)
-            ? this._dragging
-              ? 'placeholder'
-              : 'selected'
-            : 'none'}
+          .status=${
+            selectedFrames.has(frame.id)
+              ? this._dragging
+                ? 'placeholder'
+                : 'selected'
+              : 'none'
+          }
           @select=${this._selectFrame}
           @fitview=${this._fitToElement}
           @drag=${this._drag}
@@ -281,12 +283,14 @@ export class FramePanelBody extends SignalWatcher(
     })}`;
 
     const frameList = html` <div class="frame-list-container">
-      ${this.insertIndex !== undefined
-        ? html`<div
-            class="insert-indicator"
-            style=${`transform: translateY(${this._indicatorTranslateY}px)`}
-          ></div>`
-        : nothing}
+      ${
+        this.insertIndex !== undefined
+          ? html`<div
+              class="insert-indicator"
+              style=${`transform: translateY(${this._indicatorTranslateY}px)`}
+            ></div>`
+          : nothing
+      }
       ${frameCards}
     </div>`;
     return frameList;
@@ -385,9 +389,11 @@ export class FramePanelBody extends SignalWatcher(
 
   override render() {
     this._updateFrameItems();
-    return html` ${this._frameItems.length
-      ? this._renderFrameList()
-      : this._renderEmptyContent()}`;
+    return html` ${
+      this._frameItems.length
+        ? this._renderFrameList()
+        : this._renderEmptyContent()
+    }`;
   }
 
   override updated(_changedProperties: PropertyValues) {

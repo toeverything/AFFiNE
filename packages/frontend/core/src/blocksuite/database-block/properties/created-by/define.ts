@@ -1,17 +1,24 @@
-import { propertyType, t } from '@blocksuite/affine/blocks/database';
+import {
+  EditorHostKey,
+  propertyType,
+  t,
+} from '@blocksuite/affine/blocks/database';
+import {
+  UserListProvider,
+  UserProvider,
+} from '@blocksuite/affine/shared/services';
 import zod from 'zod';
 
 export const createdByColumnType = propertyType('created-by');
 export const createdByPropertyModelConfig = createdByColumnType.modelConfig({
   name: 'Created By',
+  kanbanGroup: {
+    enabled: true,
+    mutable: false,
+  },
   propertyData: {
     schema: zod.object({}),
     default: () => ({}),
-  },
-  fixed: {
-    defaultData: {},
-    defaultOrder: 'end',
-    defaultShow: false,
   },
   rawValue: {
     schema: zod.string().nullable(),
@@ -21,11 +28,24 @@ export const createdByPropertyModelConfig = createdByColumnType.modelConfig({
       return { value: null };
     },
     toJson: ({ value }) => value,
-    fromJson: ({ value }) => value,
+    setValue: () => {},
   },
   jsonValue: {
     schema: zod.string().nullable(),
     isEmpty: () => false,
-    type: () => t.string.instance(),
+    type: ({ dataSource }) => {
+      const host = dataSource.serviceGet(EditorHostKey);
+      const userService = host?.std.getOptional(UserProvider);
+      const userListService = host?.std.getOptional(UserListProvider);
+
+      return t.user.instance(
+        userListService && userService
+          ? {
+              userService,
+              userListService,
+            }
+          : undefined
+      );
+    },
   },
 });

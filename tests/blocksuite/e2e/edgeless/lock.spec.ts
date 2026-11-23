@@ -194,7 +194,7 @@ test.describe('lock', () => {
     await lock.click();
     await assertEdgelessSelectedModelRect(page, [0, 0, 125, 125]); // frame outline and shape
     await pressEscape(page);
-    await clickView(page, [100, 100]);
+    await clickView(page, [90, 90]);
     await assertEdgelessSelectedModelRect(page, [0, 0, 125, 125]);
 
     await unlock.click();

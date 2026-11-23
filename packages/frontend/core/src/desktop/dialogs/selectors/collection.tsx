@@ -2,14 +2,16 @@ import { Modal, toast } from '@affine/component';
 import {
   collectionHeaderColsDef,
   CollectionListItemRenderer,
-  type CollectionMeta,
   FavoriteTag,
   type ListItem,
   ListTableHeader,
   VirtualizedList,
 } from '@affine/core/components/page-list';
 import { SelectorLayout } from '@affine/core/components/page-list/selector/selector-layout';
-import { CollectionService } from '@affine/core/modules/collection';
+import {
+  type CollectionMeta,
+  CollectionService,
+} from '@affine/core/modules/collection';
 import type { DialogComponentProps } from '@affine/core/modules/dialogs';
 import type { WORKSPACE_DIALOG_SCHEMA } from '@affine/core/modules/dialogs/constant';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
@@ -52,22 +54,15 @@ export const CollectionSelectorDialog = ({
   const collectionService = useService(CollectionService);
   const workspace = useService(WorkspaceService).workspace;
 
-  const collections = useLiveData(collectionService.collections$);
+  const collections = useLiveData(collectionService.collectionMetas$);
   const [selection, setSelection] = useState(selectedCollectionIds);
   const [keyword, setKeyword] = useState('');
 
   const collectionMetas = useMemo(() => {
-    const collectionsList: CollectionMeta[] = collections
-      .map(collection => {
-        return {
-          ...collection,
-          title: collection.name,
-        };
-      })
-      .filter(meta => {
-        const reg = new RegExp(keyword, 'i');
-        return reg.test(meta.title);
-      });
+    const collectionsList: CollectionMeta[] = collections.filter(meta => {
+      const reg = new RegExp(keyword, 'i');
+      return reg.test(meta.title);
+    });
     return collectionsList;
   }, [collections, keyword]);
 

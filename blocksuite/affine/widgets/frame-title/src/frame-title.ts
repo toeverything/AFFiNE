@@ -142,12 +142,10 @@ export class AffineFrameTitle extends SignalWatcher(
       }px)`,
     ];
 
-    const anchor = this.gfx.viewport.toViewCoord(bound.x, bound.y);
-
     this.style.display = '';
     this.style.setProperty('--bg-color', this.colors.background);
-    this.style.left = `${anchor[0]}px`;
-    this.style.top = `${anchor[1]}px`;
+    this.style.left = '0px';
+    this.style.top = '0px';
     this.style.display = hidden ? 'none' : 'flex';
     this.style.transform = transformOperation.join(' ');
     this.style.maxWidth = `${maxWidth}px`;
@@ -202,18 +200,6 @@ export class AffineFrameTitle extends SignalWatcher(
       gfx.viewport.viewportUpdated.subscribe(({ zoom }) => {
         this._zoom = zoom;
         this.requestUpdate();
-      })
-    );
-
-    _disposables.add(
-      on(this, 'click', evt => {
-        if (evt.shiftKey) {
-          this.gfx.selection.toggle(this.model);
-        } else {
-          this.gfx.selection.set({
-            elements: [this.model.id],
-          });
-        }
       })
     );
 

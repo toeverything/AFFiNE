@@ -4,7 +4,6 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -13,6 +12,7 @@ import {
   DeleteIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -99,6 +99,11 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
       return;
     }
     const handler = popMenu(target, {
+      middleware: [
+        autoPlacement({ allowedPlacements: ['bottom-start'] }),
+        offset({ mainAxis: 4, crossAxis: 0 }),
+        shift({ crossAxis: true }),
+      ],
       options: {
         items: [
           menu.group({
@@ -107,7 +112,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                 name: fn.label,
                 postfix: ArrowRightSmallIcon(),
                 select: ele => {
-                  popMenu(popupTargetFromElement(ele), {
+                  const subHandler = popMenu(popupTargetFromElement(ele), {
                     options: {
                       items: [
                         menu.group({
@@ -117,8 +122,18 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                         }),
                       ],
                     },
-                    middleware: subMenuMiddleware,
+                    middleware: [
+                      autoPlacement({
+                        allowedPlacements: ['bottom-start'],
+                      }),
+                      offset({ mainAxis: 4, crossAxis: 0 }),
+                      shift({ crossAxis: true }),
+                    ],
                   });
+                  // allow submenu height and width to adjust to content
+                  subHandler.menu.menuElement.style.minHeight = 'fit-content';
+                  subHandler.menu.menuElement.style.maxHeight = 'fit-content';
+                  subHandler.menu.menuElement.style.minWidth = '200px';
                   return false;
                 },
               }),
@@ -142,6 +157,10 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         ],
       },
     });
+    // allow main menu height and width to adjust to calendar size
+    handler.menu.menuElement.style.minHeight = 'fit-content';
+    handler.menu.menuElement.style.maxHeight = 'fit-content';
+    handler.menu.menuElement.style.minWidth = '200px';
   };
 
   @property({ attribute: false })

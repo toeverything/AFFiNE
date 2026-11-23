@@ -23,7 +23,7 @@ export class AffineMention extends SignalWatcher(
         'clig' off;
       /* Client/baseMedium */
       font-family: Inter;
-      font-size: 15px;
+      font-size: var(--affine-font-size-base);
       font-style: normal;
       font-weight: 500;
       line-height: 24px; /* 160% */

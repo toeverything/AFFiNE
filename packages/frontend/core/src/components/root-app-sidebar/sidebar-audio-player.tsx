@@ -130,7 +130,6 @@ export const SidebarAudioPlayer = () => {
       <MiniAudioPlayer
         playbackState={playbackState.state}
         name={playbackStats.name}
-        size={playbackStats.size}
         duration={playbackStats.duration}
         seekTime={seekTime}
         onPlay={handlePlay}

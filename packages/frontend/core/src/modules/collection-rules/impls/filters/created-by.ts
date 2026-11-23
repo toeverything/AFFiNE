@@ -14,7 +14,7 @@ export class CreatedByFilterProvider extends Service implements FilterProvider {
   filter$(params: FilterParams): Observable<Set<string>> {
     const method = params.method as WorkspacePropertyFilter<'createdBy'>;
     if (method === 'include') {
-      const userIds = params.value?.split(',') ?? [];
+      const userIds = params.value?.split(',').filter(Boolean) ?? [];
 
       return this.docsService.propertyValues$('createdBy').pipe(
         map(o => {

@@ -240,7 +240,7 @@ export async function enterPlaygroundWithList(
         title: new window.$blocksuite.store.Text(),
       });
       const noteId = doc.addBlock('affine:note', {}, rootId);
-      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line typescript/prefer-for-of
       for (let i = 0; i < contents.length; i++) {
         doc.addBlock(
           'affine:list',
@@ -392,7 +392,9 @@ export async function initKanbanViewState(
         return rowId;
       });
       config.columns.forEach(column => {
-        const columnId = datasource.propertyAdd('end', column.type);
+        const columnId = datasource.propertyAdd('end', {
+          type: column.type,
+        });
         if (!columnId) {
           return;
         }
@@ -547,8 +549,30 @@ export async function focusRichText(
   await page.mouse.move(0, 0);
   const editor = getEditorHostLocator(page);
   const locator = editor.locator(RICH_TEXT_SELECTOR).nth(i);
+  await expect(locator).toBeVisible();
   // need to set `force` to true when clicking on `affine-selected-blocks`
   await locator.click({ force: true, position: options?.clickPosition });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        ([i, currentEditorIndex]) => {
+          const editorHost =
+            document.querySelectorAll('editor-host')[currentEditorIndex];
+          const richText =
+            editorHost?.querySelectorAll<RichText>('rich-text')[i];
+          const inlineEditor = richText?.inlineEditor;
+          if (!inlineEditor) {
+            return false;
+          }
+          if (inlineEditor.getInlineRange() === null) {
+            inlineEditor.focusIndex(0);
+          }
+          return inlineEditor.getInlineRange() !== null;
+        },
+        [i, currentEditorIndex]
+      )
+    )
+    .toBe(true);
 }
 
 export async function focusRichTextEnd(page: Page, i = 0) {
@@ -643,7 +667,11 @@ export async function getInlineSelectionIndex(page: Page) {
     const selection = window.getSelection() as Selection;
 
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
     const index = component?.inlineEditor?.getInlineRange()?.index;
     return index !== undefined ? index : -1;
   });
@@ -653,7 +681,11 @@ export async function getInlineSelectionText(page: Page) {
   return page.evaluate(() => {
     const selection = window.getSelection() as Selection;
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
     return component?.inlineEditor?.yText.toString() ?? '';
   });
 }
@@ -662,7 +694,11 @@ export async function getSelectedTextByInlineEditor(page: Page) {
   return page.evaluate(() => {
     const selection = window.getSelection() as Selection;
     const range = selection.getRangeAt(0);
-    const component = range.startContainer.parentElement?.closest('rich-text');
+    const startElement =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const component = startElement?.closest('rich-text');
 
     const inlineRange = component?.inlineEditor?.getInlineRange();
     if (!inlineRange) return '';
@@ -712,12 +748,27 @@ export async function setInlineRangeInSelectedRichText(
       const selection = window.getSelection() as Selection;
 
       const range = selection.getRangeAt(0);
-      const component =
-        range.startContainer.parentElement?.closest('rich-text');
-      component?.inlineEditor?.setInlineRange({
+      const startElement =
+        range.startContainer instanceof Element
+          ? range.startContainer
+          : range.startContainer.parentElement;
+      const component = startElement?.closest('rich-text');
+      const inlineEditor = component?.inlineEditor;
+      if (!inlineEditor) {
+        throw new Error('Cannot find inline editor from current selection');
+      }
+      component.focus();
+      inlineEditor.setInlineRange({
         index,
         length,
       });
+      const domRange = inlineEditor.toDomRange({ index, length });
+      if (!domRange) {
+        throw new Error('Cannot remap inline range to DOM range');
+      }
+      selection.removeAllRanges();
+      selection.addRange(domRange);
+      document.dispatchEvent(new Event('selectionchange'));
     },
     { index, length }
   );
@@ -769,14 +820,11 @@ export async function pasteContent(
 
 export async function pasteTestImage(page: Page) {
   await page.evaluate(async () => {
-    const imageBlob = await fetch(`${location.origin}/test-card-1.png`).then(
-      response => response.blob()
-    );
-
-    const imageFile = new File([imageBlob], 'test-card-1.png', {
+    const resp = await fetch(`${location.origin}/test-card-1.png`);
+    const blob = await resp.blob();
+    const file = new File([blob], 'test-card-1.png', {
       type: 'image/png',
     });
-
     const e = new ClipboardEvent('paste', {
       clipboardData: new DataTransfer(),
     });
@@ -786,7 +834,7 @@ export async function pasteTestImage(page: Page) {
       value: document,
     });
 
-    e.clipboardData?.items.add(imageFile);
+    e.clipboardData?.items.add(file);
     document.dispatchEvent(e);
   });
   await waitNextFrame(page);
@@ -799,7 +847,7 @@ export async function getClipboardHTML(page: Page) {
       const indentAfter = '  '.repeat(level >= 2 ? level - 2 : 0);
       let textNode;
 
-      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      // oxlint-disable-next-line typescript/prefer-for-of
       for (let i = 0; i < node.children.length; i++) {
         textNode = document.createTextNode('\n' + indentBefore);
         node.insertBefore(textNode, node.children[i]);
@@ -925,6 +973,7 @@ export async function setSelection(
         length: 0,
       })!;
 
+      anchorRichText.focus();
       const sl = getSelection();
       if (!sl) throw new Error('Cannot get selection');
       const range = document.createRange();
@@ -938,6 +987,7 @@ export async function setSelection(
       );
       sl.removeAllRanges();
       sl.addRange(range);
+      document.dispatchEvent(new Event('selectionchange'));
     },
     {
       anchorBlockId,
@@ -994,18 +1044,6 @@ export const getCenterPositionByLocator: (
   };
 };
 
-/**
- * @deprecated Use `page.locator(selector).boundingBox()` instead
- */
-export const getBoundingClientRect: (
-  page: Page,
-  selector: string
-) => Promise<DOMRect> = async (page: Page, selector: string) => {
-  return page.evaluate((selector: string) => {
-    return document.querySelector(selector)?.getBoundingClientRect() as DOMRect;
-  }, selector);
-};
-
 export async function getBoundingBox(locator: Locator) {
   const box = await locator.boundingBox();
   if (!box) throw new Error('Missing column box');
@@ -1028,31 +1066,63 @@ export async function getIndexCoordinate(
   [richTextIndex, vIndex]: [number, number],
   coordOffSet: { x: number; y: number } = { x: 0, y: 0 }
 ) {
-  const coord = await page.evaluate(
-    ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
-      const editorHost =
-        document.querySelectorAll('editor-host')[currentEditorIndex];
-      const richText = editorHost.querySelectorAll('rich-text')[
-        richTextIndex
-      ] as any;
-      const domRange = richText.inlineEditor.toDomRange({
-        index: vIndex,
-        length: 0,
-      });
-      const pointBound = domRange.getBoundingClientRect();
-      return {
-        x: pointBound.left + coordOffSet.x,
-        y: pointBound.top + pointBound.height / 2 + coordOffSet.y,
-      };
-    },
-    {
-      richTextIndex,
-      vIndex,
-      coordOffSet,
-      currentEditorIndex,
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const coord = await page.evaluate(
+      ({ richTextIndex, vIndex, coordOffSet, currentEditorIndex }) => {
+        const editorHost =
+          document.querySelectorAll('editor-host')[currentEditorIndex];
+        const richTexts = Array.from(
+          editorHost?.querySelectorAll('rich-text') ?? []
+        );
+        if (!richTexts.length) {
+          return null;
+        }
+        const richText = richTexts[
+          Math.min(richTextIndex, richTexts.length - 1)
+        ] as any;
+        const inlineEditor = richText?.inlineEditor;
+        if (!inlineEditor) {
+          return null;
+        }
+        const clampedIndex = Math.max(
+          0,
+          Math.min(vIndex, inlineEditor.yTextLength ?? vIndex)
+        );
+        const domRange = inlineEditor.toDomRange({
+          index: clampedIndex,
+          length: 0,
+        });
+        if (!domRange) {
+          return null;
+        }
+        const pointBound = domRange.getBoundingClientRect();
+        if (
+          !Number.isFinite(pointBound.left) ||
+          !Number.isFinite(pointBound.top)
+        ) {
+          return null;
+        }
+        return {
+          x: pointBound.left + coordOffSet.x,
+          y: pointBound.top + pointBound.height / 2 + coordOffSet.y,
+        };
+      },
+      {
+        richTextIndex,
+        vIndex,
+        coordOffSet,
+        currentEditorIndex,
+      }
+    );
+    if (coord) {
+      return coord;
     }
+    await page.waitForTimeout(50);
+  }
+
+  throw new Error(
+    `Failed to get index coordinate: richTextIndex=${richTextIndex}, vIndex=${vIndex}`
   );
-  return coord;
 }
 
 export function inlineEditorInnerTextToString(innerText: string): string {
@@ -1210,43 +1280,37 @@ export async function getCurrentThemeCSSPropertyValue(
 }
 
 export async function scrollToTop(page: Page) {
-  await page.mouse.wheel(0, -1000);
-
-  await page.waitForFunction(() => {
-    const scrollContainer = document.querySelector('.affine-page-viewport');
-    if (!scrollContainer) {
-      throw new Error("Can't find scroll container");
-    }
-    return scrollContainer.scrollTop < 10;
+  const scrollContainer = page.locator('.affine-page-viewport');
+  await expect(scrollContainer).toBeVisible();
+  await scrollContainer.evaluate(node => {
+    (node as HTMLElement).scrollTop = 0;
   });
+  await expect
+    .poll(async () => {
+      return await scrollContainer.evaluate(node => {
+        return (node as HTMLElement).scrollTop;
+      });
+    })
+    .toBeLessThan(10);
 }
 
 export async function scrollToBottom(page: Page) {
-  // await page.mouse.wheel(0, 1000);
-
-  await page
-    .locator('.affine-page-viewport')
-    .evaluate(node =>
-      node.scrollTo({ left: 0, top: 1000, behavior: 'smooth' })
-    );
-  // TODO switch to `scrollend`
-  // See https://developer.chrome.com/en/blog/scrollend-a-new-javascript-event/
-  await page.waitForFunction(() => {
-    const scrollContainer = document.querySelector('.affine-page-viewport');
-    if (!scrollContainer) {
-      throw new Error("Can't find scroll container");
-    }
-
-    return (
-      // Wait for scrolled to the bottom
-      // Refer to https://stackoverflow.com/questions/3898130/check-if-a-user-has-scrolled-to-the-bottom-not-just-the-window-but-any-element
-      Math.abs(
-        scrollContainer.scrollHeight -
-          scrollContainer.scrollTop -
-          scrollContainer.clientHeight
-      ) < 10
-    );
+  const scrollContainer = page.locator('.affine-page-viewport');
+  await expect(scrollContainer).toBeVisible();
+  await scrollContainer.evaluate(node => {
+    const viewport = node as HTMLElement;
+    viewport.scrollTop = viewport.scrollHeight;
   });
+  await expect
+    .poll(async () => {
+      return await scrollContainer.evaluate(node => {
+        const viewport = node as HTMLElement;
+        return Math.abs(
+          viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
+        );
+      });
+    })
+    .toBeLessThan(10);
 }
 
 export async function mockParseDocUrlService(

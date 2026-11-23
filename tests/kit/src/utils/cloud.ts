@@ -88,13 +88,14 @@ export async function addUserToWorkspace(
     if (workspace == null) {
       throw new Error(`workspace ${workspaceId} not found`);
     }
-    await client.workspaceUserRole.create({
+    await client.workspaceMember.create({
       data: {
         workspaceId: workspace.id,
         userId,
-        accepted: true,
-        status: 'Accepted',
-        type: permission,
+        role:
+          permission === 99 ? 'owner' : permission === 10 ? 'admin' : 'member',
+        state: 'active',
+        source: 'legacy',
       },
     });
   });
@@ -113,23 +114,16 @@ export async function createRandomUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
-    const featureId = await client.feature
-      .findFirst({
-        where: { name: 'free_plan_v1' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-
     await client.user.create({
       data: {
         ...user,
         emailVerifiedAt: new Date(),
+        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
         password: await hash(user.password),
         features: {
           create: {
             reason: 'created by test case',
             activated: true,
-            featureId,
             name: 'free_plan_v1',
             type: 1,
           },
@@ -152,6 +146,15 @@ export async function createRandomUser(): Promise<{
   } as any;
 }
 
+export async function cleanupWorkspace(workspaceId: string): Promise<void> {
+  await runPrisma(async client => {
+    const ret = await client.snapshot.deleteMany({
+      where: { workspaceId, id: { not: workspaceId } },
+    });
+    console.error(ret);
+  });
+}
+
 export async function createRandomAIUser(): Promise<{
   name: string;
   email: string;
@@ -164,20 +167,7 @@ export async function createRandomAIUser(): Promise<{
     password: '123456',
   };
   const result = await runPrisma(async client => {
-    const freeFeatureId = await client.feature
-      .findFirst({
-        where: { name: 'free_plan_v1' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-    const aiFeatureId = await client.feature
-      .findFirst({
-        where: { name: 'unlimited_copilot' },
-        select: { id: true },
-      })
-      .then(f => f!.id);
-
-    await client.user.create({
+    const created = await client.user.create({
       data: {
         ...user,
         emailVerifiedAt: new Date(),
@@ -187,14 +177,12 @@ export async function createRandomAIUser(): Promise<{
             {
               reason: 'created by test case',
               activated: true,
-              featureId: freeFeatureId,
               name: 'free_plan_v1',
               type: 1,
             },
             {
               reason: 'created by test case',
               activated: true,
-              featureId: aiFeatureId,
               name: 'unlimited_copilot',
               type: 0,
             },
@@ -203,11 +191,22 @@ export async function createRandomAIUser(): Promise<{
       },
     });
 
-    return await client.user.findUnique({
-      where: {
-        email: user.email,
+    await client.entitlement.create({
+      data: {
+        targetType: 'user',
+        targetId: created.id,
+        source: 'cloud_subscription',
+        plan: 'ai',
+        status: 'active',
+        subjectId: `test-ai:${created.id}`,
+        metadata: {
+          legacySync: false,
+          paidFrom: new Date().toISOString(),
+        },
       },
     });
+
+    return created;
   });
   cloudUserSchema.parse(result);
   return {
@@ -279,6 +278,27 @@ export async function loginUserDirectly(
   }
 }
 
+async function dismissBlockingModal(page: Page) {
+  const modal = page.locator('modal-transition-container [data-modal="true"]');
+  if (
+    !(await modal
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    return;
+  }
+
+  const closeButton = page.getByTestId('modal-close-button').last();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click({ timeout: 5000 });
+  } else {
+    await page.keyboard.press('Escape');
+  }
+
+  await expect(modal.first()).toBeHidden({ timeout: 10000 });
+}
+
 export async function enableCloudWorkspace(page: Page) {
   await clickSideBarSettingButton(page);
   await page.getByTestId('workspace-setting:preference').click();
@@ -287,7 +307,9 @@ export async function enableCloudWorkspace(page: Page) {
   // wait for upload and delete local workspace
   await page.waitForTimeout(2000);
   await waitForAllPagesLoad(page);
+  await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
 }
 
 export async function enableCloudWorkspaceFromShareButton(page: Page) {
@@ -302,11 +324,44 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
   // wait for upload and delete local workspace
   await page.waitForTimeout(2000);
   await waitForEditorLoad(page);
+  await dismissBlockingModal(page);
   await clickNewPageButton(page);
+  await waitForWorkspaceSynced(page);
+}
+
+async function waitForWorkspaceSynced(page: Page) {
+  await page.evaluate(async () => {
+    const workspaceId = location.pathname.split('/')[2];
+    const workspace = (
+      window as typeof window & {
+        currentWorkspace?: {
+          engine: {
+            doc: {
+              waitForSynced(docId: string, abort: AbortSignal): Promise<void>;
+            };
+          };
+        };
+      }
+    ).currentWorkspace;
+    if (!workspaceId || !workspace) {
+      throw new Error('Cloud workspace is unavailable');
+    }
+    const abort = AbortSignal.timeout(60_000);
+    await Promise.all([
+      workspace.engine.doc.waitForSynced(workspaceId, abort),
+      workspace.engine.doc.waitForSynced('db$docProperties', abort),
+    ]);
+  });
 }
 
 export async function enableShare(page: Page) {
   await page.getByTestId('cloud-share-menu-button').click();
   await page.getByTestId('share-link-menu-trigger').click();
+  // wait for the menu to be visible
+  await page.waitForTimeout(500);
   await page.getByTestId('share-link-menu-enable-share').click();
+  await expect(page.getByTestId('share-link-menu-trigger')).toHaveText(
+    'Read only',
+    { timeout: 30_000 }
+  );
 }

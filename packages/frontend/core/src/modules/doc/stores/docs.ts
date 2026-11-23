@@ -8,8 +8,8 @@ import {
   yjsObservePath,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { distinctUntilChanged, map, switchMap } from 'rxjs';
-import { Array as YArray, Map as YMap, transact } from 'yjs';
+import { distinctUntilChanged, map, Observable, switchMap } from 'rxjs';
+import { Array as YArray, Doc as YDoc, Map as YMap, transact } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { DocPropertiesStore } from './doc-properties';
@@ -36,6 +36,15 @@ export class DocsStore extends Store {
 
   createDoc(docId?: string) {
     const id = docId ?? nanoid();
+    const workspace = this.workspaceService.workspace;
+    if (workspace.engine.usesWorkspaceState) {
+      workspace.engine.doc
+        .createDoc(id)
+        .catch(error =>
+          console.error('Failed to save document creation', error)
+        );
+      return id;
+    }
 
     transact(
       this.workspaceService.workspace.rootYDoc,
@@ -63,7 +72,23 @@ export class DocsStore extends Store {
     return id;
   }
 
+  private watchEffectiveDocMetas() {
+    const meta = this.workspaceService.workspace.docCollection.meta;
+    return new Observable<DocMeta[]>(subscriber => {
+      subscriber.next(meta.docMetas);
+      const subscription = meta.docMetaUpdated.subscribe(() =>
+        subscriber.next(meta.docMetas)
+      );
+      return () => subscription.unsubscribe();
+    });
+  }
+
   watchDocIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => doc.id))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -80,6 +105,13 @@ export class DocsStore extends Store {
   }
 
   watchAllDocUpdatedDate() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, updatedDate: doc.updatedDate }))
+        )
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -99,6 +131,11 @@ export class DocsStore extends Store {
   }
 
   watchAllDocTagIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, tags: doc.tags ?? [] })))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -108,7 +145,13 @@ export class DocsStore extends Store {
         if (pages instanceof YArray) {
           return pages.map(v => ({
             id: v.get('id') as string,
-            tags: (v.get('tags')?.toJSON() ?? []) as string[],
+            tags: (() => {
+              const tags = v.get('tags');
+              if (tags instanceof YArray) {
+                return tags.toJSON() as string[];
+              }
+              return (tags ?? []) as string[];
+            })(),
           }));
         } else {
           return [];
@@ -118,6 +161,13 @@ export class DocsStore extends Store {
   }
 
   watchAllDocCreateDate() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs =>
+          docs.map(doc => ({ id: doc.id, createDate: doc.createDate ?? 0 }))
+        )
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
@@ -136,12 +186,41 @@ export class DocsStore extends Store {
     );
   }
 
-  watchNonTrashDocIds() {
+  watchAllDocTitle() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.map(doc => ({ id: doc.id, title: doc.title ?? '' })))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.title')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            title: (v.get('title') ?? '') as string,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchNonTrashDocIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => !doc.trash).map(doc => doc.id))
+      );
+    }
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -155,11 +234,16 @@ export class DocsStore extends Store {
   }
 
   watchTrashDocIds() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.filter(doc => doc.trash).map(doc => doc.id))
+      );
+    }
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -173,6 +257,11 @@ export class DocsStore extends Store {
   }
 
   watchDocMeta(id: string) {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.watchEffectiveDocMetas().pipe(
+        map(docs => docs.find(doc => doc.id === id) ?? {})
+      );
+    }
     let docMetaIndexCache = -1;
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
@@ -214,6 +303,11 @@ export class DocsStore extends Store {
   }
 
   watchDocListReady() {
+    if (this.workspaceService.workspace.engine.usesWorkspaceState) {
+      return this.workspaceService.workspace.engine.doc.workspaceState$.pipe(
+        map(state => state?.ready ?? false)
+      );
+    }
     return this.workspaceService.workspace.engine.doc
       .docState$(this.workspaceService.workspace.id)
       .pipe(map(state => state.synced));
@@ -221,6 +315,41 @@ export class DocsStore extends Store {
 
   setDocMeta(id: string, meta: Partial<DocMeta>) {
     this.workspaceService.workspace.docCollection.meta.setDocMeta(id, meta);
+  }
+
+  async applyDocLifecycle(
+    id: string,
+    lifecycle: 'trash' | 'restore' | 'delete'
+  ) {
+    const workspace = this.workspaceService.workspace;
+    if (!workspace.engine.usesWorkspaceState) {
+      if (lifecycle === 'delete') {
+        const previous = workspace.docCollection.doc.getMap('spaces').get(id);
+        const result = await workspace.engine.doc.applyDocLifecycle(
+          id,
+          lifecycle
+        );
+        const current = workspace.docCollection.doc.getMap('spaces').get(id);
+        const physicalId = current instanceof YDoc ? current.guid : id;
+        if (
+          (workspace.flavour === 'local'
+            ? current === previous
+            : result.deletedDocIds?.includes(physicalId)) &&
+          workspace.docCollection.meta.getDocMeta(id)
+        ) {
+          workspace.docCollection.removeDoc(id);
+        }
+      } else {
+        this.setDocMeta(
+          id,
+          lifecycle === 'trash'
+            ? { trash: true, trashDate: Date.now() }
+            : { trash: false, trashDate: undefined }
+        );
+      }
+      return;
+    }
+    await workspace.engine.doc.applyDocLifecycle(id, lifecycle);
   }
 
   setDocPrimaryModeSetting(id: string, mode: DocMode) {

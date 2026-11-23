@@ -7,10 +7,14 @@ import { autoScrollOnBoundary } from '../../../../core/utils/auto-scroll.js';
 import { startDrag } from '../../../../core/utils/drag.js';
 import { KanbanCard } from '../card.js';
 import { KanbanGroup } from '../group.js';
-import type { DataViewKanban } from '../kanban-view.js';
+import type { KanbanViewUILogic } from '../kanban-view-ui-logic.js';
 
 export class KanbanDragController implements ReactiveController {
   dragStart = (ele: KanbanCard, evt: PointerEvent) => {
+    const host = this.host;
+    if (!host) {
+      return;
+    }
     const eleRect = ele.getBoundingClientRect();
     const offsetLeft = evt.x - eleRect.left;
     const offsetTop = evt.y - eleRect.top;
@@ -36,8 +40,8 @@ export class KanbanDragController implements ReactiveController {
           return;
         }
         preview.display(evt.x - offsetLeft, evt.y - offsetTop);
-        if (!Rect.fromDOM(this.host).isPointIn(Point.from(evt))) {
-          const callback = this.host.props.onDrag;
+        if (!Rect.fromDOM(host).isPointIn(Point.from(evt))) {
+          const callback = this.logic.root.config.onDrag;
           if (callback) {
             this.dropPreview.remove();
             return {
@@ -47,7 +51,7 @@ export class KanbanDragController implements ReactiveController {
           }
           return;
         }
-        const result = this.shooIndicator(evt, ele);
+        const result = this.showIndicator(evt, ele);
         if (result) {
           return {
             type: 'self',
@@ -80,18 +84,25 @@ export class KanbanDragController implements ReactiveController {
         }
       },
     });
-    const cancelScroll = autoScrollOnBoundary(
-      this.scrollContainer,
-      computed(() => {
-        return {
-          left: drag.mousePosition.value.x,
-          right: drag.mousePosition.value.x,
-          top: drag.mousePosition.value.y,
-          bottom: drag.mousePosition.value.y,
-        };
-      })
-    );
+    const cancelScroll =
+      this.scrollContainer != null
+        ? autoScrollOnBoundary(
+            this.scrollContainer,
+            computed(() => {
+              return {
+                left: drag.mousePosition.value.x,
+                right: drag.mousePosition.value.x,
+                top: drag.mousePosition.value.y,
+                bottom: drag.mousePosition.value.y,
+              };
+            })
+          )
+        : () => {};
   };
+
+  get host() {
+    return this.logic.ui$.value;
+  }
 
   dropPreview = createDropPreview();
 
@@ -119,7 +130,7 @@ export class KanbanDragController implements ReactiveController {
     }
   };
 
-  shooIndicator = (
+  showIndicator = (
     evt: MouseEvent,
     self: KanbanCard | undefined
   ): { group: KanbanGroup; position: InsertToPosition } | undefined => {
@@ -133,38 +144,36 @@ export class KanbanDragController implements ReactiveController {
   };
 
   get scrollContainer() {
-    const scrollContainer = this.host.querySelector(
-      '.affine-data-view-kanban-groups'
-    ) as HTMLElement;
+    const scrollContainer = this.logic.scrollContainer$.value;
     return scrollContainer;
   }
 
-  constructor(private readonly host: DataViewKanban) {
-    this.host.addController(this);
-  }
+  constructor(private readonly logic: KanbanViewUILogic) {}
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
+    if (this.logic.view.readonly$.value) {
       return;
     }
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
-        const event = context.get('pointerState').raw;
-        const target = event.target;
-        if (target instanceof Element) {
-          const cell = target.closest('affine-data-view-kanban-cell');
-          if (cell?.isEditing$.value) {
-            return;
+    if (this.host) {
+      this.host.disposables.add(
+        this.logic.handleEvent('dragStart', context => {
+          const event = context.get('pointerState').raw;
+          const target = event.target;
+          if (target instanceof Element) {
+            const cell = target.closest('affine-data-view-kanban-cell');
+            if (cell?.isEditing$.value) {
+              return;
+            }
+            cell?.selectCurrentCell(false);
+            const card = target.closest('affine-data-view-kanban-card');
+            if (card) {
+              this.dragStart(card, event);
+            }
           }
-          cell?.selectCurrentCell(false);
-          const card = target.closest('affine-data-view-kanban-card');
-          if (card) {
-            this.dragStart(card, event);
-          }
-        }
-        return true;
-      })
-    );
+          return true;
+        })
+      );
+    }
   }
 }
 
@@ -174,14 +183,14 @@ const createDragPreview = (card: KanbanCard, x: number, y: number) => {
   const div = document.createElement('div');
   const kanbanCard = new KanbanCard();
   kanbanCard.cardId = card.cardId;
-  kanbanCard.view = card.view;
-  kanbanCard.isFocus = true;
+  kanbanCard.kanbanViewLogic = card.kanbanViewLogic;
+  kanbanCard.isFocus$.value = true;
   kanbanCard.style.backgroundColor = 'var(--affine-background-primary-color)';
   div.append(kanbanCard);
   div.className = 'with-data-view-css-variable';
   div.style.width = `${card.getBoundingClientRect().width}px`;
   div.style.position = 'fixed';
-  // div.style.pointerEvents = 'none';
+  div.style.pointerEvents = 'none';
   div.style.transform = 'rotate(-3deg)';
   div.style.left = `${x}px`;
   div.style.top = `${y}px`;
@@ -200,8 +209,12 @@ const createDragPreview = (card: KanbanCard, x: number, y: number) => {
 };
 const createDropPreview = () => {
   const div = document.createElement('div');
-  div.style.height = '2px';
-  div.style.borderRadius = '1px';
+  div.dataset.isDropPreview = 'true';
+  div.style.pointerEvents = 'none';
+  div.style.position = 'fixed';
+  div.style.zIndex = '9999';
+  div.style.height = '3px';
+  div.style.borderRadius = '2px';
   div.style.backgroundColor = 'var(--affine-primary-color)';
   div.style.boxShadow = '0px 0px 8px 0px rgba(30, 150, 235, 0.35)';
   return {
@@ -210,19 +223,50 @@ const createDropPreview = () => {
       self: KanbanCard | undefined,
       card?: KanbanCard
     ) {
-      const target = card ?? group.querySelector('.add-card');
-      if (!target) {
-        console.error('`target` is not found');
-        return;
-      }
-      if (target.previousElementSibling === self || target === self) {
+      if (card === self) {
         div.remove();
         return;
       }
-      if (target.previousElementSibling === div) {
+
+      if (!card) {
+        const cards = Array.from(
+          group.querySelectorAll('affine-data-view-kanban-card')
+        );
+        const lastCard = cards[cards.length - 1];
+        if (lastCard === self) {
+          div.remove();
+          return;
+        }
+      }
+
+      let rect: DOMRect | undefined;
+      let y = 0;
+      if (card) {
+        rect = card.getBoundingClientRect();
+        y = rect.top;
+      } else {
+        const addCard = group.querySelector('.add-card');
+        if (addCard instanceof HTMLElement) {
+          rect = addCard.getBoundingClientRect();
+          y = rect.top;
+        }
+      }
+      if (!rect) {
+        const body = group.querySelector('.group-body');
+        if (body instanceof HTMLElement) {
+          rect = body.getBoundingClientRect();
+          y = rect.bottom;
+        }
+      }
+      if (!rect) {
+        div.remove();
         return;
       }
-      target.insertAdjacentElement('beforebegin', div);
+
+      document.body.append(div);
+      div.style.left = `${Math.round(rect.left)}px`;
+      div.style.top = `${Math.round(y - 2)}px`;
+      div.style.width = `${Math.round(rect.width)}px`;
     },
     remove() {
       div.remove();

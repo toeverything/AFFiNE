@@ -24,12 +24,7 @@ export const createdTimePropertyModelConfig = createdTimeColumnType.modelConfig(
         return { value: null };
       },
       toJson: ({ value }) => value,
-      fromJson: ({ value }) => value,
-    },
-    fixed: {
-      defaultData: {},
-      defaultShow: false,
-      defaultOrder: 'end',
+      setValue: () => {},
     },
   }
 );

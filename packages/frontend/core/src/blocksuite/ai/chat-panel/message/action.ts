@@ -1,5 +1,3 @@
-import '../content/assistant-avatar';
-
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -7,7 +5,7 @@ import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { type ChatAction } from '../../components/ai-chat-messages';
-import { HISTORY_IMAGE_ACTIONS } from '../const';
+import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 
 export class ChatMessageAction extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
@@ -63,8 +61,10 @@ export class ChatMessageAction extends WithDisposable(ShadowlessElement) {
         return html`<action-text
           .item=${item}
           .host=${host}
-          .isCode=${item.action === 'Explain this code' ||
-          item.action === 'Check code error'}
+          .isCode=${
+            item.action === 'Explain this code' ||
+            item.action === 'Check code error'
+          }
         ></action-text>`;
     }
   }

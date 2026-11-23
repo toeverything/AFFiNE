@@ -4,6 +4,7 @@ import {
   clickNewPageButton,
   clickPageMoreActions,
   getBlockSuiteEditorTitle,
+  getPageByTitle,
   getPageOperationButton,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
@@ -20,9 +21,7 @@ test('New a page ,then open it and show delete modal', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   await page.getByTestId('all-pages').click();
-  const cell = page
-    .getByTestId('page-list-item')
-    .getByText('this is a new page to delete');
+  const cell = await getPageByTitle(page, 'this is a new page to delete');
   await expect(cell).toBeVisible();
 
   await cell.click();
@@ -47,12 +46,11 @@ test('New a page ,then go to all pages and show delete modal', async ({
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   const newPageId = getCurrentDocIdFromUrl(page);
   await page.getByTestId('all-pages').click();
-  const allPages = page.getByTestId('virtualized-page-list');
-  const cell = allPages.getByText('this is a new page to delete');
+  const cell = await getPageByTitle(page, 'this is a new page to delete');
   await expect(cell).toBeVisible();
 
   await getPageOperationButton(page, newPageId).click();
-  const deleteBtn = page.getByTestId('move-to-trash');
+  const deleteBtn = page.getByTestId('doc-list-operation-trash');
   await deleteBtn.click();
   const confirmTip = page.getByRole('dialog', { name: 'Delete doc?' });
   await expect(confirmTip).toBeVisible();

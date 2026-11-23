@@ -13,6 +13,13 @@ import type {
   ExtensionDragMoveContext,
   ExtensionDragStartContext,
 } from '../types/drag.js';
+import type {
+  ExtensionElementResizeContext,
+  ExtensionElementResizeEndContext,
+  ExtensionElementResizeMoveContext,
+  ExtensionElementResizeStartContext,
+} from '../types/resize.js';
+import type { ExtensionElementSelectContext } from '../types/select.js';
 
 export const InteractivityExtensionIdentifier =
   createIdentifier<InteractivityExtension>('interactivity-extension');
@@ -99,7 +106,7 @@ export class InteractivityEventAPI {
   }
 }
 
-type ActionContextMap = {
+export type ActionContextMap = {
   dragInitialize: {
     context: DragExtensionInitializeContext;
     returnType: {
@@ -117,6 +124,18 @@ type ActionContextMap = {
         }
       | undefined
     >;
+  };
+  elementResize: {
+    context: ExtensionElementResizeContext;
+    returnType: {
+      onResizeStart?: (context: ExtensionElementResizeStartContext) => void;
+      onResizeMove?: (context: ExtensionElementResizeMoveContext) => void;
+      onResizeEnd?: (context: ExtensionElementResizeEndContext) => void;
+    };
+  };
+  elementSelect: {
+    context: ExtensionElementSelectContext;
+    returnType: void;
   };
 };
 
@@ -139,6 +158,18 @@ export class InteractivityActionAPI {
     };
   }
 
+  onElementResize(
+    handler: (
+      ctx: ActionContextMap['elementResize']['context']
+    ) => ActionContextMap['elementResize']['returnType']
+  ) {
+    this._handlers['elementResize'] = handler;
+
+    return () => {
+      return delete this._handlers['elementResize'];
+    };
+  }
+
   onRequestElementsClone(
     handler: (
       ctx: ActionContextMap['elementsClone']['context']
@@ -148,6 +179,18 @@ export class InteractivityActionAPI {
 
     return () => {
       return delete this._handlers['elementsClone'];
+    };
+  }
+
+  onElementSelect(
+    handler: (
+      ctx: ActionContextMap['elementSelect']['context']
+    ) => ActionContextMap['elementSelect']['returnType']
+  ) {
+    this._handlers['elementSelect'] = handler;
+
+    return () => {
+      return delete this._handlers['elementSelect'];
     };
   }
 

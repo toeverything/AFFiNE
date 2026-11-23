@@ -1,5 +1,4 @@
 import { IconButton, usePromptModal } from '@affine/component';
-import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
 import { CollectionService } from '@affine/core/modules/collection';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -7,8 +6,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddCollectionIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { NavigationPanelCollectionNode } from '../../nodes/collection';
@@ -24,10 +22,9 @@ export const NavigationPanelCollections = () => {
       WorkbenchService,
       NavigationPanelService,
     });
-  const navigationPanelSection = navigationPanelService.sections.collections;
   const collections = useLiveData(collectionService.collections$);
   const { openPromptModal } = usePromptModal();
-
+  const path = useMemo(() => ['collections'], []);
   const handleCreateCollection = useCallback(() => {
     openPromptModal({
       title: t['com.affine.editCollection.saveCollection'](),
@@ -46,26 +43,26 @@ export const NavigationPanelCollections = () => {
         variant: 'primary',
       },
       onConfirm(name) {
-        const id = nanoid();
-        collectionService.addCollection(createEmptyCollection(id, { name }));
+        const id = collectionService.createCollection({ name });
         track.$.navigationPanel.organize.createOrganizeItem({
           type: 'collection',
         });
         workbenchService.workbench.openCollection(id);
-        navigationPanelSection.setCollapsed(false);
+        navigationPanelService.setCollapsed(path, false);
       },
     });
   }, [
     collectionService,
-    navigationPanelSection,
+    navigationPanelService,
     openPromptModal,
+    path,
     t,
     workbenchService.workbench,
   ]);
 
   return (
     <CollapsibleSection
-      name="collections"
+      path={path}
       testId="navigation-panel-collections"
       title={t['com.affine.rootAppSidebar.collections']()}
       actions={
@@ -84,7 +81,7 @@ export const NavigationPanelCollections = () => {
       <NavigationPanelTreeRoot
         placeholder={<RootEmpty onClickCreate={handleCreateCollection} />}
       >
-        {collections.map(collection => (
+        {Array.from(collections.values()).map(collection => (
           <NavigationPanelCollectionNode
             key={collection.id}
             collectionId={collection.id}
@@ -92,6 +89,7 @@ export const NavigationPanelCollections = () => {
             location={{
               at: 'navigation-panel:collection:list',
             }}
+            parentPath={path}
           />
         ))}
       </NavigationPanelTreeRoot>

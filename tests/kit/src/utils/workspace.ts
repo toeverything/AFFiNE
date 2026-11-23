@@ -16,7 +16,8 @@ export async function openWorkspaceListModal(page: Page) {
 export async function createLocalWorkspace(
   params: CreateWorkspaceParams,
   page: Page,
-  skipOpenWorkspaceListModal = false
+  skipOpenWorkspaceListModal = false,
+  serverId?: string
 ) {
   if (!skipOpenWorkspaceListModal) {
     await openWorkspaceListModal(page);
@@ -30,13 +31,13 @@ export async function createLocalWorkspace(
   // }, []);
 
   // input workspace name
-  await page.getByPlaceholder('Set a Workspace name').click();
-  await page.getByPlaceholder('Set a Workspace name').fill(params.name);
+  const workspaceName = page.getByTestId('create-workspace-input');
+  await workspaceName.click();
+  await workspaceName.fill(params.name);
 
-  // select local server
   await page.getByTestId('server-selector-trigger').click();
   const serverSelectorList = page.getByTestId('server-selector-list');
-  await serverSelectorList.getByTestId('local').click();
+  await serverSelectorList.getByTestId(serverId ?? 'local').click();
 
   // click create button
   await page.getByTestId('create-workspace-create-button').click({
@@ -45,7 +46,7 @@ export async function createLocalWorkspace(
 
   await expect(
     page.getByTestId('create-workspace-create-button')
-  ).not.toBeAttached();
+  ).not.toBeAttached({ timeout: 30 * 1000 });
   await waitForEditorLoad(page);
 
   await expect(page.getByTestId('workspace-name')).toHaveText(params.name);

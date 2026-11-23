@@ -2,25 +2,31 @@ import {
   getBlockSelectionsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineTextAttributes,
+  AffineTextStyleAttributes,
+} from '@blocksuite/affine-shared/types';
 import type { Command } from '@blocksuite/std';
 
 import { formatBlockCommand } from './format-block.js';
 import { formatNativeCommand } from './format-native.js';
 import { formatTextCommand } from './format-text.js';
-import { getCombinedTextStyle } from './utils.js';
+import { getCombinedTextAttributes } from './utils.js';
 
 export const toggleTextStyleCommand: Command<{
   key: Extract<
-    keyof AffineTextAttributes,
+    keyof AffineTextStyleAttributes,
     'bold' | 'italic' | 'underline' | 'strike' | 'code'
   >;
 }> = (ctx, next) => {
   const { std, key } = ctx;
-  const [active] = std.command.chain().pipe(isTextStyleActive, { key }).run();
+  const [active] = std.command
+    .chain()
+    .pipe(isTextAttributeActive, { key })
+    .run();
 
   const payload: {
-    styles: AffineTextAttributes;
+    styles: AffineTextStyleAttributes;
     mode?: 'replace' | 'merge';
   } = {
     styles: {
@@ -46,7 +52,7 @@ export const toggleTextStyleCommand: Command<{
 
 const toggleTextStyleCommandWrapper = (
   key: Extract<
-    keyof AffineTextAttributes,
+    keyof AffineTextStyleAttributes,
     'bold' | 'italic' | 'underline' | 'strike' | 'code'
   >
 ): Command => {
@@ -66,30 +72,29 @@ export const toggleUnderline = toggleTextStyleCommandWrapper('underline');
 export const toggleStrike = toggleTextStyleCommandWrapper('strike');
 export const toggleCode = toggleTextStyleCommandWrapper('code');
 
-export const getTextStyle: Command<{}, { textStyle: AffineTextAttributes }> = (
-  ctx,
-  next
-) => {
-  const [result, innerCtx] = getCombinedTextStyle(
+export const getTextAttributes: Command<
+  {},
+  { textAttributes: AffineTextAttributes }
+> = (ctx, next) => {
+  const [result, innerCtx] = getCombinedTextAttributes(
     ctx.std.command.chain()
   ).run();
   if (!result) {
     return false;
   }
 
-  return next({ textStyle: innerCtx.textStyle });
+  return next({ textAttributes: innerCtx.textAttributes });
 };
 
-export const isTextStyleActive: Command<{ key: keyof AffineTextAttributes }> = (
-  ctx,
-  next
-) => {
+export const isTextAttributeActive: Command<{
+  key: keyof AffineTextAttributes;
+}> = (ctx, next) => {
   const key = ctx.key;
-  const [result] = getCombinedTextStyle(ctx.std.command.chain())
+  const [result] = getCombinedTextAttributes(ctx.std.command.chain())
     .pipe((ctx, next) => {
-      const { textStyle } = ctx;
+      const { textAttributes } = ctx;
 
-      if (textStyle && key in textStyle) {
+      if (textAttributes && key in textAttributes) {
         return next();
       }
 

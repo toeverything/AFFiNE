@@ -1,4 +1,4 @@
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
 import { type SlashMenuConfig } from '@blocksuite/affine-widget-slash-menu';
 import { ExportToPdfIcon, FileIcon } from '@blocksuite/icons/lit';
 
@@ -21,7 +21,7 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
         model.store.schema.flavourSchemaMap.has('affine:attachment'),
       action: ({ std, model }) => {
         (async () => {
-          const file = await openFileOrFiles();
+          const file = await openSingleFileWith();
           if (!file) return;
 
           await addSiblingAttachmentBlocks(std, [file], model);
@@ -44,7 +44,7 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
         model.store.schema.flavourSchemaMap.has('affine:attachment'),
       action: ({ std, model }) => {
         (async () => {
-          const file = await openFileOrFiles();
+          const file = await openSingleFileWith();
           if (!file) return;
 
           await addSiblingAttachmentBlocks(std, [file], model);

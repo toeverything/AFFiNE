@@ -5,8 +5,7 @@ import { useEffect, useRef } from 'react';
 import * as styles from './styles.css';
 
 export interface ResizePanelProps
-  extends PropsWithChildren,
-    HTMLAttributes<HTMLDivElement> {
+  extends PropsWithChildren, HTMLAttributes<HTMLDivElement> {
   horizontal?: boolean;
   vertical?: boolean;
   width?: number;
@@ -15,6 +14,7 @@ export interface ResizePanelProps
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
+  offsetModifier?: (offset: number[]) => number[];
 }
 
 /**
@@ -32,6 +32,7 @@ export const ResizePanel = ({
   className,
   horizontal = true,
   vertical = true,
+  offsetModifier,
 
   ...attrs
 }: ResizePanelProps) => {
@@ -59,7 +60,8 @@ export const ResizePanel = ({
     const onDrag = (e: MouseEvent) => {
       const pos = [e.clientX, e.clientY];
       const delta = [pos[0] - startPos[0], pos[1] - startPos[1]];
-      const newSize = [startSize[0] + delta[0], startSize[1] + delta[1]];
+      const offset = offsetModifier ? offsetModifier(delta) : delta;
+      const newSize = [startSize[0] + offset[0], startSize[1] + offset[1]];
       updateSize(newSize);
     };
 
@@ -108,6 +110,7 @@ export const ResizePanel = ({
     maxWidth,
     minHeight,
     minWidth,
+    offsetModifier,
     vertical,
     width,
   ]);

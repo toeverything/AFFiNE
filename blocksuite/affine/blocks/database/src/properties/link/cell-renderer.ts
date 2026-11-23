@@ -15,7 +15,7 @@ import { computed } from '@preact/signals-core';
 import { html, nothing, type PropertyValues } from 'lit';
 import { createRef, ref } from 'lit/directives/ref.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import {
   inlineLinkNodeStyle,
   linkCellStyle,
@@ -26,7 +26,7 @@ import {
   linkIconStyle,
   normalTextStyle,
   showLinkIconStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { linkPropertyModelConfig } from './define.js';
 
 export class LinkCell extends BaseCellRenderer<string, string> {
@@ -88,7 +88,7 @@ export class LinkCell extends BaseCellRenderer<string, string> {
   };
 
   get std() {
-    const host = this.view.contextGet(HostContextKey);
+    const host = this.view.serviceGet(EditorHostKey);
     return host?.std;
   }
 
@@ -132,32 +132,36 @@ export class LinkCell extends BaseCellRenderer<string, string> {
     return html`
       <div>
         <div class="${linkContainerStyle}">
-          ${isDoc
-            ? html`<span class="${linkedDocStyle}" @click="${this.openDoc}"
-                >${docName}</span
-              >`
-            : isValidUrl(linkText)
-              ? html`<a
-                  data-testid="property-link-a"
-                  class="${inlineLinkNodeStyle}"
-                  href="${linkText}"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  >${linkText}</a
+          ${
+            isDoc
+              ? html`<span class="${linkedDocStyle}" @click="${this.openDoc}"
+                  >${docName}</span
                 >`
-              : html`<span class="${normalTextStyle}">${linkText}</span>`}
+              : isValidUrl(linkText)
+                ? html`<a
+                    data-testid="property-link-a"
+                    class="${inlineLinkNodeStyle}"
+                    href="${linkText}"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    >${linkText}</a
+                  >`
+                : html`<span class="${normalTextStyle}">${linkText}</span>`
+          }
         </div>
-        ${hasLink
-          ? html` <div class="${linkIconContainerStyle} ${showLinkIconStyle}">
-              <div
-                class="${linkIconStyle}"
-                data-testid="edit-link-button"
-                @click="${this._onEdit}"
-              >
-                ${EditIcon()}
-              </div>
-            </div>`
-          : nothing}
+        ${
+          hasLink
+            ? html` <div class="${linkIconContainerStyle} ${showLinkIconStyle}">
+                <div
+                  class="${linkIconStyle}"
+                  data-testid="edit-link-button"
+                  @click="${this._onEdit}"
+                >
+                  ${EditIcon()}
+                </div>
+              </div>`
+            : nothing
+        }
       </div>
     `;
   }

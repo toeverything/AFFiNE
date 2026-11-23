@@ -57,7 +57,7 @@ export class DatePicker extends WithDisposable(LitElement) {
 
   private readonly _maxYear = 2099;
 
-  private readonly _minYear = 1970;
+  private readonly _minYear = 1000;
 
   get _cardStyle() {
     return {
@@ -178,18 +178,20 @@ export class DatePicker extends WithDisposable(LitElement) {
             </div>`
         )}
       </div>
-      ${this.onClear
-        ? html`<div class="date-picker-footer">
-            <button
-              tabindex="0"
-              aria-label="clear"
-              class="footer-button interactive"
-              @click=${() => this.onClear?.()}
-            >
-              Clear
-            </button>
-          </div>`
-        : nothing}`;
+      ${
+        this.onClear
+          ? html`<div class="date-picker-footer">
+              <button
+                tabindex="0"
+                aria-label="clear"
+                class="footer-button interactive"
+                @click=${() => this.onClear?.()}
+              >
+                Clear
+              </button>
+            </div>`
+          : nothing
+      }`;
   }
 
   /** Week header */
@@ -229,9 +231,9 @@ export class DatePicker extends WithDisposable(LitElement) {
 
   private _modeDecade(offset: number) {
     this._yearCursor = clamp(
+      this._yearCursor + offset,
       this._minYear,
-      this._maxYear,
-      this._yearCursor + offset
+      this._maxYear
     );
     this._getYearMatrix();
   }
@@ -286,8 +288,18 @@ export class DatePicker extends WithDisposable(LitElement) {
       </div>`;
   }
 
+  private _clampCursorYear() {
+    const year = this._cursor.getFullYear();
+    if (year < this._minYear) {
+      this._cursor = new Date(this._minYear, 0, 1);
+    } else if (year > this._maxYear) {
+      this._cursor = new Date(this._maxYear, 11, 31);
+    }
+  }
+
   private _moveMonth(offset: number) {
     this._cursor.setMonth(this._cursor.getMonth() + offset);
+    this._clampCursorYear();
     this._getMatrix();
   }
 
@@ -420,6 +432,7 @@ export class DatePicker extends WithDisposable(LitElement) {
           } else if (e.key === 'ArrowDown') {
             this._cursor.setDate(this._cursor.getDate() + 7);
           }
+          this._clampCursorYear();
           this._getMatrix();
           setTimeout(this.focusDateCell.bind(this));
         }

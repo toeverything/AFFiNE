@@ -2,12 +2,15 @@ import {
   Avatar,
   Button,
   IconButton,
+  Menu,
+  MenuItem,
   notify,
   observeIntersection,
   Scrollable,
   Skeleton,
 } from '@affine/component';
-import { InvitationService } from '@affine/core/modules/cloud';
+import { AuthService, InvitationService } from '@affine/core/modules/cloud';
+import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type Notification,
   NotificationListService,
@@ -31,6 +34,7 @@ import {
   CollaborationIcon,
   DeleteIcon,
   EdgelessIcon,
+  MoreHorizontalIcon,
   NotificationIcon,
   PageIcon,
 } from '@blocksuite/icons/rc';
@@ -51,10 +55,18 @@ import * as styles from './list.style.css';
 export const NotificationList = () => {
   const t = useI18n();
   const notificationListService = useService(NotificationListService);
+  const authService = useService(AuthService);
+  const globalDialogService = useService(GlobalDialogService);
+  const authStatus = useLiveData(authService.session.status$);
   const notifications = useLiveData(notificationListService.notifications$);
   const isLoading = useLiveData(notificationListService.isLoading$);
   const error = useLiveData(notificationListService.error$);
   const hasMore = useLiveData(notificationListService.hasMore$);
+  const showLoadingMore =
+    authStatus === 'authenticated' &&
+    notifications.length > 0 &&
+    hasMore &&
+    isLoading;
   const loadMoreIndicatorRef = useRef<HTMLDivElement>(null);
 
   const userFriendlyError = useMemo(() => {
@@ -62,55 +74,155 @@ export const NotificationList = () => {
   }, [error]);
 
   useLayoutEffect(() => {
-    // reset the notification list when the component is mounted
     notificationListService.reset();
-    notificationListService.loadMore();
-  }, [notificationListService]);
+    if (authStatus === 'authenticated') notificationListService.loadMore();
+  }, [authStatus, notificationListService]);
 
   useEffect(() => {
     if (loadMoreIndicatorRef.current) {
       let previousIsIntersecting = false;
       return observeIntersection(loadMoreIndicatorRef.current, entity => {
-        if (entity.isIntersecting && !previousIsIntersecting && hasMore) {
+        if (
+          authStatus === 'authenticated' &&
+          entity.isIntersecting &&
+          !previousIsIntersecting &&
+          hasMore
+        ) {
           notificationListService.loadMore();
         }
         previousIsIntersecting = entity.isIntersecting;
       });
     }
     return;
-  }, [hasMore, notificationListService]);
+  }, [authStatus, hasMore, notificationListService]);
+
+  const handleSignIn = useCallback(() => {
+    globalDialogService.open('sign-in', {});
+  }, [globalDialogService]);
+
+  const handleDeleteAll = useCallback(() => {
+    notificationListService.readAllNotifications().catch(err => {
+      notify.error(UserFriendlyError.fromAny(err));
+    });
+  }, [notificationListService]);
 
   return (
-    <Scrollable.Root>
-      <Scrollable.Viewport className={styles.containerScrollViewport}>
-        {notifications.length > 0 ? (
-          <ul className={styles.itemList}>
-            {notifications.map(notification => (
-              <li key={notification.id}>
-                <NotificationItem notification={notification} />
-              </li>
-            ))}
-            {userFriendlyError && (
-              <div className={styles.error}>{userFriendlyError.message}</div>
-            )}
-          </ul>
-        ) : isLoading ? (
-          <NotificationItemSkeleton />
-        ) : userFriendlyError ? (
-          <div className={styles.error}>{userFriendlyError.message}</div>
-        ) : (
-          <NotificationListEmpty />
+    <div
+      className={styles.container}
+      data-mobile={BUILD_CONFIG.isMobileEdition ? '' : undefined}
+    >
+      <div className={styles.header}>
+        <span>{t['com.affine.rootAppSidebar.notifications']()}</span>
+        {notifications.length > 0 && (
+          <Menu
+            items={
+              <MenuItem prefixIcon={<DeleteIcon />} onClick={handleDeleteAll}>
+                <span>{t['com.affine.notification.delete-all']()}</span>
+              </MenuItem>
+            }
+          >
+            <IconButton icon={<MoreHorizontalIcon />} />
+          </Menu>
         )}
+      </div>
+      <Scrollable.Root className={styles.scrollRoot}>
+        <Scrollable.Viewport className={styles.scrollViewport}>
+          {authStatus === 'unauthenticated' ? (
+            <NotificationSignIn onSignIn={handleSignIn} />
+          ) : notifications.length > 0 ? (
+            <ul className={styles.itemList}>
+              {notifications.map(notification => (
+                <li key={notification.id}>
+                  <NotificationItem notification={notification} />
+                </li>
+              ))}
+              {userFriendlyError && (
+                <li>
+                  <NotificationError
+                    message={userFriendlyError.message}
+                    onRetry={() => notificationListService.retry()}
+                  />
+                </li>
+              )}
+            </ul>
+          ) : isLoading ? (
+            <NotificationItemSkeleton />
+          ) : userFriendlyError ? (
+            <NotificationErrorEmpty
+              message={userFriendlyError.message}
+              onRetry={() => notificationListService.retry()}
+            />
+          ) : (
+            <NotificationListEmpty />
+          )}
 
-        <div
-          ref={loadMoreIndicatorRef}
-          className={hasMore ? styles.loadMoreIndicator : ''}
-        >
-          {hasMore ? t['com.affine.notification.loading-more']() : null}
-        </div>
-      </Scrollable.Viewport>
-      <Scrollable.Scrollbar />
-    </Scrollable.Root>
+          <div
+            ref={loadMoreIndicatorRef}
+            className={showLoadingMore ? styles.loadMoreIndicator : ''}
+          >
+            {showLoadingMore
+              ? t['com.affine.notification.loading-more']()
+              : null}
+          </div>
+        </Scrollable.Viewport>
+        <Scrollable.Scrollbar />
+      </Scrollable.Root>
+    </div>
+  );
+};
+
+const NotificationSignIn = ({ onSignIn }: { onSignIn: () => void }) => {
+  const t = useI18n();
+  return (
+    <div className={styles.listEmpty}>
+      <div className={styles.listEmptyIconContainer}>
+        <NotificationIcon width={24} height={24} />
+      </div>
+      <div className={styles.listEmptyTitle}>
+        {t['com.affine.ai.login-required.dialog-title']()}
+      </div>
+      <div className={styles.listEmptyDescription}>
+        {t['com.affine.notification.empty.description']()}
+      </div>
+      <Button variant="primary" onClick={onSignIn}>
+        {t['com.affine.ai.login-required.dialog-confirm']()}
+      </Button>
+    </div>
+  );
+};
+
+const NotificationErrorEmpty = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => {
+  const t = useI18n();
+  return (
+    <div className={styles.listEmpty}>
+      <div className={styles.listEmptyIconContainer}>
+        <NotificationIcon width={24} height={24} />
+      </div>
+      <div className={styles.errorEmptyTitle}>{message}</div>
+      <Button onClick={onRetry}>{t['Retry']()}</Button>
+    </div>
+  );
+};
+
+const NotificationError = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => {
+  const t = useI18n();
+  return (
+    <div className={styles.error}>
+      <span>{message}</span>
+      <Button onClick={onRetry}>{t['Retry']()}</Button>
+    </div>
   );
 };
 
@@ -156,6 +268,10 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
 
   return type === NotificationType.Mention ? (
     <MentionNotificationItem notification={notification} />
+  ) : type === NotificationType.Comment ? (
+    <CommentNotificationItem notification={notification} />
+  ) : type === NotificationType.CommentMention ? (
+    <CommentMentionNotificationItem notification={notification} />
   ) : type === NotificationType.InvitationAccepted ? (
     <InvitationAcceptedNotificationItem notification={notification} />
   ) : type === NotificationType.Invitation ? (
@@ -769,5 +885,145 @@ const DocNameWithIcon = ({
       )}
       {titleWithoutEmoji}
     </b>
+  );
+};
+
+const CommentNotificationItem = ({
+  notification,
+}: {
+  notification: Notification;
+}) => {
+  const notificationListService = useService(NotificationListService);
+  const { jumpToPageComment } = useNavigateHelper();
+  const t = useI18n();
+  const body = notification.body;
+
+  const memberInactived = !body.createdByUser;
+
+  const handleClick = useCallback(() => {
+    track.$.sidebar.notifications.clickNotification({
+      type: notification.type,
+      item: 'read',
+    });
+    if (!body.workspaceId || !body.doc?.id) {
+      return;
+    }
+    notificationListService.readNotification(notification.id).catch(err => {
+      console.error(err);
+    });
+
+    jumpToPageComment(
+      body.workspaceId,
+      body.doc.id,
+      body.commentId,
+      body.doc.mode
+    );
+  }, [body, jumpToPageComment, notificationListService, notification]);
+
+  return (
+    <div className={styles.itemContainer} onClick={handleClick}>
+      <Avatar
+        size={22}
+        name={body.createdByUser?.name}
+        url={body.createdByUser?.avatarUrl}
+      />
+      <div className={styles.itemMain}>
+        <span>
+          <Trans
+            i18nKey={'com.affine.notification.comment'}
+            components={{
+              1: (
+                <b
+                  className={styles.itemNameLabel}
+                  data-inactived={memberInactived}
+                />
+              ),
+              2: <DocNameWithIcon mode={body.doc?.mode || 'page'} />,
+            }}
+            values={{
+              username:
+                body.createdByUser?.name ?? t['com.affine.inactive-member'](),
+              docTitle: body.doc?.title || t['Untitled'](),
+            }}
+          />
+        </span>
+        <div className={styles.itemDate}>
+          {i18nTime(notification.createdAt, {
+            relative: true,
+          })}
+        </div>
+      </div>
+      <DeleteButton notification={notification} />
+    </div>
+  );
+};
+
+const CommentMentionNotificationItem = ({
+  notification,
+}: {
+  notification: Notification;
+}) => {
+  const notificationListService = useService(NotificationListService);
+  const { jumpToPageComment } = useNavigateHelper();
+  const t = useI18n();
+  const body = notification.body;
+
+  const memberInactived = !body.createdByUser;
+
+  const handleClick = useCallback(() => {
+    track.$.sidebar.notifications.clickNotification({
+      type: notification.type,
+      item: 'read',
+    });
+    if (!body.workspaceId || !body.doc?.id) {
+      return;
+    }
+    notificationListService.readNotification(notification.id).catch(err => {
+      console.error(err);
+    });
+
+    jumpToPageComment(
+      body.workspaceId,
+      body.doc.id,
+      body.commentId,
+      body.doc.mode
+    );
+  }, [body, jumpToPageComment, notificationListService, notification]);
+
+  return (
+    <div className={styles.itemContainer} onClick={handleClick}>
+      <Avatar
+        size={22}
+        name={body.createdByUser?.name}
+        url={body.createdByUser?.avatarUrl}
+      />
+      <div className={styles.itemMain}>
+        <span>
+          <Trans
+            i18nKey={'com.affine.notification.comment-mention'}
+            components={{
+              1: (
+                <b
+                  className={styles.itemNameLabel}
+                  data-inactived={memberInactived}
+                />
+              ),
+              2: <DocNameWithIcon mode={body.doc?.mode || 'page'} />,
+            }}
+            values={{
+              username:
+                body.createdByUser?.name ?? t['com.affine.inactive-member'](),
+              docTitle: body.doc?.title || t['Untitled'](),
+            }}
+          />
+        </span>
+        <div className={styles.itemDate}>
+          {i18nTime(notification.createdAt, {
+            relative: true,
+          })}
+        </div>
+      </div>
+      <DeleteButton notification={notification} />
+    </div>
   );
 };

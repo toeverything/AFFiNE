@@ -13,6 +13,7 @@ import {
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  type,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import { expect } from '@playwright/test';
@@ -301,12 +302,12 @@ test('should focus on input of popover on toolbar', async ({ page }) => {
   const scaleValue = await scaleInput.inputValue();
   expect(scaleValue).toBe('150');
 
-  const cornersMenu = toolbar.locator('.corners-menu');
-  const cornersInput = cornersMenu.locator('input');
-  const cornersButton = cornersMenu.getByLabel('Corners');
+  const stylePanelButton = toolbar.locator('edgeless-note-style-panel');
+  const cornersInput = stylePanelButton.locator(
+    '.edgeless-note-corner-radius-panel input'
+  );
 
-  await expect(cornersInput).toBeHidden();
-  await cornersButton.click();
+  await stylePanelButton.click();
 
   await cornersInput.click();
   await expect(cornersInput).toBeFocused();
@@ -342,7 +343,7 @@ test('Dropdown menus should be closed automatically when toolbar is displayed', 
 
   await expect(moreMenu).toBeVisible();
 
-  await page.mouse.move(0, 0);
+  await page.keyboard.press('Escape');
 
   await expect(toolbar).toBeHidden();
 
@@ -370,6 +371,61 @@ test('should clear selection when switching doc mode', async ({ page }) => {
 });
 
 test.describe('Toolbar More Actions', () => {
+  test('should copy selected text as markdown', async ({ page }) => {
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('toolbar-copy-as-markdown');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toContain('toolbar-copy-as-markdown');
+  });
+
+  test('should preserve heading syntax when copying as markdown from toolbar', async ({
+    page,
+  }) => {
+    await page.keyboard.press('Enter');
+    await type(page, '# toolbar-heading');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toContain('# toolbar-heading');
+  });
+
+  test('should preserve bulleted list syntax when copying as markdown from toolbar', async ({
+    page,
+  }) => {
+    await page.keyboard.press('Enter');
+    await type(page, '- toolbar-list-item');
+    await selectAllByKeyboard(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    await expect(toolbar).toBeVisible();
+
+    await toolbar.getByLabel('More menu').click();
+    await toolbar.getByLabel('Copy as Markdown').click();
+
+    const clipboardText = await (
+      await page.evaluateHandle(() => navigator.clipboard.readText())
+    ).jsonValue();
+    expect(clipboardText).toMatch(/^\* toolbar-list-item/m);
+  });
+
   test('should duplicate block', async ({ page }) => {
     await page.keyboard.press('Enter');
 

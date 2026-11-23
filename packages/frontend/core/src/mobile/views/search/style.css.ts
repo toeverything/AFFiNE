@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import {
   bodyEmphasized,
   footnoteRegular,
@@ -84,3 +85,9 @@ export const empty = style([
     color: cssVarV2('text/primary'),
   },
 ]);
+
+export const errorMessage = style({
+  padding: '0px 16px 16px',
+  fontSize: cssVar('fontSm'),
+  color: cssVarV2('status/error'),
+});

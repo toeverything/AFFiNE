@@ -27,7 +27,7 @@ import { ServerService } from '../../cloud';
 import { WorkspaceDialogService } from '../../dialogs';
 import { DocsService } from '../../doc/services/docs';
 import { toDocSearchParams } from '../../navigation';
-import { WorkbenchService } from '../../workbench';
+import { WorkbenchService } from '../../workbench/services/workbench';
 import type {
   AttachmentPeekViewInfo,
   DocReferenceInfo,

@@ -10,7 +10,6 @@ import {
   isFootnoteDefinitionNode,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { nanoid } from '@blocksuite/store';
 
 const isUrlFootnoteDefinitionNode = (node: MarkdownAST) => {
@@ -33,15 +32,7 @@ export const bookmarkBlockMarkdownAdapterMatcher =
     toMatch: o => isUrlFootnoteDefinitionNode(o.node),
     toBlockSnapshot: {
       enter: (o, context) => {
-        const { provider } = context;
-        let enableCitation = false;
-        try {
-          const featureFlagService = provider?.get(FeatureFlagService);
-          enableCitation = !!featureFlagService?.getFlag('enable_citation');
-        } catch {
-          enableCitation = false;
-        }
-        if (!isFootnoteDefinitionNode(o.node) || !enableCitation) {
+        if (!isFootnoteDefinitionNode(o.node)) {
           return;
         }
 

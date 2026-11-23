@@ -1,4 +1,5 @@
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { StorybookConfig } from '@storybook/react-vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import swc from 'unplugin-swc';
@@ -7,13 +8,7 @@ import { mergeConfig } from 'vite';
 export default {
   stories: ['../src/ui/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
 
-  addons: [
-    getAbsolutePath('@storybook/addon-links'),
-    getAbsolutePath('@storybook/addon-essentials'),
-    getAbsolutePath('@storybook/addon-interactions'),
-    getAbsolutePath('@storybook/addon-mdx-gfm'),
-    '@chromatic-com/storybook',
-  ],
+  addons: [],
 
   framework: {
     name: getAbsolutePath('@storybook/react-vite'),
@@ -72,5 +67,6 @@ export default {
 } satisfies StorybookConfig;
 
 function getAbsolutePath(value: string): any {
-  return dirname(require.resolve(join(value, 'package.json')));
+  return dirname(fileURLToPath(import.meta.resolve(join(value, 'package.json'))));
 }
+

@@ -56,7 +56,7 @@ test.describe('title', () => {
     await menuSelect(page, ['Count', 'Count Empty']);
     const value = statCell.locator('.value');
     expect((await value.textContent())?.trim()).toBe('3');
-    await page.locator('affine-database-cell-container').nth(0).click();
+    await page.locator('dv-table-view-cell-container').nth(0).click();
     await pressKey(page, 'Enter');
     await type(page, 'asd');
     await pressKey(page, 'Escape');
@@ -77,7 +77,7 @@ test.describe('rich-text', () => {
     await menuSelect(page, ['Count', 'Count Empty']);
     const value = statCell.locator('.value');
     expect((await value.textContent())?.trim()).toBe('3');
-    await page.locator('affine-database-cell-container').nth(1).click();
+    await page.locator('dv-table-view-cell-container').nth(1).click();
     await pressKey(page, 'Enter');
     await type(page, 'asd');
     await pressKey(page, 'Escape');
@@ -98,7 +98,7 @@ test.describe('select', () => {
     await menuSelect(page, ['Count', 'Count Empty']);
     const value = statCell.locator('.value');
     expect((await value.textContent())?.trim()).toBe('3');
-    await page.locator('affine-database-cell-container').nth(1).click();
+    await page.locator('dv-table-view-cell-container').nth(1).click();
     await pressKey(page, 'Enter');
     await type(page, 'select');
     await pressKey(page, 'Enter');

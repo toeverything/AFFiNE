@@ -14,6 +14,7 @@ import type { Storage } from './storage';
 export interface IndexerStorage extends Storage {
   readonly storageType: 'indexer';
   readonly isReadonly: boolean;
+  readonly recommendRefreshInterval: number; // 100ms
 
   search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
     table: T,
@@ -62,6 +63,8 @@ export interface IndexerStorage extends Storage {
   ): Promise<void>;
 
   refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
+  refreshIfNeed(): Promise<void>;
+  indexVersion(): Promise<number>;
 }
 
 type ResultPagination = {
@@ -80,7 +83,7 @@ type HighlightAbleField<T extends keyof IndexerSchema> = {
 }[keyof IndexerSchema[T]];
 
 export type SearchOptions<T extends keyof IndexerSchema> = {
-  pagination?: PaginationOption;
+  pagination?: PaginationOption & { cursor?: string };
   highlights?: { field: HighlightAbleField<T>; before: string; end: string }[];
   fields?: (keyof IndexerSchema[T])[];
 };
@@ -89,7 +92,7 @@ export type SearchResult<
   T extends keyof IndexerSchema,
   O extends SearchOptions<T>,
 > = {
-  pagination: ResultPagination;
+  pagination: ResultPagination & { nextCursor?: string | null };
   nodes: ({ id: string; score: number } & (O['fields'] extends any[]
     ? { fields: { [key in O['fields'][number]]: string | string[] } }
     : unknown) &
@@ -119,6 +122,7 @@ export type AggregateResult<
 
 export abstract class IndexerStorageBase implements IndexerStorage {
   readonly storageType = 'indexer';
+  readonly recommendRefreshInterval: number = 100; // 100ms
   abstract readonly connection: Connection;
   abstract readonly isReadonly: boolean;
 
@@ -173,4 +177,8 @@ export abstract class IndexerStorageBase implements IndexerStorage {
   ): Promise<void>;
 
   abstract refresh<T extends keyof IndexerSchema>(table: T): Promise<void>;
+
+  abstract refreshIfNeed(): Promise<void>;
+
+  abstract indexVersion(): Promise<number>;
 }

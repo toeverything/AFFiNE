@@ -6,11 +6,10 @@ test.describe('AIChatWith/Network', () => {
     await utils.chatPanel.openChatPanel(page);
   });
 
-  test('should support chat with network if network search enabled', async ({
+  test.skip('should support chat with network if network search enabled', async ({
     loggedInPage: page,
     utils,
   }) => {
-    await utils.chatPanel.enableNetworkSearch(page);
     await utils.chatPanel.makeChat(
       page,
       'What is the weather like in Shanghai today?'

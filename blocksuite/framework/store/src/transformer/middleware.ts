@@ -11,13 +11,15 @@ import type {
   SliceSnapshot,
 } from './type.js';
 
+export type BeforeImportBlockPayload = {
+  snapshot: BlockSnapshot;
+  type: 'block';
+  parent?: string;
+  index?: number;
+};
+
 export type BeforeImportPayload =
-  | {
-      snapshot: BlockSnapshot;
-      type: 'block';
-      parent?: string;
-      index?: number;
-    }
+  | BeforeImportBlockPayload
   | {
       snapshot: SliceSnapshot;
       type: 'slice';
@@ -71,14 +73,16 @@ export type AfterExportPayload =
       type: 'info';
     };
 
+export type AfterImportBlockPayload = {
+  snapshot: BlockSnapshot;
+  type: 'block';
+  model: BlockModel;
+  parent?: string;
+  index?: number;
+};
+
 export type AfterImportPayload =
-  | {
-      snapshot: BlockSnapshot;
-      type: 'block';
-      model: BlockModel;
-      parent?: string;
-      index?: number;
-    }
+  | AfterImportBlockPayload
   | {
       snapshot: DocSnapshot;
       type: 'page';
@@ -109,6 +113,8 @@ type TransformerMiddlewareOptions = {
   transformerConfigs: Map<string, unknown>;
 };
 
+type TransformerMiddlewareCleanup = () => void;
+
 export type TransformerMiddleware = (
   options: TransformerMiddlewareOptions
-) => void;
+) => void | TransformerMiddlewareCleanup;

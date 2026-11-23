@@ -16,7 +16,9 @@ import { AudioAttachmentService } from '@affine/core/modules/media/services/audi
 import { Trans, useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
+import { ResetIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import bytes from 'bytes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AttachmentViewerProps } from '../types';
@@ -31,6 +33,8 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
   const [preflightChecking, setPreflightChecking] = useState(false);
   const transcribing =
     useLiveData(block.transcriptionJob.transcribing$) || preflightChecking;
+  const loading = useLiveData(audioMedia.loading$);
+  const loadingError = useLiveData(audioMedia.loadError$);
   const error = useLiveData(block.transcriptionJob.error$);
   const transcribed = useLiveData(block.hasTranscription$);
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -64,6 +68,10 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     },
     [audioMedia]
   );
+
+  const reload = useCallback(() => {
+    audioMedia?.revalidateBuffer();
+  }, [audioMedia]);
 
   const t = useI18n();
 
@@ -107,9 +115,10 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
 
     setPreflightChecking(true);
-    const result = await block.transcriptionJob.preflightCheck();
-    setPreflightChecking(false);
-    if (result?.error === 'created-by-others') {
+    const result = await block.transcribe().finally(() => {
+      setPreflightChecking(false);
+    });
+    if (result?.status === 'blocked') {
       confirmModal.openConfirmModal({
         title: t['com.affine.audio.transcribe.non-owner.confirm.title'](),
         description: (
@@ -129,7 +138,6 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
         method: 'not owner',
       });
     } else {
-      await block.transcribe();
       track.doc.editor.audioBlock.transcribeRecording({
         type: 'Meeting record',
         method: 'success',
@@ -179,17 +187,36 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     return inner;
   }, [enableAi, transcribing, handleNotesClick, t]);
 
-  const sizeEntry = useMemo(() => {
-    if (error) {
-      return <div className={styles.error}>{error.message}</div>;
+  const descriptionEntry = useMemo(() => {
+    if (loadingError) {
+      return (
+        <>
+          <div className={styles.error}>{loadingError.message}</div>
+          <button className={styles.reloadButton} onClick={reload}>
+            <ResetIcon className={styles.reloadButtonIcon} />
+            Reload
+          </button>
+        </>
+      );
     }
-    return block.props.props.size;
-  }, [error, block.props.props.size]);
+
+    if (!loading && error) {
+      return (
+        <Tooltip content={error.message}>
+          <div className={styles.error} tabIndex={0}>
+            {t['com.affine.audio.transcription-failed']()}
+          </div>
+        </Tooltip>
+      );
+    }
+
+    return <>{bytes(block.props.props.size)}</>;
+  }, [loading, loadingError, error, reload, block.props.props.size, t]);
 
   return (
     <AudioPlayer
       name={block.props.props.name}
-      size={sizeEntry}
+      description={descriptionEntry}
       loading={stats.duration === 0}
       playbackState={playbackState?.state || 'idle'}
       waveform={stats.waveform}
@@ -234,8 +261,8 @@ const useAttachmentMediaBlock = (model: AttachmentBlockModel) => {
   return audioAttachmentBlock;
 };
 
-export const AudioBlockEmbedded = (props: AttachmentViewerProps) => {
-  const audioAttachmentBlock = useAttachmentMediaBlock(props.model);
+export const AudioBlockEmbedded = ({ model }: AttachmentViewerProps) => {
+  const audioAttachmentBlock = useAttachmentMediaBlock(model);
   const transcriptionBlock = useLiveData(
     audioAttachmentBlock?.transcriptionBlock$
   );

@@ -1,8 +1,6 @@
 import {
   EmbedEdgelessIcon,
   EmbedPageIcon,
-  getLoadingIconWith,
-  ReloadIcon,
 } from '@blocksuite/affine-components/icons';
 import {
   ColorScheme,
@@ -35,8 +33,6 @@ import {
 } from './styles.js';
 
 type EmbedCardImages = {
-  LoadingIcon: TemplateResult<1>;
-  ReloadIcon: TemplateResult<1>;
   LinkedDocIcon: TemplateResult<1>;
   LinkedDocDeletedIcon: TemplateResult<1>;
   LinkedDocEmptyBanner: TemplateResult<1>;
@@ -50,12 +46,9 @@ export function getEmbedLinkedDocIcons(
   style: (typeof EmbedLinkedDocStyles)[number]
 ): EmbedCardImages {
   const small = style !== 'vertical';
-  const LoadingIcon = getLoadingIconWith(theme);
   if (editorMode === 'page') {
     if (theme === ColorScheme.Light) {
       return {
-        LoadingIcon,
-        ReloadIcon,
         LinkedDocIcon: EmbedPageIcon,
         LinkedDocDeletedIcon,
         LinkedDocEmptyBanner: small
@@ -68,8 +61,6 @@ export function getEmbedLinkedDocIcons(
       };
     } else {
       return {
-        ReloadIcon,
-        LoadingIcon,
         LinkedDocIcon: EmbedPageIcon,
         LinkedDocDeletedIcon,
         LinkedDocEmptyBanner: small
@@ -84,8 +75,6 @@ export function getEmbedLinkedDocIcons(
   } else {
     if (theme === ColorScheme.Light) {
       return {
-        ReloadIcon,
-        LoadingIcon,
         LinkedDocIcon: EmbedEdgelessIcon,
         LinkedDocDeletedIcon,
         LinkedDocEmptyBanner: small
@@ -98,8 +87,6 @@ export function getEmbedLinkedDocIcons(
       };
     } else {
       return {
-        ReloadIcon,
-        LoadingIcon,
         LinkedDocIcon: EmbedEdgelessIcon,
         LinkedDocDeletedIcon,
         LinkedDocEmptyBanner: small

@@ -85,7 +85,7 @@ const DatabaseBacklinkRow = ({
   row$,
   onChange,
 }: {
-  defaultOpen: boolean;
+  defaultOpen?: boolean;
   row$: Observable<DatabaseRow | undefined>;
   onChange?: (
     row: DatabaseRow,
@@ -112,7 +112,7 @@ const DatabaseBacklinkRow = ({
     useMemo(
       () =>
         row?.docId ? templateDocService.list.isTemplate$(row.docId) : undefined,
-      [row?.docId, templateDocService.list]
+      [row, templateDocService.list]
     )
   );
 

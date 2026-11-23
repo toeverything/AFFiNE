@@ -8,6 +8,7 @@ import { literal } from 'lit/static-html.js';
 
 import { CalloutKeymapExtension } from './callout-keymap';
 import { calloutSlashMenuConfig } from './configs/slash-menu';
+import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
 import { effects } from './effects';
 
 export class CalloutViewExtension extends ViewExtensionProvider {
@@ -25,6 +26,7 @@ export class CalloutViewExtension extends ViewExtensionProvider {
       BlockViewExtension('affine:callout', literal`affine-callout`),
       CalloutKeymapExtension,
       SlashMenuConfigExtension('affine:callout', calloutSlashMenuConfig),
+      ...createBuiltinToolbarConfigExtension('affine:callout'),
     ]);
   }
 }

@@ -1,68 +1,216 @@
-import { Injectable } from '@nestjs/common';
-import { getStreamAsBuffer } from 'get-stream';
+import { randomUUID } from 'node:crypto';
 
-import { JOB_SIGNAL, OnJob } from '../../base';
-import { type MailName, MailProps, Renderers } from '../../mails';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
+import { Config, metrics, URLHelper } from '../../base';
+import { type MailName, Renderers } from '../../mails';
 import { UserProps, WorkspaceProps } from '../../mails/components';
-import { Models } from '../../models';
+import { MailDeliveryRow, Models } from '../../models';
+import { BackendRuntimeProvider } from '../backend-runtime';
+import { containsUrlOrDomain } from '../content-policy';
 import { DocReader } from '../doc/reader';
-import { WorkspaceBlobStorage } from '../storage';
 import { MailSender, SendOptions } from './sender';
+import { SendMailPayload } from './types';
 
-type DynamicallyFetchedProps<Props> = {
-  [Key in keyof Props]: Props[Key] extends infer Prop
-    ? Prop extends UserProps
-      ? {
-          $$userId: string;
-        } & Omit<Prop, 'email' | 'avatar'>
-      : Prop extends WorkspaceProps
-        ? {
-            $$workspaceId: string;
-          } & Omit<Prop, 'name' | 'avatar'>
-        : Prop
-    : never;
+type DynamicProp = Record<string, unknown> & {
+  $$workspaceId?: string;
+  $$workspaceUrl?: string;
+  $$userId?: string;
 };
-
-type SendMailJob<Mail extends MailName = MailName, Props = MailProps<Mail>> = {
-  name: Mail;
-  to: string;
-  // NOTE(@forehalo):
-  //   workspace avatar currently send as base64 img instead of a avatar url,
-  //   so the content might be too large to be put in job payload.
-  props: DynamicallyFetchedProps<Props>;
-};
-
-declare global {
-  interface Jobs {
-    'notification.sendMail': {
-      [K in MailName]: SendMailJob<K>;
-    }[MailName];
-  }
-}
 
 @Injectable()
 export class MailJob {
+  private readonly logger = new Logger('MailDeliveryWorker');
+  private readonly workerId = `mail-delivery-${process.pid}-${randomUUID()}`;
+
   constructor(
     private readonly sender: MailSender,
     private readonly doc: DocReader,
-    private readonly workspaceBlob: WorkspaceBlobStorage,
-    private readonly models: Models
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly models: Models,
+    private readonly config: Config,
+    private readonly url: URLHelper
   ) {}
 
-  @OnJob('notification.sendMail')
-  async sendMail({ name, to, props }: Jobs['notification.sendMail']) {
-    let options: Partial<SendOptions> = {};
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sendPendingMails() {
+    await this.processReadyDeliveries();
+    await this.cleanupRetainedDeliveries();
+    await this.recordDeliveryMetrics();
+  }
 
-    for (const key in props) {
-      // @ts-expect-error allow
-      const val = props[key];
+  async processReadyDeliveries(
+    batchSize = this.config.mailer.deliveryWorker.batchSize
+  ) {
+    const rows = await this.models.mailDelivery.claimReady(this.workerId, {
+      batchSize,
+      leaseMs: this.config.mailer.deliveryWorker.leaseMs,
+    });
+
+    for (const row of rows) {
+      await this.processDelivery(row);
+    }
+    return rows.length;
+  }
+
+  private async cleanupRetainedDeliveries() {
+    const retentionMs =
+      this.config.mailer.deliveryWorker.retentionDays * 24 * 60 * 60 * 1000;
+    const before = new Date(Date.now() - retentionMs);
+    await this.models.mailDelivery.deleteAnonymizedBefore(
+      before,
+      this.config.mailer.deliveryWorker.batchSize
+    );
+  }
+
+  private async recordDeliveryMetrics() {
+    const snapshot = await this.models.mailDelivery.metricsSnapshot();
+    metrics.mail.gauge('retry_wait_backlog').record(snapshot.retryWait);
+    metrics.mail.gauge('failed_recent').record(snapshot.failedRecent);
+    metrics.mail.gauge('expired_lease_backlog').record(snapshot.expiredLeases);
+    metrics.mail.histogram('ready_delay_ms').record(snapshot.readyDelayMs);
+  }
+
+  private async processDelivery(row: MailDeliveryRow) {
+    if (!row.recipientEmail || !row.payload) {
+      await this.models.mailDelivery.markSkipped(
+        row.id,
+        this.workerId,
+        'missing_payload'
+      );
+      return;
+    }
+    if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) {
+      await this.models.mailDelivery.markFailed(
+        row.id,
+        this.workerId,
+        'expired'
+      );
+      return;
+    }
+    if (await this.shouldSkipRecipient(row.recipientEmail)) {
+      await this.models.mailDelivery.markSkipped(
+        row.id,
+        this.workerId,
+        'disabled_recipient'
+      );
+      return;
+    }
+
+    const payload = row.payload as SendMailPayload;
+    const rendered = await this.renderPayload(payload);
+    if (!rendered) {
+      await this.models.mailDelivery.markSkipped(
+        row.id,
+        this.workerId,
+        'dynamic_props_missing'
+      );
+      return;
+    }
+    if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) {
+      await this.models.mailDelivery.markFailed(
+        row.id,
+        this.workerId,
+        'expired'
+      );
+      return;
+    }
+
+    const attempt = await this.models.mailDelivery.markAttemptStarted(
+      row.id,
+      this.workerId
+    );
+    if (!attempt) {
+      return;
+    }
+
+    const result = await this.sender.send(payload.name, {
+      to: row.recipientEmail,
+      ...rendered.options,
+      ...rendered.content,
+    });
+
+    if (result.status === 'accepted') {
+      await this.models.mailDelivery.markSent(row.id, this.workerId, {
+        providerMessageId: result.providerMessageId,
+        providerResponse: result.providerResponse,
+      });
+      return;
+    }
+
+    const nextSendAfter = this.nextSendAfter(attempt.attemptCount);
+    const canRetry =
+      result.retryable &&
+      attempt.attemptCount < attempt.maxAttempts &&
+      (!attempt.expiresAt || nextSendAfter < attempt.expiresAt);
+    if (canRetry) {
+      const retry = await this.models.mailDelivery.markRetry(
+        row.id,
+        this.workerId,
+        {
+          sendAfter: nextSendAfter,
+          errorCode: result.errorCode,
+          error: result.error,
+        }
+      );
+      if (retry) {
+        return;
+      }
+    }
+
+    await this.models.mailDelivery.markFailed(
+      row.id,
+      this.workerId,
+      attempt.expiresAt && nextSendAfter >= attempt.expiresAt
+        ? 'expired'
+        : (result.errorCode ?? result.status),
+      result.error ?? result.providerResponse ?? undefined
+    );
+  }
+
+  private nextSendAfter(attemptCount: number) {
+    const delayMs = Math.min(30 * 60 * 1000, 2 ** attemptCount * 30 * 1000);
+    return new Date(Date.now() + delayMs);
+  }
+
+  private async shouldSkipRecipient(to: string) {
+    const user = await this.models.user.getUserByEmail(to, {
+      withDisabled: true,
+    });
+
+    return user?.disabled === true;
+  }
+
+  private async renderPayload(payload: SendMailPayload) {
+    let options: Partial<SendOptions> = {};
+    const renderedProps: Record<string, unknown> = { ...payload.props };
+
+    for (const key in renderedProps) {
+      const val = renderedProps[key as keyof typeof renderedProps] as
+        | DynamicProp
+        | undefined;
       if (val && typeof val === 'object') {
-        if ('$$workspaceId' in val) {
+        if (typeof val.$$workspaceUrl === 'string') {
+          renderedProps[key] = this.url.link(
+            `/workspace/${val.$$workspaceUrl}`
+          );
+        } else if (typeof val.$$workspaceId === 'string') {
           const workspaceProps = await this.fetchWorkspaceProps(
             val.$$workspaceId
           );
 
           if (!workspaceProps) {
+            return;
+          }
+
+          if (
+            payload.name === 'MemberInvitation' &&
+            containsUrlOrDomain(workspaceProps.name)
+          ) {
+            this.logger.warn(
+              `Skip mail [${payload.name}] to [${payload.to}], reason=workspace name contains url or domain`
+            );
             return;
           }
 
@@ -77,31 +225,42 @@ export class MailJob {
             ];
             workspaceProps.avatar = 'cid:workspaceAvatar';
           }
-          // @ts-expect-error replacement
-          props[key] = workspaceProps;
-        } else if ('$$userId' in val) {
+          Object.assign(val, workspaceProps);
+          delete val.$$workspaceId;
+        } else if (typeof val.$$userId === 'string') {
           const userProps = await this.fetchUserProps(val.$$userId);
 
           if (!userProps) {
             return;
           }
 
-          // @ts-expect-error replacement
-          props[key] = userProps;
+          Object.assign(val, userProps);
+          delete val.$$userId;
         }
       }
     }
 
-    const result = await this.sender.send(name, {
-      to,
-      ...(await Renderers[name](
-        // @ts-expect-error the job trigger part has been typechecked
-        props
-      )),
-      ...options,
-    });
+    if (
+      payload.name === 'MemberInvitation' &&
+      'workspace' in renderedProps &&
+      containsUrlOrDomain(
+        (renderedProps.workspace as WorkspaceProps | undefined)?.name
+      )
+    ) {
+      this.logger.warn(
+        `Skip mail [${payload.name}] to [${payload.to}], reason=workspace name contains url or domain`
+      );
+      return;
+    }
 
-    return result === false ? JOB_SIGNAL.Retry : undefined;
+    return {
+      options,
+      content: await (
+        Renderers[payload.name] as (
+          props: unknown
+        ) => ReturnType<(typeof Renderers)[MailName]>
+      )(renderedProps),
+    };
   }
 
   private async fetchWorkspaceProps(workspaceId: string) {
@@ -116,16 +275,14 @@ export class MailJob {
     };
 
     if (workspace.avatarKey) {
-      const avatar = await this.workspaceBlob.get(
-        workspace.id,
-        workspace.avatarKey
-      );
-
-      if (avatar.body) {
-        props.avatar = (await getStreamAsBuffer(avatar.body)).toString(
-          'base64'
-        );
-      }
+      const owner = await this.models.workspaceUser.getOwner(workspace.id);
+      props.avatar = (
+        await this.runtime.readWorkspaceAvatarV1(
+          owner.id,
+          workspace.id,
+          workspace.avatarKey
+        )
+      ).toString('base64');
     }
 
     return props;

@@ -8,7 +8,7 @@ import { ObjectPool, Service } from '@toeverything/infra';
 import { combineLatest, map } from 'rxjs';
 
 import { initDocFromProps } from '../../../blocksuite/initialization';
-import { getAFFiNEWorkspaceSchema } from '../../workspace';
+import { getAFFiNEWorkspaceSchema } from '../../workspace/global-schema';
 import type { Doc } from '../entities/doc';
 import { DocRecordList } from '../entities/record-list';
 import { DocCreated, DocInitialized } from '../events';
@@ -18,6 +18,7 @@ import type { DocPropertiesStore } from '../stores/doc-properties';
 import type { DocsStore } from '../stores/docs';
 import type { DocCreateOptions } from '../types';
 import { DocService } from './doc';
+import { getDuplicatedDocTitle } from './duplicate-title';
 
 const logger = new DebugLogger('DocsService');
 
@@ -67,6 +68,22 @@ export class DocsService extends Service {
 
   allDocsTagIds$() {
     return this.store.watchAllDocTagIds();
+  }
+
+  allDocIds$() {
+    return this.store.watchDocIds();
+  }
+
+  allNonTrashDocIds$() {
+    return this.store.watchNonTrashDocIds();
+  }
+
+  allTrashDocIds$() {
+    return this.store.watchTrashDocIds();
+  }
+
+  allDocTitle$() {
+    return this.store.watchAllDocTitle();
   }
 
   constructor(
@@ -152,11 +169,24 @@ export class DocsService extends Service {
       middleware.afterCreate?.(docRecord, options);
     }
     docRecord.setCreatedAt(Date.now());
+    docRecord.setUpdatedAt(Date.now());
     this.eventBus.emit(DocCreated, {
       doc: docRecord,
       docCreateOptions: options,
     });
     return docRecord;
+  }
+
+  getCustomPropertyById(docId: string, propertyId: string) {
+    return this.docPropertiesStore.getDocProperties(docId)?.[
+      'custom:' + propertyId
+    ] as string | undefined;
+  }
+
+  setCustomPropertyById(docId: string, propertyId: string, value: string) {
+    return this.docPropertiesStore.updateDocProperties(docId, {
+      ['custom:' + propertyId]: value,
+    });
   }
 
   async addLinkedDoc(targetDocId: string, linkedDocId: string) {
@@ -269,13 +299,7 @@ export class DocsService extends Service {
     });
 
     // duplicate doc title
-    const originalTitle = sourceDoc.title$.value;
-    const lastDigitRegex = /\((\d+)\)$/;
-    const match = originalTitle.match(lastDigitRegex);
-    const newNumber = match ? parseInt(match[1], 10) + 1 : 1;
-    const newPageTitle =
-      originalTitle.replace(lastDigitRegex, '') + `(${newNumber})`;
-    targetDoc.changeDocTitle(newPageTitle);
+    targetDoc.changeDocTitle(getDuplicatedDocTitle(sourceDoc.title$.value));
 
     // duplicate doc properties
     const properties = sourceDoc.getProperties();

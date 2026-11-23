@@ -13,7 +13,7 @@ import {
   FileSizeLimitProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { humanFileSize } from '@blocksuite/affine-shared/utils';
+import { formatSize } from '@blocksuite/affine-shared/utils';
 import { Bound, type IVec, Vec } from '@blocksuite/global/gfx';
 import type { BlockStdScope } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
@@ -93,7 +93,7 @@ function hasExceeded(
   const exceeded = files.some(file => file.size > maxFileSize);
 
   if (exceeded) {
-    const size = humanFileSize(maxFileSize, true, 0);
+    const size = formatSize(maxFileSize);
     toast(std.host, `You can only upload files less than ${size}`);
   }
 
@@ -130,7 +130,7 @@ async function buildPropsWith(
     std.getOptional(TelemetryProvider)?.track('AttachmentUploadedEvent', {
       page: `${mode} editor`,
       module: 'attachment',
-      segment: 'attachment',
+      segment: mode,
       control: 'uploader',
       type,
       category,

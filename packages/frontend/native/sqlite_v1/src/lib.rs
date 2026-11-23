@@ -1,10 +1,11 @@
+use affine_schema::import_validation::{V1_IMPORT_SCHEMA_RULES, validate_import_schema};
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::{Buffer, Uint8Array};
 use napi_derive::napi;
 use sqlx::{
+  Pool, Row,
   migrate::MigrateDatabase,
   sqlite::{Sqlite, SqliteConnectOptions, SqlitePoolOptions},
-  Pool, Row,
 };
 
 // latest version
@@ -69,9 +70,7 @@ impl SqliteConnection {
   #[napi]
   pub async fn connect(&self) -> napi::Result<()> {
     if !Sqlite::database_exists(&self.path).await.unwrap_or(false) {
-      Sqlite::create_database(&self.path)
-        .await
-        .map_err(anyhow::Error::from)?;
+      Sqlite::create_database(&self.path).await.map_err(anyhow::Error::from)?;
     };
     let mut connection = self.pool.acquire().await.map_err(anyhow::Error::from)?;
     sqlx::query(affine_schema::v1::SCHEMA)
@@ -89,8 +88,7 @@ impl SqliteConnection {
     let blob = blob.as_ref();
     sqlx::query_as!(
       BlobRow,
-      "INSERT INTO blobs (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = \
-       excluded.data",
+      "INSERT INTO blobs (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
       key,
       blob,
     )
@@ -102,14 +100,10 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn get_blob(&self, key: String) -> Option<BlobRow> {
-    sqlx::query_as!(
-      BlobRow,
-      "SELECT key, data, timestamp FROM blobs WHERE key = ?",
-      key
-    )
-    .fetch_one(&self.pool)
-    .await
-    .ok()
+    sqlx::query_as!(BlobRow, "SELECT key, data, timestamp FROM blobs WHERE key = ?", key)
+      .fetch_one(&self.pool)
+      .await
+      .ok()
   }
 
   #[napi]
@@ -190,14 +184,11 @@ impl SqliteConnection {
   pub async fn get_updates_count(&self, doc_id: Option<String>) -> napi::Result<i64> {
     let count = match doc_id {
       Some(doc_id) => {
-        sqlx::query!(
-          "SELECT COUNT(*) as count FROM updates WHERE doc_id = ?",
-          doc_id
-        )
-        .fetch_one(&self.pool)
-        .await
-        .map_err(anyhow::Error::from)?
-        .count
+        sqlx::query!("SELECT COUNT(*) as count FROM updates WHERE doc_id = ?", doc_id)
+          .fetch_one(&self.pool)
+          .await
+          .map_err(anyhow::Error::from)?
+          .count
       }
       None => {
         sqlx::query!("SELECT COUNT(*) as count FROM updates WHERE doc_id is NULL")
@@ -239,11 +230,7 @@ impl SqliteConnection {
   }
 
   #[napi]
-  pub async fn replace_updates(
-    &self,
-    doc_id: Option<String>,
-    updates: Vec<InsertRow>,
-  ) -> napi::Result<()> {
+  pub async fn replace_updates(&self, doc_id: Option<String>, updates: Vec<InsertRow>) -> napi::Result<()> {
     let mut transaction = self.pool.begin().await.map_err(anyhow::Error::from)?;
 
     match doc_id {
@@ -289,8 +276,7 @@ impl SqliteConnection {
   pub async fn set_server_clock(&self, key: String, data: Uint8Array) -> napi::Result<()> {
     let data = data.as_ref();
     sqlx::query!(
-      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = \
-       excluded.data",
+      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
       key,
       data,
     )
@@ -344,8 +330,7 @@ impl SqliteConnection {
   pub async fn set_sync_metadata(&self, key: String, data: Uint8Array) -> napi::Result<()> {
     let data = data.as_ref();
     sqlx::query!(
-      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data \
-       = excluded.data",
+      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
       key,
       data,
     )
@@ -439,11 +424,7 @@ impl SqliteConnection {
 
   #[napi]
   pub async fn validate(path: String) -> ValidationResult {
-    let pool = match SqlitePoolOptions::new()
-      .max_connections(1)
-      .connect(&path)
-      .await
-    {
+    let pool = match open_readonly_pool(&path).await {
       Ok(pool) => pool,
       Err(_) => return ValidationResult::GeneralError,
     };
@@ -472,9 +453,7 @@ impl SqliteConnection {
       Err(_) => return ValidationResult::GeneralError,
     };
 
-    let columns_res = sqlx::query("PRAGMA table_info(updates)")
-      .fetch_all(&pool)
-      .await;
+    let columns_res = sqlx::query("PRAGMA table_info(updates)").fetch_all(&pool).await;
 
     let doc_id_exist = match columns_res {
       Ok(res) => {
@@ -493,6 +472,16 @@ impl SqliteConnection {
     } else {
       ValidationResult::Valid
     }
+  }
+
+  #[napi]
+  pub async fn validate_import_schema(&self) -> napi::Result<bool> {
+    let pool = open_readonly_pool(&self.path).await?;
+    Ok(
+      validate_import_schema(&pool, &V1_IMPORT_SCHEMA_RULES)
+        .await
+        .map_err(anyhow::Error::from)?,
+    )
   }
 
   #[napi]
@@ -526,6 +515,17 @@ impl SqliteConnection {
     Ok(())
   }
 
+  #[napi]
+  pub async fn vacuum_into(&self, path: String) -> napi::Result<()> {
+    let pool = open_readonly_pool(&self.path).await?;
+    sqlx::query("VACUUM INTO ?;")
+      .bind(path)
+      .execute(&pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
+  }
+
   pub async fn migrate_add_doc_id_index(&self) -> napi::Result<()> {
     // ignore errors
     match sqlx::query("CREATE INDEX IF NOT EXISTS idx_doc_id ON updates(doc_id);")
@@ -537,5 +537,66 @@ impl SqliteConnection {
         Err(anyhow::Error::from(err).into()) // Propagate other errors
       }
     }
+  }
+}
+
+async fn open_readonly_pool(path: &str) -> anyhow::Result<Pool<Sqlite>> {
+  let options = SqliteConnectOptions::new()
+    .filename(path)
+    .foreign_keys(false)
+    .read_only(true);
+
+  Ok(
+    SqlitePoolOptions::new()
+      .max_connections(1)
+      .connect_with(options)
+      .await?,
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{
+    fs,
+    time::{SystemTime, UNIX_EPOCH},
+  };
+
+  use super::*;
+
+  #[tokio::test]
+  async fn validate_import_schema_accepts_current_v1_schema() {
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let base = std::env::temp_dir().join(format!("sqlite-v1-schema-valid-{unique}"));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let connection = SqliteConnection::new(source.to_string_lossy().into_owned()).unwrap();
+    connection.connect().await.unwrap();
+
+    assert!(connection.validate_import_schema().await.unwrap());
+
+    connection.close().await;
+    fs::remove_dir_all(base).unwrap();
+  }
+
+  #[tokio::test]
+  async fn validate_import_schema_rejects_unexpected_schema_objects() {
+    let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let base = std::env::temp_dir().join(format!("sqlite-v1-schema-{unique}"));
+    fs::create_dir_all(&base).unwrap();
+
+    let source = base.join("storage.db");
+    let connection = SqliteConnection::new(source.to_string_lossy().into_owned()).unwrap();
+    connection.connect().await.unwrap();
+
+    sqlx::query("CREATE TRIGGER rogue_trigger AFTER INSERT ON updates BEGIN SELECT 1; END;")
+      .execute(&connection.pool)
+      .await
+      .unwrap();
+
+    assert!(!connection.validate_import_schema().await.unwrap());
+
+    connection.close().await;
+    fs::remove_dir_all(base).unwrap();
   }
 }

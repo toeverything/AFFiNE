@@ -74,3 +74,27 @@ export const serverDivider = style({
   marginTop: 8,
   marginBottom: 12,
 });
+
+export const signInMenuItemContent = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '0px 4px',
+});
+export const signInIconWrapper = style({
+  width: 30,
+  height: 30,
+  borderRadius: 6,
+  border: `1px solid ${cssVarV2.tab.divider.divider}`,
+  fontSize: 20,
+  color: cssVarV2.icon.primary,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+export const signInText = style({
+  fontSize: 14,
+  lineHeight: '22px',
+  fontWeight: 500,
+  color: cssVarV2.text.primary,
+});

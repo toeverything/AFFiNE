@@ -4,10 +4,7 @@ import {
   ParseDocUrlProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import {
-  getViewportElement,
-  isValidUrl,
-} from '@blocksuite/affine-shared/utils';
+import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { BaseCellRenderer } from '@blocksuite/data-view';
 import { IS_MAC } from '@blocksuite/global/env';
 import { LinkedPageIcon } from '@blocksuite/icons/lit';
@@ -17,14 +14,15 @@ import { property } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
 import { getSingleDocIdFromText } from '../../utils/title-doc.js';
+import { analyzeTextForUrlPaste, insertUrlTextSegments } from '../paste-url.js';
 import {
   headerAreaIconStyle,
   titleCellStyle,
   titleRichTextStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 
 export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   activity = true;
@@ -32,7 +30,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   docId$ = signal<string>();
 
   get host() {
-    return this.view.contextGet(HostContextKey);
+    return this.view.serviceGet(EditorHostKey);
   }
 
   get inlineEditor() {
@@ -50,7 +48,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   }
 
   get std() {
-    return this.view.contextGet(HostContextKey)?.std;
+    return this.view.serviceGet(EditorHostKey)?.std;
   }
 
   private readonly _onCopy = (e: ClipboardEvent) => {
@@ -95,7 +93,9 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   private readonly _onPaste = (e: ClipboardEvent) => {
     const inlineEditor = this.inlineEditor;
     const inlineRange = inlineEditor?.getInlineRange();
-    if (!inlineRange) return;
+    if (!inlineEditor || !inlineRange) return;
+    e.preventDefault();
+    e.stopPropagation();
     if (e.clipboardData) {
       try {
         const getDeltas = (snapshot: BlockSnapshot): DeltaInsert[] => {
@@ -121,14 +121,15 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       ?.getData('text/plain')
       ?.replace(/\r?\n|\r/g, '\n');
     if (!text) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (isValidUrl(text)) {
+    const { segments, singleUrl } = analyzeTextForUrlPaste(text);
+    if (singleUrl) {
       const std = this.std;
-      const result = std?.getOptional(ParseDocUrlProvider)?.parseDocUrl(text);
+      const result = std
+        ?.getOptional(ParseDocUrlProvider)
+        ?.parseDocUrl(singleUrl);
       if (result) {
         const text = ' ';
-        inlineEditor?.insertText(inlineRange, text, {
+        inlineEditor.insertText(inlineRange, text, {
           reference: {
             type: 'LinkedPage',
             pageId: result.docId,
@@ -139,7 +140,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
             },
           },
         });
-        inlineEditor?.setInlineRange({
+        inlineEditor.setInlineRange({
           index: inlineRange.index + text.length,
           length: 0,
         });
@@ -151,22 +152,10 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
           segment: 'database',
           parentFlavour: 'affine:database',
         });
-      } else {
-        inlineEditor?.insertText(inlineRange, text, {
-          link: text,
-        });
-        inlineEditor?.setInlineRange({
-          index: inlineRange.index + text.length,
-          length: 0,
-        });
+        return;
       }
-    } else {
-      inlineEditor?.insertText(inlineRange, text);
-      inlineEditor?.setInlineRange({
-        index: inlineRange.index + text.length,
-        length: 0,
-      });
     }
+    insertUrlTextSegments(inlineEditor, inlineRange, segments);
   };
 
   insertDelta = (delta: DeltaInsert) => {
@@ -209,9 +198,18 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       }
     };
 
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
   }
+
+  private readonly _handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        return;
+      }
+      event.stopPropagation();
+    }
+  };
 
   override firstUpdated(props: Map<string, unknown>) {
     super.firstUpdated(props);
@@ -231,8 +229,15 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
           this.disposables.addFromEvent(
             this.richText.value,
             'paste',
-            this._onPaste
+            this._onPaste,
+            true
           );
+          const inlineEditor = this.inlineEditor;
+          if (inlineEditor) {
+            this.disposables.add(
+              inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+            );
+          }
         }
       })
       .catch(console.error);

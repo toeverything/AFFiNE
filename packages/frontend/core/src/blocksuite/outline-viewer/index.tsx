@@ -15,31 +15,22 @@ export const EditorOutlineViewer = ({
 }) => {
   const outlineViewerRef = useRef<OutlineViewer | null>(null);
 
-  const onRefChange = useCallback((container: HTMLDivElement | null) => {
-    if (container) {
-      if (outlineViewerRef.current === null) {
-        console.error('outline viewer should be initialized');
-        return;
+  const onRefChange = useCallback(
+    (container: HTMLDivElement | null) => {
+      if (container && editor) {
+        if (outlineViewerRef.current) {
+          outlineViewerRef.current.remove();
+        }
+        outlineViewerRef.current = new OutlineViewer();
+        outlineViewerRef.current.editor = editor;
+        outlineViewerRef.current.toggleOutlinePanel = openOutlinePanel ?? null;
+        container.append(outlineViewerRef.current);
       }
+    },
+    [editor, openOutlinePanel]
+  );
 
-      container.append(outlineViewerRef.current);
-    }
-  }, []);
-
-  if (!editor || !show) return;
-
-  if (!outlineViewerRef.current) {
-    outlineViewerRef.current = new OutlineViewer();
-  }
-  if (outlineViewerRef.current.editor !== editor) {
-    outlineViewerRef.current.editor = editor;
-  }
-  if (
-    outlineViewerRef.current.toggleOutlinePanel !== openOutlinePanel &&
-    openOutlinePanel
-  ) {
-    outlineViewerRef.current.toggleOutlinePanel = openOutlinePanel;
-  }
+  if (!editor || !show) return null;
 
   return <div className={styles.root} ref={onRefChange} />;
 };

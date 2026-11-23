@@ -2,14 +2,14 @@ import {
   EmbedYoutubeBlockSchema,
   type EmbedYoutubeModel,
   EmbedYoutubeStyles,
+  youtubeUrlRegex,
 } from '@blocksuite/affine-model';
 import {
   EmbedOptionConfig,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
 } from '@blocksuite/affine-shared/services';
 import { BlockService } from '@blocksuite/std';
 
-import { youtubeUrlRegex } from './embed-youtube-model.js';
 import { queryEmbedYoutubeData } from './utils.js';
 
 export class EmbedYoutubeBlockService extends BlockService {
@@ -21,7 +21,7 @@ export class EmbedYoutubeBlockService extends BlockService {
   ) => {
     return queryEmbedYoutubeData(
       embedYoutubeModel,
-      this.doc.get(LinkPreviewerService),
+      this.std.get(LinkPreviewServiceIdentifier),
       signal
     );
   };

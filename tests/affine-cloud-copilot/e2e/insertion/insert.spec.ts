@@ -22,12 +22,12 @@ test.describe('AIInsertion/Insert', () => {
     await page.keyboard.insertText('World Block');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -60,12 +60,12 @@ test.describe('AIInsertion/Insert', () => {
     await page.keyboard.insertText('World Block');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -101,12 +101,12 @@ test.describe('AIInsertion/Insert', () => {
     await page.keyboard.insertText('World Block');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -139,12 +139,12 @@ test.describe('AIInsertion/Insert', () => {
     await page.keyboard.insertText('World Block');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -173,12 +173,12 @@ test.describe('AIInsertion/Insert', () => {
     await page.keyboard.press('Delete');
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',

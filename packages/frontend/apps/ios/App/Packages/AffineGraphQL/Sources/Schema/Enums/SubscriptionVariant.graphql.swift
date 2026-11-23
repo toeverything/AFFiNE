@@ -4,6 +4,5 @@
 import ApolloAPI
 
 public enum SubscriptionVariant: String, EnumType {
-  case ea = "EA"
   case onetime = "Onetime"
 }

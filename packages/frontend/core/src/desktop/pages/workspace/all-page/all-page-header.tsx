@@ -1,42 +1,51 @@
+import { type MenuProps } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
-import {
-  AllPageListOperationsMenu,
-  PageDisplayMenu,
-  PageListNewPageButton,
-} from '@affine/core/components/page-list';
-import { Header } from '@affine/core/components/pure/header';
-import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
+import { ExplorerDisplayMenuButton } from '@affine/core/components/explorer/display-menu';
+import { ViewToggle } from '@affine/core/components/explorer/display-menu/view-toggle';
+import type { DocListItemView } from '@affine/core/components/explorer/docs-view/doc-list-item';
+import { ExplorerNavigation } from '@affine/core/components/explorer/header/navigation';
+import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
+import { PageListNewPageButton } from '@affine/core/components/page-list/docs/page-list-new-page-button';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { inferOpenMode } from '@affine/core/utils';
-import type { Filter } from '@affine/env/filter';
-import { track } from '@affine/track';
-import { PlusIcon } from '@blocksuite/icons/rc';
-import { useServices } from '@toeverything/infra';
-import clsx from 'clsx';
+import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import * as styles from './all-page.css';
+import * as styles from './all-page-header.css';
 
-export const AllPageHeader = ({
-  showCreateNew,
-  filters,
-  onChangeFilters,
+const menuProps: Partial<MenuProps> = {
+  contentOptions: {
+    side: 'bottom',
+    align: 'end',
+    alignOffset: 0,
+    sideOffset: 8,
+  },
+};
+export const AllDocsHeader = ({
+  displayPreference,
+  onDisplayPreferenceChange,
+  view,
+  onViewChange,
 }: {
-  showCreateNew: boolean;
-  filters: Filter[];
-  onChangeFilters: (filters: Filter[]) => void;
+  displayPreference: ExplorerDisplayPreference;
+  onDisplayPreferenceChange: (
+    displayPreference: ExplorerDisplayPreference
+  ) => void;
+  view: DocListItemView;
+  onViewChange: (view: DocListItemView) => void;
 }) => {
-  const { workspaceService, workspaceDialogService, workbenchService } =
-    useServices({
-      WorkspaceService,
-      WorkspaceDialogService,
-      WorkbenchService,
-    });
+  const t = useI18n();
+  const workspaceService = useService(WorkspaceService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
+  const workbenchService = useService(WorkbenchService);
   const workbench = workbenchService.workbench;
-  const workspace = workspaceService.workspace;
-  const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);
+  const { createEdgeless, createPage } = usePageHelper(
+    workspaceService.workspace.docCollection
+  );
 
   const handleOpenDocs = useCallback(
     (result: {
@@ -73,33 +82,27 @@ export const AllPageHeader = ({
   }, [workspaceDialogService, handleOpenDocs]);
 
   return (
-    <Header
-      left={
-        <AllPageListOperationsMenu
-          filterList={filters}
-          onChangeFilterList={onChangeFilters}
-          propertiesMeta={workspace.docCollection.meta.properties}
+    <div className={styles.header}>
+      <ExplorerNavigation active="docs" />
+
+      <div className={styles.actions}>
+        <ViewToggle view={view} onViewChange={onViewChange} />
+        <ExplorerDisplayMenuButton
+          menuProps={menuProps}
+          displayPreference={displayPreference}
+          onDisplayPreferenceChange={onDisplayPreferenceChange}
         />
-      }
-      right={
-        <>
-          <PageListNewPageButton
-            size="small"
-            className={clsx(
-              styles.headerCreateNewButton,
-              !showCreateNew && styles.headerCreateNewButtonHidden
-            )}
-            onCreateEdgeless={e => createEdgeless({ at: inferOpenMode(e) })}
-            onCreatePage={e => createPage('page', { at: inferOpenMode(e) })}
-            onCreateDoc={e => createPage(undefined, { at: inferOpenMode(e) })}
-            onImportFile={onImportFile}
-          >
-            <PlusIcon />
-          </PageListNewPageButton>
-          <PageDisplayMenu />
-        </>
-      }
-      center={<WorkspaceModeFilterTab activeFilter={'docs'} />}
-    />
+        <PageListNewPageButton
+          size="small"
+          onCreateEdgeless={e => createEdgeless({ at: inferOpenMode(e) })}
+          onCreatePage={e => createPage('page', { at: inferOpenMode(e) })}
+          onCreateDoc={e => createPage(undefined, { at: inferOpenMode(e) })}
+          onImportFile={onImportFile}
+          data-testid="new-page-button-trigger"
+        >
+          <span className={styles.newPageButtonLabel}>{t['New Page']()}</span>
+        </PageListNewPageButton>
+      </div>
+    </div>
   );
 };

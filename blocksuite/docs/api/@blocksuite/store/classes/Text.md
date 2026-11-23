@@ -38,9 +38,9 @@ Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
 ##### input?
 
-The input can be a string, a Y.Text instance, or an array of DeltaInsert.
+`string` \| `YText` \| `DeltaInsert`\<`TextAttributes`\>[]
 
-`string` | `YText` | `DeltaInsert`\<`TextAttributes`\>[]
+The input can be a string, a Y.Text instance, or an array of DeltaInsert.
 
 #### Returns
 
@@ -103,13 +103,13 @@ Clear the text content.
 
 ### clone()
 
-> **clone**(): `Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
+> **clone**(): `Text`\<\{ `bold?`: `true` \| `null`; `code?`: `true` \| `null`; `italic?`: `true` \| `null`; `link?`: `string` \| `null`; `strike?`: `true` \| `null`; `underline?`: `true` \| `null`; \}\>
 
 Clone the text to a new Text instance.
 
 #### Returns
 
-`Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
+`Text`\<\{ `bold?`: `true` \| `null`; `code?`: `true` \| `null`; `italic?`: `true` \| `null`; `link?`: `string` \| `null`; `strike?`: `true` \| `null`; `underline?`: `true` \| `null`; \}\>
 
 A new Text instance.
 
@@ -320,7 +320,7 @@ The delta of the sliced text.
 
 ### split()
 
-> **split**(`index`, `length`): `Text`
+> **split**(`index`, `length?`): `Text`
 
 Split the text into another Text.
 
@@ -332,7 +332,7 @@ Split the text into another Text.
 
 The index to split.
 
-##### length
+##### length?
 
 `number` = `0`
 

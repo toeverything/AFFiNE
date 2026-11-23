@@ -62,10 +62,7 @@ export const connectorWatcher: SurfaceMiddleware = (
       if (
         'type' in element &&
         element.type === 'connector' &&
-        (props['mode'] !== undefined ||
-          props['target'] ||
-          props['source'] ||
-          (props['xywh'] && !(element as ConnectorElementModel).updatingPath))
+        (props['mode'] !== undefined || props['target'] || props['source'])
       ) {
         addToUpdateList(element as ConnectorElementModel);
       }
@@ -87,6 +84,8 @@ export const connectorWatcher: SurfaceMiddleware = (
     );
 
   return () => {
+    pendingFlag = false;
+    pendingList.clear();
     disposables.forEach(d => d.unsubscribe());
   };
 };

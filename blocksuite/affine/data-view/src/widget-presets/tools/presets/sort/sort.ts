@@ -10,7 +10,10 @@ import { popCreateSort } from '../../../../core/sort/add-sort.js';
 import { sortTraitKey } from '../../../../core/sort/manager.js';
 import { createSortUtils } from '../../../../core/sort/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
-import { ShowQuickSettingBarContextKey } from '../../../quick-setting-bar/context.js';
+import {
+  createDefaultShowQuickSettingBar,
+  ShowQuickSettingBarKey,
+} from '../../../quick-setting-bar/context.js';
 import { popSortRoot } from '../../../quick-setting-bar/sort/root-panel.js';
 
 const styles = css`
@@ -40,7 +43,7 @@ export class DataViewHeaderToolsSort extends WidgetBase {
   sortUtils$ = computed(() => {
     const sortTrait = this.view.traitGet(sortTraitKey);
     if (sortTrait) {
-      return createSortUtils(sortTrait, this.dataViewInstance.eventTrace);
+      return createSortUtils(sortTrait, this.dataViewLogic.eventTrace);
     }
     return;
   });
@@ -106,7 +109,10 @@ export class DataViewHeaderToolsSort extends WidgetBase {
   }
 
   toggleShowQuickSettingBar(show?: boolean) {
-    const map = this.view.contextGet(ShowQuickSettingBarContextKey);
+    const map = this.view.serviceGetOrCreate(
+      ShowQuickSettingBarKey,
+      createDefaultShowQuickSettingBar
+    );
     map.value = {
       ...map.value,
       [this.view.id]: show ?? !map.value[this.view.id],

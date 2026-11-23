@@ -6,11 +6,13 @@ on:
 jobs:
   build-server-native:
     name: Build Server native
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
+      CARGO_PROFILE_RELEASE_LTO: 'thin'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
@@ -30,7 +32,7 @@ jobs:
 
   copilot-api-test:
     name: Server Copilot Api Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - build-server-native
     env:
@@ -60,7 +62,7 @@ jobs:
           - 1025:1025
           - 8025:8025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -77,12 +79,7 @@ jobs:
 
       - name: Prepare Server Test Environment
         env:
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
-          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
-          COPILOT_ANTHROPIC_API_KEY: ${{ secrets.COPILOT_ANTHROPIC_API_KEY }}
-          COPILOT_EXA_API_KEY: ${{ secrets.COPILOT_EXA_API_KEY }}
+          SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
@@ -101,7 +98,7 @@ jobs:
 
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -110,8 +107,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
-        shardTotal: [8]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        shardTotal: [10]
     needs:
       - build-server-native
     services:
@@ -131,7 +128,7 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
@@ -148,12 +145,7 @@ jobs:
 
       - name: Prepare Server Test Environment
         env:
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
-          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
-          COPILOT_ANTHROPIC_API_KEY: ${{ secrets.COPILOT_ANTHROPIC_API_KEY }}
-          COPILOT_EXA_API_KEY: ${{ secrets.COPILOT_EXA_API_KEY }}
+          SERVER_CONFIG: ${{ secrets.TEST_SERVER_CONFIG }}
         uses: ./.github/actions/server-test-env
 
       - name: Run Copilot E2E Test ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
@@ -169,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Post test result message
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup Node.js

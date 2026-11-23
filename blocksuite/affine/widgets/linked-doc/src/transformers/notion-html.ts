@@ -12,6 +12,14 @@ import {
   type Workspace,
 } from '@blocksuite/store';
 
+import {
+  blobsFromAssets,
+  type ImportBatch,
+  type ImportDoc,
+  type ImportFolder,
+  type ImportIconData,
+  type ImportWarning,
+} from './import-batch.js';
 import { Unzip } from './utils.js';
 
 type ImportNotionZipOptions = {
@@ -19,6 +27,29 @@ type ImportNotionZipOptions = {
   schema: Schema;
   imported: Blob;
   extensions: ExtensionType[];
+};
+
+export type PageIcon = {
+  type: 'emoji' | 'image';
+  content: string;
+};
+
+export type FolderHierarchy = {
+  name: string;
+  path: string;
+  children: Map<string, FolderHierarchy>;
+  pageId?: string;
+  parentPath?: string;
+  icon?: PageIcon;
+};
+
+export type PlanNotionHtmlZipResult = {
+  entryId: string | undefined;
+  pageIds: string[];
+  isWorkspaceFile: boolean;
+  hasMarkdown: boolean;
+  folderHierarchy?: FolderHierarchy;
+  batch: ImportBatch;
 };
 
 function getProvider(extensions: ExtensionType[]) {
@@ -29,31 +60,204 @@ function getProvider(extensions: ExtensionType[]) {
   return container.provider();
 }
 
-/**
- * Imports a Notion zip file into the BlockSuite collection.
- *
- * @param options - The options for importing.
- * @param options.collection - The BlockSuite document collection.
- * @param options.schema - The schema of the BlockSuite document collection.
- * @param options.imported - The imported zip file as a Blob.
- *
- * @returns A promise that resolves to an object containing:
- *          - entryId: The ID of the entry page (if any).
- *          - pageIds: An array of imported page IDs.
- *          - isWorkspaceFile: Whether the imported file is a workspace file.
- *          - hasMarkdown: Whether the zip contains markdown files.
- */
-async function importNotionZip({
+function parseFolderPath(filePath: string): {
+  folderParts: string[];
+  fileName: string;
+} {
+  const parts = filePath.split('/');
+  const fileName = parts.pop() || '';
+  return { folderParts: parts.filter(part => part.length > 0), fileName };
+}
+
+function extractPageIcon(doc: Document): PageIcon | undefined {
+  const notionIconSpan = doc.querySelector('.page-header-icon .icon');
+  if (notionIconSpan && notionIconSpan.textContent) {
+    const iconContent = notionIconSpan.textContent.trim();
+    if (/\p{Emoji}/u.test(iconContent)) {
+      return {
+        type: 'emoji',
+        content: iconContent,
+      };
+    }
+  }
+
+  const emojiIcon = doc.querySelector('.page-header-icon .notion-emoji');
+  if (emojiIcon && emojiIcon.textContent) {
+    return {
+      type: 'emoji',
+      content: emojiIcon.textContent.trim(),
+    };
+  }
+
+  const altEmojiIcon = doc.querySelector('[role="img"][aria-label]');
+  if (
+    altEmojiIcon &&
+    altEmojiIcon.textContent &&
+    /\p{Emoji}/u.test(altEmojiIcon.textContent)
+  ) {
+    return {
+      type: 'emoji',
+      content: altEmojiIcon.textContent.trim(),
+    };
+  }
+
+  const imageIcon = doc.querySelector('.page-header-icon img');
+  if (imageIcon) {
+    const src = imageIcon.getAttribute('src');
+    if (src) {
+      return {
+        type: 'image',
+        content: src,
+      };
+    }
+  }
+
+  const iconSpans = doc.querySelectorAll('span.icon');
+  for (const span of iconSpans) {
+    if (span.textContent && /\p{Emoji}/u.test(span.textContent.trim())) {
+      const parent = span.parentElement;
+      if (
+        parent &&
+        (parent.classList.contains('page-header-icon') ||
+          parent.closest('.page-header-icon'))
+      ) {
+        return {
+          type: 'emoji',
+          content: span.textContent.trim(),
+        };
+      }
+    }
+  }
+
+  const pageTitle = doc.querySelector('.page-title, h1');
+  if (pageTitle && pageTitle.textContent) {
+    const text = pageTitle.textContent.trim();
+    const emojiMatch = text.match(/^(\p{Emoji}+)/u);
+    if (emojiMatch) {
+      return {
+        type: 'emoji',
+        content: emojiMatch[1],
+      };
+    }
+  }
+
+  return undefined;
+}
+
+function buildFolderHierarchy(
+  pagePaths: Array<{ path: string; pageId: string; icon?: PageIcon }>
+): FolderHierarchy {
+  const root: FolderHierarchy = {
+    name: '',
+    path: '',
+    children: new Map(),
+  };
+
+  for (const { path, pageId, icon } of pagePaths) {
+    const { folderParts, fileName } = parseFolderPath(path);
+    let current = root;
+    let currentPath = '';
+
+    for (const folderName of folderParts) {
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+      if (!current.children.has(folderName)) {
+        current.children.set(folderName, {
+          name: folderName,
+          path: currentPath,
+          parentPath: parentPath || undefined,
+          children: new Map(),
+        });
+      }
+      current = current.children.get(folderName)!;
+    }
+
+    if (fileName.endsWith('.html') && !fileName.startsWith('index.html')) {
+      const pageName = fileName.replace(/\.html$/, '');
+      if (!current.children.has(pageName)) {
+        current.children.set(pageName, {
+          name: pageName,
+          path: path,
+          parentPath: current.path || undefined,
+          children: new Map(),
+          pageId: pageId,
+          icon: icon,
+        });
+      } else {
+        const existingPage = current.children.get(pageName)!;
+        existingPage.pageId = pageId;
+        if (icon) {
+          existingPage.icon = icon;
+        }
+      }
+    }
+  }
+
+  return root;
+}
+
+function toImportIconData(icon?: PageIcon): ImportIconData | undefined {
+  if (!icon) return undefined;
+  if (icon.type === 'emoji') {
+    return {
+      type: 'emoji',
+      unicode: icon.content,
+    };
+  }
+  return {
+    type: 'image',
+    content: icon.content,
+  };
+}
+
+function flattenFolderHierarchy(root: FolderHierarchy): ImportFolder[] {
+  const folders: ImportFolder[] = [];
+
+  const visit = (node: FolderHierarchy) => {
+    if (node.name) {
+      folders.push({
+        path: node.path,
+        name: node.name,
+        parentPath: node.parentPath,
+        pageId: node.pageId,
+        icon: toImportIconData(node.icon),
+      });
+    }
+    for (const child of node.children.values()) {
+      visit(child);
+    }
+  };
+
+  for (const child of root.children.values()) {
+    visit(child);
+  }
+
+  return folders;
+}
+
+async function planNotionHtmlZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportNotionZipOptions) {
+}: ImportNotionZipOptions): Promise<PlanNotionHtmlZipResult> {
   const provider = getProvider(extensions);
   const pageIds: string[] = [];
+  const docs: ImportDoc[] = [];
+  const blobs = new Map<
+    string,
+    Awaited<ReturnType<typeof blobsFromAssets>>[0]
+  >();
+  const warnings: ImportWarning[] = [];
   let isWorkspaceFile = false;
   let hasMarkdown = false;
   let entryId: string | undefined;
+  const pagePathsWithIds: Array<{
+    path: string;
+    pageId: string;
+    icon?: PageIcon;
+  }> = [];
   const parseZipFile = async (path: File | Blob) => {
     const unzip = new Unzip();
     await unzip.load(path);
@@ -61,7 +265,7 @@ async function importNotionZip({
     const pageMap = new Map<string, string>();
     const pagePaths: string[] = [];
     const promises: Promise<void>[] = [];
-    const pendingAssets = new Map<string, Blob>();
+    const pendingAssets = new Map<string, File>();
     const pendingPathBlobIdMap = new Map<string, string>();
     for (const { path, content, index } of unzip) {
       if (path.startsWith('__MACOSX/')) continue;
@@ -80,15 +284,16 @@ async function importNotionZip({
           isWorkspaceFile = true;
           continue;
         }
+
+        let pageIcon: PageIcon | undefined;
         if (lastSplitIndex !== -1) {
           const text = await content.text();
           const doc = new DOMParser().parseFromString(text, 'text/html');
           const pageBody = doc.querySelector('.page-body');
-          if (pageBody && pageBody.children.length === 0) {
-            // Skip empty pages
-            continue;
-          }
+          if (pageBody && pageBody.children.length === 0) continue;
+          pageIcon = extractPageIcon(doc);
         }
+
         const id = collection.idGenerator();
         const splitPath = path.split('/');
         while (splitPath.length > 0) {
@@ -96,16 +301,19 @@ async function importNotionZip({
           splitPath.shift();
         }
         pagePaths.push(path);
+        pagePathsWithIds.push({ path, pageId: id, icon: pageIcon });
         if (entryId === undefined && lastSplitIndex === -1) {
           entryId = id;
         }
         continue;
       }
       if (index === 0 && fileName.endsWith('.csv')) {
-        window.open(
-          'https://affine.pro/blog/import-your-data-from-notion-into-affine',
-          '_blank'
-        );
+        warnings.push({
+          code: 'notion-csv-export',
+          message:
+            'The imported Notion export appears to be CSV instead of HTML.',
+          sourcePath: path,
+        });
         continue;
       }
       if (fileName.endsWith('.zip')) {
@@ -117,7 +325,7 @@ async function importNotionZip({
       }
       const blob = content;
       const ext = path.split('.').at(-1) ?? '';
-      const mime = extMimeMap.get(ext) ?? '';
+      const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
       const key = await sha(await blob.arrayBuffer());
       const filePathSplit = path.split('/');
       while (filePathSplit.length > 1) {
@@ -150,25 +358,57 @@ async function importNotionZip({
           pathBlobIdMap.set(key, value);
         }
       }
-      const page = await htmlAdapter.toDoc({
+      const snapshot = await htmlAdapter.toDocSnapshot({
         file: await zipFile.get(path)!.text(),
         pageId: pageMap.get(path),
         pageMap,
         assets: job.assetsManager,
       });
-      if (page) {
-        pageIds.push(page.id);
-      }
+      docs.push({
+        id: snapshot.meta.id,
+        snapshot,
+      });
+      pageIds.push(snapshot.meta.id);
     });
     promises.push(...pagePromises);
+    promises.push(
+      blobsFromAssets(pendingAssets, pendingPathBlobIdMap).then(importBlobs => {
+        for (const blob of importBlobs) {
+          blobs.set(blob.blobId, blob);
+        }
+      })
+    );
     return promises;
   };
   const allPromises = await parseZipFile(imported);
   await Promise.all(allPromises.flat());
   entryId = entryId ?? pageIds[0];
-  return { entryId, pageIds, isWorkspaceFile, hasMarkdown };
+
+  const folderHierarchy =
+    pagePathsWithIds.length > 0
+      ? buildFolderHierarchy(pagePathsWithIds)
+      : undefined;
+
+  return {
+    entryId,
+    pageIds,
+    isWorkspaceFile,
+    hasMarkdown,
+    folderHierarchy,
+    batch: {
+      docs,
+      blobs: Array.from(blobs.values()),
+      folders: folderHierarchy
+        ? flattenFolderHierarchy(folderHierarchy)
+        : undefined,
+      warnings,
+      entryId,
+      isWorkspaceFile,
+      done: true,
+    },
+  };
 }
 
 export const NotionHtmlTransformer = {
-  importNotionZip,
+  planNotionHtmlZip,
 };

@@ -5,7 +5,7 @@ export const pageReferenceIcon = style({
   verticalAlign: 'middle',
   fontSize: '1.1em',
   transform: 'translate(2px, -1px)',
-  color: cssVarV2('icon/primary'),
+  // color: cssVarV2('icon/primary'),
 });
 
 export const pageReferenceLink = style({

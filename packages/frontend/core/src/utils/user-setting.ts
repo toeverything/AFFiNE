@@ -1,4 +1,3 @@
-import type { Collection } from '@affine/env/filter';
 import type { Workspace } from '@blocksuite/affine/store';
 import { nanoid } from 'nanoid';
 import type { Map as YMap } from 'yjs';
@@ -28,13 +27,6 @@ export class UserSetting {
       this.setting.load();
     }
     return this.setting.whenLoaded;
-  }
-
-  /**
-   * @deprecated
-   */
-  get view() {
-    return this.setting.getMap('view') as YMap<Collection>;
   }
 }
 

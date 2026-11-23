@@ -356,3 +356,63 @@ describe('convert decorator', () => {
     expect(elementModel.shapeType).toBe('rect');
   });
 });
+
+describe('surface group index cache', () => {
+  test('syncGroupChildrenIndex should replace outdated parent mappings', () => {
+    const { surfaceModel } = commonSetup();
+    const model = surfaceModel as any;
+
+    model._syncGroupChildrenIndex('group-1', ['a', 'b'], []);
+    expect(model._parentGroupMap.get('a')).toBe('group-1');
+    expect(model._parentGroupMap.get('b')).toBe('group-1');
+
+    model._syncGroupChildrenIndex('group-1', ['b', 'c']);
+    expect(model._parentGroupMap.has('a')).toBe(false);
+    expect(model._parentGroupMap.get('b')).toBe('group-1');
+    expect(model._parentGroupMap.get('c')).toBe('group-1');
+  });
+
+  test('removeGroupFromChildrenIndex should clear both child snapshot and reverse lookup', () => {
+    const { surfaceModel } = commonSetup();
+    const model = surfaceModel as any;
+
+    model._syncGroupChildrenIndex('group-2', ['x', 'y'], []);
+    model._removeGroupFromChildrenIndex('group-2');
+
+    expect(model._groupChildIdsMap.has('group-2')).toBe(false);
+    expect(model._parentGroupMap.has('x')).toBe(false);
+    expect(model._parentGroupMap.has('y')).toBe(false);
+  });
+
+  test('getGroup should recover from stale cache and update reverse lookup', () => {
+    const { surfaceModel } = commonSetup();
+    const model = surfaceModel as any;
+
+    const shapeId = surfaceModel.addElement({
+      type: 'testShape',
+    });
+    const shape = surfaceModel.getElementById(shapeId)!;
+
+    const fakeGroup = {
+      id: 'group-fallback',
+      hasChild: (element: { id: string }) => element.id === shapeId,
+    };
+
+    model._groupLikeModels.set(fakeGroup.id, fakeGroup);
+    model._parentGroupMap.set(shapeId, 'stale-group-id');
+
+    expect(surfaceModel.getGroup(shapeId)).toBe(fakeGroup);
+    expect(model._parentGroupMap.get(shapeId)).toBe(fakeGroup.id);
+    expect(model._parentGroupMap.has('stale-group-id')).toBe(false);
+
+    const otherShapeId = surfaceModel.addElement({
+      type: 'testShape',
+    });
+    model._parentGroupMap.set(otherShapeId, 'another-missing-group');
+    expect(surfaceModel.getGroup(otherShapeId)).toBeNull();
+    expect(model._parentGroupMap.has(otherShapeId)).toBe(false);
+
+    // keep one explicit check on element-based lookup path
+    expect(surfaceModel.getGroup(shape as any)).toBe(fakeGroup);
+  });
+});

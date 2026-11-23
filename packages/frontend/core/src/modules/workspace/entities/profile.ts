@@ -24,6 +24,7 @@ export interface WorkspaceProfileInfo {
   isOwner?: boolean;
   isAdmin?: boolean;
   isTeam?: boolean;
+  isEmpty?: boolean;
 }
 
 /**
@@ -39,7 +40,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
   }
 
   profile$ = LiveData.from<WorkspaceProfileInfo | null>(
-    this.cache.watchProfileCache(this.props.metadata.id),
+    this.cache.watchProfileCache(this.props.metadata),
     null
   );
 
@@ -64,7 +65,7 @@ export class WorkspaceProfile extends Entity<{ metadata: WorkspaceMetadata }> {
     if (isEqual(this.profile$.value, info)) {
       return;
     }
-    this.cache.setProfileCache(this.props.metadata.id, info);
+    this.cache.setProfileCache(this.props.metadata, info);
   }
 
   revalidate = effect(

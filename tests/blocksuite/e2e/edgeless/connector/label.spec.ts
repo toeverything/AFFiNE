@@ -6,6 +6,7 @@ import {
   createShapeElement,
   dragBetweenViewCoords,
   edgelessCommonSetup as commonSetup,
+  getConnectorLabel,
   locatorComponentToolbar,
   setEdgelessTool,
   Shape,
@@ -331,5 +332,31 @@ test.describe('connector label with straight shape', () => {
     await waitNextFrame(page);
     await type(page, 'c');
     await assertEdgelessCanvasText(page, 'c');
+  });
+
+  test('should enter the correct label', async ({ page }) => {
+    await commonSetup(page);
+    const connector1 = await addBasicConnectorElement(
+      page,
+      { x: 100, y: 200 },
+      { x: 300, y: 300 }
+    );
+    const connector2 = await addBasicConnectorElement(
+      page,
+      { x: 300, y: 200 },
+      { x: 100, y: 300 }
+    );
+
+    await page.mouse.dblclick(155, 207);
+    await type(page, 'Connector 1');
+    await page.keyboard.press('Escape');
+
+    expect(await getConnectorLabel(page, connector1)).toBe('Connector 1');
+
+    await page.mouse.dblclick(245, 207);
+    await type(page, 'Connector 2');
+    await page.keyboard.press('Escape');
+
+    await expect(await getConnectorLabel(page, connector2)).toBe('Connector 2');
   });
 });

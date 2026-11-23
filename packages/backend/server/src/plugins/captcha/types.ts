@@ -4,9 +4,12 @@ export interface CaptchaConfig {
   turnstile: {
     /**
      * Cloudflare Turnstile CAPTCHA secret
-     * default value is demo api key, witch always return success
      */
     secret: string;
+    /** Public Turnstile widget site key. */
+    siteKey: string;
+    /** Expected action bound to the authentication widget and Siteverify response. */
+    action: string;
   };
   challenge: {
     /**

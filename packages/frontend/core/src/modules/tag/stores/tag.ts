@@ -3,10 +3,11 @@ import {
   LiveData,
   Store,
   yjsGetPath,
+  yjsObserveDeep,
   yjsObservePath,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { map, Observable, switchMap } from 'rxjs';
+import { map, switchMap } from 'rxjs';
 import { Array as YArray } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
@@ -24,15 +25,22 @@ export class TagStore extends Store {
   get properties() {
     return this.workspaceService.workspace.docCollection.meta.properties;
   }
-  get tagOptions() {
-    return this.properties.tags?.options ?? [];
-  }
 
   tagOptions$ = LiveData.from(
-    new Observable<Tag[]>(sub => {
-      return this.subscribe(() => sub.next(this.tagOptions));
-    }),
-    this.tagOptions
+    yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'properties.tags.options'
+    ).pipe(
+      switchMap(yjsObserveDeep),
+      map(tagOptions => {
+        if (tagOptions instanceof YArray) {
+          return tagOptions.toJSON();
+        } else {
+          return [];
+        }
+      })
+    ),
+    []
   );
 
   subscribe(cb: () => void) {
@@ -82,12 +90,14 @@ export class TagStore extends Store {
   };
 
   updateTagOption = (id: string, option: Tag) => {
-    this.updateTagOptions(this.tagOptions.map(o => (o.id === id ? option : o)));
+    this.updateTagOptions(
+      this.tagOptions$.value.map(o => (o.id === id ? option : o))
+    );
   };
 
   removeTagOption = (id: string) => {
     this.workspaceService.workspace.docCollection.doc.transact(() => {
-      this.updateTagOptions(this.tagOptions.filter(o => o.id !== id));
+      this.updateTagOptions(this.tagOptions$.value.filter(o => o.id !== id));
       // need to remove tag from all pages
       this.workspaceService.workspace.docCollection.docs.forEach(doc => {
         const tags = doc.meta?.tags ?? [];

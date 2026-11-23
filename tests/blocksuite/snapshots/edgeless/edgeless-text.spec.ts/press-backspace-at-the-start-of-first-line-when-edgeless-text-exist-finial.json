@@ -28,7 +28,10 @@
           "flavour": "affine:edgeless-text",
           "id": "3",
           "props": {
-            "color": "#84cfff",
+            "color": {
+              "dark": "#ffffff",
+              "light": "#000000"
+            },
             "fontFamily": "blocksuite:surface:Inter",
             "fontStyle": "normal",
             "fontWeight": "400",

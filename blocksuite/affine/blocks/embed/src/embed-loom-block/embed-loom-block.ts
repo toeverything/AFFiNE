@@ -1,4 +1,4 @@
-import { OpenIcon } from '@blocksuite/affine-components/icons';
+import { LoadingIcon, OpenIcon } from '@blocksuite/affine-components/icons';
 import type { EmbedLoomModel, EmbedLoomStyles } from '@blocksuite/affine-model';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
@@ -89,14 +89,14 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
   }
 
   override renderBlock() {
-    const { image, title = 'Loom', description, videoId } = this.model.props;
+    const { image, title, description, videoId } = this.model.props;
 
     const loading = this.loading;
     const theme = this.std.get(ThemeProvider).theme;
     const imageProxyService = this.store.get(ImageProxyService);
-    const { LoadingIcon, EmbedCardBannerIcon } = getEmbedCardIcons(theme);
-    const titleIcon = loading ? LoadingIcon : LoomIcon;
-    const titleText = loading ? 'Loading...' : title;
+    const { EmbedCardBannerIcon } = getEmbedCardIcons(theme);
+    const titleIcon = loading ? LoadingIcon() : LoomIcon;
+    const titleText = loading ? 'Loading...' : title || 'Loom';
     const descriptionText = loading ? '' : description;
     const bannerImage =
       !loading && image
@@ -112,34 +112,36 @@ export class EmbedLoomBlockComponent extends EmbedBlockComponent<
             selected: this.selected$.value,
           })}
           style=${styleMap({
-            transform: `scale(${this._scale})`,
             transformOrigin: '0 0',
           })}
           @click=${this._handleClick}
           @dblclick=${this._handleDoubleClick}
         >
           <div class="affine-embed-loom-video">
-            ${videoId
-              ? html`
-                  <div class="affine-embed-loom-video-iframe-container">
-                    <iframe
-                      src=${`https://www.loom.com/embed/${videoId}?hide_title=true`}
-                      frameborder="0"
-                      allow="fullscreen; accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      loading="lazy"
-                      credentialless
-                    ></iframe>
+            ${
+              videoId
+                ? html`
+                    <div class="affine-embed-loom-video-iframe-container">
+                      <iframe
+                        src=${`https://www.loom.com/embed/${videoId}?hide_title=true`}
+                        frameborder="0"
+                        allow="fullscreen; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        sandbox="allow-scripts allow-same-origin allow-presentation"
+                        loading="lazy"
+                        credentialless
+                      ></iframe>
 
-                    <!-- overlay to prevent the iframe from capturing pointer events -->
-                    <div
-                      class=${classMap({
-                        'affine-embed-loom-video-iframe-overlay': true,
-                        hide: !this.showOverlay$.value,
-                      })}
-                    ></div>
-                  </div>
-                `
-              : bannerImage}
+                      <!-- overlay to prevent the iframe from capturing pointer events -->
+                      <div
+                        class=${classMap({
+                          'affine-embed-loom-video-iframe-overlay': true,
+                          hide: !this.showOverlay$.value,
+                        })}
+                      ></div>
+                    </div>
+                  `
+                : bannerImage
+            }
           </div>
           <div class="affine-embed-loom-content">
             <div class="affine-embed-loom-content-header">

@@ -1,15 +1,12 @@
 use std::ptr;
 
 use objc2::{
-  msg_send,
+  AllocAnyThread, msg_send,
   runtime::{AnyClass, AnyObject},
-  AllocAnyThread,
 };
 use objc2_foundation::{NSDictionary, NSError, NSNumber, NSString, NSUInteger, NSURL};
 
-use crate::{
-  av_audio_format::AVAudioFormat, av_audio_pcm_buffer::AVAudioPCMBuffer, error::CoreAudioError,
-};
+use crate::{av_audio_format::AVAudioFormat, av_audio_pcm_buffer::AVAudioPCMBuffer, error::CoreAudioError};
 
 #[allow(unused)]
 pub(crate) struct AVAudioFile {
@@ -32,10 +29,7 @@ impl AVAudioFile {
         &*NSString::from_str("AVNumberOfChannelsKey"),
       ],
       &[
-        NSNumber::initWithUnsignedInt(
-          NSNumber::alloc(),
-          format.audio_stream_basic_description.0.mFormatID,
-        ),
+        NSNumber::initWithUnsignedInt(NSNumber::alloc(), format.audio_stream_basic_description.0.mFormatID),
         NSNumber::initWithDouble(NSNumber::alloc(), format.get_sample_rate()),
         NSNumber::initWithUnsignedInt(NSNumber::alloc(), format.get_channel_count()),
       ],
@@ -61,8 +55,7 @@ impl AVAudioFile {
 
   pub(crate) fn write(&self, buffer: AVAudioPCMBuffer) -> Result<(), CoreAudioError> {
     let mut error: *mut NSError = ptr::null_mut();
-    let success: bool =
-      unsafe { msg_send![self.inner, writeFromBuffer: buffer.inner, error: &mut error] };
+    let success: bool = unsafe { msg_send![self.inner, writeFromBuffer: buffer.inner, error: &mut error] };
     if !success {
       return Err(CoreAudioError::WriteAVAudioFileFailed);
     }

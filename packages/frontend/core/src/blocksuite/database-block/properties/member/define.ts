@@ -1,4 +1,12 @@
-import { propertyType, t } from '@blocksuite/affine/blocks/database';
+import {
+  EditorHostKey,
+  propertyType,
+  t,
+} from '@blocksuite/affine/blocks/database';
+import {
+  UserListProvider,
+  UserProvider,
+} from '@blocksuite/affine/shared/services';
 import zod from 'zod';
 
 export const memberColumnType = propertyType('member');
@@ -16,6 +24,10 @@ export type MemberCellJsonValueType = zod.TypeOf<
 >;
 export const memberPropertyModelConfig = memberColumnType.modelConfig({
   name: 'Member',
+  kanbanGroup: {
+    enabled: true,
+    mutable: true,
+  },
   propertyData: {
     schema: zod.object({}),
     default: () => ({}),
@@ -31,7 +43,21 @@ export const memberPropertyModelConfig = memberColumnType.modelConfig({
   },
   jsonValue: {
     schema: MemberCellJsonValueTypeSchema,
-    type: () => t.array.instance(t.string.instance()),
+    type: ({ dataSource }) => {
+      const host = dataSource.serviceGet(EditorHostKey);
+      const userService = host?.std.getOptional(UserProvider);
+      const userListService = host?.std.getOptional(UserListProvider);
+      return t.array.instance(
+        t.user.instance(
+          userListService && userService
+            ? {
+                userService: userService,
+                userListService: userListService,
+              }
+            : undefined
+        )
+      );
+    },
     isEmpty: ({ value }) => value.length === 0,
   },
 });

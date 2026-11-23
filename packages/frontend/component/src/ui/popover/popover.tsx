@@ -15,17 +15,21 @@ export interface PopoverProps extends PopoverPrimitiveProps {
   portalOptions?: PopoverPortalProps;
   contentOptions?: PopoverContentProps;
 }
+
+const EMPTY_CONTENT_OPTIONS: NonNullable<PopoverProps['contentOptions']> = {};
+
 export const Popover = ({
   content,
   children,
   portalOptions,
-  contentOptions: {
+  contentOptions,
+  ...props
+}: PopoverProps) => {
+  const {
     className: contentClassName,
     style: contentStyle,
     ...otherContentOptions
-  } = {},
-  ...props
-}: PopoverProps) => {
+  } = contentOptions ?? EMPTY_CONTENT_OPTIONS;
   return (
     <PopoverPrimitive.Root {...props}>
       <PopoverPrimitive.Trigger asChild>{children}</PopoverPrimitive.Trigger>

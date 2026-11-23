@@ -36,6 +36,8 @@ export class ConnectorFilter extends InteractivityExtension {
         elements.sort((a, _) => (a instanceof ConnectorElementModel ? -1 : 1));
       }
 
+      context.elements = elements;
+
       return {};
     });
   }

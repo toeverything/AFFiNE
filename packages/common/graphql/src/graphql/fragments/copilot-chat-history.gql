@@ -1,0 +1,28 @@
+fragment CopilotChatHistory on CopilotHistories {
+  sessionId
+  workspaceId
+  docId
+  parentSessionId
+  promptName
+  action
+  pinned
+  title
+  messages {
+    id
+    role
+    content
+    attachments
+    scopeSnapshot
+    streamObjects {
+      type
+      textDelta
+      toolCallId
+      toolName
+      args
+      result
+    }
+    createdAt
+  }
+  createdAt
+  updatedAt
+}

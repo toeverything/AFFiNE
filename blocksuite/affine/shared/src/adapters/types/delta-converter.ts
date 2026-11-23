@@ -56,6 +56,7 @@ export type ASTToDeltaMatcher<AST> = {
         ast: AST,
         options?: DeltaASTConverterOptions
       ) => DeltaInsert<AffineTextAttributes>[];
+      htmlToDelta?: (html: string) => DeltaInsert<AffineTextAttributes>[];
     }
   ) => DeltaInsert<AffineTextAttributes>[];
 };

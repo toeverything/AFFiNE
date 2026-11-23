@@ -2,6 +2,8 @@ version: '3.8'
 
 services:
   app:
+    security_opt:
+      - no-new-privileges:true
     image: mcr.microsoft.com/devcontainers/base:bookworm
     volumes:
       - ../..:/workspaces:cached

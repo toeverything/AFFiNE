@@ -9,6 +9,7 @@ query serverConfig {
     features
     type
     initialized
+    calendarProviders
     credentialsRequirement {
       ...CredentialsRequirements
     }

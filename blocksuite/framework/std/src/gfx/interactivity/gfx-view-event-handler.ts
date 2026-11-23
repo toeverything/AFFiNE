@@ -66,7 +66,29 @@ export class GfxViewEventManager {
       .search(new Bound(x - 5, y - 5, 10, 10), {
         filter: ['canvas', 'local'],
       })
-      .map(model => this.gfx.view.get(model)) as GfxElementModelView[];
+      .reduce((pre, model) => {
+        if (
+          model.includesPoint(
+            x,
+            y,
+            {
+              hitThreshold: 10,
+              responsePadding: [5, 5],
+            },
+            this.gfx.std.host
+          ) ||
+          ('externalBound' in model
+            ? model.externalBound?.isPointInBound([x, y])
+            : false)
+        ) {
+          const view = this.gfx.view.get(model) as GfxElementModelView | null;
+
+          view && pre.push(view);
+        }
+
+        return pre;
+      }, [] as GfxElementModelView[]);
+
     const currentStackedViews = new Set(this._hoveredElementsStack);
     const visited = new Set<GfxElementModelView>();
 

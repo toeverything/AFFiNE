@@ -6,10 +6,11 @@ import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-import { setupEffects } from './effects';
+import { setupEffects, useIsOnBattery } from './effects';
+import { DesktopLanguageSync } from './language-sync';
 import { DesktopThemeSync } from './theme-sync';
 
 const { frameworkProvider } = setupEffects();
@@ -34,23 +35,25 @@ if (
 
 const cache = createEmotionCache();
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 export function App() {
+  const isOnBattery = useIsOnBattery();
+
+  useEffect(() => {
+    document.body.classList.toggle('on-battery', isOnBattery);
+    return () => {
+      document.body.classList.remove('on-battery');
+    };
+  }, [isOnBattery]);
+
   return (
-    <Suspense>
+    <Suspense fallback={<AppContainer fallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
-              <RouterProvider
-                fallbackElement={<AppContainer fallback />}
-                router={router}
-                future={future}
-              />
+              <DesktopLanguageSync />
+              <RouterProvider router={router} />
               {environment.isWindows && (
                 <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
                   <WindowsAppControls />

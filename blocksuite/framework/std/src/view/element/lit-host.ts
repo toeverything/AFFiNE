@@ -28,6 +28,21 @@ import { ShadowlessElement } from './shadowless-element.js';
 export const storeContext = createContext<Store>('store');
 export const stdContext = createContext<BlockStdScope>('std');
 
+function isMatchFlavour(widgetFlavour: string, block: BlockModel) {
+  if (widgetFlavour.endsWith('/*')) {
+    const path = widgetFlavour.slice(0, -2).split('/');
+    let current: BlockModel | null = block.parent;
+    for (let i = path.length - 1; i >= 0; i--) {
+      if (!current || current.flavour !== path[i]) {
+        return false;
+      }
+      current = current.parent;
+    }
+    return true;
+  }
+  return block.flavour === widgetFlavour;
+}
+
 @requiredProperties({
   store: PropTypes.instanceOf(Store),
   std: PropTypes.object,
@@ -61,7 +76,7 @@ export class EditorHost extends SignalWatcher(
     const widgets = Array.from(widgetViews.entries()).reduce(
       (mapping, [key, tag]) => {
         const [widgetFlavour, id] = key.split('|');
-        if (widgetFlavour === flavour) {
+        if (isMatchFlavour(widgetFlavour, model)) {
           const template = html`<${tag} ${unsafeStatic(WIDGET_ID_ATTR)}=${id}></${tag}>`;
           mapping[id] = template;
         }
@@ -155,10 +170,10 @@ export class EditorHost extends SignalWatcher(
         ...Object.values(widgetTags),
       ];
       await Promise.all(
-        elementsTags.map(tag => {
+        elementsTags.map(async tag => {
           const element = this.renderRoot.querySelector(tag._$litStatic$);
           if (element instanceof LitElement) {
-            return element.updateComplete;
+            return await element.updateComplete;
           }
           return null;
         })

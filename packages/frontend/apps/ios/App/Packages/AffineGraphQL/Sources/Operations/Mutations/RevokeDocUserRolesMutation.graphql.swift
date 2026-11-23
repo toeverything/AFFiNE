@@ -26,6 +26,9 @@ public class RevokeDocUserRolesMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("revokeDocUserRoles", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RevokeDocUserRolesMutation.Data.self
+    ] }
 
     public var revokeDocUserRoles: Bool { __data["revokeDocUserRoles"] }
   }

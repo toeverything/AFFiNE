@@ -7,23 +7,64 @@ import type { Text } from '../reactive/index.js';
 import { Boxed, createYProxy, popProp, stashProp } from '../reactive/index.js';
 
 describe('array', () => {
-  test('proxy', () => {
+  test('push and splice', () => {
     const ydoc = new Y.Doc();
     const arr = ydoc.getArray('arr');
-    arr.push([0]);
+    arr.push([0, 1, 2, 3, 4, 5]);
 
     const proxy = createYProxy(arr) as unknown[];
-    expect(arr.get(0)).toBe(0);
+    expect(arr.toJSON()).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(proxy).toEqual([0, 1, 2, 3, 4, 5]);
 
-    proxy.push(1);
-    expect(arr.get(1)).toBe(1);
-    expect(arr.length).toBe(2);
+    proxy.push(6);
+    expect(arr.toJSON()).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(proxy).toEqual([0, 1, 2, 3, 4, 5, 6]);
 
     proxy.splice(1, 1);
-    expect(arr.length).toBe(1);
+    expect(arr.toJSON()).toEqual([0, 2, 3, 4, 5, 6]);
+    expect(proxy).toEqual([0, 2, 3, 4, 5, 6]);
 
     proxy[0] = 2;
-    expect(arr.length).toBe(1);
+    expect(arr.toJSON()).toEqual([2, 2, 3, 4, 5, 6]);
+    expect(proxy).toEqual([2, 2, 3, 4, 5, 6]);
+  });
+
+  test('shift and unshift', () => {
+    const ydoc = new Y.Doc();
+    const arr = ydoc.getArray('arr');
+    arr.push([0, 1, 2, 3, 4, 5]);
+
+    const proxy = createYProxy(arr) as unknown[];
+    expect(arr.toJSON()).toEqual([0, 1, 2, 3, 4, 5]);
+
+    // Test shift
+    const shifted = proxy.shift();
+    expect(shifted).toBe(0);
+    expect(arr.toJSON()).toEqual([1, 2, 3, 4, 5]);
+    expect(proxy).toEqual([1, 2, 3, 4, 5]);
+
+    const shifted2 = proxy.shift();
+    expect(shifted2).toBe(1);
+    expect(arr.toJSON()).toEqual([2, 3, 4, 5]);
+    expect(proxy).toEqual([2, 3, 4, 5]);
+
+    // Test shift on empty array
+    const emptyArr = ydoc.getArray('empty');
+    const emptyProxy = createYProxy(emptyArr) as unknown[];
+    const emptyShifted = emptyProxy.shift();
+    expect(emptyShifted).toBeUndefined();
+    expect(emptyArr.toJSON()).toEqual([]);
+    expect(emptyProxy).toEqual([]);
+
+    // Test unshift
+    proxy.unshift(-1, 0, 1);
+    expect(arr.toJSON()).toEqual([-1, 0, 1, 2, 3, 4, 5]);
+    expect(proxy).toEqual([-1, 0, 1, 2, 3, 4, 5]);
+
+    // Test unshift with multiple items
+    proxy.unshift(-3, -2);
+    expect(arr.toJSON()).toEqual([-3, -2, -1, 0, 1, 2, 3, 4, 5]);
+    expect(proxy).toEqual([-3, -2, -1, 0, 1, 2, 3, 4, 5]);
   });
 });
 

@@ -12,6 +12,7 @@ import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { i18nTime, useI18n } from '@affine/i18n';
+import { TodayIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
   useService,
@@ -20,6 +21,10 @@ import {
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
+import { StackProperty } from '../explorer/docs-view/stack-property';
+import type { DocListPropertyProps, GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './journal.css';
 
@@ -178,18 +183,24 @@ export const JournalValue = ({ readonly }: PropertyValueProps) => {
 
 export const JournalFilterValue = ({
   filter,
+  isDraft,
+  onDraftCompleted,
   onChange,
 }: {
   filter: FilterParams;
-  onChange: (filter: FilterParams) => void;
+  isDraft?: boolean;
+  onDraftCompleted?: () => void;
+  onChange?: (filter: FilterParams) => void;
 }) => {
   return (
-    <Menu
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
             onClick={() => {
-              onChange({
+              onChange?.({
                 ...filter,
                 value: 'true',
               });
@@ -200,7 +211,7 @@ export const JournalFilterValue = ({
           </MenuItem>
           <MenuItem
             onClick={() => {
-              onChange({
+              onChange?.({
                 ...filter,
                 value: 'false',
               });
@@ -213,6 +224,34 @@ export const JournalFilterValue = ({
       }
     >
       <span>{filter.value === 'true' ? 'True' : 'False'}</span>
-    </Menu>
+    </FilterValueMenu>
+  );
+};
+
+export const JournalDocListProperty = ({ doc }: DocListPropertyProps) => {
+  const journalService = useService(JournalService);
+  const journalDate = useLiveData(journalService.journalDate$(doc.id));
+
+  if (!journalDate) {
+    return null;
+  }
+
+  return (
+    <StackProperty icon={<TodayIcon />}>
+      {i18nTime(journalDate, { absolute: { accuracy: 'day' } })}
+    </StackProperty>
+  );
+};
+
+export const JournalGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+  const t = useI18n();
+  const text =
+    groupId === 'true'
+      ? t['com.affine.all-docs.group.is-journal']()
+      : t['com.affine.all-docs.group.is-not-journal']();
+  return (
+    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+      {text}
+    </PlainTextDocGroupHeader>
   );
 };

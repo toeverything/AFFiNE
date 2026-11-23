@@ -49,9 +49,11 @@ export const SignIn = ({
           if (redirectUrl.toUpperCase() === 'CLOSE_POPUP') {
             window.close();
           }
-          navigate(redirectUrl, {
-            replace: true,
-          });
+          Promise.resolve(
+            navigate(redirectUrl, {
+              replace: true,
+            })
+          ).catch(console.error);
         } else {
           handleClose();
         }
@@ -64,12 +66,13 @@ export const SignIn = ({
 
   return (
     <SignInPageContainer>
-      <div style={{ maxWidth: '400px', width: '100%' }}>
+      <div style={{ maxWidth: '400px', width: '100%', zIndex: 1 }}>
         <SignInPanel
           onSkip={handleClose}
           onAuthenticated={handleAuthenticated}
           initStep={initStep}
           server={server}
+          redirectUrl={redirectUrl ?? undefined}
         />
       </div>
     </SignInPageContainer>

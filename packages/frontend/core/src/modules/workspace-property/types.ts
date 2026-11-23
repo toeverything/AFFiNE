@@ -13,13 +13,19 @@ type DateFilters =
 
 export type WorkspacePropertyTypes = {
   tags: {
-    filter: 'include' | 'is-not-empty' | 'is-empty';
+    filter:
+      | 'include-all'
+      | 'include-any-of'
+      | 'not-include-all'
+      | 'not-include-any-of'
+      | 'is-not-empty'
+      | 'is-empty';
   };
   text: {
     filter: 'is' | 'is-not' | 'is-not-empty' | 'is-empty';
   };
   number: {
-    filter: 'is' | 'is-not' | 'is-not-empty' | 'is-empty';
+    filter: '=' | '≠' | '>' | '<' | '≥' | '≤' | 'is-not-empty' | 'is-empty';
   };
   checkbox: {
     filter: 'is' | 'is-not';
@@ -33,9 +39,9 @@ export type WorkspacePropertyTypes = {
   createdAt: { filter: DateFilters };
   docPrimaryMode: { filter: 'is' | 'is-not' };
   journal: { filter: 'is' | 'is-not' };
-  edgelessTheme: { filter: never };
-  pageWidth: { filter: never };
-  template: { filter: never };
+  edgelessTheme: { filter: 'is' | 'is-not' };
+  pageWidth: { filter: 'is' | 'is-not' };
+  template: { filter: 'is' | 'is-not' };
   unknown: { filter: never };
 };
 export type WorkspacePropertyType = keyof WorkspacePropertyTypes;

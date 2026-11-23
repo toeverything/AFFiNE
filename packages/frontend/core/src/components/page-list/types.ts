@@ -1,15 +1,15 @@
-import type { Collection } from '@affine/env/filter';
+import type { CollectionMeta } from '@affine/core/modules/collection';
 import type { DocMeta, Workspace } from '@blocksuite/affine/store';
 import type { JSX, PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
-export type ListItem = DocMeta | CollectionMeta | TagMeta;
-
-export interface CollectionMeta extends Collection {
-  title: string;
-  createDate?: Date | number;
-  updatedDate?: Date | number;
-}
+export type ListItem =
+  | DocMeta
+  | (CollectionMeta & {
+      createDate?: Date | number;
+      updatedDate?: Date | number;
+    })
+  | TagMeta;
 
 export type TagMeta = {
   id: string;

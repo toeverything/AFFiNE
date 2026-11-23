@@ -1,10 +1,10 @@
-import { getMembersByWorkspaceIdQuery } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
-import type { WorkspaceServerService } from '../../cloud';
+import type { NbstoreService } from '../../storage';
+import { mapWorkspaceMemberSnapshot } from './realtime-mappers';
 
 export class MemberSearchStore extends Store {
-  constructor(private readonly workspaceServerService: WorkspaceServerService) {
+  constructor(private readonly nbstoreService: NbstoreService) {
     super();
   }
 
@@ -15,22 +15,21 @@ export class MemberSearchStore extends Store {
     take?: number,
     signal?: AbortSignal
   ) {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No Server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId,
-        skip,
-        take,
-        query,
-      },
-      context: {
-        signal,
-      },
-    });
+    return await this.nbstoreService.realtime
+      .request(
+        'workspace.members.get',
+        { workspaceId, skip, take, query },
+        { signal, timeoutMs: 10000 }
+      )
+      .then(data => ({
+        ...data,
+        members: data.members.map(mapWorkspaceMemberSnapshot),
+      }));
+  }
 
-    return data.workspace;
+  subscribeMembers(workspaceId: string) {
+    return this.nbstoreService.realtime.subscribe('workspace.members.changed', {
+      workspaceId,
+    });
   }
 }

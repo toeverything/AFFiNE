@@ -1,0 +1,70 @@
+name: Prepare Release
+description: Resolve the application release with the published affine-release tool
+inputs:
+  targets:
+    description: Targets accepted by affine-release plan
+    required: true
+  created-at:
+    description: Original GitHub workflow run creation time
+    required: true
+  tool-image:
+    description: Release tool image tag or digest
+    required: true
+outputs:
+  APP_VERSION:
+    description: Planned application version
+    value: ${{ steps.plan.outputs.APP_VERSION }}
+  GIT_SHORT_HASH:
+    description: Application source short SHA
+    value: ${{ steps.plan.outputs.GIT_SHORT_HASH }}
+  BUILD_TYPE:
+    description: Planned channel
+    value: ${{ steps.plan.outputs.BUILD_TYPE }}
+  SKIP:
+    description: Whether this source and target set is already complete
+    value: ${{ steps.plan.outputs.SKIP }}
+  SERVER:
+    description: Whether the server is selected
+    value: ${{ steps.plan.outputs.SERVER }}
+  DESKTOP_MATRIX:
+    description: Desktop build matrix
+    value: ${{ steps.plan.outputs.DESKTOP_MATRIX }}
+  MOBILE_MATRIX:
+    description: Mobile build matrix
+    value: ${{ steps.plan.outputs.MOBILE_MATRIX }}
+runs:
+  using: composite
+  steps:
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    - name: Pull release tool
+      shell: bash
+      env:
+        TOOL_IMAGE: ${{ inputs.tool-image }}
+      run: docker pull "$TOOL_IMAGE"
+    - name: Resolve release plan
+      id: plan
+      shell: bash
+      env:
+        TOOL_IMAGE: ${{ inputs.tool-image }}
+        TARGETS: ${{ inputs.targets }}
+        RUN_CREATED_AT: ${{ inputs.created-at }}
+      run: |
+        set -euo pipefail
+        previous=()
+        if [ -f release-previous.json ]; then previous=(--previous /work/release-previous.json); fi
+        docker run --rm --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/work" "$TOOL_IMAGE" plan \
+          --ref "$GITHUB_REF" --sha "$GITHUB_SHA" --targets "$TARGETS" \
+          --request-id "$GITHUB_REPOSITORY_ID-$GITHUB_RUN_ID" --created-at "$RUN_CREATED_AT" --out /work/release-plan.json "${previous[@]}"
+        {
+          echo "APP_VERSION=$(jq -r .version release-plan.json)"
+          echo "GIT_SHORT_HASH=${GITHUB_SHA:0:9}"
+          echo "BUILD_TYPE=$(jq -r .channel release-plan.json)"
+          echo "SKIP=$(jq -r ' .skip // false' release-plan.json)"
+          echo "SERVER=$(jq 'any(.targets[]; .name == "server")' release-plan.json)"
+          echo "DESKTOP_MATRIX=$(jq -c '{include: [.buildMatrix.include[] | select(.target | startswith("desktop-"))]}' release-plan.json)"
+          echo "MOBILE_MATRIX=$(jq -c '{include: [.buildMatrix.include[] | select(.target | startswith("mobile-"))]}' release-plan.json)"
+        } >> "$GITHUB_OUTPUT"

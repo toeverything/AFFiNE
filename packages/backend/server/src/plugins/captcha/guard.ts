@@ -33,14 +33,15 @@ export class CaptchaGuardProvider
 
     const { req } = getRequestResponseFromContext(context);
 
-    // require headers, old client send through query string
-    // x-captcha-token
-    // x-captcha-challenge
-    const token = req.headers['x-captcha-token'] ?? req.query['token'];
-    const challenge =
-      req.headers['x-captcha-challenge'] ?? req.query['challenge'];
+    const token = req.headers['x-captcha-token'];
+    const challenge = req.headers['x-captcha-challenge'];
+    const provider = req.headers['x-captcha-provider'];
 
-    const credential = this.captcha.assertValidCredential({ token, challenge });
+    const credential = this.captcha.assertValidCredential({
+      token,
+      challenge,
+      provider,
+    });
     await this.captcha.verifyRequest(credential, req);
 
     return true;

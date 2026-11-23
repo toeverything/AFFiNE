@@ -244,13 +244,15 @@ export class EmbedIframeLinkInputPopup extends EmbedIframeLinkInputBase {
 
     return html`
       <div class=${modalMainWrapperClass}>
-        ${showCloseButton
-          ? html`
-              <div class="popup-close-button" @click=${this._onClose}>
-                ${CloseIcon({ width: '20', height: '20' })}
-              </div>
-            `
-          : nothing}
+        ${
+          showCloseButton
+            ? html`
+                <div class="popup-close-button" @click=${this._onClose}>
+                  ${CloseIcon({ width: '20', height: '20' })}
+                </div>
+              `
+            : nothing
+        }
         <div class="link-input-popup-content-wrapper">
           <div class="title">${title}</div>
           <div class="description">${description}</div>

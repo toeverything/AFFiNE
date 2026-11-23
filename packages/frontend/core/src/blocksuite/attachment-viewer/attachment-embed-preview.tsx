@@ -6,7 +6,7 @@ import { PDFViewerEmbedded } from './pdf/pdf-viewer-embedded';
 import type { AttachmentViewerProps } from './types';
 import { getAttachmentType } from './utils';
 
-// In Embed view
+// Embed view
 export const AttachmentEmbedPreview = ({ model }: AttachmentViewerProps) => {
   const attachmentType = getAttachmentType(model);
   const element = useMemo(() => {

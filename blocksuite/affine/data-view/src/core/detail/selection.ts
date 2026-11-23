@@ -1,7 +1,6 @@
 import type { KanbanCardSelection } from '../../view-presets';
 import type { KanbanCard } from '../../view-presets/kanban/pc/card.js';
 import { KanbanCell } from '../../view-presets/kanban/pc/cell.js';
-import type { RecordDetail } from './detail.js';
 import { RecordField } from './field.js';
 
 type DetailViewSelection = {
@@ -9,16 +8,39 @@ type DetailViewSelection = {
   isEditing: boolean;
 };
 
+type DetailSelectionHost = {
+  querySelector: (selector: string) => unknown;
+};
+
+const isSameDetailSelection = (
+  current?: DetailViewSelection,
+  next?: DetailViewSelection
+) => {
+  if (!current && !next) {
+    return true;
+  }
+  if (!current || !next) {
+    return false;
+  }
+  return (
+    current.propertyId === next.propertyId &&
+    current.isEditing === next.isEditing
+  );
+};
+
 export class DetailSelection {
   _selection?: DetailViewSelection;
 
   onSelect = (selection?: DetailViewSelection) => {
+    if (isSameDetailSelection(this._selection, selection)) {
+      return;
+    }
     const old = this._selection;
+    this._selection = selection;
     if (old) {
       this.blur(old);
     }
-    this._selection = selection;
-    if (selection) {
+    if (selection && isSameDetailSelection(this._selection, selection)) {
       this.focus(selection);
     }
   };
@@ -49,7 +71,7 @@ export class DetailSelection {
     }
   }
 
-  constructor(private readonly viewEle: RecordDetail) {}
+  constructor(private readonly viewEle: DetailSelectionHost) {}
 
   blur(selection: DetailViewSelection) {
     const container = this.getFocusCellContainer(selection);
@@ -111,8 +133,10 @@ export class DetailSelection {
   }
 
   focusFirstCell() {
-    const firstId = this.viewEle.querySelector('affine-data-view-record-field')
-      ?.column.id;
+    const firstField = this.viewEle.querySelector(
+      'affine-data-view-record-field'
+    ) as RecordField | undefined;
+    const firstId = firstField?.column.id;
     if (firstId) {
       this.selection = {
         propertyId: firstId,
@@ -144,11 +168,12 @@ export class DetailSelection {
 
   getSelectCard(selection: KanbanCardSelection) {
     const { groupKey, cardId } = selection.cards[0];
+    const group = this.viewEle.querySelector(
+      `affine-data-view-kanban-group[data-key="${groupKey}"]`
+    ) as HTMLElement | undefined;
 
-    return this.viewEle
-      .querySelector(`affine-data-view-kanban-group[data-key="${groupKey}"]`)
-      ?.querySelector(
-        `affine-data-view-kanban-card[data-card-id="${cardId}"]`
-      ) as KanbanCard | undefined;
+    return group?.querySelector(
+      `affine-data-view-kanban-card[data-card-id="${cardId}"]`
+    ) as KanbanCard | undefined;
   }
 }

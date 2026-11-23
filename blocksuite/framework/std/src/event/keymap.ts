@@ -3,6 +3,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { base, keyName } from 'w3c-keyname';
 
 import type { UIEventHandler } from './base.js';
+import { KeyboardEventState } from './state/index.js';
 
 function normalizeKeyName(name: string) {
   const parts = name.split(/-(?!$)/);
@@ -86,14 +87,26 @@ export function bindKeymap(
       }
     }
 
-    // none standard keyboard, fallback to keyCode
-    const special =
-      event.shiftKey ||
-      event.altKey ||
-      event.metaKey ||
-      name.charCodeAt(0) > 127;
+    // For non-standard keyboards, fallback to keyCode only when modifier keys are pressed.
+    // Do NOT fallback when the key produces a non-ASCII character (e.g., Cyrillic 'х' on Russian keyboard),
+    // because the user intends to type that character, not trigger a shortcut bound to the physical key.
+    // See: https://github.com/toeverything/AFFiNE/issues/14059
+    const hasModifier =
+      event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     const baseName = base[event.keyCode];
-    if (special && baseName && baseName !== name) {
+    const isSingleAscii = name.length === 1 && name.charCodeAt(0) <= 0x7e;
+    const isAltInputChar =
+      event.altKey && !event.ctrlKey && !event.metaKey && !isSingleAscii;
+    // Keep supporting existing Alt+digit shortcuts (e.g. Alt-0/1/2 in edgeless)
+    // while preventing Alt-based locale input characters from triggering letter shortcuts.
+    const isDigitBaseKey =
+      baseName != null && baseName.length === 1 && /[0-9]/.test(baseName);
+    if (
+      hasModifier &&
+      baseName &&
+      baseName !== name &&
+      !(isAltInputChar && !isDigitBaseKey)
+    ) {
       const fromCode = map[modifiers(baseName, event)];
       if (fromCode && fromCode(ctx)) {
         return true;
@@ -104,7 +117,7 @@ export function bindKeymap(
   };
 }
 
-// In Android, the keypress event  dose not contain
+// In some IME of Android like, the keypress event  dose not contain
 // the information about what key is pressed. See
 // https://stackoverflow.com/a/68188679
 // https://stackoverflow.com/a/66724830
@@ -115,13 +128,38 @@ export function androidBindKeymapPatch(
     const event = ctx.get('defaultState').event;
     if (!(event instanceof InputEvent)) return;
 
-    if (
-      event.inputType === 'deleteContentBackward' &&
-      'Backspace' in bindings
-    ) {
-      return bindings['Backspace'](ctx);
+    const bindingName =
+      event.inputType === 'deleteContentBackward'
+        ? 'Backspace'
+        : event.inputType === 'deleteContentForward'
+          ? 'Delete'
+          : event.inputType === 'insertParagraph'
+            ? 'Enter'
+            : undefined;
+    if (!bindingName || !(bindingName in bindings)) return false;
+
+    if (!ctx.has('keyboardState')) {
+      const keyboardEvent = new KeyboardEvent('keydown', {
+        key: bindingName,
+        code: bindingName,
+        cancelable: true,
+      });
+      Object.defineProperty(keyboardEvent, 'isComposing', {
+        configurable: true,
+        value: event.isComposing,
+      });
+      ctx.add(
+        new KeyboardEventState({
+          event: keyboardEvent,
+          composing: event.isComposing,
+        })
+      );
     }
 
-    return false;
+    const handled = bindings[bindingName](ctx);
+    if (handled || ctx.get('keyboardState').raw.defaultPrevented) {
+      event.preventDefault();
+    }
+    return handled;
   };
 }

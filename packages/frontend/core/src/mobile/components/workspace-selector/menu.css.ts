@@ -9,7 +9,7 @@ import { style } from '@vanilla-extract/css';
 
 export const root = style({
   maxHeight:
-    'calc(100dvh - 100px - env(safe-area-inset-bottom) - env(safe-area-inset-top))',
+    'calc(100dvh - 100px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)))',
   display: 'flex',
   flexDirection: 'column',
 });
@@ -85,6 +85,17 @@ export const wsName = style([
     textAlign: 'left',
   },
 ]);
+export const signInIcon = style({
+  width: 32,
+  height: 32,
+  borderRadius: 6,
+  border: `1px solid ${cssVarV2.tab.divider.divider}`,
+  color: cssVarV2.icon.primary,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 20,
+});
 
 export const serverInfo = style({
   padding: '6px 20px',

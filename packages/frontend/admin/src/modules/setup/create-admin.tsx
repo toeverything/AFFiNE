@@ -80,7 +80,7 @@ export const CreateAdmin = ({
               required
             />
             <p
-              className={`absolute text-sm text-red-500 -bottom-6 ${invalidEmail ? '' : 'opacity-0 pointer-events-none'}`}
+              className={`absolute text-sm text-destructive -bottom-6 ${invalidEmail ? '' : 'opacity-0 pointer-events-none'}`}
             >
               Invalid email address.
             </p>
@@ -99,7 +99,7 @@ export const CreateAdmin = ({
               required
             />
             <p
-              className={`text-sm text-muted-foreground ${invalidPassword && 'text-red-500'}`}
+              className={`text-sm text-muted-foreground ${invalidPassword && 'text-destructive'}`}
             >
               {invalidPassword ? 'Invalid password. ' : ''}Please enter{' '}
               {String(passwordLimits.minLength)}-

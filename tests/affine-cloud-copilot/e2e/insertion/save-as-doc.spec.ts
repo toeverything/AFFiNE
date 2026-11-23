@@ -13,12 +13,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -34,8 +34,9 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await page.getByText('New doc created').waitFor({ state: 'visible' });
 
     // Verify the ai block is created
-    const editorContent = await utils.editor.getEditorContent(page);
-    expect(editorContent).toBe(content);
+    await expect
+      .poll(() => utils.editor.getEditorContent(page), { timeout: 15_000 })
+      .toBe(content);
   });
 
   test('should save content as a doc in edgeless mode', async ({
@@ -45,12 +46,12 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await utils.editor.switchToEdgelessMode(page);
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -69,7 +70,8 @@ test.describe('AIInsertion/SaveAsDoc', () => {
     await utils.editor.isPageMode(page);
 
     // Verify the ai block is created
-    const editorContent = await utils.editor.getEditorContent(page);
-    expect(editorContent).toBe(content);
+    await expect
+      .poll(() => utils.editor.getEditorContent(page), { timeout: 15_000 })
+      .toBe(content);
   });
 });

@@ -5,7 +5,7 @@ import type { ReactiveController } from 'lit';
 
 import { startDrag } from '../../../../core/utils/drag.js';
 import { TableRowView } from '../row/row.js';
-import type { DataViewTable } from '../table-view.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class TableDragController implements ReactiveController {
   dragStart = (rowView: TableRowView, evt: PointerEvent) => {
@@ -32,8 +32,8 @@ export class TableDragController implements ReactiveController {
       onDrag: () => undefined,
       onMove: evt => {
         preview.display(evt.x - offsetLeft, evt.y - offsetTop);
-        if (!this.host.contains(evt.target as Node)) {
-          const callback = this.host.props.onDrag;
+        if (!this.host?.contains(evt.target as Node)) {
+          const callback = this.logic.root.config.onDrag;
           if (callback) {
             this.dropPreview.remove();
             return {
@@ -66,7 +66,7 @@ export class TableDragController implements ReactiveController {
           return;
         }
         if (result.type === 'self') {
-          const row = this.host.props.view.rowGetOrCreate(rowView.rowId);
+          const row = this.logic.view.rowGetOrCreate(rowView.rowId);
           row.move(result.position, fromGroup, result.groupKey);
         }
       },
@@ -88,9 +88,9 @@ export class TableDragController implements ReactiveController {
     | undefined => {
     const y = evt.y;
     const tableRect = this.host
-      .querySelector('affine-data-view-table-group')
+      ?.querySelector('affine-data-view-table-group')
       ?.getBoundingClientRect();
-    const rows = this.host.querySelectorAll('data-view-table-row');
+    const rows = this.host?.querySelectorAll('data-view-table-row');
     if (!rows || !tableRect || y < tableRect.top) {
       return;
     }
@@ -124,21 +124,23 @@ export class TableDragController implements ReactiveController {
     return position;
   };
 
-  constructor(private readonly host: DataViewTable) {
-    this.host.addController(this);
+  constructor(private readonly logic: TableViewUILogic) {}
+
+  get host() {
+    return this.logic.ui$.value;
   }
 
   hostConnected() {
-    if (this.host.props.view.readonly$.value) {
-      return;
-    }
-    this.host.disposables.add(
-      this.host.props.handleEvent('dragStart', context => {
+    this.host?.disposables.add(
+      this.logic.handleEvent('dragStart', context => {
+        if (this.logic.view.readonly$.value) {
+          return;
+        }
         const event = context.get('pointerState').raw;
         const target = event.target;
         if (
           target instanceof Element &&
-          this.host.contains(target) &&
+          this.host?.contains(target) &&
           target.closest('.data-view-table-view-drag-handler')
         ) {
           event.preventDefault();
@@ -158,10 +160,9 @@ export class TableDragController implements ReactiveController {
 const createDragPreview = (row: TableRowView, x: number, y: number) => {
   const div = document.createElement('div');
   const cloneRow = new TableRowView();
-  cloneRow.view = row.view;
   cloneRow.rowIndex = row.rowIndex;
   cloneRow.rowId = row.rowId;
-  cloneRow.dataViewEle = row.dataViewEle;
+  cloneRow.tableViewLogic = row.tableViewLogic;
   div.append(cloneRow);
   div.className = 'with-data-view-css-variable';
   div.style.width = `${row.getBoundingClientRect().width}px`;

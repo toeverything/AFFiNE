@@ -23,3 +23,9 @@ export async function updateBlockType(
   );
   await waitNextFrame(page, 400);
 }
+
+export async function getBlockIds(page: Page) {
+  return page.evaluate(() => {
+    return window.host.std.store.getAllModels().map(m => m.id);
+  });
+}

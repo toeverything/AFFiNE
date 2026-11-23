@@ -132,15 +132,15 @@ function isAfter(
   referenceDate: readonly [number, number, number] | Dayjs
 ): boolean {
   const [targetYear, targetMonth, targetDay] = isDayjs(targetDate)
-    ? [targetDate.year(), targetDate.month(), targetDate.date()]
+    ? [targetDate.year(), targetDate.month() + 1, targetDate.date()]
     : targetDate;
   const [refYear, refMonth, refDay] = isDayjs(referenceDate)
-    ? [referenceDate.year(), referenceDate.month(), referenceDate.date()]
+    ? [referenceDate.year(), referenceDate.month() + 1, referenceDate.date()]
     : referenceDate;
 
   return (
-    targetYear >= refYear ||
-    (targetYear === refYear && targetMonth >= refMonth) ||
+    targetYear > refYear ||
+    (targetYear === refYear && targetMonth > refMonth) ||
     (targetYear === refYear && targetMonth === refMonth && targetDay >= refDay)
   );
 }
@@ -153,8 +153,8 @@ function isBefore(
   const [refYear, refMonth, refDay] = referenceDate;
 
   return (
-    targetYear <= refYear ||
-    (targetYear === refYear && targetMonth <= refMonth) ||
+    targetYear < refYear ||
+    (targetYear === refYear && targetMonth < refMonth) ||
     (targetYear === refYear && targetMonth === refMonth && targetDay <= refDay)
   );
 }

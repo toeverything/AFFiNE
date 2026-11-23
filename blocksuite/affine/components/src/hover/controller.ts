@@ -179,7 +179,7 @@ export class HoverController implements ReactiveController {
       this._portal = createLitPortal({
         ...portalOptions,
         abortController: this._abortController,
-      });
+      }).portal;
 
       const transition = this._hoverOptions.transition;
       if (transition) {

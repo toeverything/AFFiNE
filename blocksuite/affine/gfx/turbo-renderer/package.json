@@ -3,17 +3,18 @@
   "description": "Turbo renderer for viewport in BlockSuite.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "yarn run -T tsc"
   },
   "sideEffects": false,
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
+    "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.2"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -25,5 +26,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.27.5"
 }

@@ -22,6 +22,9 @@ export const publicUserLabelRemoved = style([
 ]);
 
 export const publicUserLabelAvatar = style({
-  marginRight: '0.5em',
-  transform: 'translateY(4px)',
+  selectors: {
+    '&[data-show-name="true"]': {
+      marginRight: '0.5em',
+    },
+  },
 });

@@ -11,6 +11,7 @@ import {
 import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -101,7 +102,7 @@ export const DeleteLeaveWorkspace = ({
     <>
       <SettingRow
         name={
-          <span style={{ color: 'var(--affine-error-color)' }}>
+          <span style={{ color: cssVarV2('status/error') }}>
             {isOwner
               ? t['com.affine.workspaceDelete.title']()
               : t['com.affine.deleteLeaveWorkspace.leave']()}

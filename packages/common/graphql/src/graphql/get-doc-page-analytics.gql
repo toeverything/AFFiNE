@@ -1,0 +1,33 @@
+query getDocPageAnalytics(
+  $workspaceId: String!
+  $docId: String!
+  $input: DocPageAnalyticsInput
+) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      analytics(input: $input) {
+        window {
+          from
+          to
+          timezone
+          bucket
+          requestedSize
+          effectiveSize
+        }
+        series {
+          date
+          totalViews
+          uniqueViews
+          guestViews
+        }
+        summary {
+          totalViews
+          uniqueViews
+          guestViews
+          lastAccessedAt
+        }
+        generatedAt
+      }
+    }
+  }
+}

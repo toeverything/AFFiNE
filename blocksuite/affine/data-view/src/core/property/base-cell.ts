@@ -8,10 +8,10 @@ import type { Cell } from '../view-manager/cell.js';
 import type { CellRenderProps, DataViewCellLifeCycle } from './manager.js';
 
 export abstract class BaseCellRenderer<
-    RawValue = unknown,
-    JsonValue = unknown,
-    Data extends Record<string, unknown> = Record<string, unknown>,
-  >
+  RawValue = unknown,
+  JsonValue = unknown,
+  Data extends Record<string, unknown> = Record<string, unknown>,
+>
   extends SignalWatcher(WithDisposable(ShadowlessElement))
   implements DataViewCellLifeCycle, CellRenderProps<Data, RawValue, JsonValue>
 {

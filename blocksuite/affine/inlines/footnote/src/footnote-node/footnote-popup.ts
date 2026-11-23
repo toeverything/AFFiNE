@@ -1,14 +1,13 @@
 import {
   getAttachmentFileIcon,
-  getLoadingIconWith,
+  LoadingIcon,
   WebIcon16,
 } from '@blocksuite/affine-components/icons';
 import type { FootNote } from '@blocksuite/affine-model';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import {
   DocDisplayMetaProvider,
-  LinkPreviewerService,
-  ThemeProvider,
+  LinkPreviewServiceIdentifier,
 } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
@@ -77,7 +76,7 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
       return getAttachmentFileIcon(fileType);
     } else if (referenceType === 'url') {
       if (this._isLoading$.value) {
-        return this._LoadingIcon();
+        return LoadingIcon();
       }
 
       const favicon = this._linkPreview$.value?.favicon;
@@ -121,15 +120,10 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
     if (referenceType === 'url') {
       const title = this._linkPreview$.value?.title;
       const url = this.footnote.reference.url;
-      return [title, url].filter(Boolean).join(' ') || '';
+      return [title, url].filter(Boolean).join('\n') || '';
     }
     return this._popupLabel$.value;
   });
-
-  private readonly _LoadingIcon = () => {
-    const theme = this.std.get(ThemeProvider).theme;
-    return getLoadingIconWith(theme);
-  };
 
   private readonly _onClick = () => {
     this.onPopupClick(this.footnote, this.abortController);
@@ -160,15 +154,29 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
       isTitleAndDescriptionEmpty
     ) {
       this._isLoading$.value = true;
-      this.std.store
-        .get(LinkPreviewerService)
+      this.std
+        .get(LinkPreviewServiceIdentifier)
         .query(this.footnote.reference.url)
         .then(data => {
+          // update the local link preview data
           this._linkPreview$.value = {
             favicon: data.icon ?? undefined,
             title: data.title ?? undefined,
             description: data.description ?? undefined,
           };
+
+          // update the footnote attributes in the node with the link preview data
+          // to avoid fetching the same data multiple times
+          const footnote: FootNote = {
+            ...this.footnote,
+            reference: {
+              ...this.footnote.reference,
+              ...(data.icon && { favicon: data.icon }),
+              ...(data.title && { title: data.title }),
+              ...(data.description && { description: data.description }),
+            },
+          };
+          this.updateFootnoteAttributes(footnote);
         })
         .catch(console.error)
         .finally(() => {
@@ -187,9 +195,13 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
           .label=${this._popupLabel$.value}
           .tooltip=${this._tooltip$.value}
         ></footnote-popup-chip>
-        ${description
-          ? html` <div class="footnote-popup-description">${description}</div> `
-          : nothing}
+        ${
+          description
+            ? html`
+                <div class="footnote-popup-description">${description}</div>
+              `
+            : nothing
+        }
       </div>
     `;
   }
@@ -209,4 +221,7 @@ export class FootNotePopup extends SignalWatcher(WithDisposable(LitElement)) {
 
   @property({ attribute: false })
   accessor onPopupClick: FootNotePopupClickHandler | (() => void) = () => {};
+
+  @property({ attribute: false })
+  accessor updateFootnoteAttributes: (footnote: FootNote) => void = () => {};
 }

@@ -1,6 +1,6 @@
-import type { Signal } from '@preact/signals-core';
 import type { nothing, TemplateResult } from 'lit';
 
+import type { StreamObject } from '../../components/ai-chat-messages';
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
 import type { AIError } from '../../provider';
 
@@ -23,16 +23,15 @@ export interface AIPanelErrorConfig {
 }
 
 export interface AIPanelGeneratingConfig {
-  generatingIcon: TemplateResult<1>;
+  generatingIcon?: TemplateResult<1>;
   height?: number;
   stages?: string[];
 }
 
-export interface AINetworkSearchConfig {
-  visible: Signal<boolean | undefined>;
-  enabled: Signal<boolean | undefined>;
-  setEnabled: (state: boolean) => void;
-}
+export type AIActionAnswer = {
+  content: string;
+  streamObjects?: StreamObject[];
+};
 
 export interface AffineAIPanelWidgetConfig {
   answerRenderer: (
@@ -41,7 +40,7 @@ export interface AffineAIPanelWidgetConfig {
   ) => TemplateResult<1> | typeof nothing;
   generateAnswer?: (props: {
     input: string;
-    update: (answer: string) => void;
+    update: (answer: AIActionAnswer) => void;
     finish: (type: 'success' | 'error' | 'aborted', err?: AIError) => void;
     // Used to allow users to stop actively when generating
     signal: AbortSignal;
@@ -50,7 +49,6 @@ export interface AffineAIPanelWidgetConfig {
   finishStateConfig: AIPanelAnswerConfig;
   generatingStateConfig: AIPanelGeneratingConfig;
   errorStateConfig: AIPanelErrorConfig;
-  networkSearchConfig: AINetworkSearchConfig;
   hideCallback?: () => void;
   discardCallback?: () => void;
   inputCallback?: (input: string) => void;

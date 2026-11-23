@@ -1,31 +1,49 @@
 package app.affine.pro.theme
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 
-val AffineDarkColorScheme = darkColorScheme(
-    background = Dark.BackgroundPrimary,
-    onSurface = Dark.TextPrimary,
-    onSurfaceVariant = Dark.IconPrimary,
-    surfaceContainer = Dark.Surface,
-    surface = Dark.BackgroundPrimary,
-    inverseSurface = Dark.InverseBackgroundPrimary,
-)
-val AffineLightColorScheme = lightColorScheme()
+object AFFiNETheme {
+    val colors: AFFiNEColorScheme
+        @ReadOnlyComposable
+        @Composable
+        get() = LocalAFFiNEColors.current
 
-@SuppressLint("NewApi")
+    val typography: AFFiNETypography
+        @ReadOnlyComposable
+        @Composable
+        get() = LocalAFFiNETypography.current
+}
+
 @Composable
-fun AffineTheme(
-    isDarkTheme: Boolean = isSystemInDarkTheme(),
+fun AFFiNETheme(
+    mode: ThemeMode = ThemeMode.System,
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = if (isDarkTheme) AffineDarkColorScheme else AffineLightColorScheme,
-        typography = AffineTypography,
-        content = content
-    )
+    val colors = when (mode) {
+        ThemeMode.Light -> affineLightScheme
+        ThemeMode.Dark -> affineDarkScheme
+        ThemeMode.System -> if (isSystemInDarkTheme()) affineDarkScheme else affineLightScheme
+    }
+
+    CompositionLocalProvider(LocalAFFiNEColors provides colors) {
+        MaterialTheme {
+            content()
+        }
+    }
+}
+
+enum class ThemeMode(name: String) {
+    Light("light"),
+    Dark("dark"),
+    System("system");
+
+    fun of(name: String) = when (name) {
+        "light" -> Light
+        "dark" -> Dark
+        else -> System
+    }
 }

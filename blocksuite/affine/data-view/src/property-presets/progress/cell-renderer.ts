@@ -14,7 +14,7 @@ import {
   progressDragHandleStyle,
   progressFgStyle,
   progressNumberStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { progressPropertyModelConfig } from './define.js';
 
 const progressColors = {
@@ -131,15 +131,17 @@ export class ProgressCell extends BaseCellRenderer<number, number> {
               style=${bgStyles}
             >
               <div class="${progressFgStyle}" style=${fgStyles}></div>
-              ${this.isEditing$.value
-                ? html` <div
-                    class="${progressDragHandleStyle}"
-                    data-testid="progress-drag-handle"
-                    style=${styleMap({
-                      left: `calc(${progress}% - 3px)`,
-                    })}
-                  ></div>`
-                : ''}
+              ${
+                this.isEditing$.value
+                  ? html` <div
+                      class="${progressDragHandleStyle}"
+                      data-testid="progress-drag-handle"
+                      style=${styleMap({
+                        left: `calc(${progress}% - 3px)`,
+                      })}
+                    ></div>`
+                  : ''
+              }
             </div>
           </div>
           <span class="${progressNumberStyle}" data-testid="progress"

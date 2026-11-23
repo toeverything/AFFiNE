@@ -1,7 +1,5 @@
-import type {
-  CollectionMeta,
-  TagMeta,
-} from '@affine/core/components/page-list';
+import type { TagMeta } from '@affine/core/components/page-list';
+import { UserFriendlyError } from '@affine/error';
 import { I18n } from '@affine/i18n';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
 import type { DocMeta } from '@blocksuite/affine/store';
@@ -9,16 +7,17 @@ import type {
   LinkedMenuGroup,
   LinkedMenuItem,
 } from '@blocksuite/affine/widgets/linked-doc';
-import { CollectionsIcon } from '@blocksuite/icons/lit';
-import { computed } from '@preact/signals-core';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
+import { CollectionsIcon, WarningIcon } from '@blocksuite/icons/lit';
+import { computed, signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import Fuse, { type FuseResultMatch } from 'fuse.js';
 import { html } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { map } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 
-import type { CollectionService } from '../../collection';
+import { normalizeSearchText } from '../../../utils/normalize-search-text';
+import type { CollectionMeta, CollectionService } from '../../collection';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
 import { type RecentDocsService } from '../../quicksearch';
@@ -90,6 +89,7 @@ export class SearchMenuService extends Service {
   ): LinkedMenuGroup {
     const currentWorkspace = this.workspaceService.workspace;
     const rawMetas = currentWorkspace.docCollection.meta.docMetas;
+    const loading = signal(true);
     const { signal: docsSignal, cleanup: cleanupDocs } =
       createSignalFromObservable(
         this.searchDocs$(query).pipe(
@@ -111,7 +111,26 @@ export class SearchMenuService extends Service {
                 );
               })
               .filter(m => !!m);
+            loading.value = false;
             return docs;
+          }),
+          catchError(err => {
+            loading.value = false;
+            const userFriendlyError = UserFriendlyError.fromAny(err);
+            return of([
+              {
+                name: html`<span style="color: ${cssVarV2('status/error')}"
+                  >${I18n.t(
+                    `error.${userFriendlyError.name}`,
+                    userFriendlyError.data
+                  )}</span
+                >`,
+                key: 'error',
+                icon: WarningIcon(),
+                disabled: true,
+                action: () => {},
+              },
+            ]);
           })
         ),
         []
@@ -132,6 +151,7 @@ export class SearchMenuService extends Service {
       name: I18n.t('com.affine.editor.at-menu.link-to-doc', {
         query,
       }),
+      loading: loading,
       items: docsSignal,
       maxDisplay: MAX_DOCS,
       overflowText,
@@ -166,14 +186,16 @@ export class SearchMenuService extends Service {
               typeof node.fields.docId === 'string'
                 ? node.fields.docId
                 : node.fields.docId[0];
-            const title =
+            const title = normalizeSearchText(
               typeof node.fields.title === 'string'
                 ? node.fields.title
-                : node.fields.title[0];
+                : node.fields.title[0]
+            );
+            const highlights = normalizeSearchText(node.highlights?.title?.[0]);
             return {
               id,
               title,
-              highlights: node.highlights.title[0],
+              highlights: highlights || undefined,
             };
           })
         )
@@ -298,7 +320,7 @@ export class SearchMenuService extends Service {
     action: SearchCollectionMenuAction,
     _abortSignal: AbortSignal
   ): LinkedMenuGroup {
-    const collections = this.collectionService.collections$.value;
+    const collections = this.collectionService.collectionMetas$.value;
     if (query.trim().length === 0) {
       return {
         name: I18n.t('com.affine.editor.at-menu.collections', {

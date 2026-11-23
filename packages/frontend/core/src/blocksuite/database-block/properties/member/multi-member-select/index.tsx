@@ -16,6 +16,7 @@ import {
 
 import { useSignalValue } from '../../../../../modules/doc-info/utils';
 import { Spinner } from '../../../components/loading';
+import { useMemberInfo } from '../../../hooks/use-member-info';
 import * as styles from './style.css';
 
 type BaseOptions = {
@@ -47,10 +48,24 @@ class MemberManager {
   selectedMemberId = signal<string | null>(null);
 
   filteredMembers = computed(() => {
-    return this.ops.userListService.users$.value.filter(
-      member =>
-        !member.removed && !this.selectedMembers.value.includes(member.id)
-    );
+    const isSearching = this.userListService.searchText$.value !== '';
+    if (isSearching) {
+      return this.ops.userListService.users$.value.filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    } else {
+      const currentUser = this.ops.userService.currentUserInfo$.value;
+      return [
+        ...(currentUser ? [currentUser] : []),
+        ...this.ops.userListService.users$.value.filter(
+          member => member.id !== currentUser?.id
+        ),
+      ].filter(
+        member =>
+          !member.removed && !this.selectedMembers.value.includes(member.id)
+      );
+    }
   });
 
   constructor(private readonly ops: MemberManagerOptions) {}
@@ -172,13 +187,6 @@ class MemberManager {
   };
 }
 
-export const useMemberInfo = (id: string, memberManager: MemberManager) => {
-  useEffect(() => {
-    memberManager.userService?.revalidateUserInfo(id);
-  }, [id, memberManager.userService]);
-  return useSignalValue(memberManager.userService?.userInfo$(id));
-};
-
 export const MemberListItem = (props: {
   member: ExistedUserInfo;
   memberManager: MemberManager;
@@ -225,7 +233,7 @@ export const MemberPreview = ({
   memberManager: MemberManager;
   onDelete?: () => void;
 }) => {
-  const userInfo = useMemberInfo(memberId, memberManager);
+  const userInfo = useMemberInfo(memberId, memberManager.userService);
   if (!userInfo) {
     return null;
   }
@@ -252,8 +260,10 @@ export const MemberPreview = ({
 export const MultiMemberSelect: React.FC<MemberManagerOptions> = props => {
   const inputRef = useRef<HTMLInputElement>(null);
   const memberListRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const memberManager = useMemo(() => new MemberManager(props), []);
+  const memberManager = useMemo(
+    () => new MemberManager(props), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
+    [] // oxlint-disable-line react/exhaustive-deps
+  );
 
   const isLoading = useSignalValue(memberManager.userListService.isLoading$);
   const selectedMembers = useSignalValue(memberManager.selectedMembers);

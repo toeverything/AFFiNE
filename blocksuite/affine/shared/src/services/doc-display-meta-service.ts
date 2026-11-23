@@ -1,5 +1,4 @@
-import type { AliasInfo, ReferenceParams } from '@blocksuite/affine-model';
-import { type Container, createIdentifier } from '@blocksuite/global/di';
+import type { Container } from '@blocksuite/global/di';
 import {
   type DisposableMember,
   disposeMember,
@@ -24,41 +23,12 @@ import {
 import type { TemplateResult } from 'lit';
 
 import { referenceToNode } from '../utils/reference.js';
+import {
+  type DocDisplayMetaExtension,
+  type DocDisplayMetaParams,
+  DocDisplayMetaProvider,
+} from './doc-display-meta-provider.js';
 import { DocModeProvider } from './doc-mode-service.js';
-
-export type DocDisplayMetaParams = {
-  referenced?: boolean;
-  params?: ReferenceParams;
-} & AliasInfo;
-
-/**
- * Customize document display title and icon.
- *
- * Supports the following blocks:
- *
- * * Inline View:
- *      `AffineReference`
- * * Card View:
- *      `EmbedLinkedDocBlockComponent`
- *      `EmbedEdgelessLinkedDocBlockComponent`
- * * Embed View:
- *      `EmbedSyncedDocBlockComponent`
- *      `EmbedEdgelessSyncedDocBlockComponent`
- */
-export interface DocDisplayMetaExtension {
-  icon: (
-    docId: string,
-    referenceInfo?: DocDisplayMetaParams
-  ) => ReadonlySignal<TemplateResult>;
-  title: (
-    docId: string,
-    referenceInfo?: DocDisplayMetaParams
-  ) => ReadonlySignal<string>;
-}
-
-export const DocDisplayMetaProvider = createIdentifier<DocDisplayMetaExtension>(
-  'DocDisplayMetaService'
-);
 
 export class DocDisplayMetaService
   extends LifeCycleWatcher

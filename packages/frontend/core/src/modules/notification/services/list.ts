@@ -79,6 +79,12 @@ export class NotificationListService extends Service {
     this.loadMore.reset();
   }
 
+  retry() {
+    this.error$.setValue(null);
+    this.loadMore.reset();
+    this.loadMore();
+  }
+
   async readNotification(id: string) {
     await this.store.readNotification(id);
     this.notifications$.next(
@@ -87,5 +93,24 @@ export class NotificationListService extends Service {
     this.notificationCount.setCount(
       Math.max(this.notificationCount.count$.value - 1, 0)
     );
+  }
+
+  async readAllNotifications() {
+    // optimistic clear all notifications
+    this.reset();
+    this.notificationCount.setCount(0);
+    // avoid loading more notifications after clear all notifications
+    this.hasMore$.setValue(false);
+
+    try {
+      await this.store.readAllNotifications();
+    } catch (err) {
+      // rollback the optimistic clear all notifications
+      this.reset();
+      this.loadMore();
+
+      // rethrow the error to the caller, to notify the user
+      throw err;
+    }
   }
 }

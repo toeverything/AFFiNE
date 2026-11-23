@@ -1,4 +1,5 @@
 import { Controller, Get, HttpStatus, UseGuards } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import { type Response } from 'supertest';
@@ -84,6 +85,18 @@ class NonThrottledController {
   }
 }
 
+@UseGuards(CloudThrottlerGuard)
+@Throttle('strict')
+@Controller('/strict-throttled')
+class StrictThrottledController {
+  @Public()
+  @SkipThrottle()
+  @Get('/skip')
+  skip() {
+    return 'skip';
+  }
+}
+
 test.before(async t => {
   const app = await createTestingApp({
     imports: [
@@ -91,7 +104,7 @@ test.before(async t => {
         throttle: {
           throttlers: {
             default: {
-              ttl: 60,
+              ttl: 60_000,
               limit: 120,
             },
           },
@@ -99,7 +112,11 @@ test.before(async t => {
       }),
       AppModule,
     ],
-    controllers: [ThrottledController, NonThrottledController],
+    controllers: [
+      ThrottledController,
+      NonThrottledController,
+      StrictThrottledController,
+    ],
   });
 
   t.context.storage = app.get(ThrottlerStorage);
@@ -108,6 +125,7 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   const { app } = t.context;
+  t.context.storage.storage.clear();
   await app.initTestingDB();
 });
 
@@ -144,6 +162,72 @@ test('should be able to prevent requests if limit is reached', async t => {
   stub.restore();
 });
 
+test('should use session id as tracker when available', async t => {
+  const { app } = t.context;
+
+  const user = await app.signupV1('u1@affine.pro');
+  const userSession = await app.get(PrismaClient).userSession.findFirst({
+    where: { userId: user.id },
+  });
+  t.truthy(userSession);
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app.GET('/throttled/default').expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith(`throttler:${userSession!.sessionId};default`));
+
+  stub.restore();
+});
+
+test('should use CF-Connecting-IP as tracker when present', async t => {
+  const { app } = t.context;
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app
+    .GET('/nonthrottled/default')
+    .set('CF-Connecting-IP', '1.2.3.4')
+    .expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith('throttler:1.2.3.4;default'));
+
+  stub.restore();
+});
+
+test('should use X-Forwarded-For as tracker when present', async t => {
+  const { app } = t.context;
+
+  const stub = Sinon.stub(app.get(ThrottlerStorage), 'increment').resolves({
+    timeToExpire: 10,
+    totalHits: 1,
+    isBlocked: false,
+    timeToBlockExpire: 0,
+  });
+
+  await app
+    .GET('/nonthrottled/default')
+    .set('X-Forwarded-For', '5.6.7.8, 9.9.9.9')
+    .expect(200);
+
+  const key = stub.firstCall.args[0] as string;
+  t.true(key.startsWith('throttler:5.6.7.8;default'));
+
+  stub.restore();
+});
+
 // ====== unauthenticated user visits ======
 test('should use default throttler for unauthenticated user when not specified', async t => {
   const { app } = t.context;
@@ -170,6 +254,18 @@ test('should skip throttler for unauthenticated user when specified', async t =>
   res = await app.GET('/throttled/skip').expect(200);
 
   headers = rateLimitHeaders(res);
+
+  t.is(headers.limit, undefined!);
+  t.is(headers.remaining, undefined!);
+  t.is(headers.reset, undefined!);
+});
+
+test('should skip class-level strict throttler when specified', async t => {
+  const { app } = t.context;
+
+  const res = await app.GET('/strict-throttled/skip').expect(200);
+
+  const headers = rateLimitHeaders(res);
 
   t.is(headers.limit, undefined!);
   t.is(headers.remaining, undefined!);

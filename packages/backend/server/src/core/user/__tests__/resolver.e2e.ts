@@ -23,6 +23,7 @@ test('should get user settings', async t => {
   t.deepEqual(settings, {
     receiveInvitationEmail: true,
     receiveMentionEmail: true,
+    receiveCommentEmail: true,
   });
 });
 
@@ -31,11 +32,13 @@ test('should update user settings', async t => {
   await updateUserSettings(app, {
     receiveInvitationEmail: false,
     receiveMentionEmail: false,
+    receiveCommentEmail: false,
   });
   const settings = await getUserSettings(app);
   t.deepEqual(settings, {
     receiveInvitationEmail: false,
     receiveMentionEmail: false,
+    receiveCommentEmail: false,
   });
 
   await updateUserSettings(app, {
@@ -45,6 +48,7 @@ test('should update user settings', async t => {
   t.deepEqual(settings2, {
     receiveInvitationEmail: false,
     receiveMentionEmail: true,
+    receiveCommentEmail: false,
   });
 
   await updateUserSettings(app, {
@@ -54,6 +58,33 @@ test('should update user settings', async t => {
   const settings3 = await getUserSettings(app);
   t.deepEqual(settings3, {
     receiveInvitationEmail: false,
+    receiveMentionEmail: true,
+    receiveCommentEmail: false,
+  });
+});
+
+test('should update user settings with comment email', async t => {
+  await app.signup();
+
+  await updateUserSettings(app, {
+    receiveCommentEmail: true,
+  });
+
+  const settings = await getUserSettings(app);
+  t.deepEqual(settings, {
+    receiveCommentEmail: true,
+    receiveInvitationEmail: true,
+    receiveMentionEmail: true,
+  });
+
+  await updateUserSettings(app, {
+    receiveCommentEmail: false,
+  });
+
+  const settings2 = await getUserSettings(app);
+  t.deepEqual(settings2, {
+    receiveCommentEmail: false,
+    receiveInvitationEmail: true,
     receiveMentionEmail: true,
   });
 });

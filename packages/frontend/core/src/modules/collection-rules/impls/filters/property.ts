@@ -25,7 +25,7 @@ export class PropertyFilterProvider extends Service implements FilterProvider {
           FilterProvider('property:' + type)
         );
         if (!provider) {
-          throw new Error('Unsupported property type');
+          throw new Error(`Unsupported property type: ${type}`);
         }
         return provider.filter$(params);
       })

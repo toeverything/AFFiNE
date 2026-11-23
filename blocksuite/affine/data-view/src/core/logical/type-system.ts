@@ -180,10 +180,9 @@ export class TypeSystem {
       if (arg == null) {
         return;
       }
-      // eslint-disable-next-line sonarjs/no-collapsible-if
+      // oxlint-disable-next-line sonarjs/no-collapsible-if
       if (realArg != null) {
         if (!this._unify(newCtx, realArg, arg)) {
-          console.log('arg', realArg, arg);
           return;
         }
       }

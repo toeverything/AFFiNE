@@ -7,90 +7,128 @@ import {
   createSign,
   createVerify,
   generateKeyPairSync,
+  type KeyObject,
   randomBytes,
   randomInt,
+  sign,
   timingSafeEqual,
+  verify,
 } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
-import {
-  hash as hashPassword,
-  verify as verifyPassword,
-} from '@node-rs/argon2';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { hash as hashPassword } from '@node-rs/argon2';
 
-import { Config } from '../config';
+import { AFFINE_PRO_PUBLIC_KEY } from '../../native';
 import { OnEvent } from '../event';
 
 const NONCE_LENGTH = 12;
 const AUTH_TAG_LENGTH = 12;
+
+export const CRYPTO_KEY_SOURCE = Symbol('CRYPTO_KEY_SOURCE');
 
 function generatePrivateKey(): string {
   const { privateKey } = generateKeyPairSync('ec', {
     namedCurve: 'prime256v1',
   });
 
+  // Export EC private key as PKCS#8 PEM. This avoids OpenSSL 3.x decoder issues
+  // in Node.js 22 when later deriving the public key via createPublicKey.
   const key = privateKey.export({
-    type: 'sec1',
+    type: 'pkcs8',
     format: 'pem',
   });
 
   return key.toString('utf8');
 }
 
-function readPrivateKey(privateKey: string) {
-  return createPrivateKey({
-    key: Buffer.from(privateKey),
-    format: 'pem',
-    type: 'sec1',
-  })
-    .export({
-      format: 'pem',
-      type: 'pkcs8',
-    })
-    .toString('utf8');
-}
-
-function readPublicKey(privateKey: string) {
-  return createPublicKey({
-    key: Buffer.from(privateKey),
-  })
-    .export({ format: 'pem', type: 'spki' })
-    .toString('utf8');
+function parseKey(privateKey: string) {
+  const keyBuf = Buffer.from(privateKey);
+  let priv: KeyObject;
+  try {
+    priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'pkcs8' });
+  } catch {
+    try {
+      priv = createPrivateKey({ key: keyBuf, format: 'pem', type: 'sec1' });
+    } catch {
+      // As a last resort rely on auto-detection
+      priv = createPrivateKey(keyBuf);
+    }
+  }
+  const pub = createPublicKey(priv);
+  return { priv, pub };
 }
 
 @Injectable()
-export class CryptoHelper {
+export class CryptoHelper implements OnModuleInit {
   keyPair!: {
-    publicKey: Buffer;
-    privateKey: Buffer;
+    publicKey: KeyObject;
+    privateKey: KeyObject;
     sha256: {
       publicKey: Buffer;
       privateKey: Buffer;
     };
   };
 
-  constructor(private readonly config: Config) {}
+  private previousPublicKeys: KeyObject[] = [];
+
+  AFFiNEProPublicKey: Buffer | null = null;
+
+  onModuleInit() {
+    if (env.selfhosted) {
+      // Community builds rely on the embedded COMMUNITY_DEFAULT_PUBLIC_KEY in
+      // native for the bundled default license and only require
+      // AFFINE_PRO_PUBLIC_KEY when verifying pro-v1 / legacy commercial licenses.
+      this.AFFiNEProPublicKey = this.loadAFFiNEProPublicKey();
+      if (
+        process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY === 'true' &&
+        !this.AFFiNEProPublicKey
+      ) {
+        throw new Error(
+          'AFFINE_PRO_PUBLIC_KEY must be embedded in official self-hosted server-native builds.'
+        );
+      }
+    }
+  }
+
+  constructor(
+    @Inject(CRYPTO_KEY_SOURCE)
+    private readonly source: { nodeCryptoPrivateKey(): string }
+  ) {}
 
   @OnEvent('config.init')
   onConfigInit() {
     this.setup();
   }
 
-  @OnEvent('config.changed')
-  onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.crypto?.privateKey) {
+  @OnEvent('backendRuntime.configApplied')
+  onConfigApplied(event: Events['backendRuntime.configApplied']) {
+    if (event.updates.crypto && 'privateKey' in event.updates.crypto) {
       this.setup();
     }
   }
 
   private setup() {
-    const key = this.config.crypto.privateKey || generatePrivateKey();
-    const privateKey = readPrivateKey(key);
-    const publicKey = readPublicKey(key);
+    const prevPublicKey = this.keyPair?.publicKey;
+    const privateKey =
+      this.source.nodeCryptoPrivateKey() || generatePrivateKey();
+    const { priv, pub } = parseKey(privateKey);
+    const publicKey = pub
+      .export({ format: 'pem', type: 'spki' })
+      .toString('utf8');
+
+    if (prevPublicKey) {
+      const prevPem = prevPublicKey
+        .export({ format: 'pem', type: 'spki' })
+        .toString('utf8');
+      if (prevPem !== publicKey) {
+        this.previousPublicKeys.unshift(prevPublicKey);
+        this.previousPublicKeys = this.previousPublicKeys.slice(0, 2);
+      }
+    }
 
     this.keyPair = {
-      publicKey: Buffer.from(publicKey),
-      privateKey: Buffer.from(privateKey),
+      publicKey: pub,
+      privateKey: priv,
       sha256: {
         publicKey: this.sha256(publicKey),
         privateKey: this.sha256(privateKey),
@@ -98,11 +136,23 @@ export class CryptoHelper {
     };
   }
 
+  private get keyType() {
+    return (this.keyPair.privateKey.asymmetricKeyType as string) || 'ec';
+  }
+
   sign(data: string) {
-    const sign = createSign('rsa-sha256');
-    sign.update(data, 'utf-8');
-    sign.end();
-    return `${data},${sign.sign(this.keyPair.privateKey, 'base64')}`;
+    const input = Buffer.from(data, 'utf-8');
+    if (this.keyType === 'ed25519') {
+      // Ed25519 signs the message directly (no pre-hash)
+      const sig = sign(null, input, this.keyPair.privateKey);
+      return `${data},${sig.toString('base64')}`;
+    } else {
+      // ECDSA with SHA-256 for EC keys
+      const sign = createSign('sha256');
+      sign.update(input);
+      sign.end();
+      return `${data},${sign.sign(this.keyPair.privateKey, 'base64')}`;
+    }
   }
 
   verify(signatureWithData: string) {
@@ -110,10 +160,23 @@ export class CryptoHelper {
     if (!signature) {
       return false;
     }
-    const verify = createVerify('rsa-sha256');
-    verify.update(data, 'utf-8');
-    verify.end();
-    return verify.verify(this.keyPair.privateKey, signature, 'base64');
+    const input = Buffer.from(data, 'utf-8');
+    const sigBuf = Buffer.from(signature, 'base64');
+
+    const keys = [this.keyPair.publicKey, ...this.previousPublicKeys];
+    return keys.some(publicKey => {
+      const keyType = (publicKey.asymmetricKeyType as string) || 'ec';
+      if (keyType === 'ed25519') {
+        // Ed25519 verifies the message directly
+        return verify(null, input, publicKey, sigBuf);
+      } else {
+        // ECDSA with SHA-256
+        const verifier = createVerify('sha256');
+        verifier.update(input);
+        verifier.end();
+        return verifier.verify(publicKey, sigBuf);
+      }
+    });
   }
 
   encrypt(data: string) {
@@ -154,10 +217,6 @@ export class CryptoHelper {
     return hashPassword(password);
   }
 
-  verifyPassword(password: string, hash: string) {
-    return verifyPassword(hash, password);
-  }
-
   compare(lhs: string, rhs: string) {
     if (lhs.length !== rhs.length) {
       return false;
@@ -178,7 +237,7 @@ export class CryptoHelper {
     let otp = '';
 
     for (let i = 0; i < length; i++) {
-      otp += this.randomInt(0, 9).toString();
+      otp += this.randomInt(0, 10).toString();
     }
 
     return otp;
@@ -186,5 +245,12 @@ export class CryptoHelper {
 
   sha256(data: string) {
     return createHash('sha256').update(data).digest();
+  }
+
+  private loadAFFiNEProPublicKey() {
+    if (AFFINE_PRO_PUBLIC_KEY) {
+      return Buffer.from(AFFINE_PRO_PUBLIC_KEY);
+    }
+    return null;
   }
 }

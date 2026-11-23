@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+import { I18n } from '@affine/i18n';
 import {
   app,
   BrowserWindow,
@@ -23,9 +24,9 @@ import {
   type Unsubscribable,
 } from 'rxjs';
 
+import { mainWindowOrigin, shellViewUrl } from '../../shared/internal-origin';
 import { isMacOS } from '../../shared/utils';
 import { beforeAppQuit, onTabClose } from '../cleanup';
-import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import {
@@ -38,6 +39,7 @@ import {
   type WorkbenchViewMeta,
 } from '../shared-state-schema';
 import { globalStateStorage } from '../shared-storage/storage';
+import { buildWebPreferences } from '../web-preferences';
 import { getMainWindow, MainWindowManager } from './main-window';
 
 async function getAdditionalArguments() {
@@ -389,19 +391,85 @@ export class WebContentViewsManager {
 
     this.closedWorkbenches.push(targetWorkbench);
 
-    setTimeout(() => {
+    globalThis.setTimeout(() => {
       const view = this.tabViewsMap.get(id);
       this.tabViewsMap.delete(id);
 
-      if (this.mainWindow && view) {
-        this.mainWindow.contentView.removeChildView(view);
-        view?.webContents.close({
-          waitForBeforeUnload: true,
-        });
+      if (!view) {
+        return;
       }
+
+      void this.disposeTabView(id, view).catch(error => {
+        logger.warn('failed to dispose tab view', {
+          id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
     }, 500); // delay a bit to get rid of the flicker
 
     onTabClose(id);
+  };
+
+  private readonly disposeTabView = async (
+    id: string,
+    view: WebContentsView
+  ) => {
+    const waitForDestroyed = () =>
+      new Promise<boolean>(resolve => {
+        if (view.webContents.isDestroyed()) {
+          resolve(true);
+          return;
+        }
+
+        const timeout = globalThis.setTimeout(() => {
+          resolve(false);
+        }, 1_000);
+
+        view.webContents.once('destroyed', () => {
+          globalThis.clearTimeout(timeout);
+          resolve(true);
+        });
+      });
+
+    if (this.mainWindow?.contentView.children.includes(view)) {
+      this.mainWindow.contentView.removeChildView(view);
+    }
+
+    if (view.webContents.isDestroyed()) {
+      return;
+    }
+
+    try {
+      view.webContents.close({
+        waitForBeforeUnload: true,
+      });
+    } catch {
+      return;
+    }
+
+    if (await waitForDestroyed()) return;
+
+    view.webContents.forcefullyCrashRenderer();
+
+    try {
+      view.webContents.close({
+        waitForBeforeUnload: false,
+      });
+    } catch {
+      return;
+    }
+
+    if (!view.webContents.isDestroyed() && !(await waitForDestroyed())) {
+      logger.warn('tab webContents is still alive after force close', {
+        id,
+        webContentsId: view.webContents.id,
+        url: view.webContents.getURL(),
+      });
+    }
+
+    if (this.mainWindow?.contentView.children.includes(view)) {
+      this.mainWindow.contentView.removeChildView(view);
+    }
   };
 
   undoCloseTab = async () => {
@@ -510,6 +578,7 @@ export class WebContentViewsManager {
     if (view) {
       this.resizeView(view);
     }
+    this.updateBackgroundThrottling();
     return view;
   };
 
@@ -758,6 +827,10 @@ export class WebContentViewsManager {
 
     this.mainWindow?.on('focus', () => {
       focusActiveView();
+      this.updateBackgroundThrottling();
+    });
+    this.mainWindow?.on('blur', () => {
+      this.updateBackgroundThrottling();
     });
 
     combineLatest([
@@ -767,6 +840,7 @@ export class WebContentViewsManager {
       // makes sure the active view is always focused
       if (window?.isFocused()) {
         focusActiveView();
+        this.updateBackgroundThrottling();
       }
     });
   };
@@ -781,12 +855,9 @@ export class WebContentViewsManager {
 
   resizeView = (view: View) => {
     // app view will take full w/h of the main window
-    view.setBounds({
-      x: 0,
-      y: 0,
-      width: this.mainWindow?.getContentBounds().width ?? 0,
-      height: this.mainWindow?.getContentBounds().height ?? 0,
-    });
+    const bounds = this.mainWindow?.getContentBounds();
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+    view.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height });
   };
 
   private readonly generateViewId = (type: 'app' | 'shell') => {
@@ -809,62 +880,85 @@ export class WebContentViewsManager {
     additionalArguments.push(`--view-id=${viewId}`);
 
     const view = new WebContentsView({
-      webPreferences: {
+      webPreferences: buildWebPreferences({
         webgl: true,
         transparent: true,
-        contextIsolation: true,
-        sandbox: false,
         spellcheck: spellCheckSettings.enabled,
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
         // serialize exposed meta that to be used in preload
         additionalArguments: additionalArguments,
-      },
+        backgroundThrottling: type === 'app',
+      }),
     });
 
-    if (spellCheckSettings.enabled) {
-      view.webContents.on('context-menu', (_event, params) => {
-        const shouldShow =
-          params.misspelledWord && params.dictionarySuggestions.length > 0;
+    view.webContents.on('context-menu', (_event, params) => {
+      const menu = Menu.buildFromTemplate([
+        {
+          id: 'cut',
+          label: I18n['com.affine.context-menu.cut'](),
+          role: 'cut',
+          enabled: params.editFlags.canCut,
+        },
+        {
+          id: 'copy',
+          label: I18n['com.affine.context-menu.copy'](),
+          role: 'copy',
+          enabled: params.editFlags.canCopy,
+        },
+        {
+          id: 'paste',
+          label: I18n['com.affine.context-menu.paste'](),
+          role: 'paste',
+          enabled: params.editFlags.canPaste,
+        },
+      ]);
 
-        if (!shouldShow) {
-          return;
-        }
-        const menu = new Menu();
+      // Add each spelling suggestion
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () => view.webContents.replaceMisspelling(suggestion),
+          })
+        );
+      }
 
-        // Add each spelling suggestion
-        for (const suggestion of params.dictionarySuggestions) {
-          menu.append(
-            new MenuItem({
-              label: suggestion,
-              click: () => view.webContents.replaceMisspelling(suggestion),
-            })
-          );
-        }
+      // Allow users to add the misspelled word to the dictionary
+      if (params.misspelledWord) {
+        menu.append(
+          new MenuItem({
+            label: 'Add to dictionary', // TODO: i18n
+            click: () =>
+              view.webContents.session.addWordToSpellCheckerDictionary(
+                params.misspelledWord
+              ),
+          })
+        );
+      }
 
-        // Allow users to add the misspelled word to the dictionary
-        if (params.misspelledWord) {
-          menu.append(
-            new MenuItem({
-              label: 'Add to dictionary', // TODO: i18n
-              click: () =>
-                view.webContents.session.addWordToSpellCheckerDictionary(
-                  params.misspelledWord
-                ),
-            })
-          );
-        }
-
-        menu.popup();
-      });
-    }
+      menu.popup();
+    });
 
     this.webViewsMap$.next(this.tabViewsMap.set(viewId, view));
-    let unsub = () => {};
+    let disconnectHelperProcess: (() => void) | null = null;
 
     // shell process do not need to connect to helper process
     if (type !== 'shell') {
+      view.webContents.on(
+        'did-start-navigation',
+        (_event, _url, isInPlace, isMainFrame) => {
+          // Keep shell fallback lifecycle tied to main-frame navigation only.
+          if (isMainFrame && !isInPlace) {
+            this.setTabUIUnready(viewId);
+          }
+        }
+      );
       view.webContents.on('did-finish-load', () => {
-        unsub = helperProcessManager.connectRenderer(view.webContents);
+        disconnectHelperProcess?.();
+        disconnectHelperProcess = helperProcessManager.connectRenderer(
+          view.webContents
+        );
+        this.updateBackgroundThrottling();
       });
     } else {
       view.webContents.on('focus', () => {
@@ -878,7 +972,8 @@ export class WebContentViewsManager {
     }
 
     view.webContents.on('destroyed', () => {
-      unsub();
+      disconnectHelperProcess?.();
+      disconnectHelperProcess = null;
       this.webViewsMap$.next(
         new Map(
           [...this.tabViewsMap.entries()].filter(([key]) => key !== viewId)
@@ -889,6 +984,7 @@ export class WebContentViewsManager {
       if (this.tabViewsMap.size === 0) {
         app.quit();
       }
+      this.updateBackgroundThrottling();
     });
 
     this.resizeView(view);
@@ -905,6 +1001,31 @@ export class WebContentViewsManager {
 
     logger.info(`view ${viewId} created in ${performance.now() - start}ms`);
     return view;
+  };
+
+  private readonly updateBackgroundThrottling = () => {
+    const mainFocused = this.mainWindow?.isFocused() ?? false;
+    const activeId = this.activeWorkbenchId;
+    this.webViewsMap$.value.forEach((view, id) => {
+      // skip active view to avoid windows rendering
+      if (id === 'shell' || id === activeId) {
+        return;
+      }
+      const shouldThrottle = !mainFocused || id !== activeId;
+      try {
+        view.webContents.setBackgroundThrottling(shouldThrottle);
+      } catch (err) {
+        logger.warn('failed to set backgroundThrottling', err);
+      }
+    });
+    if (this.shellView) {
+      const shellThrottle = !mainFocused;
+      try {
+        this.shellView.webContents.setBackgroundThrottling(shellThrottle);
+      } catch (err) {
+        logger.warn('failed to set shell backgroundThrottling', err);
+      }
+    }
   };
 
   private async skipOnboarding(view: WebContentsView) {
@@ -924,7 +1045,7 @@ export async function handleWebContentsResize(webContents?: WebContents) {
   if (isMacOS()) {
     const window = await getMainWindow();
     const factor = webContents?.getZoomFactor() || 1;
-    window?.setWindowButtonPosition({ x: 16 * factor, y: 24 * factor - 6 });
+    window?.setWindowButtonPosition({ x: 14 * factor, y: 14 * factor - 2 });
   }
 }
 
@@ -1108,13 +1229,28 @@ export const showDevTools = (id?: string) => {
 };
 
 export const pingAppLayoutReady = (wc: WebContents, ready: boolean) => {
-  const viewId =
-    WebContentViewsManager.instance.getWorkbenchIdFromWebContentsId(wc.id);
+  const manager = WebContentViewsManager.instance;
+  const viewId = manager.getWorkbenchIdFromWebContentsId(wc.id);
   if (viewId) {
     if (ready) {
-      WebContentViewsManager.instance.setTabUIReady(viewId);
+      manager.setTabUIReady(viewId);
     } else {
-      WebContentViewsManager.instance.setTabUIUnready(viewId);
+      const isActive = manager.activeWorkbenchId === viewId;
+      const view = manager.getViewById(viewId);
+      const isLoadingMainFrame =
+        view?.webContents.isLoadingMainFrame?.() ??
+        view?.webContents.isLoading?.() ??
+        false;
+      // Renderer unload can be noisy on Windows when resizing;
+      // keep active tab visible unless it is truly navigating.
+      if (isActive && !isLoadingMainFrame) {
+        logger.warn('ignore pingAppLayoutReady(false) for active tab', {
+          viewId,
+          senderId: wc.id,
+        });
+        return;
+      }
+      manager.setTabUIUnready(viewId);
     }
   }
 };

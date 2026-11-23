@@ -75,11 +75,14 @@ export class ExtensionManager<Scope extends string> {
 
   /** @internal */
   private readonly _getContextByScope = (scope: Scope): Context<Scope> => {
-    return {
+    const context: Context<Scope> = {
       scope,
-      register: (extensions: ExtensionType[] | ExtensionType) =>
-        this._registerToScope(scope, extensions),
+      register: (extensions: ExtensionType[] | ExtensionType) => {
+        this._registerToScope(scope, extensions);
+        return context;
+      },
     };
+    return context;
   };
 
   /**

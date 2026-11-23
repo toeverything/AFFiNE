@@ -28,7 +28,6 @@ export class ClipboardControl {
     const clipboardEventState = new ClipboardEventState({
       event,
     });
-
     this._dispatcher.run(
       'paste',
       this._createContext(event, clipboardEventState)

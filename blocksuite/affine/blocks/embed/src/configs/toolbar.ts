@@ -153,7 +153,7 @@ function createBuiltinToolbarConfigForExternal(
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
 
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
               let flavour = 'affine:bookmark';
 
               if (options?.viewType === 'card') {
@@ -227,7 +227,7 @@ function createBuiltinToolbarConfigForExternal(
               if (options?.viewType !== 'embed') return;
 
               const { flavour, styles } = options;
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
 
               if (!styles.includes(style)) {
                 style =
@@ -281,7 +281,7 @@ function createBuiltinToolbarConfigForExternal(
               @toggle=${onToggle}
               .actions=${actions}
               .context=${ctx}
-              .viewType$=${viewType$}
+              .viewTypeSignal=${viewType$}
             ></affine-view-dropdown-menu>`
           )}`;
         },
@@ -329,7 +329,7 @@ function createBuiltinToolbarConfigForExternal(
               @toggle=${onToggle}
               .actions=${actions}
               .context=${ctx}
-              .style$=${model.props.style$}
+              .styleSignal=${model.props.style$}
             ></affine-card-style-dropdown-menu>`
           )}`;
         },
@@ -441,7 +441,11 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
               let { style } = model.props;
               let flavour = 'affine:bookmark';
 
-              if (!BookmarkStyles.includes(style)) {
+              if (
+                !BookmarkStyles.includes(
+                  style as (typeof BookmarkStyles)[number]
+                )
+              ) {
                 style = BookmarkStyles[0];
               }
 
@@ -510,33 +514,33 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
               @toggle=${onToggle}
               .actions=${actions}
               .context=${ctx}
-              .viewType$=${viewType$}
+              .viewTypeSignal=${viewType$}
             ></affine-view-dropdown-menu>`
           )}`;
         },
       } satisfies ToolbarActionGroup<ToolbarAction>,
       {
         id: 'c.style',
-        actions: [
-          {
-            id: 'horizontal',
-            label: 'Large horizontal style',
-          },
-          {
-            id: 'list',
-            label: 'Small horizontal style',
-          },
-          {
-            id: 'vertical',
-            label: 'Large vertical style',
-          },
-          {
-            id: 'cube',
-            label: 'Small vertical style',
-          },
-        ].filter(action =>
-          EmbedGithubStyles.includes(action.id as EmbedCardStyle)
-        ),
+        actions: (
+          [
+            {
+              id: 'horizontal',
+              label: 'Large horizontal style',
+            },
+            {
+              id: 'list',
+              label: 'Small horizontal style',
+            },
+            {
+              id: 'vertical',
+              label: 'Large vertical style',
+            },
+            {
+              id: 'cube',
+              label: 'Small vertical style',
+            },
+          ] as const
+        ).filter(action => EmbedGithubStyles.includes(action.id)),
         when(ctx) {
           return Boolean(ctx.getCurrentModelByType(EmbedGithubModel));
         },
@@ -575,7 +579,7 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
               @toggle=${onToggle}
               .actions=${actions}
               .context=${ctx}
-              .style$=${style$}
+              .styleSignal=${style$}
             ></affine-card-style-dropdown-menu>`
           )}`;
         },
@@ -642,7 +646,7 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
               @select=${onSelect}
               @toggle=${onToggle}
               .format=${format}
-              .size$=${scale$}
+              .sizeSignal=${scale$}
             ></affine-size-dropdown-menu>`
           )}`;
         },

@@ -1,0 +1,28 @@
+query calendarAccounts {
+  currentUser {
+    calendarAccounts {
+      id
+      provider
+      providerAccountId
+      displayName
+      email
+      status
+      lastError
+      refreshIntervalMinutes
+      calendarsCount
+      createdAt
+      updatedAt
+      calendars {
+        id
+        accountId
+        provider
+        externalCalendarId
+        displayName
+        timezone
+        color
+        enabled
+        lastSyncAt
+      }
+    }
+  }
+}

@@ -61,8 +61,8 @@ export class BatchTaskManager {
 
   private run(): void {
     let totalBatchCount = this.totalBatchSize;
-    // let skipCount = 0;
-    // let tasksExecuted = false;
+    let skipCount = 0;
+    let tasksExecuted = false;
     const runTaskArr = this.queues.map(() => 0);
     for (let i = this.queues.length - 1; i >= 0; i--) {
       const queue = this.queues[i];
@@ -82,22 +82,22 @@ export class BatchTaskManager {
         if (result !== false) {
           totalBatchCount--;
           priorityBatchCount--;
-          // tasksExecuted = true;
+          tasksExecuted = true;
           runTaskArr[i] = (runTaskArr[i] ?? 0) + 1;
         }
       }
     }
 
-    // if (tasksExecuted) {
-    //   console.log(
-    //     'run task count',
-    //     ...runTaskArr,
-    //     'skip count',
-    //     skipCount,
-    //     'total task count',
-    //     ...this.queues.map(arr => arr.size)
-    //   );
-    // }
+    if (tasksExecuted) {
+      console.log(
+        'run task count',
+        ...runTaskArr,
+        'skip count',
+        skipCount,
+        'total task count',
+        ...this.queues.map(arr => arr.size)
+      );
+    }
 
     const hasRemainingTasks = this.queues.some(queue => !queue.isEmpty());
 

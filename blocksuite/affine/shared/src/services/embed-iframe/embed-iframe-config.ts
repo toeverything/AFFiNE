@@ -27,6 +27,7 @@ export type IframeOptions = {
   allow?: string;
   allowFullscreen?: boolean;
   containerBorderRadius?: number;
+  sandbox?: string;
 };
 
 /**
@@ -65,6 +66,10 @@ export type EmbedIframeConfig = {
    * The function to build the oEmbed URL for fetching embed data
    */
   buildOEmbedUrl: (url: string) => string | undefined;
+  /**
+   * Validate the final iframe src before rendering.
+   */
+  validateIframeUrl?: (iframeUrl: string, originalUrl?: string) => boolean;
   /**
    * Use oEmbed URL directly as iframe src without fetching oEmbed data
    */

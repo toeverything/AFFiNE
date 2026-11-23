@@ -206,8 +206,8 @@ export const useDropTarget = <D extends DNDData = DNDData>(
           (dropTargetContext.fromExternalData as fromExternalData<D>))
         : undefined,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, dropTargetContext.fromExternalData]);
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [...deps, getOptions, dropTargetContext.fromExternalData]);
 
   const getDropTargetOptions = useCallback(() => {
     const wrappedCanDrop = dropTargetGet(options.canDrop, options);

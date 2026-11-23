@@ -60,9 +60,13 @@ export class CMDKQuickSearchService extends Service {
 
           if (result.source === 'recent-doc' || result.source === 'docs') {
             const doc: {
-              docId: string;
+              docId?: string;
               blockId?: string;
             } = result.payload;
+
+            if (!doc.docId) {
+              return;
+            }
 
             result.source === 'recent-doc' && track.$.cmdk.recent.recentDocs();
             result.source === 'docs' &&
@@ -71,6 +75,7 @@ export class CMDKQuickSearchService extends Service {
             const options: { docId: string; blockIds?: string[] } = {
               docId: doc.docId,
             };
+
             if (doc.blockId) {
               options.blockIds = [doc.blockId];
             }

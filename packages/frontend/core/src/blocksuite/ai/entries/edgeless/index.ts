@@ -7,7 +7,7 @@ import {
 import { html } from 'lit';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
-import { AIProvider } from '../../provider';
+import { AIAppEvents } from '../../provider';
 import { getAIPanelWidget } from '../../utils/ai-widgets';
 import { getEdgelessCopilotWidget } from '../../utils/edgeless';
 import { extractSelectedContent } from '../../utils/extract';
@@ -57,11 +57,20 @@ export function edgelessToolbarAIEntryConfig(): ToolbarModuleConfig {
                 aiPanel.hide();
                 extractSelectedContent(host)
                   .then(context => {
-                    AIProvider.slots.requestSendWithChat.next({
-                      input,
-                      context,
-                      host,
-                    });
+                    if (context?.attachments?.length || context?.docs?.length) {
+                      AIAppEvents.requestOpenWithChat.next({
+                        input,
+                        host,
+                        context,
+                        autoSelect: true,
+                      });
+                    } else {
+                      AIAppEvents.requestSendWithChat.next({
+                        input,
+                        context,
+                        host,
+                      });
+                    }
                   })
                   .catch(console.error);
               };

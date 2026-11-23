@@ -1,12 +1,114 @@
-// TODO(@forehalo):
-//   Because of the `@affine/server` package can't import directly from workspace packages,
-//   this is a temprory solution to get the block suite data(title, description) from given yjs binary or yjs doc.
-//   The logic is mainly copied from
-//     - packages/frontend/core/src/modules/docs-search/worker/in-worker.ts
-//     - packages/frontend/core/src/components/page-list/use-block-suite-page-preview.ts
-//   and it's better to be provided by blocksuite
+import { z } from 'zod';
 
-import { Array, Doc, Map } from 'yjs';
+import {
+  parsePageDocFromBinary,
+  parseWorkspaceDocFromBinary,
+  parseYDocToMarkdown,
+  projectDocCanvasFromBinary,
+  projectDocSearchFromBinary,
+  readAllDocIdsFromRootDoc,
+} from '../../native';
+
+const DocVisibilitySchema = z.enum(['page', 'edgeless', 'both']);
+const DocBoundsSchema = z
+  .object({
+    x: z.number().finite(),
+    y: z.number().finite(),
+    width: z.number().finite().nonnegative(),
+    height: z.number().finite().nonnegative(),
+  })
+  .strict();
+const ProjectionWarningSchema = z
+  .object({ code: z.string(), locator: z.string() })
+  .strict();
+const CanvasProjectionBlockSchema = z
+  .object({
+    id: z.string(),
+    type: z.string(),
+    visibility: DocVisibilitySchema,
+    bounds: DocBoundsSchema.optional(),
+    text: z.string().optional(),
+    title: z.string().optional(),
+    childIds: z.array(z.string()),
+  })
+  .strict();
+const CanvasProjectionElementSchema = z
+  .object({
+    id: z.string(),
+    type: z.string(),
+    bounds: DocBoundsSchema.optional(),
+    text: z.string().optional(),
+    title: z.string().optional(),
+    frameId: z.string().optional(),
+    childIds: z.array(z.string()),
+    sourceId: z.string().optional(),
+    targetId: z.string().optional(),
+    parentId: z.string().optional(),
+    index: z.string().optional(),
+    pointCount: z.number().int().nonnegative().optional(),
+    color: z.string().optional(),
+    lineWidth: z.number().finite().optional(),
+  })
+  .strict();
+const CanvasProjectionV1Schema = z
+  .object({
+    version: z.literal(1),
+    docId: z.string(),
+    revision: z.string(),
+    title: z.string(),
+    surfaceBlockId: z.string().optional(),
+    bounds: DocBoundsSchema.optional(),
+    counts: z.record(z.string(), z.number().int().nonnegative()),
+    blocks: z.array(CanvasProjectionBlockSchema),
+    elements: z.array(CanvasProjectionElementSchema),
+    warnings: z.array(ProjectionWarningSchema),
+  })
+  .strict();
+const DocumentSearchUnitV1Schema = z
+  .object({
+    unitId: z.string(),
+    source: z.enum(['page-block', 'canvas-block', 'surface-element']),
+    visibility: DocVisibilitySchema,
+    blockId: z.string().optional(),
+    elementId: z.string().optional(),
+    frameId: z.string().optional(),
+    blobId: z.string().optional(),
+    refDocIds: z.array(z.string()),
+    refs: z.array(z.string()),
+    parentFlavour: z.string().optional(),
+    parentBlockId: z.string().optional(),
+    additional: z.string().optional(),
+    type: z.string(),
+    text: z.string(),
+  })
+  .strict();
+const DocumentSearchProjectionV1Schema = z
+  .object({
+    version: z.literal(1),
+    docId: z.string(),
+    revision: z.string(),
+    sourceHash: z.string(),
+    title: z.string(),
+    units: z.array(DocumentSearchUnitV1Schema),
+    warnings: z.array(ProjectionWarningSchema),
+  })
+  .strict();
+
+export type DocVisibility = z.infer<typeof DocVisibilitySchema>;
+export type DocBounds = z.infer<typeof DocBoundsSchema>;
+export type ProjectionWarning = z.infer<typeof ProjectionWarningSchema>;
+export type CanvasProjectionBlock = z.infer<typeof CanvasProjectionBlockSchema>;
+export type CanvasProjectionElement = z.infer<
+  typeof CanvasProjectionElementSchema
+>;
+export type CanvasProjectionV1 = z.infer<typeof CanvasProjectionV1Schema>;
+export type DocumentSearchUnitV1 = z.infer<typeof DocumentSearchUnitV1Schema>;
+export type DocumentSearchProjectionV1 = z.infer<
+  typeof DocumentSearchProjectionV1Schema
+>;
+
+export const parseCanvasProjection = (value: unknown) =>
+  CanvasProjectionV1Schema.parse(value);
 
 export interface PageDocContent {
   title: string;
@@ -18,142 +120,80 @@ export interface WorkspaceDocContent {
   avatarKey: string;
 }
 
-type KnownFlavour =
-  | 'affine:page'
-  | 'affine:note'
-  | 'affine:surface'
-  | 'affine:paragraph'
-  | 'affine:list'
-  | 'affine:code'
-  | 'affine:image'
-  | 'affine:attachment'
-  | 'affine:transcription'
-  | 'affine:callout'
-  | 'affine:table';
-
-export function parseWorkspaceDoc(doc: Doc): WorkspaceDocContent | null {
-  // not a workspace doc
-  if (!doc.share.has('meta')) {
-    return null;
-  }
-
-  const meta = doc.getMap('meta');
-
-  return {
-    name: meta.get('name') as string,
-    avatarKey: meta.get('avatar') as string,
-  };
+export interface DocMarkdownContent {
+  title: string;
+  markdown: string;
+  knownUnsupportedBlocks: string[];
+  unknownBlocks: string[];
 }
 
 export interface ParsePageOptions {
-  maxSummaryLength: number;
+  maxSummaryLength?: number;
+}
+
+export function parseWorkspaceDoc(
+  snapshot: Uint8Array
+): WorkspaceDocContent | null {
+  return parseWorkspaceDocFromBinary(Buffer.from(snapshot)) ?? null;
 }
 
 export function parsePageDoc(
-  doc: Doc,
+  docSnapshot: Uint8Array,
   opts: ParsePageOptions = { maxSummaryLength: 150 }
 ): PageDocContent | null {
-  // not a page doc
-  if (!doc.share.has('blocks')) {
-    return null;
-  }
+  return (
+    parsePageDocFromBinary(
+      Buffer.from(docSnapshot),
+      opts?.maxSummaryLength ?? 150
+    ) ?? null
+  );
+}
 
-  const blocks = doc.getMap<Map<any>>('blocks');
+export function readAllDocIdsFromWorkspaceSnapshot(
+  snapshot: Uint8Array,
+  includeTrash = false
+) {
+  return readAllDocIdsFromRootDoc(Buffer.from(snapshot), includeTrash);
+}
 
-  if (!blocks.size) {
-    return null;
-  }
+export function projectDocCanvas(
+  docSnapshot: Uint8Array,
+  docId: string,
+  revision: string
+): CanvasProjectionV1 {
+  return parseCanvasProjection(
+    projectDocCanvasFromBinary(Buffer.from(docSnapshot), docId, revision)
+  );
+}
 
-  const content: PageDocContent = {
-    title: '',
-    summary: '',
+export function projectDocSearch(
+  docSnapshot: Uint8Array,
+  docId: string,
+  revision: string
+): DocumentSearchProjectionV1 {
+  return DocumentSearchProjectionV1Schema.parse(
+    projectDocSearchFromBinary(Buffer.from(docSnapshot), docId, revision)
+  );
+}
+
+export function parseDocToMarkdownFromDocSnapshot(
+  workspaceId: string,
+  docId: string,
+  docSnapshot: Uint8Array,
+  aiEditable = false
+): DocMarkdownContent {
+  const docUrlPrefix = workspaceId ? `/workspace/${workspaceId}` : undefined;
+  const parsed = parseYDocToMarkdown(
+    Buffer.from(docSnapshot),
+    docId,
+    aiEditable,
+    docUrlPrefix
+  );
+
+  return {
+    title: parsed.title,
+    markdown: parsed.markdown,
+    knownUnsupportedBlocks: parsed.knownUnsupportedBlocks ?? [],
+    unknownBlocks: parsed.unknownBlocks ?? [],
   };
-
-  let summaryLenNeeded = opts.maxSummaryLength;
-
-  let root: Map<any> | null = null;
-  for (const block of blocks.values()) {
-    const flavour = block.get('sys:flavour') as KnownFlavour;
-    if (flavour === 'affine:page') {
-      content.title = block.get('prop:title') as string;
-      root = block;
-    }
-  }
-
-  if (!root) {
-    return null;
-  }
-
-  const queue: string[] = [root.get('sys:id')];
-
-  function pushChildren(block: Map<any>) {
-    const children = block.get('sys:children') as Array<string> | undefined;
-    if (children?.length) {
-      for (let i = children.length - 1; i >= 0; i--) {
-        queue.push(children.get(i));
-      }
-    }
-  }
-
-  while (queue.length) {
-    const blockId = queue.pop();
-    const block = blockId ? blocks.get(blockId) : null;
-    if (!block) {
-      break;
-    }
-
-    const flavour = block.get('sys:flavour') as KnownFlavour;
-
-    switch (flavour) {
-      case 'affine:page':
-      case 'affine:note': {
-        pushChildren(block);
-        break;
-      }
-      case 'affine:attachment':
-      case 'affine:transcription':
-      case 'affine:callout': {
-        // only extract text in full content mode
-        if (summaryLenNeeded === -1) {
-          pushChildren(block);
-        }
-        break;
-      }
-      case 'affine:table': {
-        // only extract text in full content mode
-        if (summaryLenNeeded === -1) {
-          const contents: string[] = [...block.keys()]
-            .map(key => {
-              if (key.startsWith('prop:cells.') && key.endsWith('.text')) {
-                return block.get(key)?.toString() ?? '';
-              }
-              return '';
-            })
-            .filter(Boolean);
-          content.summary += contents.join('|');
-        }
-        break;
-      }
-      case 'affine:paragraph':
-      case 'affine:list':
-      case 'affine:code': {
-        pushChildren(block);
-        const text = block.get('prop:text');
-        if (!text) {
-          continue;
-        }
-
-        if (summaryLenNeeded === -1) {
-          content.summary += text.toString();
-        } else if (summaryLenNeeded > 0) {
-          content.summary += text.toString();
-          summaryLenNeeded -= text.length;
-        } else {
-          break;
-        }
-      }
-    }
-  }
-
-  return content;
 }

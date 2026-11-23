@@ -5,6 +5,7 @@ import {
 
 import { EdgelessClipboardImageConfig } from './edgeless-clipboard-config';
 import { effects } from './effects';
+import { ImageEdgelessBlockInteraction } from './image-edgeless-block';
 import { ImageBlockSpec } from './image-spec';
 
 export class ImageViewExtension extends ViewExtensionProvider {
@@ -20,6 +21,7 @@ export class ImageViewExtension extends ViewExtensionProvider {
     context.register(ImageBlockSpec);
     if (this.isEdgeless(context.scope)) {
       context.register(EdgelessClipboardImageConfig);
+      context.register(ImageEdgelessBlockInteraction);
     }
   }
 }

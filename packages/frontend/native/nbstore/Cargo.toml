@@ -1,30 +1,57 @@
 [package]
-edition = "2021"
+edition = "2024"
 name    = "affine_nbstore"
+publish = false
 version = "0.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
-use-as-lib = ["napi-derive/noop", "napi/noop"]
+default    = []
+napi       = ["affine_common/napi"]
+use-as-lib = []
 
 [dependencies]
+affine_common = { workspace = true, features = ["napi"] }
+affine_doc_loader = { workspace = true }
 affine_schema = { path = "../schema" }
-anyhow        = { workspace = true }
-chrono        = { workspace = true }
-napi          = { workspace = true }
-napi-derive   = { workspace = true }
-sqlx          = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-thiserror     = { workspace = true }
-tokio         = { workspace = true, features = ["full"] }
+bincode = { version = "2.0.1", features = ["serde"] }
+chrono = { workspace = true }
+memory-indexer = { workspace = true }
+napi = { workspace = true }
+napi-derive = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "sqlite",
+] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+y-octo = { workspace = true }
+zstd = "0.13"
 
 [target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
 uniffi = { workspace = true }
 
 [build-dependencies]
 affine_schema = { path = "../schema" }
-dotenvy       = { workspace = true }
-napi-build    = { workspace = true }
-sqlx          = { workspace = true, default-features = false, features = ["chrono", "json", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-tokio         = { workspace = true, features = ["full"] }
+dotenvy = { workspace = true }
+napi-build = { workspace = true }
+sqlx = { workspace = true, default-features = false, features = [
+  "chrono",
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "sqlite",
+] }
+tokio = { workspace = true, features = ["full"] }
+
+
+[dev-dependencies]
+assert-json-diff = { workspace = true }
+serde_json       = { workspace = true }
+uuid             = { workspace = true, features = ["v4"] }

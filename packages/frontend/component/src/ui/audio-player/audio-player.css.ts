@@ -60,8 +60,9 @@ export const spacer = style({
   flex: 1,
 });
 
-export const sizeInfo = style({
+export const description = style({
   display: 'flex',
+  gap: '8px',
   alignItems: 'center',
   fontSize: cssVar('fontXs'),
   color: cssVarV2('text/secondary'),
@@ -122,6 +123,7 @@ export const progressContainer = style({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  minWidth: 0,
 });
 
 export const progressBar = style({

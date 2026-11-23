@@ -11,9 +11,11 @@ test('import from template should work', async ({ page }) => {
   await page.goto('https://affine.pro/templates', { waitUntil: 'load' });
 
   await page.click('.template-list > a:first-child');
-  const importLink = page.getByText('Use this template');
+  const importButton = page.getByRole('button', {
+    name: 'Use this template',
+  });
 
-  const href = await importLink.evaluate((el: HTMLElement) => {
+  const href = await importButton.evaluate((el: HTMLElement) => {
     const a = el.closest('a');
     if (!a) {
       throw new Error('Import link not found');

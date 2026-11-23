@@ -1,3 +1,4 @@
+import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import {
   Select,
@@ -7,16 +8,22 @@ import {
   SelectValue,
 } from '@affine/admin/components/ui/select';
 import { Switch } from '@affine/admin/components/ui/switch';
-import { useCallback, useState } from 'react';
+import { cn } from '@affine/admin/utils';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Textarea } from '../../components/ui/textarea';
-import { isEqual } from './utils';
 
 export type ConfigInputProps = {
   field: string;
   desc: string;
   defaultValue: any;
-  onChange: (key: string, value: any) => void;
+  onChange: (field: string, value: any) => void;
+  error?: string;
+  onErrorChange?: (field: string, error?: string) => void;
+  secret?: boolean;
+  configured?: boolean;
+  source?: string;
+  onClear?: () => void;
 } & (
   | {
       type: 'String' | 'Number' | 'Boolean' | 'JSON';
@@ -33,6 +40,9 @@ const Inputs: Record<
     defaultValue: any;
     onChange: (value?: any) => void;
     options?: string[];
+    error?: string;
+    onValidationChange?: (error?: string) => void;
+    secret?: boolean;
   }>
 > = {
   Boolean: function SwitchInput({ defaultValue, onChange }) {
@@ -42,57 +52,95 @@ const Inputs: Record<
 
     return (
       <Switch
-        defaultChecked={defaultValue}
+        checked={Boolean(defaultValue)}
         onCheckedChange={handleSwitchChange}
       />
     );
   },
-  String: function StringInput({ defaultValue, onChange }) {
+  String: function StringInput({ defaultValue, onChange, secret }) {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(e.target.value);
     };
 
     return (
       <Input
-        type="text"
+        type={secret ? 'password' : 'text'}
         minLength={1}
-        defaultValue={defaultValue}
+        value={defaultValue ?? ''}
         onChange={handleInputChange}
       />
     );
   },
   Number: function NumberInput({ defaultValue, onChange }) {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(parseInt(e.target.value));
+      const next = e.target.value;
+      onChange(next === '' ? undefined : parseInt(next, 10));
     };
 
     return (
       <Input
         type="number"
-        defaultValue={defaultValue}
+        value={defaultValue ?? ''}
         onChange={handleInputChange}
       />
     );
   },
-  JSON: function ObjectInput({ defaultValue, onChange }) {
+  JSON: function ObjectInput({
+    defaultValue,
+    onChange,
+    error,
+    onValidationChange,
+    secret,
+  }) {
+    const fallbackText = useMemo(
+      () =>
+        secret && defaultValue === undefined
+          ? ''
+          : typeof defaultValue === 'string'
+            ? defaultValue
+            : JSON.stringify(defaultValue ?? null),
+      [defaultValue, secret]
+    );
+    const [text, setText] = useState(fallbackText);
+
+    useEffect(() => {
+      setText(fallbackText);
+    }, [fallbackText]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const nextText = e.target.value;
+      setText(nextText);
       try {
-        const value = JSON.parse(e.target.value);
+        const value = JSON.parse(nextText);
+        onValidationChange?.(undefined);
         onChange(value);
-      } catch {}
+      } catch {
+        onValidationChange?.('Invalid JSON format');
+        // Keep the draft "dirty" even when JSON is temporarily invalid
+        // so Save/Cancel state can reflect real editing progress.
+        onChange(nextText);
+      }
     };
 
     return (
       <Textarea
-        defaultValue={JSON.stringify(defaultValue)}
+        value={text}
         onChange={handleInputChange}
-        className="w-full"
+        className={cn(
+          'w-full',
+          error
+            ? 'border-destructive hover:border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
+            : undefined
+        )}
       />
     );
   },
   Enum: function EnumInput({ defaultValue, onChange, options }) {
     return (
-      <Select defaultValue={defaultValue} onValueChange={onChange}>
+      <Select
+        value={typeof defaultValue === 'string' ? defaultValue : undefined}
+        onValueChange={onChange}
+      >
         <SelectTrigger>
           <SelectValue placeholder="Select an option" />
         </SelectTrigger>
@@ -114,54 +162,81 @@ export const ConfigRow = ({
   type,
   defaultValue,
   onChange,
+  error,
+  onErrorChange,
+  secret,
+  configured,
+  source,
+  onClear,
   ...props
 }: ConfigInputProps) => {
-  const [value, setValue] = useState(defaultValue);
-
-  const isValueChanged = !isEqual(value, defaultValue);
+  const Input = Inputs[type] ?? Inputs.JSON;
+  const [validationError, setValidationError] = useState<string>();
 
   const onValueChange = useCallback(
     (value?: any) => {
       onChange(field, value);
-      setValue(value);
     },
     [field, onChange]
   );
 
-  const Input = Inputs[type] ?? Inputs.JSON;
+  const onValidationChange = useCallback((nextError?: string) => {
+    setValidationError(nextError);
+  }, []);
+
+  const mergedError = error ?? validationError;
+
+  useEffect(() => {
+    onErrorChange?.(field, mergedError);
+    return () => {
+      onErrorChange?.(field, undefined);
+    };
+  }, [field, mergedError, onErrorChange]);
 
   return (
     <div
-      className={`flex justify-between flex-grow space-y-[10px]
-         ${type === 'Boolean' ? 'flex-row' : 'flex-col'}`}
+      className={cn(
+        'flex flex-grow gap-3',
+        type === 'Boolean' ? 'items-start justify-between' : 'flex-col'
+      )}
     >
-      <div className="text-base font-bold flex-3">{desc}</div>
-      <div className="flex flex-col items-end relative flex-1">
+      <div className="flex-3">
+        <div
+          className="text-sm font-semibold leading-6 text-foreground"
+          dangerouslySetInnerHTML={{ __html: desc }}
+        />
+        <div className="text-xs text-muted-foreground">
+          {source ? `Source: ${source}` : null}
+          {secret ? ` · ${configured ? 'Configured' : 'Not configured'}` : null}
+        </div>
+      </div>
+      <div
+        className={cn(
+          'relative flex flex-1 flex-col',
+          type === 'Boolean' ? 'items-end' : 'items-stretch'
+        )}
+      >
         <Input
           defaultValue={defaultValue}
           onChange={onValueChange}
+          error={mergedError}
+          onValidationChange={onValidationChange}
+          secret={secret}
           {...props}
         />
-        {isValueChanged && (
-          <div className="absolute bottom-[-25px] text-sm right-0 break-words">
-            <span
-              className="line-through"
-              style={{
-                color: 'rgba(198, 34, 34, 1)',
-                backgroundColor: 'rgba(254, 213, 213, 1)',
-              }}
-            >
-              {JSON.stringify(defaultValue)}
-            </span>{' '}
-            =&gt;{' '}
-            <span
-              style={{
-                color: 'rgba(20, 147, 67, 1)',
-                backgroundColor: 'rgba(225, 250, 177, 1)',
-              }}
-            >
-              {JSON.stringify(value)}
-            </span>
+        {onClear ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2 self-start"
+            onClick={onClear}
+          >
+            Reset override
+          </Button>
+        ) : null}
+        {mergedError && (
+          <div className="mt-1 w-full break-words text-sm text-destructive">
+            {mergedError}
           </div>
         )}
       </div>

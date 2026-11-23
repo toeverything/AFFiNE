@@ -182,13 +182,12 @@ export class AIPanelError extends WithDisposable(LitElement) {
       () => {
         const tip = this.config.error?.message;
         const error = tip
-          ? html`<span class="error-tip"
-              >An error occurred<affine-tooltip
-                tip-position="bottom-start"
-                .arrow=${false}
-                >${tip}</affine-tooltip
-              ></span
-            >`
+          ? html`<span class="error-tip">
+              An error occurred
+              <affine-tooltip tip-position="bottom-start">
+                ${tip}
+              </affine-tooltip>
+            </span>`
           : 'An error occurred';
         return html`
           <style>
@@ -215,30 +214,36 @@ export class AIPanelError extends WithDisposable(LitElement) {
         </div>
         ${errorTemplate}
       </div>
-      ${this.withAnswer
-        ? html`<ai-finish-tip
-            .copy=${this.copy}
-            .host=${this.host}
-          ></ai-finish-tip>`
-        : nothing}
-      ${responseGroup.length > 0
-        ? html`
-            <ai-panel-divider></ai-panel-divider>
-            ${responseGroup.map(
-              (group, index) => html`
-                ${index !== 0
-                  ? html`<ai-panel-divider></ai-panel-divider>`
-                  : nothing}
-                <div class="response-list-container">
-                  <ai-item-list
-                    .host=${this.host}
-                    .groups=${[group]}
-                  ></ai-item-list>
-                </div>
-              `
-            )}
-          `
-        : nothing}
+      ${
+        this.withAnswer
+          ? html`<ai-finish-tip
+              .copy=${this.copy}
+              .host=${this.host}
+            ></ai-finish-tip>`
+          : nothing
+      }
+      ${
+        responseGroup.length > 0
+          ? html`
+              <ai-panel-divider></ai-panel-divider>
+              ${responseGroup.map(
+                (group, index) => html`
+                  ${
+                    index !== 0
+                      ? html`<ai-panel-divider></ai-panel-divider>`
+                      : nothing
+                  }
+                  <div class="response-list-container">
+                    <ai-item-list
+                      .host=${this.host}
+                      .groups=${[group]}
+                    ></ai-item-list>
+                  </div>
+                `
+              )}
+            `
+          : nothing
+      }
     `;
   }
 

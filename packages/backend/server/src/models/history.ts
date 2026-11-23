@@ -33,22 +33,30 @@ export class HistoryModel extends BaseModel {
    * Create a doc history with a max age.
    */
   async create(snapshot: Doc, maxAge: number): Promise<DocHistorySimple> {
-    const row = await this.db.snapshotHistory.create({
-      select: {
-        timestamp: true,
-        createdByUser: { select: publicUserSelect },
+    const timestamp = new Date(snapshot.timestamp);
+    const expiredAt = new Date(Date.now() + maxAge);
+
+    const row = await this.db.snapshotHistory.upsert({
+      where: {
+        workspaceId_id_timestamp: {
+          workspaceId: snapshot.spaceId,
+          id: snapshot.docId,
+          timestamp,
+        },
       },
-      data: {
+      select: { timestamp: true, createdByUser: { select: publicUserSelect } },
+      create: {
         workspaceId: snapshot.spaceId,
         id: snapshot.docId,
-        timestamp: new Date(snapshot.timestamp),
+        timestamp,
         blob: snapshot.blob,
         createdBy: snapshot.editorId,
-        expiredAt: new Date(Date.now() + maxAge),
+        expiredAt,
       },
+      update: { expiredAt },
     });
     this.logger.debug(
-      `Created history ${row.timestamp} for ${snapshot.docId} in ${snapshot.spaceId}`
+      `Upserted history ${row.timestamp} for ${snapshot.docId} in ${snapshot.spaceId}`
     );
     return {
       timestamp: row.timestamp.getTime(),
@@ -150,22 +158,5 @@ export class HistoryModel extends BaseModel {
       timestamp: row.timestamp.getTime(),
       editor: row.createdByUser,
     };
-  }
-
-  /**
-   * Clean expired histories.
-   */
-  async cleanExpired() {
-    const { count } = await this.db.snapshotHistory.deleteMany({
-      where: {
-        expiredAt: {
-          lte: new Date(),
-        },
-      },
-    });
-    if (count > 0) {
-      this.logger.log(`Deleted ${count} expired histories`);
-    }
-    return count;
   }
 }

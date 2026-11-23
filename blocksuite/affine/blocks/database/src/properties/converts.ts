@@ -47,7 +47,7 @@ export const databasePropertyConverts = [
     propertyModelPresets.multiSelectPropertyModelConfig,
     (_property, cells) => {
       const options: Record<string, SelectTag> = {};
-      // eslint-disable-next-line sonarjs/no-identical-functions
+      // oxlint-disable-next-line sonarjs/no-identical-functions
       const getTag = (name: string) => {
         if (options[name]) return options[name];
         const tag: SelectTag = {

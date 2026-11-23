@@ -57,7 +57,7 @@ function isValidGoogleDocsUrl(url: string, strictMode = true): boolean {
   }
 }
 
-const googleDocsConfig = {
+export const googleDocsConfig = {
   name: 'google-docs',
   match: (url: string) => isValidGoogleDocsUrl(url),
   buildOEmbedUrl: (url: string) => {
@@ -67,6 +67,7 @@ const googleDocsConfig = {
     return url;
   },
   useOEmbedUrlDirectly: true,
+  validateIframeUrl: (iframeUrl: string) => isValidGoogleDocsUrl(iframeUrl),
   options: {
     widthInSurface: GOOGLE_DOCS_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: GOOGLE_DOCS_DEFAULT_HEIGHT_IN_SURFACE,

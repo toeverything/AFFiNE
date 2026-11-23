@@ -120,8 +120,7 @@ test('keep same color when mouse mode switched back to brush', async ({
   await assertEdgelessColorSameWithHexColor(page, color, pickedColor);
 });
 
-// TODO(@fundon): should add it back?
-test.skip('add brush element with different size', async ({ page }) => {
+test('add brush element with different size', async ({ page }) => {
   await enterPlaygroundRoom(page);
   await initEmptyEdgelessState(page);
   await switchEditorMode(page);

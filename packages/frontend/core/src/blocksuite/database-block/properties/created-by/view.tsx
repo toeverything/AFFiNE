@@ -3,7 +3,7 @@ import {
   type CellRenderProps,
   createIcon,
   type DataViewCellLifeCycle,
-  HostContextKey,
+  EditorHostKey,
 } from '@blocksuite/affine/blocks/database';
 import {
   UserProvider,
@@ -14,11 +14,11 @@ import {
   forwardRef,
   type ForwardRefRenderFunction,
   type ReactNode,
-  useEffect,
   useImperativeHandle,
 } from 'react';
 
 import { useSignalValue } from '../../../../modules/doc-info/utils';
+import { useMemberInfo } from '../../hooks/use-member-info';
 import { createdByPropertyModelConfig } from './define';
 
 const cellContainer = css({
@@ -64,7 +64,7 @@ const CreatedByCellComponent: ForwardRefRenderFunction<
     }),
     []
   );
-  const host = props.cell.view.contextGet(HostContextKey);
+  const host = props.cell.view.serviceGet(EditorHostKey);
   const userService = host?.std.getOptional(UserProvider);
   const memberId = useSignalValue(props.cell.value$);
   if (!memberId) {
@@ -81,16 +81,6 @@ const CreatedByCellComponent: ForwardRefRenderFunction<
       </div>
     </div>
   );
-};
-
-const useMemberInfo = (
-  id: string,
-  userService: UserService | null | undefined
-) => {
-  useEffect(() => {
-    userService?.revalidateUserInfo(id);
-  }, [id, userService]);
-  return useSignalValue(userService?.userInfo$(id));
 };
 
 const MemberPreview = ({
@@ -123,7 +113,7 @@ const CreatedByCell = forwardRef(CreatedByCellComponent);
 
 export const createdByPropertyConfig =
   createdByPropertyModelConfig.createPropertyMeta({
-    icon: createIcon('UserIcon'),
+    icon: createIcon('MemberIcon'),
     cellRenderer: {
       view: uniReactRoot.createUniComponent(CreatedByCell),
     },

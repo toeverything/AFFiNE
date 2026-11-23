@@ -10,6 +10,7 @@ import type {
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
 import { useAutoFocus, useAutoSelect } from '../../hooks';
+import { useDebounceCallback } from '../../hooks/use-debounce-callback';
 
 export type RowInputProps = {
   disabled?: boolean;
@@ -21,7 +22,10 @@ export type RowInputProps = {
   style?: CSSProperties;
   onEnter?: (value: string) => void;
   [key: `data-${string}`]: string;
+  debounce?: number;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
+
+const EMPTY_STYLE: CSSProperties = {};
 
 // RowInput component that is used in the selector layout for search input
 // handles composition events and enter key press
@@ -31,12 +35,13 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
       disabled,
       onChange: propsOnChange,
       className,
-      style = {},
+      style = EMPTY_STYLE,
       onEnter,
       onKeyDown,
       onBlur,
       autoFocus,
       autoSelect,
+      debounce,
       ...otherProps
     }: RowInputProps,
     upstreamRef: ForwardedRef<HTMLInputElement>
@@ -66,7 +71,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
       if (!onBlur) return;
       selectRef.current?.addEventListener('blur', onBlur as any);
       return () => {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // oxlint-disable-next-line react/exhaustive-deps
         selectRef.current?.removeEventListener('blur', onBlur as any);
       };
     }, [onBlur, selectRef]);
@@ -77,6 +82,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
       },
       [propsOnChange]
     );
+    const debounceHandleChange = useDebounceCallback(handleChange, debounce);
 
     const handleKeyDown = useCallback(
       (e: KeyboardEvent<HTMLInputElement>) => {
@@ -105,7 +111,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
         ref={inputRef}
         disabled={disabled}
         style={style}
-        onChange={handleChange}
+        onChange={debounce ? debounceHandleChange : handleChange}
         onKeyDown={handleKeyDown}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}

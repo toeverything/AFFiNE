@@ -1,4 +1,7 @@
-import { CanvasElementType } from '@blocksuite/affine-block-surface';
+import {
+  CanvasElementType,
+  EdgelessCRUDIdentifier,
+} from '@blocksuite/affine-block-surface';
 import type { BrushElementModel } from '@blocksuite/affine-model';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import type { IVec } from '@blocksuite/global/gfx';
@@ -118,7 +121,7 @@ export class BrushTool extends BaseTool {
     this._lastPoint = [pointX, pointY];
     this._draggingPathPoints = points;
 
-    this.gfx.updateElement(this._draggingElement!, {
+    this.gfx.updateElement(this._draggingElement, {
       points: this._tryGetPressurePoints(e),
     });
 
@@ -165,6 +168,24 @@ export class BrushTool extends BaseTool {
     this._draggingPathPoints = points;
     this._draggingPathPressures = [e.pressure];
     this._lastPopLength = 0;
+  }
+
+  override click(e: PointerEventState) {
+    this.doc.captureSync();
+
+    const [modelX, modelY] = this.gfx.viewport.toModelCoord(
+      e.point.x,
+      e.point.y
+    );
+
+    const points = this._pressureSupportedPointerIds.has(e.raw.pointerId)
+      ? [[modelX, modelY, e.pressure]]
+      : [[modelX, modelY]];
+
+    const crud = this.std.get(EdgelessCRUDIdentifier);
+    crud.addElement(CanvasElementType.BRUSH, {
+      points,
+    });
   }
 
   override activate() {

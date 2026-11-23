@@ -4,6 +4,10 @@ import {
   showPopFilterableList,
 } from '@blocksuite/affine-components/filterable-list';
 import { ArrowDownIcon } from '@blocksuite/affine-components/icons';
+import {
+  DocModeProvider,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
@@ -14,24 +18,25 @@ import { html } from 'lit/static-html.js';
 
 import type { CodeBlockComponent } from '../..';
 
+const PLAIN_TEXT_ID = '__plain_text__';
+
 export class LanguageListButton extends WithDisposable(
   SignalWatcher(LitElement)
 ) {
   static override styles = css`
     .lang-button {
-      background-color: var(--affine-background-primary-color);
-      box-shadow: var(--affine-shadow-1);
       display: flex;
       gap: 4px;
       padding: 2px 4px;
+      height: 28px;
     }
 
     .lang-button:hover {
-      background: var(--affine-hover-color-filled);
+      background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
     }
 
     .lang-button[hover] {
-      background: var(--affine-hover-color-filled);
+      background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
     }
 
     .lang-button-icon {
@@ -72,10 +77,28 @@ export class LanguageListButton extends WithDisposable(
           sortedBundledLanguages.unshift(item);
         }
         this.blockComponent.store.transact(() => {
-          this.blockComponent.model.props.language$.value = item.name;
+          this.blockComponent.model.props.language$.value =
+            item.name === PLAIN_TEXT_ID ? null : item.name;
+        });
+
+        const std = this.blockComponent.std;
+        const mode =
+          std.getOptional(DocModeProvider)?.getEditorMode() ?? 'page';
+        const telemetryService = std.getOptional(TelemetryProvider);
+        if (!telemetryService) return;
+        telemetryService.track('codeBlockLanguageSelect', {
+          page: mode,
+          segment: 'code block',
+          module: 'language selector',
+          control: item.name,
         });
       },
-      active: item => item.name === this.blockComponent.model.props.language,
+      active: item => {
+        if (item.name === PLAIN_TEXT_ID) {
+          return this.blockComponent.model.props.language === null;
+        }
+        return item.name === this.blockComponent.model.props.language;
+      },
       items: this._sortedBundledLanguages,
     };
 
@@ -96,15 +119,28 @@ export class LanguageListButton extends WithDisposable(
   override connectedCallback(): void {
     super.connectedCallback();
 
+    const plainTextItem: FilterableListItem = {
+      label: 'Plain Text',
+      name: PLAIN_TEXT_ID,
+      aliases: ['plain', 'text', 'plaintext', 'txt', 'none'],
+    };
+
     const langList = localStorage.getItem('blocksuite:code-block:lang-list');
     if (langList) {
       this._sortedBundledLanguages = JSON.parse(langList);
+      // Ensure Plain Text item is always in the list
+      if (
+        !this._sortedBundledLanguages.some(item => item.name === PLAIN_TEXT_ID)
+      ) {
+        this._sortedBundledLanguages.unshift(plainTextItem);
+      }
     } else {
-      this._sortedBundledLanguages = this.blockComponent.langs.map(lang => ({
+      const mappedLanguages = this.blockComponent.langs.map(lang => ({
         label: lang.name,
         name: lang.id,
         aliases: lang.aliases,
       }));
+      this._sortedBundledLanguages = [plainTextItem, ...mappedLanguages];
     }
 
     this.disposables.add(() => {

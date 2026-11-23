@@ -126,19 +126,23 @@ export class CitationCard extends SignalWatcher(WithDisposable(LitElement)) {
         @dblclick=${this.onDoubleClickCallback}
       >
         <div class="citation-header">
-          ${this.icon
-            ? html`<div class="citation-icon">
-                ${this._IconTemplate(this.icon)}
-              </div>`
-            : nothing}
+          ${
+            this.icon
+              ? html`<div class="citation-icon">
+                  ${this._IconTemplate(this.icon)}
+                </div>`
+              : nothing
+          }
           <div class="citation-title">${this.citationTitle}</div>
           <div class=${citationIdentifierClasses}>
             ${this.citationIdentifier}
           </div>
         </div>
-        ${this.citationContent
-          ? html`<div class="citation-content">${this.citationContent}</div>`
-          : nothing}
+        ${
+          this.citationContent
+            ? html`<div class="citation-content">${this.citationContent}</div>`
+            : nothing
+        }
       </div>
     `;
   }

@@ -108,6 +108,10 @@ export class BlobEngine {
     return this.main.blobState$?.(key) ?? null;
   }
 
+  upload(key: string) {
+    return this.main.upload?.(key) ?? null;
+  }
+
   start() {
     if (this._abort) {
       return;

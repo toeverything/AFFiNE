@@ -131,7 +131,7 @@ export class HighlighterElementModel extends GfxPrimitiveElementModel<Highlighte
     instance['_local'].delete('commands');
   })
   @derive((lineWidth: number, instance: Instance) => {
-    const oldBound = instance.elementBound;
+    const oldBound = Bound.fromXYWH(instance.deserializedXYWH);
 
     if (
       lineWidth === instance.lineWidth ||

@@ -52,6 +52,7 @@ export type BaseElementProps = {
   index: string;
   seed: number;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
 };
 
 export type SerializedElement = Record<string, unknown> & {
@@ -60,12 +61,12 @@ export type SerializedElement = Record<string, unknown> & {
   id: string;
   index: string;
   lockedBySelf?: boolean;
+  comments?: Record<string, boolean>;
   props: Record<string, unknown>;
 };
 export abstract class GfxPrimitiveElementModel<
   Props extends BaseElementProps = BaseElementProps,
-> implements GfxCompatibleInterface
-{
+> implements GfxCompatibleInterface {
   private _lastXYWH!: SerializedXYWH;
 
   protected _disposable = new DisposableGroup();
@@ -102,8 +103,9 @@ export abstract class GfxPrimitiveElementModel<
   }
 
   get deserializedXYWH() {
-    if (!this._lastXYWH || this.xywh !== this._lastXYWH) {
-      const xywh = this.xywh;
+    const xywh = this.xywh;
+
+    if (!this._lastXYWH || xywh !== this._lastXYWH) {
       this._local.set('deserializedXYWH', deserializeXYWH(xywh));
       this._lastXYWH = xywh;
     }
@@ -278,9 +280,7 @@ export abstract class GfxPrimitiveElementModel<
 
     if (getFieldPropsSet(this).has(prop as string)) {
       if (!isEqual(value, this.yMap.get(prop as string))) {
-        this.surface.store.transact(() => {
-          this.yMap.set(prop as string, value);
-        });
+        this.yMap.set(prop as string, value);
       }
     } else {
       console.warn('pop a prop that is not field or local:', prop);
@@ -374,15 +374,20 @@ export abstract class GfxPrimitiveElementModel<
 
   @field()
   accessor seed!: number;
+
+  @field()
+  accessor comments: Record<string, boolean> | undefined = undefined;
 }
 
 export abstract class GfxGroupLikeElementModel<
-    Props extends BaseElementProps = BaseElementProps,
-  >
+  Props extends BaseElementProps = BaseElementProps,
+>
   extends GfxPrimitiveElementModel<Props>
   implements GfxGroupCompatibleInterface
 {
   private _childIds: string[] = [];
+
+  private _xywhDirty = true;
 
   private readonly _mutex = createMutex();
 
@@ -418,24 +423,9 @@ export abstract class GfxGroupLikeElementModel<
 
   get xywh() {
     this._mutex(() => {
-      const curXYWH =
-        (this._local.get('xywh') as SerializedXYWH) ?? '[0,0,0,0]';
-      const newXYWH = this._getXYWH().serialize();
-
-      if (curXYWH !== newXYWH || !this._local.has('xywh')) {
-        this._local.set('xywh', newXYWH);
-
-        if (curXYWH !== newXYWH) {
-          this._onChange({
-            props: {
-              xywh: newXYWH,
-            },
-            oldValues: {
-              xywh: curXYWH,
-            },
-            local: true,
-          });
-        }
+      if (this._xywhDirty || !this._local.has('xywh')) {
+        this._local.set('xywh', this._getXYWH().serialize());
+        this._xywhDirty = false;
       }
     });
 
@@ -455,13 +445,39 @@ export abstract class GfxGroupLikeElementModel<
       bound = bound ? bound.unite(child.elementBound) : child.elementBound;
     });
 
-    if (bound) {
-      this._local.set('xywh', bound.serialize());
-    } else {
-      this._local.delete('xywh');
-    }
-
     return bound ?? new Bound(0, 0, 0, 0);
+  }
+
+  invalidateXYWH() {
+    this._xywhDirty = true;
+    this._local.delete('deserializedXYWH');
+  }
+
+  refreshXYWH(local: boolean) {
+    this._mutex(() => {
+      const oldXYWH =
+        (this._local.get('xywh') as SerializedXYWH) ?? '[0,0,0,0]';
+      const nextXYWH = this._getXYWH().serialize();
+
+      this._xywhDirty = false;
+
+      if (oldXYWH === nextXYWH && this._local.has('xywh')) {
+        return;
+      }
+
+      this._local.set('xywh', nextXYWH);
+      this._local.delete('deserializedXYWH');
+
+      this._onChange({
+        props: {
+          xywh: nextXYWH,
+        },
+        oldValues: {
+          xywh: oldXYWH,
+        },
+        local,
+      });
+    });
   }
 
   abstract addChild(element: GfxModel): void;
@@ -494,6 +510,7 @@ export abstract class GfxGroupLikeElementModel<
   setChildIds(value: string[], fromLocal: boolean) {
     const oldChildIds = this.childIds;
     this._childIds = value;
+    this.invalidateXYWH();
 
     this._onChange({
       props: {

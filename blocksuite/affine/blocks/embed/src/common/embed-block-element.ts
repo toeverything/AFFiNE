@@ -2,16 +2,23 @@ import {
   CaptionedBlockComponent,
   SelectedStyle,
 } from '@blocksuite/affine-components/caption';
-import type { EmbedCardStyle } from '@blocksuite/affine-model';
+import type { EmbedCardStyle, EmbedProps } from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_MIN_WIDTH,
   EMBED_CARD_WIDTH,
 } from '@blocksuite/affine-shared/consts';
-import { DocModeProvider } from '@blocksuite/affine-shared/services';
+import {
+  BlockElementCommentManager,
+  DocModeProvider,
+} from '@blocksuite/affine-shared/services';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { findAncestorModel } from '@blocksuite/affine-shared/utils';
 import type { BlockService } from '@blocksuite/std';
-import type { GfxCompatibleProps } from '@blocksuite/std/gfx';
+import {
+  GfxViewInteractionExtension,
+  type ResizeConstraint,
+} from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import type { TemplateResult } from 'lit';
@@ -21,7 +28,7 @@ import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
 
 export class EmbedBlockComponent<
-  Model extends BlockModel<GfxCompatibleProps> = BlockModel<GfxCompatibleProps>,
+  Model extends BlockModel<EmbedProps> = BlockModel<EmbedProps>,
   Service extends BlockService = BlockService,
   WidgetName extends string = string,
 > extends CaptionedBlockComponent<Model, Service, WidgetName> {
@@ -46,12 +53,6 @@ export class EmbedBlockComponent<
 
   _cardStyle: EmbedCardStyle = 'horizontal';
 
-  /**
-   * The actual rendered scale of the embed card.
-   * By default, it is set to 1.
-   */
-  protected _scale = 1;
-
   blockDraggable = true;
 
   /**
@@ -60,6 +61,14 @@ export class EmbedBlockComponent<
    * By default, the height and width are set to `_cardHeight` and `_cardWidth` respectively.
    */
   protected embedContainerStyle: StyleInfo = {};
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockElementCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
+  }
 
   renderEmbed = (content: () => TemplateResult) => {
     if (
@@ -92,6 +101,11 @@ export class EmbedBlockComponent<
         style=${styleMap({
           height: `${this._cardHeight}px`,
           width: '100%',
+          ...(this.isCommentHighlighted
+            ? {
+                border: `2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')}`,
+              }
+            : {}),
           ...this.embedContainerStyle,
         })}
       >
@@ -163,3 +177,31 @@ export class EmbedBlockComponent<
 
   override accessor useZeroWidth = true;
 }
+
+export const createEmbedEdgelessBlockInteraction = (
+  flavour: string,
+  config?: {
+    resizeConstraint?: ResizeConstraint;
+  }
+) => {
+  const resizeConstraint = Object.assign(
+    {
+      lockRatio: true,
+    },
+    config?.resizeConstraint ?? {}
+  );
+  const rotateConstraint = {
+    rotatable: false,
+  };
+
+  return GfxViewInteractionExtension(flavour, {
+    resizeConstraint,
+    handleRotate() {
+      return {
+        beforeRotate(context) {
+          context.set(rotateConstraint);
+        },
+      };
+    },
+  });
+};

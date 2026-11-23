@@ -126,7 +126,7 @@ export class EdgelessZoomToolbar extends WithDisposable(LitElement) {
 
     this.disposables.add(
       effect(() => {
-        this.gfx.tool.currentToolName$.value;
+        void this.gfx.tool.currentToolName$.value;
         this.requestUpdate();
       })
     );

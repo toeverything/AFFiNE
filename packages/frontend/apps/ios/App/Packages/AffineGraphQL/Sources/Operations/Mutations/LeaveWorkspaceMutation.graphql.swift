@@ -31,11 +31,15 @@ public class LeaveWorkspaceMutation: GraphQLMutation {
     public init(_dataDict: DataDict) { __data = _dataDict }
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
+    #warning("Argument 'sendLeaveMail' of field 'leaveWorkspace' is deprecated. Reason: 'no used anymore'")
     public static var __selections: [ApolloAPI.Selection] { [
       .field("leaveWorkspace", Bool.self, arguments: [
         "workspaceId": .variable("workspaceId"),
         "sendLeaveMail": .variable("sendLeaveMail")
       ]),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      LeaveWorkspaceMutation.Data.self
     ] }
 
     public var leaveWorkspace: Bool { __data["leaveWorkspace"] }

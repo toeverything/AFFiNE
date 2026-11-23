@@ -1,24 +1,24 @@
+import { CodeBlockPreviewIdentifier } from '@blocksuite/affine/blocks/code';
 import { addImages } from '@blocksuite/affine/blocks/image';
 import { getSurfaceBlock } from '@blocksuite/affine/blocks/surface';
-import { LightLoadingIcon } from '@blocksuite/affine/components/icons';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { addTree } from '@blocksuite/affine/gfx/mindmap';
 import { fitContent } from '@blocksuite/affine/gfx/shape';
 import { createTemplateJob } from '@blocksuite/affine/gfx/template';
 import { Bound } from '@blocksuite/affine/global/gfx';
-import type {
-  MindmapElementModel,
-  ShapeElementModel,
-} from '@blocksuite/affine/model';
 import {
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
   EDGELESS_TEXT_BLOCK_MIN_WIDTH,
   EdgelessTextBlockModel,
   ImageBlockModel,
+  type MindmapElementModel,
   NoteDisplayMode,
+  type ShapeElementModel,
 } from '@blocksuite/affine/model';
 import { TelemetryProvider } from '@blocksuite/affine/shared/services';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
+import { Text } from '@blocksuite/affine/store';
 import {
   AFFINE_TOOLBAR_WIDGET,
   type AffineToolbarWidget,
@@ -34,8 +34,9 @@ import { html, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { insertFromMarkdown } from '../../utils';
+import type { ChatContextValue } from '../components/ai-chat-content/type';
 import type { AIItemConfig } from '../components/ai-item/types';
-import { AIProvider } from '../provider';
+import { AIAppEvents } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import type { AIContext } from '../utils/context';
@@ -97,7 +98,7 @@ export function retry(panel: AffineAIPanelWidget): AIItemConfig {
     icon: ResetIcon(),
     testId: 'answer-retry',
     handler: () => {
-      reportResponse('result:retry');
+      reportResponse('result:retry', panel.host);
       panel.generate();
     },
   };
@@ -121,7 +122,7 @@ export function createInsertItems<T extends keyof BlockSuitePresets.AIActions>(
     {
       name: `${buttonText} - Loading...`,
       icon: html`<div style=${styleMap({ height: '20px', width: '20px' })}>
-        ${LightLoadingIcon}
+        ${LoadingIcon()}
       </div>`,
       testId: 'answer-insert-below-loading',
       showWhen: () => {
@@ -151,7 +152,7 @@ export function createInsertItems<T extends keyof BlockSuitePresets.AIActions>(
         );
       },
       handler: () => {
-        reportResponse('result:insert');
+        reportResponse('result:insert', host);
         edgelessResponseHandler(id, host, ctx).catch(console.error);
         const panel = getAIPanelWidget(host);
         panel.hide();
@@ -200,7 +201,7 @@ export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      reportResponse('result:use-as-caption');
+      reportResponse('result:use-as-caption', host);
       const panel = getAIPanelWidget(host);
       const caption = panel.answer;
       if (!caption) return;
@@ -470,11 +471,18 @@ function responseToBrainstormMindmap(host: EditorHost, ctx: AIContext) {
   });
 }
 
-function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
+function getMakeItRealHTML(host: EditorHost) {
   const aiPanel = getAIPanelWidget(host);
   let html = aiPanel.answer;
   if (!html) return;
   html = preprocessHtml(html);
+  return html;
+}
+
+function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
+  const aiPanel = getAIPanelWidget(host);
+  const html = getMakeItRealHTML(host);
+  if (!html) return;
 
   const edgelessCopilot = getEdgelessCopilotWidget(host);
   const surface = getSurfaceBlock(host.store);
@@ -490,15 +498,34 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext) {
   aiPanel.hide();
 
   host.store.transact(() => {
-    host.store.addBlock(
-      'affine:embed-html',
-      {
-        html,
-        design: 'ai:makeItReal', // as tag
-        xywh: bounds.serialize(),
-      },
-      surface.id
+    const ifUseCodeBlock = host.std.getOptional(
+      CodeBlockPreviewIdentifier('html')
     );
+
+    if (ifUseCodeBlock) {
+      const note = host.store.addBlock(
+        'affine:note',
+        {
+          xywh: bounds.serialize(),
+        },
+        host.store.root
+      );
+      host.store.addBlock(
+        'affine:code',
+        { text: new Text(html), language: 'html', preview: true },
+        note
+      );
+    } else {
+      host.store.addBlock(
+        'affine:embed-html',
+        {
+          html,
+          design: 'ai:makeItReal', // as tag
+          xywh: bounds.serialize(),
+        },
+        surface.id
+      );
+    }
   });
 }
 
@@ -562,10 +589,10 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
             testId: 'answer-continue-in-chat',
             icon: ChatWithAiIcon({}),
             handler: () => {
-              reportResponse('result:continue-in-chat');
-              const panel = getAIPanelWidget(host);
-              AIProvider.slots.requestOpenWithChat.next({ host });
-              panel.hide();
+              reportResponse('result:continue-in-chat', host);
+              edgelesContinueResponseHandler(id, host, ctx).catch(
+                console.error
+              );
             },
           },
           ...createInsertItems(id, host, ctx, variants),
@@ -577,6 +604,108 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
     ],
     actions: [],
   };
+}
+
+function continueExpandMindmap(ctx: AIContext) {
+  const mindmapNode = ctx.get().node;
+  if (!mindmapNode) {
+    return null;
+  }
+  return {
+    snapshot: JSON.stringify(mindmapNode),
+  };
+}
+
+function continueBrainstormMindmap(ctx: AIContext) {
+  const mindmap = ctx.get().node;
+  if (!mindmap) {
+    return null;
+  }
+  return {
+    snapshot: JSON.stringify(mindmap),
+  };
+}
+
+function continueMakeItReal(host: EditorHost) {
+  const html = getMakeItRealHTML(host);
+  if (!html) {
+    return null;
+  }
+  return {
+    html,
+  };
+}
+
+function continueCreateSlides(ctx: AIContext) {
+  const { contents = [] } = ctx.get();
+  return {
+    snapshot: JSON.stringify(contents),
+  };
+}
+
+async function continueCreateImage(host: EditorHost) {
+  const aiPanel = getAIPanelWidget(host);
+  // `DataURL` or `URL`
+  const data = aiPanel.answer;
+  if (!data) return null;
+
+  const filename = 'image';
+  const imageProxy = host.std.clipboard.configs.get('imageProxy');
+
+  try {
+    const image = await fetchImageToFile(data, filename, imageProxy);
+    return image
+      ? {
+          images: [image],
+        }
+      : null;
+  } catch (error) {
+    console.error('Failed fetch image', error);
+    return null;
+  }
+}
+
+function continueDefaultHandler(host: EditorHost) {
+  const panel = getAIPanelWidget(host);
+  return {
+    combinedElementsMarkdown: panel.answer,
+  };
+}
+
+async function edgelesContinueResponseHandler<
+  T extends keyof BlockSuitePresets.AIActions,
+>(id: T, host: EditorHost, ctx: AIContext) {
+  let context: Partial<ChatContextValue> | null = null;
+  switch (id) {
+    case 'expandMindmap':
+      context = continueExpandMindmap(ctx);
+      break;
+    case 'brainstormMindmap':
+      context = continueBrainstormMindmap(ctx);
+      break;
+    case 'makeItReal':
+      context = continueMakeItReal(host);
+      break;
+    case 'createSlides':
+      context = continueCreateSlides(ctx);
+      break;
+    case 'createImage':
+    case 'filterImage':
+    case 'processImage':
+      context = await continueCreateImage(host);
+      break;
+    default:
+      context = continueDefaultHandler(host);
+      break;
+  }
+
+  const panel = getAIPanelWidget(host);
+  AIAppEvents.requestOpenWithChat.next({
+    host,
+    context,
+    fromAnswer: true,
+  });
+  panel.hide();
 }
 
 export function actionToGenerating<T extends keyof BlockSuitePresets.AIActions>(
@@ -603,11 +732,11 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
-      AIProvider.slots.requestUpgradePlan.next({ host: panel.host });
+      AIAppEvents.requestUpgradePlan.next({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      AIProvider.slots.requestLogin.next({ host: panel.host });
+      AIAppEvents.requestLogin.next({ host: panel.host });
       panel.hide();
     },
     cancel: () => {

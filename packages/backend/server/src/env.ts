@@ -1,14 +1,22 @@
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import pkg from '../package.json' with { type: 'json' };
+import { ServerConfigHandle } from './native';
 
 declare global {
+  // oxlint-disable-next-line no-shadow-restricted-names
   namespace globalThis {
     // oxlint-disable-next-line no-var
     var env: Readonly<Env>;
     // oxlint-disable-next-line no-var
     var readEnv: <T>(key: string, defaultValue: T, availableValues?: T[]) => T;
+    // oxlint-disable-next-line no-var
+    var CUSTOM_CONFIG_PATH: string;
+    // oxlint-disable-next-line no-var
+    var CLS_REQUEST_HOST: 'CLS_REQUEST_HOST';
   }
 }
 
@@ -17,8 +25,16 @@ export enum Flavor {
   Graphql = 'graphql',
   Sync = 'sync',
   Renderer = 'renderer',
-  Doc = 'doc',
+  Front = 'front',
+  Worker = 'worker',
   Script = 'script',
+}
+
+export enum ServerRole {
+  Frontend = 'frontend',
+  Api = 'api',
+  Worker = 'worker',
+  AllInOne = 'allinone',
 }
 
 export enum Namespace {
@@ -50,6 +66,8 @@ export type AppEnv = {
   version: string;
 };
 
+globalThis.CLS_REQUEST_HOST = 'CLS_REQUEST_HOST';
+globalThis.CUSTOM_CONFIG_PATH = join(homedir(), '.affine/config');
 globalThis.readEnv = function readEnv<T>(
   env: string,
   defaultValue: T,
@@ -72,24 +90,79 @@ globalThis.readEnv = function readEnv<T>(
 };
 
 export class Env implements AppEnv {
-  NODE_ENV = readEnv('NODE_ENV', NodeEnv.Production, Object.values(NodeEnv));
+  #serverConfigHandle?: ServerConfigHandle;
+  readonly #configPath?: string;
+  NODE_ENV = (process.env.NODE_ENV ?? NodeEnv.Production) as NodeEnv;
   NAMESPACE = readEnv(
     'AFFINE_ENV',
     Namespace.Production,
     Object.values(Namespace)
   );
-  DEPLOYMENT_TYPE = readEnv(
-    'DEPLOYMENT_TYPE',
-    this.dev ? DeploymentType.Affine : DeploymentType.Selfhosted,
-    Object.values(DeploymentType)
-  );
+  DEPLOYMENT_TYPE = this.dev
+    ? DeploymentType.Affine
+    : DeploymentType.Selfhosted;
   FLAVOR = readEnv('SERVER_FLAVOR', Flavor.AllInOne, Object.values(Flavor));
   platform = readEnv('DEPLOYMENT_PLATFORM', Platform.Unknown);
   version = pkg.version;
   projectRoot = resolve(fileURLToPath(import.meta.url), '../../');
 
+  get serverConfigHandle() {
+    if (!this.#serverConfigHandle) {
+      const appPath = join(this.projectRoot, 'config.json');
+      // TODO(0.27.5): Remove the home path fallback after old self-host mounts are upgraded.
+      const configPath =
+        this.#configPath ??
+        (existsSync(appPath)
+          ? appPath
+          : join(homedir(), '.affine/config/config.json'));
+      // TODO(0.27.5): Remove the deployment env fallback after old self-host configs are upgraded.
+      const legacyDeploymentType =
+        process.env.DEPLOYMENT_TYPE ?? this.DEPLOYMENT_TYPE;
+      this.#serverConfigHandle = new ServerConfigHandle(
+        configPath,
+        legacyDeploymentType === DeploymentType.Affine
+          ? 'cloud'
+          : legacyDeploymentType
+      );
+    }
+    return this.#serverConfigHandle;
+  }
+
   get selfhosted() {
     return this.DEPLOYMENT_TYPE === DeploymentType.Selfhosted;
+  }
+
+  get role(): ServerRole | undefined {
+    switch (this.FLAVOR) {
+      case Flavor.AllInOne:
+        return ServerRole.AllInOne;
+      case Flavor.Graphql:
+        return ServerRole.Api;
+      case Flavor.Worker:
+        return ServerRole.Worker;
+      case Flavor.Front:
+      case Flavor.Sync:
+      case Flavor.Renderer:
+        return ServerRole.Frontend;
+      case Flavor.Script:
+        return undefined;
+    }
+  }
+
+  get isApi() {
+    return this.FLAVOR === Flavor.Graphql || this.FLAVOR === Flavor.AllInOne;
+  }
+
+  get isWorker() {
+    return this.FLAVOR === Flavor.Worker || this.FLAVOR === Flavor.AllInOne;
+  }
+
+  get isFrontend() {
+    return (
+      this.FLAVOR === Flavor.Front ||
+      this.FLAVOR === Flavor.Sync ||
+      this.FLAVOR === Flavor.Renderer
+    );
   }
 
   isFlavor(flavor: Flavor) {
@@ -101,7 +174,8 @@ export class Env implements AppEnv {
       graphql: this.isFlavor(Flavor.Graphql),
       sync: this.isFlavor(Flavor.Sync),
       renderer: this.isFlavor(Flavor.Renderer),
-      doc: this.isFlavor(Flavor.Doc),
+      front: this.FLAVOR === Flavor.Front,
+      worker: this.isFlavor(Flavor.Worker),
       // Script in a special flavor, return true only when it is set explicitly
       script: this.FLAVOR === Flavor.Script,
     };
@@ -129,6 +203,29 @@ export class Env implements AppEnv {
 
   get gcp() {
     return this.platform === Platform.GCP;
+  }
+
+  constructor(configPath?: string) {
+    if (!Object.values(NodeEnv).includes(this.NODE_ENV)) {
+      throw new Error(
+        `Invalid NODE_ENV environment. \`${this.NODE_ENV}\` is not a valid NODE_ENV value.`
+      );
+    }
+    this.#configPath = configPath;
+    const appPath = join(this.projectRoot, 'config.json');
+    const homePath = join(homedir(), '.affine/config/config.json');
+    if (configPath || existsSync(appPath) || existsSync(homePath)) {
+      this.DEPLOYMENT_TYPE =
+        this.serverConfigHandle.deploymentType === 'selfhosted'
+          ? DeploymentType.Selfhosted
+          : DeploymentType.Affine;
+    } else {
+      this.DEPLOYMENT_TYPE = readEnv(
+        'DEPLOYMENT_TYPE',
+        this.DEPLOYMENT_TYPE,
+        Object.values(DeploymentType)
+      );
+    }
   }
 }
 

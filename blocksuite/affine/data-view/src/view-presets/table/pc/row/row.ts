@@ -9,14 +9,14 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../../core/data-view.js';
 import {
   TableViewRowSelection,
   type TableViewSelection,
 } from '../../selection';
-import type { TableSingleView } from '../../table-view-manager.js';
+import { cellDivider } from '../../styles';
 import type { TableGroup } from '../group.js';
 import { openDetail, popRowMenu } from '../menu.js';
+import type { TableViewUILogic } from '../table-view-ui-logic.js';
 
 export class TableRowView extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -138,7 +138,7 @@ export class TableRowView extends SignalWatcher(
     }
     e.preventDefault();
     const ele = e.target as HTMLElement;
-    const cell = ele.closest('affine-database-cell-container');
+    const cell = ele.closest('dv-table-view-cell-container');
     const row = { id: this.rowId, groupKey: this.groupKey };
     if (!TableViewRowSelection.includes(selection.selection, row)) {
       selection.selection = TableViewRowSelection.create({
@@ -150,7 +150,7 @@ export class TableRowView extends SignalWatcher(
       (e.target as HTMLElement).closest('.database-cell') ?? // for last add btn cell
       (e.target as HTMLElement);
 
-    popRowMenu(this.dataViewEle, popupTargetFromElement(target), selection);
+    popRowMenu(this.tableViewLogic, popupTargetFromElement(target), selection);
   };
 
   setSelection = (selection?: TableViewSelection) => {
@@ -164,7 +164,7 @@ export class TableRowView extends SignalWatcher(
   }
 
   get selectionController() {
-    return this.closest('affine-database-table')?.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   override connectedCallback() {
@@ -177,28 +177,30 @@ export class TableRowView extends SignalWatcher(
   protected override render(): unknown {
     const view = this.view;
     return html`
-      ${view.readonly$.value
-        ? nothing
-        : html`<div class="data-view-table-left-bar" style="height: 34px">
-            <div style="display: flex;">
-              <div
-                class="data-view-table-view-drag-handler show-on-hover-row row-selected-bg"
-                @click=${this._clickDragHandler}
-              >
+      ${
+        view.readonly$.value
+          ? nothing
+          : html`<div class="data-view-table-left-bar" style="height: 34px">
+              <div style="display: flex;">
                 <div
-                  style="width: 4px;
+                  class="data-view-table-view-drag-handler show-on-hover-row row-selected-bg"
+                  @click=${this._clickDragHandler}
+                >
+                  <div
+                    style="width: 4px;
                   border-radius: 2px;
                   height: 12px;
                   background-color: var(--affine-placeholder-color);"
-                ></div>
+                  ></div>
+                </div>
+                <row-select-checkbox
+                  .tableViewLogic="${this.tableViewLogic}"
+                  .rowId="${this.rowId}"
+                  .groupKey="${this.groupKey}"
+                ></row-select-checkbox>
               </div>
-              <row-select-checkbox
-                .selection="${this.dataViewEle.config.selection$}"
-                .rowId="${this.rowId}"
-                .groupKey="${this.groupKey}"
-              ></row-select-checkbox>
-            </div>
-          </div>`}
+            </div>`
+      }
       ${repeat(
         view.properties$.value,
         v => v.id,
@@ -212,7 +214,11 @@ export class TableRowView extends SignalWatcher(
                 rows: [{ id: this.rowId, groupKey: this.groupKey }],
               })
             );
-            openDetail(this.dataViewEle, this.rowId, this.selectionController);
+            openDetail(
+              this.tableViewLogic,
+              this.rowId,
+              this.selectionController
+            );
           };
           const openMenu = (e: MouseEvent) => {
             if (!this.selectionController) {
@@ -234,20 +240,20 @@ export class TableRowView extends SignalWatcher(
               );
             }
             popRowMenu(
-              this.dataViewEle,
+              this.tableViewLogic,
               popupTargetFromElement(ele),
               this.selectionController
             );
           };
           return html`
             <div style="display: flex;">
-              <affine-database-cell-container
+              <dv-table-view-cell-container
                 class="database-cell"
                 style=${styleMap({
                   width: `${column.width$.value}px`,
                   border: i === 0 ? 'none' : undefined,
                 })}
-                .view="${view}"
+                .tableViewLogic="${this.tableViewLogic}"
                 .column="${column}"
                 .rowId="${this.rowId}"
                 data-row-id="${this.rowId}"
@@ -258,22 +264,26 @@ export class TableRowView extends SignalWatcher(
                 .columnIndex="${i}"
                 data-column-index="${i}"
               >
-              </affine-database-cell-container>
-              <div class="cell-divider"></div>
+              </dv-table-view-cell-container>
+              <div class="${cellDivider}"></div>
             </div>
-            ${!column.readonly$.value &&
-            column.view.mainProperties$.value.titleColumn === column.id
-              ? html`<div class="row-ops show-on-hover-row">
-                  <div class="row-op" @click="${clickDetail}">
-                    ${CenterPeekIcon()}
-                  </div>
-                  ${!view.readonly$.value
-                    ? html`<div class="row-op" @click="${openMenu}">
-                        ${MoreHorizontalIcon()}
-                      </div>`
-                    : nothing}
-                </div>`
-              : nothing}
+            ${
+              !column.readonly$.value &&
+              column.view.mainProperties$.value.titleColumn === column.id
+                ? html`<div class="row-ops show-on-hover-row">
+                    <div class="row-op" @click="${clickDetail}">
+                      ${CenterPeekIcon()}
+                    </div>
+                    ${
+                      !view.readonly$.value
+                        ? html`<div class="row-op" @click="${openMenu}">
+                            ${MoreHorizontalIcon()}
+                          </div>`
+                        : nothing
+                    }
+                  </div>`
+                : nothing
+            }
           `;
         }
       )}
@@ -282,7 +292,7 @@ export class TableRowView extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
+  accessor tableViewLogic!: TableViewUILogic;
 
   @property({ attribute: false })
   accessor rowId!: string;
@@ -290,8 +300,9 @@ export class TableRowView extends SignalWatcher(
   @property({ attribute: false })
   accessor rowIndex!: number;
 
-  @property({ attribute: false })
-  accessor view!: TableSingleView;
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

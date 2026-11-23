@@ -44,12 +44,14 @@ export const SelectorLayout = ({
   );
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} data-testid="doc-selector-layout">
       <header className={styles.header}>
         <RowInput
+          data-testid="doc-selector-search-input"
           className={styles.search}
           placeholder={searchPlaceholder}
           onChange={onSearchChange}
+          debounce={200}
         />
       </header>
 
@@ -73,10 +75,15 @@ export const SelectorLayout = ({
         <div className={styles.footerAction}>
           {actions ?? (
             <>
-              <Button onClick={onCancel} className={styles.actionButton}>
+              <Button
+                data-testid="doc-selector-cancel-button"
+                onClick={onCancel}
+                className={styles.actionButton}
+              >
                 {t['Cancel']()}
               </Button>
               <Button
+                data-testid="doc-selector-confirm-button"
                 onClick={onConfirm}
                 className={styles.actionButton}
                 variant="primary"

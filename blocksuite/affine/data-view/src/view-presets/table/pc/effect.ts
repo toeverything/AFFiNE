@@ -1,4 +1,4 @@
-import { DatabaseCellContainer } from './cell.js';
+import { TableViewCellContainer } from './cell.js';
 import { DragToFillElement } from './controller/drag-to-fill.js';
 import { SelectionElement } from './controller/selection.js';
 import { TableGroup } from './group.js';
@@ -9,15 +9,12 @@ import { DatabaseNumberFormatBar } from './header/number-format-bar.js';
 import { TableVerticalIndicator } from './header/vertical-indicator.js';
 import { TableRowView } from './row/row.js';
 import { RowSelectCheckbox } from './row/row-select-checkbox.js';
-import { DataViewTable } from './table-view.js';
+import { TableViewUI } from './table-view-ui-logic.js';
 
 export function pcEffects() {
-  customElements.define('affine-database-table', DataViewTable);
+  customElements.define('dv-table-view-ui', TableViewUI);
   customElements.define('affine-data-view-table-group', TableGroup);
-  customElements.define(
-    'affine-database-cell-container',
-    DatabaseCellContainer
-  );
+  customElements.define('dv-table-view-cell-container', TableViewCellContainer);
   customElements.define('affine-database-column-header', DatabaseColumnHeader);
   customElements.define(
     'affine-data-view-column-preview',

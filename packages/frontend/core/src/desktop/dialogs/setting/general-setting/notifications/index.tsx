@@ -95,6 +95,17 @@ export const NotificationSettings = () => {
             }
           />
         </SettingRow>
+        <SettingRow
+          name={t['com.affine.setting.notifications.email.comments.title']()}
+          desc={t['com.affine.setting.notifications.email.comments.subtitle']()}
+        >
+          <Switch
+            data-testid="notification-email-comments-trigger"
+            checked={userSettings?.receiveCommentEmail ?? false}
+            disabled={disable}
+            onChange={checked => handleUpdate('receiveCommentEmail', checked)}
+          />
+        </SettingRow>
       </SettingWrapper>
     </>
   );

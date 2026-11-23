@@ -11,6 +11,25 @@ trap error_help ERR
 # XCode tries to be helpful and overwrites the PATH. Reset that.
 PATH="$(bash -l -c 'echo $PATH')"
 
+# Resolve cargo binary: prefer ~/.cargo/bin, then PATH, then rustup
+CARGO=""
+if [ -x "$HOME/.cargo/bin/cargo" ]; then
+  CARGO="$HOME/.cargo/bin/cargo"
+elif command -v cargo &>/dev/null; then
+  CARGO="$(command -v cargo)"
+elif command -v rustup &>/dev/null; then
+  CARGO="$(rustup which cargo 2>/dev/null)" || true
+fi
+if [ -z "$CARGO" ] || [ ! -x "$CARGO" ]; then
+  echo "error: cargo not found. Install Rust via https://rustup.rs" >&2
+  exit 1
+fi
+# Ensure rustc and other toolchain binaries are on PATH
+export PATH="$(dirname "$CARGO"):$PATH"
+
+# Ensure IPHONEOS_DEPLOYMENT_TARGET is set for Rust/cc crate builds
+export IPHONEOS_DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET:-16.5}"
+
 # This should be invoked from inside xcode, not manually
 if [[ "${#}" -ne 3 ]]
 then
@@ -22,20 +41,30 @@ fi
 FFI_TARGET=${1}
 # path to source code root
 SRC_ROOT=${2}
+# Keep Cargo artifacts in a stable repo-local location so Xcode does not inherit
+# a sandbox-specific CARGO_TARGET_DIR from the parent shell.
+export CARGO_TARGET_DIR="$SRC_ROOT/../../../target"
 # buildvariant from our xcconfigs
 BUILDVARIANT=$(echo "${3}" | tr '[:upper:]' '[:lower:]')
 
-RELFLAG=
+RELFLAG=debug
+CARGO_PROFILE_FLAG=
 if [[ "${BUILDVARIANT}" != "debug" ]]; then
     RELFLAG=release
-else
-    RELFLAG=debug
+    CARGO_PROFILE_FLAG=--release
+    # Xcode 27 can produce unloadable host proc macros when their symbols are stripped.
+    export CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none
 fi
 
 IS_SIMULATOR=0
 if [ "${LLVM_TARGET_TRIPLE_SUFFIX-}" = "-simulator" ]; then
   IS_SIMULATOR=1
 fi
+
+SIM_ARM64_LIB=
+SIM_X86_64_LIB=
+DEVICE_ARM64_LIB=
+OUTPUT_LIB="$SRCROOT/lib${FFI_TARGET}.a"
 
 for arch in $ARCHS; do
   case "$arch" in
@@ -47,20 +76,44 @@ for arch in $ARCHS; do
 
       # Intel iOS simulator
       export CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios"
-      $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target x86_64-apple-ios
+      $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target x86_64-apple-ios --features use-as-lib
+      SIM_X86_64_LIB="$CARGO_TARGET_DIR/x86_64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a"
       ;;
 
     arm64)
       if [ $IS_SIMULATOR -eq 0 ]; then
         # Hardware iOS targets
-        $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios
-        cp $SRC_ROOT/../../../target/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios --features use-as-lib
+        DEVICE_ARM64_LIB="$CARGO_TARGET_DIR/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a"
       else
-        # M1 iOS simulator
-        $HOME/.cargo/bin/cargo rustc -p "${FFI_TARGET}" --lib --crate-type staticlib --$RELFLAG --target aarch64-apple-ios-sim
-        cp $SRC_ROOT/../../../target/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a $SRCROOT/lib${FFI_TARGET}.a
+        # Apple Silicon iOS simulator
+        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios-sim --features use-as-lib
+        SIM_ARM64_LIB="$CARGO_TARGET_DIR/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a"
       fi
+      ;;
   esac
 done
 
-$HOME/.cargo/bin/cargo run -p affine_mobile_native --bin uniffi-bindgen generate --library $SRCROOT/lib${FFI_TARGET}.a --language swift --out-dir $SRCROOT/../../ios/App/App/uniffi
+BINDGEN_LIB=
+if [ $IS_SIMULATOR -eq 0 ]; then
+  BINDGEN_LIB="$DEVICE_ARM64_LIB"
+elif [ -n "$SIM_ARM64_LIB" ]; then
+  BINDGEN_LIB="$SIM_ARM64_LIB"
+elif [ -n "$SIM_X86_64_LIB" ]; then
+  BINDGEN_LIB="$SIM_X86_64_LIB"
+else
+  echo "error: no simulator Rust library was produced" >&2
+  exit 1
+fi
+
+$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
+
+if [ $IS_SIMULATOR -eq 0 ]; then
+  cp "$DEVICE_ARM64_LIB" "$OUTPUT_LIB"
+elif [ -n "$SIM_ARM64_LIB" ] && [ -n "$SIM_X86_64_LIB" ]; then
+  lipo -create "$SIM_ARM64_LIB" "$SIM_X86_64_LIB" -output "$OUTPUT_LIB"
+elif [ -n "$SIM_ARM64_LIB" ]; then
+  cp "$SIM_ARM64_LIB" "$OUTPUT_LIB"
+else
+  cp "$SIM_X86_64_LIB" "$OUTPUT_LIB"
+fi

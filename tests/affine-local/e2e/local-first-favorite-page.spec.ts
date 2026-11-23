@@ -20,7 +20,7 @@ test('New a page and open it, then favorite it', async ({
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();
   const cell = page
-    .getByTestId('page-list-item')
+    .getByTestId('doc-list-item-title')
     .getByText('this is a new page to favorite');
   await expect(cell).toBeVisible();
 
@@ -88,14 +88,8 @@ test('Cancel favorite', async ({ page, workspace }) => {
 
   await page.getByTestId('all-pages').click();
 
-  const box = await getPageByTitle(
-    page,
-    'this is a new page to favorite'
-  ).boundingBox();
-  //hover table record
-  await page.mouse.move((box?.x ?? 0) + 10, (box?.y ?? 0) + 10);
-
-  await page.getByTestId('favorited-icon').nth(0).click();
+  const doc = await getPageByTitle(page, 'this is a new page to favorite');
+  await doc.getByTestId('doc-list-operation-favorite').click();
 
   // expect it not in favorite list
   await expect(

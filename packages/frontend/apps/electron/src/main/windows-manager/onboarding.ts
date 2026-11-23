@@ -2,10 +2,11 @@ import { join } from 'node:path';
 
 import { BrowserWindow, screen } from 'electron';
 
+import { onboardingViewUrl } from '../../shared/internal-origin';
 import { isDev } from '../config';
-import { onboardingViewUrl } from '../constants';
 // import { getExposedMeta } from './exposed';
 import { logger } from '../logger';
+import { buildWebPreferences } from '../web-preferences';
 import { fullscreenAndCenter, getScreenSize } from './utils';
 
 // todo: not all window need all of the exposed meta
@@ -40,11 +41,11 @@ async function createOnboardingWindow(additionalArguments: string[]) {
     transparent: true,
     hasShadow: false,
     roundedCorners: false,
-    webPreferences: {
+    webPreferences: buildWebPreferences({
       webgl: true,
       preload: join(__dirname, './preload.js'),
       additionalArguments: additionalArguments,
-    },
+    }),
   });
 
   // workaround for the phantom title bar on windows when losing focus

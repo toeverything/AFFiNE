@@ -9,7 +9,7 @@ import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { AIProvider } from '../provider';
+import { AIAppEvents } from '../provider';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { extractSelectedContent } from '../utils/extract';
 import type { AffineAIPanelWidgetConfig } from '../widgets/ai-panel/type';
@@ -65,7 +65,7 @@ export class AskAIToolbarButton extends WithDisposable(LitElement) {
       },
       abortController: this._abortController,
       closeOnClickAway: true,
-    });
+    }).portal;
   };
 
   private readonly _generateAnswer: AffineAIPanelWidgetConfig['generateAnswer'] =
@@ -75,7 +75,7 @@ export class AskAIToolbarButton extends WithDisposable(LitElement) {
       aiPanel.hide();
       extractSelectedContent(this.host)
         .then(context => {
-          AIProvider.slots.requestSendWithChat.next({
+          AIAppEvents.requestSendWithChat.next({
             input,
             context,
             host: this.host,

@@ -3,8 +3,13 @@ import {
   clickEdgelessModeButton,
   clickView,
   createEdgelessNoteBlock,
+  dblclickNoteBody,
   fitViewportToContent,
+  focusDocTitle,
+  getSelectedXYWH,
   locateEditorContainer,
+  resizeElementByHandle,
+  scaleElementByHandle,
 } from '@affine-test/kit/utils/editor';
 import { pressEnter } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
@@ -31,8 +36,7 @@ test.beforeEach(async ({ page }) => {
 test('should not show hidden note in embed view page mode', async ({
   page,
 }) => {
-  const note = page.locator('affine-edgeless-note');
-  await note.dblclick();
+  await dblclickNoteBody(page);
   await page.keyboard.type('visible content');
   await createEdgelessNoteBlock(page, [100, 100]);
   await page.keyboard.press('Enter');
@@ -45,6 +49,7 @@ test('should not show hidden note in embed view page mode', async ({
   await inlineLink.dblclick();
 
   // reference the previous page
+  await focusDocTitle(page);
   await page.keyboard.press('Enter');
   await page.keyboard.type('@' + title);
   const docPopover = page.locator('.linked-doc-popover');
@@ -72,6 +77,7 @@ test.describe('edgeless', () => {
       .getByTestId('cmdk-quick-search')
       .getByText(/^Synced Block Test$/)
       .click();
+
     await fitViewportToContent(page);
   });
 
@@ -84,11 +90,11 @@ test.describe('edgeless', () => {
       const content = embedBlock.locator('editor-host');
 
       await expect(foldButton).toHaveAttribute('data-folded', 'false');
-      await expect(content).toBeVisible();
+      await expect(content).toBeInViewport();
 
       await foldButton.click();
 
-      await expect(content).toBeHidden();
+      await expect(content).not.toBeInViewport();
       await expect(foldButton).toHaveAttribute('data-folded', 'true');
     });
 
@@ -98,6 +104,67 @@ test.describe('edgeless', () => {
         'edgeless-embed-synced-doc-title'
       );
       await expect(headerTitle).toHaveText(title);
+    });
+  });
+
+  test.describe('size adjustment of embed synced doc', () => {
+    test.beforeEach(async ({ page }) => {
+      await scaleElementByHandle(page, [10, 10], 'bottom-right');
+    });
+
+    test('should fold embed synced doc when adjust height to smallest', async ({
+      page,
+    }) => {
+      const [, , , h] = await getSelectedXYWH(page);
+      await resizeElementByHandle(page, [0, -(h - 10)], 'bottom-right');
+
+      const embedBlock = page.locator('affine-embed-edgeless-synced-doc-block');
+      const foldButton = embedBlock.getByTestId(
+        'edgeless-embed-synced-doc-fold-button'
+      );
+      const content = embedBlock.locator('editor-host');
+
+      await expect(foldButton).toHaveAttribute('data-folded', 'true');
+      await expect(content).not.toBeInViewport();
+
+      await foldButton.click();
+      await expect(foldButton).toHaveAttribute('data-folded', 'false');
+      await expect(content).toBeInViewport();
+
+      await embedBlock.click();
+      const [, , , h2] = await getSelectedXYWH(page);
+      expect(
+        h2,
+        'should recover height when unfold embed synced doc which was resized to smallest height directly'
+      ).toEqual(h);
+    });
+
+    test('should be able to adjust height the folded embed synced doc', async ({
+      page,
+    }) => {
+      const embedBlock = page.locator('affine-embed-edgeless-synced-doc-block');
+
+      const content = embedBlock.locator('editor-host');
+      const foldButton = embedBlock.getByTestId(
+        'edgeless-embed-synced-doc-fold-button'
+      );
+      await foldButton.click();
+
+      await resizeElementByHandle(page, [50, 0], 'bottom-right');
+      await expect(content).not.toBeInViewport();
+      await expect(foldButton).toHaveAttribute('data-folded', 'true');
+
+      await resizeElementByHandle(page, [-50, 0], 'bottom-right');
+      await expect(content).not.toBeInViewport();
+      await expect(foldButton).toHaveAttribute('data-folded', 'true');
+
+      await resizeElementByHandle(page, [0, 50], 'bottom-right');
+      await expect(
+        content,
+        'should unfold the embed synced doc when adjust height to greater'
+      ).toBeInViewport();
+      await expect(foldButton).toHaveAttribute('data-folded', 'false');
+      await expect(content).toBeInViewport();
     });
   });
 });

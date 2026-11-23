@@ -1,6 +1,8 @@
 import { RENDER_CARD_THROTTLE_MS } from '@blocksuite/affine-block-embed';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { WithDisposable } from '@blocksuite/global/lit';
+import { ResetIcon } from '@blocksuite/icons/lit';
 import {
   BlockSelection,
   isGfxBlockComponent,
@@ -148,9 +150,7 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
 
     const theme = this.std.get(ThemeProvider).theme;
     const {
-      LoadingIcon,
       SyncedDocErrorIcon,
-      ReloadIcon,
       SyncedDocEmptyBanner,
       SyncedDocErrorBanner,
       SyncedDocDeletedBanner,
@@ -159,7 +159,7 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
     const icon = error
       ? SyncedDocErrorIcon
       : isLoading
-        ? LoadingIcon
+        ? LoadingIcon()
         : this.block.icon$.value;
     const title = isLoading ? 'Loading...' : this.block.title$;
 
@@ -202,42 +202,48 @@ export class EmbedSyncedDocCard extends WithDisposable(ShadowlessElement) {
             </div>
           </div>
 
-          ${showDefaultNoteContent
-            ? html`<div class="affine-embed-synced-doc-content-note default">
-                ${defaultNoteContent}
-              </div>`
-            : nothing}
+          ${
+            showDefaultNoteContent
+              ? html`<div class="affine-embed-synced-doc-content-note default">
+                  ${defaultNoteContent}
+                </div>`
+              : nothing
+          }
           <div class="affine-embed-synced-doc-content-note render"></div>
 
-          ${error
-            ? html`
-                <div class="affine-embed-synced-doc-card-content-reload">
-                  <div
-                    class="affine-embed-synced-doc-card-content-reload-button"
-                    @click=${() => this.block.refreshData()}
-                  >
-                    ${ReloadIcon} <span>Reload</span>
+          ${
+            error
+              ? html`
+                  <div class="affine-embed-synced-doc-card-content-reload">
+                    <div
+                      class="affine-embed-synced-doc-card-content-reload-button"
+                      @click=${() => this.block.refreshData()}
+                    >
+                      ${ResetIcon()} <span>Reload</span>
+                    </div>
                   </div>
-                </div>
-              `
-            : html`
-                <div class="affine-embed-synced-doc-card-content-date">
-                  <span>Updated</span>
+                `
+              : html`
+                  <div class="affine-embed-synced-doc-card-content-date">
+                    <span>Updated</span>
 
-                  <span>${dateText}</span>
-                </div>
-              `}
+                    <span>${dateText}</span>
+                  </div>
+                `
+          }
         </div>
 
         <div class="affine-embed-synced-doc-card-banner render"></div>
 
-        ${showDefaultBanner
-          ? html`
-              <div class="affine-embed-synced-doc-card-banner default">
-                ${defaultBanner}
-              </div>
-            `
-          : nothing}
+        ${
+          showDefaultBanner
+            ? html`
+                <div class="affine-embed-synced-doc-card-banner default">
+                  ${defaultBanner}
+                </div>
+              `
+            : nothing
+        }
       </div>
     `;
   }

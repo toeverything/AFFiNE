@@ -1,154 +1,122 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
 
+import type { PromptMessage, PromptParams } from '../providers/types';
 import {
-  PromptConfig,
-  PromptConfigSchema,
-  PromptMessage,
-  PromptMessageSchema,
-} from '../providers';
-import { ChatPrompt } from './chat-prompt';
-import { refreshPrompts } from './prompts';
+  getBuiltInPromptSpecNative,
+  renderBuiltInPromptNative,
+  renderBuiltInPromptSessionNative,
+} from './native-contract';
+import type { PromptSpec, ResolvedPrompt } from './spec';
 
 @Injectable()
-export class PromptService implements OnApplicationBootstrap {
-  private readonly cache = new Map<string, ChatPrompt>();
-
-  constructor(private readonly db: PrismaClient) {}
-
-  async onApplicationBootstrap() {
-    this.cache.clear();
-    await refreshPrompts(this.db);
+export class PromptService {
+  protected readonly logger = new Logger(PromptService.name);
+  constructor() {
+    this.logger.log('Using native built-in prompt catalog.');
   }
 
-  /**
-   * list prompt names
-   * @returns prompt names
-   */
-  async listNames() {
-    return this.db.aiPrompt
-      .findMany({ select: { name: true } })
-      .then(prompts => Array.from(new Set(prompts.map(p => p.name))));
+  async get(name: string): Promise<ResolvedPrompt | null> {
+    const builtInPromptSpec = this.lookupBuiltInPromptSpec(name);
+    if (!builtInPromptSpec) return null;
+
+    return this.describeBuiltInPromptSpec(builtInPromptSpec);
   }
 
-  async list() {
-    return this.db.aiPrompt.findMany({
-      select: {
-        name: true,
-        action: true,
-        model: true,
-        config: true,
-        messages: {
-          select: { role: true, content: true, params: true },
-          orderBy: { idx: 'asc' },
-        },
-      },
-      orderBy: { action: { sort: 'asc', nulls: 'first' } },
-    });
-  }
-
-  /**
-   * get prompt messages by prompt name
-   * @param name prompt name
-   * @returns prompt messages
-   */
-  async get(name: string): Promise<ChatPrompt | null> {
-    const cached = this.cache.get(name);
-    if (cached) return cached;
-
-    const prompt = await this.db.aiPrompt.findUnique({
-      where: {
-        name,
-      },
-      select: {
-        name: true,
-        action: true,
-        model: true,
-        config: true,
-        messages: {
-          select: {
-            role: true,
-            content: true,
-            params: true,
-          },
-          orderBy: {
-            idx: 'asc',
-          },
-        },
-      },
+  finish(
+    prompt: ResolvedPrompt,
+    params: PromptParams,
+    sessionId?: string
+  ): PromptMessage[] {
+    const rendered = renderBuiltInPromptNative({
+      name: prompt.name,
+      renderParams: params,
     });
 
-    const messages = PromptMessageSchema.array().safeParse(prompt?.messages);
-    const config = PromptConfigSchema.safeParse(prompt?.config);
-    if (prompt && messages.success && config.success) {
-      const chatPrompt = ChatPrompt.createFromPrompt({
-        ...prompt,
-        config: config.data,
-        messages: messages.data,
-      });
-      this.cache.set(name, chatPrompt);
-      return chatPrompt;
-    }
-    return null;
+    this.logWarnings(rendered.warnings, sessionId);
+    return rendered.messages;
   }
 
-  async set(
-    name: string,
-    model: string,
-    messages: PromptMessage[],
-    config?: PromptConfig | null
-  ) {
-    return await this.db.aiPrompt
-      .create({
-        data: {
-          name,
-          model,
-          config: config || undefined,
-          messages: {
-            create: messages.map((m, idx) => ({
-              idx,
-              ...m,
-              attachments: m.attachments || undefined,
-              params: m.params || undefined,
-            })),
-          },
-        },
+  renderSession(
+    prompt: ResolvedPrompt,
+    turns: PromptMessage[],
+    params: PromptParams,
+    sessionId?: string
+  ): PromptMessage[] {
+    const rendered = renderBuiltInPromptSessionNative({
+      name: prompt.name,
+      turns,
+      renderParams: params,
+    });
+
+    this.logWarnings(rendered.warnings, sessionId);
+    return rendered.messages;
+  }
+
+  protected lookupBuiltInPromptSpec(name: string): PromptSpec | null {
+    const spec = getBuiltInPromptSpecNative(name);
+    return spec ? this.clonePromptSpec(spec) : null;
+  }
+
+  protected cloneMessages(messages: PromptMessage[]) {
+    return messages.map(message => ({
+      ...message,
+      attachments: message.attachments ? [...message.attachments] : undefined,
+      params: message.params ? structuredClone(message.params) : undefined,
+      responseFormat: message.responseFormat
+        ? structuredClone(message.responseFormat)
+        : undefined,
+    }));
+  }
+
+  protected clonePromptSpec(spec: PromptSpec): PromptSpec {
+    return {
+      ...spec,
+      config: spec.config ? structuredClone(spec.config) : undefined,
+      params: spec.params ? structuredClone(spec.params) : undefined,
+      messages: spec.messages.map(message => ({ ...message })),
+    };
+  }
+
+  private describeBuiltInPromptSpec(spec: PromptSpec): ResolvedPrompt {
+    const params = this.normalizePromptSpecParams(spec.params);
+    return {
+      name: spec.name,
+      action: spec.action,
+      config: spec.config ? structuredClone(spec.config) : undefined,
+      paramKeys: Object.keys(params),
+      params,
+    };
+  }
+
+  private normalizePromptSpecParams(
+    params?: PromptSpec['params']
+  ): PromptParams {
+    if (!params) return {};
+
+    return Object.fromEntries(
+      Object.entries(params).map(([key, value]) => {
+        if (value.enum?.length) {
+          const normalized = value.default
+            ? [
+                value.default,
+                ...value.enum.filter(option => option !== value.default),
+              ]
+            : [...value.enum];
+          return [key, normalized];
+        }
+
+        return [key, value.default ?? ''];
       })
-      .then(ret => ret.id);
+    );
   }
 
-  async update(
-    name: string,
-    messages: PromptMessage[],
-    modifyByApi: boolean = false,
-    config?: PromptConfig
-  ) {
-    const { id } = await this.db.aiPrompt.update({
-      where: { name },
-      data: {
-        config: config || undefined,
-        updatedAt: new Date(),
-        modified: modifyByApi,
-        messages: {
-          // cleanup old messages
-          deleteMany: {},
-          create: messages.map((m, idx) => ({
-            idx,
-            ...m,
-            attachments: m.attachments || undefined,
-            params: m.params || undefined,
-          })),
-        },
-      },
-    });
+  private logWarnings(warnings: string[], sessionId?: string) {
+    if (!sessionId) {
+      return;
+    }
 
-    this.cache.delete(name);
-    return id;
-  }
-
-  async delete(name: string) {
-    const { id } = await this.db.aiPrompt.delete({ where: { name } });
-    this.cache.delete(name);
-    return id;
+    for (const warning of warnings) {
+      this.logger.warn(`${warning} in session ${sessionId}`);
+    }
   }
 }

@@ -1,7 +1,4 @@
-import { createContextKey } from '@blocksuite/data-view';
+import { createIdentifier } from '@blocksuite/global/di';
 import type { EditorHost } from '@blocksuite/std';
 
-export const HostContextKey = createContextKey<EditorHost | undefined>(
-  'editor-host',
-  undefined
-);
+export const EditorHostKey = createIdentifier<EditorHost>('editor-host');

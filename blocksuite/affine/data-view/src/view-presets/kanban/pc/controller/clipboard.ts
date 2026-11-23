@@ -2,7 +2,7 @@ import type { UIEventStateContext } from '@blocksuite/std';
 import type { ReactiveController } from 'lit';
 
 import type { KanbanViewSelectionWithType } from '../../selection';
-import type { DataViewKanban } from '../kanban-view.js';
+import type { KanbanViewUILogic } from '../kanban-view-ui-logic.js';
 
 export class KanbanClipboardController implements ReactiveController {
   private readonly _onCopy = (
@@ -19,31 +19,35 @@ export class KanbanClipboardController implements ReactiveController {
   };
 
   private get readonly() {
-    return this.host.props.view.readonly$.value;
+    return this.logic.view.readonly$.value;
   }
 
-  constructor(public host: DataViewKanban) {
-    host.addController(this);
+  get host() {
+    return this.logic.ui$.value;
   }
+
+  constructor(public logic: KanbanViewUILogic) {}
 
   hostConnected() {
-    this.host.disposables.add(
-      this.host.props.handleEvent('copy', ctx => {
-        const kanbanSelection = this.host.selectionController.selection;
-        if (!kanbanSelection) return false;
+    if (this.host) {
+      this.host.disposables.add(
+        this.logic.handleEvent('copy', ctx => {
+          const kanbanSelection = this.logic.selectionController.selection;
+          if (!kanbanSelection) return false;
 
-        this._onCopy(ctx, kanbanSelection);
-        return true;
-      })
-    );
+          this._onCopy(ctx, kanbanSelection);
+          return true;
+        })
+      );
 
-    this.host.disposables.add(
-      this.host.props.handleEvent('paste', ctx => {
-        if (this.readonly) return false;
+      this.host.disposables.add(
+        this.logic.handleEvent('paste', ctx => {
+          if (this.readonly) return false;
 
-        this._onPaste(ctx);
-        return true;
-      })
-    );
+          this._onPaste(ctx);
+          return true;
+        })
+      );
+    }
   }
 }

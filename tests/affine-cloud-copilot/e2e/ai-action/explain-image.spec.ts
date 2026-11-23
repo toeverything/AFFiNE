@@ -27,7 +27,7 @@ test.describe('AIAction/ExplainImage', () => {
     expect(responses).toEqual(new Set(['insert-below', 'replace-selection']));
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {

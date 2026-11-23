@@ -7,6 +7,7 @@ import { SlashMenuConfigExtension } from '@blocksuite/affine-widget-slash-menu';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
 
+import { AttachmentBlockInteraction } from './attachment-edgeless-block.js';
 import { AttachmentDropOption } from './attachment-service.js';
 import { attachmentSlashMenuConfig } from './configs/slash-menu.js';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
@@ -44,6 +45,7 @@ export class AttachmentViewExtension extends ViewExtensionProvider {
     ]);
     if (this.isEdgeless(context.scope)) {
       context.register(EdgelessClipboardAttachmentConfig);
+      context.register(AttachmentBlockInteraction);
     }
   }
 }

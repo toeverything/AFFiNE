@@ -21,6 +21,7 @@ import type { HelperToMain, MainToHelper } from '../shared/type';
 import { MessageEventChannel } from '../shared/utils';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { openExternalSafely } from './security/open-external';
 
 const HELPER_PROCESS_PATH = path.join(__dirname, './helper.js');
 
@@ -75,6 +76,16 @@ class HelperProcessManager {
     beforeAppQuit(() => {
       this.#process.kill();
     });
+
+    this.#process.on('exit', code => {
+      logger.error('[helper] process exited', { code });
+      HelperProcessManager._instance = null;
+    });
+
+    this.#process.on('error', err => {
+      logger.error('[helper] process error', err);
+      HelperProcessManager._instance = null;
+    });
   }
 
   // bridge renderer <-> helper process
@@ -105,10 +116,10 @@ class HelperProcessManager {
         return dialog.showSaveDialog(window, opts);
       },
     };
-    const shellMethods = pickAndBind(shell, [
-      'openExternal',
-      'showItemInFolder',
-    ]);
+    const shellMethods = {
+      openExternal: openExternalSafely as typeof shell.openExternal,
+      showItemInFolder: shell.showItemInFolder.bind(shell),
+    };
     const appMethods = pickAndBind(app, ['getPath']);
 
     const mainToHelperServer: MainToHelper = {

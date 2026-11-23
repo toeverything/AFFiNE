@@ -1,7 +1,7 @@
 import {
+  getSurfaceComponent,
   type Options,
   type RoughCanvas,
-  type SurfaceBlockComponent,
   ToolOverlay,
 } from '@blocksuite/affine-block-surface';
 import {
@@ -87,7 +87,8 @@ export class ShapeOverlay extends ToolOverlay {
           shapeStyle
         );
 
-        (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+        const surface = getSurfaceComponent(this.gfx.std);
+        surface?.refresh();
       })
     );
   }

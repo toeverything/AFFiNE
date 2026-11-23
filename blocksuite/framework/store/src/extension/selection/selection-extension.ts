@@ -94,8 +94,14 @@ export class StoreSelectionExtension extends StoreExtension {
       }
     );
 
-    this.store.history.on('stack-item-added', this._itemAdded);
-    this.store.history.on('stack-item-popped', this._itemPopped);
+    this.store.history.undoManager.on('stack-item-added', this._itemAdded);
+    this.store.history.undoManager.on('stack-item-popped', this._itemPopped);
+  }
+
+  override disposed() {
+    super.disposed();
+    this.store.history.undoManager.off('stack-item-added', this._itemAdded);
+    this.store.history.undoManager.off('stack-item-popped', this._itemPopped);
   }
 
   get value() {

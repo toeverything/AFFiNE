@@ -1,8 +1,10 @@
 import { Modal } from '@affine/component';
-import { CollectionService } from '@affine/core/modules/collection';
+import {
+  type CollectionInfo,
+  CollectionService,
+} from '@affine/core/modules/collection';
 import type { DialogComponentProps } from '@affine/core/modules/dialogs';
 import type { WORKSPACE_DIALOG_SCHEMA } from '@affine/core/modules/dialogs/constant';
-import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
@@ -18,17 +20,18 @@ export const CollectionEditorDialog = ({
   const collectionService = useService(CollectionService);
   const collection = useLiveData(collectionService.collection$(collectionId));
   const onConfirmOnCollection = useCallback(
-    (collection: Collection) => {
-      collectionService.updateCollection(collection.id, () => collection);
+    (collection: CollectionInfo) => {
+      collectionService.updateCollection(collection.id, collection);
       close();
     },
     [close, collectionService]
   );
+  const info = useLiveData(collection?.info$);
   const onCancel = useCallback(() => {
     close();
   }, [close]);
 
-  if (!collection) {
+  if (!collection || !info) {
     return null;
   }
 
@@ -50,7 +53,7 @@ export const CollectionEditorDialog = ({
     >
       <EditCollection
         onConfirmText={t['com.affine.editCollection.save']()}
-        init={collection}
+        init={info}
         mode={mode}
         onCancel={onCancel}
         onConfirm={onConfirmOnCollection}

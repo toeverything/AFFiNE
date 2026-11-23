@@ -26,6 +26,9 @@ public class DeleteWorkspaceMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("deleteWorkspace", Bool.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      DeleteWorkspaceMutation.Data.self
+    ] }
 
     public var deleteWorkspace: Bool { __data["deleteWorkspace"] }
   }

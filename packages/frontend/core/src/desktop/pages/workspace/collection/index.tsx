@@ -1,12 +1,19 @@
-import { notify } from '@affine/component';
+import { FlexWrapper } from '@affine/component';
 import { EmptyCollectionDetail } from '@affine/core/components/affine/empty/collection-detail';
-import { VirtualizedPageList } from '@affine/core/components/page-list';
-import { CollectionService } from '@affine/core/modules/collection';
-import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
+import {
+  createDocExplorerContext,
+  DocExplorerContext,
+} from '@affine/core/components/explorer/context';
+import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
+import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
+import {
+  type Collection,
+  CollectionService,
+} from '@affine/core/modules/collection';
+import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
@@ -21,44 +28,98 @@ import {
   ViewIcon,
   ViewTitle,
 } from '../../../../modules/workbench';
+import { PageNotFound } from '../../404';
 import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import { CollectionDetailHeader } from './header';
+import * as styles from './index.css';
+import { CollectionListHeader } from './list-header';
 
 export const CollectionDetail = ({
   collection,
 }: {
   collection: Collection;
 }) => {
-  const { workspaceDialogService } = useServices({
-    WorkspaceDialogService,
-  });
+  const [explorerContextValue] = useState(createDocExplorerContext);
+  const collectionRulesService = useService(CollectionRulesService);
+
   const permissionService = useService(WorkspacePermissionService);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
-  const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
-  const handleEditCollection = useCallback(() => {
-    workspaceDialogService.open('collection-editor', {
-      collectionId: collection.id,
-    });
-  }, [collection, workspaceDialogService]);
+  const displayPreference = useLiveData(
+    explorerContextValue.displayPreference$
+  );
+  const groupBy = useLiveData(explorerContextValue.groupBy$);
+  const orderBy = useLiveData(explorerContextValue.orderBy$);
+  const rules = useLiveData(collection.rules$);
+  const allowList = useLiveData(collection.allowList$);
+
+  const handleDisplayPreferenceChange = useCallback(
+    (displayPreference: ExplorerDisplayPreference) => {
+      explorerContextValue.displayPreference$.next(displayPreference);
+    },
+    [explorerContextValue]
+  );
+
+  useEffect(() => {
+    const subscription = collectionRulesService
+      .watch({
+        filters: rules.filters,
+        groupBy,
+        orderBy,
+        extraAllowList: allowList,
+        extraFilters: [
+          {
+            type: 'system',
+            key: 'empty-journal',
+            method: 'is',
+            value: 'false',
+          },
+          {
+            type: 'system',
+            key: 'trash',
+            method: 'is',
+            value: 'false',
+          },
+        ],
+      })
+      .subscribe({
+        next: result => {
+          explorerContextValue.groups$.next(result.groups);
+        },
+        error: error => {
+          console.error(error);
+        },
+      });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [
+    allowList,
+    collectionRulesService,
+    explorerContextValue.groups$,
+    groupBy,
+    orderBy,
+    rules.filters,
+  ]);
 
   return (
-    <>
+    <DocExplorerContext.Provider value={explorerContextValue}>
       <ViewHeader>
         <CollectionDetailHeader
-          showCreateNew={!hideHeaderCreateNew}
-          onCreate={handleEditCollection}
+          displayPreference={displayPreference}
+          onDisplayPreferenceChange={handleDisplayPreferenceChange}
         />
       </ViewHeader>
       <ViewBody>
-        <VirtualizedPageList
-          collection={collection}
-          setHideHeaderCreateNewPage={setHideHeaderCreateNew}
-          disableMultiDelete={!isAdmin && !isOwner}
-        />
+        <FlexWrapper flexDirection="column" alignItems="stretch" width="100%">
+          <CollectionListHeader collection={collection} />
+          <div className={styles.scrollArea}>
+            <DocsExplorer disableMultiDelete={!isAdmin && !isOwner} />
+          </div>
+        </FlexWrapper>
       </ViewBody>
-    </>
+    </DocExplorerContext.Provider>
   );
 };
 
@@ -68,29 +129,15 @@ export const Component = function CollectionPage() {
     GlobalContextService,
   });
   const globalContext = globalContextService.globalContext;
-
-  const collections = useLiveData(collectionService.collections$);
-  const navigate = useNavigateHelper();
+  const t = useI18n();
   const params = useParams();
-  const workspace = useService(WorkspaceService).workspace;
-  const collection = collections.find(v => v.id === params.collectionId);
+  const collection = useLiveData(
+    params.collectionId
+      ? collectionService.collection$(params.collectionId)
+      : null
+  );
+  const name = useLiveData(collection?.name$);
   const isActiveView = useIsActiveView();
-
-  const notifyCollectionDeleted = useCallback(() => {
-    navigate.jumpToPage(workspace.id, 'all');
-    const collection = collectionService.collectionsTrash$.value.find(
-      v => v.collection.id === params.collectionId
-    );
-    let text = 'Collection does not exist';
-    if (collection) {
-      if (collection.userId) {
-        text = `${collection.collection.name} has been deleted by ${collection.userName}`;
-      } else {
-        text = `${collection.collection.name} has been deleted`;
-      }
-    }
-    return notify.error({ title: text });
-  }, [collectionService, navigate, params.collectionId, workspace.id]);
 
   useEffect(() => {
     if (isActiveView && collection) {
@@ -105,25 +152,22 @@ export const Component = function CollectionPage() {
     return;
   }, [collection, globalContext, isActiveView]);
 
-  useEffect(() => {
-    if (!collection) {
-      notifyCollectionDeleted();
-    }
-  }, [collection, notifyCollectionDeleted]);
+  const info = useLiveData(collection?.info$);
 
   if (!collection) {
-    return null;
+    return <PageNotFound />;
   }
-  const inner = isEmptyCollection(collection) ? (
-    <Placeholder collection={collection} />
-  ) : (
-    <CollectionDetail collection={collection} />
-  );
+  const inner =
+    info?.allowList.length === 0 && info?.rules.filters.length === 0 ? (
+      <Placeholder collection={collection} />
+    ) : (
+      <CollectionDetail collection={collection} />
+    );
 
   return (
     <>
       <ViewIcon icon="collection" />
-      <ViewTitle title={collection.name} />
+      <ViewTitle title={name ?? t['Untitled']()} />
       <AllDocSidebarTabs />
       {inner}
     </>
@@ -134,6 +178,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   const workspace = useService(WorkspaceService).workspace;
   const { jumpToCollections } = useNavigateHelper();
   const t = useI18n();
+  const name = useLiveData(collection?.name$);
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspace.id);
@@ -176,7 +221,7 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
               ['WebkitAppRegion' as string]: 'no-drag',
             }}
           >
-            {collection.name}
+            {name ?? t['Untitled']()}
           </div>
           <div style={{ flex: 1 }} />
         </div>
@@ -188,11 +233,5 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
         />
       </ViewBody>
     </>
-  );
-};
-
-export const isEmptyCollection = (collection: Collection) => {
-  return (
-    collection.allowList.length === 0 && collection.filterList.length === 0
   );
 };

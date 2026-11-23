@@ -3,6 +3,7 @@ import './action-wrapper';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -57,8 +58,9 @@ export class ActionText extends WithDisposable(LitElement) {
         class="original-text"
         data-testid="original-text"
       >
-        ${createTextRenderer(this.host, {
+        ${createTextRenderer({
           customHeading: true,
+          theme: this.host.std.get(ThemeProvider).app$,
         })(originalText)}
       </div>
     </action-wrapper>`;

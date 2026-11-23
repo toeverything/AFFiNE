@@ -17,7 +17,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { type MouseEventHandler, useCallback } from 'react';
+import { type MouseEventHandler, useCallback, useMemo } from 'react';
 
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { NavigationPanelCollectionNode } from '../../nodes/collection';
@@ -41,7 +41,7 @@ export const NavigationPanelFavorites = () => {
       NavigationPanelService,
     });
 
-  const navigationPanelSection = navigationPanelService.sections.favorites;
+  const path = useMemo(() => ['favorites'], []);
 
   const favorites = useLiveData(favoriteService.favoriteList.sortedList$);
 
@@ -71,10 +71,10 @@ export const NavigationPanelFavorites = () => {
         track.$.navigationPanel.favorites.drop({
           type: data.source.data.entity.type,
         });
-        navigationPanelSection.setCollapsed(false);
+        navigationPanelService.setCollapsed(path, false);
       }
     },
-    [navigationPanelSection, favoriteService.favoriteList]
+    [navigationPanelService, favoriteService.favoriteList, path]
   );
 
   const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
@@ -85,9 +85,9 @@ export const NavigationPanelFavorites = () => {
         newDoc.id,
         favoriteService.favoriteList.indexAt('before')
       );
-      navigationPanelSection.setCollapsed(false);
+      navigationPanelService.setCollapsed(path, false);
     },
-    [createPage, navigationPanelSection, favoriteService.favoriteList]
+    [createPage, navigationPanelService, favoriteService.favoriteList, path]
   );
 
   const handleOnChildrenDrop = useCallback(
@@ -162,7 +162,7 @@ export const NavigationPanelFavorites = () => {
 
   return (
     <CollapsibleSection
-      name="favorites"
+      path={path}
       title={t['com.affine.rootAppSidebar.favorites']()}
       headerRef={dropTargetRef}
       testId="navigation-panel-favorites"
@@ -202,6 +202,7 @@ export const NavigationPanelFavorites = () => {
             key={favorite.id}
             favorite={favorite}
             onDrop={handleOnChildrenDrop}
+            parentPath={path}
           />
         ))}
       </NavigationPanelTreeRoot>
@@ -215,11 +216,13 @@ const childLocation = {
 const NavigationPanelFavoriteNode = ({
   favorite,
   onDrop,
+  parentPath,
 }: {
   favorite: {
     id: string;
     type: FavoriteSupportTypeUnion;
   };
+  parentPath: string[];
   onDrop: (
     favorite: {
       id: string;
@@ -242,6 +245,7 @@ const NavigationPanelFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      parentPath={parentPath}
     />
   ) : favorite.type === 'tag' ? (
     <NavigationPanelTagNode
@@ -251,6 +255,7 @@ const NavigationPanelFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      parentPath={parentPath}
     />
   ) : favorite.type === 'folder' ? (
     <NavigationPanelFolderNode
@@ -260,6 +265,7 @@ const NavigationPanelFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      parentPath={parentPath}
     />
   ) : (
     <NavigationPanelCollectionNode
@@ -269,6 +275,7 @@ const NavigationPanelFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      parentPath={parentPath}
     />
   );
 };

@@ -13,12 +13,12 @@ test.describe('AIInsertion/SaveAsBlock', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -28,11 +28,10 @@ test.describe('AIInsertion/SaveAsBlock', () => {
 
     const { actions } = await utils.chatPanel.getLatestAssistantMessage(page);
     await actions.saveAsBlock();
+    await page.getByText('Successfully saved chat to a block').waitFor();
 
-    // Switch to edgeless mode
     await utils.editor.isEdgelessMode(page);
 
-    // Verify the ai block is created
     await page.waitForSelector('affine-edgeless-ai-chat');
     const aiBlock = await page.locator('affine-edgeless-ai-chat');
     await expect(aiBlock).toBeVisible();
@@ -45,12 +44,12 @@ test.describe('AIInsertion/SaveAsBlock', () => {
     await utils.editor.switchToEdgelessMode(page);
 
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',

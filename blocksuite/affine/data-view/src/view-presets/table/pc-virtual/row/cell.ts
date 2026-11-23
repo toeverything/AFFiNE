@@ -10,16 +10,15 @@ import type {
   CellRenderProps,
   DataViewCellLifeCycle,
 } from '../../../../core/property';
-import type { SingleView } from '../../../../core/view-manager/single-view';
 import {
   TableViewAreaSelection,
   TableViewRowSelection,
   type TableViewSelectionWithType,
 } from '../../selection';
-import type { VirtualTableView } from '../table-view';
+import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 import type { TableGridCell } from '../types';
 import { popRowMenu } from './menu';
-import { rowSelectedBg } from './row-header.css';
+import { rowSelectedBg } from './row-header-css';
 export class DatabaseCellContainer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
@@ -55,7 +54,9 @@ export class DatabaseCellContainer extends SignalWatcher(
     const selectionView = this.selectionView;
     if (selectionView) {
       const selection = selectionView.selection;
-      if (selection && this.isSelected(selection) && editing) {
+      const shouldEnterEditMode =
+        editing && this.cell?.beforeEnterEditMode() !== false;
+      if (selection && this.isSelected(selection) && shouldEnterEditMode) {
         selectionView.selection = TableViewAreaSelection.create({
           groupKey: this.groupKey,
           focus: {
@@ -82,7 +83,7 @@ export class DatabaseCellContainer extends SignalWatcher(
   }
 
   private get selectionView() {
-    return this.tableView?.selectionController;
+    return this.tableViewLogic.selectionController;
   }
 
   get rowSelected$() {
@@ -104,11 +105,7 @@ export class DatabaseCellContainer extends SignalWatcher(
         rows: [row],
       });
     }
-    popRowMenu(
-      this.tableView.props.dataViewEle,
-      popupTargetFromElement(this),
-      selection
-    );
+    popRowMenu(this.tableViewLogic, popupTargetFromElement(this), selection);
   };
 
   override connectedCallback() {
@@ -184,6 +181,19 @@ export class DatabaseCellContainer extends SignalWatcher(
       },
     });
   }
+
+  private _tagDraft: string | undefined;
+
+  setTagDraft(value: string) {
+    this._tagDraft = value;
+  }
+
+  consumeTagDraft(): string | undefined {
+    const value = this._tagDraft;
+    this._tagDraft = undefined;
+    return value;
+  }
+
   isEditing$ = signal(false);
 
   rowIndex$ = computed(() => {
@@ -216,10 +226,11 @@ export class DatabaseCellContainer extends SignalWatcher(
   accessor gridCell!: TableGridCell;
 
   @property({ attribute: false })
-  accessor view!: SingleView;
+  accessor tableViewLogic!: VirtualTableViewUILogic;
 
-  @property({ attribute: false })
-  accessor tableView!: VirtualTableView;
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

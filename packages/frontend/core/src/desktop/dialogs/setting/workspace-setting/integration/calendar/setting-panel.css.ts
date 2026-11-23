@@ -4,46 +4,61 @@ import { style } from '@vanilla-extract/css';
 export const list = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: 24,
+  gap: 16,
 });
 
-export const newButton = style({
+export const group = style({
+  padding: '12px 16px',
+  borderRadius: 8,
+  border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
+  background: cssVarV2.layer.background.primary,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+});
+
+export const groupHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+});
+
+export const groupTitle = style({
+  fontSize: 14,
+  fontWeight: 500,
+  lineHeight: '22px',
+  color: cssVarV2.text.primary,
+});
+
+export const groupCaption = style({
+  fontSize: 12,
+  lineHeight: '18px',
   color: cssVarV2.text.secondary,
 });
 
-export const newDialog = style({
-  maxWidth: 480,
+export const groupMeta = style({
+  fontSize: 12,
+  lineHeight: '20px',
+  color: cssVarV2.text.secondary,
+  whiteSpace: 'nowrap',
 });
 
-export const newDialogHeader = style({
+export const groupList = style({
   display: 'flex',
-  alignItems: 'center',
+  flexDirection: 'column',
   gap: 8,
 });
 
-export const newDialogTitle = style({
-  fontSize: 15,
-  lineHeight: '24px',
-  fontWeight: 500,
-  color: cssVarV2.text.primary,
-});
-
-export const newDialogContent = style({
-  marginTop: 16,
-  marginBottom: 20,
-});
-
-export const newDialogLabel = style({
+export const empty = style({
   fontSize: 12,
   lineHeight: '20px',
-  fontWeight: 500,
-  color: cssVarV2.text.primary,
-  marginBottom: 4,
+  color: cssVarV2.text.secondary,
+  padding: '8px 0',
 });
 
-export const newDialogFooter = style({
+export const actions = style({
+  marginTop: 12,
   display: 'flex',
   justifyContent: 'flex-end',
-  alignItems: 'center',
-  gap: 20,
 });

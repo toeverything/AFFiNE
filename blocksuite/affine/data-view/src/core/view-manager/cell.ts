@@ -29,8 +29,7 @@ export class CellBase<
   RawValue = unknown,
   JsonValue = unknown,
   Data extends Record<string, unknown> = Record<string, unknown>,
-> implements Cell<RawValue, JsonValue, Data>
-{
+> implements Cell<RawValue, JsonValue, Data> {
   get dataSource() {
     return this.view.manager.dataSource;
   }
@@ -85,6 +84,7 @@ export class CellBase<
     return toString({
       value: this.value$.value,
       data: this.property.data$.value,
+      dataSource: this.dataSource,
     });
   });
 

@@ -9,9 +9,8 @@ import type {
   BoxSelectionContext,
   DragMoveContext,
   GfxViewTransformInterface,
-  SelectedContext,
 } from '../../gfx/interactivity/index.js';
-import { type GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
+import type { GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
 import { SurfaceSelection } from '../../selection/index.js';
 import { BlockComponent } from './block-component.js';
 
@@ -32,16 +31,28 @@ function updateTransform(element: GfxBlockComponent) {
   element.style.transform = element.getCSSTransform();
 }
 
+function updateZIndex(element: GfxBlockComponent) {
+  const zIndex = element.toZIndex();
+  if (element.style.zIndex !== zIndex) {
+    element.style.zIndex = zIndex;
+  }
+}
+
 function updateBlockVisibility(view: GfxBlockComponent) {
   if (view.transformState$.value === 'active') {
     view.style.visibility = 'visible';
     view.style.pointerEvents = 'auto';
-    view.classList.remove('block-idle');
+    view.classList.remove('block-idle', 'block-survival');
     view.classList.add('block-active');
+  } else if (view.transformState$.value === 'survival') {
+    view.style.visibility = 'visible';
+    view.style.pointerEvents = 'none';
+    view.classList.remove('block-active', 'block-idle');
+    view.classList.add('block-survival');
   } else {
     view.style.visibility = 'hidden';
     view.style.pointerEvents = 'none';
-    view.classList.remove('block-active');
+    view.classList.remove('block-active', 'block-survival');
     view.classList.add('block-idle');
   }
 }
@@ -49,8 +60,19 @@ function updateBlockVisibility(view: GfxBlockComponent) {
 function handleGfxConnection(instance: GfxBlockComponent) {
   instance.style.position = 'absolute';
 
+  const viewport = instance.gfx.viewport;
+
   instance.disposables.add(
-    instance.gfx.viewport.viewportUpdated.subscribe(() => {
+    viewport.viewportUpdated.subscribe(() => {
+      // When SKIP_REFRESH_DURING_GESTURE is enabled and a gesture is active,
+      // skip per-block transform updates. The viewport-element applies a
+      // container-level CSS transform to keep visuals in sync instead.
+      if (
+        viewport.SKIP_REFRESH_DURING_GESTURE &&
+        (viewport.panning$.value || viewport.zooming$.value)
+      ) {
+        return;
+      }
       updateTransform(instance);
     })
   );
@@ -59,7 +81,14 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     instance.store.slots.blockUpdated.subscribe(({ type, id }) => {
       if (id === instance.model.id && type === 'update') {
         updateTransform(instance);
+        updateZIndex(instance);
       }
+    })
+  );
+
+  instance.disposables.add(
+    instance.gfx.layer.slots.layerUpdated.subscribe(() => {
+      updateZIndex(instance);
     })
   );
 
@@ -67,21 +96,22 @@ function handleGfxConnection(instance: GfxBlockComponent) {
     effect(() => {
       updateBlockVisibility(instance);
       updateTransform(instance);
+      updateZIndex(instance);
     })
   );
 }
 
 export abstract class GfxBlockComponent<
-    Model extends GfxBlockElementModel = GfxBlockElementModel,
-    Service extends BlockService = BlockService,
-    WidgetName extends string = string,
-  >
+  Model extends GfxBlockElementModel = GfxBlockElementModel,
+  Service extends BlockService = BlockService,
+  WidgetName extends string = string,
+>
   extends BlockComponent<Model, Service, WidgetName>
   implements GfxViewTransformInterface
 {
   [GfxElementSymbol] = true;
 
-  readonly transformState$ = signal<'idle' | 'active'>('active');
+  readonly transformState$ = signal<'idle' | 'survival' | 'active'>('active');
 
   get gfx() {
     return this.std.get(GfxControllerIdentifier);
@@ -104,33 +134,25 @@ export abstract class GfxBlockComponent<
     this.model.pop('xywh');
   }
 
-  onSelected(context: SelectedContext): void | boolean {
-    if (context.multiSelect) {
-      this.gfx.selection.toggle(this.model);
-    } else {
-      this.gfx.selection.set({ elements: [this.model.id] });
-    }
-
-    return true;
-  }
-
   onBoxSelected(_: BoxSelectionContext) {}
 
-  onRotate() {}
-
-  onResize() {}
+  getCSSScaleVal(): number {
+    const viewport = this.gfx.viewport;
+    const { zoom, viewScale } = viewport;
+    return zoom / viewScale;
+  }
 
   getCSSTransform() {
     const viewport = this.gfx.viewport;
-    const { translateX, translateY, zoom } = viewport;
+    const { translateX, translateY, zoom, viewScale } = viewport;
     const bound = Bound.deserialize(this.model.xywh);
 
-    const scaledX = bound.x * zoom;
-    const scaledY = bound.y * zoom;
+    const scaledX = (bound.x * zoom) / viewScale;
+    const scaledY = (bound.y * zoom) / viewScale;
     const deltaX = scaledX - bound.x;
     const deltaY = scaledY - bound.y;
 
-    return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom})`;
+    return `translate(${translateX / viewScale + deltaX}px, ${translateY / viewScale + deltaY}px) scale(${this.getCSSScaleVal()})`;
   }
 
   getRenderingRect() {
@@ -201,7 +223,7 @@ export function toGfxBlockComponent<
   return class extends CustomBlock {
     [GfxElementSymbol] = true;
 
-    readonly transformState$ = signal<'idle' | 'active'>('active');
+    readonly transformState$ = signal<'idle' | 'survival' | 'active'>('active');
 
     override selected$ = computed(() => {
       const selection = this.std.selection.value.find(
@@ -223,22 +245,7 @@ export function toGfxBlockComponent<
       this.model.pop('xywh');
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
-    onSelected(context: SelectedContext): void | boolean {
-      if (context.multiSelect) {
-        this.gfx.selection.toggle(this.model);
-      } else {
-        this.gfx.selection.set({ elements: [this.model.id] });
-      }
-
-      return true;
-    }
-
     onBoxSelected(_: BoxSelectionContext) {}
-
-    onRotate() {}
-
-    onResize() {}
 
     get gfx() {
       return this.std.get(GfxControllerIdentifier);
@@ -249,21 +256,15 @@ export function toGfxBlockComponent<
       handleGfxConnection(this);
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
-    getCSSTransform() {
-      const viewport = this.gfx.viewport;
-      const { translateX, translateY, zoom } = viewport;
-      const bound = Bound.deserialize(this.model.xywh);
-
-      const scaledX = bound.x * zoom;
-      const scaledY = bound.y * zoom;
-      const deltaX = scaledX - bound.x;
-      const deltaY = scaledY - bound.y;
-
-      return `translate(${translateX + deltaX}px, ${translateY + deltaY}px) scale(${zoom})`;
+    getCSSScaleVal(): number {
+      return GfxBlockComponent.prototype.getCSSScaleVal.call(this);
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    getCSSTransform() {
+      return GfxBlockComponent.prototype.getCSSTransform.call(this);
+    }
+
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     getRenderingRect(): {
       x: number;
       y: number;
@@ -305,7 +306,7 @@ export function toGfxBlockComponent<
       return super.renderBlock();
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
+    // oxlint-disable-next-line sonarjs/no-identical-functions
     override async scheduleUpdate() {
       const parent = this.parentElement;
 

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 
+import { addDocToRootDoc, readAllDocIdsFromRootDoc } from '../native';
 import {
   acceptInviteById,
   createTestingApp,
@@ -10,11 +11,12 @@ import {
   inviteUser,
   publishDoc,
   revokePublicDoc,
+  setWorkspaceSharing,
   TestingApp,
   updateWorkspace,
 } from './utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
   client: PrismaClient;
 }>;
@@ -57,10 +59,23 @@ test('should be able to publish workspace', async t => {
 });
 
 test('should visit public page', async t => {
-  const { app } = t.context;
-  await app.signupV1('u1@affine.pro');
+  const { app, client } = t.context;
+  const user = await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
+  const rootDoc = addDocToRootDoc(Buffer.from([0, 0]), 'doc1', 'doc1');
+  await client.snapshot.update({
+    where: { workspaceId_id: { workspaceId: workspace.id, id: workspace.id } },
+    data: { blob: rootDoc },
+  });
+  await client.snapshot.create({
+    data: {
+      workspaceId: workspace.id,
+      id: 'doc1',
+      blob: Buffer.from([0, 0]),
+      updatedAt: new Date(),
+    },
+  });
   const share = await publishDoc(app, workspace.id, 'doc1');
 
   t.is(share.id, 'doc1', 'failed to share doc');
@@ -77,17 +92,29 @@ test('should visit public page', async t => {
     `/api/workspaces/${workspace.id}/docs/${workspace.id}`
   );
   t.is(resp1.statusCode, 200, 'failed to get root doc with u1 token');
+
+  await app.logout();
   const resp2 = await app.GET(
     `/api/workspaces/${workspace.id}/docs/${workspace.id}`
   );
-  t.is(resp2.statusCode, 200, 'failed to get root doc with public pages');
+  t.is(resp2.statusCode, 403, 'legacy root doc should not be public');
+
+  const respPublicRoot = await app.GET(
+    `/api/workspaces/${workspace.id}/public-docs/doc1/root-doc`
+  );
+  t.is(
+    respPublicRoot.statusCode,
+    200,
+    'failed to get filtered public root doc'
+  );
+  t.deepEqual(readAllDocIdsFromRootDoc(respPublicRoot.body, false), ['doc1']);
 
   const resp3 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
-  // 404 because we don't put the page doc to server
-  t.is(resp3.statusCode, 404, 'failed to get shared doc with u1 token');
+  t.is(resp3.statusCode, 200, 'failed to get shared doc');
   const resp4 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
-  // 404 because we don't put the page doc to server
-  t.is(resp4.statusCode, 404, 'should not get shared doc without token');
+  t.is(resp4.statusCode, 200, 'should get shared doc without token');
+
+  await app.login(user);
 
   const revoke = await revokePublicDoc(app, workspace.id, 'doc1');
   t.false(revoke.public, 'failed to revoke doc');
@@ -113,7 +140,7 @@ test('should not be able to public not permitted doc', async t => {
 
   await t.throwsAsync(revokePublicDoc(app, 'not_exists_ws', 'doc2'), {
     message:
-      'You do not have permission to perform Doc.Publish action on doc doc2.',
+      'You do not have permission to perform Doc.Unpublish action on doc doc2.',
   });
 });
 
@@ -180,4 +207,17 @@ test('should be able to get public workspace doc', async t => {
     .type('application/octet-stream');
 
   t.deepEqual(res.body, Buffer.from([0, 0]), 'failed to get public doc');
+
+  const disabled = await setWorkspaceSharing(app, workspace.id, false);
+  t.false(disabled, 'failed to disable workspace sharing');
+
+  // owner should still be able to access
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .expect(200);
+
+  await app.logout();
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .expect(403);
 });

@@ -17,7 +17,7 @@ import {
   FeatureFlagService,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import { openSingleFileWith } from '@blocksuite/affine-shared/utils';
 import { Bound, type IVec } from '@blocksuite/global/gfx';
 import type { BlockComponent } from '@blocksuite/std';
 import type { TemplateResult } from 'lit';
@@ -158,7 +158,7 @@ export const textRender: DraggableTool['render'] = async (bound, edgeless) => {
 export const mediaRender: DraggableTool['render'] = async (bound, edgeless) => {
   let file: File | null = null;
   try {
-    file = await openFileOrFiles();
+    file = await openSingleFileWith();
   } catch (e) {
     console.error(e);
     return null;

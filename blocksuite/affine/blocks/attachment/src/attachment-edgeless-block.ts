@@ -1,10 +1,14 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
-import { AttachmentBlockStyles } from '@blocksuite/affine-model';
+import {
+  AttachmentBlockSchema,
+  AttachmentBlockStyles,
+} from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
 } from '@blocksuite/affine-shared/consts';
 import { toGfxBlockComponent } from '@blocksuite/std';
+import { GfxViewInteractionExtension } from '@blocksuite/std/gfx';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { AttachmentBlockComponent } from './attachment-block.js';
@@ -48,3 +52,21 @@ declare global {
     'affine-edgeless-attachment': AttachmentEdgelessBlockComponent;
   }
 }
+
+export const AttachmentBlockInteraction = GfxViewInteractionExtension(
+  AttachmentBlockSchema.model.flavour,
+  {
+    resizeConstraint: {
+      lockRatio: true,
+    },
+    handleRotate: () => {
+      return {
+        beforeRotate: context => {
+          context.set({
+            rotatable: false,
+          });
+        },
+      };
+    },
+  }
+);

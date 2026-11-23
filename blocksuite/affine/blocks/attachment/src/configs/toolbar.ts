@@ -24,6 +24,7 @@ import {
   DownloadIcon,
   DuplicateIcon,
   EditIcon,
+  ReplaceIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
@@ -77,13 +78,19 @@ export const attachmentViewDropdownMenu = {
         const model = ctx.getCurrentModelByType(AttachmentBlockModel);
         if (!model) return;
 
-        if (!ctx.hasSelectedSurfaceModels) {
+        const provider = ctx.std.get(AttachmentEmbedProvider);
+
+        // TODO(@fundon): should auto focus image block.
+        if (
+          provider.shouldBeConverted(model) &&
+          !ctx.hasSelectedSurfaceModels
+        ) {
           // Clears
           ctx.reset();
           ctx.select('note');
         }
 
-        ctx.std.get(AttachmentEmbedProvider).convertTo(model);
+        provider.convertTo(model);
 
         ctx.track('SelectedView', {
           ...trackBaseProps,
@@ -133,27 +140,42 @@ export const attachmentViewDropdownMenu = {
       });
     };
 
-    return html`${keyed(
-      model,
-      html`<affine-view-dropdown-menu
-        @toggle=${onToggle}
-        .actions=${actions.value}
-        .context=${ctx}
-        .viewType$=${viewType$}
-      ></affine-view-dropdown-menu>`
-    )}`;
+    return html`<affine-view-dropdown-menu
+      @toggle=${onToggle}
+      .actions=${actions.value}
+      .context=${ctx}
+      .viewTypeSignal=${viewType$}
+    ></affine-view-dropdown-menu>`;
   },
 } as const satisfies ToolbarActionGroup<ToolbarAction>;
 
+const replaceAction = {
+  id: 'c.replace',
+  tooltip: 'Replace attachment',
+  icon: ReplaceIcon(),
+  disabled(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    if (!block) return true;
+
+    const { downloading = false, uploading = false } =
+      block.resourceController.state$.value;
+    return downloading || uploading;
+  },
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    block?.replace().catch(console.error);
+  },
+} as const satisfies ToolbarAction;
+
 const downloadAction = {
-  id: 'c.download',
+  id: 'd.download',
   tooltip: 'Download',
   icon: DownloadIcon(),
   run(ctx) {
     const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
     block?.download();
   },
-  when: ctx => {
+  when(ctx) {
     const model = ctx.getCurrentModelByType(AttachmentBlockModel);
     if (!model) return false;
     // Current citation attachment block does not support download
@@ -162,7 +184,7 @@ const downloadAction = {
 } as const satisfies ToolbarAction;
 
 const captionAction = {
-  id: 'd.caption',
+  id: 'e.caption',
   tooltip: 'Caption',
   icon: CaptionIcon(),
   run(ctx) {
@@ -215,6 +237,7 @@ const builtinToolbarConfig = {
       },
     },
     attachmentViewDropdownMenu,
+    replaceAction,
     downloadAction,
     captionAction,
     {
@@ -257,7 +280,13 @@ const builtinToolbarConfig = {
       icon: ResetIcon(),
       run(ctx) {
         const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
-        block?.refreshData();
+        block?.reload();
+
+        ctx.track('AttachmentReloadedEvent', {
+          ...trackBaseProps,
+          control: 'reload',
+          type: block?.model.props.name.split('.').pop() ?? '',
+        });
       },
     },
     {
@@ -337,18 +366,22 @@ const builtinSurfaceToolbarConfig = {
             @toggle=${onToggle}
             .actions=${actions}
             .context=${ctx}
-            .style$=${style$}
+            .styleSignal=${style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },
     } satisfies ToolbarActionGroup<ToolbarAction>,
     {
+      ...replaceAction,
+      id: 'd.replace',
+    },
+    {
       ...downloadAction,
-      id: 'd.download',
+      id: 'e.download',
     },
     {
       ...captionAction,
-      id: 'e.caption',
+      id: 'f.caption',
     },
   ],
   when: ctx => ctx.getSurfaceModelsByType(AttachmentBlockModel).length === 1,

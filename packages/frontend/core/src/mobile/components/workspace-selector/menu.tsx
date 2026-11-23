@@ -1,6 +1,9 @@
 import { Divider, IconButton, Menu, MenuItem } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '@affine/core/components/hooks/use-navigate-helper';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceAvatar } from '@affine/core/components/workspace-avatar';
 import {
@@ -10,7 +13,6 @@ import {
   ServersService,
 } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import {
   type WorkspaceMetadata,
@@ -45,7 +47,7 @@ const WorkspaceItem = ({
     <li className={styles.wsItem}>
       <button className={clsx(styles.wsCard, className)} {...attrs}>
         <WorkspaceAvatar
-          key={workspace.id}
+          key={`${workspace.flavour}:${workspace.id}`}
           meta={workspace}
           rounded={6}
           data-testid="workspace-avatar"
@@ -71,11 +73,25 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
 
   return workspaceList.map(item => (
     <WorkspaceItem
-      key={item.id}
+      key={`${item.flavour}:${item.id}`}
       workspace={item}
       onClick={() => props.onClick(item)}
     />
   ));
+};
+
+const CloudSignIn = ({ onClick }: { onClick: () => void }) => {
+  const t = useI18n();
+  return (
+    <li className={styles.wsItem}>
+      <button className={styles.wsCard} onClick={onClick}>
+        <div className={styles.signInIcon}>
+          <AccountIcon />
+        </div>
+        <div className={styles.wsName}>{t['Sign in']()}</div>
+      </button>
+    </li>
+  );
 };
 
 const WorkspaceServerInfo = ({
@@ -85,7 +101,6 @@ const WorkspaceServerInfo = ({
   accountStatus,
   onDeleteServer,
   onSignOut,
-  onSignIn,
 }: {
   server: string;
   name: string;
@@ -93,7 +108,6 @@ const WorkspaceServerInfo = ({
   accountStatus?: 'authenticated' | 'unauthenticated';
   onDeleteServer?: () => void;
   onSignOut?: () => void;
-  onSignIn?: () => void;
 }) => {
   const t = useI18n();
   const isCloud = server !== 'local';
@@ -121,17 +135,8 @@ const WorkspaceServerInfo = ({
             {t['Sign out']()}
           </MenuItem>
         ),
-        accountStatus === 'unauthenticated' && (
-          <MenuItem
-            prefixIcon={<AccountIcon />}
-            key="sign-in"
-            onClick={onSignIn}
-          >
-            {t['Sign in']()}
-          </MenuItem>
-        ),
       ].filter(Boolean),
-    [accountStatus, onDeleteServer, onSignIn, onSignOut, server, t]
+    [accountStatus, onDeleteServer, onSignOut, server, t]
   );
 
   return (
@@ -213,7 +218,7 @@ const CloudWorkSpaceList = ({
     if (currentWorkspaceFlavour === server.id) {
       const otherWorkspace = workspaces.find(w => w.flavour !== server.id);
       if (otherWorkspace) {
-        navigateHelper.openPage(otherWorkspace.id, 'all');
+        void navigateHelper.openPage(otherWorkspace.id, 'all');
       }
     }
   }, [
@@ -226,7 +231,8 @@ const CloudWorkSpaceList = ({
 
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-  }, [authService]);
+    void navigateHelper.jumpToSignIn();
+  }, [authService, navigateHelper]);
 
   const handleSignIn = useAsyncCallback(async () => {
     globalDialogService.open('sign-in', {
@@ -243,31 +249,31 @@ const CloudWorkSpaceList = ({
         accountStatus={accountStatus}
         onDeleteServer={handleDeleteServer}
         onSignOut={handleSignOut}
-        onSignIn={handleSignIn}
       />
-      <WorkspaceList
-        items={workspaces}
-        onClick={onClickWorkspace}
-        onEnableCloudClick={onClickEnableCloud}
-      />
+      {accountStatus === 'unauthenticated' ? (
+        <CloudSignIn onClick={handleSignIn} />
+      ) : (
+        <WorkspaceList
+          items={workspaces}
+          onClick={onClickWorkspace}
+          onEnableCloudClick={onClickEnableCloud}
+        />
+      )}
     </>
   );
 };
 
 const AddServer = () => {
   const globalDialogService = useService(GlobalDialogService);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableMultipleServer = useLiveData(
-    featureFlagService.flags.enable_multiple_cloud_servers.$
-  );
 
   const onAddServer = useCallback(() => {
     globalDialogService.open('sign-in', { step: 'addSelfhosted' });
   }, [globalDialogService]);
 
-  if (!enableMultipleServer) {
+  if (!BUILD_CONFIG.isNative) {
     return null;
   }
+
   return <IconButton onClick={onAddServer} size="24" icon={<SelfhostIcon />} />;
 };
 
@@ -275,8 +281,15 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
   const workspacesService = useService(WorkspacesService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const serversService = useService(ServersService);
+  const globalContextService = useService(GlobalContextService);
   const { jumpToPage } = useNavigateHelper();
 
+  const currentWorkspaceId = useLiveData(
+    globalContextService.globalContext.workspaceId.$
+  );
+  const currentWorkspaceFlavour = useLiveData(
+    globalContextService.globalContext.workspaceFlavour.$
+  );
   const servers = useLiveData(serversService.servers$);
   const affineCloudServer = useMemo(
     () => servers.find(s => s.id === 'affine-cloud') as Server,
@@ -306,12 +319,29 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
   const handleClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
       const id = workspaceMetadata.id;
-      if (id !== currentWorkspace?.id) {
-        jumpToPage(id, 'home');
+      const isCurrentWorkspace =
+        id === currentWorkspaceId &&
+        workspaceMetadata.flavour === currentWorkspaceFlavour;
+      if (!isCurrentWorkspace) {
+        const server = servers.find(
+          server => server.id === workspaceMetadata.flavour
+        );
+        if (workspaceMetadata.flavour !== 'local' && !server) {
+          return;
+        }
+        const searchParams = new URLSearchParams({
+          flavour: workspaceMetadata.flavour,
+        });
+        if (workspaceMetadata.flavour !== 'local' && server) {
+          searchParams.set('server', server.baseUrl);
+        }
+        void jumpToPage(id, 'home', RouteLogic.PUSH, {
+          search: searchParams,
+        });
       }
       onClose?.();
     },
-    [onClose, jumpToPage]
+    [currentWorkspaceFlavour, currentWorkspaceId, jumpToPage, onClose, servers]
   );
 
   return (

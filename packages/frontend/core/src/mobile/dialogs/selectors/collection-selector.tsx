@@ -19,7 +19,7 @@ export const CollectionSelectorDialog = ({
 }: DialogComponentProps<WORKSPACE_DIALOG_SCHEMA['collection-selector']>) => {
   const t = useI18n();
   const collectionService = useService(CollectionService);
-  const collections = useLiveData(collectionService.collections$);
+  const collections = useLiveData(collectionService.collectionMetas$);
 
   const list = useMemo(() => {
     return collections.map(collection => ({

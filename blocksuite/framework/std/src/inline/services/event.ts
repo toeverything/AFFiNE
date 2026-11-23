@@ -1,5 +1,7 @@
+import { IS_ANDROID } from '@blocksuite/global/env';
 import type { BaseTextAttributes } from '@blocksuite/store';
 
+import { INLINE_ROOT_ATTR } from '../consts.js';
 import type { InlineEditor } from '../inline-editor.js';
 import type { InlineRange } from '../types.js';
 import {
@@ -11,76 +13,190 @@ import { isMaybeInlineRangeEqual } from '../utils/inline-range.js';
 import { transformInput } from '../utils/transform-input.js';
 import type { BeforeinputHookCtx, CompositionEndHookCtx } from './hook.js';
 
+type AndroidIMEInputType = 'deleteContentBackward' | 'deleteContentForward';
+
+type AndroidIMEInputDetail = {
+  inputType?: AndroidIMEInputType;
+  handled?: boolean;
+};
+
+type AndroidIMEBridge = {
+  getProtocolVersion?: () => number;
+  finishComposingSession?: () => void;
+  finishDeleteSession?: () => void;
+  setEditorFocused?: (focused: boolean) => void;
+};
+
+declare global {
+  interface HTMLElementEventMap {
+    'affine-android-ime-input': CustomEvent<AndroidIMEInputDetail>;
+  }
+}
+
 export class EventService<TextAttributes extends BaseTextAttributes> {
   private _compositionInlineRange: InlineRange | null = null;
 
   private _isComposing = false;
+
+  private readonly _androidIMEBridge = () => {
+    const bridge = (
+      globalThis as typeof globalThis & {
+        AffineAndroidIME?: AndroidIMEBridge;
+      }
+    ).AffineAndroidIME;
+    return bridge?.getProtocolVersion?.() === 1 ? bridge : undefined;
+  };
+
+  private readonly _finishAndroidComposingSession = (isDelete: boolean) => {
+    if (!IS_ANDROID) return;
+
+    window.setTimeout(() => {
+      const bridge = this._androidIMEBridge();
+      if (isDelete) {
+        bridge?.finishDeleteSession?.();
+      } else {
+        bridge?.finishComposingSession?.();
+      }
+    }, 0);
+  };
+
+  private readonly _setAndroidEditorFocused = (focused: boolean) => {
+    if (!IS_ANDROID) return;
+    this._androidIMEBridge()?.setEditorFocused?.(focused);
+  };
+
+  private readonly _getClosestInlineRoot = (node: Node): Element | null => {
+    const el = node instanceof Element ? node : node.parentElement;
+    return el?.closest(`[${INLINE_ROOT_ATTR}]`) ?? null;
+  };
 
   private readonly _isRangeCompletelyInRoot = (range: Range) => {
     if (range.commonAncestorContainer.ownerDocument !== document) return false;
 
     const rootElement = this.editor.rootElement;
     if (!rootElement) return false;
-
-    const rootRange = document.createRange();
-    rootRange.selectNode(rootElement);
-
-    if (
-      range.startContainer.compareDocumentPosition(range.endContainer) &
-      Node.DOCUMENT_POSITION_FOLLOWING
-    ) {
-      return (
-        rootRange.comparePoint(range.startContainer, range.startOffset) >= 0 &&
-        rootRange.comparePoint(range.endContainer, range.endOffset) <= 0
-      );
-    } else {
-      return (
-        rootRange.comparePoint(range.endContainer, range.startOffset) >= 0 &&
-        rootRange.comparePoint(range.startContainer, range.endOffset) <= 0
-      );
-    }
+    // Avoid `Range.comparePoint` here — Firefox/Chrome have subtle differences
+    // around selection points in `contenteditable` and comment marker nodes.
+    const containsStart =
+      range.startContainer === rootElement ||
+      rootElement.contains(range.startContainer);
+    const containsEnd =
+      range.endContainer === rootElement ||
+      rootElement.contains(range.endContainer);
+    return containsStart && containsEnd;
   };
 
-  private readonly _onBeforeInput = (event: InputEvent) => {
+  private readonly _onBeforeInput = async (event: InputEvent) => {
     const range = this.editor.rangeService.getNativeRange();
-    if (
-      this.editor.isReadonly ||
-      this._isComposing ||
-      !range ||
-      !this._isRangeCompletelyInRoot(range)
-    )
+    if (this.editor.isReadonly || !range) return;
+    const rootElement = this.editor.rootElement;
+    if (!rootElement) return;
+
+    const startInRoot =
+      range.startContainer === rootElement ||
+      rootElement.contains(range.startContainer);
+    const endInRoot =
+      range.endContainer === rootElement ||
+      rootElement.contains(range.endContainer);
+
+    // Not this inline editor.
+    if (!startInRoot && !endInRoot) return;
+
+    // If selection spans into another inline editor, let the range binding handle it.
+    if (startInRoot !== endInRoot) {
+      const otherNode = startInRoot ? range.endContainer : range.startContainer;
+      const otherRoot = this._getClosestInlineRoot(otherNode);
+      if (otherRoot && otherRoot !== rootElement) return;
+    }
+
+    if (this._isComposing) {
+      if (IS_ANDROID && event.inputType === 'insertCompositionText') {
+        const compositionInlineRange = this.editor.toInlineRange(range);
+        if (compositionInlineRange) {
+          this._compositionInlineRange = compositionInlineRange;
+        }
+      }
       return;
+    }
+
+    // Always prevent native DOM mutations inside inline editor. Browsers (notably
+    // Firefox) may remove Lit marker comment nodes during native edits, which
+    // will crash subsequent Lit updates with `ChildPart has no parentNode`.
+    event.preventDefault();
 
     let inlineRange = this.editor.toInlineRange(range);
-    if (!inlineRange) return;
-
-    let ifHandleTargetRange = true;
-
-    if (event.inputType.startsWith('delete')) {
-      if (
-        isInEmbedGap(range.commonAncestorContainer) &&
-        inlineRange.length === 0 &&
-        inlineRange.index > 0
-      ) {
-        inlineRange = {
-          index: inlineRange.index - 1,
-          length: 1,
-        };
-        ifHandleTargetRange = false;
-      } else if (
-        isInEmptyLine(range.commonAncestorContainer) &&
-        inlineRange.length === 0 &&
-        inlineRange.index > 0
-        // eslint-disable-next-line sonarjs/no-duplicated-branches
-      ) {
-        // do not use target range when deleting across lines
-        // https://github.com/toeverything/blocksuite/issues/5381
-        inlineRange = {
-          index: inlineRange.index - 1,
-          length: 1,
-        };
-        ifHandleTargetRange = false;
+    if (!inlineRange) {
+      // Some browsers may report selection points on non-text nodes inside
+      // `contenteditable`. Prefer the target range if available.
+      try {
+        const targetRanges = event.getTargetRanges();
+        if (targetRanges.length > 0) {
+          const staticRange = targetRanges[0];
+          const targetRange = document.createRange();
+          targetRange.setStart(
+            staticRange.startContainer,
+            staticRange.startOffset
+          );
+          targetRange.setEnd(staticRange.endContainer, staticRange.endOffset);
+          inlineRange = this.editor.toInlineRange(targetRange);
+        }
+      } catch {
+        // ignore
       }
+    }
+    if (!inlineRange && startInRoot !== endInRoot) {
+      // Clamp a partially-outside selection to this editor so native editing
+      // won't touch Lit marker nodes.
+      const pointRange = document.createRange();
+      if (startInRoot) {
+        pointRange.setStart(range.startContainer, range.startOffset);
+        pointRange.setEnd(range.startContainer, range.startOffset);
+        const startPoint = this.editor.toInlineRange(pointRange);
+        if (startPoint) {
+          inlineRange = {
+            index: startPoint.index,
+            length: this.editor.yTextLength - startPoint.index,
+          };
+        }
+      } else {
+        pointRange.setStart(range.endContainer, range.endOffset);
+        pointRange.setEnd(range.endContainer, range.endOffset);
+        const endPoint = this.editor.toInlineRange(pointRange);
+        if (endPoint) {
+          inlineRange = {
+            index: 0,
+            length: endPoint.index,
+          };
+        }
+      }
+    }
+    if (!inlineRange) {
+      // Try to recover from an unexpected DOM/selection state by rebuilding the
+      // editor DOM and retrying the range conversion.
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      const newRange = this.editor.rangeService.getNativeRange();
+      inlineRange = newRange ? this.editor.toInlineRange(newRange) : null;
+      if (!inlineRange) return;
+    }
+
+    // Keep a non-collapsed selection: Firefox may start the target range at the inline root.
+    let ifHandleTargetRange = inlineRange.length === 0;
+
+    if (
+      event.inputType.startsWith('delete') &&
+      (isInEmbedGap(range.commonAncestorContainer) ||
+        // https://github.com/toeverything/blocksuite/issues/5381
+        isInEmptyLine(range.commonAncestorContainer)) &&
+      inlineRange.length === 0 &&
+      inlineRange.index > 0
+    ) {
+      // do not use target range when deleting across lines
+      inlineRange = {
+        index: inlineRange.index - 1,
+        length: 1,
+      };
+      ifHandleTargetRange = false;
     }
 
     if (ifHandleTargetRange) {
@@ -92,15 +208,30 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
         range.setEnd(staticRange.endContainer, staticRange.endOffset);
         const targetInlineRange = this.editor.toInlineRange(range);
 
-        if (!isMaybeInlineRangeEqual(inlineRange, targetInlineRange)) {
+        // Ignore an un-resolvable target range to avoid swallowing the input.
+        if (
+          targetInlineRange &&
+          !isMaybeInlineRangeEqual(inlineRange, targetInlineRange)
+        ) {
           inlineRange = targetInlineRange;
         }
       }
     }
-
     if (!inlineRange) return;
 
-    event.preventDefault();
+    if (IS_ANDROID) {
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      if (
+        event.inputType === 'deleteContentBackward' &&
+        !(inlineRange.index === 0 && inlineRange.length === 0)
+      ) {
+        // when press backspace at offset 1, double characters will be removed.
+        // because we mock backspace key event `androidBindKeymapPatch` in blocksuite/framework/std/src/event/keymap.ts
+        // so we need to stop the event propagation to prevent the double characters removal.
+        event.stopPropagation();
+      }
+    }
 
     const ctx: BeforeinputHookCtx<TextAttributes> = {
       inlineEditor: this.editor,
@@ -119,7 +250,98 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       this.editor as never
     );
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
+
+    if (
+      IS_ANDROID &&
+      (ctx.raw.inputType === 'deleteContentBackward' ||
+        ctx.raw.inputType === 'deleteContentForward' ||
+        ctx.raw.inputType === 'insertParagraph' ||
+        ctx.raw.inputType === 'insertLineBreak' ||
+        (ctx.raw.inputType === 'insertText' &&
+          (ctx.data === ' ' || ctx.data === '\n')))
+    ) {
+      this._finishAndroidComposingSession(
+        ctx.raw.inputType === 'deleteContentBackward' ||
+          ctx.raw.inputType === 'deleteContentForward'
+      );
+    }
+  };
+
+  private readonly _onAndroidIMEInput = async (
+    event: CustomEvent<AndroidIMEInputDetail>
+  ) => {
+    if (!IS_ANDROID) return;
+
+    const inputType = event.detail?.inputType;
+    if (
+      inputType !== 'deleteContentBackward' &&
+      inputType !== 'deleteContentForward'
+    ) {
+      return;
+    }
+
+    const range = this.editor.rangeService.getNativeRange();
+    if (!range || !this._isRangeCompletelyInRoot(range)) return;
+
+    event.detail.handled = true;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (this.editor.isReadonly) return;
+
+    let inlineRange = this.editor.toInlineRange(range);
+    if (!inlineRange) {
+      this.editor.rerenderWholeEditor();
+      await this.editor.waitForUpdate();
+      const newRange = this.editor.rangeService.getNativeRange();
+      inlineRange = newRange ? this.editor.toInlineRange(newRange) : null;
+      if (!inlineRange) return;
+    }
+
+    if (inlineRange.length === 0) {
+      if (inputType === 'deleteContentBackward') {
+        if (inlineRange.index === 0) return;
+        inlineRange = {
+          index: inlineRange.index - 1,
+          length: 1,
+        };
+      } else {
+        if (inlineRange.index >= this.editor.yTextLength) return;
+        inlineRange = {
+          index: inlineRange.index,
+          length: 1,
+        };
+      }
+    }
+
+    this._isComposing = false;
+    this._compositionInlineRange = null;
+
+    const raw = new InputEvent('beforeinput', {
+      inputType,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+    });
+    const ctx: BeforeinputHookCtx<TextAttributes> = {
+      inlineEditor: this.editor,
+      raw,
+      inlineRange,
+      data: null,
+      attributes: {} as TextAttributes,
+    };
+    this.editor.hooks.beforeinput?.(ctx);
+
+    transformInput<TextAttributes>(
+      ctx.raw.inputType,
+      ctx.data,
+      ctx.attributes,
+      ctx.inlineRange,
+      this.editor as never
+    );
+    this.editor.slots.inputting.next('');
+    this._finishAndroidComposingSession(true);
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -181,10 +403,11 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       });
     }
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
+    this._finishAndroidComposingSession(false);
   };
 
-  private readonly _onCompositionStart = () => {
+  private readonly _onCompositionStart = (event: CompositionEvent) => {
     this._isComposing = true;
     if (!this.editor.rootElement) return;
     // embeds is not editable and it will break IME
@@ -201,9 +424,11 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     } else {
       this._compositionInlineRange = null;
     }
+
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
-  private readonly _onCompositionUpdate = () => {
+  private readonly _onCompositionUpdate = (event: CompositionEvent) => {
     if (!this.editor.rootElement || !this.editor.rootElement.isConnected) {
       return;
     }
@@ -216,7 +441,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     )
       return;
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
   private readonly _onKeyDown = (event: KeyboardEvent) => {
@@ -344,10 +569,32 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       return;
     }
 
+    this.editor.disposables.addFromEvent(eventSource, 'beforeinput', e => {
+      this._onBeforeInput(e).catch(console.error);
+    });
     this.editor.disposables.addFromEvent(
       eventSource,
-      'beforeinput',
-      this._onBeforeInput
+      'affine-android-ime-input',
+      e => {
+        this._onAndroidIMEInput(e).catch(console.error);
+      }
+    );
+    this.editor.disposables.addFromEvent(eventSource, 'focusin', () => {
+      this._setAndroidEditorFocused(true);
+    });
+    this.editor.disposables.addFromEvent(
+      eventSource,
+      'focusout',
+      (event: FocusEvent) => {
+        const relatedTarget = event.relatedTarget;
+        if (
+          relatedTarget instanceof Node &&
+          this.editor.rootElement?.contains(relatedTarget)
+        ) {
+          return;
+        }
+        this._setAndroidEditorFocused(false);
+      }
     );
     this.editor.disposables.addFromEvent(
       eventSource,
@@ -359,13 +606,9 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       'compositionupdate',
       this._onCompositionUpdate
     );
-    this.editor.disposables.addFromEvent(
-      eventSource,
-      'compositionend',
-      (event: CompositionEvent) => {
-        this._onCompositionEnd(event).catch(console.error);
-      }
-    );
+    this.editor.disposables.addFromEvent(eventSource, 'compositionend', e => {
+      this._onCompositionEnd(e).catch(console.error);
+    });
     this.editor.disposables.addFromEvent(
       eventSource,
       'keydown',

@@ -9,6 +9,10 @@ export const OthersGroup = () => {
   return (
     <SettingGroup title={t['com.affine.mobile.setting.others.title']()}>
       <RowLayout
+        label={t['com.affine.mobile.setting.others.discord']()}
+        href="https://discord.com/invite/whd5mjYqVw"
+      />
+      <RowLayout
         label={t['com.affine.mobile.setting.others.github']()}
         href="https://github.com/toeverything/AFFiNE"
       />

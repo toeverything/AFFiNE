@@ -6,9 +6,11 @@ import { EventName } from '../../base/event/def';
 export class MockEventBus {
   private readonly stub = Sinon.createStubInstance(EventBus);
 
-  emit = this.stub.emitAsync;
-  emitAsync = this.stub.emitAsync;
-  broadcast = this.stub.broadcast;
+  emit: Sinon.SinonStub = this.stub.emitAsync;
+  emitAsync: Sinon.SinonStub = this.stub.emitAsync;
+  emitDetached: Sinon.SinonStub = this.stub.emitAsync;
+  emitDetachedAsync: Sinon.SinonStub = this.stub.emitAsync;
+  broadcast: Sinon.SinonStub = this.stub.broadcast;
 
   last<Event extends EventName>(
     name: Event
@@ -21,7 +23,6 @@ export class MockEventBus {
       throw new Error(`Event ${name} never called`);
     }
 
-    // @ts-expect-error allow
     return {
       name,
       payload: call.args[1],

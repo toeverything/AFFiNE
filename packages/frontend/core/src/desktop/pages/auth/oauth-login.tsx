@@ -6,25 +6,45 @@ import {
   type LoaderFunction,
   redirect,
   useLoaderData,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
+  // oxlint-disable-next-line typescript/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 import { z } from 'zod';
 
 import { supportedClient } from './common';
+import { attachOAuthFlowToAuthUrl, resolveOAuthFlowMode } from './oauth-flow';
 
 const supportedProvider = z.nativeEnum(OAuthProviderType);
+const CSRF_COOKIE_NAME = 'affine_csrf_token';
+
+function getCookieValue(name: string) {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const cookies = document.cookie ? document.cookie.split('; ') : [];
+  for (const cookie of cookies) {
+    const idx = cookie.indexOf('=');
+    const key = idx === -1 ? cookie : cookie.slice(0, idx);
+    if (key === name) {
+      return idx === -1 ? '' : cookie.slice(idx + 1);
+    }
+  }
+  return null;
+}
 
 const oauthParameters = z.object({
   provider: supportedProvider,
   client: supportedClient,
   redirectUri: z.string().optional().nullable(),
+  flow: z.string().optional().nullable(),
 });
 
 interface LoaderData {
   provider: OAuthProviderType;
   client: string;
   redirectUri?: string;
+  flow: string;
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -33,16 +53,22 @@ export const loader: LoaderFunction = async ({ request }) => {
   const provider = searchParams.get('provider');
   const client = searchParams.get('client') ?? 'web';
   const redirectUri = searchParams.get('redirect_uri');
+  const flow = searchParams.get('flow');
 
   // sign out first, web only
   if (client === 'web') {
-    await fetch('/api/auth/sign-out');
+    const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
+    await fetch('/api/auth/sign-out', {
+      method: 'POST',
+      headers: csrfToken ? { 'x-affine-csrf-token': csrfToken } : undefined,
+    });
   }
 
   const paramsParseResult = oauthParameters.safeParse({
     provider,
     client,
     redirectUri,
+    flow,
   });
 
   if (paramsParseResult.success) {
@@ -50,6 +76,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       provider,
       client,
       redirectUri,
+      flow: resolveOAuthFlowMode(flow),
     };
   }
 
@@ -67,12 +94,17 @@ export const Component = () => {
   useEffect(() => {
     auth
       .oauthPreflight(data.provider, data.client, data.redirectUri)
-      .then(url => {
+      .then(({ url }) => {
         // this is the url of oauth provider auth page, can't navigate with react-router
-        location.href = url;
+        location.href = attachOAuthFlowToAuthUrl(
+          url,
+          resolveOAuthFlowMode(data.flow)
+        );
       })
       .catch(e => {
-        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
+        Promise.resolve(
+          nav(`/sign-in?error=${encodeURIComponent(e.message)}`)
+        ).catch(console.error);
       });
   }, [data, auth, nav]);
 

@@ -35,6 +35,7 @@ const ToggleButton = ({
       className={className}
       data-show={show}
       data-testid="right-sidebar-toggle"
+      tooltip="Open sidebar"
     >
       <RightSidebarIcon />
     </IconButton>
@@ -52,10 +53,15 @@ export const RouteContainer = () => {
     workbench.toggleSidebar();
   }, [workbench]);
 
+  const showSwitch = !BUILD_CONFIG.isElectron && viewPosition.isFirst;
+
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        {!BUILD_CONFIG.isElectron && viewPosition.isFirst && (
+      <div
+        className={styles.header}
+        data-show-switch={showSwitch && !leftSidebarOpen}
+      >
+        {showSwitch && (
           <SidebarSwitch
             show={!leftSidebarOpen}
             className={styles.leftSidebarButton}

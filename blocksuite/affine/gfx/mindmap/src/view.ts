@@ -4,15 +4,18 @@ import {
 } from '@blocksuite/affine-ext-loader';
 
 import { effects } from './effects';
-import { MindmapElementRendererExtension } from './element-renderer';
 import { MindMapIndicatorOverlay } from './indicator-overlay';
 import { MindMapDragExtension } from './interactivity';
+import {
+  MindmapDomRendererExtension,
+  MindmapElementRendererExtension,
+} from './renderer';
 import {
   mindmapToolbarExtension,
   shapeMindmapToolbarExtension,
 } from './toolbar/config';
 import { mindMapSeniorTool } from './toolbar/senior-tool';
-import { MindMapView } from './view/view';
+import { MindMapInteraction, MindMapView } from './view/view';
 
 export class MindmapViewExtension extends ViewExtensionProvider {
   override name = 'affine-mindmap-gfx';
@@ -25,11 +28,13 @@ export class MindmapViewExtension extends ViewExtensionProvider {
   override setup(context: ViewExtensionContext) {
     super.setup(context);
     context.register(MindmapElementRendererExtension);
+    context.register(MindmapDomRendererExtension);
     context.register(mindMapSeniorTool);
     context.register(mindmapToolbarExtension);
     context.register(shapeMindmapToolbarExtension);
     context.register(MindMapView);
     context.register(MindMapDragExtension);
     context.register(MindMapIndicatorOverlay);
+    context.register(MindMapInteraction);
   }
 }

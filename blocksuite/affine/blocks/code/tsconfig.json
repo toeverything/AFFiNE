@@ -10,6 +10,7 @@
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../gfx/turbo-renderer" },
+    { "path": "../../inlines/comment" },
     { "path": "../../inlines/latex" },
     { "path": "../../inlines/link" },
     { "path": "../../inlines/preset" },

@@ -5,7 +5,10 @@ import {
   NoteBlockSchema,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
-import { textConversionConfigs } from '@blocksuite/affine-rich-text';
+import {
+  textAlignConfigs,
+  textConversionConfigs,
+} from '@blocksuite/affine-rich-text';
 import {
   focusBlockEnd,
   focusBlockStart,
@@ -36,6 +39,7 @@ import {
   indentBlocks,
   selectBlock,
   selectBlocksBetween,
+  updateBlockAlign,
   updateBlockType,
 } from './commands';
 import { moveBlockConfigs } from './move-block';
@@ -155,6 +159,36 @@ class NoteKeymap {
         },
         {} as Record<string, UIEventHandler>
       );
+  };
+
+  private readonly _bindTextAlignHotKey = () => {
+    return textAlignConfigs.reduce(
+      (acc, item) => {
+        const keymap = item.hotkey!.reduce(
+          (acc, key) => {
+            return {
+              ...acc,
+              [key]: ctx => {
+                ctx.get('defaultState').event.preventDefault();
+                const [result] = this._std.command
+                  .chain()
+                  .pipe(updateBlockAlign, { textAlign: item.textAlign })
+                  .run();
+
+                return result;
+              },
+            };
+          },
+          {} as Record<string, UIEventHandler>
+        );
+
+        return {
+          ...acc,
+          ...keymap,
+        };
+      },
+      {} as Record<string, UIEventHandler>
+    );
   };
 
   private _focusBlock: BlockComponent | null = null;
@@ -568,6 +602,7 @@ class NoteKeymap {
       ...this._bindMoveBlockHotKey(),
       ...this._bindQuickActionHotKey(),
       ...this._bindTextConversionHotKey(),
+      ...this._bindTextAlignHotKey(),
       Tab: ctx => {
         const [success] = this.std.command.exec(indentBlocks);
 

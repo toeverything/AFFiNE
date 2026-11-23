@@ -30,3 +30,4 @@ export type MainToHelper = Pick<
 
 export const AFFINE_API_CHANNEL_NAME = 'affine-ipc-api';
 export const AFFINE_EVENT_CHANNEL_NAME = 'affine-ipc-event';
+export const AFFINE_EVENT_SUBSCRIBE_CHANNEL_NAME = 'affine-ipc-event-subscribe';

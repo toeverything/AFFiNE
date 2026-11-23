@@ -30,16 +30,19 @@ export async function waitForEditorLoad(page: Page) {
 }
 
 export async function waitForAllPagesLoad(page: Page) {
-  // if filters tag is rendered, we believe all_pages is ready
-  await page.waitForSelector('[data-testid="create-first-filter"]', {
+  // if doc-list-item is rendered, we believe all_pages is ready
+  await page.waitForSelector('[data-testid="doc-list-item"]', {
     timeout: 20000,
   });
 }
 
 export async function clickNewPageButton(page: Page, title?: string) {
-  await page.getByTestId('sidebar-new-page-button').click({
-    // default timeout is 5000ms, but it's not enough for the CI first page load
-    timeout: 20000,
+  const newPageButton = page.getByTestId('sidebar-new-page-button');
+  await expect(newPageButton).toBeVisible({
+    timeout: 30000,
+  });
+  await newPageButton.click({
+    timeout: 30000,
   });
   await waitForEmptyEditor(page);
   if (title) {
@@ -48,7 +51,10 @@ export async function clickNewPageButton(page: Page, title?: string) {
 }
 
 export async function waitForEmptyEditor(page: Page) {
-  await expect(page.locator('.doc-title-container-empty')).toBeVisible();
+  await page.waitForSelector(
+    '.doc-title-container-empty, doc-title .inline-editor',
+    { timeout: 20000 }
+  );
 }
 
 export function getBlockSuiteEditorTitle(page: Page) {
@@ -69,6 +75,20 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
   await linkedPagePopover
     .locator(`icon-button`)
     .filter({ hasText: `New "${pageName}" page` })
+    .click();
+};
+
+export const createSyncedPageInEdgeless = async (
+  page: Page,
+  pageName?: string
+) => {
+  await page.keyboard.type('@', { delay: 50 });
+  const cmdkPopover = page.locator('[data-testid="cmdk-quick-search"]');
+  await expect(cmdkPopover).toBeVisible();
+  await type(page, pageName || 'Untitled');
+
+  await cmdkPopover
+    .locator('[cmdk-item][data-value="creation:create-page"]')
     .click();
 };
 
@@ -95,15 +115,19 @@ export async function clickPageMoreActions(page: Page) {
 }
 
 export const getPageOperationButton = (page: Page, id: string) => {
-  return getPageItem(page, id).getByTestId('page-list-operation-button');
+  return getPageItem(page, id).getByTestId('doc-list-operation-button');
 };
 
 export const getPageItem = (page: Page, id: string) => {
-  return page.locator(`[data-page-id="${id}"][data-testid="page-list-item"]`);
+  return page.locator(`[data-doc-id="${id}"][data-testid="doc-list-item"]`);
 };
 
 export const getPageByTitle = (page: Page, title: string) => {
-  return page.getByTestId('page-list-item').getByText(title);
+  return page.getByTestId('doc-list-item').filter({
+    has: page.locator(
+      `[data-testid="doc-list-item-title"]:has-text("${title}")`
+    ),
+  });
 };
 
 export type DragLocation =
@@ -153,30 +177,23 @@ export const dragTo = async (
   location: DragLocation = 'center',
   willMoveOnDrag = false
 ) => {
-  await locator.hover();
   const locatorElement = await locator.boundingBox();
   if (!locatorElement) {
     throw new Error('locator element not found');
   }
   const locatorCenter = toPosition(locatorElement, 'center');
-  await page.mouse.move(
-    locatorElement.x + locatorCenter.x,
-    locatorElement.y + locatorCenter.y
-  );
+  const start = {
+    x: locatorElement.x + locatorCenter.x,
+    y: locatorElement.y + locatorCenter.y,
+  };
+  await page.mouse.move(start.x, start.y);
   await page.mouse.down();
   await page.waitForTimeout(100);
-  await page.mouse.move(
-    locatorElement.x + locatorCenter.x + 1,
-    locatorElement.y + locatorCenter.y + 1
-  );
+  await page.mouse.move(start.x + 8, start.y + 8, { steps: 4 });
 
-  await page.mouse.move(1, 1, {
-    steps: 10,
-  });
-
-  await target.hover();
-
-  if (!willMoveOnDrag) {
+  if (willMoveOnDrag) {
+    await target.hover();
+  } else {
     const targetElement = await target.boundingBox();
     if (!targetElement) {
       throw new Error('target element not found');
@@ -186,11 +203,11 @@ export const dragTo = async (
       targetElement.x + targetPosition.x,
       targetElement.y + targetPosition.y,
       {
-        steps: 10,
+        steps: 24,
       }
     );
   }
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(200);
   await page.mouse.up();
 };
 
@@ -233,10 +250,8 @@ export const addCodeBlock = async (page: Page) => {
   await page.getByTestId('Code Block').click();
 };
 
-export const addDatabaseRow = async (page: Page, databaseTitle: string) => {
-  const db = page.locator(`affine-database-table`, {
-    has: page.locator(`affine-database-title:has-text("${databaseTitle}")`),
-  });
+export const addDatabaseRow = async (page: Page, nth: number = 0) => {
+  const db = page.getByTestId('dv-table-view').nth(nth);
   await db.locator('.data-view-table-group-add-row-button').click();
 };
 

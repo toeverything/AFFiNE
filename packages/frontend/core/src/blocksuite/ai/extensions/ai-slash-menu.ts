@@ -19,7 +19,7 @@ import {
 } from '../widgets/ai-panel/ai-panel';
 
 export function AiSlashMenuConfigExtension() {
-  const AIItems = pageAIGroups.map(group => group.items).flat();
+  const AIItems = pageAIGroups.flatMap(group => group.items);
 
   const iconWrapper = (icon: AIItemConfig['icon']) => {
     return html`<div style="color: var(--affine-primary-color)">

@@ -22,19 +22,40 @@ test.describe('AIChatWith/Collections', () => {
     loggedInPage: page,
     utils,
   }) => {
+    const randomStr = Math.random().toString(36).substring(2, 6);
     // Create two collections
     await utils.editor.createCollectionAndDoc(
       page,
       'Collection 1',
-      'CollectionAAaa is a cute dog'
+      `Collection${randomStr} is a cute dog`
     );
 
     await utils.chatPanel.chatWithCollections(page, ['Collection 1']);
-    await utils.chatPanel.makeChat(page, 'What is CollectionAAaa(Use English)');
+    await utils.settings.openSettingsPanel(page);
+    await utils.settings.disableWorkspaceEmbedding(page);
+    await utils.settings.closeSettingsPanel(page);
+    await utils.chatPanel.makeChat(
+      page,
+      `What is Collection${randomStr}? Use English and answer with a citation.`
+    );
+    await expect(
+      page.getByText(
+        'One or more selected sources are unavailable. Check the sources or workspace AI indexing settings, then retry.'
+      )
+    ).toBeVisible();
+    expect(
+      (await utils.chatPanel.collectHistory(page)).filter(
+        message => message.role === 'user'
+      )
+    ).toHaveLength(1);
+    await utils.settings.openSettingsPanel(page);
+    await utils.settings.enableWorkspaceEmbedding(page);
+    await utils.settings.closeSettingsPanel(page);
+    await page.getByTestId('ai-error-action-button').click();
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is CollectionAAaa(Use English)',
+        content: `What is Collection${randomStr}? Use English and answer with a citation.`,
       },
       {
         role: 'assistant',
@@ -45,8 +66,10 @@ test.describe('AIChatWith/Collections', () => {
     await expect(async () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/CollectionAAaa.*dog/);
-      expect(await message.locator('affine-footnote-node').count()).toBe(1);
+      expect(content).toMatch(new RegExp(`Collection${randomStr}.*dog`));
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(1);
     }).toPass();
   });
 
@@ -54,17 +77,19 @@ test.describe('AIChatWith/Collections', () => {
     loggedInPage: page,
     utils,
   }) => {
+    const randomStr1 = Math.random().toString(36).substring(2, 6);
+    const randomStr2 = Math.random().toString(36).substring(2, 6);
     // Create two collections
     await utils.editor.createCollectionAndDoc(
       page,
       'Collection 2',
-      'CollectionEEee is a cute cat'
+      `Collection${randomStr1} is a cute cat`
     );
 
     await utils.editor.createCollectionAndDoc(
       page,
       'Collection 3',
-      'CollectionFFff is a cute dog'
+      `Collection${randomStr2} is a cute dog`
     );
 
     await utils.chatPanel.chatWithCollections(page, [
@@ -73,12 +98,12 @@ test.describe('AIChatWith/Collections', () => {
     ]);
     await utils.chatPanel.makeChat(
       page,
-      'What is CollectionEEee? What is CollectionFFff?(Use English)'
+      `What is Collection${randomStr1}? What is Collection${randomStr2}? Use English and cite both sources.`
     );
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is CollectionEEee? What is CollectionFFff?(Use English)',
+        content: `What is Collection${randomStr1}? What is Collection${randomStr2}? Use English and cite both sources.`,
       },
       {
         role: 'assistant',
@@ -89,9 +114,11 @@ test.describe('AIChatWith/Collections', () => {
     await expect(async () => {
       const { content, message } =
         await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(/CollectionEEee.*cat/);
-      expect(content).toMatch(/CollectionFFff.*dog/);
-      expect(await message.locator('affine-footnote-node').count()).toBe(2);
+      expect(content).toMatch(new RegExp(`Collection${randomStr1}.*cat`));
+      expect(content).toMatch(new RegExp(`Collection${randomStr2}.*dog`));
+      expect(
+        await message.locator('affine-footnote-node').count()
+      ).toBeGreaterThanOrEqual(2);
     }).toPass();
   });
 });

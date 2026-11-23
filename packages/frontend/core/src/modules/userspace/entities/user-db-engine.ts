@@ -8,6 +8,7 @@ import type { StoreClient } from '@affine/nbstore/worker/client';
 import { Entity } from '@toeverything/infra';
 
 import type { ServerService } from '../../cloud';
+import { assertSupportedServerVersion } from '../../cloud/stores/server-config';
 import type { NbstoreService } from '../../storage';
 
 export class UserDBEngine extends Entity<{
@@ -35,7 +36,7 @@ export class UserDBEngine extends Entity<{
     serverService: ServerService
   ) {
     super();
-
+    assertSupportedServerVersion(serverService.server.config$.value.version);
     const { store, dispose } = this.nbstoreService.openStore(
       `userspace:${serverService.server.id},${this.userId}`,
       {

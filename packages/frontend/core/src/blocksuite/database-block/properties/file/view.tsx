@@ -1,15 +1,15 @@
 import { Popover, uniReactRoot } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
-import { PeekViewService } from '@affine/core/modules/peek-view';
+import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import {
   type Cell,
   type CellRenderProps,
   createIcon,
   type DataViewCellLifeCycle,
-  HostContextKey,
+  EditorHostKey,
 } from '@blocksuite/affine/blocks/database';
-import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { BlobEngine } from '@blocksuite/affine/sync';
 import {
   DeleteIcon,
@@ -224,8 +224,8 @@ class FileCellManager {
     this.cell = props.cell;
     this.selectCurrentCell = props.selectCurrentCell;
     this.isEditing = props.isEditing$;
-    this.blobSync = this.cell?.view?.contextGet
-      ? this.cell.view.contextGet(HostContextKey)?.store.blobSync
+    this.blobSync = this.cell?.view?.serviceGet
+      ? this.cell.view.serviceGet(EditorHostKey)?.store.blobSync
       : undefined;
 
     this.fileUploadManager = this.blobSync
@@ -361,8 +361,10 @@ const FileCellComponent: ForwardRefRenderFunction<
   CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>
 > = (props, ref): ReactNode => {
   const peekView = useService(PeekViewService);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const manager = useMemo(() => new FileCellManager(props, peekView), []);
+  const manager = useMemo(
+    () => new FileCellManager(props, peekView), // oxlint-disable-line react-hooks-js/preserve-manual-memoization
+    [] // oxlint-disable-line react/exhaustive-deps
+  );
 
   useEffect(() => {
     return () => {
@@ -402,7 +404,7 @@ const FileCellComponent: ForwardRefRenderFunction<
         >
           <Button
             onClick={() => {
-              openFileOrFiles({ multiple: true })
+              openFilesWith()
                 .then(files => {
                   files?.forEach(file => {
                     manager.uploadFile(file);
@@ -447,7 +449,7 @@ const FileCellComponent: ForwardRefRenderFunction<
         <div className={styles.uploadContainer}>
           <div
             onClick={() => {
-              openFileOrFiles({ multiple: true })
+              openFilesWith()
                 .then(files => {
                   files?.forEach(file => {
                     manager.uploadFile(file);

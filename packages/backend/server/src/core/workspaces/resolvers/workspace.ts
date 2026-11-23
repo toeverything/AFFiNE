@@ -19,8 +19,11 @@ import {
 } from '../../../base';
 import { Models } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { BackendRuntimeProvider } from '../../backend-runtime';
+import type { DotToUnderline } from '../../permission';
 import {
-  AccessController,
+  mapPermissionsToGraphqlPermissions,
+  PermissionAccess,
   WORKSPACE_ACTIONS,
   WorkspaceAction,
   WorkspaceRole,
@@ -28,22 +31,6 @@ import {
 import { QuotaService, WorkspaceQuotaType } from '../../quota';
 import { WorkspaceService } from '../service';
 import { UpdateWorkspaceInput, WorkspaceType } from '../types';
-
-export type DotToUnderline<T extends string> =
-  T extends `${infer Prefix}.${infer Suffix}`
-    ? `${Prefix}_${DotToUnderline<Suffix>}`
-    : T;
-
-export function mapPermissionsToGraphqlPermissions<A extends string>(
-  permission: Record<A, boolean>
-): Record<DotToUnderline<A>, boolean> {
-  return Object.fromEntries(
-    Object.entries(permission).map(([key, value]) => [
-      key.replaceAll('.', '_'),
-      value,
-    ])
-  ) as Record<DotToUnderline<A>, boolean>;
-}
 
 const WorkspacePermissions = registerObjectType<
   Record<DotToUnderline<WorkspaceAction>, boolean>
@@ -79,10 +66,11 @@ export class WorkspaceRolePermissions {
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly quota: QuotaService,
     private readonly models: Models,
     private readonly workspaceService: WorkspaceService,
+    private readonly runtime: BackendRuntimeProvider,
     private readonly logger: AFFiNELogger
   ) {
     logger.setContext(WorkspaceResolver.name);
@@ -154,40 +142,6 @@ export class WorkspaceResolver {
       ...quota,
       humanReadable: this.quota.formatWorkspaceQuota(quota),
     };
-  }
-
-  @Query(() => Boolean, {
-    description: 'Get is owner of workspace',
-    complexity: 2,
-    deprecationReason: 'use WorkspaceType[role] instead',
-  })
-  async isOwner(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-
-    return role?.type === WorkspaceRole.Owner;
-  }
-
-  @Query(() => Boolean, {
-    description: 'Get is admin of workspace',
-    complexity: 2,
-    deprecationReason: 'use WorkspaceType[role] instead',
-  })
-  async isAdmin(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string
-  ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-
-    return role?.type === WorkspaceRole.Admin;
   }
 
   @Query(() => [WorkspaceType], {
@@ -276,12 +230,12 @@ export class WorkspaceResolver {
       const buffer = chunks.length ? Buffer.concat(chunks) : null;
 
       if (buffer) {
-        await this.models.doc.upsert({
-          spaceId: workspace.id,
+        await this.runtime.appendWorkspaceDocUpdatesV1({
+          workspaceId: workspace.id,
           docId: workspace.id,
-          blob: buffer,
-          timestamp: Date.now(),
-          editorId: user.id,
+          updates: [buffer],
+          actorUserId: user.id,
+          writeIntent: 'update_doc',
         });
       }
     }
@@ -311,7 +265,7 @@ export class WorkspaceResolver {
   ) {
     await this.ac.user(user.id).workspace(id).assert('Workspace.Delete');
 
-    await this.models.workspace.delete(id);
+    await this.workspaceService.delete(id);
 
     return true;
   }

@@ -3,27 +3,18 @@ import { InlineMarkdownExtension } from '@blocksuite/std/inline';
 
 export const LinkExtension = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'link',
-  pattern: /.*\[(.+?)\]\((.+?)\)$/,
+  pattern: /.*\[(.+?)\]\((.+?)\)\s$/,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = prefixText.match(pattern);
     if (!match) return;
 
     const linkText = match[1];
     const linkUrl = match[2];
-    const annotatedText = match[0].slice(-linkText.length - linkUrl.length - 4);
-    const startIndex = inlineRange.index - annotatedText.length;
-
-    inlineEditor.insertText(
-      {
-        index: inlineRange.index,
-        length: 0,
-      },
-      ' '
+    const annotatedText = match[0].slice(
+      -(linkText.length + linkUrl.length + 4 + 1),
+      -1
     );
-    inlineEditor.setInlineRange({
-      index: inlineRange.index + 1,
-      length: 0,
-    });
+    const startIndex = inlineRange.index - annotatedText.length - 1;
 
     undoManager.stopCapturing();
 

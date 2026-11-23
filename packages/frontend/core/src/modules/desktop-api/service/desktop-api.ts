@@ -131,7 +131,7 @@ export class DesktopApiService extends Service {
           targetServer = defaultServerService.server;
         }
         if (!targetServer) {
-          throw new Error('Affine Cloud server not found');
+          throw new Error('AFFiNE Cloud server not found');
         }
         const authService = targetServer.scope.get(AuthService);
 
@@ -144,6 +144,14 @@ export class DesktopApiService extends Service {
           case 'oauth': {
             const { code, state, provider } = payload;
             await authService.signInOauth(code, state, provider);
+            break;
+          }
+          case 'open-app-signin': {
+            const code = (payload as { code?: unknown }).code;
+            if (typeof code !== 'string' || !code) {
+              throw new Error('Invalid open-app sign-in payload');
+            }
+            await authService.signInOpenAppSignInCode(code);
             break;
           }
         }

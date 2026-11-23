@@ -18,3 +18,27 @@ export type AppConfigByPath<Module extends keyof AppConfigSchema> =
           : never;
       }
     : never;
+
+export type NodeConfig = Omit<
+  AppConfig,
+  | 'auth'
+  | 'copilot'
+  | 'crypto'
+  | 'db'
+  | 'indexer'
+  | 'oauth'
+  | 'payment'
+  | 'redis'
+  | 'storages'
+> & {
+  auth: Pick<
+    AppConfig['auth'],
+    'passwordRequirements' | 'signInRateLimit' | 'trustedCloudflareHeaders'
+  >;
+  copilot: Pick<AppConfig['copilot'], 'exa' | 'unsplash'>;
+  db: Pick<AppConfig['db'], 'prisma'>;
+  payment: Pick<AppConfig['payment'], 'showLifetimePrice'>;
+  storages: {
+    avatar: Pick<AppConfig['storages']['avatar'], 'publicPath'>;
+  };
+};

@@ -128,7 +128,7 @@ export const AboutAffine = () => {
         <a
           className={styles.link}
           rel="noreferrer"
-          href="https://community.affine.pro"
+          href="https://affine.pro/redirect/discord"
           target="_blank"
         >
           {t['com.affine.aboutAFFiNE.contact.community']()}

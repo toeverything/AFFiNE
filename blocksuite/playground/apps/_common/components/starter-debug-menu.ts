@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
+/* oxlint-disable no-restricted-imports */
 import '@shoelace-style/shoelace/dist/components/button/button.js';
 import '@shoelace-style/shoelace/dist/components/button-group/button-group.js';
 import '@shoelace-style/shoelace/dist/components/color-picker/color-picker.js';
@@ -41,7 +41,11 @@ import {
   SizeVariables,
   StyleVariables,
 } from '@blocksuite/affine/shared/theme';
-import { openFileOrFiles, printToPdf } from '@blocksuite/affine/shared/utils';
+import {
+  openFilesWith,
+  openSingleFileWith,
+  printToPdf,
+} from '@blocksuite/affine/shared/utils';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import {
@@ -50,6 +54,7 @@ import {
   type Workspace,
 } from '@blocksuite/affine/store';
 import {
+  commitImportBatchToWorkspace,
   createAssetsArchive,
   download,
   HtmlTransformer,
@@ -66,11 +71,12 @@ import { css, html } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import * as lz from 'lz-string';
 import type { Pane } from 'tweakpane';
+import * as Y from 'yjs';
 
 import type { CommentPanel } from '../../comment/index.js';
 import { createTestEditor } from '../../starter/utils/extensions.js';
 import { mockEdgelessTheme } from '../mock-services.js';
-import { AdaptersPanel } from './adapters-panel.js';
+import type { CustomAdapterPanel } from './custom-adapter-panel.js';
 import type { CustomFramePanel } from './custom-frame-panel.js';
 import type { CustomOutlinePanel } from './custom-outline-panel.js';
 import type { CustomOutlineViewer } from './custom-outline-viewer.js';
@@ -333,16 +339,21 @@ export class StarterDebugMenu extends ShadowlessElement {
     );
   }
 
+  private _exportYDoc() {
+    const encodeUpdate = Y.encodeStateAsUpdate(this.doc.spaceDoc);
+    const blob = new Blob([new Uint8Array(encodeUpdate)], {
+      type: 'application/octet-stream',
+    });
+    download(blob, 'ydoc-update');
+  }
+
   private _getStoreManager() {
     return this.editor.std.get(StoreExtensionManagerIdentifier);
   }
 
   private async _importHTML() {
     try {
-      const files = await openFileOrFiles({
-        acceptType: 'Html',
-        multiple: true,
-      });
+      const files = await openFilesWith('Html');
 
       if (!files) return;
 
@@ -373,7 +384,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importHTMLZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
       const result = await HtmlTransformer.importHTMLZip({
         collection: this.collection,
@@ -393,10 +404,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importMarkdown() {
     try {
-      const files = await openFileOrFiles({
-        acceptType: 'Markdown',
-        multiple: true,
-      });
+      const files = await openFilesWith('Markdown');
 
       if (!files) return;
 
@@ -427,18 +435,23 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importMarkdownZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const result = await MarkdownTransformer.importMarkdownZip({
+      const { batch } = await MarkdownTransformer.planMarkdownZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
         extensions: this._getStoreManager().get('store'),
       });
+      const { docIds } = await commitImportBatchToWorkspace(
+        this.collection,
+        this.editor.doc.schema,
+        batch
+      );
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.length} markdown files.`
+        `Successfully imported ${docIds.length} markdown files.`
       );
     } catch (error) {
       console.error('Import markdown zip files failed:', error);
@@ -447,10 +460,7 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importNotionHTML() {
     try {
-      const file = await openFileOrFiles({
-        acceptType: 'Html',
-        multiple: false,
-      });
+      const file = await openSingleFileWith('Html');
       if (!file) return;
       const doc = this.editor.doc;
       const job = doc.getTransformer([defaultImageProxyMiddleware]);
@@ -467,18 +477,23 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _importNotionHTMLZip() {
     try {
-      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      const file = await openSingleFileWith('Zip');
       if (!file) return;
-      const result = await NotionHtmlTransformer.importNotionZip({
+      const { batch } = await NotionHtmlTransformer.planNotionHtmlZip({
         collection: this.collection,
         schema: this.editor.doc.schema,
         imported: file,
         extensions: this._getStoreManager().get('store'),
       });
+      const result = await commitImportBatchToWorkspace(
+        this.collection,
+        this.editor.doc.schema,
+        batch
+      );
       if (!this.editor.host) return;
       toast(
         this.editor.host,
-        `Successfully imported ${result.pageIds.length} Notion HTML pages.`
+        `Successfully imported ${result.docIds.length} Notion HTML pages.`
       );
     } catch (error) {
       console.error('Failed to import Notion HTML Zip:', error);
@@ -612,26 +627,6 @@ export class StarterDebugMenu extends ShadowlessElement {
     this._hasOffset = !this._hasOffset;
   }
 
-  private _toggleAdaptersPanel() {
-    const app = document.querySelector('#app');
-    if (!app) return;
-
-    const currentAdaptersPanel = app.querySelector('adapters-panel');
-    if (currentAdaptersPanel) {
-      currentAdaptersPanel.remove();
-      (app as HTMLElement).style.display = 'block';
-      this.editor.style.width = '100%';
-      this.editor.style.flex = '';
-      return;
-    }
-
-    const adaptersPanel = new AdaptersPanel();
-    adaptersPanel.editor = this.editor;
-    app.append(adaptersPanel);
-    this.editor.style.flex = '1';
-    (app as HTMLElement).style.display = 'flex';
-  }
-
   private _toggleCommentPanel() {
     document.body.append(this.commentPanel);
   }
@@ -647,6 +642,10 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private _toggleFramePanel() {
     this.framePanel.toggleDisplay();
+  }
+
+  private _toggleAdapterPanel() {
+    this.adapterPanel.toggleDisplay();
   }
 
   private _toggleMultipleEditors() {
@@ -746,7 +745,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   }
 
   override firstUpdated() {
-    this.doc.slots.historyUpdated.subscribe(() => {
+    this.doc.history.onUpdated.subscribe(() => {
       this._canUndo = this.doc.canUndo;
       this._canRedo = this.doc.canRedo;
     });
@@ -855,6 +854,9 @@ export class StarterDebugMenu extends ShadowlessElement {
                   <sl-menu-item @click="${this._exportSnapshot}">
                     Export Snapshot
                   </sl-menu-item>
+                  <sl-menu-item @click="${this._exportYDoc}">
+                    Export Y.Doc
+                  </sl-menu-item>
                 </sl-menu>
               </sl-menu-item>
               <sl-menu-item>
@@ -926,8 +928,8 @@ export class StarterDebugMenu extends ShadowlessElement {
               <sl-menu-item @click="${this._toggleMultipleEditors}">
                 Toggle Multiple Editors
               </sl-menu-item>
-              <sl-menu-item @click="${this._toggleAdaptersPanel}">
-                Toggle Adapters Panel
+              <sl-menu-item @click="${this._toggleAdapterPanel}">
+                Toggle Adapter Panel
               </sl-menu-item>
             </sl-menu>
           </sl-dropdown>
@@ -1031,6 +1033,9 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   @property({ attribute: false })
   accessor framePanel!: CustomFramePanel;
+
+  @property({ attribute: false })
+  accessor adapterPanel!: CustomAdapterPanel;
 
   @property({ attribute: false })
   accessor leftSidePanel!: LeftSidePanel;

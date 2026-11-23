@@ -25,12 +25,15 @@ export const TrashPageFooter = () => {
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
 
   const onRestore = useCallback(() => {
-    restoreFromTrash(doc.id);
-    toast(
-      t['com.affine.toastMessage.restored']({
-        title: doc.meta$.value.title || 'Untitled',
+    restoreFromTrash(doc.id)
+      .then(() => {
+        toast(
+          t['com.affine.toastMessage.restored']({
+            title: doc.meta$.value.title || 'Untitled',
+          })
+        );
       })
-    );
+      .catch(error => console.error(error));
   }, [doc.id, doc.meta$.value.title, restoreFromTrash, t]);
 
   const onConfirmDelete = useCallback(() => {

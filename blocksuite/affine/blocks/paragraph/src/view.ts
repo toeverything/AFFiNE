@@ -2,9 +2,13 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine-ext-loader';
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
+import { z } from 'zod';
 
+import { effects } from './effects';
+import { ParagraphMarkdownExtension } from './markdown.js';
 import { ParagraphBlockConfigExtension } from './paragraph-block-config.js';
 import {
   ParagraphKeymapExtension,
@@ -22,16 +26,10 @@ const placeholders = {
   quote: '',
 };
 
-import { ParagraphBlockModel } from '@blocksuite/affine-model';
-import { z } from 'zod';
-
-import { effects } from './effects';
-
 const optionsSchema = z.object({
-  getPlaceholder: z
-    .function()
-    .args(z.instanceof(ParagraphBlockModel))
-    .returns(z.string()),
+  getPlaceholder: z.optional(
+    z.function().args(z.instanceof(ParagraphBlockModel)).returns(z.string())
+  ),
 });
 
 export class ParagraphViewExtension extends ViewExtensionProvider<
@@ -50,7 +48,7 @@ export class ParagraphViewExtension extends ViewExtensionProvider<
     context: ViewExtensionContext,
     options?: z.infer<typeof optionsSchema>
   ) {
-    super.setup(context);
+    super.setup(context, options);
     const getPlaceholder =
       options?.getPlaceholder ?? (model => placeholders[model.props.type]);
 
@@ -62,6 +60,7 @@ export class ParagraphViewExtension extends ViewExtensionProvider<
       ParagraphBlockConfigExtension({
         getPlaceholder,
       }),
+      ParagraphMarkdownExtension,
     ]);
   }
 }

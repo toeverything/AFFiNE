@@ -1,9 +1,12 @@
+import { PassThrough } from 'node:stream';
 import { mock } from 'node:test';
 
 import { TestingModule } from '@nestjs/testing';
 import ava, { TestFn } from 'ava';
+import { createLogger, format, transports } from 'winston';
 
 import { createTestingModule } from '../../../__tests__/utils';
+import { AFFiNELogger as CloudLogger } from '../../../plugins/gcloud/logging/logger';
 import { AFFiNELogger } from '../service';
 
 export const test = ava as TestFn<{
@@ -72,4 +75,40 @@ test('should print error stack with cause', t => {
     printStackTraceArgs[1],
     `${error.stack}\n\nCaused by:\n\n${(error.cause as any).stack}`
   );
+});
+
+test('cloud logger emits structured context and error causes in one record', t => {
+  const output = new PassThrough();
+  let json = '';
+  output.on('data', chunk => {
+    json += chunk.toString();
+  });
+  const raw = createLogger({
+    format: format.json(),
+    transports: [new transports.Stream({ stream: output })],
+  });
+  const logger = new CloudLogger(raw);
+  const cause = new Error('source missing');
+  const error = new Error('write failed', { cause });
+  logger.error(
+    'Failed to insert doc updates',
+    {
+      workspaceId: 'workspace',
+      docId: 'doc',
+      writeIntent: 'create_doc',
+      error,
+    },
+    'DocStorage'
+  );
+  const record = JSON.parse(json);
+  t.like(record, {
+    message: 'Failed to insert doc updates',
+    workspaceId: 'workspace',
+    docId: 'doc',
+    writeIntent: 'create_doc',
+    context: 'DocStorage',
+  });
+  t.is(record.stack[0], `${error.stack}\n\nCaused by:\n\n${cause.stack}`);
+  raw.close();
+  output.destroy();
 });

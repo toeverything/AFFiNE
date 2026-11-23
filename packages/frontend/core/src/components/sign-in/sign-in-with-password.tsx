@@ -11,10 +11,12 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import {
   AuthService,
   CaptchaService,
+  getSelfHostedServerName,
   ServerService,
 } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { Unreachable } from '@affine/env/constant';
+import { UserFriendlyError } from '@affine/error';
 import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -46,6 +48,7 @@ export const SignInWithPasswordStep = ({
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorHint, setPasswordErrorHint] = useState('');
   const captchaService = useService(CaptchaService);
   const serverService = useService(ServerService);
   const isSelfhosted = useLiveData(
@@ -56,6 +59,9 @@ export const SignInWithPasswordStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
 
   const verifyToken = useLiveData(captchaService.verifyToken$);
   const needCaptcha = useLiveData(captchaService.needCaptcha$);
@@ -74,12 +80,15 @@ export const SignInWithPasswordStep = ({
     onAuthenticated?.(loginStatus);
   }, [loginStatus, onAuthenticated, t]);
 
+  useEffect(() => {
+    setPasswordErrorHint(t['com.affine.auth.password.error']());
+  }, [t]);
+
   const onSignIn = useAsyncCallback(async () => {
     if (isLoading || (!verifyToken && needCaptcha)) return;
     setIsLoading(true);
 
     try {
-      captchaService.revalidate();
       await authService.signInPassword({
         email,
         password,
@@ -88,7 +97,24 @@ export const SignInWithPasswordStep = ({
       });
     } catch (err) {
       console.error(err);
-      setPasswordError(true);
+      const error = UserFriendlyError.fromAny(err);
+
+      if (
+        error.is('WRONG_SIGN_IN_CREDENTIALS') ||
+        error.is('PASSWORD_REQUIRED')
+      ) {
+        setPasswordError(true);
+        setPasswordErrorHint(t['com.affine.auth.password.error']());
+      } else {
+        setPasswordError(false);
+        notify.error({
+          title: t['com.affine.auth.toast.title.failed'](),
+          message: error.is('REQUEST_ABORTED')
+            ? t['error.NETWORK_ERROR']()
+            : t[`error.${error.name}`](error.data),
+        });
+      }
+      captchaService.revalidate();
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +127,7 @@ export const SignInWithPasswordStep = ({
     email,
     password,
     challenge,
+    t,
   ]);
 
   const sendMagicLink = useCallback(() => {
@@ -111,28 +138,54 @@ export const SignInWithPasswordStep = ({
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>
-        <AuthInput
-          label={t['com.affine.settings.email']()}
-          disabled={true}
-          value={email}
-        />
-        <AuthInput
-          autoFocus
-          data-testid="password-input"
-          label={t['com.affine.auth.password']()}
-          value={password}
-          type="password"
-          onChange={useCallback((value: string) => {
-            setPassword(value);
-          }, [])}
-          error={passwordError}
-          errorHint={t['com.affine.auth.password.error']()}
-          onEnter={onSignIn}
-        />
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            onSignIn();
+          }}
+        >
+          <AuthInput
+            label={t['com.affine.settings.email']()}
+            readOnly={true}
+            value={email}
+            type="email"
+            name="username"
+            autoComplete="username"
+          />
+          <AuthInput
+            autoFocus
+            data-testid="password-input"
+            label={t['com.affine.auth.password']()}
+            value={password}
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            onChange={(value: string) => {
+              setPassword(value);
+              if (passwordError) {
+                setPasswordError(false);
+                setPasswordErrorHint(t['com.affine.auth.password.error']());
+              }
+            }}
+            error={passwordError}
+            errorHint={passwordErrorHint}
+            onEnter={onSignIn}
+          />
+          {!verifyToken && needCaptcha && <Captcha />}
+          <Button
+            data-testid="sign-in-button"
+            variant="primary"
+            size="extraLarge"
+            style={{ width: '100%' }}
+            disabled={isLoading || (!verifyToken && needCaptcha)}
+          >
+            {t['com.affine.auth.sign.in']()}
+          </Button>
+        </form>
         {!isSelfhosted && (
           <div className={styles.passwordButtonRow}>
             <a
@@ -144,17 +197,6 @@ export const SignInWithPasswordStep = ({
             </a>
           </div>
         )}
-        {!verifyToken && needCaptcha && <Captcha />}
-        <Button
-          data-testid="sign-in-button"
-          variant="primary"
-          size="extraLarge"
-          style={{ width: '100%' }}
-          disabled={isLoading || (!verifyToken && needCaptcha)}
-          onClick={onSignIn}
-        >
-          {t['com.affine.auth.sign.in']()}
-        </Button>
       </AuthContent>
       <AuthFooter>
         <Back changeState={changeState} />

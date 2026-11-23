@@ -1,6 +1,7 @@
 import { LineWidth, StrokeStyle } from '@blocksuite/affine-model';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { BanIcon, DashLineIcon, StraightLineIcon } from '@blocksuite/icons/lit';
-import { html, LitElement } from 'lit';
+import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -33,7 +34,13 @@ const LINE_STYLE_LIST = [
   },
 ];
 
-export class EdgelessLineStylesPanel extends LitElement {
+export class EdgelessLineStylesPanel extends WithDisposable(LitElement) {
+  static override styles = css`
+    edgeless-line-width-panel {
+      flex: 1;
+    }
+  `;
+
   select(detail: LineDetailType) {
     this.dispatchEvent(
       new CustomEvent('select', {
@@ -47,10 +54,9 @@ export class EdgelessLineStylesPanel extends LitElement {
 
   override render() {
     const { lineSize, lineStyle, lineStyles } = this;
-
     return html`
       <edgeless-line-width-panel
-        ?disabled="${lineStyle === StrokeStyle.None}"
+        .disabled=${lineStyle === StrokeStyle.None}
         .selectedSize=${lineSize}
         @select=${(e: CustomEvent<LineWidth>) => {
           e.stopPropagation();

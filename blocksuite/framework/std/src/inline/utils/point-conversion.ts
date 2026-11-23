@@ -9,7 +9,12 @@ import {
   isVElement,
   isVLine,
 } from './guard.js';
-import { calculateTextLength, getTextNodesFromElement } from './text.js';
+import {
+  calculateTextLength,
+  getInlineRootTextCache,
+  getTextNodesFromElement,
+  invalidateInlineRootTextCache,
+} from './text.js';
 
 export function nativePointToTextPoint(
   node: unknown,
@@ -67,19 +72,6 @@ export function textPointToDomPoint(
 
   if (!rootElement.contains(text)) return null;
 
-  const texts = getTextNodesFromElement(rootElement);
-  if (texts.length === 0) return null;
-
-  const goalIndex = texts.indexOf(text);
-  let index = 0;
-  for (const text of texts.slice(0, goalIndex)) {
-    index += calculateTextLength(text);
-  }
-
-  if (text.wholeText !== ZERO_WIDTH_FOR_EMPTY_LINE) {
-    index += offset;
-  }
-
   const textParentElement = text.parentElement;
   if (!textParentElement) {
     throw new BlockSuiteError(
@@ -97,9 +89,44 @@ export function textPointToDomPoint(
     );
   }
 
+  const textOffset = text.wholeText === ZERO_WIDTH_FOR_EMPTY_LINE ? 0 : offset;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { textNodes, textNodeIndexMap, prefixLengths, lineIndexMap } =
+      getInlineRootTextCache(rootElement);
+    if (textNodes.length === 0) return null;
+
+    const goalIndex = textNodeIndexMap.get(text);
+    const lineIndex = lineIndexMap.get(lineElement);
+    if (goalIndex !== undefined && lineIndex !== undefined) {
+      const index = (prefixLengths[goalIndex] ?? 0) + textOffset;
+      return { text, index: index + lineIndex };
+    }
+
+    if (attempt === 0) {
+      // MutationObserver marks cache dirty asynchronously; force one sync retry
+      // when a newly-added node is queried within the same task.
+      invalidateInlineRootTextCache(rootElement);
+    }
+  }
+
+  // Fallback to linear scan when cache still misses. This keeps behavior
+  // stable even if MutationObserver-based invalidation lags behind.
+  const texts = getTextNodesFromElement(rootElement);
+  if (texts.length === 0) return null;
+
+  const goalIndex = texts.indexOf(text);
+  if (goalIndex < 0) return null;
+
+  let index = textOffset;
+  for (const beforeText of texts.slice(0, goalIndex)) {
+    index += calculateTextLength(beforeText);
+  }
+
   const lineIndex = Array.from(rootElement.querySelectorAll('v-line')).indexOf(
     lineElement
   );
+  if (lineIndex < 0) return null;
 
   return { text, index: index + lineIndex };
 }

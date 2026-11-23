@@ -31,7 +31,7 @@ export interface BlockStdOptions {
   extensions: ExtensionType[];
 }
 
-const internalExtensions = [
+export const internalExtensions = [
   ServiceManager,
   CommandManager,
   UIEventDispatcher,

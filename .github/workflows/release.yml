@@ -1,0 +1,229 @@
+name: Release Candidates
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Targets (comma-separated; append ? for optional platforms)'
+        required: true
+        default: 'server,desktop-macos,desktop-windows,desktop-linux?'
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  packages: write
+
+jobs:
+  prepare:
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.plan.outputs.APP_VERSION }}
+      sha: ${{ steps.plan.outputs.GIT_SHORT_HASH }}
+      channel: ${{ steps.plan.outputs.BUILD_TYPE }}
+      server: ${{ steps.plan.outputs.SERVER }}
+      skip: ${{ steps.plan.outputs.SKIP }}
+      desktop: ${{ steps.plan.outputs.DESKTOP_MATRIX }}
+      mobile: ${{ steps.plan.outputs.MOBILE_MATRIX }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Preserve request creation time
+        id: run
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({...context.repo, run_id: context.runId});
+            core.setOutput('created-at', run.data.created_at);
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{...context.repo,run_id:context.runId});
+            if (artifacts.some(a => a.name === 'release-candidate')) {
+              for (let attempt = 1; attempt < Number(process.env.GITHUB_RUN_ATTEMPT); attempt++) {
+                const previous = await github.rest.actions.getWorkflowRunAttempt({...context.repo,run_id:context.runId,attempt_number:attempt});
+                if (previous.data.conclusion === 'success') throw new Error('This run already submitted an immutable candidate. Recover its native request or start a new release run.');
+              }
+            }
+      - name: Read completed release evidence
+        if: ${{ github.event_name == 'schedule' }}
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const releases = await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page: 100});
+            for (const release of releases) {
+              const embedded = release.body?.match(/<!-- affine-release-completed\n([^]*?)\n-->/);
+              let previous;
+              if (embedded) {
+                previous = JSON.parse(embedded[1]);
+              } else {
+                const asset = release.assets.find(asset => asset.name === 'affine-release-completed.json');
+                if (!asset) continue;
+                const response = await github.rest.repos.getReleaseAsset({...context.repo, asset_id: asset.id, headers: {accept:'application/octet-stream'}});
+                previous = JSON.parse(Buffer.from(response.data).toString('utf8'));
+              }
+              if (previous.request.channel !== 'canary') continue;
+              fs.writeFileSync('release-previous.json', JSON.stringify(previous));
+              break;
+            }
+      - uses: ./.github/actions/prepare-release
+        id: plan
+        with:
+          targets: ${{ inputs.targets || 'server,desktop-macos,desktop-windows,desktop-linux?' }}
+          tool-image: ${{ vars.AFFINE_RELEASE_TOOL_IMAGE || 'ghcr.io/toeverything/affine-release:latest' }}
+          created-at: ${{ steps.run.outputs.created-at }}
+      - uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: release-plan
+          path: release-plan.json
+          if-no-files-found: error
+
+  server:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && needs.prepare.outputs.server == 'true' }}
+    uses: ./.github/workflows/build-images.yml
+    secrets: inherit
+    with:
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
+
+  desktop:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && fromJSON(needs.prepare.outputs.desktop).include[0] != null }}
+    uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
+    with:
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
+      matrix: ${{ needs.prepare.outputs.desktop }}
+
+  mobile:
+    needs: prepare
+    if: ${{ needs.prepare.outputs.skip != 'true' && fromJSON(needs.prepare.outputs.mobile).include[0] != null }}
+    uses: ./.github/workflows/release-mobile.yml
+    secrets: inherit
+    with:
+      app-version: ${{ needs.prepare.outputs.version }}
+      git-short-hash: ${{ needs.prepare.outputs.sha }}
+      build-type: ${{ needs.prepare.outputs.channel }}
+      matrix: ${{ needs.prepare.outputs.mobile }}
+
+  candidate:
+    permissions:
+      contents: read
+      actions: write
+    needs: [prepare, server, desktop, mobile]
+    if: ${{ always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare candidate rerun artifacts
+        uses: actions/github-script@v9
+        with:
+          script: |
+            if (Number(process.env.GITHUB_RUN_ATTEMPT) === 1) return;
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts,{...context.repo,run_id:context.runId});
+            if (artifacts.some(a => a.name === 'release-candidate')) {
+              for (let attempt = 1; attempt < Number(process.env.GITHUB_RUN_ATTEMPT); attempt++) {
+                const previous = await github.rest.actions.getWorkflowRunAttempt({...context.repo,run_id:context.runId,attempt_number:attempt});
+                if (previous.data.conclusion === 'success') throw new Error('Submitted candidates are immutable. Recover the native request or start a new run.');
+              }
+            }
+            for (const artifact of artifacts.filter(a => ['candidate-desktop-macos','candidate-desktop-windows','candidate-desktop-linux'].includes(a.name))) {
+              await github.rest.actions.deleteArtifact({...context.repo,artifact_id:artifact.id});
+            }
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-plan
+      - name: Combine desktop architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-macos
+          pattern: candidate-desktop-darwin-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-macos') }}
+      - name: Combine Windows architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-windows
+          pattern: candidate-desktop-win32-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-windows') }}
+      - name: Combine Linux architecture candidates
+        uses: actions/upload-artifact/merge@v4
+        continue-on-error: true
+        with:
+          name: candidate-desktop-linux
+          pattern: candidate-desktop-linux-*
+        if: ${{ contains(needs.prepare.outputs.desktop, 'desktop-linux') }}
+      - name: Collect static assets
+        if: ${{ needs.server.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '{web,admin,mobile}'
+          merge-multiple: true
+          path: static-assets
+      - name: Save static assets candidate
+        if: ${{ needs.server.result == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: static-assets
+          path: |
+            static-assets/**
+            !static-assets/**/*.html
+          if-no-files-found: error
+      - name: Record candidate identities
+        uses: actions/github-script@v9
+        env:
+          IMAGE: ${{ needs.server.outputs.image }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const plan = JSON.parse(fs.readFileSync('release-plan.json', 'utf8'));
+            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
+              ...context.repo, run_id: context.runId,
+            });
+            const candidate = {
+              repository: `${context.repo.owner}/${context.repo.repo}`,
+              runId: context.runId, workflow: '.github/workflows/release.yml',
+              event: context.eventName, ref: context.ref, sha: context.sha,
+              image: process.env.IMAGE || '', artifacts: {},
+            };
+            for (const target of plan.targets) {
+              if (target.name === 'server') continue;
+              const arches = plan.buildMatrix.include.filter(row => row.target === target.name && target.name.startsWith('desktop-'));
+              const missing = arches.filter(row => !artifacts.some(a =>
+                a.name === `candidate-desktop-${row.platform}-${row.arch}` && !a.expired
+              ));
+              const artifact = missing.length === 0
+                ? artifacts.find(a => a.name === `candidate-${target.name}` && !a.expired)
+                : undefined;
+              if (arches.length && !artifact) {
+                const reason = missing.length ? `missing ${missing.map(row => row.arch).join(', ')}` : 'missing merged artifact';
+                if (target.required) throw new Error(`${target.name}: ${reason}`);
+                core.warning(`Omitting ${target.name}: ${reason}`);
+              }
+              if (artifact) candidate.artifacts[target.name] = {
+                id: artifact.id, runId: context.runId, repository: candidate.repository,
+                name: artifact.name, stage: 'unsigned',
+              };
+            }
+            const statics = artifacts.find(a => a.name === 'static-assets' && !a.expired);
+            if (statics) candidate.artifacts['static-assets'] = {
+              id: statics.id, runId: context.runId, repository: candidate.repository,
+              name: statics.name, stage: 'ready',
+            };
+            plan.candidate = candidate;
+            fs.writeFileSync('request.json', JSON.stringify(plan, null, 2));
+      - uses: actions/upload-artifact@v4
+        with:
+          overwrite: true
+          name: release-candidate
+          path: request.json
+          if-no-files-found: error

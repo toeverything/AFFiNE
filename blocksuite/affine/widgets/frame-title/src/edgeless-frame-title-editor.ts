@@ -14,6 +14,7 @@ import {
   AFFINE_FRAME_TITLE_WIDGET,
   type AffineFrameTitleWidget,
 } from './affine-frame-title-widget';
+import type { AffineFrameTitle } from './frame-title';
 import { frameTitleStyleVars } from './styles';
 
 export class EdgelessFrameTitleEditor extends WithDisposable(
@@ -135,12 +136,13 @@ export class EdgelessFrameTitleEditor extends WithDisposable(
 
     const frameTitleWidget = this.edgeless.std.view.getWidget(
       AFFINE_FRAME_TITLE_WIDGET,
-      rootBlockId
+      this.frameModel.id
     ) as AffineFrameTitleWidget | null;
 
     if (!frameTitleWidget) return nothing;
 
-    const frameTitle = frameTitleWidget.getFrameTitle(this.frameModel);
+    const frameTitle =
+      frameTitleWidget.querySelector<AffineFrameTitle>('affine-frame-title');
 
     const colors = frameTitle?.colors ?? {
       background: cssVarV2('edgeless/frame/background/white'),

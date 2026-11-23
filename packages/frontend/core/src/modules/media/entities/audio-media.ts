@@ -1,3 +1,4 @@
+import { toArrayBuffer } from '@affine/core/utils/array-buffer';
 import { DebugLogger } from '@affine/debug';
 import {
   catchErrorInto,
@@ -132,6 +133,9 @@ export class AudioMedia extends Entity<AudioSource> {
     return { waveform, duration };
   });
 
+  // `MediaSession` is available
+  private readonly available = 'mediaSession' in navigator;
+
   private readonly audioElement: HTMLAudioElement;
 
   private updatePlaybackState(
@@ -167,7 +171,7 @@ export class AudioMedia extends Entity<AudioSource> {
 
   private async loadAudioBuffer() {
     const uint8Array = await this.getBuffer();
-    return new Blob([uint8Array]);
+    return new Blob([toArrayBuffer(uint8Array)]);
   }
 
   readonly revalidateBuffer = effect(
@@ -194,7 +198,10 @@ export class AudioMedia extends Entity<AudioSource> {
             `Calculate audio stats time: ${performance.now() - startTime}ms`
           );
         }),
-        onStart(() => this.loading$.setValue(true)),
+        onStart(() => {
+          this.loadError$.setValue(null);
+          this.loading$.setValue(true);
+        }),
         onComplete(() => {
           this.loading$.setValue(false);
         }),
@@ -212,7 +219,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private setupMediaSession() {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -237,14 +244,14 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private updateMediaSessionMetadata() {
-    if (!('mediaSession' in navigator) || !this.props.metadata) {
+    if (!this.available || !this.props.metadata) {
       return;
     }
     navigator.mediaSession.metadata = this.props.metadata;
   }
 
   private updateMediaSessionPositionState(seekTime: number) {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -260,7 +267,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private updateMediaSessionPlaybackState(state: AudioMediaPlaybackState) {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
 
@@ -270,7 +277,7 @@ export class AudioMedia extends Entity<AudioSource> {
   }
 
   private cleanupMediaSession() {
-    if (!('mediaSession' in navigator)) {
+    if (!this.available) {
       return;
     }
     navigator.mediaSession.metadata = null;

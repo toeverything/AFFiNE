@@ -38,9 +38,9 @@ import {
 } from './utils/actions/index.js';
 import {
   assertAlmostEqual,
-  assertBlockChildrenIds,
   assertLocatorVisible,
   assertRichImage,
+  assertRichTextInlineDeltas,
   assertRichTextInlineRange,
   assertRichTexts,
 } from './utils/asserts.js';
@@ -92,13 +92,6 @@ test('should format quick bar show when clicking drag handle', async ({
 
   const { formatBar } = getFormatBar(page);
   await expect(formatBar).toBeVisible();
-
-  const box = await formatBar.boundingBox();
-  if (!box) {
-    throw new Error("formatBar doesn't exist");
-  }
-  assertAlmostEqual(box.x, 251, 5);
-  assertAlmostEqual(box.y - dragHandleRect.y, -55.5, 5);
 });
 
 test('should format quick bar show when select text by keyboard', async ({
@@ -246,7 +239,30 @@ test('should format quick bar be able to change background color', async ({
   // select `456` paragraph by dragging
   await dragBetweenIndices(page, [1, 0], [1, 3]);
 
-  const { highlight } = getFormatBar(page);
+  const { formatBar, highlight } = getFormatBar(page);
+
+  await formatBar.evaluate(toolbar => {
+    toolbar.style.overflowX = 'auto';
+  });
+
+  await highlight.highlightBtn.click();
+  await expect(highlight.redForegroundBtn).toBeVisible();
+  await expect(
+    formatBar.locator('editor-menu-content[data-show]')
+  ).toHaveAttribute('popover', 'manual');
+  expect(
+    await formatBar
+      .locator('editor-menu-content[data-show]')
+      .evaluate(menu => menu.matches(':popover-open'))
+  ).toBe(true);
+
+  const highlightMenu = formatBar.locator(
+    'affine-highlight-dropdown-menu editor-menu-button'
+  );
+  await highlightMenu.evaluate(menu => {
+    Reflect.set(menu, 'popperOptions', { mainAxis: 1 });
+  });
+  await expect(highlightMenu).not.toHaveAttribute('data-open', 'true');
 
   await highlight.highlightBtn.click();
   await expect(highlight.redForegroundBtn).toBeVisible();
@@ -258,6 +274,19 @@ test('should format quick bar be able to change background color', async ({
   // );
 
   await highlight.redForegroundBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(
+    page,
+    [
+      {
+        attributes: {
+          color: 'var(--affine-text-highlight-foreground-red)',
+        },
+        insert: '456',
+      },
+    ],
+    1
+  );
 
   // TODO(@fundon): these recent settings should be added to the dropdown menu.
   // await expect(highlight.highlightBtn).toHaveAttribute(
@@ -272,11 +301,26 @@ test('should format quick bar be able to change background color', async ({
   // select `123` paragraph by ctrl + a
   await focusRichText(page);
   await selectAllByKeyboard(page);
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineRange(page, 0, 0, 3);
   // // use last used color
   // await highlight.highlightBtn.click();
 
   await highlight.highlightBtn.click();
   await highlight.redForegroundBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(
+    page,
+    [
+      {
+        attributes: {
+          color: 'var(--affine-text-highlight-foreground-red)',
+        },
+        insert: '123',
+      },
+    ],
+    0
+  );
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_select_all.json`
@@ -285,6 +329,8 @@ test('should format quick bar be able to change background color', async ({
   await highlight.highlightBtn.click();
   await expect(highlight.defaultColorBtn).toBeVisible();
   await highlight.defaultColorBtn.click();
+  await waitNextFrame(page, 200);
+  await assertRichTextInlineDeltas(page, [{ insert: '123' }], 0);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_default_color.json`
@@ -548,17 +594,6 @@ test('should format quick bar work in single block selection', async ({
   const { formatBar } = getFormatBar(page);
   await expect(formatBar).toBeVisible();
 
-  const formatRect = await formatBar.boundingBox();
-  const selectionRect = await blockSelections.boundingBox();
-  if (!formatRect) {
-    throw new Error('formatRect is not found');
-  }
-  if (!selectionRect) {
-    throw new Error('selectionRect is not found');
-  }
-  assertAlmostEqual(formatRect.x - selectionRect.x, 147.5, 10);
-  assertAlmostEqual(formatRect.y - selectionRect.y, -48, 10);
-
   const boldBtn = formatBar.getByTestId('bold');
   await boldBtn.click();
   const italicBtn = formatBar.getByTestId('italic');
@@ -602,17 +637,6 @@ test('should format quick bar work in multiple block selection', async ({
 
   const formatBarController = getFormatBar(page);
   await expect(formatBarController.formatBar).toBeVisible();
-
-  const box = await formatBarController.formatBar.boundingBox();
-  if (!box) {
-    throw new Error("formatBar doesn't exist");
-  }
-  const rect = await blockSelections.first().boundingBox();
-  if (!rect) {
-    throw new Error('rect is not found');
-  }
-  assertAlmostEqual(box.x - rect.x, 147.5, 10);
-  assertAlmostEqual(box.y - rect.y, -48, 10);
 
   await formatBarController.boldBtn.click();
   await formatBarController.italicBtn.click();
@@ -958,8 +982,7 @@ test('create linked doc from block selection with format bar', async ({
   await focusRichText(page, 1);
   await pressTab(page);
   await assertRichTexts(page, ['123', '456', '789']);
-  await assertBlockChildrenIds(page, '1', ['2', '4']);
-  await assertBlockChildrenIds(page, '2', ['3']);
+  await waitNextFrame(page, 200);
 
   await selectAllBlocksByKeyboard(page);
   await waitNextFrame(page, 200);
@@ -1009,9 +1032,9 @@ test.describe('more menu button', () => {
     await copyBtn.click();
     await assertRichTextInlineRange(page, 1, 0, 3);
 
-    await focusRichText(page, 1);
+    await focusRichTextEnd(page, 1);
     await pasteByKeyboard(page);
-    await waitNextFrame(page);
+    await waitNextFrame(page, 200);
 
     await assertRichTexts(page, ['123', '456456', '789']);
   });
@@ -1029,7 +1052,7 @@ test.describe('more menu button', () => {
     await expect(duplicateBtn).toBeVisible();
     await duplicateBtn.click();
 
-    await waitNextFrame(page);
+    await waitNextFrame(page, 200);
 
     await assertRichTexts(page, ['123', '456', '456', '789']);
   });

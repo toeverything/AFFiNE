@@ -16,7 +16,6 @@ export class ChatPanelChip extends SignalWatcher(
       height: 24px;
       align-items: center;
       justify-content: center;
-      margin: 4px;
       padding: 0 4px;
       border-radius: 4px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
@@ -115,15 +114,17 @@ export class ChatPanelChip extends SignalWatcher(
           </span>
           <affine-tooltip>${this.tooltip}</affine-tooltip>
         </div>
-        ${isCandidate
-          ? html`${PlusIcon()}`
-          : this.closeable
-            ? html`
-                <div class="chip-card-close" @click=${this.onChipDelete}>
-                  ${CloseIcon()}
-                </div>
-              `
-            : ''}
+        ${
+          isCandidate
+            ? html`${PlusIcon()}`
+            : this.closeable
+              ? html`
+                  <div class="chip-card-close" @click=${this.onChipDelete}>
+                    ${CloseIcon()}
+                  </div>
+                `
+              : ''
+        }
       </div>
     `;
   }

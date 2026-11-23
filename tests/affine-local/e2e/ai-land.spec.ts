@@ -13,5 +13,5 @@ test('Click ai-land icon', async ({ page }) => {
   await clickNewPageButton(page);
   await page.locator('[data-testid=ai-island]').click();
 
-  await expect(page.locator('chat-panel')).toBeVisible();
+  await expect(page.getByTestId('chat-panel-input-container')).toBeVisible();
 });

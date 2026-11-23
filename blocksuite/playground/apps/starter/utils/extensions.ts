@@ -33,6 +33,7 @@ export function getTestCommonExtensions(
         di.override(DocModeProvider, mockDocModeService(editor));
       },
     },
+    // CommentProviderExtension(mockCommentProvider()),
   ];
 }
 

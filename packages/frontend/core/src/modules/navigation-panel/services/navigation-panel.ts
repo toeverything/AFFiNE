@@ -1,25 +1,47 @@
-import { Service } from '@toeverything/infra';
+import { LiveData, Service } from '@toeverything/infra';
 
-import { NavigationPanelSection } from '../entities/navigation-panel-section';
-import type { CollapsibleSectionName } from '../types';
+import type { GlobalCache } from '../../storage/providers/global';
+import type { WorkspaceService } from '../../workspace';
 
-const allSectionName: Array<CollapsibleSectionName> = [
-  'recent', // mobile only
-  'favorites',
-  'organize',
-  'collections',
-  'tags',
-  'favoritesOld',
-  'migrationFavorites',
-  'others',
-];
+const DEFAULT_COLLAPSABLE_STATE: Record<string, boolean> = {
+  recent: true,
+  favorites: false,
+  organize: false,
+  collections: true,
+  tags: true,
+  favoritesOld: true,
+  migrationFavorites: true,
+  others: false,
+};
 
 export class NavigationPanelService extends Service {
-  readonly sections = allSectionName.reduce(
-    (prev, name) =>
-      Object.assign(prev, {
-        [name]: this.framework.createEntity(NavigationPanelSection, { name }),
-      }),
-    {} as Record<CollapsibleSectionName, NavigationPanelSection>
-  );
+  constructor(
+    private readonly globalCache: GlobalCache,
+    private readonly workspaceService: WorkspaceService
+  ) {
+    super();
+  }
+
+  private readonly collapsedCache = new Map<string, LiveData<boolean>>();
+
+  collapsed$(path: string[]) {
+    const pathKey = path.join(':');
+    const key = `navigation:${this.workspaceService.workspace.id}:${pathKey}`;
+    const cached$ = this.collapsedCache.get(key);
+    if (!cached$) {
+      const liveData$ = LiveData.from(
+        this.globalCache.watch<boolean>(key),
+        undefined
+      ).map(v => v ?? DEFAULT_COLLAPSABLE_STATE[pathKey] ?? true);
+      this.collapsedCache.set(key, liveData$);
+      return liveData$;
+    }
+    return cached$;
+  }
+
+  setCollapsed(path: string[], collapsed: boolean) {
+    const pathKey = path.join(':');
+    const key = `navigation:${this.workspaceService.workspace.id}:${pathKey}`;
+    this.globalCache.set(key, collapsed);
+  }
 }

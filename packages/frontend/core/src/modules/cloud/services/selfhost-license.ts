@@ -56,6 +56,10 @@ export class SelfhostLicenseService extends Service {
     return await this.store.deactivate(workspaceId);
   }
 
+  async installLicense(workspaceId: string, licenseFile: File) {
+    return await this.store.installLicense(workspaceId, licenseFile);
+  }
+
   clear() {
     this.license$.next(null);
     this.error$.next(null);

@@ -12,6 +12,7 @@ export const Component = () => {
 
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab') ?? undefined;
+  const scrollAnchor = searchParams.get('scrollAnchor') ?? undefined;
 
   const isOpened = useRef(false);
 
@@ -23,7 +24,8 @@ export const Component = () => {
     workbench.openAll();
     workspaceDialogService.open('setting', {
       activeTab: tab as SettingTab,
+      scrollAnchor,
     });
-  }, [tab, workbench, workspaceDialogService]);
+  }, [scrollAnchor, tab, workbench, workspaceDialogService]);
   return null;
 };

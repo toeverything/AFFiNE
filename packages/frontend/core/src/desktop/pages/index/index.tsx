@@ -1,9 +1,11 @@
+import { DefaultServerService } from '@affine/core/modules/cloud';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
   buildShowcaseWorkspace,
   createFirstAppData,
 } from '@affine/core/utils/first-app-data';
+import { ServerFeature } from '@affine/graphql';
 import {
   useLiveData,
   useService,
@@ -37,25 +39,38 @@ export const Component = ({
   defaultIndexRoute = 'all',
   children,
   fallback,
+  createErrorFallback,
 }: {
   defaultIndexRoute?: string;
   children?: ReactNode;
   fallback?: ReactNode;
+  createErrorFallback?: (retry: () => void) => ReactNode;
 }) => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
   const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(false);
+  const [createAttempt, setCreateAttempt] = useState(0);
   const authService = useService(AuthService);
+  const defaultServerService = useService(DefaultServerService);
 
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
+  const enableLocalWorkspace =
+    useLiveData(
+      defaultServerService.server.config$.selector(
+        c =>
+          c.features.includes(ServerFeature.LocalWorkspace) ||
+          BUILD_CONFIG.isNative
+      )
+    ) ?? true;
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
   const listIsLoading = useLiveData(workspacesService.list.isRevalidating$);
 
-  const { openPage, jumpToPage } = useNavigateHelper();
+  const { openPage, jumpToPage, jumpToSignIn } = useNavigateHelper();
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
@@ -84,6 +99,12 @@ export const Component = ({
       return;
     }
 
+    if (!enableLocalWorkspace && !loggedIn) {
+      localStorage.removeItem('last_workspace_id');
+      jumpToSignIn();
+      return;
+    }
+
     // check is user logged in && has cloud workspace
     if (searchParams.get('initCloud') === 'true') {
       if (loggedIn) {
@@ -101,6 +122,9 @@ export const Component = ({
       }
     } else {
       if (list.length === 0) {
+        if (BUILD_CONFIG.isMobileEdition && enableLocalWorkspace) {
+          return;
+        }
         setNavigating(false);
         return;
       }
@@ -111,10 +135,12 @@ export const Component = ({
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
+    enableLocalWorkspace,
     createCloudWorkspace,
     list,
     openPage,
     searchParams,
+    jumpToSignIn,
     listIsLoading,
     loggedIn,
     navigating,
@@ -128,8 +154,16 @@ export const Component = ({
   }, [desktopApi]);
 
   useEffect(() => {
+    if (listIsLoading || list.length > 0 || !enableLocalWorkspace) {
+      return;
+    }
+
+    const creation = createFirstAppData(workspacesService);
+    if (!creation) return;
+
+    setCreateError(false);
     setCreating(true);
-    createFirstAppData(workspacesService)
+    creation
       .then(createdWorkspace => {
         if (createdWorkspace) {
           if (createdWorkspace.defaultPageId) {
@@ -144,11 +178,28 @@ export const Component = ({
       })
       .catch(err => {
         console.error('Failed to create first app data', err);
+        setCreateError(true);
       })
       .finally(() => {
         setCreating(false);
       });
-  }, [jumpToPage, openPage, workspacesService]);
+  }, [
+    jumpToPage,
+    openPage,
+    workspacesService,
+    listIsLoading,
+    list,
+    enableLocalWorkspace,
+    createAttempt,
+  ]);
+
+  const retryCreate = useCallback(() => {
+    setCreateAttempt(attempt => attempt + 1);
+  }, []);
+
+  if (createError && createErrorFallback) {
+    return createErrorFallback(retryCreate);
+  }
 
   if (navigating || creating) {
     return fallback ?? <AppContainer fallback />;

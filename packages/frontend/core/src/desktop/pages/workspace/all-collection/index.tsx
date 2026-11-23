@@ -1,9 +1,7 @@
 import { usePromptModal } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import type { CollectionMeta } from '@affine/core/components/page-list';
 import {
   CollectionListHeader,
-  createEmptyCollection,
   VirtualizedCollectionList,
 } from '@affine/core/components/page-list';
 import {
@@ -13,8 +11,7 @@ import {
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { CollectionService } from '../../../../modules/collection';
 import { ViewBody, ViewHeader } from '../../../../modules/workbench';
@@ -30,16 +27,6 @@ export const AllCollection = () => {
 
   const collectionService = useService(CollectionService);
   const collections = useLiveData(collectionService.collections$);
-
-  const collectionMetas = useMemo(() => {
-    const collectionsList: CollectionMeta[] = collections.map(collection => {
-      return {
-        ...collection,
-        title: collection.name,
-      };
-    });
-    return collectionsList;
-  }, [collections]);
 
   const navigateHelper = useNavigateHelper();
   const { openPromptModal } = usePromptModal();
@@ -62,8 +49,7 @@ export const AllCollection = () => {
         variant: 'primary',
       },
       onConfirm(name) {
-        const id = nanoid();
-        collectionService.addCollection(createEmptyCollection(id, { name }));
+        const id = collectionService.createCollection({ name });
         navigateHelper.jumpToCollection(currentWorkspace.id, id);
       },
     });
@@ -87,10 +73,8 @@ export const AllCollection = () => {
       </ViewHeader>
       <ViewBody>
         <div className={styles.body}>
-          {collectionMetas.length > 0 ? (
+          {collections.size > 0 ? (
             <VirtualizedCollectionList
-              collections={collections}
-              collectionMetas={collectionMetas}
               setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
               handleCreateCollection={handleCreateCollection}
             />

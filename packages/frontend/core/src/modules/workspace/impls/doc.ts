@@ -1,29 +1,30 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import {
   AwarenessStore,
   type Doc,
   type ExtensionType,
   type GetStoreOptions,
   StoreContainer,
-  type Workspace,
   type YBlock,
 } from '@blocksuite/affine/store';
 import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
+import type { WorkspaceImpl } from './workspace';
+
 type DocOptions = {
   id: string;
-  collection: Workspace;
+  collection: WorkspaceImpl;
   doc: Y.Doc;
 };
 
 export class DocImpl implements Doc {
-  private readonly _collection: Workspace;
+  private readonly _collection: WorkspaceImpl;
 
   private readonly _storeContainer: StoreContainer;
 
   private readonly _initSpaceDoc = () => {
-    {
+    if (!this.workspace.usesWorkspaceState) {
       // This is a piece of old version compatible code. The old version relies on the subdoc instance on `spaces`.
       // So if there is no subdoc on spaces, we will create it.
       // new version no longer needs subdoc on `spaces`.
@@ -97,13 +98,13 @@ export class DocImpl implements Doc {
   }
 
   constructor({ id, collection, doc }: DocOptions) {
+    this._collection = collection;
     this.id = id;
     this.rootDoc = doc;
     this._ySpaceDoc = this._initSpaceDoc() as Y.Doc;
     this.awarenessStore = new AwarenessStore(new Awareness(this._ySpaceDoc));
 
     this._yBlocks = this._ySpaceDoc.getMap('blocks');
-    this._collection = collection;
     this._storeContainer = new StoreContainer(this);
   }
 
@@ -116,6 +117,9 @@ export class DocImpl implements Doc {
   }
 
   private _destroy() {
+    if (this._loaded) {
+      this.workspace.onUnloadDoc?.(this._ySpaceDoc);
+    }
     this.awarenessStore.destroy();
     this._ySpaceDoc.destroy();
     this._loaded = false;
@@ -136,7 +140,10 @@ export class DocImpl implements Doc {
     extensions,
     id,
   }: GetStoreOptions = {}) {
-    const storeExtensions = getStoreManager().get('store');
+    const storeExtensions = getStoreManager()
+      .config.init()
+      .featureFlag(this.workspace.featureFlagService)
+      .value.get('store');
     const exts = storeExtensions
       .concat(extensions ?? [])
       .concat(this.storeExtensions);
@@ -170,6 +177,7 @@ export class DocImpl implements Doc {
 
   remove() {
     this._destroy();
-    this.rootDoc.getMap('spaces').delete(this.id);
+    if (!this.workspace.usesWorkspaceState)
+      this.rootDoc.getMap('spaces').delete(this.id);
   }
 }

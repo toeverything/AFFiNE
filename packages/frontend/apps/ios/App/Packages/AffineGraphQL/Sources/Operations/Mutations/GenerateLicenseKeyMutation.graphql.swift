@@ -26,6 +26,9 @@ public class GenerateLicenseKeyMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("generateLicenseKey", String.self, arguments: ["sessionId": .variable("sessionId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GenerateLicenseKeyMutation.Data.self
+    ] }
 
     public var generateLicenseKey: String { __data["generateLicenseKey"] }
   }

@@ -52,3 +52,19 @@ export function clearMarksOnDiscontinuousInput(
     }
   });
 }
+
+export function getPrefixText(inlineEditor: InlineEditor) {
+  const inlineRange = inlineEditor.getInlineRange();
+  if (!inlineRange || inlineRange.length > 0) return '';
+
+  const maxMarkdownPrefixLength = 512;
+  const prefixStart = Math.max(0, inlineRange.index - maxMarkdownPrefixLength);
+  const yTextString = inlineEditor.yTextString;
+  const prefixWindow = yTextString.slice(prefixStart, inlineRange.index);
+  const nearestLineBreakIndex = prefixWindow.lastIndexOf('\n');
+  if (nearestLineBreakIndex === -1 && prefixStart > 0) return '';
+
+  return nearestLineBreakIndex === -1
+    ? prefixWindow
+    : prefixWindow.slice(nearestLineBreakIndex + 1);
+}

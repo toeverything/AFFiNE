@@ -1,14 +1,14 @@
 import { CalloutBlockComponent } from './callout-block';
-import { EmojiMenu } from './emoji-menu';
+import { IconPickerWrapper } from './icon-picker-wrapper';
 
 export function effects() {
   customElements.define('affine-callout', CalloutBlockComponent);
-  customElements.define('affine-emoji-menu', EmojiMenu);
+  customElements.define('icon-picker-wrapper', IconPickerWrapper);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
     'affine-callout': CalloutBlockComponent;
-    'affine-emoji-menu': EmojiMenu;
+    'icon-picker-wrapper': IconPickerWrapper;
   }
 }

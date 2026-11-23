@@ -8,6 +8,7 @@ import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import {
+  getRequestFromHost,
   getRequestIdFromHost,
   getRequestIdFromRequest,
   ScannerModule,
@@ -18,41 +19,54 @@ import { ErrorModule } from './base/error';
 import { EventModule } from './base/event';
 import { GqlModule } from './base/graphql';
 import { HelpersModule } from './base/helpers';
-import { JobModule } from './base/job';
 import { LoggerModule } from './base/logger';
 import { MetricsModule } from './base/metrics';
 import { MutexModule } from './base/mutex';
 import { PrismaModule } from './base/prisma';
 import { RedisModule } from './base/redis';
-import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
-import { AuthModule } from './core/auth';
+import { AuthModule, AuthWorkerModule } from './core/auth';
+import {
+  BackendRuntimeModule,
+  BackendRuntimeWorkerModule,
+} from './core/backend-runtime';
+import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
+import { DocJobsModule } from './core/doc-jobs';
 import { DocRendererModule } from './core/doc-renderer';
-import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
-import { MailModule } from './core/mail';
-import { NotificationModule } from './core/notification';
+import { MailModule, MailWorkerModule } from './core/mail';
+import { MonitorModule } from './core/monitor';
+import {
+  NotificationModule,
+  NotificationWorkerModule,
+} from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
+import { RealtimeGatewayModule, RealtimeModule } from './core/realtime';
 import { SelfhostModule } from './core/selfhost';
-import { StorageModule } from './core/storage';
+import { StaticFileModule } from './core/static-files';
+import { StorageApiModule, StorageWorkerModule } from './core/storage';
+import { StorageRuntimeModule } from './core/storage-runtime';
 import { SyncModule } from './core/sync';
+import { TelemetryModule } from './core/telemetry';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
-import { WorkspaceModule } from './core/workspaces';
-import { Env } from './env';
+import { WorkspaceModule, WorkspaceWorkerModule } from './core/workspaces';
+import { Env, ServerRole } from './env';
 import { ModelsModule } from './models';
+import { CalendarModule, CalendarWorkerModule } from './plugins/calendar';
 import { CaptchaModule } from './plugins/captcha';
-import { CopilotModule } from './plugins/copilot';
-import { CustomerIoModule } from './plugins/customerio';
+import { CopilotModule, CopilotWorkerModule } from './plugins/copilot';
 import { GCloudModule } from './plugins/gcloud';
+import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
 import { WorkerModule } from './plugins/worker';
+import { ServerRealtimeHandlersModule } from './realtime-handlers.module';
 
 export const FunctionalityModules = [
   ClsModule.forRoot({
@@ -65,8 +79,9 @@ export const FunctionalityModules = [
         // make every request has a unique id to tracing
         return getRequestIdFromRequest(req, 'http');
       },
-      setup(cls, _req, res: Response) {
+      setup(cls, req: Request, res: Response) {
         res.setHeader('X-Request-Id', cls.getId());
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     // for websocket connection
@@ -77,6 +92,10 @@ export const FunctionalityModules = [
       idGenerator(context: ExecutionContext) {
         // make every request has a unique id to tracing
         return getRequestIdFromHost(context);
+      },
+      setup(cls, context: ExecutionContext) {
+        const req = getRequestFromHost(context);
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     plugins: [
@@ -98,12 +117,15 @@ export const FunctionalityModules = [
   MutexModule,
   MetricsModule,
   RateLimiterModule,
-  StorageProviderModule,
   HelpersModule,
   ErrorModule,
   WebSocketModule,
-  JobModule.forRoot(),
+  RealtimeModule,
   ModelsModule,
+  BackendRuntimeModule,
+  StorageRuntimeModule,
+  ScheduleModule.forRoot(),
+  MonitorModule,
 ];
 
 export class AppModuleBuilder {
@@ -138,39 +160,54 @@ export class AppModuleBuilder {
 
 export function buildAppModule(env: Env) {
   const factor = new AppModuleBuilder();
+  const workerOnly = env.role === ServerRole.Worker;
 
   factor
     // basic
     .use(...FunctionalityModules)
+    .useIf(() => !workerOnly, RealtimeGatewayModule)
 
-    // enable schedule module on graphql server and doc service
+    // Search API and worker runtime are separate from the queue worker application.
+    .useIf(() => env.isApi || env.isFrontend, IndexerModule)
+
+    // the worker owns doc consumers and schedulers
+    .useIf(() => env.isWorker, DocJobsModule)
+    .useIf(() => env.isWorker, BackendRuntimeWorkerModule)
     .useIf(
-      () => env.flavors.graphql || env.flavors.doc,
-      ScheduleModule.forRoot()
+      () => env.isWorker,
+      AuthWorkerModule,
+      MailWorkerModule,
+      NotificationWorkerModule,
+      CalendarWorkerModule,
+      WorkspaceWorkerModule,
+      CopilotWorkerModule
     )
 
-    // auth
-    .use(UserModule, AuthModule, PermissionModule)
+    // auth and business APIs are not part of the queue worker application
+    .useIf(() => !workerOnly, UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(
-      ServerConfigModule,
-      FeatureModule,
-      QuotaModule,
-      DocStorageModule,
-      NotificationModule,
-      MailModule
+    .use(ServerConfigModule, QuotaModule, DocStorageModule)
+    .useIf(() => env.isWorker, StorageWorkerModule)
+    .useIf(() => !workerOnly, FeatureModule, NotificationModule, MailModule)
+    // renderer server and front server
+    .useIf(() => env.flavors.renderer || env.flavors.front, DocRendererModule)
+    // sync server and front server
+    .useIf(
+      () => env.flavors.sync || env.flavors.front,
+      SyncModule,
+      TelemetryModule
     )
-    // renderer server only
-    .useIf(() => env.flavors.renderer, DocRendererModule)
-    // sync server only
-    .useIf(() => env.flavors.sync, SyncModule)
+    .useIf(
+      () => !env.flavors.graphql && (env.flavors.sync || env.flavors.front),
+      ServerRealtimeHandlersModule
+    )
     // graphql server only
     .useIf(
       () => env.flavors.graphql,
       GqlModule,
       VersionModule,
-      StorageModule,
+      StorageApiModule,
       ServerConfigResolverModule,
       WorkspaceModule,
       LicenseModule,
@@ -178,12 +215,18 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
-      CustomerIoModule
+      CalendarModule,
+      TelemetryModule,
+      CommentModule
     )
-    // doc service only
-    .useIf(() => env.flavors.doc, DocServiceModule)
-    // self hosted server only
-    .useIf(() => env.dev || env.selfhosted, WorkerModule, SelfhostModule)
+    // worker for and self-hosted API only for self-host and local development only
+    .useIf(
+      () => !workerOnly && (env.dev || env.selfhosted),
+      WorkerModule,
+      SelfhostModule
+    )
+    // static frontend routes for front flavor
+    .useIf(() => env.flavors.front, StaticFileModule)
 
     // gcloud
     .useIf(() => env.gcp, GCloudModule);

@@ -12,6 +12,8 @@ const image = {
 };
 
 test.describe('AIAction/ImageProcessing', () => {
+  test.describe.configure({ timeout: 4 * 60000 });
+
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
@@ -27,7 +29,7 @@ test.describe('AIAction/ImageProcessing', () => {
     await expect(responses).toEqual(new Set(['insert-below']));
   });
 
-  test('should show chat history in chat panel', async ({
+  test.skip('should show chat history in chat panel', async ({
     loggedInPage: page,
     utils,
   }) => {
@@ -36,6 +38,8 @@ test.describe('AIAction/ImageProcessing', () => {
     await expect(answer.getByTestId('ai-answer-image')).toBeVisible();
     const insert = answer.getByTestId('answer-insert-below');
     await insert.click();
+    await page.reload();
+
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'action',

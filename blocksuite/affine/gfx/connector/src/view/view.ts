@@ -10,6 +10,7 @@ import {
   type DragStartContext,
   generateKeyBetween,
   GfxElementModelView,
+  GfxViewInteractionExtension,
 } from '@blocksuite/std/gfx';
 
 import { mountConnectorLabelEditor } from '../text/edgeless-connector-label-editor';
@@ -141,6 +142,8 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
       if (!curLabelElement) {
         curLabelElement = labelElement;
 
+        labelElement.id = `#${this.model.id}-label`;
+        labelElement.creator = this.model;
         labelElement.fillColor = 'transparent';
         labelElement.strokeColor = 'transparent';
         labelElement.strokeWidth = 0;
@@ -174,3 +177,72 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
     });
   }
 }
+
+export const ConnectorInteraction =
+  GfxViewInteractionExtension<ConnectorElementView>(ConnectorElementView.type, {
+    handleResize: ({ model, gfx }) => {
+      const initialPath = model.absolutePath;
+
+      return {
+        beforeResize(context): void {
+          const { elements } = context;
+          // show the handles only when connector is selected along with
+          // its source and target elements
+          if (
+            elements.length === 1 ||
+            (model.source.id &&
+              !elements.some(el => el.model.id === model.source.id)) ||
+            (model.target.id &&
+              !elements.some(el => el.model.id === model.target.id))
+          ) {
+            context.set({
+              allowedHandlers: [],
+            });
+          }
+        },
+
+        onResizeStart(): void {
+          model.stash('labelXYWH');
+          model.stash('source');
+          model.stash('target');
+        },
+
+        onResizeMove(context): void {
+          const { matrix } = context;
+          const props = model.resize(initialPath, matrix);
+
+          gfx.updateElement(model, props);
+        },
+
+        onResizeEnd(): void {
+          model.pop('labelXYWH');
+          model.pop('source');
+          model.pop('target');
+        },
+      };
+    },
+    handleRotate({ model, gfx }) {
+      const initialPath = model.absolutePath;
+
+      return {
+        onRotateStart(): void {
+          model.stash('labelXYWH');
+          model.stash('source');
+          model.stash('target');
+        },
+
+        onRotateMove(context): void {
+          const { matrix } = context;
+          const props = model.resize(initialPath, matrix);
+
+          gfx.updateElement(model, props);
+        },
+
+        onRotateEnd(): void {
+          model.pop('labelXYWH');
+          model.pop('source');
+          model.pop('target');
+        },
+      };
+    },
+  });

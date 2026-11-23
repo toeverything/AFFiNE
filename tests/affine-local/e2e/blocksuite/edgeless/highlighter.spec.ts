@@ -37,7 +37,8 @@ test('should add highlighter', async ({ page }) => {
   await expect(toolbar).toBeVisible();
 
   const lineWidthButton = toolbar
-    .locator('.line-width-button[data-selected]')
+    .locator('affine-slider')
+    .locator('.point-button[data-selected]')
     .last();
   const defaultLineWidth = await lineWidthButton.getAttribute('aria-label');
 

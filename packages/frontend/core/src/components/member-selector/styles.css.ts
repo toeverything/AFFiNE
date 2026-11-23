@@ -37,9 +37,15 @@ export const memberSelectorMenu = style({
   minWidth: 400,
 });
 
+export const memberSelectorDoneButton = style({
+  height: '32px',
+  width: '28px',
+});
+
 export const memberSelectorSelectedTags = style({
   display: 'flex',
-  flexWrap: 'wrap',
+  flexDirection: 'row',
+  flexWrap: 'nowrap',
   padding: '10px 12px 0px',
   minHeight: 42,
   selectors: {

@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/affine-shared/commands';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { WithDisposable } from '@blocksuite/global/lit';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent, UIEventStateContext } from '@blocksuite/std';
 import {
   BlockSelection,
@@ -15,8 +15,10 @@ import {
   TextSelection,
 } from '@blocksuite/std';
 import type { BaseSelection } from '@blocksuite/store';
+import { computed } from '@preact/signals-core';
 import { css, html, type PropertyValues } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 
@@ -25,7 +27,9 @@ import { ImageResizeManager } from '../image-resize-manager';
 import { shouldResizeImage } from '../utils';
 import { ImageSelectedRect } from './image-selected-rect';
 
-export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
+export class ImageBlockPageComponent extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     affine-page-image {
       position: relative;
@@ -43,12 +47,25 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
       justify-content: center;
       position: absolute;
       top: 4px;
-      right: 4px;
-      width: 20px;
-      height: 20px;
-      padding: 4px;
-      border-radius: 4px;
-      background: ${unsafeCSSVarV2('loading/backgroundLayer')};
+      left: 4px;
+      width: 36px;
+      height: 36px;
+      padding: 5px;
+      border-radius: 8px;
+      background: ${unsafeCSSVarV2(
+        'loading/imageLoadingBackground',
+        '#92929238'
+      )};
+
+      & > svg {
+        font-size: 25.71px;
+      }
+    }
+
+    affine-page-image .affine-image-status {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
     }
 
     affine-page-image .resizable-img {
@@ -60,7 +77,13 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
       width: 100%;
       height: 100%;
     }
+
+    affine-page-image .comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+    }
   `;
+
+  resizeable$ = computed(() => this.block.resizeable$.value);
 
   private _isDragging = false;
 
@@ -128,21 +151,21 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
         return true;
       },
       Delete: ctx => {
-        if (this._host.store.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         this._doc.deleteBlock(this._model);
         return true;
       },
       Backspace: ctx => {
-        if (this._host.store.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         this._doc.deleteBlock(this._model);
         return true;
       },
       Enter: ctx => {
-        if (this._host.store.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         return true;
@@ -207,19 +230,6 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
 
   private _handleSelection() {
     const selection = this._host.selection;
-    this._disposables.add(
-      selection.slots.changed.subscribe(selList => {
-        this._isSelected = selList.some(
-          sel => sel.blockId === this.block.blockId && sel.is(ImageSelection)
-        );
-      })
-    );
-
-    this._disposables.add(
-      this._model.propsUpdated.subscribe(() => {
-        this.requestUpdate();
-      })
-    );
 
     this._disposables.addFromEvent(
       this.resizeImg,
@@ -243,7 +253,7 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
     this.block.handleEvent(
       'click',
       () => {
-        if (!this._isSelected) return;
+        if (!this.resizeable$.peek()) return;
 
         selection.update(selList =>
           selList.filter(
@@ -350,20 +360,28 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
   override render() {
     const imageSize = this._normalizeImageSize();
 
-    const imageSelectedRect = this._isSelected
+    const imageSelectedRect = this.resizeable$.value
       ? ImageSelectedRect(this._doc.readonly)
       : null;
 
-    const { loading, icon } = this.state;
+    const blobUrl = this.block.blobUrl;
+    const caption = this.block.model.props.caption$.value ?? 'Image';
+    const { loading, error, icon, description, needUpload } = this.state;
 
     return html`
-      <div class="resizable-img" style=${styleMap(imageSize)}>
+      <div
+        class=${classMap({
+          'resizable-img': true,
+          'comment-highlighted': this.block.isCommentHighlighted,
+        })}
+        style=${styleMap(imageSize)}
+      >
         <img
           class="drag-target"
           draggable="false"
           loading="lazy"
-          src=${this.block.blobUrl}
-          alt=${this.block.model.props.caption$.value ?? 'Image'}
+          src=${blobUrl}
+          alt=${caption}
           @error=${this._handleError}
         />
 
@@ -371,11 +389,21 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
       </div>
 
       ${when(loading, () => html`<div class="loading">${icon}</div>`)}
+      ${when(
+        Boolean(error && description),
+        () =>
+          html`<affine-resource-status
+            class="affine-image-status"
+            .message=${description}
+            .needUpload=${needUpload}
+            .action=${() =>
+              needUpload
+                ? this.block.resourceController.upload()
+                : this.block.refreshData()}
+          ></affine-resource-status>`
+      )}
     `;
   }
-
-  @state()
-  accessor _isSelected = false;
 
   @property({ attribute: false })
   accessor block!: ImageBlockComponent;

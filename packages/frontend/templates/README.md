@@ -13,10 +13,17 @@ Before we offer a better solution, to update the onboarding templates:
    (async () => {
      // make sure ZipTransformer is imported and attached to window
      const { ZipTransformer } = window;
-     await Promise.all([...currentWorkspace.blockSuiteWorkspace.pages.values()].map(p => p.load()));
+     await Promise.all(
+       [...currentWorkspace.blockSuiteWorkspace.pages.values()].map(p =>
+         p.load()
+       )
+     );
      // wait for a few more seconds
      await new Promise(resolve => setTimeout(resolve, 5000));
-     const zipblob = await ZipTransformer.exportPages(currentWorkspace.blockSuiteWorkspace, [...currentWorkspace.blockSuiteWorkspace.pages.values()]);
+     const zipblob = await ZipTransformer.exportPages(
+       currentWorkspace.blockSuiteWorkspace,
+       [...currentWorkspace.blockSuiteWorkspace.pages.values()]
+     );
      const url = URL.createObjectURL(zipblob);
      const a = document.createElement('a');
      a.setAttribute('href', url);

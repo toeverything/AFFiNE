@@ -1,7 +1,7 @@
-import { mixpanel, sentry } from '@affine/track';
+import { sentry, tracker } from '@affine/track';
 import { APP_SETTINGS_STORAGE_KEY } from '@toeverything/infra/atom';
 
-mixpanel.init();
+tracker.init();
 sentry.init();
 
 if (typeof localStorage !== 'undefined') {
@@ -14,7 +14,8 @@ if (typeof localStorage !== 'undefined') {
   }
 
   if (!enabled) {
-    mixpanel.opt_out_tracking();
+    // NOTE: telemetry setting is respected by tracker and sentry.
     sentry.disable();
+    tracker.opt_out_tracking();
   }
 }

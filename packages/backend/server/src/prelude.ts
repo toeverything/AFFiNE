@@ -1,14 +1,11 @@
 import 'reflect-metadata';
 
 import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import { config } from 'dotenv';
 
 import { createGlobalEnv } from './env';
-
-const CUSTOM_CONFIG_PATH = `${homedir()}/.affine/config`;
 
 function loadPrivateKey() {
   const file = join(CUSTOM_CONFIG_PATH, 'private.key');

@@ -13,6 +13,7 @@ export const filePopoverContainer = style({
 
 export const filePopoverContent = style({
   padding: '0',
+  backgroundColor: cssVarV2.layer.background.overlayPanel,
 });
 
 export const uploadButton = style({

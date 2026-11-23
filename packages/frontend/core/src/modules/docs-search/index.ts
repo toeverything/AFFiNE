@@ -1,4 +1,7 @@
-export { DocsSearchService } from './services/docs-search';
+export {
+  DocsSearchService,
+  type IndexedDocReference,
+} from './services/docs-search';
 
 import { type Framework } from '@toeverything/infra';
 

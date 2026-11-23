@@ -1,4 +1,3 @@
-import { ChatHistoryOrder } from '@affine/graphql';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
@@ -34,6 +33,7 @@ import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { Store } from '@blocksuite/affine/store';
 import {
   BlockIcon,
+  EdgelessIcon,
   InsertBleowIcon as InsertBelowIcon,
   LinkedPageIcon,
   PageIcon,
@@ -42,7 +42,9 @@ import type { TemplateResult } from 'lit';
 
 import { insertFromMarkdown } from '../../utils';
 import type { ChatMessage } from '../components/ai-chat-messages';
-import { AIProvider, type AIUserInfo } from '../provider';
+import { AIAppEvents, type AIUserInfo } from '../provider';
+import { AIChatRuntime, ForkAIChatSessionStrategy } from '../runtime/chat';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { insertBelow } from '../utils/editor-actions';
 
@@ -68,14 +70,15 @@ export type ChatAction = {
 
 export async function queryHistoryMessages(
   workspaceId: string,
-  docId: string,
-  forkSessionId: string
+  forkSessionId: string,
+  docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
-    sessionId: forkSessionId,
-    messageOrder: ChatHistoryOrder.asc,
-  });
+  const histories = await getAIRequestService().histories.chats(
+    workspaceId,
+    forkSessionId,
+    docId
+  );
 
   if (!histories || !histories.length) {
     return [];
@@ -90,7 +93,7 @@ export function constructUserInfoWithMessages(
   userInfo: AIUserInfo | null
 ) {
   return messages.map(message => {
-    const { role, id, content, createdAt } = message;
+    const { role, streamObjects } = message;
     const isUser = role === 'user';
     const userInfoProps = isUser
       ? {
@@ -100,12 +103,10 @@ export function constructUserInfoWithMessages(
         }
       : {};
     return {
-      id,
-      role,
-      content,
-      createdAt,
-      attachments: [],
+      ...message,
       ...userInfoProps,
+      attachments: [],
+      streamObjects: streamObjects || [],
     };
   });
 }
@@ -115,12 +116,12 @@ export async function constructRootChatBlockMessages(
   forkSessionId: string
 ) {
   // Convert chat messages to AI chat block messages
-  const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(
+  const userInfo = AIAppEvents.userInfo.value;
+  const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
-    doc.id,
-    forkSessionId
-  );
+    forkSessionId,
+    doc.id
+  )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
@@ -248,12 +249,12 @@ async function insertBelowBlock(
 ): Promise<boolean> {
   if (!block) return false;
 
-  reportResponse('result:insert');
+  reportResponse('result:insert', host);
   await insertBelow(host, content, block);
   return true;
 }
 
-const PAGE_INSERT = {
+export const PAGE_INSERT = {
   icon: InsertBelowIcon({ width: '20px', height: '20px' }),
   title: 'Insert',
   showWhen: (host: EditorHost) => {
@@ -292,7 +293,7 @@ const PAGE_INSERT = {
   },
 };
 
-const EDGELESS_INSERT = {
+export const EDGELESS_INSERT = {
   ...PAGE_INSERT,
   handler: async (
     host: EditorHost,
@@ -377,13 +378,20 @@ const SAVE_AS_BLOCK: ChatAction = {
       });
     }
 
-    try {
-      const newSessionId = await AIProvider.forkChat?.({
+    const runtime = new AIChatRuntime({
+      request: getAIRequestService(),
+      scope: {
+        kind: 'fork',
         workspaceId: host.store.workspace.id,
         docId: host.store.id,
-        sessionId: parentSessionId,
+        parentSessionId,
         latestMessageId: messageId,
-      });
+      },
+      strategy: new ForkAIChatSessionStrategy(),
+    });
+    try {
+      const newSession = await runtime.createSession();
+      const newSessionId = newSession?.sessionId;
 
       if (!newSessionId) {
         return false;
@@ -425,12 +433,14 @@ const SAVE_AS_BLOCK: ChatAction = {
         onClose: function (): void {},
       });
       return false;
+    } finally {
+      runtime.dispose();
     }
   },
 };
 
 const ADD_TO_EDGELESS_AS_NOTE = {
-  icon: PageIcon({ width: '20px', height: '20px' }),
+  icon: EdgelessIcon({ width: '20px', height: '20px' }),
   title: 'Add to edgeless as note',
   showWhen: (host: EditorHost) => {
     if (host.std.store.readonly$.value) {
@@ -440,7 +450,7 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
   toast: 'New note created',
   handler: async (host: EditorHost, content: string): Promise<boolean> => {
-    reportResponse('result:add-note');
+    reportResponse('result:add-note', host);
     const { store } = host;
 
     const gfx = host.std.get(GfxControllerIdentifier);
@@ -470,13 +480,13 @@ const ADD_TO_EDGELESS_AS_NOTE = {
   },
 };
 
-const SAVE_AS_DOC = {
+export const SAVE_AS_DOC = {
   icon: PageIcon({ width: '20px', height: '20px' }),
   title: 'Save as doc',
   showWhen: () => true,
   toast: 'New doc created',
   handler: (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
+    reportResponse('result:add-page', host);
     const doc = host.store.workspace.createDoc();
     const newDoc = doc.getStore();
     newDoc.load();
@@ -491,9 +501,11 @@ const SAVE_AS_DOC = {
     let complete = false;
     (function addContent() {
       if (complete) return;
-      const newHost = document.querySelector('editor-host');
+      const newHost = [
+        ...document.querySelectorAll<EditorHost>('editor-host'),
+      ].find(candidate => candidate.store.id === newDoc.id);
       // FIXME: this is a hack to wait for the host to be ready, now we don't have a way to know if the new host is ready
-      if (!newHost || newHost === host) {
+      if (!newHost) {
         setTimeout(addContent, 100);
         return;
       }
@@ -519,7 +531,7 @@ const CREATE_AS_LINKED_DOC = {
   },
   toast: 'New doc created',
   handler: async (host: EditorHost, content: string) => {
-    reportResponse('result:add-page');
+    reportResponse('result:add-page', host);
 
     const { store } = host;
     const surfaceBlock = store

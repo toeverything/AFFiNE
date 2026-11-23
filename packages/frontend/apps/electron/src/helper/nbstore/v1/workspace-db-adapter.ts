@@ -1,7 +1,7 @@
+import { parseWorkspaceRootDocMeta } from '@affine/native';
 import type { SpaceType } from '@affine/nbstore';
 import { AsyncLock } from '@toeverything/infra/utils';
 import { Subject } from 'rxjs';
-import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import { logger } from '../../logger';
 import { getWorkspaceMeta } from '../../workspace/meta';
@@ -41,18 +41,10 @@ export class WorkspaceSQLiteDB implements AsyncDisposable {
   };
 
   getWorkspaceMeta = async () => {
-    const ydoc = new YDoc();
     const updates = await this.adapter.getUpdates();
-    updates.forEach(update => {
-      applyUpdate(ydoc, update.data);
-    });
-    logger.log(
-      `ydoc.getMap('meta').get('name')`,
-      ydoc.getMap('meta').get('name'),
-      this.path,
-      updates.length
-    );
-    return ydoc.getMap('meta').toJSON();
+    const meta = parseWorkspaceRootDocMeta(updates.map(update => update.data));
+    logger.log('workspace meta name', meta.name, this.path, updates.length);
+    return meta;
   };
 
   getWorkspaceName = async () => {

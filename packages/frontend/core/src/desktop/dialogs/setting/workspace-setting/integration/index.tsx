@@ -1,30 +1,64 @@
 import { SettingHeader } from '@affine/component/setting-components';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
+import { ServerService } from '@affine/core/modules/cloud';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
+import { CALENDAR_INTEGRATION_SCROLL_ANCHOR } from '../../navigation-constants';
 import { SubPageProvider, useSubPageIsland } from '../../sub-page';
 import {
   IntegrationCard,
   IntegrationCardContent,
   IntegrationCardHeader,
 } from './card';
-import { getAllowedIntegrationList$ } from './constants';
+import { getAllowedIntegrationList } from './constants';
 import { type IntegrationItem } from './constants';
 import { list } from './index.css';
 
-export const IntegrationSetting = () => {
+export const IntegrationSetting = ({
+  scrollAnchor,
+}: {
+  scrollAnchor?: string;
+}) => {
   const t = useI18n();
   const [opened, setOpened] = useState<string | null>(null);
-  const featureFlagService = useService(FeatureFlagService);
+  const workspaceService = useService(WorkspaceService);
+  const serverService = useService(ServerService);
+  const serverFeatures = useLiveData(serverService.server.features$);
+  const info = useWorkspaceInfo(workspaceService.workspace);
+  const isCloudWorkspace = workspaceService.workspace.flavour !== 'local';
+  const showByok = isCloudWorkspace && !!(info?.isOwner || info?.isAdmin);
 
-  const integrationList = useLiveData(
-    useMemo(
-      () => getAllowedIntegrationList$(featureFlagService),
-      [featureFlagService]
-    )
+  const integrationList = useMemo(
+    () =>
+      getAllowedIntegrationList(
+        isCloudWorkspace,
+        showByok,
+        !!serverFeatures?.copilot
+      ),
+    [isCloudWorkspace, showByok, serverFeatures?.copilot]
   );
+
+  useEffect(() => {
+    if (scrollAnchor !== CALENDAR_INTEGRATION_SCROLL_ANCHOR) {
+      return;
+    }
+
+    const hasCalendarSetting = integrationList.some(
+      item => item.id === 'calendar' && 'setting' in item
+    );
+    if (hasCalendarSetting) {
+      setOpened('calendar');
+    }
+  }, [integrationList, scrollAnchor]);
 
   const handleCardClick = useCallback((card: IntegrationItem) => {
     if ('setting' in card && card.setting) {

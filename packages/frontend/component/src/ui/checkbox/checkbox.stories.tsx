@@ -6,9 +6,7 @@ import { Checkbox } from './checkbox';
 export default {
   title: 'UI/Checkbox',
   component: Checkbox,
-  parameters: {
-    chromatic: { disableSnapshot: true },
-  },
+  parameters: {},
 } satisfies Meta<typeof Checkbox>;
 
 export const Basic: StoryFn<typeof Checkbox> = props => {

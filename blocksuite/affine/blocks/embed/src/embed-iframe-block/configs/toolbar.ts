@@ -202,7 +202,7 @@ export const builtinToolbarConfig = {
             .actions=${actions}
             .context=${ctx}
             .toggle=${toggle}
-            .viewType$=${signal(actions[2].label)}
+            .viewTypeSignal=${signal(actions[2].label)}
           ></affine-view-dropdown-menu>`
         )}`;
       },
@@ -408,7 +408,7 @@ export const builtinSurfaceToolbarConfig = {
             @toggle=${onToggle}
             .actions=${actions}
             .context=${ctx}
-            .viewType$=${signal(actions[1].label)}
+            .viewTypeSignal=${signal(actions[1].label)}
           ></affine-view-dropdown-menu>`
         )}`;
       },
@@ -465,7 +465,7 @@ export const builtinSurfaceToolbarConfig = {
             @select=${onSelect}
             @toggle=${onToggle}
             .format=${format}
-            .size$=${scale$}
+            .sizeSignal=${scale$}
           ></affine-size-dropdown-menu>`
         )}`;
       },

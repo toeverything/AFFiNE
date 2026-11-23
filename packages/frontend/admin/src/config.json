@@ -8,36 +8,8 @@
   "crypto": {
     "privateKey": {
       "type": "String",
-      "desc": "The private key for used by the crypto module to create signed tokens or encrypt data.",
+      "desc": "Private key for Node signing and encryption plus native runtime identity.",
       "env": "AFFINE_PRIVATE_KEY"
-    }
-  },
-  "job": {
-    "queue": {
-      "type": "Object",
-      "desc": "The config for job queues",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html"
-    },
-    "worker": {
-      "type": "Object",
-      "desc": "The config for job workers",
-      "link": "https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html"
-    },
-    "queues.copilot": {
-      "type": "Object",
-      "desc": "The config for copilot job queue"
-    },
-    "queues.doc": {
-      "type": "Object",
-      "desc": "The config for doc job queue"
-    },
-    "queues.notification": {
-      "type": "Object",
-      "desc": "The config for notification job queue"
-    },
-    "queues.nightly": {
-      "type": "Object",
-      "desc": "The config for nightly job queue"
     }
   },
   "throttle": {
@@ -54,44 +26,70 @@
       "desc": "The config for the strict throttler."
     }
   },
-  "websocket": {
-    "transports": {
-      "type": "Array",
-      "desc": "The enabled transports for accepting websocket traffics.",
-      "link": "https://docs.nestjs.com/websockets/gateways#transports"
-    },
-    "maxHttpBufferSize": {
-      "type": "Number",
-      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
-    }
-  },
   "auth": {
-    "allowSignup": {
+    "trustedCloudflareHeaders": {
       "type": "Boolean",
-      "desc": "Whether allow new registrations."
+      "desc": "Whether request abuse source facts should trust Cloudflare headers from the origin edge."
     },
-    "requireEmailDomainVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email domain record verification before accessing restricted resources."
-    },
-    "requireEmailVerification": {
-      "type": "Boolean",
-      "desc": "Whether require email verification before accessing restricted resources(not implemented)."
+    "signInRateLimit": {
+      "type": "Object",
+      "desc": "Limits for sign-in attempts shared through Redis by source IP and email. ttl is measured in milliseconds."
     },
     "passwordRequirements": {
       "type": "Object",
       "desc": "The password strength requirements when set new password."
     },
+    "allowSignup": {
+      "type": "Boolean",
+      "desc": "Allow new registrations."
+    },
+    "allowSignupForOauth": {
+      "type": "Boolean",
+      "desc": "Allow new registrations through configured OAuth providers."
+    },
+    "requireEmailDomainVerification": {
+      "type": "Boolean",
+      "desc": "Require email domain verification for restricted resources."
+    },
+    "newAccountActionDelay": {
+      "type": "Number",
+      "desc": "Minimum account age in seconds for invites and document publishing."
+    },
     "session.ttl": {
       "type": "Number",
-      "desc": "Application auth expiration time in seconds."
+      "desc": "Application auth expiration in seconds."
     },
     "session.ttr": {
       "type": "Number",
-      "desc": "Application auth time to refresh in seconds."
+      "desc": "Application auth refresh interval in seconds."
+    },
+    "token.accessTokenTtl": {
+      "type": "Number",
+      "desc": "Access JWT expiration in seconds."
+    },
+    "token.refreshIdleTtl": {
+      "type": "Number",
+      "desc": "Refresh session inactivity expiration in seconds."
+    },
+    "token.refreshAbsoluteTtl": {
+      "type": "Number",
+      "desc": "Refresh session absolute expiration in seconds."
+    },
+    "token.refreshGracePeriod": {
+      "type": "Number",
+      "desc": "Refresh rotation concurrency grace period in seconds."
+    },
+    "token.refreshRetention": {
+      "type": "Number",
+      "desc": "Expired refresh generation retention in seconds."
     }
   },
   "mailer": {
+    "SMTP.name": {
+      "type": "String",
+      "desc": "Hostname used for SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname.",
+      "env": "MAILER_SERVERNAME"
+    },
     "SMTP.host": {
       "type": "String",
       "desc": "Host of the email server (e.g. smtp.gmail.com)",
@@ -114,20 +112,60 @@
     },
     "SMTP.sender": {
       "type": "String",
-      "desc": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")",
       "env": "MAILER_SENDER"
     },
     "SMTP.ignoreTLS": {
       "type": "Boolean",
-      "desc": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates.",
       "env": "MAILER_IGNORE_TLS"
+    },
+    "fallbackDomains": {
+      "type": "Array",
+      "desc": "The emails from these domains are always sent using the fallback SMTP server."
+    },
+    "deliveryWorker.batchSize": {
+      "type": "Number",
+      "desc": "Number of mail delivery rows claimed by each worker tick."
+    },
+    "deliveryWorker.leaseMs": {
+      "type": "Number",
+      "desc": "Mail delivery worker lease duration in milliseconds."
+    },
+    "deliveryWorker.retentionDays": {
+      "type": "Number",
+      "desc": "Days to retain anonymized terminal mail delivery ledger rows."
+    },
+    "fallbackSMTP.name": {
+      "type": "String",
+      "desc": "Hostname used for fallback SMTP HELO/EHLO (e.g. mail.example.com). Leave empty to use the system hostname."
+    },
+    "fallbackSMTP.host": {
+      "type": "String",
+      "desc": "Host of the email server (e.g. smtp.gmail.com)"
+    },
+    "fallbackSMTP.port": {
+      "type": "Number",
+      "desc": "Port of the email server (they commonly are 25, 465 or 587)"
+    },
+    "fallbackSMTP.username": {
+      "type": "String",
+      "desc": "Username used to authenticate the email server"
+    },
+    "fallbackSMTP.password": {
+      "type": "String",
+      "desc": "Password used to authenticate the email server"
+    },
+    "fallbackSMTP.sender": {
+      "type": "String",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Self Hosted &lt;noreply@example.com&gt;\")"
+    },
+    "fallbackSMTP.ignoreTLS": {
+      "type": "Boolean",
+      "desc": "Whether ignore email server's TLS certificate verification. Enable it for self-signed certificates."
     }
   },
   "doc": {
-    "experimental.yocto": {
-      "type": "Boolean",
-      "desc": "Use `y-octo` to merge updates at the same time when merging using Yjs."
-    },
     "history.interval": {
       "type": "Number",
       "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
@@ -145,6 +183,17 @@
     "blob.storage": {
       "type": "Object",
       "desc": "The config of storage for all uploaded blobs(images, videos, etc.)."
+    }
+  },
+  "websocket": {
+    "transports": {
+      "type": "Array",
+      "desc": "The enabled transports for accepting websocket traffics.",
+      "link": "https://docs.nestjs.com/websockets/gateways#transports"
+    },
+    "maxHttpBufferSize": {
+      "type": "Number",
+      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
     }
   },
   "server": {
@@ -167,6 +216,15 @@
       "desc": "Where the server get deployed(FQDN).",
       "env": "AFFINE_SERVER_HOST"
     },
+    "hosts": {
+      "type": "Array",
+      "desc": "Multiple hosts the server will accept requests from."
+    },
+    "listenAddr": {
+      "type": "String",
+      "desc": "The address to listen on (e.g., 0.0.0.0 for IPv4, :: for IPv6).",
+      "env": "LISTEN_ADDR"
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -179,16 +237,37 @@
     }
   },
   "flags": {
-    "earlyAccessControl": {
+    "allowGuestDemoWorkspace": {
       "type": "Boolean",
-      "desc": "Only allow users with early access features to access the app"
+      "desc": "Whether allow guest users to create demo workspaces."
     }
   },
-  "docService": {
-    "endpoint": {
+  "telemetry": {
+    "allowedOrigin": {
+      "type": "Array",
+      "desc": "Allowed origins for telemetry collection."
+    },
+    "ga4.measurementId": {
       "type": "String",
-      "desc": "The endpoint of the doc service.",
-      "env": "DOC_SERVICE_ENDPOINT"
+      "desc": "GA4 Measurement ID for Measurement Protocol.",
+      "env": "GA4_MEASUREMENT_ID"
+    },
+    "ga4.apiSecret": {
+      "type": "String",
+      "desc": "GA4 API secret for Measurement Protocol.",
+      "env": "GA4_API_SECRET"
+    },
+    "dedupe.ttlHours": {
+      "type": "Number",
+      "desc": "Telemetry dedupe TTL in hours."
+    },
+    "dedupe.maxEntries": {
+      "type": "Number",
+      "desc": "Telemetry dedupe max entries."
+    },
+    "batch.maxEvents": {
+      "type": "Number",
+      "desc": "Max events per telemetry batch."
     }
   },
   "client": {
@@ -199,6 +278,17 @@
     "versionControl.requiredVersion": {
       "type": "String",
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
+    }
+  },
+  "calendar": {
+    "google": {
+      "type": "Object",
+      "desc": "Google Calendar integration config",
+      "link": "https://developers.google.com/calendar/api/guides/push"
+    },
+    "caldav": {
+      "type": "Object",
+      "desc": "CalDAV integration config"
     }
   },
   "captcha": {
@@ -212,31 +302,6 @@
     }
   },
   "copilot": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether to enable the copilot plugin."
-    },
-    "providers.openai": {
-      "type": "Object",
-      "desc": "The config for the openai provider.",
-      "link": "https://github.com/openai/openai-node"
-    },
-    "providers.fal": {
-      "type": "Object",
-      "desc": "The config for the fal provider."
-    },
-    "providers.gemini": {
-      "type": "Object",
-      "desc": "The config for the gemini provider."
-    },
-    "providers.perplexity": {
-      "type": "Object",
-      "desc": "The config for the perplexity provider."
-    },
-    "providers.anthropic": {
-      "type": "Object",
-      "desc": "The config for the anthropic provider."
-    },
     "unsplash": {
       "type": "Object",
       "desc": "The config for the unsplash key."
@@ -245,19 +310,55 @@
       "type": "Object",
       "desc": "The config for the exa web search key."
     },
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable AI features. Workspace owners configure provider keys in Workspace Settings → Integrations → AI BYOK."
+    },
+    "byok.enabled": {
+      "type": "Boolean",
+      "desc": "Allow workspace owners and admins to configure AI provider keys through AI BYOK."
+    },
+    "byok.allowedProviders": {
+      "type": "Array",
+      "desc": "AI providers that workspace owners and admins may add through AI BYOK."
+    },
+    "byok.allowCustomEndpoint": {
+      "type": "Boolean",
+      "desc": "Allow AI BYOK keys to use a custom provider endpoint."
+    },
+    "byok.allowPrivateEndpoint": {
+      "type": "Boolean",
+      "desc": "Whether workspace BYOK custom endpoints may resolve to private network targets. Enabling this allows workspace owners and admins to send provider probe requests to the private network."
+    },
     "storage": {
       "type": "Object",
       "desc": "The config for the storage provider."
     }
   },
-  "customerIo": {
+  "indexer": {
     "enabled": {
       "type": "Boolean",
-      "desc": "Enable customer.io integration"
+      "desc": "Enable the indexer."
     },
-    "token": {
+    "provider.type": {
       "type": "String",
-      "desc": "Customer.io token"
+      "desc": "Search provider type."
+    },
+    "provider.endpoint": {
+      "type": "String",
+      "desc": "Remote search provider endpoint."
+    },
+    "provider.apiKey": {
+      "type": "String",
+      "desc": "Remote search provider API key."
+    },
+    "provider.username": {
+      "type": "String",
+      "desc": "Remote search provider username."
+    },
+    "provider.password": {
+      "type": "String",
+      "desc": "Remote search provider password."
     }
   },
   "oauth": {
@@ -273,32 +374,31 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config"
+      "desc": "OIDC OAuth provider config. Private network access requires allowPrivateNetwork: true",
+      "link": "https://openid.net/specs/openid-connect-core-1_0.html"
+    },
+    "providers.apple": {
+      "type": "Object",
+      "desc": "Apple OAuth provider config",
+      "link": "https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app"
     }
   },
   "payment": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Whether enable payment plugin"
-    },
     "showLifetimePrice": {
       "type": "Boolean",
       "desc": "Whether enable lifetime price and allow user to pay for it."
     },
-    "apiKey": {
-      "type": "String",
-      "desc": "Stripe API key to enable payment service.",
-      "env": "STRIPE_API_KEY"
-    },
-    "webhookKey": {
-      "type": "String",
-      "desc": "Stripe webhook key to enable payment service.",
-      "env": "STRIPE_WEBHOOK_KEY"
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable payment integration."
     },
     "stripe": {
       "type": "Object",
-      "desc": "Stripe sdk options",
-      "link": "https://docs.stripe.com/api"
+      "desc": "Stripe SDK options and credentials."
+    },
+    "revenuecat": {
+      "type": "Object",
+      "desc": "RevenueCat integration configuration."
     }
   },
   "worker": {

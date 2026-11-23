@@ -1,45 +1,48 @@
-import { Button, Menu, MenuSub } from '@affine/component';
+import {
+  Button,
+  Divider,
+  Menu,
+  type MenuProps,
+  MenuSub,
+} from '@affine/component';
 import type {
   GroupByParams,
   OrderByParams,
 } from '@affine/core/modules/collection-rules/types';
 import { useI18n } from '@affine/i18n';
-import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import type React from 'react';
 import { useCallback } from 'react';
 
-import type { ExplorerPreference } from '../types';
+import type { ExplorerDisplayPreference } from '../types';
 import { GroupByList, GroupByName } from './group';
 import { OrderByList, OrderByName } from './order';
+import { DisplayProperties } from './properties';
+import { QuickActionsConfig } from './quick-actions';
 import * as styles from './styles.css';
 
 const ExplorerDisplayMenu = ({
-  preference,
-  onChange,
+  displayPreference,
+  onDisplayPreferenceChange,
 }: {
-  preference: ExplorerPreference;
-  onChange?: (preference: ExplorerPreference) => void;
+  displayPreference: ExplorerDisplayPreference;
+  onDisplayPreferenceChange: (
+    displayPreference: ExplorerDisplayPreference
+  ) => void;
 }) => {
   const t = useI18n();
 
   const handleGroupByChange = useCallback(
-    (groupBy: GroupByParams) => {
-      onChange?.({
-        ...preference,
-        groupBy,
-      });
+    (groupBy: GroupByParams | undefined) => {
+      onDisplayPreferenceChange({ ...displayPreference, groupBy });
     },
-    [onChange, preference]
+    [displayPreference, onDisplayPreferenceChange]
   );
 
   const handleOrderByChange = useCallback(
     (orderBy: OrderByParams) => {
-      onChange?.({
-        ...preference,
-        orderBy,
-      });
+      onDisplayPreferenceChange({ ...displayPreference, orderBy });
     },
-    [onChange, preference]
+    [displayPreference, onDisplayPreferenceChange]
   );
 
   return (
@@ -47,7 +50,7 @@ const ExplorerDisplayMenu = ({
       <MenuSub
         items={
           <GroupByList
-            groupBy={preference.groupBy}
+            groupBy={displayPreference.groupBy}
             onChange={handleGroupByChange}
           />
         }
@@ -55,8 +58,8 @@ const ExplorerDisplayMenu = ({
         <div className={styles.subMenuSelectorContainer}>
           <span>{t['com.affine.explorer.display-menu.grouping']()}</span>
           <span className={styles.subMenuSelectorSelected}>
-            {preference.groupBy ? (
-              <GroupByName groupBy={preference.groupBy} />
+            {displayPreference.groupBy ? (
+              <GroupByName groupBy={displayPreference.groupBy} />
             ) : null}
           </span>
         </div>
@@ -64,7 +67,7 @@ const ExplorerDisplayMenu = ({
       <MenuSub
         items={
           <OrderByList
-            orderBy={preference.orderBy}
+            orderBy={displayPreference.orderBy}
             onChange={handleOrderByChange}
           />
         }
@@ -72,12 +75,23 @@ const ExplorerDisplayMenu = ({
         <div className={styles.subMenuSelectorContainer}>
           <span>{t['com.affine.explorer.display-menu.ordering']()}</span>
           <span className={styles.subMenuSelectorSelected}>
-            {preference.orderBy ? (
-              <OrderByName orderBy={preference.orderBy} />
+            {displayPreference.orderBy ? (
+              <OrderByName orderBy={displayPreference.orderBy} />
             ) : null}
           </span>
         </div>
       </MenuSub>
+      <Divider space={4} size="thinner" />
+      <DisplayProperties
+        displayPreference={displayPreference}
+        onDisplayPreferenceChange={onDisplayPreferenceChange}
+      />
+
+      <Divider space={4} size="thinner" />
+      <QuickActionsConfig
+        displayPreference={displayPreference}
+        onDisplayPreferenceChange={onDisplayPreferenceChange}
+      />
     </div>
   );
 };
@@ -85,26 +99,30 @@ const ExplorerDisplayMenu = ({
 export const ExplorerDisplayMenuButton = ({
   style,
   className,
-  preference,
-  onChange,
+  menuProps,
+  displayPreference,
+  onDisplayPreferenceChange,
 }: {
   style?: React.CSSProperties;
   className?: string;
-  preference: ExplorerPreference;
-  onChange?: (preference: ExplorerPreference) => void;
+  menuProps?: Omit<MenuProps, 'items' | 'children'>;
+  displayPreference: ExplorerDisplayPreference;
+  onDisplayPreferenceChange: (
+    displayPreference: ExplorerDisplayPreference
+  ) => void;
 }) => {
   const t = useI18n();
   return (
     <Menu
       items={
-        <ExplorerDisplayMenu preference={preference} onChange={onChange} />
+        <ExplorerDisplayMenu
+          displayPreference={displayPreference}
+          onDisplayPreferenceChange={onDisplayPreferenceChange}
+        />
       }
+      {...menuProps}
     >
-      <Button
-        className={className}
-        style={style}
-        suffix={<ArrowDownSmallIcon />}
-      >
+      <Button className={className} style={style}>
         {t['com.affine.explorer.display-menu.button']()}
       </Button>
     </Menu>

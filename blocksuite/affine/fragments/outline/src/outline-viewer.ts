@@ -200,6 +200,7 @@ export class OutlineViewer extends SignalWatcher(
       )
     );
 
+    // title update
     this.disposables.add(
       this.editor.store.workspace.meta.docMetaUpdated.subscribe(() => {
         this.requestUpdate();

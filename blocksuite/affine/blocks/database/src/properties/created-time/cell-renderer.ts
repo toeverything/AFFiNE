@@ -11,7 +11,6 @@ import { createdTimePropertyModelConfig } from './define.js';
 const createdTimeCellStyle = css({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
   width: '100%',
   height: '100%',
 });

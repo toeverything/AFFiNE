@@ -1,6 +1,7 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import {
   ArrowDownBigIcon as ArrowDownIcon,
   ArrowUpBigIcon as ArrowUpIcon,
@@ -25,7 +26,7 @@ import { property, state } from 'lit/decorators.js';
 
 import { type ChatAction } from '../../components/ai-chat-messages';
 import { createTextRenderer } from '../../components/text-renderer';
-import { HISTORY_IMAGE_ACTIONS } from '../const';
+import { HISTORY_IMAGE_ACTIONS } from '../../utils/history-image-actions';
 
 const icons: Record<string, TemplateResult<1>> = {
   'Fix spelling for it': DoneIcon(),
@@ -151,33 +152,43 @@ export class ActionWrapper extends WithDisposable(LitElement) {
           <div>${this.promptShow ? ArrowDownIcon() : ArrowUpIcon()}</div>
         </div>
       </div>
-      ${this.promptShow
-        ? html`
-            <div class="answer-prompt" data-testid="answer-prompt">
-              <div class="subtitle">Answer</div>
-              ${HISTORY_IMAGE_ACTIONS.includes(item.action)
-                ? images &&
-                  html`<chat-content-images
-                    .images=${images}
-                    data-testid="generated-image"
-                  ></chat-content-images>`
-                : nothing}
-              ${answer
-                ? createTextRenderer(this.host, {
-                    customHeading: true,
-                    testId: 'chat-message-action-answer',
-                  })(answer)
-                : nothing}
-              ${originalText
-                ? html`<div class="subtitle prompt">Prompt</div>
-                    ${createTextRenderer(this.host, {
-                      customHeading: true,
-                      testId: 'chat-message-action-prompt',
-                    })(item.messages[0].content + originalText)}`
-                : nothing}
-            </div>
-          `
-        : nothing} `;
+      ${
+        this.promptShow
+          ? html`
+              <div class="answer-prompt" data-testid="answer-prompt">
+                <div class="subtitle">Answer</div>
+                ${
+                  HISTORY_IMAGE_ACTIONS.includes(item.action)
+                    ? images &&
+                      html`<chat-content-images
+                        .images=${images}
+                        data-testid="generated-image"
+                      ></chat-content-images>`
+                    : nothing
+                }
+                ${
+                  answer
+                    ? createTextRenderer({
+                        customHeading: true,
+                        testId: 'chat-message-action-answer',
+                        theme: this.host.std.get(ThemeProvider).app$,
+                      })(answer)
+                    : nothing
+                }
+                ${
+                  originalText
+                    ? html`<div class="subtitle prompt">Prompt</div>
+                        ${createTextRenderer({
+                          customHeading: true,
+                          testId: 'chat-message-action-prompt',
+                          theme: this.host.std.get(ThemeProvider).app$,
+                        })(item.messages[0].content + originalText)}`
+                    : nothing
+                }
+              </div>
+            `
+          : nothing
+      } `;
   }
 }
 

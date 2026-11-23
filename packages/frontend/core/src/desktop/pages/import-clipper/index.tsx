@@ -13,6 +13,7 @@ import {
   WorkspacesService,
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { AllDocsIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
@@ -98,6 +99,7 @@ export const Component = () => {
   const handleSuccess = useCallback(() => {
     const arg = { type: 'affine-clipper:import:success' };
     const port = port$.value;
+    track.clipper.$.$.createDoc();
     if (port) {
       port.postMessage(arg);
     } else {
@@ -108,6 +110,8 @@ export const Component = () => {
 
   const handleImportToSelectedWorkspace = useAsyncCallback(async () => {
     if (clipperInputSnapshot && selectedWorkspace) {
+      // save the last opened workspace id
+      localStorage.setItem('last_workspace_id', selectedWorkspace.id);
       setImporting(true);
       try {
         await importClipperService.importToWorkspace(

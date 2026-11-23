@@ -5,10 +5,22 @@ rustflags = ["-C", "target-feature=+crt-static"]
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-args=-Wl,--warn-unresolved-symbols"]
 [target.'cfg(target_os = "macos")']
-rustflags = ["-C", "link-args=-Wl,-undefined,dynamic_lookup,-no_fixup_chains", "-C", "link-args=-all_load", "-C", "link-args=-weak_framework ScreenCaptureKit"]
+rustflags = [
+  "-C",
+  "link-args=-Wl,-undefined,dynamic_lookup,-no_fixup_chains",
+  "-C",
+  "link-args=-all_load",
+  "-C",
+  "link-args=-weak_framework ScreenCaptureKit",
+]
 # https://sourceware.org/bugzilla/show_bug.cgi?id=21032
 # https://sourceware.org/bugzilla/show_bug.cgi?id=21031
 # https://github.com/rust-lang/rust/issues/134820
 # pthread_key_create() destructors and segfault after a DSO unloading
 [target.'cfg(all(target_env = "gnu", not(target_os = "windows")))']
 rustflags = ["-C", "link-args=-Wl,-z,nodelete"]
+
+# Temporary local llm_adapter override.
+# Uncomment when verifying AFFiNE against the sibling llm_adapter workspace.
+# [patch.crates-io]
+# llm_adapter = { path = "../llm_adapter" }

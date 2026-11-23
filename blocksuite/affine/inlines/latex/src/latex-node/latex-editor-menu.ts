@@ -3,6 +3,7 @@ import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { IS_MAC } from '@blocksuite/global/env';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { noop } from '@blocksuite/global/utils';
 import { DoneIcon } from '@blocksuite/icons/lit';
@@ -57,6 +58,9 @@ export class LatexEditorMenu extends SignalWatcher(
 
       font-family: ${unsafeCSSVar('fontCodeFamily')};
       border: 1px solid transparent;
+
+      max-height: 400px;
+      overflow-y: auto;
     }
     .latex-editor:focus-within {
       border: 1px solid ${unsafeCSSVar('blue700')};
@@ -96,6 +100,10 @@ export class LatexEditorMenu extends SignalWatcher(
   get richText() {
     return this.querySelector<RichText>('rich-text');
   }
+
+  private readonly _getVerticalScrollContainer = () => {
+    return this.querySelector('.latex-editor');
+  };
 
   private _updateHighlightTokens(text: string) {
     const editorTheme = this.std.get(ThemeProvider).theme;
@@ -148,6 +156,12 @@ export class LatexEditorMenu extends SignalWatcher(
         e.stopPropagation();
         this.abortController.abort();
       }
+      // Firefox's native select all is dropped by the editor's range sync.
+      if (e.key === 'a' && (IS_MAC ? e.metaKey : e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.richText?.inlineEditor?.selectAll();
+      }
     });
 
     this.disposables.addFromEvent(this, 'pointerdown', e => {
@@ -171,11 +185,14 @@ export class LatexEditorMenu extends SignalWatcher(
   override render() {
     return html`<div class="latex-editor-container">
       <div class="latex-editor">
-        <rich-text
-          .yText=${this.yText}
-          .attributesSchema=${this.inlineManager.getSchema()}
-          .attributeRenderer=${this.inlineManager.getRenderer()}
-        ></rich-text>
+        <div class="latex-editor-content">
+          <rich-text
+            .yText=${this.yText}
+            .attributesSchema=${this.inlineManager.getSchema()}
+            .attributeRenderer=${this.inlineManager.getRenderer()}
+            .verticalScrollContainerGetter=${this._getVerticalScrollContainer}
+          ></rich-text>
+        </div>
       </div>
       <div class="latex-editor-confirm">
         <span @click=${() => this.abortController.abort()}

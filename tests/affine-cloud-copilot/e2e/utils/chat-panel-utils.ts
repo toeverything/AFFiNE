@@ -1,4 +1,4 @@
-// eslint-disable eslint-plugin-unicorn(prefer-dom-node-dataset
+// oxlint-disable unicorn/prefer-dom-node-dataset
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
@@ -37,7 +37,7 @@ export class ChatPanelUtils {
   }
 
   public static async closeChatPanel(page: Page) {
-    await page.getByTestId('right-sidebar-toggle').click({
+    await page.getByTestId('right-sidebar-close').click({
       delay: 200,
     });
     await expect(page.getByTestId('sidebar-tab-content-chat')).toBeHidden();
@@ -67,54 +67,70 @@ export class ChatPanelUtils {
   }
 
   public static async collectHistory(page: Page) {
-    return await page.evaluate(() => {
-      const chatPanel = document.querySelector<HTMLElement>(
-        '[data-testid="chat-panel-messages"]'
-      );
-      if (!chatPanel) {
-        return [] as ChatMessage[];
+    const selectors =
+      ':is(chat-message-user,chat-message-assistant,chat-message-action,[data-testid="chat-message-user"],[data-testid="chat-message-assistant"],[data-testid="chat-message-action"])';
+    const messages = page.locator(selectors);
+    const count = await messages.count();
+    if (!count) return [] as ChatMessage[];
+
+    const history: ChatMessage[] = [];
+    for (let i = 0; i < count; i++) {
+      const message = messages.nth(i);
+      const testId = await message.getAttribute('data-testid');
+      const tag = await message.evaluate(el => el.tagName.toLowerCase());
+      const isAssistant =
+        testId === 'chat-message-assistant' || tag === 'chat-message-assistant';
+      const isAction =
+        testId === 'chat-message-action' || tag === 'chat-message-action';
+      const isUser =
+        testId === 'chat-message-user' || tag === 'chat-message-user';
+
+      if (!isAssistant && !isAction && !isUser) continue;
+
+      const titleNode = message.locator('.user-info').first();
+      const title =
+        (await titleNode.count()) > 0 ? await titleNode.innerText() : '';
+
+      if (isUser) {
+        const pureText = message.getByTestId('chat-content-pure-text').first();
+        const content =
+          (await pureText.count()) > 0
+            ? await pureText.innerText()
+            : ((await message.innerText()) ?? '');
+        history.push({ role: 'user', content });
+        continue;
       }
-      const messages = chatPanel.querySelectorAll<HTMLElement>(
-        'chat-message-user,chat-message-assistant,chat-message-action'
-      );
 
-      return Array.from(messages).map(m => {
-        const isAssistant = m.dataset.testid === 'chat-message-assistant';
-        const isChatAction = m.dataset.testid === 'chat-message-action';
+      const richText = message.locator('chat-content-rich-text editor-host');
+      const richContent =
+        (await richText.count()) > 0
+          ? (await richText.allInnerTexts()).join(' ')
+          : '';
+      const content = richContent || ((await message.innerText()) ?? '').trim();
 
-        const isUser = !isAssistant && !isChatAction;
+      if (isAssistant) {
+        const inferredStatus = (await message
+          .getByTestId('ai-loading')
+          .isVisible()
+          .catch(() => false))
+          ? 'transmitting'
+          : content
+            ? 'success'
+            : 'idle';
+        history.push({
+          role: 'assistant',
+          status: ((await message.getAttribute('data-status')) ??
+            inferredStatus) as ChatStatus,
+          title,
+          content,
+        });
+        continue;
+      }
 
-        if (isUser) {
-          return {
-            role: 'user' as const,
-            content:
-              m.querySelector<HTMLElement>(
-                '[data-testid="chat-content-pure-text"]'
-              )?.innerText || '',
-          };
-        }
+      history.push({ role: 'action', title, content });
+    }
 
-        if (isAssistant) {
-          return {
-            role: 'assistant' as const,
-            status: m.dataset.status as ChatStatus,
-            title: m.querySelector<HTMLElement>('.user-info')?.innerText || '',
-            content:
-              m.querySelector<HTMLElement>('chat-content-rich-text editor-host')
-                ?.innerText || '',
-          };
-        }
-
-        // Must be chat action at this point
-        return {
-          role: 'action' as const,
-          title: m.querySelector<HTMLElement>('.user-info')?.innerText || '',
-          content:
-            m.querySelector<HTMLElement>('chat-content-rich-text editor-host')
-              ?.innerText || '',
-        };
-      });
-    });
+    return history;
   }
 
   private static expectHistory(
@@ -126,8 +142,34 @@ export class ChatPanelUtils {
     )[]
   ) {
     expect(history).toHaveLength(expected.length);
+    const assistantStage = {
+      loading: 1,
+      transmitting: 2,
+      success: 3,
+    } as const;
+
     history.forEach((message, index) => {
       const expectedMessage = expected[index];
+      if (
+        message.role === 'assistant' &&
+        expectedMessage?.role === 'assistant' &&
+        expectedMessage.status
+      ) {
+        const expectedStatus = expectedMessage.status;
+        if (
+          expectedStatus in assistantStage &&
+          message.status in assistantStage
+        ) {
+          expect(
+            assistantStage[message.status as keyof typeof assistantStage]
+          ).toBeGreaterThanOrEqual(
+            assistantStage[expectedStatus as keyof typeof assistantStage]
+          );
+          const { status: _status, ...expectedRest } = expectedMessage;
+          expect(message).toMatchObject(expectedRest);
+          return;
+        }
+      }
       expect(message).toMatchObject(expectedMessage);
     });
   }
@@ -165,9 +207,11 @@ export class ChatPanelUtils {
     const actionList = await message.getByTestId('chat-action-list');
     return {
       message,
-      content: await message
-        .locator('chat-content-rich-text editor-host')
-        .innerText(),
+      content: (
+        await message
+          .locator('chat-content-rich-text editor-host')
+          .allInnerTexts()
+      ).join(' '),
       actions: {
         copy: async () => actions.getByTestId('action-copy-button').click(),
         retry: async () => actions.getByTestId('action-retry-button').click(),
@@ -197,9 +241,11 @@ export class ChatPanelUtils {
   }
 
   public static async chatWithDoc(page: Page, docName: string) {
-    const withButton = await page.getByTestId('chat-panel-with-button');
-    await withButton.click();
-    const withMenu = await page.getByTestId('ai-add-popover');
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
+    await withButton.click({ delay: 200 });
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
     await withMenu.getByText(docName).click();
     await page.getByTestId('chat-panel-chips').getByText(docName);
   }
@@ -217,18 +263,25 @@ export class ChatPanelUtils {
       const fileChooserPromise = page.waitForEvent('filechooser');
       const withButton = page.getByTestId('chat-panel-with-button');
       await withButton.hover();
-      await withButton.click();
+      await withButton.click({ delay: 200 });
       const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-files').click();
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(attachment);
+
+      await expect(async () => {
+        const states = await page
+          .getByTestId('chat-panel-chip')
+          .evaluateAll(elements => elements.map(el => el.dataset.state));
+
+        expect(states.every(state => state === 'finished')).toBe(true);
+      }).toPass({ timeout: 20000 });
     }
     await expect(async () => {
       const states = await page
         .getByTestId('chat-panel-chip')
-        .evaluateAll(elements =>
-          elements.map(el => el.getAttribute('data-state'))
-        );
+        .evaluateAll(elements => elements.map(el => el.dataset.state));
       expect(states).toHaveLength(attachments.length);
       expect(states.every(state => state === 'finished')).toBe(true);
     }).toPass({ timeout: 20000 });
@@ -236,31 +289,44 @@ export class ChatPanelUtils {
     await this.makeChat(page, text);
   }
 
-  public static async chatWithImages(
+  public static async uploadImages(
     page: Page,
-    images: { name: string; mimeType: string; buffer: Buffer }[],
-    text: string
+    images: { name: string; mimeType: string; buffer: Buffer }[]
   ) {
     await page.evaluate(() => {
       delete window.showOpenFilePicker;
     });
 
     const fileChooserPromise = page.waitForEvent('filechooser');
-    // Open file upload dialog
-    await page.getByTestId('chat-panel-input-image-upload').click();
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
+    await withButton.click({ delay: 200 });
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
+    await withMenu.getByTestId('ai-chat-with-images').click();
 
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(images);
+  }
 
-    await page.waitForSelector('ai-chat-input img');
+  public static async chatWithImages(
+    page: Page,
+    images: { name: string; mimeType: string; buffer: Buffer }[],
+    text: string
+  ) {
+    await this.uploadImages(page, images);
+
+    await page.waitForSelector('ai-chat-input .image-container');
     await this.makeChat(page, text);
   }
 
   public static async chatWithTags(page: Page, tags: string[]) {
     for (const tag of tags) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
-      await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
+      await withButton.click({ delay: 200 });
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-tags').click();
       await withMenu.getByText(tag).click();
       await page.getByTestId('chat-panel-chips').getByText(tag);
@@ -273,9 +339,11 @@ export class ChatPanelUtils {
 
   public static async chatWithCollections(page: Page, collections: string[]) {
     for (const collection of collections) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
-      await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
+      await withButton.click({ delay: 200 });
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-collections').click();
       await withMenu.getByText(collection).click();
       await page.getByTestId('chat-panel-chips').getByText(collection);
@@ -287,29 +355,28 @@ export class ChatPanelUtils {
   }
 
   public static async waitForEmbeddingProgress(page: Page) {
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
+    try {
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'visible',
+      });
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'hidden',
+      });
+    } catch {
+      // do nothing
+    }
+  }
+
+  public static async openChatInputPreference(page: Page) {
+    const trigger = page.getByTestId('chat-input-preference-trigger');
+    await trigger.click();
+    await page.getByTestId('chat-input-preference').waitFor({
       state: 'visible',
     });
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
-      state: 'hidden',
-    });
-  }
-
-  public static async enableNetworkSearch(page: Page) {
-    const networkSearch = page.getByTestId('chat-network-search');
-    if ((await networkSearch.getAttribute('data-active')) === 'false') {
-      await networkSearch.click();
-    }
-  }
-
-  public static async disableNetworkSearch(page: Page) {
-    const networkSearch = page.getByTestId('chat-network-search');
-    if ((await networkSearch.getAttribute('data-active')) === 'true') {
-      await networkSearch.click();
-    }
   }
 
   public static async enableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'false') {
       await reasoning.click();
@@ -317,20 +384,10 @@ export class ChatPanelUtils {
   }
 
   public static async disableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'true') {
       await reasoning.click();
     }
-  }
-
-  public static async isNetworkSearchEnabled(page: Page) {
-    const networkSearch = await page.getByTestId('chat-network-search');
-    return (await networkSearch.getAttribute('aria-disabled')) === 'false';
-  }
-
-  public static async isImageUploadEnabled(page: Page) {
-    const imageUpload = await page.getByTestId('chat-panel-input-image-upload');
-    const disabled = await imageUpload.getAttribute('data-disabled');
-    return disabled === 'false';
   }
 }

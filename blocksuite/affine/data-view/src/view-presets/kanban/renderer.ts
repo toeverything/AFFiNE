@@ -1,11 +1,12 @@
-import { createUniComponentFromWebComponent } from '../../core/index.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
 import { kanbanViewModel } from './define.js';
-import { MobileDataViewKanban } from './mobile/kanban-view.js';
-import { DataViewKanban } from './pc/kanban-view.js';
+import { MobileKanbanViewUILogic } from './mobile/kanban-view-ui-logic.js';
+import { KanbanViewUILogic } from './pc/kanban-view-ui-logic.js';
 
 export const kanbanViewMeta = kanbanViewModel.createMeta({
   icon: createIcon('DatabaseKanbanViewIcon'),
-  view: createUniComponentFromWebComponent(DataViewKanban),
-  mobileView: createUniComponentFromWebComponent(MobileDataViewKanban),
+  // @ts-expect-error fixme: typesafe
+  pcLogic: () => KanbanViewUILogic,
+  // @ts-expect-error fixme: typesafe
+  mobileLogic: () => MobileKanbanViewUILogic,
 });

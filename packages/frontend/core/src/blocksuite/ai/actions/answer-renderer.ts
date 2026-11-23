@@ -1,5 +1,6 @@
 import type { MindmapElementModel } from '@blocksuite/affine/model';
 import type { EditorHost } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 
 import { createAIScrollableTextRenderer } from '../components/ai-scrollable-text-renderer';
 import {
@@ -52,5 +53,11 @@ export function actionToAnswerRenderer<
     return createImageRenderer(host, { height: 300 });
   }
 
-  return createAIScrollableTextRenderer(host, {}, 320, true);
+  return createAIScrollableTextRenderer(
+    {
+      theme: host.std.get(ThemeProvider).app$,
+    },
+    320,
+    true
+  );
 }

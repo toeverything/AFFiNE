@@ -1,13 +1,11 @@
 /**
  * @vitest-environment happy-dom
  */
-import '../../helpers/affine-test-utils';
-
 import type { TextSelection } from '@blocksuite/std';
 import { describe, expect, it } from 'vitest';
 
 import { replaceSelectedTextWithBlocksCommand } from '../../../commands/model-crud/replace-selected-text-with-blocks';
-import { affine, block } from '../../helpers/affine-template';
+import { affine, block } from '../../../test-utils';
 
 describe('commands/model-crud', () => {
   describe('replaceSelectedTextWithBlocksCommand', () => {

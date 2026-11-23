@@ -1,242 +1,349 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
 
 import {
-  autoMetadata,
-  Config,
-  EventBus,
-  type GetObjectMetadata,
-  ListObjectsMetadata,
-  OnEvent,
-  PutObjectMetadata,
-  type StorageProvider,
-  StorageProviderFactory,
+  BlobInvalid,
+  PROXY_MULTIPART_PATH,
+  PROXY_UPLOAD_PATH,
+  type PutObjectMetadata,
+  SIGNED_URL_EXPIRED,
   URLHelper,
 } from '../../../base';
+import { Models } from '../../../models';
+import type { StorageProviderCapabilities } from '../../../native';
+import { StorageRuntimeProvider } from '../../storage-runtime';
+import { MULTIPART_PART_SIZE } from '../constants';
 
-declare global {
-  interface Events {
-    'workspace.blob.sync': {
-      workspaceId: string;
-      key: string;
-    };
-    'workspace.blob.delete': {
-      workspaceId: string;
-      key: string;
-    };
-  }
-}
+type UploadURLConfig = {
+  proxyUpload: boolean;
+  urlPrefix?: string;
+};
+
+type UploadProxyConfig = {
+  urlPrefix: string;
+};
 
 @Injectable()
 export class WorkspaceBlobStorage {
-  private readonly logger = new Logger(WorkspaceBlobStorage.name);
-  private provider!: StorageProvider;
-
-  get config() {
-    return this.AFFiNEConfig.storages.blob;
-  }
-
   constructor(
-    private readonly AFFiNEConfig: Config,
-    private readonly event: EventBus,
-    private readonly storageFactory: StorageProviderFactory,
-    private readonly db: PrismaClient,
-    private readonly url: URLHelper
+    private readonly models: Models,
+    private readonly url: URLHelper,
+    private readonly rt: StorageRuntimeProvider
   ) {}
 
-  @OnEvent('config.init')
-  async onConfigInit() {
-    this.provider = this.storageFactory.create(this.config.storage);
+  async putReservation(
+    workspaceId: string,
+    key: string,
+    reservationId: string,
+    blob: Buffer,
+    metadata: PutObjectMetadata
+  ) {
+    const storedMetadata = await this.rt.putObject(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      blob,
+      metadata
+    );
+    return storedMetadata;
   }
 
-  @OnEvent('config.changed')
-  async onConfigChanged(event: Events['config.changed']) {
-    if (event.updates.storages?.blob?.storage) {
-      this.provider = this.storageFactory.create(this.config.storage);
+  async capabilities(): Promise<StorageProviderCapabilities> {
+    const capabilities = await this.rt.providerCapabilities('blob');
+    const config = this.uploadURLConfig();
+    if (!config) {
+      return {
+        ...capabilities,
+        presignPut: false,
+        multipartDirect: false,
+        proxyUpload: false,
+        serverMediatedOnly: true,
+      };
     }
-  }
-
-  async put(workspaceId: string, key: string, blob: Buffer) {
-    const meta: PutObjectMetadata = autoMetadata(blob);
-
-    await this.provider.put(`${workspaceId}/${key}`, blob, meta);
-    await this.upsert(workspaceId, key, {
-      contentType: meta.contentType ?? 'application/octet-stream',
-      contentLength: blob.length,
-      lastModified: new Date(),
-    });
-  }
-
-  async get(workspaceId: string, key: string, signedUrl?: boolean) {
-    return this.provider.get(`${workspaceId}/${key}`, signedUrl);
-  }
-
-  async list(workspaceId: string, syncBlobMeta = true) {
-    const blobsInDb = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: null,
-      },
-    });
-
-    if (blobsInDb.length > 0) {
-      return blobsInDb;
+    if (!config.proxyUpload) {
+      return capabilities;
     }
-
-    const blobs = await this.provider.list(workspaceId + '/');
-    blobs.forEach(blob => {
-      blob.key = blob.key.slice(workspaceId.length + 1);
-    });
-
-    if (syncBlobMeta) {
-      this.trySyncBlobsMeta(workspaceId, blobs);
-    }
-
-    return blobs.map(blob => ({
-      key: blob.key,
-      size: blob.contentLength,
-      createdAt: blob.lastModified,
-      mime: 'application/octet-stream',
-    }));
+    return {
+      ...capabilities,
+      presignPut: true,
+      multipartDirect: true,
+      proxyUpload: true,
+      serverMediatedOnly: false,
+    };
   }
 
-  async delete(workspaceId: string, key: string, permanently = false) {
-    if (permanently) {
-      await this.provider.delete(`${workspaceId}/${key}`);
-      await this.db.blob.deleteMany({
-        where: {
-          workspaceId,
-          key,
-        },
-      });
-    } else {
-      await this.db.blob.update({
-        where: {
-          workspaceId_key: {
-            workspaceId,
-            key,
-          },
-        },
-        data: {
-          deletedAt: new Date(),
-        },
+  async presignPut(
+    workspaceId: string,
+    key: string,
+    reservationId: string,
+    metadata?: PutObjectMetadata
+  ) {
+    const config = this.uploadURLConfig();
+    if (!config) return;
+    if (config.proxyUpload) {
+      return this.createProxyUploadUrl(workspaceId, key, metadata, {
+        urlPrefix: config.urlPrefix ?? this.url.baseUrl,
       });
     }
+    const presigned = await this.rt.presignPut(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      metadata
+    );
+    return config.urlPrefix && presigned
+      ? this.withURLPrefix(presigned, config.urlPrefix)
+      : presigned;
   }
 
-  async release(workspaceId: string) {
-    const deletedBlobs = await this.db.blob.findMany({
-      where: {
-        workspaceId,
-        deletedAt: {
-          not: null,
-        },
-      },
-    });
-
-    deletedBlobs.forEach(blob => {
-      this.event.emit('workspace.blob.delete', {
-        workspaceId: workspaceId,
-        key: blob.key,
-      });
-    });
+  async createMultipartUpload(
+    workspaceId: string,
+    key: string,
+    reservationId: string,
+    metadata?: PutObjectMetadata
+  ) {
+    return this.rt.createMultipartUpload(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      metadata
+    );
   }
 
-  async totalSize(workspaceId: string) {
-    const sum = await this.db.blob.aggregate({
-      where: {
+  async presignUploadPart(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    const config = this.uploadURLConfig();
+    if (!config) return;
+    const contentLength = await this.multipartPartContentLength(
+      workspaceId,
+      key,
+      uploadId,
+      partNumber
+    );
+    const reservationId = await this.reservationId(workspaceId, key);
+    if (config.proxyUpload) {
+      return this.createProxyMultipartUrl(
         workspaceId,
-        deletedAt: null,
-      },
-      _sum: {
-        size: true,
-      },
-    });
+        key,
+        uploadId,
+        partNumber,
+        contentLength,
+        {
+          urlPrefix: config.urlPrefix ?? this.url.baseUrl,
+        }
+      );
+    }
+    const presigned = await this.rt.presignUploadPart(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      uploadId,
+      partNumber
+    );
+    return config.urlPrefix && presigned
+      ? this.withURLPrefix(presigned, config.urlPrefix)
+      : presigned;
+  }
 
-    return sum._sum.size ?? 0;
+  async listMultipartUploadParts(
+    workspaceId: string,
+    key: string,
+    uploadId: string
+  ) {
+    const reservationId = await this.reservationId(workspaceId, key);
+    return this.rt.listMultipartUploadParts(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      uploadId
+    );
+  }
+
+  async completeMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[]
+  ) {
+    const reservationId = await this.reservationId(workspaceId, key);
+    return await this.rt.completeMultipartUpload(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      uploadId,
+      parts
+    );
+  }
+
+  async abortMultipartUpload(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    reservationId: string
+  ) {
+    return await this.rt.abortMultipartUpload(
+      'blob',
+      this.reservationObjectKey(workspaceId, key, reservationId),
+      uploadId
+    );
+  }
+
+  async head(workspaceId: string, key: string) {
+    return this.rt.headObject('blob', `${workspaceId}/${key}`);
   }
 
   getAvatarUrl(workspaceId: string, avatarKey: string | null) {
     if (!avatarKey) {
       return undefined;
     }
-    return this.url.link(`/api/workspaces/${workspaceId}/blobs/${avatarKey}`);
+    const source = new URLSearchParams({
+      sourceType: 'currentDoc',
+      docId: workspaceId,
+    });
+    return this.url.link(
+      `/api/workspaces/${workspaceId}/blobs/v1/${avatarKey}?${source}`
+    );
   }
 
-  private trySyncBlobsMeta(workspaceId: string, blobs: ListObjectsMetadata[]) {
-    for (const blob of blobs) {
-      this.event.emit('workspace.blob.sync', {
-        workspaceId,
-        key: blob.key,
-      });
-    }
+  private uploadURLConfig(): UploadURLConfig | undefined {
+    return this.rt.uploadUrlConfig('blob') ?? undefined;
   }
 
-  private async upsert(
+  private createProxyUploadUrl(
     workspaceId: string,
     key: string,
-    meta: GetObjectMetadata
+    metadata: PutObjectMetadata | undefined,
+    proxy: UploadProxyConfig
   ) {
-    await this.db.blob.upsert({
-      where: {
-        workspaceId_key: {
-          workspaceId,
-          key,
-        },
-      },
-      update: {
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
-      create: {
+    const contentType = metadata?.contentType ?? 'application/octet-stream';
+    const contentLength = metadata?.contentLength;
+    if (contentLength === undefined) {
+      throw new BlobInvalid('Missing upload content length');
+    }
+    const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
+    const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
+    const token = this.rt.signUploadToken(
+      'blob',
+      PROXY_UPLOAD_PATH,
+      [workspaceId, key, contentType, contentLength],
+      expiresAtSeconds
+    );
+    if (!token) throw new BlobInvalid('Upload proxy is unavailable');
+    return {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_UPLOAD_PATH, {
         workspaceId,
         key,
-        mime: meta.contentType,
-        size: meta.contentLength,
-      },
-    });
+        contentType,
+        contentLength,
+        expiresAt: expiresAtSeconds,
+        token,
+      }),
+      headers: {},
+      expiresAt,
+    };
   }
 
-  @OnEvent('workspace.blob.sync')
-  async syncBlobMeta({ workspaceId, key }: Events['workspace.blob.sync']) {
-    try {
-      const meta = await this.provider.head(`${workspaceId}/${key}`);
+  private createProxyMultipartUrl(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    contentLength: number,
+    proxy: UploadProxyConfig
+  ) {
+    const expiresAt = new Date(Date.now() + SIGNED_URL_EXPIRED * 1000);
+    const expiresAtSeconds = Math.floor(expiresAt.getTime() / 1000);
+    const token = this.rt.signUploadToken(
+      'blob',
+      PROXY_MULTIPART_PATH,
+      [workspaceId, key, uploadId, partNumber, contentLength],
+      expiresAtSeconds
+    );
+    if (!token) throw new BlobInvalid('Upload proxy is unavailable');
+    return {
+      url: this.linkProxyUrl(proxy.urlPrefix, PROXY_MULTIPART_PATH, {
+        workspaceId,
+        key,
+        uploadId,
+        partNumber,
+        contentLength,
+        expiresAt: expiresAtSeconds,
+        token,
+      }),
+      headers: {},
+      expiresAt,
+    };
+  }
 
-      if (meta) {
-        await this.upsert(workspaceId, key, meta);
-      } else {
-        await this.db.blob.deleteMany({
-          where: {
-            workspaceId,
-            key,
-          },
-        });
+  private linkProxyUrl(
+    urlPrefix: string,
+    path: string,
+    query: Record<string, string | number | undefined>
+  ) {
+    const url = new URL(
+      `${urlPrefix.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+    );
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, value.toString());
       }
-    } catch (e) {
-      // never throw
-      this.logger.error('failed to sync blob meta to DB', e);
     }
+    return url.toString();
   }
 
-  @OnEvent('workspace.deleted')
-  async onWorkspaceDeleted({ id }: Events['workspace.deleted']) {
-    // do not sync blob meta to DB
-    const blobs = await this.list(id, false);
-
-    // to reduce cpu time holding
-    blobs.forEach(blob => {
-      this.event.emit('workspace.blob.delete', {
-        workspaceId: id,
-        key: blob.key,
-      });
-    });
+  private withURLPrefix<T extends { url: string }>(
+    presigned: T,
+    urlPrefix: string
+  ): T {
+    const url = new URL(presigned.url);
+    const prefix = new URL(urlPrefix);
+    if (prefix.pathname !== '/' || prefix.search || prefix.hash) {
+      throw new BlobInvalid('Upload URL prefix must contain only an origin');
+    }
+    url.protocol = prefix.protocol;
+    url.host = prefix.host;
+    return { ...presigned, url: url.toString() };
   }
 
-  @OnEvent('workspace.blob.delete')
-  async onDeleteWorkspaceBlob({
-    workspaceId,
-    key,
-  }: Events['workspace.blob.delete']) {
-    await this.delete(workspaceId, key, true);
+  private async multipartPartContentLength(
+    workspaceId: string,
+    key: string,
+    uploadId: string,
+    partNumber: number
+  ) {
+    const record = await this.models.blob.get(workspaceId, key);
+    if (!record || record.status === 'completed') {
+      throw new BlobInvalid('Multipart upload is not pending');
+    }
+    if (record.uploadId !== uploadId) {
+      throw new BlobInvalid('Upload id mismatch');
+    }
+    const offset = (partNumber - 1) * MULTIPART_PART_SIZE;
+    if (
+      !Number.isInteger(partNumber) ||
+      partNumber < 1 ||
+      offset >= record.size
+    ) {
+      throw new BlobInvalid('Invalid part number');
+    }
+    return Math.min(MULTIPART_PART_SIZE, record.size - offset);
+  }
+
+  private async reservationId(workspaceId: string, key: string) {
+    const record = await this.models.blob.get(workspaceId, key);
+    if (
+      !record ||
+      record.status !== 'pending' ||
+      record.deletedAt ||
+      !record.reservationId
+    ) {
+      throw new BlobInvalid('Blob upload is not pending');
+    }
+    return record.reservationId;
+  }
+
+  private reservationObjectKey(
+    workspaceId: string,
+    key: string,
+    reservationId: string
+  ) {
+    return `${workspaceId}/.reservations/${reservationId}/${key}`;
   }
 }

@@ -11,6 +11,7 @@ import {
 
 export type LatexProps = {
   latex: string;
+  comments?: Record<string, boolean>;
 } & GfxCommonBlockProps;
 
 export const LatexBlockSchema = defineBlockSchema({
@@ -22,6 +23,7 @@ export const LatexBlockSchema = defineBlockSchema({
     scale: 1,
     rotate: 0,
     latex: '',
+    comments: undefined,
   }),
   metadata: {
     version: 1,

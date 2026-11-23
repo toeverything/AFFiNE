@@ -5,6 +5,7 @@ import type { DocMode } from '@blocksuite/affine/model';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import {
   CommunityCanvasTextFonts,
+  FeatureFlagService,
   FontConfigExtension,
 } from '@blocksuite/affine/shared/services';
 import {
@@ -28,6 +29,7 @@ const viewManager = getTestViewManager();
 effects();
 
 const storeExtensions = storeManager.get('store');
+const painterWorkers = new Set<Worker>();
 
 export function getRenderer() {
   return editor.std.get(
@@ -47,11 +49,6 @@ function createCollectionOptions() {
     id: room,
     schema,
     idGenerator,
-    defaultFlags: {
-      readonly: {
-        'doc:home': false,
-      },
-    },
   };
 }
 
@@ -70,7 +67,8 @@ function initCollection(collection: TestWorkspace) {
 async function createEditor(
   collection: TestWorkspace,
   mode: DocMode = 'page',
-  extensions: ExtensionType[] = []
+  extensions: ExtensionType[] = [],
+  editorStyle?: Partial<CSSStyleDeclaration>
 ) {
   const app = document.createElement('div');
   const blockCollection = collection.docs.values().next().value;
@@ -91,6 +89,7 @@ async function createEditor(
     FontConfigExtension(CommunityCanvasTextFonts),
     ...extensions,
   ];
+  Object.assign(editor.style, editorStyle);
   app.append(editor);
 
   window.editor = editor;
@@ -112,13 +111,27 @@ export function createPainterWorker() {
       type: 'module',
     }
   );
+  painterWorkers.add(worker);
   return worker;
 }
 
+type SetupEditorOptions = {
+  extensions?: ExtensionType[];
+  enableDomRenderer?: boolean;
+  editorStyle?: Partial<CSSStyleDeclaration>;
+};
+
 export async function setupEditor(
   mode: DocMode = 'page',
-  extensions: ExtensionType[] = []
+  extensionsInput?: ExtensionType[],
+  optionsInput?: SetupEditorOptions
 ) {
+  const extensions: ExtensionType[] = extensionsInput ?? [];
+  const options: SetupEditorOptions = optionsInput ?? {};
+  const enableDomRenderer = options?.enableDomRenderer ?? false;
+
+  await cleanup();
+
   const collection = new TestWorkspace(createCollectionOptions());
   collection.storeExtensions = storeExtensions;
   collection.meta.initialize();
@@ -126,20 +139,43 @@ export async function setupEditor(
   window.collection = collection;
 
   initCollection(collection);
-  const appElement = await createEditor(collection, mode, extensions);
 
-  return () => {
+  if (enableDomRenderer) {
+    const docStore = window.collection.docs.get('doc:home')?.getStore();
+    const featureFlagService = docStore?.get(FeatureFlagService);
+    featureFlagService?.setFlag('enable_dom_renderer', true);
+  }
+
+  const appElement = await createEditor(
+    collection,
+    mode,
+    extensions,
+    options.editorStyle
+  );
+
+  return async () => {
+    await cleanup();
     appElement?.remove();
-    cleanup();
   };
 }
 
-export function cleanup() {
+export async function cleanup() {
   window.editor?.remove();
+  await window.editor?.updateComplete;
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+  for (const worker of painterWorkers) {
+    worker.terminate();
+  }
+  painterWorkers.clear();
 
   delete (window as any).collection;
 
   delete (window as any).editor;
+
+  delete (window as any).doc;
+
+  delete (window as any).renderer;
 
   delete (window as any).store;
 }

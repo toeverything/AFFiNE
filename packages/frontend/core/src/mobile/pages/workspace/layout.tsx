@@ -1,10 +1,6 @@
 import { uniReactRoot } from '@affine/component';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
-import {
-  CloudQuotaModal,
-  LocalQuotaModal,
-} from '@affine/core/components/affine/quota-reached-modal';
 import { SWRConfigProvider } from '@affine/core/components/providers/swr-config-provider';
 import { WorkspaceSideEffects } from '@affine/core/components/providers/workspace-side-effects';
 import {
@@ -22,6 +18,7 @@ import {
   FrameworkScope,
   LiveData,
   useLiveData,
+  useService,
   useServices,
 } from '@toeverything/infra';
 import {
@@ -34,7 +31,9 @@ import {
 import { map } from 'rxjs';
 
 import { AppFallback } from '../../components/app-fallback';
+import { MobileShellHost } from '../../components/mobile-shell-host';
 import { WorkspaceDialogs } from '../../dialogs';
+import { MobileBackCoordinator } from '../../modules/back-coordinator';
 
 // TODO(@forehalo): reuse the global context with [core/electron]
 declare global {
@@ -87,6 +86,7 @@ export const WorkspaceLayout = ({
         })
       );
       localStorage.setItem('last_workspace_id', workspace.id);
+      localStorage.setItem('last_workspace_flavour', workspace.flavour);
       globalContextService.globalContext.workspaceId.set(workspace.id);
       if (workspaceServer) {
         globalContextService.globalContext.serverId.set(workspaceServer.id);
@@ -113,21 +113,19 @@ export const WorkspaceLayout = ({
     workspaceServer,
   ]);
 
-  const isRootDocReady =
-    useLiveData(
-      useMemo(
-        () =>
-          workspace
-            ? LiveData.from(
-                workspace.engine.doc
-                  .docState$(workspace.id)
-                  .pipe(map(v => v.ready)),
-                false
-              )
-            : null,
-        [workspace]
-      )
-    ) ?? false;
+  const rootDocReady$ = useMemo(
+    () =>
+      workspace
+        ? LiveData.from(
+            workspace.engine.doc
+              .docState$(workspace.id)
+              .pipe(map(v => v.ready)),
+            false
+          )
+        : null,
+    [workspace]
+  );
+  const isRootDocReady = useLiveData(rootDocReady$) ?? false;
 
   if (!workspace) {
     return null; // skip this, workspace will be set in layout effect
@@ -140,24 +138,31 @@ export const WorkspaceLayout = ({
   return (
     <FrameworkScope scope={workspaceServer?.scope}>
       <FrameworkScope scope={workspace.scope}>
+        <WorkspaceBackReset workspaceId={workspace.id} />
         <AffineErrorBoundary height="100dvh">
           <SWRConfigProvider>
-            <WorkspaceDialogs />
+            <MobileShellHost>
+              <WorkspaceDialogs />
 
-            {/* ---- some side-effect components ---- */}
-            <PeekViewManagerModal />
-            {workspace?.flavour !== 'local' ? (
-              <CloudQuotaModal />
-            ) : (
-              <LocalQuotaModal />
-            )}
-            <AiLoginRequiredModal />
-            <uniReactRoot.Root />
-            <WorkspaceSideEffects />
-            {children}
+              {/* ---- some side-effect components ---- */}
+              <PeekViewManagerModal />
+              <AiLoginRequiredModal />
+              <uniReactRoot.Root />
+              <WorkspaceSideEffects />
+              {children}
+            </MobileShellHost>
           </SWRConfigProvider>
         </AffineErrorBoundary>
       </FrameworkScope>
     </FrameworkScope>
   );
+};
+
+const WorkspaceBackReset = ({ workspaceId }: { workspaceId: string }) => {
+  const coordinator = useService(MobileBackCoordinator);
+  useEffect(() => {
+    coordinator.reset();
+    return () => coordinator.reset();
+  }, [coordinator, workspaceId]);
+  return null;
 };

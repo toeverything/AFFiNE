@@ -14,7 +14,7 @@ export type SettingTab =
   | 'editor'
   | 'account'
   | 'meetings'
-  | `workspace:${'preference' | 'properties' | 'members' | 'storage' | 'billing' | 'license' | 'integrations'}`;
+  | `workspace:${'preference' | 'properties' | 'members' | 'storage' | 'billing' | 'license' | 'integrations' | 'embedding' | 'byok' | 'search'}`;
 
 export type GLOBAL_DIALOG_SCHEMA = {
   'create-workspace': (props: { serverId?: string }) => {
@@ -30,13 +30,17 @@ export type GLOBAL_DIALOG_SCHEMA = {
     snapshotUrl: string;
   }) => void;
   'sign-in': (props: { server?: string; step?: string }) => void;
-  'change-password': (props: { server?: string }) => void;
+  'change-password': (props: {
+    server?: string;
+    hasPassword?: boolean;
+  }) => void;
   'verify-email': (props: { server?: string; changeEmail?: boolean }) => void;
   'enable-cloud': (props: {
     workspaceId: string;
     openPageId?: string;
     serverId?: string;
   }) => boolean;
+  'deleted-account': () => void;
 };
 
 export type WORKSPACE_DIALOG_SCHEMA = {

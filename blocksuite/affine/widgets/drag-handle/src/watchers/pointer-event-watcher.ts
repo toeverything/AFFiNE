@@ -12,6 +12,7 @@ import { computed } from '@preact/signals-core';
 import throttle from 'lodash-es/throttle';
 
 import {
+  ADD_BLOCK_WIDGET_WIDTH,
   DRAG_HANDLE_CONTAINER_WIDTH,
   DRAG_HANDLE_GRABBER_BORDER_RADIUS,
   DRAG_HANDLE_GRABBER_HEIGHT,
@@ -153,6 +154,10 @@ export class PointerEventWatcher {
 
   private _lastShowedBlock: { id: string; el: BlockComponent } | null = null;
 
+  private _lastPointerHitBlockId: string | null = null;
+
+  private _lastPointerHitBlockElement: Element | null = null;
+
   /**
    * When pointer move on block, should show drag handle
    * And update hover block id and path
@@ -169,6 +174,7 @@ export class PointerEventWatcher {
       point
     );
     if (!closestBlock) {
+      this._lastPointerHitBlockId = null;
       this.widget.anchorBlockId.value = null;
       return;
     }
@@ -194,6 +200,7 @@ export class PointerEventWatcher {
       !this.widget.isDragHandleHovered
     ) {
       this.showDragHandleOnHoverBlock();
+      this.widget.showAddBlockWidget = true;
       this._lastHoveredBlockId = this.widget.anchorBlockId.peek();
     }
   };
@@ -237,18 +244,42 @@ export class PointerEventWatcher {
 
       const state = ctx.get('pointerState');
 
-      // When pointer is moving, should do nothing
-      if (state.delta.x !== 0 && state.delta.y !== 0) return;
-
       const { target } = state.raw;
       const element = captureEventTarget(target);
       // When pointer not on block or on dragging, should do nothing
-      if (!element) return;
+      if (!element) {
+        this._lastPointerHitBlockId = null;
+        this._lastPointerHitBlockElement = null;
+        return;
+      }
 
-      // When pointer on drag handle, should do nothing
-      if (element.closest('.affine-drag-handle-container')) return;
+      // When pointer on drag handle or add-block widget, should do nothing
+      if (
+        element.closest('.affine-drag-handle-container') ||
+        element.closest('.affine-add-block-widget-container')
+      ) {
+        return;
+      }
 
       if (!this.widget.rootComponent) return;
+
+      const hitBlock = element.closest(`[${BLOCK_ID_ATTR}]`);
+      const hitBlockId = hitBlock?.getAttribute(BLOCK_ID_ATTR) ?? null;
+
+      // Pointer move events are high-frequency. If hovered block identity is
+      // unchanged and the underlying block element is the same, skip the
+      // closest-note lookup.
+      if (
+        hitBlockId &&
+        this.widget.isBlockDragHandleVisible &&
+        hitBlockId === this._lastPointerHitBlockId &&
+        hitBlock === this._lastPointerHitBlockElement &&
+        isBlockIdEqual(this.widget.anchorBlockId.peek(), hitBlockId)
+      ) {
+        return;
+      }
+      this._lastPointerHitBlockId = hitBlockId;
+      this._lastPointerHitBlockElement = hitBlock;
 
       // When pointer out of note block hover area or inside database, should hide drag handle
       const point = new Point(state.raw.x, state.raw.y);
@@ -293,6 +324,7 @@ export class PointerEventWatcher {
 
     const container = this.widget.dragHandleContainer;
     const grabber = this.widget.dragHandleGrabber;
+    const addBlockWidgetContainer = this.widget.addBlockWidgetContainer;
     if (!container || !grabber) return;
 
     this.widget.activeDragHandle = 'block';
@@ -312,6 +344,21 @@ export class PointerEventWatcher {
       Object.assign(container.style, containerStyle);
 
       container.style.display = 'flex';
+
+      // Position the add-block widget beside the drag handle, aligned to the first line.
+      if (
+        addBlockWidgetContainer &&
+        this.widget.showAddBlockWidget &&
+        this.widget.mode === 'page'
+      ) {
+        const posTop = this._getTopWithBlockComponent(block);
+        addBlockWidgetContainer.style.left = `${draggingAreaRect.left - ADD_BLOCK_WIDGET_WIDTH}px`;
+        addBlockWidgetContainer.style.top = `${posTop}px`;
+        addBlockWidgetContainer.style.height = 'auto';
+        addBlockWidgetContainer.style.display = 'flex';
+      } else if (addBlockWidgetContainer) {
+        addBlockWidgetContainer.style.display = 'none';
+      }
     };
 
     if (isBlockIdEqual(block.blockId, this._lastShowedBlock?.id)) {
@@ -354,6 +401,8 @@ export class PointerEventWatcher {
   reset() {
     this._lastHoveredBlockId = null;
     this._lastShowedBlock = null;
+    this._lastPointerHitBlockId = null;
+    this._lastPointerHitBlockElement = null;
   }
 
   watch() {

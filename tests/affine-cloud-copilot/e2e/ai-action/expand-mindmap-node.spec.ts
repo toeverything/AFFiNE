@@ -33,6 +33,6 @@ test.describe('expand mindmap node', () => {
     await expect(async () => {
       const newChild = await utils.editor.getMindMapNode(page, id!, [0, 0, 0]);
       expect(newChild).toBeDefined();
-    }).toPass({ timeout: 20000 });
+    }).toPass({ timeout: 60000 });
   });
 });

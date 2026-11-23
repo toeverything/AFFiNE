@@ -1,6 +1,5 @@
 import { textKeymap } from '@blocksuite/affine-inline-preset';
 import { ListBlockSchema } from '@blocksuite/affine-model';
-import { markdownInput } from '@blocksuite/affine-rich-text';
 import { getSelectedModelsCommand } from '@blocksuite/affine-shared/commands';
 import { IS_MAC } from '@blocksuite/global/env';
 import { KeymapExtension, TextSelection } from '@blocksuite/std';
@@ -122,20 +121,6 @@ export const ListKeymapExtension = KeymapExtension(
       Delete: ctx => {
         const deleted = forwardDelete(std);
         if (!deleted) return;
-        ctx.get('keyboardState').raw.preventDefault();
-        return true;
-      },
-      Space: ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
-        ctx.get('keyboardState').raw.preventDefault();
-        return true;
-      },
-      'Shift-Space': ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
         ctx.get('keyboardState').raw.preventDefault();
         return true;
       },

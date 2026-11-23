@@ -15,20 +15,20 @@ export function useBlockSuiteMetaHelper() {
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
-    (docId: string) => {
+    async (docId: string) => {
       const docRecord = docRecordList.doc$(docId).value;
       if (docRecord) {
-        docRecord.moveToTrash();
+        await docRecord.moveToTrash();
       }
     },
     [docRecordList]
   );
 
   const restoreFromTrash = useCallback(
-    (docId: string) => {
+    async (docId: string) => {
       const docRecord = docRecordList.doc$(docId).value;
       if (docRecord) {
-        docRecord.restoreFromTrash();
+        await docRecord.restoreFromTrash();
       }
     },
     [docRecordList]
@@ -36,9 +36,10 @@ export function useBlockSuiteMetaHelper() {
 
   const permanentlyDeletePage = useCallback(
     (pageId: string) => {
-      workspace.docCollection.removeDoc(pageId);
+      const docRecord = docRecordList.doc$(pageId).value;
+      return docRecord?.deletePermanently();
     },
-    [workspace]
+    [docRecordList]
   );
 
   const duplicate = useAsyncCallback(

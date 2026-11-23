@@ -1,7 +1,8 @@
 import { type CalloutBlockComponent } from '@blocksuite/affine-block-callout';
 import {
   AFFINE_EDGELESS_NOTE,
-  type EdgelessNoteBlockComponent,
+  EdgelessNoteBackground,
+  EdgelessNoteBlockComponent,
 } from '@blocksuite/affine-block-note';
 import { ParagraphBlockComponent } from '@blocksuite/affine-block-paragraph';
 import {
@@ -282,14 +283,21 @@ export function getDuplicateBlocks(blocks: BlockModel[]) {
  * Get hovering note with given a point in edgeless mode.
  */
 function getHoveringNote(point: Point) {
-  return (
-    document
-      .elementsFromPoint(point.x, point.y)
-      .find(
-        (e): e is EdgelessNoteBlockComponent =>
-          e.tagName.toLowerCase() === AFFINE_EDGELESS_NOTE
-      ) || null
-  );
+  const elements = document.elementsFromPoint(point.x, point.y);
+  for (const el of elements) {
+    if (el instanceof EdgelessNoteBlockComponent) {
+      return el;
+    }
+
+    // When in edit mode for edgeless-note, the rect of note-background is larger than
+    // that of edgeless-note. Therefore, when the point is located in the area between
+    // note-background and edgeless-note, using elementsFromPoint alone cannot correctly
+    // retrieve the edgeless-note.
+    if (el instanceof EdgelessNoteBackground) {
+      return el.closest(AFFINE_EDGELESS_NOTE) ?? null;
+    }
+  }
+  return null;
 }
 
 export function getSnapshotRect(snapshot: SliceSnapshot): Bound | null {

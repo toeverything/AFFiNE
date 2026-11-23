@@ -4,7 +4,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { signal } from '@preact/signals-core';
 import { css } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { html } from 'lit/static-html.js';
 
 import type {
@@ -13,8 +13,8 @@ import type {
 } from '../../../core/property/index.js';
 import { renderUniLit } from '../../../core/utils/uni-component/uni-component.js';
 import type { Property } from '../../../core/view-manager/property.js';
-import type { KanbanSingleView } from '../kanban-view-manager.js';
 import type { KanbanViewSelection } from '../selection';
+import type { KanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 const styles = css`
   affine-data-view-kanban-cell {
@@ -62,10 +62,7 @@ export class KanbanCell extends SignalWatcher(
   private readonly _cell = signal<DataViewCellLifeCycle>();
 
   selectCurrentCell = (editing: boolean) => {
-    const selectionView = this.closest(
-      'affine-data-view-kanban'
-    )?.selectionController;
-    if (!selectionView) return;
+    const selectionView = this.kanbanViewLogic.selectionController;
     if (selectionView) {
       const selection = selectionView.selection;
       if (selection && this.isSelected(selection) && editing) {
@@ -93,7 +90,7 @@ export class KanbanCell extends SignalWatcher(
   }
 
   get selection() {
-    return this.closest('affine-data-view-kanban')?.selectionController;
+    return this.kanbanViewLogic.selectionController;
   }
 
   override connectedCallback() {
@@ -103,9 +100,7 @@ export class KanbanCell extends SignalWatcher(
         return;
       }
       e.stopPropagation();
-      const selectionElement = this.closest(
-        'affine-data-view-kanban'
-      )?.selectionController;
+      const selectionElement = this.kanbanViewLogic.selectionController;
       if (!selectionElement) return;
       if (e.shiftKey) return;
 
@@ -138,7 +133,7 @@ export class KanbanCell extends SignalWatcher(
     const { view } = renderer;
     this.view.lockRows(this.isEditing$.value);
     this.dataset['editing'] = `${this.isEditing$.value}`;
-    this.style.border = this.isFocus
+    this.style.border = this.isFocus$.value
       ? '1px solid var(--affine-primary-color)'
       : '';
     this.style.boxShadow = this.isEditing$.value
@@ -173,11 +168,14 @@ export class KanbanCell extends SignalWatcher(
   @property({ attribute: false })
   accessor groupKey!: string;
 
-  @state()
-  accessor isFocus = false;
+  isFocus$ = signal(false);
 
   @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  accessor kanbanViewLogic!: KanbanViewUILogic;
+
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

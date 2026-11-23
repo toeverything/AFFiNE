@@ -31,7 +31,7 @@ const renderRichText = ({
 
   const richText = new RichText();
   richText.yText = text;
-  richText.undoManager = doc.history;
+  richText.undoManager = doc.history.undoManager;
   richText.readonly = doc.readonly;
   richText.attributesSchema = inlineManager.getSchema() as any;
   richText.attributeRenderer = inlineManager.getRenderer();

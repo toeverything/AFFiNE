@@ -39,7 +39,8 @@ export const tagsMenu = style({
 
 export const tagsEditorSelectedTags = style({
   display: 'flex',
-  flexWrap: 'wrap',
+  flexDirection: 'row',
+  flexWrap: 'nowrap',
   padding: '10px 12px 0px',
   minHeight: 42,
   selectors: {
@@ -49,6 +50,11 @@ export const tagsEditorSelectedTags = style({
       backgroundColor: cssVarV2('layer/background/primary'),
     },
   },
+});
+
+export const tagsEditorDoneButton = style({
+  height: '32px',
+  width: '28px',
 });
 
 export const tagDivider = style({

@@ -26,7 +26,7 @@ export class OutlineNotePreviewSettingMenu extends SignalWatcher(
         <div class=${styles.actionLabel}>Show type icon</div>
         <div class=${styles.toggleButton}>
           <toggle-switch
-            .subscribe=${showPreviewIcon}
+            .on=${showPreviewIcon}
             .onChange=${() => {
               this._context.showIcons$.value = !showPreviewIcon;
             }}

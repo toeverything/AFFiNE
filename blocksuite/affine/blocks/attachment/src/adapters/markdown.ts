@@ -5,12 +5,12 @@ import {
 import {
   BlockMarkdownAdapterExtension,
   type BlockMarkdownAdapterMatcher,
+  createAttachmentBlockSnapshot,
   FOOTNOTE_DEFINITION_PREFIX,
   getFootnoteDefinitionText,
   isFootnoteDefinitionNode,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { nanoid } from '@blocksuite/store';
 
 const isAttachmentFootnoteDefinitionNode = (node: MarkdownAST) => {
@@ -36,15 +36,7 @@ export const attachmentBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher 
     fromMatch: o => o.node.flavour === AttachmentBlockSchema.model.flavour,
     toBlockSnapshot: {
       enter: (o, context) => {
-        const { provider } = context;
-        let enableCitation = false;
-        try {
-          const featureFlagService = provider?.get(FeatureFlagService);
-          enableCitation = !!featureFlagService?.getFlag('enable_citation');
-        } catch {
-          enableCitation = false;
-        }
-        if (!isFootnoteDefinitionNode(o.node) || !enableCitation) {
+        if (!isFootnoteDefinitionNode(o.node)) {
           return;
         }
 
@@ -65,17 +57,15 @@ export const attachmentBlockMarkdownAdapterMatcher: BlockMarkdownAdapterMatcher 
           }
           walkerContext
             .openNode(
-              {
-                type: 'block',
+              createAttachmentBlockSnapshot({
                 id: nanoid(),
-                flavour: AttachmentBlockSchema.model.flavour,
                 props: {
                   name: fileName,
                   sourceId: blobId,
                   footnoteIdentifier,
+                  style: 'citation',
                 },
-                children: [],
-              },
+              }),
               'children'
             )
             .closeNode();

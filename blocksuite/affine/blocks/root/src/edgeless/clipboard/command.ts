@@ -52,9 +52,7 @@ export const createElementsFromClipboardDataCommand: Command<Input, Output> = (
     let oldCommonBound, pasteX, pasteY;
     {
       const lastMousePos = toolManager.lastMousePos$.peek();
-      pasteCenter =
-        pasteCenter ??
-        gfx.viewport.toModelCoord(lastMousePos.x, lastMousePos.y);
+      pasteCenter = pasteCenter ?? [lastMousePos.x, lastMousePos.y];
       const [modelX, modelY] = pasteCenter;
       oldCommonBound = edgelessElementsBoundFromRawData(elementsRawData);
 

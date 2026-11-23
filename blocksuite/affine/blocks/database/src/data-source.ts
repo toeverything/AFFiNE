@@ -56,7 +56,12 @@ type SpacialProperty = {
   valueSet: (rowId: string, propertyId: string, value: unknown) => void;
   valueGet: (rowId: string, propertyId: string) => unknown;
 };
+
 export class DatabaseBlockDataSource extends DataSourceBase {
+  override get parentProvider() {
+    return this._model.store.provider;
+  }
+
   spacialProperties: Record<string, SpacialProperty> = {
     'created-time': {
       valueSet: () => {},
@@ -98,11 +103,17 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       },
     },
   };
-  isSpacialProperty(propertyId: string): boolean {
-    return this.spacialProperties[propertyId] !== undefined;
+
+  isSpacialProperty(propertyType: string): boolean {
+    return this.spacialProperties[propertyType] !== undefined;
   }
-  spacialValueGet(rowId: string, propertyId: string): unknown {
-    return this.spacialProperties[propertyId]?.valueGet(rowId, propertyId);
+
+  spacialValueGet(
+    rowId: string,
+    propertyId: string,
+    propertyType: string
+  ): unknown {
+    return this.spacialProperties[propertyType]?.valueGet(rowId, propertyId);
   }
 
   static externalProperties = signal<PropertyMetaConfig[]>([]);
@@ -124,14 +135,10 @@ export class DatabaseBlockDataSource extends DataSourceBase {
 
   override featureFlags$: ReadonlySignal<DatabaseFlags> = computed(() => {
     const featureFlagService = this.doc.get(FeatureFlagService);
-    const enableNumberFormat = featureFlagService.getFlag(
-      'enable_database_number_formatting'
-    );
     const enableTableVirtualScroll = featureFlagService.getFlag(
       'enable_table_virtual_scroll'
     );
     return {
-      enable_number_formatting: enableNumberFormat ?? false,
       enable_table_virtual_scroll: enableTableVirtualScroll ?? false,
     };
   });
@@ -153,8 +160,10 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   readonly$: ReadonlySignal<boolean> = computed(() => {
     return (
       this._model.store.readonly ||
-      // TODO(@L-Sun): use block level readonly
-      IS_MOBILE
+      (IS_MOBILE &&
+        !this._model.store.provider
+          .get(FeatureFlagService)
+          .getFlag('enable_mobile_database_editing'))
     );
   });
 
@@ -186,9 +195,13 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     );
   });
 
-  constructor(model: DatabaseBlockModel) {
+  constructor(
+    model: DatabaseBlockModel,
+    init?: (dataSource: DatabaseBlockDataSource) => void
+  ) {
     super();
-    this._model = model;
+    this._model = model; // ensure invariants first
+    init?.(this); // then allow external initialisation
   }
 
   private _runCapture() {
@@ -206,16 +219,20 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     return this._model.children[this._model.childMap.value.get(rowId) ?? -1];
   }
 
-  private newPropertyName() {
+  private newPropertyName(prefix = 'Column'): string {
     let i = 1;
-    while (
-      this._model.props.columns$.value.some(
-        column => column.name === `Column ${i}`
-      )
-    ) {
+    const hasSameName = (name: string) => {
+      return this._model.props.columns$.value.some(
+        column => column.name === name
+      );
+    };
+    while (true) {
+      let name = i === 1 ? prefix : `${prefix} ${i}`;
+      if (!hasSameName(name)) {
+        return name;
+      }
       i++;
     }
-    return `Column ${i}`;
   }
 
   cellValueChange(rowId: string, propertyId: string, value: unknown): void {
@@ -250,14 +267,14 @@ export class DatabaseBlockDataSource extends DataSourceBase {
 
   cellValueGet(rowId: string, propertyId: string): unknown {
     if (this.isSpacialProperty(propertyId)) {
-      return this.spacialValueGet(rowId, propertyId);
+      return this.spacialValueGet(rowId, propertyId, propertyId);
     }
     const type = this.propertyTypeGet(propertyId);
     if (!type) {
       return;
     }
-    if (type === 'title') {
-      return this.spacialValueGet(rowId, 'title');
+    if (this.isSpacialProperty(type)) {
+      return this.spacialValueGet(rowId, propertyId, type);
     }
     const meta = this.propertyMetaGet(type);
     if (!meta) {
@@ -268,17 +285,18 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       meta.config.rawValue.default();
     const schema = meta.config.rawValue.schema;
     const result = schema.safeParse(rawValue);
-    if (result.success) {
-      return result.data;
-    }
-    return;
+    return result.success ? result.data : meta.config.rawValue.default();
   }
 
   propertyAdd(
     insertToPosition: InsertToPosition,
-    type?: string
+    ops?: {
+      type?: string;
+      name?: string;
+    }
   ): string | undefined {
     this.doc.captureSync();
+    const { type, name } = ops ?? {};
     const property = this.propertyMetaGet(
       type ?? propertyPresets.multiSelectPropertyConfig.type
     );
@@ -288,7 +306,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     const result = addProperty(
       this._model,
       insertToPosition,
-      property.create(this.newPropertyName())
+      property.create(this.newPropertyName(name))
     );
     return result;
   }

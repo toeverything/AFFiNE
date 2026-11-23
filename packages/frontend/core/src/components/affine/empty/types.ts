@@ -1,7 +1,9 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
-export interface EmptyLayoutProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+export interface EmptyLayoutProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   illustrationLight: string;
   illustrationDark?: string;
   illustrationWidth?: number | string;

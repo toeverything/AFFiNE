@@ -1,10 +1,10 @@
-import { registerAIEffects } from '@affine/core/blocksuite/ai/effects';
+import { registerAIEditorEffects } from '@affine/core/blocksuite/ai/effects/editor';
 import { editorEffects } from '@affine/core/blocksuite/editors';
 
 import { registerTemplates } from './register-templates';
 
 editorEffects();
-registerAIEffects();
+registerAIEditorEffects();
 registerTemplates();
 
 export * from './blocksuite-editor';

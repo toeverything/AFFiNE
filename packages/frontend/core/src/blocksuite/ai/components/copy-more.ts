@@ -1,7 +1,7 @@
-import { Tooltip } from '@blocksuite/affine/components/toolbar';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
+import { Tooltip } from '@blocksuite/affine/components/tooltip';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { createButtonPopper } from '@blocksuite/affine/shared/utils';
 import type {
@@ -9,6 +9,7 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/affine/std';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { CopyIcon, MoreHorizontalIcon, ResetIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -81,7 +82,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   `;
 
   private get _selectionValue() {
-    return this.host.selection.value;
+    return this.host?.selection.value ?? [];
   }
 
   private get _currentTextSelection(): TextSelection | undefined {
@@ -104,16 +105,16 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   private _morePopper: ReturnType<typeof createButtonPopper> | null = null;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor actions: ChatAction[] = [];
 
   @property({ attribute: false })
-  accessor content!: string;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor content!: string;
 
   @property({ attribute: false })
   accessor messageId: string | undefined = undefined;
@@ -130,13 +131,15 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-actions';
 
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
   private _toggle() {
     this._morePopper?.toggle();
   }
 
   private readonly _notifySuccess = (title: string) => {
-    const notificationService = this.host.std.getOptional(NotificationProvider);
-    notificationService?.notify({
+    this.notificationService.notify({
       title: title,
       accent: 'success',
       onClose: function (): void {},
@@ -157,12 +160,14 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
           mainAxis: 0,
           crossAxis: -100,
         });
+        this.disposables.add(() => this._morePopper?.dispose());
       }
     }
   }
 
   override render() {
     const { host, content, isLast, messageId, actions } = this;
+    const showMoreIcon = !isLast && actions.length > 0;
     return html`<style>
         .copy-more {
           margin-top: ${this.withMargin ? '8px' : '0px'};
@@ -173,74 +178,82 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         }
       </style>
       <div class="copy-more">
-        ${content
-          ? html`<div
-              class="button copy"
-              @click=${async () => {
-                const success = await copyText(host, content);
-                if (success) {
-                  this._notifySuccess('Copied to clipboard');
-                }
-              }}
-              data-testid="action-copy-button"
-            >
-              ${CopyIcon({ width: '20px', height: '20px' })}
-              <affine-tooltip>Copy</affine-tooltip>
-            </div>`
-          : nothing}
-        ${isLast
-          ? html`<div
-              class="button retry"
-              @click=${() => this.retry()}
-              data-testid="action-retry-button"
-            >
-              ${ResetIcon({ width: '20px', height: '20px' })}
-              <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
-            </div>`
-          : nothing}
-        ${isLast
-          ? nothing
-          : html`<div
-              class="button more"
-              data-testid="action-more-button"
-              @click=${this._toggle}
-            >
-              ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
-            </div> `}
+        ${
+          content
+            ? html`<div
+                class="button copy"
+                @click=${async () => {
+                  const success = await copyText(content);
+                  if (success) {
+                    this._notifySuccess('Copied to clipboard');
+                  }
+                }}
+                data-testid="action-copy-button"
+              >
+                ${CopyIcon({ width: '20px', height: '20px' })}
+                <affine-tooltip>Copy</affine-tooltip>
+              </div>`
+            : nothing
+        }
+        ${
+          isLast
+            ? html`<div
+                class="button retry"
+                @click=${() => this.retry()}
+                data-testid="action-retry-button"
+              >
+                ${ResetIcon({ width: '20px', height: '20px' })}
+                <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
+              </div>`
+            : nothing
+        }
+        ${
+          showMoreIcon && host
+            ? html`<div
+                class="button more"
+                data-testid="action-more-button"
+                @click=${this._toggle}
+              >
+                ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
+              </div> `
+            : nothing
+        }
       </div>
 
       <div class="more-menu">
-        ${this._showMoreMenu
-          ? repeat(
-              actions.filter(action => action.showWhen(host)),
-              action => action.title,
-              action => {
-                const currentSelections = {
-                  text: this._currentTextSelection,
-                  blocks: this._currentBlockSelections,
-                };
-                return html`<div
-                  @click=${async () => {
-                    const sessionId = await this.getSessionId();
-                    const success = await action.handler(
-                      host,
-                      content,
-                      currentSelections,
-                      sessionId,
-                      messageId
-                    );
+        ${
+          this._showMoreMenu && host
+            ? repeat(
+                actions.filter(action => action.showWhen(host)),
+                action => action.title,
+                action => {
+                  const currentSelections = {
+                    text: this._currentTextSelection,
+                    blocks: this._currentBlockSelections,
+                  };
+                  return html`<div
+                    @click=${async () => {
+                      const sessionId = this.session?.sessionId;
+                      const success = await action.handler(
+                        host,
+                        content,
+                        currentSelections,
+                        sessionId,
+                        messageId
+                      );
 
-                    if (success) {
-                      this._notifySuccess(action.toast);
-                    }
-                  }}
-                >
-                  ${action.icon}
-                  <div>${action.title}</div>
-                </div>`;
-              }
-            )
-          : nothing}
+                      if (success) {
+                        this._notifySuccess(action.toast);
+                      }
+                    }}
+                  >
+                    ${action.icon}
+                    <div>${action.title}</div>
+                  </div>`;
+                }
+              )
+            : nothing
+        }
       </div>`;
   }
 }

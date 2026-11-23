@@ -77,8 +77,8 @@ function handleCurrentSelection(
   handler: (
     type: 'text' | 'block' | 'native',
     inlineEditors: InlineEditor<AffineTextAttributes>[]
-  ) => { textStyle: AffineTextAttributes } | boolean | void
-): Chain<InitCommandCtx & { textStyle: AffineTextAttributes }> {
+  ) => { textAttributes: AffineTextAttributes } | boolean | void
+): Chain<InitCommandCtx & { textAttributes: AffineTextAttributes }> {
   return chain.try(chain => [
     // text selection, corresponding to `formatText` command
     chain
@@ -174,25 +174,25 @@ function handleCurrentSelection(
   ]);
 }
 
-export function getCombinedTextStyle(chain: Chain<InitCommandCtx>) {
+export function getCombinedTextAttributes(chain: Chain<InitCommandCtx>) {
   return handleCurrentSelection(chain, (type, inlineEditors) => {
     if (type === 'text') {
       return {
-        textStyle: getCombinedFormatFromInlineEditors(
+        textAttributes: getCombinedFormatFromInlineEditors(
           inlineEditors.map(e => [e, e.getInlineRange()])
         ),
       };
     }
     if (type === 'block') {
       return {
-        textStyle: getCombinedFormatFromInlineEditors(
+        textAttributes: getCombinedFormatFromInlineEditors(
           inlineEditors.map(e => [e, { index: 0, length: e.yTextLength }])
         ),
       };
     }
     if (type === 'native') {
       return {
-        textStyle: getCombinedFormatFromInlineEditors(
+        textAttributes: getCombinedFormatFromInlineEditors(
           inlineEditors.map(e => [e, e.getInlineRange()])
         ),
       };

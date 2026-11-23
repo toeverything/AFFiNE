@@ -1,5 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
+
 export const dropdownBtn = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -30,6 +31,7 @@ export const dropdownBtn = style({
     },
   },
 });
+
 export const divider = style({
   width: '0.5px',
   height: '16px',
@@ -38,6 +40,7 @@ export const divider = style({
   margin: '0 4px',
   marginRight: 0,
 });
+
 export const dropdownWrapper = style({
   width: '100%',
   height: '100%',
@@ -47,6 +50,7 @@ export const dropdownWrapper = style({
   paddingLeft: '4px',
   paddingRight: '10px',
 });
+
 export const dropdownIcon = style({
   borderRadius: '4px',
   selectors: {
@@ -54,56 +58,4 @@ export const dropdownIcon = style({
       background: cssVar('hoverColor'),
     },
   },
-});
-export const radioButton = style({
-  flexGrow: 1,
-  flex: 1,
-  selectors: {
-    '&:not(:last-of-type)': {
-      marginRight: '4px',
-    },
-  },
-});
-export const radioButtonContent = style({
-  fontSize: cssVar('fontXs'),
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  height: '28px',
-  padding: '4px 8px',
-  borderRadius: '8px',
-  filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1))',
-  whiteSpace: 'nowrap',
-  userSelect: 'none',
-  fontWeight: 600,
-  selectors: {
-    '&:hover': {
-      background: cssVar('hoverColor'),
-    },
-    '&[data-state="checked"]': {
-      background: cssVar('white'),
-    },
-  },
-});
-export const radioUncheckedButton = style([
-  radioButtonContent,
-  {
-    color: cssVar('textSecondaryColor'),
-    filter: 'none',
-    selectors: {
-      '[data-state="checked"] > &': {
-        display: 'none',
-      },
-    },
-  },
-]);
-export const radioButtonGroup = style({
-  display: 'inline-flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  background: cssVar('hoverColorFilled'),
-  borderRadius: '10px',
-  padding: '2px',
-  // @ts-expect-error - fix electron drag
-  WebkitAppRegion: 'no-drag',
 });

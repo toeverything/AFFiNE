@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto';
 
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
+import supertest from 'supertest';
 
 import {
   changeEmail,
@@ -14,9 +16,20 @@ import {
   TestingApp,
 } from '../utils';
 
-const test = ava as TestFn<{
+const test = ava.serial as TestFn<{
   app: TestingApp;
 }>;
+
+async function lastAuthMail(app: TestingApp, name: string) {
+  const delivery = await app.get(PrismaClient).mailDelivery.findFirstOrThrow({
+    where: { mailName: name },
+    orderBy: { createdAt: 'desc' },
+  });
+  return delivery.payload as {
+    to: string;
+    props: Record<string, string>;
+  };
+}
 
 test.beforeEach(async t => {
   const app = await createTestingApp();
@@ -33,9 +46,13 @@ test('change email', async t => {
   const u2Email = 'u2@affine.pro';
 
   const user = await app.signupV1(u1Email);
-  await sendChangeEmail(app, u1Email, 'affine.pro');
+  const signedIn = await currentUser(app);
+  const jwt = signedIn?.token.token;
+  t.truthy(jwt);
 
-  const changeMail = app.mails.last('ChangeEmail');
+  await sendChangeEmail(app, '/email-change');
+
+  const changeMail = await lastAuthMail(app, 'ChangeEmail');
 
   t.is(changeMail.to, u1Email);
 
@@ -53,10 +70,10 @@ test('change email', async t => {
     app,
     changeEmailToken as string,
     u2Email,
-    'affine.pro'
+    '/email-change-verify'
   );
 
-  const verifyMail = app.mails.last('VerifyChangeEmail');
+  const verifyMail = await lastAuthMail(app, 'VerifyChangeEmail');
 
   t.is(verifyMail.to, u2Email);
 
@@ -72,12 +89,21 @@ test('change email', async t => {
 
   await changeEmail(app, verifyEmailToken as string, u2Email);
 
-  const changedMail = app.mails.last('EmailChanged');
+  const changedMail = await lastAuthMail(app, 'EmailChanged');
 
   t.is(changedMail.to, u2Email);
   t.is(changedMail.props.to, u2Email);
 
-  await app.logout();
+  const revokedCookieSession = await currentUser(app);
+  t.is(revokedCookieSession, null);
+
+  const revokedJwtSession = await supertest(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('Authorization', `Bearer ${jwt}`)
+    .expect(200);
+  t.falsy(revokedJwtSession.body.user);
+
+  app.clearAuth();
   await app.login({
     ...user,
     email: u2Email,
@@ -94,9 +120,13 @@ test('set and change password', async t => {
   const u1Email = 'u1@affine.pro';
 
   const u1 = await app.signupV1(u1Email);
-  await sendSetPasswordEmail(app, u1Email, 'affine.pro');
+  const authSession = await app.createNativeAuthSession(u1.id, {
+    installationId: 'password-change-device',
+    platform: 'ios',
+  });
+  await sendSetPasswordEmail(app, u1Email, '/password-change');
 
-  const setPasswordMail = app.mails.last('ChangePassword');
+  const setPasswordMail = await lastAuthMail(app, 'SetPassword');
   const link = new URL(setPasswordMail.props.url);
   const setPasswordToken = link.searchParams.get('token');
 
@@ -116,6 +146,12 @@ test('set and change password', async t => {
   );
 
   t.true(success, 'failed to change password');
+  t.is(
+    await app.get(PrismaClient).authSession.count({
+      where: { id: authSession.session.id },
+    }),
+    0
+  );
 
   let user = await currentUser(app);
 
@@ -130,4 +166,29 @@ test('set and change password', async t => {
 
   t.not(user, null, 'failed to get current user');
   t.is(user?.email, u1Email, 'failed to get current user');
+});
+
+test('should forbid graphql callbackUrl to external origin', async t => {
+  const { app } = t.context;
+
+  const u1Email = 'u1@affine.pro';
+  await app.signupV1(u1Email);
+
+  const res = await app
+    .POST('/graphql')
+    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+    .send({
+      query: `
+        mutation($callbackUrl: String!) {
+          sendChangeEmail(callbackUrl: $callbackUrl)
+        }
+      `,
+      variables: {
+        callbackUrl: 'https://evil.example',
+      },
+    })
+    .expect(200);
+
+  t.truthy(res.body.errors?.length);
+  t.is(res.body.errors[0].extensions?.name, 'ACTION_FORBIDDEN');
 });

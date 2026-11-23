@@ -39,9 +39,22 @@ export type AttachmentEmbedConfig = {
     std: BlockStdScope
   ) => Promise<void> | void;
   /**
-   * The template will be used to render the embed view.
+   * Renders the embed view.
    */
-  template?: (model: AttachmentBlockModel, blobUrl: string) => TemplateResult;
+  render?: (
+    model: AttachmentBlockModel,
+    blobUrl: string
+  ) => TemplateResult | null;
+
+  /**
+   * Should show status when turned on.
+   */
+  shouldShowStatus?: boolean;
+
+  /**
+   * Should block type conversion be required.
+   */
+  shouldBeConverted?: boolean;
 };
 
 // Single embed config.
@@ -115,26 +128,38 @@ export class AttachmentEmbedService extends Extension {
     return this.values.some(config => config.check(model, maxFileSize));
   }
 
-  render(
+  getRender(model: AttachmentBlockModel, maxFileSize = this._maxFileSize) {
+    return (
+      this.values.find(config => config.check(model, maxFileSize))?.render ??
+      null
+    );
+  }
+
+  shouldShowStatus(
     model: AttachmentBlockModel,
-    blobUrl?: string,
     maxFileSize = this._maxFileSize
   ) {
-    if (!model.props.embed || !blobUrl) return;
+    return (
+      this.values.find(config => config.check(model, maxFileSize))
+        ?.shouldShowStatus ?? false
+    );
+  }
 
-    const config = this.values.find(config => config.check(model, maxFileSize));
-    if (!config || !config.template) {
-      console.error('No embed view template found!', model, model.props.type);
-      return;
-    }
-
-    return config.template(model, blobUrl);
+  shouldBeConverted(
+    model: AttachmentBlockModel,
+    maxFileSize = this._maxFileSize
+  ) {
+    return (
+      this.values.find(config => config.check(model, maxFileSize))
+        ?.shouldBeConverted ?? false
+    );
   }
 }
 
 const embedConfig: AttachmentEmbedConfig[] = [
   {
     name: 'image',
+    shouldBeConverted: true,
     check: model =>
       model.store.schema.flavourSchemaMap.has('affine:image') &&
       model.props.type.startsWith('image/'),
@@ -147,6 +172,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
   },
   {
     name: 'pdf',
+    shouldShowStatus: true,
     check: (model, maxFileSize) =>
       model.props.type === 'application/pdf' && model.props.size <= maxFileSize,
     action: model => {
@@ -159,7 +185,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
         xywh: bound.serialize(),
       });
     },
-    template: (_, blobUrl) => {
+    render: (_, blobUrl) => {
       // More options: https://tinytip.co/tips/html-pdf-params/
       // https://chromium.googlesource.com/chromium/src/+/refs/tags/121.0.6153.1/chrome/browser/resources/pdf/open_pdf_params_parser.ts
       const parameters = '#toolbar=0';
@@ -185,6 +211,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
   },
   {
     name: 'video',
+    shouldShowStatus: true,
     check: (model, maxFileSize) =>
       model.props.type.startsWith('video/') && model.props.size <= maxFileSize,
     action: model => {
@@ -197,7 +224,7 @@ const embedConfig: AttachmentEmbedConfig[] = [
         xywh: bound.serialize(),
       });
     },
-    template: (_, blobUrl) =>
+    render: (_, blobUrl) =>
       html`<video
         style=${styleMap({
           display: 'flex',
@@ -216,8 +243,12 @@ const embedConfig: AttachmentEmbedConfig[] = [
     name: 'audio',
     check: (model, maxFileSize) =>
       model.props.type.startsWith('audio/') && model.props.size <= maxFileSize,
-    template: (_, blobUrl) =>
-      html`<audio controls src=${blobUrl} style="margin: 4px;"></audio>`,
+    render: (_, blobUrl) =>
+      html`<audio
+        style=${styleMap({ margin: '4px' })}
+        src=${blobUrl}
+        controls
+      ></audio>`,
   },
 ];
 

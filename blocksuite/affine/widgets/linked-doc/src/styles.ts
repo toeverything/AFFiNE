@@ -76,9 +76,15 @@ export const linkedDocPopoverStyles = css`
     border-top: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
   }
 
-  .group icon-button svg {
+  .group icon-button svg,
+  .group icon-button .icon {
     width: 20px;
     height: 20px;
+  }
+  .group icon-button .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .linked-doc-popover .group {

@@ -70,7 +70,7 @@ const getUa = (navigator: Navigator) => {
   const tiktok = mobile && /aweme/i.test(ua);
   const weibo = mobile && /Weibo/i.test(ua);
   const safari =
-    ios && !chrome && !wx && !weibo && !tiktok && /Safari|Macintosh/i.test(ua);
+    !chrome && !wx && !weibo && !tiktok && /Safari|Macintosh/i.test(ua);
   const firefox = /Firefox/.test(ua);
   const win = /windows|win32|win64|wow32|wow64/.test(uas);
   const linux = /linux/.test(uas);

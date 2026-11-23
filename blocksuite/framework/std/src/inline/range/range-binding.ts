@@ -213,20 +213,22 @@ export class RangeBinding {
       return;
     }
 
+    const startElement = getElement(range.startContainer);
+    const endElement = getElement(range.endContainer);
+    const hasInlineEndpoint =
+      !!startElement?.closest('v-text') || !!endElement?.closest('v-text');
+
     const el = getElement(range.commonAncestorContainer);
     if (!el) return;
 
     const closestExclude = el.closest(`[${RANGE_SYNC_EXCLUDE_ATTR}="true"]`);
-    if (closestExclude) return;
+    if (closestExclude && !hasInlineEndpoint) return;
 
     const closestEditable = el.closest('[contenteditable]');
-    if (!closestEditable) return;
-
-    const startElement = getElement(range.startContainer);
-    const endElement = getElement(range.endContainer);
+    if (!closestEditable && !hasInlineEndpoint) return;
 
     // if neither start nor end is in a v-text, the range is invalid
-    if (!startElement?.closest('v-text') && !endElement?.closest('v-text')) {
+    if (!hasInlineEndpoint) {
       this._prevTextSelection = null;
       this.selectionManager.clear(['text']);
 
@@ -278,6 +280,21 @@ export class RangeBinding {
       selections.find((selection): selection is TextSelection =>
         selection.is(TextSelection)
       ) ?? null;
+
+    if (!text && selections.length > 0) {
+      const hasRecoverable = selections.find(selection => {
+        const selectionConstructor =
+          selection.constructor as typeof BaseSelection;
+        return selectionConstructor.recoverable;
+      });
+      if (!hasRecoverable) {
+        // prevent focus to top-level content-editable element
+        // if the browser focus to the top-level content-editable element,
+        // when switching between tabs,
+        // the browser will focus to the top-level content-editable element
+        this.host.focus({ preventScroll: true });
+      }
+    }
 
     if (text === this._prevTextSelection) {
       return;

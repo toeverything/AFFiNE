@@ -1,10 +1,13 @@
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
+import { clipboardConfigs } from '@blocksuite/affine/foundation/clipboard';
 import { defaultImageProxyMiddleware } from '@blocksuite/affine/shared/adapters';
 import { replaceSelectedTextWithBlocksCommand } from '@blocksuite/affine/shared/commands';
 import { isInsideEdgelessEditor } from '@blocksuite/affine/shared/utils';
 import {
   type BlockComponent,
   BlockSelection,
+  BlockStdScope,
+  Clipboard,
   type EditorHost,
   SurfaceSelection,
   type TextSelection,
@@ -185,27 +188,25 @@ export const replace = async (
 };
 
 export const copyTextAnswer = async (panel: AffineAIPanelWidget) => {
-  const host = panel.host;
   if (!panel.answer) {
     return false;
   }
-  return copyText(host, panel.answer);
+  return copyText(panel.answer);
 };
 
-export const copyText = async (host: EditorHost, text: string) => {
-  const previewDoc = await markDownToDoc(
-    host.std.store.provider,
-    host.std.store.schema,
-    text,
-    [defaultImageProxyMiddleware]
-  );
+export const copyText = async (text: string) => {
+  const previewDoc = await markDownToDoc(text, [defaultImageProxyMiddleware]);
   const models = previewDoc
     .getBlocksByFlavour('affine:note')
     .map(b => b.model)
     .flatMap(model => model.children);
   const slice = Slice.fromModels(previewDoc, models);
-  await host.std.clipboard.copySlice(slice);
+  const std = new BlockStdScope({
+    store: previewDoc,
+    extensions: [...clipboardConfigs],
+  });
+  const clipboard = std.provider.get(Clipboard);
+  await clipboard.copySlice(slice);
   previewDoc.dispose();
-  previewDoc.workspace.dispose();
   return true;
 };

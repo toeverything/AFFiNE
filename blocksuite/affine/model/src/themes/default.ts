@@ -38,16 +38,13 @@ const Heavy = {
 } as const;
 
 const NoteBackgroundColorMap = {
-  Yellow: getColorByKey('edgeless/note/yellow'),
-  Orange: getColorByKey('edgeless/note/orange'),
   Red: getColorByKey('edgeless/note/red'),
-  Magenta: getColorByKey('edgeless/note/magenta'),
-  Purple: getColorByKey('edgeless/note/purple'),
-  Blue: getColorByKey('edgeless/note/blue'),
-  Teal: getColorByKey('edgeless/note/teal'),
+  Orange: getColorByKey('edgeless/note/orange'),
+  Yellow: getColorByKey('edgeless/note/yellow'),
   Green: getColorByKey('edgeless/note/green'),
-  Black: getColorByKey('edgeless/note/black'),
-  Grey: getColorByKey('edgeless/note/grey'),
+  Blue: getColorByKey('edgeless/note/blue'),
+  Purple: getColorByKey('edgeless/note/purple'),
+  Magenta: getColorByKey('edgeless/note/magenta'),
   White: getColorByKey('edgeless/note/white'),
   Transparent: Transparent,
 } as const;
@@ -118,7 +115,7 @@ export const DefaultTheme: Theme = {
   black: Black,
   white: White,
   transparent: Transparent,
-  textColor: Medium.Blue,
+  textColor: Black,
   shapeTextColor: pureBlack,
   shapeStrokeColor: Medium.Yellow,
   shapeFillColor: Medium.Yellow,

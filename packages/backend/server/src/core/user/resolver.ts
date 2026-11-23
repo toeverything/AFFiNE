@@ -16,14 +16,27 @@ import { isNil, omitBy } from 'lodash-es';
 
 import {
   CannotDeleteOwnAccount,
+  EmailAlreadyUsed,
+  EventBus,
   type FileUpload,
+  ImageFormatNotSupported,
+  OneMB,
+  readBufferWithLimit,
+  sniffMime,
   Throttle,
   UserNotFound,
 } from '../../base';
-import { Models, UserSettingsSchema } from '../../models';
+import {
+  Feature,
+  Models,
+  UserFeatureName,
+  UserSettingsSchema,
+} from '../../models';
+import { processImage } from '../../native';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { Admin } from '../common';
 import { AvatarStorage } from '../storage';
 import { validators } from '../utils/validators';
@@ -59,21 +72,27 @@ export class UserResolver {
   ): Promise<typeof UserOrLimitedUser | null> {
     validators.assertValidEmail(email);
 
-    // TODO(@forehalo): need to limit a user can only get another user witch is in the same workspace
+    // NOTE: prevent user enumeration. Only allow querying users within the same workspace scope.
+    if (!currentUser) {
+      return null;
+    }
+
     const user = await this.models.user.getUserByEmail(email);
 
     // return empty response when user not exists
     if (!user) return null;
 
-    if (currentUser) {
+    if (user.id === currentUser.id) {
       return sessionUser(user);
     }
 
-    // only return limited info when not logged in
-    return {
-      email: user.email,
-      hasPassword: !!user.password,
-    };
+    const allowed = await this.models.workspaceUser.hasSharedWorkspace(
+      currentUser.id,
+      user.id
+    );
+    if (!allowed) return null;
+
+    return sessionUser(user);
   }
 
   @Throttle('strict')
@@ -98,27 +117,37 @@ export class UserResolver {
     @Args({ name: 'avatar', type: () => GraphQLUpload })
     avatar: FileUpload
   ) {
-    if (!avatar.mimetype.startsWith('image/')) {
-      throw new Error('Invalid file type');
-    }
-
     if (!user) {
       throw new UserNotFound();
     }
 
+    const avatarBuffer = await readBufferWithLimit(
+      avatar.createReadStream(),
+      5 * OneMB
+    );
+    const contentType = sniffMime(avatarBuffer, avatar.mimetype)?.toLowerCase();
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new ImageFormatNotSupported({ format: contentType || 'unknown' });
+    }
+
+    let processedAvatarBuffer: Buffer;
+    try {
+      processedAvatarBuffer = await processImage(avatarBuffer, 512, false);
+    } catch {
+      throw new ImageFormatNotSupported({ format: contentType });
+    }
+
     const avatarUrl = await this.storage.put(
       `${user.id}-avatar-${Date.now()}`,
-      avatar.createReadStream(),
-      {
-        contentType: avatar.mimetype,
-      }
+      processedAvatarBuffer,
+      { contentType: 'image/webp' }
     );
 
     if (user.avatarUrl) {
       await this.storage.delete(user.avatarUrl);
     }
 
-    return this.models.user.update(user.id, { avatarUrl });
+    return this.models.user.updateProfile(user.id, { avatarUrl });
   }
 
   @Mutation(() => UserType, {
@@ -134,7 +163,7 @@ export class UserResolver {
       return user;
     }
 
-    return sessionUser(await this.models.user.update(user.id, input));
+    return sessionUser(await this.models.user.updateProfile(user.id, input));
   }
 
   @Mutation(() => RemoveAvatar, {
@@ -145,7 +174,7 @@ export class UserResolver {
     if (!user) {
       throw new UserNotFound();
     }
-    await this.models.user.update(user.id, { avatarUrl: null });
+    await this.models.user.updateProfile(user.id, { avatarUrl: null });
     return { success: true };
   }
 
@@ -160,7 +189,10 @@ export class UserResolver {
 
 @Resolver(() => UserType)
 export class UserSettingsResolver {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly event: EventBus
+  ) {}
 
   @Mutation(() => Boolean, {
     name: 'updateSettings',
@@ -173,6 +205,7 @@ export class UserSettingsResolver {
   ) {
     UserSettingsSchema.parse(input);
     await this.models.userSettings.set(user.id, input);
+    this.event.emit('user.settings.updated', { userId: user.id });
     return true;
   }
 
@@ -192,6 +225,12 @@ class ListUserInput {
 
   @Field(() => Int, { nullable: true, defaultValue: 20 })
   first!: number;
+
+  @Field(() => String, { nullable: true })
+  keyword?: string;
+
+  @Field(() => [Feature], { nullable: true })
+  features?: Feature[];
 }
 
 @InputType()
@@ -234,14 +273,22 @@ const UserImportResultType = createUnionType({
 export class UserManagementResolver {
   constructor(
     private readonly db: PrismaClient,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly event: EventBus
   ) {}
 
   @Query(() => Int, {
     description: 'Get users count',
   })
-  async usersCount(): Promise<number> {
-    return this.db.user.count();
+  async usersCount(
+    @Args({ name: 'filter', type: () => ListUserInput, nullable: true })
+    input?: ListUserInput
+  ): Promise<number> {
+    return this.models.user.count({
+      keyword: input?.keyword ?? null,
+      features: (input?.features as UserFeatureName[]) ?? null,
+    });
   }
 
   @Query(() => [UserType], {
@@ -250,7 +297,12 @@ export class UserManagementResolver {
   async users(
     @Args({ name: 'filter', type: () => ListUserInput }) input: ListUserInput
   ): Promise<UserType[]> {
-    const users = await this.models.user.pagination(input.skip, input.first);
+    const users = await this.models.user.list({
+      skip: input.skip,
+      take: input.first,
+      keyword: input.keyword,
+      features: input.features as UserFeatureName[],
+    });
 
     return users.map(sessionUser);
   }
@@ -358,25 +410,65 @@ export class UserManagementResolver {
       return sessionUser(user);
     }
 
-    return sessionUser(
-      await this.models.user.update(user.id, {
-        email: input.email,
-        name: input.name,
-      })
-    );
+    if (input.email && input.email !== user.email) {
+      validators.assertValidEmail(input.email);
+      try {
+        await this.runtime.executeAuthSessionCommandV1({
+          action: 'set_user_email',
+          userId: user.id,
+          email: input.email,
+          reason: 'administrator_changed_email',
+        });
+      } catch (error) {
+        if (
+          String(error).includes('email_already_used') ||
+          String(error).includes('users_email_key')
+        ) {
+          throw new EmailAlreadyUsed();
+        }
+        throw error;
+      }
+    }
+    if (input.name !== undefined) {
+      await this.models.user.updateProfile(user.id, { name: input.name });
+    }
+    const updated = await this.models.user.get(user.id, { withDisabled: true });
+    if (!updated) throw new UserNotFound();
+    if (input.email && input.name === undefined)
+      this.event.emitDetached('user.updated', updated);
+    return sessionUser(updated);
   }
 
   @Mutation(() => UserType, {
     description: 'Ban an user',
   })
   async banUser(@Args('id') id: string): Promise<UserType> {
-    return sessionUser(await this.models.user.ban(id));
+    const recreated = await this.models.user.recreateForBan(id);
+    await this.runtime.executeAuthSessionCommandV1({
+      action: 'set_user_disabled',
+      userId: recreated.id,
+      disabled: true,
+      reason: 'user_deleted_or_disabled',
+    });
+    const disabled = await this.models.user.get(recreated.id, {
+      withDisabled: true,
+    });
+    if (!disabled) throw new UserNotFound();
+    return sessionUser(disabled);
   }
 
   @Mutation(() => UserType, {
     description: 'Reenable an banned user',
   })
   async enableUser(@Args('id') id: string): Promise<UserType> {
-    return sessionUser(await this.models.user.enable(id));
+    await this.runtime.executeAuthSessionCommandV1({
+      action: 'set_user_disabled',
+      userId: id,
+      disabled: false,
+      reason: 'administrator_enabled_user',
+    });
+    const user = await this.models.user.get(id, { withDisabled: true });
+    if (!user) throw new UserNotFound();
+    return sessionUser(user);
   }
 }

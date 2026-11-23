@@ -1,6 +1,10 @@
 import { ShapeElementModel } from '@blocksuite/affine-model';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import {
+  GfxElementModelView,
+  GfxViewInteractionExtension,
+} from '@blocksuite/std/gfx';
 
+import { normalizeShapeBound } from './element-renderer';
 import { mountShapeTextEditor } from './text/edgeless-shape-text-editor';
 
 export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
@@ -26,3 +30,16 @@ export class ShapeElementView extends GfxElementModelView<ShapeElementModel> {
     });
   }
 }
+
+export const ShapeViewInteraction =
+  GfxViewInteractionExtension<ShapeElementView>(ShapeElementView.type, {
+    handleResize: () => {
+      return {
+        onResizeMove({ newBound, model }) {
+          const normalizedBound = normalizeShapeBound(model, newBound);
+
+          model.xywh = normalizedBound.serialize();
+        },
+      };
+    },
+  });

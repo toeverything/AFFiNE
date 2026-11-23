@@ -1,7 +1,7 @@
 import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const baseContainer = style({
-  padding: '4px 16px',
+  padding: '4px 14px',
   display: 'flex',
   flexFlow: 'column nowrap',
   ':empty': {

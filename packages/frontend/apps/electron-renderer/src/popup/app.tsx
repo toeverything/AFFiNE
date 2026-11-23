@@ -1,10 +1,8 @@
 import { ThemeProvider } from '@affine/core/components/theme-provider';
+import { configureElectronStateStorageImpls } from '@affine/core/desktop/storage';
 import { configureDesktopApiModule } from '@affine/core/modules/desktop-api';
 import { configureI18nModule, I18nProvider } from '@affine/core/modules/i18n';
-import {
-  configureElectronStateStorageImpls,
-  configureStorageModule,
-} from '@affine/core/modules/storage';
+import { configureStorageModule } from '@affine/core/modules/storage';
 import { configureEssentialThemeModule } from '@affine/core/modules/theme';
 import { appInfo } from '@affine/electron-api';
 import { Framework, FrameworkRoot } from '@toeverything/infra';
@@ -27,7 +25,7 @@ export function App() {
     <FrameworkRoot framework={frameworkProvider}>
       <ThemeProvider>
         <I18nProvider>
-          <div className={styles.root}>
+          <div className={styles.root} data-is-windows={environment.isWindows}>
             {mode === 'recording' && <Recording />}
           </div>
         </I18nProvider>

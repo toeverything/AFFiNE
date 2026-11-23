@@ -7,6 +7,7 @@ export const keyboardToolbarStyles = css`
     position: fixed;
     display: block;
     width: 100vw;
+    bottom: 0;
   }
 
   .keyboard-toolbar {
@@ -60,14 +61,18 @@ export const keyboardToolbarStyles = css`
 
 export const keyboardToolPanelStyles = css`
   affine-keyboard-tool-panel {
+    display: block;
+    overflow-y: auto;
+    box-sizing: border-box;
+    background-color: ${unsafeCSSVarV2('layer/background/primary')};
+  }
+
+  .affine-keyboard-tool-panel-container {
     display: flex;
     flex-direction: column;
     gap: 24px;
     width: 100%;
     padding: 16px 4px 8px 8px;
-    overflow-y: auto;
-    box-sizing: border-box;
-    background-color: ${unsafeCSSVarV2('layer/background/primary')};
   }
 
   ${scrollbarStyle('affine-keyboard-tool-panel')}

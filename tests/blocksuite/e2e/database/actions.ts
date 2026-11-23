@@ -8,7 +8,6 @@ import {
 } from '../utils/actions/keyboard.js';
 import {
   getBoundingBox,
-  getBoundingClientRect,
   getEditorLocator,
   waitNextFrame,
 } from '../utils/actions/misc.js';
@@ -117,13 +116,13 @@ export function getDatabaseCell(
   const index = columnIndex ?? 0;
   const columns = columnType
     ? row.getByTestId(columnType)
-    : row.locator('affine-database-cell-container');
+    : row.locator('dv-table-view-cell-container');
   return columns.nth(index);
 }
 
 export const getDatabaseColumnCells = (page: Page, columnIndex: number) => {
   return page.locator(
-    `affine-database-cell-container[data-column-index="${columnIndex}"]`
+    `dv-table-view-cell-container[data-column-index="${columnIndex}"]`
   );
 };
 
@@ -175,7 +174,7 @@ export async function assertDatabaseCellRichTexts(
   }
 ) {
   const cellContainer = page.locator(
-    `affine-database-cell-container[data-row-index='${rowIndex}'][data-column-index='${columnIndex}']`
+    `dv-table-view-cell-container[data-row-index='${rowIndex}'][data-column-index='${columnIndex}']`
   );
 
   const cell = cellContainer.locator('affine-database-rich-text-cell');
@@ -288,10 +287,8 @@ export async function focusDatabaseHeader(page: Page, columnIndex = 0) {
 }
 
 export async function getDatabaseMouse(page: Page) {
-  const databaseRect = await getBoundingClientRect(
-    page,
-    '.affine-database-table'
-  );
+  const databaseRect = await page.getByTestId('dv-table-view').boundingBox();
+  if (!databaseRect) throw new Error('Cannot find database rect');
   return {
     mouseOver: async () => {
       await page.mouse.move(databaseRect.x, databaseRect.y);

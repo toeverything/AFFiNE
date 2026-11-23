@@ -2,6 +2,7 @@ import { FlexWrapper, Input, notify } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
+  SettingWrapper,
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
@@ -17,9 +18,15 @@ import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AuthService, ServerService } from '../../../../modules/cloud';
+import {
+  AuthService,
+  type DeviceAuthSession,
+  ServerService,
+} from '../../../../modules/cloud';
 import type { SettingState } from '../types';
 import { AIUsagePanel } from './ai-usage-panel';
+import { DeleteAccount } from './delete-account';
+import { IntegrationsPanel } from './integrations-panel';
 import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
@@ -167,6 +174,114 @@ const StoragePanel = ({
   );
 };
 
+const DevicesPanel = () => {
+  const t = useI18n();
+  const auth = useService(AuthService);
+  const [sessions, setSessions] = useState<DeviceAuthSession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      setSessions(await auth.listDeviceSessions());
+    } catch (error) {
+      notify.error({
+        title: t['com.affine.settings.devices.load-failed'](),
+        message: String(error),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [auth, t]);
+
+  useEffect(() => {
+    reload().catch(error => {
+      notify.error({
+        title: t['com.affine.settings.devices.load-failed'](),
+        message: String(error),
+      });
+    });
+  }, [reload, t]);
+
+  const revoke = useCallback(
+    async (session: DeviceAuthSession) => {
+      if (
+        !window.confirm(
+          t['com.affine.settings.devices.confirm']({
+            device: session.deviceName ?? session.platform,
+          })
+        )
+      ) {
+        return;
+      }
+      try {
+        await auth.revokeDeviceSession(session.id, session.current);
+        if (!session.current) await reload();
+      } catch (error) {
+        notify.error({
+          title: t['com.affine.settings.devices.sign-out-failed'](),
+          message: String(error),
+        });
+      }
+    },
+    [auth, reload, t]
+  );
+
+  const revokeAll = useCallback(async () => {
+    if (!window.confirm(t['com.affine.settings.devices.confirm-all']())) return;
+    try {
+      await auth.revokeAllDeviceSessions();
+    } catch (error) {
+      notify.error({
+        title: t['com.affine.settings.devices.sign-out-all-failed'](),
+        message: String(error),
+      });
+    }
+  }, [auth, t]);
+
+  return (
+    <SettingRow
+      name={t['com.affine.settings.devices.title']()}
+      desc={t['com.affine.settings.devices.description']()}
+      spreadCol={false}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {loading ? (
+          <span>{t['com.affine.settings.devices.loading']()}</span>
+        ) : null}
+        {sessions.map(session => (
+          <div
+            key={session.id}
+            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+          >
+            <div style={{ flex: 1 }}>
+              <div>
+                {session.deviceName ?? session.platform}
+                {session.current
+                  ? ` (${t['com.affine.settings.devices.current']()})`
+                  : ''}
+              </div>
+              <div>
+                {session.platform}
+                {session.appVersion ? ` · ${session.appVersion}` : ''}
+                {` · ${t['com.affine.settings.devices.last-used']({ time: new Date(session.lastSeenAt).toLocaleString() })}`}
+              </div>
+            </div>
+            <Button onClick={() => void revoke(session)}>
+              {t['com.affine.settings.devices.sign-out']()}
+            </Button>
+          </div>
+        ))}
+        {sessions.length > 1 ? (
+          <Button onClick={() => void revokeAll()}>
+            {t['com.affine.settings.devices.sign-out-all']()}
+          </Button>
+        ) : null}
+      </div>
+    </SettingRow>
+  );
+};
+
 export const AccountSetting = ({
   onChangeSettingState,
 }: {
@@ -198,13 +313,19 @@ export const AccountSetting = ({
 
   const onPasswordButtonClick = useCallback(() => {
     globalDialogService.open('change-password', {
+      hasPassword: account?.info?.authMethods?.password.bound,
       server: serverService.server.baseUrl,
     });
-  }, [globalDialogService, serverService.server.baseUrl]);
+  }, [
+    account?.info?.authMethods?.password.bound,
+    globalDialogService,
+    serverService.server.baseUrl,
+  ]);
 
   if (!account) {
     return null;
   }
+  const hasPassword = account.info?.authMethods?.password.bound;
 
   return (
     <>
@@ -214,51 +335,44 @@ export const AccountSetting = ({
         data-testid="account-title"
       />
       <AvatarAndName />
-      <SettingRow name={t['com.affine.settings.email']()} desc={account.email}>
-        <Button onClick={onChangeEmail}>
-          {account.info?.emailVerified
-            ? t['com.affine.settings.email.action.change']()
-            : t['com.affine.settings.email.action.verify']()}
-        </Button>
-      </SettingRow>
-      <SettingRow
-        name={t['com.affine.settings.password']()}
-        desc={t['com.affine.settings.password.message']()}
-      >
-        <Button onClick={onPasswordButtonClick}>
-          {account.info?.hasPassword
-            ? t['com.affine.settings.password.action.change']()
-            : t['com.affine.settings.password.action.set']()}
-        </Button>
-      </SettingRow>
-      <StoragePanel onChangeSettingState={onChangeSettingState} />
-      {serverFeatures?.copilot && (
-        <AIUsagePanel onChangeSettingState={onChangeSettingState} />
-      )}
-      <SettingRow
-        name={t[`Sign out`]()}
-        desc={t['com.affine.setting.sign.out.message']()}
-        style={{ cursor: 'pointer' }}
-        data-testid="sign-out-button"
-        onClick={openSignOutModal}
-      >
-        <ArrowRightSmallIcon />
-      </SettingRow>
-      {/*<SettingRow*/}
-      {/*  name={*/}
-      {/*    <span style={{ color: 'var(--affine-warning-color)' }}>*/}
-      {/*      {t['com.affine.setting.account.delete']()}*/}
-      {/*    </span>*/}
-      {/*  }*/}
-      {/*  desc={t['com.affine.setting.account.delete.message']()}*/}
-      {/*  style={{ cursor: 'pointer' }}*/}
-      {/*  onClick={useCallback(() => {*/}
-      {/*    toast('Function coming soon');*/}
-      {/*  }, [])}*/}
-      {/*  testId="delete-account-button"*/}
-      {/*>*/}
-      {/*  <ArrowRightSmallIcon />*/}
-      {/*</SettingRow>*/}
+      <SettingWrapper>
+        <SettingRow
+          name={t['com.affine.settings.email']()}
+          desc={account.email}
+        >
+          <Button onClick={onChangeEmail}>
+            {account.info?.emailVerified
+              ? t['com.affine.settings.email.action.change']()
+              : t['com.affine.settings.email.action.verify']()}
+          </Button>
+        </SettingRow>
+        <SettingRow
+          name={t['com.affine.settings.password']()}
+          desc={t['com.affine.settings.password.message']()}
+        >
+          <Button onClick={onPasswordButtonClick}>
+            {hasPassword
+              ? t['com.affine.settings.password.action.change']()
+              : t['com.affine.settings.password.action.set']()}
+          </Button>
+        </SettingRow>
+        <DevicesPanel />
+        <StoragePanel onChangeSettingState={onChangeSettingState} />
+        {serverFeatures?.copilot && (
+          <AIUsagePanel onChangeSettingState={onChangeSettingState} />
+        )}
+        <IntegrationsPanel onChangeSettingState={onChangeSettingState} />
+        <SettingRow
+          name={t[`Sign out`]()}
+          desc={t['com.affine.setting.sign.out.message']()}
+          style={{ cursor: 'pointer' }}
+          data-testid="sign-out-button"
+          onClick={openSignOutModal}
+        >
+          <ArrowRightSmallIcon />
+        </SettingRow>
+      </SettingWrapper>
+      <DeleteAccount />
     </>
   );
 };

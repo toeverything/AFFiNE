@@ -188,6 +188,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     });
     this._resizeObserver.observe(this.richText);
 
+    this.connector.stash('labelXYWH');
+
     this.updateComplete
       .then(() => {
         if (!this.inlineEditor) return;
@@ -257,7 +259,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             }
           }
 
-          connector.lableEditing = false;
+          connector.labelEditing = false;
+          connector.pop('labelXYWH');
 
           selection.set({
             elements: [],
@@ -293,7 +296,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           }
         );
 
-        connector.lableEditing = true;
+        connector.labelEditing = true;
       })
       .catch(console.error);
   }
@@ -354,22 +357,26 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
         <rich-text
           .yText=${connector.text}
           .enableFormat=${false}
-          style=${isEmpty
-            ? styleMap({
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                padding: `${VERTICAL_PADDING}px ${HORIZONTAL_PADDING}px`,
-              })
-            : nothing}
+          style=${
+            isEmpty
+              ? styleMap({
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  padding: `${VERTICAL_PADDING}px ${HORIZONTAL_PADDING}px`,
+                })
+              : nothing
+          }
         ></rich-text>
-        ${isEmpty
-          ? html`
-              <span class="edgeless-connector-label-editor-placeholder">
-                Add text
-              </span>
-            `
-          : nothing}
+        ${
+          isEmpty
+            ? html`
+                <span class="edgeless-connector-label-editor-placeholder">
+                  Add text
+                </span>
+              `
+            : nothing
+        }
       </div>
     `;
   }

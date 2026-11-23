@@ -23,6 +23,19 @@ export const embedIframeBlockStyles = css`
     height: 100%;
     display: none;
   }
+
+  .affine-embed-iframe-source {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    pointer-events: none;
+  }
   .affine-embed-iframe-block-overlay.show {
     display: block;
   }

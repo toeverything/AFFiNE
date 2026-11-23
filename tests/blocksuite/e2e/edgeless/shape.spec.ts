@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { lightThemeV2 } from '@toeverything/theme/v2';
 
 import {
+  assertEdgelessShapeType,
   assertEdgelessTool,
   changeShapeFillColor,
   changeShapeFillColorToTransparent,
@@ -689,22 +690,21 @@ test.describe('shape hit test', () => {
 
   // FIXME(@flrande): This is broken by recent changes
   // In Playwright, we can't add text in shape hollow area
-  test.fixme(
-    'using text tool to add text in shape hollow area',
-    async ({ page }) => {
-      await addTransparentRect(page, rect.start, rect.end);
-      await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
-      await assertEdgelessNonSelectedRect(page);
+  test.fixme('using text tool to add text in shape hollow area', async ({
+    page,
+  }) => {
+    await addTransparentRect(page, rect.start, rect.end);
+    await page.mouse.click(rect.start.x - 20, rect.start.y - 20);
+    await assertEdgelessNonSelectedRect(page);
 
-      await assertEdgelessTool(page, 'default');
-      await setEdgelessTool(page, 'text');
-      await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
-      await waitNextFrame(page);
+    await assertEdgelessTool(page, 'default');
+    await setEdgelessTool(page, 'text');
+    await page.mouse.click(rect.start.x + 50, rect.start.y + 50);
+    await waitNextFrame(page);
 
-      await type(page, 'hello');
-      await assertEdgelessCanvasText(page, 'hello');
-    }
-  );
+    await type(page, 'hello');
+    await assertEdgelessCanvasText(page, 'hello');
+  });
 
   test('should enter edit mode when double-clicking a text area in a shape with a transparent background', async ({
     page,
@@ -787,4 +787,22 @@ test('shape should be editable when re-enter canvas', async ({ page }) => {
 
   await dblclickView(page, [50, 50]);
   await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
+});
+
+test('shape tool should not be changed after adding new shape', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  await setEdgelessTool(page, 'shape');
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
+  await clickView(page, [0, 0]);
+
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
 });

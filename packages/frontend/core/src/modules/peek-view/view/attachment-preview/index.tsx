@@ -15,11 +15,14 @@ export const AttachmentPreviewPeekView = ({
 }: AttachmentPreviewModalProps) => {
   const { doc } = useEditor(docId);
   const blocksuiteDoc = doc?.blockSuiteDoc;
-  const model = useMemo(() => {
-    const model = blocksuiteDoc?.getBlock(blockId)?.model;
-    if (!model) return null;
-    return model as AttachmentBlockModel;
-  }, [blockId, blocksuiteDoc]);
+  const model = useMemo(
+    () => blocksuiteDoc?.getModelById<AttachmentBlockModel>(blockId) ?? null,
+    [blockId, blocksuiteDoc]
+  );
 
-  return model === null ? null : <AttachmentViewer model={model} />;
+  if (model) {
+    return <AttachmentViewer model={model} />;
+  }
+
+  return null;
 };

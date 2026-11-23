@@ -311,7 +311,7 @@ test('can show database backlink info', async ({ page }) => {
     page.locator(`affine-database-title:has-text("${databaseTitle}")`)
   ).toBeVisible();
 
-  await addDatabaseRow(page, databaseTitle);
+  await addDatabaseRow(page, 0);
 
   // the new row's title cell should have been focused at the point of adding the row
   await createLinkedPage(page, 'linked page');

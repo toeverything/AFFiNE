@@ -1,38 +1,32 @@
+import { DebugLogger } from '@affine/debug';
 import type { ListedBlobRecord } from '@affine/nbstore';
 import {
   effect,
   Entity,
   fromPromise,
   LiveData,
-  onComplete,
   onStart,
 } from '@toeverything/infra';
-import { fileTypeFromBuffer } from 'file-type';
+import { isEqual } from 'lodash-es';
 import {
-  filter,
+  catchError,
+  EMPTY,
+  finalize,
   firstValueFrom,
-  fromEvent,
-  map,
   switchMap,
-  takeUntil,
   tap,
 } from 'rxjs';
+import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
-import type { DocsSearchService } from '../../docs-search';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceFlavoursService } from '../../workspace/services/flavours';
 
-interface HydratedBlobRecord extends ListedBlobRecord, Disposable {
-  url: string;
-  extension?: string;
-  type?: string;
-}
+const logger = new DebugLogger('unused-blobs');
 
 export class UnusedBlobs extends Entity {
   constructor(
     private readonly flavoursService: WorkspaceFlavoursService,
-    private readonly workspaceService: WorkspaceService,
-    private readonly docsSearchService: DocsSearchService
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
   }
@@ -42,14 +36,21 @@ export class UnusedBlobs extends Entity {
 
   readonly revalidate = effect(
     switchMap(() =>
-      fromPromise(async () => {
-        return await this.getUnusedBlobs();
+      fromPromise(async signal => {
+        return await this.getUnusedBlobs(signal);
       }).pipe(
         tap(data => {
           this.unusedBlobs$.setValue(data);
         }),
-        onStart(() => this.isLoading$.setValue(true)),
-        onComplete(() => this.isLoading$.setValue(false))
+        catchError(error => {
+          logger.error(error);
+          return EMPTY;
+        }),
+        onStart(() => {
+          this.unusedBlobs$.setValue([]);
+          this.isLoading$.setValue(true);
+        }),
+        finalize(() => this.isLoading$.setValue(false))
       )
     )
   );
@@ -60,23 +61,15 @@ export class UnusedBlobs extends Entity {
     );
   }
 
-  async listBlobs() {
-    const blobs = await this.flavourProvider?.listBlobs(
+  async listManageableBlobs() {
+    const blobs = await this.flavourProvider?.listManageableBlobs(
       this.workspaceService.workspace.id
     );
     return blobs;
   }
 
-  async getBlob(blobKey: string) {
-    const blob = await this.flavourProvider?.getWorkspaceBlob(
-      this.workspaceService.workspace.id,
-      blobKey
-    );
-    return blob;
-  }
-
   async deleteBlob(blob: string, permanent: boolean) {
-    await this.flavourProvider?.deleteBlob(
+    await this.flavourProvider?.deleteManagedBlob(
       this.workspaceService.workspace.id,
       blob,
       permanent
@@ -84,88 +77,75 @@ export class UnusedBlobs extends Entity {
   }
 
   async getUnusedBlobs(abortSignal?: AbortSignal) {
-    // Wait for both sync and indexing to complete
-    const ready$ = this.workspaceService.workspace.engine.doc.state$
-      .pipe(filter(state => state.syncing === 0 && !state.syncRetrying))
-      .pipe(map(() => true));
-
-    await firstValueFrom(
+    await this.workspaceService.workspace.engine.doc.waitForSynced(
+      undefined,
       abortSignal
-        ? ready$.pipe(takeUntil(fromEvent(abortSignal, 'abort')))
-        : ready$
     );
 
-    await this.docsSearchService.indexer.waitForCompleted(abortSignal);
+    const blobs = await this.listManageableBlobs();
+    const usedBlobs = await this.getUsedBlobs(abortSignal);
+    abortSignal?.throwIfAborted();
 
-    const [blobs, usedBlobs] = await Promise.all([
-      this.listBlobs(),
-      this.getUsedBlobs(),
+    return blobs?.filter(blob => !usedBlobs.has(blob.key)) ?? [];
+  }
+
+  private async getUsedBlobs(signal?: AbortSignal): Promise<Set<string>> {
+    const workspace = this.workspaceService.workspace;
+    const frontend = workspace.engine.doc;
+    const storage = frontend.storage;
+    const inventory = workspace.engine.usesWorkspaceState
+      ? await firstValueFrom(frontend.workspaceState$)
+      : null;
+    if (workspace.engine.usesWorkspaceState && !inventory?.ready) {
+      throw new Error('Document inventory is not ready');
+    }
+    const clocks = await storage.getDocTimestamps();
+    const docIds = new Set([
+      ...Object.keys(clocks),
+      ...(inventory?.docs.map(doc => doc.docId) ?? []),
+      ...Object.keys(inventory?.clocks ?? {}),
     ]);
-
-    // ignore the workspace avatar
-    const workspaceAvatar = this.workspaceService.workspace.avatar$.value;
-
-    return (
-      blobs?.filter(
-        blob => !usedBlobs.includes(blob.key) && blob.key !== workspaceAvatar
-      ) ?? []
-    );
-  }
-
-  private async getUsedBlobs(): Promise<string[]> {
-    const result = await this.docsSearchService.indexer.aggregate(
-      'block',
-      {
-        type: 'boolean',
-        occur: 'must',
-        queries: [
-          {
-            type: 'exists',
-            field: 'blob',
-          },
-        ],
-      },
-      'blob',
-      {
-        pagination: {
-          limit: Number.MAX_SAFE_INTEGER,
-        },
+    const usedBlobs = new Set<string>();
+    for (const docId of docIds) {
+      signal?.throwIfAborted();
+      const record = await storage.getDoc(docId);
+      if (!record) throw new Error('Document source is unavailable');
+      const doc = new YDoc({ guid: docId });
+      try {
+        applyUpdate(doc, record.bin);
+        if (doc.store.pendingStructs || doc.store.pendingDs) {
+          throw new Error('Document blob references are incomplete');
+        }
+        const avatar = doc.getMap('meta').get('avatar');
+        if (typeof avatar === 'string' && avatar) usedBlobs.add(avatar);
+        for (const block of doc.getMap('blocks').values()) {
+          if (!(block instanceof YMap)) continue;
+          const flavour = block.get('sys:flavour');
+          if (flavour !== 'affine:image' && flavour !== 'affine:attachment') {
+            continue;
+          }
+          const blob = block.get('prop:sourceId');
+          if (typeof blob === 'string') usedBlobs.add(blob);
+        }
+      } finally {
+        doc.destroy();
       }
-    );
-
-    return result.buckets.map(bucket => bucket.key);
-  }
-
-  async hydrateBlob(
-    record: ListedBlobRecord,
-    abortSignal?: AbortSignal
-  ): Promise<HydratedBlobRecord | null> {
-    const blob = await this.getBlob(record.key);
-
-    if (!blob || abortSignal?.aborted) {
-      return null;
     }
-
-    const fileType = await fileTypeFromBuffer(await blob.arrayBuffer());
-
-    if (abortSignal?.aborted) {
-      return null;
+    signal?.throwIfAborted();
+    const currentClocks = await storage.getDocTimestamps();
+    if (!isEqual(clocks, currentClocks)) {
+      throw new Error(
+        'Document sources changed while checking blob references'
+      );
     }
-
-    const mime = record.mime || fileType?.mime || 'unknown';
-    const url = URL.createObjectURL(new Blob([blob], { type: mime }));
-    // todo(@pengx17): the following may not be sufficient
-    const extension = fileType?.ext;
-    const type = extension ?? (mime?.startsWith('text/') ? 'txt' : 'unknown');
-    return {
-      ...record,
-      url,
-      extension,
-      type,
-      mime,
-      [Symbol.dispose]: () => {
-        URL.revokeObjectURL(url);
-      },
-    };
+    if (
+      inventory &&
+      !isEqual(inventory, await firstValueFrom(frontend.workspaceState$))
+    ) {
+      throw new Error(
+        'Document inventory changed while checking blob references'
+      );
+    }
+    return usedBlobs;
   }
 }

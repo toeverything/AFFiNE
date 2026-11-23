@@ -15,11 +15,11 @@ export default defineConfig({
     command: process.env.CI
       ? 'yarn workspace @blocksuite/playground run preview'
       : 'yarn workspace @blocksuite/playground run dev',
-    port: process.env.CI ? 4173 : 5173,
     reuseExistingServer: !process.env.CI,
     env: {
       COVERAGE: process.env.COVERAGE ?? '',
     },
+    url: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
   },
   use: {
     browserName:

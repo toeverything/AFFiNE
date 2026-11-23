@@ -1,16 +1,14 @@
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import {
-  app,
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-} from 'electron';
+import { BrowserWindow, type BrowserWindowConstructorOptions } from 'electron';
 import { BehaviorSubject } from 'rxjs';
 
-import { popupViewUrl } from '../constants';
+import { popupViewUrl } from '../../shared/internal-origin';
 import { logger } from '../logger';
 import type { MainEventRegister, NamespaceHandlers } from '../type';
+import { buildWebPreferences } from '../web-preferences';
+import { ensureDockVisible } from './main-window';
 import { getCurrentDisplay } from './utils';
 
 type PopupWindowType = 'notification' | 'recording';
@@ -61,10 +59,7 @@ abstract class PopupWindow {
 
   abstract windowOptions: Partial<BrowserWindowConstructorOptions>;
 
-  resolveReady: () => void = () => {};
-  ready = new Promise<void>(resolve => {
-    this.resolveReady = resolve;
-  });
+  ready = Promise.withResolvers<void>();
 
   private readonly showing$ = new BehaviorSubject<boolean>(false);
 
@@ -80,6 +75,7 @@ abstract class PopupWindow {
       closable: false,
       alwaysOnTop: true,
       hiddenInMissionControl: true,
+      skipTaskbar: true,
       movable: false,
       titleBarStyle: 'hidden',
       show: false, // hide by default,
@@ -87,21 +83,18 @@ abstract class PopupWindow {
       visualEffectState: 'active',
       vibrancy: 'under-window',
       ...this.windowOptions,
-      webPreferences: {
-        ...this.windowOptions.webPreferences,
+      webPreferences: buildWebPreferences({
         webgl: true,
-        contextIsolation: true,
-        sandbox: false,
         transparent: true,
         spellcheck: false,
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
+        ...this.windowOptions.webPreferences,
         // serialize exposed meta that to be used in preload
         additionalArguments: await getAdditionalArguments(this.name),
-      },
+      }),
     });
 
-    // it seems that the dock will disappear when popup windows are shown
-    await app.dock?.show();
+    await ensureDockVisible();
 
     // required to make the window transparent
     browserWindow.setBackgroundColor('#00000000');
@@ -109,12 +102,12 @@ abstract class PopupWindow {
       visibleOnFullScreen: true,
     });
 
-    browserWindow.loadURL(popupViewUrl).catch(err => logger.error(err));
-    browserWindow.on('ready-to-show', () => {
-      browserWindow.webContents.on('did-finish-load', () => {
-        this.resolveReady();
-      });
+    logger.info('loading popup', this.name, popupViewUrl);
+    browserWindow.webContents.on('did-finish-load', () => {
+      this.ready.resolve();
+      logger.info('popup ready', this.name);
     });
+    browserWindow.loadURL(popupViewUrl).catch(err => logger.error(err));
     return browserWindow;
   }
 
@@ -126,7 +119,7 @@ abstract class PopupWindow {
     const workArea = getCurrentDisplay(browserWindow).workArea;
     const popupSize = browserWindow.getSize();
 
-    await this.ready;
+    await this.ready.promise;
 
     this.showing$.next(true);
 
@@ -140,6 +133,8 @@ abstract class PopupWindow {
 
     // Set initial position
     browserWindow.setPosition(startX, y);
+
+    logger.info('showing popup', this.name);
 
     // First fade in, then slide
     await Promise.all([
@@ -169,6 +164,7 @@ abstract class PopupWindow {
     if (!this.browserWindow) {
       return;
     }
+    logger.info('hiding popup', this.name);
     this.showing$.next(false);
     await animate(this.browserWindow.getOpacity(), 0, opacity => {
       this.browserWindow?.setOpacity(opacity);
@@ -243,6 +239,8 @@ export class PopupManager {
           return new NotificationPopupWindow() as PopupWindowTypeMap[T];
         case 'recording':
           return new RecordingPopupWindow() as PopupWindowTypeMap[T];
+        default:
+          throw new Error(`Unknown popup type: ${type}`);
       }
     })();
 

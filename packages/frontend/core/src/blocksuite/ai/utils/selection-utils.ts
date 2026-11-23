@@ -29,7 +29,8 @@ import {
 
 import { getContentFromSlice } from '../../utils';
 import type { CopilotTool } from '../tool/copilot-tool';
-import { getEdgelessCopilotWidget } from './edgeless';
+import { isAttachment } from './attachment';
+import { getEdgelessCopilotWidget } from './get-edgeless-copilot-widget';
 
 export async function selectedToCanvas(host: EditorHost) {
   const gfx = host.std.get(GfxControllerIdentifier);
@@ -226,10 +227,30 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
       if (!sourceId) return null;
       const blob = await host.store.blobSync.get(sourceId);
       if (!blob) return null;
-      return new File([blob], sourceId);
+      return new File([blob], sourceId, { type: blob.type });
     }) ?? []
   );
   return blobs.filter((blob): blob is File => !!blob);
+};
+
+export const getSelectedAttachments = async (host: EditorHost) => {
+  const [_, data] = host.command.exec(getSelectedBlocksCommand, {
+    types: ['block'],
+  });
+
+  const blocks = data.selectedBlocks ?? [];
+  const attachments: { sourceId: string; name: string }[] = [];
+
+  for (const block of blocks) {
+    if (isAttachment(block.model)) {
+      const { sourceId, name } = block.model.props;
+      if (sourceId && name) {
+        attachments.push({ sourceId, name });
+      }
+    }
+  }
+
+  return attachments;
 };
 
 export const getSelectedNoteAnchor = (host: EditorHost, id: string) => {

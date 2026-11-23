@@ -13,15 +13,17 @@ import {
   LockIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/rc';
+import { CreditCardIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import { DiscardChanges } from '../../../components/shared/discard-changes';
 import { useRightPanel } from '../../panel/context';
 import type { UserType } from '../schema';
 import { DeleteAccountDialog } from './delete-account';
 import { DisableAccountDialog } from './disable-account';
-import { DiscardChanges } from './discard-changes';
 import { EnableAccountDialog } from './enable-account';
+import { PaymentReviewPanel } from './payment-review';
 import { ResetPasswordDialog } from './reset-password';
 import {
   useDeleteUser,
@@ -40,8 +42,15 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [enableDialogOpen, setEnableDialogOpen] = useState(false);
-  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const { openPanel, isOpen, closePanel, setPanelContent } = useRightPanel();
+  const [pendingPanel, setPendingPanel] = useState<'edit' | 'payment'>();
+  const {
+    openPanel,
+    isOpen,
+    closePanel,
+    setPanelContent,
+    hasDirtyChanges,
+    setHasDirtyChanges,
+  } = useRightPanel();
 
   const deleteUser = useDeleteUser();
   const disableUser = useDisableUser();
@@ -118,44 +127,50 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
     setEnableDialogOpen(false);
   }, []);
 
-  const handleDiscardChangesCancel = useCallback(() => {
-    setDiscardDialogOpen(false);
-  }, []);
-
   const handleConfirm = useCallback(() => {
+    setHasDirtyChanges(false);
     setPanelContent(
       <UpdateUserForm
         user={user}
         onComplete={closePanel}
         onResetPassword={openResetPasswordDialog}
         onDeleteAccount={openDeleteDialog}
+        onDirtyChange={setHasDirtyChanges}
       />
     );
-    if (discardDialogOpen) {
-      handleDiscardChangesCancel();
-    }
-    if (!isOpen) {
-      openPanel();
-    }
+    openPanel();
   }, [
     closePanel,
-    discardDialogOpen,
-    handleDiscardChangesCancel,
-    isOpen,
     openDeleteDialog,
     openPanel,
     openResetPasswordDialog,
     setPanelContent,
     user,
+    setHasDirtyChanges,
   ]);
 
-  const handleEdit = useCallback(() => {
-    if (isOpen) {
-      setDiscardDialogOpen(true);
-    } else {
+  const openPaymentReview = useCallback(() => {
+    setPanelContent(
+      <PaymentReviewPanel key={crypto.randomUUID()} user={user} />
+    );
+    openPanel();
+  }, [openPanel, setPanelContent, user]);
+
+  const openAccountPanel = (panel: 'edit' | 'payment') => {
+    if (hasDirtyChanges) {
+      setPendingPanel(panel);
+    } else if (panel === 'edit') {
       handleConfirm();
+    } else {
+      openPaymentReview();
     }
-  }, [handleConfirm, isOpen]);
+  };
+
+  const handleDiscardConfirm = () => {
+    setPendingPanel(undefined);
+    if (pendingPanel === 'edit') handleConfirm();
+    if (pendingPanel === 'payment') openPaymentReview();
+  };
 
   return (
     <div className="flex justify-end items-center">
@@ -163,47 +178,62 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-accent"
+            size="icon"
           >
             <MoreHorizontalIcon fontSize={20} />
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[214px] p-[5px] gap-2">
+        <DropdownMenuContent align="end" className="w-[214px] p-1.5">
+          <DropdownMenuItem
+            onSelect={() => openAccountPanel('edit')}
+            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
+          >
+            <EditIcon fontSize={20} />
+            Edit
+          </DropdownMenuItem>
+          {!environment.isSelfHosted && (
+            <DropdownMenuItem
+              onSelect={() => openAccountPanel('payment')}
+              className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
+            >
+              <CreditCardIcon size={20} />
+              Payment review
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
             onSelect={openResetPasswordDialog}
           >
-            <LockIcon fontSize={20} /> Reset Password
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={handleEdit}
-            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
-          >
-            <EditIcon fontSize={20} /> Edit
+            <LockIcon fontSize={20} />
+            {user.hasPassword ? 'Reset Password' : 'Setup Account'}
           </DropdownMenuItem>
           {user.disabled && (
             <DropdownMenuItem
               className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
               onSelect={openEnableDialog}
             >
-              <AccountBanIcon fontSize={20} /> Enable Email
+              <AccountBanIcon fontSize={20} />
+              Enable Email
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
           {!user.disabled && (
             <DropdownMenuItem
-              className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
+              className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
               onSelect={openDisableDialog}
             >
-              <AccountBanIcon fontSize={20} /> Disable & Delete data
+              <AccountBanIcon fontSize={20} />
+              Disable & Delete data
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
+            className="cursor-pointer gap-2 px-2 py-[6px] text-sm font-normal text-destructive focus:text-destructive"
             onSelect={openDeleteDialog}
           >
-            <DeleteIcon fontSize={20} /> Delete
+            <DeleteIcon fontSize={20} />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -235,10 +265,12 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
         onCopy={handleCopy}
       />
       <DiscardChanges
-        open={discardDialogOpen}
-        onOpenChange={setDiscardDialogOpen}
-        onClose={handleDiscardChangesCancel}
-        onConfirm={handleConfirm}
+        open={!!pendingPanel}
+        onOpenChange={open => {
+          if (!open) setPendingPanel(undefined);
+        }}
+        onClose={() => setPendingPanel(undefined)}
+        onConfirm={handleDiscardConfirm}
       />
     </div>
   );

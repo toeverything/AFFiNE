@@ -1,4 +1,4 @@
-import { LightLoadingIcon } from '@blocksuite/affine-components/icons';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
@@ -46,7 +46,7 @@ export class MindMapPlaceholder extends ShadowlessElement {
     return html`<div class="placeholder-container">
       <div class="preview-icon">${importMindMapIcon}</div>
       <div class="description">
-        ${LightLoadingIcon}
+        ${LoadingIcon()}
         <span>Importing mind map...</span>
       </div>
     </div>`;

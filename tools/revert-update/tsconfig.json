@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "files": ["index.ts"],
+  "references": [
+    { "path": "../cli" },
+    { "path": "../../packages/backend/native" }
+  ]
+}

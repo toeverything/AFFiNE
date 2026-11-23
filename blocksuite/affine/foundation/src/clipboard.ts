@@ -43,7 +43,7 @@ const imageClipboardConfigs = [
   });
 });
 
-const PlainTextClipboardConfig = ClipboardAdapterConfigExtension({
+export const PlainTextClipboardConfig = ClipboardAdapterConfigExtension({
   mimeType: 'text/plain',
   adapter: MixTextAdapter,
   priority: 70,

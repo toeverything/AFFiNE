@@ -10,8 +10,8 @@ import {
   type TestingModule,
 } from '../../../__tests__/utils';
 import { Models, User, Workspace } from '../../../models';
-import { DocReader, PgWorkspaceDocStorageAdapter as Adapter } from '..';
 import { DocEventsListener } from '../event';
+import { DocReader, PgWorkspaceDocStorageAdapter as Adapter } from '../index';
 
 interface Context {
   module: TestingModule;
@@ -67,7 +67,7 @@ test('should update doc content to database when doc is updated', async t => {
   }
 
   const docId = randomUUID();
-  await adapter.pushDocUpdates(workspace.id, docId, updates);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates);
   await adapter.getDoc(workspace.id, docId);
 
   mock.method(docReader, 'parseDocContent', () => {
@@ -105,7 +105,7 @@ test('should ignore update doc content to database when snapshot parse failed', 
   }
 
   const docId = randomUUID();
-  await adapter.pushDocUpdates(workspace.id, docId, updates);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates);
   const doc = await adapter.getDoc(workspace.id, docId);
 
   const spy = Sinon.spy(models.doc, 'upsertMeta');
@@ -132,7 +132,7 @@ test('should update workspace content to database when workspace is updated', as
     text.insert(0, 'hello');
     text.insert(5, 'world');
   }
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates);
+  await adapter.pushDocUpdatesTrusted(workspace.id, workspace.id, updates);
   await adapter.getDoc(workspace.id, workspace.id);
 
   mock.method(docReader, 'parseWorkspaceContent', () => {
@@ -166,7 +166,7 @@ test('should ignore update workspace content to database when parse workspace co
     text.insert(0, 'hello');
     text.insert(5, 'world');
   }
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates);
+  await adapter.pushDocUpdatesTrusted(workspace.id, workspace.id, updates);
   const doc = await adapter.getDoc(workspace.id, workspace.id);
 
   const spy = Sinon.spy(models.workspace, 'update');
@@ -180,4 +180,23 @@ test('should ignore update workspace content to database when parse workspace co
   t.truthy(content);
   t.is(content!.name, null);
   t.is(content!.avatarKey, null);
+});
+
+test('should ignore stale workspace when updating doc meta from snapshot event', async t => {
+  const { docReader, listener, models } = t.context;
+  const docId = randomUUID();
+  mock.method(docReader, 'parseDocContent', () => ({
+    title: 'test title',
+    summary: 'test summary',
+  }));
+
+  await models.workspace.delete(workspace.id);
+
+  await t.notThrowsAsync(async () => {
+    await listener.markDocContentCacheStale({
+      workspaceId: workspace.id,
+      docId,
+      blob: Buffer.from([0x01]),
+    });
+  });
 });

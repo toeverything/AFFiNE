@@ -21,7 +21,8 @@ import type { TemplateResult } from 'lit';
 
 import { getContentFromSlice } from '../../utils';
 import { AIChatBlockModel } from '../blocks';
-import { type AIError, AIProvider } from '../provider';
+import { type AIError } from '../provider';
+import { getAIRequestService } from '../runtime/request';
 import { reportResponse } from '../utils/action-reporter';
 import { getAIPanelWidget } from '../utils/ai-widgets';
 import { AIContext } from '../utils/context';
@@ -37,7 +38,7 @@ import {
   getSelections,
 } from '../utils/selection-utils';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
-import type { AINetworkSearchConfig } from '../widgets/ai-panel/type';
+import type { AIActionAnswer } from '../widgets/ai-panel/type';
 import type { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 import { actionToAnswerRenderer } from './answer-renderer';
 import { EXCLUDING_COPY_ACTIONS } from './consts';
@@ -130,6 +131,12 @@ export async function getContentFromSelected(
       }
     );
 
+  const hasPageBlock = notes.find(note => note.isPageBlock());
+  const title =
+    hasPageBlock && host.std.store.meta?.title
+      ? `# ${host.std.store.meta?.title}\n`
+      : '';
+
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
@@ -140,7 +147,7 @@ export async function getContentFromSelected(
     embedSyncedDocs
   );
 
-  return `${noteContent.join('\n')}
+  return `${title}${noteContent.join('\n')}
 ${edgelessTextContent.join('\n')}
 ${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
@@ -170,13 +177,8 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
     seed?: string;
   } | void>,
   trackerOptions?: BlockSuitePresets.TrackerOptions,
-  panelInput?: string,
-  networkConfig?: AINetworkSearchConfig
+  panelInput?: string
 ) {
-  const action = AIProvider.actions[id];
-
-  if (!action || typeof action !== 'function') return;
-
   if (extract && typeof extract === 'function') {
     return (host: EditorHost, ctx: AIContext): BlockSuitePresets.TextStream => {
       let stream: BlockSuitePresets.TextStream | undefined;
@@ -185,7 +187,6 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
       return {
         async *[Symbol.asyncIterator]() {
           const models = getCopilotSelectedElems(host);
-          const { visible, enabled } = networkConfig ?? {};
           const options = {
             ...variants,
             signal,
@@ -197,8 +198,7 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             host,
             docId: host.store.id,
             workspaceId: host.store.workspace.id,
-            webSearch: visible?.value && enabled?.value,
-          } as Parameters<typeof action>[0];
+          } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
           const content = ctx.get().content;
           if (typeof content === 'string' && !content.length && panelInput) {
@@ -211,8 +211,10 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
             Object.assign(options, data);
           }
 
-          // @ts-expect-error TODO(@Peng): maybe fix this
-          stream = await action(options);
+          stream = (await getAIRequestService().executeAction(
+            id,
+            options
+          )) as BlockSuitePresets.TextStream;
           if (!stream) return;
           yield* stream;
         },
@@ -239,10 +241,12 @@ function actionToStream<T extends keyof BlockSuitePresets.AIActions>(
           host,
           docId: host.store.id,
           workspaceId: host.store.workspace.id,
-        } as Parameters<typeof action>[0];
+        } as BlockSuitePresets.AITextActionOptions & Record<string, unknown>;
 
-        // @ts-expect-error TODO(@Peng): maybe fix this
-        stream = await action(options);
+        stream = (await getAIRequestService().executeAction(
+          id,
+          options
+        )) as BlockSuitePresets.TextStream;
         if (!stream) return;
         yield* stream;
       },
@@ -264,8 +268,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     attachments?: (string | Blob)[];
     seed?: string;
   } | void>,
-  trackerOptions?: BlockSuitePresets.TrackerOptions,
-  networkConfig?: AINetworkSearchConfig
+  trackerOptions?: BlockSuitePresets.TrackerOptions
 ) {
   return (host: EditorHost, ctx: AIContext) => {
     return ({
@@ -276,7 +279,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     }: {
       input: string;
       signal?: AbortSignal;
-      update: (text: string) => void;
+      update: (answer: AIActionAnswer) => void;
       finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     }) => {
       if (!extract) {
@@ -290,8 +293,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
         variants,
         extract,
         trackerOptions,
-        input,
-        networkConfig
+        input
       )?.(host, ctx);
 
       if (!stream) return;
@@ -332,8 +334,7 @@ function updateEdgelessAIPanelConfig<
     id,
     variants,
     customInput,
-    trackerOptions,
-    config.networkSearchConfig
+    trackerOptions
   )(host, ctx);
   config.finishStateConfig = actionToResponse(id, host, ctx, variants);
   config.generatingStateConfig = actionToGenerating(id, generatingIcon);
@@ -351,7 +352,7 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    reportResponse('result:discard');
+    reportResponse('result:discard', host);
   };
   config.hideCallback = () => {
     aiPanel.updateComplete
@@ -457,7 +458,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        aiPanel.toggle(referenceElement, isEmpty ? undefined : '', false);
+        aiPanel.toggle(referenceElement, isEmpty ? 'input' : 'generate');
       })
       .catch(console.error);
   };

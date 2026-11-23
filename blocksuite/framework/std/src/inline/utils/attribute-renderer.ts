@@ -30,9 +30,9 @@ function inlineTextStyles(
   }
 
   return styleMap({
-    'font-weight': props.bold ? 'bold' : 'normal',
-    'font-style': props.italic ? 'italic' : 'normal',
-    'text-decoration': textDecorations.length > 0 ? textDecorations : 'none',
+    'font-weight': props.bold ? 'bold' : 'inherit',
+    'font-style': props.italic ? 'italic' : 'inherit',
+    'text-decoration': textDecorations.length > 0 ? textDecorations : 'inherit',
     ...inlineCodeStyle,
   });
 }

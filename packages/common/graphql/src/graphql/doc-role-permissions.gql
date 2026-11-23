@@ -3,6 +3,8 @@ query getDocRolePermissions($workspaceId: String!, $docId: String!) {
     doc(docId: $docId) {
       permissions {
         Doc_Copy
+        Doc_Analytics_Read
+        Doc_Analytics_Viewers_Read
         Doc_Delete
         Doc_Duplicate
         Doc_Properties_Read
@@ -15,6 +17,12 @@ query getDocRolePermissions($workspaceId: String!, $docId: String!) {
         Doc_Update
         Doc_Users_Manage
         Doc_Users_Read
+        Doc_Comments_Create
+        Doc_Comments_Moderate
+        Doc_Comments_Read
+        Doc_History_Read
+        Doc_Preview
+        Doc_Unpublish
       }
     }
   }

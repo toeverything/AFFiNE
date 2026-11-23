@@ -1,6 +1,7 @@
 declare namespace Express {
   interface Request {
     session?: import('./core/auth/session').Session;
+    authType?: 'jwt' | 'session';
   }
 }
 

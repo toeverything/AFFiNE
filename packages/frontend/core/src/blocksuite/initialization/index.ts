@@ -56,6 +56,6 @@ export function initDocFromProps(
       paragraphId: paragraphBlockId,
       surfaceId,
     });
-    doc.history.clear();
+    doc.history.undoManager.clear();
   });
 }

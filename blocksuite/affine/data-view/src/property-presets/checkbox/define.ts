@@ -21,6 +21,10 @@ const FALSE_VALUES = new Set([
 
 export const checkboxPropertyModelConfig = checkboxPropertyType.modelConfig({
   name: 'Checkbox',
+  kanbanGroup: {
+    enabled: true,
+    mutable: true,
+  },
   propertyData: {
     schema: zod.object({}),
     default: () => ({}),

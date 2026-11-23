@@ -28,7 +28,7 @@ The bound of the element without considering the response extension.
 
 ### forceFullRender?
 
-> `optional` **forceFullRender**: `boolean`
+> `optional` **forceFullRender?**: `boolean`
 
 Whether to disable fallback rendering for this element, e.g., during zooming.
 Defaults to false (fallback to placeholder rendering is enabled).
@@ -37,7 +37,7 @@ Defaults to false (fallback to placeholder rendering is enabled).
 
 ### lockedBySelf?
 
-> `optional` **lockedBySelf**: `boolean`
+> `optional` **lockedBySelf?**: `boolean`
 
 Indicates whether the current block is explicitly locked by self.
 For checking the lock status of the element, use `isLocked` instead.

@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../components" },
     { "path": "../../ext-loader" },
+    { "path": "../comment" },
     { "path": "../footnote" },
     { "path": "../latex" },
     { "path": "../link" },
@@ -17,7 +18,6 @@
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
-    { "path": "../../../framework/global" },
     { "path": "../../../framework/std" },
     { "path": "../../../framework/store" }
   ]

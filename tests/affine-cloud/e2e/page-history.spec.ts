@@ -57,11 +57,11 @@ test('newly created page shows empty history', async ({ page }) => {
 
 const pushCurrentPageUpdates = async (page: Page) => {
   const [workspaceId, guid, updates, state] = await page.evaluate(() => {
-    // @ts-expect-error
+    // @ts-expect-error ignore the type error
     const Y = window.Y;
-    // @ts-expect-error
+    // @ts-expect-error ignore the type error
     const spaceDoc = window.currentEditor.page.spaceDoc;
-    // @ts-expect-error
+    // @ts-expect-error ignore the type error
     const workspaceId: string = window.currentWorkspace.id;
     const updates: Uint8Array = Y.encodeStateAsUpdate(spaceDoc);
     const state: Uint8Array = Y.encodeStateVector(spaceDoc);

@@ -18,6 +18,7 @@ export const PropTypes = {
     if (typeof value !== 'object' || value === null) return false;
     return Object.values(value).every(validator);
   },
+  of: (validator: ValidatorFunction) => (value: unknown) => validator(value),
 };
 
 function validatePropTypes<T extends InstanceType<Constructor>>(

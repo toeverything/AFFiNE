@@ -177,6 +177,11 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   override getNearestPoint(point: IVec): IVec {
     const { mode, absolutePath: path } = this;
 
+    if (path.length === 0) {
+      const { x, y } = this;
+      return [x, y];
+    }
+
     if (mode === ConnectorMode.Straight) {
       const first = path[0];
       const last = path[path.length - 1];
@@ -211,6 +216,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       y = bounds.y;
       w = bounds.w;
       h = bounds.h;
+    }
+
+    if (path.length === 0) {
+      return 0.5;
     }
 
     point[0] = Vec.clamp(point[0], x, x + w);
@@ -258,6 +267,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
       h = bounds.h;
     }
 
+    if (path.length === 0) {
+      return [x + w / 2, y + h / 2];
+    }
+
     if (mode === ConnectorMode.Orthogonal) {
       const points = path.map<IVec>(p => [p[0], p[1]]);
       const point = Polyline.pointAt(points, offsetDistance);
@@ -278,7 +291,13 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   }
 
   hasLabel() {
-    return Boolean(!this.lableEditing && this.labelDisplay && this.labelXYWH);
+    return Boolean(
+      !this.labelEditing &&
+      this.labelDisplay &&
+      this.labelXYWH &&
+      this.text &&
+      this.text.length
+    );
   }
 
   override includesPoint(
@@ -293,6 +312,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
 
     const { mode, strokeWidth, absolutePath: path } = this;
+
+    if (path.length === 0) {
+      return false;
+    }
 
     const point =
       mode === ConnectorMode.Curve
@@ -339,27 +362,14 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     }
   }
 
-  resize(bounds: Bound, originalPath: PointLocation[], matrix: DOMMatrix) {
+  resize(originalPath: PointLocation[], matrix: DOMMatrix) {
     this.updatingPath = false;
 
     const path = this.resizePath(originalPath, matrix);
-
-    // the property assignment order matters
-    this.xywh = bounds.serialize();
-    this.path = path.map(p => p.clone().setVec(Vec.sub(p, bounds.tl)));
-
     const props: {
-      labelXYWH?: XYWH;
       source?: Connection;
       target?: Connection;
     } = {};
-
-    // Updates Connector's Label position.
-    if (this.hasLabel()) {
-      const [cx, cy] = this.getPointByOffsetDistance(this.labelOffset.distance);
-      const [, , w, h] = this.labelXYWH!;
-      props.labelXYWH = [cx - w / 2, cy - h / 2, w, h];
-    }
 
     if (!this.source.id) {
       props.source = {
@@ -463,7 +473,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
    * Local control display and hide, mainly used in editing scenarios.
    */
   @local()
-  accessor lableEditing: boolean = false;
+  accessor labelEditing: boolean = false;
 
   @field()
   accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;

@@ -12,7 +12,7 @@ import type { PointerEventState } from '@blocksuite/std';
 import {
   type BoxSelectionContext,
   GfxElementModelView,
-  type SelectedContext,
+  GfxViewInteractionExtension,
 } from '@blocksuite/std/gfx';
 
 import { handleLayout } from './utils.js';
@@ -119,15 +119,14 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
   private _setLayoutMethod() {
     this.model.setLayoutMethod(function (
       this: MindmapElementModel,
-      tree: MindmapNode | MindmapRoot = this.tree,
-      options: {
-        applyStyle?: boolean;
-        layoutType?: LayoutType;
-        stashed?: boolean;
-      } = {
-        applyStyle: true,
-        stashed: true,
-      }
+      tree: MindmapNode | MindmapRoot | undefined,
+      options:
+        | {
+            applyStyle?: boolean;
+            layoutType?: LayoutType;
+            stashed?: boolean;
+          }
+        | undefined
     ) {
       const { stashed, applyStyle, layoutType } = Object.assign(
         {
@@ -137,9 +136,10 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
         },
         options
       );
+      const targetTree = tree ?? this.tree;
 
-      const pop = stashed ? this.stashTree(tree) : null;
-      handleLayout(this, tree, applyStyle, layoutType);
+      const pop = stashed ? this.stashTree(targetTree) : null;
+      handleLayout(this, targetTree, applyStyle, layoutType);
       pop?.();
     });
   }
@@ -334,33 +334,6 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
     return collapseButton;
   }
 
-  override onSelected(context: SelectedContext): void | boolean {
-    const { position } = context;
-    const target = this.model.childElements.find(child => {
-      if (child.elementBound.containsPoint([position.x, position.y])) {
-        return true;
-      }
-
-      return false;
-    });
-
-    if (target) {
-      if (this.model.isLocked()) {
-        return super.onSelected(context);
-      }
-
-      if (context.multiSelect) {
-        this.gfx.selection.toggle(target);
-      } else {
-        this.gfx.selection.set({ elements: [target.id] });
-      }
-
-      return true;
-    }
-
-    return false;
-  }
-
   override onBoxSelected(context: BoxSelectionContext) {
     const { box } = context;
     const bound = new Bound(box.x, box.y, box.w, box.h);
@@ -381,3 +354,25 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
     });
   }
 }
+
+export const MindMapInteraction = GfxViewInteractionExtension<MindMapView>(
+  MindMapView.type,
+  {
+    resizeConstraint: {
+      allowedHandlers: [],
+    },
+    handleSelection: () => {
+      return {
+        onSelect(context) {
+          const { model } = context;
+
+          if (model.isLocked()) {
+            return context.default(context);
+          }
+
+          return false;
+        },
+      };
+    },
+  }
+);

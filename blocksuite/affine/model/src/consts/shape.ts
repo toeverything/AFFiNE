@@ -11,9 +11,9 @@ export enum ShapeTextFontSize {
 }
 
 export enum ShapeType {
-  Diamond = 'diamond',
-  Ellipse = 'ellipse',
   Rect = 'rect',
+  Ellipse = 'ellipse',
+  Diamond = 'diamond',
   Triangle = 'triangle',
 }
 

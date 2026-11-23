@@ -4,7 +4,80 @@ import {
   MindmapElementModel,
 } from '@blocksuite/affine-model';
 import type { Command } from '@blocksuite/std';
-import { GfxControllerIdentifier, type GfxModel } from '@blocksuite/std/gfx';
+import {
+  batchAddChildren,
+  batchRemoveChildren,
+  type GfxController,
+  GfxControllerIdentifier,
+  type GfxModel,
+  measureOperation,
+} from '@blocksuite/std/gfx';
+import { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing';
+
+const getTopLevelOrderedElements = (gfx: GfxController) => {
+  const topLevelElements = gfx.layer.layers.reduce<GfxModel[]>(
+    (elements, layer) => {
+      layer.elements.forEach(element => {
+        if (element.group === null) {
+          elements.push(element as GfxModel);
+        }
+      });
+
+      return elements;
+    },
+    []
+  );
+
+  topLevelElements.sort((a, b) => gfx.layer.compare(a, b));
+  return topLevelElements;
+};
+
+const buildUngroupIndexes = (
+  orderedElements: GfxModel[],
+  afterIndex: string | null,
+  beforeIndex: string | null,
+  fallbackAnchorIndex: string
+) => {
+  if (orderedElements.length === 0) {
+    return [];
+  }
+
+  const count = orderedElements.length;
+  const tryGenerateN = (left: string | null, right: string | null) => {
+    try {
+      const generated = generateNKeysBetween(left, right, count);
+      return generated.length === count ? generated : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const tryGenerateOneByOne = (left: string | null, right: string | null) => {
+    try {
+      let cursor = left;
+      return orderedElements.map(() => {
+        cursor = generateKeyBetween(cursor, right);
+        return cursor;
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // Preferred: keep ungrouped children in the original group slot.
+  return (
+    tryGenerateN(afterIndex, beforeIndex) ??
+    // Fallback: ignore the upper bound when legacy/broken data has reversed interval.
+    tryGenerateN(afterIndex, null) ??
+    // Fallback: use group index as anchor when sibling interval is unavailable.
+    tryGenerateN(fallbackAnchorIndex, null) ??
+    // Last resort: always valid.
+    tryGenerateN(null, null) ??
+    // Defensive fallback for unexpected library behavior.
+    tryGenerateOneByOne(null, null) ??
+    []
+  );
+};
 
 export const createGroupCommand: Command<
   { elements: GfxModel[] | string[] },
@@ -39,96 +112,118 @@ export const createGroupFromSelectedCommand: Command<
   {},
   { groupId: string }
 > = (ctx, next) => {
-  const { std } = ctx;
-  const gfx = std.get(GfxControllerIdentifier);
-  const { selection, surface } = gfx;
+  measureOperation('edgeless:create-group-from-selected', () => {
+    const { std } = ctx;
+    const gfx = std.get(GfxControllerIdentifier);
+    const { selection, surface } = gfx;
 
-  if (!surface) {
-    return;
-  }
+    if (!surface) {
+      return;
+    }
 
-  if (
-    selection.selectedElements.length === 0 ||
-    !selection.selectedElements.every(
-      element =>
-        element.group === selection.firstElement.group &&
-        !(element.group instanceof MindmapElementModel)
-    )
-  ) {
-    return;
-  }
+    if (
+      selection.selectedElements.length === 0 ||
+      !selection.selectedElements.every(
+        element =>
+          element.group === selection.firstElement.group &&
+          !(element.group instanceof MindmapElementModel)
+      )
+    ) {
+      return;
+    }
 
-  const parent = selection.firstElement.group as GroupElementModel;
+    const parent = selection.firstElement.group;
+    let groupId: string | undefined;
+    std.store.transact(() => {
+      const [_, result] = std.command.exec(createGroupCommand, {
+        elements: selection.selectedElements,
+      });
 
-  if (parent !== null) {
-    selection.selectedElements.forEach(element => {
-      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-      parent.removeChild(element);
+      if (!result.groupId) {
+        return;
+      }
+
+      groupId = result.groupId;
+      const group = surface.getElementById(groupId);
+
+      if (parent !== null && group) {
+        batchRemoveChildren(parent, selection.selectedElements);
+        batchAddChildren(parent, [group]);
+      }
     });
-  }
 
-  const [_, result] = std.command.exec(createGroupCommand, {
-    elements: selection.selectedElements,
+    if (!groupId) {
+      return;
+    }
+
+    selection.set({
+      editing: false,
+      elements: [groupId],
+    });
+
+    next({ groupId });
   });
-  if (!result.groupId) {
-    return;
-  }
-  const group = surface.getElementById(result.groupId);
-
-  if (parent !== null && group) {
-    parent.addChild(group);
-  }
-
-  selection.set({
-    editing: false,
-    elements: [result.groupId],
-  });
-
-  next({ groupId: result.groupId });
 };
 
 export const ungroupCommand: Command<{ group: GroupElementModel }, {}> = (
   ctx,
   next
 ) => {
-  const { std, group } = ctx;
-  const gfx = std.get(GfxControllerIdentifier);
-  const { selection } = gfx;
-  const parent = group.group as GroupElementModel;
-  const elements = group.childElements;
+  measureOperation('edgeless:ungroup', () => {
+    const { std, group } = ctx;
+    const gfx = std.get(GfxControllerIdentifier);
+    const { selection } = gfx;
+    const parent = group.group;
+    const elements = [...group.childElements];
 
-  if (group instanceof MindmapElementModel) {
-    return;
-  }
+    if (group instanceof MindmapElementModel) {
+      return;
+    }
 
-  if (parent !== null) {
-    // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-    parent.removeChild(group);
-  }
+    const orderedElements = [...elements].sort((a, b) =>
+      gfx.layer.compare(a, b)
+    );
+    const siblings = parent
+      ? [...parent.childElements].sort((a, b) => gfx.layer.compare(a, b))
+      : getTopLevelOrderedElements(gfx);
+    const groupPosition = siblings.indexOf(group);
+    const beforeSiblingIndex =
+      groupPosition > 0 ? (siblings[groupPosition - 1]?.index ?? null) : null;
+    const afterSiblingIndex =
+      groupPosition === -1
+        ? null
+        : (siblings[groupPosition + 1]?.index ?? null);
+    const nextIndexes = buildUngroupIndexes(
+      orderedElements,
+      beforeSiblingIndex,
+      afterSiblingIndex,
+      group.index
+    );
 
-  elements.forEach(element => {
-    // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-    group.removeChild(element);
-  });
+    std.store.transact(() => {
+      if (parent !== null) {
+        batchRemoveChildren(parent, [group]);
+      }
 
-  // keep relative index order of group children after ungroup
-  elements
-    .sort((a, b) => gfx.layer.compare(a, b))
-    .forEach(element => {
-      std.store.transact(() => {
-        element.index = gfx.layer.generateIndex();
+      batchRemoveChildren(group, elements);
+
+      // keep relative index order of group children after ungroup
+      orderedElements.forEach((element, idx) => {
+        const index = nextIndexes[idx];
+        if (element.index !== index) {
+          element.index = index;
+        }
       });
+
+      if (parent !== null) {
+        batchAddChildren(parent, orderedElements);
+      }
     });
 
-  if (parent !== null) {
-    elements.forEach(element => {
-      parent.addChild(element);
+    selection.set({
+      editing: false,
+      elements: orderedElements.map(ele => ele.id),
     });
-  }
-
-  selection.set({
-    editing: false,
-    elements: elements.map(ele => ele.id),
+    next();
   });
-  next();
 };

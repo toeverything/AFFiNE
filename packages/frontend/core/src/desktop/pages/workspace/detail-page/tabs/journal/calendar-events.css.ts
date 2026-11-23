@@ -1,3 +1,4 @@
+import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, style } from '@vanilla-extract/css';
 
@@ -68,4 +69,36 @@ export const eventNewDoc = style({
       display: 'flex',
     },
   },
+});
+
+export const nameTooltip = style({
+  backgroundColor: cssVarV2.layer.background.overlayPanel,
+  padding: '8px 6px',
+  boxShadow: cssVar('overlayPanelShadow'),
+});
+export const nameTooltipContent = style({
+  display: 'flex',
+  gap: 8,
+  paddingRight: 8,
+  alignItems: 'center',
+});
+export const nameTooltipIcon = style({
+  width: 24,
+  height: 24,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  ':before': {
+    content: '',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'currentColor',
+    display: 'block',
+  },
+});
+export const nameTooltipName = style({
+  fontSize: 14,
+  lineHeight: '22px',
+  color: cssVarV2.text.primary,
 });

@@ -7,7 +7,7 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
   public static let operationName: String = "getDocRolePermissions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getDocRolePermissions($workspaceId: String!, $docId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $docId) { __typename permissions { __typename Doc_Copy Doc_Delete Doc_Duplicate Doc_Properties_Read Doc_Properties_Update Doc_Publish Doc_Read Doc_Restore Doc_TransferOwner Doc_Trash Doc_Update Doc_Users_Manage Doc_Users_Read } } } }"#
+      #"query getDocRolePermissions($workspaceId: String!, $docId: String!) { workspace(id: $workspaceId) { __typename doc(docId: $docId) { __typename permissions { __typename Doc_Copy Doc_Analytics_Read Doc_Analytics_Viewers_Read Doc_Delete Doc_Duplicate Doc_Properties_Read Doc_Properties_Update Doc_Publish Doc_Read Doc_Restore Doc_TransferOwner Doc_Trash Doc_Update Doc_Users_Manage Doc_Users_Read Doc_Comments_Create Doc_Comments_Moderate Doc_Comments_Read Doc_History_Read Doc_Preview Doc_Unpublish } } } }"#
     ))
 
   public var workspaceId: String
@@ -34,6 +34,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetDocRolePermissionsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("doc", Doc.self, arguments: ["docId": .variable("docId")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetDocRolePermissionsQuery.Data.Workspace.self
       ] }
 
       /// Get get with given id
@@ -66,6 +72,9 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
           .field("__typename", String.self),
           .field("permissions", Permissions.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetDocRolePermissionsQuery.Data.Workspace.Doc.self
+        ] }
 
         public var permissions: Permissions { __data["permissions"] }
 
@@ -80,6 +89,8 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("Doc_Copy", Bool.self),
+            .field("Doc_Analytics_Read", Bool.self),
+            .field("Doc_Analytics_Viewers_Read", Bool.self),
             .field("Doc_Delete", Bool.self),
             .field("Doc_Duplicate", Bool.self),
             .field("Doc_Properties_Read", Bool.self),
@@ -92,9 +103,20 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
             .field("Doc_Update", Bool.self),
             .field("Doc_Users_Manage", Bool.self),
             .field("Doc_Users_Read", Bool.self),
+            .field("Doc_Comments_Create", Bool.self),
+            .field("Doc_Comments_Moderate", Bool.self),
+            .field("Doc_Comments_Read", Bool.self),
+            .field("Doc_History_Read", Bool.self),
+            .field("Doc_Preview", Bool.self),
+            .field("Doc_Unpublish", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetDocRolePermissionsQuery.Data.Workspace.Doc.Permissions.self
           ] }
 
           public var doc_Copy: Bool { __data["Doc_Copy"] }
+          public var doc_Analytics_Read: Bool { __data["Doc_Analytics_Read"] }
+          public var doc_Analytics_Viewers_Read: Bool { __data["Doc_Analytics_Viewers_Read"] }
           public var doc_Delete: Bool { __data["Doc_Delete"] }
           public var doc_Duplicate: Bool { __data["Doc_Duplicate"] }
           public var doc_Properties_Read: Bool { __data["Doc_Properties_Read"] }
@@ -107,6 +129,12 @@ public class GetDocRolePermissionsQuery: GraphQLQuery {
           public var doc_Update: Bool { __data["Doc_Update"] }
           public var doc_Users_Manage: Bool { __data["Doc_Users_Manage"] }
           public var doc_Users_Read: Bool { __data["Doc_Users_Read"] }
+          public var doc_Comments_Create: Bool { __data["Doc_Comments_Create"] }
+          public var doc_Comments_Moderate: Bool { __data["Doc_Comments_Moderate"] }
+          public var doc_Comments_Read: Bool { __data["Doc_Comments_Read"] }
+          public var doc_History_Read: Bool { __data["Doc_History_Read"] }
+          public var doc_Preview: Bool { __data["Doc_Preview"] }
+          public var doc_Unpublish: Bool { __data["Doc_Unpublish"] }
         }
       }
     }

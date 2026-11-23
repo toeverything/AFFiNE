@@ -1,11 +1,16 @@
+import { I18n } from '@affine/i18n';
 import { ipcMain } from 'electron';
 
 import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
+import { authHandlers } from './auth/handlers';
+import { byokStorageHandlers } from './byok-storage/handlers';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
+import { importHandlers } from './import';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { recordingHandlers } from './recording';
+import { checkSource } from './security-restrictions';
 import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
@@ -21,6 +26,12 @@ export const debugHandlers = {
   },
 };
 
+export const i18nHandlers = {
+  changeLanguage: async (_: Electron.IpcMainInvokeEvent, language: string) => {
+    return I18n.changeLanguage(language);
+  },
+};
+
 // Note: all of these handlers will be the single-source-of-truth for the apis exposed to the renderer process
 export const allHandlers = {
   debug: debugHandlers,
@@ -29,10 +40,14 @@ export const allHandlers = {
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
+  import: importHandlers,
   sharedStorage: sharedStorageHandlers,
   worker: workerHandlers,
   recording: recordingHandlers,
   popup: popupHandlers,
+  i18n: i18nHandlers,
+  byokStorage: byokStorageHandlers,
+  auth: authHandlers,
 };
 
 export const registerHandlers = () => {
@@ -41,7 +56,7 @@ export const registerHandlers = () => {
     ...args: any[]
   ) => {
     // args[0] is the `{namespace:key}`
-    if (typeof args[0] !== 'string') {
+    if (!checkSource(e) || typeof args[0] !== 'string') {
       logger.error('invalid ipc message', args);
       return;
     }
@@ -80,16 +95,30 @@ export const registerHandlers = () => {
   };
 
   ipcMain.handle(AFFINE_API_CHANNEL_NAME, async (e, ...args: any[]) => {
-    return handleIpcMessage(e, ...args);
+    try {
+      return await handleIpcMessage(e, ...args);
+    } catch (error) {
+      logger.error(`error in ipc handler when calling ${args[0]}`, error);
+      throw error;
+    }
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {
+    if (!checkSource(e)) {
+      e.returnValue = undefined;
+      return;
+    }
+
     handleIpcMessage(e, ...args)
       .then(ret => {
         e.returnValue = ret;
       })
-      .catch(() => {
-        // never throw
+      .catch(error => {
+        logger.error(
+          `error in sync ipc handler when calling ${args[0]}`,
+          error
+        );
+        e.returnValue = undefined;
       });
   });
 };

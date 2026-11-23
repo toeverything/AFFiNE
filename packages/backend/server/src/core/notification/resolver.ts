@@ -1,11 +1,17 @@
 import {
   Args,
   ID,
-  Int,
+  Info,
   Mutation,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
+import {
+  type FragmentDefinitionNode,
+  type GraphQLResolveInfo,
+  Kind,
+  type SelectionNode,
+} from 'graphql';
 
 import {
   MentionUserDocAccessDenied,
@@ -14,7 +20,7 @@ import {
 import { paginate, PaginationInput } from '../../base/graphql';
 import { MentionNotificationCreateSchema } from '../../models';
 import { CurrentUser } from '../auth/session';
-import { AccessController } from '../permission';
+import { PermissionAccess } from '../permission';
 import { UserType } from '../user';
 import { NotificationService } from './service';
 import {
@@ -24,11 +30,44 @@ import {
   UnionNotificationBodyType,
 } from './types';
 
+function hasSelectedField(
+  selections: readonly SelectionNode[],
+  fieldName: string,
+  fragments: Record<string, FragmentDefinitionNode>
+): boolean {
+  for (const selection of selections) {
+    if (selection.kind === Kind.FIELD) {
+      if (selection.name.value === fieldName) return true;
+      continue;
+    }
+    if (selection.kind === Kind.INLINE_FRAGMENT) {
+      if (
+        hasSelectedField(
+          selection.selectionSet.selections,
+          fieldName,
+          fragments
+        )
+      ) {
+        return true;
+      }
+      continue;
+    }
+    const fragment = fragments[selection.name.value];
+    if (
+      fragment &&
+      hasSelectedField(fragment.selectionSet.selections, fieldName, fragments)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 @Resolver(() => UserType)
 export class UserNotificationResolver {
   constructor(
     private readonly service: NotificationService,
-    private readonly ac: AccessController
+    private readonly ac: PermissionAccess
   ) {}
 
   @ResolveField(() => PaginatedNotificationObjectType, {
@@ -36,20 +75,26 @@ export class UserNotificationResolver {
   })
   async notifications(
     @CurrentUser() me: UserType,
-    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput,
+    @Info() info: GraphQLResolveInfo
   ): Promise<PaginatedNotificationObjectType> {
+    const selections = info.fieldNodes.flatMap(node =>
+      node.selectionSet ? [...node.selectionSet.selections] : []
+    );
+    const includesList =
+      hasSelectedField(selections, 'edges', info.fragments) ||
+      hasSelectedField(selections, 'pageInfo', info.fragments);
+
+    if (!includesList) {
+      const totalCount = await this.service.countByUserId(me.id);
+      return paginate([], 'createdAt', pagination, totalCount);
+    }
+
     const [notifications, totalCount] = await Promise.all([
       this.service.findManyByUserId(me.id, pagination),
       this.service.countByUserId(me.id),
     ]);
     return paginate(notifications, 'createdAt', pagination, totalCount);
-  }
-
-  @ResolveField(() => Int, {
-    description: 'Get user notification count',
-  })
-  async notificationCount(@CurrentUser() me: UserType): Promise<number> {
-    return await this.service.countByUserId(me.id);
   }
 
   @Mutation(() => ID, {
@@ -98,6 +143,14 @@ export class UserNotificationResolver {
     @Args('id') notificationId: string
   ) {
     await this.service.markAsRead(me.id, notificationId);
+    return true;
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'mark all notifications as read',
+  })
+  async readAllNotifications(@CurrentUser() me: UserType) {
+    await this.service.markAllAsRead(me.id);
     return true;
   }
 }

@@ -79,6 +79,9 @@ export class WorkspaceType extends WorkspaceFeatureType {
   @Field({ description: 'Enable AI' })
   enableAi!: boolean;
 
+  @Field({ description: 'Enable workspace sharing' })
+  enableSharing!: boolean;
+
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
 
@@ -130,7 +133,13 @@ export class InvitationType {
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableAi', 'enableUrlPreview', 'enableDocEmbedding'],
+  [
+    'public',
+    'enableAi',
+    'enableSharing',
+    'enableUrlPreview',
+    'enableDocEmbedding',
+  ],
   InputType
 ) {
   @Field(() => ID)
@@ -156,16 +165,6 @@ export class InviteResult {
     description: 'Invite id, null if invite record create failed',
   })
   inviteId?: string;
-
-  /**
-   * @deprecated
-   */
-  @Field(() => Boolean, {
-    description: 'Invite email sent success',
-    deprecationReason: 'Notification will be sent asynchronously',
-    defaultValue: true,
-  })
-  sentSuccess?: boolean;
 
   @Field(() => GraphQLJSONObject, {
     nullable: true,

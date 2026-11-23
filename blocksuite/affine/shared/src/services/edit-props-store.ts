@@ -41,6 +41,7 @@ const LocalPropsSchema = z.object({
   presentBlackBackground: z.boolean(),
   presentFillScreen: z.boolean(),
   presentHideToolbar: z.boolean(),
+  presentNoFrameToastShown: z.boolean(),
 
   autoHideEmbedHTMLFullScreenToolbar: z.boolean(),
 });
@@ -126,6 +127,8 @@ export class EditPropsStore extends LifeCycleWatcher {
         return 'blocksuite:presentation:fillScreen';
       case 'presentHideToolbar':
         return 'blocksuite:presentation:hideToolbar';
+      case 'presentNoFrameToastShown':
+        return 'blocksuite:presentation:noFrameToastShown';
       case 'templateCache':
         return 'blocksuite:' + id + ':templateTool';
       case 'remoteColor':

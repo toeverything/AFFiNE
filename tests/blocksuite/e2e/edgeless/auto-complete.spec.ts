@@ -191,7 +191,7 @@ test.describe('auto-complete', () => {
       await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
       await waitNextFrame(page);
 
-      await triggerComponentToolbarAction(page, 'changeNoteColor');
+      await triggerComponentToolbarAction(page, 'changeNoteStyle');
       await changeEdgelessNoteBackground(page, 'Red');
 
       // move to arrow icon

@@ -182,7 +182,7 @@ export function yjsObservePath(yjs?: any, path?: string) {
  * observable will automatically update when yjs data changed.
  *
  * @example
- * yjsObserveDeep(yjs) -> emit when any of children changed
+ * yjsObserve(yjs) -> emit when yjs type changed
  */
 export function yjsObserve(yjs?: any) {
   return new Observable(subscriber => {

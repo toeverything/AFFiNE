@@ -17,6 +17,7 @@ export type MenuInputData = {
   class?: string;
   onComplete?: (value: string) => void;
   onChange?: (value: string) => void;
+  onBlur?: (value: string) => void;
   disableAutoFocus?: boolean;
 };
 
@@ -49,6 +50,10 @@ export class MenuInput extends MenuFocusable {
     this.data.onChange?.(this.inputRef.value);
   };
 
+  private readonly onBlur = () => {
+    this.data.onBlur?.(this.inputRef.value);
+  };
+
   private readonly onInput = (e: InputEvent) => {
     e.stopPropagation();
     if (e.isComposing) return;
@@ -66,6 +71,7 @@ export class MenuInput extends MenuFocusable {
     }
     if (e.key === 'Enter') {
       this.complete();
+      this.inputRef.blur();
       this.menu.close();
       return;
     }
@@ -89,7 +95,9 @@ export class MenuInput extends MenuFocusable {
     });
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        this.inputRef.select();
+        if (!this.data.disableAutoFocus) {
+          this.inputRef.select();
+        }
       });
     });
   }
@@ -109,8 +117,10 @@ export class MenuInput extends MenuFocusable {
       @focus="${() => {
         this.menu.setFocusOnly(this);
       }}"
+      @blur="${this.onBlur}"
       @input="${this.onInput}"
       placeholder="${this.data.placeholder ?? ''}"
+      @keypress="${this.stopPropagation}"
       @keydown="${this.onKeydown}"
       @copy="${this.stopPropagation}"
       @paste="${this.stopPropagation}"
@@ -214,6 +224,8 @@ export const menuInputItems = {
       prefix?: TemplateResult;
       onComplete?: (value: string) => void;
       onChange?: (value: string) => void;
+      onBlur?: (value: string) => void;
+      disableAutoFocus?: boolean;
       class?: string;
       style?: Readonly<StyleInfo>;
     }) =>
@@ -227,6 +239,8 @@ export const menuInputItems = {
         class: config.class,
         onComplete: config.onComplete,
         onChange: config.onChange,
+        onBlur: config.onBlur,
+        disableAutoFocus: config.disableAutoFocus,
       };
       const style = styleMap({
         display: 'flex',

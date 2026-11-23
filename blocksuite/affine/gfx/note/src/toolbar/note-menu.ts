@@ -7,7 +7,7 @@ import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import type { NoteChildrenFlavour } from '@blocksuite/affine-shared/types';
 import {
   getImageFilesFromLocal,
-  openFileOrFiles,
+  openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { AttachmentIcon, ImageIcon, LinkIcon } from '@blocksuite/icons/lit';
@@ -139,7 +139,7 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
               .activeMode=${'background'}
               .tooltip=${'File'}
               @click=${async () => {
-                const file = await openFileOrFiles();
+                const file = await openSingleFileWith();
                 if (!file) return;
                 await addAttachments(this.edgeless.std, [file]);
                 this.gfx.tool.setTool(DefaultTool);

@@ -20,10 +20,13 @@ import { HighlightText } from './highlight-text';
 
 type Groups = { group?: QuickSearchGroup; items: QuickSearchItem[] }[];
 
+const EMPTY_GROUPS: Groups = [];
+
 export const CMDK = ({
   className,
   query,
-  groups: newGroups = [],
+  groups: newGroups = EMPTY_GROUPS,
+  error,
   inputLabel,
   placeholder,
   loading: newLoading = false,
@@ -33,6 +36,7 @@ export const CMDK = ({
 }: React.PropsWithChildren<{
   className?: string;
   query: string;
+  error?: ReactNode;
   inputLabel?: ReactNode;
   placeholder?: string;
   loading?: boolean;
@@ -200,6 +204,7 @@ export const CMDK = ({
       </div>
 
       <Command.List ref={listRef} data-opening={opening ? true : undefined}>
+        {error && <p className={styles.errorMessage}>{error}</p>}
         {groups.map(({ group, items }) => {
           return (
             <CMDKGroup

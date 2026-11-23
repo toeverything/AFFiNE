@@ -3,8 +3,10 @@ import {
   ConnectorElementModel,
   MindmapElementModel,
 } from '@blocksuite/affine-model';
-import { almostEqual, Bound, Point } from '@blocksuite/global/gfx';
+import { almostEqual, Bound, type IVec, Point } from '@blocksuite/global/gfx';
 import type { GfxModel } from '@blocksuite/std/gfx';
+
+import { AdaptiveCooldownController } from './adaptive-load-controller';
 
 interface Distance {
   horiz?: {
@@ -35,6 +37,9 @@ interface Distance {
 const ALIGN_THRESHOLD = 8;
 const DISTRIBUTION_LINE_OFFSET = 1;
 const STROKE_WIDTH = 2;
+const DISTRIBUTE_ALIGN_MAX_CANDIDATES = 160;
+const DISTRIBUTE_ALIGN_MAX_COST_MS = 5;
+const DISTRIBUTE_ALIGN_COOLDOWN_FRAMES = 2;
 
 export class SnapOverlay extends Overlay {
   static override overlayName: string = 'snap-manager';
@@ -75,6 +80,11 @@ export class SnapOverlay extends Overlay {
     vertical: [],
   };
 
+  private readonly _distributeCooldown = new AdaptiveCooldownController({
+    cooldownFrames: DISTRIBUTE_ALIGN_COOLDOWN_FRAMES,
+    maxCostMs: DISTRIBUTE_ALIGN_MAX_COST_MS,
+  });
+
   override clear() {
     this._referenceBounds = {
       vertical: [],
@@ -87,6 +97,7 @@ export class SnapOverlay extends Overlay {
     };
     this._distributedAlignLines = [];
     this._skippedElements.clear();
+    this._distributeCooldown.reset();
 
     super.clear();
   }
@@ -586,6 +597,60 @@ export class SnapOverlay extends Overlay {
     );
   }
 
+  alignResize(position: IVec, direction: ('vertical' | 'horizontal')[]) {
+    const rst = { dx: 0, dy: 0 };
+
+    const { viewport } = this.gfx;
+    const threshold = ALIGN_THRESHOLD / viewport.zoom;
+    const searchBound = new Bound(
+      position[0] - threshold / 2,
+      position[1] - threshold / 2,
+      threshold,
+      threshold
+    );
+    const alignBound = new Bound(position[0], position[1], 0, 0);
+
+    this._intraGraphicAlignLines = {
+      horizontal: [],
+      vertical: [],
+    };
+    this._distributedAlignLines = [];
+    this._updateAlignCandidates(searchBound);
+
+    for (const other of this._referenceBounds.all) {
+      const closestDistances = this._calculateClosestDistances(
+        alignBound,
+        other
+      );
+
+      if (
+        direction.includes('horizontal') &&
+        closestDistances.horiz &&
+        (!this._intraGraphicAlignLines.horizontal.length ||
+          Math.abs(closestDistances.horiz.distance) < Math.abs(rst.dx))
+      ) {
+        this._updateXAlignPoint(rst, alignBound, other, closestDistances);
+      }
+
+      if (
+        direction.includes('vertical') &&
+        closestDistances.vert &&
+        (!this._intraGraphicAlignLines.vertical.length ||
+          Math.abs(closestDistances.vert.distance) < Math.abs(rst.dy))
+      ) {
+        this._updateYAlignPoint(rst, alignBound, other, closestDistances);
+      }
+    }
+
+    this._intraGraphicAlignLines.horizontal =
+      this._intraGraphicAlignLines.horizontal.slice(0, 1);
+    this._intraGraphicAlignLines.vertical =
+      this._intraGraphicAlignLines.vertical.slice(0, 1);
+    this._renderer?.refresh();
+
+    return rst;
+  }
+
   align(bound: Bound): { dx: number; dy: number } {
     const rst = { dx: 0, dy: 0 };
     const threshold = ALIGN_THRESHOLD / this.gfx.viewport.zoom;
@@ -619,13 +684,24 @@ export class SnapOverlay extends Overlay {
       }
     }
 
-    // point align priority is higher than distribute align
-    if (rst.dx === 0) {
-      this._alignDistributeHorizontally(rst, bound, threshold, viewport);
-    }
+    const shouldTryDistribute =
+      this._referenceBounds.all.length <= DISTRIBUTE_ALIGN_MAX_CANDIDATES &&
+      this._distributeCooldown.shouldRun();
 
-    if (rst.dy === 0) {
-      this._alignDistributeVertically(rst, bound, threshold, viewport);
+    if (shouldTryDistribute) {
+      const distributeStart = performance.now();
+
+      // point align priority is higher than distribute align
+      if (rst.dx === 0) {
+        this._alignDistributeHorizontally(rst, bound, threshold, viewport);
+      }
+
+      if (rst.dy === 0) {
+        this._alignDistributeVertically(rst, bound, threshold, viewport);
+      }
+
+      const distributeCost = performance.now() - distributeStart;
+      this._distributeCooldown.reportCost(distributeCost);
     }
 
     this._renderer?.refresh();
@@ -722,24 +798,26 @@ export class SnapOverlay extends Overlay {
     });
     const verticalBounds: Bound[] = [];
     const horizBounds: Bound[] = [];
-    const allBounds: Bound[] = [];
+    const allCandidateElements = new Set<GfxModel>();
 
     vertCandidates.forEach(candidate => {
       if (skipped.has(candidate) || this._isSkippedElement(candidate)) return;
-      verticalBounds.push(candidate.elementBound);
-      allBounds.push(candidate.elementBound);
+      const bound = candidate.elementBound;
+      verticalBounds.push(bound);
+      allCandidateElements.add(candidate);
     });
 
     horizCandidates.forEach(candidate => {
       if (skipped.has(candidate) || this._isSkippedElement(candidate)) return;
-      horizBounds.push(candidate.elementBound);
-      allBounds.push(candidate.elementBound);
+      const bound = candidate.elementBound;
+      horizBounds.push(bound);
+      allCandidateElements.add(candidate);
     });
 
     this._referenceBounds = {
       horizontal: horizBounds,
       vertical: verticalBounds,
-      all: allBounds,
+      all: [...allCandidateElements].map(element => element.elementBound),
     };
   }
 

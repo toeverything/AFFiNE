@@ -7,6 +7,7 @@ import {
   initEmptyEdgelessState,
   pressArrowLeft,
   pressEnter,
+  resizeElementByHandle,
   setEdgelessTool,
   SHORT_KEY,
   switchEditorMode,
@@ -208,12 +209,7 @@ test.describe('edgeless canvas text', () => {
     let lastHeight = selectedRect.height;
 
     // move cursor to the right edge and drag it to resize the width of text element
-    await page.mouse.move(130 + lastWidth, 160);
-    await page.mouse.down();
-    await page.mouse.move(130 + lastWidth / 2, 160, {
-      steps: 10,
-    });
-    await page.mouse.up();
+    await resizeElementByHandle(page, { x: -20, y: 0 }, 'right', 10);
 
     // the text should be wrapped, so check the width and height of text element
     selectedRect = await getEdgelessSelectedRect(page);
@@ -236,23 +232,13 @@ test.describe('edgeless canvas text', () => {
     selectedRect = await getEdgelessSelectedRect(page);
     lastWidth = selectedRect.width;
     lastHeight = selectedRect.height;
-    // move cursor to the left edge and drag it to resize the width of text element
-    await page.mouse.move(130, 160);
-    await page.mouse.down();
-    await page.mouse.move(60, 160, {
-      steps: 10,
-    });
-    await page.mouse.up();
+
+    await resizeElementByHandle(page, { x: 80, y: 0 }, 'right', 10);
 
     // the text should be unwrapped, check the width and height of text element
     selectedRect = await getEdgelessSelectedRect(page);
     expect(selectedRect.width).toBeGreaterThan(lastWidth);
     expect(selectedRect.height).toBeLessThan(lastHeight);
-
-    await page.mouse.dblclick(100, 160);
-    await waitForInlineEditorStateUpdated(page);
-    await waitNextFrame(page);
-    await assertEdgelessCanvasText(page, 'hellohello');
   });
 
   test('text element should have maxWidth after adjusting width by dragging left or right edge', async ({

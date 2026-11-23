@@ -40,15 +40,14 @@ describe('op consumer', () => {
   it('should throw if no handler registered', async ctx => {
     ctx.handlers.call({ type: 'call', id: 'add:1', name: 'add', payload: {} });
     await vi.advanceTimersToNextTimerAsync();
-    expect(ctx.postMessage.mock.lastCall).toMatchInlineSnapshot(`
-      [
-        {
-          "error": [Error: Handler for operation [add] is not registered.],
-          "id": "add:1",
-          "type": "return",
-        },
-      ]
-    `);
+    expect(ctx.postMessage.mock.lastCall?.[0]).toMatchObject({
+      type: 'return',
+      id: 'add:1',
+      error: {
+        message: 'Handler for operation [add] is not registered.',
+        name: 'Error',
+      },
+    });
   });
 
   it('should handle call message', async ctx => {
@@ -68,6 +67,76 @@ describe('op consumer', () => {
         "type": "return",
       }
     `);
+  });
+
+  it('should serialize string errors with message', async ctx => {
+    ctx.consumer.register('any', () => {
+      throw 'worker panic';
+    });
+
+    ctx.handlers.call({ type: 'call', id: 'any:1', name: 'any', payload: {} });
+    await vi.advanceTimersToNextTimerAsync();
+
+    expect(ctx.postMessage.mock.calls[0][0]).toMatchObject({
+      type: 'return',
+      id: 'any:1',
+      error: {
+        name: 'Error',
+        message: 'worker panic',
+      },
+    });
+  });
+
+  it('should serialize plain object errors with fallback message', async ctx => {
+    ctx.consumer.register('any', () => {
+      throw { reason: 'panic', code: 'E_PANIC' };
+    });
+
+    ctx.handlers.call({ type: 'call', id: 'any:1', name: 'any', payload: {} });
+    await vi.advanceTimersToNextTimerAsync();
+
+    const message = ctx.postMessage.mock.calls[0][0]?.error?.message;
+    expect(typeof message).toBe('string');
+    expect(message).toContain('"reason":"panic"');
+    expect(message).toContain('"code":"E_PANIC"');
+  });
+
+  it('serializes worker stacks for calls and observables', async ctx => {
+    for (const kind of ['call', 'observable'] as const) {
+      ctx.postMessage.mockClear();
+      const marker = 'WORKER_STACK_MARKER';
+      const error = new TypeError(marker);
+      error.stack = `TypeError: ${marker}\n    at workerTask (worker.ts:42:7)`;
+      ctx.consumer.register('any', () => {
+        if (kind === 'observable') {
+          return new Observable(observer => observer.error(error));
+        }
+        throw error;
+      });
+
+      if (kind === 'observable') {
+        ctx.handlers.subscribe({
+          type: 'subscribe',
+          id: 'any:1',
+          name: 'any',
+          payload: undefined,
+        });
+      } else {
+        ctx.handlers.call({
+          type: 'call',
+          id: 'any:1',
+          name: 'any',
+          payload: undefined,
+        });
+      }
+      await vi.advanceTimersToNextTimerAsync();
+
+      expect(ctx.postMessage.mock.calls[0][0].error).toMatchObject({
+        name: 'TypeError',
+        message: marker,
+        stacktrace: expect.stringContaining('worker.ts:42:7'),
+      });
+    }
   });
 
   it('should handle cancel message', async ctx => {

@@ -3,8 +3,8 @@ import {
   type ListNotificationsQuery,
   listNotificationsQuery,
   mentionUserMutation,
-  notificationCountQuery,
   type PaginationInput,
+  readAllNotificationsMutation,
   readNotificationMutation,
   type UnionNotificationBodyType,
 } from '@affine/graphql';
@@ -51,17 +51,6 @@ export class NotificationStore extends Store {
     );
   }
 
-  async getNotificationCount(signal?: AbortSignal) {
-    const result = await this.gqlService.gql({
-      query: notificationCountQuery,
-      context: {
-        signal,
-      },
-    });
-
-    return result.currentUser?.notificationCount;
-  }
-
   async listNotification(pagination: PaginationInput, signal?: AbortSignal) {
     const result = await this.gqlService.gql({
       query: listNotificationsQuery,
@@ -82,6 +71,12 @@ export class NotificationStore extends Store {
       variables: {
         id,
       },
+    });
+  }
+
+  readAllNotifications() {
+    return this.gqlService.gql({
+      query: readAllNotificationsMutation,
     });
   }
 

@@ -1,14 +1,18 @@
-import { app, clipboard, nativeImage, nativeTheme, shell } from 'electron';
-import { getLinkPreview } from 'link-preview-js';
+import { app, clipboard, nativeImage, nativeTheme } from 'electron';
+import { map, shareReplay } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
 import { persistentConfig } from '../config-storage/persist';
 import { logger } from '../logger';
+import { openExternalSafely } from '../security/open-external';
 import type { WorkbenchViewMeta } from '../shared-state-schema';
+import { MenubarStateKey, MenubarStateSchema } from '../shared-state-schema';
+import { globalStateStorage } from '../shared-storage/storage';
 import type { NamespaceHandlers } from '../type';
 import {
   activateView,
   addTab,
+  closeMainWindowToBackground,
   closeTab,
   ensureTabLoaded,
   getMainWindow,
@@ -33,6 +37,19 @@ import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-wi
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
 
+const TraySettingsState = {
+  $: globalStateStorage.watch<MenubarStateSchema>(MenubarStateKey).pipe(
+    map(v => MenubarStateSchema.parse(v ?? {})),
+    shareReplay(1)
+  ),
+
+  get value() {
+    return MenubarStateSchema.parse(
+      globalStateStorage.get(MenubarStateKey) ?? {}
+    );
+  },
+};
+
 export const uiHandlers = {
   isMaximized: async () => {
     const window = await getMainWindow();
@@ -47,7 +64,14 @@ export const uiHandlers = {
   },
   handleMinimizeApp: async () => {
     const window = await getMainWindow();
-    window?.minimize();
+    if (
+      TraySettingsState.value.enabled &&
+      TraySettingsState.value.minimizeToTray
+    ) {
+      window?.hide();
+    } else {
+      window?.minimize();
+    }
   },
   handleMaximizeApp: async () => {
     const window = await getMainWindow();
@@ -68,7 +92,14 @@ export const uiHandlers = {
     await handleWebContentsResize(e.sender);
   },
   handleCloseApp: async () => {
-    app.quit();
+    if (
+      TraySettingsState.value.enabled &&
+      TraySettingsState.value.closeToTray
+    ) {
+      await closeMainWindowToBackground();
+    } else {
+      app.quit();
+    }
   },
   handleHideApp: async () => {
     const window = await getMainWindow();
@@ -94,64 +125,8 @@ export const uiHandlers = {
       logger.error('handleOpenMainApp', err);
     }
   },
-  getBookmarkDataByLink: async (_, link: string) => {
-    if (
-      (link.startsWith('https://x.com/') ||
-        link.startsWith('https://www.x.com/') ||
-        link.startsWith('https://www.twitter.com/') ||
-        link.startsWith('https://twitter.com/')) &&
-      link.includes('/status/')
-    ) {
-      // use api.fxtwitter.com
-      link =
-        'https://api.fxtwitter.com/status/' + /\/status\/(.*)/.exec(link)?.[1];
-      try {
-        const { tweet } = (await fetch(link).then(res => res.json())) as any;
-        return {
-          title: tweet.author.name,
-          icon: tweet.author.avatar_url,
-          description: tweet.text,
-          image: tweet.media?.photos[0].url || tweet.author.banner_url,
-        };
-      } catch (err) {
-        logger.error('getBookmarkDataByLink', err);
-        return {
-          title: undefined,
-          description: undefined,
-          icon: undefined,
-          image: undefined,
-        };
-      }
-    } else {
-      const previewData = (await getLinkPreview(link, {
-        timeout: 6000,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-        },
-        followRedirects: 'follow',
-      }).catch(() => {
-        return {
-          title: '',
-          siteName: '',
-          description: '',
-          images: [],
-          videos: [],
-          contentType: `text/html`,
-          favicons: [],
-        };
-      })) as any;
-
-      return {
-        title: previewData.title,
-        description: previewData.description,
-        icon: previewData.favicons[0],
-        image: previewData.images[0],
-      };
-    }
-  },
   openExternal(_, url: string) {
-    return shell.openExternal(url);
+    return openExternalSafely(url);
   },
 
   // tab handlers

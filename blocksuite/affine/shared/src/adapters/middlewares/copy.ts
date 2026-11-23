@@ -37,7 +37,7 @@ const handlePoint = (
 };
 
 const sliceText = (slots: TransformerSlots, std: EditorHost['std']) => {
-  slots.afterExport.subscribe(payload => {
+  const afterExportSubscription = slots.afterExport.subscribe(payload => {
     if (payload.type === 'block') {
       const snapshot = payload.snapshot;
 
@@ -53,10 +53,14 @@ const sliceText = (slots: TransformerSlots, std: EditorHost['std']) => {
       }
     }
   });
+
+  return () => {
+    afterExportSubscription.unsubscribe();
+  };
 };
 
 export const copyMiddleware = (std: BlockStdScope): TransformerMiddleware => {
   return ({ slots }) => {
-    sliceText(slots, std);
+    return sliceText(slots, std);
   };
 };

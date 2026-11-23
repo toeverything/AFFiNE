@@ -13,7 +13,7 @@ import { mutex } from 'lib0';
 
 import type { EditorHost } from '../../../view/index.js';
 import type { GfxCompatibleInterface, PointTestOptions } from '../base.js';
-import type { GfxGroupModel } from '../model.js';
+import type { GfxGroupModel, GfxModel } from '../model.js';
 import type { SurfaceBlockModel } from './surface-model.js';
 
 export function prop<V, T extends GfxLocalElementModel>() {
@@ -60,6 +60,8 @@ export abstract class GfxLocalElementModel implements GfxCompatibleInterface {
   id: string = '';
 
   abstract readonly type: string;
+
+  creator: GfxModel | null = null;
 
   get deserializedXYWH() {
     if (!this._local.has('deserializedXYWH')) {

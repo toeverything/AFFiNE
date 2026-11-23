@@ -3,7 +3,6 @@ import type RemarkMath from 'remark-math';
 
 export * from './adapters';
 export * from './command';
-export * from './exts';
 export * from './inline-spec';
 export * from './markdown';
 

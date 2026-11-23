@@ -17,7 +17,7 @@ export type Context<Scope extends string> = {
   /** The scope this context is associated with */
   scope: Scope;
   /** Function to register one or more extensions */
-  register(extensions: ExtensionType[] | ExtensionType): void;
+  register(extensions: ExtensionType[] | ExtensionType): Context<Scope>;
 };
 
 /**
@@ -60,10 +60,9 @@ export class BaseExtensionProvider<
    * @param context - The context object containing scope and registration function
    * @param option - Optional configuration options for the provider
    */
-  setup(context: Context<Scope>, option?: Options) {
+  setup(_context: Context<Scope>, option?: Options) {
     if (option) {
       this.schema.parse(option);
     }
-    context;
   }
 }

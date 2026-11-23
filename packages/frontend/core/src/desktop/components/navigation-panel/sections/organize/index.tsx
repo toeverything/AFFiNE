@@ -27,10 +27,9 @@ export const NavigationPanelOrganize = () => {
     OrganizeService,
     NavigationPanelService,
   });
-  const navigationPanelSection = navigationPanelService.sections.organize;
-  const collapsed = useLiveData(navigationPanelSection.collapsed$);
+  const path = useMemo(() => ['organize'], []);
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
-
   const t = useI18n();
 
   const folderTree = organizeService.folderTree;
@@ -46,9 +45,9 @@ export const NavigationPanelOrganize = () => {
     );
     track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
     setNewFolderId(newFolderId);
-    navigationPanelSection.setCollapsed(false);
+    navigationPanelService.setCollapsed(path, false);
     return newFolderId;
-  }, [navigationPanelSection, rootFolder]);
+  }, [navigationPanelService, path, rootFolder]);
 
   const handleOnChildrenDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>, node?: FolderNode) => {
@@ -105,7 +104,7 @@ export const NavigationPanelOrganize = () => {
 
   return (
     <CollapsibleSection
-      name="organize"
+      path={path}
       title={t['com.affine.rootAppSidebar.organize']()}
       actions={
         <IconButton
@@ -141,6 +140,7 @@ export const NavigationPanelOrganize = () => {
               at: 'navigation-panel:organize:folder-node',
               nodeId: child.id as string,
             }}
+            parentPath={path}
           />
         ))}
       </NavigationPanelTreeRoot>

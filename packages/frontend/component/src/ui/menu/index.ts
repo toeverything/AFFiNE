@@ -1,4 +1,5 @@
 export * from './menu.types';
+import { ContextMenu } from './desktop/context-menu';
 import { DesktopMenuItem } from './desktop/item';
 import { DesktopMenu } from './desktop/root';
 import { DesktopMenuSeparator } from './desktop/separator';
@@ -19,6 +20,7 @@ const MenuSub = BUILD_CONFIG.isMobileEdition ? MobileMenuSub : DesktopMenuSub;
 const Menu = BUILD_CONFIG.isMobileEdition ? MobileMenu : DesktopMenu;
 
 export {
+  ContextMenu,
   DesktopMenu,
   DesktopMenuItem,
   DesktopMenuSeparator,

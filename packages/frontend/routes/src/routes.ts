@@ -11,7 +11,9 @@ export const ROUTES = {
     index: '/admin',
     auth: '/admin/auth',
     setup: '/admin/setup',
+    dashboard: '/admin/dashboard',
     accounts: '/admin/accounts',
+    workspaces: '/admin/workspaces',
     ai: '/admin/ai',
     settings: { index: '/admin/settings', module: '/admin/settings/:module' },
     about: '/admin/about',
@@ -27,7 +29,9 @@ export const RELATIVE_ROUTES = {
     index: 'admin',
     auth: 'auth',
     setup: 'setup',
+    dashboard: 'dashboard',
     accounts: 'accounts',
+    workspaces: 'workspaces',
     ai: 'ai',
     settings: { index: 'settings', module: ':module' },
     about: 'about',
@@ -41,7 +45,9 @@ const home = () => '/';
 const admin = () => '/admin';
 admin.auth = () => '/admin/auth';
 admin.setup = () => '/admin/setup';
+admin.dashboard = () => '/admin/dashboard';
 admin.accounts = () => '/admin/accounts';
+admin.workspaces = () => '/admin/workspaces';
 admin.ai = () => '/admin/ai';
 const admin_settings = () => '/admin/settings';
 admin_settings.module = (params: { module: string }) =>

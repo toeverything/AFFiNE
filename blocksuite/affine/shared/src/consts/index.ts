@@ -7,6 +7,7 @@ import {
   EmbedLoomModel,
   EmbedSyncedDocModel,
   EmbedYoutubeModel,
+  SYNCED_DEFAULT_WIDTH,
 } from '@blocksuite/affine-model';
 
 export const BLOCK_CHILDREN_CONTAINER_PADDING_LEFT = 24;
@@ -29,9 +30,10 @@ export const EMBED_CARD_WIDTH: Record<EmbedCardStyle, number> = {
   video: 752,
   figma: 752,
   html: 752,
-  syncedDoc: 800,
+  syncedDoc: SYNCED_DEFAULT_WIDTH,
   pdf: 537 + 24 + 2,
   citation: 752,
+  audio: 116,
 };
 
 export const EMBED_CARD_HEIGHT: Record<EmbedCardStyle, number> = {
@@ -47,6 +49,7 @@ export const EMBED_CARD_HEIGHT: Record<EmbedCardStyle, number> = {
   syncedDoc: 455,
   pdf: 759 + 46 + 24 + 2,
   citation: 52,
+  audio: 116,
 };
 
 export const EMBED_BLOCK_FLAVOUR_LIST = [
@@ -71,10 +74,6 @@ export const EMBED_BLOCK_MODEL_LIST = [
 
 export const DEFAULT_IMAGE_PROXY_ENDPOINT =
   'https://affine-worker.toeverything.workers.dev/api/worker/image-proxy';
-
-// https://github.com/toeverything/affine-workers/tree/main/packages/link-preview
-export const DEFAULT_LINK_PREVIEW_ENDPOINT =
-  'https://affine-worker.toeverything.workers.dev/api/worker/link-preview';
 
 // This constant is used to ignore tags when exporting using html2canvas
 export const CANVAS_EXPORT_IGNORE_TAGS = [

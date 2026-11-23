@@ -1,5 +1,4 @@
 import { STATUS_CODES } from 'node:http';
-import { escape } from 'node:querystring';
 
 import { HttpStatus, Logger } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
@@ -15,6 +14,7 @@ export type UserFriendlyErrorBaseType =
   | 'no_permission'
   | 'quota_exceeded'
   | 'authentication_required'
+  | 'service_unavailable'
   | 'internal_server_error';
 
 type ErrorArgType = 'string' | 'number' | 'boolean';
@@ -37,6 +37,7 @@ const BaseTypeToHttpStatusMap: Record<UserFriendlyErrorBaseType, HttpStatus> = {
   no_permission: HttpStatus.FORBIDDEN,
   quota_exceeded: HttpStatus.PAYMENT_REQUIRED,
   authentication_required: HttpStatus.UNAUTHORIZED,
+  service_unavailable: HttpStatus.SERVICE_UNAVAILABLE,
   internal_server_error: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 
@@ -275,12 +276,49 @@ export const USER_FRIENDLY_ERRORS = {
     args: { message: 'string' },
     message: ({ message }) => `HTTP request error, message: ${message}`,
   },
+  ssrf_blocked_error: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => {
+      switch (reason) {
+        case 'invalid_url':
+          return 'Invalid URL';
+        case 'disallowed_protocol':
+          return 'URL protocol is not allowed';
+        case 'url_has_credentials':
+          return 'URL must not contain credentials';
+        case 'blocked_hostname':
+          return 'URL hostname is not allowed';
+        case 'host_not_allowed':
+          return 'URL hostname is outside the allowed hosts';
+        case 'unresolvable_hostname':
+          return 'Failed to resolve hostname';
+        case 'blocked_ip':
+          return 'URL resolves to a private or reserved IP address';
+        case 'too_many_redirects':
+          return 'Too many redirects';
+        default:
+          return `URL blocked by SSRF protection: ${reason}`;
+      }
+    },
+  },
+  response_too_large_error: {
+    type: 'invalid_input',
+    args: { limitBytes: 'number', receivedBytes: 'number' },
+    message: ({ limitBytes, receivedBytes }) =>
+      `Response too large (${receivedBytes} bytes), limit is ${limitBytes} bytes`,
+  },
   email_service_not_configured: {
     type: 'internal_server_error',
     message: 'Email service is not configured.',
   },
 
   // Input errors
+  image_format_not_supported: {
+    type: 'invalid_input',
+    args: { format: 'string' },
+    message: ({ format }) => `Image format not supported: ${format}`,
+  },
   query_too_long: {
     type: 'invalid_input',
     args: { max: 'number' },
@@ -350,6 +388,11 @@ export const USER_FRIENDLY_ERRORS = {
     message:
       'The third-party account has already been connected to another user.',
   },
+  invalid_oauth_response: {
+    type: 'bad_request',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid OAuth response: ${reason}.`,
+  },
   invalid_email: {
     type: 'invalid_input',
     args: { email: 'string' },
@@ -369,10 +412,6 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message:
       'You are trying to sign in by a different method than you signed up with.',
-  },
-  early_access_required: {
-    type: 'action_forbidden',
-    message: `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`,
   },
   sign_up_forbidden: {
     type: 'action_forbidden',
@@ -395,6 +434,34 @@ export const USER_FRIENDLY_ERRORS = {
   authentication_required: {
     type: 'authentication_required',
     message: 'You must sign in first to access this resource.',
+  },
+  access_token_expired: {
+    type: 'authentication_required',
+    message: 'The access token has expired.',
+  },
+  access_token_invalid: {
+    type: 'authentication_required',
+    message: 'The access token is invalid.',
+  },
+  auth_session_expired: {
+    type: 'authentication_required',
+    message: 'The auth session has expired.',
+  },
+  auth_session_revoked: {
+    type: 'authentication_required',
+    message: 'The auth session has been revoked.',
+  },
+  refresh_token_invalid: {
+    type: 'authentication_required',
+    message: 'The refresh token is invalid.',
+  },
+  refresh_token_reused: {
+    type: 'authentication_required',
+    message: 'The refresh token has already been used.',
+  },
+  auth_session_temporarily_unavailable: {
+    type: 'network_error',
+    message: 'Auth session service is temporarily unavailable.',
   },
   action_forbidden: {
     type: 'action_forbidden',
@@ -442,6 +509,12 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId }) =>
       `You do not have permission to access Space ${spaceId}.`,
   },
+  sync_permission_generation_changed: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Permissions for Space ${spaceId} changed during synchronization.`,
+  },
   space_owner_not_found: {
     type: 'internal_server_error',
     args: { spaceId: 'string' },
@@ -472,6 +545,22 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ docId, action }) =>
       `You do not have permission to perform ${action} action on doc ${docId}.`,
   },
+  doc_update_invalid: {
+    type: 'invalid_input',
+    message: 'The document update is invalid.',
+  },
+  doc_update_too_large: {
+    type: 'invalid_input',
+    message: 'The document update exceeds the size limit.',
+  },
+  workspace_sync_unavailable: {
+    type: 'service_unavailable',
+    message: 'Workspace synchronization is temporarily unavailable.',
+  },
+  doc_validation_unavailable: {
+    type: 'service_unavailable',
+    message: 'Document validation is temporarily unavailable.',
+  },
   doc_update_blocked: {
     type: 'action_forbidden',
     args: { spaceId: 'string', docId: 'string' },
@@ -500,6 +589,10 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string', blobId: 'string' },
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
+  },
+  blob_invalid: {
+    type: 'invalid_input',
+    message: 'Blob is invalid.',
   },
   expect_to_publish_doc: {
     type: 'invalid_input',
@@ -559,6 +652,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Invalid invitation provided.',
   },
+  invitation_account_mismatch: {
+    type: 'action_forbidden',
+    message: 'This invitation belongs to another account.',
+  },
   no_more_seat: {
     type: 'bad_request',
     args: { spaceId: 'string' },
@@ -574,6 +671,15 @@ export const USER_FRIENDLY_ERRORS = {
   failed_to_checkout: {
     type: 'internal_server_error',
     message: 'Failed to create checkout session.',
+  },
+  purchase_in_progress: {
+    type: 'action_forbidden',
+    message: 'A purchase for this plan is still in progress.',
+  },
+  purchase_needs_verification: {
+    type: 'action_forbidden',
+    message:
+      'This plan has a purchase that needs verification. Review your subscriptions before trying again.',
   },
   invalid_checkout_parameters: {
     type: 'invalid_input',
@@ -632,11 +738,28 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Workspace id is required to update team subscription.',
   },
+  managed_by_app_store_or_play: {
+    type: 'action_forbidden',
+    message:
+      'This subscription is managed by App Store or Google Play. Please manage it in the corresponding store.',
+  },
+
+  // Calendar errors
+  calendar_provider_request_error: {
+    type: 'internal_server_error',
+    args: { status: 'number', message: 'string' },
+    message: ({ status, message }) =>
+      `Calendar provider request error, status: ${status}, message: ${message}`,
+  },
 
   // Copilot errors
   copilot_session_not_found: {
     type: 'resource_not_found',
     message: `Copilot session not found.`,
+  },
+  copilot_session_invalid_input: {
+    type: 'invalid_input',
+    message: `Copilot session input is invalid.`,
   },
   copilot_session_deleted: {
     type: 'action_forbidden',
@@ -644,11 +767,18 @@ export const USER_FRIENDLY_ERRORS = {
   },
   no_copilot_provider_available: {
     type: 'internal_server_error',
-    message: `No copilot provider available.`,
+    args: { modelId: 'string' },
+    message: ({ modelId }) => `No copilot provider available: ${modelId}`,
   },
   copilot_failed_to_generate_text: {
     type: 'internal_server_error',
     message: `Failed to generate text.`,
+  },
+  copilot_failed_to_generate_embedding: {
+    type: 'internal_server_error',
+    args: { provider: 'string', message: 'string' },
+    message: ({ provider, message }) =>
+      `Failed to generate embedding with ${provider}: ${message}`,
   },
   copilot_failed_to_create_message: {
     type: 'internal_server_error',
@@ -685,34 +815,17 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: `Copilot prompt is invalid.`,
   },
+  copilot_provider_not_supported: {
+    type: 'invalid_input',
+    args: { provider: 'string', kind: 'string' },
+    message: ({ provider, kind }) =>
+      `Copilot provider ${provider} does not support output type ${kind}`,
+  },
   copilot_provider_side_error: {
     type: 'internal_server_error',
     args: { provider: 'string', kind: 'string', message: 'string' },
     message: ({ provider, kind, message }) =>
       `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
-  },
-  copilot_invalid_context: {
-    type: 'invalid_input',
-    args: { contextId: 'string' },
-    message: ({ contextId }) => `Invalid copilot context ${contextId}.`,
-  },
-  copilot_context_file_not_supported: {
-    type: 'bad_request',
-    args: { fileName: 'string', message: 'string' },
-    message: ({ fileName, message }) =>
-      `File ${fileName} is not supported to use as context: ${message}`,
-  },
-  copilot_failed_to_modify_context: {
-    type: 'internal_server_error',
-    args: { contextId: 'string', message: 'string' },
-    message: ({ contextId, message }) =>
-      `Failed to modify context ${contextId}: ${message}`,
-  },
-  copilot_failed_to_match_context: {
-    type: 'internal_server_error',
-    args: { contextId: 'string', content: 'string', message: 'string' },
-    message: ({ contextId, content, message }) =>
-      `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
   },
   copilot_embedding_disabled: {
     type: 'action_forbidden',
@@ -721,6 +834,27 @@ export const USER_FRIENDLY_ERRORS = {
   copilot_embedding_unavailable: {
     type: 'action_forbidden',
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
+  },
+  copilot_selected_sources_processing: {
+    type: 'bad_request',
+    message: `Selected sources are still processing. Try again shortly.`,
+  },
+  copilot_selected_sources_failed: {
+    type: 'bad_request',
+    message: `Selected sources could not be processed. Remove the failed source or try again.`,
+  },
+  copilot_selected_sources_unavailable: {
+    type: 'action_forbidden',
+    message: `Selected sources are not available for AI retrieval.`,
+  },
+  copilot_selected_sources_limit_exceeded: {
+    type: 'invalid_input',
+    message: `Too many or too much content was selected. Select fewer sources and try again.`,
+  },
+  copilot_failed_to_add_workspace_artifact: {
+    type: 'internal_server_error',
+    args: { message: 'string' },
+    message: ({ message }) => `Failed to add workspace artifact: ${message}`,
   },
   copilot_transcription_job_exists: {
     type: 'bad_request',
@@ -734,13 +868,6 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'bad_request',
     message: `Audio not provided.`,
   },
-  copilot_failed_to_add_workspace_file_embedding: {
-    type: 'internal_server_error',
-    args: { message: 'string' },
-    message: ({ message }) =>
-      `Failed to add workspace file embedding: ${message}`,
-  },
-
   // Quota & Limit errors
   blob_quota_exceeded: {
     type: 'quota_exceeded',
@@ -780,9 +907,16 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: 'Cannot delete all admin accounts.',
   },
+
+  // Account errors
   cannot_delete_own_account: {
     type: 'action_forbidden',
     message: 'Cannot delete own account.',
+  },
+  cannot_delete_account_with_owned_team_workspace: {
+    type: 'action_forbidden',
+    message:
+      'Cannot delete account. You are the owner of one or more team workspaces. Please transfer ownership or delete them first.',
   },
 
   // captcha errors
@@ -811,18 +945,17 @@ export const USER_FRIENDLY_ERRORS = {
   },
   invalid_license_to_activate: {
     type: 'bad_request',
-    message: 'Invalid license to activate.',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid license to activate. ${reason}`,
   },
   invalid_license_update_params: {
     type: 'invalid_input',
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid license update params. ${reason}`,
   },
-  workspace_members_exceed_limit_to_downgrade: {
+  license_expired: {
     type: 'bad_request',
-    args: { limit: 'number' },
-    message: ({ limit }) =>
-      `You cannot downgrade the workspace from team workspace because there are more than ${limit} members that are currently active.`,
+    message: 'License has expired.',
   },
 
   // version errors
@@ -834,6 +967,14 @@ export const USER_FRIENDLY_ERRORS = {
     },
     message: ({ clientVersion, requiredVersion }) =>
       `Unsupported client with version [${clientVersion}], required version is [${requiredVersion}].`,
+  },
+  unsupported_server_version: {
+    type: 'action_forbidden',
+    args: {
+      requiredVersion: 'string',
+    },
+    message: ({ requiredVersion }) =>
+      `This AFFiNE server is too old for this client. Please upgrade the server to ${requiredVersion}.`,
   },
 
   // Notification Errors
@@ -854,6 +995,67 @@ export const USER_FRIENDLY_ERRORS = {
   // app config
   invalid_app_config: {
     type: 'invalid_input',
-    message: 'Invalid app config.',
+    args: { module: 'string', key: 'string', hint: 'string' },
+    message: ({ module, key, hint }) =>
+      `Invalid app config for module \`${module}\` with key \`${key}\`. ${hint}.`,
+  },
+  invalid_app_config_input: {
+    type: 'invalid_input',
+    args: { message: 'string' },
+    message: ({ message }) => `Invalid app config input: ${message}`,
+  },
+
+  // indexer errors
+  search_index_not_ready: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Search index for Space ${spaceId} is not ready yet.`,
+  },
+  search_permission_syncing: {
+    type: 'service_unavailable',
+    message: 'Search permissions are still syncing. Please try again shortly.',
+  },
+  search_provider_unavailable: {
+    type: 'service_unavailable',
+    message: 'Search provider is temporarily unavailable.',
+  },
+  search_index_failed: {
+    type: 'service_unavailable',
+    args: { diagnosticId: 'string' },
+    message: 'Search index is temporarily unavailable.',
+  },
+  search_provider_not_found: {
+    type: 'resource_not_found',
+    message: 'Search provider not found.',
+  },
+  invalid_search_provider_request: {
+    type: 'invalid_input',
+    args: { reason: 'string', type: 'string' },
+    message: ({ reason }) =>
+      `Invalid request argument to search provider: ${reason}`,
+  },
+  invalid_indexer_input: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid indexer input: ${reason}`,
+  },
+
+  // comment and reply errors
+  comment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment not found.',
+  },
+  reply_not_found: {
+    type: 'resource_not_found',
+    message: 'Reply not found.',
+  },
+  comment_attachment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment attachment not found.',
+  },
+  comment_attachment_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded the comment attachment size quota.',
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;

@@ -7,6 +7,7 @@ import {
   getEdgelessSelectedIds,
   getPageMode,
   getSelectedXYWH,
+  isDocTitleFocused,
   locateEditorContainer,
   locateModeSwitchButton,
   locateToolbar,
@@ -28,6 +29,7 @@ import {
   type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
+import { clickLocatorByRatio } from '@affine-test/kit/utils/utils';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { IVec } from '@blocksuite/affine/global/gfx';
 import type { NoteBlockModel } from '@blocksuite/affine/model';
@@ -157,6 +159,59 @@ test.describe('edgeless page block', () => {
 
     await expect(toolbar).toBeVisible();
     await expect(infoButton).toBeHidden();
+  });
+
+  test('caret on focusing', async ({ page }) => {
+    const note = page.locator('affine-edgeless-note');
+    await note.click(); // focus note
+
+    // click on title's rear
+    const docTitle = note.locator('edgeless-page-block-title');
+    await expect(docTitle).toBeVisible();
+    await clickLocatorByRatio(page, docTitle, { xRatio: 0.9, yRatio: 0.8 });
+
+    const hasCaretInTitle = await page.evaluate(
+      hasCaretIn,
+      'edgeless-page-block-title'
+    );
+    expect(hasCaretInTitle).toBe(true);
+
+    await clickLocatorByRatio(page, note, { xRatio: 1.1, yRatio: 0.1 }); // cancel note focus
+    await note.click(); // focus note again
+
+    // click on firstParagraph's rear
+    const firstParagraph = note.locator('affine-paragraph:first-child');
+    await expect(firstParagraph).toBeVisible();
+
+    await clickLocatorByRatio(page, firstParagraph, {
+      xRatio: 0.9,
+      yRatio: 0.5,
+    });
+
+    const hasCaretInParagraph = await page.evaluate(
+      hasCaretIn,
+      'affine-paragraph'
+    );
+    expect(hasCaretInParagraph).toBe(true);
+
+    function hasCaretIn(elemSelector: string) {
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0) return false;
+
+      const startContainer = sel.getRangeAt(0).startContainer;
+      const selContainer =
+        startContainer.nodeType === Node.TEXT_NODE
+          ? startContainer.parentElement
+          : startContainer;
+
+      if (!selContainer) return false;
+
+      const closestDstElem = (selContainer as HTMLElement)?.closest(
+        elemSelector
+      );
+      if (!closestDstElem) return false;
+      return true;
+    }
   });
 
   test('page title should be editable', async ({ page }) => {
@@ -315,8 +370,9 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Shadow style' }).click();
-    await toolbar.getByTestId('affine-note-shadow-film').click();
+    await toolbar.getByRole('button', { name: 'Note Style' }).click();
+    const noteStylePanel = page.locator('edgeless-note-style-panel');
+    await noteStylePanel.getByTestId('affine-note-shadow-film').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -327,10 +383,11 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Border style' }).click();
-    await toolbar.locator('.mode-solid').click();
-    await toolbar.getByRole('button', { name: 'Border style' }).click();
-    await toolbar.locator('edgeless-line-width-panel').getByLabel('8').click();
+    const borderStylePanel = noteStylePanel.getByTestId(
+      'affine-note-border-style-panel'
+    );
+    await borderStylePanel.locator('.mode-solid').click();
+    await borderStylePanel.locator('affine-slider').getByLabel('8').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -341,12 +398,10 @@ test.describe('edgeless note element toolbar', () => {
       },
     });
 
-    await toolbar.getByRole('button', { name: 'Corners' }).click();
-    // TODO(@fundon): delete duplicate components
-    await toolbar
-      .locator('affine-size-dropdown-menu')
-      .getByText('Large')
-      .click();
+    const cornerPanel = noteStylePanel.getByTestId(
+      'affine-note-corner-radius-panel'
+    );
+    await cornerPanel.locator('affine-slider').getByLabel('24').click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {
@@ -356,6 +411,8 @@ test.describe('edgeless note element toolbar', () => {
         shadowType: '--affine-note-shadow-film',
       },
     });
+
+    await pressEscape(page);
 
     const headerToolbar = page.getByTestId('edgeless-page-block-header');
     const toggleButton = headerToolbar.getByTestId(
@@ -424,6 +481,14 @@ test.describe('note block rendering', () => {
       note,
       'should show collapsed content when dragging is finished'
     ).toHaveCSS('overflow-y', 'visible');
+  });
+
+  test('cursor should not jump to page block title from note block', async ({
+    page,
+  }) => {
+    await createEdgelessNoteBlock(page, [50, 50]);
+    await pressBackspace(page);
+    expect(await isDocTitleFocused(page)).toBeFalsy();
   });
 });
 

@@ -1,8 +1,12 @@
-import { toEdgelessEmbedBlock } from '@blocksuite/affine-block-embed';
+import {
+  createEmbedEdgelessBlockInteraction,
+  toEdgelessEmbedBlock,
+} from '@blocksuite/affine-block-embed';
 import {
   EdgelessCRUDIdentifier,
   reassociateConnectorsCommand,
 } from '@blocksuite/affine-block-surface';
+import { EmbedLinkedDocBlockSchema } from '@blocksuite/affine-model';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
@@ -61,3 +65,7 @@ export class EmbedEdgelessLinkedDocBlockComponent extends toEdgelessEmbedBlock(
     }
   };
 }
+
+export const EmbedLinkedDocInteraction = createEmbedEdgelessBlockInteraction(
+  EmbedLinkedDocBlockSchema.model.flavour
+);

@@ -1,9 +1,5 @@
-import {
-  type CollapsibleSectionName,
-  NavigationPanelService,
-} from '@affine/core/modules/navigation-panel';
+import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { ToggleRightIcon } from '@blocksuite/icons/rc';
-import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
@@ -22,7 +18,7 @@ import {
 } from './collapsible-section.css';
 
 interface CollapsibleSectionProps extends HTMLAttributes<HTMLDivElement> {
-  name: CollapsibleSectionName;
+  path: string[];
   title: string;
   actions?: ReactNode;
   testId?: string;
@@ -31,8 +27,7 @@ interface CollapsibleSectionProps extends HTMLAttributes<HTMLDivElement> {
   contentClassName?: string;
 }
 
-interface CollapsibleSectionTriggerProps
-  extends HTMLAttributes<HTMLDivElement> {
+interface CollapsibleSectionTriggerProps extends HTMLAttributes<HTMLDivElement> {
   label: string;
   collapsed?: boolean;
   actions?: ReactNode;
@@ -76,7 +71,7 @@ const CollapsibleSectionTrigger = forwardRef<
 });
 
 export const CollapsibleSection = ({
-  name,
+  path,
   title,
   actions,
   testId,
@@ -86,18 +81,18 @@ export const CollapsibleSection = ({
   children,
   ...attrs
 }: CollapsibleSectionProps) => {
-  const section = useService(NavigationPanelService).sections[name];
-  const collapsed = useLiveData(section.collapsed$);
+  const navigationPanelService = useService(NavigationPanelService);
+  const collapsed = useLiveData(navigationPanelService.collapsed$(path));
 
   const setCollapsed = useCallback(
-    (v: boolean) => section.setCollapsed(v),
-    [section]
+    (v: boolean) => navigationPanelService.setCollapsed(path, v),
+    [navigationPanelService, path]
   );
 
   return (
-    <Collapsible.Root
+    <div
       data-collapsed={collapsed}
-      open={!collapsed}
+      data-state={collapsed ? 'closed' : 'open'}
       data-testid={testId}
       {...attrs}
     >
@@ -109,12 +104,15 @@ export const CollapsibleSection = ({
         data-testid={headerTestId}
         className={headerClassName}
       />
-      <Collapsible.Content
-        data-testid="collapsible-section-content"
-        className={clsx(content, contentClassName)}
-      >
-        {children}
-      </Collapsible.Content>
-    </Collapsible.Root>
+      {collapsed ? null : (
+        <div
+          data-state="open"
+          data-testid="collapsible-section-content"
+          className={clsx(content, contentClassName)}
+        >
+          {children}
+        </div>
+      )}
+    </div>
   );
 };

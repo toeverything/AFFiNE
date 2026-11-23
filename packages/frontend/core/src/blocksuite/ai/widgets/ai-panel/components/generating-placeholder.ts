@@ -1,6 +1,5 @@
-import { getLoadingIconWith } from '@blocksuite/affine/components/icons';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import type { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVar } from '@blocksuite/affine/shared/theme';
 import { baseTheme } from '@toeverything/theme';
 import {
@@ -88,18 +87,19 @@ export class GeneratingPlaceholder extends WithDisposable(LitElement) {
 
   protected override render() {
     const loadingText = this.stages[this.loadingProgress - 1] || '';
-    const loadingIcon = getLoadingIconWith(this.theme);
 
     return html`<style>
         .generating-body {
           height: ${this.height}px;
         }
       </style>
-      ${this.showHeader
-        ? html`<div class="generating-header">Answer</div>`
-        : nothing}
+      ${
+        this.showHeader
+          ? html`<div class="generating-header">Answer</div>`
+          : nothing
+      }
       <div class="generating-body">
-        <div class="generating-icon">${loadingIcon}</div>
+        <div class="generating-icon">${LoadingIcon()}</div>
         <div class="loading-progress">
           <div class="loading-text">${loadingText}</div>
           <div class="loading-stage">
@@ -129,9 +129,6 @@ export class GeneratingPlaceholder extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor stages!: string[];
-
-  @property({ attribute: false })
-  accessor theme!: ColorScheme;
 }
 
 declare global {

@@ -11,11 +11,19 @@ interface RunScriptOptions {
 }
 
 const currentDir = Path.dir(import.meta.url);
+const serverRuntimeLoader = currentDir
+  .join('../register.js')
+  .toFileUrl()
+  .toString();
+const tsxRuntimeLoader = currentDir
+  .join('../tsx-register.js')
+  .toFileUrl()
+  .toString();
 
 const ignoreLoaderScripts = [
   'vitest',
   'vite',
-  'ts-node',
+  'tsx',
   'prisma',
   'cap',
   'tsc',
@@ -34,7 +42,7 @@ export class RunCommand extends PackageCommand {
 
       \`affine init\`            Generate the required files if there are any package added or removed
 
-      \`affine clean\`           Clean the output files of ts, cargo, webpack, etc.
+      \`affine clean\`           Clean the output files of ts, cargo, bundler outputs, etc.
 
       \`affine bundle\`          Bundle the packages
 
@@ -161,13 +169,17 @@ export class RunCommand extends PackageCommand {
     args = extractedArgs;
 
     const bin = args[0] === 'yarn' ? args[1] : args[0];
-
-    const loader = currentDir.join('../register.js').toFileUrl().toString();
+    const loader =
+      pkg.name === '@affine/server' ? serverRuntimeLoader : tsxRuntimeLoader;
+    const hasKnownLoader =
+      process.env.NODE_OPTIONS?.includes('tsx') ||
+      process.env.NODE_OPTIONS?.includes(tsxRuntimeLoader) ||
+      process.env.NODE_OPTIONS?.includes(serverRuntimeLoader);
 
     // very simple test for auto ts/mjs scripts
     const isLoaderRequired =
       !ignoreLoaderScripts.some(ignore => new RegExp(ignore).test(bin)) ||
-      process.env.NODE_OPTIONS?.includes('ts-node/esm') ||
+      hasKnownLoader ||
       process.env.NODE_OPTIONS?.includes(loader);
 
     let NODE_OPTIONS = process.env.NODE_OPTIONS

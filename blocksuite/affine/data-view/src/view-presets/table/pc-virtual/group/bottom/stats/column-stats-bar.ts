@@ -4,7 +4,7 @@ import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { GroupData } from '../../../../../../core/group-by/trait';
+import type { Group } from '../../../../../../core/group-by/trait';
 import { LEFT_TOOL_BAR_WIDTH, STATS_BAR_HEIGHT } from '../../../../consts';
 import type { TableSingleView } from '../../../../table-view-manager';
 
@@ -38,7 +38,7 @@ export class VirtualDataBaseColumnStats extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor group: Group | undefined = undefined;
 
   @property({ attribute: false })
   accessor view!: TableSingleView;

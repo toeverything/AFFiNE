@@ -9,4 +9,6 @@ export const root = style({
   position: 'relative',
   overflow: 'hidden',
   maxWidth: 2000, // since we have at least 1000 samples, the max width is 2000
+  minWidth: 0,
+  flex: 1,
 });

@@ -1,3 +1,4 @@
+import { CodeBlockPreviewIdentifier } from '@blocksuite/affine/blocks/code';
 import { addSiblingImageBlocks } from '@blocksuite/affine/blocks/image';
 import {
   getSurfaceBlock,
@@ -117,17 +118,37 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext, place: Place) {
   const htmlBound = new Bound(x, y + PADDING, width || 800, height || 600);
   const html = preprocessHtml(aiPanel.answer);
   host.store.transact(() => {
-    host.store.addBlock(
-      'affine:embed-html',
-      {
-        html,
-        design: 'ai:makeItReal', // as tag
-        xywh: htmlBound.serialize(),
-      },
-      surface.id
+    const ifUseCodeBlock = host.std.getOptional(
+      CodeBlockPreviewIdentifier('html')
     );
-    const frameBound = expandBound(htmlBound, PADDING);
-    addSurfaceRefBlock(host, frameBound, place);
+    if (ifUseCodeBlock) {
+      const note = host.store.addBlock(
+        'affine:note',
+        {
+          xywh: htmlBound.serialize(),
+        },
+        host.store.root
+      );
+      host.store.addBlock(
+        'affine:code',
+        { text: new Text(html), language: 'html', preview: true },
+        note
+      );
+      const frameBound = expandBound(htmlBound, PADDING);
+      addSurfaceRefBlock(host, frameBound, place);
+    } else {
+      host.store.addBlock(
+        'affine:embed-html',
+        {
+          html,
+          design: 'ai:makeItReal', // as tag
+          xywh: htmlBound.serialize(),
+        },
+        surface.id
+      );
+      const frameBound = expandBound(htmlBound, PADDING);
+      addSurfaceRefBlock(host, frameBound, place);
+    }
   });
 }
 

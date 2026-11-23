@@ -1,25 +1,21 @@
 package app.affine.pro.ai.chat.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import app.affine.pro.components.AffineAppBar
-import app.affine.pro.components.AffineDropMenu
+import androidx.compose.ui.unit.sp
+import app.affine.pro.R
+import app.affine.pro.components.AFFiNEAppBar
+import app.affine.pro.components.AFFiNEDropMenu
+import app.affine.pro.components.AFFiNEIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,36 +26,33 @@ fun ChatAppBar(
     onClearHistory: () -> Unit = { },
     onSaveAsChatBlock: () -> Unit = { },
 ) {
-    AffineAppBar(
+    AFFiNEAppBar(
         modifier = modifier,
         scrollBehavior = scrollBehavior,
         onNavIconPressed = onBackClick,
         title = {
             Row(
-                modifier = Modifier.clickable { },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Chat with AI")
-                Spacer(Modifier.width(10.dp))
-                Icon(imageVector = Icons.Default.KeyboardArrowDown, contentDescription = null)
+                Text("Chat with AI", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
         },
         actions = {
-            AffineDropMenu(
-                icon = { Icon(Icons.Default.MoreHoriz, contentDescription = "More actions") },
+            AFFiNEDropMenu(
+                R.drawable.ic_more_horizontal,
+                modifier = Modifier.size(44.dp),
                 menuItems = {
                     DropdownMenuItem(
                         text = { Text("Clear history") },
-                        trailingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        trailingIcon = {
+                            AFFiNEIcon(R.drawable.ic_broom)
+                        },
                         onClick = onClearHistory,
                     )
                     DropdownMenuItem(
                         text = { Text("Save as chat block") },
                         trailingIcon = {
-                            Icon(
-                                Icons.Default.ChatBubble,
-                                contentDescription = null
-                            )
+                            AFFiNEIcon(R.drawable.ic_bubble)
                         },
                         onClick = onSaveAsChatBlock,
                     )

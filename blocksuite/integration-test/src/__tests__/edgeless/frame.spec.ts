@@ -31,12 +31,15 @@ describe('frame', () => {
     );
     await wait();
 
-    const frameTitleWidget = service.std.view.getWidget(
-      'affine-frame-title-widget',
-      doc.root!.id
-    ) as AffineFrameTitleWidget | null;
+    const getFrameTitle = (frameId: string) => {
+      const frameTitleWidget = service.std.view.getWidget(
+        'affine-frame-title-widget',
+        frameId
+      ) as AffineFrameTitleWidget | null;
+      return frameTitleWidget?.shadowRoot?.querySelector('affine-frame-title');
+    };
 
-    const frameTitle = frameTitleWidget?.getFrameTitle(frame);
+    const frameTitle = getFrameTitle(frame);
     const rect = frameTitle?.getBoundingClientRect();
 
     expect(frameTitle).toBeTruthy();
@@ -44,7 +47,10 @@ describe('frame', () => {
     expect(rect!.width).toBeGreaterThan(0);
     expect(rect!.height).toBeGreaterThan(0);
 
-    const [titleX, titleY] = service.viewport.toModelCoord(rect!.x, rect!.y);
+    const [titleX, titleY] = service.viewport.toModelCoordFromClientCoord([
+      rect!.x,
+      rect!.y,
+    ]);
     expect(titleX).toBeCloseTo(0);
     expect(titleY).toBeLessThan(0);
 
@@ -58,15 +64,16 @@ describe('frame', () => {
     );
     await wait();
 
-    const nestedTitle = frameTitleWidget?.getFrameTitle(nestedFrame);
+    const nestedTitle = getFrameTitle(nestedFrame);
     expect(nestedTitle).toBeTruthy();
     if (!nestedTitle) return;
 
     const nestedTitleRect = nestedTitle.getBoundingClientRect()!;
-    const [nestedTitleX, nestedTitleY] = service.viewport.toModelCoord(
-      nestedTitleRect.x,
-      nestedTitleRect.y
-    );
+    const [nestedTitleX, nestedTitleY] =
+      service.viewport.toModelCoordFromClientCoord([
+        nestedTitleRect.x,
+        nestedTitleRect.y,
+      ]);
 
     expect(nestedTitleX).toBeGreaterThan(20);
     expect(nestedTitleY).toBeGreaterThan(20);

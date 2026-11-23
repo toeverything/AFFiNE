@@ -62,4 +62,9 @@ export const modalContent = style({
       animationFillMode: 'forwards',
     },
   },
+  '@media': {
+    'screen and (max-width: 520px)': {
+      minWidth: 'auto',
+    },
+  },
 });
