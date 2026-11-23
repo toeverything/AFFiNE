@@ -7,11 +7,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {}
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
 
-  func scene(_ scene: UIScene, willConnectTo _: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-    self.scene(scene, openURLContexts: connectionOptions.urlContexts)
-    for activity in connectionOptions.userActivities {
-      self.scene(scene, continue: activity)
-    }
+  func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+    // Plugins are not loaded yet on a cold start, so launch URLs and activities posted now are lost.
+    // The proxy delivers them on the first capacitorViewDidAppear; share-inbox is handled by sceneDidBecomeActive.
+    SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
   }
 
   func sceneDidBecomeActive(_: UIScene) {
