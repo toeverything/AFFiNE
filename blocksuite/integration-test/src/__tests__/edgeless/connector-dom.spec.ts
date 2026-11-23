@@ -1,5 +1,7 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
+import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import { beforeEach, describe, expect, test } from 'vitest';
+import * as Y from 'yjs';
 
 import { wait } from '../utils/common.js';
 import { getSurface } from '../utils/edgeless.js';
@@ -181,6 +183,56 @@ describe('Connector rendering with DOM renderer', () => {
 
     const markers = defsElement?.querySelectorAll('marker');
     expect(markers?.length).toBeGreaterThan(0);
+  });
+
+  test('should position connector label relative to the connector', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+
+    // Keep the connector away from the canvas origin so an absolute
+    // label position would be clearly off.
+    const connectorId = surfaceModel.addElement({
+      type: 'connector',
+      source: { position: [400, 300] },
+      target: { position: [600, 300] },
+    });
+
+    expect(
+      await waitForConnectorElement(surfaceView, connectorId)
+    ).not.toBeNull();
+
+    const connector = surfaceModel.getElementById(
+      connectorId
+    ) as ConnectorElementModel;
+    const [cx, cy] = connector.getPointByOffsetDistance(0.5);
+    const [lw, lh] = [40, 20];
+    surfaceModel.updateElement(connectorId, {
+      text: new Y.Text('label'),
+      labelOffset: { ...connector.labelOffset, distance: 0.5 },
+      labelXYWH: [cx - lw / 2, cy - lh / 2, lw, lh],
+    });
+
+    let labelElement: HTMLElement | null = null;
+    for (let i = 0; i < 20 && !labelElement; i++) {
+      const connectorElement = await waitForConnectorElement(
+        surfaceView,
+        connectorId
+      );
+      labelElement =
+        connectorElement?.querySelector<HTMLElement>(':scope > div') ?? null;
+      if (!labelElement) await wait(50);
+    }
+    expect(labelElement).not.toBeNull();
+    expect(labelElement!.textContent).toBe('label');
+
+    const zoom = surfaceView.renderer.viewport.zoom;
+    const [x, y] = connector.deserializedXYWH;
+    expect(parseFloat(labelElement!.style.left)).toBeCloseTo(
+      (cx - lw / 2 - x) * zoom
+    );
+    expect(parseFloat(labelElement!.style.top)).toBeCloseTo(
+      (cy - lh / 2 - y) * zoom
+    );
   });
 
   test('should remove connector DOM node when element is deleted', async () => {

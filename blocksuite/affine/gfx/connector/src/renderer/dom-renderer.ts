@@ -211,6 +211,9 @@ function renderConnectorLabel(
     return;
   }
 
+  // labelXYWH is in canvas coordinates, while the connector element is
+  // already positioned at the connector's origin.
+  const [x, y] = model.deserializedXYWH;
   const [lx, ly, lw, lh] = model.labelXYWH;
   const {
     labelStyle: {
@@ -225,8 +228,8 @@ function renderConnectorLabel(
 
   const labelElement = getOrCreateLabelElement(retained);
   labelElement.style.position = 'absolute';
-  labelElement.style.left = `${lx * zoom}px`;
-  labelElement.style.top = `${ly * zoom}px`;
+  labelElement.style.left = `${(lx - x) * zoom}px`;
+  labelElement.style.top = `${(ly - y) * zoom}px`;
   labelElement.style.width = `${lw * zoom}px`;
   labelElement.style.height = `${lh * zoom}px`;
   labelElement.style.pointerEvents = 'none';
