@@ -3,6 +3,7 @@ import {
   createDocExplorerContext,
   DocExplorerContext,
 } from '@affine/core/components/explorer/context';
+import { useExplorerDisplayPreference } from '@affine/core/components/explorer/display-preference';
 import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
 import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
 import { Filters } from '@affine/core/components/filter';
@@ -28,76 +29,6 @@ import * as styles from './all-page.css';
 import { AllDocsHeader } from './all-page-header';
 import { MigrationAllDocsDataNotification } from './migration-data';
 import { PinnedCollections } from './pinned-collections';
-
-const DefaultDisplayPreference: {
-  [key in ViewMode]: ExplorerDisplayPreference;
-} = {
-  grid: {
-    view: 'grid',
-    displayProperties: [
-      'system:createdAt',
-      'system:updatedAt',
-      'system:createdBy',
-      'system:tags',
-    ],
-    orderBy: {
-      type: 'system',
-      key: 'updatedAt',
-      desc: true,
-    },
-    groupBy: undefined,
-    showDocIcon: true,
-    showDocPreview: true,
-    quickFavorite: true,
-    showDragHandle: true,
-    showMoreOperation: true,
-  },
-  masonry: {
-    view: 'masonry',
-    displayProperties: [
-      'system:createdAt',
-      'system:updatedAt',
-      'system:createdBy',
-      'system:tags',
-    ],
-    orderBy: {
-      type: 'system',
-      key: 'updatedAt',
-      desc: true,
-    },
-    groupBy: undefined,
-    showDocIcon: true,
-    showDocPreview: true,
-    quickFavorite: true,
-    showDragHandle: true,
-    showMoreOperation: true,
-  },
-  list: {
-    view: 'list',
-    displayProperties: [
-      'system:createdAt',
-      'system:updatedAt',
-      'system:createdBy',
-      'system:tags',
-    ],
-    orderBy: {
-      type: 'system',
-      key: 'updatedAt',
-      desc: true,
-    },
-    groupBy: {
-      type: 'system',
-      key: 'updatedAt',
-    },
-    showDocIcon: true,
-    showDocPreview: true,
-    quickFavorite: true,
-    showDragHandle: true,
-    showMoreOperation: true,
-  },
-};
-
-type ViewMode = NonNullable<ExplorerDisplayPreference['view']>;
 
 export const AllPage = () => {
   const t = useI18n();
@@ -412,60 +343,18 @@ export const Component = () => {
   return <AllPage />;
 };
 
-/**
- * Since split view allows users to open multiple all docs simultaneously, each with its own state,
- * we only read the stored state once during useState initialization to maintain independent states.
- */
 const useAllDocsOptions = () => {
   const workspaceLocalState = useService(WorkspaceLocalState);
 
-  const readSavedViewMode = useCallback(() => {
-    return workspaceLocalState.get<ViewMode>('allDocsMode') ?? 'list';
-  }, [workspaceLocalState]);
-
-  const readSavedDisplayPreference = useCallback(
-    (mode: ViewMode) => {
-      const saved = workspaceLocalState.get<ExplorerDisplayPreference>(
-        'allDocsDisplayPreference:' + mode
-      );
-      return {
-        ...DefaultDisplayPreference[mode],
-        ...saved,
-        view: mode,
-      };
-    },
-    [workspaceLocalState]
-  );
-
-  const [viewMode, setViewMode] = useState(readSavedViewMode);
-  const [displayPreference, setDisplayPreference] =
-    useState<ExplorerDisplayPreference>(() =>
-      readSavedDisplayPreference(viewMode)
-    );
+  const { viewMode, setViewMode, displayPreference, setDisplayPreference } =
+    useExplorerDisplayPreference({
+      viewModeKey: 'allDocsMode',
+      displayPreferenceKeyPrefix: 'allDocsDisplayPreference:',
+    });
   const [selectedCollectionId, setSelectedCollectionId] = useState(
     () =>
       workspaceLocalState.get<string | null>('allDocsSelectedCollectionId') ??
       null
-  );
-
-  const handleViewModeChange = useCallback(
-    (mode: ViewMode) => {
-      workspaceLocalState.set('allDocsMode', mode);
-      setViewMode(mode);
-      setDisplayPreference(readSavedDisplayPreference(mode));
-    },
-    [workspaceLocalState, readSavedDisplayPreference]
-  );
-
-  const handleDisplayPreferenceChange = useCallback(
-    (displayPreference: ExplorerDisplayPreference) => {
-      workspaceLocalState.set(
-        'allDocsDisplayPreference:' + viewMode,
-        displayPreference
-      );
-      setDisplayPreference(displayPreference);
-    },
-    [viewMode, workspaceLocalState]
   );
 
   const handleSelectedCollectionIdChange = useCallback(
@@ -478,9 +367,9 @@ const useAllDocsOptions = () => {
 
   return {
     viewMode,
-    setViewMode: handleViewModeChange,
+    setViewMode,
     displayPreference,
-    setDisplayPreference: handleDisplayPreferenceChange,
+    setDisplayPreference,
     selectedCollectionId,
     setSelectedCollectionId: handleSelectedCollectionIdChange,
   };
