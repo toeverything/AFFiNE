@@ -1,6 +1,7 @@
 import { Button } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { SubscriptionService } from '@affine/core/modules/cloud';
+import type { SubscriptionType } from '@affine/core/modules/cloud/entities/subscription';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -8,10 +9,9 @@ import {
 } from '@affine/graphql';
 import { type I18nString, i18nTime, Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useEffect } from 'react';
 
 import { CardNameLabelRow } from './card-name-label-row';
-import { PaymentMethodUpdater } from './payment-method';
+import { ManageSubscriptionButton } from './manage-subscription';
 import * as styles from './style.css';
 
 const DescriptionI18NKey = {
@@ -40,10 +40,6 @@ export const ProPlanCard = ({
 }) => {
   const t = useI18n();
   const subscriptionService = useService(SubscriptionService);
-  useEffect(() => {
-    subscriptionService.subscription.revalidate();
-    subscriptionService.prices.revalidate();
-  }, [subscriptionService]);
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
 
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
@@ -89,8 +85,7 @@ export const ProPlanCard = ({
               />
               <CloudExpirationInfo />
               <PlanAction
-                plan={currentPlan}
-                subscriptionStatus={proSubscription?.status}
+                subscription={proSubscription}
                 gotoPlansSetting={gotoCloudPlansSetting}
               />
             </>
@@ -146,33 +141,32 @@ const CloudExpirationInfo = () => {
 };
 
 const PlanAction = ({
-  plan,
-  subscriptionStatus,
+  subscription,
   gotoPlansSetting,
 }: {
-  plan: string;
+  subscription?: SubscriptionType | null;
   gotoPlansSetting: () => void;
-  subscriptionStatus?: SubscriptionStatus;
 }) => {
   const t = useI18n();
+
+  if (subscription && subscription.provider !== 'stripe') return null;
+
+  const pastDue = subscription?.status === SubscriptionStatus.PastDue;
 
   return (
     <div className={styles.planActionContainer}>
       <Button
         className={styles.planAction}
-        variant={
-          subscriptionStatus === SubscriptionStatus.PastDue
-            ? 'secondary'
-            : 'primary'
-        }
+        variant={pastDue ? 'secondary' : 'primary'}
         onClick={gotoPlansSetting}
       >
-        {plan === SubscriptionPlan.Pro
+        {subscription
           ? t['com.affine.payment.billing-setting.change-plan']()
           : t['com.affine.payment.billing-setting.upgrade']()}
       </Button>
-      {subscriptionStatus === SubscriptionStatus.PastDue ? (
-        <PaymentMethodUpdater
+      {pastDue ? (
+        <ManageSubscriptionButton
+          source={subscription}
           inCardView
           className={styles.managementInCard}
           variant="primary"

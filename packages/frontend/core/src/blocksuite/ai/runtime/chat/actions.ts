@@ -49,6 +49,6 @@ export type AIChatAction =
   | { type: 'removeScopeSelector'; item: AIChatScopeSelector }
   | { type: 'addFocusSelector'; item: AIChatScopeSelector }
   | { type: 'removeFocusSelector'; item: AIChatScopeSelector }
-  | ({ type: 'send' } & AIChatSendOptions)
+  | ({ type: 'send'; onAccepted?: () => void } & AIChatSendOptions)
   | { type: 'retry'; messageId: string }
   | { type: 'stop' };

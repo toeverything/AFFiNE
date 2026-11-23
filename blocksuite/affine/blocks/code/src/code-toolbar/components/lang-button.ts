@@ -18,6 +18,8 @@ import { html } from 'lit/static-html.js';
 
 import type { CodeBlockComponent } from '../..';
 
+const PLAIN_TEXT_ID = '__plain_text__';
+
 export class LanguageListButton extends WithDisposable(
   SignalWatcher(LitElement)
 ) {
@@ -75,7 +77,8 @@ export class LanguageListButton extends WithDisposable(
           sortedBundledLanguages.unshift(item);
         }
         this.blockComponent.store.transact(() => {
-          this.blockComponent.model.props.language$.value = item.name;
+          this.blockComponent.model.props.language$.value =
+            item.name === PLAIN_TEXT_ID ? null : item.name;
         });
 
         const std = this.blockComponent.std;
@@ -90,7 +93,12 @@ export class LanguageListButton extends WithDisposable(
           control: item.name,
         });
       },
-      active: item => item.name === this.blockComponent.model.props.language,
+      active: item => {
+        if (item.name === PLAIN_TEXT_ID) {
+          return this.blockComponent.model.props.language === null;
+        }
+        return item.name === this.blockComponent.model.props.language;
+      },
       items: this._sortedBundledLanguages,
     };
 
@@ -111,15 +119,28 @@ export class LanguageListButton extends WithDisposable(
   override connectedCallback(): void {
     super.connectedCallback();
 
+    const plainTextItem: FilterableListItem = {
+      label: 'Plain Text',
+      name: PLAIN_TEXT_ID,
+      aliases: ['plain', 'text', 'plaintext', 'txt', 'none'],
+    };
+
     const langList = localStorage.getItem('blocksuite:code-block:lang-list');
     if (langList) {
       this._sortedBundledLanguages = JSON.parse(langList);
+      // Ensure Plain Text item is always in the list
+      if (
+        !this._sortedBundledLanguages.some(item => item.name === PLAIN_TEXT_ID)
+      ) {
+        this._sortedBundledLanguages.unshift(plainTextItem);
+      }
     } else {
-      this._sortedBundledLanguages = this.blockComponent.langs.map(lang => ({
+      const mappedLanguages = this.blockComponent.langs.map(lang => ({
         label: lang.name,
         name: lang.id,
         aliases: lang.aliases,
       }));
+      this._sortedBundledLanguages = [plainTextItem, ...mappedLanguages];
     }
 
     this.disposables.add(() => {

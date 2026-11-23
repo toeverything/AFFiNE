@@ -1,15 +1,18 @@
 use chrono::{DateTime, Duration, Utc};
 use napi::bindgen_prelude::Buffer;
-use sqlx::{PgPool, Row};
+use sqlx::{Postgres, Row, Transaction};
 
-use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, types::RuntimeDocHistoryInput};
+use super::{
+  BackendRuntime, RuntimeError, RuntimeResult, load_current_doc_parts_in, lock_current_doc_read, merge_current_doc,
+  napi_error, types::RuntimeDocHistoryInput,
+};
 
 fn is_empty_doc(bin: &[u8]) -> bool {
   bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
 }
 
 async fn latest_history_timestamp(
-  pool: &PgPool,
+  transaction: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
 ) -> RuntimeResult<Option<DateTime<Utc>>> {
@@ -24,15 +27,100 @@ async fn latest_history_timestamp(
   )
   .bind(workspace_id)
   .bind(doc_id)
-  .fetch_optional(pool)
+  .fetch_optional(&mut **transaction)
   .await
   .map(|row| row.map(|row| row.get("timestamp")))
   .map_err(|err| RuntimeError::database("DocStorage load latest history failed", err))
 }
 
+#[napi_derive::napi(object)]
+pub struct RuntimeDocRecord {
+  pub bin: Buffer,
+  pub timestamp: i64,
+  pub editor: Option<String>,
+}
+
 #[napi_derive::napi]
 impl BackendRuntime {
   #[napi]
+  pub async fn get_current_workspace_doc_v1(
+    &self,
+    workspace_id: String,
+    doc_id: String,
+  ) -> napi::Result<Option<RuntimeDocRecord>> {
+    let pool = self.pool().await?;
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin current document read", error))?;
+    lock_current_doc_read(&mut transaction, &workspace_id, &doc_id).await?;
+    let (snapshot, updates) = load_current_doc_parts_in(&mut transaction, &workspace_id, &doc_id).await?;
+    let result = merge_current_doc(snapshot, updates)
+      .map_err(|_| RuntimeError::invalid_state("doc_update_invalid"))?
+      .map(|root| RuntimeDocRecord {
+        bin: root.blob.into(),
+        timestamp: root.updated_at.timestamp_millis(),
+        editor: root.updated_by,
+      });
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit current document read", error))?;
+    Ok(result)
+  }
+
+  #[napi]
+  pub async fn get_workspace_doc_creator_v1(
+    &self,
+    workspace_id: String,
+    doc_id: String,
+  ) -> napi::Result<Option<String>> {
+    let pool = self.pool().await?;
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin document creator read", error))?;
+    lock_current_doc_read(&mut transaction, &workspace_id, &doc_id).await?;
+    let recorded: Option<Option<String>> =
+      sqlx::query_scalar("SELECT created_by FROM runtime_doc_creators WHERE workspace_id=$1 AND doc_id=$2")
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| RuntimeError::database("load runtime document creator", error))?;
+    let creator = if let Some(recorded_creator) = recorded {
+      recorded_creator
+    } else {
+      let has_snapshot: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2)")
+          .bind(&workspace_id)
+          .bind(&doc_id)
+          .fetch_one(&mut *transaction)
+          .await
+          .map_err(|error| RuntimeError::database("check document snapshot existence", error))?;
+      if has_snapshot {
+        None
+      } else {
+        sqlx::query_scalar::<_, Option<String>>(
+          "SELECT created_by FROM updates WHERE workspace_id=$1 AND guid=$2 ORDER BY created_at ASC LIMIT 1",
+        )
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| RuntimeError::database("load initial document update creator", error))?
+        .flatten()
+      }
+    };
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit document creator read", error))?;
+    Ok(creator)
+  }
+
+  #[napi]
+  #[allow(clippy::too_many_arguments)]
   pub async fn upsert_doc_snapshot(
     &self,
     workspace_id: String,
@@ -40,29 +128,49 @@ impl BackendRuntime {
     blob: Buffer,
     timestamp_ms: i64,
     editor_id: Option<String>,
+    creator_id: Option<String>,
+    from_initial_updates: Option<bool>,
   ) -> napi::Result<bool> {
-    if is_empty_doc(blob.as_ref()) {
-      return Ok(false);
+    if workspace_id == doc_id {
+      return Err(napi_error("doc_is_workspace"));
     }
-
     let timestamp = DateTime::<Utc>::from_timestamp_millis(timestamp_ms)
       .ok_or_else(|| RuntimeError::invalid_input(format!("Invalid doc snapshot timestamp: {timestamp_ms}")))?;
     let pool = self.pool().await?;
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage begin snapshot transaction failed", err))?;
+    super::domain_command::lock_workspace_storage_shared(&mut transaction, &workspace_id).await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &workspace_id, &doc_id).await?;
+    super::ensure_doc_not_deleted_in(&mut transaction, &workspace_id, &doc_id).await?;
+    let had_snapshot: bool =
+      sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id = $1 AND guid = $2)")
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|err| RuntimeError::database("DocStorage check snapshot existence failed", err))?;
+    let initial_creator = if !had_snapshot && from_initial_updates == Some(true) {
+      creator_id.as_deref()
+    } else {
+      None
+    };
     let row = sqlx::query(
       r#"
       INSERT INTO snapshots
         (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
       VALUES
-        ($1, $2, $3, $4, $5, $5, $6, $6)
+        ($1, $2, $3, $4, $5, $5, $6, $7)
       ON CONFLICT (workspace_id, guid)
       DO UPDATE SET
         blob = $3,
         size = $4,
         updated_at = $5,
-        updated_by = $6
+        updated_by = $7
       WHERE snapshots.workspace_id = $1
         AND snapshots.guid = $2
-        AND snapshots.updated_at <= $5
+        AND (snapshots.updated_at < $5 OR (snapshots.updated_at = $5 AND snapshots.blob = $3))
       RETURNING updated_at
       "#,
     )
@@ -71,10 +179,36 @@ impl BackendRuntime {
     .bind(blob.as_ref())
     .bind(blob.len() as i64)
     .bind(timestamp)
+    .bind(initial_creator)
     .bind(editor_id.as_deref())
-    .fetch_optional(&pool)
+    .fetch_optional(&mut *transaction)
     .await
     .map_err(|err| RuntimeError::database("DocStorage upsert snapshot failed", err))?;
+    if row.is_some() {
+      if !had_snapshot && from_initial_updates == Some(true) {
+        sqlx::query(
+          "INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by) VALUES ($1, $2, $3) ON CONFLICT \
+           (workspace_id, doc_id) DO NOTHING",
+        )
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .bind(creator_id.as_deref())
+        .execute(&mut *transaction)
+        .await
+        .map_err(|err| RuntimeError::database("DocStorage preserve initial doc creator failed", err))?;
+      }
+      super::domain_command::invalidate_doc_blob_projection(
+        &mut transaction,
+        &workspace_id,
+        &doc_id,
+        self.embedding_schema_ready()?,
+      )
+      .await?;
+    }
+    transaction
+      .commit()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage commit snapshot transaction failed", err))?;
 
     Ok(row.is_some())
   }
@@ -91,7 +225,14 @@ impl BackendRuntime {
     let timestamp = DateTime::<Utc>::from_timestamp_millis(input.timestamp_ms)
       .ok_or_else(|| RuntimeError::invalid_input(format!("Invalid doc history timestamp: {}", input.timestamp_ms)))?;
     let pool = self.pool().await?;
-    let should_create = match latest_history_timestamp(&pool, &input.workspace_id, &input.doc_id).await? {
+    let mut transaction = pool
+      .begin()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage begin history transaction failed", err))?;
+    super::domain_command::lock_workspace_storage_shared(&mut transaction, &input.workspace_id).await?;
+    super::domain_command::lock_workspace_doc_update(&mut transaction, &input.workspace_id, &input.doc_id).await?;
+    super::ensure_doc_not_deleted_in(&mut transaction, &input.workspace_id, &input.doc_id).await?;
+    let should_create = match latest_history_timestamp(&mut transaction, &input.workspace_id, &input.doc_id).await? {
       None => true,
       Some(last_timestamp) if last_timestamp == timestamp => false,
       Some(last_timestamp) => {
@@ -120,10 +261,273 @@ impl BackendRuntime {
     .bind(input.blob.as_ref())
     .bind(expired_at)
     .bind(input.editor_id.as_deref())
-    .execute(&pool)
+    .execute(&mut *transaction)
     .await
     .map_err(|err| RuntimeError::database("DocStorage create history failed", err))?;
+    transaction
+      .commit()
+      .await
+      .map_err(|err| RuntimeError::database("DocStorage commit history transaction failed", err))?;
 
     Ok(true)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::runtime::{backend_runtime::tests::runtime_from_database_url, migrations::DATABASE_TEST_LOCK};
+
+  #[tokio::test]
+  async fn snapshot_writes_invalidate_only_committed_sources() -> anyhow::Result<()> {
+    let _guard = DATABASE_TEST_LOCK.lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let pool = runtime.pool().await?;
+    let workspace_id = format!("snapshot-writer-{}", uuid::Uuid::new_v4());
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    let timestamp = Utc::now().timestamp_millis();
+    let blob = affine_doc_loader::add_doc_to_root_doc(vec![0, 0], "live", None)?;
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          workspace_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None,
+          None,
+          None,
+        )
+        .await
+        .is_err()
+    );
+    let empty_id = "empty-snapshot".to_string();
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          empty_id.clone(),
+          vec![0, 0].into(),
+          timestamp,
+          None,
+          None,
+          None,
+        )
+        .await?
+    );
+    assert!(
+      !runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          empty_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None,
+          None,
+          None,
+        )
+        .await?
+    );
+    let empty: Vec<u8> = sqlx::query_scalar("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&empty_id)
+      .fetch_one(&pool)
+      .await?;
+    assert_eq!(empty, [0, 0]);
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          empty_id.clone(),
+          vec![0, 0].into(),
+          timestamp,
+          None,
+          None,
+          None,
+        )
+        .await?
+    );
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          empty_id,
+          blob.clone().into(),
+          timestamp + 1,
+          None,
+          None,
+          None,
+        )
+        .await?
+    );
+    let doc_id = "snapshot-doc".to_string();
+    assert!(
+      runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          doc_id.clone(),
+          blob.clone().into(),
+          timestamp,
+          None,
+          None,
+          None,
+        )
+        .await?
+    );
+    for delta in [-1, 0, 1] {
+      sqlx::query(
+        "INSERT INTO doc_blob_ref_projections(workspace_id,doc_id,source_revision,parser_version,status,indexed_at) \
+         VALUES($1,$3,to_timestamp($2::bigint::double precision/1000),1,'fresh',now()) ON \
+         CONFLICT(workspace_id,doc_id) DO UPDATE SET status='fresh',indexed_at=now()",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .bind(&doc_id)
+      .execute(&pool)
+      .await?;
+      sqlx::query(
+        "UPDATE workspaces SET last_check_embeddings=to_timestamp($2::bigint::double precision/1000) WHERE id=$1",
+      )
+      .bind(&workspace_id)
+      .bind(timestamp)
+      .execute(&pool)
+      .await?;
+      let accepted = runtime
+        .upsert_doc_snapshot(
+          workspace_id.clone(),
+          doc_id.clone(),
+          blob.clone().into(),
+          timestamp + delta,
+          None,
+          None,
+          None,
+        )
+        .await?;
+      assert_eq!(accepted, delta >= 0);
+      let status: String =
+        sqlx::query_scalar("SELECT status FROM doc_blob_ref_projections WHERE workspace_id=$1 AND doc_id=$2")
+          .bind(&workspace_id)
+          .bind(&doc_id)
+          .fetch_one(&pool)
+          .await?;
+      assert_eq!(status, if accepted { "pending" } else { "fresh" });
+      let checked_at: DateTime<Utc> = sqlx::query_scalar("SELECT last_check_embeddings FROM workspaces WHERE id=$1")
+        .bind(&workspace_id)
+        .fetch_one(&pool)
+        .await?;
+      assert_eq!(checked_at.timestamp_millis(), timestamp);
+    }
+    sqlx::query("DELETE FROM doc_blob_ref_projections WHERE workspace_id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn upsert_doc_snapshot_does_not_backfill_creator_when_snapshot_exists() -> anyhow::Result<()> {
+    let _guard = DATABASE_TEST_LOCK.lock().await;
+    let Some(runtime) = runtime_from_database_url().await? else {
+      return Ok(());
+    };
+    let pool = runtime.pool().await?;
+    let workspace_id = format!("snapshot-creator-{}", uuid::Uuid::new_v4());
+    let user_a = format!("snap-creator-a-{}", uuid::Uuid::new_v4());
+    let user_b = format!("snap-creator-b-{}", uuid::Uuid::new_v4());
+    for user in [&user_a, &user_b] {
+      sqlx::query(
+        "INSERT INTO users(id,name,email,registered,email_verified,disabled) VALUES($1,$1,$2,true,now(),false)",
+      )
+      .bind(user)
+      .bind(format!("{user}@example.com"))
+      .execute(&pool)
+      .await?;
+    }
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+
+    let doc_id = "legacy-snapshot-doc".to_string();
+    let timestamp = Utc::now().timestamp_millis();
+    let newer_ts = DateTime::<Utc>::from_timestamp_millis(timestamp + 100).expect("valid timestamp");
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,size,created_at,updated_at,created_by,updated_by) \
+       VALUES($1,$2,$3,2,$4,$4,$5,$5)",
+    )
+    .bind(&workspace_id)
+    .bind(&doc_id)
+    .bind(vec![0u8, 0u8])
+    .bind(newer_ts)
+    .bind(&user_b)
+    .execute(&pool)
+    .await?;
+
+    // Stale upsert against a newer legacy snapshot: must return false and not
+    // write runtime_doc_creators.
+    let stale_accepted = runtime
+      .upsert_doc_snapshot(
+        workspace_id.clone(),
+        doc_id.clone(),
+        vec![0, 0].into(),
+        timestamp,
+        Some(user_b.clone()),
+        Some(user_a.clone()),
+        Some(true),
+      )
+      .await?;
+    assert!(!stale_accepted);
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), doc_id.clone())
+        .await?,
+      None
+    );
+
+    // Newer upsert against an existing legacy snapshot: must return true but
+    // still not backfill runtime_doc_creators.
+    let newer_accepted = runtime
+      .upsert_doc_snapshot(
+        workspace_id.clone(),
+        doc_id.clone(),
+        vec![0, 0].into(),
+        timestamp + 200,
+        Some(user_b.clone()),
+        Some(user_a.clone()),
+        Some(true),
+      )
+      .await?;
+    assert!(newer_accepted);
+    assert_eq!(
+      runtime
+        .get_workspace_doc_creator_v1(workspace_id.clone(), doc_id.clone())
+        .await?,
+      None
+    );
+
+    for table in ["runtime_doc_creators", "doc_blob_ref_projections", "snapshots"] {
+      sqlx::query(&format!("DELETE FROM {table} WHERE workspace_id=$1"))
+        .bind(&workspace_id)
+        .execute(&pool)
+        .await?;
+    }
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await?;
+    sqlx::query("DELETE FROM users WHERE id=ANY($1)")
+      .bind(vec![&user_a, &user_b])
+      .execute(&pool)
+      .await?;
+    Ok(())
   }
 }

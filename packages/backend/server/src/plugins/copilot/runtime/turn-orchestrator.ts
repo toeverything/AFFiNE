@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { BackendRuntimeEmbeddingService } from '../../../core/backend-runtime';
+import type { CopilotScopeMode } from '../access';
 import { type Turn } from '../core';
 import {
   type ModelConditions,
@@ -216,6 +217,11 @@ export class TurnOrchestrator {
     const finalParams: PromptParams = systemMessage?.params ?? {};
     const hasAttachment =
       !!prepared.session.latestUserTurn?.attachments?.length;
+    if (prepared.scopeMode !== 'canonical') {
+      throw new BadRequestException(
+        "Local workspaces don't support generated images."
+      );
+    }
 
     return {
       messageId: prepared.messageId,
@@ -223,8 +229,8 @@ export class TurnOrchestrator {
       finalMessage,
       stream: this.streamImageResult(
         userId,
-        sessionId,
         prepared.session,
+        prepared.scopeMode,
         selection.conditions,
         hasAttachment,
         finalMessage,
@@ -244,8 +250,8 @@ export class TurnOrchestrator {
 
   private async *streamImageResult(
     userId: string,
-    sessionId: string,
     session: ChatSession,
+    scopeMode: CopilotScopeMode,
     conditions: ModelConditions,
     hasAttachment: boolean,
     finalMessage: ReturnType<ChatSession['finish']>,
@@ -265,8 +271,9 @@ export class TurnOrchestrator {
     )) {
       const handled = await this.imageResults.persistNativeArtifact(
         userId,
-        sessionId,
-        artifact
+        session.config.workspaceId,
+        artifact,
+        scopeMode
       );
       if (handled) {
         attachments.push(handled);

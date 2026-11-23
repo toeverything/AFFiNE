@@ -537,14 +537,14 @@ export class SelectionController implements ReactiveController {
       if (removeNativeSelection) {
         getSelection()?.removeAllRanges();
       }
-      this.host.selection.set([
+      this.host.selection.setGroup(TableSelection.group, [
         new TableSelection({
           blockId: this.host.model.id,
           data: selection,
         }),
       ]);
     } else {
-      this.host.selection.clear();
+      this.host.selection.setGroup(TableSelection.group, []);
     }
   }
   selected$ = computed(() => this.getSelected());

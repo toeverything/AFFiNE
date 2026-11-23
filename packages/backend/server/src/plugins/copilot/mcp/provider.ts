@@ -2,8 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { McpAccessMode } from '@prisma/client';
 import z from 'zod/v3';
 
-import { DocReader, DocWriter } from '../../../core/doc';
+import {
+  DocCreateIncompleteError,
+  DocReader,
+  DocWriter,
+} from '../../../core/doc';
 import { PermissionAccess } from '../../../core/permission';
+import { isOrdinaryWorkspaceDoc } from '../../../native';
 import { DocumentRetrievalService } from '../retrieval/document';
 
 type McpTextContent = {
@@ -214,6 +219,7 @@ export class WorkspaceMcpProvider {
         parser: z.object({
           title: z.string().min(1),
           content: z.string(),
+          docId: z.string().trim().min(1).optional(),
         }),
         inputSchema: {
           type: 'object',
@@ -226,41 +232,78 @@ export class WorkspaceMcpProvider {
               type: 'string',
               description: 'The markdown content for the document body',
             },
+            docId: {
+              type: 'string',
+              description:
+                'Optional document ID returned from a previous incomplete creation error; retries workspace registration idempotently without duplicating document content',
+            },
           },
           required: ['title', 'content'],
           additionalProperties: false,
         },
-        execute: async ({ title, content }, options) => {
+        execute: async ({ title, content, docId }, options) => {
           try {
             await this.ac
               .user(userId)
               .workspace(workspaceId)
               .assert('Workspace.CreateDoc');
-
-            const abortedAfterPermission = abortIfNeeded(options.signal);
-            if (abortedAfterPermission) return abortedAfterPermission;
+            const abortedBeforeWrite = abortIfNeeded(options.signal);
+            if (abortedBeforeWrite) return abortedBeforeWrite;
 
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
             if (!sanitizedTitle) throw new Error('Title cannot be empty');
-            const strippedContent = content.replace(
-              /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
-              ''
-            );
-            const result = await this.writer.createDoc(
-              workspaceId,
-              sanitizedTitle,
-              strippedContent,
-              userId
-            );
+
+            let result: { docId: string };
+            if (docId !== undefined) {
+              if (!isOrdinaryWorkspaceDoc(workspaceId, docId)) {
+                return toolError('Invalid document ID.');
+              }
+              await this.ac
+                .user(userId)
+                .workspace(workspaceId)
+                .doc(docId)
+                .assert('Doc.Update');
+              result = await this.writer.recoverDocCreation(
+                workspaceId,
+                docId,
+                sanitizedTitle,
+                userId
+              );
+            } else {
+              const strippedContent = content.replace(
+                /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
+                ''
+              );
+              result = await this.writer.createDoc(
+                workspaceId,
+                sanitizedTitle,
+                strippedContent,
+                userId
+              );
+            }
 
             return toolText(
               JSON.stringify({
                 success: true,
                 docId: result.docId,
-                message: `Document "${title}" created successfully`,
+                message:
+                  docId !== undefined
+                    ? `Document "${title}" registration completed`
+                    : `Document "${title}" created successfully`,
               })
             );
           } catch (error) {
+            if (error instanceof DocCreateIncompleteError) {
+              return toolError(
+                JSON.stringify({
+                  success: false,
+                  code: 'doc_create_incomplete',
+                  retryable: true,
+                  docId: error.docId,
+                  message: error.message,
+                })
+              );
+            }
             return toolError(
               `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`
             );
@@ -296,13 +339,12 @@ export class WorkspaceMcpProvider {
         execute: async ({ docId, content }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
+          if (!canUpdate) return notFoundError;
           const abortedBeforeWrite = abortIfNeeded(options.signal);
           if (abortedBeforeWrite) return abortedBeforeWrite;
 
@@ -315,10 +357,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });
@@ -348,16 +388,14 @@ export class WorkspaceMcpProvider {
         },
         execute: async ({ docId, title }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
-
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
-          const abortedAfterPermission = abortIfNeeded(options.signal);
-          if (abortedAfterPermission) return abortedAfterPermission;
+          if (!canUpdate) return notFoundError;
+          const abortedBeforeWrite = abortIfNeeded(options.signal);
+          if (abortedBeforeWrite) return abortedBeforeWrite;
 
           try {
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
@@ -377,10 +415,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document title updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });

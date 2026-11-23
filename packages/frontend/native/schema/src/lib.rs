@@ -99,6 +99,18 @@ CREATE TABLE "indexer_sync" (
  "#,
     None,
   ),
+  (
+    "workspace_inventory",
+    r#"
+ALTER TABLE peer_clocks ADD COLUMN inventory_kind TEXT;
+ALTER TABLE peer_clocks ADD COLUMN lifecycle TEXT;
+ALTER TABLE peer_clocks ADD COLUMN lifecycle_changed_at INTEGER;
+ALTER TABLE peer_clocks ADD COLUMN pending_create BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE peer_clocks ADD COLUMN inventory_ready BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE peer_clocks ADD COLUMN cache_token INTEGER NOT NULL DEFAULT 0;
+"#,
+    None,
+  ),
 ];
 
 pub fn get_migrator() -> Migrator {

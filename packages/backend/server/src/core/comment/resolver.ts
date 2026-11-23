@@ -13,7 +13,6 @@ import {
   CommentAttachmentQuotaExceeded,
   CommentNotFound,
   type FileUpload,
-  JobQueue,
   readableToBuffer,
   ReplyNotFound,
 } from '../../base';
@@ -22,16 +21,15 @@ import {
   paginateWithCustomCursor,
   PaginationInput,
 } from '../../base/graphql';
-import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { ServerFeature, ServerService } from '../config';
+import { DocReader } from '../doc/reader';
+import { NotificationService } from '../notification/service';
 import { DocAction, PermissionAccess } from '../permission';
-import { QuotaService } from '../quota';
 import { RealtimePublisher } from '../realtime';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
 import { WorkspaceType } from '../workspaces';
-import { publishCommentChanged } from './realtime';
 import { CommentService } from './service';
 import {
   CommentCreateInput,
@@ -57,11 +55,10 @@ export class CommentResolver {
     private readonly service: CommentService,
     private readonly ac: PermissionAccess,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
-    private readonly quota: QuotaService,
-    private readonly queue: JobQueue,
-    private readonly models: Models,
+    private readonly notifications: NotificationService,
     private readonly server: ServerService,
-    private readonly realtime: RealtimePublisher
+    private readonly realtime: RealtimePublisher,
+    private readonly docReader: DocReader
   ) {
     // enable comment feature by default
     this.server.enableFeature(ServerFeature.Comment);
@@ -72,21 +69,18 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentCreateInput
   ): Promise<CommentObjectType> {
-    await this.assertPermission(me, input, 'Doc.Comments.Create');
-
-    const comment = await this.service.createComment({
+    input = {
       ...input,
-      userId: me.id,
-    });
+      docId: await this.docReader.resolveStorageDocId(
+        input.workspaceId,
+        input.docId
+      ),
+    };
+    await this.assertPermission(me, input, 'Doc.Comments.Create');
+    const comment = await this.service.createComment(me.id, input);
 
-    await this.sendCommentNotification(
-      me,
-      comment,
-      input.docTitle,
-      input.docMode,
-      input.mentions
-    );
-    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
+    await this.deliverCommentNotifications(comment);
+    await this.publishCommentChanged(comment.workspaceId, comment.docId);
 
     return {
       ...comment,
@@ -106,15 +100,11 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentUpdateInput
   ) {
-    const comment = await this.service.getComment(input.id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Update');
-
-    await this.service.updateComment(input);
-    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
+    const current = await this.service.getComment(input.id);
+    if (!current) throw new CommentNotFound();
+    await this.assertPermission(me, current, 'Doc.Comments.Moderate');
+    const comment = await this.service.updateComment(me.id, input);
+    await this.publishCommentChanged(comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -125,15 +115,11 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: CommentResolveInput
   ) {
-    const comment = await this.service.getComment(input.id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Resolve');
-
-    await this.service.resolveComment(input);
-    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
+    const current = await this.service.getComment(input.id);
+    if (!current) throw new CommentNotFound();
+    await this.assertPermission(me, current, 'Doc.Comments.Moderate');
+    const comment = await this.service.resolveComment(me.id, input);
+    await this.publishCommentChanged(comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -141,15 +127,11 @@ export class CommentResolver {
     description: 'Delete a comment',
   })
   async deleteComment(@CurrentUser() me: UserType, @Args('id') id: string) {
-    const comment = await this.service.getComment(id);
-    if (!comment) {
-      throw new CommentNotFound();
-    }
-
-    await this.assertPermission(me, comment, 'Doc.Comments.Delete');
-
-    await this.service.deleteComment(id);
-    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
+    const current = await this.service.getComment(id);
+    if (!current) throw new CommentNotFound();
+    await this.assertPermission(me, current, 'Doc.Comments.Moderate');
+    const comment = await this.service.deleteComment(me.id, id);
+    await this.publishCommentChanged(comment.workspaceId, comment.docId);
     return true;
   }
 
@@ -162,23 +144,12 @@ export class CommentResolver {
     if (!comment) {
       throw new CommentNotFound();
     }
-
     await this.assertPermission(me, comment, 'Doc.Comments.Create');
 
-    const reply = await this.service.createReply({
-      ...input,
-      userId: me.id,
-    });
+    const reply = await this.service.createReply(me.id, input);
 
-    await this.sendCommentNotification(
-      me,
-      comment,
-      input.docTitle,
-      input.docMode,
-      input.mentions,
-      reply
-    );
-    publishCommentChanged(this.realtime, comment.workspaceId, comment.docId);
+    await this.deliverCommentNotifications(reply);
+    await this.publishCommentChanged(comment.workspaceId, comment.docId);
 
     return {
       ...reply,
@@ -197,15 +168,11 @@ export class CommentResolver {
     @CurrentUser() me: UserType,
     @Args('input') input: ReplyUpdateInput
   ) {
-    const reply = await this.service.getReply(input.id);
-    if (!reply) {
-      throw new ReplyNotFound();
-    }
-
-    await this.assertPermission(me, reply, 'Doc.Comments.Update');
-
-    await this.service.updateReply(input);
-    publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
+    const current = await this.service.getReply(input.id);
+    if (!current) throw new ReplyNotFound();
+    await this.assertPermission(me, current, 'Doc.Comments.Moderate');
+    const reply = await this.service.updateReply(me.id, input);
+    await this.publishCommentChanged(reply.workspaceId, reply.docId);
     return true;
   }
 
@@ -213,15 +180,11 @@ export class CommentResolver {
     description: 'Delete a reply',
   })
   async deleteReply(@CurrentUser() me: UserType, @Args('id') id: string) {
-    const reply = await this.service.getReply(id);
-    if (!reply) {
-      throw new ReplyNotFound();
-    }
-
-    await this.assertPermission(me, reply, 'Doc.Comments.Delete');
-
-    await this.service.deleteReply(id);
-    publishCommentChanged(this.realtime, reply.workspaceId, reply.docId);
+    const current = await this.service.getReply(id);
+    if (!current) throw new ReplyNotFound();
+    await this.assertPermission(me, current, 'Doc.Comments.Moderate');
+    const reply = await this.service.deleteReply(me.id, id);
+    await this.publishCommentChanged(reply.workspaceId, reply.docId);
     return true;
   }
 
@@ -238,6 +201,7 @@ export class CommentResolver {
     })
     pagination?: PaginationInput
   ): Promise<PaginatedCommentObjectType> {
+    docId = await this.docReader.resolveStorageDocId(workspace.id, docId);
     await this.assertPermission(
       me,
       {
@@ -304,6 +268,7 @@ export class CommentResolver {
     @Args({ name: 'pagination' })
     pagination: PaginationInput
   ): Promise<PaginatedCommentChangeObjectType> {
+    docId = await this.docReader.resolveStorageDocId(workspace.id, docId);
     // DEPRECATED-0.26-COMPAT(realtime): remove after server no longer supports 0.26.x clients.
     await this.assertPermission(
       me,
@@ -350,6 +315,7 @@ export class CommentResolver {
     @Args({ name: 'attachment', type: () => GraphQLUpload })
     attachment: FileUpload
   ) {
+    docId = await this.docReader.resolveStorageDocId(workspaceId, docId);
     await this.assertPermission(
       me,
       { workspaceId, docId },
@@ -359,13 +325,6 @@ export class CommentResolver {
     const buffer = await readableToBuffer(attachment.createReadStream());
     // max attachment size is 10MB
     if (buffer.length > 10 * 1024 * 1024) {
-      throw new CommentAttachmentQuotaExceeded();
-    }
-
-    const checkExceeded =
-      await this.quota.getWorkspaceQuotaCalculator(workspaceId);
-    const result = checkExceeded(buffer.length);
-    if (result?.blobQuotaExceeded || result?.storageQuotaExceeded) {
       throw new CommentAttachmentQuotaExceeded();
     }
 
@@ -381,93 +340,27 @@ export class CommentResolver {
     return this.commentAttachmentStorage.getUrl(workspaceId, docId, key);
   }
 
-  private async sendCommentNotification(
-    sender: UserType,
-    comment: Comment,
-    docTitle: string,
-    docMode: DocMode,
-    mentions?: string[],
-    reply?: Reply
-  ) {
-    const mentionUserIds = new Set(mentions);
-    const notifyUserIds = new Set<string>();
-
-    // send comment mention notification to mentioned users
-    for (const mentionUserId of mentionUserIds) {
-      // skip if the mention user is the sender
-      if (mentionUserId === sender.id) {
-        continue;
-      }
-
-      // check if the mention user has Doc.Comments.Read permission
-      const hasPermission = await this.ac
-        .user(mentionUserId)
-        .workspace(comment.workspaceId)
-        .doc(comment.docId)
-        .can('Doc.Comments.Read');
-
-      if (!hasPermission) {
-        continue;
-      }
-
-      await this.queue.add('notification.sendComment', {
-        isMention: true,
-        userId: mentionUserId,
-        body: {
-          workspaceId: comment.workspaceId,
-          createdByUserId: sender.id,
-          commentId: comment.id,
-          replyId: reply?.id,
-          doc: {
-            id: comment.docId,
-            title: docTitle,
-            mode: docMode,
-          },
-        },
-      });
+  private async publishCommentChanged(workspaceId: string, docId: string) {
+    const aliases = await this.docReader.getDocIdAliases(workspaceId);
+    const ids = new Set([docId]);
+    for (const [logicalId, physicalId] of aliases) {
+      if (physicalId === docId) ids.add(logicalId);
     }
-
-    // send comment notification to doc owners
-    const owner = await this.models.docUser.getOwner(
-      comment.workspaceId,
-      comment.docId
-    );
-    if (owner) {
-      notifyUserIds.add(owner.userId);
-    }
-
-    // send comment notification to all repliers and comment author
-    if (reply) {
-      notifyUserIds.add(comment.userId);
-      const replies = await this.models.comment.listReplies(
-        comment.workspaceId,
-        comment.docId,
-        comment.id
+    for (const docId of ids) {
+      this.realtime.publish(
+        'comment.changed',
+        { workspaceId, docId },
+        { changed: true }
       );
-      for (const reply of replies) {
-        notifyUserIds.add(reply.userId);
-      }
     }
+  }
 
-    for (const userId of notifyUserIds) {
-      // skip if the user is the sender or mentioned
-      if (userId !== sender.id && !mentionUserIds.has(userId)) {
-        await this.queue.add('notification.sendComment', {
-          userId,
-          body: {
-            workspaceId: comment.workspaceId,
-            createdByUserId: sender.id,
-            commentId: comment.id,
-            replyId: reply?.id,
-            doc: {
-              id: comment.docId,
-              title: docTitle,
-              mode: docMode,
-            },
-          },
-        });
-      }
-    }
+  private async deliverCommentNotifications(item: object) {
+    const notificationIds =
+      (item as { notificationIds?: string[] }).notificationIds ?? [];
+    await Promise.allSettled(
+      notificationIds.map(id => this.notifications.deliverComment(id))
+    );
   }
 
   private async assertPermission(

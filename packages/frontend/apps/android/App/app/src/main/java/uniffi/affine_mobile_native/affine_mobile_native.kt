@@ -809,6 +809,12 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
 // For large crates we prevent `MethodTooLargeException` (see #2340)
 // N.B. the name of the extension is very misleading, since it is 
 // rather `InterfaceTooLargeException`, caused by too many methods 
@@ -836,6 +842,8 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_clocks(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_doc_indexed_clock(
 ): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_confirm_peer_doc_create(
+): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_connect(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_crawl_doc_data(
@@ -850,15 +858,15 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob_uploaded_at(
 ): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc(
+): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clock(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks(
 ): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_diff(
+): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_indexed_clock(
-): Short
-fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_snapshot(
-): Short
-fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_updates(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock(
 ): Short
@@ -871,6 +879,8 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pushed_c
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clock(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_workspace_state(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_index_aggregate(
 ): Short
@@ -886,9 +896,13 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_index_upsert(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_index_version(
 ): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_install_peer_workspace_state(
+): Short
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_invalidate_peer_workspace_state(
+): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs(
 ): Short
-fun uniffi_affine_mobile_native_checksum_method_docstoragepool_mark_updates_merged(
+fun uniffi_affine_mobile_native_checksum_method_docstoragepool_merge_updates(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update(
 ): Short
@@ -901,8 +915,6 @@ fun uniffi_affine_mobile_native_checksum_method_docstoragepool_set_blob_uploaded
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_indexed_clock(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_indexed_clocks(
-): Short
-fun uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_snapshot(
 ): Short
 fun uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pulled_remote_clock(
 ): Short
@@ -969,6 +981,8 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_clear_clocks(`ptr`: Poi
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_clear_doc_indexed_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_confirm_peer_doc_create(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
+): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_connect(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`path`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_crawl_doc_data(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
@@ -983,15 +997,15 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob(`ptr`: Pointer
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_blob_uploaded_at(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`blobId`: RustBuffer.ByValue,
 ): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
+): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_clocks(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`after`: RustBuffer.ByValue,
 ): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_diff(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`state`: RustBuffer.ByValue,
+): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_indexed_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
-): Long
-fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_snapshot(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
-): Long
-fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_updates(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pulled_remote_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
@@ -1004,6 +1018,8 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_pushed_clocks(
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_remote_clocks(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_workspace_state(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`rootDocId`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_index_aggregate(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`table`: RustBuffer.ByValue,`query`: RustBuffer.ByValue,`field`: RustBuffer.ByValue,`limit`: Int,`offset`: Int,`hits`: RustBuffer.ByValue,
 ): Long
@@ -1019,11 +1035,15 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_index_upsert(`ptr`: Poi
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_index_version(`ptr`: Pointer,
 ): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_install_peer_workspace_state(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`rootDocId`: RustBuffer.ByValue,`cacheToken`: Long,`docs`: RustBuffer.ByValue,`clocks`: RustBuffer.ByValue,
+): Long
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_invalidate_peer_workspace_state(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`rootDocId`: RustBuffer.ByValue,
+): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_list_blobs(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,
 ): Long
-fun uniffi_affine_mobile_native_fn_method_docstoragepool_mark_updates_merged(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`updates`: RustBuffer.ByValue,
-): Long
-fun uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`update`: RustBuffer.ByValue,
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_merge_updates(`ptr`: Pointer,`updates`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+fun uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`update`: RustBuffer.ByValue,`createForPeer`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_release_blobs(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,
 ): Long
@@ -1034,8 +1054,6 @@ fun uniffi_affine_mobile_native_fn_method_docstoragepool_set_blob_uploaded_at(`p
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_indexed_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`clock`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_indexed_clocks(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`clocks`: RustBuffer.ByValue,
-): Long
-fun uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_snapshot(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`snapshot`: RustBuffer.ByValue,
 ): Long
 fun uniffi_affine_mobile_native_fn_method_docstoragepool_set_peer_pulled_remote_clock(`ptr`: Pointer,`universalId`: RustBuffer.ByValue,`peer`: RustBuffer.ByValue,`docId`: RustBuffer.ByValue,`clock`: Long,
 ): Long
@@ -1197,6 +1215,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_clear_doc_indexed_clock() != 61151.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_confirm_peer_doc_create() != 26473.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_connect() != 19047.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1218,19 +1239,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_blob_uploaded_at() != 41270.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc() != 12953.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clock() != 48394.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_clocks() != 46082.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_diff() != 22717.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_indexed_clock() != 17668.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_snapshot() != 31220.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_doc_updates() != 65430.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_pulled_remote_clock() != 56577.toShort()) {
@@ -1249,6 +1270,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_remote_clocks() != 14523.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_get_peer_workspace_state() != 59705.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_index_aggregate() != 55736.toShort()) {
@@ -1272,13 +1296,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_index_version() != 60393.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_install_peer_workspace_state() != 44437.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_invalidate_peer_workspace_state() != 39671.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_list_blobs() != 6777.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_mark_updates_merged() != 42713.toShort()) {
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_merge_updates() != 49313.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 20688.toShort()) {
+    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_push_update() != 60089.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_release_blobs() != 2203.toShort()) {
@@ -1294,9 +1324,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_indexed_clocks() != 44339.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_set_doc_snapshot() != 5287.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_affine_mobile_native_checksum_method_docstoragepool_set_peer_pulled_remote_clock() != 33923.toShort()) {
@@ -1748,6 +1775,8 @@ public interface DocStoragePoolInterface {
     
     suspend fun `clearDocIndexedClock`(`universalId`: kotlin.String, `docId`: kotlin.String)
     
+    suspend fun `confirmPeerDocCreate`(`universalId`: kotlin.String, `peer`: kotlin.String, `docId`: kotlin.String)
+    
     /**
      * Initialize the database and run migrations.
      */
@@ -1765,15 +1794,15 @@ public interface DocStoragePoolInterface {
     
     suspend fun `getBlobUploadedAt`(`universalId`: kotlin.String, `peer`: kotlin.String, `blobId`: kotlin.String): kotlin.Long?
     
+    suspend fun `getDoc`(`universalId`: kotlin.String, `docId`: kotlin.String): DocRecord?
+    
     suspend fun `getDocClock`(`universalId`: kotlin.String, `docId`: kotlin.String): DocClock?
     
     suspend fun `getDocClocks`(`universalId`: kotlin.String, `after`: kotlin.Long?): List<DocClock>
     
+    suspend fun `getDocDiff`(`universalId`: kotlin.String, `docId`: kotlin.String, `state`: kotlin.String?): DocDiff?
+    
     suspend fun `getDocIndexedClock`(`universalId`: kotlin.String, `docId`: kotlin.String): DocIndexedClock?
-    
-    suspend fun `getDocSnapshot`(`universalId`: kotlin.String, `docId`: kotlin.String): DocRecord?
-    
-    suspend fun `getDocUpdates`(`universalId`: kotlin.String, `docId`: kotlin.String): List<DocUpdate>
     
     suspend fun `getPeerPulledRemoteClock`(`universalId`: kotlin.String, `peer`: kotlin.String, `docId`: kotlin.String): DocClock?
     
@@ -1786,6 +1815,8 @@ public interface DocStoragePoolInterface {
     suspend fun `getPeerRemoteClock`(`universalId`: kotlin.String, `peer`: kotlin.String, `docId`: kotlin.String): DocClock?
     
     suspend fun `getPeerRemoteClocks`(`universalId`: kotlin.String, `peer`: kotlin.String): List<DocClock>
+    
+    suspend fun `getPeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String): kotlin.String
     
     suspend fun `indexAggregate`(`universalId`: kotlin.String, `table`: kotlin.String, `query`: kotlin.String, `field`: kotlin.String, `limit`: kotlin.UInt, `offset`: kotlin.UInt, `hits`: kotlin.String?): IndexAggregateResult
     
@@ -1801,11 +1832,15 @@ public interface DocStoragePoolInterface {
     
     suspend fun `indexVersion`(): kotlin.UInt
     
+    suspend fun `installPeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String, `cacheToken`: kotlin.Long, `docs`: kotlin.String, `clocks`: kotlin.String): kotlin.Boolean
+    
+    suspend fun `invalidatePeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String)
+    
     suspend fun `listBlobs`(`universalId`: kotlin.String): List<ListedBlob>
     
-    suspend fun `markUpdatesMerged`(`universalId`: kotlin.String, `docId`: kotlin.String, `updates`: List<kotlin.Long>): kotlin.UInt
+    fun `mergeUpdates`(`updates`: List<kotlin.String>): kotlin.String
     
-    suspend fun `pushUpdate`(`universalId`: kotlin.String, `docId`: kotlin.String, `update`: kotlin.String): kotlin.Long
+    suspend fun `pushUpdate`(`universalId`: kotlin.String, `docId`: kotlin.String, `update`: kotlin.String, `createForPeer`: kotlin.String?): kotlin.Long
     
     suspend fun `releaseBlobs`(`universalId`: kotlin.String)
     
@@ -1816,8 +1851,6 @@ public interface DocStoragePoolInterface {
     suspend fun `setDocIndexedClock`(`universalId`: kotlin.String, `clock`: DocIndexedClock)
     
     suspend fun `setDocIndexedClocks`(`universalId`: kotlin.String, `clocks`: List<DocIndexedClock>)
-    
-    suspend fun `setDocSnapshot`(`universalId`: kotlin.String, `snapshot`: DocRecord): kotlin.Boolean
     
     suspend fun `setPeerPulledRemoteClock`(`universalId`: kotlin.String, `peer`: kotlin.String, `docId`: kotlin.String, `clock`: kotlin.Long)
     
@@ -1943,6 +1976,28 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
             UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_clear_doc_indexed_clock(
                 thisPtr,
                 FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `confirmPeerDocCreate`(`universalId`: kotlin.String, `peer`: kotlin.String, `docId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_confirm_peer_doc_create(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`peer`),FfiConverterString.lower(`docId`),
             )
         },
         { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
@@ -2113,6 +2168,27 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
     
     @Throws(UniffiException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getDoc`(`universalId`: kotlin.String, `docId`: kotlin.String) : DocRecord? {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeDocRecord.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `getDocClock`(`universalId`: kotlin.String, `docId`: kotlin.String) : DocClock? {
         return uniffiRustCallAsync(
         callWithPointer { thisPtr ->
@@ -2155,6 +2231,27 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
     
     @Throws(UniffiException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getDocDiff`(`universalId`: kotlin.String, `docId`: kotlin.String, `state`: kotlin.String?) : DocDiff? {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_diff(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),FfiConverterOptionalString.lower(`state`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeDocDiff.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `getDocIndexedClock`(`universalId`: kotlin.String, `docId`: kotlin.String) : DocIndexedClock? {
         return uniffiRustCallAsync(
         callWithPointer { thisPtr ->
@@ -2168,48 +2265,6 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
         { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterOptionalTypeDocIndexedClock.lift(it) },
-        // Error FFI converter
-        UniffiException.ErrorHandler,
-    )
-    }
-
-    
-    @Throws(UniffiException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `getDocSnapshot`(`universalId`: kotlin.String, `docId`: kotlin.String) : DocRecord? {
-        return uniffiRustCallAsync(
-        callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_snapshot(
-                thisPtr,
-                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterOptionalTypeDocRecord.lift(it) },
-        // Error FFI converter
-        UniffiException.ErrorHandler,
-    )
-    }
-
-    
-    @Throws(UniffiException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `getDocUpdates`(`universalId`: kotlin.String, `docId`: kotlin.String) : List<DocUpdate> {
-        return uniffiRustCallAsync(
-        callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_get_doc_updates(
-                thisPtr,
-                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
-        // lift function
-        { FfiConverterSequenceTypeDocUpdate.lift(it) },
         // Error FFI converter
         UniffiException.ErrorHandler,
     )
@@ -2336,6 +2391,27 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
         { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeDocClock.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getPeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_get_peer_workspace_state(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`peer`),FfiConverterString.lower(`rootDocId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
         // Error FFI converter
         UniffiException.ErrorHandler,
     )
@@ -2494,6 +2570,49 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
     
     @Throws(UniffiException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `installPeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String, `cacheToken`: kotlin.Long, `docs`: kotlin.String, `clocks`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_install_peer_workspace_state(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`peer`),FfiConverterString.lower(`rootDocId`),FfiConverterLong.lower(`cacheToken`),FfiConverterString.lower(`docs`),FfiConverterString.lower(`clocks`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `invalidatePeerWorkspaceState`(`universalId`: kotlin.String, `peer`: kotlin.String, `rootDocId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_invalidate_peer_workspace_state(
+                thisPtr,
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`peer`),FfiConverterString.lower(`rootDocId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiException.ErrorHandler,
+    )
+    }
+
+    
+    @Throws(UniffiException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `listBlobs`(`universalId`: kotlin.String) : List<ListedBlob> {
         return uniffiRustCallAsync(
         callWithPointer { thisPtr ->
@@ -2513,35 +2632,27 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
     }
 
     
-    @Throws(UniffiException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `markUpdatesMerged`(`universalId`: kotlin.String, `docId`: kotlin.String, `updates`: List<kotlin.Long>) : kotlin.UInt {
-        return uniffiRustCallAsync(
-        callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_mark_updates_merged(
-                thisPtr,
-                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),FfiConverterSequenceLong.lower(`updates`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_u32(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_u32(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_u32(future) },
-        // lift function
-        { FfiConverterUInt.lift(it) },
-        // Error FFI converter
-        UniffiException.ErrorHandler,
+    @Throws(UniffiException::class)override fun `mergeUpdates`(`updates`: List<kotlin.String>): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(UniffiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_merge_updates(
+        it, FfiConverterSequenceString.lower(`updates`),_status)
+}
+    }
     )
     }
+    
 
     
     @Throws(UniffiException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `pushUpdate`(`universalId`: kotlin.String, `docId`: kotlin.String, `update`: kotlin.String) : kotlin.Long {
+    override suspend fun `pushUpdate`(`universalId`: kotlin.String, `docId`: kotlin.String, `update`: kotlin.String, `createForPeer`: kotlin.String?) : kotlin.Long {
         return uniffiRustCallAsync(
         callWithPointer { thisPtr ->
             UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_push_update(
                 thisPtr,
-                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),FfiConverterString.lower(`update`),
+                FfiConverterString.lower(`universalId`),FfiConverterString.lower(`docId`),FfiConverterString.lower(`update`),FfiConverterOptionalString.lower(`createForPeer`),
             )
         },
         { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_i64(future, callback, continuation) },
@@ -2659,27 +2770,6 @@ open class DocStoragePool: Disposable, AutoCloseable, DocStoragePoolInterface
         // lift function
         { Unit },
         
-        // Error FFI converter
-        UniffiException.ErrorHandler,
-    )
-    }
-
-    
-    @Throws(UniffiException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setDocSnapshot`(`universalId`: kotlin.String, `snapshot`: DocRecord) : kotlin.Boolean {
-        return uniffiRustCallAsync(
-        callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_affine_mobile_native_fn_method_docstoragepool_set_doc_snapshot(
-                thisPtr,
-                FfiConverterString.lower(`universalId`),FfiConverterTypeDocRecord.lower(`snapshot`),
-            )
-        },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_poll_i8(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_complete_i8(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_affine_mobile_native_rust_future_free_i8(future) },
-        // lift function
-        { FfiConverterBoolean.lift(it) },
         // Error FFI converter
         UniffiException.ErrorHandler,
     )
@@ -2983,6 +3073,46 @@ public object FfiConverterTypeDocClock: FfiConverterRustBuffer<DocClock> {
 
 
 
+data class DocDiff (
+    var `docId`: kotlin.String, 
+    var `missing`: kotlin.String, 
+    var `state`: kotlin.String, 
+    var `timestamp`: kotlin.Long
+) {
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDocDiff: FfiConverterRustBuffer<DocDiff> {
+    override fun read(buf: ByteBuffer): DocDiff {
+        return DocDiff(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterLong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: DocDiff) = (
+            FfiConverterString.allocationSize(value.`docId`) +
+            FfiConverterString.allocationSize(value.`missing`) +
+            FfiConverterString.allocationSize(value.`state`) +
+            FfiConverterLong.allocationSize(value.`timestamp`)
+    )
+
+    override fun write(value: DocDiff, buf: ByteBuffer) {
+            FfiConverterString.write(value.`docId`, buf)
+            FfiConverterString.write(value.`missing`, buf)
+            FfiConverterString.write(value.`state`, buf)
+            FfiConverterLong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
 data class DocIndexedClock (
     var `docId`: kotlin.String, 
     var `timestamp`: kotlin.Long, 
@@ -3050,42 +3180,6 @@ public object FfiConverterTypeDocRecord: FfiConverterRustBuffer<DocRecord> {
             FfiConverterString.write(value.`docId`, buf)
             FfiConverterString.write(value.`bin`, buf)
             FfiConverterLong.write(value.`timestamp`, buf)
-    }
-}
-
-
-
-data class DocUpdate (
-    var `docId`: kotlin.String, 
-    var `timestamp`: kotlin.Long, 
-    var `bin`: kotlin.String
-) {
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeDocUpdate: FfiConverterRustBuffer<DocUpdate> {
-    override fun read(buf: ByteBuffer): DocUpdate {
-        return DocUpdate(
-            FfiConverterString.read(buf),
-            FfiConverterLong.read(buf),
-            FfiConverterString.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: DocUpdate) = (
-            FfiConverterString.allocationSize(value.`docId`) +
-            FfiConverterLong.allocationSize(value.`timestamp`) +
-            FfiConverterString.allocationSize(value.`bin`)
-    )
-
-    override fun write(value: DocUpdate, buf: ByteBuffer) {
-            FfiConverterString.write(value.`docId`, buf)
-            FfiConverterLong.write(value.`timestamp`, buf)
-            FfiConverterString.write(value.`bin`, buf)
     }
 }
 
@@ -3698,6 +3792,38 @@ public object FfiConverterOptionalTypeDocClock: FfiConverterRustBuffer<DocClock?
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeDocDiff: FfiConverterRustBuffer<DocDiff?> {
+    override fun read(buf: ByteBuffer): DocDiff? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeDocDiff.read(buf)
+    }
+
+    override fun allocationSize(value: DocDiff?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeDocDiff.allocationSize(value)
+        }
+    }
+
+    override fun write(value: DocDiff?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeDocDiff.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeDocIndexedClock: FfiConverterRustBuffer<DocIndexedClock?> {
     override fun read(buf: ByteBuffer): DocIndexedClock? {
         if (buf.get().toInt() == 0) {
@@ -3784,34 +3910,6 @@ public object FfiConverterOptionalSequenceString: FfiConverterRustBuffer<List<ko
         } else {
             buf.put(1)
             FfiConverterSequenceString.write(value, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceLong: FfiConverterRustBuffer<List<kotlin.Long>> {
-    override fun read(buf: ByteBuffer): List<kotlin.Long> {
-        val len = buf.getInt()
-        return List<kotlin.Long>(len) {
-            FfiConverterLong.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<kotlin.Long>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterLong.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<kotlin.Long>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterLong.write(it, buf)
         }
     }
 }
@@ -3924,34 +4022,6 @@ public object FfiConverterSequenceTypeDocIndexedClock: FfiConverterRustBuffer<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeDocIndexedClock.write(it, buf)
-        }
-    }
-}
-
-
-
-
-/**
- * @suppress
- */
-public object FfiConverterSequenceTypeDocUpdate: FfiConverterRustBuffer<List<DocUpdate>> {
-    override fun read(buf: ByteBuffer): List<DocUpdate> {
-        val len = buf.getInt()
-        return List<DocUpdate>(len) {
-            FfiConverterTypeDocUpdate.read(buf)
-        }
-    }
-
-    override fun allocationSize(value: List<DocUpdate>): ULong {
-        val sizeForLength = 4UL
-        val sizeForItems = value.map { FfiConverterTypeDocUpdate.allocationSize(it) }.sum()
-        return sizeForLength + sizeForItems
-    }
-
-    override fun write(value: List<DocUpdate>, buf: ByteBuffer) {
-        buf.putInt(value.size)
-        value.iterator().forEach {
-            FfiConverterTypeDocUpdate.write(it, buf)
         }
     }
 }

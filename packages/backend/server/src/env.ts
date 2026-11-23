@@ -1,8 +1,10 @@
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import pkg from '../package.json' with { type: 'json' };
+import { ServerConfigHandle } from './native';
 
 declare global {
   // oxlint-disable-next-line no-shadow-restricted-names
@@ -88,21 +90,43 @@ globalThis.readEnv = function readEnv<T>(
 };
 
 export class Env implements AppEnv {
+  #serverConfigHandle?: ServerConfigHandle;
+  readonly #configPath?: string;
   NODE_ENV = (process.env.NODE_ENV ?? NodeEnv.Production) as NodeEnv;
   NAMESPACE = readEnv(
     'AFFINE_ENV',
     Namespace.Production,
     Object.values(Namespace)
   );
-  DEPLOYMENT_TYPE = readEnv(
-    'DEPLOYMENT_TYPE',
-    this.dev ? DeploymentType.Affine : DeploymentType.Selfhosted,
-    Object.values(DeploymentType)
-  );
+  DEPLOYMENT_TYPE = this.dev
+    ? DeploymentType.Affine
+    : DeploymentType.Selfhosted;
   FLAVOR = readEnv('SERVER_FLAVOR', Flavor.AllInOne, Object.values(Flavor));
   platform = readEnv('DEPLOYMENT_PLATFORM', Platform.Unknown);
   version = pkg.version;
   projectRoot = resolve(fileURLToPath(import.meta.url), '../../');
+
+  get serverConfigHandle() {
+    if (!this.#serverConfigHandle) {
+      const appPath = join(this.projectRoot, 'config.json');
+      // TODO(0.27.5): Remove the home path fallback after old self-host mounts are upgraded.
+      const configPath =
+        this.#configPath ??
+        (existsSync(appPath)
+          ? appPath
+          : join(homedir(), '.affine/config/config.json'));
+      // TODO(0.27.5): Remove the deployment env fallback after old self-host configs are upgraded.
+      const legacyDeploymentType =
+        process.env.DEPLOYMENT_TYPE ?? this.DEPLOYMENT_TYPE;
+      this.#serverConfigHandle = new ServerConfigHandle(
+        configPath,
+        legacyDeploymentType === DeploymentType.Affine
+          ? 'cloud'
+          : legacyDeploymentType
+      );
+    }
+    return this.#serverConfigHandle;
+  }
 
   get selfhosted() {
     return this.DEPLOYMENT_TYPE === DeploymentType.Selfhosted;
@@ -181,10 +205,25 @@ export class Env implements AppEnv {
     return this.platform === Platform.GCP;
   }
 
-  constructor() {
+  constructor(configPath?: string) {
     if (!Object.values(NodeEnv).includes(this.NODE_ENV)) {
       throw new Error(
         `Invalid NODE_ENV environment. \`${this.NODE_ENV}\` is not a valid NODE_ENV value.`
+      );
+    }
+    this.#configPath = configPath;
+    const appPath = join(this.projectRoot, 'config.json');
+    const homePath = join(homedir(), '.affine/config/config.json');
+    if (configPath || existsSync(appPath) || existsSync(homePath)) {
+      this.DEPLOYMENT_TYPE =
+        this.serverConfigHandle.deploymentType === 'selfhosted'
+          ? DeploymentType.Selfhosted
+          : DeploymentType.Affine;
+    } else {
+      this.DEPLOYMENT_TYPE = readEnv(
+        'DEPLOYMENT_TYPE',
+        this.DEPLOYMENT_TYPE,
+        Object.values(DeploymentType)
       );
     }
   }

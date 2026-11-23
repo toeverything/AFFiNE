@@ -235,10 +235,18 @@ test('recovers an unreadable session file on the next atomic write', async () =>
 test('does not publish a rotated pair until an atomic save succeeds', async () => {
   const endpoint = 'https://save-failure.example';
   await setAuthSession(endpoint, tokenResponse('old', 'a', 1));
-  runtime.fetch.mockResolvedValueOnce(
-    new Response(JSON.stringify(tokenResponse('rotated', 'b', 900)))
-  );
-  runtime.failWrite = true;
+  runtime.fetch.mockImplementationOnce(async (_url, request) => {
+    const stored = JSON.parse(runtime.files.get(sessionFile)!)[endpoint];
+    const attempted = JSON.parse(Buffer.from(stored, 'base64').toString());
+    expect(request.headers['x-affine-refresh-attempt']).toBe(
+      attempted.refreshAttemptId
+    );
+    expect(JSON.parse(request.body)).toEqual({
+      refreshToken: attempted.refreshToken,
+    });
+    runtime.failWrite = true;
+    return new Response(JSON.stringify(tokenResponse('rotated', 'b', 900)));
+  });
 
   await expect(getValidAccessToken(endpoint, 120_000)).rejects.toMatchObject({
     code: 'AUTH_TOKEN_STORAGE_UNAVAILABLE',

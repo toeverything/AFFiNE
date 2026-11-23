@@ -9,9 +9,7 @@ import {
   Config,
   EventBus,
   getRequestClientIp,
-  JobQueue,
   metrics,
-  OnJob,
   TooManyRequest,
   type UserFriendlyError,
 } from '../../base';
@@ -32,12 +30,6 @@ export type InviteQuotaAdmission = {
   reservationId?: string;
   decision: RuntimeWorkspaceInviteQuotaDecision;
 };
-
-declare global {
-  interface Jobs {
-    'inviteAbuse.executePendingActions': {};
-  }
-}
 
 function parseAsn(value: string | undefined) {
   if (!value) {
@@ -82,7 +74,6 @@ export class InviteAbuseDispositionService {
   constructor(
     private readonly models: Models,
     private readonly runtime: BackendRuntimeProvider,
-    private readonly queue: JobQueue,
     private readonly event: EventBus
   ) {}
 
@@ -113,7 +104,17 @@ export class InviteAbuseDispositionService {
       switch (actionRequired.action) {
         case 'ban_actor':
           await this.cancelPendingActorArtifacts(input, actionRequired);
-          await this.models.user.ban(input.actorUserId);
+          {
+            const user = await this.models.user.recreateForBan(
+              input.actorUserId
+            );
+            await this.runtime.executeAuthSessionCommandV1({
+              action: 'set_user_disabled',
+              userId: user.id,
+              disabled: true,
+              reason: 'abuse_ban',
+            });
+          }
           break;
         case 'quarantine_actor':
           await this.cancelPendingActorArtifacts(input, actionRequired);
@@ -164,16 +165,6 @@ export class InviteAbuseDispositionService {
     }
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  async enqueuePendingActions() {
-    await this.queue.add(
-      'inviteAbuse.executePendingActions',
-      {},
-      { jobId: 'invite-abuse-execute-pending-actions' }
-    );
-  }
-
-  @OnJob('inviteAbuse.executePendingActions')
   async executePendingActions() {
     const workerId = `node:${this.workerOwnerId}`;
     const actions = await this.runtime.claimRetryableInviteAbuseActions(
@@ -207,14 +198,30 @@ export class InviteAbuseDispositionService {
     await this.models.mailDelivery.cancelByWorkspace(input.workspaceId);
     await this.models.mailDelivery.cancelByAbuseSubject(action.subjectKey);
 
-    await this.models.workspaceInvitation.cancelPendingByActor(
-      input.actorUserId
-    );
+    const workspaceIds =
+      await this.models.workspaceInvitation.cancelPendingByActor(
+        input.actorUserId
+      );
+    await this.runtime.quotaSeatUsageTransitionV1(workspaceIds);
   }
 
   private async cancelPendingWorkspaceArtifacts(workspaceId: string) {
     await this.models.mailDelivery.cancelByWorkspace(workspaceId);
-    await this.models.workspaceInvitation.cancelPendingByWorkspace(workspaceId);
+    const workspaceIds =
+      await this.models.workspaceInvitation.cancelPendingByWorkspace(
+        workspaceId
+      );
+    await this.runtime.quotaSeatUsageTransitionV1(workspaceIds);
+  }
+}
+
+@Injectable()
+export class InviteAbuseWorker {
+  constructor(private readonly disposition: InviteAbuseDispositionService) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async executePendingActions() {
+    await this.disposition.executePendingActions();
   }
 }
 
@@ -223,19 +230,16 @@ export class InviteQuotaAssertService {
   private readonly logger = new Logger(InviteQuotaAssertService.name);
 
   constructor(
-    private readonly config: Config,
     private readonly quota: QuotaService,
     private readonly runtime: BackendRuntimeProvider,
     private readonly disposition: InviteAbuseDispositionService
   ) {}
 
-  async assertWorkspaceActionAllowed(input: {
+  async assertWorkspaceInviteLinkAllowed(input: {
     actorUserId: string;
     workspaceId: string;
-    action: 'inviteMember' | 'createInviteLink' | 'publishDoc';
-    docId?: string;
   }) {
-    const decision = await this.runtime.evaluateWorkspaceActionV1(
+    const decision = await this.runtime.evaluateWorkspaceInviteLinkV1(
       input.actorUserId,
       input.workspaceId
     );
@@ -268,9 +272,7 @@ export class InviteQuotaAssertService {
       const message =
         error instanceof Error ? error.message : 'native assert failed';
       metrics.workspace.counter('invite_quota_runtime_fallback').add(1, {
-        mode: this.config.auth.inviteQuotaFailOpenOnRuntimeError
-          ? 'fail_open'
-          : 'fail_closed',
+        mode: 'fail_closed',
       });
       this.logger.error('Workspace invite quota native assert failed', {
         userId: input.actorUserId,
@@ -284,9 +286,6 @@ export class InviteQuotaAssertService {
         cfRay: input.source?.rayId,
         error: message,
       });
-      if (this.config.auth.inviteQuotaFailOpenOnRuntimeError) {
-        return { decision: { allowed: true, requested: input.targetCount } };
-      }
       throw new TooManyRequest();
     }
     metrics.workspace
@@ -303,30 +302,6 @@ export class InviteQuotaAssertService {
       metrics.workspace.counter('invite_quota_reject_by_reason').add(1, {
         reason: decision.reason ?? 'unknown',
       });
-      if (this.config.auth.inviteQuotaShadowMode) {
-        this.logger.warn('Workspace invite quota shadow rejected', {
-          userId: input.actorUserId,
-          workspaceId: input.workspaceId,
-          targetCount: input.targetCount,
-          targetDomainsSummary: input.targetDomains,
-          sourceTrusted: input.source?.trusted ?? false,
-          country: input.source?.country,
-          asn: input.source?.asn,
-          reason: decision.reason,
-          scopeKeyHash: hashLogValue(decision.scopeKey),
-          limit: decision.limit,
-          current: decision.current,
-          requested: decision.requested,
-          memberLimit: seatQuota.memberLimit,
-          memberCount: seatQuota.memberCount,
-          retryAfter: decision.retryAfterSeconds,
-          requestId: input.requestId,
-          cfRay: input.source?.rayId,
-          wouldDispose: decision.actionRequired?.action,
-        });
-        return { decision };
-      }
-
       try {
         await this.disposition.execute({
           actionRequired: decision.actionRequired,

@@ -9,6 +9,7 @@ export class MockEventBus {
   emit: Sinon.SinonStub = this.stub.emitAsync;
   emitAsync: Sinon.SinonStub = this.stub.emitAsync;
   emitDetached: Sinon.SinonStub = this.stub.emitAsync;
+  emitDetachedAsync: Sinon.SinonStub = this.stub.emitAsync;
   broadcast: Sinon.SinonStub = this.stub.broadcast;
 
   last<Event extends EventName>(

@@ -11,13 +11,14 @@ pub mod storage;
 #[cfg(not(feature = "use-as-lib"))]
 use affine_common::napi_utils::to_napi_error;
 use chrono::NaiveDateTime;
+pub use doc::merge_updates;
 use napi::bindgen_prelude::*;
+#[cfg(not(feature = "use-as-lib"))]
 use napi_derive::napi;
+#[cfg(not(feature = "use-as-lib"))]
 use pool::{Ref, SqliteDocStoragePool};
+#[cfg(not(feature = "use-as-lib"))]
 use storage::SqliteDocStorage;
-
-#[cfg(feature = "use-as-lib")]
-type Result<T> = anyhow::Result<T>;
 
 #[cfg(not(feature = "use-as-lib"))]
 type Result<T> = napi::Result<T>;
@@ -29,62 +30,97 @@ impl From<error::Error> for napi::Error {
   }
 }
 
-#[cfg(feature = "use-as-lib")]
-pub type Data = Vec<u8>;
-
-#[cfg(not(feature = "use-as-lib"))]
 pub type Data = Uint8Array;
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocUpdate {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocRecord {
   pub doc_id: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub bin: Data,
   pub timestamp: NaiveDateTime,
 }
 
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct DocDiff {
+  pub doc_id: String,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub missing: Data,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
+  pub state: Data,
+  pub timestamp: NaiveDateTime,
+}
+
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct ReadonlyDocRecords {
+  pub snapshot: Option<DocRecord>,
+  pub updates: Vec<DocUpdate>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object, use_nullable = true))]
+pub struct WorkspaceDoc {
+  pub doc_id: String,
+  pub timestamp: i64,
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "'trashed'"))]
+  pub lifecycle: Option<String>,
+  pub lifecycle_changed_at: Option<i64>,
+  #[serde(default)]
+  pub pending_create: bool,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
+pub struct PeerWorkspaceState {
+  pub cache_token: i64,
+  pub ready: bool,
+  pub docs: Vec<WorkspaceDoc>,
+  pub clocks: std::collections::HashMap<String, i64>,
+}
+
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
 }
 
 #[derive(Debug)]
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct DocIndexedClock {
   pub doc_id: String,
   pub timestamp: NaiveDateTime,
   pub indexer_version: i64,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct SetBlob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct Blob {
   pub key: String,
-  #[napi(ts_type = "Uint8Array")]
+  #[cfg_attr(not(feature = "use-as-lib"), napi(ts_type = "Uint8Array"))]
   pub data: Data,
   pub mime: String,
   pub size: i64,
   pub created_at: NaiveDateTime,
 }
 
-#[napi(object)]
+#[cfg_attr(not(feature = "use-as-lib"), napi(object))]
 pub struct ListedBlob {
   pub key: String,
   pub size: i64,
@@ -92,11 +128,13 @@ pub struct ListedBlob {
   pub created_at: NaiveDateTime,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStoragePool {
   pool: SqliteDocStoragePool,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStoragePool {
   #[napi(constructor)]
@@ -148,39 +186,119 @@ impl DocStoragePool {
   }
 
   #[napi]
-  pub async fn push_update(&self, universal_id: String, doc_id: String, update: Uint8Array) -> Result<NaiveDateTime> {
-    Ok(self.get(universal_id).await?.push_update(doc_id, update).await?)
-  }
-
-  #[napi]
-  pub async fn get_doc_snapshot(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
-    Ok(self.get(universal_id).await?.get_doc_snapshot(doc_id).await?)
-  }
-
-  #[napi]
-  pub async fn set_doc_snapshot(&self, universal_id: String, snapshot: DocRecord) -> Result<bool> {
-    Ok(self.get(universal_id).await?.set_doc_snapshot(snapshot).await?)
-  }
-
-  #[napi]
-  pub async fn get_doc_updates(&self, universal_id: String, doc_id: String) -> Result<Vec<DocUpdate>> {
-    Ok(self.get(universal_id).await?.get_doc_updates(doc_id).await?)
-  }
-
-  #[napi]
-  pub async fn mark_updates_merged(
+  pub async fn push_update(
     &self,
     universal_id: String,
     doc_id: String,
-    updates: Vec<NaiveDateTime>,
-  ) -> Result<u32> {
+    update: Uint8Array,
+    create_for_peer: Option<String>,
+  ) -> Result<NaiveDateTime> {
     Ok(
       self
         .get(universal_id)
         .await?
-        .mark_updates_merged(doc_id, updates)
+        .push_update_with_peer(doc_id, update, create_for_peer)
         .await?,
     )
+  }
+
+  #[napi]
+  pub async fn get_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+  ) -> Result<PeerWorkspaceState> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_peer_workspace_state(peer, root_doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn invalidate_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+  ) -> Result<()> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .invalidate_peer_workspace_state(peer, root_doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn install_peer_workspace_state(
+    &self,
+    universal_id: String,
+    peer: String,
+    root_doc_id: String,
+    cache_token: i64,
+    docs: Vec<WorkspaceDoc>,
+    clocks: std::collections::HashMap<String, i64>,
+  ) -> Result<bool> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .install_peer_workspace_state(peer, root_doc_id, cache_token, docs, clocks)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn confirm_peer_doc_create(&self, universal_id: String, peer: String, doc_id: String) -> Result<()> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .confirm_peer_doc_create(peer, doc_id)
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn get_doc(&self, universal_id: String, doc_id: String) -> Result<Option<DocRecord>> {
+    Ok(self.get(universal_id).await?.get_doc(doc_id).await?)
+  }
+
+  #[napi]
+  pub fn merge_updates(&self, updates: Vec<Uint8Array>) -> Result<Uint8Array> {
+    let slices: Vec<&[u8]> = updates.iter().map(|u| u.as_ref()).collect();
+    Ok(Uint8Array::new(doc::merge_updates(&slices)?))
+  }
+
+  #[napi]
+  pub async fn get_doc_diff(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    state: Option<Uint8Array>,
+  ) -> Result<Option<DocDiff>> {
+    Ok(
+      self
+        .get(universal_id)
+        .await?
+        .get_doc_diff(doc_id, state.map(|s| s.to_vec()))
+        .await?,
+    )
+  }
+
+  #[napi]
+  pub async fn read_doc_records_readonly(&self, path: String, doc_id: String) -> Result<ReadonlyDocRecords> {
+    Ok(SqliteDocStorage::read_doc_records_readonly(&path, &doc_id).await?)
+  }
+
+  #[napi]
+  pub async fn read_blob_readonly(&self, path: String, key: String) -> Result<Option<Blob>> {
+    Ok(SqliteDocStorage::read_blob_readonly(&path, &key).await?)
   }
 
   #[napi]
@@ -485,11 +603,13 @@ impl DocStoragePool {
   }
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 pub struct DocStorage {
   storage: SqliteDocStorage,
 }
 
+#[cfg(not(feature = "use-as-lib"))]
 #[napi]
 impl DocStorage {
   #[napi(constructor, async_runtime)]

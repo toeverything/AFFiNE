@@ -113,7 +113,7 @@ async function extractEdgelessSelected(
           if (sourceId) {
             const blob = await host.store.blobSync.get(sourceId);
             if (blob) {
-              images.push(new File([blob], sourceId));
+              images.push(new File([blob], sourceId, { type: blob.type }));
             }
           }
         } else if (element instanceof GfxPrimitiveElementModel) {
@@ -149,7 +149,7 @@ async function extractEdgelessSelected(
   if (!blob) return null;
 
   return {
-    images: [new File([blob], 'selected.png'), ...images],
+    images: [new File([blob], 'selected.png', { type: blob.type }), ...images],
     snapshot: snapshot ? JSON.stringify(snapshot) : null,
     combinedElementsMarkdown: markdown.length ? markdown : null,
     attachments,

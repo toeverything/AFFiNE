@@ -12,7 +12,7 @@ import { DocEventsListener } from './event';
 import { DocStorageCronJob } from './job';
 import { DocStorageOptions } from './options';
 import { DatabaseDocReader, DocReader, DocReaderProvider } from './reader';
-import { DocWriter } from './writer';
+import { DocCreateIncompleteError, DocWriter } from './writer';
 
 @Module({
   imports: [BackendRuntimeModule, QuotaModule, PermissionModule, StorageModule],
@@ -29,6 +29,7 @@ import { DocWriter } from './writer';
     DatabaseDocReader,
     DocReader,
     DocWriter,
+    DocStorageOptions,
     PgWorkspaceDocStorageAdapter,
     PgUserspaceDocStorageAdapter,
   ],
@@ -43,7 +44,9 @@ export class DocStorageWorkerModule {}
 
 export {
   DatabaseDocReader,
+  DocCreateIncompleteError,
   DocReader,
+  DocStorageOptions,
   DocWriter,
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,

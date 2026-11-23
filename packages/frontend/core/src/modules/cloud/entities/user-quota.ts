@@ -35,12 +35,6 @@ function formatHistoryPeriod(value: number) {
   return `${(value / DAY_SECONDS).toFixed(0)} days`;
 }
 
-function userMemberLimit(plan: string) {
-  return plan === 'pro' || plan === 'lifetime_pro' || plan === 'selfhost_free'
-    ? 10
-    : 3;
-}
-
 function planName(plan: string) {
   switch (plan) {
     case 'pro':
@@ -57,7 +51,7 @@ function planName(plan: string) {
 
 function userQuotaFromState(state: UserQuotaStateSnapshot): QuotaType {
   const name = planName(state.plan);
-  const memberLimit = userMemberLimit(state.plan);
+  const memberLimit = state.seatLimit;
   return {
     name,
     blobLimit: state.blobLimit,

@@ -33,12 +33,14 @@ export type GraphqlContext = {
           useGlobalPrefix: true,
           graphiql: env.NODE_ENV === NodeEnv.Development,
           sortSchema: true,
-          autoSchemaFile: join(
-            env.projectRoot,
-            env.testing
-              ? './node_modules/.cache/schema.gql'
-              : './src/schema.gql'
-          ),
+          autoSchemaFile: env.prod
+            ? true
+            : join(
+                env.projectRoot,
+                env.testing
+                  ? './node_modules/.cache/schema.gql'
+                  : './src/schema.gql'
+              ),
           path: '/graphql',
           csrfPrevention: {
             requestHeaders: ['content-type'],

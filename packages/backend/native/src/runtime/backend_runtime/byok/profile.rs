@@ -574,3 +574,193 @@ pub(super) fn require_text(value: &str, field: &'static str) -> RuntimeResult<()
     Ok(())
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use p256::{SecretKey, pkcs8::EncodePrivateKey};
+  use sqlx::PgPool;
+
+  use super::*;
+  use crate::{
+    llm::{
+      ByokCapabilityInput, ByokEndpointInput, ByokModelDeclarationInput, ByokProfileDefinitionInput,
+      ByokProfileOrderInput, byok::ByokPolicy,
+    },
+    runtime::{Deployment, config::CopilotByokRuntimeConfig},
+  };
+
+  fn definition(models: &[(&str, &str)]) -> ByokProfileDefinitionInput {
+    ByokProfileDefinitionInput {
+      endpoint: ByokEndpointInput {
+        kind: "provider_default".to_string(),
+        url: None,
+        dialect: None,
+      },
+      models: models
+        .iter()
+        .map(|(model_id, output)| ByokModelDeclarationInput {
+          model_id: (*model_id).to_string(),
+          enabled: true,
+          capabilities: vec![ByokCapabilityInput {
+            input: vec!["text".to_string()],
+            output: vec![(*output).to_string()],
+            features: Vec::new(),
+            attachment_kinds: Vec::new(),
+            attachment_sources: Vec::new(),
+          }],
+        })
+        .collect(),
+    }
+  }
+
+  #[tokio::test]
+  async fn profile_mutations_own_cas_encryption_and_ordering() {
+    let _guard = crate::runtime::migrations::DATABASE_TEST_LOCK.lock().await;
+    let Ok(database_url) = std::env::var("DATABASE_URL") else {
+      return;
+    };
+    let pool = PgPool::connect(&database_url).await.unwrap();
+    let suffix = uuid::Uuid::new_v4().simple().to_string();
+    let user_id = format!("byok-user-{suffix}");
+    let workspace_id = format!("byok-workspace-{suffix}");
+    sqlx::query("INSERT INTO users(id,name,email) VALUES($1,'BYOK Test',$2)")
+      .bind(&user_id)
+      .bind(format!("byok-{suffix}@example.com"))
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let secret = SecretKey::from_slice(&[7; 32])
+      .unwrap()
+      .to_pkcs8_pem(Default::default())
+      .unwrap();
+    let policy = ByokPolicy::from(Deployment::Cloud, &CopilotByokRuntimeConfig::default());
+
+    let first = create(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      CreateByokProfileInput {
+        workspace_id: workspace_id.clone(),
+        provider: "openai".to_string(),
+        name: "OpenAI".to_string(),
+        description: None,
+        credential: "first-secret".to_string(),
+        definition: definition(&[("gpt-4o-mini", "text")]),
+        enabled: true,
+        actor_user_id: user_id.clone(),
+      },
+    )
+    .await
+    .unwrap();
+    let encrypted: String = sqlx::query_scalar("SELECT encrypted_api_key FROM ai_workspace_byok_configs WHERE id=$1")
+      .bind(&first.profile_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert!(!encrypted.contains("first-secret"));
+
+    let replaced = replace(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      ReplaceByokProfileInput {
+        workspace_id: workspace_id.clone(),
+        profile_id: first.profile_id.clone(),
+        expected_revision: first.revision,
+        name: "OpenAI models".to_string(),
+        description: None,
+        definition: definition(&[("gpt-4o-mini", "text"), ("text-embedding-3-small", "embedding")]),
+        credential: None,
+        enabled: true,
+        actor_user_id: user_id.clone(),
+      },
+    )
+    .await
+    .unwrap();
+    assert_eq!(replaced.revision, first.revision + 1);
+    assert_eq!(replaced.definition.models.len(), 2);
+    let stale = replace(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      ReplaceByokProfileInput {
+        workspace_id: workspace_id.clone(),
+        profile_id: first.profile_id.clone(),
+        expected_revision: first.revision,
+        name: "stale".to_string(),
+        description: None,
+        definition: definition(&[("gpt-4o-mini", "text")]),
+        credential: None,
+        enabled: true,
+        actor_user_id: user_id.clone(),
+      },
+    )
+    .await
+    .err()
+    .unwrap();
+    assert!(stale.to_string().contains("byok_revision_conflict"));
+
+    let rotated = rotate(
+      &pool,
+      secret.as_bytes(),
+      RotateByokCredentialInput {
+        workspace_id: workspace_id.clone(),
+        profile_id: first.profile_id.clone(),
+        expected_revision: replaced.revision,
+        credential: "second-secret".to_string(),
+        actor_user_id: user_id.clone(),
+      },
+    )
+    .await
+    .unwrap();
+    let second = create(
+      &pool,
+      secret.as_bytes(),
+      &policy,
+      CreateByokProfileInput {
+        workspace_id: workspace_id.clone(),
+        provider: "openai".to_string(),
+        name: "Fallback".to_string(),
+        description: None,
+        credential: "fallback-secret".to_string(),
+        definition: definition(&[("gpt-4o-mini", "text")]),
+        enabled: true,
+        actor_user_id: user_id.clone(),
+      },
+    )
+    .await
+    .unwrap();
+    let reordered = reorder(
+      &pool,
+      ReorderByokProfilesInput {
+        workspace_id: workspace_id.clone(),
+        profiles: vec![
+          ByokProfileOrderInput {
+            profile_id: second.profile_id.clone(),
+            expected_revision: second.revision,
+          },
+          ByokProfileOrderInput {
+            profile_id: first.profile_id.clone(),
+            expected_revision: rotated.revision,
+          },
+        ],
+        actor_user_id: user_id,
+      },
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+      reordered
+        .iter()
+        .map(|profile| profile.profile_id.as_str())
+        .collect::<Vec<_>>(),
+      [second.profile_id.as_str(), first.profile_id.as_str()]
+    );
+    assert!(delete(&pool, &workspace_id, &first.profile_id).await.unwrap());
+  }
+}

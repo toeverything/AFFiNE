@@ -18,7 +18,6 @@ export class ArtifactRetrievalService {
     return await this.access
       .user(userId)
       .workspace(workspaceId)
-      .allowLocal()
       .can('Workspace.Read');
   }
 

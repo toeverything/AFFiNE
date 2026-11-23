@@ -1,13 +1,21 @@
 use std::collections::BTreeSet;
 
+use affine_core::access_control::{
+  ReservedDocumentClassification, UserdataTable, classify_reserved_document, userdata_document_id,
+};
 use affine_doc_loader::{
   apply_favorites, apply_workspace_db, evaluate_collection, project_orm_records, project_workspace_root_facts,
 };
 use chrono::Utc;
 use sqlx::{PgPool, Row};
 
-use super::{RuntimeError, RuntimeResult, permission::PermissionAuthorizer, types};
-use crate::{runtime::storage_runtime::load_current_doc, userdata_acl};
+use super::{
+  RuntimeError, RuntimeResult, is_ordinary_workspace_doc, load_current_doc_in, load_doc_states_in,
+  load_legacy_workspace_in, load_workspace_doc_states_in,
+  permission::{PermissionAuthorizer, PermissionTelemetry},
+  types, workspace_lifecycle_active_in,
+};
+use crate::runtime::{Deployment, storage_runtime::load_current_doc};
 
 const REQUIRED_DOCUMENT_LIMIT: usize = 64;
 
@@ -17,9 +25,14 @@ pub(super) struct ScopeCompiler {
 }
 
 impl ScopeCompiler {
-  pub(super) fn new(pool: PgPool) -> Self {
+  #[cfg(test)]
+  pub(super) fn new(pool: PgPool, deployment: Deployment) -> Self {
+    Self::with_telemetry(pool, deployment, PermissionTelemetry::default())
+  }
+
+  pub(super) fn with_telemetry(pool: PgPool, deployment: Deployment, telemetry: PermissionTelemetry) -> Self {
     Self {
-      authorizer: PermissionAuthorizer::new(pool.clone()),
+      authorizer: PermissionAuthorizer::with_telemetry(pool.clone(), deployment, telemetry),
       pool,
     }
   }
@@ -28,7 +41,7 @@ impl ScopeCompiler {
     &self,
     input: types::CompileScopeInput,
   ) -> RuntimeResult<types::RuntimeTurnScopeSnapshot> {
-    validate_selectors(&input.selectors)?;
+    validate_selectors(&input.workspace_id, &input.selectors)?;
     if input.selectors.is_empty() {
       return Ok(snapshot(
         input.selectors,
@@ -37,43 +50,126 @@ impl ScopeCompiler {
         input.preferred_source_ids.unwrap_or_default(),
       ));
     }
-    let root = load_current_doc(&self.pool, &input.workspace_id, &input.workspace_id)
-      .await?
-      .ok_or_else(|| RuntimeError::invalid_state("workspace root doc is missing"))?;
-    let mut facts = project_workspace_root_facts(&root.blob)
-      .map_err(|error| RuntimeError::invalid_state(format!("workspace scope projection failed: {error}")))?;
-    if !facts.complete {
-      return Err(RuntimeError::invalid_state("workspace root projection is incomplete"));
+    let mut transaction = self
+      .pool
+      .begin()
+      .await
+      .map_err(|error| RuntimeError::database("begin workspace scope read", error))?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+      .execute(&mut *transaction)
+      .await
+      .map_err(|error| RuntimeError::database("configure workspace scope snapshot", error))?;
+    let collection = input.selectors.iter().any(|selector| selector.kind == "collection");
+    let favorite = collection || input.selectors.iter().any(|selector| selector.kind == "favorite");
+    let metadata = collection || input.selectors.iter().any(|selector| selector.kind == "tag");
+    let inventory_active = workspace_lifecycle_active_in(&mut transaction).await?;
+    let (mut facts, aliases) = if inventory_active {
+      (
+        affine_doc_loader::WorkspaceFacts {
+          complete: false,
+          documents: Vec::new(),
+          tags: Vec::new(),
+          collections: Vec::new(),
+        },
+        std::collections::BTreeMap::new(),
+      )
+    } else {
+      let legacy = load_legacy_workspace_in(&mut transaction, &input.workspace_id).await?;
+      (legacy.facts, legacy.aliases)
+    };
+    if inventory_active {
+      let states = if metadata || favorite {
+        load_workspace_doc_states_in(&mut transaction, &input.workspace_id).await?
+      } else {
+        let doc_ids = input
+          .selectors
+          .iter()
+          .filter(|selector| selector.kind == "document")
+          .map(|selector| selector.id.clone())
+          .collect::<Vec<_>>();
+        load_doc_states_in(&mut transaction, &input.workspace_id, &doc_ids).await?
+      };
+      if metadata {
+        match load_current_doc_in(&mut transaction, &input.workspace_id, &input.workspace_id).await {
+          Ok(Some(root)) => {
+            if let Ok(projected) = project_workspace_root_facts(&root.blob) {
+              facts = projected;
+            }
+          }
+          Ok(None) | Err(RuntimeError::InvalidState(_)) => {}
+          Err(error) => return Err(error),
+        }
+      }
+      let mut metadata = facts
+        .documents
+        .into_iter()
+        .map(|doc| (doc.id.clone(), doc))
+        .collect::<std::collections::BTreeMap<_, _>>();
+      facts.documents = states
+        .into_iter()
+        .filter(|doc| is_ordinary_workspace_doc(&input.workspace_id, &doc.doc_id))
+        .map(|state| {
+          let mut doc = metadata
+            .remove(&state.doc_id)
+            .unwrap_or_else(|| affine_doc_loader::DocumentFacts {
+              id: state.doc_id,
+              ..Default::default()
+            });
+          doc.trash = state.lifecycle.as_deref() == Some("trashed");
+          doc
+        })
+        .collect();
     }
+    transaction
+      .commit()
+      .await
+      .map_err(|error| RuntimeError::database("commit workspace scope read", error))?;
 
-    let properties_id = format!("db${}$docProperties", input.workspace_id);
-    if let Some(properties) = load_current_doc(&self.pool, &input.workspace_id, &properties_id).await? {
-      let records = project_orm_records(&properties.blob)
-        .map_err(|error| RuntimeError::invalid_state(format!("workspace properties projection failed: {error}")))?;
-      apply_workspace_db(&mut facts.documents, &records);
+    if collection {
+      let properties_id = format!("db${}$docProperties", input.workspace_id);
+      if let Some(properties) = load_current_doc(&self.pool, &input.workspace_id, &properties_id).await? {
+        let records = project_orm_records(&properties.blob)
+          .map_err(|error| RuntimeError::invalid_state(format!("workspace properties projection failed: {error}")))?;
+        apply_workspace_db(&mut facts.documents, &records);
+      }
+      self
+        .enrich_product_facts(&input.workspace_id, &mut facts.documents)
+        .await?;
     }
-    let favorite_id = userdata_acl::doc_id(&input.user_id, &input.workspace_id, "favorite")
-      .ok_or_else(|| RuntimeError::invalid_state("favorite userdata table is unsupported"))?;
-    if !userdata_acl::authorize(&input.user_id, &input.workspace_id, &favorite_id) {
-      return Err(RuntimeError::invalid_input("userdata_subject_denied"));
+    if favorite {
+      let favorite_id = userdata_document_id(&input.user_id, &input.workspace_id, UserdataTable::Favorite)
+        .map_err(|_| RuntimeError::invalid_input("userdata_subject_denied"))?;
+      if let Some(favorite) = load_current_doc(&self.pool, &input.workspace_id, &favorite_id).await? {
+        let records = project_orm_records(&favorite.blob)
+          .map_err(|error| RuntimeError::invalid_state(format!("favorite projection failed: {error}")))?;
+        apply_favorites(&mut facts.documents, &records);
+      }
     }
-    if let Some(favorite) = load_current_doc(&self.pool, &input.workspace_id, &favorite_id).await? {
-      let records = project_orm_records(&favorite.blob)
-        .map_err(|error| RuntimeError::invalid_state(format!("favorite projection failed: {error}")))?;
-      apply_favorites(&mut facts.documents, &records);
-    }
-    self
-      .enrich_product_facts(&input.workspace_id, &mut facts.documents)
-      .await?;
 
     let readable = self
       .authorizer
       .filter_readable_docs(
         &input.workspace_id,
         &input.user_id,
-        facts.documents.iter().map(|doc| doc.id.clone()).collect(),
+        facts
+          .documents
+          .iter()
+          .map(|doc| aliases.get(&doc.id).cloned().unwrap_or_else(|| doc.id.clone()))
+          .collect(),
       )
       .await?;
+    let readable = facts
+      .documents
+      .iter()
+      .filter(|doc| readable.contains(aliases.get(&doc.id).unwrap_or(&doc.id)))
+      .map(|doc| doc.id.clone())
+      .collect::<BTreeSet<_>>();
+    let active = facts
+      .documents
+      .iter()
+      .filter(|doc| !doc.trash && readable.contains(&doc.id))
+      .map(|doc| doc.id.clone())
+      .collect::<BTreeSet<_>>();
     let mut required_docs = BTreeSet::new();
     let mut required_artifacts = BTreeSet::new();
     for selector in &input.selectors {
@@ -89,7 +185,7 @@ impl ScopeCompiler {
             .iter()
             .find(|tag| tag.id == selector.id)
             .ok_or_else(|| RuntimeError::invalid_input("scope_selector_not_found"))?;
-          required_docs.extend(tag.document_ids.iter().filter(|id| readable.contains(*id)).cloned());
+          required_docs.extend(tag.document_ids.iter().filter(|id| active.contains(*id)).cloned());
         }
         "collection" => {
           let collection = facts
@@ -99,14 +195,14 @@ impl ScopeCompiler {
             .ok_or_else(|| RuntimeError::invalid_input("scope_selector_not_found"))?;
           let resolved = evaluate_collection(collection, &facts.documents, Utc::now())
             .map_err(|error| RuntimeError::invalid_input(format!("scope_selector_unsupported: {error}")))?;
-          required_docs.extend(resolved.into_iter().filter(|id| readable.contains(id)));
+          required_docs.extend(resolved.into_iter().filter(|id| active.contains(id)));
         }
         "favorite" => {
           required_docs.extend(
             facts
               .documents
               .iter()
-              .filter(|doc| doc.favorite && readable.contains(&doc.id))
+              .filter(|doc| doc.favorite && active.contains(&doc.id))
               .map(|doc| doc.id.clone()),
           );
         }
@@ -126,9 +222,17 @@ impl ScopeCompiler {
     }
     Ok(snapshot(
       input.selectors,
-      required_docs.into_iter().collect(),
+      required_docs
+        .into_iter()
+        .map(|id| aliases.get(&id).cloned().unwrap_or(id))
+        .collect(),
       required_artifacts.into_iter().collect(),
-      input.preferred_source_ids.unwrap_or_default(),
+      input
+        .preferred_source_ids
+        .unwrap_or_default()
+        .into_iter()
+        .map(|id| aliases.get(&id).cloned().unwrap_or(id))
+        .collect(),
     ))
   }
 
@@ -203,13 +307,16 @@ fn snapshot(
   }
 }
 
-fn validate_selectors(selectors: &[types::ScopeSelectorInput]) -> RuntimeResult<()> {
+fn validate_selectors(workspace_id: &str, selectors: &[types::ScopeSelectorInput]) -> RuntimeResult<()> {
   if selectors.len() > 100 {
     return Err(RuntimeError::invalid_input("scope_selector_limit_exceeded"));
   }
   for selector in selectors {
     if selector.id.is_empty()
-      || selector.id.starts_with("userdata$")
+      || !matches!(
+        classify_reserved_document(workspace_id, &selector.id),
+        ReservedDocumentClassification::Ordinary
+      )
       || !matches!(selector.source.as_str(), "draft" | "focus" | "message")
     {
       return Err(RuntimeError::invalid_input("scope_selector_invalid"));
@@ -227,29 +334,43 @@ mod tests {
   #[tokio::test]
   async fn selector_contract_rejects_invalid_inputs_and_compiles_current_facts() {
     assert!(
-      validate_selectors(&[types::ScopeSelectorInput {
-        kind: "favorite".to_string(),
-        id: "userdata$user$workspace$favorite".to_string(),
-        name: None,
-        source: "draft".to_string(),
-      }])
+      validate_selectors(
+        "workspace",
+        &[types::ScopeSelectorInput {
+          kind: "favorite".to_string(),
+          id: "userdata$user$workspace$favorite".to_string(),
+          name: None,
+          source: "draft".to_string(),
+        }]
+      )
       .is_err()
     );
     assert!(
-      validate_selectors(&[types::ScopeSelectorInput {
-        kind: "favorite".to_string(),
-        id: "favorite".to_string(),
-        name: None,
-        source: "client-expanded".to_string(),
-      }])
+      validate_selectors(
+        "workspace",
+        &[types::ScopeSelectorInput {
+          kind: "favorite".to_string(),
+          id: "favorite".to_string(),
+          name: None,
+          source: "client-expanded".to_string(),
+        }]
+      )
       .is_err()
     );
 
     let Ok(database_url) = std::env::var("DATABASE_URL") else {
       return;
     };
-    let _guard = crate::runtime::migrations::EMBEDDING_TEST_LOCK.lock().await;
+    let _guard = crate::runtime::backend_runtime::SEARCH_TEST_LOCK.lock().await;
     let pool = PgPool::connect(&database_url).await.unwrap();
+    crate::runtime::migrations::migrate_search_tables(&pool).await.unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
     let legacy_relations: Vec<Option<String>> = sqlx::query_scalar(
       "SELECT to_regclass(name) FROM \
        unnest(ARRAY['workspace_permission_revisions','workspace_permission_changes','search_runtime_generations']) \
@@ -264,7 +385,7 @@ mod tests {
     let collaborator_id = format!("scope-collaborator-{suffix}");
     let workspace_id = format!("scope-workspace-{suffix}");
     let doc_id = format!("scope-doc-{suffix}");
-    let favorite_doc_id = userdata_acl::doc_id(&user_id, &workspace_id, "favorite").unwrap();
+    let favorite_doc_id = userdata_document_id(&user_id, &workspace_id, UserdataTable::Favorite).unwrap();
     let root = affine_doc_loader::add_doc_to_root_doc(Vec::new(), &doc_id, None).unwrap();
     let favorite = DocOptions::new().build();
     let mut record = favorite.get_or_create_map("favorite-record").unwrap();
@@ -308,6 +429,7 @@ mod tests {
       .unwrap();
     for (guid, blob) in [
       (workspace_id.as_str(), root),
+      (doc_id.as_str(), vec![0, 0]),
       (favorite_doc_id.as_str(), favorite.encode_update_v1().unwrap()),
     ] {
       sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,clock_timestamp())")
@@ -319,7 +441,7 @@ mod tests {
         .unwrap();
     }
 
-    let compiler = ScopeCompiler::new(pool.clone());
+    let compiler = ScopeCompiler::new(pool.clone(), Deployment::Cloud);
     let input = types::CompileScopeInput {
       workspace_id: workspace_id.clone(),
       user_id: user_id.clone(),
@@ -368,6 +490,127 @@ mod tests {
       explicitly_granted.required_doc_ids.as_slice(),
       std::slice::from_ref(&doc_id)
     );
+
+    let physical_id = format!("scope-legacy-{suffix}");
+    let mut legacy_root = y_octo::Doc::new();
+    legacy_root
+      .apply_update_from_binary_v1(
+        sqlx::query_scalar::<_, Vec<u8>>("SELECT blob FROM snapshots WHERE workspace_id=$1 AND guid=$1")
+          .bind(&workspace_id)
+          .fetch_one(&pool)
+          .await
+          .unwrap(),
+      )
+      .unwrap();
+    legacy_root
+      .get_or_create_map("spaces")
+      .unwrap()
+      .insert(
+        doc_id.clone(),
+        Value::Doc(DocOptions::new().with_guid(physical_id.clone()).build()),
+      )
+      .unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$2 WHERE workspace_id=$1 AND guid=$1")
+      .bind(&workspace_id)
+      .bind(legacy_root.encode_update_v1().unwrap())
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(&physical_id)
+      .bind(&[0u8, 0][..])
+      .execute(&pool)
+      .await
+      .unwrap();
+    let aliased = compiler
+      .compile(types::CompileScopeInput {
+        workspace_id: workspace_id.clone(),
+        user_id: user_id.clone(),
+        selectors: vec![types::ScopeSelectorInput {
+          kind: "document".into(),
+          id: doc_id.clone(),
+          name: None,
+          source: "draft".into(),
+        }],
+        preferred_source_ids: Some(vec![doc_id.clone()]),
+      })
+      .await
+      .unwrap();
+    assert_eq!(aliased.required_doc_ids, vec![physical_id]);
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    let retained_sources: Vec<(String, Vec<u8>)> =
+      sqlx::query_as("SELECT guid,blob FROM snapshots WHERE workspace_id=$1 AND guid<>$2")
+        .bind(&workspace_id)
+        .bind(&doc_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE snapshots SET blob=$3 WHERE workspace_id=$1 AND guid<>$2")
+      .bind(&workspace_id)
+      .bind(&doc_id)
+      .bind(&[255u8][..])
+      .execute(&pool)
+      .await
+      .unwrap();
+    let properties_id = format!("db${workspace_id}$docProperties");
+    sqlx::query("INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,$2,$3,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(&properties_id)
+      .bind(&[255u8][..])
+      .execute(&pool)
+      .await
+      .unwrap();
+    for kind in ["document", "artifact"] {
+      let compiled = compiler
+        .compile(types::CompileScopeInput {
+          workspace_id: workspace_id.clone(),
+          user_id: collaborator_id.clone(),
+          selectors: vec![types::ScopeSelectorInput {
+            kind: kind.into(),
+            id: if kind == "document" {
+              doc_id.clone()
+            } else {
+              uuid::Uuid::new_v4().to_string()
+            },
+            name: None,
+            source: "draft".into(),
+          }],
+          preferred_source_ids: None,
+        })
+        .await
+        .unwrap();
+      assert_eq!(
+        compiled.required_doc_ids,
+        if kind == "document" {
+          vec![doc_id.clone()]
+        } else {
+          vec![]
+        }
+      );
+    }
+    for (guid, blob) in retained_sources {
+      sqlx::query("UPDATE snapshots SET blob=$3 WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(guid)
+        .bind(blob)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query("DELETE FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(&properties_id)
+      .execute(&pool)
+      .await
+      .unwrap();
 
     sqlx::query("DELETE FROM workspace_members WHERE workspace_id=$1 AND user_id=$2")
       .bind(&workspace_id)
@@ -463,5 +706,12 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

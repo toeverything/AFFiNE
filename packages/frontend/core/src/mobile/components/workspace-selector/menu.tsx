@@ -218,7 +218,7 @@ const CloudWorkSpaceList = ({
     if (currentWorkspaceFlavour === server.id) {
       const otherWorkspace = workspaces.find(w => w.flavour !== server.id);
       if (otherWorkspace) {
-        navigateHelper.openPage(otherWorkspace.id, 'all');
+        void navigateHelper.openPage(otherWorkspace.id, 'all');
       }
     }
   }, [
@@ -231,7 +231,7 @@ const CloudWorkSpaceList = ({
 
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-    navigateHelper.jumpToSignIn();
+    void navigateHelper.jumpToSignIn();
   }, [authService, navigateHelper]);
 
   const handleSignIn = useAsyncCallback(async () => {
@@ -335,7 +335,7 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
         if (workspaceMetadata.flavour !== 'local' && server) {
           searchParams.set('server', server.baseUrl);
         }
-        jumpToPage(id, 'home', RouteLogic.PUSH, {
+        void jumpToPage(id, 'home', RouteLogic.PUSH, {
           search: searchParams,
         });
       }

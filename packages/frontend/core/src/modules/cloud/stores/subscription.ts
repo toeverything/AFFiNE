@@ -4,7 +4,9 @@ import type {
 } from '@affine/graphql';
 import {
   cancelSubscriptionMutation,
+  checkoutAttemptQuery,
   createCheckoutSessionMutation,
+  expireCheckoutMutation,
   getWorkspaceSubscriptionQuery,
   pricesQuery,
   resumeSubscriptionMutation,
@@ -16,10 +18,12 @@ import { Store } from '@toeverything/infra';
 
 import type { GlobalCache } from '../../storage';
 import type { UrlService } from '../../url';
-import type { SubscriptionType } from '../entities/subscription';
+import type { SubscriptionBilling } from '../entities/subscription';
+import type { SubscriptionType } from '../entities/workspace-subscription';
 import type { GraphQLService } from '../services/graphql';
 import type { ServerService } from '../services/server';
 const SUBSCRIPTION_CACHE_KEY = 'subscription:';
+const SUBSCRIPTION_BILLING_CACHE_KEY = 'subscription-billing:v1:';
 
 const getDefaultSubscriptionSuccessCallbackLink = (
   baseUrl: string,
@@ -50,7 +54,7 @@ export class SubscriptionStore extends Store {
     super();
   }
 
-  async fetchSubscriptions(abortSignal?: AbortSignal) {
+  async fetchSubscriptionBilling(abortSignal?: AbortSignal) {
     const data = await this.gqlService.gql({
       query: subscriptionQuery,
       context: {
@@ -58,14 +62,12 @@ export class SubscriptionStore extends Store {
       },
     });
 
-    if (!data.currentUser) {
-      throw new Error('No logged in');
-    }
-
-    return {
-      userId: data.currentUser?.id,
-      subscriptions: data.currentUser?.subscriptions,
-    };
+    return data.currentUser
+      ? {
+          userId: data.currentUser.id,
+          billing: data.currentUser.subscriptionBilling,
+        }
+      : null;
   }
 
   async fetchWorkspaceSubscriptions(
@@ -136,14 +138,21 @@ export class SubscriptionStore extends Store {
     return data.cancelSubscription;
   }
 
-  getCachedSubscriptions(userId: string) {
-    return this.globalCache.get<SubscriptionType[]>(
-      SUBSCRIPTION_CACHE_KEY + userId
+  getCachedSubscriptionBilling(userId: string) {
+    return this.globalCache.get<SubscriptionBilling>(
+      this.billingCacheKey(userId)
     );
   }
 
-  setCachedSubscriptions(userId: string, subscriptions: SubscriptionType[]) {
-    return this.globalCache.set(SUBSCRIPTION_CACHE_KEY + userId, subscriptions);
+  setCachedSubscriptionBilling(userId: string, billing: SubscriptionBilling) {
+    return this.globalCache.set(this.billingCacheKey(userId), billing);
+  }
+
+  private billingCacheKey(userId: string) {
+    return (
+      SUBSCRIPTION_BILLING_CACHE_KEY +
+      JSON.stringify([this.serverService.server.id, userId])
+    );
   }
 
   getCachedWorkspaceSubscription(workspaceId: string) {
@@ -200,6 +209,22 @@ export class SubscriptionStore extends Store {
       },
     });
     return data.createCheckoutSession;
+  }
+
+  async checkoutAttempt(plan: SubscriptionPlan) {
+    const data = await this.gqlService.gql({
+      query: checkoutAttemptQuery,
+      variables: { plan },
+    });
+    return data.checkoutAttempt;
+  }
+
+  async expireCheckout(plan: SubscriptionPlan, attemptId: string) {
+    const data = await this.gqlService.gql({
+      query: expireCheckoutMutation,
+      variables: { plan, attemptId },
+    });
+    return data.expireCheckout;
   }
 
   async fetchSubscriptionPrices(abortSignal?: AbortSignal) {

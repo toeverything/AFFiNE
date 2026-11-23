@@ -1,18 +1,27 @@
 import {
+  deleteWorkspaceMutation,
   indexerAggregateQuery,
   SearchQueryType,
   SearchTable,
 } from '@affine/graphql';
+import { PrismaClient } from '@prisma/client';
 
-import { Config } from '../../../base';
-import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { ServerService } from '../../../core/config';
 import { createDocWithMarkdown } from '../../../native';
 import { Mockers } from '../../mocks';
-import { app, e2e } from '../test';
+import {
+  addDocumentToRoot,
+  app,
+  e2e,
+  reconcileSearchProjection,
+} from '../test';
 
-const indexer = app.get(Config).indexer;
+const indexer = (await app.get(ServerService).getEffectiveAdminConfig())
+  .indexer;
 const remoteE2e =
-  indexer.enabled && indexer.provider.type === 'elasticsearch' ? e2e : e2e.skip;
+  indexer?.enabled && indexer.provider?.type === 'elasticsearch'
+    ? e2e.serial
+    : e2e.skip;
 
 async function indexDocument(
   workspaceId: string,
@@ -21,22 +30,18 @@ async function indexDocument(
   markdown: string
 ) {
   await app.create(Mockers.DocMeta, { workspaceId, docId });
+  await addDocumentToRoot(workspaceId, docId);
   await app.create(Mockers.DocSnapshot, {
     workspaceId,
     docId,
     user,
     blob: createDocWithMarkdown(docId, markdown, docId),
   });
-  const runtime = app.get(BackendRuntimeProvider);
-  for (let attempt = 0; attempt < 50; attempt++) {
-    await runtime.reconcileSearchProjection(1000);
-    if ((await runtime.searchStatus()).ready) return;
-  }
-  throw new Error('search projection did not become ready');
+  await reconcileSearchProjection();
 }
 
 remoteE2e(
-  'exposes remote aggregation through the GraphQL contract',
+  'aggregates remote documents and removes workspace projections after deletion',
   async t => {
     const owner = await app.signup();
     const workspace = await app.create(Mockers.Workspace, {
@@ -79,5 +84,50 @@ remoteE2e(
     t.is(result.workspace.aggregate.buckets.length, 2);
     t.is(result.workspace.aggregate.pagination.count, 2);
     t.true(result.workspace.aggregate.pagination.hasMore);
+
+    const [generation] = await app.get(PrismaClient).$queryRaw<
+      { manifest: Record<string, string> }[]
+    >`SELECT manifest FROM search_projection.generations WHERE state = 'active'`;
+    const provider = indexer!.provider!;
+    const countWorkspaceRows = async () => {
+      return await Promise.all(
+        ['doc', 'block'].map(async table => {
+          const response = await fetch(
+            new URL(
+              `${generation.manifest[table]}/_count`,
+              `${provider.endpoint}/`
+            ),
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(provider.apiKey
+                  ? { Authorization: `ApiKey ${provider.apiKey}` }
+                  : provider.username
+                    ? {
+                        Authorization: `Basic ${Buffer.from(
+                          `${provider.username}:${provider.password}`
+                        ).toString('base64')}`,
+                      }
+                    : {}),
+              },
+              body: JSON.stringify({
+                query: { term: { workspace_id: workspace.id } },
+              }),
+            }
+          );
+          t.is(response.status, 200);
+          const body = (await response.json()) as { count: number };
+          return body.count;
+        })
+      );
+    };
+    t.true((await countWorkspaceRows()).every(count => count > 0));
+    await app.gql({
+      query: deleteWorkspaceMutation,
+      variables: { id: workspace.id },
+    });
+    await reconcileSearchProjection();
+    t.deepEqual(await countWorkspaceRows(), [0, 0]);
   }
 );

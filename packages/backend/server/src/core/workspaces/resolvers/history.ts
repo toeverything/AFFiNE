@@ -11,10 +11,11 @@ import {
 } from '@nestjs/graphql';
 import type { SnapshotHistory } from '@prisma/client';
 
+import { canonicalizeDocumentIdentity } from '../../../native';
 import { CurrentUser } from '../../auth';
-import { PgWorkspaceDocStorageAdapter } from '../../doc';
+import { BackendRuntimeProvider } from '../../backend-runtime';
+import { DocReader, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { PermissionAccess } from '../../permission';
-import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
 import { EditorType } from './doc';
 
@@ -37,7 +38,9 @@ class DocHistoryType implements Partial<SnapshotHistory> {
 export class DocHistoryResolver {
   constructor(
     private readonly workspace: PgWorkspaceDocStorageAdapter,
-    private readonly ac: PermissionAccess
+    private readonly ac: PermissionAccess,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly docReader: DocReader
   ) {}
 
   @ResolveField(() => [DocHistoryType])
@@ -50,20 +53,24 @@ export class DocHistoryResolver {
     @Args({ name: 'take', type: () => Int, nullable: true })
     take?: number
   ): Promise<DocHistoryType[]> {
-    const docId = new DocID(guid, workspace.id);
+    const identity = canonicalizeDocumentIdentity(guid, workspace.id);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(workspace.id, identity.docId),
+      workspace.id
+    );
 
-    await this.ac.user(user.id).doc(docId).assert('Doc.Read');
+    await this.ac.user(user.id).doc(docId).assert('Doc.History.Read');
 
     const histories = await this.workspace.listDocHistories(
       workspace.id,
-      docId.guid,
+      docId.docId,
       { before: timestamp.getTime(), limit: take }
     );
 
     return histories.map(history => {
       return {
         workspaceId: workspace.id,
-        id: docId.guid,
+        id: docId.docId,
         timestamp: new Date(history.timestamp),
         editor: history.editor,
       };
@@ -75,18 +82,22 @@ export class DocHistoryResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('guid') guid: string,
-    @Args({ name: 'timestamp', type: () => GraphQLISODateTime }) timestamp: Date
+    @Args({ name: 'timestamp', type: () => GraphQLISODateTime })
+    timestamp: Date
   ): Promise<Date> {
-    const docId = new DocID(guid, workspaceId);
-
-    await this.ac.user(user.id).doc(docId).assert('Doc.Update');
-
-    await this.workspace.rollbackDoc(
-      docId.workspace,
-      docId.guid,
-      timestamp.getTime(),
-      user.id
+    const identity = canonicalizeDocumentIdentity(guid, workspaceId);
+    const docId = canonicalizeDocumentIdentity(
+      await this.docReader.resolveStorageDocId(workspaceId, identity.docId),
+      workspaceId
     );
+
+    await this.runtime.executeDomainCommandV1({
+      command: 'recover_doc',
+      actorUserId: user.id,
+      workspaceId: docId.workspaceId,
+      docId: docId.docId,
+      timestamp: timestamp.toISOString(),
+    });
 
     return timestamp;
   }

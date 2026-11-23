@@ -237,7 +237,7 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
       refs.map(async ref => {
         const doc = this.docsService.list.doc$(ref.id).value;
         if (doc) {
-          doc.moveToTrash();
+          await doc.moveToTrash();
         }
         return this.integrationRefStore.deleteRef(ref.id);
       })

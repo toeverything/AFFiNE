@@ -10,6 +10,7 @@ import {
 } from 'socket.io-client';
 
 import { AutoReconnectConnection } from '../../connection';
+import type { WorkspaceState } from '../../storage';
 import type { TelemetryAck, TelemetryBatch } from '../../telemetry/types';
 import { throwIfAborted } from '../../utils/throw-if-aborted';
 
@@ -40,7 +41,8 @@ interface ServerEvents {
   'space:broadcast-doc-invalidation': {
     spaceType: string;
     spaceId: string;
-    timestamp: number;
+    timestamp?: number;
+    inventoryChanged?: boolean;
   };
 
   'space:collect-awareness': {
@@ -59,13 +61,7 @@ interface ServerEvents {
   'realtime:event': RealtimeEvent;
 }
 
-export type SyncProtocol = 'legacy' | 'batch';
-
 interface ClientEvents {
-  'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string; success: boolean },
-  ];
   'space:join-batch': [
     {
       spaces: Array<{
@@ -74,30 +70,15 @@ interface ClientEvents {
         docId?: string;
       }>;
       clientVersion: string;
+      protocolVersion: 1 | 2;
     },
-    { clientId: string; success: boolean },
+    { clientId: string; success: boolean; protocolVersion: 1 | 2 },
   ];
   'space:leave-batch': {
     spaceType: string;
     spaceId: string;
     docIds: string[];
   };
-  'space:leave': { spaceType: string; spaceId: string };
-  'space:join-awareness': [
-    {
-      spaceType: string;
-      spaceId: string;
-      docId: string;
-      clientVersion: string;
-    },
-    { clientId: string; success: boolean },
-  ];
-  'space:leave-awareness': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-  };
-
   'space:update-awareness': {
     spaceType: string;
     spaceId: string;
@@ -112,8 +93,18 @@ interface ClientEvents {
   };
 
   'space:push-doc-update': [
-    { spaceType: string; spaceId: string; docId: string; update: string },
-    { timestamp: number },
+    {
+      spaceType: string;
+      spaceId: string;
+      docId: string;
+      update: string;
+      intent: 'create' | 'update';
+    },
+    { accepted: true; timestamp: number; created: boolean },
+  ];
+  'space:load-workspace-state': [
+    { spaceType: string; spaceId: string },
+    WorkspaceState,
   ];
   'space:load-doc-timestamps': [
     {
@@ -140,6 +131,16 @@ interface ClientEvents {
     { spaceType: string; spaceId: string; docId: string },
     { success?: true },
   ];
+  'space:doc-lifecycle': [
+    {
+      spaceType: string;
+      spaceId: string;
+      docId: string;
+      lifecycle: 'trash' | 'restore' | 'delete';
+      physicalDocId?: string;
+    },
+    { timestamp: number; deletedDocIds?: string[] },
+  ];
 
   'telemetry:batch': [TelemetryBatch, TelemetryAck];
 
@@ -149,6 +150,7 @@ interface ClientEvents {
 }
 
 export const SPACE_JOIN_BATCH_LIMIT = 100;
+export const WORKSPACE_SYNC_PROTOCOL_VERSION: 1 | 2 = 1;
 
 export type ServerEventsMap = {
   [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;

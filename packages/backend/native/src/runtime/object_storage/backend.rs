@@ -1,16 +1,16 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use sqlx::{PgPool, Row};
 
 use super::{config::ObjectStorageConfig, types::StorageProviderConfig};
-use crate::runtime::{ConfigSource, RuntimeError, RuntimeResult};
+use crate::runtime::{RuntimeError, RuntimeResult};
 
 #[derive(Clone, Debug)]
 pub(in crate::runtime) enum StorageBackendConfig {
   Fs(FsStorageConfig),
-  S3(ObjectStorageConfig),
+  S3(Box<ObjectStorageConfig>),
   Assetpack(FsStorageConfig),
 }
 
@@ -39,7 +39,9 @@ struct CopilotConfigFile {
 }
 
 impl StorageBackendConfig {
-  fn from_provider_config(storage: Option<StorageProviderConfig>) -> RuntimeResult<Option<Self>> {
+  pub(in crate::runtime) fn from_provider_config(
+    storage: Option<StorageProviderConfig>,
+  ) -> RuntimeResult<Option<Self>> {
     let Some(storage) = storage else {
       return Ok(None);
     };
@@ -60,7 +62,7 @@ impl StorageBackendConfig {
         }))
       }
       "aws-s3" | "cloudflare-r2" => ObjectStorageConfig::from_provider_config(Some(storage))
-        .map(|config| config.map(Self::S3))
+        .map(|config| config.map(|config| Self::S3(Box::new(config))))
         .map_err(Into::into),
       provider => Err(RuntimeError::config(format!(
         "unsupported object storage provider: {provider}"
@@ -124,56 +126,34 @@ impl ObjectStorageAppConfig {
 }
 
 fn default_object_storage_config() -> ObjectStorageAppConfig {
-  let storage = |bucket: &str| {
-    serde_json::json!({
-      "provider": "fs",
-      "bucket": bucket,
-      "config": { "path": "~/.affine/storage" }
-    })
-  };
-
   ObjectStorageAppConfig {
     storages: Some(HashMap::from([
-      ("blob.storage".to_string(), storage("blobs")),
-      ("avatar.storage".to_string(), storage("avatars")),
+      ("blob.storage".to_string(), default_storage_provider_config("blobs")),
+      ("avatar.storage".to_string(), default_storage_provider_config("avatars")),
     ])),
     copilot: Some(CopilotConfigFile {
-      storage: Some(StorageProviderConfig {
-        provider: "fs".to_string(),
-        bucket: "copilot".to_string(),
-        config: serde_json::json!({ "path": "~/.affine/storage" }),
-      }),
+      storage: Some(serde_json::from_value(default_storage_provider_config("copilot")).expect("storage default")),
     }),
   }
 }
 
-pub(super) fn backends_from_config_files() -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
-  backends_from_config_source(&ConfigSource::default())
+pub(in crate::runtime) fn default_storage_provider_config(bucket: &str) -> Value {
+  serde_json::json!({
+    "provider": "fs",
+    "bucket": bucket,
+    "config": { "path": "~/.affine/storage" }
+  })
 }
 
-pub(super) fn backends_from_config_source(
-  source: &ConfigSource,
-) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
-  let mut merged = default_object_storage_config();
-  for path in source.paths() {
-    if !path.exists() {
-      if source.required(&path) {
-        return Err(RuntimeError::config(format!(
-          "config file does not exist: {}",
-          path.display()
-        )));
-      }
-      continue;
-    }
-    let raw = fs::read_to_string(&path).map_err(|err| RuntimeError::io("failed to read config file", err))?;
-    let config = serde_json::from_str(&raw).map_err(|err| RuntimeError::json("failed to parse config file", err))?;
-    merged.merge(config);
-  }
-  merged.storage_backends()
-}
-
+#[cfg(test)]
 pub(super) fn backends_from_config_json(config_json: &str) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
-  let config = serde_json::from_str::<ObjectStorageAppConfig>(config_json)
+  let value =
+    serde_json::from_str(config_json).map_err(|err| RuntimeError::json("invalid object storage config", err))?;
+  backends_from_config_value(&value)
+}
+
+pub(super) fn backends_from_config_value(value: &Value) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
+  let config = serde_json::from_value::<ObjectStorageAppConfig>(value.clone())
     .map_err(|err| RuntimeError::json("invalid object storage config", err))?;
   let mut merged = default_object_storage_config();
   merged.merge(config);
@@ -181,15 +161,34 @@ pub(super) fn backends_from_config_json(config_json: &str) -> RuntimeResult<Hash
 }
 
 pub(super) async fn backends_from_db(pool: &PgPool) -> RuntimeResult<HashMap<String, StorageBackendConfig>> {
-  let rows = match sqlx::query("SELECT id, value FROM app_configs").fetch_all(pool).await {
+  let rows = match sqlx::query(
+    "SELECT id, value FROM app_configs WHERE id IN ('storages.blob.storage', 'storages.avatar.storage', \
+     'copilot.storage')",
+  )
+  .fetch_all(pool)
+  .await
+  {
     Ok(rows) => rows,
     Err(sqlx::Error::Database(err)) if err.code().as_deref() == Some("42P01") => return Ok(HashMap::new()),
     Err(err) => return Err(RuntimeError::database("failed to load app config overrides", err)),
   };
+  backends_from_flat_overrides(
+    rows
+      .into_iter()
+      .map(|row| (row.get::<String, _>("id"), row.get::<Value, _>("value"))),
+  )
+}
+
+pub(in crate::runtime) fn backends_from_flat_overrides<I, S>(
+  rows: I,
+) -> RuntimeResult<HashMap<String, StorageBackendConfig>>
+where
+  I: IntoIterator<Item = (S, Value)>,
+  S: AsRef<str>,
+{
   let mut root = Map::new();
-  for row in rows {
-    let path: String = row.get("id");
-    let value: Value = row.get("value");
+  for (path, value) in rows {
+    let path = path.as_ref();
     let Some((module, key)) = path.split_once('.') else {
       continue;
     };

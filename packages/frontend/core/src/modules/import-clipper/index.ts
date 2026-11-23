@@ -9,7 +9,6 @@ export {
   type ShareDestinationOptions,
   type ShareImportInput,
   type ShareImportResult,
-  type ShareLinkPreview,
 } from './services/import';
 
 export function configureImportClipperModule(framework: Framework) {

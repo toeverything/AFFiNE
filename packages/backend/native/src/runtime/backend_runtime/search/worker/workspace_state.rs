@@ -92,6 +92,7 @@ pub(super) async fn claim_workspace(
                 SELECT 1 FROM search_projection.document_states document
                 WHERE document.generation_id=state.generation_id
                   AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND document.available_at <= now()
                   AND (document.target_source_version <> document.published_source_version
                     OR document.target_source_exists <> document.published_source_exists
@@ -99,10 +100,12 @@ pub(super) async fn claim_workspace(
               ) AS has_due_publications
        FROM search_projection.workspace_states state
        WHERE generation_id=$1 AND workspace_id=$2
+         AND state.last_error IS DISTINCT FROM 'search_workspace_reconcile_failed'
          AND (available_at <= now() OR EXISTS(
            SELECT 1 FROM search_projection.document_states document
            WHERE document.generation_id=state.generation_id
              AND document.workspace_id=state.workspace_id
+             AND document.last_error IS NULL
              AND document.available_at <= now()
              AND (document.target_source_version <> document.published_source_version
                OR document.target_source_exists <> document.published_source_exists
@@ -295,9 +298,10 @@ pub(super) async fn complete_workspace(
            applied_permission_version=CASE
              WHEN state.required_permission_version <= $4
               AND NOT EXISTS (
-                SELECT 1 FROM search_projection.document_states document
-                WHERE document.generation_id=state.generation_id
+             SELECT 1 FROM search_projection.document_states document
+             WHERE document.generation_id=state.generation_id
                   AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND document.target_permission_version <> document.published_permission_version
               )
              THEN GREATEST(state.applied_permission_version,state.required_permission_version)
@@ -308,6 +312,7 @@ pub(super) async fn complete_workspace(
              WHEN EXISTS (
                SELECT 1 FROM search_projection.document_states document
                WHERE document.generation_id=state.generation_id AND document.workspace_id=state.workspace_id
+                 AND document.last_error IS NULL
                  AND (document.target_source_version <> document.published_source_version
                    OR document.target_source_exists <> document.published_source_exists
                    OR document.target_permission_version <> document.published_permission_version)
@@ -320,6 +325,7 @@ pub(super) async fn complete_workspace(
               AND NOT EXISTS (
                 SELECT 1 FROM search_projection.document_states document
                 WHERE document.generation_id=state.generation_id AND document.workspace_id=state.workspace_id
+                  AND document.last_error IS NULL
                   AND (document.target_source_version <> document.published_source_version
                     OR document.target_source_exists <> document.published_source_exists
                     OR document.target_permission_version <> document.published_permission_version)
@@ -443,6 +449,15 @@ mod tests {
       return;
     };
     let pool = PgPool::connect(&database_url).await.unwrap();
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle_activation','global','active') ON CONFLICT(kind,scope) DO UPDATE SET \
+       status='active'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    crate::runtime::migrations::migrate_runtime_tables(&pool).await.unwrap();
     migrate_search_tables(&pool).await.unwrap();
     let generation_id = Uuid::new_v4();
     let workspace_id = format!("claim-workspace-{}", Uuid::new_v4().simple());
@@ -468,8 +483,8 @@ mod tests {
     .unwrap();
     sqlx::query(
       r#"INSERT INTO search_projection.generations(
-           id,provider,state,config_hash,schema_version,scan_high_water_sid,scan_cursor_sid
-         ) VALUES($1,'embedded','building',$2,1,0,0)"#,
+           id,provider,state,config_hash,schema_version,manifest,scan_high_water_sid,scan_cursor_sid
+         ) VALUES($1,'embedded','building',$2,1,'{"doc":"doc","block":"block"}',0,0)"#,
     )
     .bind(generation_id)
     .bind(config_hash(&config))
@@ -572,7 +587,7 @@ mod tests {
       )
     );
 
-    let runtime = SearchRuntime::new(pool.clone(), config).unwrap();
+    let runtime = SearchRuntime::new(pool.clone(), config, crate::runtime::Deployment::Cloud).unwrap();
     runtime.embedded.prepare_generation(generation_id).await;
     assert_eq!(runtime.reconcile_pending(1).await.unwrap(), 0);
     assert_eq!(
@@ -585,6 +600,78 @@ mod tests {
     );
     assert_eq!(runtime.status().await.unwrap()["metrics"]["pendingPublications"], 0);
 
+    let pending_workspace = format!("!a-unmigrated-{generation_id}");
+    let ready_workspace = format!("!b-migrated-{generation_id}");
+    for id in [&pending_workspace, &ready_workspace] {
+      sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      sqlx::query("INSERT INTO search_projection.workspace_states(generation_id,workspace_id) VALUES($1,$2)")
+        .bind(generation_id)
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    sqlx::query(
+      "INSERT INTO storage_reconciliation_checkpoints(kind,scope,status) \
+       VALUES('workspace_doc_lifecycle',$1,'completed')",
+    )
+    .bind(&ready_workspace)
+    .execute(&pool)
+    .await
+    .unwrap();
+    for _ in 0..4 {
+      assert_eq!(runtime.reconcile_pending(1).await.unwrap(), 1);
+    }
+    let coverage: Vec<(String, bool)> = sqlx::query_as(
+      "SELECT workspace_id,covered FROM search_projection.workspace_states WHERE generation_id=$1 AND \
+       workspace_id=ANY($2) ORDER BY workspace_id",
+    )
+    .bind(generation_id)
+    .bind([pending_workspace.clone(), ready_workspace.clone()])
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+      coverage,
+      vec![(pending_workspace.clone(), false), (ready_workspace.clone(), true)]
+    );
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    for _ in 0..4 {
+      runtime.reconcile_pending(1).await.unwrap();
+    }
+    assert!(
+      sqlx::query_scalar::<_, bool>(
+        "SELECT covered FROM search_projection.workspace_states WHERE generation_id=$1 AND workspace_id=$2"
+      )
+      .bind(generation_id)
+      .bind(&pending_workspace)
+      .fetch_one(&pool)
+      .await
+      .unwrap()
+    );
+    for id in [&pending_workspace, &ready_workspace] {
+      sqlx::query("DELETE FROM storage_reconciliation_checkpoints WHERE scope=$1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+      sqlx::query("DELETE FROM workspaces WHERE id=$1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
     sqlx::query("DELETE FROM search_projection.generations WHERE id=$1")
       .bind(generation_id)
       .execute(&pool)
@@ -595,5 +682,12 @@ mod tests {
       .execute(&pool)
       .await
       .unwrap();
+    sqlx::query(
+      "DELETE FROM storage_reconciliation_checkpoints WHERE kind='workspace_doc_lifecycle_activation' AND \
+       scope='global'",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
   }
 }

@@ -509,6 +509,12 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId }) =>
       `You do not have permission to access Space ${spaceId}.`,
   },
+  sync_permission_generation_changed: {
+    type: 'service_unavailable',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) =>
+      `Permissions for Space ${spaceId} changed during synchronization.`,
+  },
   space_owner_not_found: {
     type: 'internal_server_error',
     args: { spaceId: 'string' },
@@ -538,6 +544,22 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string', docId: 'string', action: 'string' },
     message: ({ docId, action }) =>
       `You do not have permission to perform ${action} action on doc ${docId}.`,
+  },
+  doc_update_invalid: {
+    type: 'invalid_input',
+    message: 'The document update is invalid.',
+  },
+  doc_update_too_large: {
+    type: 'invalid_input',
+    message: 'The document update exceeds the size limit.',
+  },
+  workspace_sync_unavailable: {
+    type: 'service_unavailable',
+    message: 'Workspace synchronization is temporarily unavailable.',
+  },
+  doc_validation_unavailable: {
+    type: 'service_unavailable',
+    message: 'Document validation is temporarily unavailable.',
   },
   doc_update_blocked: {
     type: 'action_forbidden',
@@ -649,6 +671,15 @@ export const USER_FRIENDLY_ERRORS = {
   failed_to_checkout: {
     type: 'internal_server_error',
     message: 'Failed to create checkout session.',
+  },
+  purchase_in_progress: {
+    type: 'action_forbidden',
+    message: 'A purchase for this plan is still in progress.',
+  },
+  purchase_needs_verification: {
+    type: 'action_forbidden',
+    message:
+      'This plan has a purchase that needs verification. Review your subscriptions before trying again.',
   },
   invalid_checkout_parameters: {
     type: 'invalid_input',

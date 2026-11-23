@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 
 import { DocStorageModule, DocStorageWorkerModule } from '../doc';
-import { DocJobConsumer, DocJobScheduler } from './job';
+import { DocJobRunner } from './job';
 
 @Module({
   imports: [DocStorageModule, DocStorageWorkerModule],
-  providers: [DocJobConsumer, DocJobScheduler],
+  providers: [DocJobRunner],
 })
 export class DocJobsModule {}

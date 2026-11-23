@@ -107,8 +107,8 @@ export const PageHeaderMenuButton = () => {
       confirmButtonOptions: {
         variant: 'error',
       },
-      onConfirm() {
-        doc.moveToTrash();
+      async onConfirm() {
+        await doc.moveToTrash();
         track.$.navigationPanel.docs.deleteDoc({
           control: 'button',
         });

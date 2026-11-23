@@ -144,8 +144,8 @@ export class ChatPanelUtils {
     expect(history).toHaveLength(expected.length);
     const assistantStage = {
       loading: 1,
-      transmitting: 1,
-      success: 2,
+      transmitting: 2,
+      success: 3,
     } as const;
 
     history.forEach((message, index) => {

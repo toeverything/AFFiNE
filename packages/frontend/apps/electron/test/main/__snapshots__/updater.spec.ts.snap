@@ -16,6 +16,15 @@ exports[`testing for client update > filter valid installer files > filter for p
 ]
 `;
 
+exports[`testing for client update > filter valid installer files > filter for platform [linux] arch [arm64] 1`] = `
+[
+  "affine-0.18.0-stable-linux-arm64.appimage",
+  "affine-0.18.0-stable-linux-arm64.deb",
+  "affine-0.18.0-stable-linux-arm64.flatpak",
+  "affine-0.18.0-stable-linux-arm64.zip",
+]
+`;
+
 exports[`testing for client update > filter valid installer files > filter for platform [linux] arch [x64] 1`] = `
 [
   "affine-0.18.0-stable-linux-x64.appimage",

@@ -4,6 +4,7 @@ import { i18nTime, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
+import { ManageSubscriptionButton } from '../../billing/manage-subscription';
 import { AICancel, AILogin, AIResume, AISubscribe } from './actions';
 import * as styles from './ai-plan.css';
 import { AIPlanLayout } from './layout';
@@ -52,7 +53,13 @@ export const AIPlan = () => {
       actionButtons={
         isLoggedIn ? (
           subscription ? (
-            subscription.canceledAt ? (
+            subscription.provider !== 'stripe' ? (
+              <ManageSubscriptionButton
+                source={subscription}
+                inCardView
+                className={styles.purchaseButton}
+              />
+            ) : subscription.canceledAt ? (
               <AIResume className={styles.purchaseButton} />
             ) : (
               <AICancel className={styles.purchaseButton} />

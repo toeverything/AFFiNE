@@ -19,7 +19,8 @@ export class MockTeamWorkspace extends Mocker<
       data: {
         targetType: 'workspace',
         targetId: id,
-        source: 'cloud_subscription',
+        source: 'admin_grant',
+        subjectId: `admin_grant:workspace:${id}`,
         plan: 'team',
         status: 'active',
         quantity,

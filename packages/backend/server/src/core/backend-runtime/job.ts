@@ -2,41 +2,26 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import {
-  ConfigFactory,
   CopilotSelectedSourcesFailed,
   CopilotSelectedSourcesLimitExceeded,
   CopilotSelectedSourcesProcessing,
   CopilotSelectedSourcesUnavailable,
-  JobQueue,
+  DocUpdateInvalid,
   metrics,
-  OnEvent,
-  OnJob,
 } from '../../base';
 import { Models } from '../../models';
+import { type DocumentEmbeddingProjectionInput } from '../../native';
 import { projectDocSearch } from '../utils/blocksuite';
 import { BackendRuntimeProvider } from './provider';
+
+const HOUSEKEEPING_BATCH_SIZE = 1000;
+const HOUSEKEEPING_MAX_BATCHES = 100;
 
 const SELECTED_DOCUMENT_LIMIT = 64;
 const SELECTED_DOCUMENT_UNIT_LIMIT = 20_000;
 const SELECTED_DOCUMENT_TEXT_BYTE_LIMIT = 16 * 1024 * 1024;
 const SELECTED_DOCUMENT_PRIORITY = 1000;
 const SELECTED_DOCUMENT_WAIT_MS = 90_000;
-
-declare global {
-  interface Jobs {
-    'backendRuntime.cleanExpiredHousekeeping': {};
-    'backendRuntime.syncDocumentEmbedding': {
-      workspaceId: string;
-      docId: string;
-    };
-    'backendRuntime.reconcileDocumentEmbeddings': {
-      workspaceId: string;
-    };
-    'backendRuntime.reconcileSearchProjection': {
-      limit?: number;
-    };
-  }
-}
 
 @Injectable()
 export class BackendRuntimeEmbeddingService {
@@ -45,8 +30,25 @@ export class BackendRuntimeEmbeddingService {
     private readonly models: Models
   ) {}
 
-  async syncDocument(workspaceId: string, docId: string) {
-    await this.syncDocuments(workspaceId, [docId], true);
+  async syncDocument(workspaceId: string, docId: string, revision: string) {
+    try {
+      await this.syncDocuments(workspaceId, [docId]);
+    } catch (error) {
+      if (!(error instanceof DocUpdateInvalid)) throw error;
+      await this.rt.syncEmbeddingState({
+        workspaceId,
+        enabled: true,
+        documents: [
+          {
+            docId,
+            revision,
+            sourceHash: revision,
+            units: [],
+            skipReason: 'invalid_document',
+          },
+        ],
+      });
+    }
   }
 
   async prepareSelectedDocuments(workspaceId: string, docIds: string[]) {
@@ -55,7 +57,7 @@ export class BackendRuntimeEmbeddingService {
       throw new CopilotSelectedSourcesLimitExceeded();
     }
     try {
-      await this.syncDocuments(workspaceId, selectedDocIds, false, {
+      await this.syncDocuments(workspaceId, selectedDocIds, {
         priority: SELECTED_DOCUMENT_PRIORITY,
         waitForReadyMs: SELECTED_DOCUMENT_WAIT_MS,
       });
@@ -65,6 +67,8 @@ export class BackendRuntimeEmbeddingService {
   }
 
   private mapSelectedSourceError(error: unknown) {
+    if (error instanceof DocUpdateInvalid)
+      return new CopilotSelectedSourcesFailed();
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('embedding_selected_sources_processing')) {
       return new CopilotSelectedSourcesProcessing();
@@ -81,7 +85,6 @@ export class BackendRuntimeEmbeddingService {
   private async syncDocuments(
     workspaceId: string,
     docIds: string[],
-    reconcileDocuments: boolean,
     scheduling?: { priority: number; waitForReadyMs: number }
   ) {
     if (!(await this.rt.embeddingHealth()).enabled) {
@@ -93,17 +96,68 @@ export class BackendRuntimeEmbeddingService {
       if (scheduling) throw new CopilotSelectedSourcesUnavailable();
       return;
     }
-    const documents = [];
+    if (scheduling) await this.rt.ensureWorkspaceLifecycleV1(workspaceId);
+    const documents: DocumentEmbeddingProjectionInput[] = [];
     let unitCount = 0;
     let textBytes = 0;
     for (const docId of docIds) {
-      const snapshot = await this.models.doc.getSnapshot(workspaceId, docId);
+      const snapshot = await this.rt.getCurrentWorkspaceDocV1(
+        workspaceId,
+        docId
+      );
       if (!snapshot) {
         if (scheduling) throw new CopilotSelectedSourcesUnavailable();
         continue;
       }
-      const revision = snapshot.updatedAt.getTime().toString();
-      const projection = projectDocSearch(snapshot.blob, docId, revision);
+      const revision = snapshot.timestamp.toString();
+      const skipped: DocumentEmbeddingProjectionInput = {
+        docId,
+        revision,
+        sourceHash: revision,
+        units: [],
+      };
+      if (
+        !snapshot.bin.length ||
+        (snapshot.bin.length === 2 &&
+          snapshot.bin[0] === 0 &&
+          snapshot.bin[1] === 0)
+      ) {
+        if (scheduling) throw new CopilotSelectedSourcesUnavailable();
+        documents.push({ ...skipped, skipReason: 'empty_document' });
+        continue;
+      }
+      let projection;
+      try {
+        projection = projectDocSearch(snapshot.bin, docId, revision);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+          scheduling ||
+          !['invalid_binary', 'parser_error: blocks map not found'].includes(
+            message
+          )
+        )
+          throw error;
+        documents.push({
+          ...skipped,
+          skipReason:
+            message === 'invalid_binary'
+              ? 'invalid_document'
+              : 'document_blocks_missing',
+        });
+        continue;
+      }
+      if (
+        projection.units.some(unit =>
+          Object.values(unit).some(
+            value => typeof value === 'string' && value.includes('\0')
+          )
+        )
+      ) {
+        if (scheduling) throw new CopilotSelectedSourcesFailed();
+        documents.push({ ...skipped, skipReason: 'document_contains_nul' });
+        continue;
+      }
       unitCount += projection.units.length;
       for (const unit of projection.units) {
         textBytes += Buffer.byteLength(unit.text);
@@ -112,7 +166,12 @@ export class BackendRuntimeEmbeddingService {
         unitCount > SELECTED_DOCUMENT_UNIT_LIMIT ||
         textBytes > SELECTED_DOCUMENT_TEXT_BYTE_LIMIT
       ) {
-        throw new CopilotSelectedSourcesLimitExceeded();
+        if (scheduling) throw new CopilotSelectedSourcesLimitExceeded();
+        documents.push({
+          ...skipped,
+          skipReason: 'document_projection_too_large',
+        });
+        continue;
       }
       documents.push({
         docId,
@@ -128,84 +187,13 @@ export class BackendRuntimeEmbeddingService {
         })),
       });
     }
-    if (!documents.length && !reconcileDocuments) return;
+    if (!documents.length) return;
     await this.rt.syncEmbeddingState({
       workspaceId,
       enabled,
-      reconcileDocuments,
       documents,
       ...scheduling,
     });
-  }
-
-  async reconcileDocuments(workspaceId: string) {
-    if (!(await this.rt.embeddingHealth()).enabled) return;
-    await this.rt.syncEmbeddingState({
-      workspaceId,
-      enabled: await this.models.workspace.allowEmbedding(workspaceId),
-      reconcileDocuments: true,
-    });
-  }
-}
-
-@Injectable()
-export class BackendRuntimeEmbeddingProducer {
-  constructor(private readonly queue: JobQueue) {}
-
-  @OnEvent('doc.updated')
-  async onDocUpdated({ workspaceId, docId }: Events['doc.updated']) {
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  @OnEvent('doc.snapshot.updated')
-  async onDocSnapshotUpdated({
-    workspaceId,
-    docId,
-  }: Events['doc.snapshot.updated']) {
-    if (workspaceId === docId) {
-      await this.queue.add(
-        'backendRuntime.reconcileDocumentEmbeddings',
-        { workspaceId },
-        { jobId: `reconcileDocumentEmbeddings/${workspaceId}` }
-      );
-      return;
-    }
-    await this.queueDocument(workspaceId, docId);
-  }
-
-  private async queueDocument(workspaceId: string, docId: string) {
-    if (
-      workspaceId === docId ||
-      docId.startsWith('db$') ||
-      docId.startsWith('userdata$')
-    ) {
-      return;
-    }
-    await this.queue.add(
-      'backendRuntime.syncDocumentEmbedding',
-      { workspaceId, docId },
-      { jobId: `syncDocumentEmbedding/${workspaceId}/${docId}` }
-    );
-  }
-}
-
-@Injectable()
-export class BackendRuntimeEmbeddingJob {
-  constructor(private readonly service: BackendRuntimeEmbeddingService) {}
-
-  @OnJob('backendRuntime.syncDocumentEmbedding')
-  async syncDocument({
-    workspaceId,
-    docId,
-  }: Jobs['backendRuntime.syncDocumentEmbedding']) {
-    await this.service.syncDocument(workspaceId, docId);
-  }
-
-  @OnJob('backendRuntime.reconcileDocumentEmbeddings')
-  async reconcileDocuments({
-    workspaceId,
-  }: Jobs['backendRuntime.reconcileDocumentEmbeddings']) {
-    await this.service.reconcileDocuments(workspaceId);
   }
 }
 
@@ -213,49 +201,34 @@ export class BackendRuntimeEmbeddingJob {
 export class BackendRuntimeHousekeepingJob {
   private readonly logger = new Logger(BackendRuntimeHousekeepingJob.name);
 
-  constructor(
-    private readonly rt: BackendRuntimeProvider,
-    private readonly queue: JobQueue
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async nightlyJob() {
-    await this.queue.add(
-      'backendRuntime.cleanExpiredHousekeeping',
-      {},
-      {
-        jobId: 'nightly-backend-runtime-housekeeping',
-      }
-    );
-  }
-
-  @OnJob('backendRuntime.cleanExpiredHousekeeping')
   async cleanExpiredRuntimeHousekeeping() {
     const states = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRuntimeStates(1000)
+      this.rt.cleanupExpiredRuntimeStates(HOUSEKEEPING_BATCH_SIZE)
     );
     const gates = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRuntimeGates(1000)
+      this.rt.cleanupExpiredRuntimeGates(HOUSEKEEPING_BATCH_SIZE)
     );
     const rollingQuota = await this.cleanBatches(() =>
-      this.rt.cleanupExpiredRollingQuota(1000)
+      this.rt.cleanupExpiredRollingQuota(HOUSEKEEPING_BATCH_SIZE)
     );
     const artifacts = await this.cleanBatches(() =>
-      this.rt.cleanupUnreferencedArtifacts(1000)
+      this.rt.cleanupUnreferencedArtifacts(HOUSEKEEPING_BATCH_SIZE)
     );
-    const embeddingWorkspaces = await this.rt.reconcileEmbeddingWorkspaces();
 
     this.logger.log(
-      `cleaned runtime housekeeping states=${states} gates=${gates} rollingQuota=${rollingQuota} artifacts=${artifacts} embeddingWorkspaces=${embeddingWorkspaces}`
+      `cleaned runtime housekeeping states=${states} gates=${gates} rollingQuota=${rollingQuota} artifacts=${artifacts}`
     );
   }
 
   private async cleanBatches(fn: () => Promise<number>) {
     let total = 0;
-    for (;;) {
+    for (let batch = 0; batch < HOUSEKEEPING_MAX_BATCHES; batch++) {
       const count = Number(await fn());
       total += count;
-      if (count < 1000) {
+      if (count < HOUSEKEEPING_BATCH_SIZE) {
         break;
       }
     }
@@ -265,31 +238,11 @@ export class BackendRuntimeHousekeepingJob {
 
 @Injectable()
 export class BackendRuntimeSearchJob {
-  constructor(
-    private readonly rt: BackendRuntimeProvider,
-    private readonly queue: JobQueue,
-    private readonly config: ConfigFactory
-  ) {}
+  constructor(private readonly rt: BackendRuntimeProvider) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  async scheduleReconciliation() {
-    if (!this.config.config.indexer.enabled) return;
-    await this.queue.add(
-      'backendRuntime.reconcileSearchProjection',
-      { limit: 100 },
-      {
-        jobId: 'backend-runtime-search-reconciliation',
-        attempts: 1,
-        removeOnFail: true,
-      }
-    );
-  }
-
-  @OnJob('backendRuntime.reconcileSearchProjection')
-  async reconcileProjection({
-    limit = 100,
-  }: Jobs['backendRuntime.reconcileSearchProjection']) {
-    if (!this.config.config.indexer.enabled) return 0;
+  @Cron(CronExpression.EVERY_30_SECONDS, { waitForCompletion: true })
+  async reconcileProjection(limit = 100) {
+    if (!this.rt.searchEnabled()) return 0;
     const startedAt = performance.now();
     try {
       const reconciled = await this.rt.reconcileSearchProjection(limit);

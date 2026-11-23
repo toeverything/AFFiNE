@@ -9,6 +9,8 @@ const SUBMISSION_TTL = 24 * 60 * 60 * 1000;
 
 type StoredCompatSubmission = {
   id: string;
+  userId: string;
+  workspaceId: string;
   sessionId: string;
   content?: string;
   attachments?: PromptMessage['attachments'];
@@ -17,6 +19,7 @@ type StoredCompatSubmission = {
 };
 
 type StoredAcceptedSubmission = {
+  userId: string;
   sessionId: string;
   turnId: string;
   acceptedAt: string;
@@ -37,12 +40,12 @@ export type AcceptedCompatSubmission = Omit<
 export class CompatSubmissionStore {
   constructor(private readonly cache: Cache) {}
 
-  private submissionKey(token: string) {
-    return `copilot:submission:${token}`;
+  private submissionKey(userId: string, token: string) {
+    return `copilot:submission:${userId}:${token}`;
   }
 
-  private acceptedKey(token: string) {
-    return `copilot:submission:${token}:accepted`;
+  private acceptedKey(userId: string, token: string) {
+    return `copilot:submission:${userId}:${token}:accepted`;
   }
 
   private fromStoredSubmission(
@@ -81,38 +84,48 @@ export class CompatSubmissionStore {
       createdAt: new Date().toISOString(),
     };
 
-    await this.cache.set(this.submissionKey(token), stored, {
+    await this.cache.set(this.submissionKey(submission.userId, token), stored, {
       ttl: SUBMISSION_TTL,
     });
     return token;
   }
 
-  async get(token: string): Promise<CompatSubmission | undefined> {
+  async get(
+    token: string,
+    userId: string
+  ): Promise<CompatSubmission | undefined> {
     return this.fromStoredSubmission(
-      await this.cache.get<StoredCompatSubmission>(this.submissionKey(token))
+      await this.cache.get<StoredCompatSubmission>(
+        this.submissionKey(userId, token)
+      )
     );
   }
 
   async markAccepted(
     token: string,
+    userId: string,
     accepted: { sessionId: string; turnId: string }
   ) {
     await this.cache.set<StoredAcceptedSubmission>(
-      this.acceptedKey(token),
+      this.acceptedKey(userId, token),
       {
         ...accepted,
+        userId,
         acceptedAt: new Date().toISOString(),
       },
       { ttl: SUBMISSION_TTL }
     );
-    await this.cache.delete(this.submissionKey(token));
+    await this.cache.delete(this.submissionKey(userId, token));
   }
 
   async getAccepted(
-    token: string
+    token: string,
+    userId: string
   ): Promise<AcceptedCompatSubmission | undefined> {
     return this.fromStoredAccepted(
-      await this.cache.get<StoredAcceptedSubmission>(this.acceptedKey(token))
+      await this.cache.get<StoredAcceptedSubmission>(
+        this.acceptedKey(userId, token)
+      )
     );
   }
 }

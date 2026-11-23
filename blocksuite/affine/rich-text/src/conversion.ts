@@ -13,7 +13,7 @@ import {
   QuoteIcon,
   TextIcon,
 } from '@blocksuite/affine-components/icons';
-import { TeXIcon } from '@blocksuite/icons/lit';
+import { FontIcon, TeXIcon } from '@blocksuite/icons/lit';
 import type { TemplateResult } from 'lit';
 
 /**
@@ -136,6 +136,13 @@ export const textConversionConfigs: TextConversionConfig[] = [
     description: 'Add a blockquote for emphasis.',
     hotkey: null,
     icon: QuoteIcon,
+  },
+  {
+    flavour: 'affine:callout',
+    type: undefined,
+    name: 'Callout',
+    hotkey: null,
+    icon: FontIcon(),
   },
   {
     flavour: 'affine:divider',

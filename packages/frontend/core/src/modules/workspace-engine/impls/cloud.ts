@@ -8,6 +8,7 @@ import {
   ServerFeature,
 } from '@affine/graphql';
 import type {
+  BlobSource,
   BlobStorage,
   DocStorage,
   ListedBlobRecord,
@@ -66,7 +67,11 @@ import {
   GraphQLService,
   WorkspaceServerService,
 } from '../../cloud';
-import { getSyncProtocol } from '../../cloud/stores/server-config';
+import { assertSupportedServerVersion } from '../../cloud/stores/server-config';
+import {
+  AFFiNE_WORKSPACE_DB_SCHEMA,
+  AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA,
+} from '../../db/schema';
 import { type GlobalState, NbstoreService } from '../../storage';
 import type {
   Workspace,
@@ -76,6 +81,7 @@ import type {
   WorkspaceProfileInfo,
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
+import { WorkspaceRepositoryService } from '../../workspace/services/repo';
 import { getWorkspaceProfileWorker } from './out-worker';
 
 const getCloudWorkspaceCacheKey = (serverId: string) => {
@@ -103,6 +109,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
+        this.server.scope
+          .get(WorkspaceRepositoryService)
+          .closeFlavour(this.flavour);
         this.revalidate();
       }
     );
@@ -182,6 +191,11 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       id: workspaceId,
       flavour: this.flavour,
       type: 'workspace',
+      creationPeer: JSON.stringify([
+        this.server.serverMetadata.baseUrl,
+        workspaceId,
+        this.authService.session.account$.value?.id ?? '',
+      ]),
     });
     docStorage.connection.connect();
     await docStorage.connection.waitForConnected();
@@ -229,9 +243,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         await docStorage.pushDocUpdate({
           docId: subdocs.guid,
           bin: encodeStateAsUpdate(subdocs),
+          intent: subdocs.guid === workspaceId ? 'update' : 'create',
         });
       }
 
+      for (const docId of docCollection.docs.keys()) {
+        if (!(await docStorage.getDoc(docId))) {
+          await docStorage.pushDocUpdate({
+            docId,
+            bin: new Uint8Array([0, 0]),
+            intent: 'create',
+          });
+        }
+      }
       const accountId = this.authService.session.account$.value?.id;
       await this.writeInitialDocProperties(
         workspaceId,
@@ -381,7 +405,15 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     };
   }
 
-  async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
+  async getWorkspaceBlob(
+    id: string,
+    blob: string,
+    source: BlobSource = {
+      type: 'currentDoc',
+      workspaceId: id,
+      docId: id,
+    }
+  ): Promise<Blob | null> {
     const storage = new this.BlobStorageType({
       id: id,
       flavour: this.flavour,
@@ -389,9 +421,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     });
     storage.connection.connect();
     await storage.connection.waitForConnected();
-    const localBlob = await storage.get(blob);
-
-    storage.connection.disconnect();
+    const localBlob = await storage
+      .get(blob)
+      .finally(() => storage.connection.disconnect());
 
     if (localBlob) {
       return new Blob([toArrayBuffer(localBlob.data)], {
@@ -399,25 +431,62 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       });
     }
 
-    const cloudBlob = await new CloudBlobStorage({
-      id,
-      serverBaseUrl: this.server.serverMetadata.baseUrl,
-    }).get(blob);
-    if (!cloudBlob) {
-      return null;
+    const sourceSession = this.openWorkspaceBlobSource(id, source);
+    try {
+      return await sourceSession.get(blob);
+    } finally {
+      await sourceSession.close();
     }
-    return new Blob([toArrayBuffer(cloudBlob.data)], { type: cloudBlob.mime });
   }
 
-  async listBlobs(id: string): Promise<ListedBlobRecord[]> {
+  openWorkspaceBlobSource(id: string, source: BlobSource) {
     const cloudStorage = new CloudBlobStorage({
       id,
       serverBaseUrl: this.server.serverMetadata.baseUrl,
     });
-    return cloudStorage.list();
+    let ready: Promise<void> | undefined;
+    let registered = false;
+    let closed = false;
+    return {
+      get: async (blob: string) => {
+        if (closed) throw new Error('Workspace blob source is closed');
+        if (!ready) {
+          registered = true;
+          const registration = cloudStorage.registerSource(source);
+          ready = registration;
+          try {
+            await registration;
+          } catch (error) {
+            if (ready === registration) ready = undefined;
+            throw error;
+          }
+        } else {
+          await ready;
+        }
+        const cloudBlob = await cloudStorage.get(blob, undefined, source);
+        return cloudBlob
+          ? new Blob([toArrayBuffer(cloudBlob.data)], {
+              type: cloudBlob.mime,
+            })
+          : null;
+      },
+      close: async () => {
+        if (closed) return;
+        closed = true;
+        if (registered) await cloudStorage.unregisterSource(source);
+      },
+    };
   }
 
-  async deleteBlob(
+  async listManageableBlobs(id: string): Promise<ListedBlobRecord[]> {
+    const cloudStorage = new CloudBlobStorage({
+      id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    return cloudStorage.listManageable();
+  }
+
+  async deleteManagedBlob(
     id: string,
     blob: string,
     permanent: boolean
@@ -455,6 +524,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   }
 
   getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {
+    assertSupportedServerVersion(this.server.config$.value.version);
     return {
       local: {
         doc: {
@@ -517,10 +587,19 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           doc: {
             name: 'CloudDocStorage',
             opts: {
+              accountId: this.authService.session.account$.value?.id ?? '',
+              localReservedDocIds: [
+                ...Object.keys(AFFiNE_WORKSPACE_DB_SCHEMA).map(
+                  table => `db$${table}`
+                ),
+                ...Object.keys(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA).map(
+                  table =>
+                    `userdata$${this.authService.session.account$.value?.id ?? ''}$${table}`
+                ),
+              ],
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
-              syncProtocol: getSyncProtocol(this.server.config$.value.version),
               isSelfHosted:
                 this.server.config$.value.type ===
                 ServerDeploymentType.Selfhosted,
@@ -539,7 +618,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
-              syncProtocol: getSyncProtocol(this.server.config$.value.version),
               isSelfHosted:
                 this.server.config$.value.type ===
                 ServerDeploymentType.Selfhosted,

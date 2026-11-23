@@ -101,11 +101,6 @@ final class AppPaywallViewController: UIViewController {
         let completed = try await bridge.purchaseSelectedPlan()
         guard completed else { return }
 
-        guard try await hasActiveSubscription(for: plan) else {
-          bridge.errorMessage = String(localized: "Your purchase is still being processed. Please try again in a moment.")
-          return
-        }
-
         dismiss(animated: true) { [weak self] in
           self?.onPurchaseCompleted?()
         }
@@ -122,12 +117,7 @@ final class AppPaywallViewController: UIViewController {
     actionTask = Task { @MainActor [weak self] in
       guard let self else { return }
       do {
-        try await bridge.restorePurchases()
-
-        guard try await hasActiveSubscription(for: initialPlan) else {
-          bridge.errorMessage = String(localized: "No active purchases were found to restore.")
-          return
-        }
+        guard try await bridge.restorePurchases() else { return }
 
         dismiss(animated: true) { [weak self] in
           self?.onPurchaseCompleted?()
@@ -137,23 +127,6 @@ final class AppPaywallViewController: UIViewController {
       } catch {
         bridge.errorMessage = error.localizedDescription
       }
-    }
-  }
-
-  private func hasActiveSubscription(for plan: AppPaywallPlan) async throws -> Bool {
-    guard let webView = bindWebView else {
-      throw NSError(
-        domain: "AppPaywallViewController",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: String(localized: "Missing required information")]
-      )
-    }
-
-    switch plan {
-    case .ai:
-      return try await PaywallAuthGuard.hasAISubscription(in: webView)
-    case .pro, .lite:
-      return try await PaywallAuthGuard.hasProSubscription(in: webView)
     }
   }
 

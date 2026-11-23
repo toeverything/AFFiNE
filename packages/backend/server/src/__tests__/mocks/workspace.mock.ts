@@ -65,18 +65,6 @@ export class MockWorkspace extends Mocker<MockWorkspaceInput, MockedWorkspace> {
           : undefined,
       },
     });
-    await this.db.effectiveWorkspaceQuotaState.create({
-      data: {
-        workspaceId: workspace.id,
-        plan: 'free',
-        seatLimit: 0,
-        blobLimit: 0,
-        storageQuota: 0,
-        historyPeriodSeconds: 0,
-        known: true,
-      },
-    });
-
     // create a rootDoc snapshot
     if (snapshot) {
       await this.db.snapshot.create({

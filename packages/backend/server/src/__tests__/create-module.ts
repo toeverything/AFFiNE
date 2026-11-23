@@ -7,26 +7,18 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { FunctionalityModules } from '../app.module';
-import {
-  AFFiNELogger,
-  ConfigFactory,
-  EventBus,
-  JobModule,
-  JobQueue,
-} from '../base';
-import {
-  BACKEND_RUNTIME_CONFIG_PATHS,
-  BackendRuntimeProvider,
-} from '../core/backend-runtime';
+import { AFFiNELogger, EventBus } from '../base';
+import { OVERRIDE_CONFIG_TOKEN } from '../base/config/factory';
+import { getDefaultConfig } from '../base/config/register';
+import { BackendRuntimeProvider } from '../core/backend-runtime';
 import { StorageRuntimeProvider } from '../core/storage-runtime';
-import {
-  createFactory,
-  MockEventBus,
-  MockJobModule,
-  MockJobQueue,
-} from './mocks';
+import { ServerConfigHandle } from '../native';
+import { createFactory, MockEventBus } from './mocks';
 import { TEST_LOG_LEVEL } from './utils';
-import { createTestRuntimeConfig } from './utils/runtime-config';
+import {
+  applyTestConfigOverrides,
+  createTestRuntimeConfig,
+} from './utils/runtime-config';
 
 interface TestingModuleMetadata extends ModuleMetadata {
   tapModule?(m: TestingModuleBuilder): void;
@@ -35,39 +27,33 @@ interface TestingModuleMetadata extends ModuleMetadata {
 export interface TestingModule extends NestjsTestingModule {
   [Symbol.asyncDispose](): Promise<void>;
   create: ReturnType<typeof createFactory>;
-  queue: MockJobQueue;
   event: MockEventBus;
 }
 
 export async function createModule(
   metadata: TestingModuleMetadata = {}
 ): Promise<TestingModule> {
-  const config = new ConfigFactory().config;
+  const config = getDefaultConfig();
   const runtimeConfig = await createTestRuntimeConfig(
     config.db.datasourceUrl,
     config.indexer
   );
   const { tapModule, ...meta } = metadata;
-  const functionalityModules = [
-    ...FunctionalityModules.filter(module => {
-      const moduleType = 'module' in module ? module.module : module;
-      return moduleType !== JobModule;
-    }),
-    MockJobModule,
-  ];
+  const functionalityModules = [...FunctionalityModules];
 
   const builder = Test.createTestingModule({
     ...meta,
     imports: [...functionalityModules, ...(meta.imports ?? [])],
   });
 
-  builder
-    .overrideProvider(JobQueue)
-    .useValue(new MockJobQueue())
-    .overrideProvider(EventBus)
-    .useValue(new MockEventBus())
-    .overrideProvider(BACKEND_RUNTIME_CONFIG_PATHS)
-    .useValue([runtimeConfig.configPath]);
+  builder.overrideProvider(EventBus).useValue(new MockEventBus());
+  builder.overrideProvider(ServerConfigHandle).useFactory({
+    factory: (overrides?: DeepPartial<AppConfig>) => {
+      applyTestConfigOverrides(runtimeConfig.configPath, overrides);
+      return new ServerConfigHandle(runtimeConfig.configPath);
+    },
+    inject: [{ token: OVERRIDE_CONFIG_TOKEN, optional: true }],
+  });
 
   // when custom override happens
   if (tapModule) {
@@ -119,7 +105,6 @@ export async function createModule(
     await module.close();
   };
   module.create = createFactory(module.get(PrismaClient));
-  module.queue = module.get(JobQueue);
   module.event = module.get(EventBus);
 
   return module;

@@ -98,41 +98,13 @@ export const KNOWN_CONFIG_GROUPS = [
     fields: [
       {
         key: 'blob.storage',
-        desc: 'The storage provider for user uploaded blobs',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'blob.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user uploaded blobs storage',
-      },
-      {
-        key: 'blob.storage',
-        sub: 'config',
+        desc: 'Complete storage configuration for user uploaded blobs',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.storage',
-        desc: 'The storage provider for user avatars',
-        sub: 'provider',
-        type: 'Enum',
-        options: ['fs', 'aws-s3', 'cloudflare-r2'],
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'bucket',
-        type: 'String',
-        desc: 'The bucket name for user avatars storage',
-      },
-      {
-        key: 'avatar.storage',
-        sub: 'config',
+        desc: 'Complete storage configuration for user avatars',
         type: 'JSON',
-        desc: 'The S3 compatible config for the storage provider (endpoint/region/credentials).',
       },
       {
         key: 'avatar.publicPath',

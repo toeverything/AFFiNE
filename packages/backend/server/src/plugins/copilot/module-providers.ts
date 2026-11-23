@@ -1,3 +1,4 @@
+import { CopilotAccessService } from './access';
 import { ByokEntitlementPolicy, WorkspaceByokResolver } from './byok';
 import { HistoryAttachmentUrlProjector } from './compat/history-attachment-url-projector';
 import { CompatHistoryProjector } from './compat/history-projector';
@@ -40,6 +41,7 @@ import { TurnOrchestrator } from './runtime/turn-orchestrator';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
+  CopilotTranscriptionProcessor,
   CopilotTranscriptionReader,
   CopilotTranscriptionResolver,
   CopilotTranscriptionRetryService,
@@ -55,6 +57,7 @@ import {
 export const COPILOT_PROVIDER_PROVIDERS: [] = [];
 
 export const COPILOT_RUNTIME_PROVIDERS = [
+  CopilotAccessService,
   ByokEntitlementPolicy,
   ChatSessionService,
   ConversationStore,
@@ -89,6 +92,7 @@ export const COPILOT_RUNTIME_PROVIDERS = [
 ];
 
 export const COPILOT_TRANSCRIPT_REALTIME_PROVIDERS = [
+  CopilotTranscriptionProcessor,
   CopilotTranscriptionReader,
   CopilotTranscriptionRetryService,
   CopilotTranscriptRealtimeProvider,
@@ -127,7 +131,6 @@ export const COPILOT_FEATURE_PROVIDERS = [
   TurnOrchestrator,
   ...COPILOT_TRANSCRIPT_PROVIDERS,
   ...COPILOT_WORKSPACE_PROVIDERS,
-  ...COPILOT_JOB_PROVIDERS,
 ];
 
 export const COPILOT_API_PROVIDERS = [

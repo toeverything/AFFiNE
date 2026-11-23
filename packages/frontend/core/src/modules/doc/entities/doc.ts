@@ -127,6 +127,10 @@ export class Doc extends Entity {
     return this.record.restoreFromTrash();
   }
 
+  deletePermanently() {
+    return this.record.deletePermanently();
+  }
+
   waitForSyncReady() {
     return this.store.waitForDocLoadReady(this.id);
   }

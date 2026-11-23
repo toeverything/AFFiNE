@@ -10,9 +10,9 @@ import { share } from '../../../connection';
 import {
   type DocClocks,
   type DocRecord,
-  DocStorageBase,
   type DocStorageOptions,
   type DocUpdate,
+  SnapshotDocStorageBase,
 } from '../../../storage';
 import { getIdConverter } from '../../../utils/id-converter';
 import { DocIDBConnection } from './db';
@@ -27,7 +27,7 @@ const CONST_TIMESTAMP = new Date(1893456000000);
 /**
  * @deprecated readonly
  */
-export class IndexedDBV1DocStorage extends DocStorageBase {
+export class IndexedDBV1DocStorage extends SnapshotDocStorageBase {
   static readonly identifier = 'IndexedDBV1DocStorage';
 
   readonly connection = share(new DocIDBConnection());

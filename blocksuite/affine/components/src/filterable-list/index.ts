@@ -43,21 +43,29 @@ export class FilterableListComponent<Props = unknown> extends WithDisposable(
   }
 
   private _filterItems() {
-    const searchFilter = !this._filterText
+    const query = this._filterText.toLowerCase();
+    const matchRank = (item: FilterableListItem<Props>) => {
+      if (!query) return 0;
+      if (
+        item.name.toLowerCase().startsWith(query) ||
+        item.aliases?.some(alias => alias.toLowerCase().startsWith(query))
+      ) {
+        return 0;
+      }
+      return item.label?.toLowerCase().startsWith(query) ? 1 : -1;
+    };
+    const searchFilter = !query
       ? this.options.items
-      : this.options.items.filter(
-          item =>
-            item.name.startsWith(this._filterText.toLowerCase()) ||
-            item.aliases?.some(alias =>
-              alias.startsWith(this._filterText.toLowerCase())
-            )
-        );
+      : this.options.items.filter(item => matchRank(item) !== -1);
     return searchFilter.sort((a, b) => {
       const isActiveA = this.options.active?.(a);
       const isActiveB = this.options.active?.(b);
 
       if (isActiveA && !isActiveB) return -1;
       if (!isActiveA && isActiveB) return 1;
+
+      const rankDiff = matchRank(a) - matchRank(b);
+      if (rankDiff) return rankDiff;
 
       return this.listFilter?.(a, b) ?? 0;
     });

@@ -222,7 +222,7 @@ test('should clean expired notifications', async t => {
   t.truthy(notification);
   let notifications = await models.notification.findManyByUserId(user.id);
   t.is(notifications.length, 1);
-  let count = await models.notification.cleanExpiredNotifications();
+  let { count } = await models.notification.cleanExpiredNotifications();
   t.is(count, 0);
   notifications = await models.notification.findManyByUserId(user.id);
   t.is(notifications.length, 1);
@@ -234,7 +234,7 @@ test('should clean expired notifications', async t => {
     apis: ['Date'],
     now: Due.after('1y'),
   });
-  count = await models.notification.cleanExpiredNotifications();
+  ({ count } = await models.notification.cleanExpiredNotifications());
   t.true(count > 0);
   notifications = await models.notification.findManyByUserId(user.id);
   t.is(notifications.length, 0);
@@ -254,10 +254,10 @@ test('should not clean unexpired notifications', async t => {
       createdByUserId: createdBy.id,
     },
   });
-  let count = await models.notification.cleanExpiredNotifications();
+  let { count } = await models.notification.cleanExpiredNotifications();
   t.is(count, 0);
   await models.notification.markAsRead(notification.id, user.id);
-  count = await models.notification.cleanExpiredNotifications();
+  ({ count } = await models.notification.cleanExpiredNotifications());
   t.is(count, 0);
 });
 

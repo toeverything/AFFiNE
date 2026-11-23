@@ -674,6 +674,7 @@ e2e(
     const workspace = await app.create(Mockers.Workspace, {
       owner: { id: owner.id },
     });
+    await app.create(Mockers.TeamWorkspace, { id: workspace.id });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,
       userId: member.id,
@@ -769,11 +770,11 @@ e2e(
     });
 
     t.falsy(ownerResult.errors);
-    t.is(ownerResult.data!.workspace.doc.analytics.window.effectiveSize, 7);
+    t.is(ownerResult.data!.workspace.doc.analytics.window.effectiveSize, 90);
     t.true(ownerResult.data!.workspace.doc.analytics.series.length > 0);
-    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.totalCount, 2);
-    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.edges.length, 2);
-    t.false(
+    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.totalCount, 3);
+    t.is(ownerResult.data!.workspace.doc.lastAccessedMembers.edges.length, 3);
+    t.true(
       ownerResult.data!.workspace.doc.lastAccessedMembers.edges.some(
         (edge: { node: { user: { id: string } } }) =>
           edge.node.user.id === staleMember.id
@@ -880,6 +881,6 @@ e2e(
       errors?: Array<{ extensions: Record<string, unknown> }>;
     };
     t.truthy(memberDenied.errors?.length);
-    t.is(memberDenied.errors![0].extensions.name, 'SPACE_ACCESS_DENIED');
+    t.is(memberDenied.errors![0].extensions.name, 'DOC_ACTION_DENIED');
   }
 );

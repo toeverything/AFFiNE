@@ -24,35 +24,19 @@ interface Context {
     assertMailDeliveryQuotaV1: Sinon.SinonStub;
     commitMailDeliveryQuotaV1: Sinon.SinonStub;
     releaseMailDeliveryQuotaV1: Sinon.SinonStub;
-    embeddingHealth: Sinon.SinonStub;
-    searchStatus: Sinon.SinonStub;
   };
 }
 
-const test = ava as TestFn<Context>;
+const test = ava.serial as TestFn<Context>;
 
 test.before(async t => {
-  t.context.runtime = {
-    assertMailDeliveryQuotaV1: Sinon.stub(),
-    commitMailDeliveryQuotaV1: Sinon.stub(),
-    releaseMailDeliveryQuotaV1: Sinon.stub(),
-    embeddingHealth: Sinon.stub().resolves({
-      enabled: false,
-      state: 'disabled',
-      reason: 'test',
-      workerRunning: false,
-    }),
-    searchStatus: Sinon.stub().resolves({ ready: false }),
-  };
   t.context.module = await createTestingModule({
     tapModule: builder => {
       builder
         .overrideProvider(Mailer)
         .useClass(Mailer)
         .overrideProvider(MailSender)
-        .useValue({ configured: true })
-        .overrideProvider(BackendRuntimeProvider)
-        .useValue(t.context.runtime);
+        .useValue({ configured: true });
     },
   });
   t.context.mailer = t.context.module.get(Mailer);
@@ -62,9 +46,15 @@ test.before(async t => {
 });
 
 test.beforeEach(t => {
-  t.context.runtime.assertMailDeliveryQuotaV1.reset();
-  t.context.runtime.commitMailDeliveryQuotaV1.reset();
-  t.context.runtime.releaseMailDeliveryQuotaV1.reset();
+  const runtime = t.context.module.get(BackendRuntimeProvider);
+  t.context.runtime = {
+    assertMailDeliveryQuotaV1: Sinon.stub(runtime, 'assertMailDeliveryQuotaV1'),
+    commitMailDeliveryQuotaV1: Sinon.stub(runtime, 'commitMailDeliveryQuotaV1'),
+    releaseMailDeliveryQuotaV1: Sinon.stub(
+      runtime,
+      'releaseMailDeliveryQuotaV1'
+    ),
+  };
   t.context.runtime.assertMailDeliveryQuotaV1.resolves({
     allowed: true,
     reservationId: '00000000-0000-0000-0000-000000000001',

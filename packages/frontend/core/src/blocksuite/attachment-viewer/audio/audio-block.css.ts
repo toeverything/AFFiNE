@@ -29,6 +29,9 @@ export const notesButtonIcon = style({
 
 export const error = style({
   display: 'flex',
+  minWidth: 0,
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
   color: cssVarV2('aI/errorText'),
 });
 

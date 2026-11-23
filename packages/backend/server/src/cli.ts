@@ -4,9 +4,12 @@ import { type INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Command, CommanderError } from 'commander';
 
+import { BackendRuntimeProvider } from './core/backend-runtime';
 import { CliAppModule } from './data/app';
 import { CreateCommand } from './data/commands/create';
+import { CutoverCommand } from './data/commands/cutover';
 import { ImportConfigCommand } from './data/commands/import';
+import { RootSourceCommand } from './data/commands/root-source';
 import { RevertCommand, RunCommand } from './data/commands/run';
 
 function getProgramName() {
@@ -67,6 +70,33 @@ function buildProgram(logger: Logger) {
     });
 
   program
+    .command('activate-workspace-lifecycle')
+    .description(
+      'Activate workspace lifecycle synchronization after all old writers and in-flight transactions have drained'
+    )
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const activated = await app
+          .get(BackendRuntimeProvider)
+          .activateWorkspaceLifecycleV1();
+        logger.log(
+          activated
+            ? 'Workspace lifecycle synchronization activated.'
+            : 'Workspace lifecycle synchronization is already active.'
+        );
+      });
+    });
+
+  program
+    .command('validate-cutover')
+    .description('Validate canonical authority data before server startup')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        await app.get(CutoverCommand).execute();
+      });
+    });
+
+  program
     .command('revert [name]')
     .description('Revert one data migration with given name')
     .action(async name => {
@@ -76,12 +106,42 @@ function buildProgram(logger: Logger) {
     });
 
   program
+    .command('provision-stripe-catalog')
+    .description('explicitly provision the development Stripe price catalog')
+    .action(async () => {
+      await withCliApp(logger, async app => {
+        const result = await app
+          .get(BackendRuntimeProvider)
+          .executePaymentCommandV1({ action: 'provision_stripe_catalog' });
+        logger.log(JSON.stringify(result));
+      });
+    });
+
+  program
     .command('import-config [path]')
-    .description('import config from a file')
+    .description(
+      'import config from a file; changes take effect on the next server start'
+    )
     .action(async path => {
       await withCliApp(logger, async app => {
         await app.get(ImportConfigCommand).execute(path);
+        logger.log(
+          'Config imported; changes take effect on the next server start.'
+        );
       });
+    });
+
+  const rootSource = program
+    .command('root-source')
+    .description('Export original workspace root material');
+  rootSource
+    .command('inspect')
+    .requiredOption('--workspace <id>')
+    .requiredOption('--output <file>')
+    .action(async options => {
+      await withCliApp(logger, app =>
+        app.get(RootSourceCommand).inspect(options.workspace, options.output)
+      );
     });
 
   return program;

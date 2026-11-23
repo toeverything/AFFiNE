@@ -4,7 +4,6 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  type RawBodyRequest,
   Req,
   Res,
 } from '@nestjs/common';
@@ -21,7 +20,6 @@ import {
 } from '../../base';
 import { Public, SessionIssuer } from '../../core/auth';
 import { OAuthProviderName } from './config';
-import { OAuthProviderFactory } from './factory';
 import { OAuthCallbackBodySchema, OAuthPreflightBodySchema } from './input';
 import { OAuthService } from './service';
 
@@ -31,7 +29,6 @@ export class OAuthController {
   constructor(
     private readonly sessionIssuer: SessionIssuer,
     private readonly oauth: OAuthService,
-    private readonly providerFactory: OAuthProviderFactory,
     private readonly url: URLHelper
   ) {}
 
@@ -46,9 +43,7 @@ export class OAuthController {
       if (fields.has('client_nonce')) {
         throw new MissingOauthQueryParameter({ name: 'client_nonce' });
       }
-      if (fields.has('client')) {
-        throw new ActionForbidden();
-      }
+      if (fields.has('client')) throw new ActionForbidden();
       if (fields.has('provider')) {
         const provider =
           body && typeof body === 'object' && 'provider' in body
@@ -58,131 +53,78 @@ export class OAuthController {
       }
       throw new MissingOauthQueryParameter({ name: 'provider' });
     }
-
     const {
-      provider: unknownProviderName,
+      provider: label,
       redirect_uri: redirectUri,
       client,
       client_nonce: clientNonce,
     } = input.data;
-
-    const providerName =
-      OAuthProviderName[unknownProviderName as keyof typeof OAuthProviderName];
-    const provider = this.providerFactory.get(providerName);
-
-    if (!provider) {
-      throw new UnknownOauthProvider({ name: unknownProviderName });
-    }
-
-    const pkce = provider.requiresPkce ? this.oauth.createPkcePair() : null;
-
-    if (redirectUri && !this.url.isAllowedRedirectUri(redirectUri)) {
-      throw new ActionForbidden();
-    }
-
-    const clientVersion = getClientVersionFromRequest(req);
-    const state = await this.oauth.saveOAuthState({
-      provider: providerName,
-      redirectUri,
+    const provider = OAuthProviderName[label as keyof typeof OAuthProviderName];
+    return await this.oauth.preflight({
+      provider,
+      redirectUri: redirectUri
+        ? this.url.canonicalRedirectUri(redirectUri)
+        : undefined,
       client,
       clientNonce,
-      clientVersion,
-      ...(pkce
-        ? {
-            pkce: {
-              codeVerifier: pkce.codeVerifier,
-              codeChallengeMethod: pkce.codeChallengeMethod,
-            },
-          }
-        : {}),
+      clientVersion: getClientVersionFromRequest(req) ?? undefined,
+      callbackUrl: this.url.link(
+        provider === OAuthProviderName.Apple
+          ? '/api/oauth/callback'
+          : '/oauth/callback'
+      ),
+      ...this.url.redirectPolicy(),
     });
-
-    const statePayload: Record<string, unknown> = {
-      state,
-      client,
-      provider: unknownProviderName,
-    };
-
-    if (pkce) {
-      statePayload.pkce = {
-        codeChallenge: pkce.codeChallenge,
-        codeChallengeMethod: pkce.codeChallengeMethod,
-      };
-    }
-
-    const stateStr = JSON.stringify(statePayload);
-
-    return {
-      url: provider.getAuthUrl(stateStr, clientNonce),
-    };
   }
 
-  // the prerequest `/oauth/prelight` request already checked client version,
-  // let's simply ignore it for callback which will block apple oauth post_form mode
-  // @UseNamedGuard('version')
   @Public()
   @Post('/callback')
   @HttpCode(HttpStatus.OK)
   async callback(
-    @Req() req: RawBodyRequest<Request>,
+    @Req() req: Request,
     @Res() res: Response,
     @Body() body?: unknown
   ) {
     const input = OAuthCallbackBodySchema.safeParse(body);
     if (!input.success) {
       const fields = new Set(input.error.issues.map(issue => issue.path[0]));
-      if (fields.has('code')) {
-        throw new MissingOauthQueryParameter({ name: 'code' });
-      }
-      if (fields.has('state')) {
-        throw new MissingOauthQueryParameter({ name: 'state' });
-      }
-      throw new MissingOauthQueryParameter({ name: 'state' });
+      throw new MissingOauthQueryParameter({
+        name: fields.has('code') ? 'code' : 'state',
+      });
     }
-
-    const { code, state: stateStr, client_nonce: clientNonce } = input.data;
-
-    const verified = await this.oauth.verifyCallback({
-      code,
-      stateStr,
-      clientNonce,
-      rawBody: req.rawBody,
+    const result = await this.oauth.callback({
+      code: input.data.code,
+      state: input.data.state,
+      clientNonce: input.data.client_nonce,
+      issue: this.sessionIssuer.target(req),
     });
-
-    if (verified.type === 'handoff') {
-      const clientUrl = new URL(`${verified.state.client}://authentication`);
+    if (result.type === 'handoff') {
+      const clientUrl = new URL(`${result.client}://authentication`);
       clientUrl.searchParams.set('method', 'oauth');
       clientUrl.searchParams.set(
         'payload',
         JSON.stringify({
-          state: verified.stateToken,
-          code,
-          provider: verified.provider,
+          state: result.stateToken,
+          code: result.code,
+          provider: result.provider,
         })
       );
       clientUrl.searchParams.set('server', this.url.requestOrigin);
-
       return res.redirect(
-        this.url.link('/open-app/url?', {
-          url: clientUrl.toString(),
-        })
+        this.url.link('/open-app/url?', { url: clientUrl.toString() })
       );
     }
-
-    const { identity, state } = verified;
-    const { exchangeCode } = await this.sessionIssuer.issue(req, res, identity);
-
+    this.sessionIssuer.apply(res, result);
     if (
-      state.provider === OAuthProviderName.Apple &&
-      (!state.client || state.client === 'web')
+      result.provider === OAuthProviderName.Apple &&
+      (!result.client || result.client === 'web')
     ) {
-      return this.url.safeRedirect(res, state.redirectUri ?? '/');
+      return this.url.safeRedirect(res, result.redirectUri ?? '/');
     }
-
     res.send({
-      id: identity.userId,
-      exchangeCode,
-      redirectUri: state.redirectUri,
+      id: result.user.id,
+      exchangeCode: result.exchangeCode,
+      redirectUri: result.redirectUri,
     });
   }
 }

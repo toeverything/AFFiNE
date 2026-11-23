@@ -3,7 +3,6 @@ import {
   type BlockInfo,
   type CrawlResult,
   type DocClocks,
-  type DocRecord,
   DocStorageBase,
   type DocUpdate,
 } from '../../storage';
@@ -17,8 +16,26 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
     return this.connection.apis;
   }
 
+  override getDoc(docId: string) {
+    return this.db.getDoc(docId);
+  }
+
+  override async getDocDiff(docId: string, state?: Uint8Array) {
+    if (this.db.getDocDiff) {
+      return this.db.getDocDiff(docId, state);
+    }
+    return super.getDocDiff(docId, state);
+  }
+
   override async pushDocUpdate(update: DocUpdate, origin?: string) {
-    const timestamp = await this.db.pushUpdate(update.docId, update.bin);
+    const createForPeer =
+      update.createForPeer ??
+      (update.intent === 'create' ? this.options.creationPeer : undefined);
+    const timestamp = await this.db.pushUpdate(
+      update.docId,
+      update.bin,
+      createForPeer
+    );
 
     this.emit(
       'update',
@@ -27,6 +44,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
         bin: update.bin,
         timestamp,
         editor: update.editor,
+        createForPeer: createForPeer,
       },
       origin
     );
@@ -36,6 +54,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   override async deleteDoc(docId: string) {
     await this.db.deleteDoc(docId);
+    this.emit('delete', docId);
   }
 
   override async getDocTimestamps(after?: Date) {
@@ -49,37 +68,6 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
 
   override async getDocTimestamp(docId: string) {
     return this.db.getDocClock(docId);
-  }
-
-  protected override async getDocSnapshot(docId: string) {
-    const snapshot = await this.db.getDocSnapshot(docId);
-
-    if (!snapshot) {
-      return null;
-    }
-
-    return snapshot;
-  }
-
-  protected override async setDocSnapshot(
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    return this.db.setDocSnapshot({
-      docId: snapshot.docId,
-      bin: snapshot.bin,
-      timestamp: snapshot.timestamp,
-    });
-  }
-
-  protected override async getDocUpdates(docId: string) {
-    return this.db.getDocUpdates(docId);
-  }
-
-  protected override markUpdatesMerged(docId: string, updates: DocRecord[]) {
-    return this.db.markUpdatesMerged(
-      docId,
-      updates.map(update => update.timestamp)
-    );
   }
 
   override async crawlDocData(docId: string): Promise<CrawlResult | null> {

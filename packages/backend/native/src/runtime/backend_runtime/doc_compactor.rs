@@ -1,8 +1,12 @@
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{FromRow, PgPool, Postgres, Row, Transaction};
+#[cfg(test)]
 use y_octo::Doc;
 
-use super::{BackendRuntime, RuntimeError, RuntimeResult, napi_error, types::RuntimeDocCompactionResult};
+use super::{
+  BackendRuntime, RuntimeError, RuntimeResult, ensure_doc_not_deleted_in, napi_error, try_lock_current_doc_read,
+  types::RuntimeDocCompactionResult,
+};
 
 #[derive(FromRow)]
 struct SnapshotRow {
@@ -20,11 +24,15 @@ struct UpdateRow {
 
 struct DocCompactorStore {
   pool: PgPool,
+  embedding_schema_ready: bool,
 }
 
 impl DocCompactorStore {
-  fn new(pool: PgPool) -> Self {
-    Self { pool }
+  fn new(pool: PgPool, embedding_schema_ready: bool) -> Self {
+    Self {
+      pool,
+      embedding_schema_ready,
+    }
   }
 
   async fn compact_doc(
@@ -34,7 +42,7 @@ impl DocCompactorStore {
     batch_limit: i64,
     history_min_interval_ms: i64,
     history_max_age_seconds: i64,
-  ) -> RuntimeResult<(i64, bool)> {
+  ) -> RuntimeResult<Option<(i64, bool)>> {
     compact_doc(
       self.pool.clone(),
       workspace_id,
@@ -42,6 +50,7 @@ impl DocCompactorStore {
       batch_limit,
       history_min_interval_ms,
       history_max_age_seconds,
+      self.embedding_schema_ready,
     )
     .await
   }
@@ -51,16 +60,10 @@ fn is_empty_doc(bin: &[u8]) -> bool {
   bin.is_empty() || (bin.len() == 1 && bin[0] == 0) || (bin.len() == 2 && bin[0] == 0 && bin[1] == 0)
 }
 
-fn apply_updates(updates: impl IntoIterator<Item = Vec<u8>>) -> RuntimeResult<Vec<u8>> {
-  let mut doc = Doc::default();
-  for update in updates {
-    doc
-      .apply_update_from_binary_v1(&update)
-      .map_err(|err| RuntimeError::invalid_state(format!("DocCompactor merge failed: {err}")))?;
-  }
-  doc
-    .encode_update_v1()
-    .map_err(|err| RuntimeError::invalid_state(format!("DocCompactor encode failed: {err}")))
+fn merge_updates(updates: impl IntoIterator<Item = Vec<u8>>) -> RuntimeResult<Vec<u8>> {
+  y_octo::merge_updates_v1(updates)
+    .and_then(|update| update.encode_v1())
+    .map_err(|error| RuntimeError::invalid_state(format!("DocCompactor merge failed: {error}")))
 }
 
 fn checked_milliseconds(value: i64, field: &str) -> RuntimeResult<Duration> {
@@ -116,33 +119,32 @@ async fn load_updates(
   .map_err(|err| RuntimeError::database("DocCompactor load updates failed", err))
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn upsert_snapshot(
   tx: &mut Transaction<'_, Postgres>,
   workspace_id: &str,
   doc_id: &str,
   blob: &[u8],
-  timestamp: DateTime<Utc>,
+  created_at: DateTime<Utc>,
+  updated_at: DateTime<Utc>,
+  creator: Option<&str>,
   editor: Option<&str>,
-) -> RuntimeResult<bool> {
-  if is_empty_doc(blob) {
-    return Ok(false);
-  }
-
-  let row = sqlx::query(
+) -> RuntimeResult<()> {
+  sqlx::query(
     r#"
     INSERT INTO snapshots
       (workspace_id, guid, blob, size, created_at, updated_at, created_by, updated_by)
     VALUES
-      ($1, $2, $3, $4, $5, $5, $6, $6)
+      ($1, $2, $3, $4, $5, $6, $7, $8)
     ON CONFLICT (workspace_id, guid)
     DO UPDATE SET
       blob = $3,
       size = $4,
-      updated_at = $5,
-      updated_by = $6
+      updated_at = $6,
+      updated_by = $8
     WHERE snapshots.workspace_id = $1
       AND snapshots.guid = $2
-      AND snapshots.updated_at <= $5
+      AND snapshots.updated_at <= $6
     RETURNING updated_at
     "#,
   )
@@ -150,13 +152,15 @@ async fn upsert_snapshot(
   .bind(doc_id)
   .bind(blob)
   .bind(blob.len() as i64)
-  .bind(timestamp)
+  .bind(created_at)
+  .bind(updated_at)
+  .bind(creator)
   .bind(editor)
-  .fetch_optional(&mut **tx)
+  .fetch_one(&mut **tx)
   .await
   .map_err(|err| RuntimeError::database("DocCompactor upsert snapshot failed", err))?;
 
-  Ok(row.is_some())
+  Ok(())
 }
 
 async fn should_create_history(
@@ -272,20 +276,32 @@ async fn compact_doc(
   batch_limit: i64,
   history_min_interval_ms: i64,
   history_max_age_seconds: i64,
-) -> RuntimeResult<(i64, bool)> {
+  embedding_schema_ready: bool,
+) -> RuntimeResult<Option<(i64, bool)>> {
   let mut tx = pool
     .begin()
     .await
     .map_err(|err| RuntimeError::database("DocCompactor begin transaction failed", err))?;
 
+  let locked = try_lock_current_doc_read(&mut tx, workspace_id, doc_id).await?;
+  if !locked {
+    tx.rollback()
+      .await
+      .map_err(|err| RuntimeError::database("DocCompactor rollback unlocked transaction failed", err))?;
+    return Ok(None);
+  }
+
+  ensure_doc_not_deleted_in(&mut tx, workspace_id, doc_id).await?;
   let snapshot = load_snapshot(&mut tx, workspace_id, doc_id).await?;
   let updates = load_updates(&mut tx, workspace_id, doc_id, batch_limit).await?;
   if updates.is_empty() {
     tx.commit()
       .await
       .map_err(|err| RuntimeError::database("DocCompactor commit transaction failed", err))?;
-    return Ok((0, false));
+    return Ok(Some((0, false)));
   }
+
+  super::domain_command::invalidate_doc_blob_projection(&mut tx, workspace_id, doc_id, embedding_schema_ready).await?;
 
   let last = updates.last().expect("updates is not empty");
   let mut merge_inputs = Vec::with_capacity(updates.len() + usize::from(snapshot.is_some()));
@@ -297,22 +313,72 @@ async fn compact_doc(
   let final_blob = if merge_inputs.len() == 1 {
     merge_inputs.remove(0)
   } else {
-    apply_updates(merge_inputs)?
+    merge_updates(merge_inputs)?
   };
 
-  let snapshot_updated = upsert_snapshot(
-    &mut tx,
-    workspace_id,
-    doc_id,
-    &final_blob,
-    last.created_at,
-    last.created_by.as_deref(),
-  )
-  .await?;
+  let mut timestamp = snapshot
+    .as_ref()
+    .map_or(last.created_at, |snapshot| snapshot.updated_at.max(last.created_at));
+  if snapshot
+    .as_ref()
+    .is_some_and(|snapshot| snapshot.updated_at >= last.created_at && snapshot.blob != final_blob)
+  {
+    timestamp = super::domain_command::next_workspace_doc_update_timestamp(&mut tx, workspace_id, doc_id).await?;
+  }
+  let editor = snapshot
+    .as_ref()
+    .filter(|snapshot| snapshot.updated_at > last.created_at)
+    .and_then(|snapshot| snapshot.updated_by.as_deref())
+    .or(last.created_by.as_deref());
+  if snapshot.is_none() {
+    let first = updates.first().expect("updates is not empty");
+    sqlx::query(
+      "INSERT INTO runtime_doc_creators (workspace_id, doc_id, created_by, created_at) VALUES ($1, $2, $3, $4) ON \
+       CONFLICT (workspace_id, doc_id) DO NOTHING",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .bind(first.created_by.as_deref())
+    .bind(first.created_at)
+    .execute(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("DocCompactor preserve initial doc creator failed", err))?;
+    let creator: Option<String> = sqlx::query_scalar::<_, Option<String>>(
+      "SELECT created_by FROM runtime_doc_creators WHERE workspace_id = $1 AND doc_id = $2",
+    )
+    .bind(workspace_id)
+    .bind(doc_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|err| RuntimeError::database("DocCompactor load doc creator failed", err))?
+    .flatten();
+    upsert_snapshot(
+      &mut tx,
+      workspace_id,
+      doc_id,
+      &final_blob,
+      first.created_at,
+      timestamp,
+      creator.as_deref(),
+      editor,
+    )
+    .await?;
+  } else {
+    upsert_snapshot(
+      &mut tx,
+      workspace_id,
+      doc_id,
+      &final_blob,
+      timestamp,
+      timestamp,
+      None,
+      editor,
+    )
+    .await?;
+  }
 
   let mut history_created = false;
-  if snapshot_updated
-    && let Some(snapshot) = &snapshot
+  if let Some(snapshot) = &snapshot
     && should_create_history(&mut tx, snapshot, workspace_id, doc_id, history_min_interval_ms).await?
   {
     history_created = create_history(&mut tx, workspace_id, doc_id, snapshot, history_max_age_seconds).await?;
@@ -325,22 +391,16 @@ async fn compact_doc(
     .await
     .map_err(|err| RuntimeError::database("DocCompactor commit transaction failed", err))?;
 
-  Ok((deleted, history_created))
+  Ok(Some((deleted, history_created)))
 }
 
 #[napi_derive::napi]
 impl BackendRuntime {
   /// Merge pending doc updates with y-octo and persist the merged snapshot.
   ///
-  /// Do not use this for snapshots that will be sent back to yjs clients until
-  /// the y-octo/yjs round-trip compatibility issue is resolved.
-  ///
-  /// The caller owns quota reconciliation and must pass a fresh
-  /// history_max_age_seconds value. The compactor intentionally does not read
-  /// effective_workspace_quota_states; if a future caller cannot provide a
-  /// fresh quota state, fail and retry after Node reconciles it.
+  /// The caller must pass the canonical history retention period resolved for
+  /// this workspace. The compactor does not make quota decisions.
   #[napi]
-  #[allow(clippy::too_many_arguments)]
   pub async fn compact_pending_doc_updates(
     &self,
     workspace_id: String,
@@ -348,8 +408,6 @@ impl BackendRuntime {
     batch_limit: i64,
     history_min_interval_ms: i64,
     history_max_age_seconds: i64,
-    owner: String,
-    lease_ttl_ms: i64,
   ) -> napi::Result<RuntimeDocCompactionResult> {
     if batch_limit <= 0 {
       return Err(napi_error("doc compactor batch limit must be positive"));
@@ -368,10 +426,19 @@ impl BackendRuntime {
         .ok_or_else(|| RuntimeError::invalid_input("DocCompactor history max age is out of range"))?;
     }
 
-    let lease_key = format!("doc:update:{workspace_id}:{doc_id}");
-    let Some(lease) = self.acquire_coordination_lease(lease_key, owner, lease_ttl_ms).await? else {
+    let Some((updates_merged, history_created)) =
+      DocCompactorStore::new(self.pool().await?, self.embedding_schema_ready()?)
+        .compact_doc(
+          &workspace_id,
+          &doc_id,
+          batch_limit,
+          history_min_interval_ms,
+          history_max_age_seconds,
+        )
+        .await?
+    else {
       return Ok(RuntimeDocCompactionResult {
-        lease_acquired: false,
+        lock_acquired: false,
         merged: false,
         workspace_id,
         doc_id,
@@ -379,32 +446,194 @@ impl BackendRuntime {
         history_created: false,
       });
     };
-
-    let result = DocCompactorStore::new(self.pool().await?)
-      .compact_doc(
-        &workspace_id,
-        &doc_id,
-        batch_limit,
-        history_min_interval_ms,
-        history_max_age_seconds,
-      )
-      .await;
-
-    let released = self
-      .release_coordination_lease(lease.key, lease.owner, lease.fencing_token)
-      .await?;
-    if !released {
-      return Err(RuntimeError::invalid_state("DocCompactor failed to release coordination lease").into());
-    }
-
-    let (updates_merged, history_created) = result?;
     Ok(RuntimeDocCompactionResult {
-      lease_acquired: true,
+      lock_acquired: true,
       merged: updates_merged > 0,
       workspace_id,
       doc_id,
       updates_merged,
       history_created,
     })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::runtime::backend_runtime::tests::{pg_test_lock, runtime_from_database_url};
+
+  async fn insert_workspace(pool: &PgPool, workspace_id: &str) {
+    sqlx::query("INSERT INTO workspaces(id,created_at) VALUES($1,clock_timestamp())")
+      .bind(workspace_id)
+      .execute(pool)
+      .await
+      .unwrap();
+  }
+
+  #[tokio::test]
+  async fn transaction_lock_serializes_compaction_and_missing_snapshot_is_supported() {
+    let _guard = pg_test_lock().lock().await;
+    let Some(runtime) = runtime_from_database_url().await.unwrap() else {
+      return;
+    };
+    let pool = runtime.pool().await.unwrap();
+    let workspace_id = format!("rust-test:compactor:{}", uuid::Uuid::new_v4());
+    let doc_id = "doc";
+    insert_workspace(&pool, &workspace_id).await;
+
+    let update = Doc::default().encode_update_v1().unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,$3,clock_timestamp())")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .bind(update)
+      .execute(&pool)
+      .await
+      .unwrap();
+
+    let mut blocker = pool.begin().await.unwrap();
+    let locked: bool = sqlx::query_scalar("SELECT pg_try_advisory_xact_lock(hashtextextended($1,0))")
+      .bind(format!("workspace-doc-update:{workspace_id}/{doc_id}"))
+      .fetch_one(&mut *blocker)
+      .await
+      .unwrap();
+    assert!(locked);
+
+    let skipped = runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.to_string(), 100, 0, 3600)
+      .await
+      .unwrap();
+    assert!(!skipped.lock_acquired);
+    assert_eq!(
+      sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+      1
+    );
+
+    blocker.rollback().await.unwrap();
+    let compacted = runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.to_string(), 100, 0, 3600)
+      .await
+      .unwrap();
+    assert!(compacted.lock_acquired);
+    assert!(compacted.merged);
+    assert_eq!(compacted.updates_merged, 1);
+    assert!(
+      sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM snapshots WHERE workspace_id=$1 AND guid=$2)")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    );
+
+    let first: DateTime<Utc> = sqlx::query_scalar("SELECT updated_at FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    let empty_ack = first + Duration::milliseconds(1);
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,decode('0000','hex'),$3)")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .bind(empty_ack)
+      .execute(&pool)
+      .await
+      .unwrap();
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.into(), 100, 0, 3600)
+      .await
+      .unwrap();
+    let current: DateTime<Utc> =
+      sqlx::query_scalar("SELECT updated_at FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(current, empty_ack);
+    let older = Doc::with_client(99);
+    older
+      .get_or_create_text("text")
+      .unwrap()
+      .insert(0, "older material")
+      .unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,$3,$4)")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .bind(older.encode_update_v1().unwrap())
+      .bind(first - Duration::milliseconds(1))
+      .execute(&pool)
+      .await
+      .unwrap();
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.into(), 100, 0, 3600)
+      .await
+      .unwrap();
+    let merged: (Vec<u8>, DateTime<Utc>) =
+      sqlx::query_as("SELECT blob,updated_at FROM snapshots WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(merged.1 > current);
+    assert_eq!(
+      Doc::try_from_binary_v1(&merged.0)
+        .unwrap()
+        .get_or_create_text("text")
+        .unwrap()
+        .to_string(),
+      "older material"
+    );
+    let trigger = format!("rfc21_compactor_{}", uuid::Uuid::new_v4().simple());
+    sqlx::raw_sql(&format!(
+      "CREATE FUNCTION {trigger}() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RETURN NULL; END$$; CREATE TRIGGER \
+       {trigger} BEFORE UPDATE ON snapshots FOR EACH ROW WHEN(NEW.workspace_id='{workspace_id}') EXECUTE FUNCTION \
+       {trigger}()"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO updates(workspace_id,guid,blob,created_at) VALUES($1,$2,decode('0000','hex'),$3)")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .bind(merged.1 + Duration::milliseconds(1))
+      .execute(&pool)
+      .await
+      .unwrap();
+    assert!(
+      runtime
+        .compact_pending_doc_updates(workspace_id.clone(), doc_id.into(), 100, 0, 3600)
+        .await
+        .is_err()
+    );
+    let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM updates WHERE workspace_id=$1 AND guid=$2")
+      .bind(&workspace_id)
+      .bind(doc_id)
+      .fetch_one(&pool)
+      .await
+      .unwrap();
+    assert_eq!(pending, 1);
+    sqlx::raw_sql(&format!(
+      "DROP TRIGGER {trigger} ON snapshots; DROP FUNCTION {trigger}()"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    runtime
+      .compact_pending_doc_updates(workspace_id.clone(), doc_id.into(), 100, 0, 3600)
+      .await
+      .unwrap();
+
+    sqlx::query("DELETE FROM workspaces WHERE id=$1")
+      .bind(&workspace_id)
+      .execute(&pool)
+      .await
+      .unwrap();
   }
 }

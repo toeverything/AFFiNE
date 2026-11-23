@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mock } from 'node:test';
 
 import test from 'ava';
-import { applyUpdate, Doc as YDoc } from 'yjs';
+import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
@@ -52,11 +52,13 @@ test('should return doc when found', async t => {
 
   const docId = randomUUID();
   const timestamp = Date.now();
+  const source = new YDoc();
+  source.getText('content').insert(0, 'blob1 data');
   await models.doc.createUpdates([
     {
       spaceId: workspace.id,
       docId,
-      blob: Buffer.from('blob1 data'),
+      blob: Buffer.from(encodeStateAsUpdate(source)),
       timestamp,
       editorId: user.id,
     },
@@ -64,7 +66,9 @@ test('should return doc when found', async t => {
 
   const doc = await docReader.getDoc(workspace.id, docId);
   t.truthy(doc);
-  t.is(Buffer.from(doc!.bin).toString('utf8'), 'blob1 data');
+  const loaded = new YDoc();
+  applyUpdate(loaded, doc!.bin);
+  t.is(loaded.getText('content').toString(), 'blob1 data');
   t.is(doc!.timestamp, timestamp);
   t.is(doc!.editor, user.id);
 });
@@ -159,7 +163,7 @@ test('should get doc content', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, docId, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(workspace.id, docId, updates, user.id);
 
   const docContent = await docReader.getDocContent(workspace.id, docId);
 
@@ -185,7 +189,12 @@ test('should get workspace content with default avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(
+    workspace.id,
+    workspace.id,
+    updates,
+    user.id
+  );
 
   mock.method(docReader, 'parseWorkspaceContent', () => ({
     name: 'Test Workspace',
@@ -221,7 +230,12 @@ test('should get workspace content with custom avatar', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdates(workspace.id, workspace.id, updates, user.id);
+  await adapter.pushDocUpdatesTrusted(
+    workspace.id,
+    workspace.id,
+    updates,
+    user.id
+  );
 
   const avatarKey = randomUUID();
 
@@ -237,7 +251,7 @@ test('should get workspace content with custom avatar', async t => {
     id: workspace.id,
     name: 'Test Workspace',
     avatarKey,
-    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
   });
 
   // should save to database
@@ -258,7 +272,7 @@ test('should get workspace content with custom avatar', async t => {
     id: workspace.id,
     name: 'Test Workspace 2',
     avatarKey,
-    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/v1/${avatarKey}?sourceType=currentDoc&docId=${workspace.id}`,
   });
 });
 

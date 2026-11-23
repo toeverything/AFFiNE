@@ -54,7 +54,14 @@ struct AppPaywallRootView: View {
         }
       )
     ) {
-      Button("OK", role: .cancel) {}
+      if bridge.canEndStripeCheckout {
+        Button("End Stripe checkout", role: .destructive) {
+          Task { await bridge.endStripeCheckout() }
+        }
+        Button("Cancel", role: .cancel) {}
+      } else {
+        Button("OK", role: .cancel) {}
+      }
     } message: {
       Text(bridge.errorMessage ?? "")
     }

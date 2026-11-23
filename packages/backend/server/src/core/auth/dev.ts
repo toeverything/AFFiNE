@@ -1,13 +1,11 @@
 import { Models } from '../../models';
-import {
-  SubscriptionRecurring,
-  SubscriptionStatus,
-} from '../../plugins/payment/types';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { EntitlementService } from '../entitlement';
 
 export async function createDevUsers(
   models: Models,
-  entitlement: EntitlementService
+  entitlement: EntitlementService,
+  runtime: BackendRuntimeProvider
 ) {
   const devUsers: {
     email: string;
@@ -52,17 +50,16 @@ export async function createDevUsers(
         });
       }
       await models.userFeature.add(devUser.id, 'administrator', name);
-      for (const plan of plans) {
-        await entitlement.upsertFromCloudSubscription({
-          targetId: devUser.id,
-          plan,
-          recurring: SubscriptionRecurring.Monthly,
-          status: SubscriptionStatus.Active,
-          provider: 'dev',
-          subscriptionId: `dev:${devUser.id}:${plan}`,
-        });
+      if (!env.selfhosted) {
+        for (const plan of plans) {
+          await entitlement.upsertAdminGrant({
+            targetType: 'user',
+            targetId: devUser.id,
+            plan,
+          });
+        }
       }
-      if (teamWorkspace) {
+      if (teamWorkspace && !env.selfhosted) {
         const workspaceIds = (
           await models.workspaceUser.getUserActiveRoles(devUser.id)
         ).map(row => row.workspaceId);
@@ -70,27 +67,24 @@ export async function createDevUsers(
         const hasTeamWorkspace = (
           await Promise.all(
             workspaces.map(workspace =>
-              entitlement.resolveWorkspaceEntitlement(workspace.id)
+              entitlement.hasCommercialWorkspace(workspace.id)
             )
           )
-        ).some(resolved => resolved.plan === 'team');
+        ).some(Boolean);
         if (!hasTeamWorkspace) {
           const workspace = await models.workspace.create(devUser.id);
-          await models.doc.upsert({
-            spaceId: workspace.id,
+          await runtime.appendWorkspaceDocUpdatesV1({
+            workspaceId: workspace.id,
             docId: workspace.id,
-            blob: devWorkspaceBlob,
-            timestamp: Date.now(),
-            editorId: devUser.id,
+            updates: [devWorkspaceBlob],
+            actorUserId: devUser.id,
+            writeIntent: 'update_doc',
           });
-          await entitlement.upsertFromCloudSubscription({
+          await entitlement.upsertAdminGrant({
+            targetType: 'workspace',
             targetId: workspace.id,
             plan: 'team',
-            recurring: SubscriptionRecurring.Monthly,
-            status: SubscriptionStatus.Active,
             quantity: 10,
-            provider: 'dev',
-            subscriptionId: `dev:${workspace.id}:team`,
           });
         }
       }

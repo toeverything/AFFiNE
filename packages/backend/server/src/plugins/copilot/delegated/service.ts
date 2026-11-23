@@ -9,7 +9,9 @@ import type {
 import { Injectable } from '@nestjs/common';
 
 import { OnEvent } from '../../../base';
+import { PermissionAccess } from '../../../core/permission';
 import { RealtimePublisher, realtimeUserRoom } from '../../../core/realtime';
+import { CopilotAccessService } from '../access';
 import type { CopilotChatOptions } from '../providers/types';
 
 type EditorLease = DelegatedEditorLeaseInput & {
@@ -48,7 +50,11 @@ export class DelegatedEditorService {
   private readonly leases = new Map<string, EditorLease>();
   private readonly pending = new Map<string, PendingRequest>();
 
-  constructor(private readonly publisher: RealtimePublisher) {}
+  constructor(
+    private readonly publisher: RealtimePublisher,
+    private readonly access: CopilotAccessService,
+    private readonly ac: PermissionAccess
+  ) {}
 
   leaseKey(userId: string, clientId: string) {
     return `${userId}:${clientId}`;
@@ -116,6 +122,21 @@ export class DelegatedEditorService {
           retryable: true,
         },
       };
+    }
+    const mode = await this.access.sessionResource(
+      {
+        userId: lease.userId,
+        workspaceId: lease.workspaceId,
+        docId: lease.docId,
+        action: 'Doc.Read',
+      },
+      [lease.sessionId]
+    );
+    if (mode === 'canonical') {
+      await this.ac
+        .user(lease.userId)
+        .workspace(lease.workspaceId)
+        .assert('Workspace.Copilot');
     }
 
     const identity = {

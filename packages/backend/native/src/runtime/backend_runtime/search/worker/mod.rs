@@ -1,5 +1,6 @@
 mod anti_entropy;
 mod document;
+mod inventory;
 mod workspace;
 mod workspace_state;
 
@@ -20,15 +21,14 @@ enum WorkspaceStep {
   Continue(WorkspacePhase),
   Quiet(WorkspacePhase),
   Complete,
-  Failed,
 }
 
 pub(super) use anti_entropy::sweep_generation_orphans;
 use anti_entropy::{
-  CANONICAL_SNAPSHOT_BATCH_SQL, ProjectionExpectation, provider_projection_matches, reconcile_source_documents,
-  reconcile_stale_provider_rows, sweep_deleted_workspace,
+  ProjectionExpectation, provider_projection_matches, reconcile_stale_provider_rows, sweep_deleted_workspace,
 };
 use document::upsert_document;
+use inventory::{DocumentReconcilePhase, reconcile_documents};
 pub(super) use workspace::reconcile_workspace;
 use workspace_state::{
   WorkspacePhase, checkpoint_workspace, checkpoint_workspace_after, claim_workspace, complete_workspace,
@@ -36,6 +36,7 @@ use workspace_state::{
 };
 
 use super::{
-  ActiveGeneration, ProjectionInput, SearchChange, SearchProvider, SearchTable, WORKSPACE_RECONCILE_FAILED,
-  project_document, projection_external_id, provider_payload,
+  ActiveGeneration, DOCUMENT_PROJECTION_FAILED, ProjectionInput, SearchChange, SearchProvider, SearchTable,
+  WORKSPACE_RECONCILE_FAILED, is_ordinary_workspace_doc, load_legacy_workspace_in, load_workspace_doc_states_in,
+  project_document, projection_external_id, provider_payload, workspace_lifecycle_active_in,
 };

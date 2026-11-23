@@ -10,10 +10,12 @@ import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
+  type DocDiff,
   type DocIndexedClock,
   type DocRecord,
   type ListedBlobRecord,
   parseUniversalId,
+  type PeerWorkspaceState,
 } from '@affine/nbstore';
 import { type NativeDBApis } from '@affine/nbstore/sqlite';
 import { registerPlugin } from '@capacitor/core';
@@ -35,62 +37,55 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   pushUpdate: async function (
     id: string,
     docId: string,
-    update: Uint8Array
+    update: Uint8Array,
+    createForPeer?: string
   ): Promise<Date> {
     const { timestamp } = await NbStore.pushUpdate({
       id,
       docId,
       data: await uint8ArrayToBase64(update),
+      createForPeer,
     });
     return new Date(timestamp);
   },
-  getDocSnapshot: async function (
+  getDoc: async function (
     id: string,
     docId: string
   ): Promise<DocRecord | null> {
-    const snapshot = await NbStore.getDocSnapshot({ id, docId });
-    return snapshot
+    const record = await NbStore.getDoc({ id, docId });
+    return record
       ? {
-          bin: base64ToUint8Array(snapshot.bin),
-          docId: snapshot.docId,
-          timestamp: new Date(snapshot.timestamp),
+          bin: base64ToUint8Array(record.bin),
+          docId: record.docId,
+          timestamp: new Date(record.timestamp),
         }
       : null;
   },
-  setDocSnapshot: async function (
-    id: string,
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    const { success } = await NbStore.setDocSnapshot({
-      id,
-      docId: snapshot.docId,
-      bin: await uint8ArrayToBase64(snapshot.bin),
-      timestamp: snapshot.timestamp.getTime(),
-    });
-    return success;
-  },
-  getDocUpdates: async function (
-    id: string,
-    docId: string
-  ): Promise<DocRecord[]> {
-    const { updates } = await NbStore.getDocUpdates({ id, docId });
-    return updates.map(update => ({
-      bin: base64ToUint8Array(update.bin),
-      docId: update.docId,
-      timestamp: new Date(update.timestamp),
-    }));
-  },
-  markUpdatesMerged: async function (
+  getDocDiff: async function (
     id: string,
     docId: string,
-    updates: Date[]
-  ): Promise<number> {
-    const { count } = await NbStore.markUpdatesMerged({
+    state?: Uint8Array
+  ): Promise<DocDiff | null> {
+    const diff = await NbStore.getDocDiff({
       id,
       docId,
-      timestamps: updates.map(t => t.getTime()),
+      state: state ? await uint8ArrayToBase64(state) : undefined,
     });
-    return count;
+    return diff
+      ? {
+          docId: diff.docId,
+          missing: base64ToUint8Array(diff.missing),
+          state: base64ToUint8Array(diff.state),
+          timestamp: new Date(diff.timestamp),
+        }
+      : null;
+  },
+  mergeUpdates: async function (updates: Uint8Array[]): Promise<Uint8Array> {
+    const encoded = await Promise.all(
+      updates.map(update => uint8ArrayToBase64(update))
+    );
+    const { bin } = await NbStore.mergeUpdates({ updates: encoded });
+    return base64ToUint8Array(bin);
   },
   deleteDoc: async function (id: string, docId: string): Promise<void> {
     await NbStore.deleteDoc({
@@ -189,6 +184,36 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       createdAt: new Date(b.createdAt),
     }));
   },
+  getPeerWorkspaceState: async (id, peer, rootDocId) => {
+    const { state } = await NbStore.getPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+    });
+    return JSON.parse(state) as PeerWorkspaceState;
+  },
+  invalidatePeerWorkspaceState: (id, peer, rootDocId) =>
+    NbStore.invalidatePeerWorkspaceState({ id, peer, rootDocId }),
+  installPeerWorkspaceState: async (
+    id,
+    peer,
+    rootDocId,
+    cacheToken,
+    docs,
+    clocks
+  ) => {
+    const { installed } = await NbStore.installPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+      cacheToken,
+      docs: JSON.stringify(docs),
+      clocks: JSON.stringify(clocks),
+    });
+    return installed;
+  },
+  confirmPeerDocCreate: (id, peer, docId) =>
+    NbStore.confirmPeerDocCreate({ id, peer, docId }),
   getPeerRemoteClocks: async function (
     id: string,
     peer: string

@@ -40,6 +40,7 @@ export const buildDocContentGetter = (
         { code: 'INVALID_CONTEXT', retryable: false }
       );
     }
+    docId = await docReader.resolveStorageDocId(options.workspace, docId);
     if (!isDocumentInScope(documentScope, docId)) {
       return toolError(
         'Doc Read Failed',

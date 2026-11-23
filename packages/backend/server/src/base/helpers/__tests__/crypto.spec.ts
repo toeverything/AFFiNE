@@ -7,6 +7,7 @@ import { CryptoHelper } from '../crypto';
 
 const test = ava as TestFn<{
   crypto: CryptoHelper;
+  setPrivateKey(key: string): void;
 }>;
 
 function generateTestPrivateKey(): string {
@@ -25,11 +26,13 @@ const privateKey = generateTestPrivateKey();
 const privateKey2 = generateTestPrivateKey();
 
 test.beforeEach(async t => {
+  let activeKey = privateKey;
   t.context.crypto = new CryptoHelper({
-    crypto: {
-      privateKey,
-    },
-  } as any);
+    nodeCryptoPrivateKey: () => activeKey,
+  });
+  t.context.setPrivateKey = key => {
+    activeKey = key;
+  };
   t.context.crypto.onConfigInit();
 });
 
@@ -46,13 +49,21 @@ test('should verify signatures across key rotation', t => {
   const signatureV1 = t.context.crypto.sign(data);
   t.true(t.context.crypto.verify(signatureV1));
 
-  (t.context.crypto as any).config.crypto.privateKey = privateKey2;
-  t.context.crypto.onConfigChanged({
-    updates: { crypto: { privateKey: privateKey2 } },
-  } as any);
+  t.context.setPrivateKey(privateKey2);
+  t.context.crypto.onConfigApplied({
+    updates: { crypto: { privateKey: undefined } },
+  });
 
   const signatureV2 = t.context.crypto.sign(data);
   t.true(t.context.crypto.verify(signatureV1));
+  t.true(t.context.crypto.verify(signatureV2));
+
+  const previousKeyHash = t.context.crypto.keyPair.sha256.privateKey;
+  t.context.setPrivateKey('');
+  t.context.crypto.onConfigApplied({
+    updates: { crypto: { privateKey: undefined } },
+  });
+  t.notDeepEqual(t.context.crypto.keyPair.sha256.privateKey, previousKeyHash);
   t.true(t.context.crypto.verify(signatureV2));
 });
 
@@ -97,14 +108,75 @@ test('should be able to digest', t => {
   t.is(hash, 'uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=');
 });
 
+test('uses the native verifier public key', t => {
+  const deployment = globalThis.env.DEPLOYMENT_TYPE;
+  // @ts-expect-error test mutates deployment mode before the lifecycle hook
+  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+  const loadKey = Sinon.stub(
+    t.context.crypto as unknown as {
+      loadAFFiNEProPublicKey(): Buffer | null;
+    },
+    'loadAFFiNEProPublicKey'
+  );
+  loadKey.onFirstCall().returns(null);
+  loadKey.onSecondCall().returns(Buffer.from('public-key'));
+  try {
+    t.notThrows(() => t.context.crypto.onModuleInit());
+    t.is(t.context.crypto.AFFiNEProPublicKey, null);
+    t.context.crypto.onModuleInit();
+    t.is(t.context.crypto.AFFiNEProPublicKey?.toString(), 'public-key');
+  } finally {
+    // @ts-expect-error test restores deployment mode after the lifecycle hook
+    globalThis.env.DEPLOYMENT_TYPE = deployment;
+  }
+});
+
+test.serial(
+  'official self-hosted builds require a public key while community builds may omit it',
+  t => {
+    const deployment = globalThis.env.DEPLOYMENT_TYPE;
+    const flag = process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY;
+    // @ts-expect-error test temporarily selects self-hosted lifecycle behavior
+    globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+    const loadKey = Sinon.stub(
+      t.context.crypto as unknown as {
+        loadAFFiNEProPublicKey(): Buffer | null;
+      },
+      'loadAFFiNEProPublicKey'
+    );
+    try {
+      for (const required of ['false', 'true']) {
+        process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY = required;
+        for (const key of [null, Buffer.from('public-key')]) {
+          loadKey.returns(key);
+          if (required === 'true' && !key) {
+            t.throws(() => t.context.crypto.onModuleInit(), {
+              message:
+                'AFFINE_PRO_PUBLIC_KEY must be embedded in official self-hosted server-native builds.',
+            });
+          } else {
+            t.notThrows(() => t.context.crypto.onModuleInit());
+          }
+        }
+      }
+    } finally {
+      loadKey.restore();
+      // @ts-expect-error test restores deployment mode
+      globalThis.env.DEPLOYMENT_TYPE = deployment;
+      if (flag === undefined) delete process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY;
+      else process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY = flag;
+    }
+  }
+);
+
 test('should be able to safe compare', t => {
   t.true(t.context.crypto.compare('abc', 'abc'));
   t.false(t.context.crypto.compare('abc', 'def'));
 });
 
-test('should be able to hash and verify password', async t => {
+test('should be able to hash password for native verification', async t => {
   const password = 'mySecurePassword';
   const hash = await t.context.crypto.encryptPassword(password);
-  t.true(await t.context.crypto.verifyPassword(password, hash));
-  t.false(await t.context.crypto.verifyPassword('wrong-password', hash));
+  t.true(hash.startsWith('$argon2id$'));
+  t.not(hash, password);
 });

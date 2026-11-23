@@ -1,4 +1,5 @@
 mod candidate;
+mod claim;
 mod index;
 mod read;
 mod source;
@@ -11,13 +12,32 @@ use std::{
   sync::{Arc, Mutex as StdMutex, RwLock},
 };
 
+use claim::{claim_index_probe, claim_projection, release_index_probe, release_projection};
 use sqlx::PgPool;
 use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
 use types::*;
 
-use super::{RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider};
+use super::{
+  RuntimeError, RuntimeResult,
+  copilot::BackgroundEmbeddingProvider,
+  domain_command::{lock_workspace_doc_update, lock_workspace_storage_shared},
+  is_ordinary_workspace_doc, load_doc_states_in, load_legacy_workspace_in, workspace_lifecycle_active_in,
+};
 use crate::runtime::object_storage::ObjectStorageService;
+
+async fn legacy_document_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<Vec<String>>> {
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("load embedding document membership", error))?;
+  if workspace_lifecycle_active_in(&mut connection).await? {
+    Ok(None)
+  } else {
+    let legacy = load_legacy_workspace_in(&mut connection, workspace_id).await?;
+    Ok(Some(legacy.active_doc_ids().into_iter().collect()))
+  }
+}
 
 fn extraction_file_name(mime_type: &str) -> String {
   let extension = match mime_type {
@@ -95,10 +115,9 @@ impl EmbeddingService {
     &self,
     workspace_id: &str,
     documents: &[crate::runtime::types::DocumentEmbeddingProjectionInput],
-    reconcile: bool,
     priority: i32,
   ) -> RuntimeResult<()> {
-    source::sync_documents(&self.pool, workspace_id, documents, reconcile, priority).await?;
+    source::sync_documents(&self.pool, workspace_id, documents, priority).await?;
     self.wake();
     Ok(())
   }
@@ -126,12 +145,6 @@ impl EmbeddingService {
       }
       tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
-  }
-
-  pub(super) async fn reconcile_documents(&self, workspace_id: &str) -> RuntimeResult<()> {
-    source::reconcile_documents(&self.pool, workspace_id).await?;
-    self.wake();
-    Ok(())
   }
 
   pub(super) async fn health_counts(&self) -> RuntimeResult<EmbeddingQueueCounts> {
@@ -206,11 +219,11 @@ impl EmbeddingService {
   }
 
   async fn claim(&self, owner: &str) -> RuntimeResult<Option<ProjectionClaim>> {
-    store::claim_projection(&self.pool, owner).await
+    claim_projection(&self.pool, owner).await
   }
 
   async fn claim_probe(&self, owner: &str) -> RuntimeResult<Option<IndexProbeClaim>> {
-    store::claim_index_probe(&self.pool, owner).await
+    claim_index_probe(&self.pool, owner).await
   }
 
   async fn complete_probe(&self, claim: &IndexProbeClaim) -> RuntimeResult<()> {
@@ -239,11 +252,8 @@ impl EmbeddingService {
 pub(in crate::runtime::backend_runtime) async fn register_artifact_source(
   pool: &PgPool,
   artifact: &crate::runtime::types::RuntimeWorkspaceArtifact,
+  schema_ready: bool,
 ) -> RuntimeResult<()> {
-  let schema_ready: bool = sqlx::query_scalar("SELECT to_regclass('embedding_sources') IS NOT NULL")
-    .fetch_one(pool)
-    .await
-    .map_err(|error| RuntimeError::database("Embedding source schema health check failed", error))?;
   if !schema_ready {
     return Ok(());
   }

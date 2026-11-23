@@ -14,23 +14,14 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import supertest from 'supertest';
 
-import {
-  AFFiNELogger,
-  ApplyType,
-  GlobalExceptionFilter,
-  JobQueue,
-} from '../../base';
+import { AFFiNELogger, ApplyType, GlobalExceptionFilter } from '../../base';
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthService, AuthSigningKeyRing } from '../../core/auth';
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { UserModel } from '../../models';
-import {
-  createFactory,
-  MockedUser,
-  MockJobQueue,
-  MockUser,
-  MockUserInput,
-} from '../mocks';
+import { createFactory, MockedUser, MockUser, MockUserInput } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
 import { createTestingModule } from './testing-module';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
@@ -74,8 +65,21 @@ export async function createTestingApp(
     moduleDef.tapApp(app);
   }
 
-  await module.initTestingDB();
-  await app.init();
+  try {
+    await module.initTestingDB();
+    await app.init();
+    await app.get(BackendRuntimeProvider).runMigrations();
+    await app.get(StorageRuntimeProvider).runMigrations();
+    await app.get(BackendRuntimeProvider).activateWorkspaceLifecycleV1();
+    await app.listen(0);
+  } catch (error) {
+    try {
+      await app.close();
+    } finally {
+      await module.close();
+    }
+    throw error;
+  }
 
   return makeTestingApp(app);
 }
@@ -102,7 +106,6 @@ export class TestingApp extends ApplyType<INestApplication>() {
 
   readonly create!: ReturnType<typeof createFactory>;
   readonly mails!: MockMailer;
-  readonly queue!: MockJobQueue;
 
   [Symbol.asyncDispose](): Promise<void> {
     return this.close();
@@ -112,6 +115,42 @@ export class TestingApp extends ApplyType<INestApplication>() {
     await initTestingDB(this);
     await this.get(AuthSigningKeyRing).onConfigInit();
     this.clearAuth();
+  }
+
+  async createNativeAuthSession(
+    userId: string,
+    metadata: {
+      installationId?: string;
+      platform?: 'ios' | 'android' | 'electron';
+      deviceName?: string;
+      appVersion?: string;
+    } = {}
+  ) {
+    const rt = this.get(BackendRuntimeProvider);
+    const issued = await rt.executeAuthSessionCommandV1<{
+      exchangeCode: string;
+    }>({
+      action: 'issue_user',
+      userId,
+      issue: { type: 'native', clientVersion: metadata.appVersion },
+    });
+    return await rt.executeAuthSessionCommandV1<{
+      userId: string;
+      tokenType: 'Bearer';
+      accessToken: string;
+      expiresIn: number;
+      refreshToken: string;
+      refreshExpiresAt: string;
+      session: { id: string; absoluteExpiresAt: string };
+      isNewDevice: boolean;
+    }>({
+      action: 'exchange',
+      code: issued.exchangeCode,
+      installationId: metadata.installationId ?? `test-${randomUUID()}`,
+      platform: metadata.platform ?? 'ios',
+      deviceName: metadata.deviceName,
+      appVersion: metadata.appVersion,
+    });
   }
 
   clearAuth() {
@@ -366,9 +405,6 @@ function makeTestingApp(app: INestApplication): TestingApp {
   testingApp.create = createFactory(app.get(PrismaClient, { strict: false }));
   // @ts-expect-error allow
   testingApp.mails = app.get(Mailer, { strict: false }) as MockMailer;
-  // @ts-expect-error allow
-  testingApp.queue = app.get(JobQueue, { strict: false }) as MockJobQueue;
-
   return new Proxy(testingApp, {
     get(target, prop) {
       // @ts-expect-error override

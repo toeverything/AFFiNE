@@ -305,7 +305,7 @@ fn provision_error(status: u16, body: &[u8]) -> RuntimeError {
       error_type.as_deref(),
       Some("mapper_parsing_exception" | "strict_dynamic_mapping_exception" | "illegal_argument_exception")
     ) {
-      RuntimeError::invalid_state("provider_schema_failed")
+      RuntimeError::SearchGenerationInvalid("provider schema rejected generation".to_string())
     } else {
       RuntimeError::SearchProviderUnavailable
     };
@@ -490,7 +490,7 @@ mod tests {
     }
     assert!(matches!(
       validate_bulk_response(&json!({"errors":true,"items":[{"index":{"status":400,"error":{}}}]}), 1),
-      Err(RuntimeError::SearchSourceInvalid(_))
+      Err(RuntimeError::SearchGenerationInvalid(_))
     ));
     assert!(matches!(
       validate_bulk_response(&json!({"errors":true,"items":[{"index":{"status":429,"error":{}}}]}), 1),
@@ -502,7 +502,7 @@ mod tests {
     ));
     assert!(matches!(
       provision_error(400, br#"{"error":{"type":"mapper_parsing_exception"}}"#),
-      RuntimeError::InvalidState(_)
+      RuntimeError::SearchGenerationInvalid(_)
     ));
     assert!(matches!(provision_error(401, &[]), RuntimeError::Config(_)));
   }

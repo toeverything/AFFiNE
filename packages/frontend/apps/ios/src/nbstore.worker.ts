@@ -10,6 +10,7 @@ import {
 import { idbStoragesIndexerOnly } from '@affine/nbstore/idb';
 import {
   bindNativeDBApis,
+  getNativeMergeUpdates,
   type NativeDBApis,
   sqliteStorages,
 } from '@affine/nbstore/sqlite';
@@ -66,11 +67,25 @@ const consumer = new OpConsumer<WorkerManagerOps>(
   globalThis as MessageCommunicapable
 );
 
-const storeManager = new StoreManagerConsumer([
-  ...idbStoragesIndexerOnly,
-  ...sqliteStorages,
-  ...broadcastChannelStorages,
-  ...cloudStorages,
-]);
+const storeManager = new StoreManagerConsumer(
+  [
+    ...idbStoragesIndexerOnly,
+    ...sqliteStorages,
+    ...broadcastChannelStorages,
+    ...cloudStorages,
+  ],
+  {
+    mergeUpdates: updates => {
+      if (updates.length === 1) {
+        return updates[0];
+      }
+      const nativeMerge = getNativeMergeUpdates();
+      if (!nativeMerge) {
+        throw new Error('Native mergeUpdates is not bound');
+      }
+      return nativeMerge(updates);
+    },
+  }
+);
 
 storeManager.bindConsumer(consumer);

@@ -10,10 +10,10 @@ pub use action::copilot_action_recipe;
 pub use byok::{
   ByokCapabilityInput, ByokCatalogModelOutput, ByokCatalogOutput, ByokCatalogProviderOutput, ByokEndpointInput,
   ByokLocalLeaseOutput, ByokModelDeclarationInput, ByokModelProbeCheckOutput, ByokModelProbeOutput, ByokPolicyOutput,
-  ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput, ByokProfileOutput,
-  ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput, CreateByokProfileInput,
-  ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput, ReplaceByokProfileInput,
-  RotateByokCredentialInput, byok_catalog,
+  ByokProbeCheckInput, ByokProbeResultOutput, ByokProbeStatusOutput, ByokProfileDefinitionInput, ByokProfileOrderInput,
+  ByokProfileOutput, ByokValidationOutput, CreateByokLocalLeaseInput, CreateByokLocalLeaseProviderInput,
+  CreateByokProfileInput, ProbeByokDraftInput, ProbeByokProfileInput, ReorderByokProfilesInput,
+  ReplaceByokProfileInput, RotateByokCredentialInput, byok_catalog,
 };
 
 pub use self::core::{
@@ -39,8 +39,10 @@ pub use contract_schema::{llm_get_contract_schema, llm_validate_contract};
 pub(crate) use ffi::{
   LlmDispatchPayload, LlmMiddlewarePayload, LlmRerankDispatchPayload, LlmStructuredDispatchPayload,
 };
-pub use prompt_catalog::llm_get_built_in_route_options;
-pub(crate) use route::Deployment;
+pub(crate) use prompt_catalog::{
+  BuiltInManagedTargetTier, BuiltInRouteOptions, built_in_managed_operations, built_in_managed_target,
+  llm_get_built_in_route_options,
+};
 pub use route::{
   CopilotAccessProjection, CopilotExecuteInput, CopilotManagedTier, CopilotRouteCheckInput, CopilotTargetOverrideInput,
 };

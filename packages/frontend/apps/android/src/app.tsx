@@ -79,10 +79,6 @@ window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 const framework = new Framework();
 configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
@@ -473,18 +469,14 @@ const AndroidBackAdapter = () => {
 
 export function App() {
   return (
-    <Suspense>
+    <Suspense fallback={<AppFallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
           <MobileModalConfigProvider>
             <AffineContext store={getCurrentStore()}>
               <ThemeProvider />
               <AndroidBackAdapter />
-              <RouterProvider
-                fallbackElement={<AppFallback />}
-                router={router}
-                future={future}
-              />
+              <RouterProvider router={router} />
             </AffineContext>
           </MobileModalConfigProvider>
         </I18nProvider>
@@ -530,5 +522,11 @@ function createStoreManagerClient() {
     { type: 'auth-access-token-channel', port: authTokenChannelClient },
     [authTokenChannelClient]
   );
-  return new StoreManagerClient(new OpClient(worker));
+  const nativeMergeUpdates = NbStoreNativeDBApis.mergeUpdates;
+  return new StoreManagerClient(new OpClient(worker), {
+    mergeUpdates: nativeMergeUpdates
+      ? updates =>
+          updates.length === 1 ? updates[0] : nativeMergeUpdates(updates)
+      : undefined,
+  });
 }

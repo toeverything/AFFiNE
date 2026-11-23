@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=assets /app /app
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends openssl libjemalloc2 && \
+  apt-get install -y --no-install-recommends openssl libjemalloc2 ca-certificates && \
   rm -rf /var/lib/apt/lists/*
 
 # Enable jemalloc by preloading the library
@@ -32,4 +32,4 @@ ENV LD_PRELOAD=libjemalloc.so.2
 
 EXPOSE 3010
 
-CMD ["node", "./dist/main.js"]
+CMD ["sh", "-c", "node ./scripts/upgrade-config.js && exec node ./dist/main.js"]

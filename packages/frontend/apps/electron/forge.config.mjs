@@ -311,6 +311,11 @@ const makers = [
           '--share=network',
           // System notifications with libnotify
           '--talk-name=org.freedesktop.Notifications',
+          // Encrypted login sessions and API keys
+          '--talk-name=org.freedesktop.secrets',
+          '--talk-name=org.kde.kwalletd',
+          '--talk-name=org.kde.kwalletd5',
+          '--talk-name=org.kde.kwalletd6',
         ],
       },
     },
@@ -328,10 +333,12 @@ export default {
     name: productName,
     appBundleId: fromBuildIdentifier(appIdMap),
     icon: icnsPath,
-    osxSign: {
-      identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
-      'hardened-runtime': true,
-    },
+    osxSign: process.env.AFFINE_UNSIGNED_PACKAGE
+      ? undefined
+      : {
+          identity: 'Developer ID Application: TOEVERYTHING PTE. LTD.',
+          'hardened-runtime': true,
+        },
     electronZipDir: process.env.ELECTRON_FORGE_ELECTRON_ZIP_DIR,
     osxNotarize: process.env.APPLE_ID
       ? {

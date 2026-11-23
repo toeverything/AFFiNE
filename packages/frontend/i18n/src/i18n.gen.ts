@@ -3987,6 +3987,46 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.billing-setting.subtitle"](): string;
     /**
+      * `{{planName}} billing conflict`
+      */
+    ["com.affine.payment.billing-setting.subscription-conflict"](options: {
+        readonly planName: string;
+    }): string;
+    /**
+      * `More than one billing channel recorded a purchase for this plan. Check your purchases with each provider.`
+      */
+    ["com.affine.payment.billing-setting.subscription-conflict.description"](): string;
+    /**
+      * `Billed monthly`
+      */
+    ["com.affine.payment.billing-setting.subscription-billing.monthly"](): string;
+    /**
+      * `Billed yearly`
+      */
+    ["com.affine.payment.billing-setting.subscription-billing.yearly"](): string;
+    /**
+      * `Couldn’t load subscriptions`
+      */
+    ["com.affine.payment.billing-setting.load-failed"](): string;
+    /**
+      * `Couldn’t refresh subscriptions. Showing the last loaded subscriptions.`
+      */
+    ["com.affine.payment.billing-setting.refresh-failed"](): string;
+    /**
+      * `Retry`
+      */
+    ["com.affine.payment.billing-setting.retry"](): string;
+    /**
+      * `Manage {{planName}} billing`
+      */
+    ["com.affine.payment.billing-setting.subscription-manageable"](options: {
+        readonly planName: string;
+    }): string;
+    /**
+      * `Plan access is currently inactive. Review billing and renewal with the provider.`
+      */
+    ["com.affine.payment.billing-setting.subscription-manageable.description"](): string;
+    /**
       * `Billing`
       */
     ["com.affine.payment.billing-setting.title"](): string;
@@ -4666,6 +4706,18 @@ export function useAFFiNEI18N(): {
       * `Are you sure?`
       */
     ["com.affine.payment.modal.downgrade.title"](): string;
+    /**
+      * `End checkout`
+      */
+    ["com.affine.payment.modal.end-checkout.confirm"](): string;
+    /**
+      * `End your open Stripe checkout before starting a new one for this plan.`
+      */
+    ["com.affine.payment.modal.end-checkout.description"](): string;
+    /**
+      * `End the previous checkout?`
+      */
+    ["com.affine.payment.modal.end-checkout.title"](): string;
     /**
       * `Cancel`
       */
@@ -9595,6 +9647,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.audio.transcribing"](): string;
     /**
+      * `Transcription failed`
+      */
+    ["com.affine.audio.transcription-failed"](): string;
+    /**
       * `Unable to retrieve AI results for others`
       */
     ["com.affine.audio.transcribe.non-owner.confirm.title"](): string;
@@ -10061,6 +10117,12 @@ export function useAFFiNEI18N(): {
         readonly spaceId: string;
     }): string;
     /**
+      * `Permissions for Space {{spaceId}} changed during synchronization.`
+      */
+    ["error.SYNC_PERMISSION_GENERATION_CHANGED"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
       * `Owner of Space {{spaceId}} not found.`
       */
     ["error.SPACE_OWNER_NOT_FOUND"](options: {
@@ -10092,6 +10154,22 @@ export function useAFFiNEI18N(): {
         action: string;
         docId: string;
     }>): string;
+    /**
+      * `The document update is invalid.`
+      */
+    ["error.DOC_UPDATE_INVALID"](): string;
+    /**
+      * `The document update exceeds the size limit.`
+      */
+    ["error.DOC_UPDATE_TOO_LARGE"](): string;
+    /**
+      * `Workspace synchronization is temporarily unavailable.`
+      */
+    ["error.WORKSPACE_SYNC_UNAVAILABLE"](): string;
+    /**
+      * `Document validation is temporarily unavailable.`
+      */
+    ["error.DOC_VALIDATION_UNAVAILABLE"](): string;
     /**
       * `Doc {{docId}} under Space {{spaceId}} is blocked from updating.`
       */
@@ -10210,6 +10288,14 @@ export function useAFFiNEI18N(): {
       * `Failed to create checkout session.`
       */
     ["error.FAILED_TO_CHECKOUT"](): string;
+    /**
+      * `A purchase for this plan is still in progress.`
+      */
+    ["error.PURCHASE_IN_PROGRESS"](): string;
+    /**
+      * `This plan has a purchase that needs verification. Review your subscriptions before trying again.`
+      */
+    ["error.PURCHASE_NEEDS_VERIFICATION"](): string;
     /**
       * `Invalid checkout parameters provided.`
       */

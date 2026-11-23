@@ -84,6 +84,7 @@ export class CellBase<
     return toString({
       value: this.value$.value,
       data: this.property.data$.value,
+      dataSource: this.dataSource,
     });
   });
 

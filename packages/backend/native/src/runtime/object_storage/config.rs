@@ -1,9 +1,14 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use base64::{
+  Engine as _,
+  engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+};
 use hmac::{Hmac, KeyInit, Mac};
 use rusty_s3::{Bucket, Credentials, UrlStyle};
+use schemars::{JsonSchema, generate::SchemaSettings};
 use serde::Deserialize;
+use serde_json::{Value, json, to_value};
 use sha2::Sha256;
 use url::Url;
 
@@ -31,15 +36,17 @@ pub(crate) struct ObjectStorageConfig {
   pub(crate) presign_sign_content_type_for_put: Option<bool>,
   pub(crate) use_presigned_url: bool,
   pub(crate) proxy_upload: bool,
+  pub(crate) upload_url_prefix: Option<String>,
+  pub(crate) proxy_sign_key: Option<String>,
   pub(crate) custom_get_url_prefix: Option<String>,
   pub(crate) custom_get_sign_key: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct S3ConfigFile {
   endpoint: Option<String>,
-  region: Option<String>,
+  region: String,
   credentials: Option<S3CredentialsConfigFile>,
   force_path_style: Option<bool>,
   request_timeout_ms: Option<u64>,
@@ -49,7 +56,7 @@ struct S3ConfigFile {
   use_presigned_url: Option<UsePresignedUrlConfigFile>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct R2ConfigFile {
   account_id: String,
@@ -63,14 +70,14 @@ struct R2ConfigFile {
   use_presigned_url: Option<UsePresignedUrlConfigFile>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 enum R2Jurisdiction {
   Default,
   Eu,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct S3CredentialsConfigFile {
   access_key_id: Option<String>,
@@ -78,19 +85,72 @@ struct S3CredentialsConfigFile {
   session_token: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct S3PresignConfigFile {
   expires_in_seconds: Option<u64>,
   sign_content_type_for_put: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct UsePresignedUrlConfigFile {
   enabled: bool,
   url_prefix: Option<String>,
   sign_key: Option<String>,
+}
+
+pub(in crate::runtime) fn storage_provider_schema() -> Value {
+  let mut settings = SchemaSettings::draft07();
+  settings.inline_subschemas = true;
+  let s3 = to_value(settings.clone().into_generator().into_root_schema_for::<S3ConfigFile>())
+    .expect("S3 schema should serialize");
+  let r2 =
+    to_value(settings.into_generator().into_root_schema_for::<R2ConfigFile>()).expect("R2 schema should serialize");
+  let storage = |provider: &str, config: Value| {
+    json!({
+      "type": "object",
+      "required": ["provider", "bucket", "config"],
+      "properties": {
+        "provider": { "const": provider },
+        "bucket": { "type": "string" },
+        "config": config
+      }
+    })
+  };
+  json!({
+    "oneOf": [
+      storage("fs", json!({ "type": "object", "required": ["path"], "properties": { "path": { "type": "string" } } })),
+      storage("assetpack", json!({ "type": "object", "required": ["path"], "properties": { "path": { "type": "string" } } })),
+      storage("aws-s3", s3),
+      storage("cloudflare-r2", r2)
+    ]
+  })
+}
+
+impl UsePresignedUrlConfigFile {
+  fn settings(
+    self,
+  ) -> (
+    bool,
+    bool,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+  ) {
+    let prefix = self.url_prefix.filter(|value| !value.is_empty());
+    let key = self.sign_key.filter(|value| !value.is_empty());
+    let custom_get = self.enabled && prefix.is_some() && key.is_some();
+    (
+      self.enabled,
+      self.enabled && key.is_some(),
+      prefix.clone(),
+      key.clone(),
+      custom_get.then_some(prefix).flatten(),
+      custom_get.then_some(key).flatten(),
+    )
+  }
 }
 
 impl ObjectStorageConfig {
@@ -112,11 +172,13 @@ impl ObjectStorageConfig {
   pub(crate) fn from_s3_config(storage: StorageProviderConfig) -> ObjectStorageResult<Option<Self>> {
     let config: S3ConfigFile = serde_json::from_value(storage.config)
       .map_err(|err| ObjectStorageError::Config(format!("invalid aws-s3 blob storage config: {err}")))?;
-    let region = config
-      .region
-      .ok_or_else(|| ObjectStorageError::Config("aws-s3 blob storage config requires region".to_string()))?;
+    let region = config.region;
     let endpoint = config.endpoint.or_else(|| Some(resolve_s3_endpoint(&region)));
     let credentials = config.credentials.unwrap_or_default();
+    let (use_presigned_url, proxy_upload, upload_url_prefix, proxy_sign_key, _, _) = config
+      .use_presigned_url
+      .map(UsePresignedUrlConfigFile::settings)
+      .unwrap_or((false, false, None, None, None, None));
 
     Ok(Some(Self {
       provider: storage.provider,
@@ -131,8 +193,10 @@ impl ObjectStorageConfig {
       min_part_size: config.min_part_size,
       presign_expires_in_seconds: config.presign.as_ref().and_then(|v| v.expires_in_seconds),
       presign_sign_content_type_for_put: config.presign.as_ref().and_then(|v| v.sign_content_type_for_put),
-      use_presigned_url: config.use_presigned_url.map(|v| v.enabled).unwrap_or(false),
-      proxy_upload: false,
+      use_presigned_url,
+      proxy_upload,
+      upload_url_prefix,
+      proxy_sign_key,
       custom_get_url_prefix: None,
       custom_get_sign_key: None,
     }))
@@ -146,25 +210,17 @@ impl ObjectStorageConfig {
       Some(R2Jurisdiction::Default) | None => config.account_id,
     };
     let credentials = config.credentials.unwrap_or_default();
-    let (use_presigned_url, proxy_upload, custom_get_url_prefix, custom_get_sign_key) = config
+    let (
+      use_presigned_url,
+      proxy_upload,
+      upload_url_prefix,
+      proxy_sign_key,
+      custom_get_url_prefix,
+      custom_get_sign_key,
+    ) = config
       .use_presigned_url
-      .map(|value| {
-        let url_prefix = value.url_prefix.filter(|prefix| !prefix.is_empty());
-        let sign_key = value.sign_key.filter(|key| !key.is_empty());
-        let custom_get_enabled = value.enabled && url_prefix.is_some() && sign_key.is_some();
-        let (custom_get_url_prefix, custom_get_sign_key) = if custom_get_enabled {
-          (url_prefix, sign_key)
-        } else {
-          (None, None)
-        };
-        (
-          value.enabled,
-          custom_get_enabled,
-          custom_get_url_prefix,
-          custom_get_sign_key,
-        )
-      })
-      .unwrap_or((false, false, None, None));
+      .map(UsePresignedUrlConfigFile::settings)
+      .unwrap_or((false, false, None, None, None, None));
 
     Ok(Some(Self {
       provider: storage.provider,
@@ -181,9 +237,57 @@ impl ObjectStorageConfig {
       presign_sign_content_type_for_put: config.presign.as_ref().and_then(|v| v.sign_content_type_for_put),
       use_presigned_url,
       proxy_upload,
+      upload_url_prefix,
+      proxy_sign_key,
       custom_get_url_prefix,
       custom_get_sign_key,
     }))
+  }
+
+  pub(crate) fn proxy_upload_token(
+    &self,
+    path: &str,
+    fields: &[Value],
+    expires_at: i64,
+  ) -> ObjectStorageResult<Option<String>> {
+    // TODO(0.27.5): Review 0.27.4 upload URL compatibility after old instances
+    // and URLs expire.
+    let Some(key) = self.proxy_sign_key.as_ref().filter(|_| self.proxy_upload) else {
+      return Ok(None);
+    };
+    let mut canonical = vec![json!("affine-storage-upload"), json!(1), json!("PUT"), json!(path)];
+    canonical.extend_from_slice(fields);
+    canonical.push(json!(expires_at));
+    let payload = serde_json::to_vec(&canonical)
+      .map_err(|err| ObjectStorageError::Config(format!("invalid upload token payload: {err}")))?;
+    let mut mac = HmacSha256::new_from_slice(key.as_bytes())
+      .map_err(|err| ObjectStorageError::Config(format!("invalid upload signing key: {err}")))?;
+    mac.update(&payload);
+    Ok(Some(URL_SAFE_NO_PAD.encode(mac.finalize().into_bytes())))
+  }
+
+  pub(crate) fn verify_proxy_upload_token(
+    &self,
+    path: &str,
+    fields: &[Value],
+    expires_at: i64,
+    token: &str,
+  ) -> ObjectStorageResult<bool> {
+    let Some(key) = self.proxy_sign_key.as_ref().filter(|_| self.proxy_upload) else {
+      return Ok(false);
+    };
+    let Ok(signature) = URL_SAFE_NO_PAD.decode(token) else {
+      return Ok(false);
+    };
+    let mut canonical = vec![json!("affine-storage-upload"), json!(1), json!("PUT"), json!(path)];
+    canonical.extend_from_slice(fields);
+    canonical.push(json!(expires_at));
+    let payload = serde_json::to_vec(&canonical)
+      .map_err(|err| ObjectStorageError::Config(format!("invalid upload token payload: {err}")))?;
+    let mut mac = HmacSha256::new_from_slice(key.as_bytes())
+      .map_err(|err| ObjectStorageError::Config(format!("invalid upload signing key: {err}")))?;
+    mac.update(&payload);
+    Ok(mac.verify_slice(&signature).is_ok())
   }
 
   pub(crate) fn custom_presign_get(&self, key: &ObjectKey) -> ObjectStorageResult<Option<PresignedObjectRequest>> {

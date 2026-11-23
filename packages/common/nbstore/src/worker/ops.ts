@@ -14,12 +14,16 @@ import type { AvailableStorageImplementations } from '../impls';
 import type {
   AggregateResult,
   BlobRecord,
+  BlobSource,
   DocClock,
   DocClocks,
   DocDiff,
+  DocLifecycle,
+  DocLifecycleResult,
   DocRecord,
   DocUpdate,
   ListedBlobRecord,
+  PeerWorkspaceState,
   Query,
   SearchResult,
   StorageType,
@@ -55,7 +59,12 @@ interface GroupedWorkerOps {
     getDocTimestamps: [Date | null, DocClocks];
     getDocTimestamp: [string, DocClock | null];
     deleteDoc: [string, void];
+    applyDocLifecycle: [
+      { docId: string; lifecycle: DocLifecycle },
+      DocLifecycleResult,
+    ];
     subscribeDocUpdate: [void, { update: DocRecord; origin?: string }];
+    subscribeDocDelete: [void, string];
     waitForConnected: [void, void];
   };
 
@@ -86,6 +95,9 @@ interface GroupedWorkerOps {
   };
 
   docSync: {
+    workspaceState: [void, PeerWorkspaceState | null];
+    createDoc: [string, DocClock];
+    refreshWorkspaceState: [void, void];
     state: [void, DocSyncState];
     docState: [string, DocSyncDocState];
     waitForSynced: [string | null, void];
@@ -97,6 +109,8 @@ interface GroupedWorkerOps {
     state: [void, BlobSyncState];
     blobState: [string, BlobSyncBlobState];
     downloadBlob: [string, boolean];
+    registerSource: [BlobSource, void];
+    unregisterSource: [BlobSource, void];
     uploadBlob: [{ blob: BlobRecord; force?: boolean }, true];
     fullDownload: [string | null, void];
   };
@@ -118,6 +132,7 @@ interface GroupedWorkerOps {
   };
 
   indexerSync: {
+    docTitles: [void, Record<string, string>];
     state: [void, IndexerSyncState];
     docState: [string, IndexerDocSyncState];
     addPriority: [{ docId: string; priority: number }, boolean];

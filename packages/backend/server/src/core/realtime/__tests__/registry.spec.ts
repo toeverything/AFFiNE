@@ -1,19 +1,18 @@
-import {
-  getRealtimeInputKey,
-  type WorkspaceQuotaStateSnapshot,
-} from '@affine/realtime';
+import { getRealtimeInputKey } from '@affine/realtime';
 import test from 'ava';
 import { z } from 'zod';
 
 import { CANARY_CLIENT_VERSION_MAX_AGE_DAYS } from '../../../base';
 import { Flavor } from '../../../env';
 import { PublicDocMode } from '../../../models';
+import type { CopilotAccessService } from '../../../plugins/copilot/access';
 import { CopilotEmbeddingRealtimeProvider } from '../../../plugins/copilot/embedding/realtime';
 import type { CopilotTranscriptionReader } from '../../../plugins/copilot/transcript/reader';
 import { CopilotTranscriptRealtimeProvider } from '../../../plugins/copilot/transcript/realtime';
 import type { CopilotTranscriptionRetryService } from '../../../plugins/copilot/transcript/retry';
 import type { CurrentUser } from '../../auth';
 import { CommentRealtimeProvider } from '../../comment/realtime';
+import type { DocReader } from '../../doc/reader';
 import { NotificationRealtimeProvider } from '../../notification/realtime';
 import {
   DocRole,
@@ -74,6 +73,12 @@ function createGateway(registry: RealtimeRegistry) {
     publishLocal() {},
   } as unknown as RealtimePublisher);
 }
+
+const docReader = {
+  resolveStorageDocId: async (_workspaceId: string, docId: string) =>
+    docId === 'logical-doc' ? 'doc' : docId,
+  getDocIdAliases: async () => new Map([['logical-doc', 'doc']]),
+} as unknown as DocReader;
 
 test('registry rejects duplicate request and topic handlers', t => {
   const registry = new RealtimeRegistry();
@@ -422,12 +427,14 @@ test('front and sync realtime gateway required handlers are registered by lightw
   new DocShareRealtimeProvider(
     {} as never,
     {} as never,
+    docReader,
     registry
   ).onModuleInit();
   new DocGrantsRealtimeProvider(
     {} as never,
     {} as never,
     {} as never,
+    docReader,
     registry
   ).onModuleInit();
   new UserRealtimeProvider({} as never, registry).onModuleInit();
@@ -435,7 +442,8 @@ test('front and sync realtime gateway required handlers are registered by lightw
   new CommentRealtimeProvider(
     {} as never,
     {} as never,
-    registry
+    registry,
+    docReader
   ).onModuleInit();
   new CopilotEmbeddingRealtimeProvider(
     {} as never,
@@ -450,11 +458,7 @@ test('front and sync realtime gateway required handlers are registered by lightw
     registry,
     {} as never
   ).onModuleInit();
-  new QuotaStateRealtimeProvider(
-    {} as never,
-    {} as never,
-    registry
-  ).onModuleInit();
+  new QuotaStateRealtimeProvider({} as never, registry).onModuleInit();
 
   t.deepEqual(
     REALTIME_GATEWAY_REQUIRED_REQUESTS.filter(
@@ -521,7 +525,7 @@ test('workspace realtime providers register access, config, members and invite l
     },
   };
   const quotaState = {
-    getWorkspaceQuotaState: async () => ({ known: true, plan: 'team' }),
+    getWorkspaceQuotaStateV1: async () => ({ known: true, plan: 'team' }),
     reconcileWorkspaceQuotaState: async () => {
       throw new Error('workspace.access.get should not reconcile quota state');
     },
@@ -634,6 +638,7 @@ test('workspace realtime providers register access, config, members and invite l
 test('doc realtime providers register share state and grants handlers', async t => {
   const registry = new RealtimeRegistry();
   const assertedActions: string[] = [];
+  let revoked = false;
   const ac = {
     user(userId: string) {
       return {
@@ -648,6 +653,7 @@ test('doc realtime providers register share state and grants handlers', async t 
                   docId: 'doc',
                 }
               );
+              if (revoked) throw new Error('revoked physical grant');
               assertedActions.push(action);
             },
           };
@@ -708,18 +714,43 @@ test('doc realtime providers register share state and grants handlers', async t 
     }),
   };
 
-  new DocShareRealtimeProvider(ac, models as never, registry).onModuleInit();
+  new DocShareRealtimeProvider(
+    ac,
+    models as never,
+    docReader,
+    registry
+  ).onModuleInit();
   new DocGrantsRealtimeProvider(
     ac,
     models as never,
     grants as never,
+    docReader,
     registry
+  ).onModuleInit();
+
+  new CommentRealtimeProvider(
+    {
+      listCommentChanges: async (workspaceId: string, docId: string) => {
+        t.is(workspaceId, 'space');
+        t.is(docId, 'doc');
+        return [];
+      },
+    } as never,
+    {
+      user: (userId: string) => ({
+        workspace: (workspaceId: string) => ({
+          doc: (docId: string) => ac.user(userId).doc(workspaceId, docId),
+        }),
+      }),
+    } as never,
+    registry,
+    docReader
   ).onModuleInit();
 
   t.deepEqual(
     await registry.getRequest('doc.share-state.get').handle(user, {
       workspaceId: 'space',
-      docId: 'doc',
+      docId: 'logical-doc',
     }),
     {
       state: {
@@ -732,23 +763,64 @@ test('doc realtime providers register share state and grants handlers', async t 
   t.like(
     await registry.getRequest('doc.grants.get').handle(user, {
       workspaceId: 'space',
-      docId: 'doc',
+      docId: 'logical-doc',
       pagination: { first: 10 },
     }),
     { totalCount: 1 }
   );
   t.deepEqual(assertedActions, ['Doc.Read', 'Doc.Users.Read']);
+  t.like(
+    await registry
+      .getRequest('comment.changes.get')
+      .handle(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    { changes: [] }
+  );
+  t.is(
+    registry
+      .getTopic('comment.changed')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeCommentRoom('space', 'logical-doc')
+  );
   t.is(
     registry
       .getTopic('doc.share-state.changed')
-      .room(user, { workspaceId: 'space', docId: 'doc' }),
-    realtimeDocShareStateRoom('space', 'doc')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeDocShareStateRoom('space', 'logical-doc')
   );
   t.is(
     registry
       .getTopic('doc.grants.changed')
-      .room(user, { workspaceId: 'space', docId: 'doc' }),
-    realtimeDocGrantsRoom('space', 'doc')
+      .room(user, { workspaceId: 'space', docId: 'logical-doc' }),
+    realtimeDocGrantsRoom('space', 'logical-doc')
+  );
+  const input = { workspaceId: 'space', docId: 'logical-doc' };
+  for (const topic of [
+    'doc.share-state.changed',
+    'doc.grants.changed',
+    'comment.changed',
+  ] as const) {
+    await registry.getTopic(topic).authorize(user, input);
+  }
+  revoked = true;
+  for (const topic of [
+    'doc.share-state.changed',
+    'doc.grants.changed',
+    'comment.changed',
+  ] as const) {
+    await t.throwsAsync(registry.getTopic(topic).authorize(user, input), {
+      message: 'revoked physical grant',
+    });
+  }
+  await t.throwsAsync(
+    registry.getRequest('doc.share-state.get').handle(user, input)
+  );
+  await t.throwsAsync(
+    registry.getRequest('comment.changes.get').handle(user, input)
+  );
+  await t.throwsAsync(
+    registry
+      .getRequest('doc.grants.get')
+      .handle(user, { ...input, pagination: { first: 10 } })
   );
 });
 
@@ -814,7 +886,7 @@ test('user realtime provider snapshots private profile settings and access token
   });
 });
 
-test('new realtime providers publish changed events from domain events', t => {
+test('new realtime providers publish changed events from domain events', async t => {
   const published: unknown[][] = [];
   const publisher = {
     publish: (...args: unknown[]) => published.push(args),
@@ -828,6 +900,18 @@ test('new realtime providers publish changed events from domain events', t => {
     publisher
   );
   workspaceAccess.onMembersUpdated({ workspaceId: 'space' });
+  const quota = new QuotaStateRealtimeProvider(
+    {} as never,
+    undefined,
+    publisher
+  );
+  for (const invalidation of [
+    { version: 1, kind: 'quotaEntitlement', subject: 'workspace:space' },
+    { version: 1, kind: 'quotaSeatUsage', workspaceId: 'space' },
+  ] as const) {
+    workspaceAccess.onRuntimeInvalidation(invalidation);
+    quota.onRuntimeInvalidation(invalidation);
+  }
 
   const workspaceConfig = new WorkspaceConfigRealtimeProvider(
     {} as never,
@@ -850,19 +934,21 @@ test('new realtime providers publish changed events from domain events', t => {
   const docShare = new DocShareRealtimeProvider(
     {} as never,
     {} as never,
+    docReader,
     undefined,
     publisher
   );
-  docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
+  await docShare.onPublicStateChanged({ workspaceId: 'space', docId: 'doc' });
 
   const docGrants = new DocGrantsRealtimeProvider(
     {} as never,
     {} as never,
     {} as never,
+    docReader,
     undefined,
     publisher
   );
-  docGrants.onOwnerChanged({
+  await docGrants.onOwnerChanged({
     workspaceId: 'space',
     docId: 'doc',
     userId: 'u2',
@@ -872,62 +958,74 @@ test('new realtime providers publish changed events from domain events', t => {
     published.map(args => args[0]),
     [
       'workspace.access.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
+      'workspace.access.changed',
+      'workspace.quota-state.changed',
       'workspace.config.changed',
       'workspace.invite-link.changed',
       'doc.share-state.changed',
+      'doc.share-state.changed',
       'doc.grants.changed',
+      'doc.grants.changed',
+    ]
+  );
+  t.deepEqual(
+    published.slice(-4).map(args => args[1]),
+    [
+      { workspaceId: 'space', docId: 'doc' },
+      { workspaceId: 'space', docId: 'logical-doc' },
+      { workspaceId: 'space', docId: 'doc' },
+      { workspaceId: 'space', docId: 'logical-doc' },
+    ]
+  );
+  t.deepEqual(
+    published.slice(-4).map(args => args[3]),
+    [
+      { room: realtimeDocShareStateRoom('space', 'doc') },
+      { room: realtimeDocShareStateRoom('space', 'logical-doc') },
+      { room: realtimeDocGrantsRoom('space', 'doc') },
+      { room: realtimeDocGrantsRoom('space', 'logical-doc') },
     ]
   );
 });
 
-test('quota realtime provider exposes effective quota state snapshots', async t => {
+test('quota realtime provider exposes canonical quota state snapshots', async t => {
   const registry = new RealtimeRegistry();
+  const authorizations: unknown[] = [];
   const provider = new QuotaStateRealtimeProvider(
     {
-      workspaceUser: {
-        getActive: async () => ({ role: 'admin' }),
+      authorizePermissionV1: async (input: unknown) => {
+        authorizations.push(input);
+        return {
+          workspace: {
+            decisions: [{ action: 'Workspace.Read', allowed: true }],
+          },
+        };
       },
-    } as never,
-    {
-      reconcileUserQuotaState: async () => ({
-        userId: 'u1',
+      getUserQuotaStateV1: async () => ({
         plan: 'pro',
-        sourceEntitlementId: null,
-        blobLimit: 1n,
-        storageQuota: 2n,
-        usedStorageQuota: 3n,
+        blobLimit: 1,
+        storageQuota: 2,
+        usedStorageQuota: 3,
         historyPeriodSeconds: 4,
-        copilotActionLimit: null,
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
+        copilotActionLimit: undefined,
+        unlimitedCopilot: false,
       }),
-      reconcileWorkspaceQuotaState: async () => ({
-        workspaceId: 'space',
+      getWorkspaceQuotaStateV1: async () => ({
         plan: 'team',
-        sourceEntitlementId: null,
         ownerUserId: 'u1',
         usesOwnerQuota: false,
         seatLimit: 5,
         memberCount: 4,
         overcapacityMemberCount: 0,
-        blobLimit: 6n,
-        storageQuota: 7n,
-        usedStorageQuota: 8n,
+        blobLimit: 6,
+        storageQuota: 7,
+        usedStorageQuota: 8,
         historyPeriodSeconds: 9,
         readonly: false,
         readonlyReasons: [],
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
+        unlimitedCopilot: false,
       }),
     } as never,
     registry
@@ -935,34 +1033,23 @@ test('quota realtime provider exposes effective quota state snapshots', async t 
 
   provider.onModuleInit();
 
-  t.deepEqual(
-    await registry.getRequest('user.quota-state.get').handle(user, {}),
-    {
-      state: {
-        userId: 'u1',
-        plan: 'pro',
-        sourceEntitlementId: null,
-        blobLimit: 1,
-        storageQuota: 2,
-        usedStorageQuota: 3,
-        historyPeriodSeconds: 4,
-        copilotActionLimit: null,
-        flags: {},
-        known: true,
-        stale: false,
-        lastReconciledAt: null,
-        staleAfter: null,
-        createdAt: new Date(0),
-        updatedAt: new Date(0),
-      },
-    }
-  );
-  const workspaceQuotaState = (await registry
+  const userQuotaState = await registry
+    .getRequest('user.quota-state.get')
+    .handle(user, {});
+  const workspaceQuotaState = await registry
     .getRequest('workspace.quota-state.get')
-    .handle(user, { workspaceId: 'space' })) as {
-    state: WorkspaceQuotaStateSnapshot;
-  };
-  t.is(workspaceQuotaState.state.memberCount, 4);
+    .handle(user, { workspaceId: 'space' });
+
+  t.snapshot({ userQuotaState, workspaceQuotaState });
+  t.deepEqual(authorizations, [
+    {
+      version: 1,
+      workspaceId: 'space',
+      actorUserId: user.id,
+      workspaceActions: ['Workspace.Read'],
+      docs: [],
+    },
+  ]);
   t.is(
     registry
       .getTopic('workspace.quota-state.changed')
@@ -979,9 +1066,6 @@ test('copilot embedding realtime provider uses native health and progress', asyn
       return {
         workspace(workspaceId: string) {
           return {
-            allowLocal() {
-              return this;
-            },
             async assert(action: string) {
               assertions.push({ userId, workspaceId, action });
             },
@@ -994,13 +1078,14 @@ test('copilot embedding realtime provider uses native health and progress', asyn
     health: async () => ({ enabled: true }),
     progress: async () => ({ total: 5, embedded: 3 }),
   };
-  const config = { copilot: { enabled: true } };
+  let enabled = true;
+  const runtime = { copilotEnabled: () => enabled };
 
   const provider = new CopilotEmbeddingRealtimeProvider(
     ac,
     embedding as never,
     registry,
-    config as never
+    runtime as never
   );
   provider.onModuleInit();
 
@@ -1013,7 +1098,7 @@ test('copilot embedding realtime provider uses native health and progress', asyn
       embedded: 3,
     }
   );
-  config.copilot.enabled = false;
+  enabled = false;
   await t.throwsAsync(
     registry
       .getRequest('workspace.embedding.progress.get')
@@ -1034,29 +1119,43 @@ test('copilot embedding realtime provider uses native health and progress', asyn
 test('copilot transcript realtime provider registers task live query handlers', async t => {
   const registry = new RealtimeRegistry();
   const assertions: unknown[] = [];
-  const ac = {
-    user(userId: string) {
+  const access = {
+    async transcriptResource(
+      userId: string,
+      workspaceId: string,
+      resource: { taskId?: string; blobId?: string }
+    ) {
+      assertions.push({
+        userId,
+        workspaceId,
+        action: 'Workspace.Copilot',
+        ...resource,
+      });
+      return 'canonical' as const;
+    },
+  } as unknown as CopilotAccessService;
+  const transcript = {
+    async queryTaskInScope(input: {
+      userId: string;
+      workspaceId: string;
+      taskId?: string;
+      blobId?: string;
+    }) {
+      if (input.userId !== 'u1') return null;
       return {
-        workspace(workspaceId: string) {
-          return {
-            allowLocal() {
-              return this;
-            },
-            async assert(action: string) {
-              assertions.push({ userId, workspaceId, action });
-            },
-          };
-        },
+        id: input.taskId ?? input.blobId,
+        status: 'finished',
+        userId: input.userId,
+        workspaceId: input.workspaceId,
       };
     },
-  } as unknown as PermissionAccess;
-  const transcript = {
     async queryTask(
       userId: string,
       workspaceId: string,
       taskId?: string,
       blobId?: string
     ) {
+      if (userId !== 'u1') return null;
       return { id: taskId ?? blobId, status: 'finished', userId, workspaceId };
     },
   } as unknown as CopilotTranscriptionReader;
@@ -1065,8 +1164,8 @@ test('copilot transcript realtime provider registers task live query handlers', 
       return { id: taskId, status: 'running', userId, workspaceId };
     },
   } as unknown as CopilotTranscriptionRetryService;
-  new CopilotTranscriptRealtimeProvider(ac, transcript, retry, registry, {
-    copilot: { enabled: true },
+  new CopilotTranscriptRealtimeProvider(access, transcript, retry, registry, {
+    copilotEnabled: () => true,
   } as never).onModuleInit();
 
   t.deepEqual(
@@ -1097,9 +1196,45 @@ test('copilot transcript realtime provider registers task live query handlers', 
       },
     }
   );
+  await registry
+    .getTopic('copilot.transcript.task.changed')
+    .authorize(user, { workspaceId: 'space', taskId: 'task' });
+  await t.throwsAsync(
+    registry.getTopic('copilot.transcript.task.changed').authorize(
+      { ...user, id: 'u2' },
+      {
+        workspaceId: 'space',
+        taskId: 'task',
+      }
+    ),
+    { message: /not found/i }
+  );
   t.deepEqual(assertions, [
-    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
-    { userId: 'u1', workspaceId: 'space', action: 'Workspace.Copilot' },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+      blobId: undefined,
+    },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
+    {
+      userId: 'u1',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
+    {
+      userId: 'u2',
+      workspaceId: 'space',
+      action: 'Workspace.Copilot',
+      taskId: 'task',
+    },
   ]);
 });
 

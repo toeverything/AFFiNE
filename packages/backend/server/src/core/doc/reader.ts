@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import { Cache } from '../../base';
 import { Models } from '../../models';
+import {
+  diffDocUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  extractRootDocIdAliases,
+} from '../../native';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { WorkspaceBlobStorage } from '../storage';
 import {
   type CanvasProjectionV1,
@@ -51,6 +56,16 @@ export abstract class DocReader {
   parseWorkspaceContent(bin: Uint8Array) {
     return parseWorkspaceDoc(bin);
   }
+
+  abstract getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>>;
+
+  abstract resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string>;
 
   abstract getDoc(
     workspaceId: string,
@@ -156,11 +171,34 @@ export abstract class DocReader {
   ): Promise<WorkspaceDocInfo | null>;
 
   protected docDiff(update: Uint8Array, stateVector?: Uint8Array) {
-    const missing = stateVector ? diffUpdate(update, stateVector) : update;
-    const state = encodeStateVectorFromUpdate(update);
+    const bin = Buffer.from(
+      update.buffer,
+      update.byteOffset,
+      update.byteLength
+    );
+    const rawMissing =
+      stateVector && stateVector.length > 0
+        ? diffDocUpdateV1(
+            bin,
+            Buffer.from(
+              stateVector.buffer,
+              stateVector.byteOffset,
+              stateVector.byteLength
+            )
+          )
+        : update;
+    const rawState = encodeStateVectorFromUpdateV1(bin);
     return {
-      missing,
-      state,
+      missing: new Uint8Array(
+        rawMissing.buffer,
+        rawMissing.byteOffset,
+        rawMissing.byteLength
+      ),
+      state: new Uint8Array(
+        rawState.buffer,
+        rawState.byteOffset,
+        rawState.byteLength
+      ),
     };
   }
 }
@@ -171,9 +209,38 @@ export class DatabaseDocReader extends DocReader {
     protected override readonly cache: Cache,
     protected override readonly models: Models,
     protected override readonly blobStorage: WorkspaceBlobStorage,
-    protected readonly workspace: PgWorkspaceDocStorageAdapter
+    protected readonly workspace: PgWorkspaceDocStorageAdapter,
+    private readonly runtime: BackendRuntimeProvider
   ) {
     super(cache, models, blobStorage);
+  }
+
+  async getDocIdAliases(
+    workspaceId: string,
+    rootDoc?: DocRecord | null
+  ): Promise<Map<string, string>> {
+    const aliases = new Map<string, string>();
+    if (await this.runtime.getWorkspaceLifecycleActiveV1()) return aliases;
+    const root =
+      rootDoc === undefined
+        ? await this.workspace.getDoc(workspaceId, workspaceId)
+        : rootDoc;
+    if (!root) return aliases;
+    const extracted = extractRootDocIdAliases(
+      Buffer.from(root.bin.buffer, root.bin.byteOffset, root.bin.byteLength)
+    );
+    for (const [id, guid] of Object.entries(extracted)) {
+      aliases.set(id, guid);
+    }
+    return aliases;
+  }
+
+  async resolveStorageDocId(
+    workspaceId: string,
+    docId: string
+  ): Promise<string> {
+    if (docId === workspaceId) return docId;
+    return (await this.getDocIdAliases(workspaceId)).get(docId) ?? docId;
   }
 
   async getDoc(workspaceId: string, docId: string): Promise<DocRecord | null> {
@@ -243,7 +310,8 @@ export class DatabaseDocReader extends DocReader {
     guid: string,
     fullContent?: boolean
   ): Promise<PageDocContent | null> {
-    const docBinary = await this.workspace.getDocBinNative(workspaceId, guid);
+    const record = await this.workspace.getDoc(workspaceId, guid);
+    const docBinary = record?.bin;
     if (!docBinary) return null;
     return this.parseDocContent(docBinary, fullContent ? -1 : 150);
   }
