@@ -64,7 +64,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 **Multimodal AI partner ready to kick in any work**
 
-- Write up a professional work report? Turn an outline into expressive and presentable slides? Summarize an article into a well-structured mindmap? Sort your job plan and backlog tasks? Or... draw and code prototype apps and web pages directly, all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination, just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind maps for brainstorming.
+- Write up a professional work report? Turn an outline into expressive and presentable slides? Summarize an article into a well-structured mindmap? Sort your job plan and backlog tasks? Or... draw and code prototype apps and web pages directly, all with one prompt? [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination, just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind maps for brainstorming.
 
 **Local-first & Real-time collaborative**
 
