@@ -34,8 +34,11 @@ export const TrashPageFooter = () => {
 
   const onConfirmDelete = useCallback(() => {
     jumpToPage(workspace.id, 'all');
-    permanentlyDeletePage(doc.id);
-    toast(t['com.affine.toastMessage.permanentlyDeleted']());
+    permanentlyDeletePage(doc.id)
+      ?.then(() => {
+        toast(t['com.affine.toastMessage.permanentlyDeleted']());
+      })
+      .catch(error => console.error(error));
   }, [jumpToPage, workspace.id, doc.id, permanentlyDeletePage, t]);
 
   const onDelete = useCallback(() => {
