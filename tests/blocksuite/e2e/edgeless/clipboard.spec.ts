@@ -44,8 +44,6 @@ test.describe('mime', () => {
 
     await pasteContent(page, content);
 
-    // wait for paste
-    await page.waitForTimeout(200);
     await assertRichImage(page, 1);
   });
 

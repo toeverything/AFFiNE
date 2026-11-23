@@ -1,24 +1,65 @@
 # Working on AFFiNE Native Playground (for agents)
 
-These rules apply at repository root on the `darksky/native-playground` branch and topic branches under `darksky/np/**`. Subdirectory `AGENTS.md` files (notably `blocksuite/native-playground/AGENTS.md`) state narrower rules beside the code they govern.
+These rules apply at the repository root on the `darksky/native-playground` branch and on topic branches under `darksky/np/**`. Subdirectory `AGENTS.md` files (for example `blocksuite/native-playground/AGENTS.md`) give narrower rules beside the code they govern.
 
-## Branch & CI workflow
+## Branch and CI workflow
 
 - **Never merge to `canary`.** Integration lands on `darksky/native-playground` only.
-- **PR-less CI on push:** Push topic branches matching `darksky/np/**` (or `darksky/native-playground`) to trigger `.github/workflows/native-playground.yml` directly. `.github/workflows/build-test.yml` ignores `darksky/native-playground` pull requests so unrelated legacy jobs stay silent.
-- **Review council gate:** Every topic branch requires at least **3 of 4** review council approvals before squash-landing onto `darksky/native-playground`.
-- **Performance regression gate:** Any CI benchmark metric regressing by **more than 10%** against the rolling `N-3` baseline is routed to the dedicated performance guardian before landing.
-- **Cargo rustflags isolation:** Root `.cargo/config.toml` injects NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`) that Cargo concatenates into nested workspaces. Always build and test `blocksuite/native-playground`, `packages/backend`, `tools/frame-audit`, and `tools/parity-harness` with `CARGO_ENCODED_RUSTFLAGS=""` in the environment.
-- **Static gates and fast lanes:** `node scripts/ci/check-l0-tier-a.mjs` (no dependencies, under a second) guards `packages/backend/` layering and hygiene, the `waitForTimeout` / `.skip` ratchet in `scripts/ci/l0-ratchet.json` (counts may only go down, lower the ceiling with `--update-baseline`), and workflow references. `native-playground.yml` runs it with the frozen server contract checks (`scripts/oracle`), the `packages/backend/` checks, and the `tools/parity-harness` checks. It calls `np-web-fast.yml` (lint, typecheck, Node-only Vitest projects) when web sources change, and `np-web-build.yml` (production bundles of `@affine/web`, `@affine/mobile`, and `@affine/admin`, no Electron/Playwright downloads) when frontend sources change.
 
-## Engineering & testing principles
+- **PR-less CI on push:** A push to a topic branch that matches `darksky/np/**` (or to `darksky/native-playground`) starts `.github/workflows/native-playground.yml` directly. `.github/workflows/build-test.yml` ignores `darksky/native-playground` pull requests. Unrelated legacy jobs stay silent.
 
-- **Global optimum over band-aid patches**: Favor clean structural refactoring and bold deletion over minimal-diff workarounds, defensive clutter, or over-abstraction. Delete obsolete helpers, structs, and files outright, and fold single-caller one-way fragments back into their caller when they add indirection without clarity.
-- **Test names match actual scope**: Every test file and test function name must accurately reflect everything it asserts — never append unrelated assertions to a narrowly named test without renaming it to match.
-- **Table-driven tests**: Group related scenarios (geometry/hit-testing, parsers, key sequences, IME cases) into concise table-driven loops rather than proliferating near-identical `#[test]` functions.
+- **Review council gate:** Each topic branch needs at least **3 of 4** review council approvals. Then it can squash-land onto `darksky/native-playground`.
+
+- **Performance regression gate:** A CI benchmark metric can regress by **more than 10%** against the rolling `N-3` baseline. In that case, the performance guardian reviews the change before it lands.
+
+- **Cargo rustflags isolation:** Root `.cargo/config.toml` adds NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`). Cargo joins these flags into nested workspaces. Always set `CARGO_ENCODED_RUSTFLAGS=""` when you build and test `blocksuite/native-playground` and the standalone `packages/backend/` workspace.
+
+- **Static gates:** `node scripts/ci/check-l0-tier-a.mjs` has no dependencies and runs in under a second. It guards the `packages/backend/` layering and hygiene. It also guards workflow references and the `waitForTimeout` / `.skip` ratchet in `scripts/ci/l0-ratchet.json`. The ratchet counts can only go down. To lower the ceiling, run the script with `--update-baseline`.
+
+- **Fast lanes:** `native-playground.yml` always runs the L0 Tier-A check and the zero-backend CSF geometry audit (`scripts/ci/check-csf-frame-audit.mjs`). It also always runs the frozen server contract checks (`scripts/oracle`), the `packages/backend/` checks and the `tools/parity-harness` checks.
+
+- **Web lanes:** `native-playground.yml` calls `np-web-fast.yml` only when web sources change. That lane runs lint, typecheck and the Node-only Vitest projects. It calls `np-web-build.yml` only when frontend sources change. That lane builds the production bundles of `@affine/web`, `@affine/mobile` and `@affine/admin`. It downloads no Electron or Playwright binaries, and each bundle has eight minutes.
+
+## Pull requests and evidence
+
+- Open one PR per request from the target base branch. Split a PR only when a maintainer asks. External contributors open one PR per issue.
+
+- On `darksky/native-playground`, `darksky/np/**` slices run CI on push and squash-land onto `darksky/native-playground` without a PR. They never merge to `canary`.
+
+- Squash each task into one commit before its first PR. After that, append commits without a squash.
+
+- Set both author and committer to `DarkSky <darksky2048@gmail.com>` for all commits we create, including sub-chats and squashes. Do not add AI `Co-Authored-By` trailers. Keep the original author on external contributor commits.
+
+- End the PR description with the models you used and the test frameworks you ran.
+
+- For UI changes, attach before and after images. For animation or timing changes, also attach a short video. Upload the evidence to GitHub and link it in the PR. Never commit assets that only the PR needs.
+
+- Bug fixes merge after the latest checks pass. Product changes and changes that users can see need owner approval.
+
+## Commit, comment, and pull request messages
+
+- Follow `.agents/skills/ste-writing/SKILL.md` for commit messages, code comments, review comments, documentation, error messages, and PR titles and descriptions.
+
+- Write PR titles and descriptions in English.
+
+- Use `{type}({scope}): {description}` for commit subjects (for example `feat(server): add sync routes`).
+
+- To check a text, run `python3 .agents/skills/ste-writing/scripts/ste-lint.py <file>`.
+
+## Engineering and testing principles
+
+- **Global optimum over band-aid patches:** Prefer clean structural refactors and bold deletion. Do not add minimal-diff workarounds, defensive clutter or extra abstraction. Delete obsolete helpers, structs and files outright. If a fragment has one caller and adds indirection without clarity, fold it back into its caller.
+
+- **Test names match actual scope:** The name of each test file and test function must match everything that it asserts. Do not add unrelated assertions to a narrowly named test. If you must add them, rename the test to match.
+
+- **Table-driven tests:** Put related scenarios into short table-driven loops. Examples are geometry and hit tests, parsers, key sequences and IME cases. Do not add many near-identical `#[test]` functions.
+
+- **Deterministic tests:** Keep tests deterministic with test clocks and simulated networks. Never add sleeps, retries or longer deadlines. Never rerun a flaky check green. Find and remove the uncontrolled input.
 
 ## Keeping rules true
 
-- When a change makes any statement, path, command, or invariant in an `AGENTS.md` file inaccurate, update that `AGENTS.md` in the same commit.
-- A new directory with rules of its own gets an `AGENTS.md` and a one-line `CLAUDE.md` containing `@AGENTS.md`.
-- Keep code, comments, workflows, `AGENTS.md`, and commit messages free of internal process-journal jargon.
+- If a change makes a statement, path, command or invariant in an `AGENTS.md` file false, update that `AGENTS.md` in the same commit.
+
+- A new directory with rules of its own gets an `AGENTS.md` file and a one-line `CLAUDE.md` file that contains `@AGENTS.md`.
+
+- Keep code, comments, workflows, `AGENTS.md` files and commit messages free of internal process-journal jargon.

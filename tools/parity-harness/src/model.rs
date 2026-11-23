@@ -36,6 +36,11 @@ pub struct Scenario {
     /// same way (both rejecting a write, both missing an effect) are not equal.
     #[serde(default)]
     pub require: Vec<Requirement>,
+    /// Collapses repeated identical `quotaStorageUsage` invalidations and
+    /// `realtime.topic.changed` self-echo bursts when comparing against frozen
+    /// `v0.27.5` (which echoes its own Redis invalidations locally).
+    #[serde(default)]
+    pub collapse_redis_invalidation_echoes: bool,
 }
 
 /// A JSON pointer into one side's recorded observations (`/protocol/<i>/...`,
@@ -158,7 +163,10 @@ pub struct Part {
     pub name: String,
     pub filename: Option<String>,
     pub mime: Option<String>,
-    pub base64: String,
+    #[serde(default)]
+    pub base64: Option<String>,
+    #[serde(default)]
+    pub text: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

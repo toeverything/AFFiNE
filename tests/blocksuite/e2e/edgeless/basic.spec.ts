@@ -326,8 +326,7 @@ test('the tooltip of more button should be hidden when the action menu is shown'
     throw new Error('moreButtonBox is not found');
   }
 
-  // need to wait for previous tooltip to be hidden
-  await page.waitForTimeout(100);
+  await expect(tooltip).toBeHidden();
   await page.mouse.move(moreButtonBox.x + 10, moreButtonBox.y + 10);
   await expect(tooltip).toBeVisible();
 

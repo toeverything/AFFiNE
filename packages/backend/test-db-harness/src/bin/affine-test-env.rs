@@ -1,8 +1,9 @@
 //! `affine-test-env`: start, share and clean up the PostgreSQL/Redis test
 //! services, lease template clones, and write `run.json` reports.
 
-use std::{collections::BTreeMap, path::PathBuf, process::ExitCode, time::Duration};
+use std::{collections::BTreeMap, fs::File, io::BufReader, path::PathBuf, process::ExitCode, time::Duration};
 
+use frame_audit::{AuditViolation, FrameSnapshot, audit_frame_snapshot};
 use test_db_harness::{
   Container, Error, Result,
   migrations::MigrationSet,
@@ -36,6 +37,10 @@ usage: affine-test-env <command> [options]
            [--run-id <id>] [--sha <sha>] [--select <target>]...
            [--skip <target>=<reason>]... [--timing <name>=<ms>]...
       Write a run.json report.
+  audit-frames --frames <path>
+      Audit a JSON object of { name: FrameSnapshot } offline and print
+      { name: [AuditViolation] }. Violations are data; only unreadable input
+      fails.
 ";
 
 const PG_TEMPLATE_ENV: &str = "AFFINE_TEST_PG_TEMPLATE";
@@ -82,6 +87,7 @@ fn run(args: &[String]) -> Result<()> {
       Ok(())
     }
     "run-json" => run_json(&opts),
+    "audit-frames" => audit_frames(&opts),
     "-h" | "--help" | "help" => {
       print!("{USAGE}");
       Ok(())
@@ -141,6 +147,19 @@ fn down(opts: &Opts) -> Result<()> {
       println!("removed {key} {value}");
     }
   }
+  Ok(())
+}
+
+fn audit_frames(opts: &Opts) -> Result<()> {
+  let path = opts.required("frames")?;
+  let frames: BTreeMap<String, FrameSnapshot> =
+    serde_json::from_reader(BufReader::new(File::open(path)?)).map_err(|e| Error::new(format!("{path}: {e}")))?;
+  let report: BTreeMap<&str, Vec<AuditViolation>> = frames
+    .iter()
+    .map(|(name, frame)| (name.as_str(), audit_frame_snapshot(frame)))
+    .collect();
+  let json = serde_json::to_string(&report).map_err(|e| Error::new(e.to_string()))?;
+  println!("{json}");
   Ok(())
 }
 

@@ -1,0 +1,33 @@
+[package]
+name                   = "server-blob"
+version                = "0.1.0"
+edition.workspace      = true
+license.workspace      = true
+publish.workspace      = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait.workspace  = true
+base64.workspace       = true
+chrono.workspace       = true
+crc32fast.workspace    = true
+reqwest.workspace      = true
+rusty-s3.workspace     = true
+serde.workspace        = true
+serde_json.workspace   = true
+server-db.workspace    = true
+server-spi.workspace   = true
+server-types.workspace = true
+sqlx.workspace         = true
+thiserror.workspace    = true
+tokio.workspace        = true
+tracing.workspace      = true
+url.workspace          = true
+uuid.workspace         = true
+
+[dev-dependencies]
+axum.workspace            = true
+test-db-harness.workspace = true

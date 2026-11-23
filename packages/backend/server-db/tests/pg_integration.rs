@@ -126,6 +126,52 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
         .await
         .unwrap()
     );
+    let data_migrations: Vec<String> =
+      sqlx::query_scalar(r#"SELECT name FROM "_data_migrations" WHERE finished_at IS NOT NULL ORDER BY name ASC"#)
+        .fetch_all(conn.as_conn())
+        .await
+        .unwrap();
+    let mut expected_data_migrations: Vec<String> = phase_a_compat::bootstrap::V0275_DATA_MIGRATION_NAMES
+      .iter()
+      .map(|s| (*s).to_owned())
+      .collect();
+    expected_data_migrations.sort();
+    assert_eq!(
+      data_migrations, expected_data_migrations,
+      "fresh DB must seed all 10 completed v0.27.5 _data_migrations markers"
+    );
+
+    let (lifecycle_status, lifecycle_meta): (String, serde_json::Value) = sqlx::query_as(
+      "SELECT status, metadata
+       FROM storage_reconciliation_checkpoints
+       WHERE kind = 'workspace_doc_lifecycle_activation' AND scope = 'global'",
+    )
+    .fetch_one(conn.as_conn())
+    .await
+    .unwrap();
+    assert_eq!(lifecycle_status, "active");
+    assert_eq!(lifecycle_meta, serde_json::json!({ "protocolVersion": 2 }));
+
+    let native_ledger: Vec<(String, i32, String)> =
+      sqlx::query_as("SELECT component, version, checksum FROM native_schema_migrations ORDER BY component, version")
+        .fetch_all(conn.as_conn())
+        .await
+        .unwrap();
+    let ledger_pairs: Vec<(&str, i32)> = native_ledger.iter().map(|(c, v, _)| (c.as_str(), *v)).collect();
+    assert_eq!(
+      ledger_pairs,
+      vec![
+        ("embedding", 1),
+        ("embedding", 2),
+        ("search_projection", 1),
+        ("search_projection", 2),
+        ("search_projection", 3),
+        ("search_projection", 4),
+        ("search_projection", 5),
+        ("server_db_runtime", 1),
+      ]
+    );
+
     let cutover = phase_a_compat::check_cutover_invariants(conn.as_conn(), true)
       .await
       .unwrap();
@@ -139,7 +185,8 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
         .unwrap();
     drop(conn);
 
-    // Second run must be an idempotent no-op with zero changes to `_prisma_migrations`.
+    // Second run must be an idempotent no-op with zero changes to `_prisma_migrations`
+    // and must skip re-executing already-recorded native migrations.
     let second = db.ensure_schema_ready().await.expect("second ensure_schema_ready");
     assert_eq!(
       second,
@@ -155,6 +202,17 @@ fn fresh_empty_db_initializes_0275_baseline_and_is_idempotent() {
         .unwrap();
     assert_eq!(before_rerun, after_rerun);
     drop(conn);
+
+    // Tampering a recorded native_schema_migrations checksum must fail verification.
+    {
+      let mut conn = db.acquire_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      sqlx::query("UPDATE native_schema_migrations SET checksum = 'deadbeef' WHERE component = 'server_db_runtime'")
+        .execute(conn.as_conn())
+        .await
+        .unwrap();
+    }
+    let tampered = db.ensure_schema_ready().await.expect_err("tampered checksum must fail");
+    assert!(matches!(tampered, DbError::SchemaCheck(_)));
     db.pool().close().await;
   });
 }
@@ -204,7 +262,7 @@ fn partial_pre_0275_db_fails_with_stepping_stone_required() {
     let err = db
       .ensure_schema_ready()
       .await
-      .expect_err("partial DB must fail baseline gate check");
+      .expect_err("partial DB must fail baseline check");
     match err {
       DbError::SteppingStoneRequired {
         missing_migrations,
@@ -285,6 +343,48 @@ fn existing_0275_db_boots_cleanly_without_touching_prisma_migrations() {
       .unwrap();
     }
 
+    // Confirm `public.runtime_states` and `public.native_schema_migrations` do not exist
+    // before existing-DB `ensure_schema_ready()`.
+    {
+      let mut conn = db.acquire_tiered(WorkloadTier::InteractiveRead).await.unwrap();
+      let runtime_states_before: bool = sqlx::query_scalar("SELECT to_regclass('public.runtime_states') IS NOT NULL")
+        .fetch_one(conn.as_conn())
+        .await
+        .unwrap();
+      assert!(
+        !runtime_states_before,
+        "public.runtime_states must be absent before existing-DB ensure_schema_ready()"
+      );
+    }
+
+    // Without `_data_migrations` and `workspace_doc_lifecycle_activation`, existing-DB check must fail
+    // BEFORE running any native component migrations (leaving `native_schema_migrations` absent).
+    match db.ensure_schema_ready().await {
+      Err(DbError::SteppingStoneRequired { .. }) => {}
+      other => panic!("expected SteppingStoneRequired when runtime prerequisites are missing, got {other:?}"),
+    }
+    {
+      let mut conn = db.acquire_tiered(WorkloadTier::InteractiveRead).await.unwrap();
+      let native_table_exists: bool =
+        sqlx::query_scalar("SELECT to_regclass('public.native_schema_migrations') IS NOT NULL")
+          .fetch_one(conn.as_conn())
+          .await
+          .unwrap();
+      assert!(
+        !native_table_exists,
+        "existing-DB prerequisite rejection must happen before creating native_schema_migrations"
+      );
+    }
+
+    // Now seed the completed v0.27.5 data migrations and lifecycle checkpoint.
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      server_db::phase_a_compat::bootstrap::seed_fresh_0275_bootstrap_markers(tx.tx_mut())
+        .await
+        .unwrap();
+      tx.commit().await.unwrap();
+    }
+
     let readiness = db.ensure_schema_ready().await.unwrap();
     assert_eq!(
       readiness,
@@ -312,12 +412,14 @@ fn existing_0275_db_boots_cleanly_without_touching_prisma_migrations() {
       .await
       .unwrap();
     assert!(ledger_exists);
-    let runtime_table_exists: bool =
-      sqlx::query_scalar("SELECT to_regclass('public.storage_reconciliation_checkpoints') IS NOT NULL")
-        .fetch_one(conn.as_conn())
-        .await
-        .unwrap();
-    assert!(runtime_table_exists, "existing-DB bootstrap must ensure runtime tables exist");
+    let runtime_states_after: bool = sqlx::query_scalar("SELECT to_regclass('public.runtime_states') IS NOT NULL")
+      .fetch_one(conn.as_conn())
+      .await
+      .unwrap();
+    assert!(
+      runtime_states_after,
+      "public.runtime_states must exist after existing-DB ensure_schema_ready()"
+    );
     drop(conn);
     db.pool().close().await;
   });
@@ -555,6 +657,286 @@ fn tiered_semaphores_timeouts_and_query_scope_counters() {
     assert_eq!(snap_b.queries, 1);
     assert!(snap_b.assert_within(1, 1, 1).is_ok());
     assert!(snap_b.assert_within(0, 1, 1).is_err());
+
+    db.pool().close().await;
+  });
+}
+
+#[test]
+fn phase_a_sessions_four_table_lifecycle_and_monotonic_updates() {
+  use chrono::{Duration as ChronoDuration, Utc};
+  use server_db::{
+    phase_a_compat::{sessions::PhaseASessionRepository, updates::insert_monotonic_doc_update},
+    sessions::{DEFAULT_COOKIE_SESSION_TTL_SECONDS, NewAuthSessionInput, SessionRepository as _},
+  };
+
+  let cluster = PgCluster::from_env_or_docker().expect("test PG16 cluster");
+  let empty = EmptyDbGuard::create(&cluster, "phasea");
+
+  let rt = test_runtime();
+  rt.block_on(async {
+    let db = ServerDb::connect(DbConfig::new(&empty.url)).await.unwrap();
+    db.ensure_schema_ready().await.unwrap();
+
+    let user_id = uuid::Uuid::new_v4().to_string();
+    let ws_id = uuid::Uuid::new_v4().to_string();
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      sqlx::query(
+        "INSERT INTO users (id, name, email, registered, disabled, auth_epoch, created_at)
+         VALUES ($1, 'PhaseA User', 'phasea@affine.test', true, false, 0, now())",
+      )
+      .bind(&user_id)
+      .execute(tx.tx_mut().as_mut())
+      .await
+      .unwrap();
+      sqlx::query("INSERT INTO workspaces (id) VALUES ($1)")
+        .bind(&ws_id)
+        .execute(tx.tx_mut().as_mut())
+        .await
+        .unwrap();
+      tx.commit().await.unwrap();
+    }
+
+    let repo = PhaseASessionRepository;
+    let now = Utc::now();
+
+    // 1. Cookie session issue + resolve + revoke across multiple_users_sessions & user_sessions.
+    let issued_cookie = {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      let res = repo
+        .issue_cookie_session(
+          tx.tx_mut(),
+          &user_id,
+          None,
+          Some("0.27.5"),
+          DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+          now,
+        )
+        .await
+        .unwrap();
+      tx.commit().await.unwrap();
+      res
+    };
+
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveRead).await.unwrap();
+      let resolved = repo
+        .resolve_cookie_session(
+          tx.tx_mut(),
+          &issued_cookie.session_id,
+          Some(&user_id),
+          None,
+          false,
+          DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+          604_800,
+          now + ChronoDuration::seconds(10),
+        )
+        .await
+        .unwrap()
+        .expect("cookie session must resolve");
+      assert_eq!(resolved.user_id, user_id);
+      assert_eq!(resolved.session_id, issued_cookie.session_id);
+      tx.commit().await.unwrap();
+    }
+
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      let revoked = repo
+        .revoke_cookie_session(tx.tx_mut(), &issued_cookie.session_id, None)
+        .await
+        .unwrap();
+      assert_eq!(revoked, 1);
+      tx.commit().await.unwrap();
+    }
+
+    // 1b. Multi-account cookie session: requesting a disabled user must return None
+    //     on BOTH lock-free (`refresh = false`) and locked (`refresh = true`) paths,
+    //     never silently falling back to another active user in the same session.
+    {
+      let disabled_user_id = uuid::Uuid::new_v4().to_string();
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      sqlx::query(
+        r#"INSERT INTO users (id, name, email, registered, disabled)
+           VALUES ($1, 'Disabled User', 'disabled-phase-a@affine.test', true, true)"#,
+      )
+      .bind(&disabled_user_id)
+      .execute(tx.tx_mut().as_mut())
+      .await
+      .unwrap();
+      let multi_b = repo
+        .issue_cookie_session(
+          tx.tx_mut(),
+          &user_id,
+          None,
+          Some("0.27.5"),
+          DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+          now,
+        )
+        .await
+        .unwrap();
+      let _multi_a = repo
+        .issue_cookie_session(
+          tx.tx_mut(),
+          &disabled_user_id,
+          Some(&multi_b.session_id),
+          Some("0.27.5"),
+          DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+          now + ChronoDuration::seconds(1),
+        )
+        .await
+        .unwrap();
+      tx.commit().await.unwrap();
+
+      for refresh in [false, true] {
+        let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+        let resolved_disabled = repo
+          .resolve_cookie_session(
+            tx.tx_mut(),
+            &multi_b.session_id,
+            Some(&disabled_user_id),
+            None,
+            refresh,
+            DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+            604_800,
+            now + ChronoDuration::seconds(2),
+          )
+          .await
+          .unwrap();
+        assert!(
+          resolved_disabled.is_none(),
+          "resolve_cookie_session(refresh={refresh}) must not fall back to another user when requested user is disabled"
+        );
+        let resolved_active = repo
+          .resolve_cookie_session(
+            tx.tx_mut(),
+            &multi_b.session_id,
+            Some(&user_id),
+            None,
+            refresh,
+            DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+            604_800,
+            now + ChronoDuration::seconds(2),
+          )
+          .await
+          .unwrap()
+          .expect("active user in shared session must still resolve");
+        assert_eq!(resolved_active.user_id, user_id);
+        tx.commit().await.unwrap();
+      }
+    }
+
+    // 2. Bearer/native auth session atomic 4-table write + list + revoke.
+    let issued_auth = {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      let res = repo
+        .issue_auth_session(
+          tx.tx_mut(),
+          NewAuthSessionInput {
+            user_id: user_id.clone(),
+            installation_id: "inst-1".to_owned(),
+            platform: "electron".to_owned(),
+            device_name: Some("MacBook".to_owned()),
+            app_version: Some("0.27.5".to_owned()),
+            refresh_token_id: uuid::Uuid::new_v4().to_string(),
+            refresh_secret_hash: "hash-0".to_owned(),
+            idle_expires_at: now + ChronoDuration::days(30),
+            absolute_expires_at: now + ChronoDuration::days(180),
+          },
+          now,
+        )
+        .await
+        .unwrap();
+      assert!(res.is_new_device);
+      tx.commit().await.unwrap();
+      res
+    };
+
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveRead).await.unwrap();
+      let active = repo
+        .list_active_auth_sessions(tx.tx_mut(), &user_id, now)
+        .await
+        .unwrap();
+      assert_eq!(active.len(), 1);
+      assert_eq!(active[0].id, issued_auth.auth_session_id);
+      tx.commit().await.unwrap();
+    }
+
+    {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      let expires_before: Option<chrono::DateTime<Utc>> =
+        sqlx::query_scalar("SELECT expires_at FROM user_sessions WHERE id = $1")
+          .bind(&issued_auth.user_session_id)
+          .fetch_one(tx.tx_mut().as_mut())
+          .await
+          .unwrap();
+      let changed = repo
+        .revoke_auth_session(
+          tx.tx_mut(),
+          &issued_auth.auth_session_id,
+          Some(&user_id),
+          "user_logout",
+          now,
+        )
+        .await
+        .unwrap();
+      assert!(changed);
+      let expires_after: Option<chrono::DateTime<Utc>> =
+        sqlx::query_scalar("SELECT expires_at FROM user_sessions WHERE id = $1")
+          .bind(&issued_auth.user_session_id)
+          .fetch_one(tx.tx_mut().as_mut())
+          .await
+          .unwrap();
+      assert_eq!(
+        expires_before, expires_after,
+        "revoke_auth_session must not mutate user_sessions (v0.27.5 DB parity)"
+      );
+      let active = repo
+        .list_active_auth_sessions(tx.tx_mut(), &user_id, now)
+        .await
+        .unwrap();
+      assert!(active.is_empty());
+      for refresh in [false, true] {
+        let resolved_underlying = repo
+          .resolve_cookie_session(
+            tx.tx_mut(),
+            &issued_auth.session_id,
+            Some(&user_id),
+            None,
+            refresh,
+            DEFAULT_COOKIE_SESSION_TTL_SECONDS,
+            604_800,
+            now,
+          )
+          .await
+          .unwrap();
+        assert!(
+          resolved_underlying.is_none(),
+          "resolve_cookie_session(refresh={refresh}) must reject cookie tied to revoked auth_session"
+        );
+      }
+      tx.commit().await.unwrap();
+    }
+
+    // 3. Monotonic millisecond timestamps for public.updates under rapid back-to-back inserts.
+    let mut timestamps = Vec::new();
+    for i in 0..5_u8 {
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveWrite).await.unwrap();
+      let ts = insert_monotonic_doc_update(tx.tx_mut(), &ws_id, "doc-mono", &[i, 1, 2], Some(&user_id))
+        .await
+        .unwrap();
+      tx.commit().await.unwrap();
+      timestamps.push(ts);
+    }
+    for pair in timestamps.windows(2) {
+      assert!(
+        pair[1] > pair[0],
+        "expected strictly increasing ms timestamps: {:?} <= {:?}",
+        pair[1],
+        pair[0]
+      );
+    }
 
     db.pool().close().await;
   });

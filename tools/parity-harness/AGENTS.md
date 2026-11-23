@@ -91,3 +91,40 @@ their requirements. Re-record it when the scenario or the baseline changes.
 Dynamic rules in the scenario cover only per-process values: identifiers,
 timestamps, cookie and session tokens, salted password hashes, generated
 signing secrets and the instances' own ports.
+
+## Live `v0.27.5` vs `affine-server` parity and coexistence
+
+`scripts/run-v0275-vs-vnew-parity.mjs` verifies the frozen `@affine/server`
+checkout (`--server-root`, default expected SHA `c2929acf2d24456c40c2df164e068d1d3d59d7fd`,
+clean git tree), records the candidate `affine-server` SHA-256 and repo HEAD in
+`summary.json`, and runs three live checks against identical `v0.27.5` predeploy
+baselines (`run`, `validate-cutover`, `activate-workspace-lifecycle`):
+
+- **Core HTTP, GraphQL, blob, mail, and sync replay**: replays
+  `scenarios/v0275-vs-vnew-parity.json` (18 steps covering `/info`, setup,
+  `set-cookie` comparison, CSRF sign-out negative/positive, password sign-in,
+  `currentUser`, `createWorkspace`, multipart GraphQL `setBlob`, legacy
+  `GET /api/workspaces/:id/blobs/:name` `403 UNSUPPORTED_CLIENT_VERSION`,
+  workspace and user non-zero storage quota, Socket.IO `doc_sync`, `deleteBlob`
+  and `releaseDeletedBlobs`, `appConfig`, and `sendTestEmail`) with
+  adjacent-window `collapse_redis_invalidation_echoes` (cleared across non-echo
+  boundaries such as `sync.doc.updates.pushed` so missing second-stage
+  invalidations are never masked) and explicit `originChannel` verification
+  (`"production"` vs `"v2:production"`), requiring 0 differences.
+- **Magic-Link end-to-end delivery and database snapshot diff**: starts
+  dual-side local SMTP capture servers, triggers `POST /api/auth/sign-in` on
+  both servers, waits naturally for both workers to deliver the Magic-Link email
+  over SMTP and finalize `mail_deliveries` to `sent`/`anonymized`, extracts the
+  6-digit OTP directly from each captured SMTP email body (asserting identical
+  subjects), completes `POST /api/auth/magic-link`, `GET /api/auth/session`, and
+  CSRF `POST /api/auth/sign-out`, and diffs 97-table PostgreSQL snapshots (0
+  differences, excluding `_prisma_migrations`, `native_schema_migrations`,
+  `runtime_rolling_quota_counters`, `storage_reconciliation_checkpoints`, and
+  `sync_active_users_minutely`), followed by live DB row and recorded GraphQL
+  fault injections.
+- **Shared-database and shared-Redis live coexistence**: boots both servers on
+  one shared PostgreSQL 16 database and one shared Redis 7 instance and verifies
+  bidirectional real-time Socket.IO `space:broadcast-doc-updates`,
+  `space:broadcast-doc-invalidation`, and `space:load-doc` convergence with
+  distinct incremental Yjs updates decoded and verified for merged content and
+  state vector equality.

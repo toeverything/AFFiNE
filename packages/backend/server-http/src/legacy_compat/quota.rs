@@ -1,26 +1,40 @@
 //! `v0.27.5` GraphQL `WorkspaceQuotaType` and `WorkspaceQuotaHumanReadableType`
 //! compatibility projection from canonical [`server_types::AccessGrant`].
 
-use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, SimpleObject, Value};
+use async_graphql::{
+  ComplexObject, ErrorExtensions, InputValueError, InputValueResult, Scalar, ScalarType, SimpleObject, Value,
+};
 use serde::{Deserialize, Serialize};
 use server_types::{AccessGrant, LicenseTier};
 
 const ONE_KB: f64 = 1024.0;
 const BYTE_UNITS: [&str; 9] = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
-/// `v0.27.5` `SafeInt` GraphQL scalar (transparent `i64` JSON integer).
+/// `v0.27.5` `SafeInt` GraphQL scalar (transparent `i64` JSON integer within
+/// ECMAScript safe integer bounds `±(2^53 - 1)`).
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct SafeInt(pub i64);
+
+impl SafeInt {
+  pub fn try_from_i64(val: i64) -> Result<Self, &'static str> {
+    if !(-server_types::license::MAX_SAFE_INT..=server_types::license::MAX_SAFE_INT).contains(&val) {
+      return Err("SafeInt exceeds ECMAScript safe integer bounds");
+    }
+    Ok(Self(val))
+  }
+}
 
 #[Scalar(name = "SafeInt")]
 impl ScalarType for SafeInt {
   fn parse(value: Value) -> InputValueResult<Self> {
     match value {
-      Value::Number(n) => n
-        .as_i64()
-        .map(SafeInt)
-        .ok_or_else(|| InputValueError::custom("SafeInt must be a 64-bit integer")),
+      Value::Number(n) => {
+        let val = n
+          .as_i64()
+          .ok_or_else(|| InputValueError::custom("SafeInt must be a 64-bit integer"))?;
+        Self::try_from_i64(val).map_err(InputValueError::custom)
+      }
       other => Err(InputValueError::expected_type(other)),
     }
   }
@@ -62,9 +76,93 @@ pub fn format_date(seconds: i64) -> String {
 pub fn legacy_plan_name(tier: LicenseTier) -> &'static str {
   match tier {
     LicenseTier::SelfhostDefault | LicenseTier::CloudPro => "Pro",
+    LicenseTier::CloudLifetimePro => "Lifetime Pro",
     LicenseTier::SelfhostTeam | LicenseTier::SelfhostEnterprise | LicenseTier::CloudTeam => "Team",
     LicenseTier::CloudAi => "AI",
     LicenseTier::CloudFree => "Free",
+  }
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[graphql(name = "UserQuotaHumanReadableType")]
+#[serde(rename_all = "camelCase")]
+pub struct UserQuotaHumanReadableType {
+  pub name: String,
+  pub blob_limit: String,
+  pub storage_quota: String,
+  pub used_storage_quota: String,
+  pub history_period: String,
+  pub member_limit: String,
+  pub copilot_action_limit: String,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[graphql(name = "UserQuotaType", complex)]
+#[serde(rename_all = "camelCase")]
+pub struct UserQuotaType {
+  pub name: String,
+  #[graphql(skip)]
+  pub blob_limit: i64,
+  #[graphql(skip)]
+  pub storage_quota: i64,
+  #[graphql(skip)]
+  pub used_storage_quota: i64,
+  #[graphql(skip)]
+  pub history_period: i64,
+  pub member_limit: i32,
+  pub copilot_action_limit: Option<i32>,
+  pub human_readable: UserQuotaHumanReadableType,
+}
+
+#[ComplexObject]
+impl UserQuotaType {
+  async fn blob_limit(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.blob_limit).map_err(|_| safe_int_output_error(self.blob_limit))
+  }
+
+  async fn storage_quota(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.storage_quota).map_err(|_| safe_int_output_error(self.storage_quota))
+  }
+
+  async fn used_storage_quota(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.used_storage_quota).map_err(|_| safe_int_output_error(self.used_storage_quota))
+  }
+
+  async fn history_period(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.history_period).map_err(|_| safe_int_output_error(self.history_period))
+  }
+}
+
+/// Projects a canonical [`AccessGrant`] into `v0.27.5` `UserQuotaType`.
+pub fn user_quota_from_grant(grant: &AccessGrant, used_storage_quota: i64) -> UserQuotaType {
+  let name = legacy_plan_name(grant.tier).to_owned();
+  let blob_limit = grant.limits.blob_limit_bytes;
+  let storage_quota = grant.limits.storage_quota_bytes;
+  let history_period = grant.limits.history_period_seconds;
+  let member_limit = grant.limits.seat_limit;
+  let copilot_action_limit = grant.limits.copilot_action_limit;
+
+  let human_readable = UserQuotaHumanReadableType {
+    name: name.clone(),
+    blob_limit: format_size(blob_limit, 2),
+    storage_quota: format_size(storage_quota, 2),
+    used_storage_quota: format_size(used_storage_quota, 2),
+    history_period: format_date(history_period),
+    member_limit: member_limit.to_string(),
+    copilot_action_limit: copilot_action_limit
+      .map(|n| n.to_string())
+      .unwrap_or_else(|| "unlimited".to_owned()),
+  };
+
+  UserQuotaType {
+    name,
+    blob_limit,
+    storage_quota,
+    used_storage_quota,
+    history_period,
+    member_limit,
+    copilot_action_limit,
+    human_readable,
   }
 }
 
@@ -83,22 +181,64 @@ pub struct WorkspaceQuotaHumanReadableType {
 }
 
 #[derive(SimpleObject, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-#[graphql(name = "WorkspaceQuotaType")]
+#[graphql(name = "WorkspaceQuotaType", complex)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceQuotaType {
   pub name: String,
-  pub blob_limit: SafeInt,
-  pub storage_quota: SafeInt,
-  pub used_storage_quota: SafeInt,
-  pub history_period: SafeInt,
+  #[graphql(skip)]
+  pub blob_limit: i64,
+  #[graphql(skip)]
+  pub storage_quota: i64,
+  #[graphql(skip)]
+  pub used_storage_quota: i64,
+  #[graphql(skip)]
+  pub history_period: i64,
   pub member_limit: i32,
   pub member_count: i32,
   pub overcapacity_member_count: i32,
   pub human_readable: WorkspaceQuotaHumanReadableType,
 }
 
+/// Builds the exact `v0.27.5` GraphQL error produced when `graphql-scalars@2.0.1`
+/// `GraphQLSafeInt.serialize` rejects an out-of-range integer and `formatError` /
+/// `mapAnyError` maps it to `InternalServerError` (`500 / INTERNAL_SERVER_ERROR`)
+/// while preserving the outer `SafeInt` serialization message.
+fn safe_int_output_error(val: i64) -> async_graphql::Error {
+  let envelope =
+    crate::legacy_compat::errors::domain_error_to_envelope(&server_types::DomainError::Internal(String::new()));
+  async_graphql::Error::new(format!("SafeInt cannot represent unsafe integer value: {val}")).extend_with(|_, ext| {
+    ext.set("status", envelope.status);
+    ext.set("code", envelope.code.clone());
+    ext.set("type", envelope.error_type.clone());
+    ext.set("name", envelope.name.clone());
+    ext.set("message", envelope.message.clone());
+  })
+}
+
+#[ComplexObject]
+impl WorkspaceQuotaType {
+  async fn blob_limit(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.blob_limit).map_err(|_| safe_int_output_error(self.blob_limit))
+  }
+
+  async fn storage_quota(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.storage_quota).map_err(|_| safe_int_output_error(self.storage_quota))
+  }
+
+  async fn used_storage_quota(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.used_storage_quota).map_err(|_| safe_int_output_error(self.used_storage_quota))
+  }
+
+  async fn history_period(&self) -> async_graphql::Result<SafeInt> {
+    SafeInt::try_from_i64(self.history_period).map_err(|_| safe_int_output_error(self.history_period))
+  }
+}
+
 /// Projects a canonical [`AccessGrant`] plus current usage counters into the
-/// exact `v0.27.5` GraphQL [`WorkspaceQuotaType`].
+/// exact `v0.27.5` GraphQL [`WorkspaceQuotaType`]. `SafeInt` range validation
+/// (`±(2^53 - 1)`) is enforced lazily in each GraphQL field resolver so queries
+/// that only select non-overflowing fields still succeed and overflowing fields
+/// report their exact GraphQL error `path`.
 pub fn workspace_quota_from_grant(
   grant: &AccessGrant,
   used_storage_quota: i64,
@@ -124,10 +264,10 @@ pub fn workspace_quota_from_grant(
 
   WorkspaceQuotaType {
     name,
-    blob_limit: SafeInt(blob_limit),
-    storage_quota: SafeInt(storage_quota),
-    used_storage_quota: SafeInt(used_storage_quota),
-    history_period: SafeInt(history_period),
+    blob_limit,
+    storage_quota,
+    used_storage_quota,
+    history_period,
     member_limit,
     member_count,
     overcapacity_member_count,
@@ -140,11 +280,11 @@ mod tests {
   use std::collections::BTreeMap;
   use std::path::Path;
 
-  use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+  use async_graphql::{EmptySubscription, Schema};
   use server_types::{Limits, Rights};
 
   use super::*;
-  use crate::graphql::QueryRoot;
+  use crate::graphql::{MutationRoot, QueryRoot};
 
   fn extract_gql_type_signatures(sdl: &str, type_name: &str) -> BTreeMap<String, String> {
     let header = format!("type {type_name} {{");
@@ -195,10 +335,10 @@ mod tests {
     let default_grant = server_types::license::default_selfhost_access_grant();
     let default_quota = workspace_quota_from_grant(&default_grant, 104_857_600, 3);
     assert_eq!(default_quota.name, "Pro");
-    assert_eq!(default_quota.blob_limit, SafeInt(104_857_600));
-    assert_eq!(default_quota.storage_quota, SafeInt(107_374_182_400));
-    assert_eq!(default_quota.used_storage_quota, SafeInt(104_857_600));
-    assert_eq!(default_quota.history_period, SafeInt(2_592_000));
+    assert_eq!(default_quota.blob_limit, 104_857_600);
+    assert_eq!(default_quota.storage_quota, 107_374_182_400);
+    assert_eq!(default_quota.used_storage_quota, 104_857_600);
+    assert_eq!(default_quota.history_period, 2_592_000);
     assert_eq!(default_quota.member_limit, 10);
     assert_eq!(default_quota.member_count, 3);
     assert_eq!(default_quota.overcapacity_member_count, 0);
@@ -251,6 +391,31 @@ mod tests {
     let ent_quota = workspace_quota_from_grant(&ent_grant, 0, 10);
     assert_eq!(ent_quota.name, "Team");
     assert_eq!(ent_quota.overcapacity_member_count, 0);
+
+    // 4. CloudLifetimePro -> legacy name "Lifetime Pro"
+    assert_eq!(legacy_plan_name(LicenseTier::CloudLifetimePro), "Lifetime Pro");
+  }
+
+  #[test]
+  fn safe_int_enforces_ecmascript_safe_integer_bounds() {
+    use server_types::license::MAX_SAFE_INT;
+
+    assert_eq!(
+      SafeInt::parse(Value::Number(MAX_SAFE_INT.into())).unwrap(),
+      SafeInt(MAX_SAFE_INT)
+    );
+    assert_eq!(
+      SafeInt::parse(Value::Number((-MAX_SAFE_INT).into())).unwrap(),
+      SafeInt(-MAX_SAFE_INT)
+    );
+    assert!(SafeInt::parse(Value::Number((MAX_SAFE_INT + 1).into())).is_err());
+    assert!(SafeInt::parse(Value::Number((-MAX_SAFE_INT - 1).into())).is_err());
+
+    // Field-level SafeInt conversion rejects out-of-range values rather than silently clamping.
+    assert_eq!(SafeInt::try_from_i64(MAX_SAFE_INT).unwrap(), SafeInt(MAX_SAFE_INT));
+    assert_eq!(SafeInt::try_from_i64(-MAX_SAFE_INT).unwrap(), SafeInt(-MAX_SAFE_INT));
+    assert!(SafeInt::try_from_i64(MAX_SAFE_INT + 1).is_err());
+    assert!(SafeInt::try_from_i64(-MAX_SAFE_INT - 1).is_err());
   }
 
   #[test]
@@ -259,10 +424,15 @@ mod tests {
     let oracle_sdl =
       std::fs::read_to_string(&oracle_path).unwrap_or_else(|e| panic!("failed to read {}: {e}", oracle_path.display()));
 
-    let generated_sdl = Schema::new(QueryRoot, EmptyMutation, EmptySubscription).sdl();
+    let generated_sdl = Schema::new(QueryRoot, MutationRoot, EmptySubscription).sdl();
 
     // Exact field name + GraphQL type (including SafeInt!, Int!, String! non-nullability)
-    for type_name in ["WorkspaceQuotaType", "WorkspaceQuotaHumanReadableType"] {
+    for type_name in [
+      "WorkspaceQuotaType",
+      "WorkspaceQuotaHumanReadableType",
+      "UserQuotaType",
+      "UserQuotaHumanReadableType",
+    ] {
       let oracle_sigs = extract_gql_type_signatures(&oracle_sdl, type_name);
       let generated_sigs = extract_gql_type_signatures(&generated_sdl, type_name);
       assert_eq!(

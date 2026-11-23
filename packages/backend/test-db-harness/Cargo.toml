@@ -15,10 +15,11 @@ name = "affine-test-env"
 path = "src/bin/affine-test-env.rs"
 
 [dependencies]
-postgres   = { workspace = true }
-serde      = { workspace = true }
-serde_json = { workspace = true }
-sha2       = { workspace = true }
+frame-audit = { workspace = true }
+postgres    = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+sha2        = { workspace = true }
 
 [lints]
 workspace = true

@@ -14,18 +14,25 @@ arc-swap.workspace           = true
 async-graphql.workspace      = true
 async-graphql-axum.workspace = true
 axum.workspace               = true
+base64.workspace             = true
+bytes.workspace              = true
 chrono.workspace             = true
 http.workspace               = true
 redis.workspace              = true
 serde.workspace              = true
 serde_json.workspace         = true
+server-blob.workspace        = true
 server-db.workspace          = true
+server-domain.workspace      = true
+server-mail.workspace        = true
 server-spi.workspace         = true
 server-types.workspace       = true
 sqlx.workspace               = true
 tokio.workspace              = true
 tower-http.workspace         = true
 tracing.workspace            = true
+url.workspace                = true
+uuid.workspace               = true
 
 [dev-dependencies]
 test-db-harness.workspace = true

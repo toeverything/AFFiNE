@@ -246,6 +246,12 @@ fn compare_with(
             }
         }
     }
+    if scenario.collapse_redis_invalidation_echoes {
+        left["effects"]["redis"] =
+            collapse_redis_invalidation_echoes(left["effects"]["redis"].take());
+        right["effects"]["redis"] =
+            collapse_redis_invalidation_echoes(right["effects"]["redis"].take());
+    }
     normalizer.compare(
         "/effects/redis",
         &left["effects"]["redis"],
@@ -295,6 +301,50 @@ fn unmet(requirement: &model::Requirement, side: &Value) -> Option<String> {
     };
     (!held).then(|| "requirement not met".into())
 }
+fn collapse_redis_invalidation_echoes(events: Value) -> Value {
+    let Some(arr) = events.as_array() else {
+        return events;
+    };
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::with_capacity(arr.len());
+    for item in arr {
+        let channel = item.get("channel").and_then(Value::as_str).unwrap_or("");
+        let val = item.pointer("/payload/value");
+        let kind = val.and_then(|v| v.get("kind")).and_then(Value::as_str);
+        let event = val.and_then(|v| v.get("event")).and_then(Value::as_str);
+        let dedupe_key = if kind == Some("quotaStorageUsage") {
+            let subject = val
+                .and_then(|v| v.get("subject"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            Some(format!("{channel}:quotaStorageUsage:{subject}"))
+        } else if event == Some("realtime.topic.changed") {
+            let topic = val
+                .and_then(|v| v.pointer("/payload/topic"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let room = val
+                .and_then(|v| v.pointer("/payload/room"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            Some(format!("{channel}:realtime.topic.changed:{topic}:{room}"))
+        } else {
+            None
+        };
+        if let Some(key) = dedupe_key {
+            if !seen.insert(key) {
+                continue;
+            }
+        } else {
+            // Reset dedupe window across any non-collapsible event so echoes are only
+            // collapsed within the same operation phase, never across distinct phases.
+            seen.clear();
+        }
+        out.push(item.clone());
+    }
+    Value::Array(out)
+}
+
 async fn start_smtp(bind: &Option<String>) -> Result<Option<SmtpSink>> {
     match bind {
         Some(b) => Ok(Some(SmtpSink::bind(b).await?)),
@@ -440,6 +490,66 @@ mod snapshot_tests {
             ]
         );
     }
+    #[test]
+    fn adjacent_window_redis_collapse_preserves_second_phase_quota_invalidation() {
+        let scenario: Scenario = serde_json::from_value(json!({
+            "left_target":{"base_url":"http://127.0.0.1:1"},
+            "right_target":{"base_url":"http://127.0.0.1:2"},
+            "collapse_redis_invalidation_echoes": true,
+            "steps":[{"name":"info","kind":"http","method":"GET","path":"/info"}]
+        }))
+        .unwrap();
+        let quota_ws = json!({
+            "channel": "affine:backend-runtime:invalidation:v1",
+            "payload": {"encoding": "json", "value": {"kind": "quotaStorageUsage", "subject": "ws-1"}}
+        });
+        let doc_pushed = json!({
+            "channel": "affine:eventbus:v1",
+            "payload": {"encoding": "json", "value": {"event": "sync.doc.updates.pushed"}}
+        });
+        // Left emits setBlob quota echo (x2), then doc_sync event, then deleteBlob quota.
+        let left = json!({
+            "protocol": [{"status": 200}],
+            "database": {},
+            "effects": {
+                "smtp": [],
+                "redis": [quota_ws.clone(), quota_ws.clone(), doc_pushed.clone(), quota_ws.clone()]
+            }
+        });
+        // Right emits setBlob quota (x1), then doc_sync event, but OMITS deleteBlob quota.
+        let right_missing_second = json!({
+            "protocol": [{"status": 200}],
+            "database": {},
+            "effects": {
+                "smtp": [],
+                "redis": [quota_ws.clone(), doc_pushed.clone()]
+            }
+        });
+        let report_diff = compare(&scenario, left.clone(), right_missing_second).unwrap();
+        assert!(
+            !report_diff.is_equal(),
+            "missing second-phase quotaStorageUsage must NOT be masked by adjacent echo collapsing"
+        );
+        assert!(
+            report_diff
+                .differences
+                .iter()
+                .any(|d| d.path.starts_with("/effects/redis"))
+        );
+
+        // When right also emits the second-phase quotaStorageUsage, both sides collapse to 3 events and match.
+        let right_ok = json!({
+            "protocol": [{"status": 200}],
+            "database": {},
+            "effects": {
+                "smtp": [],
+                "redis": [quota_ws.clone(), doc_pushed, quota_ws]
+            }
+        });
+        let report_ok = compare(&scenario, left, right_ok).unwrap();
+        assert!(report_ok.is_equal(), "diffs: {:?}", report_ok.differences);
+    }
+
     #[tokio::test]
     async fn empty_scenarios_are_rejected() {
         let scenario:Scenario=serde_json::from_value(json!({"left_target":{"base_url":"http://127.0.0.1:1"},"right_target":{"base_url":"http://127.0.0.1:2"},"steps":[]})).unwrap();

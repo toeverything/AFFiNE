@@ -69,6 +69,7 @@ jobs:
               - '.yarn/**'
               - '.oxlintrc.json'
               - '.oxfmtrc.json'
+              - '.prettierignore'
               - '.github/actions/setup-node/**'
               - '.github/workflows/np-web-fast.yml'
             web-build:
@@ -166,11 +167,13 @@ jobs:
           step parity-fmt cargo fmt "${parity[@]}" --all -- --check
           step parity-clippy cargo clippy --locked "${parity[@]}" --workspace --all-targets -- -D warnings
           step parity-test cargo test --locked "${parity[@]}" --workspace
+          step csf-frame-audit node ../../scripts/ci/check-csf-frame-audit.mjs
           cargo run --locked --quiet -p test-db-harness --bin affine-test-env -- \
             run-json --out ../../.artifacts/server-harness/run.json --lane server-harness --status "$status" \
             --sha "${{ github.sha }}" --run-id "${{ github.run_id }}-${{ github.run_attempt }}" \
-            --select frame-audit --select test-db-harness --select parity-harness \
-            --select server-types --select server-db --select server-spi \
+            --select frame-audit --select csf-frame-audit --select test-db-harness --select parity-harness \
+            --select server-types --select server-db --select server-spi --select server-domain \
+            --select server-mail --select server-blob --select server-sync \
             --select server-http --select server-worker --select affine-server "${timings[@]}"
           cat ../../.artifacts/server-harness/run.json
           test "$status" = passed
@@ -180,7 +183,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: server-harness-run
-          path: .artifacts/server-harness/run.json
+          path: |
+            .artifacts/server-harness/run.json
+            .artifacts/csf-frame-audit/frames.json
           if-no-files-found: ignore
 
   lint-and-wasm:

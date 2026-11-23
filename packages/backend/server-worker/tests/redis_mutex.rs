@@ -185,3 +185,95 @@ async fn worker_supervisor_drain_aborts_stubborn_task_before_releasing_lock() {
 
   successor.release().await.expect("release successor lease");
 }
+
+#[tokio::test]
+async fn concurrent_drains_wait_for_one_drain_and_leases_after_shutdown_are_released_at_once() {
+  struct DropFlag(Arc<AtomicBool>);
+  impl Drop for DropFlag {
+    fn drop(&mut self) {
+      self.0.store(true, Ordering::SeqCst);
+    }
+  }
+
+  let test_redis = TestRedis::from_env_or_docker().expect("test redis");
+  let (session_url, _) = session_redis_url(test_redis.url()).expect("session url");
+  let mutex = RedisMutex::new(&session_url, test_redis.key_prefix()).expect("redis mutex");
+  let acquire = |label: &'static str| {
+    let mutex = mutex.clone();
+    async move {
+      let resource = format!("worker:{label}:{}", uuid::Uuid::new_v4());
+      let lease = mutex
+        .try_acquire(&resource, new_owner_token(label), DEFAULT_LOCK_TTL_SECS)
+        .await
+        .expect("acquire lease");
+      (resource, lease)
+    }
+  };
+
+  let (tracked_resource, tracked) = acquire("tracked").await;
+  let shutdown = CancellationToken::new();
+  let supervisor = WorkerSupervisor::new(shutdown.clone());
+  assert!(supervisor.track_lease(tracked).await);
+
+  // A task that ignores cancellation, so the drain must wait out its timeout
+  // and abort it before releasing the tracked lease.
+  let terminated = Arc::new(AtomicBool::new(false));
+  let started = Arc::new(tokio::sync::Notify::new());
+  {
+    let terminated = Arc::clone(&terminated);
+    let started = Arc::clone(&started);
+    supervisor
+      .spawn(move |_ignored| async move {
+        let _guard = DropFlag(terminated);
+        started.notify_one();
+        tokio::time::sleep(Duration::from_secs(60)).await;
+      })
+      .await;
+  }
+  started.notified().await;
+
+  let first = tokio::spawn({
+    let supervisor = supervisor.clone();
+    async move { supervisor.drain(Duration::from_millis(300)).await }
+  });
+  shutdown.cancelled().await;
+
+  // Offered while the first drain is still waiting for the stubborn task.
+  let (late_resource, late) = acquire("late").await;
+  assert!(
+    !supervisor.track_lease(late).await,
+    "a lease offered during drain is not tracked"
+  );
+  assert_eq!(
+    mutex.current_owner(&late_resource).await.unwrap(),
+    None,
+    "and is released at once"
+  );
+
+  // The second caller joins the running drain: when it returns, the task is
+  // gone and the tracked lock is released, although its own timeout is longer.
+  let second = supervisor.drain(Duration::from_secs(30)).await;
+  assert!(
+    terminated.load(Ordering::SeqCst),
+    "second drain returned before the task terminated"
+  );
+  assert_eq!(
+    mutex.current_owner(&tracked_resource).await.unwrap(),
+    None,
+    "second drain returned before the tracked lease was released"
+  );
+  assert_eq!((first.await.unwrap(), second), (1, 1));
+  assert_eq!(
+    supervisor.drain(Duration::ZERO).await,
+    1,
+    "a later drain reports the finished drain"
+  );
+
+  // Shutdown signalled without any drain also refuses new leases.
+  let signalled = CancellationToken::new();
+  signalled.cancel();
+  let idle = WorkerSupervisor::new(signalled);
+  let (refused_resource, refused) = acquire("refused").await;
+  assert!(!idle.track_lease(refused).await);
+  assert_eq!(mutex.current_owner(&refused_resource).await.unwrap(), None);
+}

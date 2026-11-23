@@ -767,7 +767,7 @@ test.describe('slash menu with style', () => {
     await expect(slashMenu).toBeVisible();
     const bold = page.getByTestId('Bold');
     await bold.click();
-    await page.waitForTimeout(50);
+    await expect(slashMenu).toBeHidden();
     await type(page, 'hello');
 
     expect(await getPageSnapshot(page, true)).toMatchSnapshot(

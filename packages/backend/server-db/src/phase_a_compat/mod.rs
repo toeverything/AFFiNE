@@ -1,7 +1,13 @@
-//! Compatibility storage adapters for shared database schemas.
+//! `v0.27.5` co-existence SQL helpers.
 //!
 //! Kept isolated under `phase_a_compat` so canonical domain crates never depend
-//! on shared-schema checkpoint tables or cutover checks.
+//! on transition-era checkpoint tables or cutover checks.
+
+pub mod bootstrap;
+pub mod sessions;
+pub mod updates;
+
+pub use bootstrap::verify_existing_0275_runtime_prerequisites;
 
 use crate::DbError;
 

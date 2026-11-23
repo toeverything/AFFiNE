@@ -1,7 +1,8 @@
-//! HTTP + GraphQL transport skeleton (`axum 0.8` + `async-graphql 7`).
+//! HTTP + GraphQL transport (`axum 0.8` + `async-graphql 7`).
 
 pub mod graphql;
 pub mod legacy_compat;
+pub mod rest;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -10,38 +11,73 @@ use arc_swap::ArcSwap;
 use async_graphql::http::GraphiQLSource;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::extract::{Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
+use server_blob::{BlobService, LocalFsBlobStorage};
 use server_db::ServerDb;
+use server_db::phase_a_compat::sessions::PhaseASessionRepository;
+use server_domain::app_config::{AppConfigService, RuntimeAppConfigBaseline};
+use server_domain::auth::{AuthConfig, AuthService};
+use server_domain::events::{EventBusPublisher, InvalidationPublisher, NoopEventPublisher};
+use server_domain::users::UserService;
+use server_domain::workspaces::WorkspaceService;
 use server_spi::ServerExtension;
 use server_types::{DeploymentMode, ServerRole};
 use tower_http::trace::TraceLayer;
 
-use crate::graphql::{AppSchema, build_schema};
+use crate::graphql::{AppSchema, AuthenticatedUser, build_schema};
+use crate::rest::{json_utf8_response, resolve_request_principal};
 
 /// Lock-free runtime configuration snapshot stored inside [`AppState`].
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone)]
 pub struct RuntimeConfig {
   pub server_version: String,
+  pub server_name: String,
+  pub external_url: String,
+  pub https: bool,
   pub deployment_mode: DeploymentMode,
   pub role: ServerRole,
   pub redis_db_index: u8,
   pub session_redis_db_index: u8,
   pub graphql_playground: bool,
+  pub smtp_password: String,
+  pub app_config_baseline: RuntimeAppConfigBaseline,
+}
+
+impl std::fmt::Debug for RuntimeConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("RuntimeConfig")
+      .field("server_version", &self.server_version)
+      .field("server_name", &self.server_name)
+      .field("external_url", &self.external_url)
+      .field("https", &self.https)
+      .field("deployment_mode", &self.deployment_mode)
+      .field("role", &self.role)
+      .field("redis_db_index", &self.redis_db_index)
+      .field("session_redis_db_index", &self.session_redis_db_index)
+      .field("graphql_playground", &self.graphql_playground)
+      .field("smtp_password", &"[REDACTED]")
+      .finish()
+  }
 }
 
 impl Default for RuntimeConfig {
   fn default() -> Self {
     Self {
       server_version: "0.27.5".to_owned(),
+      server_name: "AFFiNE".to_owned(),
+      external_url: "http://localhost:3010".to_owned(),
+      https: false,
       deployment_mode: DeploymentMode::Selfhosted,
       role: ServerRole::Allinone,
       redis_db_index: 0,
       session_redis_db_index: 2,
       graphql_playground: false,
+      smtp_password: String::new(),
+      app_config_baseline: RuntimeAppConfigBaseline::default(),
     }
   }
 }
@@ -52,20 +88,91 @@ pub struct AppState {
   pub redis: Option<redis::Client>,
   pub config: ArcSwap<RuntimeConfig>,
   pub extension: Arc<dyn ServerExtension>,
+  pub auth: AuthService,
+  pub users: UserService,
+  pub workspaces: WorkspaceService,
+  pub app_config: AppConfigService,
+  pub blobs: BlobService,
+  pub invalidation: Arc<dyn InvalidationPublisher>,
+  pub event_bus: Arc<dyn EventBusPublisher>,
+}
+
+/// Pre-wired domain services passed into [`AppState::with_services`].
+pub struct AppServices {
+  pub auth: AuthService,
+  pub users: UserService,
+  pub workspaces: WorkspaceService,
+  pub app_config: AppConfigService,
+  pub blobs: BlobService,
+  pub invalidation: Arc<dyn InvalidationPublisher>,
+  pub event_bus: Arc<dyn EventBusPublisher>,
 }
 
 impl AppState {
+  /// Constructs an [`AppState`] with default community services (suitable for
+  /// tests and lightweight setups). Production entrypoints should prefer
+  /// [`AppState::with_services`] to inject configured private keys, Redis
+  /// event publishers, and persistent blob storage.
   pub fn new(
     db: ServerDb,
     redis: Option<redis::Client>,
     config: RuntimeConfig,
     extension: Arc<dyn ServerExtension>,
   ) -> Arc<Self> {
+    let sessions = Arc::new(PhaseASessionRepository);
+    let auth_cfg = AuthConfig {
+      server_name: config.server_name.clone(),
+      private_key: format!("ephemeral-test-key-{}", uuid::Uuid::new_v4()),
+      ..AuthConfig::default()
+    };
+    let auth = AuthService::new(db.clone(), sessions, extension.session_policy(), auth_cfg);
+    let users = UserService::new(db.clone());
+    let noop = Arc::new(NoopEventPublisher::default());
+    let invalidation: Arc<dyn InvalidationPublisher> = noop.clone();
+    let event_bus: Arc<dyn EventBusPublisher> = noop;
+    let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation));
+    let app_config = AppConfigService::new(db.clone(), config.app_config_baseline.clone(), Arc::clone(&event_bus));
+    let blob_root = std::env::temp_dir().join(format!("affine-server-blobs-{}", uuid::Uuid::new_v4()));
+    let blob_root_str = blob_root.to_string_lossy();
+    let storage = Arc::new(LocalFsBlobStorage::new(&blob_root_str, "blobs").expect("valid temp blob storage"));
+    let blobs = BlobService::new(db.clone(), storage, extension.quota_gate());
+
+    Self::with_services(
+      db,
+      redis,
+      config,
+      extension,
+      AppServices {
+        auth,
+        users,
+        workspaces,
+        app_config,
+        blobs,
+        invalidation,
+        event_bus,
+      },
+    )
+  }
+
+  pub fn with_services(
+    db: ServerDb,
+    redis: Option<redis::Client>,
+    config: RuntimeConfig,
+    extension: Arc<dyn ServerExtension>,
+    services: AppServices,
+  ) -> Arc<Self> {
     Arc::new(Self {
       db,
       redis,
       config: ArcSwap::from_pointee(config),
       extension,
+      auth: services.auth,
+      users: services.users,
+      workspaces: services.workspaces,
+      app_config: services.app_config,
+      blobs: services.blobs,
+      invalidation: services.invalidation,
+      event_bus: services.event_bus,
     })
   }
 
@@ -76,9 +183,9 @@ impl AppState {
 }
 
 #[derive(Clone)]
-struct RouterState {
-  app: Arc<AppState>,
-  schema: AppSchema,
+pub(crate) struct RouterState {
+  pub(crate) app: Arc<AppState>,
+  pub(crate) schema: AppSchema,
 }
 
 /// Public `/info` JSON payload matching `packages/backend/server/src/app.controller.ts` 1:1.
@@ -144,14 +251,18 @@ fn deployment_type_str(mode: DeploymentMode) -> &'static str {
   }
 }
 
-async fn handle_info(State(state): State<RouterState>) -> Json<ServerInfoResponse> {
+async fn handle_info(State(state): State<RouterState>) -> Response {
   let cfg = state.app.config.load();
-  Json(ServerInfoResponse {
-    compatibility: cfg.server_version.clone(),
-    message: format!("AFFiNE {} Server", cfg.server_version),
-    deployment_type: deployment_type_str(cfg.deployment_mode),
-    flavor: role_flavor_str(cfg.role),
-  })
+  json_utf8_response(
+    StatusCode::OK,
+    ServerInfoResponse {
+      compatibility: cfg.server_version.clone(),
+      message: format!("AFFiNE {} Server", cfg.server_version),
+      deployment_type: deployment_type_str(cfg.deployment_mode),
+      flavor: role_flavor_str(cfg.role),
+    },
+    false,
+  )
 }
 
 async fn handle_healthz(State(state): State<RouterState>) -> Json<HealthResponse> {
@@ -213,8 +324,27 @@ async fn handle_readyz(State(state): State<RouterState>) -> (StatusCode, Json<Re
   )
 }
 
-async fn handle_graphql_post(State(state): State<RouterState>, req: GraphQLRequest) -> GraphQLResponse {
-  state.schema.execute(req.into_inner()).await.into()
+async fn handle_graphql_post(State(state): State<RouterState>, headers: HeaderMap, req: GraphQLRequest) -> Response {
+  let mut gql_req = req.into_inner();
+  if let Ok(Some(principal)) = resolve_request_principal(&state, &headers).await {
+    gql_req = gql_req.data(AuthenticatedUser {
+      user_id: principal.user.id.clone(),
+      user: Some(principal.user),
+    });
+  }
+  let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
+  let mut resp = gql_resp.into_response();
+  let h = resp.headers_mut();
+  h.insert(
+    header::CONTENT_TYPE,
+    HeaderValue::from_static("application/json; charset=utf-8"),
+  );
+  h.insert(
+    header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+    HeaderValue::from_static("true"),
+  );
+  h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+  resp
 }
 
 async fn handle_graphql_get(State(state): State<RouterState>, Query(params): Query<GraphqlGetQuery>) -> Response {
@@ -256,7 +386,20 @@ pub fn build_router(app: Arc<AppState>) -> Router {
     router = router.route("/info", get(handle_info));
   }
   if matches!(role, ServerRole::Graphql | ServerRole::Allinone) {
-    router = router.route("/graphql", get(handle_graphql_get).post(handle_graphql_post));
+    let graphql_route = Router::new()
+      .route("/graphql", get(handle_graphql_get).post(handle_graphql_post))
+      .layer(axum::extract::DefaultBodyLimit::max(105 * 1024 * 1024));
+    router = router
+      .merge(graphql_route)
+      .route("/api/setup/create-admin-user", post(rest::handle_create_admin_user))
+      .route("/api/auth/session", get(rest::handle_get_session))
+      .route("/api/auth/sign-in", post(rest::handle_sign_in))
+      .route("/api/auth/sign-out", post(rest::handle_sign_out))
+      .route("/api/auth/magic-link", post(rest::handle_complete_magic_link))
+      .route(
+        "/api/workspaces/{workspace_id}/blobs/{name}",
+        get(rest::handle_get_legacy_blob),
+      );
   }
 
   let mut router = router.with_state(state);
@@ -305,6 +448,7 @@ mod tests {
       database_url: database_url.to_owned(),
       channel: "canary".into(),
       role,
+      selfhosted: true,
       max_connections: 2,
       statement_timeout_ms: 5_000,
       tier_permits: [4, 2, 2, 1],
@@ -353,6 +497,15 @@ mod tests {
         .await
         .expect("info response");
       assert_eq!(resp.status(), StatusCode::OK);
+      assert_eq!(
+        resp.headers().get(header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
+        Some(&HeaderValue::from_static("true"))
+      );
+      assert_eq!(
+        resp.headers().get(header::CONTENT_TYPE),
+        Some(&HeaderValue::from_static("application/json; charset=utf-8"))
+      );
+      assert!(resp.headers().get(header::CACHE_CONTROL).is_none());
       let body = axum::body::to_bytes(resp.into_body(), 64 * 1024).await.unwrap();
       let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
       assert_eq!(

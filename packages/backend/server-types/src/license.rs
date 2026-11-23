@@ -17,6 +17,8 @@ pub const COMMUNITY_DEFAULT_KID: &str = "community-default-v1";
 pub const PRO_KID: &str = "pro-v1";
 pub const LICENSE_AUDIENCE_SELFHOST: &str = "affine-selfhost";
 pub const MAX_SEAT_LIMIT: i32 = 100_000;
+/// Maximum ECMAScript safe integer (`2^53 - 1 = 9_007_199_254_740_991`).
+pub const MAX_SAFE_INT: i64 = (1_i64 << 53) - 1;
 
 /// Public key for the bundled non-commercial default self-hosted license.
 pub const COMMUNITY_DEFAULT_PUBLIC_KEY: &str = "\
@@ -351,6 +353,15 @@ pub fn verify_license_v2(
   })
 }
 
+fn check_safe_int(field: &str, value: i64) -> Result<(), LicenseV2Error> {
+  if !(-MAX_SAFE_INT..=MAX_SAFE_INT).contains(&value) {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "{field} {value} exceeds ECMAScript safe integer bounds (-{MAX_SAFE_INT}..={MAX_SAFE_INT})"
+    )));
+  }
+  Ok(())
+}
+
 fn validate_limits(limits: &LicenseLimitsV2) -> Result<(), LicenseV2Error> {
   if !(1..=MAX_SEAT_LIMIT).contains(&limits.seat_limit) {
     return Err(LicenseV2Error::InvalidClaims(format!(
@@ -358,25 +369,29 @@ fn validate_limits(limits: &LicenseLimitsV2) -> Result<(), LicenseV2Error> {
       limits.seat_limit
     )));
   }
+  check_safe_int("blobLimitBytes", limits.blob_limit_bytes)?;
   if limits.blob_limit_bytes <= 0 {
     return Err(LicenseV2Error::InvalidClaims(format!(
       "blobLimitBytes must be > 0, got {}",
       limits.blob_limit_bytes
     )));
   }
+  check_safe_int("storageQuotaBytes", limits.storage_quota_bytes)?;
   if limits.storage_quota_bytes <= 0 {
     return Err(LicenseV2Error::InvalidClaims(format!(
       "storageQuotaBytes must be > 0, got {}",
       limits.storage_quota_bytes
     )));
   }
-  if let Some(seat_quota_bytes) = limits.seat_quota_bytes
-    && seat_quota_bytes < 0
-  {
-    return Err(LicenseV2Error::InvalidClaims(format!(
-      "seatQuotaBytes must be >= 0, got {seat_quota_bytes}"
-    )));
+  if let Some(seat_quota_bytes) = limits.seat_quota_bytes {
+    check_safe_int("seatQuotaBytes", seat_quota_bytes)?;
+    if seat_quota_bytes < 0 {
+      return Err(LicenseV2Error::InvalidClaims(format!(
+        "seatQuotaBytes must be >= 0, got {seat_quota_bytes}"
+      )));
+    }
   }
+  check_safe_int("historyPeriodSeconds", limits.history_period_seconds)?;
   if limits.history_period_seconds < 0 {
     return Err(LicenseV2Error::InvalidClaims(format!(
       "historyPeriodSeconds must be >= 0, got {}",
@@ -670,5 +685,48 @@ mod tests {
       verify_license_v2(unknown_field.as_bytes(), &keyring, None, fixed_now()),
       Err(LicenseV2Error::InvalidJson(_))
     ));
+  }
+
+  #[test]
+  fn cloud_lifetime_pro_tier_and_safe_int_bounds() {
+    assert_eq!(LicenseTier::CloudLifetimePro.as_str(), "cloud_lifetime_pro");
+    let encoded = serde_json::to_string(&LicenseTier::CloudLifetimePro).unwrap();
+    assert_eq!(encoded, r#""cloud_lifetime_pro""#);
+    let decoded: LicenseTier = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(decoded, LicenseTier::CloudLifetimePro);
+
+    assert_eq!(MAX_SAFE_INT, 9_007_199_254_740_991);
+    let (signing_key, pro_pem) = test_pro_keypair(0x77);
+    let keyring = Keyring::with_pro_public_key(&pro_pem);
+
+    let mut at_boundary = sample_pro_workspace_claims("ws-safe", "selfhost_enterprise", 10);
+    at_boundary.limits.blob_limit_bytes = MAX_SAFE_INT;
+    at_boundary.limits.storage_quota_bytes = MAX_SAFE_INT;
+    at_boundary.limits.seat_quota_bytes = Some(MAX_SAFE_INT);
+    at_boundary.limits.history_period_seconds = MAX_SAFE_INT;
+    let boundary_raw = sign_claims(&at_boundary, &signing_key);
+    assert!(verify_license_v2(&boundary_raw, &keyring, Some("ws-safe"), fixed_now()).is_ok());
+
+    type LimitMutator = fn(&mut LicenseLimitsV2);
+    let cases: [(&str, LimitMutator); 4] = [
+      ("blob_limit_bytes", |l| l.blob_limit_bytes = MAX_SAFE_INT + 1),
+      ("storage_quota_bytes", |l| l.storage_quota_bytes = MAX_SAFE_INT + 1),
+      ("seat_quota_bytes", |l| l.seat_quota_bytes = Some(MAX_SAFE_INT + 1)),
+      ("history_period_seconds", |l| {
+        l.history_period_seconds = MAX_SAFE_INT + 1
+      }),
+    ];
+    for (label, mutate) in cases {
+      let mut over = sample_pro_workspace_claims("ws-safe", "selfhost_enterprise", 10);
+      mutate(&mut over.limits);
+      let raw = sign_claims(&over, &signing_key);
+      assert!(
+        matches!(
+          verify_license_v2(&raw, &keyring, Some("ws-safe"), fixed_now()),
+          Err(LicenseV2Error::InvalidClaims(_))
+        ),
+        "expected {label} > MAX_SAFE_INT to be rejected"
+      );
+    }
   }
 }

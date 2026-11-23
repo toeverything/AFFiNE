@@ -90,7 +90,10 @@ if (existsSync(CRATES)) {
     const sub = path.slice('packages/backend/'.length).split('/')[0];
     if (LEGACY_BACKEND_DIRS.has(sub)) continue;
     if (/(^|\/)prompts\//.test(path))
-      fail('crates-hygiene', `${path}: prompt assets do not belong in packages/backend/`);
+      fail(
+        'crates-hygiene',
+        `${path}: prompt assets do not belong in packages/backend/`
+      );
     if (statSync(file).size > 2 * 1024 * 1024) continue;
     const text = read(file);
     for (const [pattern, what] of HYGIENE_RULES) {
@@ -280,8 +283,14 @@ for (const name of readdirSync(WORKFLOWS).filter(f => /\.ya?ml$/.test(f))) {
 
 // The harness starts the same pinned images the workflows pull.
 const HARNESS_IMAGES = [
-  ['packages/backend/test-db-harness/src/pg.rs', /PG_IMAGE: &str =\s*"([^"]+)"/],
-  ['packages/backend/test-db-harness/src/redis.rs', /REDIS_IMAGE: &str =\s*"([^"]+)"/],
+  [
+    'packages/backend/test-db-harness/src/pg.rs',
+    /PG_IMAGE: &str =\s*"([^"]+)"/,
+  ],
+  [
+    'packages/backend/test-db-harness/src/redis.rs',
+    /REDIS_IMAGE: &str =\s*"([^"]+)"/,
+  ],
 ];
 for (const [path, pattern] of HARNESS_IMAGES) {
   if (!existsSync(join(ROOT, path))) continue;

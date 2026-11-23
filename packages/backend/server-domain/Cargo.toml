@@ -1,0 +1,38 @@
+[package]
+name                   = "server-domain"
+version                = "0.1.0"
+edition.workspace      = true
+license.workspace      = true
+publish.workspace      = true
+rust-version.workspace = true
+
+[dependencies]
+argon2.workspace       = true
+async-trait.workspace  = true
+base64.workspace       = true
+chrono.workspace           = true
+hickory-resolver.workspace = true
+hmac.workspace             = true
+rand.workspace         = true
+redis.workspace        = true
+serde.workspace        = true
+serde_json.workspace   = true
+server-db.workspace    = true
+server-spi.workspace   = true
+server-types.workspace = true
+sha2.workspace         = true
+sqlx.workspace         = true
+subtle.workspace       = true
+thiserror.workspace    = true
+tokio.workspace        = true
+tracing.workspace      = true
+url.workspace          = true
+uuid.workspace         = true
+
+[dev-dependencies]
+futures-util.workspace    = true
+postgres.workspace        = true
+test-db-harness.workspace = true
+
+[lints]
+workspace = true

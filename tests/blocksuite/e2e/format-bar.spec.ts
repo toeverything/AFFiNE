@@ -436,7 +436,6 @@ test('should format quick bar be able to change to heading paragraph type', asyn
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_finial.json`
   );
-  await page.waitForTimeout(10);
   // The paragraph button should prevent selection after click
   await assertRichTextInlineRange(page, 0, 0, 3);
 });

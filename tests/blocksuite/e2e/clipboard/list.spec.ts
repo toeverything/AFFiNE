@@ -441,7 +441,7 @@ test(scoped`should copy and paste of database work`, async ({ page }) => {
   await copyByKeyboard(page);
   await pressEnter(page);
   await pasteByKeyboard(page);
-  await page.waitForTimeout(100);
+  await expect(page.locator('affine-database')).toHaveCount(2);
 
   let pageJson = await getPageSnapshot(page, false);
   let note = (pageJson as BlockSnapshot).children[0];

@@ -333,7 +333,7 @@ test('basic indent and unindent', async ({ page }, testInfo) => {
     `${testInfo.title}_after_tab.json`
   );
 
-  await page.waitForTimeout(100);
+  await assertRichTextInlineRange(page, 1, 5);
   await pressShiftTab(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(

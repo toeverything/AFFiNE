@@ -97,9 +97,9 @@ pub fn session_redis_url(base_redis_url: &str) -> Result<(String, u8), WorkerErr
   Ok((out, session_db))
 }
 
-/// Helper for private worker keys inside the shared Redis logical DB.
+/// Helper for `V_new` private keys inside the shared Redis logical DB.
 ///
-/// Every key is prefixed with `<optional_prefix>v2:` so worker state
+/// Every key is prefixed with `<optional_prefix>v2:` so `V_new` worker state
 /// never collides with `v0.27.5` keys.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct V2Keyspace {
@@ -307,6 +307,9 @@ pub struct WorkerSupervisor {
   draining: Arc<AtomicBool>,
   active_leases: Arc<Mutex<Vec<RedisLockLease>>>,
   tasks: Arc<Mutex<Vec<JoinHandle<()>>>>,
+  /// Completion of the one drain every `drain` caller waits for; `Some` once
+  /// a drain has started, carrying its released-lease count when it finishes.
+  drain_done: Arc<Mutex<Option<watch::Receiver<Option<usize>>>>>,
 }
 
 impl WorkerSupervisor {
@@ -316,6 +319,7 @@ impl WorkerSupervisor {
       draining: Arc::new(AtomicBool::new(false)),
       active_leases: Arc::new(Mutex::new(Vec::new())),
       tasks: Arc::new(Mutex::new(Vec::new())),
+      drain_done: Arc::new(Mutex::new(None)),
     }
   }
 
@@ -323,20 +327,37 @@ impl WorkerSupervisor {
     self.shutdown.clone()
   }
 
-  /// Registers an active Redis lock lease so graceful shutdown releases it automatically.
-  pub async fn track_lease(&self, lease: RedisLockLease) {
-    self.active_leases.lock().await.push(lease);
+  fn is_closed(&self) -> bool {
+    self.draining.load(Ordering::Acquire) || self.shutdown.is_cancelled()
+  }
+
+  /// Registers an active Redis lock lease so graceful shutdown releases it
+  /// automatically. Once shutdown has been signalled or a drain has begun the
+  /// lease is not tracked: it is released at once and `false` is returned.
+  pub async fn track_lease(&self, lease: RedisLockLease) -> bool {
+    {
+      let mut guard = self.active_leases.lock().await;
+      if !self.is_closed() {
+        guard.push(lease);
+        return true;
+      }
+    }
+    if let Err(err) = lease.release().await {
+      tracing::warn!(lock_key = lease.lock_key(), error = %err, "failed to release lease offered after shutdown");
+    }
+    false
   }
 
   /// Spawns a supervised background task that receives a clone of the supervisor's
-  /// cancellation token. Rejects new tasks once [`WorkerSupervisor::drain`] has begun.
+  /// cancellation token. Rejects new tasks once shutdown has been signalled or
+  /// [`WorkerSupervisor::drain`] has begun.
   pub async fn spawn<F, Fut>(&self, f: F)
   where
     F: FnOnce(CancellationToken) -> Fut + Send + 'static,
     Fut: std::future::Future<Output = ()> + Send + 'static,
   {
     let mut guard = self.tasks.lock().await;
-    if self.draining.load(Ordering::Acquire) || self.shutdown.is_cancelled() {
+    if self.is_closed() {
       return;
     }
     let token = self.shutdown.clone();
@@ -348,11 +369,42 @@ impl WorkerSupervisor {
 
   /// Marks the supervisor as draining, cancels all supervised workers, awaits
   /// them up to `drain_timeout`, explicitly aborts and awaits any stubborn tasks
-  /// so no worker outlives its lock, and only then releases every tracked Redis lease.
+  /// so no worker outlives its lock, and only then releases every tracked Redis
+  /// lease. Returns the number of leases released.
+  ///
+  /// There is one drain per supervisor: it runs as its own task, so it
+  /// completes even if a caller stops waiting, and every caller, concurrent or
+  /// later, waits for that drain to finish and gets its count. The first
+  /// caller's `drain_timeout` applies.
   pub async fn drain(&self, drain_timeout: Duration) -> usize {
-    self.draining.store(true, Ordering::Release);
-    self.shutdown.cancel();
+    let mut done = {
+      let mut slot = self.drain_done.lock().await;
+      match slot.as_ref() {
+        Some(done) => done.clone(),
+        None => {
+          self.draining.store(true, Ordering::Release);
+          self.shutdown.cancel();
+          let (tx, rx) = watch::channel(None);
+          let this = self.clone();
+          tokio::spawn(async move {
+            let released = this.drain_once(drain_timeout).await;
+            let _ = tx.send(Some(released));
+          });
+          *slot = Some(rx.clone());
+          rx
+        }
+      }
+    };
+    match done.wait_for(Option::is_some).await {
+      Ok(released) => released.unwrap_or_default(),
+      Err(_) => {
+        tracing::error!("worker drain task ended without reporting completion");
+        0
+      }
+    }
+  }
 
+  async fn drain_once(&self, drain_timeout: Duration) -> usize {
     let handles = {
       let mut guard = self.tasks.lock().await;
       std::mem::take(&mut *guard)

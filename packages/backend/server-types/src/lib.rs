@@ -81,6 +81,8 @@ pub enum LicenseTier {
   CloudFree,
   CloudAi,
   CloudPro,
+  #[serde(rename = "cloud_lifetime_pro")]
+  CloudLifetimePro,
   CloudTeam,
   SelfhostDefault,
   SelfhostTeam,
@@ -93,6 +95,7 @@ impl LicenseTier {
       Self::CloudFree => "cloud_free",
       Self::CloudAi => "cloud_ai",
       Self::CloudPro => "cloud_pro",
+      Self::CloudLifetimePro => "cloud_lifetime_pro",
       Self::CloudTeam => "cloud_team",
       Self::SelfhostDefault => "selfhost_default",
       Self::SelfhostTeam => "selfhost_team",

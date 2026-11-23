@@ -110,8 +110,7 @@ test.describe('edgeless canvas text', () => {
       state: 'attached',
     });
     await type(page, 'hello');
-    await page.waitForTimeout(100);
-    await assertEdgelessCanvasText(page, 'hhelloello');
+    await expect(() => assertEdgelessCanvasText(page, 'hhelloello')).toPass();
 
     await page.mouse.click(145, 155);
     await type(page, 'ddd\n');

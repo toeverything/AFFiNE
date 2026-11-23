@@ -6,6 +6,7 @@ pub mod error;
 pub mod metrics;
 pub mod phase_a_compat;
 pub mod schema;
+pub mod sessions;
 
 use std::{
   future::Future,
@@ -57,6 +58,7 @@ pub struct DbConfig {
   pub database_url: String,
   pub channel: String,
   pub role: ServerRole,
+  pub selfhosted: bool,
   pub max_connections: u32,
   pub statement_timeout_ms: u64,
   pub tier_permits: [usize; 4],
@@ -68,6 +70,7 @@ impl DbConfig {
       database_url: database_url.into(),
       channel: "stable".to_owned(),
       role: ServerRole::Allinone,
+      selfhosted: true,
       max_connections: 20,
       statement_timeout_ms: DEFAULT_STATEMENT_TIMEOUT_MS,
       tier_permits: [12, 8, 4, 2],
@@ -83,6 +86,8 @@ struct ServerDbInner {
   pool: PgPool,
   connect_options: PgConnectOptions,
   tier_semaphores: [Arc<Semaphore>; 4],
+  role: ServerRole,
+  selfhosted: bool,
 }
 
 #[derive(Clone)]
@@ -281,12 +286,22 @@ impl ServerDb {
         pool,
         connect_options,
         tier_semaphores,
+        role: config.role,
+        selfhosted: config.selfhosted,
       }),
     })
   }
 
   pub fn pool(&self) -> &PgPool {
     &self.inner.pool
+  }
+
+  pub fn role(&self) -> ServerRole {
+    self.inner.role
+  }
+
+  pub fn selfhosted(&self) -> bool {
+    self.inner.selfhosted
   }
 
   pub async fn acquire_tiered(&self, tier: WorkloadTier) -> Result<TieredConn, DbError> {

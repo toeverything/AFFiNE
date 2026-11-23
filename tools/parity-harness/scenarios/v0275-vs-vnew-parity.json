@@ -1,0 +1,393 @@
+{
+  "left_target": {
+    "base_url": "http://127.0.0.1:1"
+  },
+  "right_target": {
+    "base_url": "http://127.0.0.1:2"
+  },
+  "timeout_ms": 20000,
+  "expected_smtp_count": 1,
+  "collapse_redis_invalidation_echoes": true,
+  "compare_headers": ["set-cookie"],
+  "dynamic": [
+    {
+      "path": "/(id|userId|workspaceId|spaceId|docId|clientId|sessionId|requestId|originId|sid|workspace_id|user_id|session_id|principal_id|[a-z_]+_by)$",
+      "kind": "id"
+    },
+    {
+      "path": "/body/value/data/appConfig/(server|redis|mailer/SMTP)/port$",
+      "kind": "id"
+    },
+    {
+      "path": "^/effects/redis/[0-9]+/payload/value/(originChannel|payload/originChannel|subject|payload/room)$",
+      "kind": "id"
+    },
+    {
+      "path": "/[A-Za-z_]*(At|_at|_ts)$|^/protocol/.*/attributes/expires$|/timestamp$|/email_verified$|/send_after$",
+      "kind": "ts"
+    },
+    {
+      "path": "/headers/set-cookie/[0-9]+/value$|^/database/public\\.users/[0-9]+/password$|^/database/public\\.app_configs/.*/secret$",
+      "kind": "token"
+    }
+  ],
+  "steps": [
+    {
+      "name": "info",
+      "kind": "http",
+      "method": "GET",
+      "path": "/info"
+    },
+    {
+      "name": "server_config_before_setup",
+      "kind": "graphql",
+      "query": "query { serverConfig { version name type initialized baseUrl features credentialsRequirement { password { minLength maxLength } } } }"
+    },
+    {
+      "name": "create_admin_user",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/setup/create-admin-user",
+      "body": {
+        "name": "Parity Admin",
+        "email": "parity-admin@affine.test",
+        "password": "Parity-Admin-Passw0rd"
+      },
+      "extract": {
+        "csrf": "/headers/set-cookie/0/value"
+      }
+    },
+    {
+      "name": "session",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/auth/session"
+    },
+    {
+      "name": "sign_out_missing_csrf",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/auth/sign-out"
+    },
+    {
+      "name": "sign_out_ok",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/auth/sign-out",
+      "headers": {
+        "x-affine-csrf-token": "{{csrf}}"
+      }
+    },
+    {
+      "name": "session_after_sign_out",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/auth/session"
+    },
+    {
+      "name": "password_sign_in",
+      "kind": "http",
+      "method": "POST",
+      "path": "/api/auth/sign-in",
+      "body": {
+        "email": "parity-admin@affine.test",
+        "password": "Parity-Admin-Passw0rd"
+      },
+      "extract": {
+        "csrf2": "/headers/set-cookie/0/value"
+      }
+    },
+    {
+      "name": "current_user",
+      "kind": "graphql",
+      "query": "query { currentUser { id name email emailVerified hasPassword features quota { name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit humanReadable { name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit } } } }"
+    },
+    {
+      "name": "create_workspace",
+      "kind": "graphql",
+      "query": "mutation { createWorkspace { id public } }",
+      "extract": {
+        "workspace": "/body/value/data/createWorkspace/id"
+      }
+    },
+    {
+      "name": "doc_sync",
+      "kind": "socketio",
+      "actions": [
+        {
+          "action": "emit_with_ack",
+          "event": "space:join-batch",
+          "args": [
+            {
+              "spaces": [
+                {
+                  "spaceType": "workspace",
+                  "spaceId": "{{workspace}}",
+                  "docId": "{{workspace}}"
+                }
+              ],
+              "clientVersion": "0.27.5",
+              "protocolVersion": 2
+            }
+          ]
+        },
+        {
+          "action": "emit_with_ack",
+          "event": "space:push-doc-update",
+          "args": [
+            {
+              "spaceType": "workspace",
+              "spaceId": "{{workspace}}",
+              "docId": "parity-self-doc",
+              "update": "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA=",
+              "intent": "create"
+            }
+          ]
+        },
+        {
+          "action": "emit_with_ack",
+          "event": "space:join-batch",
+          "args": [
+            {
+              "spaces": [
+                {
+                  "spaceType": "workspace",
+                  "spaceId": "{{workspace}}",
+                  "docId": "parity-self-doc"
+                }
+              ],
+              "clientVersion": "0.27.5",
+              "protocolVersion": 2
+            }
+          ]
+        },
+        {
+          "action": "emit_with_ack",
+          "event": "space:load-doc",
+          "args": [
+            {
+              "spaceType": "workspace",
+              "spaceId": "{{workspace}}",
+              "docId": "parity-self-doc"
+            }
+          ]
+        }
+      ],
+      "record_events": []
+    },
+    {
+      "name": "set_blob",
+      "kind": "http",
+      "method": "POST",
+      "path": "/graphql",
+      "headers": {
+        "apollo-require-preflight": "true"
+      },
+      "multipart": [
+        {
+          "name": "operations",
+          "text": "{\"query\":\"mutation ($workspaceId: String!, $blob: Upload!) { setBlob(workspaceId: $workspaceId, blob: $blob) }\",\"variables\":{\"workspaceId\":\"{{workspace}}\",\"blob\":null}}"
+        },
+        {
+          "name": "map",
+          "text": "{\"0\":[\"variables.blob\"]}"
+        },
+        {
+          "name": "0",
+          "filename": "CkKQK4axLvR1kRwwyaD1uyIbS-TSdGuekpiU-WZY6qs",
+          "mime": "text/plain",
+          "base64": "aGVsbG8gcGFyaXR5IGJsb2IK"
+        }
+      ]
+    },
+    {
+      "name": "legacy_get_blob_rejected",
+      "kind": "http",
+      "method": "GET",
+      "path": "/api/workspaces/{{workspace}}/blobs/CkKQK4axLvR1kRwwyaD1uyIbS-TSdGuekpiU-WZY6qs",
+      "headers": {
+        "x-affine-version": "0.26.0"
+      }
+    },
+    {
+      "name": "workspace_and_user_quota_with_blob",
+      "kind": "graphql",
+      "query": "query ($id: String!) { workspace(id: $id) { id public blobs { key size mime } quota { name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit memberCount overcapacityMemberCount humanReadable { name blobLimit storageQuota storageQuotaUsed historyPeriod memberLimit } } } currentUser { quota { usedStorageQuota humanReadable { usedStorageQuota } } } }",
+      "variables": {
+        "id": "{{workspace}}"
+      }
+    },
+    {
+      "name": "doc_sync_update_separator",
+      "kind": "socketio",
+      "actions": [
+        {
+          "action": "emit_with_ack",
+          "event": "space:join-batch",
+          "args": [
+            {
+              "spaces": [
+                {
+                  "spaceType": "workspace",
+                  "spaceId": "{{workspace}}",
+                  "docId": "parity-self-doc"
+                }
+              ],
+              "clientVersion": "0.27.5",
+              "protocolVersion": 2
+            }
+          ]
+        },
+        {
+          "action": "emit_with_ack",
+          "event": "space:push-doc-update",
+          "args": [
+            {
+              "spaceType": "workspace",
+              "spaceId": "{{workspace}}",
+              "docId": "parity-self-doc",
+              "update": "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA=",
+              "intent": "update"
+            }
+          ]
+        }
+      ],
+      "record_events": []
+    },
+    {
+      "name": "delete_and_release_blob",
+      "kind": "graphql",
+      "query": "mutation ($workspaceId: String!) { deleteBlob(workspaceId: $workspaceId, key: \"CkKQK4axLvR1kRwwyaD1uyIbS-TSdGuekpiU-WZY6qs\") releaseDeletedBlobs(workspaceId: $workspaceId) }",
+      "variables": {
+        "workspaceId": "{{workspace}}"
+      }
+    },
+    {
+      "name": "app_config",
+      "kind": "graphql",
+      "query": "query { appConfig }",
+      "extract": {
+        "smtp": "/body/value/data/appConfig/mailer/SMTP"
+      }
+    },
+    {
+      "name": "send_test_email",
+      "kind": "graphql",
+      "query": "mutation ($config: JSONObject!) { sendTestEmail(config: $config) }",
+      "variables": {
+        "config": "{{smtp}}"
+      }
+    }
+  ],
+  "require": [
+    {
+      "path": "/protocol/0/status",
+      "equals": 200
+    },
+    {
+      "path": "/protocol/2/status",
+      "equals": 201
+    },
+    {
+      "path": "/protocol/4/status",
+      "equals": 403
+    },
+    {
+      "path": "/protocol/5/status",
+      "equals": 200
+    },
+    {
+      "path": "/protocol/6/body/value",
+      "equals": {}
+    },
+    {
+      "path": "/protocol/7/status",
+      "equals": 200
+    },
+    {
+      "path": "/protocol/8/body/value/data/currentUser/email",
+      "equals": "parity-admin@affine.test"
+    },
+    {
+      "path": "/protocol/10/body/value/acks/0/value/data/success",
+      "equals": true
+    },
+    {
+      "path": "/protocol/10/body/value/acks/1/value/data/accepted",
+      "equals": true
+    },
+    {
+      "path": "/protocol/10/body/value/acks/3/value/data/missing",
+      "equals": "AQIBACgBBG1ldGEFdGl0bGUBdwZwYXJpdHkEAQdjb250ZW50DGhlbGxvIHBhcml0eQA="
+    },
+    {
+      "path": "/protocol/11/body/value/data/setBlob",
+      "equals": "CkKQK4axLvR1kRwwyaD1uyIbS-TSdGuekpiU-WZY6qs"
+    },
+    {
+      "path": "/protocol/12/status",
+      "equals": 403
+    },
+    {
+      "path": "/protocol/12/body/value/name",
+      "equals": "UNSUPPORTED_CLIENT_VERSION"
+    },
+    {
+      "path": "/protocol/13/body/value/data/workspace/quota/usedStorageQuota",
+      "equals": 18
+    },
+    {
+      "path": "/protocol/13/body/value/data/currentUser/quota/usedStorageQuota",
+      "equals": 18
+    },
+    {
+      "path": "/protocol/14/body/value/acks/1/value/data/accepted",
+      "equals": true
+    },
+    {
+      "path": "/protocol/15/body/value/data/deleteBlob",
+      "equals": true
+    },
+    {
+      "path": "/protocol/15/body/value/data/releaseDeletedBlobs",
+      "equals": true
+    },
+    {
+      "path": "/protocol/17/body/value/data/sendTestEmail",
+      "equals": true
+    },
+    {
+      "path": "/database/public.updates",
+      "contains": {
+        "guid": "parity-self-doc"
+      }
+    },
+    {
+      "path": "/database/public.storage_reconciliation_checkpoints",
+      "contains": {
+        "kind": "schema_baseline_0275"
+      }
+    },
+    {
+      "path": "/effects/smtp",
+      "length": 1
+    },
+    {
+      "path": "/effects/redis",
+      "contains": {
+        "channel": "affine:backend-runtime:invalidation:v1"
+      }
+    },
+    {
+      "path": "/effects/redis",
+      "contains": {
+        "channel": "affine:eventbus:v1",
+        "payload": {
+          "value": {
+            "event": "sync.doc.updates.pushed"
+          }
+        }
+      }
+    }
+  ]
+}

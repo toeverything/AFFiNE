@@ -123,7 +123,7 @@ const testEnv = (argv, env = cargoEnv) =>
       '--',
       ...argv,
     ],
-    { cwd: join(ROOT, 'crates'), env }
+    { cwd: join(ROOT, 'packages/backend'), env }
   );
 const harness = argv =>
   run(
@@ -275,6 +275,16 @@ async function main() {
   const sha = await serverSha();
   if (!/^[0-9a-f]{40}$/.test(sha))
     throw new Error(`server SHA ${sha} is not a full commit id`);
+  if (args.record && existsSync(join(SERVER_ROOT, '.git'))) {
+    const dirty = (
+      await run('git', ['status', '--porcelain'], { cwd: SERVER_ROOT })
+    ).stdout.trim();
+    if (dirty) {
+      throw new Error(
+        `refusing --record from dirty server checkout ${SERVER_ROOT}:\n${dirty}`
+      );
+    }
+  }
   log(`server ${SERVER_ROOT} at ${sha}; run directory ${OUT}`);
   const migrations = join(SERVER, 'migrations');
   const sides = [{ name: 'left' }, { name: 'right' }];
@@ -469,6 +479,7 @@ async function main() {
       ? 'PASS: 0 differences, every requirement met, every fault detected'
       : `FAIL: see ${OUT}/summary.json and report.json`
   );
+  let pendingRecord = null;
   if (passed && args.record) {
     const record = resolve(ROOT, args.record);
     const partial = `${record}.${process.pid}.tmp`;
@@ -480,15 +491,15 @@ async function main() {
         1
       ) + '\n'
     );
-    renameSync(partial, record);
-    log(`recorded ${record}`);
+    pendingRecord = { partial, record };
   }
-  return passed;
+  return { passed, pendingRecord };
 }
 
 let passed = false;
+let pendingRecord = null;
 try {
-  passed = await main();
+  ({ passed, pendingRecord } = await main());
 } catch (error) {
   console.error(error);
 } finally {
@@ -499,6 +510,14 @@ try {
       console.error(`cleanup failed: ${error}`);
       passed = false;
     }
+  }
+}
+if (pendingRecord) {
+  if (passed) {
+    renameSync(pendingRecord.partial, pendingRecord.record);
+    log(`recorded ${pendingRecord.record}`);
+  } else {
+    rmSync(pendingRecord.partial, { force: true });
   }
 }
 process.exit(passed ? 0 : 1);

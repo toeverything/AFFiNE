@@ -266,7 +266,15 @@ impl Session {
         if !parts.is_empty() {
             let mut form = reqwest::multipart::Form::new();
             for part in parts {
-                let mut data = reqwest::multipart::Part::bytes(STANDARD.decode(part.base64)?);
+                let bytes = match (part.base64, part.text) {
+                    (Some(b64), None) => STANDARD.decode(b64)?,
+                    (None, Some(txt)) => txt.into_bytes(),
+                    _ => bail!(
+                        "multipart part `{}` must specify exactly one of base64 or text",
+                        part.name
+                    ),
+                };
+                let mut data = reqwest::multipart::Part::bytes(bytes);
                 if let Some(filename) = part.filename {
                     data = data.file_name(filename);
                 }

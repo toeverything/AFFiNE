@@ -19,6 +19,67 @@ use crate::{DbError, ServerDb, phase_a_compat};
 include!(concat!(env!("OUT_DIR"), "/bundled_migrations.rs"));
 
 const SCHEMA_READY_ADVISORY_LOCK: i64 = 0x4146_4649_4e45_0275;
+const MIGRATION_LOCK_TIMEOUT_SQL: &str = "SET LOCAL lock_timeout = '5s'";
+const NATIVE_RUNTIME_COMPONENT: &str = "server_db_runtime";
+
+struct NativeMigration {
+  component: &'static str,
+  version: i32,
+  checksum: &'static str,
+  sql: &'static str,
+}
+
+const NATIVE_RUNTIME_MIGRATIONS: &[NativeMigration] = &[NativeMigration {
+  component: NATIVE_RUNTIME_COMPONENT,
+  version: 1,
+  checksum: BUNDLED_RUNTIME_MIGRATIONS_CHECKSUM,
+  sql: BUNDLED_RUNTIME_MIGRATIONS_SQL,
+}];
+
+async fn pgvector_at_least_0_8(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<bool, DbError> {
+  let version: Option<String> = sqlx::query_scalar("SELECT extversion FROM pg_extension WHERE extname = 'vector'")
+    .fetch_optional(&mut **tx)
+    .await?;
+  let Some(version) = version else {
+    return Ok(false);
+  };
+  let mut parts = version.split('.');
+  let major = parts.next().and_then(|p| p.parse::<u32>().ok());
+  let minor = parts.next().and_then(|p| p.parse::<u32>().ok());
+  Ok(matches!((major, minor), (Some(maj), Some(min)) if maj > 0 || min >= 8))
+}
+
+async fn apply_all_native_component_migrations_in_tx(
+  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DbError> {
+  apply_native_migrations_in_tx(tx, NATIVE_RUNTIME_MIGRATIONS).await?;
+
+  if pgvector_at_least_0_8(tx).await? {
+    let embedding: Vec<NativeMigration> = BUNDLED_EMBEDDING_MIGRATIONS
+      .iter()
+      .map(|m| NativeMigration {
+        component: "embedding",
+        version: m.version,
+        checksum: m.checksum,
+        sql: m.sql,
+      })
+      .collect();
+    apply_native_migrations_in_tx(tx, &embedding).await?;
+  }
+
+  let search: Vec<NativeMigration> = BUNDLED_SEARCH_PROJECTION_MIGRATIONS
+    .iter()
+    .map(|m| NativeMigration {
+      component: "search_projection",
+      version: m.version,
+      checksum: m.checksum,
+      sql: m.sql,
+    })
+    .collect();
+  apply_native_migrations_in_tx(tx, &search).await?;
+
+  Ok(())
+}
 
 const CREATE_PRISMA_MIGRATIONS_TABLE_SQL: &str = r#"
 CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
@@ -247,6 +308,7 @@ pub async fn apply_migration_sql_and_record_in_tx(
   checksum: &str,
   raw_sql: &str,
 ) -> Result<(), DbError> {
+  sqlx::query(MIGRATION_LOCK_TIMEOUT_SQL).execute(&mut **tx).await?;
   let sanitized = strip_top_level_tx_control(raw_sql);
   if !sanitized.trim().is_empty() {
     sqlx::raw_sql(&sanitized)
@@ -265,6 +327,79 @@ pub async fn apply_migration_sql_and_record_in_tx(
   Ok(())
 }
 
+/// Ensures `native_schema_migrations` exists, verifies any already-recorded
+/// contiguous prefix checksums for `component`, skips already-recorded
+/// migrations without re-executing their SQL, and applies any remaining ones.
+async fn apply_native_migrations_in_tx(
+  tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+  migrations: &[NativeMigration],
+) -> Result<usize, DbError> {
+  sqlx::query(MIGRATION_LOCK_TIMEOUT_SQL).execute(&mut **tx).await?;
+  tx.execute(CREATE_NATIVE_SCHEMA_MIGRATIONS_TABLE_SQL).await?;
+  let Some(first) = migrations.first() else {
+    return Ok(0);
+  };
+  let component = first.component;
+
+  let recorded: Vec<(i32, String)> = sqlx::query_as(
+    "SELECT version, checksum
+     FROM native_schema_migrations
+     WHERE component = $1
+     ORDER BY version ASC",
+  )
+  .bind(component)
+  .fetch_all(&mut **tx)
+  .await?;
+
+  if recorded.len() > migrations.len() {
+    return Err(DbError::SchemaCheck(format!(
+      "native_schema_migrations for {component} has {} entries, more than bundled {}",
+      recorded.len(),
+      migrations.len()
+    )));
+  }
+
+  for ((actual_version, actual_checksum), expected) in recorded.iter().zip(migrations.iter()) {
+    if *actual_version != expected.version {
+      return Err(DbError::SchemaCheck(format!(
+        "native_schema_migrations for {component} is not a contiguous prefix: expected version {}, got {actual_version}",
+        expected.version
+      )));
+    }
+    if actual_checksum != expected.checksum {
+      return Err(DbError::SchemaCheck(format!(
+        "native_schema_migrations checksum mismatch for {component} v{}: expected {}, got {actual_checksum}",
+        expected.version, expected.checksum
+      )));
+    }
+  }
+
+  let mut applied_now = 0usize;
+  for migration in &migrations[recorded.len()..] {
+    let sanitized = strip_top_level_tx_control(migration.sql);
+    if !sanitized.trim().is_empty() {
+      sqlx::raw_sql(&sanitized).execute(&mut **tx).await.map_err(|e| {
+        DbError::SchemaCheck(format!(
+          "failed applying native migration {} v{}: {e}",
+          migration.component, migration.version
+        ))
+      })?;
+    }
+    sqlx::query(
+      "INSERT INTO native_schema_migrations (component, version, checksum)
+       VALUES ($1, $2, $3)",
+    )
+    .bind(migration.component)
+    .bind(migration.version)
+    .bind(migration.checksum)
+    .execute(&mut **tx)
+    .await?;
+    applied_now += 1;
+  }
+
+  Ok(applied_now)
+}
+
 pub(crate) async fn ensure_schema_ready_impl(db: &ServerDb) -> Result<SchemaReadiness, DbError> {
   let mut conn = db.dedicated_session_conn().await?;
   // Allow enough time for full fresh-DB baseline DDL on slower hosts.
@@ -274,7 +409,7 @@ pub(crate) async fn ensure_schema_ready_impl(db: &ServerDb) -> Result<SchemaRead
     .execute(&mut conn)
     .await?;
 
-  let outcome = ensure_schema_ready_locked(&mut conn).await;
+  let outcome = ensure_schema_ready_locked(&mut conn, db.role(), db.selfhosted()).await;
 
   let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
     .bind(SCHEMA_READY_ADVISORY_LOCK)
@@ -284,7 +419,11 @@ pub(crate) async fn ensure_schema_ready_impl(db: &ServerDb) -> Result<SchemaRead
   outcome
 }
 
-async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<SchemaReadiness, DbError> {
+async fn ensure_schema_ready_locked(
+  conn: &mut sqlx::PgConnection,
+  role: server_types::ServerRole,
+  selfhosted: bool,
+) -> Result<SchemaReadiness, DbError> {
   let prisma_table_exists: bool = sqlx::query_scalar("SELECT to_regclass('public._prisma_migrations') IS NOT NULL")
     .fetch_one(&mut *conn)
     .await?;
@@ -300,6 +439,9 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
   if is_fresh_empty || resuming_fresh_init {
     let prefix_len = if is_fresh_empty {
       let mut bootstrap_tx = conn.begin().await?;
+      sqlx::query(MIGRATION_LOCK_TIMEOUT_SQL)
+        .execute(&mut *bootstrap_tx)
+        .await?;
       bootstrap_tx.execute(CREATE_PRISMA_MIGRATIONS_TABLE_SQL).await?;
       bootstrap_tx.execute(CREATE_CHECKPOINTS_TABLE_SQL).await?;
       sqlx::query(
@@ -329,23 +471,30 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
     }
 
     let mut finalize_tx = conn.begin().await?;
-    sqlx::raw_sql(BUNDLED_RUNTIME_MIGRATIONS_SQL)
-      .execute(&mut *finalize_tx)
-      .await
-      .map_err(|e| DbError::SchemaCheck(format!("failed applying runtime migrations: {e}")))?;
+    apply_all_native_component_migrations_in_tx(&mut finalize_tx).await?;
 
     sqlx::query(
-      r#"INSERT INTO storage_reconciliation_checkpoints (kind, scope, status, completed_at, updated_at)
-         VALUES ('schema_baseline_0275', 'global', 'completed', now(), now())
+      r#"INSERT INTO storage_reconciliation_checkpoints
+           (kind, scope, status, cursor, completed_at, updated_at, metadata)
+         VALUES (
+           'schema_baseline_0275',
+           'global',
+           'completed',
+           '{}'::jsonb,
+           now(),
+           now(),
+           jsonb_build_object('baselineVersion', '0.27.5', 'deployment', 'selfhosted')
+         )
          ON CONFLICT (kind, scope) DO UPDATE
            SET status = EXCLUDED.status,
                completed_at = COALESCE(storage_reconciliation_checkpoints.completed_at, EXCLUDED.completed_at),
+               metadata = EXCLUDED.metadata,
                updated_at = now()"#,
     )
     .execute(&mut *finalize_tx)
     .await?;
 
-    finalize_tx.execute(CREATE_NATIVE_SCHEMA_MIGRATIONS_TABLE_SQL).await?;
+    phase_a_compat::bootstrap::seed_fresh_0275_bootstrap_markers(&mut finalize_tx).await?;
     finalize_tx.commit().await?;
 
     return Ok(SchemaReadiness::InitializedFresh0275 {
@@ -354,7 +503,7 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
   }
 
   // Existing non-empty database: enforce the v0.27.5 baseline gate
-  // without modifying `_prisma_migrations`.
+  // without ever modifying `_prisma_migrations`.
   let has_baseline_checkpoint = phase_a_compat::has_schema_baseline_0275_checkpoint(&mut *conn).await?;
 
   let missing_migrations = if prisma_table_exists {
@@ -402,12 +551,16 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
     });
   }
 
+  // Verify all v0.27.5 runtime prerequisites (10 `_data_migrations`, active
+  // `workspace_doc_lifecycle_activation`, and cutover invariants) strictly
+  // BEFORE running any native component migrations so an unprepared existing DB
+  // is rejected with zero DDL or `native_schema_migrations` writes.
+  if role != server_types::ServerRole::Script {
+    phase_a_compat::verify_existing_0275_runtime_prerequisites(&mut *conn, selfhosted).await?;
+  }
+
   let mut tx = conn.begin().await?;
-  sqlx::raw_sql(BUNDLED_RUNTIME_MIGRATIONS_SQL)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| DbError::SchemaCheck(format!("failed ensuring runtime migrations on existing DB: {e}")))?;
-  tx.execute(CREATE_NATIVE_SCHEMA_MIGRATIONS_TABLE_SQL).await?;
+  apply_all_native_component_migrations_in_tx(&mut tx).await?;
   tx.commit().await?;
 
   Ok(SchemaReadiness::ReadyExisting0275 {

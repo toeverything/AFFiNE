@@ -158,7 +158,7 @@ test(scoped`copy clipItems format`, async ({ page }) => {
 `;
 
   await pasteContent(page, { 'text/plain': clipData });
-  await page.waitForTimeout(100);
+  await expect(page.locator('affine-list')).toHaveCount(4);
   await setSelection(page, 4, 1, 5, 1);
   assertClipItems(page, 'text/plain', 'bc');
   assertClipItems(page, 'text/html', '<ul><li>b<ul><li>c</li></ul></li></ul>');

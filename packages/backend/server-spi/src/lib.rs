@@ -20,6 +20,15 @@ pub trait QuotaGate: Send + Sync + 'static {
     now: DateTime<Utc>,
   ) -> Result<AccessGrant, DomainError>;
 
+  async fn resolve_user_grant(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _user_id: &str,
+    _now: DateTime<Utc>,
+  ) -> Result<AccessGrant, DomainError> {
+    Ok(server_types::license::default_selfhost_access_grant())
+  }
+
   async fn check_seat_admission(
     &self,
     tx: &mut Transaction<'_, Postgres>,
@@ -66,6 +75,15 @@ impl QuotaGate for CommunityQuotaGate {
     &self,
     _tx: &mut Transaction<'_, Postgres>,
     _workspace_id: &str,
+    _now: DateTime<Utc>,
+  ) -> Result<AccessGrant, DomainError> {
+    Ok(server_types::license::default_selfhost_access_grant())
+  }
+
+  async fn resolve_user_grant(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _user_id: &str,
     _now: DateTime<Utc>,
   ) -> Result<AccessGrant, DomainError> {
     Ok(server_types::license::default_selfhost_access_grant())

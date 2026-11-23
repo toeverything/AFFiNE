@@ -10,21 +10,32 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+async-trait.workspace        = true
 axum.workspace               = true
 clap.workspace               = true
+http.workspace               = true
+rand.workspace               = true
 redis.workspace              = true
+serde.workspace              = true
+serde_json.workspace         = true
+server-blob.workspace        = true
 server-db.workspace          = true
+server-domain.workspace      = true
 server-http.workspace        = true
+server-mail.workspace        = true
 server-spi.workspace         = true
+server-sync.workspace        = true
 server-types.workspace       = true
 server-worker.workspace      = true
+sqlx.workspace               = true
 thiserror.workspace          = true
 tokio.workspace              = true
 tracing.workspace            = true
 tracing-subscriber.workspace = true
+url.workspace                = true
+uuid.workspace               = true
 
 [dev-dependencies]
 serde_json.workspace      = true
 sqlx.workspace            = true
 test-db-harness.workspace = true
-uuid.workspace            = true

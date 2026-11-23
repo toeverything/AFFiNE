@@ -99,8 +99,8 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
       code: "Internal Server Error".into(),
       error_type: "INTERNAL_SERVER_ERROR".into(),
       name: "INTERNAL_SERVER_ERROR".into(),
-      // Never leak internal error details to clients (matches v0.27.5 def.ts).
-      message: "Internal server error".into(),
+      // Never leak internal error details to clients (matches v0.27.5 def.ts:248-251).
+      message: "An internal error occurred.".into(),
       data: None,
     },
   }
@@ -145,6 +145,7 @@ mod tests {
     let env = domain_error_to_envelope(&internal);
     assert_eq!(env.status, 500);
     assert_eq!(env.code, "Internal Server Error");
+    assert_eq!(env.message, "An internal error occurred.");
     assert!(!env.message.contains("secret"));
   }
 }

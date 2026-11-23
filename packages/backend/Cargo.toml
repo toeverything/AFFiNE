@@ -5,6 +5,10 @@ members = [
   "server-types",
   "server-db",
   "server-spi",
+  "server-domain",
+  "server-mail",
+  "server-blob",
+  "server-sync",
   "server-http",
   "server-worker",
   "affine-server",
@@ -19,6 +23,7 @@ rust-version = "1.88"
 
 [workspace.dependencies]
 arc-swap           = "1"
+argon2             = "0.5"
 async-graphql      = { version = "7", features = ["chrono", "uuid"] }
 async-graphql-axum = "7"
 async-trait        = "0.1"
@@ -27,29 +32,45 @@ base64             = "0.22"
 bytes              = "1"
 chrono             = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap               = { version = "4", features = ["derive", "env"] }
+crc32fast          = "1"
 futures-util       = "0.3"
+hex                = "0.4"
+hickory-resolver   = "0.26.2"
+hmac               = "0.12"
 http               = "1"
+lettre             = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
+lru                = "0.12"
+mailparse          = "0.16"
 p256               = { version = "0.13", features = ["ecdsa", "pem"] }
 postgres           = "0.19"
+rand               = "0.9"
 redis              = { version = "0.27", features = ["tokio-comp", "aio"] }
+reqwest            = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+rusty-s3           = "0.10"
 serde              = { version = "1", features = ["derive"] }
 serde_json         = "1"
 sha2               = "0.10"
 sqlx               = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
+subtle             = "2"
 thiserror          = "2"
 tokio              = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time", "process"] }
 tower              = "0.5"
 tower-http         = { version = "0.6", features = ["cors", "trace"] }
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+url                = "2.5"
 uuid               = { version = "1", features = ["v4", "serde"] }
 y-octo             = { version = "0.4.0", features = ["large_refs"] }
 
 affine-server   = { path = "affine-server" }
 frame-audit     = { path = "../../tools/frame-audit" }
+server-blob     = { path = "server-blob" }
 server-db       = { path = "server-db" }
+server-domain   = { path = "server-domain" }
 server-http     = { path = "server-http" }
+server-mail     = { path = "server-mail" }
 server-spi      = { path = "server-spi" }
+server-sync     = { path = "server-sync" }
 server-types    = { path = "server-types" }
 server-worker   = { path = "server-worker" }
 test-db-harness = { path = "test-db-harness" }

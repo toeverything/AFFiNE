@@ -236,7 +236,6 @@ test('format quick bar should show up when double-clicking on text', async ({
       position: { x: 10, y: 10 },
       delay: 20,
     });
-  await page.waitForTimeout(200);
   const formatBar = page.locator('affine-toolbar-widget editor-toolbar');
   await expect(formatBar).toBeVisible();
 });

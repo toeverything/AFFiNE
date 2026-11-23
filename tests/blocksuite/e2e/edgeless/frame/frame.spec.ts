@@ -409,11 +409,10 @@ test('outline should keep updated during a new frame created by frame-tool dragg
   await page.mouse.move(start[0], start[1]);
   await page.mouse.down();
   await page.mouse.move(end[0], end[1], { steps: 10 });
-  await page.waitForTimeout(50);
 
-  expect(
-    await pickColorAtPoints(page, [start, [end[0] - 1, end[1] - 1]])
-  ).toEqual(['#1e96eb', '#1e96eb']);
+  await expect
+    .poll(() => pickColorAtPoints(page, [start, [end[0] - 1, end[1] - 1]]))
+    .toEqual(['#1e96eb', '#1e96eb']);
 });
 
 test('undo should work when create a frame by dragging', async ({ page }) => {
