@@ -3,10 +3,7 @@ import {
   AttachmentBlockSchema,
   AttachmentBlockStyles,
 } from '@blocksuite/affine-model';
-import {
-  EMBED_CARD_HEIGHT,
-  EMBED_CARD_WIDTH,
-} from '@blocksuite/affine-shared/consts';
+import { EMBED_CARD_WIDTH } from '@blocksuite/affine-shared/consts';
 import { toGfxBlockComponent } from '@blocksuite/std';
 import { GfxViewInteractionExtension } from '@blocksuite/std/gfx';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -30,15 +27,13 @@ export class AttachmentEdgelessBlockComponent extends toGfxBlockComponent(
     const { style$ } = this.model.props;
     const cardStyle = style$.value ?? AttachmentBlockStyles[1];
     const width = EMBED_CARD_WIDTH[cardStyle];
-    const height = EMBED_CARD_HEIGHT[cardStyle];
     const bound = this.model.elementBound;
-    const scaleX = bound.w / width;
-    const scaleY = bound.h / height;
+    const scale = bound.w / width;
 
     this.containerStyleMap = styleMap({
       width: `${width}px`,
-      height: `${height}px`,
-      transform: `scale(${scaleX}, ${scaleY})`,
+      height: `${bound.h / scale}px`,
+      transform: `scale(${scale})`,
       transformOrigin: '0 0',
       overflow: 'hidden',
     });
