@@ -72,6 +72,7 @@ resolver = "3"
   ogg = "0.9"
   once_cell = "1"
   p256 = { version = "0.13", features = ["ecdsa", "pem"] }
+  pulldown-cmark = "0.13"
   rand = "0.9"
   rayon = "1.10"
   redis = { version = "1.6", features = ["tokio-comp", "tokio-rustls-comp"] }

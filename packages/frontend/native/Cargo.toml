@@ -18,6 +18,7 @@ chrono = { workspace = true }
 napi = { workspace = true }
 napi-derive = { workspace = true }
 once_cell = { workspace = true }
+pulldown-cmark = { workspace = true }
 serde_json = { workspace = true }
 sha3 = { workspace = true }
 sqlx = { workspace = true, default-features = false, features = [
