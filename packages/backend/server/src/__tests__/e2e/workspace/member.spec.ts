@@ -162,6 +162,15 @@ e2e('should invite a user', async t => {
     },
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
+
+  const retry = await app.gql({
+    query: acceptInviteByInviteIdMutation,
+    variables: {
+      workspaceId: workspace.id,
+      inviteId: invitation.body.inviteId,
+    },
+  });
+  t.true(retry.acceptInviteById);
 });
 
 e2e(

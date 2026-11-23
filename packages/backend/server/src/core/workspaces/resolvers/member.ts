@@ -582,6 +582,17 @@ export class WorkspaceMemberResolver {
         throw new InvitationAccountMismatch();
       }
 
+      if (role.status === WorkspaceMemberStatus.Accepted) {
+        const activeMember = await this.models.workspaceUser.getActive(
+          role.workspaceId,
+          role.userId
+        );
+        if (activeMember?.id === inviteId) {
+          return true;
+        }
+        throw new InvalidInvitation();
+      }
+
       await this.acceptInvitationByEmail(role);
     } else {
       // invitation by link
