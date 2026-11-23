@@ -10,6 +10,7 @@ import { AffineCommentProvider } from './comment-provider';
 const optionsSchema = z.object({
   enableComment: z.boolean().optional(),
   framework: z.instanceof(FrameworkProvider).optional(),
+  isInPeekView: z.boolean().optional(),
 });
 
 type CommentViewOptions = z.infer<typeof optionsSchema>;
@@ -26,6 +27,8 @@ export class CommentViewExtension extends ViewExtensionProvider<CommentViewOptio
     const framework = options.framework;
     if (!framework) return;
 
-    context.register([AffineCommentProvider(framework)]);
+    context.register([
+      AffineCommentProvider(framework, options.isInPeekView ?? false),
+    ]);
   }
 }

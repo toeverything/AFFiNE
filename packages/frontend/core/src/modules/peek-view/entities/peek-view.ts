@@ -16,6 +16,7 @@ import { firstValueFrom, map, race } from 'rxjs';
 
 import type { AIChatBlockModel } from '../../../blocksuite/ai/blocks';
 import { resolveLinkToDoc } from '../../navigation';
+import type { WorkbenchOpenOptions } from '../../workbench/entities/workbench';
 import type { WorkbenchService } from '../../workbench/services/workbench';
 import type { ImagePreviewData } from '../view/image-preview';
 
@@ -306,5 +307,13 @@ export class PeekViewEntity extends Entity {
       value: false,
       animation,
     });
+  };
+
+  openInWorkbench = (
+    docRef: DocReferenceInfo & { commentId?: string },
+    options?: WorkbenchOpenOptions
+  ) => {
+    this.workbenchService.workbench.openDoc(docRef, options);
+    this.close(false);
   };
 }

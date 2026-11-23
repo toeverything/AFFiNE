@@ -64,7 +64,8 @@ type Configure = {
   iconPicker: (framework?: FrameworkProvider) => Configure;
   comment: (
     enableComment?: boolean,
-    framework?: FrameworkProvider
+    framework?: FrameworkProvider,
+    isInPeekView?: boolean
   ) => Configure;
 
   value: ViewExtensionManager;
@@ -348,11 +349,13 @@ class ViewProvider {
 
   private readonly _configureComment = (
     enableComment?: boolean,
-    framework?: FrameworkProvider
+    framework?: FrameworkProvider,
+    isInPeekView?: boolean
   ) => {
     this._manager.configure(CommentViewExtension, {
       enableComment,
       framework,
+      isInPeekView,
     });
 
     this._manager.configure(InlineCommentViewExtension, {
