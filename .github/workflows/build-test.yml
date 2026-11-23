@@ -199,9 +199,11 @@ jobs:
           else
             matrix="[$linux]"
           fi
-          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
-          echo "server=$server" >> "$GITHUB_OUTPUT"
-          echo "desktop_matrix=$matrix" >> "$GITHUB_OUTPUT"
+          {
+            echo "desktop=$desktop"
+            echo "server=$server"
+            echo "desktop_matrix=$matrix"
+          } >> "$GITHUB_OUTPUT"
 
   mobile-native-build-filter:
     name: Mobile native build filter
