@@ -2,6 +2,7 @@ import './config';
 
 import { Module } from '@nestjs/common';
 
+import { BackendRuntimeModule } from '../backend-runtime';
 import { PermissionModule } from '../permission';
 import { QuotaModule } from '../quota';
 import { StorageModule } from '../storage';
@@ -11,15 +12,14 @@ import { DocEventsListener } from './event';
 import { DocStorageCronJob } from './job';
 import { DocStorageOptions } from './options';
 import { DatabaseDocReader, DocReader, DocReaderProvider } from './reader';
-import { DocWriter } from './writer';
+import { DocCreateIncompleteError, DocWriter } from './writer';
 
 @Module({
-  imports: [QuotaModule, PermissionModule, StorageModule],
+  imports: [BackendRuntimeModule, QuotaModule, PermissionModule, StorageModule],
   providers: [
     DocStorageOptions,
     PgWorkspaceDocStorageAdapter,
     PgUserspaceDocStorageAdapter,
-    DocStorageCronJob,
     DocReaderProvider,
     DatabaseDocReader,
     DocEventsListener,
@@ -29,15 +29,24 @@ import { DocWriter } from './writer';
     DatabaseDocReader,
     DocReader,
     DocWriter,
+    DocStorageOptions,
     PgWorkspaceDocStorageAdapter,
     PgUserspaceDocStorageAdapter,
   ],
 })
 export class DocStorageModule {}
+
+@Module({
+  imports: [DocStorageModule],
+  providers: [DocStorageCronJob],
+})
+export class DocStorageWorkerModule {}
+
 export {
-  // only for doc-service
   DatabaseDocReader,
+  DocCreateIncompleteError,
   DocReader,
+  DocStorageOptions,
   DocWriter,
   PgUserspaceDocStorageAdapter,
   PgWorkspaceDocStorageAdapter,

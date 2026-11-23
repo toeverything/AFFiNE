@@ -38,6 +38,9 @@ public class ListCommentsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListCommentsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -57,6 +60,9 @@ public class ListCommentsQuery: GraphQLQuery {
           "pagination": .variable("pagination")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListCommentsQuery.Data.Workspace.self
+      ] }
 
       /// Get comments of a doc
       public var comments: Comments { __data["comments"] }
@@ -75,6 +81,9 @@ public class ListCommentsQuery: GraphQLQuery {
           .field("edges", [Edge].self),
           .field("pageInfo", PageInfo.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListCommentsQuery.Data.Workspace.Comments.self
+        ] }
 
         public var totalCount: Int { __data["totalCount"] }
         public var edges: [Edge] { __data["edges"] }
@@ -92,6 +101,9 @@ public class ListCommentsQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("cursor", String.self),
             .field("node", Node.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListCommentsQuery.Data.Workspace.Comments.Edge.self
           ] }
 
           public var cursor: String { __data["cursor"] }
@@ -114,6 +126,9 @@ public class ListCommentsQuery: GraphQLQuery {
               .field("updatedAt", AffineGraphQL.DateTime.self),
               .field("user", User.self),
               .field("replies", [Reply].self),
+            ] }
+            public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+              ListCommentsQuery.Data.Workspace.Comments.Edge.Node.self
             ] }
 
             public var id: AffineGraphQL.ID { __data["id"] }
@@ -144,6 +159,9 @@ public class ListCommentsQuery: GraphQLQuery {
                 .field("name", String.self),
                 .field("avatarUrl", String?.self),
               ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                ListCommentsQuery.Data.Workspace.Comments.Edge.Node.User.self
+              ] }
 
               public var id: String { __data["id"] }
               public var name: String { __data["name"] }
@@ -166,6 +184,9 @@ public class ListCommentsQuery: GraphQLQuery {
                 .field("createdAt", AffineGraphQL.DateTime.self),
                 .field("updatedAt", AffineGraphQL.DateTime.self),
                 .field("user", User.self),
+              ] }
+              public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                ListCommentsQuery.Data.Workspace.Comments.Edge.Node.Reply.self
               ] }
 
               public var commentId: AffineGraphQL.ID { __data["commentId"] }
@@ -193,6 +214,9 @@ public class ListCommentsQuery: GraphQLQuery {
                   .field("name", String.self),
                   .field("avatarUrl", String?.self),
                 ] }
+                public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+                  ListCommentsQuery.Data.Workspace.Comments.Edge.Node.Reply.User.self
+                ] }
 
                 public var id: String { __data["id"] }
                 public var name: String { __data["name"] }
@@ -216,6 +240,9 @@ public class ListCommentsQuery: GraphQLQuery {
             .field("endCursor", String?.self),
             .field("hasNextPage", Bool.self),
             .field("hasPreviousPage", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            ListCommentsQuery.Data.Workspace.Comments.PageInfo.self
           ] }
 
           public var startCursor: String? { __data["startCursor"] }

@@ -8,6 +8,8 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 
+import { AI_CHAT_AUTO_SCROLL_PAUSE_EVENT } from '../ai-chat-messages/auto-scroll';
+
 export interface ToolResult {
   title: string | TemplateResult<1>;
   icon?: string | TemplateResult<1>;
@@ -258,9 +260,11 @@ export class ToolResultCard extends SignalWatcher(
         <div class="ai-tool-header" @click=${this.toggleCard}>
           <div class="ai-icon">${this.icon}</div>
           <div class="ai-tool-name">${this.name}</div>
-          ${this.isCollapsed
-            ? this.renderFooterIcons()
-            : html` <div class="ai-icon">${ToggleDownIcon()}</div> `}
+          ${
+            this.isCollapsed
+              ? this.renderFooterIcons()
+              : html` <div class="ai-icon">${ToggleDownIcon()}</div> `
+          }
         </div>
         <div class="ai-tool-results" data-collapsed=${this.isCollapsed}>
           <div class="ai-tool-result-collapse-wrapper">
@@ -283,11 +287,13 @@ export class ToolResultCard extends SignalWatcher(
                         ${this.renderIcon(result.icon)}
                       </div>
                     </div>
-                    ${result.content
-                      ? html`<div class="result-content">
-                          ${result.content}
-                        </div>`
-                      : nothing}
+                    ${
+                      result.content
+                        ? html`<div class="result-content">
+                            ${result.content}
+                          </div>`
+                        : nothing
+                    }
                   </a>
                 `
               )}
@@ -352,6 +358,12 @@ export class ToolResultCard extends SignalWatcher(
   }
 
   private toggleCard() {
+    this.dispatchEvent(
+      new CustomEvent(AI_CHAT_AUTO_SCROLL_PAUSE_EVENT, {
+        bubbles: true,
+        composed: true,
+      })
+    );
     this.isCollapsed = !this.isCollapsed;
   }
 }

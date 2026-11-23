@@ -28,10 +28,12 @@ import { WorkspaceSettingStorage } from './storage';
 
 export const WorkspaceSetting = ({
   activeTab,
+  scrollAnchor,
   onCloseSetting,
   onChangeSettingState,
 }: {
   activeTab: SettingTab;
+  scrollAnchor?: string;
   onCloseSetting: () => void;
   onChangeSettingState: (settingState: SettingState) => void;
 }) => {
@@ -54,7 +56,7 @@ export const WorkspaceSetting = ({
     case 'workspace:license':
       return <WorkspaceSettingLicense onCloseSetting={onCloseSetting} />;
     case 'workspace:integrations':
-      return <IntegrationSetting />;
+      return <IntegrationSetting scrollAnchor={scrollAnchor} />;
     case 'workspace:embedding':
       return <EmbeddingSettings />;
     default:

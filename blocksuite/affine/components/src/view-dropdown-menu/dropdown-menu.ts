@@ -16,7 +16,7 @@ import { EditorChevronDown } from '../toolbar';
 @requiredProperties({
   actions: PropTypes.array,
   context: PropTypes.instanceOf(ToolbarContext),
-  viewType$: PropTypes.object,
+  viewTypeSignal: PropTypes.object,
 })
 export class ViewDropdownMenu extends SignalWatcher(LitElement) {
   @property({ attribute: false })
@@ -26,13 +26,13 @@ export class ViewDropdownMenu extends SignalWatcher(LitElement) {
   accessor context!: ToolbarContext;
 
   @property({ attribute: false })
-  accessor viewType$!: Signal<string> | ReadonlySignal<string>;
+  accessor viewTypeSignal!: Signal<string> | ReadonlySignal<string>;
 
   override render() {
     const {
       actions,
       context,
-      viewType$: { value: viewType },
+      viewTypeSignal: { value: viewType },
     } = this;
 
     return html`

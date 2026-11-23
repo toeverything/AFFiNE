@@ -26,6 +26,9 @@ public class ListBlobsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ListBlobsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class ListBlobsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("blobs", [Blob].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ListBlobsQuery.Data.Workspace.self
       ] }
 
       /// List blobs of workspace
@@ -60,6 +66,9 @@ public class ListBlobsQuery: GraphQLQuery {
           .field("size", Int.self),
           .field("mime", String.self),
           .field("createdAt", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          ListBlobsQuery.Data.Workspace.Blob.self
         ] }
 
         public var key: String { __data["key"] }

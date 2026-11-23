@@ -1,19 +1,35 @@
+import { randomUUID } from 'node:crypto';
+
 import {
   acceptInviteByInviteIdMutation,
   approveWorkspaceTeamMemberMutation,
   createInviteLinkMutation,
   getInviteInfoQuery,
-  getMembersByWorkspaceIdQuery,
+  grantWorkspaceTeamMemberMutation,
   inviteByEmailsMutation,
   leaveWorkspaceMutation,
+  Permission,
   revokeMemberPermissionMutation,
   WorkspaceInviteLinkExpireTime,
   WorkspaceMemberStatus,
 } from '@affine/graphql';
 import { faker } from '@faker-js/faker';
+import {
+  WorkspaceMemberSource,
+  WorkspaceMemberStatus as PrismaWorkspaceMemberStatus,
+} from '@prisma/client';
 
-import { Models } from '../../../models';
+import { EntitlementService } from '../../../core/entitlement';
+import {
+  type InvitationNotification,
+  type InvitationReviewDeclinedNotification,
+  Models,
+  NotificationType,
+  WorkspaceRole as ModelWorkspaceRole,
+} from '../../../models';
+import { SubscriptionPlan } from '../../../plugins/payment/types';
 import { Mockers } from '../../mocks';
+import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
 
 async function createWorkspace() {
@@ -26,6 +42,37 @@ async function createWorkspace() {
     owner,
     workspace,
   };
+}
+
+async function grantTeamPlan(workspaceId: string, quantity: number) {
+  await app.get(EntitlementService).upsertAdminGrant({
+    targetType: 'workspace',
+    targetId: workspaceId,
+    plan: SubscriptionPlan.Team,
+    quantity,
+  });
+}
+
+async function revokeTeamPlan(workspaceId: string) {
+  await app.get(EntitlementService).revokeAdminGrant('workspace', workspaceId);
+}
+
+async function waitForInvitationNotification(userId: string) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const [notification] = await app.models.notification.findManyByUserId(
+      userId,
+      {
+        includeRead: true,
+        first: 1,
+        offset: 0,
+      }
+    );
+    if (notification?.type === NotificationType.Invitation) {
+      return notification as InvitationNotification;
+    }
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  throw new Error('Invitation notification was not created');
 }
 
 e2e('should invite a user', async t => {
@@ -42,32 +89,68 @@ e2e('should invite a user', async t => {
   });
 
   t.truthy(result, 'failed to invite user');
-  // add invitation notification job
-  const invitationNotification = await app.queue.waitFor(
-    'notification.sendInvitation'
+  const invitation = await waitForInvitationNotification(u2.id);
+  t.is(invitation.type, NotificationType.Invitation);
+  t.is(invitation.body.createdByUserId, owner.id);
+  t.is(invitation.body.inviteId, result.inviteMembers[0].inviteId!);
+
+  await t.throwsAsync(
+    app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invitation.body.inviteId,
+      },
+    }),
+    { message: 'This invitation belongs to another account.' }
   );
-  t.is(invitationNotification.payload.inviterId, owner.id);
-  t.is(
-    invitationNotification.payload.inviteId,
-    result.inviteMembers[0].inviteId!
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invitation.body.inviteId,
+      },
+    }),
+    { message: 'This invitation belongs to another account.' }
   );
 
+  await app.logout();
+  await t.throwsAsync(
+    app.gql({
+      query: getInviteInfoQuery,
+      variables: {
+        inviteId: invitation.body.inviteId,
+      },
+    }),
+    { message: 'You must sign in first to access this resource.' }
+  );
+  await t.throwsAsync(
+    app.gql({
+      query: acceptInviteByInviteIdMutation,
+      variables: {
+        workspaceId: workspace.id,
+        inviteId: invitation.body.inviteId,
+      },
+    }),
+    { message: 'You must sign in first to access this resource.' }
+  );
+
+  await app.login(u2);
   // invitation status is pending
   const { getInviteInfo } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo.status, WorkspaceMemberStatus.Pending);
 
   // u2 accept invite
-  await app.login(u2);
   await app.gql({
     query: acceptInviteByInviteIdMutation,
     variables: {
       workspaceId: workspace.id,
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
 
@@ -75,11 +158,61 @@ e2e('should invite a user', async t => {
   const { getInviteInfo: getInviteInfo2 } = await app.gql({
     query: getInviteInfoQuery,
     variables: {
-      inviteId: invitationNotification.payload.inviteId,
+      inviteId: invitation.body.inviteId,
     },
   });
   t.is(getInviteInfo2.status, WorkspaceMemberStatus.Accepted);
 });
+
+e2e(
+  'should remove charged invitations when the team entitlement is revoked',
+  async t => {
+    const { owner, workspace } = await createWorkspace();
+    const member = await app.create(Mockers.User);
+    await grantTeamPlan(workspace.id, 12);
+
+    await Promise.all(
+      Array.from({ length: 10 }).map(async () => {
+        await app.create(Mockers.WorkspaceUser, {
+          workspaceId: workspace.id,
+          userId: (await app.create(Mockers.User)).id,
+        });
+      })
+    );
+
+    await app.login(owner);
+    const invite = await app.gql({
+      query: inviteByEmailsMutation,
+      variables: {
+        emails: [member.email],
+        workspaceId: workspace.id,
+      },
+    });
+
+    await revokeTeamPlan(workspace.id);
+
+    await app.login(member);
+    await t.throwsAsync(
+      app.gql({
+        query: acceptInviteByInviteIdMutation,
+        variables: {
+          workspaceId: workspace.id,
+          inviteId: invite.inviteMembers[0].inviteId!,
+        },
+      })
+    );
+
+    await t.throwsAsync(
+      app.gql({
+        query: getInviteInfoQuery,
+        variables: {
+          inviteId: invite.inviteMembers[0].inviteId!,
+        },
+      }),
+      { message: 'Invitation not found' }
+    );
+  }
+);
 
 e2e('should leave a workspace', async t => {
   const { owner, workspace } = await createWorkspace();
@@ -127,6 +260,82 @@ e2e('should revoke a user', async t => {
   t.true(revokeMember, 'failed to revoke user');
 });
 
+e2e('should map every workspace role transition without fallback', async t => {
+  const roles = [
+    {
+      graphql: Permission.Owner,
+      model: ModelWorkspaceRole.Owner,
+    },
+    {
+      graphql: Permission.Admin,
+      model: ModelWorkspaceRole.Admin,
+    },
+    {
+      graphql: Permission.Collaborator,
+      model: ModelWorkspaceRole.Collaborator,
+    },
+    {
+      graphql: Permission.External,
+      model: ModelWorkspaceRole.External,
+    },
+  ];
+
+  for (const current of roles) {
+    for (const next of roles) {
+      const actor = await app.create(Mockers.User);
+      const target =
+        current.model === ModelWorkspaceRole.Owner
+          ? actor
+          : await app.create(Mockers.User);
+      const workspace = await app.create(Mockers.Workspace, {
+        owner: { id: actor.id },
+      });
+      await grantTeamPlan(workspace.id, 2);
+      if (
+        current.model !== ModelWorkspaceRole.External &&
+        current.model !== ModelWorkspaceRole.Owner
+      ) {
+        await app.create(Mockers.WorkspaceUser, {
+          workspaceId: workspace.id,
+          userId: target.id,
+          type: current.model,
+        });
+      }
+      await app.login(actor);
+
+      const mutation = app.gql({
+        query: grantWorkspaceTeamMemberMutation,
+        variables: {
+          workspaceId: workspace.id,
+          userId: target.id,
+          permission: next.graphql,
+        },
+      });
+      const allowed =
+        current.model === ModelWorkspaceRole.Admin ||
+        current.model === ModelWorkspaceRole.Collaborator ||
+        (current.model === ModelWorkspaceRole.Owner &&
+          next.model === ModelWorkspaceRole.Owner);
+
+      if (!allowed) {
+        await t.throwsAsync(mutation);
+        continue;
+      }
+
+      const { grantMember } = await mutation;
+      t.true(grantMember);
+      const member = await app
+        .get(Models)
+        .workspaceUser.get(workspace.id, target.id);
+      if (next.model === ModelWorkspaceRole.External) {
+        t.falsy(member);
+      } else {
+        t.is(member?.type, next.model);
+      }
+    }
+  }
+});
+
 e2e('should approve a user on under review', async t => {
   const { owner, workspace } = await createWorkspace();
   const user = await app.create(Mockers.User);
@@ -134,6 +343,7 @@ e2e('should approve a user on under review', async t => {
     workspaceId: workspace.id,
     userId: user.id,
     status: WorkspaceMemberStatus.UnderReview,
+    kind: 'link',
   });
 
   await app.login(owner);
@@ -171,19 +381,18 @@ e2e('should revoke a user on under review', async t => {
     },
   });
   t.true(revokeMember, 'failed to revoke user');
-  const requestDeclinedNotification = app.queue.last(
-    'notification.sendInvitationReviewDeclined'
-  );
-  t.truthy(requestDeclinedNotification);
-  t.deepEqual(
-    requestDeclinedNotification.payload,
-    {
-      userId: user.id,
-      workspaceId: workspace.id,
-      reviewerId: owner.id,
-    },
-    'should send review declined notification'
-  );
+  const [requestDeclinedNotification] =
+    await app.models.notification.findManyByUserId(user.id, {
+      includeRead: true,
+      first: 1,
+      offset: 0,
+    });
+  const declined =
+    requestDeclinedNotification as InvitationReviewDeclinedNotification;
+  t.is(declined.type, NotificationType.InvitationReviewDeclined);
+  t.is(declined.userId, user.id);
+  t.is(declined.body.workspaceId, workspace.id);
+  t.is(declined.body.createdByUserId, owner.id);
 });
 
 e2e('should create user if not exist', async t => {
@@ -217,39 +426,31 @@ e2e('should support pagination for member', async t => {
     userId: u2.id,
   });
 
-  await app.login(owner);
-  let result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 2,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  let result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 2);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 2);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 2,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 2,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 1);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 1);
 
-  result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 3,
-      take: 2,
-    },
+  result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 3,
+    take: 2,
   });
-  t.is(result.workspace.memberCount, 3);
-  t.is(result.workspace.members.length, 0);
+  t.is(result.memberCount, 3);
+  t.is(result.members.length, 0);
 });
 
 e2e('should limit member count correctly', async t => {
@@ -265,17 +466,15 @@ e2e('should limit member count correctly', async t => {
     })
   );
 
-  await app.login(owner);
-  const result = await app.gql({
-    query: getMembersByWorkspaceIdQuery,
-    variables: {
-      workspaceId: workspace.id,
-      skip: 0,
-      take: 10,
-    },
+  const socket = await createRealtimeClient(app, owner);
+  t.teardown(() => socket.disconnect());
+  const result = await realtimeRequest(socket, 'workspace.members.get', {
+    workspaceId: workspace.id,
+    skip: 0,
+    take: 10,
   });
-  t.is(result.workspace.memberCount, 11);
-  t.is(result.workspace.members.length, 10);
+  t.is(result.memberCount, 11);
+  t.is(result.members.length, 10);
 });
 
 e2e('should get invite link info with status', async t => {
@@ -408,11 +607,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 
@@ -420,10 +622,7 @@ e2e(
   'should invite by link and send review request notification over quota limit',
   async t => {
     const { owner, workspace } = await createWorkspace();
-    await app.create(Mockers.TeamWorkspace, {
-      id: workspace.id,
-      quantity: 3,
-    });
+    await grantTeamPlan(workspace.id, 3);
 
     await app.login(owner);
     const { createInviteLink } = await app.gql({
@@ -447,11 +646,14 @@ e2e(
       },
     });
     t.truthy(result, 'failed to accept invite');
-    const notification = app.queue.last(
-      'notification.sendInvitationReviewRequest'
+    const [notification] = await app.models.notification.findManyByUserId(
+      owner.id,
+      { includeRead: true, first: 1, offset: 0 }
     );
-    t.is(notification.payload.reviewerId, owner.id);
-    t.truthy(notification.payload.inviteId);
+    const review = notification as InvitationNotification;
+    t.is(review.type, NotificationType.InvitationReviewRequest);
+    t.is(review.userId, owner.id);
+    t.truthy(review.body.inviteId);
   }
 );
 
@@ -463,10 +665,7 @@ e2e(
       name: faker.internet.displayName({ firstName: 'Lucy' }),
     });
     const user2 = await app.create(Mockers.User, {
-      email: faker.internet.email({
-        firstName: 'Jeanne',
-        lastName: 'Doe',
-      }),
+      email: `jeanne_doe.${randomUUID()}@affine.pro`,
     });
     await app.create(Mockers.WorkspaceUser, {
       workspaceId: workspace.id,
@@ -477,38 +676,54 @@ e2e(
       userId: user2.id,
     });
 
-    await app.login(owner);
-    let result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'lucy',
-      },
+    const socket = await createRealtimeClient(app, owner);
+    t.teardown(() => socket.disconnect());
+    let result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'lucy',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'LUCY',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'LUCY',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].name, user1.name);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].name, user1.name);
 
-    result = await app.gql({
-      query: getMembersByWorkspaceIdQuery,
-      variables: {
-        workspaceId: workspace.id,
-        query: 'jeanne_doe',
-      },
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'jeanne_doe',
     });
-    t.is(result.workspace.memberCount, 3);
-    t.is(result.workspace.members.length, 1);
-    t.is(result.workspace.members[0].email, user2.email);
+    t.is(result.memberCount, 3);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, user2.email);
+
+    const pendingEmail = `pending_search.${randomUUID()}@affine.pro`;
+    const pendingUser = await app.create(Mockers.User, {
+      email: pendingEmail,
+    });
+    await app
+      .get(Models)
+      .workspaceUser.set(
+        workspace.id,
+        pendingUser.id,
+        ModelWorkspaceRole.Collaborator,
+        {
+          status: PrismaWorkspaceMemberStatus.Pending,
+          source: WorkspaceMemberSource.Email,
+        }
+      );
+    result = await realtimeRequest(socket, 'workspace.members.get', {
+      workspaceId: workspace.id,
+      query: 'pending_search',
+    });
+    t.is(result.memberCount, 4);
+    t.is(result.members.length, 1);
+    t.is(result.members[0].email, pendingEmail);
+    t.is(result.members[0].status, WorkspaceMemberStatus.Pending);
   }
 );

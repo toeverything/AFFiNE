@@ -34,6 +34,9 @@ public class IndexerSearchQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      IndexerSearchQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class IndexerSearchQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("search", Search.self, arguments: ["input": .variable("input")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        IndexerSearchQuery.Data.Workspace.self
       ] }
 
       /// Search a specific table
@@ -67,6 +73,9 @@ public class IndexerSearchQuery: GraphQLQuery {
           .field("nodes", [Node].self),
           .field("pagination", Pagination.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          IndexerSearchQuery.Data.Workspace.Search.self
+        ] }
 
         public var nodes: [Node] { __data["nodes"] }
         public var pagination: Pagination { __data["pagination"] }
@@ -83,6 +92,9 @@ public class IndexerSearchQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("fields", AffineGraphQL.JSONObject.self),
             .field("highlights", AffineGraphQL.JSONObject?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerSearchQuery.Data.Workspace.Search.Node.self
           ] }
 
           /// The search result fields, see UnionSearchItemObjectType
@@ -105,9 +117,15 @@ public class IndexerSearchQuery: GraphQLQuery {
             .field("hasMore", Bool.self),
             .field("nextCursor", String?.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerSearchQuery.Data.Workspace.Search.Pagination.self
+          ] }
 
+          /// Number of results returned in this response, not a global total
           public var count: Int { __data["count"] }
+          /// Whether the provider has more candidates; remaining visible results are not guaranteed
           public var hasMore: Bool { __data["hasMore"] }
+          /// Opaque provider candidate cursor; it does not guarantee complete visible-result pagination
           public var nextCursor: String? { __data["nextCursor"] }
         }
       }

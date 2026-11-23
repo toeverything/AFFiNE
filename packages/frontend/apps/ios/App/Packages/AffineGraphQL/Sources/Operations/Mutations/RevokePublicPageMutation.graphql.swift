@@ -37,6 +37,9 @@ public class RevokePublicPageMutation: GraphQLMutation {
         "docId": .variable("pageId")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RevokePublicPageMutation.Data.self
+    ] }
 
     public var revokePublicDoc: RevokePublicDoc { __data["revokePublicDoc"] }
 
@@ -53,6 +56,9 @@ public class RevokePublicPageMutation: GraphQLMutation {
         .field("id", String.self),
         .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
         .field("public", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        RevokePublicPageMutation.Data.RevokePublicDoc.self
       ] }
 
       public var id: String { __data["id"] }

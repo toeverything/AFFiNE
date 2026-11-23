@@ -47,6 +47,9 @@ public class CreateBlobUploadMutation: GraphQLMutation {
         "mime": .variable("mime")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateBlobUploadMutation.Data.self
+    ] }
 
     public var createBlobUpload: CreateBlobUpload { __data["createBlobUpload"] }
 
@@ -69,6 +72,9 @@ public class CreateBlobUploadMutation: GraphQLMutation {
         .field("uploadId", String?.self),
         .field("partSize", Int?.self),
         .field("uploadedParts", [UploadedPart]?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateBlobUploadMutation.Data.CreateBlobUpload.self
       ] }
 
       public var method: GraphQLEnum<AffineGraphQL.BlobUploadMethod> { __data["method"] }
@@ -93,6 +99,9 @@ public class CreateBlobUploadMutation: GraphQLMutation {
           .field("__typename", String.self),
           .field("partNumber", Int.self),
           .field("etag", String.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CreateBlobUploadMutation.Data.CreateBlobUpload.UploadedPart.self
         ] }
 
         public var partNumber: Int { __data["partNumber"] }

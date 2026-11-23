@@ -6,9 +6,9 @@ import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-cha
 import { useAISubscribe } from '@affine/core/components/hooks/affine/use-ai-subscribe';
 import {
   AIDraftService,
+  AIModelService,
   AIToolsConfigService,
 } from '@affine/core/modules/ai-button';
-import { AIModelService } from '@affine/core/modules/ai-button/services/models';
 import { ServerService, SubscriptionService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -36,8 +36,8 @@ export const AIChatBlockPeekView = ({
   const affineWorkspaceDialogService = framework.get(WorkspaceDialogService);
   const aiDraftService = framework.get(AIDraftService);
   const aiToolsConfigService = framework.get(AIToolsConfigService);
-  const subscriptionService = framework.get(SubscriptionService);
   const aiModelService = framework.get(AIModelService);
+  const subscriptionService = framework.get(SubscriptionService);
   const handleAISubscribe = useAISubscribe();
 
   return useMemo(() => {
@@ -52,8 +52,8 @@ export const AIChatBlockPeekView = ({
       affineWorkspaceDialogService,
       aiDraftService,
       aiToolsConfigService,
-      subscriptionService,
       aiModelService,
+      subscriptionService,
       handleAISubscribe
     );
     return toReactNode(template);
@@ -68,8 +68,8 @@ export const AIChatBlockPeekView = ({
     affineWorkspaceDialogService,
     aiDraftService,
     aiToolsConfigService,
-    subscriptionService,
     aiModelService,
+    subscriptionService,
     handleAISubscribe,
   ]);
 };

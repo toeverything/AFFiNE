@@ -21,7 +21,7 @@ import {
 const FRAME = 16;
 
 describe('viewport turbo renderer', () => {
-  let cleanup: () => void;
+  let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
     cleanup = await setupEditor('edgeless', [
@@ -34,7 +34,7 @@ describe('viewport turbo renderer', () => {
     return cleanup;
   });
 
-  afterEach(() => cleanup?.());
+  afterEach(async () => await cleanup?.());
 
   test('should access turbo renderer instance', async () => {
     const renderer = getRenderer();

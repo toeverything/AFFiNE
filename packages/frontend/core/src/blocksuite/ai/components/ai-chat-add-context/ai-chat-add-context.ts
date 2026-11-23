@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -20,6 +21,10 @@ export class AIChatAddContext extends SignalWatcher(
       align-items: center;
       justify-content: center;
       cursor: pointer;
+
+      &[aria-disabled='true'] {
+        cursor: not-allowed;
+      }
     }
   `;
 
@@ -50,18 +55,33 @@ export class AIChatAddContext extends SignalWatcher(
   private abortController: AbortController | null = null;
 
   override render() {
+    const disabled = !this.searchMenuConfig.addContextAvailable;
     return html`
       <div
         class="ai-chat-add-context"
+        aria-disabled=${disabled}
         data-testid="chat-panel-with-button"
         @click=${this.toggleAddDocMenu}
       >
         ${PlusIcon()}
+        ${
+          disabled
+            ? html`<affine-tooltip>
+                ${I18n[
+                  'com.affine.ai.chat-panel.local-workspace-context-unavailable'
+                ]()}
+              </affine-tooltip>`
+            : null
+        }
       </div>
     `;
   }
 
   private readonly toggleAddDocMenu = () => {
+    if (!this.searchMenuConfig.addContextAvailable) {
+      return;
+    }
+
     if (this.abortController) {
       this.abortController.abort();
       return;

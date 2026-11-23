@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
+import { upgradeConfig } from './upgrade-config.js';
+
 const SELF_HOST_CONFIG_DIR = `${homedir()}/.affine/config`;
 
 function generatePrivateKey() {
@@ -29,6 +31,8 @@ const files = [{ to: 'private.key', generator: generatePrivateKey }];
 function prepare() {
   fs.mkdirSync(SELF_HOST_CONFIG_DIR, { recursive: true });
 
+  upgradeConfig();
+
   for (const { to, generator } of files) {
     const targetFilePath = path.join(SELF_HOST_CONFIG_DIR, to);
     if (!fs.existsSync(targetFilePath)) {
@@ -38,9 +42,18 @@ function prepare() {
   }
 }
 
-function runPredeployScript() {
-  console.log('running predeploy script.');
-  execSync('yarn predeploy', {
+function runPrismaMigrations() {
+  console.log('running prisma migrations.');
+  execSync('yarn prisma migrate deploy', {
+    encoding: 'utf-8',
+    env: process.env,
+    stdio: 'inherit',
+  });
+}
+
+function runDataMigrations() {
+  console.log('running data migrations.');
+  execSync('yarn cli run', {
     encoding: 'utf-8',
     env: process.env,
     stdio: 'inherit',
@@ -85,4 +98,5 @@ function fixFailedMigrations() {
 
 prepare();
 fixFailedMigrations();
-runPredeployScript();
+runPrismaMigrations();
+runDataMigrations();

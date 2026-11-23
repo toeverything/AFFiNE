@@ -3,10 +3,8 @@ import {
   type TranscriptionBlockModel,
 } from '@affine/core/blocksuite/ai/blocks/transcription-block/model';
 import { insertFromMarkdown } from '@affine/core/blocksuite/utils';
-import { toArrayBuffer } from '@affine/core/utils/array-buffer';
-import { encodeAudioBlobToOpusSlices } from '@affine/core/utils/opus-encoding';
+import { preprocessAudioBlobForTranscription } from '@affine/core/utils/opus-encoding';
 import { DebugLogger } from '@affine/debug';
-import { AiJobStatus } from '@affine/graphql';
 import track from '@affine/track';
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
@@ -23,10 +21,20 @@ import { AudioTranscriptionJob } from './audio-transcription-job';
 import type { TranscriptionResult } from './types';
 
 const logger = new DebugLogger('audio-attachment-block');
+type TranscriptionBlockProps = TranscriptionBlockModel['props'];
 
 // BlockSuiteError: yText must not contain "\r" because it will break the range synchronization
 function sanitizeText(text: string) {
   return text.replace(/\r/g, '');
+}
+
+function requireTranscriptionBlockProps(
+  transcriptionBlockProps: TranscriptionBlockProps | undefined
+) {
+  if (!transcriptionBlockProps) {
+    throw new Error('No transcription block props');
+  }
+  return transcriptionBlockProps;
 }
 
 const colorOptions = [
@@ -93,7 +101,7 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       this.transcriptionJob.status$.value.status === 'waiting-for-job' &&
       !this.hasTranscription$.value
     ) {
-      this.transcribe().catch(error => {
+      this.resumeTranscription().catch(error => {
         logger.error('Error transcribing audio:', error);
       });
     }
@@ -124,42 +132,55 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       transcriptionBlockProps = this.transcriptionBlock$.value?.props;
     }
 
-    if (!transcriptionBlockProps) {
-      throw new Error('No transcription block props');
-    }
-
     const job = this.framework.createEntity(AudioTranscriptionJob, {
       blobId: this.props.props.sourceId,
-      blockProps: transcriptionBlockProps,
-      getAudioFiles: async () => {
+      blockProps: requireTranscriptionBlockProps(transcriptionBlockProps),
+      getAudioTranscriptionInput: async () => {
         const buffer = await this.audioMedia.getBuffer();
         if (!buffer) {
           throw new Error('No audio buffer available');
         }
-        const slices = await encodeAudioBlobToOpusSlices(buffer, 64000);
-        const files = slices.map((slice, index) => {
-          const blob = new Blob([toArrayBuffer(slice)], { type: 'audio/opus' });
-          return new File([blob], this.props.props.name + `-${index}.opus`, {
-            type: 'audio/opus',
+        const currentTranscriptionBlockProps = requireTranscriptionBlockProps(
+          this.transcriptionBlock$.value?.props
+        );
+        const { files, sourceAudio, sliceManifest } =
+          await preprocessAudioBlobForTranscription(buffer, {
+            fileNameBase: this.props.props.name,
+            sourceMimeType: this.props.props.type,
+            targetBitrate: 64000,
           });
-        });
-        return files;
+
+        return {
+          files,
+          input: {
+            sourceAudio: {
+              ...sourceAudio,
+              ...currentTranscriptionBlockProps.transcription.sourceAudio,
+            },
+            quality: currentTranscriptionBlockProps.transcription.quality,
+            sliceManifest,
+          },
+        };
       },
     });
 
     return job;
   }
 
-  readonly transcribe = async () => {
+  private readonly runTranscription = async (retryFailed: boolean) => {
     try {
-      // if job is already running, we should not start it again
-      if (this.transcriptionJob.status$.value.status !== 'waiting-for-job') {
+      const initialStatus = this.transcriptionJob.status$.value.status;
+      if (initialStatus !== 'waiting-for-job' && initialStatus !== 'failed') {
         return;
       }
-      const status = await this.transcriptionJob.start();
-      if (status.status === AiJobStatus.claimed) {
+      const status = await this.transcriptionJob.start(retryFailed);
+      if (status.status === 'blocked') {
+        return status;
+      }
+      if (status.status === 'settled') {
         await this.fillTranscriptionResult(status.result);
       }
+      return status;
     } catch (error) {
       track.doc.editor.audioBlock.transcribeRecording({
         type: 'Meeting record',
@@ -169,6 +190,10 @@ export class AudioAttachmentBlock extends Entity<AttachmentBlockModel> {
       throw error;
     }
   };
+
+  readonly resumeTranscription = () => this.runTranscription(false);
+
+  readonly transcribe = () => this.runTranscription(true);
 
   private readonly fillTranscriptionResult = async (
     result: TranscriptionResult

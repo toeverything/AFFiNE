@@ -8,7 +8,7 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
       #"query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10, $offset: Int = 0) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: $limit, offset: $offset } options: { action: false, fork: false, sessionOrder: desc, withMessages: false } ) { __typename ...PaginatedCopilotChats } } } }"#,
-      fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
+      fragments: [CopilotChatHistory.self, PaginatedCopilotChats.self]
     ))
 
   public var workspaceId: String
@@ -39,6 +39,9 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("currentUser", CurrentUser?.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetCopilotRecentSessionsQuery.Data.self
+    ] }
 
     /// Get current user
     public var currentUser: CurrentUser? { __data["currentUser"] }
@@ -54,6 +57,9 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetCopilotRecentSessionsQuery.Data.CurrentUser.self
       ] }
 
       public var copilot: Copilot { __data["copilot"] }
@@ -81,6 +87,9 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
             ]
           ]),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          GetCopilotRecentSessionsQuery.Data.CurrentUser.Copilot.self
+        ] }
 
         public var chats: Chats { __data["chats"] }
 
@@ -95,6 +104,10 @@ public class GetCopilotRecentSessionsQuery: GraphQLQuery {
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .fragment(PaginatedCopilotChats.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            GetCopilotRecentSessionsQuery.Data.CurrentUser.Copilot.Chats.self,
+            PaginatedCopilotChats.self
           ] }
 
           public var pageInfo: PageInfo { __data["pageInfo"] }

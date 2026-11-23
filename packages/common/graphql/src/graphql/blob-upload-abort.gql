@@ -1,3 +1,7 @@
-mutation abortBlobUpload($workspaceId: String!, $key: String!, $uploadId: String!) {
+mutation abortBlobUpload(
+  $workspaceId: String!
+  $key: String!
+  $uploadId: String!
+) {
   abortBlobUpload(workspaceId: $workspaceId, key: $key, uploadId: $uploadId)
 }

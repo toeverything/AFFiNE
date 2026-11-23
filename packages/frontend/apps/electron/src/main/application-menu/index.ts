@@ -1,5 +1,5 @@
 import type { MainEventRegister } from '../type';
-import { applicationMenuSubjects } from './subject';
+import { applicationMenuSubjects, type NewPageAction } from './subject';
 
 export * from './create';
 export * from './subject';
@@ -11,7 +11,7 @@ export const applicationMenuEvents = {
   /**
    * File -> New Doc
    */
-  onNewPageAction: (fn: (type: 'page' | 'edgeless') => void) => {
+  onNewPageAction: (fn: (type: NewPageAction) => void) => {
     const sub = applicationMenuSubjects.newPageAction$.subscribe(fn);
     return () => {
       sub.unsubscribe();

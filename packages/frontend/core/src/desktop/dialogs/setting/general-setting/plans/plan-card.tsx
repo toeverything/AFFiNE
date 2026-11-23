@@ -12,9 +12,8 @@ import { UrlService } from '@affine/core/modules/url';
 import {
   type CreateCheckoutSessionInput,
   SubscriptionPlan,
-  SubscriptionRecurring,
+  type SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -25,6 +24,7 @@ import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
+import { ManageSubscriptionButton } from '../billing/manage-subscription';
 import { CancelAction, ResumeAction } from './actions';
 import { CheckoutSlot } from './checkout-slot';
 import type { DynamicPrice, FixedPrice } from './cloud-plans';
@@ -119,7 +119,6 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   );
   const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = primarySubscription?.recurring;
-  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimePro$);
   const isFree = detail.plan === SubscriptionPlan.Free;
 
   const signUpText = useMemo(
@@ -136,9 +135,6 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   //  else
   //    if team                                 => 'Start 14-day free trial'
   //    if isBeliever                           => 'Included in Lifetime'
-  //    if onetime
-  //      if free                               => 'Included in Pro'
-  //      else                                  => 'Redeem Code'
   //    if isCurrent
   //      if canceled                           => 'Resume'
   //      else                                  => 'Current Plan'
@@ -156,23 +152,23 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
     return <SignUpAction>{signUpText}</SignUpAction>;
   }
 
+  if (primarySubscription && primarySubscription.provider !== 'stripe') {
+    return isFree ? null : (
+      <ManageSubscriptionButton
+        source={primarySubscription}
+        inCardView
+        className={styles.planAction}
+        variant="primary"
+      />
+    );
+  }
+
   // lifetime
   if (isBeliever) {
     return (
       <Button className={styles.planAction} disabled>
         {t['com.affine.payment.cloud.lifetime.included']()}
       </Button>
-    );
-  }
-
-  // onetime
-  if (isOnetime) {
-    return isFree ? (
-      <Button className={styles.planAction} disabled>
-        {t['com.affine.payment.cloud.onetime.included']()}
-      </Button>
-    ) : (
-      <RedeemCode recurring={recurring} />
     );
   }
 
@@ -469,31 +465,5 @@ const ResumeButton = () => {
         </span>
       </Button>
     </ResumeAction>
-  );
-};
-
-const redeemCodeCheckoutInput = { variant: SubscriptionVariant.Onetime };
-export const RedeemCode = ({
-  className,
-  recurring = SubscriptionRecurring.Yearly,
-  plan,
-  children,
-  ...btnProps
-}: ButtonProps & {
-  recurring?: SubscriptionRecurring;
-  plan?: SubscriptionPlan;
-}) => {
-  const t = useI18n();
-
-  return (
-    <Upgrade
-      recurring={recurring}
-      className={className}
-      checkoutInput={redeemCodeCheckoutInput}
-      plan={plan ?? SubscriptionPlan.Pro}
-      {...btnProps}
-    >
-      {children ?? t['com.affine.payment.redeem-code']()}
-    </Upgrade>
   );
 };

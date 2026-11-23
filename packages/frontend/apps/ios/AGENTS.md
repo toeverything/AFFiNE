@@ -87,7 +87,7 @@ Follow the guidelines in `AGENTS.md`:
 ### Testing and Quality
 
 - TypeScript strict mode enabled
-- ESLint/Prettier configuration from workspace root
+- Oxlint/Oxfmt configuration from workspace root
 - No specific test commands in this package (tests likely in workspace root)
 
 # Swift Code Style Guidelines

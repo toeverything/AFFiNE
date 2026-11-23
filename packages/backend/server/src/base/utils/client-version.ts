@@ -1,3 +1,5 @@
+import semver from 'semver';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Example: 2026.2.6-canary.015
@@ -88,4 +90,27 @@ export function checkCanaryDateClientVersion(
     allowed: ageMs <= maxAgeMs && ageMs >= -maxFutureSkewMs,
     normalized: parsed.normalized,
   };
+}
+
+function normalizeComparableVersion(version: string): string | null {
+  const canary = parseCanaryDateClientVersion(version);
+  return semver.valid(canary?.normalized ?? version.trim(), {
+    loose: true,
+  });
+}
+
+export function hasNewerVersion(
+  currentVersion: string,
+  nextVersion: string
+): boolean {
+  const current = normalizeComparableVersion(currentVersion);
+  const next = normalizeComparableVersion(nextVersion);
+
+  if (!current || !next) {
+    return currentVersion.trim() !== nextVersion.trim();
+  }
+
+  return semver.gt(next, current, {
+    loose: true,
+  });
 }

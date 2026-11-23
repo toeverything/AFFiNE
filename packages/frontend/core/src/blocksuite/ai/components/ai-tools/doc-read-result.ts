@@ -6,6 +6,9 @@ import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import { getToolErrorDisplayName, isToolError } from './tool-result-utils';
+import type { ToolError } from './type';
+
 interface DocReadToolCall {
   type: 'tool-call';
   toolCallId: string;
@@ -18,13 +21,23 @@ interface DocReadToolResult {
   toolCallId: string;
   toolName: string;
   args: { doc_id: string };
-  result: {
-    /** Old result may not have docId */
-    docId?: string;
-    title: string;
-    markdown: string;
-  };
+  result:
+    | {
+        /** Old result may not have docId */
+        docId?: string;
+        title: string;
+        markdown: string;
+      }
+    | ToolError
+    | null;
 }
+
+const getFailedName = (result: ToolError | null) => {
+  return getToolErrorDisplayName(result, 'Document read failed', {
+    'Workspace Sync Required': 'Enable workspace sync to read this document',
+    'Document Sync Pending': 'Wait for document sync to finish',
+  });
+};
 
 export class DocReadResult extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
@@ -49,18 +62,25 @@ export class DocReadResult extends WithDisposable(ShadowlessElement) {
     if (this.data.type !== 'tool-result') {
       return nothing;
     }
+    const result = this.data.result;
+    if (!result || isToolError(result)) {
+      return html`<tool-call-failed
+        .name=${getFailedName(isToolError(result) ? result : null)}
+        .icon=${ViewIcon()}
+      ></tool-call-failed>`;
+    }
     // TODO: better markdown rendering
     return html`<tool-result-card
-      .name=${`Read "${this.data.result.title}"`}
+      .name=${`Read "${result.title}"`}
       .icon=${ViewIcon()}
       .width=${this.width}
       .results=${[
         {
-          title: this.data.result.title,
+          title: result.title,
           icon: PageIcon(),
-          content: this.data.result.markdown,
+          content: result.markdown,
           onClick: () => {
-            const docId = (this.data as DocReadToolResult).result.docId;
+            const docId = result.docId;
             if (!docId) {
               return;
             }

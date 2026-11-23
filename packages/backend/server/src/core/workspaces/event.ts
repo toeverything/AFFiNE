@@ -22,9 +22,11 @@ declare global {
     'workspace.members.updated': {
       workspaceId: string;
     };
-    'workspace.members.allocateSeats': {
+    'workspace.invite_link.created': {
       workspaceId: string;
-      quantity: number;
+    };
+    'workspace.invite_link.revoked': {
+      workspaceId: string;
     };
   }
 }
@@ -73,6 +75,11 @@ export class WorkspaceEvents {
           $$workspaceId: workspaceId,
         },
       },
+      metadata: {
+        workspaceId,
+        recipientUserId: userId,
+        source: { trusted: false },
+      },
     });
   }
 
@@ -116,13 +123,5 @@ export class WorkspaceEvents {
     inviteId,
   }: Events['workspace.members.invite']) {
     await this.workspaceService.sendInvitationNotification(inviterId, inviteId);
-  }
-
-  @OnEvent('workspace.members.allocateSeats')
-  async onAllocateSeats({
-    workspaceId,
-    quantity,
-  }: Events['workspace.members.allocateSeats']) {
-    await this.workspaceService.allocateSeats(workspaceId, quantity);
   }
 }

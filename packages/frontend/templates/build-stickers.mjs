@@ -129,7 +129,7 @@ function buildStickerTemplate(data) {
 }
 
 const code = `
-/* eslint-disable */
+/* oxlint-disable */
 // @ts-nocheck
 
 ${importStatements}

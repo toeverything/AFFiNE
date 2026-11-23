@@ -1,18 +1,15 @@
+import { UserFriendlyError } from '@affine/error';
 import {
   type GetDocRolePermissionsQuery,
   getDocRolePermissionsQuery,
-  type GetWorkspaceInfoQuery,
-  getWorkspaceInfoQuery,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
 
 import type { WorkspaceServerService } from '../../cloud';
+import type { NbstoreService } from '../../storage';
 import type { WorkspaceService } from '../../workspace';
 
-export type WorkspacePermissionActions = keyof Omit<
-  GetWorkspaceInfoQuery['workspace']['permissions'],
-  '__typename'
->;
+export type WorkspacePermissionActions = string;
 
 export type DocPermissionActions = keyof Omit<
   GetDocRolePermissionsQuery['workspace']['doc']['permissions'],
@@ -22,7 +19,8 @@ export type DocPermissionActions = keyof Omit<
 export class GuardStore extends Store {
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly workspaceServerService: WorkspaceServerService
+    private readonly workspaceServerService: WorkspaceServerService,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
   }
@@ -30,31 +28,34 @@ export class GuardStore extends Store {
   async getWorkspacePermissions(): Promise<
     Record<WorkspacePermissionActions, boolean>
   > {
-    if (!this.workspaceServerService.server) {
-      throw new Error('No server');
-    }
-    const data = await this.workspaceServerService.server.gql({
-      query: getWorkspaceInfoQuery,
-      variables: {
-        workspaceId: this.workspaceService.workspace.id,
-      },
-    });
-    return data.workspace.permissions;
+    const { access } = await this.nbstoreService.realtime.request(
+      'workspace.access.get',
+      { workspaceId: this.workspaceService.workspace.id },
+      { timeoutMs: 10000 }
+    );
+    return access.permissions as Record<WorkspacePermissionActions, boolean>;
   }
 
   async getDocPermissions(
     docId: string
-  ): Promise<Record<DocPermissionActions, boolean>> {
+  ): Promise<Record<DocPermissionActions, boolean> | false> {
     if (!this.workspaceServerService.server) {
       throw new Error('No server');
     }
-    const data = await this.workspaceServerService.server.gql({
-      query: getDocRolePermissionsQuery,
-      variables: {
-        workspaceId: this.workspaceService.workspace.id,
-        docId,
-      },
-    });
-    return data.workspace.doc.permissions;
+    try {
+      const data = await this.workspaceServerService.server.gql({
+        query: getDocRolePermissionsQuery,
+        variables: {
+          workspaceId: this.workspaceService.workspace.id,
+          docId,
+        },
+      });
+      return data.workspace.doc.permissions;
+    } catch (error) {
+      if (UserFriendlyError.fromAny(error).is('DOC_ACTION_DENIED')) {
+        return false;
+      }
+      throw error;
+    }
   }
 }

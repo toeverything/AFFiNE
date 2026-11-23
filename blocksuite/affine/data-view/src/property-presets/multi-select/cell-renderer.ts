@@ -2,7 +2,10 @@ import { popupTargetFromElement } from '@blocksuite/affine-components/context-me
 import { computed } from '@preact/signals-core';
 import { html } from 'lit/static-html.js';
 
-import { popTagSelect } from '../../core/component/tags/multi-tag-select.js';
+import {
+  consumeTagDraftFromTableCellHost,
+  popTagSelect,
+} from '../../core/component/tags/multi-tag-select.js';
 import type { SelectTag } from '../../core/index.js';
 import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
@@ -19,6 +22,7 @@ export class MultiSelectCell extends BaseCellRenderer<
 > {
   closePopup?: () => void;
   private readonly popTagSelect = () => {
+    const initialDraftText = consumeTagDraftFromTableCellHost(this);
     this.closePopup = popTagSelect(popupTargetFromElement(this), {
       name: this.cell.property.name$.value,
       options: this.options$,
@@ -29,6 +33,7 @@ export class MultiSelectCell extends BaseCellRenderer<
       },
       onComplete: this._editComplete,
       minWidth: 400,
+      initialDraftText,
     });
   };
 

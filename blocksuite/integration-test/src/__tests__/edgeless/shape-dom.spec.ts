@@ -13,6 +13,31 @@ function expectPxCloseTo(
   expect(Number.parseFloat(value)).toBeCloseTo(expected, precision);
 }
 
+async function waitForShapeElement(
+  surfaceView: ReturnType<typeof getSurface>,
+  shapeId: string,
+  timeout = 5000
+) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    if (surfaceView.renderer instanceof DomRenderer) {
+      surfaceView.renderer.markElementDirty(shapeId);
+      surfaceView.renderer.forceFullRender();
+    }
+
+    const shapeElement = surfaceView.renderRoot.querySelector<HTMLElement>(
+      `[data-element-id="${shapeId}"]`
+    );
+
+    if (shapeElement) return shapeElement;
+
+    await wait(50);
+  }
+
+  return null;
+}
+
 describe('Shape rendering with DOM renderer', () => {
   beforeEach(async () => {
     const cleanup = await setupEditor('edgeless', [], {
@@ -40,10 +65,7 @@ describe('Shape rendering with DOM renderer', () => {
     };
     const shapeId = surfaceModel.addElement(shapeProps);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const shapeElement = surfaceView?.renderRoot.querySelector(
-      `[data-element-id="${shapeId}"]`
-    );
+    const shapeElement = await waitForShapeElement(surfaceView, shapeId);
 
     expect(shapeElement).not.toBeNull();
     expect(shapeElement).toBeInstanceOf(HTMLElement);
@@ -61,10 +83,7 @@ describe('Shape rendering with DOM renderer', () => {
       stroke: '#000000',
     };
     const shapeId = surfaceModel.addElement(shapeProps);
-    await wait(100);
-    const shapeElement = surfaceView?.renderRoot.querySelector<HTMLElement>(
-      `[data-element-id="${shapeId}"]`
-    );
+    const shapeElement = await waitForShapeElement(surfaceView, shapeId);
 
     expect(shapeElement).not.toBeNull();
     const zoom = surfaceView.renderer.viewport.zoom;
@@ -84,16 +103,12 @@ describe('Shape rendering with DOM renderer', () => {
     };
     const shapeId = surfaceModel.addElement(shapeProps);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    let shapeElement = surfaceView.renderRoot.querySelector(
-      `[data-element-id="${shapeId}"]`
-    );
+    let shapeElement = await waitForShapeElement(surfaceView, shapeId);
     expect(shapeElement).not.toBeNull();
 
     surfaceModel.deleteElement(shapeId);
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await wait(100);
 
     shapeElement = surfaceView.renderRoot.querySelector(
       `[data-element-id="${shapeId}"]`
@@ -113,10 +128,7 @@ describe('Shape rendering with DOM renderer', () => {
       filled: true,
     };
     const shapeId = surfaceModel.addElement(shapeProps);
-    await wait(100);
-    const shapeElement = surfaceView?.renderRoot.querySelector<HTMLElement>(
-      `[data-element-id="${shapeId}"]`
-    );
+    const shapeElement = await waitForShapeElement(surfaceView, shapeId);
 
     expect(shapeElement).not.toBeNull();
     const zoom = surfaceView.renderer.viewport.zoom;
@@ -136,10 +148,7 @@ describe('Shape rendering with DOM renderer', () => {
       filled: true,
     };
     const shapeId = surfaceModel.addElement(shapeProps);
-    await wait(100);
-    const shapeElement = surfaceView?.renderRoot.querySelector<HTMLElement>(
-      `[data-element-id="${shapeId}"]`
-    );
+    const shapeElement = await waitForShapeElement(surfaceView, shapeId);
 
     expect(shapeElement).not.toBeNull();
     const zoom = surfaceView.renderer.viewport.zoom;

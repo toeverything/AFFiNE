@@ -25,6 +25,7 @@ export const CurrentWorkspaceCard = forwardRef<
       ref={ref}
       onClick={onClick}
       className={clsx(card, className)}
+      data-testid="workspace-selector-trigger"
       {...attrs}
     >
       {currentWorkspace ? (

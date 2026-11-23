@@ -4,6 +4,7 @@ import { signal } from '@preact/signals-core';
 
 import { LifeCycleWatcher } from '../extension/index.js';
 import { KeymapIdentifier } from '../identifier.js';
+import { shouldDeactivateEditorOnFocusOut } from '../inline/range/active.js';
 import type { BlockStdScope } from '../scope/index.js';
 import { type BlockComponent, EditorHost } from '../view/index.js';
 import {
@@ -77,6 +78,8 @@ export type EventHandlerRunner = {
   flavour?: string;
   blockId?: string;
 };
+
+const syntheticEventNames = new Set(['click', 'doubleClick', 'tripleClick']);
 
 export class UIEventDispatcher extends LifeCycleWatcher {
   private static _activeDispatcher: UIEventDispatcher | null = null;
@@ -172,16 +175,21 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       this._setActive(true);
     });
     this.disposables.addFromEvent(document, 'focusout', e => {
-      if (e.relatedTarget && !this.host.contains(e.relatedTarget as Node)) {
+      if (shouldDeactivateEditorOnFocusOut(this.host, e.relatedTarget)) {
         this._setActive(false);
       }
     });
-    this.disposables.addFromEvent(this.host, 'blur', () => {
+    this.disposables.addFromEvent(this.host, 'blur', e => {
       if (_dragging) {
         return;
       }
 
-      this._setActive(false);
+      if (
+        !e.relatedTarget ||
+        shouldDeactivateEditorOnFocusOut(this.host, e.relatedTarget)
+      ) {
+        this._setActive(false);
+      }
     });
     this.disposables.addFromEvent(this.host, 'dragover', () => {
       _dragging = true;
@@ -435,7 +443,10 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       const { fn } = runner;
       const result = fn(context);
       if (result) {
-        context.get('defaultState').event.stopPropagation();
+        // Only stop propagation for non-synthetic events
+        if (!syntheticEventNames.has(name)) {
+          context.get('defaultState').event.stopPropagation();
+        }
         return;
       }
     }

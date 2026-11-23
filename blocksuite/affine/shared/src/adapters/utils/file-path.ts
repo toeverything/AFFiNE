@@ -1,3 +1,20 @@
+function safeDecodePathReference(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
+export function normalizeFilePathReference(path: string): string {
+  return safeDecodePathReference(path)
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/');
+}
+
 /**
  * Normalizes a relative path by resolving all relative path segments
  * @param basePath The base path (markdown file's directory)
@@ -40,7 +57,7 @@ export function getImageFullPath(
   imageReference: string
 ): string {
   // Decode the image reference in case it contains URL-encoded characters
-  const decodedReference = decodeURIComponent(imageReference);
+  const decodedReference = safeDecodePathReference(imageReference);
 
   // Get the directory of the file path
   const markdownDir = filePath.substring(0, filePath.lastIndexOf('/'));

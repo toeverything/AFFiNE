@@ -92,7 +92,7 @@ export class CalendarAccountModel extends BaseModel {
       scope: input.scope ?? null,
       status: input.status ?? 'active',
       lastError: input.lastError ?? null,
-      refreshIntervalMinutes: input.refreshIntervalMinutes ?? 60,
+      refreshIntervalMinutes: input.refreshIntervalMinutes ?? 30,
     };
 
     const updateData: Prisma.CalendarAccountUncheckedUpdateInput = {

@@ -123,7 +123,7 @@ export class DeltaService<TextAttributes extends BaseTextAttributes> {
     const deltas = this.editor.embedDeltas;
     const result: Result[] = [];
 
-    // eslint-disable-next-line sonarjs/no-ignored-return
+    // oxlint-disable-next-line sonarjs/no-ignored-return
     deltas.reduce((rangeIndex, delta, deltaIndex) => {
       const length = delta.insert.length;
       const from = inlineRange.index - length;

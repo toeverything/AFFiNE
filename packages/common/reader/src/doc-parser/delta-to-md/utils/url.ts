@@ -1,5 +1,5 @@
 export const encodeLink = (link: string) =>
   encodeURI(link)
-    .replace(/\(/g, '%28')
-    .replace(/\)/g, '%29')
+    .replaceAll('(', '%28')
+    .replaceAll(')', '%29')
     .replace(/(\?|&)response-content-disposition=attachment.*$/, '');

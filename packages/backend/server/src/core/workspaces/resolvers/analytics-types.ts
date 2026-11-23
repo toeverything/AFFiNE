@@ -2,6 +2,7 @@ import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
 
 export enum TimeBucket {
   Minute = 'Minute',
+  Hour = 'Hour',
   Day = 'Day',
 }
 

@@ -59,9 +59,11 @@ export class AIChatBlockMessage extends LitElement {
         <div class="ai-chat-content">
           <chat-images .attachments=${attachments}></chat-images>
           <div class=${messageClasses}>
-            ${streamObjects?.length
-              ? this.renderStreamObjects(streamObjects)
-              : this.renderRichText(content)}
+            ${
+              streamObjects?.length
+                ? this.renderStreamObjects(streamObjects)
+                : this.renderRichText(content)
+            }
           </div>
         </div>
       </div>
@@ -75,8 +77,9 @@ export class AIChatBlockMessage extends LitElement {
       .host=${this.host}
       .state=${this.state}
       .extensions=${this.textRendererOptions.extensions}
-      .affineFeatureFlagService=${this.textRendererOptions
-        .affineFeatureFlagService}
+      .affineFeatureFlagService=${
+        this.textRendererOptions.affineFeatureFlagService
+      }
       .notificationService=${notificationService}
       .independentMode=${false}
       .theme=${this.host.std.get(ThemeProvider).app$}
@@ -88,8 +91,9 @@ export class AIChatBlockMessage extends LitElement {
       .text=${text}
       .state=${this.state}
       .extensions=${this.textRendererOptions.extensions}
-      .affineFeatureFlagService=${this.textRendererOptions
-        .affineFeatureFlagService}
+      .affineFeatureFlagService=${
+        this.textRendererOptions.affineFeatureFlagService
+      }
       .theme=${this.host.std.get(ThemeProvider).app$}
     ></chat-content-rich-text>`;
   }

@@ -37,13 +37,15 @@ export const widgetQuickSettingBar = defineUniComponent(
     >
       ${barList.map((bar, index) => {
         return html`
-          ${index !== 0
-            ? html` <div
-                style="width: 1px;height:27px;background-color: ${unsafeCSSVarV2(
-                  'layer/insideBorder/border'
-                )}"
-              ></div>`
-            : nothing}
+          ${
+            index !== 0
+              ? html` <div
+                  style="width: 1px;height:27px;background-color: ${unsafeCSSVarV2(
+                    'layer/insideBorder/border'
+                  )}"
+                ></div>`
+              : nothing
+          }
           ${bar}
         `;
       })}

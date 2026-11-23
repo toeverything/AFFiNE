@@ -87,7 +87,7 @@ export const config = (): BuildOptions => {
     bundle: true,
     target: `node${NODE_MAJOR_VERSION}`,
     platform: 'node',
-    external: ['electron', 'electron-updater', 'yjs', 'semver'],
+    external: ['electron', 'electron-updater', 'semver'],
     format: 'cjs',
     loader: {
       '.node': 'copy',
@@ -98,7 +98,7 @@ export const config = (): BuildOptions => {
           JSON.stringify(val) ??
           String(
             val
-          ) /* JSON.stringify(undefined) == undefined, but we need 'undefined' */;
+          ); /* JSON.stringify(undefined) == undefined, but we need 'undefined' */
         return def;
       },
       {} as Record<string, string>

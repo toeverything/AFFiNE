@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { pick } from 'lodash-es';
+import { McpAccessMode } from '@prisma/client';
 import z from 'zod/v3';
 
-import { DocReader, DocWriter } from '../../../core/doc';
-import { AccessController } from '../../../core/permission';
-import { clearEmbeddingChunk } from '../../../models';
-import { IndexerService } from '../../indexer';
-import { CopilotContextService } from '../context/service';
+import {
+  DocCreateIncompleteError,
+  DocReader,
+  DocWriter,
+} from '../../../core/doc';
+import { PermissionAccess } from '../../../core/permission';
+import { isOrdinaryWorkspaceDoc } from '../../../native';
+import { DocumentRetrievalService } from '../retrieval/document';
 
 type McpTextContent = {
   type: 'text';
@@ -99,14 +102,17 @@ function defineTool<T extends z.ZodTypeAny>(
 @Injectable()
 export class WorkspaceMcpProvider {
   constructor(
-    private readonly ac: AccessController,
+    private readonly ac: PermissionAccess,
     private readonly reader: DocReader,
     private readonly writer: DocWriter,
-    private readonly context: CopilotContextService,
-    private readonly indexer: IndexerService
+    private readonly retrieval: DocumentRetrievalService
   ) {}
 
-  async for(userId: string, workspaceId: string): Promise<WorkspaceMcpServer> {
+  async for(
+    userId: string,
+    workspaceId: string,
+    accessMode: McpAccessMode = McpAccessMode.READ_ONLY
+  ): Promise<WorkspaceMcpServer> {
     await this.ac.user(userId).workspace(workspaceId).assert('Workspace.Read');
 
     const readDocument = defineTool({
@@ -149,99 +155,62 @@ export class WorkspaceMcpProvider {
       },
     });
 
-    const semanticSearch = defineTool({
-      name: 'semantic_search',
-      title: 'Semantic Search',
+    const docSearch = defineTool({
+      name: 'doc_search',
+      title: 'Document Search',
       description:
-        'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; use this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts, recent documents).',
-      parser: z.object({ query: z.string() }),
+        'Search persisted workspace documents and return bounded passages with Page or canvas locators. Retrieval strategy is selected by the server and never includes files, blobs, attachments, or the web.',
+      parser: z.object({
+        query: z.string().trim().min(1).max(2000),
+        doc_ids: z.array(z.string().min(1).max(128)).max(50).optional(),
+        limit: z.number().int().min(1).max(20).optional(),
+      }),
       inputSchema: {
         type: 'object',
         properties: {
           query: { type: 'string' },
+          doc_ids: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 50,
+          },
+          limit: { type: 'integer', minimum: 1, maximum: 20 },
         },
         required: ['query'],
         additionalProperties: false,
       },
-      execute: async ({ query }, options) => {
-        const trimmed = query.trim();
-        if (!trimmed) {
-          return toolError('Query is required for semantic search.');
-        }
-
-        const chunks = await this.context.matchWorkspaceDocs(
-          workspaceId,
-          trimmed,
-          5,
+      execute: async ({ query, doc_ids, limit }, options) => {
+        const result = await this.retrieval.search(
+          { user: userId, workspace: workspaceId },
+          query,
+          doc_ids,
+          limit ?? 10,
           options.signal
         );
-
-        const abortedAfterMatch = abortIfNeeded(options.signal);
-        if (abortedAfterMatch) return abortedAfterMatch;
-
-        const docs = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .docs(
-            chunks.filter(chunk => 'docId' in chunk),
-            'Doc.Read'
-          );
-
-        const abortedAfterDocs = abortIfNeeded(options.signal);
-        if (abortedAfterDocs) return abortedAfterDocs;
-
-        return {
-          content: docs.map(doc => ({
-            type: 'text',
-            text: clearEmbeddingChunk(doc).content,
-          })),
-        };
+        return toolText(
+          JSON.stringify({
+            retrieval_mode: result.retrievalMode,
+            degraded_reason: result.degradedReason,
+            hits: result.hits.map(hit => ({
+              doc_id: hit.docId,
+              title: hit.title,
+              excerpt: hit.excerpt,
+              visibility: hit.visibility,
+              block_id: hit.blockId,
+              element_id: hit.elementId,
+              frame_id: hit.frameId,
+            })),
+          })
+        );
       },
     });
 
-    const keywordSearch = defineTool({
-      name: 'keyword_search',
-      title: 'Keyword Search',
-      description:
-        'Fuzzy search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based or keyword-base lookup is sufficient.',
-      parser: z.object({ query: z.string() }),
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: { type: 'string' },
-        },
-        required: ['query'],
-        additionalProperties: false,
-      },
-      execute: async ({ query }, options) => {
-        const trimmed = query.trim();
-        if (!trimmed) return toolError('Query is required for keyword search.');
+    const tools = [readDocument, docSearch];
 
-        let docs = await this.indexer.searchDocsByKeyword(workspaceId, trimmed);
-
-        const abortedAfterSearch = abortIfNeeded(options.signal);
-        if (abortedAfterSearch) return abortedAfterSearch;
-
-        docs = await this.ac
-          .user(userId)
-          .workspace(workspaceId)
-          .docs(docs, 'Doc.Read');
-
-        const abortedAfterDocs = abortIfNeeded(options.signal);
-        if (abortedAfterDocs) return abortedAfterDocs;
-
-        return {
-          content: docs.map(doc => ({
-            type: 'text',
-            text: JSON.stringify(pick(doc, 'docId', 'title', 'createdAt')),
-          })),
-        };
-      },
-    });
-
-    const tools = [readDocument, semanticSearch, keywordSearch];
-
-    if (env.dev || env.namespaces.canary) {
+    if (
+      accessMode === McpAccessMode.READ_WRITE &&
+      (env.dev || env.namespaces.canary)
+    ) {
       const createDocument = defineTool({
         name: 'create_document',
         title: 'Create Document',
@@ -250,6 +219,7 @@ export class WorkspaceMcpProvider {
         parser: z.object({
           title: z.string().min(1),
           content: z.string(),
+          docId: z.string().trim().min(1).optional(),
         }),
         inputSchema: {
           type: 'object',
@@ -262,41 +232,78 @@ export class WorkspaceMcpProvider {
               type: 'string',
               description: 'The markdown content for the document body',
             },
+            docId: {
+              type: 'string',
+              description:
+                'Optional document ID returned from a previous incomplete creation error; retries workspace registration idempotently without duplicating document content',
+            },
           },
           required: ['title', 'content'],
           additionalProperties: false,
         },
-        execute: async ({ title, content }, options) => {
+        execute: async ({ title, content, docId }, options) => {
           try {
             await this.ac
               .user(userId)
               .workspace(workspaceId)
               .assert('Workspace.CreateDoc');
-
-            const abortedAfterPermission = abortIfNeeded(options.signal);
-            if (abortedAfterPermission) return abortedAfterPermission;
+            const abortedBeforeWrite = abortIfNeeded(options.signal);
+            if (abortedBeforeWrite) return abortedBeforeWrite;
 
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
             if (!sanitizedTitle) throw new Error('Title cannot be empty');
-            const strippedContent = content.replace(
-              /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
-              ''
-            );
-            const result = await this.writer.createDoc(
-              workspaceId,
-              sanitizedTitle,
-              strippedContent,
-              userId
-            );
+
+            let result: { docId: string };
+            if (docId !== undefined) {
+              if (!isOrdinaryWorkspaceDoc(workspaceId, docId)) {
+                return toolError('Invalid document ID.');
+              }
+              await this.ac
+                .user(userId)
+                .workspace(workspaceId)
+                .doc(docId)
+                .assert('Doc.Update');
+              result = await this.writer.recoverDocCreation(
+                workspaceId,
+                docId,
+                sanitizedTitle,
+                userId
+              );
+            } else {
+              const strippedContent = content.replace(
+                /^[ \t]{0,3}#\s+[^\n]*#*\s*\n*/,
+                ''
+              );
+              result = await this.writer.createDoc(
+                workspaceId,
+                sanitizedTitle,
+                strippedContent,
+                userId
+              );
+            }
 
             return toolText(
               JSON.stringify({
                 success: true,
                 docId: result.docId,
-                message: `Document "${title}" created successfully`,
+                message:
+                  docId !== undefined
+                    ? `Document "${title}" registration completed`
+                    : `Document "${title}" created successfully`,
               })
             );
           } catch (error) {
+            if (error instanceof DocCreateIncompleteError) {
+              return toolError(
+                JSON.stringify({
+                  success: false,
+                  code: 'doc_create_incomplete',
+                  retryable: true,
+                  docId: error.docId,
+                  message: error.message,
+                })
+              );
+            }
             return toolError(
               `Failed to create document: ${error instanceof Error ? error.message : 'Unknown error'}`
             );
@@ -332,13 +339,12 @@ export class WorkspaceMcpProvider {
         execute: async ({ docId, content }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
 
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
+          if (!canUpdate) return notFoundError;
           const abortedBeforeWrite = abortIfNeeded(options.signal);
           if (abortedBeforeWrite) return abortedBeforeWrite;
 
@@ -351,10 +357,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });
@@ -384,16 +388,14 @@ export class WorkspaceMcpProvider {
         },
         execute: async ({ docId, title }, options) => {
           const notFoundError = toolError(`Doc with id ${docId} not found.`);
-
-          const accessible = await this.ac
+          const canUpdate = await this.ac
             .user(userId)
             .workspace(workspaceId)
             .doc(docId)
             .can('Doc.Update');
-          if (!accessible) return notFoundError;
-
-          const abortedAfterPermission = abortIfNeeded(options.signal);
-          if (abortedAfterPermission) return abortedAfterPermission;
+          if (!canUpdate) return notFoundError;
+          const abortedBeforeWrite = abortIfNeeded(options.signal);
+          if (abortedBeforeWrite) return abortedBeforeWrite;
 
           try {
             const sanitizedTitle = title.replace(/[\r\n]+/g, ' ').trim();
@@ -413,10 +415,8 @@ export class WorkspaceMcpProvider {
                 message: 'Document title updated successfully',
               })
             );
-          } catch (error) {
-            return toolError(
-              `Failed to update document metadata: ${error instanceof Error ? error.message : 'Unknown error'}`
-            );
+          } catch {
+            return notFoundError;
           }
         },
       });

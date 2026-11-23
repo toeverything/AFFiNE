@@ -42,6 +42,9 @@ public class UploadCommentAttachmentMutation: GraphQLMutation {
         "attachment": .variable("attachment")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UploadCommentAttachmentMutation.Data.self
+    ] }
 
     /// Upload a comment attachment and return the access url
     public var uploadCommentAttachment: String { __data["uploadCommentAttachment"] }

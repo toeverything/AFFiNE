@@ -1,13 +1,18 @@
+import * as contextMenu from '@blocksuite/affine-components/context-menu';
 import { signal } from '@preact/signals-core';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { GroupBy } from '../core/common/types.js';
+import { TagManager } from '../core/component/tags/multi-tag-select.js';
 import type { DataSource } from '../core/data-source/base.js';
 import { DetailSelection } from '../core/detail/selection.js';
 import type { FilterGroup } from '../core/filter/types.js';
 import { groupByMatchers } from '../core/group-by/define.js';
+import { SelectGroupView } from '../core/group-by/renderer/select-group.js';
+import { GroupTrait, sortByManually } from '../core/group-by/trait.js';
 import { t } from '../core/logical/type-presets.js';
 import type { DataViewCellLifeCycle } from '../core/property/index.js';
+import type { Row } from '../core/view-manager/row.js';
 import { checkboxPropertyModelConfig } from '../property-presets/checkbox/define.js';
 import { multiSelectPropertyModelConfig } from '../property-presets/multi-select/define.js';
 import { selectPropertyModelConfig } from '../property-presets/select/define.js';
@@ -214,7 +219,223 @@ const createDragController = () => {
   return new KanbanDragController({} as DragLogic);
 };
 
+const createTestRow = (rowId: string): Row => ({
+  rowId,
+  cells$: signal([]) as Row['cells$'],
+  index$: signal<Row['index$']['value']>(undefined),
+  prev$: signal<Row | undefined>(undefined),
+  next$: signal<Row | undefined>(undefined),
+  delete: vi.fn(),
+  move: vi.fn(),
+});
+
+const createGroupTraitHarness = (options?: {
+  groupProperties?: Array<{
+    key: string;
+    hide: boolean;
+    manuallyCardSort: string[];
+  }>;
+  rowIds?: string[];
+  values?: Record<string, boolean>;
+}) => {
+  const dataSource = createMockDataSource([
+    {
+      id: 'checkbox',
+      type: checkboxPropertyModelConfig.type,
+    },
+  ]);
+
+  const property = {
+    id: 'checkbox',
+    dataType$: signal(t.boolean.instance()),
+    meta$: signal({ config: {} }),
+  };
+
+  const groupProperties = options?.groupProperties ?? [
+    {
+      key: 'true',
+      hide: false,
+      manuallyCardSort: [],
+    },
+    {
+      key: 'false',
+      hide: false,
+      manuallyCardSort: [],
+    },
+  ];
+  const rows = options?.rowIds ?? [];
+  const data$ = signal({
+    groupProperties,
+  });
+  const cellValues = new Map(
+    Object.entries(options?.values ?? {}).map(([rowId, value]) => [
+      `${rowId}:checkbox`,
+      value,
+    ])
+  );
+  const cells = new Map<
+    string,
+    {
+      jsonValue$: ReturnType<typeof signal<boolean | undefined>>;
+      jsonValueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+      valueSet: ReturnType<typeof vi.fn<(value: unknown) => void>>;
+    }
+  >();
+
+  const cellGetOrCreate = (rowId: string, propertyId: string) => {
+    const key = `${rowId}:${propertyId}`;
+    const existing = cells.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const jsonValue$ = signal(cellValues.get(key));
+    const update = (value: unknown) => {
+      jsonValue$.value = value as boolean | undefined;
+      cellValues.set(key, value as boolean);
+    };
+    const cell = {
+      jsonValue$,
+      jsonValueSet: vi.fn(update),
+      valueSet: vi.fn(update),
+    };
+    cells.set(key, cell);
+    return cell;
+  };
+
+  const isLocked$ = signal(false);
+  const view = {
+    data$,
+    rows$: signal(rows.map(createTestRow)),
+    isLocked$,
+    lockRows: vi.fn((locked: boolean) => {
+      isLocked$.value = locked;
+    }),
+    manager: {
+      dataSource: asDataSource(dataSource),
+    },
+    propertyGetOrCreate: () => property,
+    cellGetOrCreate,
+  };
+
+  const groupBy$ = signal<GroupBy | undefined>({
+    type: 'groupBy',
+    columnId: 'checkbox',
+    name: 'boolean',
+    hideEmpty: false,
+    sort: { desc: false },
+  });
+
+  const ops = {
+    groupBySet: vi.fn(),
+    sortGroup: (keys: string[], asc?: boolean) => {
+      const sorted = sortByManually(
+        keys,
+        value => value,
+        data$.value.groupProperties.map(value => value.key)
+      );
+      return asc === false ? sorted.reverse() : sorted;
+    },
+    sortRow: (groupKey: string, groupedRows: Row[]) => {
+      const group = data$.value.groupProperties.find(
+        value => value.key === groupKey
+      );
+      return sortByManually(
+        groupedRows,
+        row => row.rowId,
+        group?.manuallyCardSort ?? []
+      );
+    },
+    changeGroupSort: vi.fn(),
+    changeRowSort: vi.fn(),
+    changeGroupHide: vi.fn(),
+  };
+
+  return {
+    groupTrait: new GroupTrait(groupBy$, view as never, ops),
+    ops,
+    cells,
+    view,
+  };
+};
+
 describe('kanban', () => {
+  describe('group trait', () => {
+    it('reapplies manual card order when building grouped rows', () => {
+      const { groupTrait } = createGroupTraitHarness({
+        groupProperties: [
+          {
+            key: 'true',
+            hide: false,
+            manuallyCardSort: ['row-2', 'row-1'],
+          },
+          {
+            key: 'false',
+            hide: false,
+            manuallyCardSort: [],
+          },
+        ],
+        rowIds: ['row-1', 'row-2'],
+        values: {
+          'row-1': true,
+          'row-2': true,
+        },
+      });
+
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2', 'row-1']);
+    });
+
+    it('preserves manual group order when updating card sort', () => {
+      const { groupTrait, ops, cells, view } = createGroupTraitHarness({
+        groupProperties: [
+          {
+            key: 'false',
+            hide: false,
+            manuallyCardSort: ['row-1'],
+          },
+          {
+            key: 'true',
+            hide: false,
+            manuallyCardSort: ['row-2'],
+          },
+        ],
+        rowIds: ['row-1', 'row-2'],
+        values: {
+          'row-1': false,
+          'row-2': true,
+        },
+      });
+
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2']);
+      view.lockRows(true);
+
+      groupTrait.moveCardTo('row-1', 'false', 'true', 'end');
+
+      expect(view.lockRows).toHaveBeenLastCalledWith(false);
+      expect(
+        groupTrait.groupsDataList$.value
+          ?.find(group => group.key === 'true')
+          ?.rows.map(row => row.rowId)
+      ).toEqual(['row-2', 'row-1']);
+      expect(ops.changeRowSort).toHaveBeenCalledWith(
+        ['false', 'true'],
+        'true',
+        ['row-2', 'row-1']
+      );
+      expect(cells.get('row-1:checkbox')?.jsonValueSet).toHaveBeenCalledWith(
+        true
+      );
+    });
+  });
+
   describe('group-by define', () => {
     it('boolean group should not include ungroup bucket', () => {
       const booleanGroup = groupByMatchers.find(
@@ -583,6 +804,215 @@ describe('kanban', () => {
       } finally {
         vi.unstubAllGlobals();
       }
+    });
+  });
+
+  describe('SelectGroupView', () => {
+    it('renders Untitled when tag value is empty or whitespace', async () => {
+      if (!customElements.get('data-view-group-title-select-view')) {
+        customElements.define(
+          'data-view-group-title-select-view',
+          SelectGroupView
+        );
+      }
+      const view = document.createElement(
+        'data-view-group-title-select-view'
+      ) as SelectGroupView;
+      const data$ = signal({
+        options: [
+          { id: 'opt-1', value: '', color: '#ff0000' },
+          { id: 'opt-2', value: '   ', color: '#00ff00' },
+          { id: 'opt-3', value: 'Done', color: '#0000ff' },
+        ],
+      });
+      view.group = {
+        value: 'opt-1',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+
+      document.body.append(view);
+      await view.updateComplete;
+
+      const tag1 = view.querySelector('.tag');
+      expect(tag1?.textContent?.trim()).toBe('Untitled');
+
+      view.group = {
+        value: 'opt-2',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+      await view.updateComplete;
+
+      const tag2 = view.querySelector('.tag');
+      expect(tag2?.textContent?.trim()).toBe('Untitled');
+
+      view.group = {
+        value: 'opt-3',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {},
+      } as never;
+      await view.updateComplete;
+
+      const tag3 = view.querySelector('.tag');
+      expect(tag3?.textContent?.trim()).toBe('Done');
+
+      view.remove();
+    });
+
+    it('allows opening rename and color menu when column title is empty or whitespace', async () => {
+      if (!customElements.get('data-view-group-title-select-view')) {
+        customElements.define(
+          'data-view-group-title-select-view',
+          SelectGroupView
+        );
+      }
+      const view = document.createElement(
+        'data-view-group-title-select-view'
+      ) as SelectGroupView;
+      const data$ = signal({
+        options: [
+          { id: 'opt-1', value: '', color: '#ff0000' },
+          { id: 'opt-2', value: '   ', color: '#00ff00' },
+        ],
+      });
+      const updateData = vi.fn((data: unknown) => {
+        data$.value = data as {
+          options: Array<{ id: string; value: string; color: string }>;
+        };
+      });
+      view.group = {
+        value: 'opt-1',
+        property: {
+          data$,
+          name$: signal('Status'),
+        },
+        manager: {
+          updateData,
+        },
+      } as never;
+
+      document.body.append(view);
+      await view.updateComplete;
+
+      const inputSpy = vi.spyOn(contextMenu.menu, 'input');
+      const popMenuSpy = vi
+        .spyOn(contextMenu, 'popMenu')
+        .mockImplementation(() => ({ close: () => {} }) as never);
+
+      try {
+        // Test empty string title
+        const trigger1 = view.querySelector(
+          '.data-view-group-title-select-view'
+        ) as HTMLElement;
+        expect(trigger1).not.toBeNull();
+        trigger1.click();
+
+        expect(popMenuSpy).toHaveBeenCalledTimes(1);
+        expect(inputSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            initialValue: '',
+            placeholder: 'Untitled',
+          })
+        );
+
+        // Test rename from the menu input
+        const inputConfig1 = inputSpy.mock.calls[0]?.[0];
+        inputConfig1?.onChange?.('In Progress');
+        expect(updateData).toHaveBeenCalledWith({
+          options: [
+            { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
+            { id: 'opt-2', value: '   ', color: '#00ff00' },
+          ],
+        });
+
+        // Test color selection from the menu
+        const popMenuOptions1 = popMenuSpy.mock.calls[0]?.[1]?.options?.items;
+        expect(popMenuOptions1).toBeDefined();
+        expect(popMenuOptions1!.length).toBeGreaterThan(1);
+
+        // Test whitespace-only title
+        popMenuSpy.mockClear();
+        inputSpy.mockClear();
+        updateData.mockClear();
+        view.group = {
+          value: 'opt-2',
+          property: {
+            data$,
+            name$: signal('Status'),
+          },
+          manager: {
+            updateData,
+          },
+        } as never;
+        await view.updateComplete;
+
+        const trigger2 = view.querySelector(
+          '.data-view-group-title-select-view'
+        ) as HTMLElement;
+        expect(trigger2).not.toBeNull();
+        trigger2.click();
+
+        expect(popMenuSpy).toHaveBeenCalledTimes(1);
+        expect(inputSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            initialValue: '   ',
+            placeholder: 'Untitled',
+          })
+        );
+
+        const inputConfig2 = inputSpy.mock.calls[0]?.[0];
+        inputConfig2?.onChange?.('Done');
+        expect(updateData).toHaveBeenCalledWith({
+          options: [
+            { id: 'opt-1', value: 'In Progress', color: '#ff0000' },
+            { id: 'opt-2', value: 'Done', color: '#00ff00' },
+          ],
+        });
+      } finally {
+        inputSpy.mockRestore();
+        popMenuSpy.mockRestore();
+        view.remove();
+      }
+    });
+  });
+
+  describe('TagManager', () => {
+    it('matches blank tags when searching for Untitled', () => {
+      const options$ = signal([
+        { id: 'opt-1', value: '', color: '#ff0000' },
+        { id: 'opt-2', value: 'Todo', color: '#00ff00' },
+        { id: 'opt-3', value: '   ', color: '#0000ff' },
+      ]);
+      const manager = new TagManager({
+        options: options$,
+        value: signal([]),
+        onChange: () => {},
+        onOptionsChange: () => {},
+      });
+
+      manager.text$.value = 'unt';
+      const filtered = manager.filteredOptions$.value;
+      expect(filtered.some(opt => opt.id === 'opt-1')).toBe(true);
+      expect(filtered.some(opt => opt.id === 'opt-2')).toBe(false);
+
+      manager.text$.value = 'todo';
+      const filteredTodo = manager.filteredOptions$.value;
+      expect(filteredTodo.some(opt => opt.id === 'opt-1')).toBe(false);
+      expect(filteredTodo.some(opt => opt.id === 'opt-2')).toBe(true);
+
+      manager.text$.value = ' ';
+      const filteredSpace = manager.filteredOptions$.value;
+      expect(filteredSpace.some(opt => opt.id === 'opt-3')).toBe(true);
     });
   });
 });

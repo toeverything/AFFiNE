@@ -29,6 +29,9 @@ export const notesButtonIcon = style({
 
 export const error = style({
   display: 'flex',
+  minWidth: 0,
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
   color: cssVarV2('aI/errorText'),
 });
 
@@ -54,4 +57,5 @@ export const reloadButtonIcon = style({
 globalStyle(`.affine-attachment-container:has(${root})`, {
   border: 'none',
   overflow: 'visible',
+  height: 'fit-content !important',
 });

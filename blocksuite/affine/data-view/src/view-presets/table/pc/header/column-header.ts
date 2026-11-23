@@ -87,9 +87,11 @@ export class DatabaseColumnHeader extends SignalWatcher(
     return html`
       ${this.renderGroupHeader?.()}
       <div class="affine-database-column-header database-row">
-        ${this.readonly
-          ? nothing
-          : html`<div class="${tableStyle.leftToolBarStyle}"></div>`}
+        ${
+          this.readonly
+            ? nothing
+            : html`<div class="${tableStyle.leftToolBarStyle}"></div>`
+        }
         ${repeat(
           this.tableViewManager.properties$.value,
           column => column.id,

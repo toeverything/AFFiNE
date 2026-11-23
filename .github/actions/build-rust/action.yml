@@ -11,6 +11,10 @@ inputs:
     description: 'Whether to skip building'
     required: false
     default: 'false'
+  cache-key:
+    description: 'Additional cache key to separate build purposes'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -59,13 +63,21 @@ runs:
           echo "TARGET_CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
         fi
 
+    - name: Prepare cache key
+      id: cache-key
+      shell: bash
+      run: |
+        shared_key="$(printf '%s' "${{ inputs.target }}-${{ inputs.package }}" | tr -c 'A-Za-z0-9_.-' '-')"
+        echo "shared-key=$shared_key" >> "$GITHUB_OUTPUT"
+
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
       if: ${{ runner.os == 'Windows' }}
       with:
         workspaces: ${{ env.DEV_DRIVE_WORKSPACE }}
         save-if: ${{ github.ref_name == 'canary' }}
-        shared-key: ${{ inputs.target }}-${{ inputs.package }}
+        shared-key: ${{ steps.cache-key.outputs.shared-key }}
+        key: ${{ inputs.cache-key }}
       env:
         CARGO_HOME: ${{ env.DEV_DRIVE }}/.cargo
         RUSTUP_HOME: ${{ env.DEV_DRIVE }}/.rustup
@@ -75,13 +87,14 @@ runs:
       if: ${{ runner.os != 'Windows' }}
       with:
         save-if: ${{ github.ref_name == 'canary' }}
-        shared-key: ${{ inputs.target }}-${{ inputs.package }}
+        shared-key: ${{ steps.cache-key.outputs.shared-key }}
+        key: ${{ inputs.cache-key }}
 
     - name: Build
       shell: bash
       if: ${{ runner.os != 'Windows' && inputs.no-build != 'true' }}
       run: |
-        if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]]; then
+        if [[ "${{ inputs.target }}" == "x86_64-unknown-linux-gnu" ]] || [[ "${{ inputs.target }}" == "aarch64-unknown-linux-gnu" && "$(uname -m)" == "aarch64" ]]; then
           yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }}
         else
           yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }} --use-napi-cross

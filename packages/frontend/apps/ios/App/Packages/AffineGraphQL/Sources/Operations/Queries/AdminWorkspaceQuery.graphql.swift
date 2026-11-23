@@ -7,7 +7,7 @@ public class AdminWorkspaceQuery: GraphQLQuery {
   public static let operationName: String = "adminWorkspace"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query adminWorkspace($id: String!, $memberSkip: Int, $memberTake: Int, $memberQuery: String) { adminWorkspace(id: $id) { __typename id public createdAt name avatarKey enableAi enableSharing enableUrlPreview enableDocEmbedding features owner { __typename id name email avatarUrl } memberCount publicPageCount snapshotCount snapshotSize blobCount blobSize sharedLinks { __typename docId title publishedAt } members(skip: $memberSkip, take: $memberTake, query: $memberQuery) { __typename id name email avatarUrl role status } } }"#
+      #"query adminWorkspace($id: String!, $memberSkip: Int, $memberTake: Int, $memberQuery: String) { adminWorkspace(id: $id) { __typename id public createdAt name avatarKey enableAi enableSharing enableUrlPreview enableDocEmbedding owner { __typename id name email avatarUrl } memberCount publicPageCount snapshotCount snapshotSize blobCount blobSize sharedLinks { __typename docId title publishedAt } members(skip: $memberSkip, take: $memberTake, query: $memberQuery) { __typename id name email avatarUrl role status } } }"#
     ))
 
   public var id: String
@@ -42,6 +42,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("adminWorkspace", AdminWorkspace?.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AdminWorkspaceQuery.Data.self
+    ] }
 
     /// Get workspace detail for admin
     public var adminWorkspace: AdminWorkspace? { __data["adminWorkspace"] }
@@ -65,7 +68,6 @@ public class AdminWorkspaceQuery: GraphQLQuery {
         .field("enableSharing", Bool.self),
         .field("enableUrlPreview", Bool.self),
         .field("enableDocEmbedding", Bool.self),
-        .field("features", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
         .field("owner", Owner?.self),
         .field("memberCount", Int.self),
         .field("publicPageCount", Int.self),
@@ -80,6 +82,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           "query": .variable("memberQuery")
         ]),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        AdminWorkspaceQuery.Data.AdminWorkspace.self
+      ] }
 
       public var id: String { __data["id"] }
       public var `public`: Bool { __data["public"] }
@@ -90,7 +95,6 @@ public class AdminWorkspaceQuery: GraphQLQuery {
       public var enableSharing: Bool { __data["enableSharing"] }
       public var enableUrlPreview: Bool { __data["enableUrlPreview"] }
       public var enableDocEmbedding: Bool { __data["enableDocEmbedding"] }
-      public var features: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["features"] }
       public var owner: Owner? { __data["owner"] }
       public var memberCount: Int { __data["memberCount"] }
       public var publicPageCount: Int { __data["publicPageCount"] }
@@ -117,6 +121,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("email", String.self),
           .field("avatarUrl", String?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.Owner.self
+        ] }
 
         public var id: String { __data["id"] }
         public var name: String { __data["name"] }
@@ -138,6 +145,9 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("title", String?.self),
           .field("publishedAt", AffineGraphQL.DateTime?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.SharedLink.self
+        ] }
 
         public var docId: String { __data["docId"] }
         public var title: String? { __data["title"] }
@@ -158,15 +168,18 @@ public class AdminWorkspaceQuery: GraphQLQuery {
           .field("name", String.self),
           .field("email", String.self),
           .field("avatarUrl", String?.self),
-          .field("role", GraphQLEnum<AffineGraphQL.Permission>.self),
+          .field("role", GraphQLEnum<AffineGraphQL.AdminWorkspaceMemberRole>.self),
           .field("status", GraphQLEnum<AffineGraphQL.WorkspaceMemberStatus>.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          AdminWorkspaceQuery.Data.AdminWorkspace.Member.self
         ] }
 
         public var id: String { __data["id"] }
         public var name: String { __data["name"] }
         public var email: String { __data["email"] }
         public var avatarUrl: String? { __data["avatarUrl"] }
-        public var role: GraphQLEnum<AffineGraphQL.Permission> { __data["role"] }
+        public var role: GraphQLEnum<AffineGraphQL.AdminWorkspaceMemberRole> { __data["role"] }
         public var status: GraphQLEnum<AffineGraphQL.WorkspaceMemberStatus> { __data["status"] }
       }
     }

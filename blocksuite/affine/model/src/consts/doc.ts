@@ -63,17 +63,19 @@ export type ReferenceInfo = z.infer<typeof ReferenceInfoSchema>;
  * It supports the following types:
  * 1. docId: string - the id of the doc
  * 2. blobId: string - the id of the attachment
- * 3. url: string - the url of the reference
- * 4. fileName: string - the name of the attachment
- * 5. fileType: string - the type of the attachment
- * 6. favicon: string - the favicon of the url reference
- * 7. title: string - the title of the url reference
- * 8. description: string - the description of the url reference
+ * 3. artifactId: string - the id of a Copilot artifact
+ * 4. url: string - the url of the reference
+ * 5. fileName: string - the name of the attachment
+ * 6. fileType: string - the type of the attachment
+ * 7. favicon: string - the favicon of the url reference
+ * 8. title: string - the title of the url reference
+ * 9. description: string - the description of the url reference
  */
 export const FootNoteReferenceParamsSchema = z.object({
   type: z.enum(FootNoteReferenceTypes),
   docId: z.string().optional(),
   blobId: z.string().optional(),
+  artifactId: z.string().optional(),
   fileName: z.string().optional(),
   fileType: z.string().optional(),
   url: z.string().optional(),

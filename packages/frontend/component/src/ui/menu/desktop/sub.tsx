@@ -9,18 +9,25 @@ import * as styles from '../styles.css';
 import { useMenuItem } from '../use-menu-item';
 import { DesktopMenuContext } from './context';
 
+const EMPTY_SUB_OPTIONS: NonNullable<MenuSubProps['subOptions']> = {};
+const EMPTY_SUB_CONTENT_OPTIONS: NonNullable<
+  MenuSubProps['subContentOptions']
+> = {};
+
 export const DesktopMenuSub = ({
   children: propsChildren,
   items,
   portalOptions,
-  subOptions: { defaultOpen, ...otherSubOptions } = {},
+  subOptions,
   triggerOptions,
-  subContentOptions: {
+  subContentOptions,
+}: MenuSubProps) => {
+  const { defaultOpen, ...otherSubOptions } = subOptions ?? EMPTY_SUB_OPTIONS;
+  const {
     className: subContentClassName = '',
     style: contentStyle,
     ...otherSubContentOptions
-  } = {},
-}: MenuSubProps) => {
+  } = subContentOptions ?? EMPTY_SUB_CONTENT_OPTIONS;
   const { type } = useContext(DesktopMenuContext);
   const { className, children, otherProps } = useMenuItem({
     children: propsChildren,

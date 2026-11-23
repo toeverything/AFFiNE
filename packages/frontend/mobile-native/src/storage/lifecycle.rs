@@ -58,14 +58,20 @@ impl DocStoragePool {
     Ok(self.inner.get(universal_id).await?.set_space_id(space_id).await?)
   }
 
-  pub async fn push_update(&self, universal_id: String, doc_id: String, update: String) -> Result<i64> {
+  pub async fn push_update(
+    &self,
+    universal_id: String,
+    doc_id: String,
+    update: String,
+    create_for_peer: Option<String>,
+  ) -> Result<i64> {
     let decoded_update = self.decode_base64_payload(&update)?;
     Ok(
       self
         .inner
         .get(universal_id)
         .await?
-        .push_update(doc_id, decoded_update)
+        .push_update_with_peer(doc_id, decoded_update, create_for_peer)
         .await?
         .and_utc()
         .timestamp_millis(),

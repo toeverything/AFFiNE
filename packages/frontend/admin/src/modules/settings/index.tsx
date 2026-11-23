@@ -21,7 +21,9 @@ import { useAppConfig } from './use-app-config';
 export function SettingsPage() {
   const {
     appConfig,
+    appConfigMetadata,
     update,
+    clear,
     saveGroup,
     resetGroup,
     patchedAppConfig,
@@ -39,7 +41,9 @@ export function SettingsPage() {
         onExpandedModulesChange={setExpandedModules}
         onUpdate={update}
         appConfig={appConfig}
+        appConfigMetadata={appConfigMetadata}
         patchedAppConfig={patchedAppConfig}
+        onClear={clear}
         onSaveGroup={saveGroup}
         onResetGroup={resetGroup}
         isGroupDirty={isGroupDirty}
@@ -54,8 +58,10 @@ const AdminPanel = ({
   expandedModules,
   onExpandedModulesChange,
   appConfig,
+  appConfigMetadata,
   patchedAppConfig,
   onUpdate,
+  onClear,
   onSaveGroup,
   onResetGroup,
   isGroupDirty,
@@ -65,8 +71,10 @@ const AdminPanel = ({
   expandedModules: string[];
   onExpandedModulesChange: (modules: string[]) => void;
   appConfig: AppConfig;
+  appConfigMetadata: Record<string, unknown>;
   patchedAppConfig: AppConfig;
   onUpdate: (path: string, value: any) => void;
+  onClear: (path: string) => void;
   onSaveGroup: (module: string) => Promise<void>;
   onResetGroup: (module: string) => void;
   isGroupDirty: (module: string) => boolean;
@@ -173,6 +181,25 @@ const AdminPanel = ({
                     key={`${module}-${version}`}
                   >
                     {fields.map(field => {
+                      const fieldKey =
+                        typeof field === 'string' ? field : String(field.key);
+                      const metadata = get(
+                        appConfigMetadata,
+                        `${module}.${fieldKey}`
+                      ) as
+                        | { source?: string; configured?: boolean }
+                        | undefined;
+                      const secret = metadata?.configured !== undefined;
+                      const effectiveIndexerProvider =
+                        sourceConfig?.provider?.type ?? 'embedded';
+                      if (
+                        module === 'indexer' &&
+                        effectiveIndexerProvider === 'embedded' &&
+                        fieldKey.startsWith('provider.') &&
+                        fieldKey !== 'provider.type'
+                      ) {
+                        return null;
+                      }
                       let props: ConfigInputProps;
                       if (typeof field === 'string') {
                         const descriptor =
@@ -194,11 +221,22 @@ const AdminPanel = ({
                           type: field.type ?? descriptor.type,
                           // @ts-expect-error for enum type
                           options: field.options,
-                          defaultValue: get(
-                            sourceConfig,
-                            field.key + (field.sub ? '.' + field.sub : '')
-                          ),
-                          onChange: onUpdate,
+                          defaultValue:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? effectiveIndexerProvider
+                              : get(
+                                  sourceConfig,
+                                  field.key + (field.sub ? '.' + field.sub : '')
+                                ),
+                          onChange:
+                            module === 'indexer' &&
+                            field.key === 'provider.type'
+                              ? (_path, value) => {
+                                  onUpdate('indexer/enabled', true);
+                                  onUpdate('indexer/provider.type', value);
+                                }
+                              : onUpdate,
                         };
                       }
 
@@ -206,6 +244,14 @@ const AdminPanel = ({
                         <ConfigRow
                           key={props.field}
                           {...props}
+                          source={metadata?.source}
+                          secret={secret}
+                          configured={metadata?.configured}
+                          onClear={
+                            metadata?.source === 'database'
+                              ? () => onClear(`${module}/${fieldKey}`)
+                              : undefined
+                          }
                           onErrorChange={onFieldErrorChange}
                         />
                       );

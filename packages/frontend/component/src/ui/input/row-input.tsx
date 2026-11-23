@@ -25,6 +25,8 @@ export type RowInputProps = {
   debounce?: number;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
 
+const EMPTY_STYLE: CSSProperties = {};
+
 // RowInput component that is used in the selector layout for search input
 // handles composition events and enter key press
 export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
@@ -33,7 +35,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
       disabled,
       onChange: propsOnChange,
       className,
-      style = {},
+      style = EMPTY_STYLE,
       onEnter,
       onKeyDown,
       onBlur,

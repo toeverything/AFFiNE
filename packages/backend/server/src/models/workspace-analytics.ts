@@ -9,11 +9,11 @@ import {
 } from '../base/graphql/pagination';
 import { CacheRedis } from '../base/redis';
 import { BaseModel } from './base';
-import { WorkspaceRole } from './common';
 
 const DEFAULT_STORAGE_HISTORY_DAYS = 30;
 const DEFAULT_SYNC_HISTORY_HOURS = 48;
 const DEFAULT_SHARED_LINK_WINDOW_DAYS = 28;
+const DEFAULT_COPILOT_WINDOW_DAYS = 7;
 const DEFAULT_ANALYTICS_WINDOW_DAYS = 28;
 const NON_TEAM_ANALYTICS_WINDOW_DAYS = 7;
 const DEFAULT_TIMEZONE = 'UTC';
@@ -51,6 +51,7 @@ export type AdminDashboardOptions = {
   storageHistoryDays?: number;
   syncHistoryHours?: number;
   sharedLinkWindowDays?: number;
+  copilotWindowDays?: number;
   includeTopSharedLinks?: boolean;
 };
 
@@ -100,6 +101,7 @@ export type AdminDashboardDto = {
   }>;
   syncWindow: TimeWindowDto;
   copilotConversations: number;
+  copilotWindow: TimeWindowDto;
   workspaceStorageBytes: number;
   blobStorageBytes: number;
   workspaceStorageHistory: Array<{
@@ -263,6 +265,12 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       90,
       DEFAULT_SHARED_LINK_WINDOW_DAYS
     );
+    const copilotWindowDays = clampInt(
+      options.copilotWindowDays,
+      1,
+      90,
+      DEFAULT_COPILOT_WINDOW_DAYS
+    );
     const includeTopSharedLinks = options.includeTopSharedLinks ?? true;
 
     const now = new Date();
@@ -275,6 +283,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const currentDay = startOfUtcDay(now);
     const storageFrom = addUtcDays(currentDay, -(storageHistoryDays - 1));
     const sharedFrom = addUtcDays(currentDay, -(sharedLinkWindowDays - 1));
+    const copilotFrom = addUtcDays(currentDay, -(copilotWindowDays - 1));
 
     const topSharedLinksPromise = includeTopSharedLinks
       ? this.db.$queryRaw<
@@ -317,20 +326,22 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             COALESCE(v.guest_views, 0) AS "guestViews",
             v.last_accessed_at AS "lastAccessedAt"
           FROM workspace_pages wp
+          INNER JOIN doc_access_policies dap
+            ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
           LEFT JOIN snapshots sn
             ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
           LEFT JOIN view_agg v
             ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
           LEFT JOIN LATERAL (
             SELECT user_id
-            FROM workspace_user_permissions
+            FROM workspace_members
             WHERE workspace_id = wp.workspace_id
-            AND type = ${WorkspaceRole.Owner}
-            AND status = 'Accepted'::"WorkspaceMemberStatus"
-            ORDER BY created_at ASC
+            AND role = 'owner'
+            AND state = 'active'
+            ORDER BY created_at ASC, id ASC
             LIMIT 1
           ) owner ON TRUE
-          WHERE wp.public = TRUE
+          WHERE dap.visibility = 'public' AND dap.public_role = 'external'
           ORDER BY views DESC, "uniqueViews" DESC, "workspaceId" ASC, "docId" ASC
           LIMIT 10
         `
@@ -349,7 +360,7 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             (
               SELECT active_users
               FROM sync_active_users_minutely
-              WHERE minute_ts <= ${syncTo}
+              WHERE minute_ts BETWEEN ${syncFrom} AND ${syncTo}
               ORDER BY minute_ts DESC
               LIMIT 1
             ),
@@ -362,9 +373,15 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           )
           SELECT
             minutes.minute_ts AS minute,
-            COALESCE(s.active_users, 0)::integer AS "activeUsers"
+            COALESCE(sample.active_users, 0)::integer AS "activeUsers"
           FROM minutes
-          LEFT JOIN sync_active_users_minutely s ON s.minute_ts = minutes.minute_ts
+          LEFT JOIN LATERAL (
+            SELECT active_users
+            FROM sync_active_users_minutely
+            WHERE minute_ts BETWEEN ${syncFrom} AND minutes.minute_ts
+            ORDER BY minute_ts DESC
+            LIMIT 1
+          ) sample ON TRUE
           ORDER BY minute ASC
         `,
       this.db.$queryRaw<
@@ -385,10 +402,23 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           blobStorageBytes: bigint | number;
         }[]
       >`
-          WITH days AS (
-            SELECT generate_series(${storageFrom}::date, ${currentDay}::date, interval '1 day')::date AS day
+          WITH baseline_day AS (
+            SELECT max(date) AS date
+            FROM workspace_admin_stats_daily
+            WHERE date < ${storageFrom}::date
           ),
-          grouped AS (
+          baseline AS (
+            SELECT
+              baseline_day.date,
+              COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
+              COALESCE(SUM(blob_size), 0) AS blob_storage_bytes
+            FROM baseline_day
+            JOIN workspace_admin_stats_daily stats
+              ON stats.date = baseline_day.date
+            WHERE baseline_day.date IS NOT NULL
+            GROUP BY baseline_day.date
+          ),
+          in_window AS (
             SELECT
               date,
               COALESCE(SUM(snapshot_size), 0) AS workspace_storage_bytes,
@@ -398,28 +428,71 @@ export class WorkspaceAnalyticsModel extends BaseModel {
             GROUP BY date
           )
           SELECT
-            days.day AS date,
-            COALESCE(grouped.workspace_storage_bytes, 0) AS "workspaceStorageBytes",
-            COALESCE(grouped.blob_storage_bytes, 0) AS "blobStorageBytes"
-          FROM days
-          LEFT JOIN grouped ON grouped.date = days.day
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM baseline
+          UNION ALL
+          SELECT
+            date,
+            workspace_storage_bytes AS "workspaceStorageBytes",
+            blob_storage_bytes AS "blobStorageBytes"
+          FROM in_window
           ORDER BY date ASC
         `,
       this.db.$queryRaw<{ conversations: bigint | number }[]>`
           SELECT COUNT(*) AS conversations
           FROM ai_sessions_messages
           WHERE role = 'user'
-          AND created_at >= ${sharedFrom}
+          AND created_at >= ${copilotFrom}
           AND created_at <= ${now}
         `,
       topSharedLinksPromise,
     ]);
 
-    const storageHistorySeries = storageHistory.map(row => ({
-      date: row.date,
-      workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
-      blobStorageBytes: Number(row.blobStorageBytes ?? 0),
-    }));
+    const currentWorkspaceStorageBytes = Number(
+      storageCurrent[0]?.workspaceStorageBytes ?? 0
+    );
+    const currentBlobStorageBytes = Number(
+      storageCurrent[0]?.blobStorageBytes ?? 0
+    );
+    const storageByDate = new Map(
+      storageHistory.map(row => [
+        asDateOnlyString(row.date),
+        {
+          workspaceStorageBytes: Number(row.workspaceStorageBytes ?? 0),
+          blobStorageBytes: Number(row.blobStorageBytes ?? 0),
+        },
+      ])
+    );
+    const storageHistorySeries: Array<{
+      date: Date;
+      workspaceStorageBytes: number;
+      blobStorageBytes: number;
+    }> = [];
+    const baselineStorage =
+      storageHistory.find(row => row.date < storageFrom) ?? null;
+    let carriedStorageValue = {
+      workspaceStorageBytes: Number(
+        baselineStorage?.workspaceStorageBytes ?? 0
+      ),
+      blobStorageBytes: Number(baselineStorage?.blobStorageBytes ?? 0),
+    };
+    for (let day = storageFrom; day <= currentDay; day = addUtcDays(day, 1)) {
+      carriedStorageValue =
+        storageByDate.get(asDateOnlyString(day)) ?? carriedStorageValue;
+      storageHistorySeries.push({
+        date: day,
+        ...carriedStorageValue,
+      });
+    }
+    if (storageHistorySeries.length > 0) {
+      const lastPoint = storageHistorySeries[storageHistorySeries.length - 1];
+      if (asDateOnlyString(lastPoint.date) === asDateOnlyString(currentDay)) {
+        lastPoint.workspaceStorageBytes = currentWorkspaceStorageBytes;
+        lastPoint.blobStorageBytes = currentBlobStorageBytes;
+      }
+    }
 
     return {
       syncActiveUsers: Number(syncCurrent[0]?.activeUsers ?? 0),
@@ -436,10 +509,16 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         effectiveSize: syncHistoryHours,
       },
       copilotConversations: Number(copilotCount[0]?.conversations ?? 0),
-      workspaceStorageBytes: Number(
-        storageCurrent[0]?.workspaceStorageBytes ?? 0
-      ),
-      blobStorageBytes: Number(storageCurrent[0]?.blobStorageBytes ?? 0),
+      copilotWindow: {
+        from: copilotFrom,
+        to: now,
+        timezone,
+        bucket: 'Day',
+        requestedSize: options.copilotWindowDays ?? DEFAULT_COPILOT_WINDOW_DAYS,
+        effectiveSize: copilotWindowDays,
+      },
+      workspaceStorageBytes: currentWorkspaceStorageBytes,
+      blobStorageBytes: currentBlobStorageBytes,
       workspaceStorageHistory: storageHistorySeries.map(row => ({
         date: row.date,
         value: row.workspaceStorageBytes,
@@ -565,20 +644,22 @@ export class WorkspaceAnalyticsModel extends BaseModel {
           COALESCE(wp.published_at, to_timestamp(0)) AS "sortValueDatePublishedAt",
           COALESCE(v.views, 0) AS "sortValueViews"
         FROM workspace_pages wp
+        INNER JOIN doc_access_policies dap
+          ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
         LEFT JOIN snapshots sn
           ON sn.workspace_id = wp.workspace_id AND sn.guid = wp.page_id
         LEFT JOIN view_agg v
           ON v.workspace_id = wp.workspace_id AND v.doc_id = wp.page_id
         LEFT JOIN LATERAL (
           SELECT user_id
-          FROM workspace_user_permissions
+          FROM workspace_members
           WHERE workspace_id = wp.workspace_id
-          AND type = ${WorkspaceRole.Owner}
-          AND status = 'Accepted'::"WorkspaceMemberStatus"
-          ORDER BY created_at ASC
+          AND role = 'owner'
+          AND state = 'active'
+          ORDER BY created_at ASC, id ASC
           LIMIT 1
         ) owner ON TRUE
-        WHERE wp.public = TRUE
+        WHERE dap.visibility = 'public' AND dap.public_role = 'external'
         ${keywordCondition}
         ${workspaceCondition}
         ${updatedAfterCondition}
@@ -836,10 +917,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
         mla.last_doc_id AS "lastDocId"
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${input.workspaceId}
       AND mla.last_doc_id = ${input.docId}
       ${windowCondition}
@@ -1024,7 +1105,9 @@ export class WorkspaceAnalyticsModel extends BaseModel {
     const [row] = await this.db.$queryRaw<{ total: bigint | number }[]>`
       SELECT COUNT(*) AS total
       FROM workspace_pages wp
-      WHERE wp.public = TRUE
+      INNER JOIN doc_access_policies dap
+        ON dap.workspace_id = wp.workspace_id AND dap.doc_id = wp.page_id
+      WHERE dap.visibility = 'public' AND dap.public_role = 'external'
       ${keywordCondition}
       ${workspaceCondition}
       ${updatedAfterCondition}
@@ -1050,10 +1133,10 @@ export class WorkspaceAnalyticsModel extends BaseModel {
       SELECT COUNT(*) AS total
       FROM workspace_member_last_access mla
       INNER JOIN users u ON u.id = mla.user_id
-      INNER JOIN workspace_user_permissions wur
-        ON wur.workspace_id = mla.workspace_id
-       AND wur.user_id = mla.user_id
-       AND wur.status = 'Accepted'::"WorkspaceMemberStatus"
+      INNER JOIN workspace_members wm
+        ON wm.workspace_id = mla.workspace_id
+       AND wm.user_id = mla.user_id
+       AND wm.state = 'active'
       WHERE mla.workspace_id = ${workspaceId}
       AND mla.last_doc_id = ${docId}
       ${windowCondition}

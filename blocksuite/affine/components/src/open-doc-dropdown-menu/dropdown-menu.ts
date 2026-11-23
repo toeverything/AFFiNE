@@ -17,7 +17,7 @@ import { EditorChevronDown } from '../toolbar';
 @requiredProperties({
   actions: PropTypes.array,
   context: PropTypes.instanceOf(ToolbarContext),
-  openDocMode$: PropTypes.object,
+  openDocModeSignal: PropTypes.object,
   updateOpenDocMode: PropTypes.instanceOf(Function),
 })
 export class OpenDocDropdownMenu extends SignalWatcher(
@@ -59,13 +59,13 @@ export class OpenDocDropdownMenu extends SignalWatcher(
   accessor context!: ToolbarContext;
 
   @property({ attribute: false })
-  accessor openDocMode$!: ReadonlySignal<OpenDocMode>;
+  accessor openDocModeSignal!: ReadonlySignal<OpenDocMode>;
 
   @property({ attribute: false })
   accessor updateOpenDocMode!: (mode: OpenDocMode) => void;
 
   currentAction$ = computed(() => {
-    const currentOpenDocMode = this.openDocMode$.value;
+    const currentOpenDocMode = this.openDocModeSignal.value;
     return (
       this.actions.find(a => a.mode === currentOpenDocMode) ?? this.actions[0]
     );

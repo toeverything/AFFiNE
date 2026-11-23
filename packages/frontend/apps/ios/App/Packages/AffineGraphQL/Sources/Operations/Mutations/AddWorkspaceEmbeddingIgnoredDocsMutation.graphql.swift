@@ -37,6 +37,9 @@ public class AddWorkspaceEmbeddingIgnoredDocsMutation: GraphQLMutation {
         "add": .variable("add")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      AddWorkspaceEmbeddingIgnoredDocsMutation.Data.self
+    ] }
 
     /// Update ignored docs
     public var updateWorkspaceEmbeddingIgnoredDocs: Int { __data["updateWorkspaceEmbeddingIgnoredDocs"] }

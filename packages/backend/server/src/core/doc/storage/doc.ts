@@ -1,25 +1,27 @@
 import { Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import {
-  applyUpdate,
-  diffUpdate,
-  Doc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  encodeStateVectorFromUpdate,
-  mergeUpdates,
-  UndoManager,
-} from 'yjs';
 
-import { CallMetric } from '../../../base';
-import { mergeUpdatesInApplyWay } from '../../../native';
+import {
+  CallMetric,
+  DocUpdateInvalid,
+  DocUpdateTooLarge,
+  DocValidationUnavailable,
+} from '../../../base';
+import {
+  diffDocUpdateV1,
+  encodeStateVectorFromUpdateV1,
+  validateDocUpdate,
+} from '../../../native';
+import { mergeUpdatesWithNative } from '../merge-updates';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
 
-async function nativeMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
-  // use native module to merge updates
-  return mergeUpdatesInApplyWay(updates.map(u => Buffer.from(u)));
+const DOC_UPDATE_VALIDATE_TIMEOUT_MS = 1000;
+const DOC_UPDATE_VALIDATE_MAX_BYTES = 32 * 1024 * 1024;
+
+async function defaultMergeUpdates(updates: Uint8Array[]): Promise<Uint8Array> {
+  return mergeUpdatesWithNative(updates, 'doc.storage.squash.native');
 }
 
 export interface DocRecord {
@@ -28,6 +30,7 @@ export interface DocRecord {
   bin: Uint8Array;
   timestamp: number;
   editor?: string;
+  creator?: string;
 }
 
 export interface DocDiff {
@@ -62,7 +65,7 @@ export abstract class DocStorageAdapter extends Connection {
 
   constructor(
     protected readonly options: DocStorageOptions = {
-      mergeUpdates,
+      mergeUpdates: defaultMergeUpdates,
     }
   ) {
     super();
@@ -79,9 +82,40 @@ export abstract class DocStorageAdapter extends Connection {
     );
   }
 
+  protected async assertValidDocUpdates(updates: Uint8Array[]) {
+    for (const update of updates) {
+      if (update.length > DOC_UPDATE_VALIDATE_MAX_BYTES) {
+        throw new DocUpdateTooLarge();
+      }
+      let valid: boolean;
+      try {
+        valid = await validateDocUpdate(
+          Buffer.from(update.buffer, update.byteOffset, update.byteLength),
+          {
+            timeoutMs: DOC_UPDATE_VALIDATE_TIMEOUT_MS,
+          }
+        );
+      } catch (error) {
+        const unavailable = new DocValidationUnavailable();
+        unavailable.cause = error;
+        throw unavailable;
+      }
+      if (!valid) {
+        throw new DocUpdateInvalid();
+      }
+    }
+  }
+
   async getDoc(spaceId: string, docId: string): Promise<DocRecord | null> {
     await using _lock = await this.lockDocForUpdate(spaceId, docId);
 
+    return (await this.getDocUnderLock(spaceId, docId)).doc;
+  }
+
+  protected async getDocUnderLock(
+    spaceId: string,
+    docId: string
+  ): Promise<{ doc: DocRecord | null; snapshotUpdated: boolean }> {
     const snapshot = await this.getDocSnapshot(spaceId, docId);
     const updates = await this.getDocUpdates(spaceId, docId);
 
@@ -98,32 +132,11 @@ export abstract class DocStorageAdapter extends Connection {
       );
     }
 
-    return snapshot;
-  }
-
-  /// get final binary only but not updating the snapshot in database
-  async getDocBinNative(
-    spaceId: string,
-    docId: string
-  ): Promise<Uint8Array | undefined> {
-    await using _lock = await this.lockDocForUpdate(spaceId, docId);
-
-    const snapshot = await this.getDocSnapshot(spaceId, docId);
-    const updates = await this.getDocUpdates(spaceId, docId);
-
-    if (updates.length) {
-      const docUpdate = await this.squash(
-        snapshot ? [snapshot, ...updates] : updates,
-        nativeMergeUpdates
-      );
-      return docUpdate.bin;
-    }
-
-    return snapshot?.bin;
+    return { doc: snapshot, snapshotUpdated: false };
   }
 
   @Transactional<TransactionalAdapterPrisma>({ timeout: 60000 })
-  private async squashUpdatesToSnapshot(
+  protected async squashUpdatesToSnapshot(
     spaceId: string,
     docId: string,
     updates: DocUpdate[],
@@ -134,29 +147,37 @@ export abstract class DocStorageAdapter extends Connection {
       `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
     );
 
-    const { bin, timestamp, editor } = finalUpdate;
+    const { bin, editor } = finalUpdate;
+    const timestamp = snapshot
+      ? Math.max(finalUpdate.timestamp, snapshot.timestamp + 1)
+      : finalUpdate.timestamp;
+    const fromInitialUpdates = snapshot === null;
     const newSnapshot: DocRecord = {
       spaceId,
       docId,
       bin,
       timestamp,
       editor,
+      ...(fromInitialUpdates ? { creator: updates[0]?.editor } : {}),
     };
 
-    const success = await this.setDocSnapshot(newSnapshot);
+    const success = await this.setDocSnapshot(newSnapshot, {
+      fromInitialUpdates,
+    });
 
     // if there is old snapshot, create a new history record
     if (success && snapshot) {
       await this.createDocHistory(snapshot);
     }
 
-    // always mark updates as merged unless throws
-    const count = await this.markUpdatesMerged(spaceId, docId, updates);
-    this.logger.verbose(
-      `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
-    );
+    if (success) {
+      const count = await this.markUpdatesMerged(spaceId, docId, updates);
+      this.logger.verbose(
+        `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}, timestamp: ${timestamp}`
+      );
+    }
 
-    return newSnapshot;
+    return { doc: newSnapshot, snapshotUpdated: success };
   }
 
   async getDocDiff(
@@ -170,12 +191,35 @@ export abstract class DocStorageAdapter extends Connection {
       return null;
     }
 
-    const missing = stateVector ? diffUpdate(doc.bin, stateVector) : doc.bin;
-    const state = encodeStateVectorFromUpdate(doc.bin);
+    const bin = Buffer.from(
+      doc.bin.buffer,
+      doc.bin.byteOffset,
+      doc.bin.byteLength
+    );
+    const rawMissing =
+      stateVector && stateVector.length > 0
+        ? diffDocUpdateV1(
+            bin,
+            Buffer.from(
+              stateVector.buffer,
+              stateVector.byteOffset,
+              stateVector.byteLength
+            )
+          )
+        : doc.bin;
+    const rawState = encodeStateVectorFromUpdateV1(bin);
 
     return {
-      missing,
-      state,
+      missing: new Uint8Array(
+        rawMissing.buffer,
+        rawMissing.byteOffset,
+        rawMissing.byteLength
+      ),
+      state: new Uint8Array(
+        rawState.buffer,
+        rawState.byteOffset,
+        rawState.byteLength
+      ),
       timestamp: doc.timestamp,
     };
   }
@@ -184,35 +228,23 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string,
     updates: Uint8Array[],
-    editorId?: string
+    editorId: string,
+    expectedPermissionGeneration?: number,
+    writeIntent?: 'update_doc' | 'create_doc',
+    protocolVersion?: number,
+    expectedCurrentTimestamp?: number
+  ): Promise<{ timestamp: number; created: boolean }>;
+
+  abstract pushDocUpdatesTrusted(
+    spaceId: string,
+    docId: string,
+    updates: Uint8Array[],
+    editorId?: string,
+    expectedCurrentTimestamp?: number
   ): Promise<number>;
 
   abstract deleteDoc(spaceId: string, docId: string): Promise<void>;
   abstract deleteSpace(spaceId: string): Promise<void>;
-  async rollbackDoc(
-    spaceId: string,
-    docId: string,
-    timestamp: number,
-    editorId?: string
-  ): Promise<void> {
-    await using _lock = await this.lockDocForUpdate(spaceId, docId);
-    const toSnapshot = await this.getDocHistory(spaceId, docId, timestamp);
-    if (!toSnapshot) {
-      throw new Error('Can not find the version to rollback to.');
-    }
-
-    const fromSnapshot = await this.getDocSnapshot(spaceId, docId);
-
-    if (!fromSnapshot) {
-      throw new Error('Can not find the current version of the doc.');
-    }
-
-    const change = this.generateChangeUpdate(fromSnapshot.bin, toSnapshot.bin);
-    await this.pushDocUpdates(spaceId, docId, [change], editorId);
-    // force create a new history record after rollback
-    await this.createDocHistory(fromSnapshot, true);
-  }
-
   abstract getSpaceDocTimestamps(
     spaceId: string,
     after?: number
@@ -233,7 +265,10 @@ export abstract class DocStorageAdapter extends Connection {
     spaceId: string,
     docId: string
   ): Promise<DocRecord | null>;
-  protected abstract setDocSnapshot(snapshot: DocRecord): Promise<boolean>;
+  protected abstract setDocSnapshot(
+    snapshot: DocRecord,
+    options?: { fromInitialUpdates?: boolean }
+  ): Promise<boolean>;
   protected abstract getDocUpdates(
     spaceId: string,
     docId: string
@@ -244,17 +279,14 @@ export abstract class DocStorageAdapter extends Connection {
     updates: DocUpdate[]
   ): Promise<number>;
 
-  protected abstract createDocHistory(
-    snapshot: DocRecord,
-    force?: boolean
-  ): Promise<boolean>;
+  protected abstract createDocHistory(snapshot: DocRecord): Promise<boolean>;
 
   @CallMetric('doc', 'squash')
   protected async squash(
     updates: DocUpdate[],
     merge?: (updates: Uint8Array[]) => Promise<Uint8Array>
   ): Promise<DocUpdate> {
-    const mergeFn = merge ?? this.options?.mergeUpdates ?? mergeUpdates;
+    const mergeFn = merge ?? this.options?.mergeUpdates ?? defaultMergeUpdates;
     const lastUpdate = updates.at(-1);
     if (!lastUpdate) {
       throw new Error('No updates to be squashed.');
@@ -279,25 +311,5 @@ export abstract class DocStorageAdapter extends Connection {
     docId: string
   ): Promise<AsyncDisposable> {
     return this.locker.lock(`workspace:${spaceId}:update`, docId);
-  }
-
-  protected generateChangeUpdate(newerBin: Uint8Array, olderBin: Uint8Array) {
-    const newerDoc = new Doc();
-    applyUpdate(newerDoc, newerBin);
-    const olderDoc = new Doc();
-    applyUpdate(olderDoc, olderBin);
-
-    const newerState = encodeStateVector(newerDoc);
-    const olderState = encodeStateVector(olderDoc);
-
-    const diff = encodeStateAsUpdate(newerDoc, olderState);
-
-    const undoManager = new UndoManager(Array.from(newerDoc.share.values()));
-
-    applyUpdate(olderDoc, diff);
-
-    undoManager.undo();
-
-    return encodeStateAsUpdate(olderDoc, newerState);
   }
 }

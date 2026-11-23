@@ -115,11 +115,13 @@ export class AIItemList extends WithDisposable(LitElement) {
     const theme = this.host.std.get(ThemeProvider).app$.value;
     return html`${repeat(this.groups, group => {
       return html`
-        ${group.name
-          ? html`<div class="group-name">
-              ${group.name.toLocaleUpperCase()}
-            </div>`
-          : nothing}
+        ${
+          group.name
+            ? html`<div class="group-name">
+                ${group.name.toLocaleUpperCase()}
+              </div>`
+            : nothing
+        }
         ${repeat(
           group.items,
           item => item.name,

@@ -32,22 +32,6 @@ services:
     volumes:
       - mailpit_data:/data
 
-  # https://manual.manticoresearch.com/Starting_the_server/Docker
-  manticoresearch:
-    image: manticoresearch/manticore:${MANTICORE_VERSION:-10.1.0}
-    ports:
-      - 9308:9308
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - manticoresearch_data:/var/lib/manticore
-  
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-9.0.1}${ELASTIC_VERSION_ARM64}
   #   platform: ${ELASTIC_PLATFORM}
@@ -94,6 +78,5 @@ networks:
 
 volumes:
   postgres_data:
-  manticoresearch_data:
   mailpit_data:
   elasticsearch_data:

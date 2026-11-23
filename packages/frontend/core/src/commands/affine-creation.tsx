@@ -53,19 +53,21 @@ export function registerAffineCreationCommands({
     })
   );
 
-  unsubs.push(
-    registerAffineCommand({
-      id: 'affine:new-workspace',
-      category: 'affine:creation',
-      icon: <PlusIcon />,
-      label: t['com.affine.cmdk.affine.new-workspace'](),
-      run() {
-        track.$.cmdk.workspace.createWorkspace();
+  if (!BUILD_CONFIG.isMobileEdition) {
+    unsubs.push(
+      registerAffineCommand({
+        id: 'affine:new-workspace',
+        category: 'affine:creation',
+        icon: <PlusIcon />,
+        label: t['com.affine.cmdk.affine.new-workspace'](),
+        run() {
+          track.$.cmdk.workspace.createWorkspace();
 
-        globalDialogService.open('create-workspace', {});
-      },
-    })
-  );
+          globalDialogService.open('create-workspace', {});
+        },
+      })
+    );
+  }
   unsubs.push(
     registerAffineCommand({
       id: 'affine:import-workspace',

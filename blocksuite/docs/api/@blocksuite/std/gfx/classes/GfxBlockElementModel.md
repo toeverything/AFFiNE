@@ -96,7 +96,7 @@ For (un)locking the element, use `(un)lock` instead.
 
 ###### lockedBySelf
 
-`boolean` | `undefined`
+`boolean` \| `undefined`
 
 ##### Returns
 

@@ -19,9 +19,11 @@ import type { AppTabLink } from './type';
 export const AppTabs = ({
   background,
   fixed = true,
+  hidden = false,
 }: {
   background?: string;
   fixed?: boolean;
+  hidden?: boolean;
 }) => {
   const virtualKeyboardService = useService(VirtualKeyboardService);
   const virtualKeyboardVisible = useLiveData(virtualKeyboardService.visible$);
@@ -47,7 +49,8 @@ export const AppTabs = ({
         ...assignInlineVars({
           [styles.appTabsBackground]: background,
         }),
-        visibility: virtualKeyboardVisible ? 'hidden' : 'visible',
+        visibility: hidden || virtualKeyboardVisible ? 'hidden' : 'visible',
+        pointerEvents: hidden || virtualKeyboardVisible ? 'none' : 'auto',
       }}
     >
       <ul className={styles.appTabsInner} role="tablist">

@@ -30,12 +30,6 @@ export const Dashboard = lazy(
 export const Workspaces = lazy(
   () => import(/* webpackChunkName: "workspaces" */ './modules/workspaces')
 );
-export const Queue = lazy(
-  () => import(/* webpackChunkName: "queue" */ './modules/queue')
-);
-export const AI = lazy(
-  () => import(/* webpackChunkName: "ai" */ './modules/ai')
-);
 export const About = lazy(
   () => import(/* webpackChunkName: "about" */ './modules/about')
 );
@@ -130,8 +124,12 @@ export const App = () => {
                       )
                     }
                   />
-                  <Route path={`${ROUTES.admin.queue}/*`} element={<Queue />} />
-                  <Route path={ROUTES.admin.ai} element={<AI />} />
+                  <Route
+                    path={ROUTES.admin.ai}
+                    element={
+                      <Navigate to={ROUTES.admin.settings.index} replace />
+                    }
+                  />
                   <Route path={ROUTES.admin.about} element={<About />} />
                   <Route
                     path={ROUTES.admin.settings.index}

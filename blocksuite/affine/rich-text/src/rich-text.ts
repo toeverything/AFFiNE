@@ -342,7 +342,7 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     if (this.enableUndoRedo) {
       this.disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
-        // eslint-disable-next-line sonarjs/no-collapsible-if
+        // oxlint-disable-next-line sonarjs/no-collapsible-if
         if (e.ctrlKey || e.metaKey) {
           if (e.key === 'z' || e.key === 'Z') {
             if (e.shiftKey) {

@@ -1,12 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import {
-  applyUpdate,
-  Doc,
-  encodeStateAsUpdate,
-  encodeStateVector,
-  UndoManager,
-} from 'yjs';
+import serverNative from '@affine/server-native';
 
 type InputFormat = 'file' | 'base64' | 'hex';
 type OutputFormat = 'bin' | 'base64' | 'hex';
@@ -35,21 +29,12 @@ function generateRevertUpdate(
   fromNewerBin: Uint8Array,
   toOlderBin: Uint8Array
 ): Uint8Array {
-  const newerDoc = new Doc();
-  applyUpdate(newerDoc, fromNewerBin);
-  const olderDoc = new Doc();
-  applyUpdate(olderDoc, toOlderBin);
-
-  const newerState = encodeStateVector(newerDoc);
-  const olderState = encodeStateVector(olderDoc);
-
-  const diff = encodeStateAsUpdate(newerDoc, olderState);
-  const undoManager = new UndoManager(Array.from(olderDoc.share.values()));
-
-  applyUpdate(olderDoc, diff);
-  undoManager.undo();
-
-  return encodeStateAsUpdate(olderDoc, newerState);
+  return new Uint8Array(
+    serverNative.revertDocUpdateV1(
+      Buffer.from(fromNewerBin),
+      Buffer.from(toOlderBin)
+    )
+  );
 }
 
 function fail(message: string): never {

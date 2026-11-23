@@ -1,5 +1,15 @@
-mutation createBlobUpload($workspaceId: String!, $key: String!, $size: Int!, $mime: String!) {
-  createBlobUpload(workspaceId: $workspaceId, key: $key, size: $size, mime: $mime) {
+mutation createBlobUpload(
+  $workspaceId: String!
+  $key: String!
+  $size: Int!
+  $mime: String!
+) {
+  createBlobUpload(
+    workspaceId: $workspaceId
+    key: $key
+    size: $size
+    mime: $mime
+  ) {
     method
     blobKey
     alreadyUploaded

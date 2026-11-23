@@ -26,6 +26,9 @@ public class WorkspaceBlobQuotaQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      WorkspaceBlobQuotaQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class WorkspaceBlobQuotaQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("quota", Quota.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        WorkspaceBlobQuotaQuery.Data.Workspace.self
       ] }
 
       /// quota of workspace
@@ -59,6 +65,9 @@ public class WorkspaceBlobQuotaQuery: GraphQLQuery {
           .field("blobLimit", AffineGraphQL.SafeInt.self),
           .field("humanReadable", HumanReadable.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          WorkspaceBlobQuotaQuery.Data.Workspace.Quota.self
+        ] }
 
         public var blobLimit: AffineGraphQL.SafeInt { __data["blobLimit"] }
         public var humanReadable: HumanReadable { __data["humanReadable"] }
@@ -74,6 +83,9 @@ public class WorkspaceBlobQuotaQuery: GraphQLQuery {
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("blobLimit", String.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            WorkspaceBlobQuotaQuery.Data.Workspace.Quota.HumanReadable.self
           ] }
 
           public var blobLimit: String { __data["blobLimit"] }

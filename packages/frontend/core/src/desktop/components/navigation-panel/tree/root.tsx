@@ -4,9 +4,11 @@ import { NavigationPanelTreeContext } from './context';
 import * as styles from './root.css';
 import type { NodeOperation } from './types';
 
+const EMPTY_OPERATIONS: NodeOperation[] = [];
+
 export const NavigationPanelTreeRoot = ({
   children,
-  childrenOperations = [],
+  childrenOperations = EMPTY_OPERATIONS,
   placeholder,
 }: {
   children?: React.ReactNode;

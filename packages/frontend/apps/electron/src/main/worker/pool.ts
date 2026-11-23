@@ -2,7 +2,7 @@ import { join } from 'node:path';
 
 import { BrowserWindow, MessageChannelMain, type WebContents } from 'electron';
 
-import { backgroundWorkerViewUrl } from '../constants';
+import { backgroundWorkerViewUrl } from '../../shared/internal-origin';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import { buildWebPreferences } from '../web-preferences';

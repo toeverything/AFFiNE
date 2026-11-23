@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +41,160 @@ async function safeReadDir(dirPath) {
 
 async function rmrf(targetPath) {
   await fs.rm(targetPath, { recursive: true, force: true });
+}
+
+async function fileSize(filePath) {
+  const stat = await fs.lstat(filePath).catch(() => null);
+  return stat?.isFile() ? stat.size : 0;
+}
+
+async function walkFiles(rootDir) {
+  if (!(await exists(rootDir))) {
+    return [];
+  }
+
+  const files = [];
+  const stack = [rootDir];
+
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch (err) {
+      debug(`skip unreadable dir ${current}: ${err?.message ?? String(err)}`);
+      continue;
+    }
+
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const dirent of entries) {
+      const fullPath = path.join(current, dirent.name);
+      if (dirent.isDirectory()) {
+        stack.push(fullPath);
+      } else if (dirent.isFile()) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  files.sort();
+  return files;
+}
+
+async function sha256(filePath) {
+  const hash = crypto.createHash('sha256');
+  const handle = await fs.open(filePath, 'r');
+  try {
+    for await (const chunk of handle.readableWebStream()) {
+      hash.update(Buffer.from(chunk));
+    }
+  } finally {
+    await handle.close().catch(() => {});
+  }
+  return hash.digest('hex');
+}
+
+async function hardlinkDuplicate(canonicalPath, duplicatePath) {
+  const tempPath = path.join(
+    path.dirname(duplicatePath),
+    `.docker-clean-link-${process.pid}-${Date.now()}-${path.basename(
+      duplicatePath
+    )}`
+  );
+
+  try {
+    await fs.link(canonicalPath, tempPath);
+    await fs.rename(tempPath, duplicatePath);
+    return true;
+  } catch (err) {
+    await fs.rm(tempPath, { force: true }).catch(() => {});
+    debug(
+      `failed to hardlink ${duplicatePath} -> ${canonicalPath}: ${
+        err?.message ?? String(err)
+      }`
+    );
+    return false;
+  }
+}
+
+function hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat) {
+  return (
+    canonicalStat.mode === duplicateStat.mode &&
+    canonicalStat.uid === duplicateStat.uid &&
+    canonicalStat.gid === duplicateStat.gid
+  );
+}
+
+async function hardlinkDuplicateFiles(rootDir) {
+  const files = await walkFiles(rootDir);
+  const bySize = new Map();
+
+  for (const filePath of files) {
+    const size = await fileSize(filePath);
+    if (size === 0) {
+      continue;
+    }
+    const sizedFiles = bySize.get(size);
+    if (sizedFiles) {
+      sizedFiles.push(filePath);
+    } else {
+      bySize.set(size, [filePath]);
+    }
+  }
+
+  let linked = 0;
+  let savedBytes = 0;
+
+  for (const [size, sizedFiles] of bySize) {
+    if (sizedFiles.length < 2) {
+      continue;
+    }
+
+    const byHash = new Map();
+    for (const filePath of sizedFiles) {
+      let digest;
+      try {
+        digest = await sha256(filePath);
+      } catch (err) {
+        debug(`failed to hash ${filePath}: ${err?.message ?? String(err)}`);
+        continue;
+      }
+
+      const canonicalPath = byHash.get(digest);
+      if (!canonicalPath) {
+        byHash.set(digest, filePath);
+        continue;
+      }
+
+      const [canonicalStat, duplicateStat] = await Promise.all([
+        fs.lstat(canonicalPath).catch(() => null),
+        fs.lstat(filePath).catch(() => null),
+      ]);
+
+      if (
+        !canonicalStat ||
+        !duplicateStat ||
+        !hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat)
+      ) {
+        continue;
+      }
+
+      if (
+        canonicalStat.dev === duplicateStat.dev &&
+        canonicalStat.ino === duplicateStat.ino
+      ) {
+        continue;
+      }
+
+      if (await hardlinkDuplicate(canonicalPath, filePath)) {
+        linked += 1;
+        savedBytes += size;
+      }
+    }
+  }
+
+  return { linked, savedBytes };
 }
 
 async function deleteFilesByExtension(rootDir, extension) {
@@ -88,6 +243,110 @@ async function deleteFilesByExtension(rootDir, extension) {
   }
 
   return deleted;
+}
+
+async function deleteFilesByPredicate(rootDir, shouldDelete) {
+  if (!(await exists(rootDir))) {
+    return { deleted: 0, bytes: 0 };
+  }
+
+  let deleted = 0;
+  let bytes = 0;
+  const stack = [rootDir];
+
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch (err) {
+      debug(`skip unreadable dir ${current}: ${err?.message ?? String(err)}`);
+      continue;
+    }
+
+    for (const dirent of entries) {
+      const fullPath = path.join(current, dirent.name);
+      if (dirent.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (!dirent.isFile() || !shouldDelete(fullPath, dirent.name)) {
+        continue;
+      }
+
+      const size = await fileSize(fullPath);
+      try {
+        await fs.unlink(fullPath);
+        deleted += 1;
+        bytes += size;
+      } catch (err) {
+        debug(`failed to delete ${fullPath}: ${err?.message ?? String(err)}`);
+      }
+    }
+  }
+
+  return { deleted, bytes };
+}
+
+async function deleteDirsByName(rootDir, names, shouldPreserve = () => false) {
+  if (!(await exists(rootDir))) {
+    return { deleted: 0, bytes: 0 };
+  }
+
+  let deleted = 0;
+  let bytes = 0;
+  const stack = [rootDir];
+
+  while (stack.length) {
+    const current = stack.pop();
+    let entries;
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true });
+    } catch (err) {
+      debug(`skip unreadable dir ${current}: ${err?.message ?? String(err)}`);
+      continue;
+    }
+
+    for (const dirent of entries) {
+      if (!dirent.isDirectory()) {
+        continue;
+      }
+
+      const fullPath = path.join(current, dirent.name);
+      if (shouldPreserve(fullPath)) {
+        stack.push(fullPath);
+        continue;
+      }
+
+      if (names.has(dirent.name)) {
+        const dirBytes = await directoryBytes(fullPath);
+        try {
+          await rmrf(fullPath);
+          deleted += 1;
+          bytes += dirBytes;
+        } catch (err) {
+          debug(`failed to delete ${fullPath}: ${err?.message ?? String(err)}`);
+        }
+      } else {
+        stack.push(fullPath);
+      }
+    }
+  }
+
+  return { deleted, bytes };
+}
+
+async function directoryBytes(rootDir) {
+  let bytes = 0;
+  for (const filePath of await walkFiles(rootDir)) {
+    bytes += await fileSize(filePath);
+  }
+  return bytes;
+}
+
+function formatMiB(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(1)}MiB`;
 }
 
 function normalizeTargetKey(arch, variant) {
@@ -225,12 +484,61 @@ async function prunePrismaQueryEngines(dirPath, keepTarget) {
   for (const name of entries) {
     if (
       name.startsWith('libquery_engine-') &&
-      name.endsWith('.so.node') &&
+      name.endsWith('.node') &&
       name !== keepName
     ) {
       await fs.rm(path.join(dirPath, name), { force: true }).catch(() => {});
     }
   }
+}
+
+async function hardlinkPrismaQueryEngines(appRoot, keepTarget) {
+  const queryEngineName = `libquery_engine-${keepTarget}.so.node`;
+  const paths = [
+    path.join(appRoot, 'node_modules', '.prisma', 'client', queryEngineName),
+    path.join(appRoot, 'node_modules', 'prisma', queryEngineName),
+    path.join(appRoot, 'node_modules', '@prisma', 'engines', queryEngineName),
+  ];
+  const stats = await Promise.all(
+    paths.map(filePath => fs.lstat(filePath).catch(() => null))
+  );
+
+  if (stats.some(stat => !stat?.isFile())) {
+    debug('missing prisma query engine copy, skip hardlinking');
+    return { linked: 0, savedBytes: 0 };
+  }
+
+  const canonicalPath = paths[0];
+  const canonicalStat = stats[0];
+  const canonicalDigest = await sha256(canonicalPath);
+  let linked = 0;
+  let savedBytes = 0;
+
+  for (let i = 1; i < paths.length; i += 1) {
+    const duplicatePath = paths[i];
+    const duplicateStat = stats[i];
+    if (
+      !hasCompatibleHardlinkMetadata(canonicalStat, duplicateStat) ||
+      (await sha256(duplicatePath)) !== canonicalDigest
+    ) {
+      debug(`prisma query engine copy differs: ${duplicatePath}`);
+      continue;
+    }
+
+    if (
+      canonicalStat.dev === duplicateStat.dev &&
+      canonicalStat.ino === duplicateStat.ino
+    ) {
+      continue;
+    }
+
+    if (await hardlinkDuplicate(canonicalPath, duplicatePath)) {
+      linked += 1;
+      savedBytes += duplicateStat.size;
+    }
+  }
+
+  return { linked, savedBytes };
 }
 
 function runPrismaVersion(prismaBinPath, cwd) {
@@ -259,7 +567,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
   const prismaBinPath = path.join(appRoot, 'node_modules', '.bin', 'prisma');
 
   if (!(await exists(prismaClientDir))) {
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   const keepTarget = await pickExistingPrismaTarget(
@@ -269,7 +577,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
 
   if (!keepTarget) {
     debug('no prisma keepTarget detected, skip prisma pruning');
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   await prunePrismaQueryEngines(prismaClientDir, keepTarget);
@@ -286,7 +594,7 @@ async function prunePrismaEngines(appRoot, targetKey) {
 
   if (!(await exists(keepSchemaEngine))) {
     debug(`missing ${keepSchemaEngine}, skip pruning @prisma/engines`);
-    return;
+    return { linked: 0, savedBytes: 0 };
   }
 
   const keepLibQueryEngine = `libquery_engine-${keepTarget}.so.node`;
@@ -307,6 +615,140 @@ async function prunePrismaEngines(appRoot, targetKey) {
         .catch(() => {});
     }
   }
+
+  return hardlinkPrismaQueryEngines(appRoot, keepTarget);
+}
+
+async function prunePrismaRuntimeArtifacts(nodeModulesDir) {
+  const prismaClientRuntimeDir = path.join(
+    nodeModulesDir,
+    '@prisma',
+    'client',
+    'runtime'
+  );
+  const prismaClientCopyRuntimeDir = path.join(
+    nodeModulesDir,
+    'prisma',
+    'prisma-client',
+    'runtime'
+  );
+
+  let deleted = 0;
+  let bytes = 0;
+
+  for (const runtimeDir of [
+    prismaClientRuntimeDir,
+    prismaClientCopyRuntimeDir,
+  ]) {
+    const result = await deleteFilesByPredicate(
+      runtimeDir,
+      (_filePath, name) => {
+        return (
+          name.startsWith('query_engine_bg.') ||
+          name.startsWith('query_compiler_bg.')
+        );
+      }
+    );
+    deleted += result.deleted;
+    bytes += result.bytes;
+  }
+
+  return { deleted, bytes };
+}
+
+function isNodeModulesPackageRoot(nodeModulesDir, dirPath) {
+  const relative = path.relative(nodeModulesDir, dirPath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  const segments = ['node_modules', ...relative.split(path.sep)];
+  const targetIndex = segments.length - 1;
+
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    if (segments[i] !== 'node_modules') {
+      continue;
+    }
+
+    const packageIndex = i + 1;
+    if (!segments[packageIndex]) {
+      continue;
+    }
+
+    if (segments[packageIndex].startsWith('@')) {
+      if (targetIndex === packageIndex + 1) {
+        return true;
+      }
+      continue;
+    }
+
+    if (targetIndex === packageIndex) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function pruneNodeModulesArtifacts(nodeModulesDir) {
+  const disposableDirs = new Set([
+    '.github',
+    '.husky',
+    'benchmark',
+    'benchmarks',
+    'coverage',
+    'example',
+    'examples',
+    'test',
+    'testing',
+    'tests',
+    '__tests__',
+  ]);
+  const disposableFilenames = new Set([
+    '.npmignore',
+    '.yarn-metadata.json',
+    'CHANGELOG',
+    'CHANGELOG.md',
+    'HISTORY.md',
+    'README',
+    'README.md',
+  ]);
+  const disposableExtensions = [
+    '.cts',
+    '.d.cts',
+    '.d.mts',
+    '.d.ts',
+    '.markdown',
+    '.md',
+    '.mts',
+    '.ts',
+    '.tsbuildinfo',
+    '.tsx',
+  ];
+
+  const dirResult = await deleteDirsByName(
+    nodeModulesDir,
+    disposableDirs,
+    dirPath => isNodeModulesPackageRoot(nodeModulesDir, dirPath)
+  );
+  const fileResult = await deleteFilesByPredicate(
+    nodeModulesDir,
+    (_filePath, name) => {
+      if (name.toLowerCase().startsWith('license')) {
+        return false;
+      }
+      return (
+        disposableFilenames.has(name) ||
+        disposableExtensions.some(extension => name.endsWith(extension))
+      );
+    }
+  );
+
+  return {
+    deletedDirs: dirResult.deleted,
+    deletedFiles: fileResult.deleted,
+    bytes: dirResult.bytes + fileResult.bytes,
+  };
 }
 
 const targetKey = normalizeTargetKey(TARGETARCH, TARGETVARIANT);
@@ -330,6 +772,15 @@ const deletedNodeModulesMaps = await deleteFilesByExtension(
 debug(`deleted static maps: ${deletedStaticMaps}`);
 debug(`deleted node_modules maps: ${deletedNodeModulesMaps}`);
 
+const staticDedupe = await hardlinkDuplicateFiles(
+  path.join(APP_ROOT, 'static')
+);
+log(
+  `hardlinked duplicate static files: ${staticDedupe.linked}, saved ${formatMiB(
+    staticDedupe.savedBytes
+  )}`
+);
+
 const distDir = path.join(APP_ROOT, 'dist');
 await pruneServerNative(distDir, serverNativeArch(targetKey));
 
@@ -338,11 +789,33 @@ await pruneOptionalNativeDeps(
   cpuPruneRegexes(targetKey)
 );
 
-await prunePrismaEngines(APP_ROOT, targetKey);
+const prismaQueryEngineDedupe = await prunePrismaEngines(APP_ROOT, targetKey);
+log(
+  `hardlinked prisma query engines: ${prismaQueryEngineDedupe.linked}, saved ${formatMiB(
+    prismaQueryEngineDedupe.savedBytes
+  )}`
+);
+
+const nodeModulesDir = path.join(APP_ROOT, 'node_modules');
+
+const prismaRuntimeArtifacts =
+  await prunePrismaRuntimeArtifacts(nodeModulesDir);
+log(
+  `deleted prisma runtime artifacts: ${prismaRuntimeArtifacts.deleted}, saved ${formatMiB(
+    prismaRuntimeArtifacts.bytes
+  )}`
+);
+
+const nodeModulesArtifacts = await pruneNodeModulesArtifacts(nodeModulesDir);
+log(
+  `deleted node_modules artifacts: ${nodeModulesArtifacts.deletedFiles} files, ${
+    nodeModulesArtifacts.deletedDirs
+  } dirs, saved ${formatMiB(nodeModulesArtifacts.bytes)}`
+);
 
 await Promise.all([
-  rmrf(path.join(APP_ROOT, 'node_modules', 'typescript')).catch(() => {}),
-  rmrf(path.join(APP_ROOT, 'node_modules', '@types')).catch(() => {}),
+  rmrf(path.join(nodeModulesDir, 'typescript')).catch(() => {}),
+  rmrf(path.join(nodeModulesDir, '@types')).catch(() => {}),
   rmrf(path.join(APP_ROOT, 'src')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.gitignore')).catch(() => {}),
   rmrf(path.join(APP_ROOT, '.dockerignore')).catch(() => {}),

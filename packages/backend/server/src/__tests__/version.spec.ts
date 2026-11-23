@@ -6,6 +6,7 @@ import { AppModule } from '../app.module';
 import {
   CANARY_CLIENT_VERSION_MAX_AGE_DAYS,
   ConfigFactory,
+  hasNewerVersion,
   UseNamedGuard,
 } from '../base';
 import { Public } from '../core/auth/guard';
@@ -248,4 +249,12 @@ test('should reject old canary date version in canary namespace', async t => {
     // @ts-expect-error test
     env.NAMESPACE = prevNamespace;
   }
+});
+
+test('should compare release versions for available upgrades', t => {
+  t.false(hasNewerVersion('0.26.5', '0.26.4'));
+  t.false(hasNewerVersion('0.26.5', '0.26.5'));
+  t.true(hasNewerVersion('0.26.5', '0.26.6'));
+  t.true(hasNewerVersion('0.26.5', '0.26.6-beta.1'));
+  t.false(hasNewerVersion('0.26.6-beta.2', '0.26.6-beta.1'));
 });

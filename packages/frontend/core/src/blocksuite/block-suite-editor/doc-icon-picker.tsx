@@ -1,4 +1,5 @@
 import { IconEditor, IconRenderer } from '@affine/component';
+import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { ExplorerIconService } from '@affine/core/modules/explorer-icon/services/explorer-icon';
 import { useI18n } from '@affine/i18n';
 import { SmileSolidIcon } from '@blocksuite/icons/rc';
@@ -35,10 +36,13 @@ export const DocIconPicker = ({
 }) => {
   const t = useI18n();
   const explorerIconService = useService(ExplorerIconService);
+  const editorSetting = useService(EditorSettingService).editorSetting;
 
   const icon = useLiveData(explorerIconService.icon$('doc', docId));
+  const settings = useLiveData(editorSetting.settings$);
 
   const isPlaceholder = !icon?.icon;
+  const shouldShowAddIconOption = settings.displayAddIconOption;
 
   if (readonly) {
     return isPlaceholder ? null : (
@@ -49,6 +53,10 @@ export const DocIconPicker = ({
         <IconRenderer data={icon.icon} />
       </div>
     );
+  }
+
+  if (isPlaceholder && !shouldShowAddIconOption) {
+    return null;
   }
 
   return (

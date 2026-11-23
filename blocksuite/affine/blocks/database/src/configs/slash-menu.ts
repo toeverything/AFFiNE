@@ -6,6 +6,7 @@ import { viewPresets } from '@blocksuite/data-view/view-presets';
 import {
   DatabaseKanbanViewIcon,
   DatabaseTableViewIcon,
+  TodayIcon,
 } from '@blocksuite/icons/lit';
 
 import { insertDatabaseBlockCommand } from '../commands';
@@ -32,6 +33,35 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           .pipe(getSelectedModelsCommand)
           .pipe(insertDatabaseBlockCommand, {
             viewType: viewPresets.tableViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .pipe(({ insertedDatabaseBlockId }) => {
+            if (insertedDatabaseBlockId) {
+              const telemetry = std.getOptional(TelemetryProvider);
+              telemetry?.track('BlockCreated', {
+                blockType: 'affine:database',
+              });
+            }
+          })
+          .run();
+      },
+    },
+
+    {
+      name: 'Calendar View',
+      description: 'Display items by date in a calendar.',
+      searchAlias: ['database', 'calendar'],
+      icon: TodayIcon(),
+      group: '7_Database@1',
+      when: ({ model }) =>
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.calendarViewMeta.type,
             place: 'after',
             removeEmptyLine: true,
           })

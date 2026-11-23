@@ -4,7 +4,7 @@
 
 [BlockSuite API Documentation](../../../../README.md) / [@blocksuite/std](../../README.md) / [index](../README.md) / LifeCycleWatcher
 
-# Class: `abstract` LifeCycleWatcher
+# Abstract Class: LifeCycleWatcher
 
 A life cycle watcher is an extension that watches the life cycle of the editor.
 It is used to perform actions when the editor is created, mounted, rendered, or unmounted.

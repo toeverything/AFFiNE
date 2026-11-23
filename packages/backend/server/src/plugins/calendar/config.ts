@@ -4,10 +4,12 @@ import { defineModuleConfig, JSONSchema } from '../../base';
 
 export interface CalendarGoogleConfig {
   enabled: boolean;
+  allowNewAccounts?: boolean;
   clientId: string;
   clientSecret: string;
   externalWebhookUrl?: string;
   webhookVerificationToken?: string;
+  requestTimeoutMs?: number;
 }
 
 export type CalendarCalDAVAuthType = 'auto' | 'basic' | 'digest';
@@ -45,10 +47,12 @@ const schema: JSONSchema = {
   type: 'object',
   properties: {
     enabled: { type: 'boolean' },
+    allowNewAccounts: { type: 'boolean' },
     clientId: { type: 'string' },
     clientSecret: { type: 'string' },
     externalWebhookUrl: { type: 'string' },
     webhookVerificationToken: { type: 'string' },
+    requestTimeoutMs: { type: 'number' },
   },
 };
 
@@ -84,14 +88,17 @@ defineModuleConfig('calendar', {
     desc: 'Google Calendar integration config',
     default: {
       enabled: false,
+      allowNewAccounts: true,
       clientId: '',
       clientSecret: '',
       externalWebhookUrl: '',
       webhookVerificationToken: '',
+      requestTimeoutMs: 10_000,
     },
     schema,
     shape: z.object({
       enabled: z.boolean(),
+      allowNewAccounts: z.boolean().optional(),
       clientId: z.string(),
       clientSecret: z.string(),
       externalWebhookUrl: z
@@ -101,6 +108,7 @@ defineModuleConfig('calendar', {
         .or(z.string().length(0))
         .optional(),
       webhookVerificationToken: z.string().optional(),
+      requestTimeoutMs: z.number().int().positive().optional(),
     }),
     link: 'https://developers.google.com/calendar/api/guides/push',
   },

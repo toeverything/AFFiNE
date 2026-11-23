@@ -37,6 +37,9 @@ public class UpdateAccountMutation: GraphQLMutation {
         "input": .variable("input")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateAccountMutation.Data.self
+    ] }
 
     /// Update an user
     public var updateUser: UpdateUser { __data["updateUser"] }
@@ -54,6 +57,9 @@ public class UpdateAccountMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("name", String.self),
         .field("email", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        UpdateAccountMutation.Data.UpdateUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

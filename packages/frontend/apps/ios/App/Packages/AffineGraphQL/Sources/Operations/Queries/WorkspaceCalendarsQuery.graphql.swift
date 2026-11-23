@@ -26,6 +26,9 @@ public class WorkspaceCalendarsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      WorkspaceCalendarsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class WorkspaceCalendarsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("calendars", [Calendar].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        WorkspaceCalendarsQuery.Data.Workspace.self
       ] }
 
       public var calendars: [Calendar] { __data["calendars"] }
@@ -62,6 +68,9 @@ public class WorkspaceCalendarsQuery: GraphQLQuery {
           .field("colorOverride", String?.self),
           .field("enabled", Bool.self),
           .field("items", [Item].self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          WorkspaceCalendarsQuery.Data.Workspace.Calendar.self
         ] }
 
         public var id: String { __data["id"] }
@@ -87,6 +96,9 @@ public class WorkspaceCalendarsQuery: GraphQLQuery {
             .field("sortOrder", Int?.self),
             .field("colorOverride", String?.self),
             .field("enabled", Bool.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            WorkspaceCalendarsQuery.Data.Workspace.Calendar.Item.self
           ] }
 
           public var id: String { __data["id"] }

@@ -9,6 +9,7 @@
   },
   "references": [
     { "path": "../reader" },
+    { "path": "../realtime" },
     { "path": "../infra" },
     { "path": "../error" },
     { "path": "../graphql" },

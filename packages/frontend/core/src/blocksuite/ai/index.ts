@@ -5,4 +5,7 @@ export * from './entries/edgeless/actions-config';
 export * from './messages';
 export { AIChatBlockPeekViewTemplate } from './peek-view/chat-block-peek-view';
 export * from './provider';
+export * from './runtime/chat';
+export * from './runtime/frontend';
+export * from './runtime/request';
 export * from './utils/edgeless';

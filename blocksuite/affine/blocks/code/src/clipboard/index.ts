@@ -1,4 +1,5 @@
 import { deleteTextCommand } from '@blocksuite/affine-inline-preset';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   HtmlAdapter,
   pasteMiddleware,
@@ -18,6 +19,7 @@ import {
   LifeCycleWatcher,
   LifeCycleWatcherIdentifier,
   StdIdentifier,
+  TextSelection,
   type UIEventHandler,
 } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
@@ -102,6 +104,30 @@ export class CodeBlockClipboardController extends LifeCycleWatcher {
   onPaste: UIEventHandler = ctx => {
     const e = ctx.get('clipboardState').raw;
     e.preventDefault();
+
+    const textSelection = this.std.selection.find(TextSelection);
+    const plainText = e.clipboardData
+      ?.getData('text/plain')
+      ?.replace(/\r?\n|\r/g, '\n');
+    const selectedBlockId = textSelection?.from.blockId;
+    const codeBlock = selectedBlockId
+      ? this.std.store.getBlock(selectedBlockId)?.model
+      : null;
+    if (plainText && codeBlock?.flavour === 'affine:code' && selectedBlockId) {
+      const richText = this.std.view
+        .getBlock(selectedBlockId)
+        ?.querySelector<RichText>('rich-text');
+      const inlineEditor = richText?.inlineEditor;
+      const inlineRange = inlineEditor?.getInlineRange();
+      if (inlineEditor && inlineRange) {
+        inlineEditor.insertText(inlineRange, plainText);
+        inlineEditor.setInlineRange({
+          index: inlineRange.index + plainText.length,
+          length: 0,
+        });
+        return true;
+      }
+    }
 
     this.std.store.captureSync();
     this.std.command

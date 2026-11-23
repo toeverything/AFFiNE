@@ -2,15 +2,11 @@ import track from '@affine/track';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { Signal } from '@preact/signals-core';
-import { html, type PropertyValues } from 'lit';
+import { html } from 'lit';
 import { property } from 'lit/decorators.js';
-import throttle from 'lodash-es/throttle';
 
-import { extractMarkdownFromDoc } from '../../utils/extract';
 import type { DocChip, DocDisplayConfig } from './type';
-import { estimateTokenCount, getChipIcon, getChipTooltip } from './utils';
-
-const EXTRACT_DOC_THROTTLE = 1000;
+import { getChipIcon, getChipTooltip } from './utils';
 
 export class ChatPanelDocChip extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -25,16 +21,7 @@ export class ChatPanelDocChip extends SignalWatcher(
   accessor addChip!: (chip: DocChip) => void;
 
   @property({ attribute: false })
-  accessor updateChip!: (chip: DocChip, options: Partial<DocChip>) => void;
-
-  @property({ attribute: false })
   accessor removeChip!: (chip: DocChip) => void;
-
-  @property({ attribute: false })
-  accessor checkTokenLimit!: (
-    newChip: DocChip,
-    newTokenCount: number
-  ) => boolean;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -49,27 +36,6 @@ export class ChatPanelDocChip extends SignalWatcher(
     );
     this.chipName = signal;
     this.disposables.add(cleanup);
-
-    const doc = this.docDisplayConfig.getDoc(this.chip.docId);
-    if (doc) {
-      this.disposables.add(
-        doc.slots.blockUpdated.subscribe(
-          throttle(this.autoUpdateChip, EXTRACT_DOC_THROTTLE)
-        )
-      );
-      this.autoUpdateChip();
-    }
-  }
-
-  override updated(changedProperties: PropertyValues): void {
-    super.updated(changedProperties);
-    if (
-      changedProperties.has('chip') &&
-      this.chip.state === 'processing' &&
-      !this.chip.markdown
-    ) {
-      this.processDocChip().catch(console.error);
-    }
   }
 
   override disconnectedCallback() {
@@ -81,7 +47,7 @@ export class ChatPanelDocChip extends SignalWatcher(
     if (this.chip.state === 'candidate') {
       this.addChip({
         ...this.chip,
-        state: 'processing',
+        state: 'finished',
       });
       const mode = this.docDisplayConfig.getDocPrimaryMode(this.chip.docId);
       const page = this.independentMode
@@ -97,44 +63,6 @@ export class ChatPanelDocChip extends SignalWatcher(
 
   private readonly onChipDelete = () => {
     this.removeChip(this.chip);
-  };
-
-  private readonly autoUpdateChip = () => {
-    if (this.chip.state !== 'candidate') {
-      this.processDocChip().catch(console.error);
-    }
-  };
-
-  private readonly processDocChip = async () => {
-    try {
-      const doc = this.docDisplayConfig.getDoc(this.chip.docId);
-      if (!doc) {
-        throw new Error('Document not found');
-      }
-      if (!doc.ready) {
-        doc.load();
-      }
-      const value = await extractMarkdownFromDoc(doc);
-      const tokenCount = estimateTokenCount(value);
-      if (this.checkTokenLimit(this.chip, tokenCount)) {
-        const markdown = this.chip.markdown ?? new Signal<string>('');
-        markdown.value = value;
-        this.updateChip(this.chip, {
-          markdown,
-          tokenCount,
-        });
-      } else {
-        this.updateChip(this.chip, {
-          state: 'failed',
-          tooltip: 'Content exceeds token limit',
-        });
-      }
-    } catch (e) {
-      this.updateChip(this.chip, {
-        state: 'failed',
-        tooltip: e instanceof Error ? e.message : 'Failed to extract markdown',
-      });
-    }
   };
 
   override render() {

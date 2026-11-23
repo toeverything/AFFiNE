@@ -1,71 +1,88 @@
 import { app } from 'electron';
 
-import { anotherHost, mainHost } from './constants';
+import { isInternalUrl } from '../shared/internal-origin';
+import { logger } from './logger';
 import { openExternalSafely } from './security/open-external';
 import { validateRedirectProxyUrl } from './security/redirect-proxy';
 
-app.on('web-contents-created', (_, contents) => {
-  const isInternalUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      if (
-        parsed.protocol === 'assets:' &&
-        (parsed.hostname === mainHost || parsed.hostname === anotherHost)
-      ) {
-        return true;
-      }
-    } catch {}
-    return false;
-  };
-  /**
-   * Block navigation to origins not on the allowlist.
-   *
-   * Navigation is a common attack vector. If an attacker can convince the app to navigate away
-   * from its current page, they can possibly force the app to open web sites on the Internet.
-   *
-   * @see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
-   */
-  contents.on('will-navigate', (event, url) => {
-    if (isInternalUrl(url)) {
-      return;
-    }
-    // Prevent navigation
-    event.preventDefault();
-    openExternalSafely(url).catch(error => {
-      console.error('[security] Failed to open external URL:', error);
-    });
-  });
+const pendingInternalNavigation = new WeakMap<Electron.WebContents, string>();
 
-  /**
-   * Hyperlinks to allowed sites open in the default browser.
-   *
-   * The creation of new `webContents` is a common attack vector. Attackers attempt to convince the app to create new windows,
-   * frames, or other renderer processes with more privileges than they had before; or with pages opened that they couldn't open before.
-   * You should deny any unexpected window creation.
-   *
-   * @see https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
-   * @see https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-openexternal-with-untrusted-content
-   */
-  contents.setWindowOpenHandler(({ url }) => {
-    if (!isInternalUrl(url)) {
+export const checkSource = (
+  e: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent
+) => {
+  const url =
+    e.senderFrame?.url ||
+    (e.senderFrame && e.senderFrame !== e.sender.mainFrame
+      ? ''
+      : e.sender.getURL() || pendingInternalNavigation.get(e.sender) || '');
+  const result = isInternalUrl(url);
+  if (!result) logger.error('invalid source', url);
+  return result;
+};
+
+export const registerSecurityRestrictions = () => {
+  app.on('web-contents-created', (_, contents) => {
+    contents.on('did-start-navigation', ({ url, isMainFrame }) => {
+      if (!isMainFrame) return;
+      if (isInternalUrl(url)) {
+        pendingInternalNavigation.set(contents, url);
+      } else {
+        pendingInternalNavigation.delete(contents);
+      }
+    });
+    contents.on('did-stop-loading', () => {
+      pendingInternalNavigation.delete(contents);
+    });
+    /**
+     * Block navigation to origins not on the allowlist.
+     *
+     * Navigation is a common attack vector. If an attacker can convince the app to navigate away
+     * from its current page, they can possibly force the app to open web sites on the Internet.
+     *
+     * @see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
+     */
+    contents.on('will-navigate', (event, url) => {
+      if (isInternalUrl(url)) {
+        return;
+      }
+      // Prevent navigation
+      event.preventDefault();
       openExternalSafely(url).catch(error => {
         console.error('[security] Failed to open external URL:', error);
       });
-    } else if (url.includes('/redirect-proxy')) {
-      const result = validateRedirectProxyUrl(url);
-      if (!result.allow) {
-        console.warn(
-          `[security] Blocked redirect proxy: ${result.reason}`,
-          result.redirectTarget ?? url
-        );
-        return { action: 'deny' };
-      }
+    });
 
-      openExternalSafely(result.redirectTarget).catch(error => {
-        console.error('[security] Failed to open external URL:', error);
-      });
-    }
-    // Prevent creating new window in application
-    return { action: 'deny' };
+    /**
+     * Hyperlinks to allowed sites open in the default browser.
+     *
+     * The creation of new `webContents` is a common attack vector. Attackers attempt to convince the app to create new windows,
+     * frames, or other renderer processes with more privileges than they had before; or with pages opened that they couldn't open before.
+     * You should deny any unexpected window creation.
+     *
+     * @see https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
+     * @see https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-openexternal-with-untrusted-content
+     */
+    contents.setWindowOpenHandler(({ url }) => {
+      if (!isInternalUrl(url)) {
+        openExternalSafely(url).catch(error => {
+          console.error('[security] Failed to open external URL:', error);
+        });
+      } else if (url.includes('/redirect-proxy')) {
+        const result = validateRedirectProxyUrl(url);
+        if (!result.allow) {
+          console.warn(
+            `[security] Blocked redirect proxy: ${result.reason}`,
+            result.redirectTarget ?? url
+          );
+          return { action: 'deny' };
+        }
+
+        openExternalSafely(result.redirectTarget).catch(error => {
+          console.error('[security] Failed to open external URL:', error);
+        });
+      }
+      // Prevent creating new window in application
+      return { action: 'deny' };
+    });
   });
-});
+};

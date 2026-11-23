@@ -22,6 +22,7 @@ import {
   type LinkedWidgetConfig,
   LinkedWidgetUtils,
 } from '@blocksuite/affine/widgets/linked-doc';
+import { unsafeHTML } from '@blocksuite/affine-shared/utils';
 import {
   DateTimeIcon,
   NewXxxEdgelessIcon,
@@ -35,7 +36,6 @@ import type { FuseResultMatch } from 'fuse.js';
 import Fuse from 'fuse.js';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import {
   createAbsolutePositionFromRelativePosition,
   createRelativePositionFromTypeIndex,

@@ -1,5 +1,6 @@
 import { Menu, MenuItem, MenuTrigger, notify } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { EditorService } from '@affine/core/modules/editor';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { UserFriendlyError } from '@affine/error';
 import { PublicDocMode } from '@affine/graphql';
@@ -19,11 +20,13 @@ import * as styles from './styles.css';
 
 export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
   const t = useI18n();
+  const editorService = useService(EditorService);
   const shareInfoService = useService(ShareInfoService);
   const isSharedPage = useLiveData(shareInfoService.shareInfo.isShared$);
   const isRevalidating = useLiveData(
     shareInfoService.shareInfo.isRevalidating$
   );
+  const currentMode = useLiveData(editorService.editor.mode$);
 
   useEffect(() => {
     shareInfoService.shareInfo.revalidate();
@@ -63,7 +66,9 @@ export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
     }
     try {
       // TODO(@JimmFly): remove mode when we have a better way to handle it
-      await shareInfoService.shareInfo.enableShare(PublicDocMode.Page);
+      await shareInfoService.shareInfo.enableShare(
+        currentMode === 'edgeless' ? PublicDocMode.Edgeless : PublicDocMode.Page
+      );
       track.$.sharePanel.$.createShareLink();
       notify.success({
         title:
@@ -84,7 +89,7 @@ export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
         message: err.message,
       });
     }
-  }, [isSharedPage, shareInfoService.shareInfo, t]);
+  }, [currentMode, isSharedPage, shareInfoService.shareInfo, t]);
 
   return (
     <div className={styles.rowContainerStyle}>

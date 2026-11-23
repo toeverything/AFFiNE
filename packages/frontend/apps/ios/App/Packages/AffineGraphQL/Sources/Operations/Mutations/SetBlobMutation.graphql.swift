@@ -37,6 +37,9 @@ public class SetBlobMutation: GraphQLMutation {
         "blob": .variable("blob")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      SetBlobMutation.Data.self
+    ] }
 
     public var setBlob: String { __data["setBlob"] }
   }

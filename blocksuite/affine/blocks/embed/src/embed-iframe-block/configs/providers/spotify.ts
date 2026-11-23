@@ -18,7 +18,12 @@ const spotifyUrlValidationOptions: EmbedIframeUrlValidationOptions = {
   hostnames: ['open.spotify.com', 'spotify.link'],
 };
 
-const spotifyConfig = {
+const spotifyIframeUrlValidationOptions: EmbedIframeUrlValidationOptions = {
+  protocols: ['https:'],
+  hostnames: ['open.spotify.com'],
+};
+
+export const spotifyConfig = {
   name: 'spotify',
   match: (url: string) =>
     validateEmbedIframeUrl(url, spotifyUrlValidationOptions),
@@ -32,6 +37,13 @@ const spotifyConfig = {
     return oEmbedUrl;
   },
   useOEmbedUrlDirectly: false,
+  validateIframeUrl: (iframeUrl: string) => {
+    if (!validateEmbedIframeUrl(iframeUrl, spotifyIframeUrlValidationOptions)) {
+      return false;
+    }
+    const parsedUrl = new URL(iframeUrl);
+    return parsedUrl.pathname.split('/').find(Boolean) === 'embed';
+  },
   options: {
     widthInSurface: SPOTIFY_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: SPOTIFY_DEFAULT_HEIGHT_IN_SURFACE,

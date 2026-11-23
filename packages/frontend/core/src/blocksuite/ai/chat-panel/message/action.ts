@@ -61,8 +61,10 @@ export class ChatMessageAction extends WithDisposable(ShadowlessElement) {
         return html`<action-text
           .item=${item}
           .host=${host}
-          .isCode=${item.action === 'Explain this code' ||
-          item.action === 'Check code error'}
+          .isCode=${
+            item.action === 'Explain this code' ||
+            item.action === 'Check code error'
+          }
         ></action-text>`;
     }
   }

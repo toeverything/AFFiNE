@@ -6,10 +6,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('AIChatWith/Attachments', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(
-      page,
-      'claude-sonnet-4-5@20250929'
-    );
+    await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
   });
 
@@ -29,13 +26,13 @@ test.describe('AIChatWith/Attachments', () => {
           buffer: buffer,
         },
       ],
-      'What is AttachmentEEee?'
+      'What is AttachmentEEee? Answer with a citation.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is AttachmentEEee?',
+        content: 'What is AttachmentEEee? Answer with a citation.',
       },
       {
         role: 'assistant',
@@ -44,8 +41,29 @@ test.describe('AIChatWith/Attachments', () => {
     ]);
 
     await expect(async () => {
-      const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
+      const { content, message } =
+        await utils.chatPanel.getLatestAssistantMessage(page);
       expect(content).toMatch(/EEee/);
+      const references = await message
+        .locator('affine-footnote-node')
+        .evaluateAll(nodes =>
+          nodes.map(
+            node =>
+              (
+                node as HTMLElement & {
+                  footnote?: { reference?: Record<string, unknown> };
+                }
+              ).footnote?.reference
+          )
+        );
+      expect(references).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'attachment',
+            artifactId: expect.any(String),
+          }),
+        ])
+      );
     }).toPass({ timeout: 10000 });
   });
 
@@ -53,34 +71,34 @@ test.describe('AIChatWith/Attachments', () => {
     loggedInPage: page,
     utils,
   }) => {
-    const randomStr1 = Math.random().toString(36).substring(2, 6);
-    const randomStr2 = Math.random().toString(36).substring(2, 6);
-    const textContent1 = `Attachment${randomStr1} is a cute cat`;
-    const textContent2 = `Attachment${randomStr2} is a cute dog`;
+    const textContent1 = 'This attachment describes a cute cat.';
+    const textContent2 = 'This attachment describes a cute dog.';
     const buffer1 = Buffer.from(textContent1);
     const buffer2 = Buffer.from(textContent2);
+    const firstName = 'cat-document.txt';
+    const secondName = 'dog-document.txt';
 
     await utils.chatPanel.chatWithAttachments(
       page,
       [
         {
-          name: 'document1.txt',
+          name: firstName,
           mimeType: 'text/plain',
           buffer: buffer1,
         },
         {
-          name: 'document2.txt',
+          name: secondName,
           mimeType: 'text/plain',
           buffer: buffer2,
         },
       ],
-      `Which animal is Attachment${randomStr1} and which animal is Attachment${randomStr2}? Answer with both attachment names.`
+      `Which animal is described in ${firstName} and which animal is described in ${secondName}? Answer with both attachment names.`
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: `Which animal is Attachment${randomStr1} and which animal is Attachment${randomStr2}? Answer with both attachment names.`,
+        content: `Which animal is described in ${firstName} and which animal is described in ${secondName}? Answer with both attachment names.`,
       },
       {
         role: 'assistant',
@@ -90,8 +108,8 @@ test.describe('AIChatWith/Attachments', () => {
 
     await expect(async () => {
       const { content } = await utils.chatPanel.getLatestAssistantMessage(page);
-      expect(content).toMatch(new RegExp(`Attachment${randomStr1}`));
-      expect(content).toMatch(new RegExp(`Attachment${randomStr2}`));
+      expect(content).toContain(firstName);
+      expect(content).toContain(secondName);
       expect(content).toMatch(/cat/i);
       expect(content).toMatch(/dog/i);
     }).toPass({ timeout: 20000 });

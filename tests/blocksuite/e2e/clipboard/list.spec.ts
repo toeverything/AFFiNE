@@ -12,6 +12,7 @@ import {
   dragBetweenCoords,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   getAllNoteIds,
   getClipboardHTML,
   getClipboardSnapshot,
@@ -51,6 +52,7 @@ import {
   assertBlockTypes,
   assertEdgelessNoteBackground,
   assertEdgelessSelectedModelRect,
+  assertRichTextInlineRange,
   assertRichTextModelType,
   assertRichTexts,
   assertText,
@@ -148,7 +150,8 @@ test('paste a nested list to a nested list', async ({ page }) => {
   await focusRichText(page, 1);
 
   // paste on start
-  await page.keyboard.press('Control+ArrowLeft');
+  await setInlineRangeInSelectedRichText(page, 0, 0);
+  await assertRichTextInlineRange(page, 1, 0);
 
   /**
    * - aaa
@@ -192,7 +195,7 @@ test('paste a nested list to a nested list', async ({ page }) => {
 
   // paste on end
   await undoByKeyboard(page);
-  await page.keyboard.press('Control+ArrowRight');
+  await focusRichTextEnd(page, 1);
 
   /**
    * - aaa
@@ -238,7 +241,8 @@ test('paste nested lists to a nested list', async ({ page }) => {
   };
 
   // paste on start
-  await page.keyboard.press('Control+ArrowLeft');
+  await setInlineRangeInSelectedRichText(page, 0, 0);
+  await assertRichTextInlineRange(page, 1, 0);
 
   /**
    * - aaa
@@ -284,7 +288,7 @@ test('paste nested lists to a nested list', async ({ page }) => {
 
   // paste on end
   await undoByKeyboard(page);
-  await page.keyboard.press('Control+ArrowRight');
+  await focusRichTextEnd(page, 1);
 
   /**
    * - aaa
@@ -328,7 +332,8 @@ test('paste non-nested lists to a nested list', async ({ page }) => {
   };
 
   // paste on start
-  await page.keyboard.press('Control+ArrowLeft');
+  await setInlineRangeInSelectedRichText(page, 0, 0);
+  await assertRichTextInlineRange(page, 0, 0);
 
   /**
    * - |aaa

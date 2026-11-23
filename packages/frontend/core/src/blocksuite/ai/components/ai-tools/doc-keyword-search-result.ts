@@ -7,6 +7,8 @@ import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { ToolResult } from './tool-result-card';
+import { getToolErrorDisplayName, isToolError } from './tool-result-utils';
+import type { ToolError } from './type';
 
 interface DocKeywordSearchToolCall {
   type: 'tool-call';
@@ -20,10 +22,11 @@ interface DocKeywordSearchToolResult {
   toolCallId: string;
   toolName: string;
   args: { query: string };
-  result: Array<{
-    title: string;
-    docId: string;
-  }>;
+  result:
+    | Array<{ title: string; docId: string }>
+    | { hits: Array<{ title: string; doc_id: string; excerpt?: string }> }
+    | ToolError
+    | null;
 }
 
 export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
@@ -51,9 +54,26 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
     if (this.data.type !== 'tool-result') {
       return nothing;
     }
+    const result = this.data.result;
+    if (!result || isToolError(result)) {
+      return html`<tool-call-failed
+        .name=${getToolErrorDisplayName(
+          isToolError(result) ? result : null,
+          'Document search failed',
+          {
+            'Workspace Sync Required':
+              'Enable workspace sync to search documents',
+          }
+        )}
+        .icon=${SearchIcon()}
+      ></tool-call-failed>`;
+    }
+    const items = Array.isArray(result)
+      ? result
+      : result.hits.map(item => ({ title: item.title, docId: item.doc_id }));
     let results: ToolResult[] = [];
     try {
-      results = this.data.result.map(item => ({
+      results = items.map(item => ({
         title: item.title,
         icon: PageIcon(),
         onClick: () => {
@@ -69,7 +89,7 @@ export class DocKeywordSearchResult extends WithDisposable(ShadowlessElement) {
       console.error('Failed to parse result', err);
     }
     return html`<tool-result-card
-      .name=${`Found ${this.data.result.length} pages for "${this.data.args.query}"`}
+      .name=${`Found ${items.length} pages for "${this.data.args.query}"`}
       .icon=${SearchIcon()}
       .width=${this.width}
       .results=${results}

@@ -1,4 +1,4 @@
-import { OneDay, OneKB } from '../../base';
+import { OneKB } from '../../base';
 
 export const ByteUnit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
@@ -14,6 +14,6 @@ export function formatSize(bytes: number, decimals: number = 2): string {
   );
 }
 
-export function formatDate(ms: number): string {
-  return `${(ms / OneDay).toFixed(0)} days`;
+export function formatDate(seconds: number): string {
+  return `${(seconds / (24 * 60 * 60)).toFixed(0)} days`;
 }

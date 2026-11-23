@@ -26,6 +26,9 @@ public class GetMemberCountByWorkspaceIdQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("workspaceId")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetMemberCountByWorkspaceIdQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -41,6 +44,9 @@ public class GetMemberCountByWorkspaceIdQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("memberCount", Int.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetMemberCountByWorkspaceIdQuery.Data.Workspace.self
       ] }
 
       /// member count of workspace

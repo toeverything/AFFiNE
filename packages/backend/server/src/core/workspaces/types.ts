@@ -166,16 +166,6 @@ export class InviteResult {
   })
   inviteId?: string;
 
-  /**
-   * @deprecated
-   */
-  @Field(() => Boolean, {
-    description: 'Invite email sent success',
-    deprecationReason: 'Notification will be sent asynchronously',
-    defaultValue: true,
-  })
-  sentSuccess?: boolean;
-
   @Field(() => GraphQLJSONObject, {
     nullable: true,
     description: 'Invite error',

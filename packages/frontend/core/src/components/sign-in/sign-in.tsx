@@ -8,7 +8,11 @@ import {
 } from '@affine/component/auth-components';
 import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { AuthService, ServerService } from '@affine/core/modules/cloud';
+import {
+  AuthService,
+  getSelfHostedServerName,
+  ServerService,
+} from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
@@ -61,6 +65,9 @@ export const SignInStep = ({
       c => c.type === ServerDeploymentType.Selfhosted
     )
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
   const authService = useService(AuthService);
   const [isMutating, setIsMutating] = useState(false);
 
@@ -90,7 +97,9 @@ export const SignInStep = ({
     setIsMutating(true);
 
     try {
-      const { hasPassword } = await authService.checkUserByEmail(email);
+      const { methods } = await authService.checkUserByEmail(email);
+      const hasPassword = methods.password.available;
+      const canUseMagicLink = methods.magicLink.available;
 
       if (hasPassword) {
         changeState(prev => ({
@@ -99,13 +108,18 @@ export const SignInStep = ({
           step: 'signInWithPassword',
           hasPassword: true,
         }));
-      } else {
+      } else if (canUseMagicLink) {
         changeState(prev => ({
           ...prev,
           email,
           step: 'signInWithEmail',
           hasPassword: false,
         }));
+      } else {
+        notify.error({
+          title: 'Failed to sign in',
+          message: 'This email is not available for sign in.',
+        });
       }
     } catch (err: any) {
       console.error(err);
@@ -132,7 +146,7 @@ export const SignInStep = ({
       <AuthContainer>
         <AuthHeader
           title={t['com.affine.auth.sign.in']()}
-          subTitle={serverName}
+          subTitle={signInServerName}
         />
         <AuthContent>
           <div>{versionError}</div>
@@ -145,37 +159,47 @@ export const SignInStep = ({
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>
         <OAuth redirectUrl={state.redirectUrl} />
 
-        <AuthInput
-          className={style.authInput}
-          label={t['com.affine.settings.email']()}
-          placeholder={t['com.affine.auth.sign.email.placeholder']()}
-          onChange={setEmail}
-          error={!isValidEmail}
-          errorHint={
-            isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
-          }
-          onEnter={onContinue}
-        />
-
-        <Button
-          className={style.signInButton}
-          style={{ width: '100%' }}
-          size="extraLarge"
-          data-testid="continue-login-button"
-          block
-          loading={isMutating}
-          suffix={<ArrowRightBigIcon />}
-          suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
-          onClick={onContinue}
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            onContinue();
+          }}
         >
-          {t['com.affine.auth.sign.email.continue']()}
-        </Button>
+          <AuthInput
+            className={style.authInput}
+            label={t['com.affine.settings.email']()}
+            placeholder={t['com.affine.auth.sign.email.placeholder']()}
+            onChange={setEmail}
+            error={!isValidEmail}
+            errorHint={
+              isValidEmail ? '' : t['com.affine.auth.sign.email.error']()
+            }
+            onEnter={onContinue}
+            type="email"
+            name="username"
+            autoComplete="username"
+          />
+
+          <Button
+            className={style.signInButton}
+            style={{ width: '100%' }}
+            size="extraLarge"
+            data-testid="continue-login-button"
+            block
+            loading={isMutating}
+            disabled={isMutating}
+            suffix={<ArrowRightBigIcon />}
+            suffixStyle={{ width: 20, height: 20, color: cssVar('blue') }}
+          >
+            {t['com.affine.auth.sign.email.continue']()}
+          </Button>
+        </form>
 
         {!isSelfhosted && (
           <>

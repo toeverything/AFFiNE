@@ -3,6 +3,19 @@ use std::ops::Deref;
 use super::{Blob, ListedBlob, SetBlob, error::Result, storage::SqliteDocStorage};
 
 impl SqliteDocStorage {
+  pub async fn read_blob_readonly(path: &str, key: &str) -> Result<Option<Blob>> {
+    let pool = Self::open_readonly_path(path).await?;
+    let blob = sqlx::query_as!(
+      Blob,
+      "SELECT key, data, size, mime, created_at FROM blobs WHERE key = ? AND deleted_at IS NULL",
+      key
+    )
+    .fetch_optional(&pool)
+    .await?;
+    pool.close().await;
+    Ok(blob)
+  }
+
   pub async fn get_blob(&self, key: String) -> Result<Option<Blob>> {
     let result = sqlx::query_as!(
       Blob,

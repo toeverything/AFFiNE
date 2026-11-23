@@ -26,6 +26,9 @@ public class GetPublicUserByIdQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("publicUserById", PublicUserById?.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GetPublicUserByIdQuery.Data.self
+    ] }
 
     /// Get public user by id
     public var publicUserById: PublicUserById? { __data["publicUserById"] }
@@ -43,6 +46,9 @@ public class GetPublicUserByIdQuery: GraphQLQuery {
         .field("id", String.self),
         .field("avatarUrl", String?.self),
         .field("name", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        GetPublicUserByIdQuery.Data.PublicUserById.self
       ] }
 
       public var id: String { __data["id"] }

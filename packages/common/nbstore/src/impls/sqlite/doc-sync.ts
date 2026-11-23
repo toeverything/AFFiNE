@@ -1,5 +1,9 @@
 import { share } from '../../connection';
-import { type DocClock, DocSyncStorageBase } from '../../storage';
+import {
+  type DocClock,
+  DocSyncStorageBase,
+  type WorkspaceState,
+} from '../../storage';
 import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteDocSyncStorage extends DocSyncStorageBase {
@@ -65,5 +69,31 @@ export class SqliteDocSyncStorage extends DocSyncStorageBase {
 
   override async clearClocks() {
     await this.db.clearClocks();
+  }
+  override getPeerWorkspaceState(peer: string, rootDocId: string) {
+    return this.db.getPeerWorkspaceState(peer, rootDocId);
+  }
+  override invalidatePeerWorkspaceState(peer: string, rootDocId: string) {
+    return this.db.invalidatePeerWorkspaceState(peer, rootDocId);
+  }
+  override installPeerWorkspaceState(
+    peer: string,
+    rootDocId: string,
+    cacheToken: number,
+    state: WorkspaceState
+  ) {
+    return this.db.installPeerWorkspaceState(
+      peer,
+      rootDocId,
+      cacheToken,
+      state.docs.map(doc => ({
+        ...doc,
+        pendingCreate: doc.pendingCreate ?? false,
+      })),
+      state.clocks
+    );
+  }
+  override confirmPeerDocCreate(peer: string, docId: string) {
+    return this.db.confirmPeerDocCreate(peer, docId);
   }
 }

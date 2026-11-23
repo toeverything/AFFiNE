@@ -95,7 +95,7 @@ export const CheckboxDocListProperty = ({
 
   return (
     <StackProperty icon={<CheckBoxCheckLinearIcon />}>
-      {/* 
+      {/*
         Has circular dependency issue (WorkspacePropertyName -> WorkspacePropertyTypes -> Checkbox)
         <WorkspacePropertyName propertyInfo={propertyInfo} /> 
       */}

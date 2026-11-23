@@ -184,23 +184,25 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
         }).render()}
       </div>
 
-      ${this.templateShow
-        ? html` <div class="select-template-title">Select template</div>
-            <div class="template">
-              ${repeat(
-                mindmapStyles,
-                ([style]) => style,
-                ([style, icon]) => {
-                  return html`<div
-                    class=${`template-item ${curStyle === style ? 'active' : ''}`}
-                    @click=${() => this._switchStyle(style as MindmapStyle)}
-                  >
-                    ${icon}
-                  </div>`;
-                }
-              )}
-            </div>`
-        : nothing}
+      ${
+        this.templateShow
+          ? html` <div class="select-template-title">Select template</div>
+              <div class="template">
+                ${repeat(
+                  mindmapStyles,
+                  ([style]) => style,
+                  ([style, icon]) => {
+                    return html`<div
+                      class=${`template-item ${curStyle === style ? 'active' : ''}`}
+                      @click=${() => this._switchStyle(style as MindmapStyle)}
+                    >
+                      ${icon}
+                    </div>`;
+                  }
+                )}
+              </div>`
+          : nothing
+      }
     </div>`;
   }
 

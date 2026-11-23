@@ -15,7 +15,7 @@ const excalidrawUrlValidationOptions: EmbedIframeUrlValidationOptions = {
   hostnames: ['excalidraw.com'],
 };
 
-const excalidrawConfig = {
+export const excalidrawConfig = {
   name: 'excalidraw',
   match: (url: string) =>
     validateEmbedIframeUrl(url, excalidrawUrlValidationOptions),
@@ -27,6 +27,8 @@ const excalidrawConfig = {
     return url;
   },
   useOEmbedUrlDirectly: true,
+  validateIframeUrl: (iframeUrl: string) =>
+    validateEmbedIframeUrl(iframeUrl, excalidrawUrlValidationOptions),
   options: {
     widthInSurface: EXCALIDRAW_DEFAULT_WIDTH_IN_SURFACE,
     heightInSurface: EXCALIDRAW_DEFAULT_HEIGHT_IN_SURFACE,

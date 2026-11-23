@@ -1,4 +1,4 @@
-use affine_common::doc_parser::ParseError;
+use affine_doc_loader::ParseError;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -12,8 +12,16 @@ pub enum Error {
   ConnectionInProgress,
   #[error("Invalid operation")]
   InvalidOperation,
+  #[error("Index is rebuilding")]
+  IndexNotReady,
+  #[error("invalid_binary")]
+  InvalidBinary,
   #[error("Serialization Error: {0}")]
   Serialization(String),
+  #[error("Document changed during compaction")]
+  ConcurrentModification,
+  #[error(transparent)]
+  Indexer(#[from] memory_indexer::Error),
   #[error(transparent)]
   Parse(#[from] ParseError),
 }

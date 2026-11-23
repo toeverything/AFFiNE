@@ -11,6 +11,23 @@ public struct CreateChatMessageInput: InputObject {
   }
 
   public init(
+    blob: GraphQLNullable<Upload> = nil,
+    blobs: GraphQLNullable<[Upload]> = nil,
+    content: GraphQLNullable<String> = nil,
+    params: GraphQLNullable<JSON> = nil,
+    sessionId: String
+  ) {
+    __data = InputDict([
+      "blob": blob,
+      "blobs": blobs,
+      "content": content,
+      "params": params,
+      "sessionId": sessionId
+    ])
+  }
+
+  @available(*, deprecated, message: "Argument 'attachments' is deprecated.")
+  public init(
     attachments: GraphQLNullable<[String]> = nil,
     blob: GraphQLNullable<Upload> = nil,
     blobs: GraphQLNullable<[Upload]> = nil,
@@ -28,6 +45,7 @@ public struct CreateChatMessageInput: InputObject {
     ])
   }
 
+  @available(*, deprecated, message: "use blobs")
   public var attachments: GraphQLNullable<[String]> {
     get { __data["attachments"] }
     set { __data["attachments"] = newValue }

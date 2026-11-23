@@ -17,6 +17,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
     .field("pageInfo", PageInfo.self),
     .field("edges", [Edge].self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    PaginatedCopilotChats.self
+  ] }
 
   public var pageInfo: PageInfo { __data["pageInfo"] }
   public var edges: [Edge] { __data["edges"] }
@@ -35,6 +38,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
       .field("hasPreviousPage", Bool.self),
       .field("startCursor", String?.self),
       .field("endCursor", String?.self),
+    ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PaginatedCopilotChats.PageInfo.self
     ] }
 
     public var hasNextPage: Bool { __data["hasNextPage"] }
@@ -56,6 +62,9 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
       .field("cursor", String.self),
       .field("node", Node.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      PaginatedCopilotChats.Edge.self
+    ] }
 
     public var cursor: String { __data["cursor"] }
     public var node: Node { __data["node"] }
@@ -72,20 +81,20 @@ public struct PaginatedCopilotChats: AffineGraphQL.SelectionSet, Fragment {
         .field("__typename", String.self),
         .fragment(CopilotChatHistory.self),
       ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        PaginatedCopilotChats.Edge.Node.self,
+        CopilotChatHistory.self
+      ] }
 
       public var sessionId: String { __data["sessionId"] }
       public var workspaceId: String { __data["workspaceId"] }
       public var docId: String? { __data["docId"] }
       public var parentSessionId: String? { __data["parentSessionId"] }
       public var promptName: String { __data["promptName"] }
-      public var model: String { __data["model"] }
-      public var optionalModels: [String] { __data["optionalModels"] }
       /// An mark identifying which view to use to display the session
       public var action: String? { __data["action"] }
       public var pinned: Bool { __data["pinned"] }
       public var title: String? { __data["title"] }
-      /// The number of tokens used in the session
-      public var tokens: Int { __data["tokens"] }
       public var messages: [Message] { __data["messages"] }
       public var createdAt: AffineGraphQL.DateTime { __data["createdAt"] }
       public var updatedAt: AffineGraphQL.DateTime { __data["updatedAt"] }

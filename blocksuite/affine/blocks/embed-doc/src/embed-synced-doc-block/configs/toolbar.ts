@@ -199,7 +199,7 @@ const conversionsActionGroup = {
         @toggle=${onToggle}
         .actions=${actions}
         .context=${ctx}
-        .viewType$=${viewType$}
+        .viewTypeSignal=${viewType$}
       ></affine-view-dropdown-menu>`
     )}`;
   },
@@ -466,7 +466,7 @@ const builtinSurfaceToolbarConfig = {
             @select=${onSelect}
             @toggle=${onToggle}
             .format=${format}
-            .size$=${scale$}
+            .sizeSignal=${scale$}
           ></affine-size-dropdown-menu>`
         )}`;
       },

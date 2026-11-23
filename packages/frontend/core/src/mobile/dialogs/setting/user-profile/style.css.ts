@@ -33,16 +33,27 @@ const ellipsis = style({
   whiteSpace: 'nowrap',
 });
 
-export const title = style([bodyRegular, { color: cssVarV2('text/primary') }]);
+export const title = style([
+  bodyRegular,
+  {
+    color: cssVarV2('text/primary'),
+    fontSize: 19,
+    lineHeight: '24px',
+  },
+]);
 
 export const caption = style([
   subHeadlineRegular,
-  { color: cssVarV2('text/secondary') },
+  {
+    color: cssVarV2('text/secondary'),
+    fontSize: 16,
+    lineHeight: '20px',
+  },
 ]);
 
 export const suffixIcon = style({
-  fontSize: 30,
-  color: cssVarV2('icon/primary'),
+  fontSize: 20,
+  color: cssVarV2('icon/secondary'),
 });
 
 export const emailInfo = style([ellipsis, { width: '100%' }]);

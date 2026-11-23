@@ -23,7 +23,7 @@ export interface AIPanelErrorConfig {
 }
 
 export interface AIPanelGeneratingConfig {
-  generatingIcon: TemplateResult<1>;
+  generatingIcon?: TemplateResult<1>;
   height?: number;
   stages?: string[];
 }

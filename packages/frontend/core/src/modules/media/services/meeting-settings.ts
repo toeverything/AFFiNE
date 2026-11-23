@@ -83,8 +83,9 @@ export class MeetingSettingsService extends Service {
         await this.desktopApiService?.handler.recording.getCurrentRecording();
       if (
         ongoingRecording &&
-        ongoingRecording.status !== 'new' &&
-        ongoingRecording.status !== 'ready'
+        ['starting', 'recording', 'finalizing'].includes(
+          ongoingRecording.status
+        )
       ) {
         throw new Error('There is an ongoing recording, please stop it first');
       }

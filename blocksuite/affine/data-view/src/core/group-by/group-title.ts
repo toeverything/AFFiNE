@@ -96,16 +96,18 @@ const GroupTitleMobile = (
       ${icon} ${renderUniLit(groupData.view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
-    ${ops.readonly
-      ? nothing
-      : html` <div class="group-header-ops">
-          <div @click="${ops.clickAdd}" class="group-header-op add-card">
-            ${PlusIcon()}
-          </div>
-          <div @click="${ops.clickOps}" class="group-header-op">
-            ${MoreHorizontalIcon()}
-          </div>
-        </div>`}
+    ${
+      ops.readonly
+        ? nothing
+        : html` <div class="group-header-ops">
+            <div @click="${ops.clickAdd}" class="group-header-op add-card">
+              ${PlusIcon()}
+            </div>
+            <div @click="${ops.clickOps}" class="group-header-op">
+              ${MoreHorizontalIcon()}
+            </div>
+          </div>`
+    }
   `;
 };
 
@@ -211,15 +213,17 @@ export const GroupTitle = (
       ${icon} ${renderUniLit(groupData.view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
-    ${ops.readonly
-      ? nothing
-      : html` <div class="group-header-ops">
-          <div @click="${ops.clickAdd}" class="group-header-op add-card">
-            ${PlusIcon()}
-          </div>
-          <div @click="${ops.clickOps}" class="group-header-op">
-            ${MoreHorizontalIcon()}
-          </div>
-        </div>`}
+    ${
+      ops.readonly
+        ? nothing
+        : html` <div class="group-header-ops">
+            <div @click="${ops.clickAdd}" class="group-header-op add-card">
+              ${PlusIcon()}
+            </div>
+            <div @click="${ops.clickOps}" class="group-header-op">
+              ${MoreHorizontalIcon()}
+            </div>
+          </div>`
+    }
   `;
 };

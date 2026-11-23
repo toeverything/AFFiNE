@@ -1,4 +1,3 @@
-import { DEFAULT_LINK_PREVIEW_ENDPOINT } from '@blocksuite/affine/shared/consts';
 import {
   LinkPreviewCacheIdentifier,
   type LinkPreviewCacheProvider,
@@ -11,11 +10,30 @@ import type { FrameworkProvider } from '@toeverything/infra';
 
 import { ServerService } from '../../../modules/cloud/services/server';
 
+const LINK_PREVIEW_PATH = '/api/worker/link-preview';
+
+export function resolveLinkPreviewEndpoint(value: string, baseUrl: string) {
+  if (!value.trim() || !URL.canParse(value, baseUrl)) return null;
+  const endpoint = new URL(value, baseUrl);
+  return endpoint.pathname === LINK_PREVIEW_PATH ? endpoint.toString() : null;
+}
+
 class AffineLinkPreviewService extends LinkPreviewService {
-  constructor(endpoint: string, cache: LinkPreviewCacheProvider) {
-    super(cache);
+  constructor(endpoint: string | null, cache: LinkPreviewCacheProvider) {
+    super(cache, createAffineLinkPreviewFetch(BUILD_CONFIG.appVersion));
     this.setEndpoint(endpoint);
   }
+}
+
+export function createAffineLinkPreviewFetch(
+  version: string,
+  fetcher: typeof globalThis.fetch = globalThis.fetch
+): typeof globalThis.fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    if (version) headers.set('x-affine-version', version);
+    return fetcher(input, { ...init, headers });
+  };
 }
 
 /**
@@ -26,21 +44,11 @@ class AffineLinkPreviewService extends LinkPreviewService {
 export function patchLinkPreviewService(
   framework: FrameworkProvider
 ): ExtensionType {
-  // get link preview service endpoint from server and BUILD_CONFIG
-  let linkPreviewUrl: string;
-  try {
-    const server = framework.get(ServerService).server;
-    linkPreviewUrl = new URL(
-      BUILD_CONFIG.linkPreviewUrl || '/',
-      server.baseUrl
-    ).toString();
-  } catch (err) {
-    console.error(
-      'Invalid BUILD_CONFIG.linkPreviewUrl, falling back to default',
-      err
-    );
-    linkPreviewUrl = DEFAULT_LINK_PREVIEW_ENDPOINT;
-  }
+  const server = framework.get(ServerService).server;
+  const linkPreviewUrl = resolveLinkPreviewEndpoint(
+    BUILD_CONFIG.linkPreviewUrl,
+    server.baseUrl
+  );
 
   return {
     setup: (di: Container) => {

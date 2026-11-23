@@ -193,7 +193,7 @@ export const paragraphBlockNotionHtmlAdapterMatcher: BlockNotionHtmlAdapterMatch
         const { walkerContext } = context;
         switch (o.node.tagName) {
           case 'div': {
-            // eslint-disable-next-line sonarjs/no-collapsible-if
+            // oxlint-disable-next-line sonarjs/no-collapsible-if
             if (
               o.parent?.node.type === 'element' &&
               !(

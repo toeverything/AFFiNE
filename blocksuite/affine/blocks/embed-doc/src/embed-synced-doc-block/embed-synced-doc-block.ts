@@ -242,18 +242,20 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
           ?data-scale=${undefined}
         >
           <div class="affine-embed-synced-doc-editor">
-            ${isPageMode && this._isEmptySyncedDoc
-              ? html`
-                  <div class="affine-embed-synced-doc-editor-empty">
-                    <span>
-                      This is a linked doc, you can add content here.
-                    </span>
-                  </div>
-                `
-              : guard(
-                  [editorMode, syncedDoc, appTheme, edgelessTheme],
-                  renderEditor
-                )}
+            ${
+              isPageMode && this._isEmptySyncedDoc
+                ? html`
+                    <div class="affine-embed-synced-doc-editor-empty">
+                      <span>
+                        This is a linked doc, you can add content here.
+                      </span>
+                    </div>
+                  `
+                : guard(
+                    [editorMode, syncedDoc, appTheme, edgelessTheme],
+                    renderEditor
+                  )
+            }
           </div>
           <div
             class=${classMap({

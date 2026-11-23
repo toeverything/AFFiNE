@@ -58,9 +58,11 @@ export function getListIcon(
         class=${`affine-list-block__prefix affine-list-block__todo-prefix ${model.store.readonly ? 'readonly' : ''}`}
         @click=${onClick}
       >
-        ${model.props.checked
-          ? CheckBoxCheckSolidIcon({ style: 'color: #1E96EB' })
-          : CheckBoxUnIcon()}
+        ${
+          model.props.checked
+            ? CheckBoxCheckSolidIcon({ style: 'color: #1E96EB' })
+            : CheckBoxUnIcon()
+        }
       </div>`;
     case 'toggle':
       return html`<div

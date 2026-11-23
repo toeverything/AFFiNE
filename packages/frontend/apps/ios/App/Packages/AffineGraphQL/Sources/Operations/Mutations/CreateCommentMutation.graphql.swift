@@ -26,6 +26,9 @@ public class CreateCommentMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createComment", CreateComment.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateCommentMutation.Data.self
+    ] }
 
     public var createComment: CreateComment { __data["createComment"] }
 
@@ -46,6 +49,9 @@ public class CreateCommentMutation: GraphQLMutation {
         .field("updatedAt", AffineGraphQL.DateTime.self),
         .field("user", User.self),
         .field("replies", [Reply].self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateCommentMutation.Data.CreateComment.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -76,6 +82,9 @@ public class CreateCommentMutation: GraphQLMutation {
           .field("name", String.self),
           .field("avatarUrl", String?.self),
         ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CreateCommentMutation.Data.CreateComment.User.self
+        ] }
 
         public var id: String { __data["id"] }
         public var name: String { __data["name"] }
@@ -98,6 +107,9 @@ public class CreateCommentMutation: GraphQLMutation {
           .field("createdAt", AffineGraphQL.DateTime.self),
           .field("updatedAt", AffineGraphQL.DateTime.self),
           .field("user", User.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          CreateCommentMutation.Data.CreateComment.Reply.self
         ] }
 
         public var commentId: AffineGraphQL.ID { __data["commentId"] }
@@ -124,6 +136,9 @@ public class CreateCommentMutation: GraphQLMutation {
             .field("id", String.self),
             .field("name", String.self),
             .field("avatarUrl", String?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            CreateCommentMutation.Data.CreateComment.Reply.User.self
           ] }
 
           public var id: String { __data["id"] }

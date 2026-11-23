@@ -26,6 +26,9 @@ public class ValidateConfigQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("validateAppConfig", [ValidateAppConfig].self, arguments: ["updates": .variable("updates")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ValidateConfigQuery.Data.self
+    ] }
 
     /// validate app configuration
     public var validateAppConfig: [ValidateAppConfig] { __data["validateAppConfig"] }
@@ -45,6 +48,9 @@ public class ValidateConfigQuery: GraphQLQuery {
         .field("value", AffineGraphQL.JSON.self),
         .field("valid", Bool.self),
         .field("error", String?.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        ValidateConfigQuery.Data.ValidateAppConfig.self
       ] }
 
       public var module: String { __data["module"] }

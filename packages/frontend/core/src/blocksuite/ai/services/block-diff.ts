@@ -1,3 +1,4 @@
+import { sourceScopedBlobUrl } from '@affine/nbstore/cloud';
 import { parsePageDoc } from '@affine/reader';
 import { LifeCycleWatcher } from '@blocksuite/affine/std';
 import { Extension, type Store } from '@blocksuite/affine/store';
@@ -387,7 +388,11 @@ export class BlockDiffService extends Extension implements BlockDiffProvider {
       doc: spaceDoc,
       workspaceId: doc.workspace.id,
       buildBlobUrl: (blobId: string) => {
-        return `/${doc.workspace.id}/blobs/${blobId}`;
+        return sourceScopedBlobUrl(doc.workspace.id, blobId, {
+          type: 'currentDoc',
+          workspaceId: doc.workspace.id,
+          docId: doc.id,
+        });
       },
       buildDocUrl: (docId: string) => {
         return `/workspace/${doc.workspace.id}/${docId}`;

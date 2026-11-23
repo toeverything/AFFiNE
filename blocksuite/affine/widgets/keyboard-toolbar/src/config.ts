@@ -223,6 +223,17 @@ const textToolActionItems: KeyboardToolbarActionItem[] = [
     },
   },
   {
+    name: 'Equation',
+    showWhen: ({ std }) =>
+      std.store.schema.flavourSchemaMap.has('affine:latex'),
+    icon: TeXIcon(),
+    action: ({ std }) => {
+      std.command.exec(updateBlockType, {
+        flavour: 'affine:latex',
+      });
+    },
+  },
+  {
     name: 'Quote',
     showWhen: ({ std }) =>
       std.store.schema.flavourSchemaMap.has('affine:paragraph'),

@@ -3,14 +3,17 @@ import { z } from 'zod';
 
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type { CopilotProviderFactory, PromptService } from './types';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>
+) => Promise<string>;
 
 const logger = new Logger('ConversationSummaryTool');
 
 export const createConversationSummaryTool = (
   sessionId: string | undefined,
-  promptService: PromptService,
-  factory: CopilotProviderFactory
+  prompt: RunPromptText
 ) => {
   return defineTool({
     description:
@@ -38,27 +41,14 @@ export const createConversationSummaryTool = (
           );
         }
 
-        const prompt = await promptService.get('Conversation Summary');
-        const provider = await factory.getProviderByModel(prompt?.model || '');
-
-        if (!prompt || !provider) {
-          return toolError(
-            'Prompt Not Found',
-            'Failed to summarize conversation.'
-          );
-        }
-
-        const summary = await provider.text(
-          { modelId: prompt.model },
-          prompt.finish({
-            messages: messages.map(m => ({
-              ...m,
-              content: m.content.toString(),
-            })),
-            focus: focus || 'general',
-            length,
-          })
-        );
+        const summary = await prompt('Conversation Summary', {
+          messages: messages.map(m => ({
+            ...m,
+            content: m.content.toString(),
+          })),
+          focus: focus || 'general',
+          length,
+        });
 
         return {
           focusArea: focus || 'general',

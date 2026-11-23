@@ -13,6 +13,7 @@ import {
   QuoteIcon,
   TextIcon,
 } from '@blocksuite/affine-components/icons';
+import { FontIcon, TeXIcon } from '@blocksuite/icons/lit';
 import type { TemplateResult } from 'lit';
 
 /**
@@ -120,12 +121,28 @@ export const textConversionConfigs: TextConversionConfig[] = [
     icon: CodeBlockIcon,
   },
   {
+    flavour: 'affine:latex',
+    type: undefined,
+    name: 'Equation',
+    description: 'Formula block with LaTeX rendering.',
+    hotkey: null,
+    icon: TeXIcon(),
+    searchAlias: ['mathBlock', 'equationBlock', 'latexBlock'],
+  },
+  {
     flavour: 'affine:paragraph',
     type: 'quote',
     name: 'Quote',
     description: 'Add a blockquote for emphasis.',
     hotkey: null,
     icon: QuoteIcon,
+  },
+  {
+    flavour: 'affine:callout',
+    type: undefined,
+    name: 'Callout',
+    hotkey: null,
+    icon: FontIcon(),
   },
   {
     flavour: 'affine:divider',

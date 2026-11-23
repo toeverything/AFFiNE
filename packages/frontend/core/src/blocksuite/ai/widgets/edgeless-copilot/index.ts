@@ -27,7 +27,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types.js';
-import { AIProvider } from '../../provider/index.js';
+import { AIAppEvents } from '../../provider/index.js';
 import { extractSelectedContent } from '../../utils/extract.js';
 import {
   AFFINE_AI_PANEL_WIDGET,
@@ -106,7 +106,7 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
             aiPanel.hide();
             extractSelectedContent(this.host)
               .then(context => {
-                AIProvider.slots.requestSendWithChat.next({
+                AIAppEvents.requestSendWithChat.next({
                   input,
                   context,
                   host: this.host,

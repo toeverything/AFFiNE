@@ -1,6 +1,9 @@
 import { Divider, IconButton, Menu, MenuItem } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '@affine/core/components/hooks/use-navigate-helper';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceAvatar } from '@affine/core/components/workspace-avatar';
 import {
@@ -44,7 +47,7 @@ const WorkspaceItem = ({
     <li className={styles.wsItem}>
       <button className={clsx(styles.wsCard, className)} {...attrs}>
         <WorkspaceAvatar
-          key={workspace.id}
+          key={`${workspace.flavour}:${workspace.id}`}
           meta={workspace}
           rounded={6}
           data-testid="workspace-avatar"
@@ -70,7 +73,7 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
 
   return workspaceList.map(item => (
     <WorkspaceItem
-      key={item.id}
+      key={`${item.flavour}:${item.id}`}
       workspace={item}
       onClick={() => props.onClick(item)}
     />
@@ -215,7 +218,7 @@ const CloudWorkSpaceList = ({
     if (currentWorkspaceFlavour === server.id) {
       const otherWorkspace = workspaces.find(w => w.flavour !== server.id);
       if (otherWorkspace) {
-        navigateHelper.openPage(otherWorkspace.id, 'all');
+        void navigateHelper.openPage(otherWorkspace.id, 'all');
       }
     }
   }, [
@@ -228,7 +231,7 @@ const CloudWorkSpaceList = ({
 
   const handleSignOut = useAsyncCallback(async () => {
     await authService.signOut();
-    navigateHelper.jumpToSignIn();
+    void navigateHelper.jumpToSignIn();
   }, [authService, navigateHelper]);
 
   const handleSignIn = useAsyncCallback(async () => {
@@ -278,8 +281,15 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
   const workspacesService = useService(WorkspacesService);
   const workspaces = useLiveData(workspacesService.list.workspaces$);
   const serversService = useService(ServersService);
+  const globalContextService = useService(GlobalContextService);
   const { jumpToPage } = useNavigateHelper();
 
+  const currentWorkspaceId = useLiveData(
+    globalContextService.globalContext.workspaceId.$
+  );
+  const currentWorkspaceFlavour = useLiveData(
+    globalContextService.globalContext.workspaceFlavour.$
+  );
   const servers = useLiveData(serversService.servers$);
   const affineCloudServer = useMemo(
     () => servers.find(s => s.id === 'affine-cloud') as Server,
@@ -309,12 +319,29 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
   const handleClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
       const id = workspaceMetadata.id;
-      if (id !== currentWorkspace?.id) {
-        jumpToPage(id, 'home');
+      const isCurrentWorkspace =
+        id === currentWorkspaceId &&
+        workspaceMetadata.flavour === currentWorkspaceFlavour;
+      if (!isCurrentWorkspace) {
+        const server = servers.find(
+          server => server.id === workspaceMetadata.flavour
+        );
+        if (workspaceMetadata.flavour !== 'local' && !server) {
+          return;
+        }
+        const searchParams = new URLSearchParams({
+          flavour: workspaceMetadata.flavour,
+        });
+        if (workspaceMetadata.flavour !== 'local' && server) {
+          searchParams.set('server', server.baseUrl);
+        }
+        void jumpToPage(id, 'home', RouteLogic.PUSH, {
+          search: searchParams,
+        });
       }
       onClose?.();
     },
-    [onClose, jumpToPage]
+    [currentWorkspaceFlavour, currentWorkspaceId, jumpToPage, onClose, servers]
   );
 
   return (

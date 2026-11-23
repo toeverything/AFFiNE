@@ -1,49 +1,84 @@
-import { LookupAddress } from 'node:dns';
-
+import serverNativeModule from '@affine/server-native';
+import { Logger } from '@nestjs/common';
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 import type { Response } from 'supertest';
 
-import {
-  __resetDnsLookupForTests,
-  __setDnsLookupForTests,
-  type DnsLookup,
-} from '../base/utils/ssrf';
-import { createTestingApp, TestingApp } from './utils';
+import type { TestingApp } from './utils';
 
 type TestContext = {
   app: TestingApp;
 };
-const test = ava as TestFn<TestContext>;
+const test = ava.serial as TestFn<TestContext>;
 
-const LookupAddressStub = (async (_hostname, options) => {
-  const result = [{ address: '76.76.21.21', family: 4 }] as LookupAddress[];
-  const isOptions = options && typeof options === 'object';
-  if (isOptions && 'all' in options && options.all) {
-    return result;
+let safeFetchStub: Sinon.SinonStub | undefined;
+let originalDeploymentType: typeof env.DEPLOYMENT_TYPE;
+let safeFetchHandler:
+  | ((request: { url: string; method?: 'get' | 'head' }) => {
+      status?: number;
+      finalUrl?: string;
+      headers?: Record<string, string>;
+      body?: Buffer | string;
+    })
+  | undefined;
+
+const stubSafeFetch = (
+  handler: (request: { url: string; method?: 'get' | 'head' }) => {
+    status?: number;
+    finalUrl?: string;
+    headers?: Record<string, string>;
+    body?: Buffer | string;
   }
-  return result[0];
-}) as DnsLookup;
+) => {
+  safeFetchHandler = handler;
+  return {
+    restore() {
+      safeFetchHandler = undefined;
+    },
+  };
+};
 
 test.before(async t => {
+  originalDeploymentType = env.DEPLOYMENT_TYPE;
   // @ts-expect-error test
   env.DEPLOYMENT_TYPE = 'selfhosted';
 
-  // Avoid relying on real DNS during tests. SSRF protection uses dns.lookup().
-  __setDnsLookupForTests(LookupAddressStub);
+  safeFetchStub = Sinon.stub(serverNativeModule, 'safeFetch').callsFake(
+    async request => {
+      if (!safeFetchHandler) {
+        throw new Error('Unexpected safeFetch call');
+      }
+      const nativeRequest = request as {
+        url: string;
+        method?: 'get' | 'head';
+      };
+      const response = safeFetchHandler(nativeRequest);
+      return {
+        status: response.status ?? 200,
+        finalUrl: response.finalUrl ?? nativeRequest.url,
+        headers: response.headers ?? {},
+        body: Buffer.isBuffer(response.body)
+          ? response.body
+          : Buffer.from(response.body ?? ''),
+      };
+    }
+  );
 
+  const { createTestingApp } = await import('./utils');
   const app = await createTestingApp();
 
   t.context.app = app;
 });
 
 test.afterEach.always(() => {
-  Sinon.restore();
+  safeFetchHandler = undefined;
 });
 
 test.after.always(async t => {
-  __resetDnsLookupForTests();
+  // @ts-expect-error test
+  env.DEPLOYMENT_TYPE = originalDeploymentType;
+  safeFetchStub?.restore();
   await t.context.app.close();
 });
 
@@ -57,6 +92,7 @@ const assertAndSnapshotRaw = async (
     referer?: string | null;
     method?: 'GET' | 'OPTIONS' | 'POST';
     body?: any;
+    headers?: Record<string, string>;
     checker?: (res: Response) => any;
   }
 ) => {
@@ -74,6 +110,9 @@ const assertAndSnapshotRaw = async (
   }
   if (referer) {
     req.set('Referer', referer);
+  }
+  if (options?.headers) {
+    req.set(options.headers);
   }
 
   const res = req.send(options?.body).expect(status).expect(checker);
@@ -128,15 +167,13 @@ test('should proxy image', async t => {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
       'base64'
     );
-    const fakeResponse = new Response(fakeBuffer, {
-      status: 200,
+    const fetchSpy = stubSafeFetch(() => ({
+      body: fakeBuffer,
       headers: {
         'content-type': 'image/png',
         'content-disposition': 'inline',
       },
-    });
-
-    const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeResponse);
+    }));
     try {
       await assertAndSnapshot(
         `/api/worker/image-proxy?url=${imageUrl}`,
@@ -144,6 +181,42 @@ test('should proxy image', async t => {
       );
     } finally {
       fetchSpy.restore();
+    }
+  }
+
+  {
+    const invalidImageUrl = `http://example.com/not-image-${Date.now()}.png`;
+    const invalidFetchSpy = stubSafeFetch(() => ({
+      body: 'not an image',
+      headers: { 'content-type': 'image/png' },
+    }));
+    try {
+      await t.context.app
+        .GET(`/api/worker/image-proxy?url=${invalidImageUrl}`)
+        .set('Origin', 'http://localhost:3010')
+        .send()
+        .expect(400);
+    } finally {
+      invalidFetchSpy.restore();
+    }
+
+    const validImageUrl = `http://example.com/valid-image-${Date.now()}.png`;
+    const fakeBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+      'base64'
+    );
+    const validFetchSpy = stubSafeFetch(() => ({
+      body: fakeBuffer,
+      headers: { 'content-type': 'image/png' },
+    }));
+    try {
+      await t.context.app
+        .GET(`/api/worker/image-proxy?url=${validImageUrl}`)
+        .set('Origin', 'http://localhost:3010')
+        .send()
+        .expect(200);
+    } finally {
+      validFetchSpy.restore();
     }
   }
 });
@@ -157,9 +230,19 @@ test('should preview link', async t => {
     {
       status: 204,
       method: 'OPTIONS',
+      headers: {
+        'Access-Control-Request-Headers': 'content-type, x-affine-version',
+      },
       checker: (res: Response) => {
-        if (!res.headers['access-control-allow-methods']) {
-          throw new Error('Missing CORS headers');
+        if (
+          !res.headers['access-control-allow-methods'] ||
+          !res.headers['access-control-allow-headers']
+            ?.toLowerCase()
+            .includes('x-affine-version')
+        ) {
+          throw new Error(
+            `Missing CORS headers: ${JSON.stringify(res.headers)}`
+          );
         }
       },
     }
@@ -190,7 +273,8 @@ test('should preview link', async t => {
   );
 
   {
-    const fakeHTML = new Response(`
+    const pageUrl = `http://external.com/page-${Date.now()}`;
+    const fakeHTML = `
         <html>
           <head>
             <meta property="og:title" content="Test Title" />
@@ -201,13 +285,18 @@ test('should preview link', async t => {
             <title>Fallback Title</title>
           </body>
         </html>
-      `);
+      `;
 
-    Object.defineProperty(fakeHTML, 'url', {
-      value: 'http://example.com/page',
+    const fetchSpy = stubSafeFetch(request => {
+      if (request.url.includes('/favicon.ico')) {
+        return { status: 204, finalUrl: request.url };
+      }
+      return {
+        body: fakeHTML,
+        finalUrl: 'http://example.com/page',
+        headers: { 'content-type': 'text/html;charset=UTF-8' },
+      };
     });
-
-    const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
     try {
       await assertAndSnapshot(
         '/api/worker/link-preview',
@@ -215,11 +304,43 @@ test('should preview link', async t => {
         {
           status: 200,
           method: 'POST',
-          body: { url: 'http://external.com/page' },
+          body: { url: pageUrl, include: ['transcript'] },
         }
       );
     } finally {
       fetchSpy.restore();
+    }
+  }
+
+  {
+    const secret = `secret-${Date.now()}`;
+    const pageUrl = `http://external.com/private/page?token=${secret}&user=name`;
+    const logSpies = [
+      Sinon.spy(Logger.prototype, 'debug'),
+      Sinon.spy(Logger.prototype, 'warn'),
+      Sinon.spy(Logger.prototype, 'error'),
+    ];
+    const fetchSpy = stubSafeFetch(request => ({
+      body: '<title>Safe log test</title>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    }));
+    try {
+      await t.context.app
+        .POST('/api/worker/link-preview')
+        .set('Origin', 'http://localhost:3010')
+        .send({ url: pageUrl })
+        .expect(200);
+      const logged = logSpies
+        .flatMap(spy => spy.getCalls())
+        .map(call => JSON.stringify(call.args))
+        .join('\n');
+      t.true(logged.includes('http://external.com/private/page'));
+      t.false(logged.includes(secret));
+      t.false(logged.includes('?token='));
+    } finally {
+      fetchSpy.restore();
+      logSpies.forEach(spy => spy.restore());
     }
   }
 
@@ -244,6 +365,7 @@ test('should preview link', async t => {
     ];
 
     for (const { content, charset } of encoded) {
+      const pageUrl = `http://example.com/${charset}-${Date.now()}`;
       const before = Buffer.from(`<html>
           <head>
             <meta http-equiv="Content-Type" content="text/html; charset=${charset}" />
@@ -253,13 +375,18 @@ test('should preview link', async t => {
           </head>
         </html>
       `);
-      const fakeHTML = new Response(Buffer.concat([before, encoded, after]));
+      const fakeHTML = Buffer.concat([before, encoded, after]);
 
-      Object.defineProperty(fakeHTML, 'url', {
-        value: `http://example.com/${charset}`,
+      const fetchSpy = stubSafeFetch(request => {
+        if (request.url.includes('/favicon.ico')) {
+          return { status: 204, finalUrl: request.url };
+        }
+        return {
+          body: fakeHTML,
+          finalUrl: `http://example.com/${charset}`,
+          headers: { 'content-type': `text/html;charset=${charset}` },
+        };
       });
-
-      const fetchSpy = Sinon.stub(global, 'fetch').resolves(fakeHTML);
       try {
         await assertAndSnapshot(
           '/api/worker/link-preview',
@@ -267,12 +394,83 @@ test('should preview link', async t => {
           {
             status: 200,
             method: 'POST',
-            body: { url: `http://example.com/${charset}` },
+            body: { url: pageUrl },
           }
         );
       } finally {
         fetchSpy.restore();
       }
     }
+  }
+});
+
+test('should not forward Accept-Encoding when fetching a link-preview target', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: '<html><head><meta property="og:title" content="Test" /></head></html>',
+      finalUrl: request.url,
+      headers: { 'content-type': 'text/html;charset=UTF-8' },
+    };
+  });
+
+  try {
+    const pageUrl = `http://external.com/accept-encoding-${Date.now()}`;
+    await t.context.app
+      .POST('/api/worker/link-preview')
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send({ url: pageUrl })
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
+  }
+});
+
+test('should not forward Accept-Encoding when proxying an image', async t => {
+  const capturedHeaders: Record<string, string>[] = [];
+  const fakeBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jfJ8AAAAASUVORK5CYII=',
+    'base64'
+  );
+  const fetchSpy = stubSafeFetch(request => {
+    capturedHeaders.push(
+      (request as { headers?: Record<string, string> }).headers ?? {}
+    );
+    return {
+      body: fakeBuffer,
+      headers: { 'content-type': 'image/png' },
+    };
+  });
+
+  try {
+    const imageUrl = `http://example.com/accept-encoding-${Date.now()}.png`;
+    await t.context.app
+      .GET(`/api/worker/image-proxy?url=${imageUrl}`)
+      .set('Origin', 'http://localhost:3010')
+      .set('Accept-Encoding', 'gzip, deflate, br')
+      .send()
+      .expect(200);
+
+    t.true(capturedHeaders.length > 0, 'expected at least one fetch');
+    for (const headers of capturedHeaders) {
+      t.false(
+        Object.keys(headers).some(k => k.toLowerCase() === 'accept-encoding'),
+        'Accept-Encoding should not be forwarded to the fetch target'
+      );
+    }
+  } finally {
+    fetchSpy.restore();
   }
 });

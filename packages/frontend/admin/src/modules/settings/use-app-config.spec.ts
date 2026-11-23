@@ -101,13 +101,7 @@ describe('useAppConfig', () => {
     mocked.notifySuccessMock.mockReset();
     mocked.notifyErrorMock.mockReset();
 
-    mocked.mutateMock.mockImplementation(async updater => {
-      const currentState = mocked.getQueryState();
-      if (typeof updater === 'function') {
-        mocked.setQueryState(updater(currentState));
-      }
-      return mocked.getQueryState();
-    });
+    mocked.mutateMock.mockImplementation(async () => mocked.getQueryState());
   });
 
   test('clears dirty state when value is changed back to original', () => {
@@ -160,6 +154,12 @@ describe('useAppConfig', () => {
         },
       },
     });
+    mocked.mutateMock.mockResolvedValue({
+      appConfig: {
+        ...mocked.getQueryState().appConfig,
+        server: { name: 'AFFiNE Cloud', hosts: ['localhost'] },
+      },
+    });
 
     await act(async () => {
       await result.current.saveGroup('server');
@@ -189,5 +189,21 @@ describe('useAppConfig', () => {
     });
 
     expect(result.current.isGroupDirty('storages')).toBe(true);
+  });
+
+  test('clear sends an explicit clear operation', async () => {
+    const { result } = renderHook(() => useAppConfig());
+
+    act(() => {
+      result.current.clear('server/name');
+    });
+    expect(result.current.isGroupDirty('server')).toBe(true);
+
+    await act(async () => {
+      await result.current.saveGroup('server');
+    });
+    expect(mocked.saveUpdatesMock).toHaveBeenCalledWith({
+      updates: [{ module: 'server', key: 'name', clear: true }],
+    });
   });
 });

@@ -256,15 +256,17 @@ export class RecordDetail extends SignalWatcher(
               );
             }
           )}
-          ${!this.readonly
-            ? html` <div
-                class="add-property"
-                @click="${this._clickAddProperty}"
-              >
-                <div class="icon">${PlusIcon()}</div>
-                Add Property
-              </div>`
-            : nothing}
+          ${
+            !this.readonly
+              ? html` <div
+                  class="add-property"
+                  @click="${this._clickAddProperty}"
+                >
+                  <div class="icon">${PlusIcon()}</div>
+                  Add Property
+                </div>`
+              : nothing
+          }
         </div>
         ${keyed(this.rowId, this.renderNote())}
       </div>

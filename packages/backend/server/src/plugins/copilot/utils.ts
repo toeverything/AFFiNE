@@ -67,14 +67,21 @@ export function getTools(
       case 'searchWorkspace':
         if (value === false) {
           result = result.filter(tool => {
-            return tool !== 'docKeywordSearch' && tool !== 'docSemanticSearch';
+            return tool !== 'docSearch';
           });
         }
         break;
       case 'readingDocs':
         if (value === false) {
           result = result.filter(tool => {
-            return tool !== 'docRead';
+            return ![
+              'docRead',
+              'docCanvasRead',
+              'frontendGetEditorState',
+              'frontendReadSelection',
+              'frontendReadNodes',
+              'frontendSnapshotDocument',
+            ].includes(tool);
           });
         }
         break;

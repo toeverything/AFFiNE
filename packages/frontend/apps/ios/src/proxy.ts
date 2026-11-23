@@ -1,65 +1,34 @@
-import { openDB } from 'idb';
+import { canonicalAuthEndpoint } from '@affine/mobile-shared/auth/endpoint';
+import {
+  type AuthRequestProvider,
+  installAuthRequestProxy,
+} from '@affine/mobile-shared/auth/request';
 
-/**
- * the below code includes the custom fetch and xmlhttprequest implementation for ios webview.
- * should be included in the entry file of the app or webworker.
- */
-const rawFetch = globalThis.fetch;
-globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const request = new Request(input, init);
+import { Auth } from './plugins/auth';
 
-  const origin = new URL(request.url, globalThis.location.origin).origin;
-
-  const token = await readEndpointToken(origin);
-  if (token) {
-    request.headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  return rawFetch(request);
+export const authRequestProvider: AuthRequestProvider = {
+  async getValidAccessToken(endpoint) {
+    const { token } = await Auth.getValidAccessToken({
+      endpoint: canonicalAuthEndpoint(endpoint),
+    });
+    return token ?? null;
+  },
+  async refreshAccessToken(endpoint) {
+    const { token } = await Auth.refreshAccessToken({
+      endpoint: canonicalAuthEndpoint(endpoint),
+    });
+    return token;
+  },
 };
 
-const rawXMLHttpRequest = globalThis.XMLHttpRequest;
-globalThis.XMLHttpRequest = class extends rawXMLHttpRequest {
-  override send(body?: Document | XMLHttpRequestBodyInit | null): void {
-    const origin = new URL(this.responseURL, globalThis.location.origin).origin;
+installAuthRequestProxy(authRequestProvider);
 
-    readEndpointToken(origin).then(
-      token => {
-        if (token) {
-          this.setRequestHeader('Authorization', `Bearer ${token}`);
-        }
-        return super.send(body);
-      },
-      () => {
-        throw new Error('Failed to read token');
-      }
-    );
-  }
-};
-
-export async function readEndpointToken(
-  endpoint: string
-): Promise<string | null> {
-  const idb = await openDB('affine-token', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('tokens')) {
-        db.createObjectStore('tokens', { keyPath: 'endpoint' });
-      }
-    },
-  });
-
-  const token = await idb.get('tokens', endpoint);
-  return token ? token.token : null;
+export function getValidAccessToken(endpoint: string) {
+  return authRequestProvider.getValidAccessToken(endpoint);
 }
 
-export async function writeEndpointToken(endpoint: string, token: string) {
-  const db = await openDB('affine-token', 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('tokens')) {
-        db.createObjectStore('tokens', { keyPath: 'endpoint' });
-      }
-    },
+export async function clearEndpointSession(endpoint: string) {
+  await Auth.clearEndpointSession({
+    endpoint: canonicalAuthEndpoint(endpoint),
   });
-
-  await db.put('tokens', { endpoint, token });
 }

@@ -45,7 +45,6 @@ export const MemberList = ({
   const handlePageChange = useCallback(
     (_: number, pageNum: number) => {
       membersService.members.setPageNum(pageNum);
-      membersService.members.revalidate();
     },
     [membersService]
   );
@@ -57,7 +56,7 @@ export const MemberList = ({
   return (
     <div>
       {pageMembers === undefined ? (
-        isLoading ? (
+        isLoading || !error ? (
           <MemberListFallback
             memberCount={
               memberCount
@@ -70,11 +69,7 @@ export const MemberList = ({
             }
           />
         ) : (
-          <span className={styles.errorStyle}>
-            {error
-              ? UserFriendlyError.fromAny(error).message
-              : 'Failed to load members'}
-          </span>
+          <MemberListError error={error} />
         )
       ) : (
         pageMembers?.map(member => (
@@ -278,19 +273,24 @@ const getMemberStatus = (member: Member): I18nString => {
   }
 };
 
+const getMembersFallbackHeight = (memberCount?: number) => {
+  if (memberCount) {
+    // height and margin-bottom
+    return memberCount * 58 + (memberCount - 1) * 6;
+  }
+  return 'auto';
+};
+
 export const MemberListFallback = ({
   memberCount,
 }: {
   memberCount?: number;
 }) => {
   // prevent page jitter
-  const height = useMemo(() => {
-    if (memberCount) {
-      // height and margin-bottom
-      return memberCount * 58 + (memberCount - 1) * 6;
-    }
-    return 'auto';
-  }, [memberCount]);
+  const height = useMemo(
+    () => getMembersFallbackHeight(memberCount),
+    [memberCount]
+  );
   const t = useI18n();
 
   return (
@@ -302,6 +302,34 @@ export const MemberListFallback = ({
     >
       <Loading size={20} />
       <span>{t['com.affine.settings.member.loading']()}</span>
+    </div>
+  );
+};
+
+export const MemberListError = ({
+  error,
+  memberCount,
+}: {
+  error?: unknown;
+  memberCount?: number;
+}) => {
+  const height = useMemo(
+    () => getMembersFallbackHeight(memberCount),
+    [memberCount]
+  );
+
+  return (
+    <div
+      style={{
+        height,
+      }}
+      className={styles.membersFallback}
+    >
+      <span className={styles.errorStyle}>
+        {error
+          ? UserFriendlyError.fromAny(error).message
+          : 'Failed to load members'}
+      </span>
     </div>
   );
 };

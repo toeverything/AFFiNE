@@ -38,6 +38,9 @@ public class InstallLicenseMutation: GraphQLMutation {
         "license": .variable("license")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      InstallLicenseMutation.Data.self
+    ] }
 
     public var installLicense: InstallLicense { __data["installLicense"] }
 
@@ -52,6 +55,10 @@ public class InstallLicenseMutation: GraphQLMutation {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .fragment(LicenseBody.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        InstallLicenseMutation.Data.InstallLicense.self,
+        LicenseBody.self
       ] }
 
       public var expiredAt: AffineGraphQL.DateTime? { __data["expiredAt"] }

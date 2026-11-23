@@ -9,7 +9,8 @@ import {
   Scrollable,
   Skeleton,
 } from '@affine/component';
-import { InvitationService } from '@affine/core/modules/cloud';
+import { AuthService, InvitationService } from '@affine/core/modules/cloud';
+import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type Notification,
   NotificationListService,
@@ -54,10 +55,18 @@ import * as styles from './list.style.css';
 export const NotificationList = () => {
   const t = useI18n();
   const notificationListService = useService(NotificationListService);
+  const authService = useService(AuthService);
+  const globalDialogService = useService(GlobalDialogService);
+  const authStatus = useLiveData(authService.session.status$);
   const notifications = useLiveData(notificationListService.notifications$);
   const isLoading = useLiveData(notificationListService.isLoading$);
   const error = useLiveData(notificationListService.error$);
   const hasMore = useLiveData(notificationListService.hasMore$);
+  const showLoadingMore =
+    authStatus === 'authenticated' &&
+    notifications.length > 0 &&
+    hasMore &&
+    isLoading;
   const loadMoreIndicatorRef = useRef<HTMLDivElement>(null);
 
   const userFriendlyError = useMemo(() => {
@@ -65,23 +74,31 @@ export const NotificationList = () => {
   }, [error]);
 
   useLayoutEffect(() => {
-    // reset the notification list when the component is mounted
     notificationListService.reset();
-    notificationListService.loadMore();
-  }, [notificationListService]);
+    if (authStatus === 'authenticated') notificationListService.loadMore();
+  }, [authStatus, notificationListService]);
 
   useEffect(() => {
     if (loadMoreIndicatorRef.current) {
       let previousIsIntersecting = false;
       return observeIntersection(loadMoreIndicatorRef.current, entity => {
-        if (entity.isIntersecting && !previousIsIntersecting && hasMore) {
+        if (
+          authStatus === 'authenticated' &&
+          entity.isIntersecting &&
+          !previousIsIntersecting &&
+          hasMore
+        ) {
           notificationListService.loadMore();
         }
         previousIsIntersecting = entity.isIntersecting;
       });
     }
     return;
-  }, [hasMore, notificationListService]);
+  }, [authStatus, hasMore, notificationListService]);
+
+  const handleSignIn = useCallback(() => {
+    globalDialogService.open('sign-in', {});
+  }, [globalDialogService]);
 
   const handleDeleteAll = useCallback(() => {
     notificationListService.readAllNotifications().catch(err => {
@@ -110,7 +127,9 @@ export const NotificationList = () => {
       </div>
       <Scrollable.Root className={styles.scrollRoot}>
         <Scrollable.Viewport className={styles.scrollViewport}>
-          {notifications.length > 0 ? (
+          {authStatus === 'unauthenticated' ? (
+            <NotificationSignIn onSignIn={handleSignIn} />
+          ) : notifications.length > 0 ? (
             <ul className={styles.itemList}>
               {notifications.map(notification => (
                 <li key={notification.id}>
@@ -118,26 +137,91 @@ export const NotificationList = () => {
                 </li>
               ))}
               {userFriendlyError && (
-                <div className={styles.error}>{userFriendlyError.message}</div>
+                <li>
+                  <NotificationError
+                    message={userFriendlyError.message}
+                    onRetry={() => notificationListService.retry()}
+                  />
+                </li>
               )}
             </ul>
           ) : isLoading ? (
             <NotificationItemSkeleton />
           ) : userFriendlyError ? (
-            <div className={styles.error}>{userFriendlyError.message}</div>
+            <NotificationErrorEmpty
+              message={userFriendlyError.message}
+              onRetry={() => notificationListService.retry()}
+            />
           ) : (
             <NotificationListEmpty />
           )}
 
           <div
             ref={loadMoreIndicatorRef}
-            className={hasMore ? styles.loadMoreIndicator : ''}
+            className={showLoadingMore ? styles.loadMoreIndicator : ''}
           >
-            {hasMore ? t['com.affine.notification.loading-more']() : null}
+            {showLoadingMore
+              ? t['com.affine.notification.loading-more']()
+              : null}
           </div>
         </Scrollable.Viewport>
         <Scrollable.Scrollbar />
       </Scrollable.Root>
+    </div>
+  );
+};
+
+const NotificationSignIn = ({ onSignIn }: { onSignIn: () => void }) => {
+  const t = useI18n();
+  return (
+    <div className={styles.listEmpty}>
+      <div className={styles.listEmptyIconContainer}>
+        <NotificationIcon width={24} height={24} />
+      </div>
+      <div className={styles.listEmptyTitle}>
+        {t['com.affine.ai.login-required.dialog-title']()}
+      </div>
+      <div className={styles.listEmptyDescription}>
+        {t['com.affine.notification.empty.description']()}
+      </div>
+      <Button variant="primary" onClick={onSignIn}>
+        {t['com.affine.ai.login-required.dialog-confirm']()}
+      </Button>
+    </div>
+  );
+};
+
+const NotificationErrorEmpty = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => {
+  const t = useI18n();
+  return (
+    <div className={styles.listEmpty}>
+      <div className={styles.listEmptyIconContainer}>
+        <NotificationIcon width={24} height={24} />
+      </div>
+      <div className={styles.errorEmptyTitle}>{message}</div>
+      <Button onClick={onRetry}>{t['Retry']()}</Button>
+    </div>
+  );
+};
+
+const NotificationError = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) => {
+  const t = useI18n();
+  return (
+    <div className={styles.error}>
+      <span>{message}</span>
+      <Button onClick={onRetry}>{t['Retry']()}</Button>
     </div>
   );
 };

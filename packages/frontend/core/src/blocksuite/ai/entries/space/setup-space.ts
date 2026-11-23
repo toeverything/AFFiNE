@@ -2,7 +2,7 @@ import type { RichText } from '@blocksuite/affine/rich-text';
 import { type EditorHost, TextSelection } from '@blocksuite/affine/std';
 
 import { handleInlineAskAIAction } from '../../actions/doc-handler';
-import { AIProvider } from '../../provider';
+import { hasAIRequestService } from '../../runtime/request';
 import type { AffineAIPanelWidget } from '../../widgets/ai-panel/ai-panel';
 
 function isSpaceEvent(event: KeyboardEvent) {
@@ -43,7 +43,7 @@ export function setupSpaceAIEntry(panel: AffineAIPanelWidget) {
     const host = panel.host;
     const keyboardState = ctx.get('keyboardState');
     const event = keyboardState.raw;
-    if (AIProvider.actions.chat && isSpaceEvent(event)) {
+    if (hasAIRequestService() && isSpaceEvent(event)) {
       // If the AI panel is in the input state and the input content is empty,
       // insert a space back into the editor.
       if (panel.state === 'input') {

@@ -1,13 +1,26 @@
+import type { ReadonlySignal } from '@preact/signals-core';
+
+import { multiSelectPropertyType } from '../../property-presets/multi-select/define.js';
+import { selectPropertyType } from '../../property-presets/select/define.js';
 import type { TableViewSelectionWithType } from './selection';
 import { TableViewRowSelection } from './selection';
 
 export interface TableCell {
   rowId: string;
+  setTagDraft?(value: string): void;
 }
 
-export type ColumnAccessor<T extends TableCell> = (
-  cell: T
-) => { valueSetFromString(rowId: string, value: string): void } | undefined;
+const TAG_COLUMN_TYPES = new Set<string>([
+  selectPropertyType.type,
+  multiSelectPropertyType.type,
+]);
+
+export type ColumnAccessor<T extends TableCell> = (cell: T) =>
+  | {
+      valueSetFromString(rowId: string, value: string): void;
+      type$: ReadonlySignal<string>;
+    }
+  | undefined;
 
 export interface StartEditOptions<T extends TableCell> {
   event: KeyboardEvent;
@@ -48,7 +61,13 @@ export function handleCharStartEdit<T extends TableCell>(
     );
     if (cell) {
       const column = getColumn(cell);
-      column?.valueSetFromString(cell.rowId, event.key);
+      if (column) {
+        if (TAG_COLUMN_TYPES.has(column.type$.value) && cell.setTagDraft) {
+          cell.setTagDraft(event.key);
+        } else {
+          column.valueSetFromString(cell.rowId, event.key);
+        }
+      }
       updateSelection({ ...selection, isEditing: true });
       event.preventDefault();
       return true;

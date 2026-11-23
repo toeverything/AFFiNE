@@ -152,35 +152,43 @@ export class ActionWrapper extends WithDisposable(LitElement) {
           <div>${this.promptShow ? ArrowDownIcon() : ArrowUpIcon()}</div>
         </div>
       </div>
-      ${this.promptShow
-        ? html`
-            <div class="answer-prompt" data-testid="answer-prompt">
-              <div class="subtitle">Answer</div>
-              ${HISTORY_IMAGE_ACTIONS.includes(item.action)
-                ? images &&
-                  html`<chat-content-images
-                    .images=${images}
-                    data-testid="generated-image"
-                  ></chat-content-images>`
-                : nothing}
-              ${answer
-                ? createTextRenderer({
-                    customHeading: true,
-                    testId: 'chat-message-action-answer',
-                    theme: this.host.std.get(ThemeProvider).app$,
-                  })(answer)
-                : nothing}
-              ${originalText
-                ? html`<div class="subtitle prompt">Prompt</div>
-                    ${createTextRenderer({
-                      customHeading: true,
-                      testId: 'chat-message-action-prompt',
-                      theme: this.host.std.get(ThemeProvider).app$,
-                    })(item.messages[0].content + originalText)}`
-                : nothing}
-            </div>
-          `
-        : nothing} `;
+      ${
+        this.promptShow
+          ? html`
+              <div class="answer-prompt" data-testid="answer-prompt">
+                <div class="subtitle">Answer</div>
+                ${
+                  HISTORY_IMAGE_ACTIONS.includes(item.action)
+                    ? images &&
+                      html`<chat-content-images
+                        .images=${images}
+                        data-testid="generated-image"
+                      ></chat-content-images>`
+                    : nothing
+                }
+                ${
+                  answer
+                    ? createTextRenderer({
+                        customHeading: true,
+                        testId: 'chat-message-action-answer',
+                        theme: this.host.std.get(ThemeProvider).app$,
+                      })(answer)
+                    : nothing
+                }
+                ${
+                  originalText
+                    ? html`<div class="subtitle prompt">Prompt</div>
+                        ${createTextRenderer({
+                          customHeading: true,
+                          testId: 'chat-message-action-prompt',
+                          theme: this.host.std.get(ThemeProvider).app$,
+                        })(item.messages[0].content + originalText)}`
+                    : nothing
+                }
+              </div>
+            `
+          : nothing
+      } `;
   }
 }
 

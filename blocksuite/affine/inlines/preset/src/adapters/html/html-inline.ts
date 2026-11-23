@@ -320,9 +320,21 @@ export const htmlMarkElementToDeltaMatcher = HtmlASTToDeltaExtension({
     if (!isElement(ast)) {
       return [];
     }
+    const dataColor =
+      typeof ast.properties?.dataColor === 'string'
+        ? ast.properties.dataColor
+        : '';
+    const colorName =
+      dataColor &&
+      /^(red|orange|yellow|green|teal|blue|purple|grey)$/.test(dataColor)
+        ? dataColor
+        : 'yellow';
     return ast.children.flatMap(child =>
       context.toDelta(child, { trim: false }).map(delta => {
-        delta.attributes = { ...delta.attributes };
+        delta.attributes = {
+          ...delta.attributes,
+          background: `var(--affine-text-highlight-${colorName})`,
+        };
         return delta;
       })
     );

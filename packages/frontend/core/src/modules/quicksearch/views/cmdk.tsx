@@ -20,10 +20,12 @@ import { HighlightText } from './highlight-text';
 
 type Groups = { group?: QuickSearchGroup; items: QuickSearchItem[] }[];
 
+const EMPTY_GROUPS: Groups = [];
+
 export const CMDK = ({
   className,
   query,
-  groups: newGroups = [],
+  groups: newGroups = EMPTY_GROUPS,
   error,
   inputLabel,
   placeholder,

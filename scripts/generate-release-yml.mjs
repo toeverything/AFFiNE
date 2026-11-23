@@ -11,6 +11,7 @@ const filenamesMapping = {
 };
 
 const releaseFiles = ['zip', 'exe', 'dmg', 'appimage', 'deb', 'flatpak'];
+const releaseMetadata = {};
 
 const generateYml = platform => {
   const yml = {
@@ -70,8 +71,14 @@ const generateYml = platform => {
     `releaseDate: ${yml.releaseDate}\n`;
 
   fs.writeFileSync(path.join(releaseDir, outputFileName), ymlStr);
+  releaseMetadata[outputFileName] = yml;
 };
 
 generateYml('macos');
 generateYml('linux');
 generateYml('all');
+
+fs.writeFileSync(
+  path.join(releaseDir, 'release-metadata.json'),
+  JSON.stringify(releaseMetadata)
+);

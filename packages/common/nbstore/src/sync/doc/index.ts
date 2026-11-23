@@ -1,17 +1,24 @@
-import type { Observable } from 'rxjs';
 import {
+  BehaviorSubject,
   combineLatest,
   filter,
   first,
   lastValueFrom,
   map,
+  Observable,
   of,
   ReplaySubject,
   share,
+  switchMap,
   throttleTime,
 } from 'rxjs';
 
-import type { DocStorage, DocSyncStorage } from '../../storage';
+import type {
+  DocClock,
+  DocStorage,
+  DocSyncStorage,
+  PeerWorkspaceState,
+} from '../../storage';
 import { DummyDocStorage } from '../../storage/dummy/doc';
 import { DummyDocSyncStorage } from '../../storage/dummy/doc-sync';
 import { takeUntilAbort } from '../../utils/take-until-abort';
@@ -25,6 +32,7 @@ export interface DocSyncState {
   synced: boolean;
   retrying: boolean;
   errorMessage: string | null;
+  error?: { docId: string; name: string; data?: unknown };
 }
 
 export interface DocSyncDocState {
@@ -34,7 +42,12 @@ export interface DocSyncDocState {
   errorMessage: string | null;
 }
 
+const RESET_SYNC_CONNECT_TIMEOUT_MS = 30_000;
+
 export interface DocSync {
+  readonly workspaceState$: Observable<PeerWorkspaceState | null>;
+  createDoc(docId: string): Promise<DocClock>;
+  refreshWorkspaceState(): Promise<void>;
   readonly state$: Observable<DocSyncState>;
   docState$(docId: string): Observable<DocSyncDocState>;
   waitForSynced(docId?: string, abort?: AbortSignal): Promise<void>;
@@ -43,17 +56,74 @@ export interface DocSync {
 }
 
 export class DocSyncImpl implements DocSync {
-  private readonly peers: DocSyncPeer[] = Object.entries(
-    this.storages.remotes
-  ).map(
-    ([peerId, remote]) =>
-      new DocSyncPeer(peerId, this.storages.local, this.sync, remote)
-  );
-  private abort: AbortController | null = null;
+  private readonly peers$ = new BehaviorSubject<DocSyncPeer[]>([]);
+  private usesWorkspaceState = false;
+  private readonly deletedDocs = new Set<string>();
 
-  private readonly _state$ = combineLatest(
-    this.peers.map(peer => peer.peerState$)
-  ).pipe(
+  isDeleted(docId: string) {
+    return this.deletedDocs.has(docId);
+  }
+
+  async removeDocs(docIds: readonly string[]) {
+    for (const docId of docIds) this.deletedDocs.add(docId);
+    await Promise.all(this.peers.map(peer => peer.removeDocs(docIds)));
+  }
+  private get peers() {
+    return this.peers$.value;
+  }
+
+  setRemotes(remotes: Record<string, DocStorage>) {
+    this.usesWorkspaceState ||= Object.values(remotes).some(
+      remote => !!remote.workspaceStateScope
+    );
+    this.storages.remotes = remotes;
+    this.peers$.next(
+      Object.entries(remotes).map(
+        ([id, remote]) =>
+          this.peers.find(
+            peer => peer.peerId === id && peer.remote === remote
+          ) ??
+          new DocSyncPeer(id, this.storages.local, this.sync, remote, {
+            isDeleted: docId => this.isDeleted(docId),
+            mergeUpdates: this.options?.mergeUpdates,
+          })
+      )
+    );
+  }
+  private abort: AbortController | null = null;
+  private running: Promise<void> = Promise.resolve();
+  private resetting: Promise<void> | null = null;
+
+  readonly workspaceState$ = this.peers$.pipe(
+    switchMap(
+      peers =>
+        peers.find(peer => peer.remote.workspaceStateScope)?.workspaceState$ ??
+        of(
+          this.usesWorkspaceState
+            ? { ready: false, cacheToken: 0, docs: [], clocks: {} }
+            : null
+        )
+    ),
+    share({
+      connector: () => new ReplaySubject<PeerWorkspaceState | null>(1),
+      resetOnRefCountZero: true,
+    })
+  );
+
+  createDoc(docId: string) {
+    const peer = this.peers.find(peer => peer.remote.workspaceStateScope);
+    if (!peer) throw new Error('Cloud document creation is unavailable');
+    return peer.createDoc(docId);
+  }
+
+  async refreshWorkspaceState() {
+    await Promise.all(this.peers.map(peer => peer.refreshWorkspaceState()));
+  }
+
+  private readonly _state$ = this.peers$.pipe(
+    switchMap(peers =>
+      peers.length ? combineLatest(peers.map(peer => peer.peerState$)) : of([])
+    ),
     map(allPeers =>
       allPeers.length === 0
         ? {
@@ -73,6 +143,7 @@ export class DocSyncImpl implements DocSync {
             retrying: allPeers.some(peer => peer.retrying),
             errorMessage:
               allPeers.find(peer => peer.errorMessage)?.errorMessage ?? null,
+            error: allPeers.find(peer => peer.error)?.error,
           }
     ),
     share({
@@ -90,8 +161,15 @@ export class DocSyncImpl implements DocSync {
 
   constructor(
     readonly storages: PeerStorageOptions<DocStorage>,
-    readonly sync: DocSyncStorage
-  ) {}
+    readonly sync: DocSyncStorage,
+    private readonly options?: {
+      mergeUpdates?: (
+        updates: Uint8Array[]
+      ) => Promise<Uint8Array> | Uint8Array;
+    }
+  ) {
+    this.setRemotes(storages.remotes);
+  }
 
   /**
    * for testing
@@ -107,15 +185,12 @@ export class DocSyncImpl implements DocSync {
   }
 
   private _docState$(docId: string): Observable<DocSyncDocState> {
-    if (this.peers.length === 0) {
-      return of({
-        errorMessage: null,
-        retrying: false,
-        syncing: false,
-        synced: true,
-      });
-    }
-    return combineLatest(this.peers.map(peer => peer.docState$(docId))).pipe(
+    return this.peers$.pipe(
+      switchMap(peers =>
+        peers.length
+          ? combineLatest(peers.map(peer => peer.docState$(docId)))
+          : of([])
+      ),
       map(allPeers => {
         return {
           errorMessage:
@@ -155,31 +230,82 @@ export class DocSyncImpl implements DocSync {
     if (this.abort) {
       this.abort.abort(MANUALLY_STOP);
     }
+    const previous = this.running;
     const abort = new AbortController();
     this.abort = abort;
-    Promise.allSettled(
-      this.peers.map(peer => peer.mainLoop(abort.signal))
-    ).catch(error => {
-      console.error(error);
+    this.running = previous.then(async () => {
+      if (abort.signal.aborted) {
+        return;
+      }
+      await Promise.allSettled(
+        this.peers.map(peer => peer.mainLoop(abort.signal))
+      );
     });
   }
 
   stop() {
     this.abort?.abort(MANUALLY_STOP);
     this.abort = null;
+    return this.running;
   }
 
   addPriority(id: string, priority: number) {
-    const undo = this.peers.map(peer => peer.addPriority(id, priority));
-    return () => undo.forEach(fn => fn());
+    const subscription = this.peers$
+      .pipe(
+        switchMap(
+          peers =>
+            new Observable(() => {
+              const undo = peers.map(peer => peer.addPriority(id, priority));
+              return () => undo.forEach(dispose => dispose());
+            })
+        )
+      )
+      .subscribe();
+    return () => subscription.unsubscribe();
   }
 
-  async resetSync() {
+  resetSync() {
+    if (this.resetting) {
+      return this.resetting;
+    }
+    const resetting = this.performReset().finally(() => {
+      if (this.resetting === resetting) {
+        this.resetting = null;
+      }
+    });
+    this.resetting = resetting;
+    return resetting;
+  }
+
+  private async performReset() {
     const running = this.abort !== null;
-    this.stop();
-    await this.sync.clearClocks();
-    if (running) {
-      this.start();
+    const shouldConnectSyncStorage =
+      this.sync.connection.status === 'idle' ||
+      this.sync.connection.status === 'closed';
+    await this.stop();
+    if (shouldConnectSyncStorage) {
+      this.sync.connection.connect();
+    }
+    const abort = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abort.abort(new Error('Connect to remote timeout'));
+    }, RESET_SYNC_CONNECT_TIMEOUT_MS) as ReturnType<typeof setTimeout> & {
+      unref?: () => void;
+    };
+    timeoutId.unref?.();
+    try {
+      await this.sync.connection.waitForConnected(abort.signal);
+      await this.sync.clearClocks();
+    } catch (error) {
+      console.error('Failed to reset sync', error);
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (running) {
+        this.start();
+      } else if (shouldConnectSyncStorage) {
+        this.sync.connection.disconnect();
+      }
     }
   }
 }

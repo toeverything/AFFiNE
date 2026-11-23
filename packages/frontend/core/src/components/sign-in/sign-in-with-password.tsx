@@ -11,6 +11,7 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import {
   AuthService,
   CaptchaService,
+  getSelfHostedServerName,
   ServerService,
 } from '@affine/core/modules/cloud';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
@@ -58,6 +59,9 @@ export const SignInWithPasswordStep = ({
   const serverName = useLiveData(
     serverService.server.config$.selector(c => c.serverName)
   );
+  const signInServerName = isSelfhosted
+    ? getSelfHostedServerName(serverName)
+    : serverName;
 
   const verifyToken = useLiveData(captchaService.verifyToken$);
   const needCaptcha = useLiveData(captchaService.needCaptcha$);
@@ -85,7 +89,6 @@ export const SignInWithPasswordStep = ({
     setIsLoading(true);
 
     try {
-      captchaService.revalidate();
       await authService.signInPassword({
         email,
         password,
@@ -111,6 +114,7 @@ export const SignInWithPasswordStep = ({
             : t[`error.${error.name}`](error.data),
         });
       }
+      captchaService.revalidate();
     } finally {
       setIsLoading(false);
     }
@@ -134,32 +138,54 @@ export const SignInWithPasswordStep = ({
     <AuthContainer>
       <AuthHeader
         title={t['com.affine.auth.sign.in']()}
-        subTitle={serverName}
+        subTitle={signInServerName}
       />
 
       <AuthContent>
-        <AuthInput
-          label={t['com.affine.settings.email']()}
-          disabled={true}
-          value={email}
-        />
-        <AuthInput
-          autoFocus
-          data-testid="password-input"
-          label={t['com.affine.auth.password']()}
-          value={password}
-          type="password"
-          onChange={(value: string) => {
-            setPassword(value);
-            if (passwordError) {
-              setPasswordError(false);
-              setPasswordErrorHint(t['com.affine.auth.password.error']());
-            }
+        <form
+          onSubmit={event => {
+            event.preventDefault();
+            onSignIn();
           }}
-          error={passwordError}
-          errorHint={passwordErrorHint}
-          onEnter={onSignIn}
-        />
+        >
+          <AuthInput
+            label={t['com.affine.settings.email']()}
+            readOnly={true}
+            value={email}
+            type="email"
+            name="username"
+            autoComplete="username"
+          />
+          <AuthInput
+            autoFocus
+            data-testid="password-input"
+            label={t['com.affine.auth.password']()}
+            value={password}
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            onChange={(value: string) => {
+              setPassword(value);
+              if (passwordError) {
+                setPasswordError(false);
+                setPasswordErrorHint(t['com.affine.auth.password.error']());
+              }
+            }}
+            error={passwordError}
+            errorHint={passwordErrorHint}
+            onEnter={onSignIn}
+          />
+          {!verifyToken && needCaptcha && <Captcha />}
+          <Button
+            data-testid="sign-in-button"
+            variant="primary"
+            size="extraLarge"
+            style={{ width: '100%' }}
+            disabled={isLoading || (!verifyToken && needCaptcha)}
+          >
+            {t['com.affine.auth.sign.in']()}
+          </Button>
+        </form>
         {!isSelfhosted && (
           <div className={styles.passwordButtonRow}>
             <a
@@ -171,17 +197,6 @@ export const SignInWithPasswordStep = ({
             </a>
           </div>
         )}
-        {!verifyToken && needCaptcha && <Captcha />}
-        <Button
-          data-testid="sign-in-button"
-          variant="primary"
-          size="extraLarge"
-          style={{ width: '100%' }}
-          disabled={isLoading || (!verifyToken && needCaptcha)}
-          onClick={onSignIn}
-        >
-          {t['com.affine.auth.sign.in']()}
-        </Button>
       </AuthContent>
       <AuthFooter>
         <Back changeState={changeState} />

@@ -56,7 +56,7 @@ export function autoUpdatePosition(
   flavour: string,
   placement: ToolbarPlacement,
   sideOptions: Partial<SideObject> | null,
-  options: AutoUpdateOptions = { elementResize: false, animationFrame: true }
+  options: AutoUpdateOptions = { elementResize: false }
 ) {
   const isInline = flavour === 'affine:note';
   const hasSurfaceScope = flavour.includes('surface');
@@ -147,7 +147,7 @@ export function autoUpdatePosition(
     () => {
       update().catch(console.error);
     },
-    options
+    { animationFrame: hasSurfaceScope, ...options }
   );
 }
 
@@ -390,9 +390,11 @@ function renderActionItem(action: ToolbarAction, context: ToolbarContext) {
       @click=${() => action.run?.(context)}
     >
       ${action.icon}
-      ${action.showLabel && action.label
-        ? html`<span class="label">${action.label}</span>`
-        : null}
+      ${
+        action.showLabel && action.label
+          ? html`<span class="label">${action.label}</span>`
+          : null
+      }
     </editor-icon-button>
   `;
 }

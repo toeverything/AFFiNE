@@ -5,7 +5,6 @@ import {
   listNotificationsQuery,
   MentionNotificationBodyType,
   mentionUserMutation,
-  notificationCountQuery,
   NotificationObjectType,
   NotificationType,
   readAllNotificationsMutation,
@@ -13,6 +12,7 @@ import {
 } from '@affine/graphql';
 
 import { Mockers } from '../../mocks';
+import { createRealtimeClient, realtimeRequest } from '../realtime';
 import { app, e2e } from '../test';
 
 async function init() {
@@ -120,6 +120,51 @@ e2e('should mention user in a doc', async t => {
   t.is(body2.workspace!.name, 'test-workspace-name');
   t.falsy(body2.workspace!.avatarUrl);
 });
+
+e2e(
+  'notification totalCount selection does not load the notification list',
+  async t => {
+    const { member, owner, workspace } = await init();
+
+    await app.login(owner);
+    await app.gql({
+      query: mentionUserMutation,
+      variables: {
+        input: {
+          userId: member.id,
+          workspaceId: workspace.id,
+          doc: {
+            id: 'count-only-doc',
+            title: 'count-only-doc',
+            mode: DocMode.page,
+          },
+        },
+      },
+    });
+
+    await app.login(member);
+    const result = (await app.gql({
+      query: {
+        ...listNotificationsQuery,
+        op: 'CountOnlyNotifications',
+        query: `
+        query CountOnlyNotifications($pagination: PaginationInput!) {
+          currentUser {
+            notifications(pagination: $pagination) {
+              totalCount
+            }
+          }
+      }
+      `,
+      },
+      variables: { pagination: { first: 10, offset: 0 } },
+    })) as unknown as {
+      currentUser: { notifications: { totalCount: number } };
+    };
+
+    t.is(result.currentUser.notifications.totalCount, 1);
+  }
+);
 
 e2e('should mention doc mode support string value', async t => {
   const { member, owner, workspace } = await init();
@@ -270,10 +315,10 @@ e2e('should mark notification as read', async t => {
       },
     });
   }
-  const count = await app.gql({
-    query: notificationCountQuery,
-  });
-  t.is(count.currentUser!.notifications.totalCount, 0);
+  const socket = await createRealtimeClient(app, member);
+  t.teardown(() => socket.disconnect());
+  const count = await realtimeRequest(socket, 'notification.count.get', {});
+  t.is(count.count, 0);
 
   // read again should work
   for (const notification of notifications) {

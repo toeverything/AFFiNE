@@ -16,7 +16,6 @@ public struct AdminUpdateWorkspaceInput: InputObject {
     enableDocEmbedding: GraphQLNullable<Bool> = nil,
     enableSharing: GraphQLNullable<Bool> = nil,
     enableUrlPreview: GraphQLNullable<Bool> = nil,
-    features: GraphQLNullable<[GraphQLEnum<FeatureType>]> = nil,
     id: String,
     name: GraphQLNullable<String> = nil,
     `public`: GraphQLNullable<Bool> = nil
@@ -27,7 +26,6 @@ public struct AdminUpdateWorkspaceInput: InputObject {
       "enableDocEmbedding": enableDocEmbedding,
       "enableSharing": enableSharing,
       "enableUrlPreview": enableUrlPreview,
-      "features": features,
       "id": id,
       "name": name,
       "public": `public`
@@ -57,11 +55,6 @@ public struct AdminUpdateWorkspaceInput: InputObject {
   public var enableUrlPreview: GraphQLNullable<Bool> {
     get { __data["enableUrlPreview"] }
     set { __data["enableUrlPreview"] = newValue }
-  }
-
-  public var features: GraphQLNullable<[GraphQLEnum<FeatureType>]> {
-    get { __data["features"] }
-    set { __data["features"] = newValue }
   }
 
   public var id: String {

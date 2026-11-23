@@ -213,9 +213,9 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
 
     return html`
       <div
-        class="doc-title-container ${isEmpty
-          ? 'doc-title-container-empty'
-          : ''}"
+        class="doc-title-container ${
+          isEmpty ? 'doc-title-container-empty' : ''
+        }"
         data-block-is-title="true"
       >
         <rich-text

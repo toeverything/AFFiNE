@@ -35,10 +35,6 @@ if (
 
 const cache = createEmotionCache();
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 export function App() {
   const isOnBattery = useIsOnBattery();
 
@@ -50,18 +46,14 @@ export function App() {
   }, [isOnBattery]);
 
   return (
-    <Suspense>
+    <Suspense fallback={<AppContainer fallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
               <DesktopLanguageSync />
-              <RouterProvider
-                fallbackElement={<AppContainer fallback />}
-                router={router}
-                future={future}
-              />
+              <RouterProvider router={router} />
               {environment.isWindows && (
                 <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
                   <WindowsAppControls />

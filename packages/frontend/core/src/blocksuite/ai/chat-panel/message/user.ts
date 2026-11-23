@@ -1,3 +1,4 @@
+import { I18n } from '@affine/i18n';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { css, html, nothing } from 'lit';
@@ -31,6 +32,14 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
     .text-content-wrapper {
       align-self: flex-end;
     }
+
+    .scope-receipt {
+      align-self: flex-end;
+      margin-top: 6px;
+      color: var(--affine-text-secondary-color);
+      font-size: 11px;
+      text-align: right;
+    }
   `;
 
   @property({ attribute: false })
@@ -41,14 +50,25 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
 
   renderContent() {
     const { item } = this;
+    const receipt = item.scopeSnapshot;
+    const showReceipt = receipt && receipt.selectors.length > 0;
+    const resolvedCount = receipt
+      ? receipt.requiredDocIds.length + receipt.requiredArtifactIds.length
+      : 0;
+    const selectorNames = receipt?.selectors.map(selector => {
+      if (selector.name) return selector.name;
+      return I18n[`com.affine.ai.chat-panel.scope.${selector.kind}`]();
+    });
 
     return html`
-      ${item.attachments
-        ? html`<chat-content-images
-            class="chat-content-images"
-            .images=${item.attachments}
-          ></chat-content-images>`
-        : nothing}
+      ${
+        item.attachments
+          ? html`<chat-content-images
+              class="chat-content-images"
+              .images=${item.attachments}
+            ></chat-content-images>`
+          : nothing
+      }
       <div
         class="text-content-wrapper"
         data-test-id="chat-content-user-text"
@@ -56,6 +76,17 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
       >
         <chat-content-pure-text .text=${item.content}></chat-content-pure-text>
       </div>
+      ${
+        showReceipt
+          ? html`<div class="scope-receipt" data-testid="chat-scope-receipt">
+              ${selectorNames?.join(', ')} ·
+              ${I18n['com.affine.ai.chat-panel.scope.sources']({
+                count: String(resolvedCount),
+              })}
+              · ${new Date(receipt.resolvedAt).toLocaleString()}
+            </div>`
+          : nothing
+      }
     `;
   }
 

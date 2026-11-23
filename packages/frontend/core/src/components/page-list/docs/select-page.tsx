@@ -20,8 +20,10 @@ import { AffineShapeIcon } from '..';
 import { SelectorLayout } from '../selector/selector-layout';
 import * as styles from './select-page.css';
 
+const EMPTY_INIT: string[] = [];
+
 export const SelectPage = memo(function SelectPage({
-  init = [],
+  init = EMPTY_INIT,
   onConfirm,
   onCancel,
   onChange: propsOnChange,

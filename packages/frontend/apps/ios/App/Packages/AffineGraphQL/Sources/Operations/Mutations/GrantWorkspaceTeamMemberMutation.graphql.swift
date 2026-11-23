@@ -42,6 +42,9 @@ public class GrantWorkspaceTeamMemberMutation: GraphQLMutation {
         "permission": .variable("permission")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      GrantWorkspaceTeamMemberMutation.Data.self
+    ] }
 
     public var grantMember: Bool { __data["grantMember"] }
   }

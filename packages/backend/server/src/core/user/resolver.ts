@@ -16,6 +16,8 @@ import { isNil, omitBy } from 'lodash-es';
 
 import {
   CannotDeleteOwnAccount,
+  EmailAlreadyUsed,
+  EventBus,
   type FileUpload,
   ImageFormatNotSupported,
   OneMB,
@@ -34,6 +36,7 @@ import { processImage } from '../../native';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import { Admin } from '../common';
 import { AvatarStorage } from '../storage';
 import { validators } from '../utils/validators';
@@ -144,7 +147,7 @@ export class UserResolver {
       await this.storage.delete(user.avatarUrl);
     }
 
-    return this.models.user.update(user.id, { avatarUrl });
+    return this.models.user.updateProfile(user.id, { avatarUrl });
   }
 
   @Mutation(() => UserType, {
@@ -160,7 +163,7 @@ export class UserResolver {
       return user;
     }
 
-    return sessionUser(await this.models.user.update(user.id, input));
+    return sessionUser(await this.models.user.updateProfile(user.id, input));
   }
 
   @Mutation(() => RemoveAvatar, {
@@ -171,7 +174,7 @@ export class UserResolver {
     if (!user) {
       throw new UserNotFound();
     }
-    await this.models.user.update(user.id, { avatarUrl: null });
+    await this.models.user.updateProfile(user.id, { avatarUrl: null });
     return { success: true };
   }
 
@@ -186,7 +189,10 @@ export class UserResolver {
 
 @Resolver(() => UserType)
 export class UserSettingsResolver {
-  constructor(private readonly models: Models) {}
+  constructor(
+    private readonly models: Models,
+    private readonly event: EventBus
+  ) {}
 
   @Mutation(() => Boolean, {
     name: 'updateSettings',
@@ -199,6 +205,7 @@ export class UserSettingsResolver {
   ) {
     UserSettingsSchema.parse(input);
     await this.models.userSettings.set(user.id, input);
+    this.event.emit('user.settings.updated', { userId: user.id });
     return true;
   }
 
@@ -266,7 +273,9 @@ const UserImportResultType = createUnionType({
 export class UserManagementResolver {
   constructor(
     private readonly db: PrismaClient,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly runtime: BackendRuntimeProvider,
+    private readonly event: EventBus
   ) {}
 
   @Query(() => Int, {
@@ -401,25 +410,65 @@ export class UserManagementResolver {
       return sessionUser(user);
     }
 
-    return sessionUser(
-      await this.models.user.update(user.id, {
-        email: input.email,
-        name: input.name,
-      })
-    );
+    if (input.email && input.email !== user.email) {
+      validators.assertValidEmail(input.email);
+      try {
+        await this.runtime.executeAuthSessionCommandV1({
+          action: 'set_user_email',
+          userId: user.id,
+          email: input.email,
+          reason: 'administrator_changed_email',
+        });
+      } catch (error) {
+        if (
+          String(error).includes('email_already_used') ||
+          String(error).includes('users_email_key')
+        ) {
+          throw new EmailAlreadyUsed();
+        }
+        throw error;
+      }
+    }
+    if (input.name !== undefined) {
+      await this.models.user.updateProfile(user.id, { name: input.name });
+    }
+    const updated = await this.models.user.get(user.id, { withDisabled: true });
+    if (!updated) throw new UserNotFound();
+    if (input.email && input.name === undefined)
+      this.event.emitDetached('user.updated', updated);
+    return sessionUser(updated);
   }
 
   @Mutation(() => UserType, {
     description: 'Ban an user',
   })
   async banUser(@Args('id') id: string): Promise<UserType> {
-    return sessionUser(await this.models.user.ban(id));
+    const recreated = await this.models.user.recreateForBan(id);
+    await this.runtime.executeAuthSessionCommandV1({
+      action: 'set_user_disabled',
+      userId: recreated.id,
+      disabled: true,
+      reason: 'user_deleted_or_disabled',
+    });
+    const disabled = await this.models.user.get(recreated.id, {
+      withDisabled: true,
+    });
+    if (!disabled) throw new UserNotFound();
+    return sessionUser(disabled);
   }
 
   @Mutation(() => UserType, {
     description: 'Reenable an banned user',
   })
   async enableUser(@Args('id') id: string): Promise<UserType> {
-    return sessionUser(await this.models.user.enable(id));
+    await this.runtime.executeAuthSessionCommandV1({
+      action: 'set_user_disabled',
+      userId: id,
+      disabled: false,
+      reason: 'administrator_enabled_user',
+    });
+    const user = await this.models.user.get(id, { withDisabled: true });
+    if (!user) throw new UserNotFound();
+    return sessionUser(user);
   }
 }

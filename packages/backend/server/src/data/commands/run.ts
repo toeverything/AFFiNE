@@ -1,9 +1,10 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
 import { once } from 'lodash-es';
-import { Command, CommandRunner } from 'nest-commander';
 
+import { BackendRuntimeProvider } from '../../core/backend-runtime';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import * as migrationImports from '../migrations';
 
 interface Migration {
@@ -13,6 +14,9 @@ interface Migration {
   down: (db: PrismaClient, injector: ModuleRef) => Promise<void>;
   order: number;
 }
+
+const LEGACY_CONTEXT_BLOB_ARTIFACT_MIGRATION =
+  'MigrateLegacyContextBlobArtifacts1786820000000';
 
 export const collectMigrations = once(() => {
   const migrations = Object.values(migrationImports).map(migration => {
@@ -35,20 +39,21 @@ export const collectMigrations = once(() => {
   return migrations.sort((a, b) => a.order - b.order);
 });
 
-@Command({
-  name: 'run',
-  description: 'Run all pending data migrations',
-})
-export class RunCommand extends CommandRunner {
+@Injectable()
+export class RunCommand {
   logger = new Logger(RunCommand.name);
   constructor(
     private readonly db: PrismaClient,
     private readonly injector: ModuleRef
-  ) {
-    super();
-  }
+  ) {}
 
-  override async run(): Promise<void> {
+  async execute(): Promise<void> {
+    await this.injector
+      .get(BackendRuntimeProvider, { strict: false })
+      .runMigrations();
+    await this.injector
+      .get(StorageRuntimeProvider, { strict: false })
+      .runMigrations();
     const migrations = collectMigrations();
     const done: Migration[] = [];
     for (const migration of migrations) {
@@ -91,6 +96,33 @@ export class RunCommand extends CommandRunner {
     await this.runMigration(migration);
   }
 
+  async admitLegacyContextBlobs(): Promise<void> {
+    const tables = await this.db.$queryRaw<
+      Array<{
+        contexts: string | null;
+        sessions: string | null;
+        blobs: string | null;
+        artifacts: string | null;
+      }>
+    >`
+      SELECT
+        to_regclass('public.ai_contexts')::text AS contexts,
+        to_regclass('public.ai_sessions_metadata')::text AS sessions,
+        to_regclass('public.blobs')::text AS blobs,
+        to_regclass('public.workspace_artifacts')::text AS artifacts
+    `;
+
+    const schemaExists = Object.values(tables[0] ?? {}).every(Boolean);
+    if (!schemaExists) {
+      this.logger.log(
+        'Skipping legacy context blob admission because its source schema is not present.'
+      );
+      return;
+    }
+
+    await this.runOne(LEGACY_CONTEXT_BLOB_ARTIFACT_MIGRATION);
+  }
+
   private async runMigration(migration: Migration) {
     this.logger.log(`Running ${migration.name}...`);
     const record = await this.db.dataMigration.upsert({
@@ -116,7 +148,7 @@ export class RunCommand extends CommandRunner {
       });
       await migration.down(this.db, this.injector);
       this.logger.error('Failed to run data migration', e);
-      process.exit(1);
+      throw e;
     }
 
     await this.db.dataMigration.update({
@@ -130,23 +162,16 @@ export class RunCommand extends CommandRunner {
   }
 }
 
-@Command({
-  name: 'revert',
-  arguments: '[name]',
-  description: 'Revert one data migration with given name',
-})
-export class RevertCommand extends CommandRunner {
+@Injectable()
+export class RevertCommand {
   logger = new Logger(RevertCommand.name);
 
   constructor(
     private readonly db: PrismaClient,
     private readonly injector: ModuleRef
-  ) {
-    super();
-  }
+  ) {}
 
-  override async run(inputs: string[]): Promise<void> {
-    const name = inputs[0];
+  async execute(name?: string): Promise<void> {
     if (!name) {
       throw new Error('A migration name is required');
     }

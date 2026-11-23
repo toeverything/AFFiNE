@@ -117,7 +117,9 @@ test('Should show no permission page when the share page is not found', async ({
   await page.goto('http://localhost:8080/workspace/abc/123');
 
   await expect(
-    page.getByText('You do not have access or this content does not exist.')
+    page.getByText(
+      'Sorry, you do not have access or this content does not exist...'
+    )
   ).toBeVisible();
 });
 

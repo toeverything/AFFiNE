@@ -3,7 +3,12 @@ import {
   docLinkBaseURLMiddleware,
   fileNameMiddleware,
   filePathMiddleware,
+  FULL_FILE_PATH_KEY,
+  getImageFullPath,
   MarkdownAdapter,
+  type MarkdownAST,
+  MarkdownASTToDeltaExtension,
+  normalizeFilePathReference,
   titleMiddleware,
 } from '@blocksuite/affine-shared/adapters';
 import { Container } from '@blocksuite/global/di';
@@ -11,6 +16,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { sha } from '@blocksuite/global/utils';
 import type {
   DocMeta,
+  DocSnapshot,
   ExtensionType,
   Schema,
   Store,
@@ -18,11 +24,20 @@ import type {
 } from '@blocksuite/store';
 import { extMimeMap, Transformer } from '@blocksuite/store';
 
+import {
+  blobsFromAssets,
+  type ImportBatch,
+  type ImportDoc,
+  type ImportFolder,
+} from './import-batch.js';
 import type { AssetMap, ImportedFileEntry, PathBlobIdMap } from './type.js';
 import { createAssetsArchive, download, parseMatter, Unzip } from './utils.js';
 
-type ParsedFrontmatterMeta = Partial<
-  Pick<DocMeta, 'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite'>
+export type ParsedFrontmatterMeta = Partial<
+  Pick<
+    DocMeta,
+    'title' | 'createDate' | 'updatedDate' | 'tags' | 'favorite' | 'trash'
+  >
 >;
 
 const FRONTMATTER_KEYS = {
@@ -57,6 +72,117 @@ const FRONTMATTER_KEYS = {
   favorite: ['favorite', 'favourite', 'star', 'starred', 'pinned'],
   trash: ['trash', 'trashed', 'deleted', 'archived'],
 };
+
+const MARKDOWN_ZIP_PAGE_ID_CONFIG_PREFIX = 'markdown-zip:page-id:';
+
+function normalizeMarkdownZipLookupPath(path: string) {
+  return normalizeFilePathReference(path).toLowerCase();
+}
+
+function stripMarkdownExtension(path: string) {
+  return path.replace(/\.md$/i, '');
+}
+
+function splitMarkdownLinkTarget(url: string) {
+  const queryIndex = url.indexOf('?');
+  const hashIndex = url.indexOf('#');
+  const splitIndex = [queryIndex, hashIndex]
+    .filter(index => index >= 0)
+    .sort((a, b) => a - b)[0];
+
+  return splitIndex === undefined ? url : url.slice(0, splitIndex);
+}
+
+function isLocalMarkdownDocLink(url: string) {
+  const path = splitMarkdownLinkTarget(url).trim();
+  if (!path || path.startsWith('//') || path.startsWith('#')) {
+    return false;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) {
+    return false;
+  }
+
+  const fileName = path.split('/').at(-1) ?? '';
+  return path.toLowerCase().endsWith('.md') || !fileName.includes('.');
+}
+
+function markdownAstText(ast: MarkdownAST): string {
+  if ('value' in ast && typeof ast.value === 'string') {
+    return ast.value;
+  }
+  if ('children' in ast && Array.isArray(ast.children)) {
+    return ast.children.map(child => markdownAstText(child)).join('');
+  }
+  return '';
+}
+
+function getMarkdownZipPageIdConfigKey(path: string) {
+  return `${MARKDOWN_ZIP_PAGE_ID_CONFIG_PREFIX}${normalizeMarkdownZipLookupPath(
+    path
+  )}`;
+}
+
+function getMarkdownZipTargetPageId(
+  configs: Map<string, string>,
+  currentFilePath: string,
+  url: string
+) {
+  const targetPath = splitMarkdownLinkTarget(url);
+  const fullPath = getImageFullPath(currentFilePath, targetPath);
+  const candidates = [fullPath, stripMarkdownExtension(fullPath)];
+
+  for (const candidate of candidates) {
+    const pageId = configs.get(getMarkdownZipPageIdConfigKey(candidate));
+    if (pageId) {
+      return pageId;
+    }
+  }
+
+  return null;
+}
+
+const markdownZipDocLinkToDeltaMatcher = MarkdownASTToDeltaExtension({
+  name: 'markdown-zip-doc-link',
+  match: ast =>
+    ast.type === 'link' &&
+    'url' in ast &&
+    typeof ast.url === 'string' &&
+    isLocalMarkdownDocLink(ast.url),
+  toDelta: (ast, context) => {
+    if (!('children' in ast) || !('url' in ast)) {
+      return [];
+    }
+
+    const currentFilePath = context.configs.get(FULL_FILE_PATH_KEY);
+    const targetPageId =
+      typeof currentFilePath === 'string'
+        ? getMarkdownZipTargetPageId(context.configs, currentFilePath, ast.url)
+        : null;
+
+    if (targetPageId) {
+      const title = markdownAstText(ast).trim();
+      return [
+        {
+          insert: ' ',
+          attributes: {
+            reference: {
+              type: 'LinkedPage',
+              pageId: targetPageId,
+              ...(title ? { title } : {}),
+            },
+          },
+        },
+      ];
+    }
+
+    return ast.children.flatMap(child =>
+      context.toDelta(child).map(delta => {
+        delta.attributes = { ...delta.attributes, link: ast.url };
+        return delta;
+      })
+    );
+  },
+});
 
 const truthyStrings = new Set(['true', 'yes', 'y', '1', 'on']);
 const falsyStrings = new Set(['false', 'no', 'n', '0', 'off']);
@@ -150,11 +276,18 @@ function buildMetaFromFrontmatter(
       }
       continue;
     }
+    if (FRONTMATTER_KEYS.trash.includes(key)) {
+      const trash = parseBoolean(value);
+      if (trash !== undefined) {
+        meta.trash = trash;
+      }
+      continue;
+    }
   }
   return meta;
 }
 
-function parseFrontmatter(markdown: string): {
+export function parseFrontmatter(markdown: string): {
   content: string;
   meta: ParsedFrontmatterMeta;
 } {
@@ -176,7 +309,7 @@ function parseFrontmatter(markdown: string): {
   }
 }
 
-function applyMetaPatch(
+export function applyMetaPatch(
   collection: Workspace,
   docId: string,
   meta: ParsedFrontmatterMeta
@@ -187,13 +320,14 @@ function applyMetaPatch(
   if (meta.updatedDate !== undefined) metaPatch.updatedDate = meta.updatedDate;
   if (meta.tags) metaPatch.tags = meta.tags;
   if (meta.favorite !== undefined) metaPatch.favorite = meta.favorite;
+  if (meta.trash !== undefined) metaPatch.trash = meta.trash;
 
   if (Object.keys(metaPatch).length) {
     collection.meta.setDocMeta(docId, metaPatch);
   }
 }
 
-function getProvider(extensions: ExtensionType[]) {
+export function getProvider(extensions: ExtensionType[]) {
   const container = new Container();
   extensions.forEach(ext => {
     ext.setup(container);
@@ -222,6 +356,218 @@ type ImportMarkdownZipOptions = {
   imported: Blob;
   extensions: ExtensionType[];
 };
+
+type PrepareMarkdownFileOptions = {
+  filename: string;
+  markdown: string;
+};
+
+type PreparedMarkdownFile = {
+  content: string;
+  meta: ParsedFrontmatterMeta;
+  preferredTitle: string;
+};
+
+type ImportMarkdownZipInternalOptions = ImportMarkdownZipOptions & {
+  createRootFolderForTopLevelDocs?: boolean;
+  normalizeFolderName?: (folderName: string) => string;
+  prepareMarkdownFile?: (
+    options: PrepareMarkdownFileOptions
+  ) => PreparedMarkdownFile;
+  preserveCommonRoot?: boolean;
+  recursiveZip?: boolean;
+};
+
+function getFileNameWithoutExtension(filename: string) {
+  return filename.replace(/\.[^/.]+$/, '');
+}
+
+function stripNotionHash(name: string) {
+  return name
+    .replace(
+      /\s+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      ''
+    )
+    .replace(/\s+[0-9a-f]{32}$/i, '');
+}
+
+function parseNotionMarkdownTitle(markdown: string):
+  | {
+      title: string;
+      content: string;
+    }
+  | undefined {
+  const match = markdown.match(/^\uFEFF?#(?!#)\s+(.+?)\s*(?:\r?\n|$)/);
+  if (!match) {
+    return;
+  }
+
+  const title = match?.[1]?.trim();
+  if (!title) {
+    return;
+  }
+
+  return {
+    title,
+    content: markdown.slice(match[0].length),
+  };
+}
+
+function prepareDefaultMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const fileNameWithoutExt = getFileNameWithoutExtension(filename);
+  const { content, meta } = parseFrontmatter(markdown);
+  return {
+    content,
+    meta,
+    preferredTitle: meta.title ?? fileNameWithoutExt,
+  };
+}
+
+function prepareNotionMarkdownFile({
+  filename,
+  markdown,
+}: PrepareMarkdownFileOptions): PreparedMarkdownFile {
+  const notionTitle = parseNotionMarkdownTitle(markdown);
+  const { content, meta } = parseFrontmatter(notionTitle?.content ?? markdown);
+  const fallbackTitle = stripNotionHash(getFileNameWithoutExtension(filename));
+  const preferredTitle = notionTitle?.title ?? meta.title ?? fallbackTitle;
+
+  return {
+    content,
+    meta: {
+      ...meta,
+      title: preferredTitle,
+    },
+    preferredTitle,
+  };
+}
+
+function applySnapshotTitle(snapshot: DocSnapshot, title: string) {
+  snapshot.meta.title = title;
+  snapshot.blocks.props.title = {
+    '$blocksuite:internal:text$': true,
+    delta: [{ insert: title }],
+  };
+}
+
+/**
+ * Filters hidden/system entries that should never participate in imports.
+ */
+export function isSystemImportPath(path: string) {
+  return path.includes('__MACOSX') || path.includes('.DS_Store');
+}
+
+/**
+ * Creates the doc CRUD bridge used by importer transformers.
+ */
+export function createCollectionDocCRUD(collection: Workspace) {
+  return {
+    create: (id: string) => collection.createDoc(id).getStore({ id }),
+    get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
+    delete: (id: string) => collection.removeDoc(id),
+  };
+}
+
+type CreateMarkdownImportJobOptions = {
+  collection: Workspace;
+  schema: Schema;
+  preferredTitle?: string;
+  fullPath?: string;
+};
+
+/**
+ * Creates a markdown import job with the standard collection middlewares.
+ */
+export function createMarkdownImportJob({
+  collection,
+  schema,
+  preferredTitle,
+  fullPath,
+}: CreateMarkdownImportJobOptions) {
+  return new Transformer({
+    schema,
+    blobCRUD: collection.blobSync,
+    docCRUD: createCollectionDocCRUD(collection),
+    middlewares: [
+      defaultImageProxyMiddleware,
+      fileNameMiddleware(preferredTitle),
+      docLinkBaseURLMiddleware(collection.id),
+      ...(fullPath ? [filePathMiddleware(fullPath)] : []),
+    ],
+  });
+}
+
+type StageImportedAssetOptions = {
+  pendingAssets: AssetMap;
+  pendingPathBlobIdMap: PathBlobIdMap;
+  path: string;
+  content: Blob;
+  fileName: string;
+};
+
+/**
+ * Hashes a non-markdown import file and stages it into the shared asset maps.
+ */
+export async function stageImportedAsset({
+  pendingAssets,
+  pendingPathBlobIdMap,
+  path,
+  content,
+  fileName,
+}: StageImportedAssetOptions) {
+  const ext = path.split('.').at(-1) ?? '';
+  const mime = extMimeMap.get(ext.toLowerCase()) ?? '';
+  const key = await sha(await content.arrayBuffer());
+  pendingPathBlobIdMap.set(path, key);
+  pendingAssets.set(key, new File([content], fileName, { type: mime }));
+}
+
+/**
+ * Binds previously staged asset files into a transformer job before import.
+ */
+export function bindImportedAssetsToJob(
+  job: Transformer,
+  pendingAssets: AssetMap,
+  pendingPathBlobIdMap: PathBlobIdMap
+) {
+  const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
+  // Iterate over all assets to be imported
+  for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
+    // Get the relative path of the asset to the markdown file
+    // Store the path to blobId map
+    pathBlobIdMap.set(assetPath, key);
+    // Store the asset to assets, the key is the blobId, the value is the file object
+    // In block adapter, it will use the blobId to get the file object
+    const assetFile = pendingAssets.get(key);
+    if (assetFile) {
+      job.assets.set(key, assetFile);
+    }
+  }
+
+  return pathBlobIdMap;
+}
+
+function bindImportedMarkdownPagesToJob(
+  job: Transformer,
+  pagePathIdMap: ReadonlyMap<string, string>
+) {
+  for (const [path, pageId] of pagePathIdMap.entries()) {
+    job.adapterConfigs.set(getMarkdownZipPageIdConfigKey(path), pageId);
+  }
+}
+
+function registerMarkdownZipPagePath(
+  pagePathIdMap: Map<string, string>,
+  path: string,
+  pageId: string
+) {
+  const normalizedPath = normalizeFilePathReference(path);
+  pagePathIdMap.set(normalizedPath, pageId);
+  pagePathIdMap.set(stripMarkdownExtension(normalizedPath), pageId);
+}
 
 /**
  * Exports a doc to a Markdown file or a zip archive containing Markdown and assets.
@@ -329,19 +675,10 @@ async function importMarkdownToDoc({
   const { content, meta } = parseFrontmatter(markdown);
   const preferredTitle = meta.title ?? fileName;
   const provider = getProvider(extensions);
-  const job = new Transformer({
+  const job = createMarkdownImportJob({
+    collection,
     schema,
-    blobCRUD: collection.blobSync,
-    docCRUD: {
-      create: (id: string) => collection.createDoc(id).getStore({ id }),
-      get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-      delete: (id: string) => collection.removeDoc(id),
-    },
-    middlewares: [
-      defaultImageProxyMiddleware,
-      fileNameMiddleware(preferredTitle),
-      docLinkBaseURLMiddleware(collection.id),
-    ],
+    preferredTitle,
   });
   const mdAdapter = new MarkdownAdapter(job, provider);
   const page = await mdAdapter.toDoc({
@@ -363,100 +700,287 @@ async function importMarkdownToDoc({
  * @param options.imported The zip file as a Blob
  * @returns A Promise that resolves to an array of IDs of the newly created docs
  */
-async function importMarkdownZip({
+export type FolderHierarchy = {
+  name: string;
+  path: string;
+  children: Map<string, FolderHierarchy>;
+  pageId?: string;
+  parentPath?: string;
+};
+
+export type PlanMarkdownZipResult = {
+  docIds: string[];
+  folderHierarchy?: FolderHierarchy;
+  batch: ImportBatch;
+};
+
+async function planMarkdownZip({
   collection,
   schema,
   imported,
   extensions,
-}: ImportMarkdownZipOptions) {
-  const provider = getProvider(extensions);
-  const unzip = new Unzip();
-  await unzip.load(imported);
+}: ImportMarkdownZipOptions): Promise<PlanMarkdownZipResult> {
+  return planMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+  });
+}
 
+async function planNotionMarkdownZip({
+  collection,
+  schema,
+  imported,
+  extensions,
+}: ImportMarkdownZipOptions): Promise<PlanMarkdownZipResult> {
+  return planMarkdownZipInternal({
+    collection,
+    schema,
+    imported,
+    extensions,
+    normalizeFolderName: stripNotionHash,
+    prepareMarkdownFile: prepareNotionMarkdownFile,
+    preserveCommonRoot: true,
+    createRootFolderForTopLevelDocs: true,
+    recursiveZip: true,
+  });
+}
+
+async function planMarkdownZipInternal({
+  collection,
+  schema,
+  imported,
+  extensions,
+  createRootFolderForTopLevelDocs = false,
+  normalizeFolderName,
+  prepareMarkdownFile = prepareDefaultMarkdownFile,
+  preserveCommonRoot = false,
+  recursiveZip = false,
+}: ImportMarkdownZipInternalOptions): Promise<PlanMarkdownZipResult> {
+  const provider = getProvider([
+    markdownZipDocLinkToDeltaMatcher,
+    ...extensions,
+  ]);
   const docIds: string[] = [];
+  const docs: ImportDoc[] = [];
   const pendingAssets: AssetMap = new Map();
   const pendingPathBlobIdMap: PathBlobIdMap = new Map();
-  const markdownBlobs: ImportedFileEntry[] = [];
+  const docPathMap: Array<{ fullPath: string; docId: string }> = [];
+  const pendingPagePathIdMap = new Map<string, string>();
+  const markdownBlobs: Array<ImportedFileEntry & { pageId: string }> = [];
 
-  // Iterate over all files in the zip
-  for (const { path, content: blob } of unzip) {
-    // Skip the files that are not markdown files
-    if (path.includes('__MACOSX') || path.includes('.DS_Store')) {
-      continue;
-    }
+  async function collectZipEntries(zipBlob: Blob, basePath = '') {
+    const unzip = new Unzip();
+    await unzip.load(zipBlob);
 
-    // Get the file name
-    const fileName = path.split('/').pop() ?? '';
-    // If the file is a markdown file, store it to markdownBlobs
-    if (fileName.endsWith('.md')) {
-      markdownBlobs.push({
-        filename: fileName,
-        contentBlob: blob,
-        fullPath: path,
-      });
-    } else {
-      // If the file is not a markdown file, store it to pendingAssets
-      const ext = path.split('.').at(-1) ?? '';
-      const mime = extMimeMap.get(ext) ?? '';
-      const key = await sha(await blob.arrayBuffer());
-      pendingPathBlobIdMap.set(path, key);
-      pendingAssets.set(key, new File([blob], fileName, { type: mime }));
+    for (const { path, content: blob } of unzip) {
+      if (isSystemImportPath(path)) {
+        continue;
+      }
+
+      const fileName = path.split('/').pop() ?? '';
+      const fullPath = basePath ? `${basePath}/${path}` : path;
+      if (fileName.endsWith('.md')) {
+        const pageId = collection.idGenerator();
+        registerMarkdownZipPagePath(pendingPagePathIdMap, fullPath, pageId);
+        markdownBlobs.push({
+          filename: fileName,
+          contentBlob: blob,
+          fullPath,
+          pageId,
+        });
+      } else if (recursiveZip && fileName.endsWith('.zip')) {
+        await collectZipEntries(blob, getFileNameWithoutExtension(fullPath));
+      } else {
+        await stageImportedAsset({
+          pendingAssets,
+          pendingPathBlobIdMap,
+          path: fullPath,
+          content: blob,
+          fileName,
+        });
+      }
     }
   }
 
+  await collectZipEntries(imported);
+
   await Promise.all(
     markdownBlobs.map(async markdownFile => {
-      const { filename, contentBlob, fullPath } = markdownFile;
-      const fileNameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+      const { filename, contentBlob, fullPath, pageId } = markdownFile;
       const markdown = await contentBlob.text();
-      const { content, meta } = parseFrontmatter(markdown);
-      const preferredTitle = meta.title ?? fileNameWithoutExt;
-      const job = new Transformer({
-        schema,
-        blobCRUD: collection.blobSync,
-        docCRUD: {
-          create: (id: string) => collection.createDoc(id).getStore({ id }),
-          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
-          delete: (id: string) => collection.removeDoc(id),
-        },
-        middlewares: [
-          defaultImageProxyMiddleware,
-          fileNameMiddleware(preferredTitle),
-          docLinkBaseURLMiddleware(collection.id),
-          filePathMiddleware(fullPath),
-        ],
+      const { content, meta, preferredTitle } = prepareMarkdownFile({
+        filename,
+        markdown,
       });
-      const assets = job.assets;
-      const pathBlobIdMap = job.assetsManager.getPathBlobIdMap();
-      // Iterate over all assets to be imported
-      for (const [assetPath, key] of pendingPathBlobIdMap.entries()) {
-        // Get the relative path of the asset to the markdown file
-        // Store the path to blobId map
-        pathBlobIdMap.set(assetPath, key);
-        // Store the asset to assets, the key is the blobId, the value is the file object
-        // In block adapter, it will use the blobId to get the file object
-        if (pendingAssets.get(key)) {
-          assets.set(key, pendingAssets.get(key)!);
-        }
-      }
+      const job = createMarkdownImportJob({
+        collection,
+        schema,
+        preferredTitle,
+        fullPath,
+      });
+      bindImportedAssetsToJob(job, pendingAssets, pendingPathBlobIdMap);
+      bindImportedMarkdownPagesToJob(job, pendingPagePathIdMap);
 
       const mdAdapter = new MarkdownAdapter(job, provider);
-      const doc = await mdAdapter.toDoc({
+      const snapshot = await mdAdapter.toDocSnapshot({
         file: content,
         assets: job.assetsManager,
       });
-      if (doc) {
-        applyMetaPatch(collection, doc.id, meta);
-        docIds.push(doc.id);
-      }
+      snapshot.meta.id = pageId;
+      applySnapshotTitle(snapshot, preferredTitle);
+      docs.push({
+        id: pageId,
+        snapshot,
+        meta: {
+          ...meta,
+          title: preferredTitle,
+        },
+      });
+      docIds.push(pageId);
+      docPathMap.push({ fullPath, docId: pageId });
     })
   );
-  return docIds;
+
+  const folderHierarchy = buildMarkdownZipFolderHierarchy(
+    docPathMap,
+    normalizeFolderName,
+    preserveCommonRoot,
+    createRootFolderForTopLevelDocs
+  );
+
+  return {
+    docIds,
+    folderHierarchy,
+    batch: {
+      docs,
+      blobs: await blobsFromAssets(pendingAssets, pendingPathBlobIdMap),
+      folders: folderHierarchy
+        ? flattenFolderHierarchy(folderHierarchy)
+        : undefined,
+      done: true,
+    },
+  };
+}
+
+/**
+ * Builds a tree of {@link FolderHierarchy} nodes from the zip paths of
+ * imported markdown files. Returns `undefined` when every entry sits at
+ * the same level (no real subfolder structure). A common root directory
+ * shared by all entries is stripped automatically so that the resulting
+ * hierarchy starts one level deeper.
+ */
+function buildMarkdownZipFolderHierarchy(
+  entries: Array<{ fullPath: string; docId: string }>,
+  normalizeFolderName?: (folderName: string) => string,
+  preserveCommonRoot = false,
+  createRootFolderForTopLevelDocs = false
+): FolderHierarchy | undefined {
+  if (entries.length === 0) return undefined;
+
+  // Check once whether all entries share a common root directory
+  const candidateRoot = entries[0]?.fullPath.split('/').find(Boolean);
+  const skipRoot =
+    !preserveCommonRoot &&
+    !!candidateRoot &&
+    entries.every(e => e.fullPath.startsWith(candidateRoot + '/'));
+
+  // Check if any entries have folder structure after the common root is stripped.
+  const hasSubfolders = entries.some(e => {
+    const parts = e.fullPath.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    const folderParts = skipRoot ? parts.slice(1) : parts;
+    return (
+      folderParts.length > 0 || (createRootFolderForTopLevelDocs && !!fileName)
+    );
+  });
+  if (!hasSubfolders) {
+    // All files are at the same level, no folder hierarchy needed
+    return undefined;
+  }
+
+  const root: FolderHierarchy = {
+    name: '',
+    path: '',
+    children: new Map(),
+  };
+
+  for (const { fullPath, docId } of entries) {
+    const parts = fullPath.split('/').filter(Boolean);
+    const fileName = parts.pop(); // Remove filename
+    if (!fileName) continue;
+
+    const folderParts = skipRoot ? parts.slice(1) : parts;
+    if (folderParts.length === 0 && createRootFolderForTopLevelDocs) {
+      folderParts.push(getFileNameWithoutExtension(fileName));
+    }
+
+    if (folderParts.length === 0) {
+      // Root-level file, no folder needed
+      continue;
+    }
+
+    let current = root;
+    let currentPath = '';
+
+    for (const folderName of folderParts) {
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+      if (!current.children.has(folderName)) {
+        current.children.set(folderName, {
+          name: normalizeFolderName?.(folderName) ?? folderName,
+          path: currentPath,
+          parentPath: parentPath || undefined,
+          children: new Map(),
+        });
+      }
+      current = current.children.get(folderName)!;
+    }
+
+    // Add the doc as a leaf
+    const docNodeKey = `__doc__${docId}`;
+    current.children.set(docNodeKey, {
+      name: docNodeKey,
+      path: `${current.path}/${docNodeKey}`,
+      parentPath: current.path,
+      children: new Map(),
+      pageId: docId,
+    });
+  }
+
+  return root.children.size > 0 ? root : undefined;
+}
+
+function flattenFolderHierarchy(root: FolderHierarchy): ImportFolder[] {
+  const folders: ImportFolder[] = [];
+
+  const visit = (node: FolderHierarchy) => {
+    if (node.name) {
+      folders.push({
+        path: node.path,
+        name: node.name,
+        parentPath: node.parentPath,
+        pageId: node.pageId,
+      });
+    }
+    for (const child of node.children.values()) {
+      visit(child);
+    }
+  };
+
+  for (const child of root.children.values()) {
+    visit(child);
+  }
+
+  return folders;
 }
 
 export const MarkdownTransformer = {
   exportDoc,
   importMarkdownToBlock,
   importMarkdownToDoc,
-  importMarkdownZip,
+  planMarkdownZip,
+  planNotionMarkdownZip,
 };

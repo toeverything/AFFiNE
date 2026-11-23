@@ -20,40 +20,26 @@ import {
   createNodeTargetConfig as createRspackNodeTargetConfig,
   createWorkerTargetConfig as createRspackWorkerTargetConfig,
 } from './rspack';
-import {
-  shouldUploadReleaseAssets,
-  uploadDistAssetsToS3,
-} from './rspack-shared/s3-plugin.js';
 
 type WorkerConfig = { name: string };
 type CreateWorkerTargetConfig = (pkg: Package, entry: string) => WorkerConfig;
+type BaseWorkerOptions = {
+  includeMermaidAndTypst?: boolean;
+};
 
 function assertRspackSupportedPackage(pkg: Package) {
   assertRspackSupportedPackageName(pkg.name);
 }
 
-function shouldUploadAssetsForPackage(pkg: Package): boolean {
-  return (
-    !!process.env.R2_SECRET_ACCESS_KEY && shouldUploadReleaseAssets(pkg.name)
-  );
-}
-
-async function uploadAssetsForPackage(pkg: Package, logger: Logger) {
-  if (!shouldUploadAssetsForPackage(pkg)) {
-    return;
-  }
-  logger.info('Uploading dist assets to R2...');
-  await uploadDistAssetsToS3(pkg.distPath.value);
-  logger.info('Uploaded dist assets to R2.');
-}
-
 function getBaseWorkerConfigs(
   pkg: Package,
-  createWorkerTargetConfig: CreateWorkerTargetConfig
+  createWorkerTargetConfig: CreateWorkerTargetConfig,
+  options: BaseWorkerOptions = {}
 ) {
   const core = new Package('@affine/core');
+  const includeMermaidAndTypst = options.includeMermaidAndTypst ?? true;
 
-  return [
+  const workerConfigs = [
     createWorkerTargetConfig(
       pkg,
       core.srcPath.join(
@@ -71,6 +57,21 @@ function getBaseWorkerConfigs(
       ).value
     ),
   ];
+
+  if (includeMermaidAndTypst) {
+    workerConfigs.push(
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/mermaid/renderer/mermaid.worker.ts').value
+      ),
+      createWorkerTargetConfig(
+        pkg,
+        core.srcPath.join('modules/typst/renderer/typst.worker.ts').value
+      )
+    );
+  }
+
+  return workerConfigs;
 }
 
 function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
@@ -85,9 +86,7 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
       ] as MultiRspackOptions;
     }
     case '@affine/web':
-    case '@affine/mobile':
-    case '@affine/ios':
-    case '@affine/android': {
+    case '@affine/mobile': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
         createRspackWorkerTargetConfig
@@ -109,10 +108,35 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
         ...workerConfigs,
       ] as MultiRspackOptions;
     }
+    case '@affine/ios':
+    case '@affine/android': {
+      const workerConfigs = getBaseWorkerConfigs(
+        pkg,
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
+      );
+      workerConfigs.push(
+        createRspackWorkerTargetConfig(
+          pkg,
+          pkg.srcPath.join('nbstore.worker.ts').value
+        )
+      );
+
+      return [
+        createRspackHTMLTargetConfig(
+          pkg,
+          pkg.srcPath.join('index.tsx').value,
+          {},
+          workerConfigs.map(config => config.name)
+        ),
+        ...workerConfigs,
+      ] as MultiRspackOptions;
+    }
     case '@affine/electron-renderer': {
       const workerConfigs = getBaseWorkerConfigs(
         pkg,
-        createRspackWorkerTargetConfig
+        createRspackWorkerTargetConfig,
+        { includeMermaidAndTypst: false }
       );
 
       return [
@@ -225,7 +249,6 @@ export class BundleCommand extends PackageCommand {
         return;
       }
       console.log(stats.toString('minimal'));
-      await uploadAssetsForPackage(pkg, logger);
     } catch (error) {
       console.error(error);
       process.exit(1);
@@ -251,10 +274,12 @@ export class BundleCommand extends PackageCommand {
       throw new Error('Failed to create rspack compiler');
     }
 
-    const devServer = new RspackDevServer(
-      merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig),
-      compiler
-    );
+    const serverConfig = merge({}, DEFAULT_DEV_SERVER_CONFIG, devServerConfig);
+    if (devServerConfig?.proxy) {
+      serverConfig.proxy = devServerConfig.proxy;
+    }
+
+    const devServer = new RspackDevServer(serverConfig, compiler);
 
     await devServer.start();
   }

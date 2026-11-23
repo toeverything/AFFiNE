@@ -152,9 +152,26 @@ export abstract class CalendarProvider {
     }
   }
 
+  protected get requestTimeoutMs() {
+    const timeout = (this.config as { requestTimeoutMs?: number } | undefined)
+      ?.requestTimeoutMs;
+    return typeof timeout === 'number' && timeout > 0 ? timeout : undefined;
+  }
+
+  protected withTimeout(signal?: AbortSignal | null) {
+    const timeoutMs = this.requestTimeoutMs;
+    if (!timeoutMs) return signal;
+
+    const timeoutSignal = AbortSignal.timeout(timeoutMs);
+    if (!signal) return timeoutSignal;
+
+    return AbortSignal.any([signal, timeoutSignal]);
+  }
+
   protected async fetchJson<T>(url: string, init?: RequestInit) {
     const response = await fetch(url, {
       ...init,
+      signal: this.withTimeout(init?.signal),
       headers: { ...init?.headers, Accept: 'application/json' },
     });
     const body = await response.text();

@@ -11,26 +11,26 @@ const MenuContextValue = {
   type: 'dropdown-menu',
 } as const;
 
+const EMPTY_ROOT_OPTIONS: NonNullable<MenuProps['rootOptions']> = {};
+const EMPTY_CONTENT_OPTIONS: NonNullable<MenuProps['contentOptions']> = {};
+const EMPTY_CONTENT_STYLE: React.CSSProperties = {};
+
 export const DesktopMenu = ({
   children,
   items,
   noPortal,
   portalOptions,
-  rootOptions: {
-    defaultOpen,
-    modal,
-    open,
-    onOpenChange,
-    onClose,
-    ...rootOptions
-  } = {},
-  contentOptions: {
-    className = '',
-    style: contentStyle = {},
-    ...otherContentOptions
-  } = {},
+  rootOptions: rawRootOptions,
+  contentOptions: rawContentOptions,
   ref,
 }: MenuProps) => {
+  const { defaultOpen, modal, open, onOpenChange, onClose, ...rootOptions } =
+    rawRootOptions ?? EMPTY_ROOT_OPTIONS;
+  const {
+    className = '',
+    style: contentStyle = EMPTY_CONTENT_STYLE,
+    ...otherContentOptions
+  } = rawContentOptions ?? EMPTY_CONTENT_OPTIONS;
   const [innerOpen, setInnerOpen] = useState(defaultOpen);
   const finalOpen = open ?? innerOpen;
 

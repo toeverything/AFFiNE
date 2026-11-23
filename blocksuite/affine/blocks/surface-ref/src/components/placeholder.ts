@@ -99,24 +99,30 @@ export class SurfaceRefPlaceHolder extends SignalWatcher(
           'not-found': modelNotFound,
         })}
       >
-        ${modelNotFound
-          ? html`<div class="surface-ref-not-found-background">
-              ${notFoundBackground}
-            </div>`
-          : nothing}
+        ${
+          modelNotFound
+            ? html`<div class="surface-ref-not-found-background">
+                ${notFoundBackground}
+              </div>`
+            : nothing
+        }
         <div class="surface-ref-placeholder-heading">
           ${modelNotFound ? DeleteIcon() : matchedType.icon}
           <span class="surface-ref-title">
-            ${modelNotFound
-              ? `This ${matchedType.name} not available`
-              : `${title}`}
+            ${
+              modelNotFound
+                ? `This ${matchedType.name} not available`
+                : `${title}`
+            }
           </span>
         </div>
         <div class="surface-ref-placeholder-body">
           <span class="surface-ref-text">
-            ${modelNotFound
-              ? `The ${matchedType.name.toLowerCase()} is deleted or not in this doc.`
-              : `The ${matchedType.name.toLowerCase()} is inserted but cannot display in edgeless mode. Switch to page mode to view the block.`}
+            ${
+              modelNotFound
+                ? `The ${matchedType.name.toLowerCase()} is deleted or not in this doc.`
+                : `The ${matchedType.name.toLowerCase()} is inserted but cannot display in edgeless mode. Switch to page mode to view the block.`
+            }
           </span>
         </div>
       </div>

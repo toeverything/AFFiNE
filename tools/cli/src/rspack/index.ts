@@ -77,12 +77,18 @@ export function createHTMLTargetConfig(
   deps?: string[]
 ): RspackConfiguration {
   entry = typeof entry === 'string' ? { index: entry } : entry;
+  const tailwindConfigPath = pkg.join('tailwind.config.js');
+  const hasTailwind = tailwindConfigPath.exists();
+  const tailwindPlugin = tailwindConfigPath.exists()
+    ? ['@tailwindcss/postcss', require(tailwindConfigPath.value)]
+    : ['@tailwindcss/postcss'];
 
   htmlConfig = merge(
     {},
     {
       filename: 'index.html',
       additionalEntryForSelfhost: true,
+      copySharedPublicAssets: true,
       injectGlobalErrorHandler: true,
       emitAssetsManifest: true,
     },
@@ -90,6 +96,22 @@ export function createHTMLTargetConfig(
   );
 
   const buildConfig = getBuildConfigFromEnv(pkg);
+  const codeBlockPreviewBackendFile =
+    buildConfig.distribution === 'desktop'
+      ? 'platform-backend.desktop.ts'
+      : buildConfig.distribution === 'ios' ||
+          buildConfig.distribution === 'android'
+        ? 'platform-backend.mobile.ts'
+        : 'platform-backend.ts';
+  const codeBlockPreviewBackendAlias = ProjectRoot.join(
+    'packages',
+    'frontend',
+    'core',
+    'src',
+    'modules',
+    'code-block-preview-renderer',
+    codeBlockPreviewBackendFile
+  ).value;
 
   console.log(
     `Building [${pkg.name}] for [${buildConfig.appBuildType}] channel in [${buildConfig.debug ? 'development' : 'production'}] mode.`
@@ -108,8 +130,6 @@ export function createHTMLTargetConfig(
     dependencies: deps,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: false,
       asyncWebAssembly: true,
     },
     entry,
@@ -145,6 +165,8 @@ export function createHTMLTargetConfig(
           '@preact',
           'signals-core'
         ).value,
+        '@affine/core/modules/code-block-preview-renderer/platform-backend':
+          codeBlockPreviewBackendAlias,
       },
     },
     //#endregion
@@ -252,12 +274,9 @@ export function createHTMLTargetConfig(
                   loader: 'postcss-loader',
                   options: {
                     postcssOptions: {
-                      plugins: pkg.join('tailwind.config.js').exists()
+                      plugins: hasTailwind
                         ? [
-                            [
-                              '@tailwindcss/postcss',
-                              require(pkg.join('tailwind.config.js').value),
-                            ],
+                            tailwindPlugin,
                             ['autoprefixer'],
                             ...(buildConfig.isAdmin
                               ? [queuedashScopePostcssPlugin()]
@@ -302,6 +321,7 @@ export function createHTMLTargetConfig(
         }),
       new VanillaExtractPlugin(),
       !buildConfig.isAdmin &&
+        htmlConfig.copySharedPublicAssets &&
         new rspack.CopyRspackPlugin({
           patterns: [
             {
@@ -346,7 +366,6 @@ export function createHTMLTargetConfig(
       providedExports: true,
       usedExports: true,
       sideEffects: true,
-      removeAvailableModules: true,
       runtimeChunk: { name: 'runtime' },
       splitChunks: {
         chunks: 'all',
@@ -408,8 +427,6 @@ export function createWorkerTargetConfig(
     name: entry,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: false,
       asyncWebAssembly: true,
     },
     entry: { [workerName]: entry },
@@ -512,7 +529,6 @@ export function createWorkerTargetConfig(
       providedExports: true,
       usedExports: true,
       sideEffects: true,
-      removeAvailableModules: true,
       runtimeChunk: false,
       splitChunks: false,
     },
@@ -538,8 +554,6 @@ export function createNodeTargetConfig(
     name: entry,
     context: ProjectRoot.value,
     experiments: {
-      topLevelAwait: true,
-      outputModule: pkg.packageJson.type === 'module',
       asyncWebAssembly: true,
     },
     entry: { index: entry },
@@ -548,6 +562,7 @@ export function createNodeTargetConfig(
       path: pkg.distPath.value,
       clean: true,
       globalObject: 'globalThis',
+      module: pkg.packageJson.type === 'module',
       ...(options.libraryType
         ? { library: { type: options.libraryType } }
         : {}),

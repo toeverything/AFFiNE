@@ -335,12 +335,14 @@ export class SlashMenu extends WithDisposable(LitElement) {
           visibility: 'hidden',
         };
 
-    return html`${this._queryState !== 'no_result'
-        ? html` <div
-            class="overlay-mask"
-            @click="${() => this.abortController.abort()}"
-          ></div>`
-        : nothing}
+    return html`${
+        this._queryState !== 'no_result'
+          ? html` <div
+              class="overlay-mask"
+              @click="${() => this.abortController.abort()}"
+            ></div>`
+          : nothing
+      }
       <inner-slash-menu
         .context=${this._innerSlashMenuContext}
         .menu=${this._queryState === 'off' ? this.items : this._filteredItems}
@@ -441,19 +443,21 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
       @click=${() => this.context.onClickItem(item)}
     >
       ${icon && html`<div class="slash-menu-item-icon">${icon}</div>`}
-      ${tooltip &&
-      html`<affine-tooltip
-        tip-position="right"
-        .offset=${22}
-        .tooltipStyle=${slashItemToolTipStyle}
-        .hoverOptions=${{
-          enterDelay: AFFINE_SLASH_MENU_TOOLTIP_TIMEOUT,
-          allowMultiple: false,
-        }}
-      >
-        <div class="tooltip-figure">${tooltip.figure}</div>
-        <div class="tooltip-caption">${tooltip.caption}</div>
-      </affine-tooltip>`}
+      ${
+        tooltip &&
+        html`<affine-tooltip
+          tip-position="right"
+          .offset=${22}
+          .tooltipStyle=${slashItemToolTipStyle}
+          .hoverOptions=${{
+            enterDelay: AFFINE_SLASH_MENU_TOOLTIP_TIMEOUT,
+            allowMultiple: false,
+          }}
+        >
+          <div class="tooltip-figure">${tooltip.figure}</div>
+          <div class="tooltip-caption">${tooltip.caption}</div>
+        </affine-tooltip>`
+      }
     </icon-button>`;
   };
 

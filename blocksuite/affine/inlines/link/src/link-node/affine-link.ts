@@ -160,7 +160,6 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
     const linkStyle = {
       color: 'var(--affine-link-color)',
       fill: 'var(--affine-link-color)',
-      'text-decoration': 'none',
       cursor: 'pointer',
     };
 

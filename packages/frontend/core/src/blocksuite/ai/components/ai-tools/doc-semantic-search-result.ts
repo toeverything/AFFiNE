@@ -7,6 +7,8 @@ import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { DocDisplayConfig } from '../ai-chat-chips';
+import { getToolErrorDisplayName, isToolError } from './tool-result-utils';
+import type { ToolError } from './type';
 
 interface DocSemanticSearchToolCall {
   type: 'tool-call';
@@ -20,10 +22,7 @@ interface DocSemanticSearchToolResult {
   toolCallId: string;
   toolName: string;
   args: { query: string };
-  result: Array<{
-    content: string;
-    docId: string;
-  }>;
+  result: Array<{ content: string; docId: string }> | ToolError | null;
 }
 
 function parseResultContent(content: string) {
@@ -82,11 +81,25 @@ export class DocSemanticSearchResult extends WithDisposable(ShadowlessElement) {
     if (this.data.type !== 'tool-result') {
       return nothing;
     }
+    const result = this.data.result;
+    if (!result || isToolError(result)) {
+      return html`<tool-call-failed
+        .name=${getToolErrorDisplayName(
+          isToolError(result) ? result : null,
+          'Semantic search failed',
+          {
+            'Workspace Sync Required':
+              'Enable workspace sync to search documents',
+          }
+        )}
+        .icon=${AiEmbeddingIcon()}
+      ></tool-call-failed>`;
+    }
     return html`<tool-result-card
       .name=${`Found semantically related pages for "${this.data.args.query}"`}
       .icon=${AiEmbeddingIcon()}
       .width=${this.width}
-      .results=${this.data.result
+      .results=${result
         .map(result => ({
           ...parseResultContent(result.content),
           title: this.docDisplayService.getTitle(result.docId),

@@ -374,18 +374,20 @@ export class EdgelessMindmapToolButton extends EdgelessToolbarToolMixin(
                 pointerEvents: draggingElement ? 'none' : 'auto',
               });
 
-              return html`${isBeingDragged
-                  ? html`<div
-                      class=${classMap({
-                        'basket-tool-item': true,
-                        next: true,
-                        coming: !!dragOut && !cancelled,
-                      })}
-                      style=${nextStyle}
-                    >
-                      ${tool.icon}
-                    </div>`
-                  : nothing}
+              return html`${
+                  isBeingDragged
+                    ? html`<div
+                        class=${classMap({
+                          'basket-tool-item': true,
+                          next: true,
+                          coming: !!dragOut && !cancelled,
+                        })}
+                        style=${nextStyle}
+                      >
+                        ${tool.icon}
+                      </div>`
+                    : nothing
+                }
 
                 <div
                   style=${currentStyle}

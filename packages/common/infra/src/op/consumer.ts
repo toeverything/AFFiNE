@@ -16,6 +16,96 @@ import {
 } from './message';
 import type { OpInput, OpNames, OpOutput, OpSchema } from './types';
 
+const SERIALIZABLE_ERROR_FIELDS = [
+  'name',
+  'message',
+  'code',
+  'type',
+  'status',
+  'data',
+  'stacktrace',
+] as const;
+
+type SerializableErrorShape = Partial<
+  Record<(typeof SERIALIZABLE_ERROR_FIELDS)[number], unknown>
+> & {
+  name?: string;
+  message?: string;
+};
+
+function getFallbackErrorMessage(error: unknown): string {
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'number' ||
+    typeof error === 'boolean' ||
+    typeof error === 'bigint' ||
+    typeof error === 'symbol'
+  ) {
+    return String(error);
+  }
+
+  if (error === null || error === undefined) {
+    return 'Unknown error';
+  }
+
+  try {
+    const jsonMessage = JSON.stringify(error);
+    if (jsonMessage && jsonMessage !== '{}') {
+      return jsonMessage;
+    }
+  } catch {
+    return 'Unknown error';
+  }
+
+  return 'Unknown error';
+}
+
+function serializeError(error: unknown): Error {
+  const valueToPick =
+    error && typeof error === 'object'
+      ? error
+      : ({} as Record<string, unknown>);
+  const serialized = pick(
+    valueToPick,
+    SERIALIZABLE_ERROR_FIELDS
+  ) as SerializableErrorShape;
+
+  if (!serialized.message || typeof serialized.message !== 'string') {
+    serialized.message = getFallbackErrorMessage(error);
+  }
+
+  if (!serialized.name || typeof serialized.name !== 'string') {
+    if (error instanceof Error && error.name) {
+      serialized.name = error.name;
+    } else if (error && typeof error === 'object') {
+      const constructorName = error.constructor?.name;
+      serialized.name =
+        typeof constructorName === 'string' && constructorName.length > 0
+          ? constructorName
+          : 'Error';
+    } else {
+      serialized.name = 'Error';
+    }
+  }
+
+  if (
+    !serialized.stacktrace &&
+    error instanceof Error &&
+    typeof error.stack === 'string'
+  ) {
+    serialized.stacktrace = error.stack;
+  }
+
+  return serialized as Error;
+}
+
 interface OpCallContext {
   signal: AbortSignal;
 }
@@ -71,15 +161,7 @@ export class OpConsumer<Ops extends OpSchema> extends AutoMessageHandler {
           this.port.postMessage({
             type: 'return',
             id: msg.id,
-            error: pick(error, [
-              'name',
-              'message',
-              'code',
-              'type',
-              'status',
-              'data',
-              'stacktrace',
-            ]),
+            error: serializeError(error),
           } satisfies ReturnMessage);
         },
         complete: () => {
@@ -109,15 +191,7 @@ export class OpConsumer<Ops extends OpSchema> extends AutoMessageHandler {
           this.port.postMessage({
             type: 'error',
             id: msg.id,
-            error: pick(error, [
-              'name',
-              'message',
-              'code',
-              'type',
-              'status',
-              'data',
-              'stacktrace',
-            ]),
+            error: serializeError(error),
           } satisfies SubscriptionErrorMessage);
         },
         complete: () => {

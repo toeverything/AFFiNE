@@ -37,7 +37,7 @@ export class GuardService extends Service {
   >({});
 
   private readonly docPermissions$ = new LiveData<
-    Record<string, Partial<Record<DocPermissionActions, boolean>>>
+    Record<string, Partial<Record<DocPermissionActions, boolean>> | false>
   >({});
 
   private readonly isAdmin$ = LiveData.computed(get => {
@@ -73,14 +73,15 @@ export class GuardService extends Service {
                 map(permissions => permissions[docId] ?? {})
               )
             : this.workspacePermissions$.asObservable()) as Observable<
-            Record<string, boolean>
+            Record<string, boolean> | false
           >,
           this.isAdmin$,
         ]).subscribe(([permissions, isAdmin]) => {
           if (isAdmin) {
             return subscriber.next(true);
           }
-          const current = permissions[action] ?? undefined;
+          const current =
+            permissions === false ? false : (permissions[action] ?? undefined);
           if (current !== prev) {
             prev = current;
             subscriber.next(current);
@@ -113,7 +114,9 @@ export class GuardService extends Service {
       ? this.loadDocPermission(docId)
       : this.loadWorkspacePermission());
 
-    return permissions[action as keyof typeof permissions] ?? false;
+    return permissions === false
+      ? false
+      : (permissions[action as keyof typeof permissions] ?? false);
   }
 
   revalidateCan<T extends WorkspacePermissionActions | DocPermissionActions>(

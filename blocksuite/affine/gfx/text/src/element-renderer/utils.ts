@@ -173,7 +173,7 @@ const RS_LTR_CHARS =
   'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' +
   '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF';
 const RS_RTL_CHARS = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC';
-// eslint-disable-next-line no-misleading-character-class
+// oxlint-disable-next-line no-misleading-character-class
 const RE_RTL_CHECK = new RegExp(`^[^${RS_LTR_CHARS}]*[${RS_RTL_CHARS}]`);
 export function isRTL(text: string) {
   return RE_RTL_CHECK.test(text);

@@ -21,6 +21,9 @@ public struct LicenseBody: AffineGraphQL.SelectionSet, Fragment {
     .field("validatedAt", AffineGraphQL.DateTime.self),
     .field("variant", GraphQLEnum<AffineGraphQL.SubscriptionVariant>?.self),
   ] }
+  public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+    LicenseBody.self
+  ] }
 
   public var expiredAt: AffineGraphQL.DateTime? { __data["expiredAt"] }
   public var installedAt: AffineGraphQL.DateTime { __data["installedAt"] }

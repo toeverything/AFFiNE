@@ -2,14 +2,48 @@ import {
   DocModeProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import type { Command, TextSelection } from '@blocksuite/std';
+import type { InlineRange } from '@blocksuite/std/inline';
+
+function openInlineLatexEditor(
+  inlineEditor: AffineInlineEditor,
+  index: number
+) {
+  inlineEditor
+    .waitForUpdate()
+    .then(async () => {
+      await inlineEditor.waitForUpdate();
+
+      const textPoint = inlineEditor.getTextPoint(index);
+      if (!textPoint) return;
+      const [text] = textPoint;
+      const latexNode = text.parentElement?.closest('affine-latex-node');
+      if (!latexNode) return;
+      latexNode.toggleEditor();
+    })
+    .catch(console.error);
+}
+
+function getSingleBlockInlineRange(
+  textSelection: TextSelection
+): InlineRange | null {
+  if (textSelection.to) {
+    return null;
+  }
+
+  return {
+    index: textSelection.from.index,
+    length: textSelection.from.length,
+  };
+}
 
 export const insertInlineLatex: Command<{
   currentTextSelection?: TextSelection;
   textSelection?: TextSelection;
 }> = (ctx, next) => {
   const textSelection = ctx.textSelection ?? ctx.currentTextSelection;
-  if (!textSelection || !textSelection.isCollapsed()) return;
+  if (!textSelection) return;
 
   const blockComponent = ctx.std.view.getBlock(textSelection.from.blockId);
   if (!blockComponent) return;
@@ -20,24 +54,19 @@ export const insertInlineLatex: Command<{
   const inlineEditor = richText.inlineEditor;
   if (!inlineEditor) return;
 
-  inlineEditor.insertText(
-    {
-      index: textSelection.from.index,
-      length: 0,
-    },
-    ' '
-  );
-  inlineEditor.formatText(
-    {
-      index: textSelection.from.index,
-      length: 1,
-    },
-    {
-      latex: '',
-    }
-  );
+  const inlineRange = getSingleBlockInlineRange(textSelection);
+  if (!inlineRange) return;
+
+  const latex = textSelection.isCollapsed()
+    ? ''
+    : inlineEditor.yTextString.slice(
+        inlineRange.index,
+        inlineRange.index + inlineRange.length
+      );
+
+  inlineEditor.insertText(inlineRange, ' ', { latex });
   inlineEditor.setInlineRange({
-    index: textSelection.from.index,
+    index: inlineRange.index,
     length: 1,
   });
 
@@ -56,19 +85,9 @@ export const insertInlineLatex: Command<{
     control: 'create inline equation',
   });
 
-  inlineEditor
-    .waitForUpdate()
-    .then(async () => {
-      await inlineEditor.waitForUpdate();
-
-      const textPoint = inlineEditor.getTextPoint(textSelection.from.index + 1);
-      if (!textPoint) return;
-      const [text] = textPoint;
-      const latexNode = text.parentElement?.closest('affine-latex-node');
-      if (!latexNode) return;
-      latexNode.toggleEditor();
-    })
-    .catch(console.error);
+  if (textSelection.isCollapsed()) {
+    openInlineLatexEditor(inlineEditor, inlineRange.index + 1);
+  }
 
   next();
 };

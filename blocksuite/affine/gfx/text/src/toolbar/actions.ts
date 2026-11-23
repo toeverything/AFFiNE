@@ -353,7 +353,7 @@ export function createTextActions<
           @select=${onPick}
           .label="${'Font size'}"
           .sizes=${FONT_SIZE_LIST}
-          .size$=${fontSize$}
+          .sizeSignal=${fontSize$}
         ></affine-size-dropdown-menu>`;
       },
     },

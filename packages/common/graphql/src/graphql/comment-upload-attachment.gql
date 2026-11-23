@@ -1,3 +1,11 @@
-mutation uploadCommentAttachment($workspaceId: String!, $docId: String!, $attachment: Upload!) {
-  uploadCommentAttachment(workspaceId: $workspaceId, docId: $docId, attachment: $attachment)
+mutation uploadCommentAttachment(
+  $workspaceId: String!
+  $docId: String!
+  $attachment: Upload!
+) {
+  uploadCommentAttachment(
+    workspaceId: $workspaceId
+    docId: $docId
+    attachment: $attachment
+  )
 }

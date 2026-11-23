@@ -37,6 +37,7 @@ const ATTR_SHOW = 'data-show';
 export type ButtonPopperOptions = {
   reference: HTMLElement;
   popperElement: HTMLElement;
+  topLayer?: boolean;
   stateUpdated?: (state: { display: Display }) => void;
   mainAxis?: number;
   crossAxis?: number;
@@ -62,6 +63,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
   const {
     reference,
     popperElement,
+    topLayer = false,
     stateUpdated = () => {},
     mainAxis,
     crossAxis,
@@ -69,6 +71,12 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     rootBoundary,
     offsetHeight,
   } = options;
+  const useTopLayer =
+    topLayer && typeof popperElement.showPopover === 'function';
+
+  if (useTopLayer) {
+    popperElement.popover = 'manual';
+  }
 
   const originMaxHeight = window.getComputedStyle(popperElement).maxHeight;
 
@@ -79,6 +87,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     };
 
     computePosition(reference, popperElement, {
+      strategy: useTopLayer ? 'fixed' : 'absolute',
       middleware: [
         offset({
           mainAxis: mainAxis ?? 14,
@@ -102,7 +111,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     })
       .then(({ x, y }) => {
         Object.assign(popperElement.style, {
-          position: 'absolute',
+          position: useTopLayer ? 'fixed' : 'absolute',
           zIndex: 1,
           left: `${x}px`,
           top: `${y}px`,
@@ -118,6 +127,9 @@ export function createButtonPopper(options: ButtonPopperOptions) {
 
     if (!displayed) {
       popperElement.setAttribute(ATTR_SHOW, '');
+      if (useTopLayer) {
+        popperElement.showPopover();
+      }
       display = 'show';
       stateUpdated({ display });
     }
@@ -130,6 +142,9 @@ export function createButtonPopper(options: ButtonPopperOptions) {
 
   const hide = () => {
     if (display === 'hidden') return;
+    if (useTopLayer) {
+      popperElement.hidePopover();
+    }
     popperElement.removeAttribute(ATTR_SHOW);
     display = 'hidden';
     stateUpdated({ display });
@@ -154,7 +169,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     hide,
     toggle,
     dispose: () => {
-      cleanup?.();
+      hide();
       clickAway.dispose();
     },
   };

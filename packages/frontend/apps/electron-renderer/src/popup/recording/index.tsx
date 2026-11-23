@@ -1,15 +1,10 @@
 import { Button } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { appIconMap } from '@affine/core/utils';
-import {
-  createStreamEncoder,
-  encodeRawBufferToOpus,
-  type OpusStreamEncoder,
-} from '@affine/core/utils/opus-encoding';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import * as styles from './styles.css';
 
@@ -17,12 +12,15 @@ type Status = {
   id: number;
   status:
     | 'new'
+    | 'starting'
+    | 'start_failed'
     | 'recording'
-    | 'paused'
-    | 'stopped'
-    | 'ready'
-    | 'create-block-success'
-    | 'create-block-failed';
+    | 'finalizing'
+    | 'pending_import'
+    | 'importing'
+    | 'imported'
+    | 'import_failed'
+    | 'finalize_failed';
   appName?: string;
   appGroupId?: number;
   icon?: Buffer;
@@ -58,6 +56,7 @@ const appIcon = appIconMap[BUILD_CONFIG.appBuildType];
 
 export function Recording() {
   const status = useRecordingStatus();
+  const trackedNewRecordingIdsRef = useRef<Set<number>>(new Set());
 
   const t = useI18n();
   const textElement = useMemo(() => {
@@ -66,14 +65,18 @@ export function Recording() {
     }
     if (status.status === 'new') {
       return t['com.affine.recording.new']();
-    } else if (status.status === 'create-block-success') {
+    } else if (status.status === 'imported') {
       return t['com.affine.recording.success.prompt']();
-    } else if (status.status === 'create-block-failed') {
+    } else if (
+      status.status === 'import_failed' ||
+      status.status === 'start_failed' ||
+      status.status === 'finalize_failed'
+    ) {
       return t['com.affine.recording.failed.prompt']();
     } else if (
+      status.status === 'starting' ||
       status.status === 'recording' ||
-      status.status === 'ready' ||
-      status.status === 'stopped'
+      status.status === 'finalizing'
     ) {
       if (status.appName) {
         return t['com.affine.recording.recording']({
@@ -82,11 +85,19 @@ export function Recording() {
       } else {
         return t['com.affine.recording.recording.unnamed']();
       }
+    } else if (
+      status.status === 'pending_import' ||
+      status.status === 'importing'
+    ) {
+      return t['com.affine.recording.importing.prompt']();
     }
     return null;
   }, [status, t]);
 
   const handleDismiss = useAsyncCallback(async () => {
+    if (status) {
+      await apis?.recording?.dismissRecordingStatus(status.id);
+    }
     await apis?.popup?.dismissCurrentRecording();
     track.popup.$.recordingBar.dismissRecording({
       type: 'Meeting record',
@@ -105,106 +116,16 @@ export function Recording() {
     await apis?.recording?.stopRecording(status.id);
   }, [status]);
 
-  const handleProcessStoppedRecording = useAsyncCallback(
-    async (currentStreamEncoder?: OpusStreamEncoder) => {
-      let id: number | undefined;
-      try {
-        const result = await apis?.recording?.getCurrentRecording();
-
-        if (!result) {
-          return;
-        }
-
-        id = result.id;
-
-        const { filepath, sampleRate, numberOfChannels } = result;
-        if (!filepath || !sampleRate || !numberOfChannels) {
-          return;
-        }
-        const [buffer] = await Promise.all([
-          currentStreamEncoder
-            ? currentStreamEncoder.finish()
-            : encodeRawBufferToOpus({
-                filepath,
-                sampleRate,
-                numberOfChannels,
-              }),
-          new Promise<void>(resolve => {
-            setTimeout(() => {
-              resolve();
-            }, 500); // wait at least 500ms for better user experience
-          }),
-        ]);
-        await apis?.recording.readyRecording(result.id, buffer);
-      } catch (error) {
-        console.error('Failed to stop recording', error);
-        await apis?.popup?.dismissCurrentRecording();
-        if (id) {
-          await apis?.recording.removeRecording(id);
-        }
-      }
-    },
-    []
-  );
-
   useEffect(() => {
-    let removed = false;
-    let currentStreamEncoder: OpusStreamEncoder | undefined;
+    if (!status || status.status !== 'new') return;
+    if (trackedNewRecordingIdsRef.current.has(status.id)) return;
 
-    apis?.recording
-      .getCurrentRecording()
-      .then(status => {
-        if (status) {
-          return handleRecordingStatusChanged(status);
-        }
-        return;
-      })
-      .catch(console.error);
-
-    const handleRecordingStatusChanged = async (status: Status) => {
-      if (removed) {
-        return;
-      }
-      if (status?.status === 'new') {
-        track.popup.$.recordingBar.toggleRecordingBar({
-          type: 'Meeting record',
-          appName: status.appName || 'System Audio',
-        });
-      }
-
-      if (
-        status?.status === 'recording' &&
-        status.sampleRate &&
-        status.numberOfChannels &&
-        (!currentStreamEncoder || currentStreamEncoder.id !== status.id)
-      ) {
-        currentStreamEncoder?.close();
-        currentStreamEncoder = createStreamEncoder(status.id, {
-          sampleRate: status.sampleRate,
-          numberOfChannels: status.numberOfChannels,
-        });
-        currentStreamEncoder.poll().catch(console.error);
-      }
-
-      if (status?.status === 'stopped') {
-        handleProcessStoppedRecording(currentStreamEncoder);
-        currentStreamEncoder = undefined;
-      }
-    };
-
-    // allow processing stopped event in tray menu as well:
-    const unsubscribe = events?.recording.onRecordingStatusChanged(status => {
-      if (status) {
-        handleRecordingStatusChanged(status).catch(console.error);
-      }
+    trackedNewRecordingIdsRef.current.add(status.id);
+    track.popup.$.recordingBar.toggleRecordingBar({
+      type: 'Meeting record',
+      appName: status.appName || 'System Audio',
     });
-
-    return () => {
-      removed = true;
-      unsubscribe?.();
-      currentStreamEncoder?.close();
-    };
-  }, [handleProcessStoppedRecording]);
+  }, [status]);
 
   const handleStartRecording = useAsyncCallback(async () => {
     if (!status) {
@@ -249,7 +170,12 @@ export function Recording() {
           {t['com.affine.recording.stop']()}
         </Button>
       );
-    } else if (status.status === 'stopped' || status.status === 'ready') {
+    } else if (
+      status.status === 'starting' ||
+      status.status === 'finalizing' ||
+      status.status === 'pending_import' ||
+      status.status === 'importing'
+    ) {
       return (
         <Button
           variant="error"
@@ -258,13 +184,22 @@ export function Recording() {
           disabled
         />
       );
-    } else if (status.status === 'create-block-success') {
+    } else if (status.status === 'imported') {
       return (
         <Button variant="primary" onClick={handleDismiss}>
           {t['com.affine.recording.success.button']()}
         </Button>
       );
-    } else if (status.status === 'create-block-failed') {
+    } else if (status.status === 'start_failed') {
+      return (
+        <Button variant="plain" onClick={handleDismiss}>
+          {t['com.affine.recording.dismiss']()}
+        </Button>
+      );
+    } else if (
+      status.status === 'import_failed' ||
+      status.status === 'finalize_failed'
+    ) {
       return (
         <>
           <Button variant="plain" onClick={handleDismiss}>

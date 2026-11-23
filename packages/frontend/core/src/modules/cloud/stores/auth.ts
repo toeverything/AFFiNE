@@ -1,25 +1,45 @@
 import {
   deleteAccountMutation,
+  getCurrentUserQuery,
   removeAvatarMutation,
+  ServerDeploymentType,
   updateUserProfileMutation,
   uploadAvatarMutation,
 } from '@affine/graphql';
+import type { CurrentUserProfileSnapshot } from '@affine/realtime';
 import { Store } from '@toeverything/infra';
+import { z } from 'zod';
 
-import type { GlobalState } from '../../storage';
+import type { GlobalState, NbstoreService } from '../../storage';
 import type { AuthSessionInfo } from '../entities/session';
-import type { AuthProvider } from '../provider/auth';
+import type { AuthProvider, SignInUserInfo } from '../provider/auth';
 import type { FetchService } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
 import type { ServerService } from '../services/server';
+import { createUnsupportedServerVersionError } from './server-config';
 
-export interface AccountProfile {
-  id: string;
-  email: string;
-  name: string;
-  hasPassword: boolean;
-  avatarUrl: string | null;
-  emailVerified: string | null;
+const AuthPreflightResponseSchema = z.object({
+  registered: z.boolean(),
+  methods: z.object({
+    password: z.object({ available: z.boolean() }),
+    magicLink: z.object({ available: z.boolean() }),
+    oauth: z.object({
+      available: z.boolean(),
+      providers: z.array(z.string()),
+    }),
+    passkey: z.object({
+      available: z.boolean(),
+      discoverable: z.boolean(),
+    }),
+  }),
+});
+
+export interface AccountProfile extends CurrentUserProfileSnapshot {
+  authMethods?: {
+    password: { bound: boolean };
+    oauth: { bound: boolean; providers: string[] };
+    passkey: { bound: boolean; count: number };
+  };
 }
 
 export class AuthStore extends Store {
@@ -28,7 +48,8 @@ export class AuthStore extends Store {
     private readonly gqlService: GraphQLService,
     private readonly globalState: GlobalState,
     private readonly serverService: ServerService,
-    private readonly authProvider: AuthProvider
+    private readonly authProvider: AuthProvider,
+    private readonly nbstoreService: NbstoreService
   ) {
     super();
   }
@@ -49,6 +70,26 @@ export class AuthStore extends Store {
     this.globalState.set(`${this.serverService.server.id}-auth`, session);
   }
 
+  setCachedSignInUser(user: SignInUserInfo) {
+    this.setCachedAuthSession({
+      account: {
+        id: user.id,
+        email: user.email,
+        label: user.name,
+        avatar: user.avatarUrl,
+        info: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          hasPassword: user.hasPassword,
+          avatarUrl: user.avatarUrl,
+          emailVerified: user.emailVerified,
+          features: [],
+        },
+      },
+    });
+  }
+
   getClientNonce() {
     return this.globalState.get<string>('auth-client-nonce');
   }
@@ -58,20 +99,29 @@ export class AuthStore extends Store {
   }
 
   async fetchSession() {
-    const url = `/api/auth/session`;
-    const options: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
+    const session = await this.fetchAuthSession();
+    if (!session.user) return { user: null };
 
-    const res = await this.fetchService.fetch(url, options);
-    const data = (await res.json()) as {
-      user?: AccountProfile | null;
-    };
-    if (!res.ok)
-      throw new Error('Get session fetch error: ' + JSON.stringify(data));
-    return data; // Return null if data empty
+    const { currentUser: user } = await this.gqlService.gql({
+      query: getCurrentUserQuery,
+    });
+    if (!user || user.id !== session.user.id) {
+      throw new Error('User profile does not match auth session');
+    }
+    const authMethods = await this.fetchAuthMethods();
+    return { user: { ...user, authMethods } };
+  }
+
+  private async fetchAuthSession(): Promise<{ user: { id: string } | null }> {
+    return await this.fetchService
+      .fetch('/api/auth/session', { cache: 'no-store' })
+      .then(res => res.json());
+  }
+
+  private async fetchAuthMethods() {
+    return await this.fetchService
+      .fetch('/api/auth/methods')
+      .then(res => (res.ok ? res.json() : undefined));
   }
 
   async signInMagicLink(email: string, token: string) {
@@ -97,11 +147,37 @@ export class AuthStore extends Store {
     verifyToken?: string;
     challenge?: string;
   }) {
-    await this.authProvider.signInPassword(credential);
+    return await this.authProvider.signInPassword(credential);
+  }
+
+  async signInOpenAppSignInCode(code: string) {
+    await this.authProvider.signInOpenAppSignInCode(code);
   }
 
   async signOut() {
-    await this.authProvider.signOut();
+    try {
+      await this.authProvider.signOut();
+    } finally {
+      await this.deauthenticateRealtime();
+    }
+  }
+
+  async clearSession() {
+    try {
+      await this.authProvider.clearSession();
+    } finally {
+      await this.deauthenticateRealtime();
+    }
+  }
+
+  private async deauthenticateRealtime() {
+    await this.nbstoreService.realtime.configure({
+      endpoint: this.serverService.server.baseUrl,
+      authenticated: false,
+      isSelfHosted:
+        this.serverService.server.config$.value.type ===
+        ServerDeploymentType.Selfhosted,
+    });
   }
 
   async uploadAvatar(file: File) {
@@ -143,13 +219,14 @@ export class AuthStore extends Store {
       throw new Error(`Failed to check user by email: ${email}`);
     }
 
-    const data = (await res.json()) as {
-      registered: boolean;
-      hasPassword: boolean;
-      magicLink: boolean;
-    };
+    const data = AuthPreflightResponseSchema.safeParse(await res.json());
+    if (!data.success) {
+      throw createUnsupportedServerVersionError(
+        this.serverService.server.config$.value.version
+      );
+    }
 
-    return data;
+    return data.data;
   }
 
   async deleteAccount() {

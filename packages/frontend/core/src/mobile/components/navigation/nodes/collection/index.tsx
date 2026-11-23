@@ -18,8 +18,8 @@ import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { NavigationPanelTreeNode } from '../../tree/node';
 import { NavigationPanelDocNode } from '../doc';
 import {
-  useNavigationPanelCollectionNodeOperations,
-  useNavigationPanelCollectionNodeOperationsMenu,
+  NavigationPanelCollectionNodeMenu,
+  useNavigationPanelCollectionAddDoc,
 } from './operations';
 
 const CollectionIcon = () => <ViewLayersIcon />;
@@ -72,24 +72,26 @@ export const NavigationPanelCollectionNode = ({
     });
   }, [collection, workspaceDialogService]);
 
-  const collectionOperations = useNavigationPanelCollectionNodeOperationsMenu(
+  const handleAddDocToCollection = useNavigationPanelCollectionAddDoc(
     collectionId,
-    handleOpenCollapsed,
-    handleEditCollection
+    handleOpenCollapsed
   );
-  const { handleAddDocToCollection } =
-    useNavigationPanelCollectionNodeOperations(
+  const menuTarget = useMemo(
+    () => (
+      <NavigationPanelCollectionNodeMenu
+        collectionId={collectionId}
+        handleAddDocToCollection={handleAddDocToCollection}
+        onOpenEdit={handleEditCollection}
+        additionalOperations={additionalOperations}
+      />
+    ),
+    [
+      additionalOperations,
       collectionId,
-      handleOpenCollapsed,
-      handleEditCollection
-    );
-
-  const finalOperations = useMemo(() => {
-    if (additionalOperations) {
-      return [...additionalOperations, ...collectionOperations];
-    }
-    return collectionOperations;
-  }, [additionalOperations, collectionOperations]);
+      handleAddDocToCollection,
+      handleEditCollection,
+    ]
+  );
 
   if (!collection) {
     return null;
@@ -103,7 +105,7 @@ export const NavigationPanelCollectionNode = ({
       setCollapsed={setCollapsed}
       to={`/collection/${collection.id}`}
       active={active}
-      operations={finalOperations}
+      menuTarget={menuTarget}
       data-testid={`navigation-panel-collection-${collectionId}`}
     >
       <NavigationPanelCollectionNodeChildren

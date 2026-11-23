@@ -18,8 +18,8 @@ examples:
 
 $ seed User                                  Create an User
 $ seed User 3                                Create 3 Users
-$ seed User feature=pro_plan_v1              Create an User with Pro feature
-$ seed TeamWorkspace id=xxx                  Seed a workspace with Team feature
+$ seed User feature=administrator            Create an administrator
+$ seed TeamWorkspace id=xxx                  Seed a workspace with Team entitlement
 $ seed Workspace id=xxx public=true          Seed with boolean property
 $ seed TeamWorkspace id=xxx quantity=10n     Seed with numberic property, use \`={num}n\` suffix
 `);

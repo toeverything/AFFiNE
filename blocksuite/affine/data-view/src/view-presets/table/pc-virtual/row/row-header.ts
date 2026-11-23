@@ -84,9 +84,11 @@ export class TableRowHeader extends SignalWatcher(
     return html`
       <div @click=${this.selectRow} class="${styles.checkboxWrapper}">
         <div class="${classString}">
-          ${this.rowSelected$.value
-            ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
-            : CheckBoxUnIcon()}
+          ${
+            this.rowSelected$.value
+              ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
+              : CheckBoxUnIcon()
+          }
         </div>
       </div>
     `;

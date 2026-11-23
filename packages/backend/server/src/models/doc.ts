@@ -1,12 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import type { Update } from '@prisma/client';
+import type { Update, WorkspaceDoc } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 import { EventBus, PaginationInput } from '../base';
-import { DocIsNotPublic } from '../base/error';
+import { BadRequest, DocIsNotPublic, NotFound } from '../base/error';
+import { isOrdinaryWorkspaceDoc } from '../native';
 import { BaseModel } from './base';
 import { Doc, DocRole, PublicDocMode, publicUserSelect } from './common';
+import {
+  docInfoProjection,
+  type DocInfoRow,
+  parseDocCursor,
+  workspaceDocSources,
+} from './doc-source';
 
 declare global {
   interface Events {
@@ -19,13 +26,24 @@ declare global {
       workspaceId: string;
       docId: string;
     };
+    'doc.public_state.changed': {
+      workspaceId: string;
+      docId: string;
+    };
+    'doc.default_role.changed': {
+      workspaceId: string;
+      docId: string;
+    };
   }
 }
 
-export type DocMetaUpsertInput = Omit<
+export type DocMetaUpsertInput = Pick<
   Prisma.WorkspaceDocUncheckedCreateInput,
-  'workspaceId' | 'docId'
->;
+  'mode' | 'blocked' | 'title' | 'summary' | 'publishedAt'
+> & {
+  public?: boolean;
+  defaultRole?: DocRole;
+};
 
 /**
  * Workspace Doc Model
@@ -42,6 +60,24 @@ export class DocModel extends BaseModel {
     super();
   }
 
+  private docRoleFromPolicy(role: string | null | undefined) {
+    switch (role) {
+      case 'none':
+        return DocRole.None;
+      case 'reader':
+        return DocRole.Reader;
+      case 'commenter':
+        return DocRole.Commenter;
+      case 'editor':
+        return DocRole.Editor;
+      case 'owner':
+        return DocRole.Owner;
+      case 'manager':
+      default:
+        return DocRole.Manager;
+    }
+  }
+
   // #region Update
 
   private updateToDocRecord(row: Update): Doc {
@@ -54,7 +90,7 @@ export class DocModel extends BaseModel {
     };
   }
 
-  private docRecordToUpdate(record: Doc): Update {
+  private docRecordToUpdate(record: Doc): Prisma.UpdateCreateManyInput {
     return {
       workspaceId: record.spaceId,
       id: record.docId,
@@ -106,10 +142,12 @@ export class DocModel extends BaseModel {
     return await this.db.update.count();
   }
 
-  async groupedUpdatesCount() {
+  async groupedUpdatesCount(limit = 100) {
     return await this.db.update.groupBy({
       by: ['workspaceId', 'id'],
       _count: true,
+      orderBy: [{ workspaceId: 'asc' }, { id: 'asc' }],
+      take: limit,
     });
   }
 
@@ -147,6 +185,11 @@ export class DocModel extends BaseModel {
    */
   async upsert(doc: Doc) {
     const { spaceId, docId, blob, timestamp, editorId } = doc;
+    if (spaceId === docId) {
+      throw new BadRequest(
+        'Workspace indexes must use the root update writer.'
+      );
+    }
     const updatedAt = new Date(timestamp);
     const size = blob.byteLength ?? blob.length;
     // CONCERNS:
@@ -166,9 +209,6 @@ export class DocModel extends BaseModel {
       RETURNING "snapshots"."workspace_id" as "workspaceId", "snapshots"."guid" as "id", "snapshots"."updated_at" as "updatedAt"
     `;
 
-    // if the condition `snapshot.updatedAt > updatedAt` is true, by which means the snapshot has already been updated by other process,
-    // the updates has been applied to current `doc` must have been seen by the other process as well.
-    // The `updatedSnapshot` will be `undefined` in this case.
     return result.at(0);
   }
 
@@ -206,20 +246,24 @@ export class DocModel extends BaseModel {
   }
 
   async getAuthors(workspaceId: string, docId: string) {
-    return await this.db.snapshot.findUnique({
+    const doc = await this.getDocInfo(workspaceId, docId);
+    if (!doc) return null;
+    const users = await this.db.user.findMany({
       where: {
-        workspaceId_id: {
-          workspaceId,
-          id: docId,
+        id: {
+          in: [doc.creatorId, doc.lastUpdaterId].filter(
+            (id): id is string => id !== null
+          ),
         },
       },
-      select: {
-        createdAt: true,
-        updatedAt: true,
-        createdByUser: { select: publicUserSelect },
-        updatedByUser: { select: publicUserSelect },
-      },
+      select: publicUserSelect,
     });
+    return {
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+      createdByUser: users.find(user => user.id === doc.creatorId) ?? null,
+      updatedByUser: users.find(user => user.id === doc.lastUpdaterId) ?? null,
+    };
   }
 
   /**
@@ -351,11 +395,53 @@ export class DocModel extends BaseModel {
   /**
    * Create or update the doc meta.
    */
+  @Transactional()
   async upsertMeta(
     workspaceId: string,
     docId: string,
     data?: DocMetaUpsertInput
   ) {
+    for (const [key, shared] of [
+      [`storage-workspace:${workspaceId}`, true],
+      [`workspace-doc-update:${workspaceId}/${docId}`, false],
+    ] as const) {
+      for (;;) {
+        const [lock] = await this.db.$queryRaw<
+          { locked: boolean }[]
+        >`SELECT CASE WHEN ${shared} THEN pg_try_advisory_xact_lock_shared(hashtextextended(${key},0)) ELSE pg_try_advisory_xact_lock(hashtextextended(${key},0)) END AS locked`;
+        if (lock.locked) break;
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+    }
+    const current = await this.db.workspaceDoc.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+      select: { lifecycleState: true },
+    });
+    if (current?.lifecycleState === 'deleted')
+      throw new NotFound('Document not found');
+    const {
+      public: isPublic,
+      defaultRole,
+      publishedAt,
+      mode,
+      blocked,
+      title,
+      summary,
+    } = data ?? {};
+    const meta = { mode, blocked, title, summary };
+    const policyPublishedAt =
+      publishedAt == null ? publishedAt : new Date(publishedAt);
+    if (
+      data &&
+      ('public' in data || 'defaultRole' in data || 'publishedAt' in data)
+    ) {
+      await this.models.docAccessPolicy.upsert(workspaceId, docId, {
+        public: isPublic,
+        defaultRole,
+        publishedAt: policyPublishedAt,
+      });
+    }
+
     const doc = await this.db.workspaceDoc.upsert({
       where: {
         workspaceId_docId: {
@@ -364,10 +450,12 @@ export class DocModel extends BaseModel {
         },
       },
       update: {
-        ...data,
+        ...meta,
+        publishedAt,
       },
       create: {
-        ...data,
+        ...meta,
+        publishedAt,
         workspaceId,
         docId,
       },
@@ -376,20 +464,36 @@ export class DocModel extends BaseModel {
       workspaceId,
       docId,
     });
-    return doc;
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+    });
+    return {
+      ...doc,
+      public: policy?.visibility === 'public',
+      defaultRole: this.docRoleFromPolicy(policy?.memberDefaultRole),
+    };
   }
 
   /**
    * Get the doc meta.
    */
+  async getMeta(
+    workspaceId: string,
+    docId: string
+  ): Promise<(WorkspaceDoc & { public: boolean; defaultRole: DocRole }) | null>;
   async getMeta<Select extends Prisma.WorkspaceDocSelect>(
     workspaceId: string,
     docId: string,
-    options?: {
-      select?: Select;
+    options: {
+      select: Select;
     }
-  ) {
-    return (await this.db.workspaceDoc.findUnique({
+  ): Promise<Prisma.WorkspaceDocGetPayload<{ select: Select }> | null>;
+  async getMeta(
+    workspaceId: string,
+    docId: string,
+    options?: { select: Prisma.WorkspaceDocSelect }
+  ): Promise<unknown> {
+    const doc = await this.db.workspaceDoc.findUnique({
       where: {
         workspaceId_docId: {
           workspaceId,
@@ -397,7 +501,18 @@ export class DocModel extends BaseModel {
         },
       },
       select: options?.select,
-    })) as Prisma.WorkspaceDocGetPayload<{ select: Select }> | null;
+    });
+    if (!doc || options?.select) {
+      return doc;
+    }
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+    });
+    return {
+      ...doc,
+      public: policy?.visibility === 'public',
+      defaultRole: this.docRoleFromPolicy(policy?.memberDefaultRole),
+    };
   }
 
   async setDefaultRole(workspaceId: string, docId: string, role: DocRole) {
@@ -407,46 +522,68 @@ export class DocModel extends BaseModel {
   }
 
   async findDefaultRoles(workspaceId: string, docIds: string[]) {
-    const docs = await this.findMetas(
-      docIds.map(docId => ({
-        workspaceId,
-        docId,
-      })),
-      {
-        select: {
-          defaultRole: true,
-          public: true,
-        },
-      }
-    );
+    const policies = await this.db.docAccessPolicy.findMany({
+      where: { workspaceId, docId: { in: docIds } },
+    });
+    const byDocId = new Map(policies.map(policy => [policy.docId, policy]));
 
-    return docs.map(doc => ({
-      external: doc?.public ? DocRole.External : null,
-      workspace: doc?.defaultRole ?? DocRole.Manager,
+    return docIds.map(docId => ({
+      external:
+        byDocId.get(docId)?.publicRole === 'external' ? DocRole.External : null,
+      workspace: this.docRoleFromPolicy(byDocId.get(docId)?.memberDefaultRole),
     }));
   }
 
   async findAuthors(ids: { workspaceId: string; docId: string }[]) {
-    const rows = await this.db.snapshot.findMany({
-      where: {
-        workspaceId: { in: ids.map(id => id.workspaceId) },
-        id: { in: ids.map(id => id.docId) },
-      },
-      select: {
-        workspaceId: true,
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        createdByUser: { select: publicUserSelect },
-        updatedByUser: { select: publicUserSelect },
-      },
-    });
-    const resultMap = new Map(
-      rows.map(row => [`${row.workspaceId}-${row.id}`, row])
+    const workspaces = new Map<string, string[]>();
+    for (const id of ids) {
+      const docs = workspaces.get(id.workspaceId) ?? [];
+      docs.push(id.docId);
+      workspaces.set(id.workspaceId, docs);
+    }
+    const docs = (
+      await Promise.all(
+        [...workspaces].map(
+          ([workspaceId, docIds]) =>
+            this.db.$queryRaw<
+              DocInfoRow[]
+            >`${workspaceDocSources(workspaceId, docIds)} ${docInfoProjection}`
+        )
+      )
+    ).flat();
+    const userIds = [
+      ...new Set(
+        docs
+          .flatMap(doc => [doc.creatorId, doc.lastUpdaterId])
+          .filter((id): id is string => id !== null)
+      ),
+    ];
+    const users = new Map(
+      (
+        await this.db.user.findMany({
+          where: { id: { in: userIds } },
+          select: publicUserSelect,
+        })
+      ).map(user => [user.id, user])
     );
-    return ids.map(
-      id => resultMap.get(`${id.workspaceId}-${id.docId}`) ?? null
+    const authors = new Map(
+      docs.map(doc => [
+        `${doc.workspaceId}:${doc.docId}`,
+        {
+          workspaceId: doc.workspaceId,
+          id: doc.docId,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          createdByUser: doc.creatorId
+            ? (users.get(doc.creatorId) ?? null)
+            : null,
+          updatedByUser: doc.lastUpdaterId
+            ? (users.get(doc.lastUpdaterId) ?? null)
+            : null,
+        },
+      ])
     );
+    return ids.map(id => authors.get(`${id.workspaceId}:${id.docId}`) ?? null);
   }
 
   async findMetas<Select extends Prisma.WorkspaceDocSelect>(
@@ -484,22 +621,26 @@ export class DocModel extends BaseModel {
    * Find the workspace public doc metas.
    */
   async findPublics(workspaceId: string, order: 'asc' | 'desc' = 'asc') {
-    return await this.db.workspaceDoc.findMany({
-      where: { workspaceId, public: true },
-      orderBy: { publishedAt: order },
-    });
+    const ids = await this.listWorkspaceDocIds(workspaceId, true);
+    const direction = order === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+    const rows = await this.db.$queryRaw<
+      DocInfoRow[]
+    >`${workspaceDocSources(workspaceId, ids)} ${docInfoProjection} AND policy.visibility='public' AND policy.public_role='external' AND policy.published_at IS NOT NULL AND workspace_pages.published_at IS NOT NULL ORDER BY workspace_pages.published_at ${direction}`;
+    return rows.map(({ defaultRolePolicy, ...doc }) => ({
+      ...doc,
+      defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+    }));
   }
 
   /**
    * Get the workspace public docs count.
    */
   async getPublicsCount(workspaceId: string) {
-    return await this.db.workspaceDoc.count({
-      where: {
-        workspaceId,
-        public: true,
-      },
-    });
+    const ids = await this.listWorkspaceDocIds(workspaceId, true);
+    const [row] = await this.db.$queryRaw<
+      { count: bigint }[]
+    >`${workspaceDocSources(workspaceId, ids)} SELECT count(*) AS count FROM doc_sources source JOIN workspace_pages page ON page.workspace_id=source.workspace_id AND page.page_id=source.doc_id JOIN doc_access_policies policy ON policy.workspace_id=source.workspace_id AND policy.doc_id=source.doc_id WHERE page.lifecycle_state IS DISTINCT FROM 'deleted' AND policy.visibility='public' AND policy.public_role='external' AND policy.published_at IS NOT NULL AND page.published_at IS NOT NULL`;
+    return Number(row.count);
   }
 
   /**
@@ -527,8 +668,7 @@ export class DocModel extends BaseModel {
 
   @Transactional()
   async unpublish(workspaceId: string, docId: string) {
-    const docMeta = await this.getMeta(workspaceId, docId);
-    if (!docMeta?.public) {
+    if (!(await this.isPublic(workspaceId, docId))) {
       throw new DocIsNotPublic();
     }
 
@@ -542,158 +682,81 @@ export class DocModel extends BaseModel {
    * Check if the doc is public.
    */
   async isPublic(workspaceId: string, docId: string) {
-    const docMeta = await this.getMeta(workspaceId, docId, {
-      select: {
-        public: true,
-      },
+    const policy = await this.db.docAccessPolicy.findUnique({
+      where: { workspaceId_docId: { workspaceId, docId } },
+      select: { visibility: true, publicRole: true },
     });
-    return docMeta?.public ?? false;
+    return policy?.visibility === 'public' && policy.publicRole === 'external';
   }
 
   async getDocInfo(workspaceId: string, docId: string) {
-    const rows = await this.db.$queryRaw<
-      {
-        workspaceId: string;
-        docId: string;
-        mode: PublicDocMode;
-        public: boolean;
-        defaultRole: DocRole;
-        title: string | null;
-        summary: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        creatorId?: string;
-        lastUpdaterId?: string;
-      }[]
-    >`
-    SELECT
-     "workspace_pages"."workspace_id" as "workspaceId",
-     "workspace_pages"."page_id" as "docId",
-     "workspace_pages"."mode" as "mode",
-     "workspace_pages"."public" as "public",
-     "workspace_pages"."defaultRole" as "defaultRole",
-     "workspace_pages"."title" as "title",
-     "workspace_pages"."summary" as "summary",
-     "snapshots"."created_at" as "createdAt",
-     "snapshots"."updated_at" as "updatedAt",
-     "snapshots"."created_by" as "creatorId",
-     "snapshots"."updated_by" as "lastUpdaterId"
-    FROM "workspace_pages"
-    INNER JOIN "snapshots"
-    ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
-    AND "workspace_pages"."page_id" = "snapshots"."guid"
-    WHERE
-      "workspace_pages"."workspace_id" = ${workspaceId}
-      AND "workspace_pages"."page_id" = ${docId}
-    LIMIT 1;
-  `;
-
-    return rows.at(0) ?? null;
+    const [row] = await this.db.$queryRaw<
+      DocInfoRow[]
+    >`${workspaceDocSources(workspaceId, [docId])} ${docInfoProjection}`;
+    if (!row) return null;
+    const { defaultRolePolicy, ...doc } = row;
+    return { ...doc, defaultRole: this.docRoleFromPolicy(defaultRolePolicy) };
   }
 
   async paginateDocInfo(workspaceId: string, pagination: PaginationInput) {
-    const count = await this.db.workspaceDoc.count({
-      where: {
-        workspaceId,
-      },
-    });
-
-    const after = pagination.after
-      ? Prisma.sql`AND "snapshots"."created_at" > ${new Date(pagination.after)}`
-      : Prisma.sql``;
-
+    const ids = await this.listWorkspaceDocIds(workspaceId);
+    const cursor = pagination.after ? parseDocCursor(pagination.after) : null;
+    const after = cursor
+      ? cursor.docId === null
+        ? Prisma.sql`AND source.created_at > ${cursor.timestamp}`
+        : Prisma.sql`AND (source.created_at,source.doc_id) > (${cursor.timestamp},${cursor.docId})`
+      : Prisma.empty;
     const rows = await this.db.$queryRaw<
-      {
-        workspaceId: string;
-        docId: string;
-        mode: PublicDocMode;
-        public: boolean;
-        defaultRole: DocRole;
-        createdAt: Date;
-        updatedAt: Date;
-        creatorId?: string;
-        lastUpdaterId?: string;
-      }[]
-    >`
-      SELECT
-       "workspace_pages"."workspace_id" as "workspaceId",
-       "workspace_pages"."page_id" as "docId",
-       "workspace_pages"."mode" as "mode",
-       "workspace_pages"."public" as "public",
-       "workspace_pages"."defaultRole" as "defaultRole",
-       "snapshots"."created_at" as "createdAt",
-       "snapshots"."updated_at" as "updatedAt",
-       "snapshots"."created_by" as "creatorId",
-       "snapshots"."updated_by" as "lastUpdaterId"
-      FROM "workspace_pages"
-      INNER JOIN "snapshots"
-      ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
-      AND "workspace_pages"."page_id" = "snapshots"."guid"
-      WHERE
-        "workspace_pages"."workspace_id" = ${workspaceId}
-        ${after}
-      ORDER BY
-        "snapshots"."created_at" ASC
-      LIMIT ${pagination.first}
-      OFFSET ${pagination.offset}
-    `;
-
-    return [count, rows] as const;
+      DocInfoRow[]
+    >`${workspaceDocSources(workspaceId, ids)} ${docInfoProjection} AND workspace_pages.lifecycle_state IS NULL ${after} ORDER BY source.created_at,source.doc_id LIMIT ${pagination.first} OFFSET ${pagination.offset}`;
+    return [
+      ids.length,
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+        cursor: JSON.stringify([doc.createdAt.toISOString(), doc.docId]),
+      })),
+    ] as const;
   }
 
   async paginateDocInfoByUpdatedAt(
     workspaceId: string,
-    pagination: PaginationInput
+    pagination: PaginationInput,
+    readablePredicate: Prisma.Sql = Prisma.sql`TRUE`
   ) {
-    const count = await this.db.workspaceDoc.count({
-      where: {
-        workspaceId,
-      },
-    });
-
-    const after = pagination.after
-      ? Prisma.sql`AND "snapshots"."updated_at" < ${new Date(pagination.after)}`
-      : Prisma.sql``;
-
+    const ids = await this.listWorkspaceDocIds(workspaceId);
+    const [count] = await this.db.$queryRaw<
+      { count: bigint }[]
+    >`${workspaceDocSources(workspaceId, ids)} SELECT count(*) AS count FROM doc_sources source LEFT JOIN workspace_pages ON workspace_pages.workspace_id=source.workspace_id AND workspace_pages.page_id=source.doc_id WHERE workspace_pages.lifecycle_state IS NULL AND ${readablePredicate}`;
+    const cursor = pagination.after ? parseDocCursor(pagination.after) : null;
+    const after = cursor
+      ? cursor.docId === null
+        ? Prisma.sql`AND source.updated_at < ${cursor.timestamp}`
+        : Prisma.sql`AND (source.updated_at < ${cursor.timestamp} OR (source.updated_at = ${cursor.timestamp} AND source.doc_id > ${cursor.docId}))`
+      : Prisma.empty;
     const rows = await this.db.$queryRaw<
-      {
-        workspaceId: string;
-        docId: string;
-        mode: PublicDocMode;
-        public: boolean;
-        defaultRole: DocRole;
-        title: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        creatorId?: string;
-        lastUpdaterId?: string;
-      }[]
-    >`
-      SELECT
-       "workspace_pages"."workspace_id" as "workspaceId",
-       "workspace_pages"."page_id" as "docId",
-       "workspace_pages"."mode" as "mode",
-       "workspace_pages"."public" as "public",
-       "workspace_pages"."defaultRole" as "defaultRole",
-       "workspace_pages"."title" as "title",
-       "snapshots"."created_at" as "createdAt",
-       "snapshots"."updated_at" as "updatedAt",
-       "snapshots"."created_by" as "creatorId",
-       "snapshots"."updated_by" as "lastUpdaterId"
-      FROM "workspace_pages"
-      INNER JOIN "snapshots"
-      ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
-      AND "workspace_pages"."page_id" = "snapshots"."guid"
-      WHERE
-        "workspace_pages"."workspace_id" = ${workspaceId}
-        ${after}
-      ORDER BY
-        "snapshots"."updated_at" DESC
-      LIMIT ${pagination.first}
-      OFFSET ${pagination.offset}
-    `;
+      DocInfoRow[]
+    >`${workspaceDocSources(workspaceId, ids)} ${docInfoProjection} AND workspace_pages.lifecycle_state IS NULL AND ${readablePredicate} ${after} ORDER BY source.updated_at DESC,source.doc_id LIMIT ${pagination.first} OFFSET ${pagination.offset}`;
+    return [
+      Number(count.count),
+      rows.map(({ defaultRolePolicy, ...doc }) => ({
+        ...doc,
+        defaultRole: this.docRoleFromPolicy(defaultRolePolicy),
+        cursor: JSON.stringify([doc.updatedAt.toISOString(), doc.docId]),
+      })),
+    ] as const;
+  }
 
-    return [count, rows] as const;
+  async listWorkspaceDocIds(workspaceId: string, includeTrashed = false) {
+    const lifecycle = includeTrashed
+      ? Prisma.sql`workspace_pages.lifecycle_state IS DISTINCT FROM 'deleted'`
+      : Prisma.sql`workspace_pages.lifecycle_state IS NULL`;
+    const rows = await this.db.$queryRaw<
+      { docId: string }[]
+    >`${workspaceDocSources(workspaceId)} SELECT source.doc_id AS "docId" FROM doc_sources source LEFT JOIN workspace_pages ON workspace_pages.workspace_id=source.workspace_id AND workspace_pages.page_id=source.doc_id WHERE ${lifecycle} ORDER BY source.doc_id`;
+    return rows
+      .map(row => row.docId)
+      .filter(docId => isOrdinaryWorkspaceDoc(workspaceId, docId));
   }
 
   async findEmptySummaryDocIds(workspaceId: string) {

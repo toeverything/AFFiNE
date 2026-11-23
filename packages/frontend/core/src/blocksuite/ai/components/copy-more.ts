@@ -178,74 +178,82 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         }
       </style>
       <div class="copy-more">
-        ${content
-          ? html`<div
-              class="button copy"
-              @click=${async () => {
-                const success = await copyText(content);
-                if (success) {
-                  this._notifySuccess('Copied to clipboard');
-                }
-              }}
-              data-testid="action-copy-button"
-            >
-              ${CopyIcon({ width: '20px', height: '20px' })}
-              <affine-tooltip>Copy</affine-tooltip>
-            </div>`
-          : nothing}
-        ${isLast
-          ? html`<div
-              class="button retry"
-              @click=${() => this.retry()}
-              data-testid="action-retry-button"
-            >
-              ${ResetIcon({ width: '20px', height: '20px' })}
-              <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
-            </div>`
-          : nothing}
-        ${showMoreIcon && host
-          ? html`<div
-              class="button more"
-              data-testid="action-more-button"
-              @click=${this._toggle}
-            >
-              ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
-            </div> `
-          : nothing}
+        ${
+          content
+            ? html`<div
+                class="button copy"
+                @click=${async () => {
+                  const success = await copyText(content);
+                  if (success) {
+                    this._notifySuccess('Copied to clipboard');
+                  }
+                }}
+                data-testid="action-copy-button"
+              >
+                ${CopyIcon({ width: '20px', height: '20px' })}
+                <affine-tooltip>Copy</affine-tooltip>
+              </div>`
+            : nothing
+        }
+        ${
+          isLast
+            ? html`<div
+                class="button retry"
+                @click=${() => this.retry()}
+                data-testid="action-retry-button"
+              >
+                ${ResetIcon({ width: '20px', height: '20px' })}
+                <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
+              </div>`
+            : nothing
+        }
+        ${
+          showMoreIcon && host
+            ? html`<div
+                class="button more"
+                data-testid="action-more-button"
+                @click=${this._toggle}
+              >
+                ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
+              </div> `
+            : nothing
+        }
       </div>
 
       <div class="more-menu">
-        ${this._showMoreMenu && host
-          ? repeat(
-              actions.filter(action => action.showWhen(host)),
-              action => action.title,
-              action => {
-                const currentSelections = {
-                  text: this._currentTextSelection,
-                  blocks: this._currentBlockSelections,
-                };
-                return html`<div
-                  @click=${async () => {
-                    const sessionId = this.session?.sessionId;
-                    const success = await action.handler(
-                      host,
-                      content,
-                      currentSelections,
-                      sessionId,
-                      messageId
-                    );
+        ${
+          this._showMoreMenu && host
+            ? repeat(
+                actions.filter(action => action.showWhen(host)),
+                action => action.title,
+                action => {
+                  const currentSelections = {
+                    text: this._currentTextSelection,
+                    blocks: this._currentBlockSelections,
+                  };
+                  return html`<div
+                    @click=${async () => {
+                      const sessionId = this.session?.sessionId;
+                      const success = await action.handler(
+                        host,
+                        content,
+                        currentSelections,
+                        sessionId,
+                        messageId
+                      );
 
-                    if (success) {
-                      this._notifySuccess(action.toast);
-                    }
-                  }}
-                >
-                  ${action.icon}
-                  <div>${action.title}</div>
-                </div>`;
-              }
-            )
-          : nothing}
+                      if (success) {
+                        this._notifySuccess(action.toast);
+                      }
+                    }}
+                  >
+                    ${action.icon}
+                    <div>${action.title}</div>
+                  </div>`;
+                }
+              )
+            : nothing
+        }
       </div>`;
   }
 }

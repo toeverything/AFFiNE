@@ -42,6 +42,7 @@ test('can switch & close tab by clicking', async ({ page }) => {
 
   // the first tab should be active
   await expectActiveTab(page, 0);
+  await expectTabCount(page, 1);
 });
 
 test('Collapse Sidebar', async ({ page }) => {

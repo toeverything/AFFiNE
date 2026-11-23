@@ -3,6 +3,7 @@ package app.affine.pro.service
 import app.affine.pro.AFFiNEApp
 import app.affine.pro.CapacitorConfig
 import app.affine.pro.utils.dataStore
+import app.affine.pro.utils.del
 import app.affine.pro.utils.set
 import com.google.firebase.crashlytics.ktx.crashlytics
 import com.google.firebase.ktx.Firebase
@@ -50,6 +51,20 @@ object OkHttp {
 
 }
 
+object AuthHttp {
+    val client = OkHttpClient.Builder()
+        .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor {
+            it.proceed(
+                it.request()
+                    .newBuilder()
+                    .addHeader("x-affine-version", CapacitorConfig.getAffineVersion())
+                    .build()
+            )
+        }
+        .build()
+}
+
 object CookieStore {
 
     const val AFFINE_SESSION = "affine_session"
@@ -61,9 +76,6 @@ object CookieStore {
     fun saveCookies(host: String, cookies: List<Cookie>) {
         _cookies[host] = cookies
         MainScope().launch(Dispatchers.IO) {
-            cookies.find { it.name == AFFINE_SESSION }?.let {
-                AFFiNEApp.context().dataStore.set(host + AFFINE_SESSION, it.toString())
-            }
             cookies.find { it.name == AFFINE_USER_ID }?.let {
                 Timber.d("Update user id [${it.value}]")
                 AFFiNEApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
@@ -76,6 +88,18 @@ object CookieStore {
     }
 
     fun getCookies(host: String) = _cookies[host] ?: emptyList()
+
+    fun clearAuthCookies(host: String) {
+        val cookies = _cookies[host] ?: emptyList()
+        _cookies[host] = cookies.filter {
+            it.name != AFFINE_SESSION && it.name != AFFINE_USER_ID && it.name != AFFINE_CSRF_TOKEN
+        }
+        MainScope().launch(Dispatchers.IO) {
+            AFFiNEApp.context().dataStore.del(host + AFFINE_USER_ID)
+            AFFiNEApp.context().dataStore.del(host + AFFINE_CSRF_TOKEN)
+            Firebase.crashlytics.setUserId("")
+        }
+    }
 
     fun getCookie(url: HttpUrl, name: String) = url.host
         .let { _cookies[it] }

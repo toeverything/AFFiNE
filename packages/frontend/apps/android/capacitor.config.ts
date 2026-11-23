@@ -7,6 +7,9 @@ const packageJson = JSON.parse(
   readFileSync(resolve(__dirname, './package.json'), 'utf-8')
 );
 
+const capServerUrl = process.env.CAP_SERVER_URL;
+const allowsCleartextServer = capServerUrl?.startsWith('http://') ?? false;
+
 interface AppConfig {
   affineVersion: string;
 }
@@ -25,12 +28,11 @@ const config: CapacitorConfig & AppConfig = {
       keystoreAliasPassword: process.env.AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD,
       releaseType: 'AAB',
     },
-    adjustMarginsForEdgeToEdge: 'force',
-  },
-  server: {
-    cleartext: true,
   },
   plugins: {
+    SystemBars: {
+      insetsHandling: 'css',
+    },
     CapacitorHttp: {
       enabled: false,
     },
@@ -40,10 +42,11 @@ const config: CapacitorConfig & AppConfig = {
   },
 };
 
-if (process.env.CAP_SERVER_URL) {
+if (capServerUrl) {
   Object.assign(config, {
     server: {
-      url: process.env.CAP_SERVER_URL,
+      url: capServerUrl,
+      cleartext: allowsCleartextServer,
     },
   });
 }

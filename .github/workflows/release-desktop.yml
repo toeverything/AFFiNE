@@ -1,6 +1,5 @@
-name: Release Desktop
-
-on:
+name: Build Desktop Candidates
+'on':
   workflow_call:
     inputs:
       build-type:
@@ -12,43 +11,22 @@ on:
       git-short-hash:
         required: true
         type: string
-      desktop_macos:
-        description: 'Desktop - macOS'
-        required: false
-        default: true
-        type: boolean
-      desktop_windows:
-        description: 'Desktop - Windows'
-        required: false
-        default: true
-        type: boolean
-      desktop_linux:
-        description: 'Desktop - Linux'
-        required: false
-        default: true
-        type: boolean
-
+      matrix:
+        required: true
+        type: string
 permissions:
-  actions: write
-  contents: write
-  security-events: write
-  id-token: write
-  attestations: write
-
+  contents: read
 env:
   BUILD_TYPE: ${{ inputs.build-type }}
   RELEASE_VERSION: ${{ inputs.app-version }}
-  DEBUG: 'affine:*,napi:*'
+  DEBUG: affine:*,napi:*
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '11.6'
-
 jobs:
   before-make:
-    if: ${{ inputs.desktop_macos || inputs.desktop_windows || inputs.desktop_linux }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.build-type }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Version
         uses: ./.github/actions/setup-version
         with:
@@ -61,32 +39,19 @@ jobs:
         run: yarn affine @affine/electron generate-assets
         env:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: 'affine'
+          SENTRY_PROJECT: affine
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_RELEASE: ${{ inputs.app-version }}
           RELEASE_VERSION: ${{ inputs.app-version }}
-
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
+          overwrite: true
           name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
-
-  make-distribution-macos:
-    if: ${{ inputs.desktop_macos }}
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - runner: macos-latest
-            platform: darwin
-            arch: x64
-            target: x86_64-apple-darwin
-          - runner: macos-latest
-            platform: darwin
-            arch: arm64
-            target: aarch64-apple-darwin
+    continue-on-error: ${{ !contains(inputs.matrix, '"required":true') }}
+  package:
     needs: before-make
     uses: ./.github/workflows/release-desktop-platform.yml
     secrets: inherit
@@ -94,325 +59,4 @@ jobs:
       build_type: ${{ inputs.build-type }}
       app_version: ${{ inputs.app-version }}
       git_short_hash: ${{ inputs.git-short-hash }}
-      runner: ${{ matrix.spec.runner }}
-      platform: ${{ matrix.spec.platform }}
-      arch: ${{ matrix.spec.arch }}
-      target: ${{ matrix.spec.target }}
-      apple_codesign: true
-
-  make-distribution-linux:
-    if: ${{ inputs.desktop_linux }}
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - runner: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: x86_64-unknown-linux-gnu
-    needs: before-make
-    uses: ./.github/workflows/release-desktop-platform.yml
-    secrets: inherit
-    with:
-      build_type: ${{ inputs.build-type }}
-      app_version: ${{ inputs.app-version }}
-      git_short_hash: ${{ inputs.git-short-hash }}
-      runner: ${{ matrix.spec.runner }}
-      platform: ${{ matrix.spec.platform }}
-      arch: ${{ matrix.spec.arch }}
-      target: ${{ matrix.spec.target }}
-      install_linux_deps: true
-
-  package-distribution-windows-x64:
-    if: ${{ inputs.desktop_windows }}
-    needs: before-make
-    uses: ./.github/workflows/release-desktop-platform.yml
-    secrets: inherit
-    with:
-      build_type: ${{ inputs.build-type }}
-      app_version: ${{ inputs.app-version }}
-      git_short_hash: ${{ inputs.git-short-hash }}
-      runner: windows-latest
-      platform: win32
-      arch: x64
-      target: x86_64-pc-windows-msvc
-      enable_scripts: true
-
-  package-distribution-windows-arm64:
-    if: ${{ inputs.desktop_windows }}
-    needs: before-make
-    uses: ./.github/workflows/release-desktop-platform.yml
-    secrets: inherit
-    with:
-      build_type: ${{ inputs.build-type }}
-      app_version: ${{ inputs.app-version }}
-      git_short_hash: ${{ inputs.git-short-hash }}
-      runner: windows-latest
-      platform: win32
-      arch: arm64
-      target: aarch64-pc-windows-msvc
-      enable_scripts: true
-
-  sign-packaged-artifacts-windows_x64:
-    if: ${{ inputs.desktop_windows }}
-    needs: package-distribution-windows-x64
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: ${{ needs.package-distribution-windows-x64.outputs.files_to_be_signed }}
-      artifact-name: packaged-win32-x64
-
-  sign-packaged-artifacts-windows_arm64:
-    if: ${{ inputs.desktop_windows }}
-    needs: package-distribution-windows-arm64
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: ${{ needs.package-distribution-windows-arm64.outputs.files_to_be_signed }}
-      artifact-name: packaged-win32-arm64
-
-  make-windows-installer:
-    if: ${{ inputs.desktop_windows }}
-    needs:
-      - sign-packaged-artifacts-windows_x64
-      - sign-packaged-artifacts-windows_arm64
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - platform: win32
-            arch: x64
-          - platform: win32
-            arch: arm64
-    runs-on: windows-latest
-    outputs:
-      FILES_TO_BE_SIGNED_x64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_x64 }}
-      FILES_TO_BE_SIGNED_arm64: ${{ steps.get_files_to_be_signed.outputs.FILES_TO_BE_SIGNED_arm64 }}
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Version
-        uses: ./.github/actions/setup-version
-        with:
-          app-version: ${{ inputs.app-version }}
-      - name: Setup Node.js
-        timeout-minutes: 10
-        uses: ./.github/actions/setup-node
-        with:
-          extra-flags: workspaces focus @affine/electron @affine/monorepo
-          hard-link-nm: false
-          nmHoistingLimits: workspaces
-        env:
-          npm_config_arch: ${{ matrix.spec.arch }}
-      - name: Download packaged artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: packaged-unsigned
-      - name: unzip packaged artifacts
-        run: Expand-Archive -Path packaged-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out
-      - name: Download signed packaged file diff
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: signed-packaged-diff
-      - name: Apply signed packaged file diff
-        shell: pwsh
-        run: |
-          $DiffRoot = 'signed-packaged-diff/files'
-          $TargetRoot = 'packages/frontend/apps/electron/out'
-          if (!(Test-Path -LiteralPath $DiffRoot)) {
-            throw "Signed diff directory not found: $DiffRoot"
-          }
-
-          Copy-Item -Path (Join-Path $DiffRoot '*') -Destination $TargetRoot -Recurse -Force
-
-          $ManifestPath = 'signed-packaged-diff/manifest.json'
-          if (Test-Path -LiteralPath $ManifestPath) {
-            $ManifestEntries = @(Get-Content -LiteralPath $ManifestPath | ConvertFrom-Json)
-            foreach ($Entry in $ManifestEntries) {
-              $TargetPath = Join-Path $TargetRoot $Entry.path
-              if (!(Test-Path -LiteralPath $TargetPath -PathType Leaf)) {
-                throw "Applied signed file not found: $($Entry.path)"
-              }
-
-              $TargetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TargetPath).Hash
-              if ($TargetHash -ne $Entry.sha256) {
-                throw "Signed file hash mismatch: $($Entry.path)"
-              }
-            }
-          }
-
-      - name: Make squirrel.windows installer
-        run: yarn affine @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-
-      - name: Make nsis.windows installer
-        run: yarn affine @affine/electron make-nsis --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
-
-      - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
-
-      - name: get all files to be signed
-        id: get_files_to_be_signed
-        run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\apps\electron\out\${{ env.BUILD_TYPE }}\make\', '') + '"' }) -join ' ')
-          "FILES_TO_BE_SIGNED_${{ matrix.spec.arch }}=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
-          echo $FILES_TO_BE_SIGNED
-
-      - name: Save installer for signing
-        uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: archive.zip
-
-  sign-installer-artifacts-windows-x64:
-    if: ${{ inputs.desktop_windows }}
-    needs: make-windows-installer
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_x64 }}
-      artifact-name: installer-win32-x64
-
-  sign-installer-artifacts-windows-arm64:
-    if: ${{ inputs.desktop_windows }}
-    needs: make-windows-installer
-    uses: ./.github/workflows/windows-signer.yml
-    with:
-      files: ${{ needs.make-windows-installer.outputs.FILES_TO_BE_SIGNED_arm64 }}
-      artifact-name: installer-win32-arm64
-
-  finalize-installer-windows:
-    if: ${{ inputs.desktop_windows }}
-    needs:
-      [
-        sign-installer-artifacts-windows-x64,
-        sign-installer-artifacts-windows-arm64,
-        before-make,
-      ]
-    strategy:
-      fail-fast: false
-      matrix:
-        spec:
-          - runner: windows-latest
-            platform: win32
-            arch: x64
-          - runner: windows-latest
-            platform: win32
-            arch: arm64
-    runs-on: ${{ matrix.spec.runner }}
-    steps:
-      - name: Download installer artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: installer-unsigned
-      - name: unzip installer artifacts
-        run: Expand-Archive -Path installer-unsigned/archive.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
-      - name: Download signed installer file diff
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
-          path: signed-installer-diff
-      - name: Apply signed installer file diff
-        shell: pwsh
-        run: |
-          $DiffRoot = 'signed-installer-diff/files'
-          $TargetRoot = 'packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make'
-          if (!(Test-Path -LiteralPath $DiffRoot)) {
-            throw "Signed diff directory not found: $DiffRoot"
-          }
-
-          Copy-Item -Path (Join-Path $DiffRoot '*') -Destination $TargetRoot -Recurse -Force
-
-          $ManifestPath = 'signed-installer-diff/manifest.json'
-          if (Test-Path -LiteralPath $ManifestPath) {
-            $ManifestEntries = @(Get-Content -LiteralPath $ManifestPath | ConvertFrom-Json)
-            foreach ($Entry in $ManifestEntries) {
-              $TargetPath = Join-Path $TargetRoot $Entry.path
-              if (!(Test-Path -LiteralPath $TargetPath -PathType Leaf)) {
-                throw "Applied signed file not found: $($Entry.path)"
-              }
-
-              $TargetHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TargetPath).Hash
-              if ($TargetHash -ne $Entry.sha256) {
-                throw "Signed file hash mismatch: $($Entry.path)"
-              }
-            }
-          }
-
-      - name: Save artifacts
-        run: |
-          mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/zip/win32/${{ matrix.spec.arch }}/AFFiNE*-win32-${{ matrix.spec.arch }}-*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
-          mv packages/frontend/apps/electron/out/*/make/squirrel.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
-          mv packages/frontend/apps/electron/out/*/make/nsis.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
-
-      - uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: |
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
-            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: affine-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}-builds
-          path: builds
-
-  release:
-    if: ${{ inputs.desktop_macos && inputs.desktop_linux && inputs.desktop_windows }}
-    needs:
-      [
-        before-make,
-        make-distribution-macos,
-        make-distribution-linux,
-        finalize-installer-windows,
-      ]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-      - name: Download Artifacts (macos-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-darwin-x64-builds
-          path: ./release
-      - name: Download Artifacts (macos-arm64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-darwin-arm64-builds
-          path: ./release
-      - name: Download Artifacts (windows-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-win32-x64-builds
-          path: ./release
-      - name: Download Artifacts (windows-arm64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-win32-arm64-builds
-          path: ./release
-      - name: Download Artifacts (linux-x64)
-        uses: actions/download-artifact@v4
-        with:
-          name: affine-linux-x64-builds
-          path: ./release
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 20
-      - name: Copy Selfhost Release Files
-        run: |
-          cp ./.docker/selfhost/compose.yml ./release/docker-compose.yml
-          cp ./.docker/selfhost/.env.example ./release/.env.example
-          cp ./.docker/selfhost/schema.json ./release/config.schema.json
-      - name: Generate Release yml
-        run: |
-          node ./scripts/generate-release-yml.mjs
-        env:
-          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ env.RELEASE_VERSION }}
-          draft: ${{ inputs.build-type == 'stable' }}
-          prerelease: ${{ inputs.build-type != 'stable' }}
-          tag_name: v${{ env.RELEASE_VERSION}}
-          files: ./release/*
+      matrix: ${{ inputs.matrix }}

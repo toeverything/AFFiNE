@@ -26,6 +26,9 @@ public class UpdateUserProfileMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("updateProfile", UpdateProfile.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      UpdateUserProfileMutation.Data.self
+    ] }
 
     public var updateProfile: UpdateProfile { __data["updateProfile"] }
 
@@ -41,6 +44,9 @@ public class UpdateUserProfileMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
         .field("name", String.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        UpdateUserProfileMutation.Data.UpdateProfile.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

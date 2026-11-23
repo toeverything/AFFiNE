@@ -6,17 +6,22 @@ import type { MenuSubProps } from '../menu.types';
 import { useMenuItem } from '../use-menu-item';
 import { useMobileSubMenuHelper } from './context';
 
+const EMPTY_SUB_CONTENT_OPTIONS: NonNullable<
+  MenuSubProps['subContentOptions']
+> = {};
+
 export const MobileMenuSub = ({
   title,
   children: propsChildren,
   items,
   triggerOptions,
-  subContentOptions: contentOptions = {},
+  subContentOptions,
 }: MenuSubProps & { title?: string }) => {
+  const contentOptions = subContentOptions ?? EMPTY_SUB_CONTENT_OPTIONS;
   const {
     className,
     children,
-    otherProps: { onClick, ...otherTriggerOptions },
+    otherProps: { onClick, textValue: _textValue, ...otherTriggerOptions },
   } = useMenuItem({
     children: propsChildren,
     suffixIcon: <ArrowRightSmallPlusIcon />,
@@ -30,9 +35,14 @@ export const MobileMenuSub = ({
       subContentOptions={contentOptions}
       title={title}
     >
-      <div role="menuitem" className={className} {...otherTriggerOptions}>
+      <button
+        type="button"
+        className={className}
+        disabled={triggerOptions?.disabled}
+        {...otherTriggerOptions}
+      >
         {children}
-      </div>
+      </button>
     </MobileMenuSubRaw>
   );
 };
@@ -43,11 +53,12 @@ export const MobileMenuSubRaw = ({
   children,
   items,
   subOptions,
-  subContentOptions: contentOptions = {},
+  subContentOptions,
 }: MenuSubProps & {
-  onClick?: (e: MouseEvent<HTMLDivElement>) => void;
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
   title?: string;
 }) => {
+  const contentOptions = subContentOptions ?? EMPTY_SUB_CONTENT_OPTIONS;
   const id = useId();
   const { addSubMenu } = useMobileSubMenuHelper();
 
@@ -61,7 +72,7 @@ export const MobileMenuSubRaw = ({
   }, [addSubMenu, subMenuContent]);
 
   const onItemClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
+    (e: MouseEvent<HTMLElement>) => {
       onClick?.(e);
       doAddSubMenu();
     },

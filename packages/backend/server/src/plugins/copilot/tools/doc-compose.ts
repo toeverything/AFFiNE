@@ -1,16 +1,21 @@
 import { Logger } from '@nestjs/common';
 import { z } from 'zod';
 
+import type { PromptMessage } from '../providers/types';
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type { CopilotProviderFactory, PromptService } from './types';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>,
+  options?: {
+    appendMessages?: PromptMessage[];
+  }
+) => Promise<string>;
 
 const logger = new Logger('DocComposeTool');
 
-export const createDocComposeTool = (
-  promptService: PromptService,
-  factory: CopilotProviderFactory
-) => {
+export const createDocComposeTool = (prompt: RunPromptText) => {
   return defineTool({
     description:
       'Write a new document with markdown content. This tool creates structured markdown content for documents including titles, sections, and formatting.',
@@ -24,22 +29,10 @@ export const createDocComposeTool = (
     }),
     execute: async ({ title, userPrompt }) => {
       try {
-        const prompt = await promptService.get('Write an article about this');
-        if (!prompt) {
-          throw new Error('Prompt not found');
-        }
-
-        const provider = await factory.getProviderByModel(prompt.model);
-
-        if (!provider) {
-          throw new Error('Provider not found');
-        }
-
-        const content = await provider.text(
-          {
-            modelId: prompt.model,
-          },
-          [...prompt.finish({}), { role: 'user', content: userPrompt }]
+        const content = await prompt(
+          'Write an article about this',
+          {},
+          { appendMessages: [{ role: 'user', content: userPrompt }] }
         );
 
         return {

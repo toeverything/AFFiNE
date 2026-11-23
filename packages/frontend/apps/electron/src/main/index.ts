@@ -1,5 +1,3 @@
-import './security-restrictions';
-
 import path from 'node:path';
 
 import * as Sentry from '@sentry/electron/main';
@@ -15,12 +13,16 @@ import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
 import { setupRecordingFeature } from './recording/feature';
+import { ensureSecureLinuxPasswordStore } from './secure-storage';
+import { registerSecurityRestrictions } from './security-restrictions';
 import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
 
 app.enableSandbox();
+
+ensureSecureLinuxPasswordStore();
 
 if (isDev) {
   // In electron the dev server will be resolved to 0.0.0.0, but it
@@ -66,7 +68,7 @@ if (overrideSession) {
   app.setPath('sessionData', userDataPath);
 }
 
-// oxlint-disable-next-line @typescript-eslint/no-var-requires
+// oxlint-disable-next-line typescript/no-var-requires
 if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {
@@ -105,6 +107,7 @@ app.on('activate', () => {
 });
 
 setupDeepLink(app);
+registerSecurityRestrictions();
 
 /**
  * Create app window when background process will be ready

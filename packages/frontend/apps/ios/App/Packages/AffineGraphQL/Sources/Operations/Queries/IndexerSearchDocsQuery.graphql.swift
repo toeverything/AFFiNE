@@ -34,6 +34,9 @@ public class IndexerSearchDocsQuery: GraphQLQuery {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("workspace", Workspace.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      IndexerSearchDocsQuery.Data.self
+    ] }
 
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }
@@ -49,6 +52,9 @@ public class IndexerSearchDocsQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("searchDocs", [SearchDoc].self, arguments: ["input": .variable("input")]),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        IndexerSearchDocsQuery.Data.Workspace.self
       ] }
 
       /// Search docs by keyword
@@ -72,6 +78,9 @@ public class IndexerSearchDocsQuery: GraphQLQuery {
           .field("updatedAt", AffineGraphQL.DateTime.self),
           .field("createdByUser", CreatedByUser?.self),
           .field("updatedByUser", UpdatedByUser?.self),
+        ] }
+        public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+          IndexerSearchDocsQuery.Data.Workspace.SearchDoc.self
         ] }
 
         public var docId: String { __data["docId"] }
@@ -97,6 +106,9 @@ public class IndexerSearchDocsQuery: GraphQLQuery {
             .field("name", String.self),
             .field("avatarUrl", String?.self),
           ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerSearchDocsQuery.Data.Workspace.SearchDoc.CreatedByUser.self
+          ] }
 
           public var id: String { __data["id"] }
           public var name: String { __data["name"] }
@@ -116,6 +128,9 @@ public class IndexerSearchDocsQuery: GraphQLQuery {
             .field("id", String.self),
             .field("name", String.self),
             .field("avatarUrl", String?.self),
+          ] }
+          public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+            IndexerSearchDocsQuery.Data.Workspace.SearchDoc.UpdatedByUser.self
           ] }
 
           public var id: String { __data["id"] }

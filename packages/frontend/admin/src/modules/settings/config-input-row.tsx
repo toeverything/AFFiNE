@@ -1,3 +1,4 @@
+import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import {
   Select,
@@ -19,6 +20,10 @@ export type ConfigInputProps = {
   onChange: (field: string, value: any) => void;
   error?: string;
   onErrorChange?: (field: string, error?: string) => void;
+  secret?: boolean;
+  configured?: boolean;
+  source?: string;
+  onClear?: () => void;
 } & (
   | {
       type: 'String' | 'Number' | 'Boolean' | 'JSON';
@@ -37,6 +42,7 @@ const Inputs: Record<
     options?: string[];
     error?: string;
     onValidationChange?: (error?: string) => void;
+    secret?: boolean;
   }>
 > = {
   Boolean: function SwitchInput({ defaultValue, onChange }) {
@@ -51,14 +57,14 @@ const Inputs: Record<
       />
     );
   },
-  String: function StringInput({ defaultValue, onChange }) {
+  String: function StringInput({ defaultValue, onChange, secret }) {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(e.target.value);
     };
 
     return (
       <Input
-        type="text"
+        type={secret ? 'password' : 'text'}
         minLength={1}
         value={defaultValue ?? ''}
         onChange={handleInputChange}
@@ -84,13 +90,16 @@ const Inputs: Record<
     onChange,
     error,
     onValidationChange,
+    secret,
   }) {
     const fallbackText = useMemo(
       () =>
-        typeof defaultValue === 'string'
-          ? defaultValue
-          : JSON.stringify(defaultValue ?? null),
-      [defaultValue]
+        secret && defaultValue === undefined
+          ? ''
+          : typeof defaultValue === 'string'
+            ? defaultValue
+            : JSON.stringify(defaultValue ?? null),
+      [defaultValue, secret]
     );
     const [text, setText] = useState(fallbackText);
 
@@ -155,6 +164,10 @@ export const ConfigRow = ({
   onChange,
   error,
   onErrorChange,
+  secret,
+  configured,
+  source,
+  onClear,
   ...props
 }: ConfigInputProps) => {
   const Input = Inputs[type] ?? Inputs.JSON;
@@ -187,10 +200,16 @@ export const ConfigRow = ({
         type === 'Boolean' ? 'items-start justify-between' : 'flex-col'
       )}
     >
-      <div
-        className="flex-3 text-sm font-semibold leading-6 text-foreground"
-        dangerouslySetInnerHTML={{ __html: desc }}
-      />
+      <div className="flex-3">
+        <div
+          className="text-sm font-semibold leading-6 text-foreground"
+          dangerouslySetInnerHTML={{ __html: desc }}
+        />
+        <div className="text-xs text-muted-foreground">
+          {source ? `Source: ${source}` : null}
+          {secret ? ` · ${configured ? 'Configured' : 'Not configured'}` : null}
+        </div>
+      </div>
       <div
         className={cn(
           'relative flex flex-1 flex-col',
@@ -202,8 +221,19 @@ export const ConfigRow = ({
           onChange={onValueChange}
           error={mergedError}
           onValidationChange={onValidationChange}
+          secret={secret}
           {...props}
         />
+        {onClear ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2 self-start"
+            onClick={onClear}
+          >
+            Reset override
+          </Button>
+        ) : null}
         {mergedError && (
           <div className="mt-1 w-full break-words text-sm text-destructive">
             {mergedError}

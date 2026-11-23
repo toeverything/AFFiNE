@@ -17,7 +17,7 @@ import {
   WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import { TodayIcon } from '@blocksuite/icons/rc';
+import { PlusIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import type { Location } from 'history';
@@ -64,8 +64,13 @@ export const JournalPlaceholder = ({ dateString }: { dateString: string }) => {
           <div className={styles.placeholderText}>
             {t['com.affine.journal.placeholder.title']()}
           </div>
+          <div className={styles.placeholderDescription}>
+            {t['com.affine.journal.placeholder.description']()}
+          </div>
           <Button
             variant="primary"
+            size={BUILD_CONFIG.isMobileEdition ? 'extraLarge' : undefined}
+            prefix={BUILD_CONFIG.isMobileEdition ? <PlusIcon /> : undefined}
             onClick={createJournal}
             data-testid="confirm-create-journal-button"
           >

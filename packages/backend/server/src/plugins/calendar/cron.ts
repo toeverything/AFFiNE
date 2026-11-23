@@ -4,6 +4,9 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Models } from '../../models';
 import { CalendarService } from './service';
 
+const CALENDAR_SYNC_CONCURRENCY = 8;
+const CALENDAR_POLL_BATCHES = 25;
+
 @Injectable()
 export class CalendarCronJobs {
   constructor(
@@ -11,51 +14,24 @@ export class CalendarCronJobs {
     private readonly calendar: CalendarService
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE, { waitForCompletion: true })
   async pollAccounts() {
-    const subscriptions =
-      await this.models.calendarSubscription.listAllWithAccountForSync();
+    for (let batch = 0; batch < CALENDAR_POLL_BATCHES; batch++) {
+      const subscriptions =
+        await this.models.calendarSubscription.claimDueForSync(
+          new Date(),
+          CALENDAR_SYNC_CONCURRENCY
+        );
 
-    const accountDueAt = new Map<
-      string,
-      { refreshInterval: number; lastSyncAt: Date | null }
-    >();
-
-    for (const subscription of subscriptions) {
-      const interval = subscription.account.refreshIntervalMinutes ?? 60;
-      const lastSyncAt = subscription.lastSyncAt ?? null;
-      const existing = accountDueAt.get(subscription.accountId);
-      if (!existing) {
-        accountDueAt.set(subscription.accountId, {
-          refreshInterval: interval,
-          lastSyncAt,
-        });
-        continue;
-      }
-
-      const earliest =
-        existing.lastSyncAt && lastSyncAt
-          ? existing.lastSyncAt < lastSyncAt
-            ? existing.lastSyncAt
-            : lastSyncAt
-          : (existing.lastSyncAt ?? lastSyncAt);
-      accountDueAt.set(subscription.accountId, {
-        refreshInterval: interval,
-        lastSyncAt: earliest,
-      });
+      await Promise.allSettled(
+        subscriptions.map(({ id, claimedUntil }) =>
+          this.calendar.syncSubscription(id, {
+            reason: 'polling',
+            claimedUntil,
+          })
+        )
+      );
+      if (subscriptions.length < CALENDAR_SYNC_CONCURRENCY) break;
     }
-
-    const now = Date.now();
-    await Promise.allSettled(
-      Array.from(accountDueAt.entries()).map(([accountId, info]) => {
-        if (
-          !info.lastSyncAt ||
-          now - info.lastSyncAt.getTime() >= info.refreshInterval * 60 * 1000
-        ) {
-          return this.calendar.syncAccount(accountId);
-        }
-        return Promise.resolve();
-      })
-    );
   }
 }

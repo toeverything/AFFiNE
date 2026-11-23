@@ -26,6 +26,9 @@ public class ResolveCommentMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("resolveComment", Bool.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      ResolveCommentMutation.Data.self
+    ] }
 
     /// Resolve a comment or not
     public var resolveComment: Bool { __data["resolveComment"] }

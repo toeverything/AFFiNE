@@ -9,6 +9,7 @@ import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
 import { powerEvents } from './power';
 import { recordingEvents } from './recording';
+import { checkSource } from './security-restrictions';
 import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
 import { updaterEvents } from './updater/event';
@@ -70,7 +71,7 @@ export function registerEvents() {
     action: 'subscribe' | 'unsubscribe',
     channel: string
   ) => {
-    if (typeof channel !== 'string') return;
+    if (!checkSource(event) || typeof channel !== 'string') return;
     if (action === 'subscribe') {
       addSubscription(event.sender, channel);
       if (channel === 'power:power-source') {

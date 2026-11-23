@@ -12,7 +12,16 @@ export interface OpSchema {
   [key: string]: [any, any?];
 }
 
-type RequiredInput<In> = In extends void ? [] : In extends never ? [] : [In];
+type IsAny<T> = 0 extends 1 & T ? true : false;
+
+type RequiredInput<In> =
+  IsAny<In> extends true
+    ? [In]
+    : [In] extends [never]
+      ? []
+      : [In] extends [void]
+        ? []
+        : [In];
 
 export type OpNames<T extends OpSchema> = ValuesOf<KeyToKey<T>>;
 export type OpInput<

@@ -32,6 +32,20 @@ public extension JSValueContainer {
     return doub
   }
 
+  func getInt64Ensure(_ key: String) throws -> Int64 {
+    guard let value = getDouble(key), let integer = Int64(exactly: value) else {
+      throw RequestParamError.request(key: key)
+    }
+    return integer
+  }
+
+  func getUInt32Ensure(_ key: String) throws -> UInt32 {
+    guard let value = getDouble(key), let integer = UInt32(exactly: value) else {
+      throw RequestParamError.request(key: key)
+    }
+    return integer
+  }
+
   func getBoolEnsure(_ key: String) throws -> Bool {
     guard let bool = getBool(key) else {
       throw RequestParamError.request(key: key)

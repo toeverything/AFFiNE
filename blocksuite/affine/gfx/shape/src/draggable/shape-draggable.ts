@@ -308,18 +308,20 @@ export class EdgelessToolbarShapeDraggable extends EdgelessToolbarToolMixin(
             opacity: isBeingDragged ? 0 : 1,
           });
           const nextStyle = styleMap(baseStyle);
-          return html`${isBeingDragged
-              ? html`<div
-                  style=${nextStyle}
-                  class=${classMap({
-                    shape: true,
-                    next: true,
-                    coming: !!dragOut && !cancelled,
-                  })}
-                >
-                  ${shape.svg}
-                </div>`
-              : nothing}
+          return html`${
+              isBeingDragged
+                ? html`<div
+                    style=${nextStyle}
+                    class=${classMap({
+                      shape: true,
+                      next: true,
+                      coming: !!dragOut && !cancelled,
+                    })}
+                  >
+                    ${shape.svg}
+                  </div>`
+                : nothing
+            }
             <div
               style=${currStyle}
               class=${classMap({

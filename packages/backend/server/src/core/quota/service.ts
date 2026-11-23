@@ -1,13 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { InternalServerError, MemberQuotaExceeded, OnEvent } from '../../base';
 import {
-  Models,
   type UserQuota,
   WorkspaceQuota as BaseWorkspaceQuota,
-  WorkspaceRole,
 } from '../../models';
-import { WorkspaceBlobStorage } from '../storage';
+import { BackendRuntimeProvider } from '../backend-runtime';
 import {
   UserQuotaHumanReadableType,
   UserQuotaType,
@@ -20,138 +17,56 @@ type UserQuotaWithUsage = Omit<UserQuotaType, 'humanReadable'>;
 type WorkspaceQuota = Omit<BaseWorkspaceQuota, 'seatQuota'> & {
   ownerQuota?: string;
 };
-type WorkspaceQuotaWithUsage = Omit<WorkspaceQuotaType, 'humanReadable'>;
+export type WorkspaceQuotaWithUsage = Omit<
+  WorkspaceQuotaType,
+  'humanReadable'
+> & { ownerQuota?: string };
 
 @Injectable()
 export class QuotaService {
   protected logger = new Logger(QuotaService.name);
 
-  constructor(
-    private readonly models: Models,
-    private readonly storage: WorkspaceBlobStorage
-  ) {}
-
-  @OnEvent('user.postCreated')
-  async onUserCreated({ id }: Events['user.postCreated']) {
-    await this.setupUserBaseQuota(id);
-  }
+  constructor(private readonly runtime: BackendRuntimeProvider) {}
 
   async getUserQuota(userId: string): Promise<UserQuota> {
-    let quota = await this.models.userFeature.getQuota(userId);
+    const state = await this.runtime.getUserQuotaStateV1(userId);
 
-    // not possible, but just in case, we do a little fix for user to avoid system dump
-    if (!quota) {
-      await this.setupUserBaseQuota(userId);
-      quota = await this.models.userFeature.getQuota(userId);
-    }
-
-    const unlimitedCopilot = await this.models.userFeature.has(
-      userId,
-      'unlimited_copilot'
-    );
-
-    if (!quota) {
-      throw new InternalServerError(
-        'User quota not found and can not be created.'
-      );
-    }
-
-    return {
-      ...quota.configs,
-      copilotActionLimit: unlimitedCopilot
-        ? undefined
-        : quota.configs.copilotActionLimit,
-    } as UserQuotaWithUsage;
+    return this.userQuotaFromState(state);
   }
 
   async getUserQuotaWithUsage(userId: string): Promise<UserQuotaWithUsage> {
-    const quota = await this.getUserQuota(userId);
-    const usedStorageQuota = await this.getUserStorageUsage(userId);
+    const state = await this.runtime.getUserQuotaStateV1(userId);
+    const quota = this.userQuotaFromState(state);
 
-    return { ...quota, usedStorageQuota };
+    return { ...quota, usedStorageQuota: Number(state.usedStorageQuota) };
   }
 
   async getUserStorageUsage(userId: string) {
-    const workspaces = await this.models.workspaceUser.getUserActiveRoles(
-      userId,
-      {
-        role: WorkspaceRole.Owner,
-      }
-    );
-
-    const ids = workspaces.map(w => w.workspaceId);
-
-    const workspacesWithQuota =
-      await this.models.workspaceFeature.batchHasQuota(ids);
-
-    const sizes = await Promise.allSettled(
-      ids
-        .filter(w => !workspacesWithQuota.includes(w))
-        .map(workspace => this.storage.totalSize(workspace))
-    );
-
-    return sizes.reduce((total, size) => {
-      if (size.status === 'fulfilled') {
-        // ensure that size is within the safe range of gql
-        const totalSize = total + size.value;
-        if (Number.isSafeInteger(totalSize)) {
-          return totalSize;
-        } else {
-          this.logger.error(`Workspace size is invalid: ${size.value}`);
-        }
-      } else {
-        this.logger.error(`Failed to get workspace size`, size.reason);
-      }
-      return total;
-    }, 0);
+    const state = await this.runtime.getUserQuotaStateV1(userId);
+    return Number(state.usedStorageQuota);
   }
 
   async getWorkspaceStorageUsage(workspaceId: string) {
-    const totalSize = await this.storage.totalSize(workspaceId);
-    // ensure that size is within the safe range of gql
-    if (Number.isSafeInteger(totalSize)) {
-      return totalSize;
-    } else {
-      this.logger.error(`Workspace size is invalid: ${totalSize}`);
-    }
-
-    return 0;
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    return Number(state.usedStorageQuota);
   }
 
   async getWorkspaceQuota(workspaceId: string): Promise<WorkspaceQuota> {
-    const quota = await this.models.workspaceFeature.getQuota(workspaceId);
-
-    if (!quota) {
-      // get and convert to workspace quota from owner's quota
-      const owner = await this.models.workspaceUser.getOwner(workspaceId);
-      const ownerQuota = await this.getUserQuota(owner.id);
-
-      return {
-        ...ownerQuota,
-        ownerQuota: owner.id,
-      };
-    }
-
-    return quota.configs;
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    return this.workspaceQuotaFromState(state);
   }
 
   async getWorkspaceQuotaWithUsage(
     workspaceId: string
   ): Promise<WorkspaceQuotaWithUsage> {
-    const quota = await this.getWorkspaceQuota(workspaceId);
-    const usedStorageQuota = quota.ownerQuota
-      ? await this.getUserStorageUsage(quota.ownerQuota)
-      : await this.getWorkspaceStorageUsage(workspaceId);
-    const memberCount =
-      await this.models.workspaceUser.chargedCount(workspaceId);
-    const overcapacityMemberCount = memberCount - quota.memberLimit;
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
+    const quota = this.workspaceQuotaFromState(state);
 
     return {
       ...quota,
-      usedStorageQuota,
-      memberCount,
-      overcapacityMemberCount,
-      usedSize: usedStorageQuota,
+      usedStorageQuota: Number(state.usedStorageQuota),
+      memberCount: state.memberCount,
+      overcapacityMemberCount: state.overcapacityMemberCount,
     };
   }
 
@@ -172,28 +87,12 @@ export class QuotaService {
   }
 
   async getWorkspaceSeatQuota(workspaceId: string) {
-    const quota = await this.getWorkspaceQuota(workspaceId);
-    const memberCount =
-      await this.models.workspaceUser.chargedCount(workspaceId);
+    const state = await this.runtime.getWorkspaceQuotaStateV1(workspaceId);
 
     return {
-      memberCount,
-      memberLimit: quota.memberLimit,
+      memberCount: state.memberCount,
+      memberLimit: state.seatLimit,
     };
-  }
-
-  async tryCheckSeat(workspaceId: string, excludeSelf = false) {
-    const quota = await this.getWorkspaceSeatQuota(workspaceId);
-
-    return quota.memberCount - (excludeSelf ? 1 : 0) < quota.memberLimit;
-  }
-
-  async checkSeat(workspaceId: string, excludeSelf = false) {
-    const available = await this.tryCheckSeat(workspaceId, excludeSelf);
-
-    if (!available) {
-      throw new MemberQuotaExceeded();
-    }
   }
 
   formatWorkspaceQuota(
@@ -211,68 +110,50 @@ export class QuotaService {
     };
   }
 
-  async getUserQuotaCalculator(userId: string) {
-    const quota = await this.getUserQuota(userId);
-    const usedSize = await this.getUserStorageUsage(userId);
-
-    return this.generateQuotaCalculator(
-      quota.storageQuota,
-      quota.blobLimit,
-      usedSize
-    );
-  }
-
-  async getWorkspaceQuotaCalculator(workspaceId: string) {
-    const quota = await this.getWorkspaceQuota(workspaceId);
-    const unlimited = await this.models.workspaceFeature.has(
-      workspaceId,
-      'unlimited_workspace'
-    );
-
-    // quota check will be disabled for unlimited workspace
-    // we save a complicated db read for used size
-    if (unlimited) {
-      return this.generateQuotaCalculator(0, quota.blobLimit, 0, true);
-    }
-
-    const usedSize = quota.ownerQuota
-      ? await this.getUserStorageUsage(quota.ownerQuota)
-      : await this.getWorkspaceStorageUsage(workspaceId);
-
-    return this.generateQuotaCalculator(
-      quota.storageQuota,
-      quota.blobLimit,
-      usedSize
-    );
-  }
-
-  private async setupUserBaseQuota(userId: string) {
-    await this.models.userFeature.add(userId, 'free_plan_v1', 'sign up');
-  }
-
-  private generateQuotaCalculator(
-    storageQuota: number,
-    blobLimit: number,
-    usedQuota: number,
-    unlimited = false
-  ) {
-    const checkExceeded = (recvSize: number) => {
-      const currentSize = usedQuota + recvSize;
-      // only skip total storage check if workspace has unlimited feature
-      if (currentSize > storageQuota && !unlimited) {
-        this.logger.warn(
-          `storage size limit exceeded: ${currentSize} > ${storageQuota}`
-        );
-        return { storageQuotaExceeded: true, blobQuotaExceeded: false };
-      } else if (recvSize > blobLimit) {
-        this.logger.warn(
-          `blob size limit exceeded: ${recvSize} > ${blobLimit}`
-        );
-        return { storageQuotaExceeded: false, blobQuotaExceeded: true };
-      } else {
-        return;
-      }
+  private userQuotaFromState(
+    state: Awaited<ReturnType<BackendRuntimeProvider['getUserQuotaStateV1']>>
+  ): UserQuota {
+    return {
+      name: this.planName(state.plan),
+      blobLimit: Number(state.blobLimit),
+      storageQuota: Number(state.storageQuota),
+      historyPeriod: state.historyPeriodSeconds,
+      memberLimit: state.seatLimit,
+      copilotActionLimit: state.unlimitedCopilot
+        ? undefined
+        : (state.copilotActionLimit ?? undefined),
     };
-    return checkExceeded;
+  }
+
+  private workspaceQuotaFromState(
+    state: Awaited<
+      ReturnType<BackendRuntimeProvider['getWorkspaceQuotaStateV1']>
+    >
+  ): WorkspaceQuota {
+    return {
+      name: this.planName(state.plan),
+      blobLimit: Number(state.blobLimit),
+      storageQuota: Number(state.storageQuota),
+      historyPeriod: state.historyPeriodSeconds,
+      memberLimit: state.seatLimit,
+      ownerQuota: state.usesOwnerQuota ? state.ownerUserId : undefined,
+    };
+  }
+
+  private planName(plan: string) {
+    switch (plan) {
+      case 'pro':
+      case 'selfhost_free':
+        return 'Pro';
+      case 'lifetime_pro':
+        return 'Lifetime Pro';
+      case 'ai':
+        return 'AI';
+      case 'team':
+      case 'selfhost_team':
+        return 'Team';
+      default:
+        return 'Free';
+    }
   }
 }

@@ -16,6 +16,7 @@
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../model" },
+    { "path": "../../rich-text" },
     { "path": "../../shared" },
     { "path": "../../../framework/global" },
     { "path": "../../../framework/std" },

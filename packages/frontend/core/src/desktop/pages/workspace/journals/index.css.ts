@@ -1,5 +1,6 @@
+import { subHeadlineRegular } from '@toeverything/theme/typography';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const header = style({
   display: 'flex',
@@ -44,7 +45,34 @@ export const docTitleContainer = style({
   lineHeight: '50px',
   fontWeight: 700,
   padding: '38px 0',
+  selectors: {
+    '[data-mobile] &': {
+      display: 'flex',
+      alignItems: 'baseline',
+      gap: 8,
+      fontSize: 28,
+      lineHeight: '34px',
+      fontWeight: 700,
+      letterSpacing: 0.38,
+      padding: '24px 0 20px',
+    },
+  },
 });
+
+globalStyle(`[data-mobile] ${docTitleContainer} > span:not(:first-child)`, {
+  fontSize: 15,
+  fontWeight: 600,
+  letterSpacing: -0.23,
+  margin: 0,
+  padding: 0,
+  lineHeight: '20px',
+  color: cssVarV2('text/secondary'),
+});
+
+globalStyle(
+  `[data-mobile] ${docTitleContainer} > [data-testid="date-today-label"]`,
+  { color: cssVarV2('text/emphasis') }
+);
 
 export const placeholder = style({
   height: 200,
@@ -55,6 +83,14 @@ export const placeholder = style({
   justifyContent: 'center',
   border: `1px dashed ${cssVarV2.layer.insideBorder.border}`,
   borderRadius: 8,
+  selectors: {
+    '[data-mobile] &': {
+      minHeight: 180,
+      height: 'auto',
+      border: 0,
+      borderRadius: 0,
+    },
+  },
 });
 
 export const placeholderIcon = style({
@@ -68,6 +104,13 @@ export const placeholderIcon = style({
   justifyContent: 'center',
   fontSize: 20,
   marginBottom: 4,
+  selectors: {
+    '[data-mobile] &': {
+      width: 40,
+      height: 40,
+      marginBottom: 12,
+    },
+  },
 });
 
 export const placeholderText = style({
@@ -75,4 +118,29 @@ export const placeholderText = style({
   lineHeight: '22px',
   marginBottom: 16,
   color: cssVarV2.text.tertiary,
+  selectors: {
+    '[data-mobile] &': {
+      fontSize: 17,
+      lineHeight: '22px',
+      fontWeight: 600,
+      letterSpacing: -0.43,
+      marginBottom: 0,
+      color: cssVarV2('text/primary'),
+    },
+  },
 });
+
+export const placeholderDescription = style([
+  subHeadlineRegular,
+  {
+    display: 'none',
+    color: cssVarV2('text/secondary'),
+    selectors: {
+      '[data-mobile] &': {
+        display: 'block',
+        marginTop: 4,
+        marginBottom: 20,
+      },
+    },
+  },
+]);

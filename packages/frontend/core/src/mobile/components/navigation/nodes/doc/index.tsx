@@ -1,29 +1,18 @@
 import { Loading } from '@affine/component';
-import { Guard } from '@affine/core/components/guard';
 import type { NodeOperation } from '@affine/core/desktop/components/navigation-panel';
-import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
-import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import { GlobalContextService } from '@affine/core/modules/global-context';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import {
-  LiveData,
-  MANUALLY_STOP,
-  useLiveData,
-  useService,
-  useServices,
-} from '@toeverything/infra';
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
+import { useCallback, useEffect, useMemo } from 'react';
 
+import { MobileShellDataProjection } from '../../../../modules/navigation-projection';
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
 import { NavigationPanelTreeNode } from '../../tree/node';
 import {
-  useNavigationPanelDocNodeOperations,
-  useNavigationPanelDocNodeOperationsMenu,
+  NavigationPanelDocNodeMenu,
+  useNavigationPanelDocNodeAddLinkedPage,
 } from './operations';
 import * as styles from './styles.css';
 
@@ -39,24 +28,13 @@ export const NavigationPanelDocNode = ({
   parentPath: string[];
 }) => {
   const t = useI18n();
-  const {
-    docsSearchService,
-    docsService,
-    globalContextService,
-    docDisplayMetaService,
-    featureFlagService,
-    workspaceService,
-  } = useServices({
-    DocsSearchService,
-    WorkspaceService,
-    DocsService,
-    GlobalContextService,
+  const { docDisplayMetaService, featureFlagService } = useServices({
     DocDisplayMetaService,
     FeatureFlagService,
   });
   const navigationPanelService = useService(NavigationPanelService);
-  const active =
-    useLiveData(globalContextService.globalContext.docId.$) === docId;
+  const dataProjection = useService(MobileShellDataProjection);
+  const entry = useLiveData(dataProjection.entry$(docId));
   const path = useMemo(
     () => [...parentPath, `doc-${docId}`],
     [parentPath, docId]
@@ -69,15 +47,12 @@ export const NavigationPanelDocNode = ({
     [navigationPanelService, path]
   );
 
-  const docRecord = useLiveData(docsService.list.doc$(docId));
   const DocIcon = useLiveData(
     docDisplayMetaService.icon$(docId, {
       reference: isLinked,
     })
   );
 
-  const docTitle = useLiveData(docDisplayMetaService.title$(docId));
-  const isInTrash = useLiveData(docRecord?.trash$);
   const enableEmojiIcon = useLiveData(
     featureFlagService.flags.enable_emoji_doc_icon.$
   );
@@ -90,109 +65,72 @@ export const NavigationPanelDocNode = ({
   );
 
   const children = useLiveData(
-    useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
-      [docsSearchService, docId]
-    )
+    dataProjection.refsByDoc$.selector(refs => refs.get(docId))
+  );
+  useEffect(
+    () => (collapsed ? undefined : dataProjection.registerExpandedDoc(docId)),
+    [collapsed, dataProjection, docId]
   );
 
-  const [referencesLoading, setReferencesLoading] = useState(true);
-  useLayoutEffect(() => {
-    if (collapsed) {
-      return;
-    }
-    const abortController = new AbortController();
-    const undoSync = workspaceService.workspace.engine.doc.addPriority(
-      docId,
-      10
-    );
-    const undoIndexer = docsSearchService.indexer.addPriority(docId, 10);
-    docsSearchService.indexer
-      .waitForDocCompleted(docId, abortController.signal)
-      .then(() => {
-        setReferencesLoading(false);
-      })
-      .catch(err => {
-        if (err !== MANUALLY_STOP) {
-          console.error(err);
-        }
-      });
-    return () => {
-      undoSync();
-      undoIndexer();
-      abortController.abort(MANUALLY_STOP);
-    };
-  }, [docId, docsSearchService, workspaceService, collapsed]);
-
-  const workspaceDialogService = useService(WorkspaceDialogService);
-  const option = useMemo(
-    () => ({
-      openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
-      openNodeCollapsed: () => setCollapsed(false),
-    }),
-    [docId, setCollapsed, workspaceDialogService]
+  const openNodeCollapsed = useCallback(
+    () => setCollapsed(false),
+    [setCollapsed]
   );
-  const operations = useNavigationPanelDocNodeOperationsMenu(docId, option);
-  const { handleAddLinkedPage } = useNavigationPanelDocNodeOperations(
+  const handleAddLinkedPage = useNavigationPanelDocNodeAddLinkedPage(
     docId,
-    option
+    openNodeCollapsed
+  );
+  const menuTarget = useMemo(
+    () => (
+      <NavigationPanelDocNodeMenu
+        docId={docId}
+        handleAddLinkedPage={handleAddLinkedPage}
+        additionalOperations={additionalOperations}
+      />
+    ),
+    [additionalOperations, docId, handleAddLinkedPage]
   );
 
-  const finalOperations = useMemo(() => {
-    if (additionalOperations) {
-      return [...operations, ...additionalOperations];
-    }
-    return operations;
-  }, [additionalOperations, operations]);
-
-  if (isInTrash || !docRecord) {
+  if (entry?.trash !== false) {
     return null;
   }
 
   return (
     <NavigationPanelTreeNode
       icon={Icon}
-      name={docTitle}
+      name={entry.title}
       extractEmojiAsIcon={enableEmojiIcon}
       collapsed={collapsed}
       setCollapsed={setCollapsed}
       to={`/${docId}`}
-      active={active}
+      active={entry.active}
       postfix={
-        referencesLoading &&
+        children === undefined &&
         !collapsed && (
           <div className={styles.loadingIcon}>
             <Loading />
           </div>
         )
       }
-      operations={finalOperations}
+      menuTarget={menuTarget}
       data-testid={`navigation-panel-doc-${docId}`}
     >
-      <Guard docId={docId} permission="Doc_Read">
-        {canRead =>
-          canRead
-            ? children?.map((child, index) => (
-                <NavigationPanelDocNode
-                  key={`${child.docId}-${index}`}
-                  docId={child.docId}
-                  isLinked
-                  parentPath={path}
-                />
-              ))
-            : null
-        }
-      </Guard>
-      <Guard docId={docId} permission="Doc_Update">
-        {canEdit =>
-          canEdit ? (
-            <AddItemPlaceholder
-              label={t['com.affine.rootAppSidebar.explorer.doc-add-tooltip']()}
-              onClick={handleAddLinkedPage}
+      {entry.canRead
+        ? children?.map((child, index) => (
+            <NavigationPanelDocNode
+              key={`${child.docId}-${index}`}
+              docId={child.docId}
+              isLinked
+              parentPath={path}
             />
-          ) : null
-        }
-      </Guard>
+          ))
+        : null}
+      {entry.canUpdate ? (
+        <AddItemPlaceholder
+          label={t['com.affine.rootAppSidebar.explorer.doc-add-tooltip']()}
+          onClick={handleAddLinkedPage}
+        />
+      ) : null}
     </NavigationPanelTreeNode>
   );
 };

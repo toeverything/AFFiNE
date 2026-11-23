@@ -427,33 +427,37 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
                   `
                 )
             )}
-            ${isError
-              ? html`
-                  <div class="affine-embed-linked-doc-card-content-reload">
-                    <div
-                      class="affine-embed-linked-doc-card-content-reload-button"
-                      @click=${this.refreshData}
-                    >
-                      ${ResetIcon()} <span>Reload</span>
+            ${
+              isError
+                ? html`
+                    <div class="affine-embed-linked-doc-card-content-reload">
+                      <div
+                        class="affine-embed-linked-doc-card-content-reload-button"
+                        @click=${this.refreshData}
+                      >
+                        ${ResetIcon()} <span>Reload</span>
+                      </div>
                     </div>
-                  </div>
-                `
-              : html`
-                  <div class="affine-embed-linked-doc-content-date">
-                    <span>Updated</span>
+                  `
+                : html`
+                    <div class="affine-embed-linked-doc-content-date">
+                      <span>Updated</span>
 
-                    <span>${dateText}</span>
-                  </div>
-                `}
+                      <span>${dateText}</span>
+                    </div>
+                  `
+            }
           </div>
 
-          ${showDefaultBanner
-            ? html`
-                <div class="affine-embed-linked-doc-banner default">
-                  ${defaultBanner}
-                </div>
-              `
-            : nothing}
+          ${
+            showDefaultBanner
+              ? html`
+                  <div class="affine-embed-linked-doc-banner default">
+                    ${defaultBanner}
+                  </div>
+                `
+              : nothing
+          }
         </div>
       `
     );

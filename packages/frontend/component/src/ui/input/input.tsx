@@ -27,6 +27,8 @@ export type InputProps = {
   onEnter?: (value: string) => void;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
 
+const EMPTY_STYLE: CSSProperties = {};
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     disabled,
@@ -34,8 +36,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     noBorder = false,
     className,
     status = 'default',
-    style = {},
-    inputStyle = {},
+    style = EMPTY_STYLE,
+    inputStyle = EMPTY_STYLE,
     size = 'default',
     preFix,
     endFix,

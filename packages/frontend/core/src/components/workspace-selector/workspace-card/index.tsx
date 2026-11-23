@@ -1,14 +1,20 @@
-import { Button, notify, Skeleton, Tooltip } from '@affine/component';
+import { Button, notify, Popover, Skeleton, Tooltip } from '@affine/component';
 import { Loading } from '@affine/component/ui/loading';
 import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import {
+  getSelfHostedServerName,
+  ServersService,
+} from '@affine/core/modules/cloud';
+import {
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
+import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
+import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
   ArrowDownSmallIcon,
@@ -18,6 +24,7 @@ import {
   InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
+  SelfhostIcon,
   SettingsIcon,
   TeamWorkspaceIcon,
   UnsyncIcon,
@@ -25,7 +32,7 @@ import {
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, MouseEvent } from 'react';
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAsyncCallback } from '../../hooks/affine-async-hooks';
@@ -35,11 +42,12 @@ import { WorkspaceAvatar } from '../../workspace-avatar';
 import * as styles from './styles.css';
 export { PureWorkspaceCard } from './pure-workspace-card';
 
-const CloudWorkspaceStatus = () => {
+const RemoteWorkspaceStatus = ({ selfHosted }: { selfHosted?: boolean }) => {
+  const Icon = selfHosted ? SelfhostIcon : CloudWorkspaceIcon;
   return (
     <>
-      <CloudWorkspaceIcon />
-      Cloud
+      <Icon />
+      {selfHosted ? 'AFFiNE' : 'Cloud'}
     </>
   );
 };
@@ -49,15 +57,6 @@ const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
     <>
       <Loading progress={progress} speed={0} />
       Syncing...
-    </>
-  );
-};
-
-const UnSyncWorkspaceStatus = () => {
-  return (
-    <>
-      <UnsyncIcon />
-      Wait for upload
     </>
   );
 };
@@ -87,6 +86,19 @@ const OfflineStatus = () => {
 const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
   const isOnline = useSystemOnline();
   const workspace = useWorkspace(meta);
+  const serversService = useService(ServersService);
+  const server = useLiveData(
+    useMemo(
+      () => serversService.server$(meta.flavour),
+      [meta.flavour, serversService]
+    )
+  );
+  const serverConfig = useLiveData(server?.config$);
+  const isSelfHostedServer =
+    serverConfig?.type === ServerDeploymentType.Selfhosted;
+  const syncTarget = isSelfHostedServer
+    ? getSelfHostedServerName(serverConfig.serverName)
+    : 'AFFiNE Cloud';
 
   const engineState = useLiveData(
     useMemo(() => {
@@ -102,7 +114,30 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
 
   const progress =
     (engineState.total - engineState.syncing) / engineState.total;
-  const syncing = engineState.syncing > 0 || engineState.syncRetrying;
+  const paused = !!engineState.syncErrorMessage && !engineState.syncRetrying;
+  const syncing =
+    !paused && (engineState.syncing > 0 || engineState.syncRetrying);
+  const error = engineState.syncError;
+  const data = error?.data;
+  const sourceRevision =
+    data && typeof data === 'object' && 'sourceRevision' in data
+      ? data.sourceRevision
+      : undefined;
+  const diagnostics = engineState.syncErrorMessage
+    ? JSON.stringify(
+        {
+          workspaceId: workspace.id,
+          docId: error?.docId,
+          code: error?.name,
+          ...(typeof sourceRevision === 'string' ||
+          typeof sourceRevision === 'number'
+            ? { sourceRevision }
+            : {}),
+        },
+        null,
+        2
+      )
+    : undefined;
 
   let content;
   // TODO(@eyhn): add i18n
@@ -114,38 +149,45 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
     }
   } else if (!isOnline) {
     content = 'Disconnected, please check your network connection';
+  } else if (paused) {
+    content =
+      error?.name === 'DOC_ROOT_SOURCE_INVALID'
+        ? 'The workspace index needs attention. Your local data is preserved, and existing documents can continue syncing.'
+        : 'Some changes could not be uploaded. Your local data is preserved.';
   } else if (engineState.syncRetrying && engineState.syncErrorMessage) {
     content = `${engineState.syncErrorMessage}, reconnecting.`;
   } else if (engineState.syncRetrying) {
     content = 'Sync disconnected due to unexpected issues, reconnecting.';
   } else if (syncing) {
     content =
-      `Syncing with AFFiNE Cloud` +
+      `Syncing with ${syncTarget}` +
       (progress ? ` (${Math.floor(progress * 100)}%)` : '');
   } else {
-    content = 'Synced with AFFiNE Cloud';
+    content = `Synced with ${syncTarget}`;
   }
 
-  const CloudWorkspaceSyncStatus = () => {
-    if (syncing) {
-      return SyncingWorkspaceStatus({
-        progress: progress ? Math.max(progress, 0.2) : undefined,
-      });
-    } else if (engineState.syncRetrying) {
-      return UnSyncWorkspaceStatus();
-    } else {
-      return CloudWorkspaceStatus();
-    }
-  };
+  const cloudIcon = paused ? (
+    <>
+      <UnsyncIcon />
+      Upload paused
+    </>
+  ) : syncing ? (
+    <SyncingWorkspaceStatus
+      progress={progress ? Math.max(progress, 0.2) : undefined}
+    />
+  ) : (
+    <RemoteWorkspaceStatus selfHosted={isSelfHostedServer} />
+  );
 
   return {
     message: content,
+    diagnostics,
     icon:
       workspace.flavour !== 'local' ? (
         !isOnline ? (
           <OfflineStatus />
         ) : (
-          <CloudWorkspaceSyncStatus />
+          cloudIcon
         )
       ) : (
         <LocalWorkspaceStatus />
@@ -153,7 +195,9 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
     progress,
     active:
       workspace.flavour !== 'local' &&
-      ((syncing && progress !== undefined) || engineState.syncRetrying), // active if syncing or retrying,
+      (paused ||
+        (syncing && progress !== undefined) ||
+        engineState.syncRetrying), // active if syncing or retrying,
   };
 };
 
@@ -184,7 +228,40 @@ const WorkspaceSyncInfo = ({
   dense?: boolean;
 }) => {
   const syncStatus = useSyncEngineSyncProgress(workspaceMetadata);
+  const navigate = useNavigateHelper();
+  const copyDiagnostics = useAsyncCallback(
+    async (event: MouseEvent) => {
+      event.stopPropagation();
+      if (!syncStatus?.diagnostics) return;
+      const copied = await copyTextToClipboard(syncStatus.diagnostics);
+      if (copied) notify.success({ title: 'Diagnostics copied' });
+      else notify.error({ title: 'Could not copy diagnostics' });
+    },
+    [syncStatus?.diagnostics]
+  );
+  const openExport = useCallback(
+    (event: MouseEvent) => {
+      event.stopPropagation();
+      navigate.jumpToWorkspaceSettings(workspaceMetadata.id, {
+        tab: 'workspace:storage',
+      });
+    },
+    [navigate, workspaceMetadata.id]
+  );
   const isCloud = workspaceMetadata.flavour !== 'local';
+  const serversService = useService(ServersService);
+  const server = useLiveData(
+    useMemo(
+      () =>
+        workspaceMetadata.flavour === 'local'
+          ? null
+          : serversService.server$(workspaceMetadata.flavour),
+      [serversService, workspaceMetadata.flavour]
+    )
+  );
+  const serverConfig = useLiveData(server?.config$);
+  const isSelfHostedServer =
+    serverConfig?.type === ServerDeploymentType.Selfhosted;
   const { paused, pause } = usePauseAnimation();
 
   // to make sure that animation will play first time
@@ -226,7 +303,11 @@ const WorkspaceSyncInfo = ({
           </div>
           {!dense ? (
             <div className={styles.workspaceStatus}>
-              {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
+              {isCloud ? (
+                <RemoteWorkspaceStatus selfHosted={isSelfHostedServer} />
+              ) : (
+                <LocalWorkspaceStatus />
+              )}
             </div>
           ) : null}
         </div>
@@ -234,14 +315,37 @@ const WorkspaceSyncInfo = ({
         {/* when syncing/offline/... */}
         {syncStatus && (
           <div className={styles.workspaceInfo} data-type="events">
-            <Tooltip
-              content={syncStatus.message}
-              options={{ className: styles.workspaceInfoTooltip }}
+            <Popover
+              content={
+                <>
+                  <div>{syncStatus.message}</div>
+                  {syncStatus.diagnostics && (
+                    <>
+                      <Button variant="plain" onClick={copyDiagnostics}>
+                        Copy diagnostics
+                      </Button>
+                      {BUILD_CONFIG.isElectron && (
+                        <Button variant="plain" onClick={openExport}>
+                          Open Quick Export
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </>
+              }
+              contentOptions={{ className: styles.workspaceInfoTooltip }}
             >
-              <div className={styles.workspaceActiveStatus}>
-                <SyncingWorkspaceStatus progress={syncStatus.progress} />
-              </div>
-            </Tooltip>
+              <Button
+                variant="plain"
+                size="custom"
+                aria-label="Sync status"
+                className={styles.workspaceActiveStatus}
+                contentClassName={styles.workspaceActiveStatusContent}
+                onClick={event => event.stopPropagation()}
+              >
+                {syncStatus.icon}
+              </Button>
+            </Popover>
           </div>
         )}
       </div>

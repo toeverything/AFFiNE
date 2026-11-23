@@ -23,12 +23,14 @@ export class ActionImageToText extends WithDisposable(ShadowlessElement) {
           marginBottom: '12px',
         })}
       >
-        ${answer
-          ? html`<chat-content-images
-              data-testid="original-images"
-              .images=${answer}
-            ></chat-content-images>`
-          : nothing}
+        ${
+          answer
+            ? html`<chat-content-images
+                data-testid="original-images"
+                .images=${answer}
+              ></chat-content-images>`
+            : nothing
+        }
       </div>
     </action-wrapper>`;
   }

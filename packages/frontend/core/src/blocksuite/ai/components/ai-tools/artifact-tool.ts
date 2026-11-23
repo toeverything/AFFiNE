@@ -152,9 +152,13 @@ export abstract class ArtifactTool<
               </div>
             </div>
           </div>
-          ${banner
-            ? html`<div class="affine-embed-linked-doc-banner">${banner}</div>`
-            : nothing}
+          ${
+            banner
+              ? html`<div class="affine-embed-linked-doc-banner">
+                  ${banner}
+                </div>`
+              : nothing
+          }
         </div>
       </div>
     `;

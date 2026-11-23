@@ -42,6 +42,9 @@ public class RecoverDocMutation: GraphQLMutation {
         "timestamp": .variable("timestamp")
       ]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      RecoverDocMutation.Data.self
+    ] }
 
     public var recoverDoc: AffineGraphQL.DateTime { __data["recoverDoc"] }
   }

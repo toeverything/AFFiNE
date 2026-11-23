@@ -144,7 +144,7 @@ export const attachmentViewDropdownMenu = {
       @toggle=${onToggle}
       .actions=${actions.value}
       .context=${ctx}
-      .viewType$=${viewType$}
+      .viewTypeSignal=${viewType$}
     ></affine-view-dropdown-menu>`;
   },
 } as const satisfies ToolbarActionGroup<ToolbarAction>;
@@ -366,7 +366,7 @@ const builtinSurfaceToolbarConfig = {
             @toggle=${onToggle}
             .actions=${actions}
             .context=${ctx}
-            .style$=${style$}
+            .styleSignal=${style$}
           ></affine-card-style-dropdown-menu>`
         )}`;
       },

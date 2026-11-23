@@ -8,9 +8,10 @@ import isMobile from 'is-mobile';
 
 import { Config, getRequestTrackerId, metrics } from '../../base';
 import { Models } from '../../models';
-import { htmlSanitize } from '../../native';
+import { type DocPreviewExposure, htmlSanitize } from '../../native';
 import { Public } from '../auth';
 import { DocReader } from '../doc';
+import { PermissionService } from '../permission';
 
 interface RenderOptions {
   title: string;
@@ -59,7 +60,8 @@ export class DocRendererController {
   constructor(
     private readonly doc: DocReader,
     private readonly models: Models,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly permission: PermissionService
   ) {
     this.webAssets = this.readHtmlAssets(join(env.projectRoot, 'static'));
     this.mobileAssets = this.readHtmlAssets(
@@ -74,21 +76,6 @@ export class DocRendererController {
       .digest('hex');
   }
 
-  private async allowDocPreview(workspaceId: string, docId: string) {
-    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
-    if (!allowSharing) return false;
-
-    let allowUrlPreview = await this.models.doc.isPublic(workspaceId, docId);
-
-    if (!allowUrlPreview) {
-      // if page is private, but workspace url preview is on
-      allowUrlPreview =
-        await this.models.workspace.allowUrlPreview(workspaceId);
-    }
-
-    return allowUrlPreview;
-  }
-
   @Public()
   @Get('/*path')
   async render(@Req() req: Request, @Res() res: Response) {
@@ -101,6 +88,7 @@ export class DocRendererController {
         : this.webAssets;
 
     let opts: RenderOptions | null = null;
+    let previewExposure: DocPreviewExposure = 'denied';
     // /workspace/:workspaceId/{:docId | staticPaths}
     const [, , workspaceId, sub, ...rest] = req.path.split('/');
     const isWorkspace =
@@ -112,13 +100,22 @@ export class DocRendererController {
       req.accepts().some(t => markdownType.has(t.toLowerCase()))
     ) {
       try {
-        const allowPreview = await this.allowDocPreview(workspaceId, sub);
-        if (!allowPreview) {
+        const docId = await this.doc.resolveStorageDocId(workspaceId, sub);
+        const canReadMarkdown = await this.permission.canDoc({
+          workspaceId,
+          docId,
+          action: 'Doc.Read',
+        });
+        if (!canReadMarkdown) {
           res.status(404).end();
           return;
         }
 
-        const markdown = await this.doc.getDocMarkdown(workspaceId, sub, false);
+        const markdown = await this.doc.getDocMarkdown(
+          workspaceId,
+          docId,
+          false
+        );
         if (markdown) {
           res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
           res.send(markdown.markdown);
@@ -135,9 +132,15 @@ export class DocRendererController {
     // /:workspaceId/:docId
     if (isWorkspace) {
       try {
-        opts = isDocPath
-          ? await this.getPageContent(workspaceId, sub)
-          : await this.getWorkspaceContent(workspaceId);
+        if (isDocPath) {
+          const preview = await this.getPageContent(workspaceId, sub);
+          opts = preview.options;
+          previewExposure = preview.exposure;
+        } else {
+          const preview = await this.getWorkspaceContent(workspaceId);
+          opts = preview.options;
+          previewExposure = preview.exposure;
+        }
         metrics.doc.counter('render').add(1);
 
         if (opts && isDocPath) {
@@ -161,52 +164,63 @@ export class DocRendererController {
     }
 
     res.setHeader('Content-Type', 'text/html');
-    if (!opts) {
+    const indexable = previewExposure === 'public_indexable';
+    if (!indexable) {
       res.setHeader('X-Robots-Tag', 'noindex');
     }
 
-    res.send(this._render(opts, assets));
+    res.send(this._render(opts, assets, indexable));
   }
 
   private async getPageContent(
     workspaceId: string,
     docId: string
-  ): Promise<RenderOptions | null> {
-    if (await this.allowDocPreview(workspaceId, docId)) {
-      return this.doc.getDocContent(workspaceId, docId);
+  ): Promise<{ options: RenderOptions | null; exposure: DocPreviewExposure }> {
+    docId = await this.doc.resolveStorageDocId(workspaceId, docId);
+    const exposure = await this.permission.docPreviewExposure({
+      workspaceId,
+      docId,
+    });
+    if (exposure !== 'denied') {
+      return {
+        options: await this.doc.getDocContent(workspaceId, docId),
+        exposure,
+      };
     }
 
-    return null;
+    return { options: null, exposure };
   }
 
   private async getWorkspaceContent(
     workspaceId: string
-  ): Promise<RenderOptions | null> {
-    const allowSharing = await this.models.workspace.allowSharing(workspaceId);
-    if (!allowSharing) {
-      return null;
-    }
+  ): Promise<{ options: RenderOptions | null; exposure: DocPreviewExposure }> {
+    const exposure = await this.permission.workspacePreviewExposure({
+      workspaceId,
+    });
+    if (exposure === 'denied') return { options: null, exposure };
 
-    const allowUrlPreview =
-      await this.models.workspace.allowUrlPreview(workspaceId);
+    const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
 
-    if (allowUrlPreview) {
-      const workspaceContent = await this.doc.getWorkspaceContent(workspaceId);
-
-      if (workspaceContent) {
-        return {
+    if (workspaceContent) {
+      return {
+        options: {
           title: workspaceContent.name,
           summary: '',
           avatar: workspaceContent.avatarUrl,
-        };
-      }
+        },
+        exposure,
+      };
     }
 
-    return null;
+    return { options: null, exposure };
   }
 
   // @TODO(@forehalo): pre-compile html template to accelerate serializing
-  _render(opts: RenderOptions | null, assets: HtmlAssets): string {
+  _render(
+    opts: RenderOptions | null,
+    assets: HtmlAssets,
+    indexable: boolean
+  ): string {
     // TODO(@forehalo): how can we enable the type reference to @affine/env
     const envMeta: Record<string, any> = {
       publicPath: assets.publicPath,
@@ -250,7 +264,7 @@ export class DocRendererController {
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
     <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />
-    ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
+    ${indexable ? '' : '<meta name="robots" content="noindex, nofollow" />'}
     <meta
       name="twitter:title"
       content="${title}"

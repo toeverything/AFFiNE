@@ -1,3 +1,0 @@
-mutation revokeUserAccessToken($id: String!) {
-  revokeUserAccessToken(id: $id)
-}

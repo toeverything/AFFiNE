@@ -26,6 +26,9 @@ public class EnableUserMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("enableUser", EnableUser.self, arguments: ["id": .variable("id")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      EnableUserMutation.Data.self
+    ] }
 
     /// Reenable an banned user
     public var enableUser: EnableUser { __data["enableUser"] }
@@ -42,6 +45,9 @@ public class EnableUserMutation: GraphQLMutation {
         .field("__typename", String.self),
         .field("email", String.self),
         .field("disabled", Bool.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        EnableUserMutation.Data.EnableUser.self
       ] }
 
       /// User email

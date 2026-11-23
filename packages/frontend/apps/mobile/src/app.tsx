@@ -37,10 +37,6 @@ window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 const framework = new Framework();
 configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
@@ -48,6 +44,7 @@ configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureMobileModules(framework);
 framework.impl(NbstoreProvider, {
+  realtime: storeManagerClient.realtime,
   openStore(key, options) {
     const { store, dispose } = storeManagerClient.open(key, options);
     return {
@@ -147,15 +144,11 @@ frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
   return (
-    <Suspense>
+    <Suspense fallback={<AppFallback />}>
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
           <AffineContext store={getCurrentStore()}>
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
+            <RouterProvider router={router} />
           </AffineContext>
         </I18nProvider>
       </FrameworkRoot>

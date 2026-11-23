@@ -1,3 +1,4 @@
+import { renderTypstSvg } from '@affine/core/modules/code-block-preview-renderer/bridge';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
@@ -7,8 +8,6 @@ import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
-
-import { ensureTypstReady, getTypst } from './typst';
 
 const RENDER_DEBOUNCE_MS = 200;
 
@@ -195,8 +194,7 @@ export class TypstPreview extends SignalWatcher(
             tabindex="0"
             aria-label="Typst error message"
           >
-${this.errorMessage}</pre
-          >
+${this.errorMessage}</pre>
           <div class="typst-copy-row">
             <button class="typst-copy-button" @click=${this._copyError}>
               ${this._copyButtonLabel}
@@ -258,9 +256,11 @@ ${this.errorMessage}</pre
               transform: `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`,
             })}
           >
-            ${this.svgContent
-              ? html`<div .innerHTML=${this.svgContent}></div>`
-              : nothing}
+            ${
+              this.svgContent
+                ? html`<div .innerHTML=${this.svgContent}></div>`
+                : nothing
+            }
           </div>
         `
       : nothing;
@@ -378,9 +378,7 @@ ${this.errorMessage}</pre
     }
 
     try {
-      await ensureTypstReady();
-      const typst = await getTypst();
-      const svg = await typst.svg({ mainContent: code });
+      const { svg } = await renderTypstSvg({ code });
       this.svgContent = svg;
       this.state = 'finish';
       this._resetView();

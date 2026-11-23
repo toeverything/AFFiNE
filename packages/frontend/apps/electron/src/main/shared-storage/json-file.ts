@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 
 import type { Memento } from '@toeverything/infra';
 import {
@@ -115,6 +116,9 @@ export class PersistentJSONFileStorage implements Memento {
     exhaustMapWithTrailing(() => {
       return fromPromise(async () => {
         try {
+          await fs.promises.mkdir(path.dirname(this.filepath), {
+            recursive: true,
+          });
           await fs.promises.writeFile(
             this.filepath,
             JSON.stringify(this.data, null, 2),

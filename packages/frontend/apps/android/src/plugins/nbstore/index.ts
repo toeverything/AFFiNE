@@ -10,10 +10,12 @@ import {
   type BlobRecord,
   type CrawlResult,
   type DocClock,
+  type DocDiff,
   type DocIndexedClock,
   type DocRecord,
   type ListedBlobRecord,
   parseUniversalId,
+  type PeerWorkspaceState,
 } from '@affine/nbstore';
 import { type NativeDBApis } from '@affine/nbstore/sqlite';
 import { registerPlugin } from '@capacitor/core';
@@ -35,62 +37,55 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   pushUpdate: async function (
     id: string,
     docId: string,
-    update: Uint8Array
+    update: Uint8Array,
+    createForPeer?: string
   ): Promise<Date> {
     const { timestamp } = await NbStore.pushUpdate({
       id,
       docId,
       data: await uint8ArrayToBase64(update),
+      createForPeer,
     });
     return new Date(timestamp);
   },
-  getDocSnapshot: async function (
+  getDoc: async function (
     id: string,
     docId: string
   ): Promise<DocRecord | null> {
-    const snapshot = await NbStore.getDocSnapshot({ id, docId });
-    return snapshot
+    const record = await NbStore.getDoc({ id, docId });
+    return record
       ? {
-          bin: base64ToUint8Array(snapshot.bin),
-          docId: snapshot.docId,
-          timestamp: new Date(snapshot.timestamp),
+          bin: base64ToUint8Array(record.bin),
+          docId: record.docId,
+          timestamp: new Date(record.timestamp),
         }
       : null;
   },
-  setDocSnapshot: async function (
-    id: string,
-    snapshot: DocRecord
-  ): Promise<boolean> {
-    const { success } = await NbStore.setDocSnapshot({
-      id,
-      docId: snapshot.docId,
-      bin: await uint8ArrayToBase64(snapshot.bin),
-      timestamp: snapshot.timestamp.getTime(),
-    });
-    return success;
-  },
-  getDocUpdates: async function (
-    id: string,
-    docId: string
-  ): Promise<DocRecord[]> {
-    const { updates } = await NbStore.getDocUpdates({ id, docId });
-    return updates.map(update => ({
-      bin: base64ToUint8Array(update.bin),
-      docId: update.docId,
-      timestamp: new Date(update.timestamp),
-    }));
-  },
-  markUpdatesMerged: async function (
+  getDocDiff: async function (
     id: string,
     docId: string,
-    updates: Date[]
-  ): Promise<number> {
-    const { count } = await NbStore.markUpdatesMerged({
+    state?: Uint8Array
+  ): Promise<DocDiff | null> {
+    const diff = await NbStore.getDocDiff({
       id,
       docId,
-      timestamps: updates.map(t => t.getTime()),
+      state: state ? await uint8ArrayToBase64(state) : undefined,
     });
-    return count;
+    return diff
+      ? {
+          docId: diff.docId,
+          missing: base64ToUint8Array(diff.missing),
+          state: base64ToUint8Array(diff.state),
+          timestamp: new Date(diff.timestamp),
+        }
+      : null;
+  },
+  mergeUpdates: async function (updates: Uint8Array[]): Promise<Uint8Array> {
+    const encoded = await Promise.all(
+      updates.map(update => uint8ArrayToBase64(update))
+    );
+    const { bin } = await NbStore.mergeUpdates({ updates: encoded });
+    return base64ToUint8Array(bin);
   },
   deleteDoc: async function (id: string, docId: string): Promise<void> {
     await NbStore.deleteDoc({
@@ -189,6 +184,36 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       createdAt: new Date(b.createdAt),
     }));
   },
+  getPeerWorkspaceState: async (id, peer, rootDocId) => {
+    const { state } = await NbStore.getPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+    });
+    return JSON.parse(state) as PeerWorkspaceState;
+  },
+  invalidatePeerWorkspaceState: (id, peer, rootDocId) =>
+    NbStore.invalidatePeerWorkspaceState({ id, peer, rootDocId }),
+  installPeerWorkspaceState: async (
+    id,
+    peer,
+    rootDocId,
+    cacheToken,
+    docs,
+    clocks
+  ) => {
+    const { installed } = await NbStore.installPeerWorkspaceState({
+      id,
+      peer,
+      rootDocId,
+      cacheToken,
+      docs: JSON.stringify(docs),
+      clocks: JSON.stringify(clocks),
+    });
+    return installed;
+  },
+  confirmPeerDocCreate: (id, peer, docId) =>
+    NbStore.confirmPeerDocCreate({ id, peer, docId }),
   getPeerRemoteClocks: async function (
     id: string,
     peer: string
@@ -357,83 +382,82 @@ export const NbStoreNativeDBApis: NativeDBApis = {
   ): Promise<CrawlResult> {
     return await NbStore.crawlDocData({ id, docId });
   },
-  ftsAddDocument: async function (
+  indexUpsert: async function (
     id: string,
-    indexName: string,
-    docId: string,
-    text: string,
-    index: boolean
+    table: string,
+    document
   ): Promise<void> {
-    await NbStore.ftsAddDocument({
+    await NbStore.indexUpsert({
       id,
-      indexName,
-      docId,
-      text,
-      index,
+      table,
+      document,
     });
   },
-  ftsDeleteDocument: async function (
+  indexDelete: async function (
     id: string,
-    indexName: string,
+    table: string,
     docId: string
   ): Promise<void> {
-    await NbStore.ftsDeleteDocument({
+    await NbStore.indexDelete({
       id,
-      indexName,
+      table,
       docId,
     });
   },
-  ftsSearch: async function (
-    id: string,
-    indexName: string,
-    query: string
-  ): Promise<{ id: string; score: number; terms: Array<string> }[]> {
-    const { results } = await NbStore.ftsSearch({
+  indexSearch: async function (id: string, table: string, query, options) {
+    return await NbStore.indexSearch({
       id,
-      indexName,
+      table,
+      query,
+      options,
+    });
+  },
+  indexAggregate: async function (
+    id: string,
+    table: string,
+    query,
+    field: string,
+    limit: number,
+    offset: number,
+    hits
+  ) {
+    return await NbStore.indexAggregate({
+      id,
+      table,
+      query,
+      field,
+      limit,
+      offset,
+      hits,
+    });
+  },
+  indexDeleteByQuery: async function (
+    id: string,
+    table: string,
+    query
+  ): Promise<number> {
+    const { deleted } = await NbStore.indexDeleteByQuery({
+      id,
+      table,
       query,
     });
-    return results ?? [];
+    return deleted;
   },
-  ftsGetDocument: async function (
-    id: string,
-    indexName: string,
-    docId: string
-  ): Promise<string | null> {
-    const result = await NbStore.ftsGetDocument({
-      id,
-      indexName,
-      docId,
-    });
-    return result.text;
-  },
-  ftsGetMatches: async function (
-    id: string,
-    indexName: string,
-    docId: string,
-    query: string
-  ): Promise<{ start: number; end: number }[]> {
-    const { matches } = await NbStore.ftsGetMatches({
-      id,
-      indexName,
-      docId,
-      query,
-    });
-    return matches ?? [];
-  },
-  ftsFlushIndex: async function (id: string): Promise<void> {
-    await NbStore.ftsFlushIndex({
+  indexFlush: async function (id: string): Promise<void> {
+    await NbStore.indexFlush({
       id,
     });
   },
-  ftsIndexVersion: function (): Promise<number> {
-    return NbStore.ftsIndexVersion().then(res => res.indexVersion);
+  indexVersion: function (): Promise<number> {
+    return NbStore.indexVersion().then(res => res.indexVersion);
   },
   getDocIndexedClock: function (
     id: string,
     docId: string
   ): Promise<DocIndexedClock | null> {
-    return NbStore.getDocIndexedClock({ id, docId });
+    return NbStore.getDocIndexedClock({ id, docId }).then(clock =>
+      clock ? { ...clock, timestamp: new Date(clock.timestamp) } : null
+    );
   },
   setDocIndexedClock: function (
     id: string,
@@ -446,6 +470,15 @@ export const NbStoreNativeDBApis: NativeDBApis = {
       docId,
       indexedClock: indexedClock.getTime(),
       indexerVersion,
+    });
+  },
+  setDocIndexedClocks: function (id, clocks): Promise<void> {
+    return NbStore.setDocIndexedClocks({
+      id,
+      clocks: clocks.map(clock => ({
+        ...clock,
+        timestamp: clock.timestamp.getTime(),
+      })),
     });
   },
   clearDocIndexedClock: function (id: string, docId: string): Promise<void> {

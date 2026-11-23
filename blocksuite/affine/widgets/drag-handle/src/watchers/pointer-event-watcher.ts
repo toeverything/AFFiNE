@@ -12,6 +12,7 @@ import { computed } from '@preact/signals-core';
 import throttle from 'lodash-es/throttle';
 
 import {
+  ADD_BLOCK_WIDGET_WIDTH,
   DRAG_HANDLE_CONTAINER_WIDTH,
   DRAG_HANDLE_GRABBER_BORDER_RADIUS,
   DRAG_HANDLE_GRABBER_HEIGHT,
@@ -199,6 +200,7 @@ export class PointerEventWatcher {
       !this.widget.isDragHandleHovered
     ) {
       this.showDragHandleOnHoverBlock();
+      this.widget.showAddBlockWidget = true;
       this._lastHoveredBlockId = this.widget.anchorBlockId.peek();
     }
   };
@@ -251,8 +253,13 @@ export class PointerEventWatcher {
         return;
       }
 
-      // When pointer on drag handle, should do nothing
-      if (element.closest('.affine-drag-handle-container')) return;
+      // When pointer on drag handle or add-block widget, should do nothing
+      if (
+        element.closest('.affine-drag-handle-container') ||
+        element.closest('.affine-add-block-widget-container')
+      ) {
+        return;
+      }
 
       if (!this.widget.rootComponent) return;
 
@@ -317,6 +324,7 @@ export class PointerEventWatcher {
 
     const container = this.widget.dragHandleContainer;
     const grabber = this.widget.dragHandleGrabber;
+    const addBlockWidgetContainer = this.widget.addBlockWidgetContainer;
     if (!container || !grabber) return;
 
     this.widget.activeDragHandle = 'block';
@@ -336,6 +344,21 @@ export class PointerEventWatcher {
       Object.assign(container.style, containerStyle);
 
       container.style.display = 'flex';
+
+      // Position the add-block widget beside the drag handle, aligned to the first line.
+      if (
+        addBlockWidgetContainer &&
+        this.widget.showAddBlockWidget &&
+        this.widget.mode === 'page'
+      ) {
+        const posTop = this._getTopWithBlockComponent(block);
+        addBlockWidgetContainer.style.left = `${draggingAreaRect.left - ADD_BLOCK_WIDGET_WIDTH}px`;
+        addBlockWidgetContainer.style.top = `${posTop}px`;
+        addBlockWidgetContainer.style.height = 'auto';
+        addBlockWidgetContainer.style.display = 'flex';
+      } else if (addBlockWidgetContainer) {
+        addBlockWidgetContainer.style.display = 'none';
+      }
     };
 
     if (isBlockIdEqual(block.blockId, this._lastShowedBlock?.id)) {

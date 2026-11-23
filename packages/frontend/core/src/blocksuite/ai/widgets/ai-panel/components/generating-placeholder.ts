@@ -93,9 +93,11 @@ export class GeneratingPlaceholder extends WithDisposable(LitElement) {
           height: ${this.height}px;
         }
       </style>
-      ${this.showHeader
-        ? html`<div class="generating-header">Answer</div>`
-        : nothing}
+      ${
+        this.showHeader
+          ? html`<div class="generating-header">Answer</div>`
+          : nothing
+      }
       <div class="generating-body">
         <div class="generating-icon">${LoadingIcon()}</div>
         <div class="loading-progress">

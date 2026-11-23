@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
-        "revision" : "d591c1dd55824867877cff4f6551fe32983d7f51",
-        "version" : "1.23.0"
+        "revision" : "09a62e377f4e9054b5d3ee7d702984094e69f661",
+        "version" : "1.25.7"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Recouse/EventSource",
       "state" : {
-        "revision" : "7b2f4f585d3927876bd76eaede9fdff779eff102",
-        "version" : "0.1.5"
+        "revision" : "2fc19773dac78904c6770712ae9e780cf049bff1",
+        "version" : "0.1.9"
       }
     },
     {
@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ListViewKit",
       "state" : {
-        "revision" : "07f7adfa0629f8647991e3c148b7d3e060fe2917",
-        "version" : "1.2.0"
+        "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
+        "version" : "1.1.6"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/Litext",
       "state" : {
-        "revision" : "c7e83f2f580ce34a102ca9ba9d2bb24e507dccd9",
-        "version" : "0.5.6"
+        "revision" : "a2ed9b63ae623a20591effc72f9db7d04e41a64c",
+        "version" : "1.2.1"
       }
     },
     {
@@ -59,17 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/MarkdownView",
       "state" : {
-        "revision" : "37f97345a108e95f66b6671c317b43063c7f2de1",
-        "version" : "3.8.2"
-      }
-    },
-    {
-      "identity" : "msdisplaylink",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/MSDisplayLink",
-      "state" : {
-        "revision" : "ebf5823cb5fc1326639d9a05bc06d16bbe82989f",
-        "version" : "2.0.8"
+        "revision" : "e0cd01cb1fcaf47c2aeb14625065773846f7136a",
+        "version" : "3.9.1"
       }
     },
     {
@@ -77,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/RevenueCat/purchases-ios-spm.git",
       "state" : {
-        "revision" : "8f5df97653eb361a2097119479332afccf0aa816",
-        "version" : "5.58.0"
+        "revision" : "e45bb84b726885492ce4e7ee94ddb252d171a205",
+        "version" : "5.92.0"
       }
     },
     {
@@ -113,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "8d9834a6189db730f6264db7556a7ffb751e99ee",
-        "version" : "1.4.0"
+        "revision" : "f96b909e1a9e469620bc5037c1e24e00153f376f",
+        "version" : "1.7.5"
       }
     },
     {

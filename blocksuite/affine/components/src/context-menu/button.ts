@@ -149,7 +149,7 @@ export class MobileMenuButton extends MenuFocusable {
     this.disposables.addFromEvent(this, 'click', this.onClick);
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   onClick() {
     if (this.data.select(this) !== false) {
       this.menu.options.onComplete?.();
@@ -250,9 +250,11 @@ export const menuButtonItems = {
       }
       const data: MenuButtonData = {
         content: () => html`
-          ${config.checked.value
-            ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
-            : CheckBoxUnIcon()}
+          ${
+            config.checked.value
+              ? CheckBoxCheckSolidIcon({ style: `color:#1E96EB` })
+              : CheckBoxUnIcon()
+          }
           <div class="affine-menu-action-text">
             ${config.label?.() ?? config.name}
           </div>

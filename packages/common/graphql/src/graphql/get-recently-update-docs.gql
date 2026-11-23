@@ -1,4 +1,7 @@
-query getRecentlyUpdatedDocs($workspaceId: String!, $pagination: PaginationInput!) {
+query getRecentlyUpdatedDocs(
+  $workspaceId: String!
+  $pagination: PaginationInput!
+) {
   workspace(id: $workspaceId) {
     recentlyUpdatedDocs(pagination: $pagination) {
       totalCount

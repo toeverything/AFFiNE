@@ -16,17 +16,9 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import {
-  catchError,
-  filter,
-  first,
-  of,
-  Subject,
-  switchMap,
-  tap,
-  timer,
-} from 'rxjs';
+import { catchError, filter, first, of, Subject, switchMap, tap } from 'rxjs';
 
+import { RealtimeLiveQuery } from '../../cloud/realtime/live-query';
 import { type DocDisplayMetaService } from '../../doc-display-meta';
 import { GlobalContextService } from '../../global-context';
 import type { SnapshotHelper } from '../services/snapshot-helper';
@@ -93,8 +85,19 @@ export class DocCommentEntity extends Entity<{
   private readonly commentDeleted$ = new Subject<CommentId>();
   readonly commentHighlighted$ = new LiveData<CommentId | null>(null);
 
-  private pollingDisposable?: DisposeCallback;
+  private readonly liveQuery = new RealtimeLiveQuery({
+    request: () => this.store.listCommentChanges({ after: this.startCursor }),
+    subscribe: () => this.store.subscribeCommentChanged(),
+    applySnapshot: result => {
+      this.handleCommentChanges(result);
+      this.startCursor = result.endCursor;
+    },
+    onError: error => {
+      console.error('Failed to sync comment changes:', error);
+    },
+  });
   private startCursor?: string;
+  private startVersion = 0;
 
   async addComment(
     selections?: BaseSelection[],
@@ -486,84 +489,35 @@ export class DocCommentEntity extends Entity<{
     return () => subscription.unsubscribe();
   }
 
-  // Start polling comments every 30s
-  // 1. when comments$ is empty, fetch all comments
-  // 2. when comments$ is not empty, fetch changes (using end cursor)
-  // 3. loop. when doc is not loaded, skip
   start(): void {
-    if (this.pollingDisposable) {
-      this.pollingDisposable();
-    }
-
-    // Initial load
-    this.revalidate();
     this.revalidateCommentsInEditor();
-
-    // Set up polling every 10 seconds
-    const polling$ = timer(10000, 10000).pipe(
-      switchMap(() => {
-        // If we have comments, fetch changes; otherwise fetch all
-        if (this.comments$.value.length > 0) {
-          return fromPromise(async () => {
-            const res = await this.store.listCommentChanges({
-              after: this.startCursor,
-            });
-            return res;
-          }).pipe(
-            tap(result => {
-              if (result) {
-                this.handleCommentChanges(result);
-                this.startCursor = result.endCursor;
-              }
-            }),
-            catchError(error => {
-              console.error('Failed to fetch comment changes:', error);
-              return of(null);
-            })
-          );
-        } else {
-          return fromPromise(async () => {
-            const allComments: DocComment[] = [];
-            let cursor = '';
-            let firstResult: DocCommentListResult | null = null;
-
-            // Fetch all pages of comments
-            while (true) {
-              const result = await this.store.listComments({ after: cursor });
-              if (!firstResult) {
-                firstResult = result;
-                // Store the startCursor from the first page for future polling
-                this.startCursor = result.startCursor;
-              }
-              allComments.push(...result.comments);
-              cursor = result.endCursor;
-              if (!result.hasNextPage) {
-                break;
-              }
-            }
-
-            // Update state with all comments
-            this.comments$.setValue(allComments);
-
-            return allComments;
-          }).pipe(
-            tap(() => this.revalidateCommentsInEditor()),
-            catchError(error => {
-              console.error('Failed to fetch comments:', error);
-              return of(null);
-            })
-          );
-        }
-      })
-    );
-
-    const subscription = polling$.subscribe();
-    this.pollingDisposable = () => subscription.unsubscribe();
+    this.startLiveQueryAfterInitialLoad().catch(error => {
+      console.error('Failed to start comment realtime:', error);
+    });
   }
 
   stop(): void {
-    if (this.pollingDisposable) {
-      this.pollingDisposable();
+    this.startVersion++;
+    this.liveQuery.stop();
+    this.loading$.setValue(false);
+  }
+
+  private async startLiveQueryAfterInitialLoad() {
+    const version = ++this.startVersion;
+    this.liveQuery.stop();
+    this.loading$.setValue(true);
+    try {
+      const allComments = await this.loadAllComments();
+      if (version !== this.startVersion) {
+        return;
+      }
+      this.revalidateCommentsInEditor();
+      this.comments$.setValue(allComments);
+      this.liveQuery.start();
+    } finally {
+      if (version === this.startVersion) {
+        this.loading$.setValue(false);
+      }
     }
   }
 
@@ -678,31 +632,9 @@ export class DocCommentEntity extends Entity<{
 
   revalidate = effect(
     switchMap(() => {
-      return fromPromise(async () => {
-        const allComments: DocComment[] = [];
-        let cursor = '';
-        let firstResult: DocCommentListResult | null = null;
-        this.revalidateCommentsInEditor();
-        // Fetch all pages of comments
-        while (true) {
-          const result = await this.store.listComments({ after: cursor });
-          if (!firstResult) {
-            firstResult = result;
-            // Store the startCursor from the first page for polling
-            this.startCursor = result.startCursor;
-          }
-          allComments.push(...result.comments);
-          cursor = result.endCursor;
-          if (!result.hasNextPage) {
-            break;
-          }
-        }
-
-        return allComments;
-      }).pipe(
+      return fromPromise(() => this.loadAllComments()).pipe(
         tap(allComments => {
           this.revalidateCommentsInEditor();
-          // Update state with all comments
           this.comments$.setValue(allComments);
         }),
         onStart(() => this.loading$.setValue(true)),
@@ -715,6 +647,27 @@ export class DocCommentEntity extends Entity<{
       );
     })
   );
+
+  private async loadAllComments() {
+    const allComments: DocComment[] = [];
+    let cursor = '';
+    let firstResult: DocCommentListResult | null = null;
+    this.revalidateCommentsInEditor();
+    while (true) {
+      const result = await this.store.listComments({ after: cursor });
+      if (!firstResult) {
+        firstResult = result;
+        this.startCursor = result.startCursor;
+      }
+      allComments.push(...result.comments);
+      cursor = result.endCursor;
+      if (!result.hasNextPage) {
+        break;
+      }
+    }
+
+    return allComments;
+  }
 
   private readonly revalidateCommentsInEditor = () => {
     this.commentsInEditor$.setValue(this.getCommentsInEditor());

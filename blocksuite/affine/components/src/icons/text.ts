@@ -265,6 +265,16 @@ export const CancelWrapIcon = icons.CancelWrapIcon({
   height: '20',
 });
 
+export const CollapseCodeIcon = icons.CollapseIcon({
+  width: '20',
+  height: '20',
+});
+
+export const ExpandCodeIcon = icons.ToggleRightIcon({
+  width: '20',
+  height: '20',
+});
+
 // Attachment
 
 export const ViewIcon = icons.ViewIcon({

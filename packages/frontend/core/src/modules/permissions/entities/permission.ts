@@ -1,4 +1,3 @@
-import { Permission } from '@affine/graphql';
 import {
   backoffRetry,
   effect,
@@ -9,6 +8,7 @@ import {
   onComplete,
   onStart,
 } from '@toeverything/infra';
+import type { Subscription } from 'rxjs';
 import { tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
@@ -26,12 +26,24 @@ export class WorkspacePermission extends Entity {
   );
   isTeam$ = this.cache$.map(cache => cache?.isTeam ?? null);
   isRevalidating$ = new LiveData(false);
+  private readonly subscription?: Subscription;
 
   constructor(
     private readonly workspaceService: WorkspaceService,
     private readonly store: WorkspacePermissionStore
   ) {
     super();
+    if (
+      this.workspaceService.workspace.flavour !== 'local' &&
+      !this.workspaceService.workspace.openOptions.isSharedMode
+    ) {
+      this.subscription = this.store
+        .subscribeWorkspaceAccess(this.workspaceService.workspace.id)
+        .subscribe({
+          next: () => this.revalidate(),
+          error: () => {},
+        });
+    }
   }
 
   revalidate = effect(
@@ -46,9 +58,11 @@ export class WorkspacePermission extends Entity {
             signal
           );
 
+          const isOwner = info.workspace.permissions.Workspace_Delete;
           return {
-            isOwner: info.workspace.role === Permission.Owner,
-            isAdmin: info.workspace.role === Permission.Admin,
+            isOwner,
+            isAdmin:
+              !isOwner && info.workspace.permissions.Workspace_Settings_Update,
             isTeam: info.workspace.team,
           };
         } else {
@@ -81,5 +95,6 @@ export class WorkspacePermission extends Entity {
 
   override dispose(): void {
     this.revalidate.unsubscribe();
+    this.subscription?.unsubscribe();
   }
 }

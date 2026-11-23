@@ -26,6 +26,9 @@ public class CreateUserMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createUser", CreateUser.self, arguments: ["input": .variable("input")]),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateUserMutation.Data.self
+    ] }
 
     /// Create a new user
     public var createUser: CreateUser { __data["createUser"] }
@@ -41,6 +44,9 @@ public class CreateUserMutation: GraphQLMutation {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateUserMutation.Data.CreateUser.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

@@ -102,7 +102,7 @@ export class IntegerInvertedIndex implements InvertedIndex {
     return match;
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   async all(trx: DataStructROTransaction): Promise<Match> {
     const objs = await trx
       .objectStore('invertedIndex')
@@ -149,7 +149,7 @@ export class BooleanInvertedIndex implements InvertedIndex {
     readonly fieldKey: string
   ) {}
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   async all(trx: DataStructROTransaction): Promise<Match> {
     const objs = await trx
       .objectStore('invertedIndex')
@@ -350,7 +350,7 @@ export class FullTextInvertedIndex implements InvertedIndex {
     return match;
   }
 
-  // eslint-disable-next-line sonarjs/no-identical-functions
+  // oxlint-disable-next-line sonarjs/no-identical-functions
   async all(trx: DataStructROTransaction): Promise<Match> {
     const objs = await trx
       .objectStore('invertedIndex')

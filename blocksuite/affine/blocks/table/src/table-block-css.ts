@@ -1,10 +1,32 @@
 import { css } from '@emotion/css';
 
+const externalRangeSelectionSelector =
+  'affine-table[data-external-range-selection]';
+const hiddenSelectionBackground = '#fff';
+
 export const tableContainer = css({
   display: 'block',
   padding: '10px 0 18px 10px',
   overflowX: 'auto',
   overflowY: 'visible',
+  userSelect: 'none',
+  WebkitUserSelect: 'none',
+  '& *': {
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+  },
+  [`${externalRangeSelectionSelector} &::selection`]: {
+    backgroundColor: hiddenSelectionBackground,
+  },
+  [`${externalRangeSelectionSelector} & *::selection`]: {
+    backgroundColor: hiddenSelectionBackground,
+  },
+  [`${externalRangeSelectionSelector} & rich-text::selection`]: {
+    backgroundColor: hiddenSelectionBackground,
+  },
+  [`${externalRangeSelectionSelector} & rich-text *::selection`]: {
+    backgroundColor: hiddenSelectionBackground,
+  },
   '::-webkit-scrollbar': {
     height: '8px',
   },

@@ -3,7 +3,11 @@ import { z } from 'zod';
 
 import { toolError } from './error';
 import { defineTool } from './tool';
-import type { CopilotProviderFactory, PromptService } from './types';
+
+type RunPromptText = (
+  promptName: string,
+  params: Record<string, unknown>
+) => Promise<string>;
 
 const logger = new Logger('CodeArtifactTool');
 /**
@@ -12,10 +16,7 @@ const logger = new Logger('CodeArtifactTool');
  * it can be saved as a single .html file and opened in any browser with no
  * external dependencies.
  */
-export const createCodeArtifactTool = (
-  promptService: PromptService,
-  factory: CopilotProviderFactory
-) => {
+export const createCodeArtifactTool = (prompt: RunPromptText) => {
   return defineTool({
     description:
       'Generate a single-file HTML snippet (with inline <style> and <script>) that accomplishes the requested functionality. The final HTML should be runnable when saved as an .html file and opened in a browser. Do NOT reference external resources (CSS, JS, images) except through data URIs.',
@@ -35,20 +36,7 @@ export const createCodeArtifactTool = (
     }),
     execute: async ({ title, userPrompt }) => {
       try {
-        const prompt = await promptService.get('Code Artifact');
-        if (!prompt) {
-          throw new Error('Prompt not found');
-        }
-        const provider = await factory.getProviderByModel(prompt.model);
-        if (!provider) {
-          throw new Error('Provider not found');
-        }
-        const content = await provider.text(
-          {
-            modelId: prompt.model,
-          },
-          prompt.finish({ content: userPrompt })
-        );
+        const content = await prompt('Code Artifact', { content: userPrompt });
         // Remove surrounding ``` or ```html fences if present
         let stripped = content.trim();
         if (stripped.startsWith('```')) {

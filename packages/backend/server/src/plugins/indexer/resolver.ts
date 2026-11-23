@@ -1,20 +1,18 @@
 import { Args, Parent, ResolveField, Resolver } from '@nestjs/graphql';
 
 import { CurrentUser } from '../../core/auth';
-import { AccessController } from '../../core/permission';
+import { DocReader } from '../../core/doc';
+import { PermissionAccess } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { WorkspaceType } from '../../core/workspaces';
-import { Models } from '../../models';
-import { AggregateBucket } from './providers';
-import { IndexerService, SearchNodeWithMeta } from './service';
+import type { SearchNodeWithMeta } from './result';
+import { IndexerService } from './service';
 import {
   AggregateInput,
   AggregateResultObjectType,
   SearchDocObjectType,
   SearchDocsInput,
   SearchInput,
-  SearchQueryOccur,
-  SearchQueryType,
   SearchResultObjectType,
 } from './types';
 
@@ -22,9 +20,39 @@ import {
 export class IndexerResolver {
   constructor(
     private readonly indexer: IndexerService,
-    private readonly ac: AccessController,
-    private readonly models: Models
+    private readonly ac: PermissionAccess,
+    private readonly docReader: DocReader
   ) {}
+
+  private async logicalDocIds(workspaceId: string) {
+    const aliases = await this.docReader.getDocIdAliases(workspaceId);
+    return new Map(
+      [...aliases].map(([logical, physical]) => [physical, logical])
+    );
+  }
+
+  private displayNodes(
+    nodes: SearchNodeWithMeta[],
+    aliases: Map<string, string>
+  ) {
+    return nodes.map(node => ({
+      ...node,
+      fields: {
+        ...node.fields,
+        ...(node.fields.docId
+          ? {
+              docId: node.fields.docId.map(id =>
+                typeof id === 'string' ? (aliases.get(id) ?? id) : id
+              ),
+            }
+          : {}),
+      },
+      _source: {
+        ...node._source,
+        docId: aliases.get(node._source.docId) ?? node._source.docId,
+      },
+    }));
+  }
 
   @ResolveField(() => SearchResultObjectType, {
     description: 'Search a specific table',
@@ -36,19 +64,15 @@ export class IndexerResolver {
   ): Promise<SearchResultObjectType> {
     // currentUser can read the workspace
     await this.ac.user(me.id).workspace(workspace.id).assert('Workspace.Read');
-    this.#addWorkspaceFilter(workspace, input);
-
-    const result = await this.indexer.search(input);
-    const nodes = await this.#filterUserReadableDocs(
-      workspace,
-      me,
-      result.nodes
-    );
+    const result = await this.indexer.search(me.id, workspace.id, input);
     return {
-      nodes,
+      nodes: this.displayNodes(
+        result.nodes,
+        await this.logicalDocIds(workspace.id)
+      ),
       pagination: {
-        count: result.total,
-        hasMore: nodes.length > 0,
+        count: result.nodes.length,
+        hasMore: Boolean(result.nextCursor),
         nextCursor: result.nextCursor,
       },
     };
@@ -64,26 +88,23 @@ export class IndexerResolver {
   ): Promise<AggregateResultObjectType> {
     // currentUser can read the workspace
     await this.ac.user(me.id).workspace(workspace.id).assert('Workspace.Read');
-    this.#addWorkspaceFilter(workspace, input);
-
-    const result = await this.indexer.aggregate(input);
-    const needs: AggregateBucket[] = [];
-    for (const bucket of result.buckets) {
-      bucket.hits.nodes = await this.#filterUserReadableDocs(
-        workspace,
-        me,
-        bucket.hits.nodes as SearchNodeWithMeta[]
-      );
-      if (bucket.hits.nodes.length > 0) {
-        needs.push(bucket);
-      }
-    }
+    const result = await this.indexer.aggregate(me.id, workspace.id, input);
+    const aliases = await this.logicalDocIds(workspace.id);
     return {
-      buckets: needs,
+      buckets: result.buckets.map(bucket => ({
+        ...bucket,
+        key:
+          input.field === 'docId' || input.field === 'doc_id'
+            ? (aliases.get(bucket.key) ?? bucket.key)
+            : bucket.key,
+        hits: {
+          ...bucket.hits,
+          nodes: this.displayNodes(bucket.hits.nodes, aliases),
+        },
+      })),
       pagination: {
-        count: result.total,
-        hasMore: needs.length > 0,
-        nextCursor: result.nextCursor,
+        count: result.buckets.length,
+        hasMore: result.hasMore,
       },
     };
   }
@@ -97,69 +118,16 @@ export class IndexerResolver {
     @Args('input') input: SearchDocsInput
   ): Promise<SearchDocObjectType[]> {
     const docs = await this.indexer.searchDocsByKeyword(
+      me.id,
       workspace.id,
       input.keyword,
-      {
-        limit: input.limit,
-      }
+      { limit: input.limit }
     );
 
-    const needs = await this.ac
-      .user(me.id)
-      .workspace(workspace.id)
-      .docs(docs, 'Doc.Read');
-    return needs;
-  }
-
-  #addWorkspaceFilter(
-    workspace: WorkspaceType,
-    input: SearchInput | AggregateInput
-  ) {
-    // filter by workspace id
-    input.query = {
-      type: SearchQueryType.boolean,
-      occur: SearchQueryOccur.must,
-      queries: [
-        {
-          type: SearchQueryType.match,
-          field: 'workspaceId',
-          match: workspace.id,
-        },
-        input.query,
-      ],
-    };
-  }
-
-  /**
-   * filter user readable docs on team workspace
-   */
-  async #filterUserReadableDocs(
-    workspace: WorkspaceType,
-    user: UserType,
-    nodes: SearchNodeWithMeta[]
-  ) {
-    if (nodes.length === 0) {
-      return nodes;
-    }
-
-    const isTeamWorkspace = await this.models.workspaceFeature.has(
-      workspace.id,
-      'team_plan_v1'
-    );
-    if (!isTeamWorkspace) {
-      return nodes;
-    }
-
-    const needs = await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .docs(
-        nodes.map(node => ({
-          node,
-          docId: node._source.docId,
-        })),
-        'Doc.Read'
-      );
-    return needs.map(node => node.node);
+    const aliases = await this.logicalDocIds(workspace.id);
+    return docs.map(doc => ({
+      ...doc,
+      docId: aliases.get(doc.docId) ?? doc.docId,
+    }));
   }
 }

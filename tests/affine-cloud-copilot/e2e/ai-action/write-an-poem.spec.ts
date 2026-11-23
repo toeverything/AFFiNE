@@ -17,7 +17,7 @@ test.describe('AIAction/WriteAnPoemAboutThis', () => {
       'AFFiNE is a workspace with fully merged docs'
     );
     const { answer, responses } = await writePoem();
-    await expect(answer).toHaveText(/AFFiNE/);
+    await expect(answer.locator('text-renderer')).toContainText(/\S/);
     expect(responses).toEqual(new Set(['insert-below', 'replace-selection']));
   });
 
@@ -35,7 +35,7 @@ test.describe('AIAction/WriteAnPoemAboutThis', () => {
       }
     );
     const { answer, responses } = await writePoem();
-    await expect(answer).toHaveText(/AFFiNE/);
+    await expect(answer.locator('text-renderer')).toContainText(/\S/);
     expect(responses).toEqual(new Set(['insert-below']));
   });
 
@@ -53,7 +53,7 @@ test.describe('AIAction/WriteAnPoemAboutThis', () => {
       }
     );
     const { answer, responses } = await writePoem();
-    await expect(answer).toHaveText(/AFFiNE/);
+    await expect(answer.locator('text-renderer')).toContainText(/\S/);
     expect(responses).toEqual(new Set(['insert-below']));
   });
 

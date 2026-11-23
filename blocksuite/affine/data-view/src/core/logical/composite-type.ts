@@ -60,7 +60,7 @@ export class FnTypeInstance<
       if (arg == null) {
         return false;
       }
-      // eslint-disable-next-line sonarjs/no-collapsible-if
+      // oxlint-disable-next-line sonarjs/no-collapsible-if
       if (realArg != null) {
         if (!unify(newCtx, realArg, arg)) {
           return false;

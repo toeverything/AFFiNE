@@ -48,6 +48,8 @@ import { DropEffect } from './drop-effect';
 import * as styles from './node.css';
 import type { NodeOperation } from './types';
 
+const EMPTY_OPERATIONS: NodeOperation[] = [];
+
 export type NavigationPanelTreeNodeDropEffectData = {
   source: { data: AffineDNDData['draggable'] };
   treeInstruction: DropTargetTreeInstruction | null;
@@ -190,9 +192,9 @@ export const NavigationPanelTreeNode = ({
   collapsible = true,
   canDrop,
   reorderable = true,
-  operations = [],
+  operations = EMPTY_OPERATIONS,
   postfix,
-  childrenOperations = [],
+  childrenOperations = EMPTY_OPERATIONS,
   childrenPlaceholder,
   linkComponent: LinkComponent = WorkbenchLink,
   dndData,

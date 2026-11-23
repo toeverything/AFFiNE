@@ -53,12 +53,14 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
     return html`
       <edgeless-tool-icon-button
         class="edgeless-connector-button"
-        .tooltip=${this.popper
-          ? ''
-          : html`<affine-tooltip-content-with-shortcut
-              data-tip="${getConnectorModeName(mode)}"
-              data-shortcut="${'C'}"
-            ></affine-tooltip-content-with-shortcut>`}
+        .tooltip=${
+          this.popper
+            ? ''
+            : html`<affine-tooltip-content-with-shortcut
+                data-tip="${getConnectorModeName(mode)}"
+                data-shortcut="${'C'}"
+              ></affine-tooltip-content-with-shortcut>`
+        }
         .tooltipOffset=${17}
         .active=${active}
         .iconContainerPadding=${6}

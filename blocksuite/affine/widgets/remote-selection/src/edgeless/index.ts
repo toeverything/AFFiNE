@@ -148,13 +148,14 @@ export class EdgelessRemoteSelectionWidget extends WidgetComponent<RootBlockMode
   };
 
   private readonly _updateTransform = requestThrottledConnectedFrame(() => {
-    const { translateX, translateY, zoom } = this.gfx.viewport;
+    const { translateX, translateY, zoom, viewScale } = this.gfx.viewport;
 
-    this.style.setProperty('--v-zoom', `${zoom}`);
+    // Compensate for outer CSS scale, matching GfxBlockComponent.getCSSTransform.
+    this.style.setProperty('--v-zoom', `${zoom / viewScale}`);
 
     this.style.setProperty(
       'transform',
-      `translate(${translateX}px, ${translateY}px) scale(var(--v-zoom))`
+      `translate(${translateX / viewScale}px, ${translateY / viewScale}px) scale(var(--v-zoom))`
     );
   }, this);
 

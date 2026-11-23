@@ -20,6 +20,26 @@ declare global {
 }
 
 export type EventName = keyof Events;
+// Only these events may enter the local emitter from the shared Redis bridge.
+const EVENT_DEFINITIONS = {
+  'config.changed.broadcast': { broadcast: true },
+  'copilot.delegated.editor.upserted': { broadcast: true },
+  'copilot.delegated.editor.released': { broadcast: true },
+  'copilot.delegated.tool.responded': { broadcast: true },
+  'realtime.connection.disconnected': { broadcast: true },
+  'realtime.topic.changed': { broadcast: true },
+  'sync.permissions.changed': { broadcast: true },
+  'sync.doc.updates.pushed': { broadcast: true },
+  'sync.awareness.collect': { broadcast: true },
+  'sync.awareness.updated': { broadcast: true },
+} satisfies Partial<Record<EventName, { broadcast: boolean }>>;
+
+export const BROADCASTABLE_EVENT_NAMES: ReadonlySet<string> = new Set(
+  Object.entries(EVENT_DEFINITIONS)
+    .filter(([, definition]) => definition.broadcast)
+    .map(([name]) => name)
+);
+
 export const EVENT_LISTENER_METADATA = Symbol('event_listener');
 
 interface EventHandlerMetadata {

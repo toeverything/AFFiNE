@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { mock } from 'node:test';
 
 import {
   CommentChangeAction,
@@ -12,9 +13,25 @@ import {
   resolveCommentMutation,
   updateCommentMutation,
   updateReplyMutation,
+  uploadCommentAttachmentMutation,
 } from '@affine/graphql';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
-import { DocRole } from '../../../models';
+import { BackendRuntimeProvider } from '../../../core/backend-runtime';
+import { CommentService } from '../../../core/comment/service';
+import { DocReader } from '../../../core/doc/reader';
+import { RealtimePublisher } from '../../../core/realtime';
+import {
+  type CommentNotification,
+  DocRole,
+  NotificationType,
+} from '../../../models';
 import { Mockers } from '../../mocks';
 import { app, e2e } from '../test';
 
@@ -52,6 +69,25 @@ async function init() {
 }
 
 const { owner, workspace, member, other, teamWorkspace } = await init();
+
+async function notificationCount(...userIds: string[]) {
+  return (
+    await Promise.all(
+      userIds.map(userId =>
+        app.models.notification.countByUserId(userId, { includeRead: true })
+      )
+    )
+  ).reduce((total, count) => total + count, 0);
+}
+
+async function latestNotification(userId: string) {
+  const notifications = await app.models.notification.findManyByUserId(userId, {
+    includeRead: true,
+    first: 1,
+    offset: 0,
+  });
+  return notifications[0] as CommentNotification;
+}
 
 // #region comment
 
@@ -97,6 +133,159 @@ e2e('should create comment work', async t => {
   t.truthy(result2.createComment.id);
   t.false(result2.createComment.resolved);
   t.is(result2.createComment.replies.length, 0);
+
+  const logicalId = randomUUID();
+  for (const [id, defaultRole] of [
+    [docId, DocRole.None],
+    [logicalId, DocRole.Manager],
+  ] as const) {
+    await app.create(Mockers.DocSnapshot, {
+      workspaceId: workspace.id,
+      user: owner,
+      docId: id,
+      blob: Buffer.from([0, 0]),
+    });
+    await app.create(Mockers.DocMeta, {
+      workspaceId: workspace.id,
+      docId: id,
+      defaultRole,
+    });
+  }
+  const root = new YDoc();
+  const rootSnapshot = await app
+    .get(DocReader)
+    .getDoc(workspace.id, workspace.id);
+  if (rootSnapshot) applyUpdate(root, rootSnapshot.bin);
+  const existingPages = root.getMap('meta').get('pages');
+  const pages =
+    existingPages instanceof YArray
+      ? existingPages
+      : new YArray<YMap<unknown>>();
+  if (!(existingPages instanceof YArray))
+    root.getMap('meta').set('pages', pages);
+  pages.push([new YMap([['id', logicalId]])]);
+  root.getMap('spaces').set(logicalId, new YDoc({ guid: docId }));
+  await app.models.doc.createUpdates([
+    {
+      spaceId: workspace.id,
+      docId: workspace.id,
+      blob: Buffer.from(encodeStateAsUpdate(root)),
+      timestamp: Date.now(),
+      editorId: owner.id,
+    },
+  ]);
+  root.destroy();
+  const activation = mock.method(
+    app.get(BackendRuntimeProvider),
+    'getWorkspaceLifecycleActiveV1',
+    async () => false
+  );
+  const publisher = mock.method(app.get(RealtimePublisher), 'publish');
+  t.teardown(() => {
+    activation.mock.restore();
+    publisher.mock.restore();
+  });
+  const list = {
+    query: listCommentsQuery,
+    variables: {
+      workspaceId: workspace.id,
+      docId: logicalId,
+      pagination: { after: '' },
+    },
+  };
+  const create = {
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: workspace.id,
+        docId: logicalId,
+        docMode: DocMode.page,
+        docTitle: 'legacy',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'through logical ID' }],
+        },
+      },
+    },
+  };
+  const upload = () =>
+    app
+      .POST('/graphql')
+      .field(
+        'operations',
+        JSON.stringify({
+          query: uploadCommentAttachmentMutation.query,
+          operationName: uploadCommentAttachmentMutation.op,
+          variables: {
+            workspaceId: workspace.id,
+            docId: logicalId,
+            attachment: null,
+          },
+        })
+      )
+      .field('map', JSON.stringify({ '0': ['variables.attachment'] }))
+      .attach('0', Buffer.from('legacy attachment'), 'legacy.txt');
+  await t.throwsAsync(app.gql(list));
+  await t.throwsAsync(app.gql(create));
+  t.truthy((await upload()).body.errors);
+  await app.models.docAccessPolicy.upsert(workspace.id, docId, {
+    defaultRole: DocRole.Commenter,
+  });
+  await app.models.docAccessPolicy.upsert(workspace.id, logicalId, {
+    defaultRole: DocRole.None,
+  });
+  const listed = await app.gql(list);
+  t.deepEqual(
+    listed.workspace.comments.edges.map(edge => edge.node.id).sort(),
+    [result.createComment.id, result2.createComment.id].sort()
+  );
+  const created = await app.gql(create);
+  t.is(
+    (await app.get(CommentService).getComment(created.createComment.id))?.docId,
+    docId
+  );
+  for (const notifiedId of [logicalId, docId]) {
+    t.true(
+      publisher.mock.calls.some(
+        ({ arguments: args }) =>
+          args[0] === 'comment.changed' &&
+          'docId' in args[1] &&
+          args[1].docId === notifiedId
+      )
+    );
+  }
+  const changes = await app.gql({
+    query: listCommentChangesQuery,
+    variables: {
+      workspaceId: workspace.id,
+      docId: logicalId,
+      pagination: { after: '', first: 10 },
+    },
+  });
+  t.true(
+    changes.workspace.commentChanges.edges.some(
+      edge => edge.node.id === created.createComment.id
+    )
+  );
+  const uploaded = await upload();
+  t.falsy(uploaded.body.errors);
+  const url = new URL(uploaded.body.data.uploadCommentAttachment);
+  t.true(url.pathname.includes(`/docs/${docId}/`));
+  for (const requestedId of [logicalId, docId]) {
+    const response = await app
+      .GET(url.pathname.replace(`/docs/${docId}/`, `/docs/${requestedId}/`))
+      .expect(200);
+    t.is(response.text, 'legacy attachment');
+  }
+  await app.models.docAccessPolicy.upsert(workspace.id, docId, {
+    defaultRole: DocRole.None,
+  });
+  await app.models.docAccessPolicy.upsert(workspace.id, logicalId, {
+    defaultRole: DocRole.Manager,
+  });
+  await app
+    .GET(url.pathname.replace(`/docs/${docId}/`, `/docs/${logicalId}/`))
+    .expect(403);
 });
 
 e2e('should create comment with mentions work', async t => {
@@ -110,7 +299,7 @@ e2e('should create comment with mentions work', async t => {
 
   await app.login(member);
 
-  const count = app.queue.count('notification.sendComment');
+  const count = await notificationCount(owner.id);
   const result = await app.gql({
     query: createCommentMutation,
     variables: {
@@ -139,10 +328,10 @@ e2e('should create comment with mentions work', async t => {
   t.false(result.createComment.resolved);
   t.is(result.createComment.replies.length, 0);
   // only send one notification to owner
-  t.is(app.queue.count('notification.sendComment'), count + 1);
-  const notification = app.queue.last('notification.sendComment');
-  t.is(notification.name, 'notification.sendComment');
-  t.is(notification.payload.userId, owner.id);
+  t.is(await notificationCount(owner.id), count + 1);
+  const notification = await latestNotification(owner.id);
+  t.is(notification.userId, owner.id);
+  t.is(notification.type, NotificationType.CommentMention);
 });
 
 e2e('should create comment work when user is Commenter', async t => {
@@ -273,16 +462,64 @@ e2e('should update comment work', async t => {
   t.truthy(result.updateComment);
 });
 
-e2e('should update comment failed by another user', async t => {
+e2e('should update comment work by doc Editor', async t => {
   const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Editor,
+  });
 
   await app.login(owner);
-
   const createResult = await app.gql({
     query: createCommentMutation,
     variables: {
       input: {
-        workspaceId: workspace.id,
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  await app.login(member);
+  const result = await app.gql({
+    query: updateCommentMutation,
+    variables: {
+      input: {
+        id: createResult.createComment.id,
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test update' }],
+        },
+      },
+    },
+  });
+
+  t.truthy(result.updateComment);
+});
+
+e2e('should update comment failed without update permission', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Reader,
+  });
+
+  await app.login(owner);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
         docId,
         docMode: DocMode.page,
         docTitle: 'test',
@@ -311,7 +548,7 @@ e2e('should update comment failed by another user', async t => {
     }),
     {
       message:
-        /You do not have permission to perform Doc\.Comments\.Update action on doc/,
+        /You do not have permission to perform Doc\.Comments\.Moderate action on doc/,
     }
   );
 });
@@ -475,7 +712,7 @@ e2e('should resolve comment failed by doc Reader user', async t => {
     }),
     {
       message:
-        /You do not have permission to perform Doc\.Comments\.Resolve action on doc/,
+        /You do not have permission to perform Doc\.Comments\.Moderate action on doc/,
     }
   );
 });
@@ -597,7 +834,7 @@ e2e('should create reply with mentions work', async t => {
     },
   });
 
-  const count = app.queue.count('notification.sendComment');
+  const count = await notificationCount(owner.id);
   const result = await app.gql({
     query: createReplyMutation,
     variables: {
@@ -624,12 +861,11 @@ e2e('should create reply with mentions work', async t => {
   t.truthy(result.createReply.id);
   t.is(result.createReply.commentId, createResult.createComment.id);
   // only send one notification to owner
-  t.is(app.queue.count('notification.sendComment'), count + 1);
-  const notification = app.queue.last('notification.sendComment');
-  t.is(notification.name, 'notification.sendComment');
-  t.is(notification.payload.userId, owner.id);
-  t.is(notification.payload.body.replyId, result.createReply.id);
-  t.is(notification.payload.isMention, true);
+  t.is(await notificationCount(owner.id), count + 1);
+  const notification = await latestNotification(owner.id);
+  t.is(notification.userId, owner.id);
+  t.is(notification.body.replyId, result.createReply.id);
+  t.is(notification.type, NotificationType.CommentMention);
 });
 
 e2e(
@@ -660,7 +896,7 @@ e2e(
       },
     });
 
-    const count = app.queue.count('notification.sendComment');
+    const count = await notificationCount(member.id);
     const result = await app.gql({
       query: createReplyMutation,
       variables: {
@@ -678,12 +914,11 @@ e2e(
 
     t.truthy(result.createReply.id);
     t.is(result.createReply.commentId, createResult.createComment.id);
-    t.is(app.queue.count('notification.sendComment'), count + 1);
-    const notification = app.queue.last('notification.sendComment');
-    t.is(notification.name, 'notification.sendComment');
-    t.is(notification.payload.userId, member.id);
-    t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, undefined);
+    t.is(await notificationCount(member.id), count + 1);
+    const notification = await latestNotification(member.id);
+    t.is(notification.userId, member.id);
+    t.is(notification.body.replyId, result.createReply.id);
+    t.is(notification.type, NotificationType.Comment);
   }
 );
 
@@ -717,7 +952,7 @@ e2e(
 
     // owner login to create reply and send notification to comment author: member
     await app.login(owner);
-    const count = app.queue.count('notification.sendComment');
+    const count = await notificationCount(member.id);
     const result = await app.gql({
       query: createReplyMutation,
       variables: {
@@ -735,12 +970,11 @@ e2e(
 
     t.truthy(result.createReply.id);
     t.is(result.createReply.commentId, createResult.createComment.id);
-    t.is(app.queue.count('notification.sendComment'), count + 1);
-    const notification = app.queue.last('notification.sendComment');
-    t.is(notification.name, 'notification.sendComment');
-    t.is(notification.payload.userId, member.id);
-    t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, undefined);
+    t.is(await notificationCount(member.id), count + 1);
+    const notification = await latestNotification(member.id);
+    t.is(notification.userId, member.id);
+    t.is(notification.body.replyId, result.createReply.id);
+    t.is(notification.type, NotificationType.Comment);
   }
 );
 
@@ -773,7 +1007,7 @@ e2e(
     });
 
     await app.login(owner);
-    const count = app.queue.count('notification.sendComment');
+    const count = await notificationCount(member.id);
     const result = await app.gql({
       query: createReplyMutation,
       variables: {
@@ -791,12 +1025,11 @@ e2e(
 
     t.truthy(result.createReply.id);
     t.is(result.createReply.commentId, createResult.createComment.id);
-    t.is(app.queue.count('notification.sendComment'), count + 1);
-    const notification = app.queue.last('notification.sendComment');
-    t.is(notification.name, 'notification.sendComment');
-    t.is(notification.payload.userId, member.id);
-    t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, undefined);
+    t.is(await notificationCount(member.id), count + 1);
+    const notification = await latestNotification(member.id);
+    t.is(notification.userId, member.id);
+    t.is(notification.body.replyId, result.createReply.id);
+    t.is(notification.type, NotificationType.Comment);
   }
 );
 
@@ -827,7 +1060,7 @@ e2e('should send comment mention notification is high priority', async t => {
   });
 
   await app.login(owner);
-  const count = app.queue.count('notification.sendComment');
+  const count = await notificationCount(member.id);
   const result = await app.gql({
     query: createReplyMutation,
     variables: {
@@ -846,16 +1079,15 @@ e2e('should send comment mention notification is high priority', async t => {
 
   t.truthy(result.createReply.id);
   t.is(result.createReply.commentId, createResult.createComment.id);
-  t.is(app.queue.count('notification.sendComment'), count + 1);
-  const notification = app.queue.last('notification.sendComment');
-  t.is(notification.name, 'notification.sendComment');
-  t.is(notification.payload.userId, member.id);
-  t.is(notification.payload.body.replyId, result.createReply.id);
-  t.is(notification.payload.isMention, true);
+  t.is(await notificationCount(member.id), count + 1);
+  const notification = await latestNotification(member.id);
+  t.is(notification.userId, member.id);
+  t.is(notification.body.replyId, result.createReply.id);
+  t.is(notification.type, NotificationType.CommentMention);
 });
 
 e2e(
-  'should create reply and send comment notification to all repliers',
+  'should notify current repliers but exclude recipients whose access was revoked',
   async t => {
     const docId = randomUUID();
     await app.create(Mockers.DocUser, {
@@ -905,7 +1137,7 @@ e2e(
     });
 
     // notify to all repliers: member and owner
-    const count = app.queue.count('notification.sendComment');
+    const count = await notificationCount(member.id, owner.id);
     await app.login(other);
     const result = await app.gql({
       query: createReplyMutation,
@@ -924,12 +1156,31 @@ e2e(
 
     t.truthy(result.createReply.id);
     t.is(result.createReply.commentId, createResult.createComment.id);
-    t.is(app.queue.count('notification.sendComment'), count + 2);
-    const notification = app.queue.last('notification.sendComment');
-    t.is(notification.name, 'notification.sendComment');
-    t.is(notification.payload.userId, owner.id);
-    t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, undefined);
+    t.is(await notificationCount(member.id, owner.id), count + 2);
+    const notification = await latestNotification(owner.id);
+    t.is(notification.userId, owner.id);
+    t.is(notification.body.replyId, result.createReply.id);
+    t.is(notification.type, NotificationType.Comment);
+    await app.models.docUser.delete(teamWorkspace.id, docId, other.id);
+    const revokedCount = await notificationCount(other.id);
+    const memberCount = await notificationCount(member.id);
+    await app.login(owner);
+    await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'private update',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'private update' }],
+          },
+        },
+      },
+    });
+    t.is(await notificationCount(other.id), revokedCount);
+    t.is(await notificationCount(member.id), memberCount + 1);
   }
 );
 
@@ -1145,15 +1396,79 @@ e2e('should update reply work when user is reply owner', async t => {
   t.truthy(result.updateReply);
 });
 
-e2e('should update reply failed when user is not reply owner', async t => {
+e2e('should update reply work by doc Editor', async t => {
   const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Editor,
+  });
 
   await app.login(owner);
   const createResult = await app.gql({
     query: createCommentMutation,
     variables: {
       input: {
-        workspaceId: workspace.id,
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  const createReplyResult = await app.gql({
+    query: createReplyMutation,
+    variables: {
+      input: {
+        commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  await app.login(member);
+  const result = await app.gql({
+    query: updateReplyMutation,
+    variables: {
+      input: {
+        id: createReplyResult.createReply.id,
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test update' }],
+        },
+      },
+    },
+  });
+
+  t.truthy(result.updateReply);
+});
+
+e2e('should update reply failed without update permission', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Reader,
+  });
+
+  await app.login(owner);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
         docId,
         docMode: DocMode.page,
         docTitle: 'test',
@@ -1196,7 +1511,7 @@ e2e('should update reply failed when user is not reply owner', async t => {
     }),
     {
       message:
-        /You do not have permission to perform Doc\.Comments\.Update action on doc/,
+        /You do not have permission to perform Doc\.Comments\.Moderate action on doc/,
     }
   );
 });

@@ -1,6 +1,7 @@
 export { AIButtonProvider } from './provider/ai-button';
 export { AIButtonService } from './services/ai-button';
 export { AIDraftService } from './services/ai-draft';
+export { AIModelService } from './services/models';
 export {
   type AIToolsConfig,
   AIToolsConfigService,

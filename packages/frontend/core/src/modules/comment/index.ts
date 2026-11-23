@@ -2,6 +2,7 @@ import type { Framework } from '@toeverything/infra';
 
 import { DefaultServerService, WorkspaceServerService } from '../cloud';
 import { DocDisplayMetaService } from '../doc-display-meta';
+import { NbstoreService } from '../storage';
 import { WorkbenchService } from '../workbench';
 import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { DocCommentEntity } from './entities/doc-comment';
@@ -25,5 +26,6 @@ export function configureCommentModule(framework: Framework) {
       WorkspaceService,
       WorkspaceServerService,
       DefaultServerService,
+      NbstoreService,
     ]);
 }

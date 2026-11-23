@@ -108,11 +108,13 @@ export class EmbedFigmaBlockComponent extends EmbedBlockComponent<EmbedFigmaMode
               </div>
             </div>
 
-            ${description
-              ? html`<div class="affine-embed-figma-content-description">
-                  ${description}
-                </div>`
-              : nothing}
+            ${
+              description
+                ? html`<div class="affine-embed-figma-content-description">
+                    ${description}
+                  </div>`
+                : nothing
+            }
 
             <div class="affine-embed-figma-content-url" @click=${this.open}>
               <span>www.figma.com</span>

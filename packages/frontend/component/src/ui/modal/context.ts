@@ -6,7 +6,7 @@ export interface ModalConfig {
    * add global callback for modal open,
    * return a function to handle close/unmount callback
    */
-  onOpen?: () => OnClose;
+  onOpen?: (close: () => void) => OnClose;
   /**
    * For mobile
    */

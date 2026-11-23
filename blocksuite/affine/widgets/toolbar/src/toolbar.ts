@@ -146,7 +146,16 @@ export class AffineToolbarWidget extends WidgetComponent {
   }
 
   setReferenceElementWithBlocks(blocks: BlockComponent[]) {
-    const getClientRects = () => blocks.map(e => e.getBoundingClientRect());
+    let cachedClientRects: DOMRect[] | null = null;
+    const getClientRects = () => {
+      if (!cachedClientRects) {
+        cachedClientRects = blocks.map(e => e.getBoundingClientRect());
+        requestAnimationFrame(() => {
+          cachedClientRects = null;
+        });
+      }
+      return cachedClientRects;
+    };
 
     this.referenceElement$.value = blocks.length
       ? () => ({
@@ -162,10 +171,11 @@ export class AffineToolbarWidget extends WidgetComponent {
   }
 
   setReferenceElementWithElements(gfx: GfxController, elements: GfxModel[]) {
+    const surfaceBounds = getCommonBoundWithRotation(elements);
+
     const getBoundingClientRect = () => {
-      const bounds = getCommonBoundWithRotation(elements);
       const { x: offsetX, y: offsetY } = this.getBoundingClientRect();
-      const [x, y, w, h] = gfx.viewport.toViewBound(bounds).toXYWH();
+      const [x, y, w, h] = gfx.viewport.toViewBound(surfaceBounds).toXYWH();
       const rect = new DOMRect(x + offsetX, y + offsetY, w, h);
       return rect;
     };

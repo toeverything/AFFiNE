@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import {
   catchErrorInto,
   effect,
@@ -7,7 +8,6 @@ import {
   LiveData,
   onComplete,
   onStart,
-  smartRetry,
 } from '@toeverything/infra';
 import { tap } from 'rxjs';
 
@@ -47,42 +47,57 @@ export class DocBacklinks extends Entity {
     exhaustMapWithTrailing(() =>
       fromPromise(async () => {
         const searchFromCloud =
-          this.featureFlagService.flags.enable_battery_save_mode &&
+          this.featureFlagService.flags.enable_battery_save_mode.value &&
           this.workspaceService.workspace.flavour !== 'local';
-        const { buckets } = await this.docsSearchService.indexer.aggregate(
-          'block',
-          {
-            type: 'boolean',
-            occur: 'must',
-            queries: [
-              {
-                type: 'match',
-                field: 'refDocId',
-                match: this.docService.doc.id,
-              },
-            ],
-          },
-          'docId',
-          {
-            hits: {
-              fields: [
-                'docId',
-                'blockId',
-                'parentBlockId',
-                'parentFlavour',
-                'additional',
-                'markdownPreview',
+        const aggregate = (prefer: 'local' | 'remote') =>
+          this.docsSearchService.indexer.aggregate(
+            'block',
+            {
+              type: 'boolean',
+              occur: 'must',
+              queries: [
+                {
+                  type: 'match',
+                  field: 'refDocId',
+                  match: this.docService.doc.id,
+                },
               ],
-              pagination: {
-                limit: BUILD_CONFIG.isElectron ? 100 : 5, // the max number of backlinks to show for each doc
+            },
+            'docId',
+            {
+              hits: {
+                fields: [
+                  'docId',
+                  'blockId',
+                  'parentBlockId',
+                  'parentFlavour',
+                  'additional',
+                  'markdownPreview',
+                ],
+                pagination: {
+                  limit: BUILD_CONFIG.isElectron ? 100 : 5,
+                },
               },
-            },
-            pagination: {
-              limit: 100,
-            },
-            prefer: searchFromCloud ? 'remote' : 'local',
-          }
-        );
+              pagination: {
+                limit: 100,
+              },
+              prefer,
+            }
+          );
+        const { buckets } = searchFromCloud
+          ? await aggregate('remote').catch(error => {
+              const cause = UserFriendlyError.fromAny(error);
+              if (
+                cause.is('SEARCH_PROVIDER_UNAVAILABLE') ||
+                cause.is('NETWORK_ERROR') ||
+                (cause.is('INVALID_INDEXER_INPUT') &&
+                  cause.data?.reason === 'unsupported_query')
+              ) {
+                return aggregate('local');
+              }
+              throw error;
+            })
+          : await aggregate('local');
         return buckets.flatMap(bucket => {
           const title =
             this.docsService.list.doc$(bucket.key).value?.title$.value ?? '';
@@ -140,7 +155,6 @@ export class DocBacklinks extends Entity {
           });
         });
       }).pipe(
-        smartRetry(),
         tap(backlinks => {
           this.backlinks$.value = backlinks;
         }),

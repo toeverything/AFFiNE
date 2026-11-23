@@ -20,6 +20,9 @@ public class CreateWorkspaceMutation: GraphQLMutation {
     public static var __selections: [ApolloAPI.Selection] { [
       .field("createWorkspace", CreateWorkspace.self),
     ] }
+    public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+      CreateWorkspaceMutation.Data.self
+    ] }
 
     /// Create a new workspace
     public var createWorkspace: CreateWorkspace { __data["createWorkspace"] }
@@ -37,6 +40,9 @@ public class CreateWorkspaceMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("public", Bool.self),
         .field("createdAt", AffineGraphQL.DateTime.self),
+      ] }
+      public static var __fulfilledFragments: [any ApolloAPI.SelectionSet.Type] { [
+        CreateWorkspaceMutation.Data.CreateWorkspace.self
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }

@@ -119,15 +119,14 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
   private _setLayoutMethod() {
     this.model.setLayoutMethod(function (
       this: MindmapElementModel,
-      tree: MindmapNode | MindmapRoot = this.tree,
-      options: {
-        applyStyle?: boolean;
-        layoutType?: LayoutType;
-        stashed?: boolean;
-      } = {
-        applyStyle: true,
-        stashed: true,
-      }
+      tree: MindmapNode | MindmapRoot | undefined,
+      options:
+        | {
+            applyStyle?: boolean;
+            layoutType?: LayoutType;
+            stashed?: boolean;
+          }
+        | undefined
     ) {
       const { stashed, applyStyle, layoutType } = Object.assign(
         {
@@ -137,9 +136,10 @@ export class MindMapView extends GfxElementModelView<MindmapElementModel> {
         },
         options
       );
+      const targetTree = tree ?? this.tree;
 
-      const pop = stashed ? this.stashTree(tree) : null;
-      handleLayout(this, tree, applyStyle, layoutType);
+      const pop = stashed ? this.stashTree(targetTree) : null;
+      handleLayout(this, targetTree, applyStyle, layoutType);
       pop?.();
     });
   }

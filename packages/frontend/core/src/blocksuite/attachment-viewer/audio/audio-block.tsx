@@ -115,9 +115,10 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
 
     setPreflightChecking(true);
-    const result = await block.transcriptionJob.preflightCheck();
-    setPreflightChecking(false);
-    if (result?.error === 'created-by-others') {
+    const result = await block.transcribe().finally(() => {
+      setPreflightChecking(false);
+    });
+    if (result?.status === 'blocked') {
       confirmModal.openConfirmModal({
         title: t['com.affine.audio.transcribe.non-owner.confirm.title'](),
         description: (
@@ -137,7 +138,6 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
         method: 'not owner',
       });
     } else {
-      await block.transcribe();
       track.doc.editor.audioBlock.transcribeRecording({
         type: 'Meeting record',
         method: 'success',
@@ -201,11 +201,17 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     }
 
     if (!loading && error) {
-      return <div className={styles.error}>{error.message}</div>;
+      return (
+        <Tooltip content={error.message}>
+          <div className={styles.error} tabIndex={0}>
+            {t['com.affine.audio.transcription-failed']()}
+          </div>
+        </Tooltip>
+      );
     }
 
     return <>{bytes(block.props.props.size)}</>;
-  }, [loading, loadingError, error, reload, block.props.props.size]);
+  }, [loading, loadingError, error, reload, block.props.props.size, t]);
 
   return (
     <AudioPlayer

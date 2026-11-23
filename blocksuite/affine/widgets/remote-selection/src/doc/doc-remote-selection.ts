@@ -346,11 +346,13 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
           .concat([
             html`
               <div
-                style="${cursorRect
-                  ? cursorStyle(cursorRect, color)
-                  : styleMap({
-                      display: 'none',
-                    })}"
+                style="${
+                  cursorRect
+                    ? cursorStyle(cursorRect, color)
+                    : styleMap({
+                        display: 'none',
+                      })
+                }"
               >
                 <div
                   style="${styleMap({

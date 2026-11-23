@@ -8,11 +8,15 @@ query getCopilotPinnedSessions(
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      chats(pagination: { first: 1 }, docId: $docId, options: {
-        pinned: true,
-        messageOrder: $messageOrder,
-        withPrompt: $withPrompt
-      }) {
+      chats(
+        pagination: { first: 1 }
+        docId: $docId
+        options: {
+          pinned: true
+          messageOrder: $messageOrder
+          withPrompt: $withPrompt
+        }
+      ) {
         ...PaginatedCopilotChats
       }
     }

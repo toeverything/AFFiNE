@@ -261,8 +261,7 @@ const CommentItem = ({
 
   const docId = entity.props.docId;
   const canCreateComment = useGuard('Doc_Comments_Create', docId);
-  const canDeleteComment = useGuard('Doc_Comments_Delete', docId);
-  const canResolveComment = useGuard('Doc_Comments_Resolve', docId);
+  const canModerateComment = useGuard('Doc_Comments_Moderate', docId);
 
   const pendingReply = useLiveData(entity.pendingReply$);
   // Check if the pending reply belongs to this comment
@@ -469,7 +468,7 @@ const CommentItem = ({
   const canReply = canCreateComment;
   const canEdit = isMyComment && canCreateComment;
   const canDelete =
-    (isMyComment && canCreateComment) || (!isMyComment && canDeleteComment);
+    (isMyComment && canCreateComment) || (!isMyComment && canModerateComment);
 
   // invalid comment, should not happen
   if (!comment.content) {
@@ -490,7 +489,7 @@ const CommentItem = ({
         data-menu-open={menuOpen}
         data-editing={isEditing}
       >
-        {canResolveComment && (
+        {canModerateComment && (
           <IconButton
             className={styles.actionButton}
             variant="solid"
@@ -786,7 +785,7 @@ const ReplyItem = ({
 
   const docId = entity.props.docId;
   const canCreateComment = useGuard('Doc_Comments_Create', docId);
-  const canDeleteComment = useGuard('Doc_Comments_Delete', docId);
+  const canModerateComment = useGuard('Doc_Comments_Moderate', docId);
 
   const handleStartEdit = useAsyncCallback(async () => {
     if (parentComment.resolved || !reply.content) return;
@@ -848,7 +847,7 @@ const ReplyItem = ({
   const canReply = canCreateComment;
   const canEdit = isMyReply && canCreateComment;
   const canDelete =
-    (isMyReply && canCreateComment) || (!isMyReply && canDeleteComment);
+    (isMyReply && canCreateComment) || (!isMyReply && canModerateComment);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
