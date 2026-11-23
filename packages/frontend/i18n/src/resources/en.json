@@ -677,6 +677,8 @@
   "com.affine.import.status.importing.title": "Importing...",
   "com.affine.import.status.success.message": "Your document has been imported successfully, thank you for choosing AFFiNE. Any questions please feel free to feedback to us",
   "com.affine.import.status.success.title": "Import completed",
+  "com.affine.import.status.warning.message": "Some items were skipped or only partly imported:",
+  "com.affine.import.status.warning.title": "Import completed with warnings",
   "com.affine.inviteModal.button.cancel": "Cancel",
   "com.affine.issue-feedback.cancel": "Maybe later",
   "com.affine.issue-feedback.confirm": "Create issue on GitHub",
