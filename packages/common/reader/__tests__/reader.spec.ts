@@ -30,6 +30,44 @@ const docSnapshotWithAiEditable = readFileSync(
   )
 );
 
+test.each(['missing-child', 'parent-cycle'])(
+  'reads remaining blocks once with a %s',
+  async mode => {
+    const doc = new YDoc();
+    const blocks = doc.getMap('blocks');
+    blocks.set(
+      'page',
+      new YMap<unknown>([
+        ['sys:id', 'page'],
+        ['sys:flavour', 'affine:page'],
+        ['prop:title', new YText('Title')],
+        [
+          'sys:children',
+          YArray.from(
+            mode === 'missing-child' ? ['missing', 'image'] : ['image']
+          ),
+        ],
+      ])
+    );
+    blocks.set(
+      'image',
+      new YMap<unknown>([
+        ['sys:id', 'image'],
+        ['sys:flavour', 'affine:image'],
+        ['prop:sourceId', 'image-blob'],
+        ['sys:children', YArray.from(mode === 'parent-cycle' ? ['page'] : [])],
+      ])
+    );
+    const result = await readAllBlocksFromDoc({ ydoc: doc, spaceId: 'space' });
+    expect(result?.blocks.map(block => block.blockId)).toEqual([
+      'page',
+      'image',
+    ]);
+    expect(result?.blocks[1].blob).toEqual(['image-blob']);
+    doc.destroy();
+  }
+);
+
 test('should read doc blocks work', async () => {
   const rootDoc = new YDoc({
     guid: 'test-root-doc',

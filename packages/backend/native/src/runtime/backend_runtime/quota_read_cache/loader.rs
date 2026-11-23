@@ -26,7 +26,7 @@ async fn user_entitlement(cache: &QuotaReadCache, user_id: &str) -> RuntimeResul
   let key = QuotaCacheKey::Entitlement(SubjectId::User(user_id.to_string()));
   cache
     .entitlements
-    .get_or_load(key, 128, || async {
+    .get_or_load_with_bypass(cache.is_degraded(), key, 128, || async {
       let mut tx = cache
         .pool
         .begin()
@@ -45,7 +45,7 @@ async fn workspace_entitlement(cache: &QuotaReadCache, workspace_id: &str) -> Ru
   let key = QuotaCacheKey::Entitlement(SubjectId::Workspace(workspace_id.to_string()));
   cache
     .entitlements
-    .get_or_load(key, 128, || async {
+    .get_or_load_with_bypass(cache.is_degraded(), key, 128, || async {
       let mut tx = cache
         .pool
         .begin()
@@ -63,15 +63,20 @@ async fn workspace_entitlement(cache: &QuotaReadCache, workspace_id: &str) -> Ru
 async fn owner(cache: &QuotaReadCache, workspace_id: &str) -> RuntimeResult<String> {
   cache
     .owners
-    .get_or_load(QuotaCacheKey::OwnerMapping(workspace_id.to_string()), 80, || async {
-      sqlx::query_scalar::<_, String>(
-        "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active'",
-      )
-      .bind(workspace_id)
-      .fetch_one(&cache.pool)
-      .await
-      .map_err(|error| RuntimeError::database("load workspace quota owner", error))
-    })
+    .get_or_load_with_bypass(
+      cache.is_degraded(),
+      QuotaCacheKey::OwnerMapping(workspace_id.to_string()),
+      80,
+      || async {
+        sqlx::query_scalar::<_, String>(
+          "SELECT user_id FROM workspace_members WHERE workspace_id=$1 AND role='owner' AND state='active'",
+        )
+        .bind(workspace_id)
+        .fetch_one(&cache.pool)
+        .await
+        .map_err(|error| RuntimeError::database("load workspace quota owner", error))
+      },
+    )
     .await
 }
 
@@ -93,7 +98,7 @@ async fn workspace_storage(cache: &QuotaReadCache, workspace_id: &str) -> Runtim
   let key = QuotaCacheKey::StorageUsage(SubjectId::Workspace(workspace_id.to_string()));
   cache
     .storage
-    .get_or_load(key, 32, || async {
+    .get_or_load_with_bypass(cache.is_degraded(), key, 32, || async {
       let mut tx = cache
         .pool
         .begin()
@@ -116,7 +121,7 @@ async fn user_storage(
   let key = QuotaCacheKey::StorageUsage(SubjectId::User(user_id.to_string()));
   cache
     .storage
-    .get_or_load(key, 32, || async {
+    .get_or_load_with_bypass(cache.is_degraded(), key, 32, || async {
       let mut tx = cache
         .pool
         .begin()
@@ -149,23 +154,28 @@ async fn user_storage(
 async fn seat_usage(cache: &QuotaReadCache, workspace_id: &str) -> RuntimeResult<SeatUsage> {
   cache
     .seats
-    .get_or_load(QuotaCacheKey::SeatUsage(workspace_id.to_string()), 32, || async {
-      let chargeable_statuses = chargeable_invitation_statuses();
-      let row = sqlx::query(
-        r#"SELECT
-          (SELECT COUNT(*)::int FROM workspace_members WHERE workspace_id=$1 AND state='active')
-          + (SELECT COUNT(*)::int FROM workspace_invitations WHERE workspace_id=$1
-              AND status::text = ANY($2)) AS member_count"#,
-      )
-      .bind(workspace_id)
-      .bind(chargeable_statuses.as_slice())
-      .fetch_one(&cache.pool)
-      .await
-      .map_err(|error| RuntimeError::database("load workspace seat quota usage", error))?;
-      Ok(SeatUsage {
-        member_count: row.get("member_count"),
-      })
-    })
+    .get_or_load_with_bypass(
+      cache.is_degraded(),
+      QuotaCacheKey::SeatUsage(workspace_id.to_string()),
+      32,
+      || async {
+        let chargeable_statuses = chargeable_invitation_statuses();
+        let row = sqlx::query(
+          r#"SELECT
+            (SELECT COUNT(*)::int FROM workspace_members WHERE workspace_id=$1 AND state='active')
+            + (SELECT COUNT(*)::int FROM workspace_invitations WHERE workspace_id=$1
+                AND status::text = ANY($2)) AS member_count"#,
+        )
+        .bind(workspace_id)
+        .bind(chargeable_statuses.as_slice())
+        .fetch_one(&cache.pool)
+        .await
+        .map_err(|error| RuntimeError::database("load workspace seat quota usage", error))?;
+        Ok(SeatUsage {
+          member_count: row.get("member_count"),
+        })
+      },
+    )
     .await
 }
 

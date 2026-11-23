@@ -19,6 +19,7 @@ import { SocketIoAdapter } from '../../base/websocket';
 import { AuthService, AuthSigningKeyRing } from '../../core/auth';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Mailer } from '../../core/mail';
+import { StorageRuntimeProvider } from '../../core/storage-runtime';
 import { UserModel } from '../../models';
 import { createFactory, MockedUser, MockUser, MockUserInput } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
@@ -64,9 +65,21 @@ export async function createTestingApp(
     moduleDef.tapApp(app);
   }
 
-  await module.initTestingDB();
-  await app.init();
-  await app.listen(0);
+  try {
+    await module.initTestingDB();
+    await app.init();
+    await app.get(BackendRuntimeProvider).runMigrations();
+    await app.get(StorageRuntimeProvider).runMigrations();
+    await app.get(BackendRuntimeProvider).activateWorkspaceLifecycleV1();
+    await app.listen(0);
+  } catch (error) {
+    try {
+      await app.close();
+    } finally {
+      await module.close();
+    }
+    throw error;
+  }
 
   return makeTestingApp(app);
 }

@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { applyUpdate, Doc, encodeStateAsUpdate } from 'yjs';
 
-import { canonicalizeDocumentIdentity } from '../../native';
+import { canonicalizeDocumentIdentity, mergeUpdates } from '../../native';
 
 export class Guid1698398506533 {
   // do the migration
@@ -63,10 +62,10 @@ export class Guid1698398506533 {
             }
 
             // recover
-            const yDoc = new Doc();
-            applyUpdate(yDoc, toBeMergeUpdate.blob);
-            applyUpdate(yDoc, existingUpdate.blob);
-            const update = encodeStateAsUpdate(yDoc);
+            const update = mergeUpdates([
+              Buffer.from(toBeMergeUpdate.blob),
+              Buffer.from(existingUpdate.blob),
+            ]);
 
             await db.$transaction([
               // we already have 'xxx', delete 'space:xxx'

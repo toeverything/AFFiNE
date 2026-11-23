@@ -1,4 +1,14 @@
-import { AccessDenied, BadRequest, NotFound } from '../../base/error';
+import {
+  AccessDenied,
+  BadRequest,
+  DocUpdateInvalid,
+  DocUpdateTooLarge,
+  DocValidationUnavailable,
+  NotFound,
+  SpaceAccessDenied,
+  UserFriendlyError,
+  WorkspaceSyncUnavailable,
+} from '../../base/error';
 import { wrapCallMetric } from '../../base/metrics';
 import type {
   RuntimeUserQuotaState,
@@ -21,8 +31,17 @@ import {
   type RuntimeWorkspaceInviteQuotaInput,
   type RuntimeWorkspaceInviteQuotaUsage,
 } from './contracts';
+import { WorkspaceLifecycleMigration } from './workspace-lifecycle';
 
 const runtimeErrorPattern = /\[affine-runtime:([a-z0-9_]+)\]\s*/;
+
+const runtimeErrors: Record<string, (new () => UserFriendlyError) | undefined> =
+  {
+    doc_update_invalid: DocUpdateInvalid,
+    doc_update_too_large: DocUpdateTooLarge,
+    doc_validation_unavailable: DocValidationUnavailable,
+    workspace_lifecycle_not_active: WorkspaceSyncUnavailable,
+  };
 
 export class BackendRuntimeError extends Error {
   constructor(
@@ -39,8 +58,28 @@ export function backendRuntimeErrorCode(error: unknown) {
   return error instanceof BackendRuntimeError ? error.code : undefined;
 }
 
+export interface WorkspaceState {
+  docs: {
+    docId: string;
+    timestamp: number;
+    lifecycle: 'trashed' | null;
+    lifecycleChangedAt: number | null;
+  }[];
+  clocks: Record<string, number>;
+}
+
 export class BackendRuntimeCoreOperations {
-  constructor(protected readonly runtime: RuntimeInstance) {}
+  protected readonly workspaceLifecycle: WorkspaceLifecycleMigration;
+
+  protected stopWorkspaceLifecycleMigrations() {
+    return this.workspaceLifecycle.stop();
+  }
+  protected startWorkspaceLifecycleMigrations() {
+    this.workspaceLifecycle.start();
+  }
+  constructor(protected readonly runtime: RuntimeInstance) {
+    this.workspaceLifecycle = new WorkspaceLifecycleMigration(runtime);
+  }
 
   stripeEnabled() {
     return this.runtime.stripeEnabled();
@@ -252,11 +291,15 @@ export class BackendRuntimeCoreOperations {
     updates: Buffer[];
     actorUserId: string;
     writeIntent: 'update_doc' | 'create_doc';
-    permissionDocId?: string;
+
     expectedPermissionGeneration?: number;
-  }): Promise<number> {
-    return await this.measured('appendWorkspaceDocUpdatesV1', runtime =>
-      runtime.appendWorkspaceDocUpdatesV1(input)
+    protocolVersion?: number;
+    expectedCurrentTimestamp?: number;
+  }): Promise<{ timestamp: number; created: boolean }> {
+    return await this.measured(
+      'appendWorkspaceDocUpdatesV1',
+      runtime => runtime.appendWorkspaceDocUpdatesV1(input),
+      { workspaceId: input.workspaceId, docId: input.docId }
     );
   }
 
@@ -265,9 +308,70 @@ export class BackendRuntimeCoreOperations {
     docId: string;
     updates: Buffer[];
     editorId?: string;
+    expectedCurrentTimestamp?: number;
   }): Promise<number> {
     return await this.measured('appendWorkspaceDocUpdatesTrustedV1', runtime =>
       runtime.appendWorkspaceDocUpdatesTrustedV1(input)
+    );
+  }
+
+  getCurrentWorkspaceDocV1(workspaceId: string, docId: string) {
+    return this.measured(
+      'getCurrentWorkspaceDocV1',
+      runtime => runtime.getCurrentWorkspaceDocV1(workspaceId, docId),
+      { workspaceId, docId }
+    );
+  }
+
+  getWorkspaceDocCreatorV1(workspaceId: string, docId: string) {
+    return this.measured(
+      'getWorkspaceDocCreatorV1',
+      runtime => runtime.getWorkspaceDocCreatorV1(workspaceId, docId),
+      { workspaceId, docId }
+    );
+  }
+
+  async runWorkspaceLifecycleMigrationsV1() {
+    await this.workspaceLifecycle.run();
+  }
+
+  activateWorkspaceLifecycleV1() {
+    return this.measured('activateWorkspaceLifecycleV1', runtime =>
+      runtime.activateWorkspaceLifecycleV1()
+    );
+  }
+
+  getWorkspaceLifecycleActiveV1() {
+    return this.measured('getWorkspaceLifecycleActiveV1', runtime =>
+      runtime.getWorkspaceLifecycleActiveV1()
+    );
+  }
+
+  ensureWorkspaceLifecycleV1(workspaceId: string, protocolVersion?: 1 | 2) {
+    return this.measured(
+      'ensureWorkspaceLifecycleV1',
+      async () => {
+        const active = await this.getWorkspaceLifecycleActiveV1();
+        if (
+          protocolVersion !== undefined &&
+          active !== (protocolVersion === 2)
+        ) {
+          throw new WorkspaceSyncUnavailable();
+        }
+        if (active) await this.workspaceLifecycle.ensure(workspaceId);
+      },
+      { workspaceId }
+    );
+  }
+
+  getWorkspaceStateV1(
+    workspaceId: string,
+    actorUserId: string
+  ): Promise<WorkspaceState> {
+    return this.measured(
+      'getWorkspaceStateV1',
+      runtime => runtime.getWorkspaceStateV1(workspaceId, actorUserId),
+      { workspaceId }
     );
   }
 
@@ -349,6 +453,12 @@ export class BackendRuntimeCoreOperations {
     } finally {
       await this.closeBlobStreamV1(blob.streamId);
     }
+  }
+
+  upsertDocSnapshot(...args: Parameters<RuntimeInstance['upsertDocSnapshot']>) {
+    return this.measured('upsertDocSnapshot', runtime =>
+      runtime.upsertDocSnapshot(...args)
+    );
   }
 
   async cleanupExpiredUserSessions(limit: number) {
@@ -593,7 +703,8 @@ export class BackendRuntimeCoreOperations {
 
   protected async measured<T>(
     method: string,
-    fn: (runtime: RuntimeInstance) => Promise<T>
+    fn: (runtime: RuntimeInstance) => Promise<T>,
+    context?: { workspaceId: string; docId?: string; sourceRevision?: string }
   ): Promise<T> {
     try {
       return await wrapCallMetric(
@@ -606,7 +717,26 @@ export class BackendRuntimeCoreOperations {
       const message = error instanceof Error ? error.message : String(error);
       const match = runtimeErrorPattern.exec(message);
       if (!match) throw error;
+      const DocumentError = runtimeErrors[match[1]];
+      if (DocumentError) {
+        const mapped = new DocumentError();
+        mapped.cause = error;
+        mapped.data = context;
+        throw mapped;
+      }
       switch (match[1]) {
+        case 'space_access_denied':
+          if (context)
+            throw new SpaceAccessDenied({ spaceId: context.workspaceId });
+          throw new AccessDenied('Workspace sync access denied');
+        case 'doc_not_found':
+          throw new NotFound('Document not found');
+        case 'sync_protocol_upgrade_required':
+          throw new BadRequest('Sync protocol upgrade required.');
+        case 'doc_is_workspace':
+          throw new BadRequest(
+            'Workspace indexes cannot be restored through document history.'
+          );
         case 'blob_source_access_denied':
           throw new AccessDenied('Blob source access denied');
         case 'blob_source_not_found':

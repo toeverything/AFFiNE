@@ -14,8 +14,7 @@ impl PaymentRuntime {
          FROM provider_subscriptions
          WHERE provider_namespace=$1 AND target_type='user' AND target_id=$2
            AND recurring<>'lifetime' AND external_subscription_id IS NOT NULL
-           AND status IN ('active','trialing','past_due')
-           AND (period_end IS NULL OR period_end>clock_timestamp())
+           AND status NOT IN ('canceled','incomplete_expired')
          ORDER BY source_identity"#,
     )
     .bind(&namespace_key)

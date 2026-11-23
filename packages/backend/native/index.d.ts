@@ -44,16 +44,15 @@ export declare class BackendRuntime {
   /**
    * Merge pending doc updates with y-octo and persist the merged snapshot.
    *
-   * Do not use this for snapshots that will be sent back to yjs clients until
-   * the y-octo/yjs round-trip compatibility issue is resolved.
-   *
    * The caller must pass the canonical history retention period resolved for
    * this workspace. The compactor does not make quota decisions.
    */
   compactPendingDocUpdates(workspaceId: string, docId: string, batchLimit: number, historyMinIntervalMs: number, historyMaxAgeSeconds: number): Promise<RuntimeDocCompactionResult>
-  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null): Promise<boolean>
+  getCurrentWorkspaceDocV1(workspaceId: string, docId: string): Promise<RuntimeDocRecord | null>
+  getWorkspaceDocCreatorV1(workspaceId: string, docId: string): Promise<string | null>
+  upsertDocSnapshot(workspaceId: string, docId: string, blob: Buffer, timestampMs: number, editorId?: string | undefined | null, creatorId?: string | undefined | null, fromInitialUpdates?: boolean | undefined | null): Promise<boolean>
   createDocHistory(input: RuntimeDocHistoryInput): Promise<boolean>
-  appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<number>
+  appendWorkspaceDocUpdatesV1(input: AppendWorkspaceDocUpdatesInputV1): Promise<WorkspaceDocWriteResultV1>
   appendWorkspaceDocUpdatesTrustedV1(input: AppendWorkspaceDocUpdatesTrustedInputV1): Promise<number>
   embeddingHealth(): Promise<EmbeddingHealth>
   syncEmbeddingState(input: SyncEmbeddingStateInput): Promise<RuntimeEmbeddingWorkspaceState>
@@ -126,6 +125,12 @@ export declare class BackendRuntime {
   activateWorkspaceSeatV1(input: RuntimeSeatActivationInput): Promise<boolean>
   reserveWorkspaceSeatsV1(input: RuntimeSeatReservationInput): Promise<RuntimeSeatReservationDecision>
   reserveStorageQuotaV1(input: RuntimeStorageReservationInput): Promise<RuntimeStorageReservationDecision>
+  getWorkspaceLifecycleActiveV1(): Promise<boolean>
+  activateWorkspaceLifecycleV1(): Promise<boolean>
+  listWorkspaceLifecycleMigrationCandidatesV1(afterWorkspaceId?: string | undefined | null): Promise<Array<string>>
+  prepareWorkspaceLifecycleMigrationV1(workspaceId: string): Promise<WorkspaceLifecycleMigrationSourceV1>
+  migrateWorkspaceLifecycleV1(input: WorkspaceLifecycleMigrationInputV1): Promise<boolean>
+  getWorkspaceStateV1(workspaceId: string, actorUserId: string): Promise<any>
   constructor(serverConfig: ServerConfigHandle, privateKey?: string | undefined | null, permissionTelemetry?: (((err: Error | null, arg: string) => void)) | undefined | null, invalidationEvents?: (((err: Error | null, arg: string) => void)) | undefined | null)
 }
 
@@ -153,8 +158,6 @@ export declare class StorageRuntime {
   backfillMissingBlobMetadata(workspaceId: string | undefined | null, limit: number): Promise<RuntimeBlobMetadataBackfillResult>
   rebuildDocBlobRefs(workspaceId: string, docId: string, sourceRevision: number): Promise<RuntimeDocBlobRefsResult>
   rebuildWorkspaceDocBlobRefs(workspaceId: string, limit: number): Promise<RuntimeDocBlobRefsResult>
-  reconcileWorkspaceDocuments(workspaceId: string): Promise<RuntimeDocumentCleanupReconcileResult>
-  executeDocumentCleanupCandidates(workspaceId: string | undefined | null, gracePeriodDays: number, limit: number): Promise<RuntimeDocumentCleanupExecuteResult>
   deleteWorkspaceObjects(workspaceId: string, userIds?: Array<string> | undefined | null): Promise<number>
   reconcileWorkspaceStorage(limit: number): Promise<RuntimeWorkspaceStorageReconcileResult>
   constructor(serverConfig: ServerConfigHandle)
@@ -239,8 +242,9 @@ export interface AppendWorkspaceDocUpdatesInputV1 {
   updates: Array<Buffer>
   actorUserId: string
   writeIntent: WorkspaceDocWriteIntentV1
-  permissionDocId?: string
   expectedPermissionGeneration?: number
+  protocolVersion?: number
+  expectedCurrentTimestamp?: number
 }
 
 export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
@@ -248,6 +252,7 @@ export interface AppendWorkspaceDocUpdatesTrustedInputV1 {
   docId: string
   updates: Array<Buffer>
   editorId?: string
+  expectedCurrentTimestamp?: number
 }
 
 export declare function assertSafeUrl(request: AssertSafeUrlRequest): void
@@ -261,6 +266,8 @@ export declare function authorizeReservedDocSubject(userId: string, workspaceId:
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
+  baselineVersion: string
+  redisDb?: number
   embedding: EmbeddingHealth
   invalidation: InvalidationHealth
 }
@@ -610,14 +617,14 @@ export interface CreateByokProfileInput {
  */
 export declare function createDocWithMarkdown(title: string, markdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
+export declare function diffDocUpdateV1(update: Buffer, stateVector: Buffer): Buffer
+
 export interface DocumentEmbeddingProjectionInput {
   docId: string
   revision: string
   sourceHash: string
   skipReason?: string
-  rootRevision?: string
   units: Array<DocumentEmbeddingUnitInput>
-  deleted?: boolean
 }
 
 export interface DocumentEmbeddingUnitInput {
@@ -643,6 +650,8 @@ export interface EmbeddingHealth {
   workerRunning: boolean
 }
 
+export declare function encodeStateVectorFromUpdateV1(update: Buffer): Buffer
+
 export interface EnsureWorkspaceBlobArtifactInput {
   workspaceId: string
   blobId: string
@@ -655,6 +664,12 @@ export interface EnsureWorkspaceBlobArtifactInput {
 export declare function evaluateLocalRedirect(input: string, baseUrl: string, allowedBases: Array<string>): string
 
 export declare function evaluateRedirectUri(input: string, baseUrl: string, allowedOrigins: Array<string>, trustedDomains: Array<string>, queryPairs: Array<UrlQueryPair>): string
+
+export declare function extractDocRecoveryFacts(docBin: Buffer, propertiesBin: Buffer | undefined | null, targetDocId: string): NativeDocRecoveryFacts
+
+export declare function extractRootDocIdAliases(rootDocBin: Buffer): Record<string, string>
+
+export declare function extractWorkspaceLifecycleRootPages(rootDocBin: Buffer, maxStructs?: number | undefined | null): Array<NativeLifecycleRootPage>
 
 export declare function fetchRemoteAttachment(request: RemoteAttachmentFetchRequest): Promise<RemoteAttachmentFetchResponse>
 
@@ -688,6 +703,8 @@ export interface InvalidationHealth {
   published: number
   publishFailures: number
 }
+
+export declare function isOrdinaryWorkspaceDoc(workspaceId: string, docId: string): boolean
 
 export interface IssueLicenseInput {
   licenseId: string
@@ -845,11 +862,9 @@ export interface MatchEmbeddingCandidatesInput {
   limit?: number
 }
 
-/**
- * Merge updates in form like `Y.applyUpdate(doc, update)` way and return the
- * result binary.
- */
-export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
+export declare function mergeUpdates(updates: Array<Buffer>): Buffer
+
+export declare function migrateRootDocPages(rootDocBin: Buffer): Buffer | null
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
@@ -945,6 +960,12 @@ export interface NativeDocBounds {
   height: number
 }
 
+export interface NativeDocRecoveryFacts {
+  title: string
+  existingCreatedBy?: string
+  existingUpdatedBy?: string
+}
+
 export interface NativeDocumentSearchProjection {
   version: number
   docId: string
@@ -970,6 +991,11 @@ export interface NativeDocumentSearchUnit {
   additional?: string
   type: string
   text: string
+}
+
+export interface NativeLifecycleRootPage {
+  docId: string
+  trashed: boolean
 }
 
 export interface NativeMarkdownResult {
@@ -1221,6 +1247,8 @@ export interface ResolveEntitlementInput {
 
 export declare function resolveEntitlementV1(input: ResolveEntitlementInput): ResolvedEntitlement
 
+export declare function revertDocUpdateV1(currentSnapshot: Buffer, targetSnapshot: Buffer): Buffer
+
 export interface RotateByokCredentialInput {
   workspaceId: string
   profileId: string
@@ -1320,21 +1348,10 @@ export interface RuntimeDocHistoryInput {
   historyMaxAgeMs: number
 }
 
-export interface RuntimeDocumentCleanupExecuteResult {
-  scannedCandidates: number
-  serializationRetries: number
-  executed: number
-  recovered: number
-  reset: number
-  failed: number
-  deletedRows: number
-}
-
-export interface RuntimeDocumentCleanupReconcileResult {
-  scannedDocs: number
-  marked: number
-  reset: number
-  recovered: number
+export interface RuntimeDocRecord {
+  bin: Buffer
+  timestamp: number
+  editor?: string
 }
 
 export interface RuntimeEmbeddingCandidate {
@@ -1825,7 +1842,6 @@ export interface SyncEmbeddingStateInput {
   workspaceId: string
   enabled: boolean
   documents?: Array<DocumentEmbeddingProjectionInput>
-  reconcileDocuments?: boolean
   priority?: number
   waitForReadyMs?: number
 }
@@ -1885,6 +1901,8 @@ export declare function updateDocTitle(existingBinary: Buffer, title: string, do
  */
 export declare function updateDocWithMarkdown(existingBinary: Buffer, newMarkdown: string, docId: string, context?: DocWriteContext | undefined | null): Buffer
 
+export declare function updateExistingRootDocMetaTitle(rootDocBin: Buffer, docId: string, title: string): Buffer | null
+
 /**
  * Updates a document title in the workspace root doc's meta.pages array.
  *
@@ -1917,3 +1935,27 @@ export declare function verifyChallengeResponse(response: string, bits: number, 
 
 export type WorkspaceDocWriteIntentV1 =  'update_doc'|
 'create_doc';
+
+export interface WorkspaceDocWriteResultV1 {
+  timestamp: number
+  created: boolean
+}
+
+export interface WorkspaceLegacyDocV1 {
+  docId: string
+  trashed: boolean
+}
+
+export interface WorkspaceLifecycleMigrationInputV1 {
+  workspaceId: string
+  sourceRevision: string
+  rootStatus: string
+  docs: Array<WorkspaceLegacyDocV1>
+}
+
+export interface WorkspaceLifecycleMigrationSourceV1 {
+  revision: string
+  bin?: Buffer
+  completed: boolean
+  rootStatus: string
+}

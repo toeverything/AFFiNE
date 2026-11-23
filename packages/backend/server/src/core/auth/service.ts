@@ -76,7 +76,7 @@ export class AuthService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     if (env.dev) {
-      await createDevUsers(this.models, this.entitlement);
+      await createDevUsers(this.models, this.entitlement, this.rt);
     }
   }
 

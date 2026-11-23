@@ -3,7 +3,7 @@ import test, { registerCompletionHandler } from 'ava';
 
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
 import { Env } from '../../env';
-import { addDocToRootDoc, mergeUpdatesInApplyWay } from '../../native';
+import { addDocToRootDoc, mergeUpdates } from '../../native';
 import { type TestingApp } from './create-app';
 
 export const e2e = test;
@@ -27,7 +27,7 @@ export async function addDocumentToRoot(workspaceId: string, docId: string) {
   await db.snapshot.update({
     where,
     data: {
-      blob: mergeUpdatesInApplyWay([rootBlob, update]),
+      blob: mergeUpdates([rootBlob, update]),
       updatedAt: new Date(),
     },
   });
@@ -35,6 +35,7 @@ export async function addDocumentToRoot(workspaceId: string, docId: string) {
 
 export async function reconcileSearchProjection() {
   const runtime = app.get(BackendRuntimeProvider);
+  await runtime.runWorkspaceLifecycleMigrationsV1();
   for (let attempt = 0; attempt < 50; attempt++) {
     const reconciled = await runtime.reconcileSearchProjection(1000);
     const status = (await runtime.searchStatus()) as {

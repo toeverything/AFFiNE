@@ -48,7 +48,19 @@ export type RuntimeInvalidation =
       kind: 'quotaOwnerMapping' | 'quotaSeatUsage';
       workspaceId: string;
     }
-  | { version: 1; kind: 'blobSource'; source: unknown };
+  | { version: 1; kind: 'blobSource'; source: unknown }
+  | {
+      version: 1;
+      kind: 'workspaceInventoryChanged';
+      workspaceId: string;
+      docId?: string;
+    }
+  | {
+      version: 1;
+      kind: 'workspaceRootChanged';
+      workspaceId: string;
+      timestampMs: number;
+    };
 
 declare global {
   interface Events {
@@ -97,11 +109,14 @@ export class BackendRuntimeProvider
 
   async start() {
     await this.runtime.start();
+    if (!env.flavors.script) this.startWorkspaceLifecycleMigrations();
     await this.event?.emitAsync('backendRuntime.configApplied', {
       updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
     });
     const health = await this.health();
-    this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+    this.logger.log(
+      `backend runtime started: db=${health.databaseConnected}, baseline=${health.baselineVersion}, redisDb=${health.redisDb ?? 'disabled'}`
+    );
   }
 
   async saveAppConfig(actor: string | null, commands: AppConfigCommand[]) {
@@ -119,6 +134,7 @@ export class BackendRuntimeProvider
   }
 
   async stop() {
+    await this.stopWorkspaceLifecycleMigrations();
     await this.runtime.stop();
     this.logger.log('backend runtime stopped');
   }

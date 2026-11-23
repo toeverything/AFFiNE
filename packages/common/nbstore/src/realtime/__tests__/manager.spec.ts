@@ -326,27 +326,63 @@ test('subscribe routes events by topic and stable input key', async () => {
     isSelfHosted: false,
     authenticated: true,
   });
-  const received: unknown[] = [];
-  const subscription = manager
-    .subscribe('comment.changed', { workspaceId: 'space', docId: 'doc' })
-    .subscribe(event => received.push(event));
-  await vi.waitFor(() => expect(received).toEqual([{ type: 'ready' }]));
+  const pageInput = { workspaceId: 'space', docId: 'P' };
+  const guidInput = { workspaceId: 'space', docId: 'G' };
+  const pageEvents: unknown[] = [];
+  const guidEvents: unknown[] = [];
+  const pageSubscription = manager
+    .subscribe('comment.changed', pageInput)
+    .subscribe(event => pageEvents.push(event));
+  const guidSubscription = manager
+    .subscribe('comment.changed', guidInput)
+    .subscribe(event => guidEvents.push(event));
+  await vi.waitFor(() => {
+    expect(pageEvents).toEqual([{ type: 'ready' }]);
+    expect(guidEvents).toEqual([{ type: 'ready' }]);
+  });
 
-  socket.publish({
-    topic: 'comment.changed',
-    inputKey: getRealtimeInputKey({ workspaceId: 'space', docId: 'other' }),
-    sentAt: 1,
-    event: { changed: true },
-  } satisfies RealtimeEvent);
-  socket.publish({
-    topic: 'comment.changed',
-    inputKey: getRealtimeInputKey({ workspaceId: 'space', docId: 'doc' }),
-    sentAt: 2,
-    event: { changed: true },
-  } satisfies RealtimeEvent);
+  for (const input of [
+    { workspaceId: 'space', docId: 'other' },
+    pageInput,
+    guidInput,
+  ]) {
+    socket.emit('realtime:event', {
+      topic: 'comment.changed',
+      inputKey: getRealtimeInputKey(input),
+      sentAt: 1,
+      event: { changed: true },
+    } satisfies RealtimeEvent);
+    if (input === pageInput) {
+      expect(pageEvents).toEqual([{ type: 'ready' }, { changed: true }]);
+      expect(guidEvents).toEqual([{ type: 'ready' }]);
+    }
+  }
+  expect(pageEvents).toEqual([{ type: 'ready' }, { changed: true }]);
+  expect(guidEvents).toEqual([{ type: 'ready' }, { changed: true }]);
 
-  expect(received).toEqual([{ type: 'ready' }, { changed: true }]);
-  subscription.unsubscribe();
+  pageSubscription.unsubscribe();
+  await vi.waitFor(() => expect(socket.subscriptions.size).toBe(1));
+  expect(
+    socket.subscriptions.has(
+      socket.subscriptionId('comment.changed', guidInput)
+    )
+  ).toBe(true);
+  for (const input of [pageInput, guidInput]) {
+    socket.emit('realtime:event', {
+      topic: 'comment.changed',
+      inputKey: getRealtimeInputKey(input),
+      sentAt: 2,
+      event: { changed: true },
+    } satisfies RealtimeEvent);
+  }
+  expect(pageEvents).toEqual([{ type: 'ready' }, { changed: true }]);
+  expect(guidEvents).toEqual([
+    { type: 'ready' },
+    { changed: true },
+    { changed: true },
+  ]);
+  guidSubscription.unsubscribe();
+  await vi.waitFor(() => expect(socket.subscriptions.size).toBe(0));
 });
 
 test('unsubscribe leaves server room and clears status', async () => {

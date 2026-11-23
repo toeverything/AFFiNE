@@ -332,6 +332,7 @@ async fn lifetime_invoice_snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: event_ids,
+    claimed_attempt: None,
     operation: None,
   })
 }

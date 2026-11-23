@@ -236,14 +236,16 @@ pub(super) async fn lock_subscription_rows(
     .collect()
 }
 
+pub(super) const RECEIPT_ATTEMPT_FENCED_ERROR: &str = "payment_receipt_attempt_fenced";
+
 pub(super) async fn lock_receipts_and_operation(
   tx: &mut Transaction<'_, Postgres>,
   snapshot: &PaymentSnapshot,
   namespace: &str,
 ) -> RuntimeResult<ReceiptDisposition> {
   let rows = sqlx::query(
-    "SELECT external_event_id,processing_status FROM payment_events WHERE provider_namespace=$1 AND \
-     external_event_id=ANY($2) ORDER BY external_event_id FOR UPDATE",
+    "SELECT external_event_id,processing_status,processing_attempts FROM payment_events WHERE provider_namespace=$1 \
+     AND external_event_id=ANY($2) ORDER BY external_event_id FOR UPDATE",
   )
   .bind(namespace)
   .bind(&snapshot.captured_event_ids)
@@ -256,6 +258,19 @@ pub(super) async fn lock_receipts_and_operation(
     .collect::<BTreeSet<_>>();
   if found != snapshot.captured_event_ids.iter().cloned().collect() {
     return Err(RuntimeError::invalid_input("payment inbox receipt not found"));
+  }
+  if let Some((claimed_event_id, expected_attempt)) = &snapshot.claimed_attempt {
+    let matched = rows
+      .iter()
+      .find(|row| row.get::<String, _>("external_event_id") == *claimed_event_id);
+    let Some(row) = matched else {
+      return Err(RuntimeError::invalid_state(RECEIPT_ATTEMPT_FENCED_ERROR));
+    };
+    if row.get::<String, _>("processing_status") != "processing"
+      || row.get::<i32, _>("processing_attempts") != *expected_attempt
+    {
+      return Err(RuntimeError::invalid_state(RECEIPT_ATTEMPT_FENCED_ERROR));
+    }
   }
   let statuses = rows
     .iter()

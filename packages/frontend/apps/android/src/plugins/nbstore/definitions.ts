@@ -61,11 +61,21 @@ export interface NbStorePlugin {
     docId: string;
     // base64 encoded data
     data: string;
+    createForPeer?: string;
   }) => Promise<{ timestamp: number }>;
   getDoc: (options: {
     id: string;
     docId: string;
   }) => Promise<{ docId: string; bin: string; timestamp: number } | undefined>;
+  getDocDiff: (options: {
+    id: string;
+    docId: string;
+    state?: string;
+  }) => Promise<
+    | { docId: string; missing: string; state: string; timestamp: number }
+    | undefined
+  >;
+  mergeUpdates: (options: { updates: string[] }) => Promise<{ bin: string }>;
   deleteDoc: (options: { id: string; docId: string }) => Promise<void>;
   getDocClocks: (options: { id: string; after?: number | null }) => Promise<{
     clocks: {
@@ -89,6 +99,29 @@ export interface NbStorePlugin {
   }) => Promise<void>;
   releaseBlobs: (options: { id: string }) => Promise<void>;
   listBlobs: (options: { id: string }) => Promise<{ blobs: Array<ListedBlob> }>;
+  getPeerWorkspaceState: (options: {
+    id: string;
+    peer: string;
+    rootDocId: string;
+  }) => Promise<{ state: string }>;
+  invalidatePeerWorkspaceState: (options: {
+    id: string;
+    peer: string;
+    rootDocId: string;
+  }) => Promise<void>;
+  installPeerWorkspaceState: (options: {
+    id: string;
+    peer: string;
+    rootDocId: string;
+    cacheToken: number;
+    docs: string;
+    clocks: string;
+  }) => Promise<{ installed: boolean }>;
+  confirmPeerDocCreate: (options: {
+    id: string;
+    peer: string;
+    docId: string;
+  }) => Promise<void>;
   getPeerRemoteClocks: (options: {
     id: string;
     peer: string;

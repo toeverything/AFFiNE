@@ -142,3 +142,37 @@ test('beforeinput ignores un-resolvable target range and still applies input', a
     await teardownInlineEditor(ctx);
   }
 });
+
+test('beforeinput replaces a full selection when the target range starts at the inline root', async () => {
+  const ctx = await setupInlineEditor('a+b=c');
+  try {
+    const range = ctx.editor.toDomRange({ index: 0, length: 5 });
+    expect(range).not.toBeNull();
+    setNativeSelection(range!);
+
+    // Firefox reports the target range of a select-all from before the first line.
+    const line = ctx.root.querySelector('v-line')!;
+    const lineOffset = Array.from(ctx.root.childNodes).indexOf(line);
+    const event = {
+      inputType: 'insertText',
+      data: 'x',
+      dataTransfer: null,
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+      getTargetRanges: () => [
+        {
+          startContainer: ctx.root,
+          startOffset: lineOffset,
+          endContainer: range!.endContainer,
+          endOffset: range!.endOffset,
+        },
+      ],
+    } as unknown as InputEvent;
+
+    await (ctx.editor.eventService as any)._onBeforeInput(event);
+
+    expect(ctx.editor.yTextString).toBe('x');
+  } finally {
+    await teardownInlineEditor(ctx);
+  }
+});

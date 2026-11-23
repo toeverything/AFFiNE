@@ -11,6 +11,7 @@ import {
   BlobSourceRegistry,
 } from './blob-source-registry';
 import { CloudBlobWriter } from './blob-writer';
+import type { CloudDocStorage } from './doc';
 import { HttpConnection } from './http';
 
 interface CloudBlobStorageOptions {
@@ -48,6 +49,32 @@ export class CloudBlobStorage extends BlobStorageBase {
 
   constructor(private readonly options: CloudBlobStorageOptions) {
     super();
+  }
+
+  private docStorage?: CloudDocStorage;
+
+  bindDocStorage(storage: CloudDocStorage) {
+    this.docStorage = storage;
+  }
+
+  private remoteSource(source: BlobSource) {
+    if (!this.docStorage) return source;
+    return {
+      ...source,
+      docId: this.docStorage.idConverter.newIdToOldId(source.docId),
+    };
+  }
+
+  private localEntries(entries: SourceBlobRecord[]) {
+    return entries.map(entry => ({
+      ...entry,
+      source: {
+        ...entry.source,
+        docId:
+          this.docStorage?.idConverter.oldIdToNewId(entry.source.docId) ??
+          entry.source.docId,
+      },
+    }));
   }
 
   readonly connection = new HttpConnection(this.options.serverBaseUrl);
@@ -173,8 +200,10 @@ export class CloudBlobStorage extends BlobStorageBase {
     do {
       registration.dirty = false;
       try {
+        if (this.docStorage)
+          await this.docStorage.connection.waitForConnected(signal);
         const res = await this.connection.fetch(
-          `/api/workspaces/${encodeURIComponent(this.options.id)}/blob-manifest/v1?${this.sourceQuery(source)}`,
+          `/api/workspaces/${encodeURIComponent(this.options.id)}/blob-manifest/v1?${this.sourceQuery(this.remoteSource(source))}`,
           { cache: 'no-store', signal }
         );
         if (!res.ok) {
@@ -187,7 +216,11 @@ export class CloudBlobStorage extends BlobStorageBase {
           entries: SourceBlobRecord[];
         };
         if (this.isRegistrationCurrent(registration)) {
-          this.replaceSource(source, manifest.entries, registration);
+          this.replaceSource(
+            source,
+            this.localEntries(manifest.entries),
+            registration
+          );
         }
       } catch (error) {
         if (this.isRegistrationCurrent(registration)) {
@@ -201,6 +234,8 @@ export class CloudBlobStorage extends BlobStorageBase {
   async *readableSources(signal?: AbortSignal) {
     let cursor: string | undefined;
     try {
+      if (this.docStorage)
+        await this.docStorage.connection.waitForConnected(signal);
       do {
         const query = new URLSearchParams({ limit: '100' });
         if (cursor) query.set('cursor', cursor);
@@ -218,7 +253,7 @@ export class CloudBlobStorage extends BlobStorageBase {
           entries: SourceBlobRecord[];
           nextCursor?: string;
         };
-        for (const entry of manifest.entries) {
+        for (const entry of this.localEntries(manifest.entries)) {
           this.sources.replaceWorkspace([entry], {});
           yield entry;
         }
@@ -249,8 +284,14 @@ export class CloudBlobStorage extends BlobStorageBase {
         }
         let res: Response;
         try {
+          if (this.docStorage)
+            await this.docStorage.connection.waitForConnected(signal);
           res = await this.connection.fetch(
-            sourceScopedBlobUrl(this.options.id, key, candidate.source),
+            sourceScopedBlobUrl(
+              this.options.id,
+              key,
+              this.remoteSource(candidate.source)
+            ),
             { cache: 'no-store', signal }
           );
         } catch (error) {

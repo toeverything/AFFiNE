@@ -55,7 +55,19 @@ pub const V2_IMPORT_SCHEMA_RULES: ImportSchemaRules = ImportSchemaRules {
     },
     ImportTableRule {
       name: "peer_clocks",
-      columns: &["peer", "doc_id", "remote_clock", "pulled_remote_clock", "pushed_clock"],
+      columns: &[
+        "peer",
+        "doc_id",
+        "remote_clock",
+        "pulled_remote_clock",
+        "pushed_clock",
+        "inventory_kind",
+        "lifecycle",
+        "lifecycle_changed_at",
+        "pending_create",
+        "inventory_ready",
+        "cache_token",
+      ],
       enforce_columns: true,
       required: true,
     },
@@ -239,7 +251,14 @@ async fn table_columns_match(pool: &Pool<Sqlite>, rule: &ImportTableRule) -> sql
     .map(|row| row.try_get::<String, _>("name"))
     .collect::<std::result::Result<BTreeSet<_>, _>>()?;
 
-  Ok(columns == rule.columns.iter().map(|column| (*column).to_string()).collect())
+  let current = columns == rule.columns.iter().map(|column| (*column).to_string()).collect();
+  let previous_peer_clocks = rule.name == "peer_clocks"
+    && columns
+      == ["peer", "doc_id", "remote_clock", "pulled_remote_clock", "pushed_clock"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+  Ok(current || previous_peer_clocks)
 }
 
 async fn index_columns_match(pool: &Pool<Sqlite>, rule: &ImportIndexRule) -> sqlx::Result<bool> {

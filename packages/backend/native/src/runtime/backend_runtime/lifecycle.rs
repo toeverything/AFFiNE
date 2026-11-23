@@ -26,11 +26,12 @@ impl BackendRuntime {
     }
 
     let config = self.config()?;
-    let database_url = &config.database_url;
+    let connect_options =
+      crate::runtime::pg_connect_options(&config.database_url, config.deployment, self.role.as_str())?;
     let pool = PgPoolOptions::new()
       .max_connections(5)
       .acquire_timeout(Duration::from_secs(5))
-      .connect(database_url)
+      .connect_with(connect_options)
       .await
       .map_err(|err| RuntimeError::database("BackendRuntime failed to connect postgres", err))?;
 
@@ -94,12 +95,14 @@ impl BackendRuntime {
         if let Some(service) = blob_access {
           targets.push(service);
         }
-        targets.push(quota_read_cache);
+        targets.push(quota_read_cache.clone());
         targets.push(Arc::new(invalidation::EventInvalidationTarget(
           self.invalidation_events.clone(),
         )));
         let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
-        *self.invalidation.lock().await = Some(invalidation::InvalidationRuntime::start(&redis, true, target).await);
+        let invalidation_runtime = invalidation::InvalidationRuntime::start(&redis, true, target).await;
+        quota_read_cache.attach_invalidation(&invalidation_runtime);
+        *self.invalidation.lock().await = Some(invalidation_runtime);
       }
       if !self.script_mode && deployment == crate::runtime::Deployment::SelfHosted {
         self.admit_offline_licenses(&pool).await?;
@@ -329,12 +332,14 @@ impl BackendRuntime {
       if let Some(service) = invalidation_blob_access {
         targets.push(service);
       }
-      targets.push(invalidation_quota_cache);
+      targets.push(invalidation_quota_cache.clone());
       targets.push(Arc::new(invalidation::EventInvalidationTarget(
         self.invalidation_events.clone(),
       )));
       let target = Arc::new(invalidation::CompositeInvalidationTarget(targets));
-      Some(invalidation::InvalidationRuntime::start(&redis_config, true, target).await)
+      let runtime = invalidation::InvalidationRuntime::start(&redis_config, true, target).await;
+      invalidation_quota_cache.attach_invalidation(&runtime);
+      Some(runtime)
     } else {
       None
     };
@@ -401,9 +406,16 @@ impl BackendRuntime {
         publish_failures: 0,
       });
 
+    let redis_db = self
+      .config()
+      .ok()
+      .and_then(|config| crate::runtime::parse_redis_db(config.redis.url.as_deref()));
+
     Ok(BackendRuntimeHealth {
       started: pool.is_some(),
       database_connected,
+      baseline_version: crate::runtime::BASELINE_VERSION.to_string(),
+      redis_db,
       embedding,
       invalidation,
     })

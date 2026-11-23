@@ -238,6 +238,7 @@ fn snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: Vec::new(),
+    claimed_attempt: None,
     operation: None,
   }
 }
@@ -962,7 +963,7 @@ async fn operation_intent_is_frozen_before_send_and_blocks_overlapping_work() {
          external_customer_id,external_subscription_id,period_end,metadata)
        VALUES
          ($1,'stripe',$2,$3,'user',$4,'pro','monthly','active',$5,$3,clock_timestamp()+INTERVAL '30 days','{}'),
-         ($6,'stripe',$2,$7,'user',$4,'ai','yearly','active',$5,$7,clock_timestamp()+INTERVAL '30 days','{}')"#,
+         ($6,'stripe',$2,$7,'user',$4,'ai','yearly','past_due',$5,$7,clock_timestamp()-INTERVAL '1 day','{}')"#,
   )
   .bind(uuid::Uuid::new_v4().to_string())
   .bind(&account_namespace_key)
@@ -1494,6 +1495,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     &webhook_runtime,
     &poison_event,
     &namespace,
+    5,
     &crate::runtime::RuntimeError::invalid_state("unsupported payment event"),
   )
   .await;
@@ -1533,7 +1535,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .execute(&pool)
     .await
     .unwrap();
-    super::worker::fail_receipt(&webhook_runtime, &healthy_event, &namespace, &timeout).await;
+    super::worker::fail_receipt(&webhook_runtime, &healthy_event, &namespace, attempts, &timeout).await;
     let retry: (String, f64) = sqlx::query_as(
       "SELECT processing_status,extract(epoch FROM next_attempt_at-updated_at)::float8 FROM payment_events WHERE \
        provider_namespace=$1 AND external_event_id=$2",
@@ -1563,6 +1565,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     &webhook_runtime,
     &healthy_event,
     &namespace,
+    13,
     &crate::runtime::RuntimeError::database("invalid payment query", permanent),
   )
   .await;

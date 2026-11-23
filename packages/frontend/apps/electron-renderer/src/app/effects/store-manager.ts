@@ -37,7 +37,14 @@ function createStoreManagerClient() {
     console.error('failed to connect worker', err);
   });
 
-  const storeManager = new StoreManagerClient(new OpClient(portForOpClient));
+  // oxlint-disable-next-line no-non-null-assertion
+  const nativeMergeUpdates = apis!.nbstore.mergeUpdates;
+  const storeManager = new StoreManagerClient(new OpClient(portForOpClient), {
+    mergeUpdates: nativeMergeUpdates
+      ? updates =>
+          updates.length === 1 ? updates[0] : nativeMergeUpdates(updates)
+      : undefined,
+  });
   portForOpClient.start();
   return storeManager;
 }

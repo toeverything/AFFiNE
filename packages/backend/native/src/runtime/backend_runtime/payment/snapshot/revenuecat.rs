@@ -181,6 +181,7 @@ pub(in crate::runtime::backend_runtime::payment) async fn revenuecat_customer_sn
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: event_ids,
+    claimed_attempt: None,
     operation: None,
   })
 }

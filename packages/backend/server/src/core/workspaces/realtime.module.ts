@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { DocStorageModule } from '../doc';
 import { PermissionModule } from '../permission';
 import { QuotaServiceModule } from '../quota';
 import { DocGrantsService } from './doc-grants';
@@ -14,7 +15,7 @@ import {
 } from './realtime';
 
 @Module({
-  imports: [PermissionModule, QuotaServiceModule],
+  imports: [DocStorageModule, PermissionModule, QuotaServiceModule],
   providers: [
     DocGrantsService,
     WorkspaceAccessRealtimeProvider,

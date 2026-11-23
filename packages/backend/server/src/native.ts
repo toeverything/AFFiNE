@@ -205,7 +205,21 @@ import type {
   ToolCallResult,
 } from './plugins/copilot/runtime/contracts/tool-contract';
 
-export const mergeUpdatesInApplyWay = serverNativeModule.mergeUpdatesInApplyWay;
+export const mergeUpdates = serverNativeModule.mergeUpdates;
+export const diffDocUpdateV1 = serverNativeModule.diffDocUpdateV1;
+export const encodeStateVectorFromUpdateV1 =
+  serverNativeModule.encodeStateVectorFromUpdateV1;
+export const extractDocRecoveryFacts =
+  serverNativeModule.extractDocRecoveryFacts;
+export const extractRootDocIdAliases =
+  serverNativeModule.extractRootDocIdAliases;
+export const extractWorkspaceLifecycleRootPages =
+  serverNativeModule.extractWorkspaceLifecycleRootPages;
+export type {
+  NativeDocRecoveryFacts,
+  NativeLifecycleRootPage,
+} from '@affine/server-native';
+export const isOrdinaryWorkspaceDoc = serverNativeModule.isOrdinaryWorkspaceDoc;
 export const authorizeReservedDocSubject =
   serverNativeModule.authorizeReservedDocSubject;
 export const canonicalizeDocumentIdentity =
@@ -445,6 +459,8 @@ export type DomainCommandInputV1 =
       workspaceId: string;
       docId: string;
       lifecycle: 'trash' | 'restore' | 'delete';
+      logicalDocId?: string;
+      requireDeleted?: boolean;
     }
   | {
       command: 'append_root_update';
@@ -526,6 +542,9 @@ export const buildPublicRootDoc = serverNativeModule.buildPublicRootDoc;
 export const updateDocTitle = serverNativeModule.updateDocTitle;
 export const updateDocProperties = serverNativeModule.updateDocProperties;
 export const updateRootDocMetaTitle = serverNativeModule.updateRootDocMetaTitle;
+export const updateExistingRootDocMetaTitle =
+  serverNativeModule.updateExistingRootDocMetaTitle;
+export const migrateRootDocPages = serverNativeModule.migrateRootDocPages;
 
 const nativeLlmModule = serverNativeModule;
 

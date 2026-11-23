@@ -75,10 +75,16 @@ export class CryptoHelper implements OnModuleInit {
 
   onModuleInit() {
     if (env.selfhosted) {
+      // Community builds rely on the embedded COMMUNITY_DEFAULT_PUBLIC_KEY in
+      // native for the bundled default license and only require
+      // AFFINE_PRO_PUBLIC_KEY when verifying pro-v1 / legacy commercial licenses.
       this.AFFiNEProPublicKey = this.loadAFFiNEProPublicKey();
-      if (!this.AFFiNEProPublicKey) {
+      if (
+        process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY === 'true' &&
+        !this.AFFiNEProPublicKey
+      ) {
         throw new Error(
-          'AFFINE_PRO_PUBLIC_KEY must be embedded in self-hosted server-native builds.'
+          'AFFINE_PRO_PUBLIC_KEY must be embedded in official self-hosted server-native builds.'
         );
       }
     }

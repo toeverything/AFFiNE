@@ -77,6 +77,19 @@ android {
     }
 }
 
+// Declare the Rust plugin output before AGP finalizes variant sources.
+def nativeLibraries = tasks.register("cargoBuild") {
+    ext.jniDirectory = objects.directoryProperty()
+    jniDirectory.set(layout.buildDirectory.dir("rustJniLibs/android"))
+    outputs.dir(jniDirectory)
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.sources.jniLibs.addGeneratedSourceDirectory(nativeLibraries) { it.jniDirectory }
+    }
+}
+
 repositories {
     flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
@@ -100,7 +113,6 @@ dependencies {
     implementation libs.androidx.activity.compose
     implementation libs.androidx.compose.foundation.layout
     implementation libs.androidx.compose.material3
-    implementation libs.androidx.compose.material.icons.extended
     implementation libs.androidx.compose.runtime.livedata
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.ui.util
@@ -173,22 +185,6 @@ kotlin {
     }
 }
 
-afterEvaluate {
-    // The `cargoBuild` task isn't available until after evaluation.
-    android.applicationVariants.configureEach { variant ->
-        def productFlavor = ""
-        variant.productFlavors.each {
-            productFlavor += "${it.name.capitalize()}"
-        }
-        def buildType = "${variant.buildType.name.capitalize()}"
-        tasks["generate${productFlavor}${buildType}Assets"].dependsOn(tasks["cargoBuild"])
-        def variantName = "${variant.name.substring(0,1).toUpperCase()}${variant.name.substring(1)}"
-        def mergeNativeLibsTask = tasks.findByName("merge${variantName}NativeLibs")
-        if (mergeNativeLibsTask != null) {
-            mergeNativeLibsTask.dependsOn(tasks["cargoBuild"])
-        }
-    }
-}
 
 def localProps = new Properties()
 def localPropsFile = file("${rootProject.projectDir}/local.properties")
@@ -202,13 +198,7 @@ android.applicationVariants.configureEach { variant ->
         workingDir "${project.projectDir}"
         // Runs the bindings generation, note that you must have uniffi-bindgen installed and in your PATH environment variable
         commandLine "${cargoPath}", 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/${nativeAbi}/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
-        dependsOn("cargoBuild")
+        dependsOn(nativeLibraries)
     }
-    variant.javaCompileProvider.get().dependsOn(t)
-}
-
-tasks.whenTaskAdded { task ->
-    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
-        task.dependsOn 'cargoBuild'
-    }
+    tasks.named("compile${variantName}Kotlin").configure { dependsOn(t) }
 }

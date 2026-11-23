@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS doc_blob_ref_projections (
   workspace_id TEXT NOT NULL,
   doc_id TEXT NOT NULL,
   source_revision TIMESTAMPTZ(3),
+  source_fingerprint TEXT,
   parser_version INTEGER NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'running', 'fresh', 'failed', 'missing')),
   indexed_at TIMESTAMPTZ(3),
@@ -128,6 +129,8 @@ CREATE TABLE IF NOT EXISTS doc_blob_ref_projections (
   CHECK (status <> 'fresh' OR (source_revision IS NOT NULL AND indexed_at IS NOT NULL)),
   CHECK (error_summary IS NULL OR octet_length(error_summary) <= 512)
 );
+
+ALTER TABLE doc_blob_ref_projections ADD COLUMN IF NOT EXISTS source_fingerprint TEXT;
 
 CREATE INDEX IF NOT EXISTS doc_blob_ref_projections_workspace_status_idx
   ON doc_blob_ref_projections (workspace_id, status, updated_at DESC);
@@ -239,3 +242,22 @@ CREATE TABLE IF NOT EXISTS runtime_invite_abuse_actions (
 
 CREATE INDEX IF NOT EXISTS runtime_invite_abuse_actions_status_next_attempt_idx
   ON runtime_invite_abuse_actions (status, next_attempt_at);
+
+CREATE TABLE IF NOT EXISTS runtime_doc_creators (
+  workspace_id VARCHAR NOT NULL,
+  doc_id VARCHAR NOT NULL,
+  created_by VARCHAR REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (workspace_id, doc_id)
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'runtime_doc_creators_created_by_fkey'
+  ) THEN
+    ALTER TABLE runtime_doc_creators
+      ADD CONSTRAINT runtime_doc_creators_created_by_fkey
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

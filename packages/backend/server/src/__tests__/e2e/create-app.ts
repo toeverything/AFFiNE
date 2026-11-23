@@ -365,6 +365,9 @@ export async function createApp(
     await app.init();
     await app.get(BackendRuntimeProvider, { strict: false }).runMigrations();
     await app.get(StorageRuntimeProvider, { strict: false }).runMigrations();
+    await app
+      .get(BackendRuntimeProvider, { strict: false })
+      .activateWorkspaceLifecycleV1();
     if (globalThis.env.isApi || globalThis.env.isFrontend) {
       await app.get(IndexerService, { strict: false }).onApplicationBootstrap();
     }

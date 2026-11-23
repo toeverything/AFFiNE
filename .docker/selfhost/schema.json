@@ -763,11 +763,6 @@
       "type": "object",
       "description": "Configuration for doc module",
       "properties": {
-        "experimental.yocto": {
-          "type": "boolean",
-          "description": "Use `y-octo` to merge updates at the same time when merging using Yjs.\n@default false",
-          "default": false
-        },
         "history.interval": {
           "type": "number",
           "description": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated.\n@default 600000",

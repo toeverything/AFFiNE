@@ -55,10 +55,16 @@ jobs:
             const fs = require('node:fs');
             const releases = await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page: 100});
             for (const release of releases) {
-              const asset = release.assets.find(asset => asset.name === 'affine-release-completed.json');
-              if (!asset) continue;
-              const response = await github.rest.repos.getReleaseAsset({...context.repo, asset_id: asset.id, headers: {accept:'application/octet-stream'}});
-              const previous = JSON.parse(Buffer.from(response.data).toString('utf8'));
+              const embedded = release.body?.match(/<!-- affine-release-completed\n([^]*?)\n-->/);
+              let previous;
+              if (embedded) {
+                previous = JSON.parse(embedded[1]);
+              } else {
+                const asset = release.assets.find(asset => asset.name === 'affine-release-completed.json');
+                if (!asset) continue;
+                const response = await github.rest.repos.getReleaseAsset({...context.repo, asset_id: asset.id, headers: {accept:'application/octet-stream'}});
+                previous = JSON.parse(Buffer.from(response.data).toString('utf8'));
+              }
               if (previous.request.channel !== 'canary') continue;
               fs.writeFileSync('release-previous.json', JSON.stringify(previous));
               break;

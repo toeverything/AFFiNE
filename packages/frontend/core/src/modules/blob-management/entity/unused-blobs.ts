@@ -1,23 +1,32 @@
+import { DebugLogger } from '@affine/debug';
 import type { ListedBlobRecord } from '@affine/nbstore';
 import {
   effect,
   Entity,
   fromPromise,
   LiveData,
-  onComplete,
   onStart,
 } from '@toeverything/infra';
-import { switchMap, tap } from 'rxjs';
+import { isEqual } from 'lodash-es';
+import {
+  catchError,
+  EMPTY,
+  finalize,
+  firstValueFrom,
+  switchMap,
+  tap,
+} from 'rxjs';
+import { applyUpdate, Doc as YDoc, Map as YMap } from 'yjs';
 
-import type { DocsSearchService } from '../../docs-search';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceFlavoursService } from '../../workspace/services/flavours';
+
+const logger = new DebugLogger('unused-blobs');
 
 export class UnusedBlobs extends Entity {
   constructor(
     private readonly flavoursService: WorkspaceFlavoursService,
-    private readonly workspaceService: WorkspaceService,
-    private readonly docsSearchService: DocsSearchService
+    private readonly workspaceService: WorkspaceService
   ) {
     super();
   }
@@ -27,14 +36,21 @@ export class UnusedBlobs extends Entity {
 
   readonly revalidate = effect(
     switchMap(() =>
-      fromPromise(async () => {
-        return await this.getUnusedBlobs();
+      fromPromise(async signal => {
+        return await this.getUnusedBlobs(signal);
       }).pipe(
         tap(data => {
           this.unusedBlobs$.setValue(data);
         }),
-        onStart(() => this.isLoading$.setValue(true)),
-        onComplete(() => this.isLoading$.setValue(false))
+        catchError(error => {
+          logger.error(error);
+          return EMPTY;
+        }),
+        onStart(() => {
+          this.unusedBlobs$.setValue([]);
+          this.isLoading$.setValue(true);
+        }),
+        finalize(() => this.isLoading$.setValue(false))
       )
     )
   );
@@ -61,45 +77,75 @@ export class UnusedBlobs extends Entity {
   }
 
   async getUnusedBlobs(abortSignal?: AbortSignal) {
-    // Wait for both sync and indexing to complete
-    await this.workspaceService.workspace.engine.doc.waitForSynced();
-
-    await this.docsSearchService.indexer.waitForCompleted(abortSignal);
-
-    const [blobs, usedBlobs] = await Promise.all([
-      this.listManageableBlobs(),
-      this.getUsedBlobs(),
-    ]);
-
-    // ignore the workspace avatar
-    const workspaceAvatar = this.workspaceService.workspace.avatar$.value;
-
-    return (
-      blobs?.filter(
-        blob => !usedBlobs.includes(blob.key) && blob.key !== workspaceAvatar
-      ) ?? []
+    await this.workspaceService.workspace.engine.doc.waitForSynced(
+      undefined,
+      abortSignal
     );
+
+    const blobs = await this.listManageableBlobs();
+    const usedBlobs = await this.getUsedBlobs(abortSignal);
+    abortSignal?.throwIfAborted();
+
+    return blobs?.filter(blob => !usedBlobs.has(blob.key)) ?? [];
   }
 
-  private async getUsedBlobs(): Promise<string[]> {
-    const limit = 1000;
-    const usedBlobs: string[] = [];
-    for (let skip = 0; ; skip += limit) {
-      const result = await this.docsSearchService.indexer.aggregate(
-        'block',
-        {
-          type: 'boolean',
-          occur: 'must',
-          queries: [{ type: 'exists', field: 'blob' }],
-        },
-        'blob',
-        { pagination: { limit, skip }, prefer: 'local' }
-      );
-      usedBlobs.push(...result.buckets.map(bucket => bucket.key));
-      if (!result.pagination.hasMore) return usedBlobs;
-      if (result.buckets.length === 0) {
-        throw new Error('Local blob index pagination did not advance');
+  private async getUsedBlobs(signal?: AbortSignal): Promise<Set<string>> {
+    const workspace = this.workspaceService.workspace;
+    const frontend = workspace.engine.doc;
+    const storage = frontend.storage;
+    const inventory = workspace.engine.usesWorkspaceState
+      ? await firstValueFrom(frontend.workspaceState$)
+      : null;
+    if (workspace.engine.usesWorkspaceState && !inventory?.ready) {
+      throw new Error('Document inventory is not ready');
+    }
+    const clocks = await storage.getDocTimestamps();
+    const docIds = new Set([
+      ...Object.keys(clocks),
+      ...(inventory?.docs.map(doc => doc.docId) ?? []),
+      ...Object.keys(inventory?.clocks ?? {}),
+    ]);
+    const usedBlobs = new Set<string>();
+    for (const docId of docIds) {
+      signal?.throwIfAborted();
+      const record = await storage.getDoc(docId);
+      if (!record) throw new Error('Document source is unavailable');
+      const doc = new YDoc({ guid: docId });
+      try {
+        applyUpdate(doc, record.bin);
+        if (doc.store.pendingStructs || doc.store.pendingDs) {
+          throw new Error('Document blob references are incomplete');
+        }
+        const avatar = doc.getMap('meta').get('avatar');
+        if (typeof avatar === 'string' && avatar) usedBlobs.add(avatar);
+        for (const block of doc.getMap('blocks').values()) {
+          if (!(block instanceof YMap)) continue;
+          const flavour = block.get('sys:flavour');
+          if (flavour !== 'affine:image' && flavour !== 'affine:attachment') {
+            continue;
+          }
+          const blob = block.get('prop:sourceId');
+          if (typeof blob === 'string') usedBlobs.add(blob);
+        }
+      } finally {
+        doc.destroy();
       }
     }
+    signal?.throwIfAborted();
+    const currentClocks = await storage.getDocTimestamps();
+    if (!isEqual(clocks, currentClocks)) {
+      throw new Error(
+        'Document sources changed while checking blob references'
+      );
+    }
+    if (
+      inventory &&
+      !isEqual(inventory, await firstValueFrom(frontend.workspaceState$))
+    ) {
+      throw new Error(
+        'Document inventory changed while checking blob references'
+      );
+    }
+    return usedBlobs;
   }
 }

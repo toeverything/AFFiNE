@@ -18,8 +18,26 @@ use tokio::sync::Notify;
 pub(super) use types::EmbeddingTarget;
 use types::*;
 
-use super::{RuntimeError, RuntimeResult, copilot::BackgroundEmbeddingProvider};
+use super::{
+  RuntimeError, RuntimeResult,
+  copilot::BackgroundEmbeddingProvider,
+  domain_command::{lock_workspace_doc_update, lock_workspace_storage_shared},
+  is_ordinary_workspace_doc, load_doc_states_in, load_legacy_workspace_in, workspace_lifecycle_active_in,
+};
 use crate::runtime::object_storage::ObjectStorageService;
+
+async fn legacy_document_ids(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<Vec<String>>> {
+  let mut connection = pool
+    .acquire()
+    .await
+    .map_err(|error| RuntimeError::database("load embedding document membership", error))?;
+  if workspace_lifecycle_active_in(&mut connection).await? {
+    Ok(None)
+  } else {
+    let legacy = load_legacy_workspace_in(&mut connection, workspace_id).await?;
+    Ok(Some(legacy.active_doc_ids().into_iter().collect()))
+  }
+}
 
 fn extraction_file_name(mime_type: &str) -> String {
   let extension = match mime_type {
@@ -97,10 +115,9 @@ impl EmbeddingService {
     &self,
     workspace_id: &str,
     documents: &[crate::runtime::types::DocumentEmbeddingProjectionInput],
-    reconcile: bool,
     priority: i32,
   ) -> RuntimeResult<()> {
-    source::sync_documents(&self.pool, workspace_id, documents, reconcile, priority).await?;
+    source::sync_documents(&self.pool, workspace_id, documents, priority).await?;
     self.wake();
     Ok(())
   }
@@ -128,12 +145,6 @@ impl EmbeddingService {
       }
       tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
-  }
-
-  pub(super) async fn reconcile_documents(&self, workspace_id: &str) -> RuntimeResult<()> {
-    source::reconcile_documents(&self.pool, workspace_id).await?;
-    self.wake();
-    Ok(())
   }
 
   pub(super) async fn health_counts(&self) -> RuntimeResult<EmbeddingQueueCounts> {

@@ -234,6 +234,7 @@ pub(super) async fn stripe_subscription_snapshot_from_observation(
     licenses,
     mails,
     captured_event_ids: event_ids,
+    claimed_attempt: None,
     operation,
   })
 }
@@ -260,6 +261,7 @@ pub(super) async fn stripe_customer_snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: Vec::new(),
+    claimed_attempt: None,
     operation,
   };
   for subscription in subscriptions {

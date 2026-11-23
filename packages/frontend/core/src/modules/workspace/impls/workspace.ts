@@ -1,3 +1,4 @@
+import type { PeerWorkspaceState } from '@affine/nbstore';
 import {
   BlockSuiteError,
   ErrorCode,
@@ -8,14 +9,13 @@ import {
   type IdGenerator,
   nanoid,
   type Workspace,
-  type WorkspaceMeta,
 } from '@blocksuite/affine/store';
 import {
   BlobEngine,
   type BlobSource,
   MemoryBlobSource,
 } from '@blocksuite/affine/sync';
-import { Subject } from 'rxjs';
+import { type Observable, Subject, type Subscription } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';
 import type { Doc as YDoc } from 'yjs';
 
@@ -32,6 +32,8 @@ type WorkspaceOptions = {
   onLoadAwareness?: (awareness: Awareness) => void;
   onCreateDoc?: (docId?: string) => string;
   featureFlagService?: FeatureFlagService;
+  inventory$?: Observable<PeerWorkspaceState | null>;
+  projectedTitles$?: Observable<Record<string, string>>;
 };
 
 export class WorkspaceImpl implements Workspace {
@@ -45,7 +47,10 @@ export class WorkspaceImpl implements Workspace {
 
   readonly idGenerator: IdGenerator;
 
-  meta: WorkspaceMeta;
+  meta: WorkspaceMetaImpl;
+  readonly usesWorkspaceState: boolean;
+  private readonly inventorySubscription?: Subscription;
+  private readonly projectedTitlesSubscription?: Subscription;
 
   slots = {
     docListUpdated: new Subject<void>(),
@@ -70,7 +75,10 @@ export class WorkspaceImpl implements Workspace {
     onLoadAwareness,
     onCreateDoc,
     featureFlagService,
+    inventory$,
+    projectedTitles$,
   }: WorkspaceOptions) {
+    this.usesWorkspaceState = !!inventory$;
     this.id = id || '';
     this.featureFlagService = featureFlagService;
     this.doc = rootDoc;
@@ -87,8 +95,14 @@ export class WorkspaceImpl implements Workspace {
 
     this.idGenerator = nanoid;
 
-    this.meta = new WorkspaceMetaImpl(this.doc);
+    this.meta = new WorkspaceMetaImpl(this.doc, this.usesWorkspaceState);
     this._bindDocMetaEvents();
+    this.inventorySubscription = inventory$?.subscribe(state =>
+      this.meta.setInventory(state?.docs ?? [])
+    );
+    this.projectedTitlesSubscription = projectedTitles$?.subscribe(titles =>
+      this.meta.setProjectedTitles(titles)
+    );
   }
 
   private _bindDocMetaEvents() {
@@ -160,6 +174,10 @@ export class WorkspaceImpl implements Workspace {
   }
 
   removeDoc(docId: string) {
+    if (this.usesWorkspaceState) {
+      this.meta.removeDocMeta(docId);
+      return;
+    }
     const docMeta = this.meta.getDocMeta(docId);
     if (!docMeta) {
       throw new BlockSuiteError(
@@ -177,6 +195,8 @@ export class WorkspaceImpl implements Workspace {
   }
 
   dispose() {
+    this.inventorySubscription?.unsubscribe();
+    this.projectedTitlesSubscription?.unsubscribe();
     this.blockCollections.forEach(doc => doc.dispose());
     this.onUnloadDoc?.(this.doc);
   }

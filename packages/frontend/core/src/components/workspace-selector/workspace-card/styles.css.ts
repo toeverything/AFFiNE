@@ -120,12 +120,16 @@ globalStyle(`.${workspaceStatus} svg`, {
 });
 
 export const workspaceActiveStatus = style({
-  display: 'flex',
-  gap: 2,
-  alignItems: 'center',
+  justifyContent: 'flex-start',
+  padding: 0,
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',
   color: cssVar('textSecondaryColor'),
+});
+export const workspaceActiveStatusContent = style({
+  display: 'flex',
+  gap: 2,
+  alignItems: 'center',
 });
 globalStyle(`.${workspaceActiveStatus} svg`, {
   width: 16,

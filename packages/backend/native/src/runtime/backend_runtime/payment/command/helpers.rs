@@ -63,6 +63,7 @@ pub(super) fn empty_snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: Vec::new(),
+    claimed_attempt: None,
     operation: Some(OperationCompletion { operation_id, result }),
   }
 }

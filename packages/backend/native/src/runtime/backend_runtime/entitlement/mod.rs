@@ -8,7 +8,7 @@ mod subscription;
 
 use affine_core::access_control::{
   AccessContext, AccessGrant, Deployment as CoreDeployment, EntitlementFact, QuotaSubject, TargetType,
-  resolve_entitlements, resolve_quota_subject,
+  resolve_quota_subject,
 };
 use chrono::{DateTime, Utc};
 use license::{
@@ -107,7 +107,7 @@ fn resolve_grant(
       signed_payload: row.signed_payload.as_deref(),
     })
     .collect::<Vec<_>>();
-  resolve_entitlements(
+  crate::license_v2::resolve_entitlements_with_v2(
     &AccessContext {
       deployment: match deployment {
         Deployment::Cloud => CoreDeployment::Cloud,

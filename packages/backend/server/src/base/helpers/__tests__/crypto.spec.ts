@@ -121,10 +121,8 @@ test('uses the native verifier public key', t => {
   loadKey.onFirstCall().returns(null);
   loadKey.onSecondCall().returns(Buffer.from('public-key'));
   try {
-    t.throws(() => t.context.crypto.onModuleInit(), {
-      message:
-        'AFFINE_PRO_PUBLIC_KEY must be embedded in self-hosted server-native builds.',
-    });
+    t.notThrows(() => t.context.crypto.onModuleInit());
+    t.is(t.context.crypto.AFFiNEProPublicKey, null);
     t.context.crypto.onModuleInit();
     t.is(t.context.crypto.AFFiNEProPublicKey?.toString(), 'public-key');
   } finally {
@@ -132,6 +130,44 @@ test('uses the native verifier public key', t => {
     globalThis.env.DEPLOYMENT_TYPE = deployment;
   }
 });
+
+test.serial(
+  'official self-hosted builds require a public key while community builds may omit it',
+  t => {
+    const deployment = globalThis.env.DEPLOYMENT_TYPE;
+    const flag = process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY;
+    // @ts-expect-error test temporarily selects self-hosted lifecycle behavior
+    globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+    const loadKey = Sinon.stub(
+      t.context.crypto as unknown as {
+        loadAFFiNEProPublicKey(): Buffer | null;
+      },
+      'loadAFFiNEProPublicKey'
+    );
+    try {
+      for (const required of ['false', 'true']) {
+        process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY = required;
+        for (const key of [null, Buffer.from('public-key')]) {
+          loadKey.returns(key);
+          if (required === 'true' && !key) {
+            t.throws(() => t.context.crypto.onModuleInit(), {
+              message:
+                'AFFINE_PRO_PUBLIC_KEY must be embedded in official self-hosted server-native builds.',
+            });
+          } else {
+            t.notThrows(() => t.context.crypto.onModuleInit());
+          }
+        }
+      }
+    } finally {
+      loadKey.restore();
+      // @ts-expect-error test restores deployment mode
+      globalThis.env.DEPLOYMENT_TYPE = deployment;
+      if (flag === undefined) delete process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY;
+      else process.env.AFFINE_REQUIRE_PRO_PUBLIC_KEY = flag;
+    }
+  }
+);
 
 test('should be able to safe compare', t => {
   t.true(t.context.crypto.compare('abc', 'abc'));

@@ -108,7 +108,6 @@
     "socket.io": "^4.8.3",
     "tldts": "^7.0.19",
     "winston": "^3.17.0",
-    "yjs": "^13.6.27",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.20.0"
   },
@@ -143,7 +142,8 @@
     "sinon": "^21.0.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "yjs": "^13.6.27"
   },
   "nodemonConfig": {
     "exec": "node",

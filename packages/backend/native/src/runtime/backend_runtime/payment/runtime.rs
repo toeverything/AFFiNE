@@ -34,10 +34,11 @@ impl PaymentRuntime {
     deployment: Deployment,
     private_key: &str,
   ) -> RuntimeResult<Self> {
+    let connect_options = crate::runtime::pg_connect_options(database_url, deployment, "payment")?;
     let pool = PgPoolOptions::new()
       .max_connections(8)
       .acquire_timeout(std::time::Duration::from_secs(5))
-      .connect(database_url)
+      .connect_with(connect_options)
       .await
       .map_err(|error| RuntimeError::database("payment runtime failed to connect postgres", error))?;
     Ok(Self {
@@ -201,6 +202,7 @@ impl PaymentRuntime {
       }
     };
     refreshed.captured_event_ids = stale.captured_event_ids.clone();
+    refreshed.claimed_attempt = stale.claimed_attempt.clone();
     Ok(refreshed)
   }
 }

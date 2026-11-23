@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import * as Sinon from 'sinon';
-import { applyUpdate, Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  Map as YMap,
+} from 'yjs';
 
 import { EventBus } from '../../base';
 import { BackendRuntimeProvider } from '../../core/backend-runtime';
@@ -9,6 +15,8 @@ import {
   DocStorageModule,
   PgWorkspaceDocStorageAdapter as Adapter,
 } from '../../core/doc';
+import { DocWriter } from '../../core/doc/writer';
+import { createDocWithMarkdown } from '../../native';
 import { createTestingModule, type TestingModule } from '../utils';
 
 let m: TestingModule;
@@ -48,19 +56,19 @@ test('should not compact from a stale update view', async t => {
   text.insert(5, 'world');
   text.insert(5, ' ');
 
-  await adapter.pushDocUpdatesTrusted('2', '2', updates);
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates);
 
-  await adapter.getDoc('2', '2');
-  await adapter.pushDocUpdatesTrusted('2', '2', updates);
+  await adapter.getDoc('2', 'doc-2');
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates);
 
   const records = await db.update.findMany({
     where: {
       workspaceId: '2',
-      id: '2',
+      id: 'doc-2',
     },
   });
 
-  await adapter.pushDocUpdatesTrusted('2', '2', updates.slice(0, 1));
+  await adapter.pushDocUpdatesTrusted('2', 'doc-2', updates.slice(0, 1));
 
   // @ts-expect-error private method
   const stub = Sinon.stub(adapter, 'getDocUpdates').resolves(
@@ -70,43 +78,132 @@ test('should not compact from a stale update view', async t => {
     }))
   );
 
-  await adapter.getDoc('2', '2');
+  await adapter.getDoc('2', 'doc-2');
   stub.restore();
 
   t.not(await db.update.count(), 0);
 });
 
-test('should finish doc creation after retrying failed updates', async t => {
-  const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesTrustedV1');
+test('should emit creation only from the committed creation receipt', async t => {
+  const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesV1');
   t.teardown(() => stub.restore());
-  let creationCompleted = false;
+  let creations = 0;
   t.teardown(
-    m.get(EventBus).on('doc.created', async () => {
-      await new Promise<void>(resolve => setImmediate(resolve));
-      creationCompleted = true;
+    m.get(EventBus).on('doc.created', () => {
+      creations++;
     })
   );
+  stub.onCall(0).rejects(new Error('storage unavailable'));
+  stub.onCall(1).resolves({ timestamp: Date.now(), created: true });
+  stub.onCall(2).resolves({ timestamp: Date.now(), created: false });
+  const push = () =>
+    adapter.pushDocUpdates(
+      '1',
+      'doc-1',
+      [Buffer.from([0, 0])],
+      'owner',
+      undefined,
+      'create_doc'
+    );
+  await t.throwsAsync(push);
+  t.is(creations, 0);
+  await push();
+  await push();
+  t.is(creations, 1);
 
-  stub.onCall(0).rejects(new Error());
-  stub.onCall(1).resolves(Date.now());
-
-  await t.notThrowsAsync(() =>
-    adapter.pushDocUpdatesTrusted('1', '1', [Buffer.from([0, 0])])
+  const trusted = Sinon.stub(adapter, 'pushDocUpdatesTrusted').resolves(42);
+  const read = Sinon.stub(adapter, 'getDoc').resolves(null);
+  t.teardown(() => {
+    trusted.restore();
+    read.restore();
+  });
+  const mode = Sinon.stub(runtime, 'getWorkspaceLifecycleActiveV1').resolves(
+    true
   );
-  t.is(stub.callCount, 2);
-  t.true(creationCompleted);
+  t.teardown(() => mode.restore());
+  const writer = new DocWriter(adapter, m.get(EventBus), runtime);
+  stub.onCall(3).rejects(new Error('permission denied'));
+  await t.throwsAsync(() => writer.createDoc('1', 'title', 'body', 'actor'), {
+    message: 'permission denied',
+  });
+  t.is(trusted.callCount, 0);
+  stub.onCall(4).resolves({ timestamp: 41, created: true });
+  const created = await writer.createDoc('1', 'title', 'body', 'actor');
+  t.is(trusted.callCount, 1);
+  const [workspaceId, propertiesId, updates, editor] = trusted.firstCall.args;
+  t.is(workspaceId, '1');
+  t.is(propertiesId, 'db$1$docProperties');
+  t.is(editor, 'actor');
+  const properties = new YDoc();
+  for (const update of updates) applyUpdate(properties, update);
+  t.deepEqual(properties.getMap(created.docId).toJSON(), {
+    id: created.docId,
+    createdBy: 'actor',
+    updatedBy: 'actor',
+  });
+  t.deepEqual([...properties.share.keys()], [created.docId]);
+
+  mode.resolves(false);
+  stub.resolves({ timestamp: 42, created: true });
+  const legacy = await writer.createDoc('1', 'legacy title', 'body', 'actor');
+  const rootPush = stub.lastCall.args[0];
+  t.is(rootPush.docId, '1');
+  const root = new YDoc();
+  for (const update of rootPush.updates) applyUpdate(root, update);
+  t.like(root.getMap('meta').toJSON().pages, [
+    { id: legacy.docId, title: 'legacy title' },
+  ]);
+  const physicalId = 'legacy-physical-guid';
+  root.getMap('spaces').set(legacy.docId, new YDoc({ guid: physicalId }));
+  const rootPages = root.getMap('meta').get('pages');
+  t.true(rootPages instanceof YArray);
+  if (!(rootPages instanceof YArray)) throw new Error('Missing root pages');
+  const originalPage = rootPages.get(0);
+  t.true(originalPage instanceof YMap);
+  if (!(originalPage instanceof YMap)) throw new Error('Missing root metadata');
+  read.withArgs('1', '1').resolves({
+    spaceId: '1',
+    docId: '1',
+    bin: encodeStateAsUpdate(root),
+    timestamp: 42,
+  });
+  read.withArgs('1', physicalId).resolves({
+    spaceId: '1',
+    docId: physicalId,
+    timestamp: 42,
+    bin: createDocWithMarkdown('legacy title', 'body', physicalId),
+  });
+  originalPage.set('offline-field', 'preserved');
+  await writer.updateDocMeta('1', physicalId, { title: 'renamed' }, 'actor');
+  const titlePush = stub.lastCall.args[0];
+  t.is(titlePush.docId, '1');
+  for (const update of titlePush.updates) applyUpdate(root, update);
+  t.is(rootPages.get(0), originalPage);
+  t.is(originalPage.get('title'), 'renamed');
+  t.is(originalPage.get('offline-field'), 'preserved');
+  t.is(rootPages.length, 1);
+  mode.resolves(true);
+  await writer.updateDocMeta(
+    '1',
+    physicalId,
+    { title: 'active title' },
+    'actor'
+  );
+  t.is(stub.lastCall.args[0].docId, physicalId);
+  root.destroy();
+  properties.destroy();
 });
 
-test('should throw if meet max retry times', async t => {
+test('should propagate storage errors without internal retries', async t => {
   const stub = Sinon.stub(runtime, 'appendWorkspaceDocUpdatesTrustedV1');
 
-  stub.rejects(new Error());
+  stub.rejects(new Error('storage unavailable'));
 
   await t.throwsAsync(
-    () => adapter.pushDocUpdatesTrusted('1', '1', [Buffer.from([0, 0])]),
-    { message: 'Failed to store doc updates.' }
+    () => adapter.pushDocUpdatesTrusted('1', 'doc-1', [Buffer.from([0, 0])]),
+    { message: 'storage unavailable' }
   );
-  t.is(stub.callCount, 4);
+  t.is(stub.callCount, 1);
 
   stub.restore();
 });
@@ -127,7 +224,7 @@ test('should be able to merge updates as snapshot', async t => {
   await db.update.createMany({
     data: [
       {
-        id: '1',
+        id: 'doc-1',
         workspaceId: '1',
         blob: Buffer.from(update),
         createdAt: new Date(Date.now() + 1),
@@ -137,7 +234,7 @@ test('should be able to merge updates as snapshot', async t => {
   });
 
   t.deepEqual(
-    Buffer.from((await adapter.getDoc('1', '1'))!.bin),
+    Buffer.from((await adapter.getDoc('1', 'doc-1'))!.bin),
     Buffer.from(update)
   );
 
@@ -150,7 +247,7 @@ test('should be able to merge updates as snapshot', async t => {
   await db.update.create({
     data: {
       workspaceId: '1',
-      id: '1',
+      id: 'doc-1',
       blob: appendUpdate,
       createdAt: new Date(),
       createdBy: null,
@@ -158,7 +255,7 @@ test('should be able to merge updates as snapshot', async t => {
   });
 
   {
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const dbDoc = new YDoc();
     applyUpdate(dbDoc, bin);
 
@@ -167,7 +264,7 @@ test('should be able to merge updates as snapshot', async t => {
   }
 });
 
-test('should be able to merge updates into snapshot', async t => {
+test('should raw merge updates without replacing persisted fragments', async t => {
   const updates: Buffer[] = [];
   {
     const doc = new YDoc();
@@ -183,9 +280,9 @@ test('should be able to merge updates into snapshot', async t => {
   }
 
   {
-    await adapter.pushDocUpdatesTrusted('1', '1', updates.slice(0, 2));
+    await adapter.pushDocUpdatesTrusted('1', 'doc-1', updates.slice(0, 2));
     // merge
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const doc = new YDoc();
     applyUpdate(doc, bin);
 
@@ -193,16 +290,16 @@ test('should be able to merge updates into snapshot', async t => {
   }
 
   {
-    await adapter.pushDocUpdatesTrusted('1', '1', updates.slice(2));
+    await adapter.pushDocUpdatesTrusted('1', 'doc-1', updates.slice(2));
     // merge
-    const { bin } = (await adapter.getDoc('1', '1'))!;
+    const { bin } = (await adapter.getDoc('1', 'doc-1'))!;
     const doc = new YDoc();
     applyUpdate(doc, bin);
 
     t.is(doc.getText('content').toString(), 'hello world!');
   }
 
-  t.is(await db.update.count(), 0);
+  t.is(await db.update.count(), updates.length);
 });
 
 test('should merge updates after a future-dated snapshot', async t => {
@@ -220,25 +317,22 @@ test('should merge updates after a future-dated snapshot', async t => {
     text.insert(11, '!');
   }
 
-  await adapter.pushDocUpdatesTrusted('2', '1', updates.slice(0, 2)); // 'helloworld'
-  // merge
-  await adapter.getDoc('2', '1');
-  // fake the snapshot is a lot newer
-  await db.snapshot.update({
-    where: {
-      workspaceId_id: {
-        workspaceId: '2',
-        id: '1',
-      },
-    },
+  await adapter.pushDocUpdatesTrusted('2', 'doc-1', updates.slice(0, 2)); // 'helloworld'
+  const current = (await adapter.getDoc('2', 'doc-1'))!;
+  const future = new Date(Date.now() + 10000);
+  await db.snapshot.create({
     data: {
-      updatedAt: new Date(Date.now() + 10000),
+      workspaceId: '2',
+      id: 'doc-1',
+      blob: Buffer.from(current.bin),
+      size: current.bin.byteLength,
+      updatedAt: future,
     },
   });
 
   {
-    await adapter.pushDocUpdatesTrusted('2', '1', updates.slice(2)); // 'hello world!'
-    const { bin } = (await adapter.getDoc('2', '1'))!;
+    await adapter.pushDocUpdatesTrusted('2', 'doc-1', updates.slice(2)); // 'hello world!'
+    const { bin } = (await adapter.getDoc('2', 'doc-1'))!;
 
     const doc = new YDoc();
     applyUpdate(doc, bin);
@@ -247,14 +341,15 @@ test('should merge updates after a future-dated snapshot', async t => {
 
   {
     const doc = new YDoc();
-    applyUpdate(doc, (await adapter.getDoc('2', '1'))!.bin);
+    applyUpdate(doc, (await adapter.getDoc('2', 'doc-1'))!.bin);
     t.is(doc.getText('content').toString(), 'hello world!');
 
-    t.is(await db.update.count(), 0);
+    t.is(await db.update.count(), updates.length);
+    t.true((await adapter.getDoc('2', 'doc-1'))!.timestamp > future.getTime());
   }
 });
 
-test('should not recreate a doc deleted before compaction acquires its database lock', async t => {
+test('should not recreate a doc deleted before its read acquires the database lock', async t => {
   const workspaceId = 'delete-before-compaction';
   const docId = 'doc';
   const doc = new YDoc();
@@ -305,4 +400,104 @@ test('should not recreate a doc deleted before compaction acquires its database 
   t.is(await compacting, null);
   t.is(await db.snapshot.count({ where: { workspaceId, id: docId } }), 0);
   t.is(await db.update.count({ where: { workspaceId, id: docId } }), 0);
+});
+
+test('recoverDocCreation preserves initial creator across first compaction and leaves legacy snapshot createdBy unset', async t => {
+  const workspaceId = 'recover-creator-pg';
+  const userA = 'user-author-a';
+  const userB = 'user-editor-b';
+  const collaborator = 'user-collab-c';
+
+  await db.user.createMany({
+    data: [
+      { id: userA, name: 'Author A', email: 'author-a@affine.pro' },
+      { id: userB, name: 'Editor B', email: 'editor-b@affine.pro' },
+      { id: collaborator, name: 'Collab C', email: 'collab-c@affine.pro' },
+    ],
+  });
+
+  await db.workspace.create({
+    data: {
+      id: workspaceId,
+      accessPolicy: { create: { memberDefaultDocRole: 'editor' } },
+    },
+  });
+
+  const mode = Sinon.stub(runtime, 'getWorkspaceLifecycleActiveV1').resolves(
+    true
+  );
+  t.teardown(() => mode.restore());
+  const writer = new DocWriter(adapter, m.get(EventBus), runtime);
+
+  // 1. Pre-existing uncompacted updates: userA creates, userB edits -> first compaction -> recoverDocCreation.
+  const docId = 'doc-uncompacted-a-b';
+  const initialBin = createDocWithMarkdown('Title A', 'Body A', docId, {
+    actorUserId: userA,
+    timestampMs: Date.now(),
+  });
+  const baseTs = Date.now();
+  await db.update.create({
+    data: {
+      workspaceId,
+      id: docId,
+      blob: Buffer.from(initialBin),
+      createdAt: new Date(baseTs),
+      createdBy: userA,
+    },
+  });
+  await db.update.create({
+    data: {
+      workspaceId,
+      id: docId,
+      blob: Buffer.from([0, 0]),
+      createdAt: new Date(baseTs + 10),
+      createdBy: userB,
+    },
+  });
+
+  await runtime.compactPendingDocUpdates(workspaceId, docId, 100, 60_000, 3600);
+  await writer.recoverDocCreation(workspaceId, docId, 'Fallback', collaborator);
+
+  const propsDocId = `db$${workspaceId}$docProperties`;
+  const propsAfterFirst = await adapter.getDoc(workspaceId, propsDocId);
+  t.truthy(propsAfterFirst?.bin);
+  const propsYdoc1 = new YDoc();
+  applyUpdate(propsYdoc1, propsAfterFirst!.bin);
+  t.is(propsYdoc1.getMap(docId).get('createdBy'), userA);
+  t.is(propsYdoc1.getMap(docId).get('updatedBy'), userB);
+  propsYdoc1.destroy();
+
+  // 2. Legacy snapshot-only doc (no runtime_doc_creators row): createdBy stays undefined, updatedBy is userB.
+  const legacyDocId = 'doc-legacy-snap-only';
+  const legacyBin = createDocWithMarkdown('Legacy Title', 'Body', legacyDocId, {
+    actorUserId: userB,
+    timestampMs: Date.now(),
+  });
+  await db.snapshot.create({
+    data: {
+      workspaceId,
+      id: legacyDocId,
+      blob: Buffer.from(legacyBin),
+      size: legacyBin.byteLength,
+      createdAt: new Date(baseTs),
+      updatedAt: new Date(baseTs),
+      createdBy: userB,
+      updatedBy: userB,
+    },
+  });
+
+  await writer.recoverDocCreation(
+    workspaceId,
+    legacyDocId,
+    'Fallback',
+    collaborator
+  );
+
+  const propsAfterLegacy = await adapter.getDoc(workspaceId, propsDocId);
+  t.truthy(propsAfterLegacy?.bin);
+  const propsYdoc2 = new YDoc();
+  applyUpdate(propsYdoc2, propsAfterLegacy!.bin);
+  t.is(propsYdoc2.getMap(legacyDocId).get('createdBy'), undefined);
+  t.is(propsYdoc2.getMap(legacyDocId).get('updatedBy'), userB);
+  propsYdoc2.destroy();
 });

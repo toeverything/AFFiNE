@@ -114,6 +114,7 @@ const WORKSPACE_STORAGE_TABLES: &[&str] = &[
   "snapshot_histories",
   "doc_blob_refs",
   "doc_blob_ref_projections",
+  "runtime_doc_creators",
   "document_cleanup_candidates",
   "blob_cleanup_candidates",
   "storage_reconciliation_runs",
@@ -125,6 +126,7 @@ const WORKSPACE_CHECKPOINT_KINDS: &[&str] = &[
   "blob_cleanup",
   "blob_cleanup_plan",
   "blob_metadata_backfill",
+  "workspace_root_source",
 ];
 
 pub(super) async fn embedding_tables_exist(pool: &PgPool) -> napi::Result<bool> {

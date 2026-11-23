@@ -1,7 +1,8 @@
 self-hosted-runner:
-  # Labels of self-hosted runner in array of strings.
   labels:
     - win-signer
+    # GitHub-hosted label missing from actionlint’s built-in list.
+    - xcode-27
 
 # Configuration variables in array of strings defined in your repository or
 # organization. `null` means disabling configuration variables check.
