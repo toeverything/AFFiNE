@@ -469,6 +469,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         })}
       >
         <rich-text
+          spellcheck="false"
           style=${styleMap({
             display: shouldRenderPreview ? 'none' : undefined,
           })}
