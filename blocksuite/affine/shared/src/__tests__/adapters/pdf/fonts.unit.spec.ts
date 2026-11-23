@@ -1,7 +1,10 @@
 import { FontFamily, FontStyle, FontWeight } from '@blocksuite/affine-model';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { createPdfFontLoader } from '../../../adapters/pdf/fonts.js';
+import {
+  createPdfFontLoader,
+  PDF_FONT_IDLE_TIMEOUT_MS,
+} from '../../../adapters/pdf/fonts.js';
 import type { FontConfig } from '../../../services/font-loader/config.js';
 
 const localInter = (
@@ -46,7 +49,9 @@ describe('createPdfFontLoader', () => {
     });
     expect(fonts.SarasaGothicCL?.normal).toBe('SarasaGothicCL-Regular.ttf');
     expect(decode(vfs['Inter-SemiBold.woff'])).toBe('Inter-SemiBold.woff');
-    expect(fetcher).not.toHaveBeenCalledWith('/fonts/Inter-Regular.woff2');
+    expect(fetcher.mock.calls.map(([url]) => url)).not.toContain(
+      '/fonts/Inter-Regular.woff2'
+    );
   });
 
   test('falls back to the editor fonts when the CDN is blocked', async () => {
@@ -90,13 +95,80 @@ describe('createPdfFontLoader', () => {
 
   test('rejects when a font cannot be loaded from anywhere', async () => {
     const fetcher = vi.fn(async (url: string) =>
-      url.endsWith('Inter-SemiBold.woff2')
+      url.includes('/Inter-SemiBold.')
         ? new Response(null, { status: 404 })
-        : Promise.reject(new TypeError('Failed to fetch'))
+        : fontResponse(url)
     );
     const load = createPdfFontLoader(fetcher as unknown as typeof fetch);
 
-    await expect(load(editorFontConfig)).rejects.toThrow();
+    await expect(load(editorFontConfig)).rejects.toThrow(/404/);
+  });
+
+  describe('with a slow CDN', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const loadWithCdn = async (
+      cdnResponse: (url: string) => Promise<Response>,
+      elapsedMs = PDF_FONT_IDLE_TIMEOUT_MS
+    ) => {
+      const fetcher = vi.fn(async (url: string) =>
+        url.startsWith('https://cdn.affine.pro/')
+          ? cdnResponse(url)
+          : fontResponse(url)
+      );
+      const result = createPdfFontLoader(fetcher as unknown as typeof fetch)(
+        editorFontConfig
+      );
+      await vi.advanceTimersByTimeAsync(elapsedMs);
+      return result;
+    };
+
+    test('falls back when no response arrives', async () => {
+      const { fonts } = await loadWithCdn(() => new Promise(() => {}));
+
+      expect(fonts.Inter?.normal).toBe('Inter-Regular.woff2');
+    });
+
+    test('falls back when the response body stops arriving', async () => {
+      const { fonts } = await loadWithCdn(async () => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array([1]));
+          },
+        });
+        return new Response(body);
+      });
+
+      expect(fonts.Inter?.normal).toBe('Inter-Regular.woff2');
+    });
+
+    test('keeps a download that is slow but still making progress', async () => {
+      const { fonts, vfs } = await loadWithCdn(async url => {
+        let chunks = 0;
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            await new Promise(resolve =>
+              setTimeout(resolve, PDF_FONT_IDLE_TIMEOUT_MS - 1)
+            );
+            if (chunks++ < 2) {
+              controller.enqueue(new TextEncoder().encode(url.slice(-4)));
+            } else {
+              controller.close();
+            }
+          },
+        });
+        return new Response(body);
+      }, 4 * PDF_FONT_IDLE_TIMEOUT_MS);
+
+      expect(fonts.Inter?.normal).toBe('Inter-Regular.woff');
+      expect(decode(vfs['Inter-Regular.woff'])).toBe('woffwoff');
+    });
   });
 
   test('reuses fonts it already loaded', async () => {

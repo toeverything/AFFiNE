@@ -5,6 +5,11 @@ import type { FontConfig } from '../../services/font-loader/config.js';
 
 const PDF_FONT_CDN = 'https://cdn.affine.pro/fonts/';
 
+// Gives up on a font request that makes no progress for this long, so a stalled
+// CDN still reaches the bundled fallback. The timer restarts whenever data
+// arrives, so a slow but working download of the ~13 MB CJK font isn't cut off.
+export const PDF_FONT_IDLE_TIMEOUT_MS = 15_000;
+
 type PdfFontVariant = 'normal' | 'bold' | 'italics' | 'bolditalics';
 
 type PdfFontSource = {
@@ -68,12 +73,7 @@ export function createPdfFontLoader(fetcher: typeof fetch = fetch) {
   const fetchFont = (url: string) => {
     let data = cache.get(url);
     if (!data) {
-      data = fetcher(url).then(async response => {
-        if (!response.ok) {
-          throw new Error(`Failed to load font ${url}: ${response.status}`);
-        }
-        return arrayBufferToBase64(await response.arrayBuffer());
-      });
+      data = fetchFontBytes(fetcher, url).then(bytesToBase64);
       cache.set(url, data);
       data.catch(() => cache.delete(url));
     }
@@ -126,8 +126,62 @@ export function createPdfFontLoader(fetcher: typeof fetch = fetch) {
   };
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
+async function fetchFontBytes(
+  fetcher: typeof fetch,
+  url: string
+): Promise<Uint8Array> {
+  const controller = new AbortController();
+  // Settles even when a custom fetcher ignores the abort signal.
+  const stalled = new Promise<never>((_, reject) => {
+    controller.signal.addEventListener(
+      'abort',
+      () => reject(new Error(`Timed out loading font ${url}`)),
+      { once: true }
+    );
+  });
+  stalled.catch(() => {});
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const withinIdleTimeout = <T>(step: Promise<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), PDF_FONT_IDLE_TIMEOUT_MS);
+    return Promise.race([step, stalled]);
+  };
+
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  try {
+    const response = await withinIdleTimeout(
+      fetcher(url, { signal: controller.signal })
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to load font ${url}: ${response.status}`);
+    }
+    if (!response.body) {
+      return new Uint8Array(await withinIdleTimeout(response.arrayBuffer()));
+    }
+    reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    for (;;) {
+      const { done, value } = await withinIdleTimeout(reader.read());
+      if (done) break;
+      chunks.push(value);
+      length += value.length;
+    }
+    reader = undefined;
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return bytes;
+  } finally {
+    clearTimeout(timer);
+    reader?.cancel().catch(() => {});
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array) {
   let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
