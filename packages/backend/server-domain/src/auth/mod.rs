@@ -11,7 +11,7 @@ use hmac::{Hmac, Mac as _};
 use rand::Rng as _;
 use serde_json::Value;
 use server_db::{ServerDb, WorkloadTier};
-use server_spi::SessionPolicyHook;
+use server_spi::{CommunityRateLimitPolicy, RateLimitPolicy, SessionPolicyHook};
 use server_types::DomainError;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
@@ -30,49 +30,7 @@ pub const MAGIC_LINK_PURPOSE: &str = "magic_link_otp";
 pub const MAGIC_LINK_TTL_SECONDS: i64 = 1_800;
 pub const MAGIC_LINK_MAX_ATTEMPTS: i32 = 5;
 
-/// Request network source metadata passed to [`AuthMailQuotaPolicy`] for
-/// optional rolling-window rate limiting by extensions.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct AuthRequestSource {
-  pub trusted: bool,
-  pub ip: Option<String>,
-  pub asn: Option<u32>,
-}
-
-/// In-transaction auth-mail quota policy invoked atomically before queuing a
-/// `public.mail_deliveries` row (returns `Err` to roll back both OTP state and
-/// mail delivery).
-#[async_trait::async_trait]
-pub trait AuthMailQuotaPolicy: Send + Sync + 'static {
-  async fn reserve_auth_mail(
-    &self,
-    tx: &mut Transaction<'_, Postgres>,
-    mail_name: &str,
-    normalized_email: &str,
-    recipient_user_id: Option<&str>,
-    source: Option<&AuthRequestSource>,
-    now: DateTime<Utc>,
-  ) -> Result<(), DomainError>;
-}
-
-/// Default community auth-mail quota policy (allows all auth mails).
-#[derive(Clone, Copy, Debug, Default)]
-pub struct CommunityAuthMailQuotaPolicy;
-
-#[async_trait::async_trait]
-impl AuthMailQuotaPolicy for CommunityAuthMailQuotaPolicy {
-  async fn reserve_auth_mail(
-    &self,
-    _tx: &mut Transaction<'_, Postgres>,
-    _mail_name: &str,
-    _normalized_email: &str,
-    _recipient_user_id: Option<&str>,
-    _source: Option<&AuthRequestSource>,
-    _now: DateTime<Utc>,
-  ) -> Result<(), DomainError> {
-    Ok(())
-  }
-}
+pub use server_spi::RequestSource as AuthRequestSource;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EmailDomainVerification {
@@ -274,7 +232,7 @@ pub struct AuthService {
   db: ServerDb,
   sessions: Arc<dyn SessionRepository>,
   session_policy: Arc<dyn SessionPolicyHook>,
-  mail_quota: Arc<dyn AuthMailQuotaPolicy>,
+  rate_limit_policy: Arc<dyn RateLimitPolicy>,
   domain_verifier: Arc<dyn EmailDomainVerifier>,
   config: AuthConfig,
 }
@@ -290,14 +248,14 @@ impl AuthService {
       db,
       sessions,
       session_policy,
-      mail_quota: Arc::new(CommunityAuthMailQuotaPolicy),
+      rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
       domain_verifier: Arc::new(DnsEmailDomainVerifier),
       config,
     }
   }
 
-  pub fn with_mail_quota_policy(mut self, mail_quota: Arc<dyn AuthMailQuotaPolicy>) -> Self {
-    self.mail_quota = mail_quota;
+  pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
+    self.rate_limit_policy = rate_limit_policy;
     self
   }
 
@@ -781,8 +739,8 @@ impl AuthService {
 
     if !already_queued {
       self
-        .mail_quota
-        .reserve_auth_mail(tx.tx_mut(), mail_name, &email_lower, None, input.source.as_ref(), now)
+        .rate_limit_policy
+        .check_auth_mail(tx.tx_mut(), mail_name, &email_lower, None, input.source.as_ref(), now)
         .await?;
 
       let recipient_domain = email_lower.split_once('@').map(|(_, d)| d).unwrap_or_default();

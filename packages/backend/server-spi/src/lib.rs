@@ -8,6 +8,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
+pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
 use sqlx::{Postgres, Transaction};
 
@@ -54,11 +55,46 @@ pub trait CopilotPolicySpi: Send + Sync + 'static {
   async fn check_copilot_allowed(&self, grant: &AccessGrant, using_byok: bool) -> Result<(), DomainError>;
 }
 
+/// Request network source metadata passed to [`RateLimitPolicy`] for
+/// rolling-window rate limiting by extensions.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct RequestSource {
+  pub trusted: bool,
+  pub ip: Option<String>,
+  pub asn: Option<u32>,
+}
+
+#[async_trait::async_trait]
+pub trait RateLimitPolicy: Send + Sync + 'static {
+  async fn check_auth_mail(
+    &self,
+    tx: &mut Transaction<'_, Postgres>,
+    mail_name: &str,
+    normalized_email: &str,
+    recipient_user_id: Option<&str>,
+    source: Option<&RequestSource>,
+    now: DateTime<Utc>,
+  ) -> Result<(), DomainError>;
+
+  async fn check_workspace_invite(
+    &self,
+    tx: &mut Transaction<'_, Postgres>,
+    workspace_id: &str,
+    inviter_id: &str,
+    target_emails: &[&str],
+    source: Option<&RequestSource>,
+    now: DateTime<Utc>,
+  ) -> Result<(), DomainError>;
+}
+
 pub trait ServerExtension: Send + Sync + 'static {
   fn edition_name(&self) -> &'static str;
   fn quota_gate(&self) -> Arc<dyn QuotaGate>;
   fn session_policy(&self) -> Arc<dyn SessionPolicyHook>;
   fn copilot_policy(&self) -> Arc<dyn CopilotPolicySpi>;
+  fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
+    Arc::new(CommunityRateLimitPolicy)
+  }
   fn extra_router(&self) -> Option<axum::Router> {
     None
   }
@@ -161,12 +197,44 @@ impl CopilotPolicySpi for CommunityCopilotPolicySpi {
   }
 }
 
+/// Default community rate-limit policy (allows all requests).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CommunityRateLimitPolicy;
+
+#[async_trait::async_trait]
+impl RateLimitPolicy for CommunityRateLimitPolicy {
+  async fn check_auth_mail(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _mail_name: &str,
+    _normalized_email: &str,
+    _recipient_user_id: Option<&str>,
+    _source: Option<&RequestSource>,
+    _now: DateTime<Utc>,
+  ) -> Result<(), DomainError> {
+    Ok(())
+  }
+
+  async fn check_workspace_invite(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _workspace_id: &str,
+    _inviter_id: &str,
+    _target_emails: &[&str],
+    _source: Option<&RequestSource>,
+    _now: DateTime<Utc>,
+  ) -> Result<(), DomainError> {
+    Ok(())
+  }
+}
+
 /// Open-source community edition [`ServerExtension`] implementation.
 #[derive(Clone)]
 pub struct CommunityExtension {
   quota_gate: Arc<dyn QuotaGate>,
   session_policy: Arc<dyn SessionPolicyHook>,
   copilot_policy: Arc<dyn CopilotPolicySpi>,
+  rate_limit_policy: Arc<dyn RateLimitPolicy>,
 }
 
 impl std::fmt::Debug for CommunityExtension {
@@ -189,6 +257,7 @@ impl CommunityExtension {
       quota_gate: Arc::new(CommunityQuotaGate),
       session_policy: Arc::new(CommunitySessionPolicyHook),
       copilot_policy: Arc::new(CommunityCopilotPolicySpi),
+      rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
     }
   }
 }
@@ -208,6 +277,10 @@ impl ServerExtension for CommunityExtension {
 
   fn copilot_policy(&self) -> Arc<dyn CopilotPolicySpi> {
     Arc::clone(&self.copilot_policy)
+  }
+
+  fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
+    Arc::clone(&self.rate_limit_policy)
   }
 }
 
@@ -239,6 +312,7 @@ mod tests {
 
     let readonly = AccessGrant {
       tier: LicenseTier::SelfhostDefault,
+      billing_subject: BillingSubject::Owner,
       seat_quantity: Some(0),
       expires_at: None,
       limits: Limits {

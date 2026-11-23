@@ -47,6 +47,9 @@ pub enum SyncError {
   #[error("workspace lifecycle not active")]
   WorkspaceLifecycleNotActive,
 
+  #[error("Too many concurrent writings")]
+  TooManyConcurrentWritings,
+
   #[error("database error: {0}")]
   Database(String),
 

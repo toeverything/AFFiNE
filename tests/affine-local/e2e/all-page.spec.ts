@@ -61,27 +61,21 @@ test('enable selection and use ESC to disable selection', async ({ page }) => {
       modifiers: ['Shift'],
     });
 
-  // wait for 500ms
-  await page.waitForTimeout(500);
-
   // there should be checkboxes in the page list now
-  expect(
-    await page
+  await expect(
+    page
       .locator('[data-testid="doc-list-item-select"][data-select-mode="true"]')
-      .count()
-  ).toBeGreaterThan(0);
+      .first()
+  ).toBeVisible();
 
   // esc again, checkboxes should disappear
   await page.keyboard.press('Escape');
 
-  // wait for 500ms
-  await page.waitForTimeout(500);
-
-  expect(
-    await page
-      .locator('[data-testid="doc-list-item-select"][data-select-mode="true"]')
-      .count()
-  ).toBe(0);
+  await expect(
+    page.locator(
+      '[data-testid="doc-list-item-select"][data-select-mode="true"]'
+    )
+  ).toHaveCount(0);
 });
 
 test('select two pages and delete', async ({ page }) => {
@@ -119,12 +113,11 @@ test('select two pages and delete', async ({ page }) => {
   await page.getByRole('button', { name: 'Delete' }).click();
 
   // check the page count again
-  await page.waitForTimeout(300);
   await expect(
     page.locator('[data-testid="floating-toolbar"]')
   ).not.toBeVisible();
 
-  expect(await getPagesCount(page)).toBe(pageCount - 2);
+  await expect.poll(() => getPagesCount(page)).toBe(pageCount - 2);
 });
 
 test('select three pages with shiftKey and delete', async ({ page }) => {
@@ -158,12 +151,11 @@ test('select three pages with shiftKey and delete', async ({ page }) => {
   await page.getByRole('button', { name: 'Delete' }).click();
 
   // check the page count again
-  await page.waitForTimeout(300);
   await expect(
     page.locator('[data-testid="floating-toolbar"]')
   ).not.toBeVisible();
 
-  expect(await getPagesCount(page)).toBe(pageCount - 3);
+  await expect.poll(() => getPagesCount(page)).toBe(pageCount - 3);
 });
 
 test('select all and delete closes the floating toolbar', async ({ page }) => {
@@ -186,11 +178,10 @@ test('select all and delete closes the floating toolbar', async ({ page }) => {
   await page.locator('[data-testid="list-toolbar-delete"]').click();
   await page.getByRole('button', { name: 'Delete' }).click();
 
-  await page.waitForTimeout(300);
   await expect(
     page.locator('[data-testid="floating-toolbar"]')
   ).not.toBeVisible();
-  expect(await getPagesCount(page)).toBeLessThan(pageCount);
+  await expect.poll(() => getPagesCount(page)).toBeLessThan(pageCount);
 });
 
 test('create a tag and delete it', async ({ page }) => {

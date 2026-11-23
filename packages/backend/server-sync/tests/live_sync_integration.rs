@@ -2702,3 +2702,968 @@ async function openAuthedWs() {
     server.shutdown().await;
   });
 }
+
+async fn create_empty_db_off_runtime(prefix: &'static str) -> EmptyDbGuard {
+  let (tx, rx) = tokio::sync::oneshot::channel();
+  std::thread::spawn(move || {
+    let cluster = PgCluster::from_env_or_docker().expect("PG16 cluster");
+    let empty = EmptyDbGuard::create(&cluster, prefix);
+    let _ = tx.send(empty);
+  });
+  rx.await.expect("empty db setup thread panicked")
+}
+
+async fn drop_empty_db_off_runtime(empty: EmptyDbGuard) {
+  let (tx, rx) = tokio::sync::oneshot::channel();
+  std::thread::spawn(move || {
+    drop(empty);
+    let _ = tx.send(());
+  });
+  rx.await.expect("empty db teardown thread panicked");
+}
+
+#[tokio::test]
+async fn userspace_mutex_ioredis_cross_gen_interop_ignores_key_prefix_on_session_db() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("userspace_ioredis").await;
+  let db_url = empty.url.clone();
+
+  let db = ServerDb::connect(DbConfig::new(&db_url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+
+  let (user_id, _session_id, _ws_id) = seed_user_and_workspace(&db).await;
+
+  // Non-zero base_db = 1 -> session_db = 3 via server_worker::session_redis_url.
+  let base_url = {
+    let (scheme, rest) = redis.url().split_once("://").expect("redis url scheme");
+    let authority = rest.split_once('/').map(|(a, _)| a).unwrap_or(rest);
+    format!("{scheme}://{authority}/1")
+  };
+  let (session_url, session_db) = server_worker::session_redis_url(&base_url).expect("session_redis_url");
+  assert_eq!(session_db, 3);
+
+  let storage = server_sync::storage::SyncStorage::new(db.clone())
+    .with_session_redis_url(&session_url)
+    .expect("configure session redis");
+
+  let update_a = {
+    let doc = y_octo::Doc::with_client(101);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("a".to_owned(), "from-legacy".to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+  let update_b = {
+    let doc = y_octo::Doc::with_client(202);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("b".to_owned(), "from-v2".to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+
+  let doc1 = format!("doc-ioredis-{}", Uuid::new_v4().simple());
+  let doc2 = format!("doc-rust-holds-{}", Uuid::new_v4().simple());
+  let node_root = locate_node_modules_root();
+  let node_path = node_root.join("node_modules");
+
+  // Direction 1: Node ioredis with non-empty `keyPrefix: "tenant:"` on `db: 3`
+  // executes `locker.ts` verbatim `new Command('EVAL', [lockScript, '1', 'MutexLock:' + key, owner])`.
+  // `ioredis 5.11.1` ignores `keyPrefix` for raw `new Command('EVAL', ...)`, locking literal
+  // `MutexLock:userspace:<u1>:<d1>`. Rust must block on it, wait for unlock, and merge A + B.
+  let hold_script = r#"
+const Redis = require('ioredis');
+const { Command } = Redis;
+const lockScript = `local key = KEYS[1]
+local owner = ARGV[1]
+if redis.call("get", key) == owner then
+  return 0
+elseif redis.call("set", key, owner, "NX", "EX", 60) then
+  return 1
+else
+  return 0
+end`;
+const unlockScript = `local key = KEYS[1]
+local owner = ARGV[1]
+local value = redis.call("get", key)
+if value == owner then
+  return redis.call("del", key)
+elseif value == nil then
+  return 1
+else
+  return 0
+end`;
+(async () => {
+  const client = new Redis(process.env.SESSION_REDIS_URL, { keyPrefix: 'tenant:' });
+  const lockKey = 'MutexLock:userspace:' + process.env.USER_ID + ':' + process.env.DOC_ID;
+  const owner = 'legacy-ioredis-' + Date.now();
+  const acquired = await client.sendCommand(new Command('EVAL', [lockScript, '1', lockKey, owner]));
+  if (acquired !== 1) throw new Error('expected acquired=1, got ' + acquired);
+  process.stdout.write('LOCKED\n');
+  await new Promise((resolve) => process.stdin.once('data', resolve));
+  const released = await client.sendCommand(new Command('EVAL', [unlockScript, '1', lockKey, owner]));
+  if (released !== 1) throw new Error('expected released=1, got ' + released);
+  await client.quit();
+})().catch((e) => { console.error(e); process.exit(1); });
+"#;
+
+  let mut child = Command::new("node")
+    .arg("--input-type=commonjs")
+    .arg("-e")
+    .arg(hold_script)
+    .env("NODE_PATH", &node_path)
+    .env("SESSION_REDIS_URL", &session_url)
+    .env("USER_ID", &user_id)
+    .env("DOC_ID", &doc1)
+    .stdin(Stdio::piped())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .expect("spawn node ioredis holder");
+
+  {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+    let mut stdout = BufReader::new(child.stdout.take().expect("stdout"));
+    let mut line = String::new();
+    tokio::time::timeout(Duration::from_secs(10), stdout.read_line(&mut line))
+      .await
+      .expect("wait for LOCKED")
+      .expect("read LOCKED");
+    assert_eq!(line.trim(), "LOCKED", "node ioredis holder must acquire lock first");
+  }
+
+  // While ioredis holds the lock, start Rust push_doc_update, write legacy doc A, then signal release.
+  let storage_clone = storage.clone();
+  let user_clone = user_id.clone();
+  let doc1_clone = doc1.clone();
+  let update_b_clone = update_b.clone();
+  let rust_push = tokio::spawn(async move {
+    storage_clone
+      .push_doc_update(
+        server_sync::protocol::SpaceType::Userspace,
+        &user_clone,
+        &doc1_clone,
+        &update_b_clone,
+        &user_clone,
+        server_sync::protocol::PushDocIntent::Update,
+        None,
+        None,
+      )
+      .await
+  });
+
+  sqlx::query(
+    "INSERT INTO user_snapshots(user_id, id, blob, created_at, updated_at) \
+     VALUES ($1, $2, $3, now(), now())",
+  )
+  .bind(&user_id)
+  .bind(&doc1)
+  .bind(&update_a)
+  .execute(db.pool())
+  .await
+  .expect("legacy write user_snapshots");
+
+  {
+    let mut stdin = child.stdin.take().expect("stdin");
+    stdin.write_all(b"UNLOCK\n").await.expect("signal unlock");
+  }
+  let node_status = child.wait_with_output().await.expect("wait node holder");
+  assert!(
+    node_status.status.success(),
+    "node ioredis holder failed: {}",
+    String::from_utf8_lossy(&node_status.stderr)
+  );
+
+  let pushed = rust_push
+    .await
+    .expect("join rust push")
+    .expect("rust push must succeed after ioredis releases lock");
+  assert!(!pushed.created, "must observe legacy row A and merge");
+
+  let merged_blob: Vec<u8> = sqlx::query_scalar("SELECT blob FROM user_snapshots WHERE user_id = $1 AND id = $2")
+    .bind(&user_id)
+    .bind(&doc1)
+    .fetch_one(db.pool())
+    .await
+    .expect("load merged doc");
+  let merged_doc = y_octo::Doc::try_from_binary_v1(&merged_blob).expect("decode merged");
+  let meta = merged_doc.get_map("meta").expect("meta map");
+  assert_eq!(
+    meta.get("a"),
+    Some(y_octo::Value::Any(y_octo::Any::String("from-legacy".into())))
+  );
+  assert_eq!(
+    meta.get("b"),
+    Some(y_octo::Value::Any(y_octo::Any::String("from-v2".into())))
+  );
+
+  // Direction 2: Rust holds the lock (paused at the Redis TCP proxy right when
+  // `FENCE_AND_RENEW` arrives before PG commit), and Node ioredis (with
+  // keyPrefix: "tenant:") attempts `EVAL` -> must observe 0 (contended on the
+  // exact same key!).
+  let upstream_addr = {
+    let without_scheme = session_url.split_once("://").unwrap().1;
+    without_scheme
+      .split_once('/')
+      .map(|(a, _)| a)
+      .unwrap_or(without_scheme)
+      .to_owned()
+  };
+  let fence_reached = std::sync::Arc::new(tokio::sync::Notify::new());
+  let release_fence = std::sync::Arc::new(tokio::sync::Notify::new());
+  let fence_hash = redis::Script::new(
+    r#"
+if redis.call("get", KEYS[1]) == ARGV[1] and redis.call("pttl", KEYS[1]) > 0 then
+  redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+  return 1
+else
+  return 0
+end
+"#,
+  )
+  .get_hash()
+  .to_owned();
+
+  let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+  let proxy_port = listener.local_addr().unwrap().port();
+  let proxy_session_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+  let fence_reached_c = std::sync::Arc::clone(&fence_reached);
+  let release_fence_c = std::sync::Arc::clone(&release_fence);
+  let proxy_task = tokio::spawn(async move {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let mut paused_once = false;
+    while let Ok((client, _)) = listener.accept().await {
+      let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+      let (mut cr, mut cw) = client.into_split();
+      let (mut ur, mut uw) = upstream.into_split();
+      let fence_reached_c = std::sync::Arc::clone(&fence_reached_c);
+      let release_fence_c = std::sync::Arc::clone(&release_fence_c);
+      let fence_hash_c = fence_hash.clone();
+      let should_pause = !paused_once;
+      paused_once = true;
+      tokio::spawn(async move {
+        let mut buf = [0u8; 8192];
+        let mut did_pause = false;
+        while let Ok(n) = cr.read(&mut buf).await {
+          if n == 0 {
+            break;
+          }
+          let chunk = &buf[..n];
+          if should_pause
+            && !did_pause
+            && (chunk.windows(fence_hash_c.len()).any(|w| w == fence_hash_c.as_bytes())
+              || chunk.windows(21).any(|w| w == b"and redis.call(\"pttl\""))
+          {
+            did_pause = true;
+            fence_reached_c.notify_one();
+            release_fence_c.notified().await;
+          }
+          if uw.write_all(chunk).await.is_err() {
+            break;
+          }
+        }
+      });
+      tokio::spawn(async move {
+        let _ = tokio::io::copy(&mut ur, &mut cw).await;
+      });
+    }
+  });
+
+  let proxied_storage = server_sync::storage::SyncStorage::new(db.clone())
+    .with_session_redis_url(&proxy_session_url)
+    .expect("configure proxied session redis");
+
+  let u_c = user_id.clone();
+  let d2_c = doc2.clone();
+  let ub_c = update_b.clone();
+  let rust_holder = tokio::spawn(async move {
+    proxied_storage
+      .push_doc_update(
+        server_sync::protocol::SpaceType::Userspace,
+        &u_c,
+        &d2_c,
+        &ub_c,
+        &u_c,
+        server_sync::protocol::PushDocIntent::Update,
+        None,
+        None,
+      )
+      .await
+  });
+  fence_reached.notified().await;
+
+  let probe_script = r#"
+const Redis = require('ioredis');
+const { Command } = Redis;
+const lockScript = `local key = KEYS[1]
+local owner = ARGV[1]
+if redis.call("get", key) == owner then
+  return 0
+elseif redis.call("set", key, owner, "NX", "EX", 60) then
+  return 1
+else
+  return 0
+end`;
+(async () => {
+  const client = new Redis(process.env.SESSION_REDIS_URL, { keyPrefix: 'tenant:' });
+  const lockKey = 'MutexLock:userspace:' + process.env.USER_ID + ':' + process.env.DOC_ID;
+  const acquired = await client.sendCommand(new Command('EVAL', [lockScript, '1', lockKey, 'legacy-probe']));
+  console.log(JSON.stringify({ acquired }));
+  await client.quit();
+})().catch((e) => { console.error(e); process.exit(1); });
+"#;
+  let probe_out = run_node_socketio_script(
+    probe_script,
+    &[
+      ("SESSION_REDIS_URL", &session_url),
+      ("USER_ID", &user_id),
+      ("DOC_ID", &doc2),
+    ],
+  )
+  .await;
+  assert_eq!(
+    probe_out["acquired"],
+    json!(0),
+    "ioredis must be blocked by Rust's MutexLock:userspace:<uid>:<doc>"
+  );
+
+  release_fence.notify_one();
+  rust_holder
+    .await
+    .expect("join rust holder")
+    .expect("rust holder commits after release");
+  proxy_task.abort();
+
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}
+
+#[tokio::test]
+async fn userspace_mutex_pre_commit_fence_rolls_back_on_lease_expiry_and_retry_merges() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("userspace_fence").await;
+  let db_url = empty.url.clone();
+
+  let db = ServerDb::connect(DbConfig::new(&db_url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+
+  let (user_id, _session_id, _ws_id) = seed_user_and_workspace(&db).await;
+  let (session_url, session_db) = server_worker::session_redis_url(redis.url()).expect("session_redis_url");
+  let session_client = redis::Client::open(session_url.as_str()).expect("open session redis");
+
+  let update_a = {
+    let doc = y_octo::Doc::with_client(301);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("a".to_owned(), "writer-a".to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+  let update_b = {
+    let doc = y_octo::Doc::with_client(302);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("b".to_owned(), "writer-b".to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+
+  let doc_id = format!("doc-fence-{}", Uuid::new_v4().simple());
+  let lock_key = format!("MutexLock:userspace:{user_id}:{doc_id}");
+
+  // Route Writer B through a Redis TCP proxy (with production ttl/3 renewal
+  // running untouched): block background RENEW calls and pause FENCE_AND_RENEW
+  // right before PG commit until the 150ms lock expires and a foreign owner
+  // claims it on real TestRedis.
+  let upstream_addr = {
+    let without_scheme = session_url.split_once("://").unwrap().1;
+    without_scheme
+      .split_once('/')
+      .map(|(a, _)| a)
+      .unwrap_or(without_scheme)
+      .to_owned()
+  };
+  let renew_hash = redis::Script::new(
+    r#"
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+else
+  return 0
+end
+"#,
+  )
+  .get_hash()
+  .to_owned();
+  let fence_hash = redis::Script::new(
+    r#"
+if redis.call("get", KEYS[1]) == ARGV[1] and redis.call("pttl", KEYS[1]) > 0 then
+  redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+  return 1
+else
+  return 0
+end
+"#,
+  )
+  .get_hash()
+  .to_owned();
+
+  let fence_reached = std::sync::Arc::new(tokio::sync::Notify::new());
+  let release_fence = std::sync::Arc::new(tokio::sync::Notify::new());
+  let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+  let proxy_port = listener.local_addr().unwrap().port();
+  let proxy_session_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+
+  let fence_reached_c = std::sync::Arc::clone(&fence_reached);
+  let release_fence_c = std::sync::Arc::clone(&release_fence);
+  let proxy_task = tokio::spawn(async move {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    while let Ok((client, _)) = listener.accept().await {
+      let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+      let (mut cr, cw) = client.into_split();
+      let (mut ur, mut uw) = upstream.into_split();
+      let cw = std::sync::Arc::new(tokio::sync::Mutex::new(cw));
+      let cw_client = std::sync::Arc::clone(&cw);
+      let fence_reached_c = std::sync::Arc::clone(&fence_reached_c);
+      let release_fence_c = std::sync::Arc::clone(&release_fence_c);
+      let renew_hash_c = renew_hash.clone();
+      let fence_hash_c = fence_hash.clone();
+      tokio::spawn(async move {
+        let mut buf = [0u8; 8192];
+        while let Ok(n) = cr.read(&mut buf).await {
+          if n == 0 {
+            break;
+          }
+          let chunk = &buf[..n];
+          let is_fence = chunk.windows(fence_hash_c.len()).any(|w| w == fence_hash_c.as_bytes())
+            || chunk.windows(21).any(|w| w == b"and redis.call(\"pttl\"");
+          let is_renew = !is_fence && chunk.windows(renew_hash_c.len()).any(|w| w == renew_hash_c.as_bytes());
+          if is_renew {
+            let mut w = cw_client.lock().await;
+            if w.write_all(b":0\r\n").await.is_err() {
+              break;
+            }
+            continue;
+          }
+          if is_fence {
+            fence_reached_c.notify_one();
+            release_fence_c.notified().await;
+          }
+          if uw.write_all(chunk).await.is_err() {
+            break;
+          }
+        }
+      });
+      tokio::spawn(async move {
+        let mut buf = [0u8; 8192];
+        while let Ok(n) = ur.read(&mut buf).await {
+          if n == 0 {
+            break;
+          }
+          let mut w = cw.lock().await;
+          if w.write_all(&buf[..n]).await.is_err() {
+            break;
+          }
+        }
+      });
+    }
+  });
+
+  let short_ttl_storage = server_sync::storage::SyncStorage::new(db.clone())
+    .with_session_redis_url(&proxy_session_url)
+    .expect("session redis")
+    .with_userspace_lock_ttl_ms(150);
+
+  let u_c = user_id.clone();
+  let d_c = doc_id.clone();
+  let ub_c = update_b.clone();
+  let stale_writer = tokio::spawn(async move {
+    short_ttl_storage
+      .push_doc_update(
+        server_sync::protocol::SpaceType::Userspace,
+        &u_c,
+        &d_c,
+        &ub_c,
+        &u_c,
+        server_sync::protocol::PushDocIntent::Update,
+        None,
+        None,
+      )
+      .await
+  });
+
+  fence_reached.notified().await;
+
+  // Wait deterministically for the 150ms Redis key to expire, then claim it as a foreign owner.
+  let mut conn = session_client.get_multiplexed_async_connection().await.unwrap();
+  let mut expired = false;
+  for _ in 0..100 {
+    let val: Option<String> = conn.get(&lock_key).await.unwrap();
+    if val.is_none() {
+      expired = true;
+      break;
+    }
+    tokio::time::sleep(Duration::from_millis(15)).await;
+  }
+  assert!(expired, "short TTL lock must expire while paused before commit");
+  let _: String = redis::cmd("SET")
+    .arg(&lock_key)
+    .arg("foreign-owner")
+    .arg("PX")
+    .arg(60_000)
+    .query_async(&mut conn)
+    .await
+    .unwrap();
+
+  // Release stale_writer: its pre-commit atomic fence MUST fail and roll back!
+  release_fence.notify_one();
+  let stale_err = stale_writer
+    .await
+    .expect("join stale writer")
+    .expect_err("stale writer must fail pre-commit fence and roll back");
+  assert!(matches!(stale_err, server_sync::error::SyncError::Internal(_)));
+  proxy_task.abort();
+
+  // Release the foreign owner's lock before verifying clean retry writes.
+  let _: i32 = conn.del(&lock_key).await.unwrap();
+
+  // Verify nothing was committed by stale_writer.
+  let row_after_rollback: Option<Vec<u8>> =
+    sqlx::query_scalar("SELECT blob FROM user_snapshots WHERE user_id = $1 AND id = $2")
+      .bind(&user_id)
+      .bind(&doc_id)
+      .fetch_optional(db.pool())
+      .await
+      .unwrap();
+  assert!(
+    row_after_rollback.is_none(),
+    "rolled-back stale writer must not commit user_snapshots"
+  );
+
+  // Now writer A commits update_a, and writer B retries cleanly -> CRDT merge preserves both A and B.
+  let normal_storage = server_sync::storage::SyncStorage::new(db.clone())
+    .with_session_redis_url(&session_url)
+    .expect("session redis");
+  normal_storage
+    .push_doc_update(
+      server_sync::protocol::SpaceType::Userspace,
+      &user_id,
+      &doc_id,
+      &update_a,
+      &user_id,
+      server_sync::protocol::PushDocIntent::Update,
+      None,
+      None,
+    )
+    .await
+    .expect("writer A succeeds");
+  normal_storage
+    .push_doc_update(
+      server_sync::protocol::SpaceType::Userspace,
+      &user_id,
+      &doc_id,
+      &update_b,
+      &user_id,
+      server_sync::protocol::PushDocIntent::Update,
+      None,
+      None,
+    )
+    .await
+    .expect("writer B retry succeeds");
+
+  let final_blob: Vec<u8> = sqlx::query_scalar("SELECT blob FROM user_snapshots WHERE user_id = $1 AND id = $2")
+    .bind(&user_id)
+    .bind(&doc_id)
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+  let final_doc = y_octo::Doc::try_from_binary_v1(&final_blob).unwrap();
+  let meta = final_doc.get_map("meta").unwrap();
+  assert_eq!(
+    meta.get("a"),
+    Some(y_octo::Value::Any(y_octo::Any::String("writer-a".into())))
+  );
+  assert_eq!(
+    meta.get("b"),
+    Some(y_octo::Value::Any(y_octo::Any::String("writer-b".into())))
+  );
+
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}
+
+#[tokio::test]
+async fn userspace_mutex_cancel_safe_release_cleans_up_on_immediate_cancel() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let (session_url, session_db) = server_worker::session_redis_url(redis.url()).expect("session_redis_url");
+  let upstream_addr = {
+    let without_scheme = session_url.split_once("://").unwrap().1;
+    without_scheme
+      .split_once('/')
+      .map(|(a, _)| a)
+      .unwrap_or(without_scheme)
+      .to_owned()
+  };
+  let unlock_hash = redis::Script::new(
+    r#"
+local value = redis.call("get", KEYS[1])
+if value == ARGV[1] then
+  return redis.call("del", KEYS[1])
+elseif not value then
+  return 1
+else
+  return 0
+end
+"#,
+  )
+  .get_hash()
+  .to_owned();
+
+  let unlock_started = std::sync::Arc::new(tokio::sync::Notify::new());
+  let (allow_reply_tx, allow_reply_rx) = tokio::sync::watch::channel(false);
+  let hold_reply = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+  let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+  let proxy_port = listener.local_addr().unwrap().port();
+  let proxy_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+
+  let unlock_started_c = std::sync::Arc::clone(&unlock_started);
+  let hold_reply_c = std::sync::Arc::clone(&hold_reply);
+  let proxy_task = tokio::spawn(async move {
+    use std::sync::atomic::Ordering;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    while let Ok((client, _)) = listener.accept().await {
+      let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+      let (mut cr, mut cw) = client.into_split();
+      let (mut ur, mut uw) = upstream.into_split();
+      let unlock_started_c = std::sync::Arc::clone(&unlock_started_c);
+      let mut allow_reply_rx_u = allow_reply_rx.clone();
+      let hold_c = std::sync::Arc::clone(&hold_reply_c);
+      let hold_r = std::sync::Arc::clone(&hold_reply_c);
+      let unlock_hash_c = unlock_hash.clone();
+      tokio::spawn(async move {
+        let mut buf = [0u8; 8192];
+        while let Ok(n) = cr.read(&mut buf).await {
+          if n == 0 {
+            break;
+          }
+          let chunk = &buf[..n];
+          if chunk
+            .windows(unlock_hash_c.len())
+            .any(|w| w == unlock_hash_c.as_bytes())
+            || chunk.windows(16).any(|w| w == b"elseif not value")
+          {
+            hold_c.store(true, Ordering::Release);
+            unlock_started_c.notify_one();
+          }
+          if uw.write_all(chunk).await.is_err() {
+            break;
+          }
+        }
+      });
+      tokio::spawn(async move {
+        let mut buf = [0u8; 8192];
+        while let Ok(n) = ur.read(&mut buf).await {
+          if n == 0 {
+            break;
+          }
+          if hold_r.load(Ordering::Acquire) && !*allow_reply_rx_u.borrow() {
+            let _ = allow_reply_rx_u.wait_for(|allowed| *allowed).await;
+          }
+          if cw.write_all(&buf[..n]).await.is_err() {
+            break;
+          }
+        }
+      });
+    }
+  });
+
+  let direct_mutex = server_worker::RedisMutex::new(&session_url, "").expect("direct redis mutex");
+  let proxied_mutex = server_worker::RedisMutex::new(&proxy_url, "").expect("proxied redis mutex");
+
+  let resource = format!("userspace:cancel:{}", Uuid::new_v4().simple());
+  let lease = proxied_mutex
+    .try_acquire_ms(&resource, server_worker::new_owner_token("cancel-test"), 60_000)
+    .await
+    .expect("acquire lease");
+  assert!(direct_mutex.current_owner(&resource).await.unwrap().is_some());
+
+  // Keep a live clone of `lease` (`Arc::strong_count >= 2`) throughout so
+  // `Drop` cannot fire and cleanup MUST come solely from the spawned task
+  // inside `lease.release()`.
+  let keep_alive = lease.clone();
+  tokio::select! {
+    _ = lease.release() => panic!("release future must be cancelled in flight"),
+    () = unlock_started.notified() => {}
+  }
+
+  let _ = allow_reply_tx.send(true);
+
+  let mut cleared = false;
+  for _ in 0..100 {
+    if direct_mutex.current_owner(&resource).await.unwrap().is_none() {
+      cleared = true;
+      break;
+    }
+    tokio::time::sleep(Duration::from_millis(15)).await;
+  }
+  assert!(
+    cleared,
+    "cancelled in-flight release must still delete Redis key while keep_alive is alive"
+  );
+  assert!(!keep_alive.owner_token().is_empty());
+  drop(keep_alive);
+  proxy_task.abort();
+}
+
+#[tokio::test]
+async fn userspace_mutex_invalid_session_redis_url_fails_closed() {
+  let empty = create_empty_db_off_runtime("userspace_failclosed").await;
+  let db_url = empty.url.clone();
+
+  let db = ServerDb::connect(DbConfig::new(&db_url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+  let (user_id, _session_id, _ws_id) = seed_user_and_workspace(&db).await;
+
+  let update = {
+    let doc = y_octo::Doc::with_client(401);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("k".to_owned(), "v".to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+
+  let invalid_server = SyncServer::start(
+    db.clone(),
+    SyncConfig {
+      session_redis_url: Some("not-a-valid-redis-url".to_owned()),
+      ..SyncConfig::default()
+    },
+  )
+  .await;
+  let err = invalid_server
+    .gateway()
+    .storage()
+    .push_doc_update(
+      server_sync::protocol::SpaceType::Userspace,
+      &user_id,
+      "doc-invalid-url",
+      &update,
+      &user_id,
+      server_sync::protocol::PushDocIntent::Update,
+      None,
+      None,
+    )
+    .await
+    .expect_err("invalid session_redis_url must fail closed");
+  assert!(matches!(err, server_sync::error::SyncError::Internal(_)));
+
+  // Also verify TooManyConcurrentWritings maps to 0.27.5 500 INTERNAL_ERROR wire envelope.
+  let ws_err = server_sync::legacy_compat::errors::sync_error_to_ws_envelope(
+    &server_sync::error::SyncError::TooManyConcurrentWritings,
+    None,
+  );
+  assert_eq!(ws_err.error.status, 500);
+  assert_eq!(ws_err.error.code, "INTERNAL_SERVER_ERROR");
+  assert_eq!(ws_err.error.error_type, "INTERNAL_ERROR");
+  assert_eq!(ws_err.error.name, "INTERNAL_SERVER_ERROR");
+  assert_eq!(ws_err.error.message, "Internal Server Error");
+
+  invalid_server.shutdown().await;
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}
+
+#[tokio::test]
+async fn userspace_concurrent_first_create_merges_bc_from_empty_table() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("userspace_empty_bc").await;
+  let db_url = empty.url.clone();
+
+  let db = ServerDb::connect(DbConfig::new(&db_url))
+    .await
+    .expect("connect test db");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+
+  let (user_id, _session_id, _ws_id) = seed_user_and_workspace(&db).await;
+  let (session_url, _) = server_worker::session_redis_url(redis.url()).expect("session_redis_url");
+  let storage = server_sync::storage::SyncStorage::new(db.clone())
+    .with_session_redis_url(&session_url)
+    .expect("configure session redis");
+
+  let encode_meta = |client_id: u64, key: &str, value: &str| {
+    let doc = y_octo::Doc::with_client(client_id);
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert(key.to_owned(), value.to_owned()).unwrap();
+    doc.encode_update_v1().unwrap()
+  };
+
+  let update_b = encode_meta(601, "b", "rust-b");
+  let update_c = encode_meta(602, "c", "legacy-c");
+  let doc_id = format!("doc-empty-bc-{}", Uuid::new_v4().simple());
+
+  // Start from an empty `user_snapshots` row for `(user_id, doc_id)`.
+  // Session 1 (frozen legacy writer) opens a PG tx and inserts C WITHOUT committing yet.
+  // Under READ COMMITTED, Rust's `SELECT ... FOR UPDATE` sees `None`, then its
+  // `INSERT ... ON CONFLICT (user_id, id) DO NOTHING` deterministically blocks on
+  // Session 1's uncommitted unique-index tuple until Session 1 commits C.
+  let mut legacy_tx = db.pool().begin().await.expect("begin legacy tx");
+  sqlx::query(
+    "INSERT INTO user_snapshots(user_id, id, blob, created_at, updated_at)
+     VALUES ($1, $2, $3, clock_timestamp(), clock_timestamp())",
+  )
+  .bind(&user_id)
+  .bind(&doc_id)
+  .bind(&update_c)
+  .execute(&mut *legacy_tx)
+  .await
+  .expect("legacy insert C");
+
+  let storage_c = storage.clone();
+  let uid_c = user_id.clone();
+  let doc_c = doc_id.clone();
+  let ub_c = update_b.clone();
+  let rust_task = tokio::spawn(async move {
+    storage_c
+      .push_doc_update(
+        server_sync::protocol::SpaceType::Userspace,
+        &uid_c,
+        &doc_c,
+        &ub_c,
+        &uid_c,
+        server_sync::protocol::PushDocIntent::Create,
+        None,
+        None,
+      )
+      .await
+  });
+
+  // Wait deterministically until Rust's `INSERT ... ON CONFLICT (user_id, id) DO NOTHING`
+  // is blocked on Session 1's uncommitted tuple in `pg_stat_activity`.
+  let mut blocked = false;
+  for _ in 0..200 {
+    let waiting: bool = sqlx::query_scalar(
+      "SELECT EXISTS(
+         SELECT 1 FROM pg_stat_activity
+         WHERE datname = current_database()
+           AND wait_event_type = 'Lock'
+           AND query LIKE '%ON CONFLICT (user_id, id) DO NOTHING%'
+       )",
+    )
+    .fetch_one(db.pool())
+    .await
+    .unwrap();
+    if waiting {
+      blocked = true;
+      break;
+    }
+    tokio::time::sleep(Duration::from_millis(10)).await;
+  }
+  assert!(
+    blocked,
+    "Rust empty-table INSERT ON CONFLICT DO NOTHING must block on uncommitted legacy INSERT C"
+  );
+
+  // Commit legacy C -> unblocks Rust INSERT (rows_affected = 0) -> Rust re-reads C
+  // FOR UPDATE, merges [C, B], and commits B+C.
+  legacy_tx.commit().await.expect("commit legacy C");
+  let rust_res = rust_task
+    .await
+    .expect("join rust task")
+    .expect("rust push must merge B+C after ON CONFLICT DO NOTHING");
+  assert!(!rust_res.created, "must observe legacy C and update with B+C");
+
+  let final_blob: Vec<u8> = sqlx::query_scalar("SELECT blob FROM user_snapshots WHERE user_id = $1 AND id = $2")
+    .bind(&user_id)
+    .bind(&doc_id)
+    .fetch_one(db.pool())
+    .await
+    .expect("load final user_snapshots blob");
+  let final_doc = y_octo::Doc::try_from_binary_v1(&final_blob).expect("decode final doc");
+  let meta = final_doc.get_map("meta").expect("meta map");
+  assert_eq!(
+    meta.get("b"),
+    Some(y_octo::Value::Any(y_octo::Any::String("rust-b".into())))
+  );
+  assert_eq!(
+    meta.get("c"),
+    Some(y_octo::Value::Any(y_octo::Any::String("legacy-c".into())))
+  );
+
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}
+
+#[tokio::test]
+async fn userspace_sync_server_operates_under_max_connections_one() {
+  let redis = TestRedis::from_env_or_docker().expect("Redis 7");
+  let empty = create_empty_db_off_runtime("userspace_max_conn_one").await;
+  let db_url = empty.url.clone();
+
+  let db = ServerDb::connect(DbConfig {
+    max_connections: 1,
+    ..DbConfig::new(&db_url)
+  })
+  .await
+  .expect("connect test db with max_connections=1");
+  db.ensure_schema_ready().await.expect("ensure schema ready");
+
+  let (user_id, _session_id, _ws_id) = seed_user_and_workspace(&db).await;
+  let (session_url, _) = server_worker::session_redis_url(redis.url()).expect("session_redis_url");
+
+  let server = SyncServer::start(
+    db.clone(),
+    SyncConfig {
+      redis_url: Some(redis.url().to_owned()),
+      session_redis_url: Some(session_url),
+      ..SyncConfig::for_deployment_channel("test")
+    },
+  )
+  .await;
+  let storage = server.gateway().storage().clone();
+
+  let doc = y_octo::Doc::with_client(601);
+  {
+    let mut meta = doc.get_or_create_map("meta").unwrap();
+    meta.insert("k".to_owned(), "single-conn".to_owned()).unwrap();
+  }
+  let update = doc.encode_update_v1().unwrap();
+  let doc_id = format!("doc-max-conn-1-{}", Uuid::new_v4().simple());
+
+  tokio::time::timeout(Duration::from_secs(5), async {
+    let pushed = storage
+      .push_doc_update(
+        server_sync::protocol::SpaceType::Userspace,
+        &user_id,
+        &doc_id,
+        &update,
+        &user_id,
+        server_sync::protocol::PushDocIntent::Create,
+        None,
+        None,
+      )
+      .await
+      .expect("userspace push succeeds under max_connections=1");
+    assert!(pushed.created);
+
+    let diff = storage
+      .load_doc_diff(server_sync::protocol::SpaceType::Userspace, &user_id, &doc_id, None)
+      .await
+      .expect("userspace load_doc_diff succeeds under max_connections=1")
+      .expect("userspace doc exists");
+    let decoded = y_octo::Doc::try_from_binary_v1(&diff.missing).expect("decode diff");
+    let meta = decoded.get_map("meta").expect("meta map");
+    assert_eq!(
+      meta.get("k"),
+      Some(y_octo::Value::Any(y_octo::Any::String("single-conn".into())))
+    );
+
+    server.shutdown().await;
+  })
+  .await
+  .expect("SyncServer push/load/shutdown must finish within 5s under max_connections=1");
+
+  db.pool().close().await;
+  drop(db);
+  drop_empty_db_off_runtime(empty).await;
+}

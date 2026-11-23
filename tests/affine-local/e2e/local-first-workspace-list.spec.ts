@@ -43,13 +43,9 @@ test('create one workspace in the workspace list', async ({
   //check page list length
   await page.keyboard.press('Escape');
   await clickSideBarAllPageButton(page);
-  await page.waitForTimeout(2000);
-  const result = await getPagesCount(page);
-  expect(result).toBe(2);
+  await expect.poll(() => getPagesCount(page)).toBe(2);
   await page.reload();
-  await page.waitForTimeout(4000);
-  const result1 = await getPagesCount(page);
-  expect(result1).toBe(2);
+  await expect.poll(() => getPagesCount(page)).toBe(2);
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

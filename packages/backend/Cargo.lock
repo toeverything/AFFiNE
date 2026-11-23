@@ -3133,6 +3133,8 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "tracing",
+ "unicode-normalization",
+ "unicode_skeleton",
  "url",
  "uuid",
 ]
@@ -3144,6 +3146,7 @@ dependencies = [
  "arc-swap",
  "async-graphql",
  "async-graphql-axum",
+ "async-trait",
  "axum",
  "base64 0.22.1",
  "bytes",
@@ -3217,6 +3220,7 @@ dependencies = [
  "server-db",
  "server-spi",
  "server-types",
+ "server-worker",
  "sha2 0.10.9",
  "sqlx",
  "test-db-harness",
@@ -4147,9 +4151,9 @@ checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.26"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75cd3fb03d5288b3ba9a1ee103ac7e9cbb59f0b03d64f8ddfcc04dd42758a85d"
+checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
 dependencies = [
  "tinyvec",
 ]
@@ -4159,6 +4163,15 @@ name = "unicode-properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "993ad287eb20e8ba755312801cfe1413e0f25d604075863acaddca10b04c1833"
+
+[[package]]
+name = "unicode_skeleton"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66bd74db2c088d393d1fbf83db2cd5663137640f072d128287dd53c882a0f412"
+dependencies = [
+ "unicode-normalization",
+]
 
 [[package]]
 name = "untrusted"

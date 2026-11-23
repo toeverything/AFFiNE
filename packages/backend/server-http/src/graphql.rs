@@ -247,27 +247,7 @@ impl UserType {
         .resolve_workspace_grant(tx.tx_mut(), &ws_id, now)
         .await
         .map_err(|e| domain_error_to_graphql(&e))?;
-      if ws_grant.rights.commercial {
-        continue;
-      }
-      let has_workspace_entitlement: bool = sqlx::query_scalar(
-        r#"SELECT EXISTS(
-             SELECT 1 FROM entitlements e
-             WHERE e.target_type = 'workspace'
-               AND e.target_id = $1
-               AND (e.starts_at IS NULL OR e.starts_at <= $2)
-               AND (
-                 (e.status = 'active' AND (e.expires_at IS NULL OR e.expires_at > $2))
-                 OR (e.status = 'grace' AND e.grace_until IS NOT NULL AND e.grace_until > $2)
-               )
-           )"#,
-      )
-      .bind(&ws_id)
-      .bind(now)
-      .fetch_one(&mut **tx.tx_mut())
-      .await
-      .map_err(|e| domain_error_to_graphql(&DomainError::Internal(format!("check workspace entitlement: {e}"))))?;
-      if !has_workspace_entitlement {
+      if ws_grant.billing_subject == server_types::BillingSubject::Owner {
         personal_ws_ids.push(ws_id);
       }
     }
@@ -723,28 +703,44 @@ impl MutationRoot {
   ) -> Result<Vec<InviteResult>> {
     let user = require_authenticated_user(ctx).await?;
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let mut results = Vec::with_capacity(emails.len());
-    for email in emails {
-      match state
-        .workspaces
-        .invite_member(&user.id, &workspace_id, &email, WorkspaceRole::Member)
+    let resolved_source = if let Some(headers) = ctx.data_opt::<axum::http::HeaderMap>() {
+      let app_cfg = state
+        .app_config
+        .get_effective_app_config()
         .await
-      {
-        Ok(inv) => results.push(InviteResult {
+        .map_err(|e| domain_error_to_graphql(&e))?;
+      let trusted_cf = app_cfg
+        .pointer("/auth/trustedCloudflareHeaders")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+      Some(crate::rest::extract_request_source(headers, trusted_cf))
+    } else {
+      ctx.data_opt::<server_spi::RequestSource>().cloned()
+    };
+    let source = resolved_source.as_ref();
+    let batch = state
+      .workspaces
+      .invite_members_with_source(&user.id, &workspace_id, &emails, WorkspaceRole::Member, source)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let results = batch
+      .into_iter()
+      .map(|(email, outcome)| match outcome {
+        Ok(inv) => InviteResult {
           email,
           invite_id: Some(inv.id),
           error: None,
-        }),
+        },
         Err(err) => {
           let env = crate::legacy_compat::errors::domain_error_to_envelope(&err);
-          results.push(InviteResult {
+          InviteResult {
             email,
             invite_id: None,
             error: Some(JsonObjectScalar(serde_json::to_value(env).unwrap_or_default())),
-          });
+          }
         }
-      }
-    }
+      })
+      .collect();
     Ok(results)
   }
 
@@ -1065,6 +1061,441 @@ mod tests {
         serde_json::Value::Null,
         "non-null error on usedStorageQuota! -> quota! -> workspace! must bubble to data: null"
       );
+
+      db.pool().close().await;
+    });
+  }
+
+  #[test]
+  fn user_quota_respects_billing_subject_without_entitlements_query() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load prisma migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure migrated template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test database");
+    let db_url = lease.url().to_owned();
+
+    struct BillingSubjectQuotaGate {
+      grants: std::collections::HashMap<String, (server_types::BillingSubject, bool)>,
+    }
+
+    #[async_trait::async_trait]
+    impl server_spi::QuotaGate for BillingSubjectQuotaGate {
+      async fn resolve_workspace_grant(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        workspace_id: &str,
+        _now: DateTime<Utc>,
+      ) -> std::result::Result<server_types::AccessGrant, DomainError> {
+        let mut grant = server_types::license::default_selfhost_access_grant();
+        if let Some(&(billing_subject, commercial)) = self.grants.get(workspace_id) {
+          grant.billing_subject = billing_subject;
+          grant.rights.commercial = commercial;
+        }
+        Ok(grant)
+      }
+
+      async fn check_seat_admission(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        workspace_id: &str,
+        current_active_seats: i32,
+        adding_seats: i32,
+        now: DateTime<Utc>,
+      ) -> std::result::Result<server_types::AccessGrant, DomainError> {
+        server_spi::CommunityQuotaGate
+          .check_seat_admission(tx, workspace_id, current_active_seats, adding_seats, now)
+          .await
+      }
+    }
+
+    struct BillingSubjectExtension {
+      base: CommunityExtension,
+      gate: Arc<dyn server_spi::QuotaGate>,
+    }
+
+    impl server_spi::ServerExtension for BillingSubjectExtension {
+      fn edition_name(&self) -> &'static str {
+        "test-billing-subject"
+      }
+
+      fn quota_gate(&self) -> Arc<dyn server_spi::QuotaGate> {
+        Arc::clone(&self.gate)
+      }
+
+      fn session_policy(&self) -> Arc<dyn server_spi::SessionPolicyHook> {
+        self.base.session_policy()
+      }
+
+      fn copilot_policy(&self) -> Arc<dyn server_spi::CopilotPolicySpi> {
+        self.base.copilot_policy()
+      }
+    }
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .expect("build tokio runtime");
+
+    rt.block_on(async move {
+      let db = ServerDb::connect(DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: ServerRole::Graphql,
+        selfhosted: true,
+        max_connections: 2,
+        statement_timeout_ms: 5_000,
+        tier_permits: [4, 2, 2, 1],
+      })
+      .await
+      .expect("connect test db");
+
+      let user_id = uuid::Uuid::new_v4().to_string();
+      let ws_owner_non_commercial = uuid::Uuid::new_v4().to_string();
+      let ws_owner_commercial = uuid::Uuid::new_v4().to_string();
+      let ws_billed_non_commercial = uuid::Uuid::new_v4().to_string();
+      let ws_billed_commercial = uuid::Uuid::new_v4().to_string();
+      sqlx::query(
+        "INSERT INTO users(id, name, email, registered, disabled) VALUES ($1, 'Quota User', $2, true, false)",
+      )
+      .bind(&user_id)
+      .bind(format!("quota-{}@affine.test", &user_id[..8]))
+      .execute(db.pool())
+      .await
+      .expect("insert user");
+
+      let cases = [
+        (
+          &ws_owner_non_commercial,
+          server_types::BillingSubject::Owner,
+          false,
+          1_000_i64,
+        ),
+        (
+          &ws_owner_commercial,
+          server_types::BillingSubject::Owner,
+          true,
+          2_000_i64,
+        ),
+        (
+          &ws_billed_non_commercial,
+          server_types::BillingSubject::Workspace,
+          false,
+          4_000_i64,
+        ),
+        (
+          &ws_billed_commercial,
+          server_types::BillingSubject::Workspace,
+          true,
+          8_000_i64,
+        ),
+      ];
+      let mut grants = std::collections::HashMap::new();
+      for (ws_id, billing_subject, commercial, blob_size) in cases {
+        grants.insert(ws_id.clone(), (billing_subject, commercial));
+        sqlx::query("INSERT INTO workspaces(id) VALUES ($1)")
+          .bind(ws_id)
+          .execute(db.pool())
+          .await
+          .expect("insert workspace");
+        sqlx::query(
+          "INSERT INTO workspace_members(id, workspace_id, user_id, role, source, state) \
+           VALUES ($1, $2, $3, 'owner', 'legacy', 'active')",
+        )
+        .bind(format!("perm_{}", uuid::Uuid::new_v4().simple()))
+        .bind(ws_id)
+        .bind(&user_id)
+        .execute(db.pool())
+        .await
+        .expect("insert workspace owner");
+        sqlx::query(
+          "INSERT INTO blobs (workspace_id, key, size, mime, status) VALUES ($1, 'b1', $2, 'text/plain', 'completed')",
+        )
+        .bind(ws_id)
+        .bind(blob_size)
+        .execute(db.pool())
+        .await
+        .expect("insert blob");
+      }
+
+      let ext = Arc::new(BillingSubjectExtension {
+        base: CommunityExtension::new(),
+        gate: Arc::new(BillingSubjectQuotaGate { grants }),
+      });
+      let state = AppState::new(
+        db.clone(),
+        None,
+        RuntimeConfig {
+          role: ServerRole::Graphql,
+          ..RuntimeConfig::default()
+        },
+        ext,
+      );
+      let schema = build_schema(state);
+
+      let resp = schema
+        .execute(
+          Request::new("{ currentUser { quota { usedStorageQuota } } }").data(AuthenticatedUser {
+            user_id: user_id.clone(),
+            user: None,
+          }),
+        )
+        .await;
+      assert!(resp.errors.is_empty(), "errors: {:?}", resp.errors);
+      let data = serde_json::to_value(&resp.data).unwrap();
+      assert_eq!(
+        data["currentUser"]["quota"]["usedStorageQuota"], 3_000,
+        "exact BillingSubject::Owner workspaces (1_000 + 2_000) must count toward user storage quota"
+      );
+
+      db.pool().close().await;
+    });
+  }
+
+  #[test]
+  fn invite_members_enforces_auth_first_domain_name_policy_512_cap_and_mixed_batch() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct CountingRateLimitPolicy {
+      calls: Arc<AtomicUsize>,
+    }
+    #[async_trait::async_trait]
+    impl server_spi::RateLimitPolicy for CountingRateLimitPolicy {
+      async fn check_auth_mail(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        _mail_name: &str,
+        _normalized_email: &str,
+        _recipient_user_id: Option<&str>,
+        _source: Option<&server_spi::RequestSource>,
+        _now: chrono::DateTime<chrono::Utc>,
+      ) -> std::result::Result<(), server_types::DomainError> {
+        Ok(())
+      }
+
+      async fn check_workspace_invite(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        _workspace_id: &str,
+        _inviter_id: &str,
+        _target_emails: &[&str],
+        _source: Option<&server_spi::RequestSource>,
+        _now: chrono::DateTime<chrono::Utc>,
+      ) -> std::result::Result<(), server_types::DomainError> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        Ok(())
+      }
+    }
+
+    struct CountingRateLimitExtension {
+      base: CommunityExtension,
+      policy: Arc<dyn server_spi::RateLimitPolicy>,
+    }
+    impl server_spi::ServerExtension for CountingRateLimitExtension {
+      fn edition_name(&self) -> &'static str {
+        self.base.edition_name()
+      }
+      fn quota_gate(&self) -> Arc<dyn server_spi::QuotaGate> {
+        self.base.quota_gate()
+      }
+      fn session_policy(&self) -> Arc<dyn server_spi::SessionPolicyHook> {
+        self.base.session_policy()
+      }
+      fn copilot_policy(&self) -> Arc<dyn server_spi::CopilotPolicySpi> {
+        self.base.copilot_policy()
+      }
+      fn rate_limit_policy(&self) -> Arc<dyn server_spi::RateLimitPolicy> {
+        Arc::clone(&self.policy)
+      }
+    }
+
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test PG cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load Prisma migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let leased = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test db");
+    let db_url = leased.url().to_owned();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+      .enable_all()
+      .build()
+      .unwrap();
+    rt.block_on(async {
+      let db = ServerDb::connect(DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: ServerRole::Graphql,
+        selfhosted: true,
+        max_connections: 2,
+        statement_timeout_ms: 5_000,
+        tier_permits: [4, 2, 2, 1],
+      })
+      .await
+      .expect("connect ServerDb");
+
+      let owner_id = format!("usr_{}", uuid::Uuid::new_v4().simple());
+      let outsider_id = format!("usr_{}", uuid::Uuid::new_v4().simple());
+      let existing_member_id = format!("usr_{}", uuid::Uuid::new_v4().simple());
+      for (uid, email) in [
+        (&owner_id, "owner@affine.test"),
+        (&outsider_id, "outsider@affine.test"),
+        (&existing_member_id, "already@affine.test"),
+      ] {
+        sqlx::query("INSERT INTO users(id, name, email, registered) VALUES ($1, 'User', $2, true)")
+          .bind(uid)
+          .bind(email)
+          .execute(db.pool())
+          .await
+          .unwrap();
+      }
+
+      let clean_ws = format!("ws_{}", uuid::Uuid::new_v4().simple());
+      let domain_ws = format!("ws_{}", uuid::Uuid::new_v4().simple());
+      let confusable_ws = format!("ws_{}", uuid::Uuid::new_v4().simple());
+      for (ws_id, name) in [
+        (&clean_ws, "Clean Workspace"),
+        (&domain_ws, "Team evil.com"),
+        (&confusable_ws, "Team \u{0435}vil。com"),
+      ] {
+        sqlx::query("INSERT INTO workspaces(id, name) VALUES ($1, $2)")
+          .bind(ws_id)
+          .bind(name)
+          .execute(db.pool())
+          .await
+          .unwrap();
+        sqlx::query(
+          "INSERT INTO workspace_members(id, workspace_id, user_id, role, source, state) \
+           VALUES ($1, $2, $3, 'owner', 'legacy', 'active')",
+        )
+        .bind(format!("perm_{}", uuid::Uuid::new_v4().simple()))
+        .bind(ws_id)
+        .bind(&owner_id)
+        .execute(db.pool())
+        .await
+        .unwrap();
+      }
+      sqlx::query(
+        "INSERT INTO workspace_members(id, workspace_id, user_id, role, source, state) \
+         VALUES ($1, $2, $3, 'member', 'legacy', 'active')",
+      )
+      .bind(format!("perm_{}", uuid::Uuid::new_v4().simple()))
+      .bind(&clean_ws)
+      .bind(&existing_member_id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+
+      let rl_calls = Arc::new(AtomicUsize::new(0));
+      let ext = Arc::new(CountingRateLimitExtension {
+        base: CommunityExtension::new(),
+        policy: Arc::new(CountingRateLimitPolicy {
+          calls: Arc::clone(&rl_calls),
+        }),
+      });
+      let state = AppState::new(
+        db.clone(),
+        None,
+        RuntimeConfig {
+          role: ServerRole::Graphql,
+          ..RuntimeConfig::default()
+        },
+        ext,
+      );
+      let schema = build_schema(state);
+
+      // 1. Unauthorized outsider passing empty emails: [] MUST still fail with 403 ACTION_FORBIDDEN.
+      let resp = schema
+        .execute(
+          Request::new(format!(
+            r#"mutation {{ inviteMembers(workspaceId: "{clean_ws}", emails: []) {{ email inviteId error }} }}"#
+          ))
+          .data(AuthenticatedUser {
+            user_id: outsider_id.clone(),
+            user: None,
+          }),
+        )
+        .await;
+      assert_eq!(resp.errors.len(), 1);
+      assert_eq!(
+        resp.errors[0].extensions.as_ref().unwrap().get("status"),
+        Some(&async_graphql::Value::from(403))
+      );
+      assert_eq!(rl_calls.load(Ordering::SeqCst), 0);
+
+      // 2. Domain-named & Unicode-confusable workspace names MUST fail with 403 and zero rate-limit / DB writes.
+      for ws_id in [&domain_ws, &confusable_ws] {
+        let resp = schema
+          .execute(
+            Request::new(format!(
+              r#"mutation {{ inviteMembers(workspaceId: "{ws_id}", emails: ["ok@affine.test"]) {{ email inviteId error }} }}"#
+            ))
+            .data(AuthenticatedUser {
+              user_id: owner_id.clone(),
+              user: None,
+            }),
+          )
+          .await;
+        assert_eq!(resp.errors.len(), 1, "ws {ws_id} must be rejected");
+        assert_eq!(
+          resp.errors[0].extensions.as_ref().unwrap().get("status"),
+          Some(&async_graphql::Value::from(403))
+        );
+      }
+      assert_eq!(rl_calls.load(Ordering::SeqCst), 0);
+
+      // 3. 513 emails MUST immediately return 429 TOO_MANY_REQUESTS with zero rate-limit / DB writes.
+      let too_many: Vec<String> = (0..513).map(|i| format!(r#""u{i}@affine.test""#)).collect();
+      let resp = schema
+        .execute(
+          Request::new(format!(
+            r#"mutation {{ inviteMembers(workspaceId: "{clean_ws}", emails: [{}]) {{ email inviteId error }} }}"#,
+            too_many.join(",")
+          ))
+          .data(AuthenticatedUser {
+            user_id: owner_id.clone(),
+            user: None,
+          }),
+        )
+        .await;
+      assert_eq!(resp.errors.len(), 1);
+      assert_eq!(
+        resp.errors[0].extensions.as_ref().unwrap().get("status"),
+        Some(&async_graphql::Value::from(429))
+      );
+      assert_eq!(rl_calls.load(Ordering::SeqCst), 0);
+
+      // 4. Mixed batch (invalid + valid + duplicate + existing member) returns exact per-item results
+      //    and calls check_workspace_invite exactly once.
+      let resp = schema
+        .execute(
+          Request::new(format!(
+            r#"mutation {{ inviteMembers(workspaceId: "{clean_ws}", emails: ["not-an-email", "fresh@affine.test", "FRESH@affine.test", "already@affine.test"]) {{ email inviteId error }} }}"#
+          ))
+          .data(AuthenticatedUser {
+            user_id: owner_id.clone(),
+            user: None,
+          }),
+        )
+        .await;
+      assert!(resp.errors.is_empty(), "mixed batch errors: {:?}", resp.errors);
+      let data = serde_json::to_value(&resp.data).unwrap();
+      let items = data["inviteMembers"].as_array().unwrap();
+      assert_eq!(items.len(), 4);
+      assert!(items[0]["inviteId"].is_null());
+      assert_eq!(items[0]["error"]["status"], 400);
+      assert_eq!(items[0]["error"]["type"], "INVALID_INPUT");
+      assert!(items[1]["inviteId"].as_str().unwrap().starts_with("inv_"));
+      assert!(items[1]["error"].is_null());
+      assert!(items[2]["inviteId"].is_null());
+      assert_eq!(items[2]["error"]["status"], 403);
+      assert_eq!(items[2]["error"]["type"], "ACTION_FORBIDDEN");
+      assert!(items[3]["inviteId"].is_null());
+      assert_eq!(items[3]["error"]["type"], "RESOURCE_ALREADY_EXISTS");
+      assert_eq!(rl_calls.load(Ordering::SeqCst), 1);
 
       db.pool().close().await;
     });

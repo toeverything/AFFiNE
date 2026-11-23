@@ -538,7 +538,7 @@ async fn build_server_with_bound_port(
   .await?;
 
   let effective_redis_url = cli.effective_redis_url();
-  let (redis_client, redis_db_index, session_redis_db_index, session_mutex, redis_runtime_cfg) =
+  let (redis_client, redis_db_index, session_redis_url_str, session_redis_db_index, session_mutex, redis_runtime_cfg) =
     match effective_redis_url.as_deref() {
       Some(url) => {
         let base_db = parse_redis_db_index(url)?;
@@ -546,9 +546,16 @@ async fn build_server_with_bound_port(
         let client = redis::Client::open(url)?;
         let mutex = RedisMutex::new(&session_url, cli.redis_key_prefix.clone())?;
         let runtime_cfg = RedisRuntimeConfig::from_redis_url(url)?;
-        (Some(client), base_db, session_db, Some(mutex), runtime_cfg)
+        (
+          Some(client),
+          base_db,
+          Some(session_url),
+          session_db,
+          Some(mutex),
+          runtime_cfg,
+        )
       }
-      None => (None, 0, 2, None, RedisRuntimeConfig::default()),
+      None => (None, 0, None, 2, None, RedisRuntimeConfig::default()),
     };
 
   let smtp_runtime_cfg = SmtpRuntimeConfig {
@@ -617,9 +624,11 @@ async fn build_server_with_bound_port(
     Arc::new(PhaseASessionRepository),
     ext.session_policy(),
     auth_cfg,
-  );
+  )
+  .with_rate_limit_policy(ext.rate_limit_policy());
   let users = UserService::new(db.clone());
-  let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation));
+  let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
+    .with_rate_limit_policy(ext.rate_limit_policy());
   let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
@@ -650,6 +659,7 @@ async fn build_server_with_bound_port(
   let sync_server = if matches!(role, ServerRole::Allinone | ServerRole::Front) {
     let mut sync_cfg = SyncConfig::for_deployment_channel(&channel);
     sync_cfg.redis_url = effective_redis_url;
+    sync_cfg.session_redis_url = session_redis_url_str;
     sync_cfg.origin_id = process_origin_id;
     sync_cfg.deployment_prefix = match deployment_mode {
       DeploymentMode::Selfhosted => "selfhosted".to_owned(),
@@ -715,6 +725,22 @@ pub async fn serve_with_extension(
   ext: Arc<dyn ServerExtension>,
   shutdown: CancellationToken,
 ) -> Result<RunningServer, ServerError> {
+  serve_with_extension_and_init(cli, ext, shutdown, |_| async { Ok(()) }).await
+}
+
+/// Like [`serve_with_extension`], but executes `before_serve(&built)` after
+/// startup schema and signing-key readiness checks and before `axum::serve`
+/// begins accepting requests.
+pub async fn serve_with_extension_and_init<F, Fut>(
+  cli: ServerCli,
+  ext: Arc<dyn ServerExtension>,
+  shutdown: CancellationToken,
+  before_serve: F,
+) -> Result<RunningServer, ServerError>
+where
+  F: FnOnce(&BuiltServer) -> Fut,
+  Fut: std::future::Future<Output = Result<(), ServerError>>,
+{
   let bind_addr = SocketAddr::new(cli.effective_host(), cli.port);
   let listener = TcpListener::bind(bind_addr).await?;
   let local_addr = listener.local_addr()?;
@@ -729,6 +755,8 @@ pub async fn serve_with_extension(
       built.state.auth.ensure_signing_keys().await?;
     }
   }
+
+  before_serve(&built).await?;
 
   if matches!(built.role, ServerRole::Allinone | ServerRole::Worker)
     && let Some(host) = cli.mailer_host.as_deref().map(str::trim).filter(|s| !s.is_empty())

@@ -11,7 +11,7 @@ use p256::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{AccessGrant, LicenseTier, Limits, Rights};
+use crate::{AccessGrant, BillingSubject, LicenseTier, Limits, Rights};
 
 pub const COMMUNITY_DEFAULT_KID: &str = "community-default-v1";
 pub const PRO_KID: &str = "pro-v1";
@@ -127,8 +127,14 @@ impl VerifiedLicenseV2 {
     } else {
       self.claims.limits.copilot_action_limit
     };
+    let billing_subject = if self.claims.rights.commercial {
+      BillingSubject::Workspace
+    } else {
+      BillingSubject::Owner
+    };
     AccessGrant {
       tier: self.tier,
+      billing_subject,
       seat_quantity: Some(self.claims.limits.seat_limit),
       expires_at: self.expires_at,
       limits: Limits {
@@ -435,6 +441,7 @@ pub fn default_selfhost_access_grant_from(payload: &[u8], keyring: &Keyring, now
     Ok(verified) => verified.into_access_grant(),
     Err(err) => AccessGrant {
       tier: LicenseTier::SelfhostDefault,
+      billing_subject: BillingSubject::Owner,
       seat_quantity: Some(0),
       expires_at: None,
       limits: Limits {
@@ -527,6 +534,7 @@ mod tests {
     assert_eq!(verified.tier, LicenseTier::SelfhostDefault);
     let grant = verified.into_access_grant();
     assert_eq!(grant.tier, LicenseTier::SelfhostDefault);
+    assert_eq!(grant.billing_subject, BillingSubject::Owner);
     assert_eq!(grant.seat_quantity, Some(10));
     assert_eq!(grant.limits.seat_limit, 10);
     assert_eq!(grant.limits.blob_limit_bytes, 104_857_600);
@@ -546,6 +554,7 @@ mod tests {
   fn default_grant_fails_closed_when_bundled_verification_fails() {
     let grant = default_selfhost_access_grant_from(b"{}", &Keyring::new(), fixed_now());
     assert_eq!(grant.tier, LicenseTier::SelfhostDefault);
+    assert_eq!(grant.billing_subject, BillingSubject::Owner);
     assert_eq!(grant.seat_quantity, Some(0));
     assert_eq!(grant.limits.seat_limit, 0);
     assert_eq!(grant.limits.blob_limit_bytes, 0);
@@ -565,6 +574,7 @@ mod tests {
     let verified = verify_license_v2(&ws_raw, &keyring, Some("ws-1"), fixed_now()).unwrap();
     let grant = verified.into_access_grant();
     assert_eq!(grant.tier, LicenseTier::SelfhostTeam);
+    assert_eq!(grant.billing_subject, BillingSubject::Workspace);
     assert_eq!(grant.limits.seat_limit, 25);
     assert_eq!(grant.limits.copilot_action_limit, None); // unlimited_copilot => None
 
@@ -606,6 +616,10 @@ mod tests {
     let inst_raw = sign_claims(&inst_claims, &signing_key);
     let verified_inst = verify_license_v2(&inst_raw, &keyring, None, fixed_now()).unwrap();
     assert_eq!(verified_inst.tier, LicenseTier::SelfhostEnterprise);
+    assert_eq!(
+      verified_inst.into_access_grant().billing_subject,
+      BillingSubject::Workspace
+    );
   }
 
   #[test]

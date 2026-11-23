@@ -706,8 +706,8 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
       );
     }
 
-    // 5c. UserType::quota excludes workspaces billed via active/grace workspace-level entitlements,
-    //     and immediately re-includes a workspace once its `grace_until` timestamp has passed.
+    // 5c. UserType::quota sums storage across owned workspaces whose AccessGrant
+    //     reports `BillingSubject::Owner` (CommunityExtension default: 17 + 20 = 37).
     let (_, _, ws2_body) = raw_http_request(
       running.addr,
       "POST",
@@ -730,16 +730,6 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
     )
     .await;
     assert_eq!(up2_status, 200);
-    let ent_id = format!("ent_{}", uuid::Uuid::new_v4().simple());
-    sqlx::query(
-      "INSERT INTO entitlements (id, target_type, target_id, source, plan, status, grace_until, created_at, updated_at) \
-       VALUES ($1, 'workspace', $2, 'admin_grant', 'team', 'grace', now() + interval '1 hour', now(), now())",
-    )
-    .bind(&ent_id)
-    .bind(&ws2_id)
-    .execute(running.state.db.pool())
-    .await
-    .unwrap();
     let quota_req = serde_json::json!({ "query": "query { currentUser { quota { usedStorageQuota } } }" });
     let (_, _, quota_bytes) = raw_http_request(
       running.addr,
@@ -751,27 +741,8 @@ fn blob_contract_authz_app_config_rollback_smtp_isolation_and_magic_link_e2e() {
     .await;
     let quota_json: Value = serde_json::from_slice(&quota_bytes).unwrap();
     assert_eq!(
-      quota_json["data"]["currentUser"]["quota"]["usedStorageQuota"], 17,
-      "user quota must exclude workspace with unexpired grace workspace entitlement: {quota_json}"
-    );
-    // Expire `grace_until` while keeping `status = 'grace'` -> ws2 must immediately count toward user quota (17 + 20 = 37).
-    sqlx::query("UPDATE entitlements SET grace_until = now() - interval '1 minute' WHERE id = $1")
-      .bind(&ent_id)
-      .execute(running.state.db.pool())
-      .await
-      .unwrap();
-    let (_, _, quota_expired_bytes) = raw_http_request(
-      running.addr,
-      "POST",
-      "/graphql",
-      &[("Content-Type", "application/json"), ("Cookie", &owner_cookie)],
-      quota_req.to_string().as_bytes(),
-    )
-    .await;
-    let quota_expired_json: Value = serde_json::from_slice(&quota_expired_bytes).unwrap();
-    assert_eq!(
-      quota_expired_json["data"]["currentUser"]["quota"]["usedStorageQuota"], 37,
-      "user quota must re-include workspace once grace_until has elapsed: {quota_expired_json}"
+      quota_json["data"]["currentUser"]["quota"]["usedStorageQuota"], 37,
+      "user quota must sum all BillingSubject::Owner owned workspaces: {quota_json}"
     );
 
     // 6. `updateAppConfig` atomic batch rollback: [valid, invalid_bool] AND [valid, invalid cloudflare-r2 storage] -> 400 and ZERO writes.

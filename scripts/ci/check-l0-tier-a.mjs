@@ -135,6 +135,60 @@ if (existsSync(CRATES)) {
           );
       }
     }
+
+    const httpCrate = path.startsWith('packages/backend/server-http/');
+    if (httpCrate && path.endsWith('.rs')) {
+      const nonTest = text
+        .split(/#\[cfg\(test\)\]/)[0]
+        .replace(/\/\/[^\n]*/g, '');
+      const entMatch = /\b(?:FROM|JOIN)\s+(?:public\.)?entitlements\b/i.exec(
+        nonTest
+      );
+      if (entMatch) {
+        fail(
+          'crates-layering',
+          `${path}:${lineOf(nonTest, entMatch.index)}: server-http must not query entitlements directly; use BillingSubject on AccessGrant`
+        );
+      }
+    }
+  }
+}
+
+// 2b. packages/backend/AGENTS.md Rust type cross-check ----------------------
+
+const BACKEND_AGENTS_MD = join(ROOT, 'packages/backend/AGENTS.md');
+const AGENTS_TYPE_WHITELIST = new Set(['SessionRedis']);
+if (existsSync(BACKEND_AGENTS_MD)) {
+  const rsCorpus = [];
+  for (const dir of [CRATES, join(ROOT, 'tools/frame-audit')]) {
+    if (!existsSync(dir)) continue;
+    for (const file of walk(dir)) {
+      const path = rel(file);
+      if (path.startsWith('packages/backend/')) {
+        const sub = path.slice('packages/backend/'.length).split('/')[0];
+        if (LEGACY_BACKEND_DIRS.has(sub)) continue;
+      }
+      if (!path.endsWith('.rs')) continue;
+      const stripped = read(file).replace(/\/\/[^\n]*/g, '');
+      rsCorpus.push(stripped);
+    }
+  }
+  const combinedRs = rsCorpus.join('\n');
+  const agentsText = read(BACKEND_AGENTS_MD);
+  const checked = new Set();
+  for (const m of agentsText.matchAll(/`([A-Z][A-Za-z0-9_]+)`/g)) {
+    const token = m[1];
+    if (/^[A-Z0-9_]+$/.test(token) || AGENTS_TYPE_WHITELIST.has(token)) {
+      continue;
+    }
+    if (checked.has(token)) continue;
+    checked.add(token);
+    if (!new RegExp(`\\b${token}\\b`).test(combinedRs)) {
+      fail(
+        'docs-drift',
+        `packages/backend/AGENTS.md:${lineOf(agentsText, m.index)}: Rust type \`${token}\` not found in packages/backend/ or tools/frame-audit/`
+      );
+    }
   }
 }
 

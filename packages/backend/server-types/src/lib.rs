@@ -129,10 +129,20 @@ pub struct Rights {
   pub unlimited_copilot: bool,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BillingSubject {
+  #[default]
+  Owner,
+  Workspace,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessGrant {
   pub tier: LicenseTier,
+  #[serde(default)]
+  pub billing_subject: BillingSubject,
   pub seat_quantity: Option<i32>,
   pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
   pub limits: Limits,

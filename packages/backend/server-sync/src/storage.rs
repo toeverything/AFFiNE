@@ -10,9 +10,10 @@ use std::{
 use chrono::{DateTime, Duration, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use server_db::{ServerDb, WorkloadTier};
+use server_db::{OwnedSemaphorePermit, ServerDb, WorkloadTier};
 use server_spi::{CommunityQuotaGate, QuotaGate};
 use server_types::AccessGrant;
+use server_worker::{DEFAULT_LOCK_TTL_SECS, RedisLockLease, RedisMutex, WorkerError, new_owner_token};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 
@@ -29,6 +30,17 @@ use crate::{
 };
 
 pub const MAX_DOC_UPDATE_BYTES: usize = 32 * 1024 * 1024;
+const USERSPACE_MUTEX_MAX_RETRIES: usize = 5;
+const USERSPACE_MUTEX_RETRY_WAIT_MS: u64 = 100;
+const USERSPACE_WRITE_DEADLINE_SECS: u64 = 30;
+
+struct AbortOnDrop(tokio::task::JoinHandle<()>);
+
+impl Drop for AbortOnDrop {
+  fn drop(&mut self) {
+    self.0.abort();
+  }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PushDocResult {
@@ -237,9 +249,18 @@ fn is_grant_readonly(grant: &AccessGrant, now: DateTime<Utc>) -> bool {
 }
 
 #[derive(Clone)]
+enum UserspaceRedisLockBackend {
+  Disabled,
+  Active(RedisMutex),
+  InvalidConfig(String),
+}
+
+#[derive(Clone)]
 pub struct SyncStorage {
   db: ServerDb,
   quota_gate: Arc<dyn QuotaGate>,
+  session_redis: UserspaceRedisLockBackend,
+  userspace_lock_ttl_ms: u64,
 }
 
 impl SyncStorage {
@@ -248,7 +269,33 @@ impl SyncStorage {
   }
 
   pub fn with_quota_gate(db: ServerDb, quota_gate: Arc<dyn QuotaGate>) -> Self {
-    Self { db, quota_gate }
+    Self {
+      db,
+      quota_gate,
+      session_redis: UserspaceRedisLockBackend::Disabled,
+      userspace_lock_ttl_ms: DEFAULT_LOCK_TTL_SECS * 1_000,
+    }
+  }
+
+  /// Configures the `SessionRedis` mutex for userspace document writes using
+  /// an empty key prefix (`""`), matching `v0.27.5` `Locker`'s literal
+  /// `MutexLock:userspace:<user_id>:<doc_id>` key even when `ioredis` has a
+  /// configured `keyPrefix`.
+  pub fn with_session_redis_url(mut self, session_redis_url: &str) -> Result<Self, SyncError> {
+    let mutex = RedisMutex::new(session_redis_url, "")
+      .map_err(|e| SyncError::Internal(format!("invalid session redis url: {e}")))?;
+    self.session_redis = UserspaceRedisLockBackend::Active(mutex);
+    Ok(self)
+  }
+
+  pub fn with_userspace_lock_ttl_ms(mut self, ttl_ms: u64) -> Self {
+    self.userspace_lock_ttl_ms = ttl_ms.max(1);
+    self
+  }
+
+  pub(crate) fn with_invalid_session_redis_config(mut self, err: String) -> Self {
+    self.session_redis = UserspaceRedisLockBackend::InvalidConfig(err);
+    self
   }
 
   pub fn db(&self) -> &ServerDb {
@@ -792,16 +839,100 @@ impl SyncStorage {
     })
   }
 
+  async fn acquire_userspace_redis_lock(
+    &self,
+    user_id: &str,
+    doc_id: &str,
+  ) -> Result<Option<RedisLockLease>, SyncError> {
+    let mutex = match &self.session_redis {
+      UserspaceRedisLockBackend::Disabled => return Ok(None),
+      UserspaceRedisLockBackend::InvalidConfig(err) => {
+        return Err(SyncError::Internal(format!("invalid session redis config: {err}")));
+      }
+      UserspaceRedisLockBackend::Active(mutex) => mutex,
+    };
+    let resource = format!("userspace:{user_id}:{doc_id}");
+    let owner = new_owner_token("v2-sync");
+    let ttl_ms = self.userspace_lock_ttl_ms;
+
+    for attempt in 0..=USERSPACE_MUTEX_MAX_RETRIES {
+      match mutex.try_acquire_ms(&resource, owner.clone(), ttl_ms).await {
+        Ok(lease) => return Ok(Some(lease)),
+        Err(WorkerError::AlreadyLocked(_)) => {
+          if attempt < USERSPACE_MUTEX_MAX_RETRIES {
+            tokio::time::sleep(std::time::Duration::from_millis(USERSPACE_MUTEX_RETRY_WAIT_MS)).await;
+          }
+        }
+        Err(err) => {
+          return Err(SyncError::Internal(format!("acquire userspace redis lock: {err}")));
+        }
+      }
+    }
+    Err(SyncError::TooManyConcurrentWritings)
+  }
+
   async fn push_userspace_doc_update(
     &self,
     user_id: &str,
     doc_id: &str,
     update: &[u8],
   ) -> Result<PushDocResult, SyncError> {
-    let mut tx = self.db.begin_tiered(WorkloadTier::InteractiveWrite).await?;
+    // 1. Acquire PG workload-tier admission permit BEFORE acquiring the Redis
+    //    mutex so queuing behind PG permits never burns Redis lock TTL.
+    let permit = self.db.acquire_tier_permit(WorkloadTier::InteractiveWrite).await?;
+
+    // 2. Acquire the cross-generation `SessionRedis` lock (`MutexLock:userspace:<uid>:<doc>`).
+    let redis_lease = self.acquire_userspace_redis_lock(user_id, doc_id).await?;
+
+    // 3. Background lease renewal every ttl/3 while the PG write transaction runs.
+    let ttl_ms = self.userspace_lock_ttl_ms;
+    let _renew_guard = redis_lease.as_ref().map(|lease| {
+      let lease = lease.clone();
+      let interval = std::time::Duration::from_millis((ttl_ms / 3).max(20));
+      AbortOnDrop(tokio::spawn(async move {
+        loop {
+          tokio::time::sleep(interval).await;
+          if lease.renew_ms(ttl_ms).await.is_err() {
+            break;
+          }
+        }
+      }))
+    });
+
+    // 4. Execute the PG write transaction with a bounded deadline and a
+    //    pre-commit atomic Redis lease fence.
+    let deadline = std::time::Duration::from_secs(USERSPACE_WRITE_DEADLINE_SECS);
+    let result = match tokio::time::timeout(
+      deadline,
+      self.push_userspace_doc_update_in_pg(permit, redis_lease.as_ref(), user_id, doc_id, update),
+    )
+    .await
+    {
+      Ok(res) => res,
+      Err(_) => Err(SyncError::Internal("userspace doc update timed out".to_owned())),
+    };
+
+    drop(_renew_guard);
+    if let Some(lease) = redis_lease
+      && let Err(err) = lease.release().await
+    {
+      tracing::warn!(lock_key = lease.lock_key(), error = %err, "failed to release userspace redis lock");
+    }
+    result
+  }
+
+  async fn push_userspace_doc_update_in_pg(
+    &self,
+    permit: OwnedSemaphorePermit,
+    redis_lease: Option<&RedisLockLease>,
+    user_id: &str,
+    doc_id: &str,
+    update: &[u8],
+  ) -> Result<PushDocResult, SyncError> {
+    let mut tx = self.db.begin_with_permit(permit).await?;
 
     // Serialize concurrent first-writes on an absent `user_snapshots` row via
-    // a transaction-scoped advisory lock so neither write can overwrite the other.
+    // a transaction-scoped advisory lock so two Rust writers never race.
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
       .bind(format!("userspace-doc:{user_id}:{doc_id}"))
       .execute(&mut **tx.tx_mut())
@@ -814,42 +945,99 @@ impl SyncStorage {
         .fetch_optional(&mut **tx.tx_mut())
         .await?;
 
+    let quantize_ms = |dt: DateTime<Utc>| DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap_or(dt);
     let update_vec = update.to_vec();
-    let (merged, created, next_ts) = match existing {
+
+    let (created, next_ts) = match existing {
       Some((old_blob, prev_ts)) => {
         let merged = tokio::task::spawn_blocking(move || {
-          y_octo::merge_updates_v1([old_blob.as_slice(), update_vec.as_slice()])
+          y_octo::merge_updates_v1(vec![old_blob.as_slice(), update_vec.as_slice()])
             .and_then(|u| u.encode_v1())
             .map_err(|e| SyncError::DocUpdateInvalid(format!("merge_updates_v1 failed: {e}")))
         })
         .await
         .map_err(|e| SyncError::Internal(format!("userspace merge task failed: {e}")))??;
-        let now = Utc::now();
-        let next = if now <= prev_ts {
-          prev_ts + Duration::milliseconds(1)
+
+        let prev_ms = quantize_ms(prev_ts);
+        let now_ms = quantize_ms(Utc::now());
+        let next = if now_ms <= prev_ms {
+          prev_ms + Duration::milliseconds(1)
         } else {
-          now
+          now_ms
         };
-        (merged, false, next)
+
+        sqlx::query("UPDATE user_snapshots SET blob = $3, updated_at = $4 WHERE user_id = $1 AND id = $2")
+          .bind(user_id)
+          .bind(doc_id)
+          .bind(&merged)
+          .bind(next)
+          .execute(&mut **tx.tx_mut())
+          .await?;
+        (false, next)
       }
-      None => (update_vec, true, Utc::now()),
+      None => {
+        // Empty-table first-create: try `ON CONFLICT DO NOTHING`; if another
+        // writer inserted a row between our `SELECT None` and `INSERT`, re-read
+        // `FOR UPDATE`, merge both updates, and `UPDATE`.
+        let initial_ts = quantize_ms(Utc::now());
+        let insert_res = sqlx::query(
+          "INSERT INTO user_snapshots(user_id, id, blob, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $4)
+           ON CONFLICT (user_id, id) DO NOTHING",
+        )
+        .bind(user_id)
+        .bind(doc_id)
+        .bind(&update_vec)
+        .bind(initial_ts)
+        .execute(&mut **tx.tx_mut())
+        .await?;
+
+        if insert_res.rows_affected() == 1 {
+          (true, initial_ts)
+        } else {
+          let (current_blob, prev_ts): (Vec<u8>, DateTime<Utc>) =
+            sqlx::query_as("SELECT blob, updated_at FROM user_snapshots WHERE user_id = $1 AND id = $2 FOR UPDATE")
+              .bind(user_id)
+              .bind(doc_id)
+              .fetch_one(&mut **tx.tx_mut())
+              .await?;
+
+          let merged = tokio::task::spawn_blocking(move || {
+            y_octo::merge_updates_v1(vec![current_blob.as_slice(), update_vec.as_slice()])
+              .and_then(|u| u.encode_v1())
+              .map_err(|e| SyncError::DocUpdateInvalid(format!("merge_updates_v1 failed: {e}")))
+          })
+          .await
+          .map_err(|e| SyncError::Internal(format!("userspace merge task failed: {e}")))??;
+
+          let prev_ms = quantize_ms(prev_ts);
+          let now_ms = quantize_ms(Utc::now());
+          let next = if now_ms <= prev_ms {
+            prev_ms + Duration::milliseconds(1)
+          } else {
+            now_ms
+          };
+
+          sqlx::query("UPDATE user_snapshots SET blob = $3, updated_at = $4 WHERE user_id = $1 AND id = $2")
+            .bind(user_id)
+            .bind(doc_id)
+            .bind(&merged)
+            .bind(next)
+            .execute(&mut **tx.tx_mut())
+            .await?;
+          (false, next)
+        }
+      }
     };
 
-    sqlx::query(
-      r#"
-      INSERT INTO user_snapshots(user_id, id, blob, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $4)
-      ON CONFLICT (user_id, id) DO UPDATE SET
-        blob = EXCLUDED.blob,
-        updated_at = EXCLUDED.updated_at
-      "#,
-    )
-    .bind(user_id)
-    .bind(doc_id)
-    .bind(&merged)
-    .bind(next_ts)
-    .execute(&mut **tx.tx_mut())
-    .await?;
+    if let Some(lease) = redis_lease
+      && let Err(err) = lease.fence_and_renew_ms(self.userspace_lock_ttl_ms).await
+    {
+      let _ = tx.rollback().await;
+      return Err(SyncError::Internal(format!(
+        "userspace redis lock lost before commit: {err}"
+      )));
+    }
 
     tx.commit().await?;
     Ok(PushDocResult {
@@ -859,7 +1047,8 @@ impl SyncStorage {
   }
 
   /// Loads `snapshots` + `updates` (or `user_snapshots` for userspace), merges
-  /// them with `y-octo` on a blocking thread, and computes `(missing, state, timestamp)`.
+  /// them with `y-octo` on a blocking thread, and computes
+  /// `(missing, state, timestamp)`.
   pub async fn load_doc_diff(
     &self,
     space_type: SpaceType,
@@ -868,13 +1057,15 @@ impl SyncStorage {
     state_vector: Option<&[u8]>,
   ) -> Result<Option<DocDiff>, SyncError> {
     if space_type == SpaceType::Userspace {
-      let mut conn = self.db.acquire_tiered(WorkloadTier::InteractiveRead).await?;
+      let mut tx = self.db.begin_tiered(WorkloadTier::InteractiveRead).await?;
       let row: Option<(Vec<u8>, DateTime<Utc>)> =
         sqlx::query_as("SELECT blob, updated_at FROM user_snapshots WHERE user_id = $1 AND id = $2")
           .bind(space_id)
           .bind(doc_id)
-          .fetch_optional(&mut *conn)
+          .fetch_optional(&mut **tx.tx_mut())
           .await?;
+      tx.commit().await?;
+
       let Some((blob, updated_at)) = row else {
         return Ok(None);
       };

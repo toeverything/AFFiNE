@@ -277,3 +277,321 @@ async fn concurrent_drains_wait_for_one_drain_and_leases_after_shutdown_are_rele
   assert!(!idle.track_lease(refused).await);
   assert_eq!(mutex.current_owner(&refused_resource).await.unwrap(), None);
 }
+
+fn redis_upstream_addr(session_url: &str) -> String {
+  let without_scheme = session_url.split_once("://").expect("redis url scheme").1;
+  without_scheme
+    .split_once('/')
+    .map(|(a, _)| a)
+    .unwrap_or(without_scheme)
+    .to_owned()
+}
+
+#[tokio::test]
+async fn try_acquire_ms_recovers_idempotently_when_first_reply_drops() {
+  use std::sync::atomic::AtomicUsize;
+  use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+  let test_redis = TestRedis::from_env_or_docker().expect("test redis");
+  let (session_url, session_db) = session_redis_url(test_redis.url()).expect("session url");
+  let upstream_addr = redis_upstream_addr(&session_url);
+
+  let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+  let proxy_port = listener.local_addr().unwrap().port();
+  let proxy_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+  let conn_count = Arc::new(AtomicUsize::new(0));
+  let conn_count_c = Arc::clone(&conn_count);
+
+  let proxy_task = tokio::spawn(async move {
+    while let Ok((client, _)) = listener.accept().await {
+      let idx = conn_count_c.fetch_add(1, Ordering::SeqCst);
+      let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+      if idx == 0 {
+        // Connection #1: forward requests to Redis, wait until ACQUIRE_LOCK_MS
+        // commits (`:1\r\n`), then drop the client socket without delivering `:1\r\n`.
+        let (mut cr, mut cw) = client.into_split();
+        let (mut ur, mut uw) = upstream.into_split();
+        let c2u = tokio::spawn(async move {
+          let _ = tokio::io::copy(&mut cr, &mut uw).await;
+        });
+        let u2c = tokio::spawn(async move {
+          let mut buf = [0u8; 4096];
+          while let Ok(n) = ur.read(&mut buf).await {
+            if n == 0 {
+              break;
+            }
+            let chunk = &buf[..n];
+            if chunk.windows(4).any(|w| w == b":1\r\n") {
+              // Drop reply after Redis has committed the lock.
+              drop(cw);
+              break;
+            }
+            if cw.write_all(chunk).await.is_err() {
+              break;
+            }
+          }
+        });
+        let _ = u2c.await;
+        c2u.abort();
+      } else {
+        let mut client = client;
+        let mut upstream = upstream;
+        tokio::spawn(async move {
+          let _ = tokio::io::copy_bidirectional(&mut client, &mut upstream).await;
+        });
+      }
+    }
+  });
+
+  let direct_mutex = RedisMutex::new(&session_url, test_redis.key_prefix()).expect("direct mutex");
+  let proxied_mutex = RedisMutex::new(&proxy_url, test_redis.key_prefix()).expect("proxied mutex");
+  let resource = format!("worker:reply-drop:{}", uuid::Uuid::new_v4());
+  let token = new_owner_token("reply-drop-node");
+
+  // Single call to `try_acquire_ms` drops reply on conn #1, reconnects on conn #2,
+  // re-confirms ownership with the same owner_token, and returns Ok(lease).
+  let lease = proxied_mutex
+    .try_acquire_ms(&resource, token.clone(), 60_000)
+    .await
+    .expect("idempotent retry must succeed after dropped reply");
+  assert_eq!(lease.owner_token(), token);
+  assert_eq!(
+    direct_mutex.current_owner(&resource).await.unwrap().as_deref(),
+    Some(token.as_str())
+  );
+  assert!(conn_count.load(Ordering::SeqCst) >= 2);
+
+  lease.release().await.expect("release recovered lease");
+  assert_eq!(direct_mutex.current_owner(&resource).await.unwrap(), None);
+  proxy_task.abort();
+}
+
+#[tokio::test]
+async fn try_acquire_ms_cleans_up_orphan_lock_when_both_attempts_fail_after_commit() {
+  use std::sync::atomic::AtomicUsize;
+  use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+  let test_redis = TestRedis::from_env_or_docker().expect("test redis");
+  let (session_url, session_db) = session_redis_url(test_redis.url()).expect("session url");
+  let upstream_addr = redis_upstream_addr(&session_url);
+
+  let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+  let proxy_port = listener.local_addr().unwrap().port();
+  let proxy_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+  let conn_count = Arc::new(AtomicUsize::new(0));
+  let conn_count_c = Arc::clone(&conn_count);
+
+  let proxy_task = tokio::spawn(async move {
+    while let Ok((client, _)) = listener.accept().await {
+      let idx = conn_count_c.fetch_add(1, Ordering::SeqCst);
+      if idx == 0 {
+        let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+        let (mut cr, mut cw) = client.into_split();
+        let (mut ur, mut uw) = upstream.into_split();
+        let c2u = tokio::spawn(async move {
+          let _ = tokio::io::copy(&mut cr, &mut uw).await;
+        });
+        let u2c = tokio::spawn(async move {
+          let mut buf = [0u8; 4096];
+          while let Ok(n) = ur.read(&mut buf).await {
+            if n == 0 {
+              break;
+            }
+            let chunk = &buf[..n];
+            if chunk.windows(4).any(|w| w == b":1\r\n") {
+              drop(cw);
+              break;
+            }
+            if cw.write_all(chunk).await.is_err() {
+              break;
+            }
+          }
+        });
+        let _ = u2c.await;
+        c2u.abort();
+      } else if idx == 1 {
+        // Connection #2 (the retry attempt): drop immediately so `try_acquire_ms` fails.
+        drop(client);
+      } else {
+        // Connection #3+ (the best-effort cleanup): forward normally so the orphan lock is deleted.
+        let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+        let mut client = client;
+        let mut upstream = upstream;
+        tokio::spawn(async move {
+          let _ = tokio::io::copy_bidirectional(&mut client, &mut upstream).await;
+        });
+      }
+    }
+  });
+
+  let direct_mutex = RedisMutex::new(&session_url, test_redis.key_prefix()).expect("direct mutex");
+  let proxied_mutex = RedisMutex::new(&proxy_url, test_redis.key_prefix()).expect("proxied mutex");
+  let resource = format!("worker:orphan-cleanup:{}", uuid::Uuid::new_v4());
+  let token = new_owner_token("orphan-node");
+
+  let err = proxied_mutex
+    .try_acquire_ms(&resource, token, 60_000)
+    .await
+    .expect_err("double-failure acquire must return Err");
+  assert!(
+    !matches!(err, WorkerError::AlreadyLocked(_)),
+    "must fail with transport error, not AlreadyLocked: {err}"
+  );
+  assert_eq!(
+    direct_mutex.current_owner(&resource).await.unwrap(),
+    None,
+    "best-effort cleanup must remove orphan lock committed on conn #1"
+  );
+  proxy_task.abort();
+}
+
+#[tokio::test]
+async fn try_acquire_ms_cancelled_before_return_unlocks_own_key_and_preserves_foreign_owner() {
+  use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+  let test_redis = TestRedis::from_env_or_docker().expect("test redis");
+  let (session_url, session_db) = session_redis_url(test_redis.url()).expect("session url");
+  let upstream_addr = redis_upstream_addr(&session_url);
+  let direct_mutex = RedisMutex::new(&session_url, test_redis.key_prefix()).expect("direct mutex");
+
+  // Scenario 1: proxy forwards ACQUIRE_LOCK_MS to Redis, receives `:1\r\n`,
+  // holds the reply and signals caller to cancel `try_acquire_ms`, then releases
+  // the reply. A successor must acquire the same resource immediately (well
+  // before the 60s TTL).
+  {
+    let reply_held = Arc::new(tokio::sync::Notify::new());
+    let (allow_reply_tx, allow_reply_rx) = tokio::sync::watch::channel(false);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let proxy_port = listener.local_addr().unwrap().port();
+    let proxy_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+    let reply_held_c = Arc::clone(&reply_held);
+    let proxy_task = tokio::spawn(async move {
+      let mut held_once = false;
+      while let Ok((client, _)) = listener.accept().await {
+        let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+        let (mut cr, mut cw) = client.into_split();
+        let (mut ur, mut uw) = upstream.into_split();
+        let reply_held_c = Arc::clone(&reply_held_c);
+        let mut allow_rx = allow_reply_rx.clone();
+        let should_hold = !held_once;
+        held_once = true;
+        tokio::spawn(async move {
+          let _ = tokio::io::copy(&mut cr, &mut uw).await;
+        });
+        tokio::spawn(async move {
+          let mut buf = [0u8; 4096];
+          let mut did_hold = false;
+          while let Ok(n) = ur.read(&mut buf).await {
+            if n == 0 {
+              break;
+            }
+            let chunk = &buf[..n];
+            if should_hold && !did_hold && chunk.windows(4).any(|w| w == b":1\r\n") {
+              did_hold = true;
+              reply_held_c.notify_one();
+              let _ = allow_rx.wait_for(|v| *v).await;
+            }
+            if cw.write_all(chunk).await.is_err() {
+              break;
+            }
+          }
+        });
+      }
+    });
+
+    let proxied_mutex = RedisMutex::new(&proxy_url, test_redis.key_prefix()).expect("proxied mutex");
+    let resource = format!("worker:cancel-own:{}", uuid::Uuid::new_v4());
+    tokio::select! {
+      _ = proxied_mutex.try_acquire_ms(&resource, new_owner_token("cancelled-caller"), 60_000) => {
+        panic!("try_acquire_ms must be cancelled before returning")
+      }
+      () = reply_held.notified() => {}
+    }
+    let _ = allow_reply_tx.send(true);
+
+    let mut successor_lease = None;
+    for _ in 0..100 {
+      if let Ok(lease) = direct_mutex
+        .try_acquire_ms(&resource, new_owner_token("successor"), 60_000)
+        .await
+      {
+        successor_lease = Some(lease);
+        break;
+      }
+      tokio::time::sleep(Duration::from_millis(15)).await;
+    }
+    let lease = successor_lease.expect("cancelled try_acquire_ms must release its own lock before TTL");
+    lease.release().await.expect("release successor");
+    proxy_task.abort();
+  }
+
+  // Scenario 2: a foreign owner already holds the lock; cancelling a contender's
+  // `try_acquire_ms` while `:0\r\n` is held MUST NOT delete the foreign owner's lock.
+  {
+    let resource = format!("worker:cancel-foreign:{}", uuid::Uuid::new_v4());
+    let foreign_token = new_owner_token("foreign-holder");
+    let foreign_lease = direct_mutex
+      .try_acquire_ms(&resource, foreign_token.clone(), 60_000)
+      .await
+      .expect("foreign acquire");
+
+    let upstream_addr = redis_upstream_addr(&session_url);
+    let reply_held = Arc::new(tokio::sync::Notify::new());
+    let (allow_reply_tx, allow_reply_rx) = tokio::sync::watch::channel(false);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let proxy_port = listener.local_addr().unwrap().port();
+    let proxy_url = format!("redis://127.0.0.1:{proxy_port}/{session_db}");
+    let reply_held_c = Arc::clone(&reply_held);
+    let proxy_task = tokio::spawn(async move {
+      let mut held_once = false;
+      while let Ok((client, _)) = listener.accept().await {
+        let upstream = tokio::net::TcpStream::connect(&upstream_addr).await.unwrap();
+        let (mut cr, mut cw) = client.into_split();
+        let (mut ur, mut uw) = upstream.into_split();
+        let reply_held_c = Arc::clone(&reply_held_c);
+        let mut allow_rx = allow_reply_rx.clone();
+        let should_hold = !held_once;
+        held_once = true;
+        tokio::spawn(async move {
+          let _ = tokio::io::copy(&mut cr, &mut uw).await;
+        });
+        tokio::spawn(async move {
+          let mut buf = [0u8; 4096];
+          let mut did_hold = false;
+          while let Ok(n) = ur.read(&mut buf).await {
+            if n == 0 {
+              break;
+            }
+            let chunk = &buf[..n];
+            if should_hold && !did_hold && chunk.windows(4).any(|w| w == b":0\r\n") {
+              did_hold = true;
+              reply_held_c.notify_one();
+              let _ = allow_rx.wait_for(|v| *v).await;
+            }
+            if cw.write_all(chunk).await.is_err() {
+              break;
+            }
+          }
+        });
+      }
+    });
+
+    let proxied_mutex = RedisMutex::new(&proxy_url, test_redis.key_prefix()).expect("proxied mutex");
+    tokio::select! {
+      _ = proxied_mutex.try_acquire_ms(&resource, new_owner_token("cancelled-contender"), 60_000) => {
+        panic!("contender try_acquire_ms must be cancelled before returning")
+      }
+      () = reply_held.notified() => {}
+    }
+    let _ = allow_reply_tx.send(true);
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    assert_eq!(
+      direct_mutex.current_owner(&resource).await.unwrap().as_deref(),
+      Some(foreign_token.as_str()),
+      "cancelled contender must never disturb foreign owner's lock"
+    );
+    foreign_lease.release().await.expect("release foreign lease");
+    proxy_task.abort();
+  }
+}

@@ -33,7 +33,7 @@ test('New a page , then delete it in all pages, restore it', async ({
   await page.getByRole('button', { name: 'Delete' }).click();
 
   await page.getByTestId('trash-page').click();
-  await page.waitForTimeout(50);
+  await expect(page.getByTestId('restore-page-button')).toBeVisible();
   const trashPage = page.url();
   // restore it
   await page.getByTestId('restore-page-button').click();

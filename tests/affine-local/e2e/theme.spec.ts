@@ -21,7 +21,7 @@ test('default white', async ({ page }) => {
   });
   await page.getByTestId('settings-modal-trigger').click();
   await page.getByTestId('appearance-panel-trigger').click();
-  await page.waitForTimeout(50);
+  await expect(page.getByTestId('dark-theme-trigger')).toBeVisible();
   await page.getByTestId('dark-theme-trigger').click();
   const darkMode = await root.evaluate(element => element.dataset.theme);
   expect(darkMode).toBe('dark');

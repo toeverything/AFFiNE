@@ -32,13 +32,13 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 
   - `run.json`: `affine-test-env run-json` writes `{ run_id, sha, lane, selected_targets, skipped_targets_with_reason, timings_ms, status }`.
 
-- `server-types` (library `server_types`): canonical domain types (`DeploymentMode`, `ServerRole`, `LicenseTier`, `Limits`, `Rights`, `AccessGrant`, `DomainError`).
+- `server-types` (library `server_types`): canonical domain types (`DeploymentMode`, `ServerRole`, `LicenseTier`, `BillingSubject`, `Limits`, `Rights`, `AccessGrant`, `DomainError`).
   It also holds `license` (`LicenseEnvelopeV2` P-256 verification, `Keyring`, bundled `default-selfhost-10s-100g.license.json`, and `default_selfhost_access_grant()`).
 
 - `server-db` (library `server_db`): single `PgPool` with `min_connections = 0`, `statement_timeout`, `idle_in_transaction_session_timeout = '10s'`, and `application_name = "affine:<channel>:<role>:v2"`.
   It exports `WorkloadTier` admission, `with_long_query_timeout`, `dedicated_session_conn`, `with_query_scope`, `ensure_schema_ready`, `SessionRepository`, and `phase_a_compat::sessions::PhaseASessionRepository`.
 
-- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `ServerExtension`) and `CommunityExtension`.
+- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `RateLimitPolicy`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, and `CommunityExtension`.
 
 - `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `AppConfigService`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
   It has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.
@@ -47,22 +47,26 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
   The worker filters direct-render rows, releases unsupported leases cleanly, reaps expired rows, redacts PII in errors, and anonymizes terminal rows.
 
 - `server-blob` (library `server_blob`): `BlobStorageBackend` (`LocalFsBlobStorage`, `S3BlobStorage`) and `BlobService` over `public.blobs`.
-  Writes and deletes hold `StorageOperation` session advisory locks outside the `PgPool`.
+  Writes and deletes hold `StorageObjectLock` session advisory locks outside the `PgPool`.
   `list_blobs_authorized`, `delete_blob_authorized`, and `release_deleted_blobs_authorized` require `Owner` or commercial-grant `Admin` plus `!users.disabled` in one transaction.
   `put_blob` reserves under `workspaces ... FOR UPDATE`, checks `QuotaGate::resolve_workspace_grant`, writes the object, and completes its reservation.
   Storage failures surface only as `Unavailable("blob storage unavailable")`.
 
 - `server-sync` (library `server_sync`): pure-Rust Engine.IO v4 / Socket.IO v4 sync gateway mounted at `/socket.io/`.
-  It handles `y-octo` CRDT validation, merge, and diff over PostgreSQL, isolated `legacy_compat::errors`, and Redis `affine:eventbus:v1` / invalidation bridging.
+  It handles `y-octo` CRDT validation, merge, and diff over PostgreSQL using transaction-level advisory locks (`pg_advisory_xact_lock`) in `storage.rs`.
+  With `SessionRedis` active, userspace writes hold `MutexLock:userspace:<user_id>:<doc_id>` across the PostgreSQL transaction and release it via Lua.
+  Empty-table creates use `ON CONFLICT DO NOTHING` with a merge fallback, and commits check the `SessionRedis` lease fence.
+  Unmodified `v0.27.5` instances skip pre-commit lock checks after a 60s stall, so patch `canary` separately for legacy fencing.
+  It isolates `legacy_compat::errors` and bridges Redis `affine:eventbus:v1` and invalidation events.
 
 - `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, auth REST routes, and `/graphql`.
   Blob management mutations require `Owner` or commercial-grant `Admin`.
   `legacy_compat::{quota, errors}` isolates external GraphQL quota labels and Apollo error extensions.
 
-- `server-worker` (library `server_worker`): `SessionRedis`-compatible mutex (`MutexLock:<key>` via `SET NX EX` and Lua renew/release), `v2:` keyspace helper, `CancellationToken`, and `WorkerSupervisor`.
+- `server-worker` (library `server_worker`): `SessionRedis`-compatible mutex (`MutexLock:<key>` with atomic Lua lock, renew, fence, and release using millisecond `PX` TTL), `v2:` keyspace helper, `CancellationToken`, and `WorkerSupervisor`.
 
 - `affine-server`: single-binary multi-role CLI (`--role front|graphql|worker|script|allinone`, `SERVER_FLAVOR`, `--port 0`, `ensure_schema_ready()`, `spawn_mail_delivery_worker`, `/socket.io/`).
-  It exports `build_server`, `serve_with_extension`, and `build_app_and_serve` for any `Arc<dyn ServerExtension>`.
+  It exports `build_server`, `serve_with_extension`, `serve_with_extension_and_init`, and `build_app_and_serve` for any `Arc<dyn ServerExtension>`.
 
 Pin both test images to multi-arch index digests in `test-db-harness/src/pg.rs`, `test-db-harness/src/redis.rs`, `.github/workflows/native-playground.yml`, and `scripts/ci/check-l0-tier-a.mjs`.
 Change all four places together.

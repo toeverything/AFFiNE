@@ -35,5 +35,6 @@ url.workspace                = true
 uuid.workspace               = true
 
 [dev-dependencies]
+async-trait.workspace     = true
 test-db-harness.workspace = true
 tower.workspace           = true

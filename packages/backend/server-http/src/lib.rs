@@ -125,12 +125,14 @@ impl AppState {
       private_key: format!("ephemeral-test-key-{}", uuid::Uuid::new_v4()),
       ..AuthConfig::default()
     };
-    let auth = AuthService::new(db.clone(), sessions, extension.session_policy(), auth_cfg);
+    let auth = AuthService::new(db.clone(), sessions, extension.session_policy(), auth_cfg)
+      .with_rate_limit_policy(extension.rate_limit_policy());
     let users = UserService::new(db.clone());
     let noop = Arc::new(NoopEventPublisher::default());
     let invalidation: Arc<dyn InvalidationPublisher> = noop.clone();
     let event_bus: Arc<dyn EventBusPublisher> = noop;
-    let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation));
+    let workspaces = WorkspaceService::new(db.clone(), extension.quota_gate(), Arc::clone(&invalidation))
+      .with_rate_limit_policy(extension.rate_limit_policy());
     let app_config = AppConfigService::new(db.clone(), config.app_config_baseline.clone(), Arc::clone(&event_bus));
     let blob_root = std::env::temp_dir().join(format!("affine-server-blobs-{}", uuid::Uuid::new_v4()));
     let blob_root_str = blob_root.to_string_lossy();
@@ -332,6 +334,7 @@ async fn handle_graphql_post(State(state): State<RouterState>, headers: HeaderMa
       user: Some(principal.user),
     });
   }
+  gql_req = gql_req.data(headers);
   let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
   let mut resp = gql_resp.into_response();
   let h = resp.headers_mut();

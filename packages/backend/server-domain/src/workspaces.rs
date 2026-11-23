@@ -5,7 +5,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use server_db::{ServerDb, WorkloadTier};
-use server_spi::QuotaGate;
+use server_spi::{CommunityRateLimitPolicy, QuotaGate, RateLimitPolicy, RequestSource};
 use server_types::DomainError;
 use sqlx::{Postgres, Row, Transaction};
 use uuid::Uuid;
@@ -121,6 +121,7 @@ pub struct WorkspaceService {
   db: ServerDb,
   quota_gate: Arc<dyn QuotaGate>,
   invalidation: Arc<dyn InvalidationPublisher>,
+  rate_limit_policy: Arc<dyn RateLimitPolicy>,
 }
 
 impl WorkspaceService {
@@ -129,7 +130,13 @@ impl WorkspaceService {
       db,
       quota_gate,
       invalidation,
+      rate_limit_policy: Arc::new(CommunityRateLimitPolicy),
     }
+  }
+
+  pub fn with_rate_limit_policy(mut self, rate_limit_policy: Arc<dyn RateLimitPolicy>) -> Self {
+    self.rate_limit_policy = rate_limit_policy;
+    self
   }
 
   /// Atomically creates a workspace, its default private access policy, the
@@ -473,24 +480,143 @@ impl WorkspaceService {
     invitee_email: &str,
     requested_role: WorkspaceRole,
   ) -> Result<WorkspaceInvitationRecord, DomainError> {
+    self
+      .invite_member_with_source(actor_user_id, workspace_id, invitee_email, requested_role, None)
+      .await
+  }
+
+  /// Invites a user by email to a workspace while forwarding optional request
+  /// source metadata to [`RateLimitPolicy::check_workspace_invite`].
+  pub async fn invite_member_with_source(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    invitee_email: &str,
+    requested_role: WorkspaceRole,
+    source: Option<&RequestSource>,
+  ) -> Result<WorkspaceInvitationRecord, DomainError> {
+    let mut batch = self
+      .invite_members_with_source(
+        actor_user_id,
+        workspace_id,
+        &[invitee_email.to_owned()],
+        requested_role,
+        source,
+      )
+      .await?;
+    batch
+      .pop()
+      .map(|(_, res)| res)
+      .unwrap_or_else(|| Err(DomainError::Internal("empty invite batch result".to_owned())))
+  }
+
+  /// Invites a batch of emails to a workspace in a single transaction,
+  /// invoking [`RateLimitPolicy::check_workspace_invite`] once with the full
+  /// valid candidate list (matching `v0.27.5` `inviteMembers` batch semantics).
+  pub async fn invite_members_with_source(
+    &self,
+    actor_user_id: &str,
+    workspace_id: &str,
+    invitee_emails: &[String],
+    requested_role: WorkspaceRole,
+    source: Option<&RequestSource>,
+  ) -> Result<Vec<(String, Result<WorkspaceInvitationRecord, DomainError>)>, DomainError> {
+    const MAX_INVITE_BATCH_LEN: usize = 512;
+
     if requested_role == WorkspaceRole::Owner {
       return Err(DomainError::Validation("cannot invite directly as owner".to_owned()));
     }
+
+    // 1. Pre-flight read gate (matching `v0.27.5` `member.ts:98-105, 179-199`):
+    //    verify workspace existence, actor authorization (even for empty or
+    //    oversized batches), workspace name domain policy, and the 512 batch
+    //    cap BEFORE looking up or locking any invitee `users` rows.
+    {
+      let mut read_tx = self
+        .db
+        .begin_tiered(WorkloadTier::InteractiveRead)
+        .await
+        .map_err(|e| DomainError::Internal(format!("begin invite_members preflight: {e}")))?;
+
+      let workspace_name: Option<String> = sqlx::query_scalar("SELECT name FROM workspaces WHERE id = $1")
+        .bind(workspace_id)
+        .fetch_optional(&mut **read_tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load workspace for invite preflight: {e}")))?
+        .ok_or_else(|| DomainError::NotFound(format!("workspace {workspace_id} not found")))?;
+
+      let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
+        .fetch_one(&mut **read_tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("load invite preflight time: {e}")))?;
+
+      let actor_role = require_active_member_role(read_tx.tx_mut(), workspace_id, actor_user_id).await?;
+      let grant = self
+        .quota_gate
+        .resolve_workspace_grant(read_tx.tx_mut(), workspace_id, now)
+        .await?;
+      let effective_actor_role = actor_role.effective(grant.rights.commercial);
+      if !matches!(effective_actor_role, WorkspaceRole::Owner | WorkspaceRole::Admin) {
+        return Err(DomainError::Forbidden(
+          "only workspace owner or commercial admin may invite members".to_owned(),
+        ));
+      }
+
+      if let Some(name) = workspace_name.as_deref()
+        && crate::content_policy::contains_url_or_domain(name)
+      {
+        return Err(DomainError::Forbidden(
+          "Workspace names containing links or domains cannot be used to invite members.".to_owned(),
+        ));
+      }
+
+      read_tx
+        .commit()
+        .await
+        .map_err(|e| DomainError::Internal(format!("commit invite_members preflight: {e}")))?;
+    }
+
+    if invitee_emails.len() > MAX_INVITE_BATCH_LEN {
+      return Err(DomainError::RateLimited("Too many requests.".to_owned()));
+    }
+    if invitee_emails.is_empty() {
+      return Ok(Vec::new());
+    }
+
     // `workspace_invitations.normalized_email` must always be stored lowercase so
     // `v0.27.5` `strict_quota/seat.rs` literal equality checks (`normalized_email = $3`)
     // match during mixed-version deployments.
-    let email = canonical_email(invitee_email)?.to_ascii_lowercase();
+    let mut slots: Vec<Option<Result<WorkspaceInvitationRecord, DomainError>>> =
+      (0..invitee_emails.len()).map(|_| None).collect();
+    let mut seen_emails = std::collections::HashSet::with_capacity(invitee_emails.len());
+    let mut valid_inputs: Vec<(usize, String)> = Vec::with_capacity(invitee_emails.len());
+
+    for (idx, raw) in invitee_emails.iter().enumerate() {
+      match canonical_email(raw) {
+        Ok(canon) => {
+          let lower = canon.to_ascii_lowercase();
+          if !seen_emails.insert(lower.clone()) {
+            slots[idx] = Some(Err(DomainError::Forbidden("Duplicate invite email.".to_owned())));
+          } else {
+            valid_inputs.push((idx, lower));
+          }
+        }
+        Err(err) => {
+          slots[idx] = Some(Err(err));
+        }
+      }
+    }
 
     let mut tx = self
       .db
       .begin_tiered(WorkloadTier::InteractiveWrite)
       .await
-      .map_err(|e| DomainError::Internal(format!("begin invite_member: {e}")))?;
+      .map_err(|e| DomainError::Internal(format!("begin invite_members: {e}")))?;
 
     // Deadlock-free lock order matching `accept_invitation` & `v0.27.5` `strict_quota/seat.rs`:
-    // 1) lock sorted `users` (`owner_id`, `actor_user_id`, optional `invitee_user_id`)
+    // 1) lock sorted `users` (`owner_id`, `actor_user_id`, all matched `invitee_user_id`s)
     // 2) lock `workspaces`
-    // 3) re-verify `owner_id` & `invitee_user_id` stability under locks.
+    // 3) re-verify `owner_id`, workspace name, & `invitee_user_id` stability under locks.
     let owner_id: String = sqlx::query_scalar(
       "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
     )
@@ -500,15 +626,19 @@ impl WorkspaceService {
     .map_err(|e| DomainError::Internal(format!("locate workspace owner for invite: {e}")))?
     .ok_or_else(|| DomainError::NotFound(format!("workspace {workspace_id} not found")))?;
 
-    let initial_invitee_user_id: Option<String> =
-      sqlx::query_scalar("SELECT id FROM users WHERE lower(email) = lower($1) ORDER BY id LIMIT 1")
-        .bind(&email)
-        .fetch_optional(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("lookup invitee user: {e}")))?;
+    let mut initial_user_map: std::collections::BTreeMap<String, Option<String>> = std::collections::BTreeMap::new();
+    for (_, email) in &valid_inputs {
+      let uid: Option<String> =
+        sqlx::query_scalar("SELECT id FROM users WHERE lower(email) = lower($1) ORDER BY id LIMIT 1")
+          .bind(email)
+          .fetch_optional(&mut **tx.tx_mut())
+          .await
+          .map_err(|e| DomainError::Internal(format!("lookup invitee user: {e}")))?;
+      initial_user_map.insert(email.clone(), uid);
+    }
 
     let mut users_to_lock = vec![owner_id.clone(), actor_user_id.to_owned()];
-    if let Some(uid) = initial_invitee_user_id.as_ref() {
+    for uid in initial_user_map.values().flatten() {
       users_to_lock.push(uid.clone());
     }
     users_to_lock.sort();
@@ -517,9 +647,23 @@ impl WorkspaceService {
       .bind(&users_to_lock)
       .fetch_all(&mut **tx.tx_mut())
       .await
-      .map_err(|e| DomainError::Internal(format!("lock invite_member users: {e}")))?;
+      .map_err(|e| DomainError::Internal(format!("lock invite_members users: {e}")))?;
 
     lock_workspace_row(tx.tx_mut(), workspace_id).await?;
+
+    // Re-check workspace name and actor invite permission under row locks to prevent TOCTOU races.
+    let locked_workspace_name: Option<String> = sqlx::query_scalar("SELECT name FROM workspaces WHERE id = $1")
+      .bind(workspace_id)
+      .fetch_one(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("reload locked workspace name for invite: {e}")))?;
+    if let Some(name) = locked_workspace_name.as_deref()
+      && crate::content_policy::contains_url_or_domain(name)
+    {
+      return Err(DomainError::Forbidden(
+        "Workspace names containing links or domains cannot be used to invite members.".to_owned(),
+      ));
+    }
 
     let locked_owner_id: String = sqlx::query_scalar(
       "SELECT user_id FROM workspace_members WHERE workspace_id = $1 AND role = 'owner' AND state = 'active' LIMIT 1",
@@ -533,14 +677,18 @@ impl WorkspaceService {
       return Err(DomainError::Conflict("workspace owner changed".to_owned()));
     }
 
-    let invitee_user_id: Option<String> =
-      sqlx::query_scalar("SELECT id FROM users WHERE lower(email) = lower($1) ORDER BY id LIMIT 1")
-        .bind(&email)
-        .fetch_optional(&mut **tx.tx_mut())
-        .await
-        .map_err(|e| DomainError::Internal(format!("recheck invitee user: {e}")))?;
-    if invitee_user_id != initial_invitee_user_id {
-      return Err(DomainError::Conflict("invitee user changed".to_owned()));
+    let mut locked_user_map: std::collections::BTreeMap<String, Option<String>> = std::collections::BTreeMap::new();
+    for (_, email) in &valid_inputs {
+      let uid: Option<String> =
+        sqlx::query_scalar("SELECT id FROM users WHERE lower(email) = lower($1) ORDER BY id LIMIT 1")
+          .bind(email)
+          .fetch_optional(&mut **tx.tx_mut())
+          .await
+          .map_err(|e| DomainError::Internal(format!("recheck invitee user: {e}")))?;
+      if initial_user_map.get(email).and_then(|v| v.as_deref()) != uid.as_deref() {
+        return Err(DomainError::Conflict("invitee user changed".to_owned()));
+      }
+      locked_user_map.insert(email.clone(), uid);
     }
 
     let now: DateTime<Utc> = sqlx::query_scalar("SELECT clock_timestamp()")
@@ -560,100 +708,140 @@ impl WorkspaceService {
       ));
     }
 
-    if let Some(uid) = invitee_user_id.as_deref() {
-      let already_member: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+    let mut candidates: Vec<(usize, String, Option<String>)> = Vec::with_capacity(valid_inputs.len());
+    for (idx, email) in valid_inputs {
+      let invitee_user_id = locked_user_map.get(&email).cloned().flatten();
+      if let Some(uid) = invitee_user_id.as_deref() {
+        let already_member: bool = sqlx::query_scalar(
+          "SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2 AND state = 'active')",
+        )
+        .bind(workspace_id)
+        .bind(uid)
+        .fetch_one(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("check existing workspace member: {e}")))?;
+        if already_member {
+          slots[idx] = Some(Err(DomainError::Conflict(
+            "user is already a workspace member".to_owned(),
+          )));
+          continue;
+        }
+      }
+
+      let duplicate_invite: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+           SELECT 1
+           FROM workspace_invitations
+           WHERE workspace_id = $1
+             AND (lower(normalized_email) = lower($2) OR ($3::text IS NOT NULL AND invitee_user_id = $3))
+             AND status::text = ANY($4)
+         )",
       )
       .bind(workspace_id)
-      .bind(uid)
+      .bind(&email)
+      .bind(invitee_user_id.as_deref())
+      .bind(CHARGEABLE_INVITATION_STATUSES.as_slice())
       .fetch_one(&mut **tx.tx_mut())
       .await
-      .map_err(|e| DomainError::Internal(format!("check existing workspace member: {e}")))?;
-      if already_member {
-        return Err(DomainError::Conflict("user is already a workspace member".to_owned()));
+      .map_err(|e| DomainError::Internal(format!("check duplicate workspace invitation: {e}")))?;
+      if duplicate_invite {
+        slots[idx] = Some(Err(DomainError::Conflict(
+          "pending invitation already exists".to_owned(),
+        )));
+        continue;
       }
+
+      candidates.push((idx, email, invitee_user_id));
     }
 
-    let duplicate_invite: bool = sqlx::query_scalar(
-      "SELECT EXISTS(
-         SELECT 1
-         FROM workspace_invitations
-         WHERE workspace_id = $1
-           AND (lower(normalized_email) = lower($2) OR ($3::text IS NOT NULL AND invitee_user_id = $3))
-           AND status::text = ANY($4)
-       )",
-    )
-    .bind(workspace_id)
-    .bind(&email)
-    .bind(invitee_user_id.as_deref())
-    .bind(CHARGEABLE_INVITATION_STATUSES.as_slice())
-    .fetch_one(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("check duplicate workspace invitation: {e}")))?;
-    if duplicate_invite {
-      return Err(DomainError::Conflict("pending invitation already exists".to_owned()));
+    if !candidates.is_empty() {
+      let candidate_refs: Vec<&str> = candidates.iter().map(|(_, e, _)| e.as_str()).collect();
+      self
+        .rate_limit_policy
+        .check_workspace_invite(tx.tx_mut(), workspace_id, actor_user_id, &candidate_refs, source, now)
+        .await?;
+
+      let current_charged_seats = count_charged_seats_in_tx(tx.tx_mut(), workspace_id).await?;
+      self
+        .quota_gate
+        .check_seat_admission(
+          tx.tx_mut(),
+          workspace_id,
+          current_charged_seats,
+          candidates.len() as i32,
+          now,
+        )
+        .await?;
+
+      for (idx, email, invitee_user_id) in candidates {
+        // Clear any stale non-chargeable invitations for this target so the
+        // `(workspace_id, invitee_user_id)` unique constraint never collides on re-invite.
+        sqlx::query(
+          "DELETE FROM workspace_invitations
+           WHERE workspace_id = $1
+             AND (lower(normalized_email) = lower($2) OR ($3::text IS NOT NULL AND invitee_user_id = $3))
+             AND NOT (status::text = ANY($4))",
+        )
+        .bind(workspace_id)
+        .bind(&email)
+        .bind(invitee_user_id.as_deref())
+        .bind(CHARGEABLE_INVITATION_STATUSES.as_slice())
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("clear stale workspace invitations: {e}")))?;
+
+        let invitation_id = format!("inv_{}", Uuid::new_v4().simple());
+        sqlx::query(
+          r#"INSERT INTO workspace_invitations
+               (id, workspace_id, invitee_user_id, normalized_email, inviter_user_id, requested_role, status, kind, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'email', $7, $7)"#,
+        )
+        .bind(&invitation_id)
+        .bind(workspace_id)
+        .bind(invitee_user_id.as_deref())
+        .bind(&email)
+        .bind(actor_user_id)
+        .bind(requested_role.as_str())
+        .bind(now)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("insert workspace invitation: {e}")))?;
+
+        slots[idx] = Some(Ok(WorkspaceInvitationRecord {
+          id: invitation_id,
+          workspace_id: workspace_id.to_owned(),
+          invitee_user_id,
+          normalized_email: Some(email),
+          inviter_user_id: Some(actor_user_id.to_owned()),
+          requested_role,
+          status: "pending".to_owned(),
+          created_at: now,
+        }));
+      }
+
+      tx.commit()
+        .await
+        .map_err(|e| DomainError::Internal(format!("commit invite_members: {e}")))?;
+
+      let _ = self
+        .invalidation
+        .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
+          workspace_id: workspace_id.to_owned(),
+        })
+        .await;
     }
 
-    let current_charged_seats = count_charged_seats_in_tx(tx.tx_mut(), workspace_id).await?;
-    self
-      .quota_gate
-      .check_seat_admission(tx.tx_mut(), workspace_id, current_charged_seats, 1, now)
-      .await?;
-
-    // Clear any stale non-chargeable invitations for this target so the
-    // `(workspace_id, invitee_user_id)` unique constraint never collides on re-invite.
-    sqlx::query(
-      "DELETE FROM workspace_invitations
-       WHERE workspace_id = $1
-         AND (lower(normalized_email) = lower($2) OR ($3::text IS NOT NULL AND invitee_user_id = $3))
-         AND NOT (status::text = ANY($4))",
+    Ok(
+      invitee_emails
+        .iter()
+        .cloned()
+        .zip(
+          slots
+            .into_iter()
+            .map(|slot| slot.unwrap_or_else(|| Err(DomainError::Internal("missing invite slot result".to_owned())))),
+        )
+        .collect(),
     )
-    .bind(workspace_id)
-    .bind(&email)
-    .bind(invitee_user_id.as_deref())
-    .bind(CHARGEABLE_INVITATION_STATUSES.as_slice())
-    .execute(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("clear stale workspace invitations: {e}")))?;
-
-    let invitation_id = format!("inv_{}", Uuid::new_v4().simple());
-    sqlx::query(
-      r#"INSERT INTO workspace_invitations
-           (id, workspace_id, invitee_user_id, normalized_email, inviter_user_id, requested_role, status, kind, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'email', $7, $7)"#,
-    )
-    .bind(&invitation_id)
-    .bind(workspace_id)
-    .bind(invitee_user_id.as_deref())
-    .bind(&email)
-    .bind(actor_user_id)
-    .bind(requested_role.as_str())
-    .bind(now)
-    .execute(&mut **tx.tx_mut())
-    .await
-    .map_err(|e| DomainError::Internal(format!("insert workspace invitation: {e}")))?;
-
-    tx.commit()
-      .await
-      .map_err(|e| DomainError::Internal(format!("commit invite_member: {e}")))?;
-
-    let _ = self
-      .invalidation
-      .publish_invalidation(&InvalidationHintV1::QuotaSeatUsage {
-        workspace_id: workspace_id.to_owned(),
-      })
-      .await;
-
-    Ok(WorkspaceInvitationRecord {
-      id: invitation_id,
-      workspace_id: workspace_id.to_owned(),
-      invitee_user_id,
-      normalized_email: Some(email),
-      inviter_user_id: Some(actor_user_id.to_owned()),
-      requested_role,
-      status: "pending".to_owned(),
-      created_at: now,
-    })
   }
 
   /// Accepts a pending workspace invitation for `invitee_user_id`, following the

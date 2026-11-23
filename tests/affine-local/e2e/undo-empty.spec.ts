@@ -18,7 +18,7 @@ test('should be able to undo on empty page', async ({ page }) => {
   // test editor still work
   await page.locator('.edgeless-note-page-content').click({ force: true });
   await page.locator('.edgeless-note-page-content').click({ force: true });
-  await page.waitForTimeout(100);
+  await expect(page.locator('.edgeless-note-page-content')).toBeVisible();
   await page
     .locator('.edgeless-note-page-content')
     .pressSequentially('test text');

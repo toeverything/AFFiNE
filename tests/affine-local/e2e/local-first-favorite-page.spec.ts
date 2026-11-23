@@ -43,7 +43,7 @@ test('Export to html, markdown and png', async ({ page }) => {
     await page.getByTestId('export-to-markdown').click();
     await downloadPromise;
   }
-  await page.waitForTimeout(50);
+  await expect(page.getByTestId('export-menu')).not.toBeVisible();
   {
     await clickPageMoreActions(page);
     await page.getByTestId('export-menu').click();

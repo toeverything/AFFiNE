@@ -30,6 +30,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct SyncConfig {
   pub redis_url: Option<String>,
+  pub session_redis_url: Option<String>,
   pub origin_channel: String,
   pub origin_id: Option<String>,
   pub deployment_prefix: String,
@@ -53,6 +54,7 @@ impl SyncConfig {
     );
     Self {
       redis_url: None,
+      session_redis_url: None,
       origin_channel: format!("v2:{channel}"),
       origin_id: None,
       deployment_prefix: "selfhosted".to_owned(),
@@ -106,7 +108,18 @@ impl SyncServer {
     quota_gate: Arc<dyn QuotaGate>,
     config: SyncConfig,
   ) -> Self {
-    let storage = SyncStorage::with_quota_gate(db, quota_gate);
+    let storage = match config.session_redis_url.as_deref() {
+      Some(url) => {
+        match SyncStorage::with_quota_gate(db.clone(), Arc::clone(&quota_gate)).with_session_redis_url(url) {
+          Ok(s) => s,
+          Err(err) => {
+            tracing::error!(error = %err, "invalid session_redis_url for server-sync; userspace writes fail closed");
+            SyncStorage::with_quota_gate(db, quota_gate).with_invalid_session_redis_config(err.to_string())
+          }
+        }
+      }
+      None => SyncStorage::with_quota_gate(db, quota_gate),
+    };
     let eventbus = match config.origin_id {
       Some(origin_id) => {
         RedisSyncBridge::start_with_origin_id(config.redis_url.as_deref(), config.origin_channel, origin_id).await

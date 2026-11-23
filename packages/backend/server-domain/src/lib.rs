@@ -7,6 +7,7 @@
 
 pub mod app_config;
 pub mod auth;
+pub mod content_policy;
 pub mod events;
 pub mod users;
 pub mod workspaces;

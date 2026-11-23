@@ -131,7 +131,6 @@ test('should not open peek view when content is covered by canvas element', asyn
     steps: 10,
   });
   await page.mouse.dblclick(syncedDocCenter.x, syncedDocCenter.y);
-  await page.waitForTimeout(100);
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 
   // close peek view
@@ -152,7 +151,15 @@ test('should not open peek view when content is covered by canvas element', asyn
     }
   );
   await page.mouse.up();
-  await page.waitForTimeout(100);
+  await expect
+    .poll(async () => {
+      try {
+        return (await getSelectedXYWH(page))[2];
+      } catch {
+        return 0;
+      }
+    })
+    .toBeGreaterThan(0);
 
   // click the same position again
   await page.mouse.move(syncedDocCenter.x, syncedDocCenter.y, {

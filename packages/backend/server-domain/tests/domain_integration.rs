@@ -24,15 +24,15 @@ use server_domain::{
     SmtpRuntimeConfig,
   },
   auth::{
-    AuthConfig, AuthMailQuotaPolicy, AuthRequestSource, AuthService, CompleteMagicLinkInput, CreateAdminUserInput,
-    EmailDomainVerification, EmailDomainVerifier, PasswordSignInInput, PrepareMagicLinkInput,
+    AuthConfig, AuthRequestSource, AuthService, CompleteMagicLinkInput, CreateAdminUserInput, EmailDomainVerification,
+    EmailDomainVerifier, PasswordSignInInput, PrepareMagicLinkInput,
     password::{hash_password, verify_password},
   },
   events::{EVENTBUS_CHANNEL_V1, INVALIDATION_CHANNEL_V1, InvalidationHintV1, NoopEventPublisher, RedisEventPublisher},
   workspaces::{UpdateWorkspaceInput, WorkspaceRole, WorkspaceService},
 };
-use server_spi::{CommunityQuotaGate, CommunitySessionPolicyHook, QuotaGate, SessionPolicyHook};
-use server_types::{AccessGrant, DomainError, LicenseTier, Limits, Rights};
+use server_spi::{CommunityQuotaGate, CommunitySessionPolicyHook, QuotaGate, RateLimitPolicy, SessionPolicyHook};
+use server_types::{AccessGrant, BillingSubject, DomainError, LicenseTier, Limits, Rights};
 use sqlx::{Postgres, Row, Transaction};
 use test_db_harness::{pg::PgCluster, redis::TestRedis};
 use uuid::Uuid;
@@ -254,6 +254,7 @@ impl QuotaGate for TwoSeatQuotaGate {
   ) -> Result<AccessGrant, DomainError> {
     Ok(AccessGrant {
       tier: LicenseTier::SelfhostDefault,
+      billing_subject: BillingSubject::Owner,
       seat_quantity: Some(2),
       expires_at: None,
       limits: Limits {
@@ -829,12 +830,12 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
     }
 
     // 7. HMAC-SHA256 recipient_hash (independent vector), recipient_user_id=NULL,
-    //    AuthMailQuotaPolicy rollback, EmailDomainVerifier (Missing / '+' / Unavailable /
+    //    RateLimitPolicy rollback, EmailDomainVerifier (Missing / '+' / Unavailable /
     //    no DNS call on invalid complete_magic_link), and concurrent invite x accept.
     struct OneMailQuotaPolicy(AtomicUsize);
     #[async_trait::async_trait]
-    impl AuthMailQuotaPolicy for OneMailQuotaPolicy {
-      async fn reserve_auth_mail(
+    impl RateLimitPolicy for OneMailQuotaPolicy {
+      async fn check_auth_mail(
         &self,
         _tx: &mut Transaction<'_, Postgres>,
         _mail_name: &str,
@@ -846,6 +847,18 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         if self.0.fetch_add(1, Ordering::SeqCst) >= 1 {
           return Err(DomainError::RateLimited("mail_quota_denied".to_owned()));
         }
+        Ok(())
+      }
+
+      async fn check_workspace_invite(
+        &self,
+        _tx: &mut Transaction<'_, Postgres>,
+        _workspace_id: &str,
+        _inviter_id: &str,
+        _target_emails: &[&str],
+        _source: Option<&AuthRequestSource>,
+        _now: DateTime<Utc>,
+      ) -> Result<(), DomainError> {
         Ok(())
       }
     }
@@ -877,7 +890,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
       Arc::new(CommunitySessionPolicyHook),
       quota_cfg,
     )
-    .with_mail_quota_policy(Arc::new(OneMailQuotaPolicy(AtomicUsize::new(0))));
+    .with_rate_limit_policy(Arc::new(OneMailQuotaPolicy(AtomicUsize::new(0))));
 
     let first_ml = quota_auth
       .prepare_magic_link(PrepareMagicLinkInput {
@@ -916,7 +929,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
       );
     }
 
-    // 2nd mail rejected by AuthMailQuotaPolicy: whole tx rolls back, no 2nd mail queued, 1st OTP still works!
+    // 2nd mail rejected by RateLimitPolicy: whole tx rolls back, no 2nd mail queued, 1st OTP still works!
     let second_err = quota_auth
       .prepare_magic_link(PrepareMagicLinkInput {
         email: "alice@example.com".to_owned(),
@@ -925,7 +938,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         source: None,
       })
       .await
-      .expect_err("2nd mail must be rejected by AuthMailQuotaPolicy");
+      .expect_err("2nd mail must be rejected by RateLimitPolicy");
     assert!(matches!(second_err, DomainError::RateLimited(_)));
     {
       let mut conn = db.acquire_tiered(WorkloadTier::InteractiveRead).await.unwrap();
@@ -1213,6 +1226,231 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
       )
       .await
       .expect("commercial admin can invite member");
+
+    db.pool().close().await;
+  });
+}
+
+struct RejectingRateLimitPolicy;
+
+#[async_trait::async_trait]
+impl RateLimitPolicy for RejectingRateLimitPolicy {
+  async fn check_auth_mail(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    mail_name: &str,
+    normalized_email: &str,
+    recipient_user_id: Option<&str>,
+    source: Option<&AuthRequestSource>,
+    _now: DateTime<Utc>,
+  ) -> Result<(), DomainError> {
+    assert_eq!(mail_name, "SignUp");
+    assert_eq!(normalized_email, "limited-user@affine.test");
+    assert!(recipient_user_id.is_none());
+    let src = source.expect("auth mail request source must be forwarded");
+    assert!(src.trusted);
+    assert_eq!(src.ip.as_deref(), Some("203.0.113.10"));
+    Err(DomainError::RateLimited("auth mail rate limited".into()))
+  }
+
+  async fn check_workspace_invite(
+    &self,
+    _tx: &mut Transaction<'_, Postgres>,
+    _workspace_id: &str,
+    _inviter_id: &str,
+    target_emails: &[&str],
+    source: Option<&AuthRequestSource>,
+    _now: DateTime<Utc>,
+  ) -> Result<(), DomainError> {
+    assert_eq!(target_emails, &["invitee-rl@affine.test"]);
+    let src = source.expect("workspace invite request source must be forwarded");
+    assert!(src.trusted);
+    assert_eq!(src.ip.as_deref(), Some("198.51.100.42"));
+    assert_eq!(src.asn, Some(13335));
+    Err(DomainError::RateLimited("workspace invite rate limited".into()))
+  }
+}
+
+#[test]
+fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
+  let cluster = PgCluster::from_env_or_docker().expect("PG16 cluster");
+  let empty = EmptyDbGuard::create(&cluster, "ratelimit");
+
+  let rt = test_runtime();
+  rt.block_on(async {
+    let db = ServerDb::connect(DbConfig::new(&empty.url)).await.unwrap();
+    db.ensure_schema_ready().await.unwrap();
+
+    let policy = Arc::new(RejectingRateLimitPolicy);
+    let auth = AuthService::new(
+      db.clone(),
+      Arc::new(TestSqlSessionRepo),
+      Arc::new(CommunitySessionPolicyHook),
+      AuthConfig {
+        private_key: "rate-limit-test-key".to_owned(),
+        ..AuthConfig::default()
+      },
+    )
+    .with_rate_limit_policy(policy.clone());
+
+    let admin = auth
+      .create_first_admin_user(CreateAdminUserInput {
+        name: Some("Owner".to_owned()),
+        email: "owner-rl@affine.test".to_owned(),
+        password: "Password123!".to_owned(),
+        client_version: None,
+      })
+      .await
+      .expect("create owner");
+
+    // 1. Auth mail rate limit must roll back both runtime_states and mail_deliveries.
+    let target_email = "limited-user@affine.test";
+    let mail_err = auth
+      .prepare_magic_link(PrepareMagicLinkInput {
+        email: target_email.to_owned(),
+        callback_url: "https://affine.test/magic-link".to_owned(),
+        client_nonce: None,
+        source: Some(AuthRequestSource {
+          trusted: true,
+          ip: Some("203.0.113.10".to_owned()),
+          asn: None,
+        }),
+      })
+      .await
+      .expect_err("rate limit policy must reject auth mail");
+    assert!(matches!(mail_err, DomainError::RateLimited(_)));
+
+    let mail_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM mail_deliveries")
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(mail_count, 0, "rejected auth mail must not persist mail_deliveries");
+
+    let state_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM runtime_states WHERE lookup_key = $1")
+      .bind(target_email)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(state_count, 0, "rejected auth mail must roll back runtime_states");
+
+    // 2. Workspace invite rate limit must roll back workspace_invitations and workspace_members.
+    let workspaces = WorkspaceService::new(
+      db.clone(),
+      Arc::new(CommunityQuotaGate),
+      Arc::new(NoopEventPublisher::default()),
+    )
+    .with_rate_limit_policy(policy);
+    let ws = workspaces
+      .create_workspace(&admin.user.id, Some("RL Workspace"))
+      .await
+      .expect("create workspace");
+
+    let invite_source = AuthRequestSource {
+      trusted: true,
+      ip: Some("198.51.100.42".to_owned()),
+      asn: Some(13335),
+    };
+    let invite_err = workspaces
+      .invite_member_with_source(
+        &admin.user.id,
+        &ws.id,
+        "invitee-rl@affine.test",
+        WorkspaceRole::Member,
+        Some(&invite_source),
+      )
+      .await
+      .expect_err("rate limit policy must reject workspace invite");
+    assert!(matches!(invite_err, DomainError::RateLimited(_)));
+
+    let inv_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM workspace_invitations WHERE workspace_id = $1")
+      .bind(&ws.id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(inv_count, 0, "rejected invite must not persist workspace_invitations");
+
+    let member_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1")
+      .bind(&ws.id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(member_count, 1, "only owner must remain in workspace_members");
+
+    // 3. Batch invite_members_with_source invokes check_workspace_invite ONCE with all 3 valid candidates.
+    struct RecordingRateLimitPolicy {
+      invite_batches: std::sync::Mutex<Vec<Vec<String>>>,
+    }
+    #[async_trait::async_trait]
+    impl RateLimitPolicy for RecordingRateLimitPolicy {
+      async fn check_auth_mail(
+        &self,
+        _tx: &mut Transaction<'_, Postgres>,
+        _mail_name: &str,
+        _normalized_email: &str,
+        _recipient_user_id: Option<&str>,
+        _source: Option<&AuthRequestSource>,
+        _now: DateTime<Utc>,
+      ) -> Result<(), DomainError> {
+        Ok(())
+      }
+
+      async fn check_workspace_invite(
+        &self,
+        _tx: &mut Transaction<'_, Postgres>,
+        _workspace_id: &str,
+        _inviter_id: &str,
+        target_emails: &[&str],
+        source: Option<&AuthRequestSource>,
+        _now: DateTime<Utc>,
+      ) -> Result<(), DomainError> {
+        assert_eq!(source.and_then(|s| s.ip.as_deref()), Some("198.51.100.42"));
+        self
+          .invite_batches
+          .lock()
+          .unwrap()
+          .push(target_emails.iter().map(|s| (*s).to_owned()).collect());
+        Ok(())
+      }
+    }
+    let recorder = Arc::new(RecordingRateLimitPolicy {
+      invite_batches: std::sync::Mutex::new(Vec::new()),
+    });
+    let batch_workspaces = WorkspaceService::new(
+      db.clone(),
+      Arc::new(CommunityQuotaGate),
+      Arc::new(NoopEventPublisher::default()),
+    )
+    .with_rate_limit_policy(recorder.clone());
+    let batch_inputs = vec![
+      "batch-1@affine.test".to_owned(),
+      "batch-2@affine.test".to_owned(),
+      "batch-3@affine.test".to_owned(),
+    ];
+    let batch_res = batch_workspaces
+      .invite_members_with_source(
+        &admin.user.id,
+        &ws.id,
+        &batch_inputs,
+        WorkspaceRole::Member,
+        Some(&invite_source),
+      )
+      .await
+      .expect("batch invite succeeds");
+    assert_eq!(batch_res.len(), 3);
+    assert!(batch_res.iter().all(|(_, r)| r.is_ok()));
+    {
+      let recorded = recorder.invite_batches.lock().unwrap();
+      assert_eq!(
+        recorded.len(),
+        1,
+        "check_workspace_invite must be called once per batch"
+      );
+      assert_eq!(
+        recorded[0].len(),
+        3,
+        "target_emails must contain all 3 valid candidates"
+      );
+    }
 
     db.pool().close().await;
   });

@@ -359,6 +359,7 @@ mod tests {
     // 2. SelfhostTeam with overcapacity members -> legacy name "Team"
     let team_grant = AccessGrant {
       tier: LicenseTier::SelfhostTeam,
+      billing_subject: server_types::BillingSubject::Workspace,
       seat_quantity: Some(25),
       expires_at: None,
       limits: Limits {

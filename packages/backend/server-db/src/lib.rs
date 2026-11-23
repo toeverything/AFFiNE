@@ -23,7 +23,8 @@ use sqlx::{
   pool::PoolConnection,
   postgres::{PgConnectOptions, PgPoolOptions, PgQueryResult, PgRow, PgStatement, PgTypeInfo},
 };
-use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+pub use tokio::sync::OwnedSemaphorePermit;
+use tokio::sync::Semaphore;
 
 pub use crate::{
   error::DbError,
@@ -314,15 +315,23 @@ impl ServerDb {
     Ok(TieredConn { conn, _permit: permit })
   }
 
-  pub async fn begin_tiered(&self, tier: WorkloadTier) -> Result<TieredTx<'_>, DbError> {
-    let permit = Arc::clone(&self.inner.tier_semaphores[tier.index()])
+  pub async fn acquire_tier_permit(&self, tier: WorkloadTier) -> Result<OwnedSemaphorePermit, DbError> {
+    Arc::clone(&self.inner.tier_semaphores[tier.index()])
       .acquire_owned()
       .await
-      .map_err(|_| DbError::PoolClosed)?;
+      .map_err(|_| DbError::PoolClosed)
+  }
+
+  pub async fn begin_with_permit(&self, permit: OwnedSemaphorePermit) -> Result<TieredTx<'_>, DbError> {
     let tx = self.inner.pool.begin().await?;
     metrics::record_pool_acquire();
     metrics::record_transaction();
     Ok(TieredTx { tx, _permit: permit })
+  }
+
+  pub async fn begin_tiered(&self, tier: WorkloadTier) -> Result<TieredTx<'_>, DbError> {
+    let permit = self.acquire_tier_permit(tier).await?;
+    self.begin_with_permit(permit).await
   }
 
   /// Acquires a [`WorkloadTier::LongQuery`] permit, opens a transaction, sets

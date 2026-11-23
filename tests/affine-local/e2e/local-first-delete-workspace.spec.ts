@@ -38,10 +38,7 @@ test('Create new workspace, then delete it', async ({ page, workspace }) => {
   await promise;
   await page.reload();
   await page.waitForSelector('[data-testid="workspace-name"]');
-  await page.waitForTimeout(1000);
-  expect(await page.getByTestId('workspace-name').textContent()).toBe(
-    'Demo Workspace'
-  );
+  await expect(page.getByTestId('workspace-name')).toHaveText('Demo Workspace');
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');
@@ -68,7 +65,6 @@ test('Delete last workspace', async ({ page }) => {
   await openHomePage(page);
   await expect(page.getByTestId('new-workspace')).toBeVisible();
   await createLocalWorkspace({ name: 'Test Workspace' }, page, true);
-  await page.waitForTimeout(1000);
   await page.waitForSelector('[data-testid="workspace-name"]');
   await expect(page.getByTestId('workspace-name')).toHaveText('Test Workspace');
 });

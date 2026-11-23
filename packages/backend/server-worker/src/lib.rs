@@ -1,10 +1,10 @@
 //! Background worker runtime primitives:
-//! - `SessionRedis`-compatible distributed mutex (`SET NX EX` + atomic Lua renew/unlock)
+//! - `SessionRedis`-compatible distributed mutex (atomic Lua acquire/renew/fence/unlock with millisecond `PX` TTL)
 //! - `v2:` private keyspace helper for shared logical DB isolation
 //! - [`CancellationToken`] and [`WorkerSupervisor`] for graceful lease drain on shutdown.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::time::Duration;
 
 use redis::{AsyncCommands, Script};
@@ -15,10 +15,47 @@ use tokio::task::JoinHandle;
 pub const SESSION_REDIS_DB_OFFSET: u8 = 2;
 /// Default lock TTL in seconds (matches `v0.27.5` `Locker`: 60s).
 pub const DEFAULT_LOCK_TTL_SECS: u64 = 60;
+/// Default timeout for a single Redis connect or command operation.
+pub const REDIS_OP_TIMEOUT: Duration = Duration::from_secs(5);
+
+const ACQUIRE_LOCK_MS_SCRIPT: &str = r#"
+local cur = redis.call("get", KEYS[1])
+if not cur then
+  redis.call("set", KEYS[1], ARGV[1], "PX", tonumber(ARGV[2]))
+  return 1
+elseif cur == ARGV[1] then
+  local pttl = redis.call("pttl", KEYS[1])
+  if pttl > 0 then
+    redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+  else
+    redis.call("set", KEYS[1], ARGV[1], "PX", tonumber(ARGV[2]))
+  end
+  return 1
+else
+  return 0
+end
+"#;
 
 const RENEW_LOCK_SCRIPT: &str = r#"
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("expire", KEYS[1], tonumber(ARGV[2]))
+else
+  return 0
+end
+"#;
+
+const RENEW_LOCK_MS_SCRIPT: &str = r#"
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+else
+  return 0
+end
+"#;
+
+const FENCE_AND_RENEW_MS_SCRIPT: &str = r#"
+if redis.call("get", KEYS[1]) == ARGV[1] and redis.call("pttl", KEYS[1]) > 0 then
+  redis.call("pexpire", KEYS[1], tonumber(ARGV[2]))
+  return 1
 else
   return 0
 end
@@ -39,6 +76,8 @@ end
 pub enum WorkerError {
   #[error("redis error: {0}")]
   Redis(#[from] redis::RedisError),
+  #[error("redis operation timed out: {0}")]
+  Timeout(String),
   #[error("invalid redis url: {0}")]
   InvalidRedisUrl(String),
   #[error("lock `{0}` is already held by another owner")]
@@ -128,11 +167,12 @@ impl V2Keyspace {
 /// Distributed Redis mutex compatible with `v0.27.5` `SessionRedis` `Locker`.
 ///
 /// Uses `MutexLock:<resource>` keys (optionally prefixed in test environments),
-/// `SET <key> <owner_token> NX EX <ttl>` for acquisition, and atomic Lua scripts
-/// verifying `owner_token` for renewal and release.
+/// atomic Lua acquire/renew/fence/release scripts with millisecond `PX` TTLs,
+/// cached multiplexed connections, and cancel-safe lease release.
 #[derive(Clone)]
 pub struct RedisMutex {
   client: redis::Client,
+  conn: Arc<Mutex<Option<redis::aio::MultiplexedConnection>>>,
   key_prefix: String,
 }
 
@@ -141,6 +181,7 @@ impl RedisMutex {
     let client = redis::Client::open(redis_url)?;
     Ok(Self {
       client,
+      conn: Arc::new(Mutex::new(None)),
       key_prefix: key_prefix.into(),
     })
   }
@@ -149,30 +190,196 @@ impl RedisMutex {
     format!("{}MutexLock:{resource}", self.key_prefix)
   }
 
+  async fn get_connection(&self) -> Result<redis::aio::MultiplexedConnection, WorkerError> {
+    {
+      let guard = self.conn.lock().await;
+      if let Some(existing) = guard.as_ref() {
+        return Ok(existing.clone());
+      }
+    }
+    let conn = tokio::time::timeout(REDIS_OP_TIMEOUT, self.client.get_multiplexed_async_connection())
+      .await
+      .map_err(|_| WorkerError::Timeout("connect multiplexed redis connection".to_owned()))??;
+    let mut guard = self.conn.lock().await;
+    if let Some(existing) = guard.as_ref() {
+      return Ok(existing.clone());
+    }
+    *guard = Some(conn.clone());
+    Ok(conn)
+  }
+
+  async fn invalidate_connection(&self) {
+    let mut guard = self.conn.lock().await;
+    *guard = None;
+  }
+
+  async fn exec_with_retry<T, F, Fut>(&self, op_name: &'static str, op: F) -> Result<T, WorkerError>
+  where
+    F: Fn(redis::aio::MultiplexedConnection) -> Fut,
+    Fut: std::future::Future<Output = Result<T, redis::RedisError>>,
+  {
+    let conn = self.get_connection().await?;
+    match tokio::time::timeout(REDIS_OP_TIMEOUT, op(conn)).await {
+      Ok(Ok(val)) => return Ok(val),
+      Ok(Err(_)) | Err(_) => {
+        self.invalidate_connection().await;
+      }
+    }
+    let conn = self.get_connection().await?;
+    match tokio::time::timeout(REDIS_OP_TIMEOUT, op(conn)).await {
+      Ok(Ok(val)) => Ok(val),
+      Ok(Err(err)) => {
+        self.invalidate_connection().await;
+        Err(WorkerError::Redis(err))
+      }
+      Err(_) => {
+        self.invalidate_connection().await;
+        Err(WorkerError::Timeout(op_name.to_owned()))
+      }
+    }
+  }
+
   /// Acquires `MutexLock:<resource>` for `owner_token` with `ttl_secs` expiration.
+  ///
+  /// Callers must pass a fresh unique `owner_token` per acquisition attempt
+  /// (e.g. [`new_owner_token`]); reusing the same `owner_token` is intentionally
+  /// idempotent so transport retries after a dropped reply recover cleanly.
   pub async fn try_acquire(
     &self,
     resource: &str,
     owner_token: impl Into<String>,
     ttl_secs: u64,
   ) -> Result<RedisLockLease, WorkerError> {
+    self
+      .try_acquire_ms(resource, owner_token, ttl_secs.max(1).saturating_mul(1_000))
+      .await
+  }
+
+  /// Acquires `MutexLock:<resource>` for `owner_token` with `ttl_ms` millisecond expiration.
+  ///
+  /// Callers must pass a fresh unique `owner_token` per acquisition attempt
+  /// (e.g. [`new_owner_token`]); reusing the same `owner_token` is intentionally
+  /// idempotent so transport retries after a dropped reply recover cleanly.
+  /// Cancel-safe: if the caller cancels this future before it returns, any lock
+  /// acquired for this `owner_token` is released asynchronously without ever
+  /// disturbing a lock held by another owner.
+  pub async fn try_acquire_ms(
+    &self,
+    resource: &str,
+    owner_token: impl Into<String>,
+    ttl_ms: u64,
+  ) -> Result<RedisLockLease, WorkerError> {
+    const STATE_IN_FLIGHT: u8 = 0;
+    const STATE_ACQUIRED_ON_SERVER: u8 = 1;
+    const STATE_CANCELLED_BY_CALLER: u8 = 2;
+
+    struct AcquireCancelGuard {
+      state: Arc<AtomicU8>,
+      mutex: RedisMutex,
+      lock_key: String,
+      owner_token: String,
+      disarmed: bool,
+    }
+
+    impl Drop for AcquireCancelGuard {
+      fn drop(&mut self) {
+        if self.disarmed {
+          return;
+        }
+        let prev = self.state.swap(STATE_CANCELLED_BY_CALLER, Ordering::AcqRel);
+        if prev == STATE_ACQUIRED_ON_SERVER
+          && let Ok(handle) = tokio::runtime::Handle::try_current()
+        {
+          let mutex = self.mutex.clone();
+          let lock_key = std::mem::take(&mut self.lock_key);
+          let owner_token = std::mem::take(&mut self.owner_token);
+          handle.spawn(async move {
+            let _ = mutex.release_raw_key(&lock_key, &owner_token).await;
+          });
+        }
+      }
+    }
+
     let owner_token = owner_token.into();
     let lock_key = self.lock_key(resource);
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let acquired: Option<String> = redis::cmd("SET")
-      .arg(&lock_key)
-      .arg(&owner_token)
-      .arg("NX")
-      .arg("EX")
-      .arg(ttl_secs.max(1))
-      .query_async(&mut conn)
-      .await?;
+    let ttl_ms = ttl_ms.max(1);
+    let state = Arc::new(AtomicU8::new(STATE_IN_FLIGHT));
 
-    if acquired.is_some() {
+    let mut guard = AcquireCancelGuard {
+      state: Arc::clone(&state),
+      mutex: self.clone(),
+      lock_key: lock_key.clone(),
+      owner_token: owner_token.clone(),
+      disarmed: false,
+    };
+
+    let task_mutex = self.clone();
+    let task_lock_key = lock_key.clone();
+    let task_owner_token = owner_token.clone();
+    let task_state = Arc::clone(&state);
+
+    let join = tokio::spawn(async move {
+      let res: Result<i32, WorkerError> = task_mutex
+        .exec_with_retry("ACQUIRE_LOCK_MS", |mut conn| {
+          let lock_key = task_lock_key.clone();
+          let owner_token = task_owner_token.clone();
+          async move {
+            Script::new(ACQUIRE_LOCK_MS_SCRIPT)
+              .key(&lock_key)
+              .arg(&owner_token)
+              .arg(ttl_ms)
+              .invoke_async(&mut conn)
+              .await
+          }
+        })
+        .await;
+
+      match res {
+        Ok(1) => {
+          if task_state
+            .compare_exchange(
+              STATE_IN_FLIGHT,
+              STATE_ACQUIRED_ON_SERVER,
+              Ordering::AcqRel,
+              Ordering::Acquire,
+            )
+            .is_err()
+          {
+            let _ = task_mutex.release_raw_key(&task_lock_key, &task_owner_token).await;
+          }
+          Ok(1)
+        }
+        Ok(other) => Ok(other),
+        Err(err) => {
+          // Best-effort cleanup in case the first attempt succeeded on Redis
+          // but its reply was lost and the retry also failed.
+          let _ = task_mutex.release_raw_key(&task_lock_key, &task_owner_token).await;
+          Err(err)
+        }
+      }
+    });
+
+    let acquired = match join.await {
+      Ok(Ok(val)) => val,
+      Ok(Err(err)) => {
+        guard.disarmed = true;
+        return Err(err);
+      }
+      Err(err) => {
+        guard.disarmed = true;
+        return Err(WorkerError::Timeout(format!("acquire task join failed: {err}")));
+      }
+    };
+
+    guard.disarmed = true;
+    if acquired == 1 {
       Ok(RedisLockLease {
-        client: self.client.clone(),
-        lock_key,
-        owner_token,
+        inner: Arc::new(RedisLockLeaseInner {
+          mutex: self.clone(),
+          lock_key,
+          owner_token,
+          released: AtomicBool::new(false),
+        }),
       })
     } else {
       Err(WorkerError::AlreadyLocked(resource.to_owned()))
@@ -183,11 +390,22 @@ impl RedisMutex {
   /// testing foreign-owner rejection and manual cleanup).
   pub async fn release_with_token(&self, resource: &str, owner_token: &str) -> Result<bool, WorkerError> {
     let lock_key = self.lock_key(resource);
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let released: i32 = Script::new(UNLOCK_SCRIPT)
-      .key(&lock_key)
-      .arg(owner_token)
-      .invoke_async(&mut conn)
+    self.release_raw_key(&lock_key, owner_token).await
+  }
+
+  async fn release_raw_key(&self, lock_key: &str, owner_token: &str) -> Result<bool, WorkerError> {
+    let released: i32 = self
+      .exec_with_retry("UNLOCK", |mut conn| {
+        let lock_key = lock_key.to_owned();
+        let owner_token = owner_token.to_owned();
+        async move {
+          Script::new(UNLOCK_SCRIPT)
+            .key(&lock_key)
+            .arg(&owner_token)
+            .invoke_async(&mut conn)
+            .await
+        }
+      })
       .await?;
     Ok(released == 1)
   }
@@ -195,12 +413,20 @@ impl RedisMutex {
   /// Attempts to extend a lock key using an explicit owner token.
   pub async fn renew_with_token(&self, resource: &str, owner_token: &str, ttl_secs: u64) -> Result<bool, WorkerError> {
     let lock_key = self.lock_key(resource);
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let renewed: i32 = Script::new(RENEW_LOCK_SCRIPT)
-      .key(&lock_key)
-      .arg(owner_token)
-      .arg(ttl_secs.max(1))
-      .invoke_async(&mut conn)
+    let ttl_secs = ttl_secs.max(1);
+    let renewed: i32 = self
+      .exec_with_retry("RENEW", |mut conn| {
+        let lock_key = lock_key.clone();
+        let owner_token = owner_token.to_owned();
+        async move {
+          Script::new(RENEW_LOCK_SCRIPT)
+            .key(&lock_key)
+            .arg(&owner_token)
+            .arg(ttl_secs)
+            .invoke_async(&mut conn)
+            .await
+        }
+      })
       .await?;
     Ok(renewed == 1)
   }
@@ -208,57 +434,155 @@ impl RedisMutex {
   /// Reads the current owner token stored at `MutexLock:<resource>`, if any.
   pub async fn current_owner(&self, resource: &str) -> Result<Option<String>, WorkerError> {
     let lock_key = self.lock_key(resource);
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let val: Option<String> = conn.get(&lock_key).await?;
-    Ok(val)
+    self
+      .exec_with_retry("GET", |mut conn| {
+        let lock_key = lock_key.clone();
+        async move { conn.get(&lock_key).await }
+      })
+      .await
+  }
+}
+
+struct RedisLockLeaseInner {
+  mutex: RedisMutex,
+  lock_key: String,
+  owner_token: String,
+  released: AtomicBool,
+}
+
+impl std::fmt::Debug for RedisLockLeaseInner {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("RedisLockLease")
+      .field("lock_key", &self.lock_key)
+      .field("owner_token", &self.owner_token)
+      .field("released", &self.released.load(Ordering::Acquire))
+      .finish()
+  }
+}
+
+impl RedisLockLeaseInner {
+  async fn unlock_now(&self) -> Result<(), WorkerError> {
+    if self.mutex.release_raw_key(&self.lock_key, &self.owner_token).await? {
+      Ok(())
+    } else {
+      Err(WorkerError::NotOwner(self.lock_key.clone()))
+    }
+  }
+}
+
+impl Drop for RedisLockLeaseInner {
+  fn drop(&mut self) {
+    if self.released.swap(true, Ordering::AcqRel) {
+      return;
+    }
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+      let mutex = self.mutex.clone();
+      let lock_key = std::mem::take(&mut self.lock_key);
+      let owner_token = std::mem::take(&mut self.owner_token);
+      handle.spawn(async move {
+        if let Err(err) = mutex.release_raw_key(&lock_key, &owner_token).await {
+          tracing::warn!(lock_key, error = %err, "failed to release dropped Redis lock lease");
+        }
+      });
+    }
   }
 }
 
 /// Active lease over a Redis distributed lock.
 #[derive(Clone, Debug)]
 pub struct RedisLockLease {
-  client: redis::Client,
-  lock_key: String,
-  owner_token: String,
+  inner: Arc<RedisLockLeaseInner>,
 }
 
 impl RedisLockLease {
   pub fn lock_key(&self) -> &str {
-    &self.lock_key
+    &self.inner.lock_key
   }
 
   pub fn owner_token(&self) -> &str {
-    &self.owner_token
+    &self.inner.owner_token
   }
 
-  /// Atomically extends this lock's TTL only if still owned by `owner_token`.
+  /// Atomically extends this lock's TTL in seconds only if still owned by `owner_token`.
   pub async fn renew(&self, ttl_secs: u64) -> Result<(), WorkerError> {
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let renewed: i32 = Script::new(RENEW_LOCK_SCRIPT)
-      .key(&self.lock_key)
-      .arg(&self.owner_token)
-      .arg(ttl_secs.max(1))
-      .invoke_async(&mut conn)
+    self.renew_ms(ttl_secs.max(1).saturating_mul(1_000)).await
+  }
+
+  /// Atomically extends this lock's TTL in milliseconds only if still owned by `owner_token`.
+  pub async fn renew_ms(&self, ttl_ms: u64) -> Result<(), WorkerError> {
+    let ttl_ms = ttl_ms.max(1);
+    let renewed: i32 = self
+      .inner
+      .mutex
+      .exec_with_retry("RENEW_MS", |mut conn| {
+        let lock_key = self.inner.lock_key.clone();
+        let owner_token = self.inner.owner_token.clone();
+        async move {
+          Script::new(RENEW_LOCK_MS_SCRIPT)
+            .key(&lock_key)
+            .arg(&owner_token)
+            .arg(ttl_ms)
+            .invoke_async(&mut conn)
+            .await
+        }
+      })
       .await?;
     if renewed == 1 {
       Ok(())
     } else {
-      Err(WorkerError::NotOwner(self.lock_key.clone()))
+      Err(WorkerError::NotOwner(self.inner.lock_key.clone()))
     }
   }
 
-  /// Atomically deletes this lock only if still owned by `owner_token`.
-  pub async fn release(&self) -> Result<(), WorkerError> {
-    let mut conn = self.client.get_multiplexed_async_connection().await?;
-    let released: i32 = Script::new(UNLOCK_SCRIPT)
-      .key(&self.lock_key)
-      .arg(&self.owner_token)
-      .invoke_async(&mut conn)
+  /// Atomically verifies `GET key == owner_token` and `PTTL key > 0`, then
+  /// extends the TTL to `ttl_ms` milliseconds. Returns `Err(NotOwner)` if the
+  /// lease has expired or been claimed by another owner.
+  pub async fn fence_and_renew_ms(&self, ttl_ms: u64) -> Result<(), WorkerError> {
+    let ttl_ms = ttl_ms.max(1);
+    let fenced: i32 = self
+      .inner
+      .mutex
+      .exec_with_retry("FENCE_RENEW_MS", |mut conn| {
+        let lock_key = self.inner.lock_key.clone();
+        let owner_token = self.inner.owner_token.clone();
+        async move {
+          Script::new(FENCE_AND_RENEW_MS_SCRIPT)
+            .key(&lock_key)
+            .arg(&owner_token)
+            .arg(ttl_ms)
+            .invoke_async(&mut conn)
+            .await
+        }
+      })
       .await?;
-    if released == 1 {
+    if fenced == 1 {
       Ok(())
     } else {
-      Err(WorkerError::NotOwner(self.lock_key.clone()))
+      Err(WorkerError::NotOwner(self.inner.lock_key.clone()))
+    }
+  }
+
+  /// Cancel-safely deletes this lock only if still owned by `owner_token`.
+  ///
+  /// Spawns the Lua unlock task onto the Tokio runtime before awaiting its
+  /// `JoinHandle` so dropping/cancelling the outer future never aborts the
+  /// unlock.
+  pub async fn release(&self) -> Result<(), WorkerError> {
+    let inner = Arc::clone(&self.inner);
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+      if inner.released.swap(true, Ordering::AcqRel) {
+        return Ok(());
+      }
+      let join = handle.spawn(async move { inner.unlock_now().await });
+      match join.await {
+        Ok(res) => res,
+        Err(err) => Err(WorkerError::Timeout(format!("unlock task join failed: {err}"))),
+      }
+    } else {
+      if inner.released.swap(true, Ordering::AcqRel) {
+        return Ok(());
+      }
+      inner.unlock_now().await
     }
   }
 }

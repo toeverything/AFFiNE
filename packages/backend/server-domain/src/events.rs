@@ -41,6 +41,9 @@ pub enum InvalidationHintV1 {
   QuotaOwnerMapping {
     workspace_id: String,
   },
+  QuotaEntitlement {
+    subject: String,
+  },
   BlobSource {
     source: BlobSourceRef,
   },
@@ -73,6 +76,11 @@ impl InvalidationHintV1 {
         "kind": "quotaOwnerMapping",
         "version": 1,
         "workspaceId": workspace_id,
+      }),
+      Self::QuotaEntitlement { subject } => serde_json::json!({
+        "kind": "quotaEntitlement",
+        "subject": subject,
+        "version": 1,
       }),
       Self::BlobSource { source } => serde_json::json!({
         "kind": "blobSource",
@@ -265,6 +273,18 @@ mod tests {
         "kind": "workspaceInventoryChanged",
         "version": 1,
         "workspaceId": "ws-1",
+      })
+    );
+
+    let entitlement = InvalidationHintV1::QuotaEntitlement {
+      subject: "workspace:ws-1".to_owned(),
+    };
+    assert_eq!(
+      entitlement.to_json_value(),
+      serde_json::json!({
+        "kind": "quotaEntitlement",
+        "subject": "workspace:ws-1",
+        "version": 1,
       })
     );
   }

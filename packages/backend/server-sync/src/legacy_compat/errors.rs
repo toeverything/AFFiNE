@@ -161,6 +161,15 @@ pub fn sync_error_to_ws_envelope(err: &SyncError, request_id: Option<String>) ->
       data: None,
       request_id,
     },
+    SyncError::TooManyConcurrentWritings => WebsocketErrorBody {
+      status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
+      code: "INTERNAL_SERVER_ERROR".into(),
+      error_type: "INTERNAL_ERROR".into(),
+      name: "INTERNAL_SERVER_ERROR".into(),
+      message: "Internal Server Error".into(),
+      data: None,
+      request_id,
+    },
     SyncError::Database(_) | SyncError::Internal(_) => WebsocketErrorBody {
       status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
       code: "INTERNAL_SERVER_ERROR".into(),

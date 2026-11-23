@@ -29,7 +29,7 @@ test('change language using keyboard', async ({ page }) => {
   const locator = page.getByTestId('language-menu-button');
   const oldName = await locator.textContent();
   await locator.click();
-  await page.waitForTimeout(200);
+  await expect(page.getByRole('menu')).toBeVisible();
   await page.keyboard.press('ArrowDown', {
     delay: 50,
   });

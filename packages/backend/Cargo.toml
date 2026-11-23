@@ -58,6 +58,8 @@ tower              = "0.5"
 tower-http         = { version = "0.6", features = ["cors", "trace"] }
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+unicode-normalization = "0.1"
+unicode_skeleton   = "0.1.1"
 url                = "2.5"
 uuid               = { version = "1", features = ["v4", "serde"] }
 y-octo             = { version = "0.4.0", features = ["large_refs"] }

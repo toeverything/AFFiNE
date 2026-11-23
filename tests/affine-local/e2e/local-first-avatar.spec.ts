@@ -15,7 +15,9 @@ test('should create a page with a local first avatar and remove it', async ({
   await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await createLocalWorkspace({ name: 'Test Workspace 1' }, page);
-  await page.waitForTimeout(1000);
+  await expect(page.getByTestId('workspace-name')).toHaveText(
+    'Test Workspace 1'
+  );
   await page.getByTestId('workspace-name').click();
   await page
     .getByTestId('workspace-card')
@@ -33,7 +35,7 @@ test('should create a page with a local first avatar and remove it', async ({
     .nth(0)
     .getByTestId('workspace-avatar')
     .click();
-  await page.waitForTimeout(2000);
+  await expect(page.getByTestId('workspace-name')).toHaveText('Demo Workspace');
   await page.getByTestId('workspace-name').click();
   await page
     .getByTestId('workspace-card')
@@ -63,7 +65,7 @@ test('should create a page with a local first avatar and remove it', async ({
   await page.getByTestId('workspace-setting-avatar').hover();
   await page.getByTestId('workspace-setting-remove-avatar-button').click();
   await page.mouse.click(0, 0);
-  await page.waitForTimeout(1000);
+  await expect(page.getByTestId('setting-modal')).not.toBeVisible();
   await page.getByTestId('workspace-name').click();
   await page.getByTestId('workspace-card').nth(1).click();
   const removedAvatarImage = await page
