@@ -114,7 +114,9 @@ export class BackendRuntimeProvider
       updates: { payment: {}, indexer: {}, copilot: {}, crypto: {}, oauth: {} },
     });
     const health = await this.health();
-    this.logger.log(`backend runtime started: db=${health.databaseConnected}`);
+    this.logger.log(
+      `backend runtime started: db=${health.databaseConnected}, baseline=${health.baselineVersion}, redisDb=${health.redisDb ?? 'disabled'}`
+    );
   }
 
   async saveAppConfig(actor: string | null, commands: AppConfigCommand[]) {

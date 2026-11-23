@@ -13,6 +13,7 @@ pub mod html_sanitize;
 pub mod image;
 pub mod license;
 mod license_import;
+pub mod license_v2;
 pub mod llm;
 pub mod permission;
 pub mod runtime;

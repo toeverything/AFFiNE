@@ -98,10 +98,12 @@ impl StorageRuntime {
     }
 
     let database_url = self.config()?.database_url;
+    let connect_options =
+      crate::runtime::pg_connect_options(&database_url, self.server_config.deployment(), "storage")?;
     let pool = PgPoolOptions::new()
       .max_connections(5)
       .acquire_timeout(std::time::Duration::from_secs(5))
-      .connect(&database_url)
+      .connect_with(connect_options)
       .await
       .map_err(|err| RuntimeError::database("StorageRuntime failed to connect postgres", err))?;
 

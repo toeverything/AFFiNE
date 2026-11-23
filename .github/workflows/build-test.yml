@@ -1278,6 +1278,15 @@ jobs:
       - name: Run native storage cleanup integration tests
         run: cargo test -p affine_server_native blob_cleanup_projection_ -- --ignored --nocapture
 
+      - name: Run entitlement invalidation and receipt fencing integration tests
+        env:
+          AFFINE_W0A_REQUIRE_SERVICES: '1'
+        run: >-
+          cargo test -p affine_server_native --
+          runtime::backend_runtime::invalidation::tests
+          runtime::backend_runtime::payment::worker::tests
+          --ignored --test-threads=1
+
   copilot-test-filter:
     name: Copilot test filter
     runs-on: ubuntu-latest

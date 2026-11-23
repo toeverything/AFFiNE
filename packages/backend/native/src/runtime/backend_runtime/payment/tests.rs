@@ -238,6 +238,7 @@ fn snapshot(
     licenses: Vec::new(),
     mails: Vec::new(),
     captured_event_ids: Vec::new(),
+    claimed_attempt: None,
     operation: None,
   }
 }
@@ -1494,6 +1495,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     &webhook_runtime,
     &poison_event,
     &namespace,
+    5,
     &crate::runtime::RuntimeError::invalid_state("unsupported payment event"),
   )
   .await;
@@ -1533,7 +1535,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     .execute(&pool)
     .await
     .unwrap();
-    super::worker::fail_receipt(&webhook_runtime, &healthy_event, &namespace, &timeout).await;
+    super::worker::fail_receipt(&webhook_runtime, &healthy_event, &namespace, attempts, &timeout).await;
     let retry: (String, f64) = sqlx::query_as(
       "SELECT processing_status,extract(epoch FROM next_attempt_at-updated_at)::float8 FROM payment_events WHERE \
        provider_namespace=$1 AND external_event_id=$2",
@@ -1563,6 +1565,7 @@ async fn snapshot_commit_is_atomic_and_transfer_moves_the_entitlement() {
     &webhook_runtime,
     &healthy_event,
     &namespace,
+    13,
     &crate::runtime::RuntimeError::database("invalid payment query", permanent),
   )
   .await;

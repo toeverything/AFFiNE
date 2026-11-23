@@ -105,7 +105,7 @@ function isBatchWsClientVersion(clientVersion: string): boolean {
   return Boolean(normalized && MIN_BATCH_WS_CLIENT_VERSION.test(normalized));
 }
 
-enum SpaceType {
+export enum SpaceType {
   Workspace = 'workspace',
   Userspace = 'userspace',
 }
@@ -211,6 +211,7 @@ declare global {
       timestamp: number;
       editor?: string;
       compressed?: boolean;
+      originChannel?: string;
     };
     'sync.awareness.collect': SyncAwarenessEvent;
     'sync.awareness.updated': SyncAwarenessEvent & {
@@ -914,6 +915,22 @@ export class SpaceSyncGateway
 
   @OnEvent('sync.doc.updates.pushed')
   onClusterDocUpdatesPushed(payload: Events['sync.doc.updates.pushed']) {
+    const originChannel =
+      payload.originChannel ?? this.event.getCurrentOriginChannel();
+    if (originChannel && originChannel !== this.event.localChannel) {
+      const batchRoom = `${payload.spaceType}:${Room(
+        payload.spaceId,
+        'sync-027'
+      )}`;
+      this.server?.local
+        .to(batchRoom)
+        .emit('space:broadcast-doc-invalidation', {
+          spaceType: payload.spaceType,
+          spaceId: payload.spaceId,
+          timestamp: payload.timestamp,
+        });
+    }
+
     if (payload.compressed !== undefined) {
       const broadcastPayload: BroadcastDocUpdatesMessage = {
         spaceType: payload.spaceType,
@@ -1215,6 +1232,7 @@ export class SpaceSyncGateway
       ...payload,
       updates: broadcastPayload.updates,
       compressed: broadcastPayload.compressed,
+      originChannel: this.event.localChannel,
     });
   }
 

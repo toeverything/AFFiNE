@@ -266,6 +266,8 @@ export declare function authorizeReservedDocSubject(userId: string, workspaceId:
 export interface BackendRuntimeHealth {
   started: boolean
   databaseConnected: boolean
+  baselineVersion: string
+  redisDb?: number
   embedding: EmbeddingHealth
   invalidation: InvalidationHealth
 }

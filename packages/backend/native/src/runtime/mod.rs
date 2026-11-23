@@ -50,3 +50,31 @@ fn blob_ref_projection_error_code(error: BlobRefProjectionError) -> &'static str
 pub(in crate::runtime) use storage_runtime::{CurrentDoc, CurrentDocUpdate};
 
 pub(super) use crate::entitlement::{entitlement_input_error, parse_quantity, parse_target_type};
+
+pub(crate) const BASELINE_VERSION: &str = "0.27.5";
+
+pub(crate) fn pg_connect_options(
+  database_url: &str,
+  deployment: Deployment,
+  role: &str,
+) -> RuntimeResult<sqlx::postgres::PgConnectOptions> {
+  let deployment_name = match deployment {
+    Deployment::Cloud => "cloud",
+    Deployment::SelfHosted => "selfhosted",
+  };
+  let app_name = format!("affine:{deployment_name}:{role}:{BASELINE_VERSION}");
+  database_url
+    .parse::<sqlx::postgres::PgConnectOptions>()
+    .map(|options| options.application_name(&app_name))
+    .map_err(|err| RuntimeError::config(format!("invalid postgres database url: {err}")))
+}
+
+pub(crate) fn parse_redis_db(redis_url: Option<&str>) -> Option<i32> {
+  let url = redis_url.and_then(|raw| url::Url::parse(raw).ok())?;
+  let segment = url.path().trim_start_matches('/');
+  if segment.is_empty() {
+    Some(0)
+  } else {
+    segment.parse::<i32>().ok()
+  }
+}

@@ -4,6 +4,8 @@ use napi::bindgen_prelude::Buffer;
 pub struct BackendRuntimeHealth {
   pub started: bool,
   pub database_connected: bool,
+  pub baseline_version: String,
+  pub redis_db: Option<i32>,
   pub embedding: EmbeddingHealth,
   pub invalidation: InvalidationHealth,
 }

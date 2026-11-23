@@ -2,7 +2,6 @@ use affine_core::access_control::{
   AccessContext, AclFacts, AuthorizationRequest, Deployment as CoreDeployment, DocAclFacts, DocAuthorizationRequest,
   DocRole, EntitlementFact as CoreEntitlementFact, RequestedDocAction, RequestedWorkspaceAction,
   ReservedDocumentAccessDecision, TargetType, WorkspaceRole, authorize_reserved_document, classify_reserved_document,
-  resolve_entitlements,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
@@ -266,7 +265,7 @@ impl PermissionStore {
           url_preview_enabled: false,
           docs,
         },
-        grant: resolve_entitlements(
+        grant: crate::license_v2::resolve_entitlements_with_v2(
           &AccessContext {
             deployment: core_deployment(self.deployment),
             target_type: TargetType::Workspace,
@@ -312,7 +311,7 @@ impl PermissionStore {
         signed_payload: payload.as_deref(),
       })
       .collect::<Vec<_>>();
-    let grant = resolve_entitlements(
+    let grant = crate::license_v2::resolve_entitlements_with_v2(
       &AccessContext {
         deployment: match self.deployment {
           Deployment::Cloud => CoreDeployment::Cloud,

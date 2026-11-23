@@ -114,10 +114,13 @@ jobs:
         targets:
           - name: x86_64-unknown-linux-gnu
             file: server-native.x64.node
+            platform: linux/amd64
           - name: aarch64-unknown-linux-gnu
             file: server-native.arm64.node
+            platform: linux/arm64
           - name: armv7-unknown-linux-gnueabihf
             file: server-native.armv7.node
+            platform: linux/arm/v7
     steps:
       - uses: actions/checkout@v7
       - name: Setup Version
@@ -137,6 +140,15 @@ jobs:
         with:
           target: ${{ matrix.targets.name }}
           package: '@affine/server-native'
+      - name: Enable target-architecture native verification
+        if: github.repository == 'toeverything/AFFiNE'
+        uses: docker/setup-qemu-action@v3
+      - name: Verify embedded commercial public key
+        if: github.repository == 'toeverything/AFFiNE'
+        run: |
+          docker run --rm --platform '${{ matrix.targets.platform }}' \
+            -v "$PWD/packages/backend/native:/native:ro" node:22-bookworm-slim \
+            node -e 'const native = require("/native/server-native.node"); if (!native.AFFINE_PRO_PUBLIC_KEY?.trim()) throw new Error("Commercial public key missing from native artifact");'
       - name: Rename ${{ matrix.targets.file }}
         run: mv ./packages/backend/native/server-native.node ./packages/backend/native/${{ matrix.targets.file }}
       - name: Upload ${{ matrix.targets.file }}
