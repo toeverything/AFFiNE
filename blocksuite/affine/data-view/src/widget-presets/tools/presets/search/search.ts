@@ -119,6 +119,7 @@ export class DataViewHeaderToolsSearch extends WidgetBase<
   };
 
   private readonly _onSearchKeydown = (event: KeyboardEvent) => {
+    event.stopPropagation();
     if (event.key === 'Escape') {
       if (this._searchInput.value) {
         this._searchInput.value = '';
