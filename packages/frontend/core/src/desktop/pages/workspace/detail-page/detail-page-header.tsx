@@ -82,13 +82,11 @@ const TemplateMark = memo(function TemplateMark({
 interface PageHeaderProps {
   page: Store;
   workspace: Workspace;
-  isReadOnlyMode?: boolean;
   onToggleReadOnly?: () => void;
 }
 export function JournalPageHeader({
   page,
   workspace,
-  isReadOnlyMode,
   onToggleReadOnly,
 }: PageHeaderProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -109,6 +107,8 @@ export function JournalPageHeader({
 
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const title = useLiveData(docDisplayMetaService.title$(page.id));
+  const editor = useService(EditorService).editor;
+  const isReadOnlyMode = useLiveData(editor.readOnlyMode$);
 
   return (
     <Header className={styles.header} ref={containerRef}>
@@ -150,7 +150,6 @@ export function JournalPageHeader({
 export function NormalPageHeader({
   page,
   workspace,
-  isReadOnlyMode,
   onToggleReadOnly,
 }: PageHeaderProps) {
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
@@ -182,6 +181,7 @@ export function NormalPageHeader({
 
   const editor = useService(EditorService).editor;
   const currentMode = useLiveData(editor.mode$);
+  const isReadOnlyMode = useLiveData(editor.readOnlyMode$);
 
   return (
     <Header className={styles.header} ref={containerRef}>

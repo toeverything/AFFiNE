@@ -340,6 +340,9 @@ const PageHeaderMenuItem = ({
 
   const canEdit = useGuard('Doc_Update', pageId);
   const canMoveToTrash = useGuard('Doc_Trash', pageId);
+  const isReadOnlyMode = useLiveData(
+    useServiceOptional(EditorService)?.editor.readOnlyMode$
+  );
 
   return (
     <>
@@ -349,7 +352,7 @@ const PageHeaderMenuItem = ({
           prefixIcon={<EditIcon />}
           data-testid="editor-option-menu-rename"
           onSelect={handleRename}
-          disabled={!canEdit}
+          disabled={!canEdit || isReadOnlyMode}
         >
           {t['Rename']()}
         </MenuItem>
