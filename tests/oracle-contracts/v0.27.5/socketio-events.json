@@ -2,7 +2,7 @@
   "gateways": [
     {
       "file": "packages/backend/server/src/base/event/eventbus.ts",
-      "line": 31,
+      "line": 117,
       "class": "EventBus",
       "options": [
         "{\n  namespace: 's2s',\n}"
@@ -44,7 +44,7 @@
     },
     {
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 332,
+      "line": 333,
       "class": "SpaceSyncGateway",
       "options": [],
       "decorators": [
@@ -235,7 +235,7 @@
     {
       "event": "space:delete-doc",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1487,
+      "line": 1505,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -288,7 +288,7 @@
     {
       "event": "space:doc-lifecycle",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1510,
+      "line": 1528,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -341,7 +341,7 @@
     {
       "event": "space:join-batch",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1246,
+      "line": 1264,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -394,7 +394,7 @@
     {
       "event": "space:leave",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1410,
+      "line": 1428,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -436,7 +436,7 @@
     {
       "event": "space:leave-batch",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1387,
+      "line": 1405,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -478,7 +478,7 @@
     {
       "event": "space:load-awarenesses",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1732,
+      "line": 1750,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -520,7 +520,7 @@
     {
       "event": "space:load-doc",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1423,
+      "line": 1441,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -562,7 +562,7 @@
     {
       "event": "space:load-doc-timestamps",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1706,
+      "line": 1724,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -615,7 +615,7 @@
     {
       "event": "space:load-workspace-state",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1689,
+      "line": 1707,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -668,7 +668,7 @@
     {
       "event": "space:push-doc-update",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1610,
+      "line": 1628,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -721,7 +721,7 @@
     {
       "event": "space:update-awareness",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1753,
+      "line": 1771,
       "gateway": "SpaceSyncGateway",
       "namespace": "/",
       "decorators": [
@@ -818,12 +818,13 @@
     {
       "event": "broadcast",
       "file": "packages/backend/server/src/base/event/eventbus.ts",
-      "line": 127,
+      "line": 346,
       "receiver": "this.server",
       "arguments": [
         "event",
         "payload",
-        "this.cls.getId()"
+        "requestId ?? undefined",
+        "{ id, originChannel }"
       ]
     },
     {
@@ -847,7 +848,7 @@
     {
       "event": "space:broadcast-awareness-update",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 685,
+      "line": 686,
       "receiver": "socket",
       "arguments": [
         "{\n          spaceType: event.spaceType,\n          spaceId: event.spaceId,\n          docId: event.docId,\n          awarenessUpdate: event.awarenessUpdate,\n        }"
@@ -856,7 +857,7 @@
     {
       "event": "space:broadcast-doc-invalidation",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1002,
+      "line": 1019,
       "receiver": "this.server?.local\n      .to(`${event.spaceType}:${Room(event.spaceId, 'sync-027')}`)",
       "arguments": [
         "{\n        spaceType: event.spaceType,\n        spaceId: event.spaceId,\n        inventoryChanged: true,\n      }"
@@ -865,7 +866,7 @@
     {
       "event": "space:broadcast-doc-invalidation",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1199,
+      "line": 1216,
       "receiver": "sourceSocket\n        .to(batchRoom)",
       "arguments": [
         "invalidation"
@@ -874,16 +875,25 @@
     {
       "event": "space:broadcast-doc-invalidation",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 1203,
+      "line": 1220,
       "receiver": "this.server\n        .to(batchRoom)",
       "arguments": [
         "invalidation"
       ]
     },
     {
+      "event": "space:broadcast-doc-invalidation",
+      "file": "packages/backend/server/src/core/sync/gateway.ts",
+      "line": 925,
+      "receiver": "this.server?.local\n        .to(batchRoom)",
+      "arguments": [
+        "{\n          spaceType: payload.spaceType,\n          spaceId: payload.spaceId,\n          timestamp: payload.timestamp,\n        }"
+      ]
+    },
+    {
       "event": "space:broadcast-doc-updates",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 649,
+      "line": 650,
       "receiver": "socket",
       "arguments": [
         "activeBroadcastPayload"
@@ -892,7 +902,7 @@
     {
       "event": "space:collect-awareness",
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "line": 664,
+      "line": 665,
       "receiver": "socket",
       "arguments": [
         "{\n          spaceType: event.spaceType,\n          spaceId: event.spaceId,\n          docId: event.docId,\n        }"
@@ -964,7 +974,7 @@
       "file": "packages/backend/server/src/core/sync/gateway.ts",
       "line": 108,
       "name": "SpaceType",
-      "declaration": "enum SpaceType {\n  Workspace = 'workspace',\n  Userspace = 'userspace',\n}"
+      "declaration": "export enum SpaceType {\n  Workspace = 'workspace',\n  Userspace = 'userspace',\n}"
     },
     {
       "file": "packages/backend/server/src/core/sync/gateway.ts",
@@ -1054,7 +1064,7 @@
       "file": "packages/backend/server/src/core/sync/gateway.ts",
       "line": 205,
       "name": "Events",
-      "declaration": "interface Events {\n    'sync.doc.updates.pushed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId: string;\n      updates: string[];\n      timestamp: number;\n      editor?: string;\n      compressed?: boolean;\n    };\n    'sync.awareness.collect': SyncAwarenessEvent;\n    'sync.awareness.updated': SyncAwarenessEvent & {\n      awarenessUpdate: string;\n    };\n    'sync.permissions.changed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId?: string;\n    };\n  }"
+      "declaration": "interface Events {\n    'sync.doc.updates.pushed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId: string;\n      updates: string[];\n      timestamp: number;\n      editor?: string;\n      compressed?: boolean;\n      originChannel?: string;\n    };\n    'sync.awareness.collect': SyncAwarenessEvent;\n    'sync.awareness.updated': SyncAwarenessEvent & {\n      awarenessUpdate: string;\n    };\n    'sync.permissions.changed': {\n      spaceType: SpaceType;\n      spaceId: string;\n      docId?: string;\n    };\n  }"
     },
     {
       "file": "packages/backend/server/src/core/telemetry/cleaner.ts",

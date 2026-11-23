@@ -1,6 +1,6 @@
 {
   "version": "0.27.5",
-  "sourceSha256": "c252398e817fabe625edf041c923064788c345a2a06e73d21c0bfcef4543d45f",
+  "sourceSha256": "e1b8b5ad2d05db605a6c1d19c09765d99c802ef5401fe865641fe784808353eb",
   "counts": {
     "sdlLines": 3149,
     "sdlDefinitions": 342,
@@ -87,11 +87,11 @@
     },
     {
       "file": "packages/backend/server/src/base/event/def.ts",
-      "sha256": "1dd2509077f614d265e346007a411bf9cfb1362af71b815193b75130dac9af31"
+      "sha256": "64adee71a147be3f63d48e020e93e4f4d714cd2ed88dd0d4da30bcb6ea49e5fb"
     },
     {
       "file": "packages/backend/server/src/base/event/eventbus.ts",
-      "sha256": "ac842cff0b4fa807e5b5cf0b89ed1eaebf22e2d9aecb2969fa24c79f1dbe2b1d"
+      "sha256": "eccd89b604220148a55ce6cc361b0223df160ef3add8ca1efa3b452679ef0201"
     },
     {
       "file": "packages/backend/server/src/base/event/index.ts",
@@ -139,7 +139,7 @@
     },
     {
       "file": "packages/backend/server/src/base/helpers/crypto.ts",
-      "sha256": "865a94196ceaea68ab528468ede8bcf7ddb409c39921e408b12078dab8501fd1"
+      "sha256": "a30df7d21baf1524df21a5af8f42ceead2f02e427be798247229df007b52a3e0"
     },
     {
       "file": "packages/backend/server/src/base/helpers/index.ts",
@@ -435,7 +435,7 @@
     },
     {
       "file": "packages/backend/server/src/core/backend-runtime/provider.ts",
-      "sha256": "1467d21b751ce461f4962ca5e9f4677b48f3bf6941ff0af8b91a45887d196340"
+      "sha256": "eb7546fe8cbb9e6767245964b4db50aa1c1cceded071152a7cb4c77ccd0c565f"
     },
     {
       "file": "packages/backend/server/src/core/backend-runtime/search-operations.ts",
@@ -851,7 +851,7 @@
     },
     {
       "file": "packages/backend/server/src/core/sync/gateway.ts",
-      "sha256": "9151ee94f018633b1a48474f86f0c480b735eef346e95ced9a4545d9a1b9cb47"
+      "sha256": "88b718926e976af70773a223964e7d13c1c79af7b31e456f5340bd58a6ad18b1"
     },
     {
       "file": "packages/backend/server/src/core/sync/index.ts",
@@ -1039,7 +1039,7 @@
     },
     {
       "file": "packages/backend/server/src/data/commands/cutover.ts",
-      "sha256": "d67593340cbb02c030aeb93c8304cf1e73e514d2047460671c8bd7c5a1423e01"
+      "sha256": "09f641335b11b1ec46efb9a78eedf844170c06153de00c12ed85db6446b86865"
     },
     {
       "file": "packages/backend/server/src/data/commands/import.ts",
@@ -1803,7 +1803,7 @@
     },
     {
       "file": "packages/backend/server/src/plugins/copilot/runtime/hosts/image-result-host.ts",
-      "sha256": "0ddc21a4e24a75ccfbcb7c138635995f69d02bb0a9dbfcc6038eaa2f39ce731a"
+      "sha256": "c38b6c639b98d30abe051cfc09dee4fefa2bc637478c069e7ea1cf6d6f98445c"
     },
     {
       "file": "packages/backend/server/src/plugins/copilot/runtime/hosts/response-postprocessor.ts",
@@ -1855,7 +1855,7 @@
     },
     {
       "file": "packages/backend/server/src/plugins/copilot/storage.ts",
-      "sha256": "ac3bb4cff393a461394e715959177a1c92c5840952fa00a4ff877213589874b0"
+      "sha256": "bd83dc068ce7cbe89c04e35a86ca1e5489fa7aad08511385a82b3ed553f666ba"
     },
     {
       "file": "packages/backend/server/src/plugins/copilot/tools/artifact.ts",
@@ -2199,7 +2199,7 @@
     },
     {
       "file": "yarn.lock",
-      "sha256": "6df16f7876d1142f35dfeb6df75e6c477c7ffd08cf85646fb056d5a8f93b5403"
+      "sha256": "8f17f0742cfd2899a8d4d788e127f625d0cbff28684e1d77ce23f1c782b87d43"
     }
   ],
   "artifacts": [
@@ -2209,7 +2209,7 @@
     },
     {
       "file": "socketio-events.json",
-      "sha256": "b6b13d808a726db98dc503ccbf567e7c24ce6472076468b77fd9c5106965088e"
+      "sha256": "ff473c51ffbc9c5ab27e57d1562b85526f0ed318c1a711f211da495d6d8f8033"
     },
     {
       "file": "schema.gql",
