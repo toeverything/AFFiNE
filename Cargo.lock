@@ -93,9 +93,9 @@ dependencies = [
 
 [[package]]
 name = "affine_doc_loader"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0c5ec95b331a6d642c71c1f304435a588728363d6abd76fa42cebf6ddd37a17"
+checksum = "9234064f3b1adb1ad684a292d5926b29452b15a97280f2387d0714e3a5344ece"
 dependencies = [
  "affine_merge",
  "chrono",
@@ -110,9 +110,9 @@ dependencies = [
 
 [[package]]
 name = "affine_importer"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fa22a0e948ed16399ae98ca26c285bda6e6894cd463c4b9dd40dc8b37092b74"
+checksum = "3e5a504d643b2aa50cacd3a73cee6d4621a759683e1c7cf983aaf8e0f1eb9022"
 dependencies = [
  "affine_doc_loader",
  "bytes",
@@ -161,9 +161,9 @@ dependencies = [
 
 [[package]]
 name = "affine_merge"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7ca4a08c70cabba37e19379db35f429394c0600a16b22e2f6f25754676b1e19"
+checksum = "be1bb3908a9805e3fd71aaa154c9568b53d1eddb87dc9ae5cbc223d8d03402ab"
 dependencies = [
  "serde",
  "thiserror 2.0.18",
@@ -11374,15 +11374,14 @@ checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
 
 [[package]]
 name = "y-octo"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e381655b2334e81e3088ff85d021c31a2ec950dac0ae96b538aea674321e7d3c"
+checksum = "e1c249c160b09c4f0bd6cef90881200667c8e119feff6a9f7c07bb538760d574"
 dependencies = [
  "ahash",
  "arbitrary",
  "async-lock",
  "byteorder",
- "indexmap",
  "log",
  "loom",
  "nanoid",
