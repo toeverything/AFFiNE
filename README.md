@@ -86,8 +86,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 There is a large overlap of their atomic “building blocks” between these apps. They are not open source, nor do they have a plugin system like Vscode for contributors to customize. We want to have something that contains all the features we love and also goes one step even further.
 
-Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵  
-Check https://affine.pro/ for more details.
+Thanks for checking us out, we appreciate your interest and sincerely hope that AFFiNE resonates with you! 🎵 Check https://affine.pro/ for more details.
 
 ## Contributing
 
