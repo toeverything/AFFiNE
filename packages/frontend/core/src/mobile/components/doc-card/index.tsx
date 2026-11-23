@@ -4,6 +4,7 @@ import { PagePreview } from '@affine/core/components/page-list/page-content-prev
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
+import { toDocSearchParams } from '@affine/core/modules/navigation';
 import {
   WorkbenchLink,
   type WorkbenchLinkProps,
@@ -27,6 +28,10 @@ export interface DocCardProps extends Omit<WorkbenchLinkProps, 'to'> {
     title?: ReactNode;
   } & { [key: string]: any };
   showTags?: boolean;
+  /**
+   * Blocks to scroll to and highlight when the doc is opened
+   */
+  blockIds?: string[];
 
   /**
    * When enabled, preview's height will be calculated based on `meta.id`
@@ -36,7 +41,7 @@ export interface DocCardProps extends Omit<WorkbenchLinkProps, 'to'> {
 
 export const DocCard = forwardRef<HTMLAnchorElement, DocCardProps>(
   function DocCard(
-    { showTags = true, meta, className, autoHeightById, ...attrs },
+    { showTags = true, meta, blockIds, className, autoHeightById, ...attrs },
     outerRef
   ) {
     const containerRef = useRef<HTMLAnchorElement | null>(null);
@@ -59,9 +64,11 @@ export const DocCard = forwardRef<HTMLAnchorElement, DocCardProps>(
       return { height: `${rows * 18}px` };
     }, [autoHeightById, meta.id]);
 
+    const search = toDocSearchParams({ blockIds });
+
     return (
       <WorkbenchLink
-        to={`/${meta.id}`}
+        to={search?.size ? `/${meta.id}?${search}` : `/${meta.id}`}
         ref={ref => {
           containerRef.current = ref;
           if (typeof outerRef === 'function') {
