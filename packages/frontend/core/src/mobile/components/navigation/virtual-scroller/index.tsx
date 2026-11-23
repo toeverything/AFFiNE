@@ -2,7 +2,6 @@ import { MenuItem, SafeArea, usePromptModal } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
 import { NavigationPanelTreeRoot } from '@affine/core/desktop/components/navigation-panel';
 import { CollectionService } from '@affine/core/modules/collection';
-import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { OrganizeService } from '@affine/core/modules/organize';
@@ -236,28 +235,15 @@ const CollectionRow = ({
   entry: MobileShellNavigationEntry;
   toggle: () => void;
 }) => {
-  const { collectionService, workspaceDialogService } = useServices({
-    CollectionService,
-    WorkspaceDialogService,
-  });
   const expand = useCallback(() => {
     if (!row.expanded) toggle();
   }, [row.expanded, toggle]);
   const handleAdd = useNavigationPanelCollectionAddDoc(entry.id, expand);
-  const handleEdit = useCallback(() => {
-    const collection = collectionService.collection$(entry.id).value;
-    if (collection) {
-      workspaceDialogService.open('collection-editor', {
-        collectionId: entry.id,
-      });
-    }
-  }, [collectionService, entry.id, workspaceDialogService]);
   const menuTarget = useMemo(
     () => (
       <NavigationPanelCollectionNodeMenu
         collectionId={entry.id}
         handleAddDocToCollection={handleAdd}
-        onOpenEdit={handleEdit}
         additionalOperations={
           row.relationId
             ? [
@@ -272,7 +258,7 @@ const CollectionRow = ({
         }
       />
     ),
-    [entry.id, handleAdd, handleEdit, row.relationId]
+    [entry.id, handleAdd, row.relationId]
   );
   return (
     <EntityRowShell
