@@ -9,6 +9,11 @@ export const listPrefix = css`
     position: relative;
   }
 
+  /* the collapsed toggle chevron points toward the content, so mirror it in RTL */
+  .affine-list-block__prefix[data-collapsed='true']:dir(rtl) svg {
+    transform: scaleX(-1);
+  }
+
   .affine-list-block__numbered {
     min-width: 22px;
     height: 24px;

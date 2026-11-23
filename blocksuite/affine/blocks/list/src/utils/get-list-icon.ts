@@ -68,6 +68,7 @@ export function getListIcon(
       return html`<div
         contenteditable="false"
         class="affine-list-block__prefix"
+        data-collapsed=${!showChildren}
         @click=${onClick}
       >
         ${showChildren ? ToggleDownIcon() : ToggleRightIcon()}

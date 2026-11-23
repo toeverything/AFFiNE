@@ -41,7 +41,7 @@ export class ParagraphHeadingIcon extends SignalWatcher(
       align-items: start;
       margin-top: 0.3em;
       position: absolute;
-      left: 0;
+      inset-inline-start: 0;
       transform: translateX(-80px);
       border-radius: 4px;
       padding: 2px;
@@ -59,6 +59,10 @@ export class ParagraphHeadingIcon extends SignalWatcher(
         var(--Shadow-buttonShadow-2-x, 0px) var(--Shadow-buttonShadow-2-y, 1px)
           var(--Shadow-buttonShadow-2-blur, 5px) 0px
           var(--Shadow-buttonShadow-2-color, rgba(0, 0, 0, 0.12));
+    }
+
+    affine-paragraph-heading-icon .heading-icon:dir(rtl) {
+      transform: translateX(80px);
     }
 
     .with-drag-handle .heading-icon {

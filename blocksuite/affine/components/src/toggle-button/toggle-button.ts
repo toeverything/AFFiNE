@@ -23,12 +23,21 @@ export class ToggleButton extends WithDisposable(ShadowlessElement) {
       width: 16px;
       height: 16px;
       top: calc((1em - 16px) / 2 + 5px);
-      left: 0;
+      inset-inline-start: 0;
       transform: translateX(-100%);
       border-radius: 4px;
       cursor: pointer;
       opacity: 0;
       transition: opacity 0.2s ease-in-out;
+    }
+
+    .toggle-icon:dir(rtl) {
+      transform: translateX(100%);
+    }
+
+    /* the collapsed chevron points toward the content, so mirror it in RTL */
+    .toggle-icon[data-collapsed='true']:dir(rtl) svg {
+      transform: scaleX(-1);
     }
 
     .toggle-icon:hover {

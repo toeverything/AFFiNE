@@ -305,6 +305,11 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
           .heading-icon {
           transform: translateX(-48px);
         }
+        .affine-paragraph-block-container[data-has-collapsed-siblings='false']
+          affine-paragraph-heading-icon
+          .heading-icon:dir(rtl) {
+          transform: translateX(48px);
+        }
       </style>
       <div
         class=${classMap({
