@@ -68,7 +68,7 @@ export const DocCard = forwardRef<HTMLAnchorElement, DocCardProps>(
 
     return (
       <WorkbenchLink
-        to={search?.size ? `/${meta.id}?${search}` : `/${meta.id}`}
+        to={search?.toString() ? `/${meta.id}?${search}` : `/${meta.id}`}
         ref={ref => {
           containerRef.current = ref;
           if (typeof outerRef === 'function') {
