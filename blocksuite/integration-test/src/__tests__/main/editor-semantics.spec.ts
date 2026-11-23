@@ -384,6 +384,76 @@ test.each([
   }
 );
 
+test.each([
+  { name: 'Tab moves right', from: [0, 0], shiftKey: false, to: [0, 1] },
+  { name: 'Tab wraps to next row', from: [0, 1], shiftKey: false, to: [1, 0] },
+  { name: 'Tab stays in last cell', from: [1, 1], shiftKey: false, to: [1, 1] },
+  { name: 'Shift+Tab moves left', from: [0, 1], shiftKey: true, to: [0, 0] },
+  {
+    name: 'Shift+Tab wraps to previous row',
+    from: [1, 0],
+    shiftKey: true,
+    to: [0, 1],
+  },
+  {
+    name: 'Shift+Tab stays in first cell',
+    from: [0, 0],
+    shiftKey: true,
+    to: [0, 0],
+  },
+])('table cell keyboard navigation: $name', async ({ from, shiftKey, to }) => {
+  const noteId = addNote(doc);
+  const tableId = doc.addBlock(
+    'affine:table',
+    {
+      rows: {
+        r0: { rowId: 'r0', order: 'a0' },
+        r1: { rowId: 'r1', order: 'a1' },
+      },
+      columns: {
+        c0: { columnId: 'c0', order: 'a0' },
+        c1: { columnId: 'c1', order: 'a1' },
+      },
+      cells: {
+        'r0:c0': { text: new Text('a') },
+        'r0:c1': { text: new Text('b') },
+        'r1:c0': { text: new Text('c') },
+        'r1:c1': { text: new Text('d') },
+      },
+    },
+    noteId
+  );
+  await wait();
+  const table = editor.host!.view.getBlock(tableId) as TableBlockComponent;
+  const cellAt = ([row, column]: number[]) =>
+    table.querySelectorAll<TableCell>('affine-table-cell')[row * 2 + column];
+
+  const source = cellAt(from);
+  source.inlineEditor!.focusEnd();
+  await wait();
+  source.inlineEditor!.rootElement!.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    })
+  );
+  await wait();
+
+  expect(table.selectionController.getSelected()).toEqual({
+    type: 'area',
+    rowStartIndex: to[0],
+    rowEndIndex: to[0],
+    columnStartIndex: to[1],
+    columnEndIndex: to[1],
+  });
+  expect(cellAt(to).inlineEditor!.getInlineRange()).toEqual({
+    index: 1,
+    length: 0,
+  });
+});
+
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',
   async mode => {
