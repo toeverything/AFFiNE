@@ -27,6 +27,17 @@ import {
   getWorkspaceMeta,
 } from './meta';
 
+// On Windows a SQLite file can stay locked for a moment after its connection
+// is closed, so removing its directory needs a few retries.
+async function removeWorkspaceDir(dir: string) {
+  await fs.rm(dir, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100,
+  });
+}
+
 async function deleteWorkspaceV1(workspaceId: string) {
   try {
     await ensureSQLiteDisconnected('workspace', workspaceId);
@@ -47,7 +58,7 @@ export async function deleteWorkspace(universalId: string) {
   const dbPath = await getSpaceDBPath(peer, type, id);
   try {
     await getDocStoragePool().disconnect(universalId);
-    await fs.remove(path.dirname(dbPath));
+    await removeWorkspaceDir(path.dirname(dbPath));
   } catch (e) {
     logger.error('deleteWorkspace', e);
   }
@@ -78,7 +89,10 @@ export async function trashWorkspace(universalId: string) {
     await fs.copy(path.dirname(dbPath), movedPath, {
       overwrite: true,
     });
-    await fs.remove(path.dirname(dbPath));
+    // If the original still cannot be removed, it stays hidden from
+    // listLocalWorkspaceIds while its backup exists and is removed together
+    // with the backup in deleteBackupWorkspace.
+    await removeWorkspaceDir(path.dirname(dbPath));
   } catch (error) {
     logger.error('trashWorkspace', error);
   }
@@ -323,6 +337,14 @@ async function importWorkspaceDb(originalPath: string) {
 }
 
 export async function deleteBackupWorkspace(id: string) {
+  // Remove what trashWorkspace could not remove before the backup that hides
+  // it, so a failure keeps the workspace in the backup list instead of bringing
+  // it back as a local workspace.
+  const leftoverPath = path.dirname(
+    await getSpaceDBPath('local', 'workspace', id)
+  );
+  await removeWorkspaceDir(leftoverPath);
+
   const basePath = await getDeletedWorkspacesBasePath();
   const workspacePath = path.join(basePath, normalizeWorkspaceIdForPath(id));
   await fs.remove(workspacePath);
