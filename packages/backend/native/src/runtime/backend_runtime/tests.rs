@@ -407,6 +407,7 @@ pub(super) async fn runtime_from_database_url() -> AnyResult<Option<BackendRunti
       search: Default::default(),
       redis: Default::default(),
       payment: Default::default(),
+      embedding: Default::default(),
     }))),
     config_reload: Arc::new(Mutex::new(())),
     pool: Arc::new(Mutex::new(Some(pool))),

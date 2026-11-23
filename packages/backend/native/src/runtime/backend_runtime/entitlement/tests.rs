@@ -868,6 +868,7 @@ async fn authoritative_byok_and_mixed_owner_storage_use_current_facts() {
     search: cloud_config.search.clone(),
     redis: cloud_config.redis.clone(),
     payment: cloud_config.payment.clone(),
+    embedding: cloud_config.embedding.clone(),
   });
   let access = runtime.get_byok_entitlement_v1(workspace.clone(), None).await.unwrap();
   assert!(access.server && access.local);

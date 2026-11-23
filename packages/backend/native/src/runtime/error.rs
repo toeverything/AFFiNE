@@ -15,6 +15,9 @@ pub(crate) enum RuntimeError {
   #[error("{0}")]
   InvalidState(String),
 
+  #[error("{message}")]
+  ProviderFailure { status: Option<u16>, message: String },
+
   #[error("workspace access denied")]
   SearchWorkspaceDenied,
 
@@ -90,6 +93,20 @@ impl RuntimeError {
     Self::InvalidState(message.into())
   }
 
+  pub(crate) fn provider_failure(status: Option<u16>, message: impl Into<String>) -> Self {
+    Self::ProviderFailure {
+      status,
+      message: message.into(),
+    }
+  }
+
+  pub(crate) fn provider_status(&self) -> Option<u16> {
+    match self {
+      Self::ProviderFailure { status, .. } => *status,
+      _ => None,
+    }
+  }
+
   pub(crate) fn database(context: impl Into<String>, source: sqlx::Error) -> Self {
     Self::Database {
       context: context.into(),
@@ -124,6 +141,8 @@ impl RuntimeError {
       Self::Config(_) => "config_error".to_string(),
       Self::InvalidInput(message) => message_code(message).unwrap_or("invalid_input").to_string(),
       Self::InvalidState(message) => message_code(message).unwrap_or("invalid_state").to_string(),
+      // Preserve the NAPI surface: provider failures report as invalid_state.
+      Self::ProviderFailure { .. } => "invalid_state".to_string(),
       Self::SearchWorkspaceDenied => "workspace_denied".to_string(),
       Self::SearchPermissionUnavailable => "permission_unavailable".to_string(),
       Self::SearchIndexNotReady => "search_index_not_ready".to_string(),

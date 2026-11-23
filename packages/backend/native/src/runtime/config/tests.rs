@@ -291,6 +291,7 @@ fn database_config_only_replaces_an_active_private_key_explicitly() {
     search: SearchRuntimeConfig::default(),
     redis: RedisRuntimeConfig::default(),
     payment: PaymentRuntimeConfig::default(),
+    embedding: EmbeddingRuntimeConfig::default(),
   };
   let empty = serde_json::Value::Object(Map::new());
 

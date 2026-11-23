@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::Deserialize;
 use zeroize::Zeroizing;
 
-use super::CopilotRuntimeConfig;
+use super::{CopilotRuntimeConfig, EmbeddingRuntimeConfig};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Deployment {
@@ -21,6 +21,7 @@ pub(crate) struct BackendRuntimeConfig {
   pub(crate) search: SearchRuntimeConfig,
   pub(crate) redis: RedisRuntimeConfig,
   pub(crate) payment: PaymentRuntimeConfig,
+  pub(crate) embedding: EmbeddingRuntimeConfig,
 }
 
 #[derive(Clone)]

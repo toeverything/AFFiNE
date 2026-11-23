@@ -344,6 +344,7 @@ mod tests {
       search: Default::default(),
       redis: Default::default(),
       payment: Default::default(),
+      embedding: Default::default(),
     };
     let options = super::super::options::route_options(&config, "Chat With AFFiNE AI").unwrap();
     assert_eq!(
@@ -446,6 +447,7 @@ mod tests {
             search: Default::default(),
             redis: Default::default(),
             payment: Default::default(),
+            embedding: Default::default(),
           }),
           slot,
           profiles: vec![],

@@ -9,6 +9,7 @@ use super::{RuntimeError, RuntimeResult};
 mod admin;
 mod auth;
 mod copilot;
+mod embedding;
 mod file;
 mod napi;
 mod payment;
@@ -19,6 +20,8 @@ pub use admin::{AppConfigDescriptor, app_config_descriptors, validate_app_config
 use auth::{AuthConfigFile, auth_limit};
 pub(crate) use copilot::{CopilotByokRuntimeConfig, CopilotRuntimeConfig};
 use copilot::{CopilotRuntimeConfigFile, SUPPORTED_BYOK_PROVIDERS, validate_copilot_config};
+use embedding::EmbeddingConfigFile;
+pub(crate) use embedding::EmbeddingRuntimeConfig;
 pub(crate) use file::ServerConfig;
 #[cfg(test)]
 use file::expand_module_config_paths;
@@ -82,6 +85,7 @@ impl BackendRuntimeConfig {
       search: app_config.indexer.map(Into::into).unwrap_or_default(),
       redis: RedisRuntimeConfig::from_sources(app_config.redis.take())?,
       payment: PaymentRuntimeConfig::from_file(app_config.payment.take()),
+      embedding: EmbeddingRuntimeConfig::from_sources(app_config.embedding.take())?,
     }
     .validated()
   }
@@ -133,6 +137,8 @@ impl BackendRuntimeConfig {
         .take()
         .map(PaymentRuntimeConfig::from_file_value)
         .unwrap_or_else(|| self.payment.clone()),
+      // from_sources covers file/env/defaults, so no previous-value fallback.
+      embedding: EmbeddingRuntimeConfig::from_sources(app_config.embedding.take())?,
     }
     .validated()
   }
@@ -174,6 +180,7 @@ struct AppConfigFile {
   indexer: Option<SearchRuntimeConfigFile>,
   redis: Option<RedisRuntimeConfigFile>,
   payment: Option<PaymentRuntimeConfigFile>,
+  embedding: Option<EmbeddingConfigFile>,
 }
 
 #[derive(Deserialize, serde::Serialize, schemars::JsonSchema)]

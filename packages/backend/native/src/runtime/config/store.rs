@@ -37,6 +37,9 @@ pub(super) const NATIVE_APP_CONFIG_KEYS: &[&str] = &[
   // TODO(0.27.5): Remove legacy DB override loading after old instances exit
   // and existing rows are cleared.
   "db.datasourceUrl",
+  "embedding.dimensions",
+  "embedding.maxBatchItems",
+  "embedding.maxBatchTokens",
   "indexer.enabled",
   "indexer.provider.apiKey",
   "indexer.provider.endpoint",
@@ -85,7 +88,7 @@ pub(super) fn is_secret_native_app_config_key(key: &str) -> bool {
 }
 
 pub(super) fn is_static_app_config_key(key: &str) -> bool {
-  key == "db.datasourceUrl" || key.starts_with("redis.")
+  key == "db.datasourceUrl" || key.starts_with("redis.") || key.starts_with("embedding.")
 }
 
 pub(super) async fn load_app_config_overrides_from_db(pool: &PgPool) -> RuntimeResult<serde_json::Value> {

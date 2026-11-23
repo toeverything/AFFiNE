@@ -15,7 +15,7 @@ use super::{
 use crate::runtime::{
   AuthRuntimeConfig, BackendRuntimeConfig, Deployment, InviteQuotaConfig, OAuthProviderRuntimeConfig,
   PaymentRuntimeConfig, RedisRuntimeConfig,
-  config::{CopilotRuntimeConfig, SearchRuntimeConfig},
+  config::{CopilotRuntimeConfig, EmbeddingRuntimeConfig, SearchRuntimeConfig},
 };
 
 async fn pool() -> Option<PgPool> {
@@ -40,6 +40,7 @@ fn config(database_url: String) -> BackendRuntimeConfig {
     search: SearchRuntimeConfig::default(),
     redis: RedisRuntimeConfig::default(),
     payment: PaymentRuntimeConfig::default(),
+    embedding: EmbeddingRuntimeConfig::default(),
   }
 }
 

@@ -11,7 +11,9 @@ use llm_adapter::{
   router::{ExecutableRequest, ExecutableResponse},
   target::{BackendCredential, prepare_backend_target},
 };
-use llm_runtime::{CompiledPlan, CompiledRoute, RuntimeRouteEvent, RuntimeUsage, dispatch_compiled_plan};
+use llm_runtime::{
+  CompiledPlan, CompiledPlanError, CompiledRoute, RuntimeRouteEvent, RuntimeUsage, dispatch_compiled_plan,
+};
 use serde::Serialize;
 use uuid::Uuid;
 use zeroize::Zeroizing;
@@ -111,7 +113,7 @@ pub(super) fn execute(
   let response = dispatch_compiled_plan(&DefaultHttpClient::default(), &execution.plan, |event| {
     runtime_events.push(event)
   })
-  .map_err(|error| RuntimeError::invalid_state(error.to_string()))?;
+  .map_err(provider_error)?;
   let events = runtime_events
     .into_iter()
     .map(|event| execution.project(event))
@@ -122,6 +124,23 @@ pub(super) fn execute(
   })
 }
 
+fn provider_error(error: CompiledPlanError) -> RuntimeError {
+  match error {
+    CompiledPlanError::Backend(backend) => backend_failure(backend),
+    CompiledPlanError::Dispatch { source, .. } => backend_failure(source),
+    CompiledPlanError::NoCandidates => RuntimeError::invalid_state(error.to_string()),
+  }
+}
+
+fn backend_failure(backend: BackendError) -> RuntimeError {
+  let message = backend.to_string();
+  let status = match backend {
+    BackendError::UpstreamStatus { status, .. } => Some(status),
+    _ => None,
+  };
+  RuntimeError::provider_failure(status, message)
+}
+
 pub(super) fn execute_embeddings(
   config: Arc<BackendRuntimeConfig>,
   slot: CatalogSlot,
@@ -130,6 +149,7 @@ pub(super) fn execute_embeddings(
   targets: AuthorizedRouteTargets,
   managed_credential: Option<Zeroizing<String>>,
 ) -> RuntimeResult<Vec<Vec<f32>>> {
+  let dimensions = config.embedding.dimensions;
   let output = execute(config, slot, request, profiles, targets, managed_credential)?;
   let response: llm_adapter::core::EmbeddingResponse = serde_json::from_value(output.result)
     .map_err(|error| RuntimeError::json("decode embedding response failed", error))?;
@@ -137,7 +157,7 @@ pub(super) fn execute_embeddings(
     .embeddings
     .into_iter()
     .map(|vector| {
-      if vector.len() != 1024 || vector.iter().any(|value| !value.is_finite()) {
+      if vector.len() != dimensions as usize || vector.iter().any(|value| !value.is_finite()) {
         return Err(RuntimeError::invalid_state("invalid_embedding_vector"));
       }
       Ok(vector.into_iter().map(|value| value as f32).collect())
@@ -522,6 +542,7 @@ mod tests {
       search: Default::default(),
       redis: Default::default(),
       payment: Default::default(),
+      embedding: Default::default(),
     };
     let (slot, request) = request_and_slot(
       slot("chat.default").unwrap(),

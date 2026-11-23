@@ -4,9 +4,9 @@ use schemars::generate::SchemaSettings;
 use serde_json::{Value, from_value, json, to_value};
 
 use super::{
-  AuthConfigFile, CopilotRuntimeConfig, CopilotRuntimeConfigFile, CryptoConfigFile, OAuthProviderConfigFile,
-  PaymentRuntimeConfigFile, RedisRuntimeConfigFile, RuntimeError, SUPPORTED_BYOK_PROVIDERS, SearchRuntimeConfigFile,
-  auth_limit, insert_flat_override, valid_search_endpoint, validate_copilot_config,
+  AuthConfigFile, CopilotRuntimeConfig, CopilotRuntimeConfigFile, CryptoConfigFile, EmbeddingConfigFile,
+  OAuthProviderConfigFile, PaymentRuntimeConfigFile, RedisRuntimeConfigFile, RuntimeError, SUPPORTED_BYOK_PROVIDERS,
+  SearchRuntimeConfigFile, auth_limit, insert_flat_override, valid_search_endpoint, validate_copilot_config,
 };
 use crate::runtime::object_storage::{
   StorageBackendConfig, default_storage_provider_config, storage_provider_schema, types::StorageProviderConfig,
@@ -15,6 +15,7 @@ use crate::runtime::object_storage::{
 const AUTH_MODULE: &str = "auth";
 const COPILOT_MODULE: &str = "copilot";
 const CRYPTO_MODULE: &str = "crypto";
+const EMBEDDING_MODULE: &str = "embedding";
 const INDEXER_MODULE: &str = "indexer";
 const OAUTH_MODULE: &str = "oauth";
 const PAYMENT_MODULE: &str = "payment";
@@ -445,6 +446,50 @@ fn oauth_descriptors() -> Vec<AppConfigDescriptor> {
   .collect()
 }
 
+fn embedding_descriptors() -> Vec<AppConfigDescriptor> {
+  let defaults = to_value(EmbeddingConfigFile::default()).expect("Embedding defaults should serialize");
+  let root = to_value(
+    SchemaSettings::draft07()
+      .into_generator()
+      .into_root_schema_for::<EmbeddingConfigFile>(),
+  )
+  .expect("Embedding schema should serialize");
+  [
+    ("dimensions", "Embedding storage-space dimensions."),
+    ("maxBatchTokens", "Embedding worker batch token budget."),
+    ("maxBatchItems", "Embedding worker batch item limit."),
+  ]
+  .into_iter()
+  .map(|(key, description)| {
+    let mut schema = field(&root, key).clone();
+    if key == "dimensions" {
+      schema["minimum"] = json!(1);
+      schema["maximum"] = json!(4000);
+    } else {
+      schema["minimum"] = json!(1);
+    }
+    AppConfigDescriptor {
+      key: key.to_string(),
+      description: description.to_string(),
+      default_value: defaults.get(key).expect("Embedding default field").clone(),
+      schema,
+      internal: false,
+      env_name: Some(format!(
+        "AFFINE_EMBEDDING_{}",
+        match key {
+          "dimensions" => "SPACE_DIMENSIONS",
+          "maxBatchTokens" => "WORKER_MAX_BATCH_TOKENS",
+          "maxBatchItems" => "WORKER_MAX_BATCH_ITEMS",
+          _ => unreachable!(),
+        }
+      )),
+      env_type: Some("integer".to_string()),
+      link: None,
+    }
+  })
+  .collect()
+}
+
 fn validate_leaf(key: &str, value: Value) -> std::result::Result<(), RuntimeError> {
   let mut raw = to_value(CopilotRuntimeConfigFile::default())
     .map_err(|error| RuntimeError::json("serialize copilot defaults", error))?;
@@ -461,6 +506,7 @@ pub fn app_config_descriptors(module: String) -> Result<Vec<AppConfigDescriptor>
     AUTH_MODULE => Ok(auth_descriptors()),
     COPILOT_MODULE => Ok(descriptors()),
     CRYPTO_MODULE => Ok(crypto_descriptors()),
+    EMBEDDING_MODULE => Ok(embedding_descriptors()),
     INDEXER_MODULE => Ok(indexer_descriptors()),
     OAUTH_MODULE => Ok(oauth_descriptors()),
     PAYMENT_MODULE => Ok(payment_descriptors()),
