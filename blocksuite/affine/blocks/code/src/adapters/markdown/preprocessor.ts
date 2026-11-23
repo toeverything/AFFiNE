@@ -33,10 +33,8 @@ const codePreprocessor: MarkdownAdapterPreprocessor = {
             return line;
           }
 
-          if (trimmedLine.startsWith('\\[')) {
-            if (!trimmedLine.includes('\\]')) {
-              mathFence = '\\]';
-            }
+          if (trimmedLine.trimEnd() === '\\[') {
+            mathFence = '\\]';
             return line;
           }
         }

@@ -5179,6 +5179,20 @@ bbb
       expect(children?.[1]?.props.latex).toBe('    E = mc^2');
     });
 
+    test('should keep leading spaces after a pasted line that only starts with a bracket', async () => {
+      const pasteAdapter = new MixTextAdapter(createJob(), provider);
+      const rawSliceSnapshot = await pasteAdapter.toSliceSnapshot({
+        file: '\\[note]\n\n  indented\n',
+        workspaceId: '',
+        pageId: '',
+      });
+
+      const children = rawSliceSnapshot?.content?.[0]?.children;
+      expect(children?.[1]?.flavour).toBe('affine:paragraph');
+      expect(children?.[1]?.props.text.delta).toEqual([
+        { insert: '  indented' },
+      ]);
+    });
   });
 
   describe('dollar currency', () => {
