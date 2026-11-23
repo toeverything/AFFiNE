@@ -15,6 +15,10 @@ import type {
 } from '@blocksuite/affine-model';
 import { insertContent } from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
+import {
+  IconPickerServiceIdentifier,
+  IconType,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { createDefaultDoc } from '@blocksuite/affine-shared/utils';
 import type { SingleViewBase } from '@blocksuite/data-view';
@@ -269,6 +273,41 @@ test('typing into a sorted database title keeps editing the same row', async () 
   ]);
   expect(titleCells[0].dataset.editing).toBe('true');
 });
+
+test.each([
+  { hasIcon: true, target: '[data-testid="callout-emoji"]', opened: true },
+  { hasIcon: true, target: 'rich-text', opened: false },
+  { hasIcon: false, target: 'rich-text', opened: false },
+])(
+  'clicking $target in a callout (icon: $hasIcon) opens the icon picker: $opened',
+  async ({ hasIcon, target, opened }) => {
+    await setupEditor('page', [
+      {
+        setup: di => {
+          di.override(IconPickerServiceIdentifier, () => ({
+            iconPickerComponent: () => ({ update() {}, unmount() {} }),
+          }));
+        },
+      },
+    ]);
+    const noteId = addNote(doc);
+    const calloutId = doc.addBlock(
+      'affine:callout',
+      { icon: hasIcon ? { type: IconType.Emoji, unicode: '💡' } : undefined },
+      noteId
+    );
+    doc.addBlock('affine:paragraph', { text: new Text('text') }, calloutId);
+    await wait();
+    editor
+      .host!.view.getBlock(calloutId)!
+      .querySelector<HTMLElement>(target)!
+      .click();
+    await wait();
+    expect(editor.host!.querySelector('icon-picker-wrapper') !== null).toBe(
+      opened
+    );
+  }
+);
 
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',

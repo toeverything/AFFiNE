@@ -166,13 +166,6 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
       return;
     }
 
-    // If there's no icon, open icon picker on click
-    const icon = this.model.props.icon$.value;
-    if (!icon) {
-      this._toggleIconPicker(event);
-      return;
-    }
-
     // Only handle clicks when there are no children
     if (this.model.children.length > 0) {
       return;
