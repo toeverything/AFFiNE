@@ -61,7 +61,7 @@ describe('number property rules', () => {
   test('order by skips cleared values', async () => {
     const provider = createFramework().get(NumberPropertyOrderByProvider);
     const result = await firstValueFrom(
-      provider.orderBy$(of(new Set()), { type: 'property', key: 'n' })
+      provider.orderBy$(of(new Set<string>()), { type: 'property', key: 'n' })
     );
     expect(result).toEqual(['zero', 'three']);
   });
@@ -69,7 +69,7 @@ describe('number property rules', () => {
   test('group by does not put cleared values in the 0 group', async () => {
     const provider = createFramework().get(NumberPropertyGroupByProvider);
     const result = await firstValueFrom(
-      provider.groupBy$(of(new Set()), { type: 'property', key: 'n' })
+      provider.groupBy$(of(new Set<string>()), { type: 'property', key: 'n' })
     );
     expect(
       Object.fromEntries([...result].map(([k, v]) => [k, [...v]]))
