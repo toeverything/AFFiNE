@@ -100,7 +100,7 @@ jobs:
     name: L0 Tier A, Server Contracts & Test Harness
     runs-on: ubuntu-24.04
     env:
-      # One installed toolchain for crates/ and tools/parity-harness alike.
+      # One installed toolchain for packages/backend/ and tools/parity-harness alike.
       RUSTUP_TOOLCHAIN: '1.98.1'
     steps:
       - name: Checkout repository
@@ -130,7 +130,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
-            crates -> target
+            packages/backend -> target
+            tools/frame-audit -> target
             tools/parity-harness -> target
           key: server-harness
 
@@ -140,10 +141,10 @@ jobs:
           docker pull -q docker.io/library/redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe &
           wait
 
-      - name: Format, clippy and test crates/ (real PostgreSQL and Redis) and the parity harness
-        working-directory: crates
+      - name: Format, clippy and test packages/backend/ (real PostgreSQL and Redis) and the parity harness
+        working-directory: packages/backend
         run: |
-          mkdir -p ../.artifacts/server-harness
+          mkdir -p ../../.artifacts/server-harness
           status=passed
           timings=()
           step() {
@@ -157,17 +158,21 @@ jobs:
           step fmt cargo fmt --all -- --check
           step clippy cargo clippy --locked --workspace --all-targets -- -D warnings
           step test cargo test --locked --workspace
-          parity=(--manifest-path ../tools/parity-harness/Cargo.toml)
+          audit=(--manifest-path ../../tools/frame-audit/Cargo.toml)
+          step audit-fmt cargo fmt "${audit[@]}" --all -- --check
+          step audit-clippy cargo clippy --locked "${audit[@]}" --workspace --all-targets -- -D warnings
+          step audit-test cargo test --locked "${audit[@]}" --workspace
+          parity=(--manifest-path ../../tools/parity-harness/Cargo.toml)
           step parity-fmt cargo fmt "${parity[@]}" --all -- --check
           step parity-clippy cargo clippy --locked "${parity[@]}" --workspace --all-targets -- -D warnings
           step parity-test cargo test --locked "${parity[@]}" --workspace
           cargo run --locked --quiet -p test-db-harness --bin affine-test-env -- \
-            run-json --out ../.artifacts/server-harness/run.json --lane server-harness --status "$status" \
+            run-json --out ../../.artifacts/server-harness/run.json --lane server-harness --status "$status" \
             --sha "${{ github.sha }}" --run-id "${{ github.run_id }}-${{ github.run_attempt }}" \
             --select frame-audit --select test-db-harness --select parity-harness \
             --select server-types --select server-db --select server-spi \
             --select server-http --select server-worker --select affine-server "${timings[@]}"
-          cat ../.artifacts/server-harness/run.json
+          cat ../../.artifacts/server-harness/run.json
           test "$status" = passed
 
       - name: Upload run report

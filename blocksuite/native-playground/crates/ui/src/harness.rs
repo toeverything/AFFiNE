@@ -2,7 +2,7 @@
 //! structural UI audit primitives.
 //!
 //! The snapshot schema and the audit rules live in the renderer-independent
-//! `frame-audit` crate (repository `crates/frame-audit`) and are re-exported
+//! `frame-audit` crate (repository `tools/frame-audit`) and are re-exported
 //! here. Full snapshot collection and auditing are active under
 //! `#[cfg(any(test, feature = "harness"))]`; non-harness release builds compile
 //! down to zero-cost no-op stubs so layout and view code never need inline

@@ -6,9 +6,9 @@
 //   node scripts/ci/check-l0-tier-a.mjs --update-baseline  rewrite the ratchet
 //
 // Gates:
-//   1. crates/ layering: server-domain crates never depend on compatibility
+//   1. packages/backend/ layering: server-domain crates never depend on compatibility
 //      layers or transport frameworks.
-//   2. crates/ hygiene: no private keys, commercial prompts or private-edition
+//   2. packages/backend/ hygiene: no private keys, commercial prompts or private-edition
 //      table references in the public workspace.
 //   3. Test-debt ratchet: per-file counts of `waitForTimeout(` and `.skip`
 //      may only go down; `*.skip.*` test files are not allowed at all.
@@ -67,9 +67,10 @@ function* walk(dir) {
 
 const lineOf = (text, index) => text.slice(0, index).split('\n').length;
 
-// 1 + 2. crates/ layering and hygiene -------------------------------------
+// 1 + 2. packages/backend/ layering and hygiene -----------------------------
 
-const CRATES = join(ROOT, 'crates');
+const CRATES = join(ROOT, 'packages/backend');
+const LEGACY_BACKEND_DIRS = new Set(['native', 'server']);
 const DOMAIN_FORBIDDEN = [
   'legacy_compat',
   'phase_a_compat',
@@ -86,8 +87,10 @@ const HYGIENE_RULES = [
 if (existsSync(CRATES)) {
   for (const file of walk(CRATES)) {
     const path = rel(file);
+    const sub = path.slice('packages/backend/'.length).split('/')[0];
+    if (LEGACY_BACKEND_DIRS.has(sub)) continue;
     if (/(^|\/)prompts\//.test(path))
-      fail('crates-hygiene', `${path}: prompt assets do not belong in crates/`);
+      fail('crates-hygiene', `${path}: prompt assets do not belong in packages/backend/`);
     if (statSync(file).size > 2 * 1024 * 1024) continue;
     const text = read(file);
     for (const [pattern, what] of HYGIENE_RULES) {
@@ -96,7 +99,7 @@ if (existsSync(CRATES)) {
         fail('crates-hygiene', `${path}:${lineOf(text, m.index)}: ${what}`);
     }
 
-    const domainCrate = /^crates\/server-domain[^/]*\//.test(path);
+    const domainCrate = /^packages\/backend\/server-domain[^/]*\//.test(path);
     if (domainCrate && path.endsWith('/Cargo.toml')) {
       const deps = text
         .split(/^\[/m)
@@ -277,8 +280,8 @@ for (const name of readdirSync(WORKFLOWS).filter(f => /\.ya?ml$/.test(f))) {
 
 // The harness starts the same pinned images the workflows pull.
 const HARNESS_IMAGES = [
-  ['crates/test-db-harness/src/pg.rs', /PG_IMAGE: &str =\s*"([^"]+)"/],
-  ['crates/test-db-harness/src/redis.rs', /REDIS_IMAGE: &str =\s*"([^"]+)"/],
+  ['packages/backend/test-db-harness/src/pg.rs', /PG_IMAGE: &str =\s*"([^"]+)"/],
+  ['packages/backend/test-db-harness/src/redis.rs', /REDIS_IMAGE: &str =\s*"([^"]+)"/],
 ];
 for (const [path, pattern] of HARNESS_IMAGES) {
   if (!existsSync(join(ROOT, path))) continue;

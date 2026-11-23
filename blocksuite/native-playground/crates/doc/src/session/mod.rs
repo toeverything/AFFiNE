@@ -255,40 +255,6 @@ impl PageDocSession {
         }
     }
 
-    /// Recursively clear all children of a Yjs container leaf-first so every underlying
-    /// `store.delete_item` deletes a single item (`ranges.len() == 1`), keeping
-    /// `DeleteSet` ranges sorted regardless of map iteration order.
-    pub(super) fn clear_value_canonically(&mut self, value: SessionReadValue) -> DocResult<()> {
-        match value {
-            SessionReadValue::Map(ident) => {
-                let target = TypeTarget::Identity(ident);
-                let mut entries = self.session.read_map(&target)?;
-                entries.sort_by(|a, b| a.0.cmp(&b.0));
-                for (k, v) in entries {
-                    self.clear_value_canonically(v)?;
-                    self.session.map_remove(&target, &k)?;
-                }
-            }
-            SessionReadValue::Array(ident) => {
-                let target = TypeTarget::Identity(ident);
-                let items = self.session.read_array(&target)?;
-                for (idx, v) in items.into_iter().enumerate().rev() {
-                    self.clear_value_canonically(v)?;
-                    self.session.array_remove(&target, idx as u64, 1)?;
-                }
-            }
-            SessionReadValue::Text(ident) => {
-                let target = TypeTarget::Identity(ident);
-                let len = self.session.read_text_len(&target)?;
-                if len > 0 {
-                    self.session.text_remove(&target, 0, len)?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     pub fn guid(&self) -> &str {
         self.session.guid()
     }

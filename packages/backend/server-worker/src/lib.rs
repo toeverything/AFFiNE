@@ -97,9 +97,9 @@ pub fn session_redis_url(base_redis_url: &str) -> Result<(String, u8), WorkerErr
   Ok((out, session_db))
 }
 
-/// Helper for `V_new` private keys inside the shared Redis logical DB.
+/// Helper for private worker keys inside the shared Redis logical DB.
 ///
-/// Every key is prefixed with `<optional_prefix>v2:` so `V_new` worker state
+/// Every key is prefixed with `<optional_prefix>v2:` so worker state
 /// never collides with `v0.27.5` keys.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct V2Keyspace {

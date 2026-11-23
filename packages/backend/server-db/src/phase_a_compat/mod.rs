@@ -1,7 +1,7 @@
-//! Phase A `v0.27.5` co-existence SQL helpers.
+//! Compatibility storage adapters for shared database schemas.
 //!
 //! Kept isolated under `phase_a_compat` so canonical domain crates never depend
-//! on transition-era checkpoint tables or cutover checks.
+//! on shared-schema checkpoint tables or cutover checks.
 
 use crate::DbError;
 

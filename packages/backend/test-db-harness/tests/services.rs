@@ -301,7 +301,7 @@ fn pg_lease_tokens_and_cluster_marker_guard_destructive_calls() {
 
 #[test]
 fn affine_server_migrations_build_prisma_compatible_template() {
-  let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packages/backend/server/migrations");
+  let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
   let migrations = MigrationSet::load(&dir).unwrap();
   let cluster = PgCluster::from_env_or_docker().unwrap();
   let template = cluster.ensure_template(&migrations).unwrap();

@@ -35,7 +35,7 @@ etagere = "0.2"
 flume = { version = "0.12", default-features = false, features = ["async"] }
 font-kit = { git = "https://github.com/zed-industries/font-kit", rev = "94b0f28166665e8fd2f53ff6d268a14955c82269", package = "zed-font-kit", version = "0.14.1-zed", default-features = false }
 foreign-types = "0.5"
-frame-audit = { path = "../../crates/frame-audit" }
+frame-audit = { path = "../../tools/frame-audit" }
 futures = "0.3.34"
 getrandom = { version = "0.3.4", features = ["wasm_js"] }
 heapless = "0.9.2"

@@ -107,36 +107,16 @@ impl PageDocSession {
         element_id: &str,
         now_ms: u64,
     ) -> DocResult<PageCommit> {
+        self.advance_time(now_ms);
         let elements_value_target = TypeTarget::Path(
             TypePath::root("blocks")
                 .key(surface_block_id)
                 .key("prop:elements")
                 .key("value"),
         );
-        let element_id = element_id.to_string();
-        if self.session.tx_depth() == 0 {
-            return self.structural_edit(now_ms, move |page| {
-                if let Some(val) = page
-                    .session
-                    .get_map_value(&elements_value_target, &element_id)?
-                {
-                    page.clear_value_canonically(val)?;
-                }
-                page.session
-                    .map_remove(&elements_value_target, &element_id)?;
-                Ok(())
-            });
-        }
-        self.advance_time(now_ms);
-        if let Some(val) = self
-            .session
-            .get_map_value(&elements_value_target, &element_id)?
-        {
-            self.clear_value_canonically(val)?;
-        }
         Ok(self
             .session
-            .map_remove(&elements_value_target, &element_id)?)
+            .map_remove(&elements_value_target, element_id)?)
     }
 
     /// Update multiple fields on an existing surface element in one tracked transaction.
@@ -462,9 +442,6 @@ impl PageDocSession {
         if trimmed_text.is_empty() {
             return self.structural_edit(now_ms, move |page| {
                 for key in ["text", "labelXYWH", "labelOffset"] {
-                    if let Some(val) = page.session.get_map_value(&elem_target, key)? {
-                        page.clear_value_canonically(val)?;
-                    }
                     let _ = page.session.map_remove(&elem_target, key);
                 }
                 Ok(())

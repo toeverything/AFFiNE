@@ -23,7 +23,7 @@ server = [
 serde.workspace = true
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 thiserror.workspace = true
-y-octo = { version = "0.3.0", default-features = false, features = ["session"] }
+y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 axum = { version = "0.8", features = ["ws"], optional = true }

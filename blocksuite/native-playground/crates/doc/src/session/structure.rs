@@ -56,14 +56,6 @@ impl PageDocSession {
         Ok(commit?)
     }
 
-    fn remove_block_canonically(&mut self, id: &str) -> DocResult<()> {
-        if let Some(val) = self.session.get_map_value(&self.blocks_target, id)? {
-            self.clear_value_canonically(val)?;
-        }
-        self.session.map_remove(&self.blocks_target, id)?;
-        Ok(())
-    }
-
     pub fn delete_block_subtree(
         &mut self,
         parent_id: &str,
@@ -88,7 +80,7 @@ impl PageDocSession {
             page.session
                 .array_remove(&children_target(parent_id), index, 1)?;
             for id in candidates.difference(&retained) {
-                page.remove_block_canonically(id)?;
+                page.session.map_remove(&page.blocks_target, id)?;
             }
             Ok(())
         })
@@ -202,7 +194,7 @@ impl PageDocSession {
                     child_values(&children),
                 )?;
             }
-            page.remove_block_canonically(id)?;
+            page.session.map_remove(&page.blocks_target, id)?;
             Ok(())
         })
     }
@@ -476,7 +468,7 @@ impl PageDocSession {
                 }
             }
             for id in ids {
-                page.remove_block_canonically(&id)?;
+                page.session.map_remove(&page.blocks_target, &id)?;
             }
             Ok(())
         })
@@ -583,7 +575,7 @@ impl PageDocSession {
                 }
                 page.session
                     .array_remove(&children_target(&parent), slot + 1, 1)?;
-                page.remove_block_canonically(id)?;
+                page.session.map_remove(&page.blocks_target, id)?;
                 if !old.children.is_empty() {
                     if accepts_children {
                         page.session.array_push(

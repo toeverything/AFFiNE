@@ -2,20 +2,19 @@ use std::{
   env,
   fmt::Write as _,
   fs,
-  path::{Path, PathBuf},
+  path::PathBuf,
 };
 
 use sha2::{Digest, Sha256};
 
 fn main() {
   let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
-  let repo_root = manifest_dir
+  let backend_dir = manifest_dir
     .parent()
-    .and_then(Path::parent)
-    .expect("crates/server-db must live two levels under repository root");
+    .expect("packages/backend/server-db must live directly under packages/backend");
 
-  let migrations_dir = repo_root.join("packages/backend/server/migrations");
-  let runtime_sql_path = repo_root.join("packages/backend/native/src/runtime/sql/runtime_migrations.sql");
+  let migrations_dir = backend_dir.join("server/migrations");
+  let runtime_sql_path = backend_dir.join("native/src/runtime/sql/runtime_migrations.sql");
 
   println!("cargo:rerun-if-changed={}", migrations_dir.display());
   println!("cargo:rerun-if-changed={}", runtime_sql_path.display());
@@ -48,7 +47,7 @@ fn main() {
   .unwrap();
   writeln!(
     generated,
-    "pub(crate) const BUNDLED_RUNTIME_MIGRATIONS_SQL: &str = include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../../packages/backend/native/src/runtime/sql/runtime_migrations.sql\"));\n"
+    "pub(crate) const BUNDLED_RUNTIME_MIGRATIONS_SQL: &str = include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/../native/src/runtime/sql/runtime_migrations.sql\"));\n"
   )
   .unwrap();
   writeln!(
@@ -57,7 +56,7 @@ fn main() {
   )
   .unwrap();
   for (name, checksum) in entries {
-    let rel = format!("/../../packages/backend/server/migrations/{name}/migration.sql");
+    let rel = format!("/../server/migrations/{name}/migration.sql");
     writeln!(
       generated,
       "  BundledPrismaMigration {{\n    name: {:?},\n    checksum: {:?},\n    sql: include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), {:?})),\n  }},",

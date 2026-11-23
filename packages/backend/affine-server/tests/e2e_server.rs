@@ -211,7 +211,7 @@ fn startup_schema_gate_rejects_pre_0275_database_by_default() {
     };
 
     let err = match serve_with_extension(cli, Arc::new(CommunityExtension::new()), CancellationToken::new()).await {
-      Ok(_) => panic!("expected stepping-stone rejection for non-empty pre-0.27.5 database"),
+      Ok(_) => panic!("expected baseline gate rejection for non-empty pre-0.27.5 database"),
       Err(err) => err,
     };
     assert!(

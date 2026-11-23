@@ -1,6 +1,6 @@
 [workspace]
+exclude = ["native", "server"]
 members = [
-  "frame-audit",
   "test-db-harness",
   "server-types",
   "server-db",
@@ -43,9 +43,10 @@ tower-http         = { version = "0.6", features = ["cors", "trace"] }
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 uuid               = { version = "1", features = ["v4", "serde"] }
+y-octo             = { version = "0.4.0", features = ["large_refs"] }
 
 affine-server   = { path = "affine-server" }
-frame-audit     = { path = "frame-audit" }
+frame-audit     = { path = "../../tools/frame-audit" }
 server-db       = { path = "server-db" }
 server-http     = { path = "server-http" }
 server-spi      = { path = "server-spi" }

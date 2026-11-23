@@ -90,13 +90,14 @@
     }
   },
   "skip": {
-    "total": 62,
+    "total": 63,
     "files": {
       "blocksuite/integration-test/src/__tests__/edgeless/turbo-renderer.spec.ts": 2,
       "packages/backend/server/src/__tests__/app/selfhost.e2e.ts": 1,
       "packages/backend/server/src/__tests__/copilot/copilot-provider.spec.ts": 1,
       "packages/backend/server/src/__tests__/doc/renderer.spec.ts": 1,
       "packages/backend/server/src/__tests__/user.e2e.ts": 1,
+      "packages/backend/server/src/data/__tests__/cutover-baseline.spec.ts": 1,
       "packages/frontend/core/src/__tests__/ai/utils/apply-model/apply-patch-to-doc.spec.ts": 2,
       "tests/affine-cloud-copilot/e2e/ai-action/change-tone.spec.ts": 1,
       "tests/affine-cloud-copilot/e2e/ai-action/check-code-error.spec.ts": 1,

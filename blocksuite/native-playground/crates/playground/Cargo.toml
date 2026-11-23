@@ -35,7 +35,7 @@ ui = { path = "../ui" }
 unicode-bidi.workspace = true
 unicode-linebreak = "0.1"
 unicode-segmentation.workspace = true
-y-octo = { version = "0.3.0", default-features = false, features = ["session"] }
+y-octo = { version = "0.4.0", default-features = false, features = ["session"] }
 
 [dev-dependencies]
 tempfile = "3"

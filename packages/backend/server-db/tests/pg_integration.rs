@@ -18,9 +18,7 @@ fn repo_migrations_dir() -> PathBuf {
   PathBuf::from(env!("CARGO_MANIFEST_DIR"))
     .parent()
     .unwrap()
-    .parent()
-    .unwrap()
-    .join("packages/backend/server/migrations")
+    .join("server/migrations")
 }
 
 fn test_runtime() -> tokio::runtime::Runtime {
@@ -178,7 +176,7 @@ fn partial_pre_0275_db_fails_with_stepping_stone_required() {
       )
       .unwrap();
     // Even if a stale `schema_baseline_0275` checkpoint row exists, missing Prisma
-    // migrations must still fail the stepping-stone gate.
+    // migrations must still fail the baseline gate.
     client
       .batch_execute(
         r#"CREATE TABLE IF NOT EXISTS storage_reconciliation_checkpoints (
@@ -206,7 +204,7 @@ fn partial_pre_0275_db_fails_with_stepping_stone_required() {
     let err = db
       .ensure_schema_ready()
       .await
-      .expect_err("partial DB must fail stepping-stone check");
+      .expect_err("partial DB must fail baseline gate check");
     match err {
       DbError::SteppingStoneRequired {
         missing_migrations,
@@ -319,7 +317,7 @@ fn existing_0275_db_boots_cleanly_without_touching_prisma_migrations() {
         .fetch_one(conn.as_conn())
         .await
         .unwrap();
-    assert!(runtime_table_exists, "Track B must ensure runtime tables exist");
+    assert!(runtime_table_exists, "existing-DB bootstrap must ensure runtime tables exist");
     drop(conn);
     db.pool().close().await;
   });

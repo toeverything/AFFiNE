@@ -6,7 +6,7 @@
 //!    `BEGIN;`/`COMMIT;` so embedded transaction wrappers never commit early) +
 //!    runtime tables, writes the `schema_baseline_0275` checkpoint, and creates
 //!    `native_schema_migrations`.
-//! 2. Existing non-empty DB: enforces the `v0.27.5` stepping-stone gate without
+//! 2. Existing non-empty DB: enforces the `v0.27.5` baseline gate without
 //!    ever mutating `_prisma_migrations`, idempotently ensures runtime tables
 //!    and `native_schema_migrations`.
 
@@ -295,7 +295,7 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
   let is_fresh_empty = !prisma_table_exists && public_table_count == 0;
   let resuming_fresh_init = !is_fresh_empty && phase_a_compat::is_schema_baseline_0275_initializing(&mut *conn).await?;
 
-  // Track A: Fresh empty database or strictly verified resume of an interrupted
+  // Fresh empty database or strictly verified resume of an interrupted
   // `server-db` fresh bootstrap.
   if is_fresh_empty || resuming_fresh_init {
     let prefix_len = if is_fresh_empty {
@@ -353,8 +353,8 @@ async fn ensure_schema_ready_locked(conn: &mut sqlx::PgConnection) -> Result<Sch
     });
   }
 
-  // Track B: Existing non-empty database — enforce v0.27.5 stepping-stone gate
-  // without ever modifying `_prisma_migrations`.
+  // Existing non-empty database: enforce the v0.27.5 baseline gate
+  // without modifying `_prisma_migrations`.
   let has_baseline_checkpoint = phase_a_compat::has_schema_baseline_0275_checkpoint(&mut *conn).await?;
 
   let missing_migrations = if prisma_table_exists {

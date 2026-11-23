@@ -255,7 +255,7 @@ mod tests {
 
   #[test]
   fn graphql_sdl_fields_and_types_match_v0275_oracle_schema() {
-    let oracle_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/oracle-contracts/v0.27.5/schema.gql");
+    let oracle_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../tests/oracle-contracts/v0.27.5/schema.gql");
     let oracle_sdl =
       std::fs::read_to_string(&oracle_path).unwrap_or_else(|e| panic!("failed to read {}: {e}", oracle_path.display()));
 
