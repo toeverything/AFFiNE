@@ -441,6 +441,23 @@ describe('markdown/list/paragraph/quote/code/link', () => {
     expect((model as any).props.language).toBe('typescript');
   });
 
+  test('spellcheck is disabled in code blocks only', async () => {
+    const { noteId, paragraphId } = await createParagraph('paragraph');
+    const codeId = doc.addBlock(
+      'affine:code',
+      { text: new Text('const value = 1;') },
+      noteId
+    );
+    await wait();
+
+    const editable = (blockId: string) =>
+      getRichTextByBlockId(blockId).querySelector<HTMLElement>(
+        '[contenteditable="true"]'
+      )!;
+    expect(editable(codeId).spellcheck).toBe(false);
+    expect(editable(paragraphId).closest('[spellcheck="false"]')).toBeNull();
+  });
+
   test('inline markdown converts style and link attributes', async () => {
     const { paragraphId: boldParagraphId } = await createParagraph();
     await triggerMarkdown(boldParagraphId, '**bold** ', 'bold');
