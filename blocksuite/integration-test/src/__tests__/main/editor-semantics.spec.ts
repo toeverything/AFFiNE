@@ -192,6 +192,57 @@ test.each([false, true])(
   }
 );
 
+test('typing into a sorted database title keeps editing the same row', async () => {
+  const noteId = addNote(doc);
+  const id = doc.addBlock('affine:database', {}, noteId);
+  const model = doc.getModelById(id) as DatabaseBlockModel;
+  const source = new DatabaseBlockDataSource(model, source => {
+    source.serviceSet(EditorHostKey, editor.host!);
+  });
+  const viewId = source.viewManager.viewAdd('table');
+  const titleId = source.properties$.value.find(
+    propertyId => source.propertyTypeGet(propertyId) === 'title'
+  )!;
+  const editedRow = source.rowAdd('end');
+  const otherRow = source.rowAdd('end');
+  doc.updateBlock(doc.getModelById(editedRow)!, { text: new Text('b') });
+  doc.updateBlock(doc.getModelById(otherRow)!, { text: new Text('c') });
+  source.viewDataUpdate(viewId, data => ({
+    ...data,
+    sort: {
+      manuallySort: [],
+      sortBy: [{ ref: { type: 'ref', name: titleId }, desc: false }],
+    },
+  }));
+  await wait();
+  const database = editor.host!.view.getBlock(id)!;
+  await database.updateComplete;
+  await wait();
+  const container = database.querySelector<
+    HTMLElement & { selectCurrentCell: (editing: boolean) => void }
+  >(
+    `dv-table-view-cell-container[data-row-id="${editedRow}"][data-column-id="${titleId}"]`
+  )!;
+
+  container.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  container.selectCurrentCell(false);
+  await wait();
+  container.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'z', bubbles: true, cancelable: true })
+  );
+  await wait();
+  await wait();
+
+  const titleCells = database.querySelectorAll<HTMLElement>(
+    `dv-table-view-cell-container[data-column-id="${titleId}"]`
+  );
+  expect(Array.from(titleCells, cell => cell.dataset.rowId)).toEqual([
+    editedRow,
+    otherRow,
+  ]);
+  expect(titleCells[0].dataset.editing).toBe('true');
+});
+
 test.each(['page', 'edgeless'] as const)(
   'table selection preserves its input owner in %s mode',
   async mode => {

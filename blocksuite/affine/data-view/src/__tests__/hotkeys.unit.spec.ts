@@ -17,6 +17,7 @@ const TAG_COLUMN_TYPES = [
 function createLogic() {
   const view = {
     rowsDelete: vi.fn(),
+    lockRows: vi.fn(),
     rows$: { value: [] },
     groupTrait: { groupsDataList$: { value: [] } },
   };
@@ -73,6 +74,7 @@ describe('TableHotkeysController', () => {
     const cell = {
       rowId: 'r1',
       dataset: { rowId: 'r1', columnId: 'c1' },
+      isEditing$: { value: true },
       column: {
         valueSetFromString: vi.fn(),
         type$: { value: 'text' },
@@ -140,6 +142,7 @@ describe('Virtual TableHotkeysController', () => {
     const cell = {
       rowId: 'r1',
       dataset: { rowId: 'r1', columnId: 'c1' },
+      isEditing$: { value: true },
       column$: {
         value: {
           valueSetFromString: vi.fn(),
