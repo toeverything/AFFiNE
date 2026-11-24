@@ -440,6 +440,15 @@ async fn handle_graphql_post(
   lazy
     .cookie_action()
     .apply_to(resp.headers_mut(), state.app.config.load().https);
+  let (allowed, retry_after) = lazy.throttle_headers();
+  if let Some(th) = allowed {
+    th.apply_to(resp.headers_mut());
+  }
+  if let Some(retry_after_secs) = retry_after
+    && let Ok(v) = HeaderValue::from_str(&retry_after_secs.to_string())
+  {
+    resp.headers_mut().insert(header::RETRY_AFTER, v);
+  }
   resp
 }
 

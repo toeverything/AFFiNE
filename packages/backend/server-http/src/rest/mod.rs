@@ -566,10 +566,27 @@ pub fn validate_and_build_magic_link_callback_url(
   Ok(parsed.into())
 }
 
+/// Validates ONLY the outer `callbackUrl` origin against allowed origins
+/// (matching `v0.27.5` `url.safeLink`, without rewriting inner query parameters).
+pub fn validate_safe_link_callback_url(
+  callback_url: &str,
+  external_url: &str,
+  server_hosts: &[String],
+) -> Result<String, DomainError> {
+  let allowed_origins = build_allowed_origins(external_url, server_hosts);
+  let parsed = parse_http_url_with_base(callback_url, external_url)?;
+  if !has_allowed_origin(&parsed, &allowed_origins) {
+    return Err(DomainError::Forbidden("callbackUrl origin is not allowed".to_owned()));
+  }
+  Ok(parsed.into())
+}
+
 /// Resolves [`AuthRequestSource`] using the effective `auth.trustedCloudflareHeaders` flag.
-pub(crate) async fn resolve_auth_request_source(state: &RouterState, headers: &HeaderMap) -> AuthRequestSource {
-  let trusted_cf = state
-    .app
+pub(crate) async fn resolve_auth_request_source_for_app(
+  app: &crate::AppState,
+  headers: &HeaderMap,
+) -> AuthRequestSource {
+  let trusted_cf = app
     .app_config
     .get_effective_app_config()
     .await
@@ -577,6 +594,11 @@ pub(crate) async fn resolve_auth_request_source(state: &RouterState, headers: &H
     .and_then(|v| v.pointer("/auth/trustedCloudflareHeaders").and_then(|b| b.as_bool()))
     .unwrap_or(false);
   extract_request_source(headers, trusted_cf)
+}
+
+/// Resolves [`AuthRequestSource`] using the effective `auth.trustedCloudflareHeaders` flag.
+pub(crate) async fn resolve_auth_request_source(state: &RouterState, headers: &HeaderMap) -> AuthRequestSource {
+  resolve_auth_request_source_for_app(&state.app, headers).await
 }
 
 /// Validates that `raw` stays on the same origin and within the base path of

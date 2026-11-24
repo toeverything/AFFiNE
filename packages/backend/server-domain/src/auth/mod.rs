@@ -7,6 +7,7 @@ pub mod oauth;
 pub mod oauth_crypto;
 mod oauth_http;
 pub mod password;
+pub mod security_challenge;
 
 use std::{fmt, fmt::Write as _, sync::Arc, time::Duration as StdDuration};
 
@@ -349,6 +350,85 @@ impl AuthService {
   /// Idempotently initializes `auth.session.signingKeys` in `public.app_configs`.
   pub async fn ensure_signing_keys(&self) -> Result<Vec<keyring::StoredSigningKey>, DomainError> {
     keyring::ensure_signing_keys(&self.db).await
+  }
+
+  /// Lists public metadata for all signing keys (with raw secrets stripped).
+  pub async fn list_signing_keys(&self) -> Result<Vec<keyring::SigningKeyMetadata>, DomainError> {
+    keyring::list_signing_key_metadata(&self.db).await
+  }
+
+  /// Rotates the active session signing key with CAS on `expected_active_key_id`.
+  pub async fn rotate_signing_key(
+    &self,
+    actor_id: &str,
+    expected_active_key_id: &str,
+  ) -> Result<Vec<keyring::SigningKeyMetadata>, DomainError> {
+    let mut conn = self
+      .db
+      .acquire_tiered(WorkloadTier::InteractiveRead)
+      .await
+      .map_err(|e| DomainError::Internal(format!("acquire auth token policy conn: {e}")))?;
+    let rows = sqlx::query(
+      "SELECT id, value
+       FROM app_configs
+       WHERE id IN ('auth', 'auth.token', 'auth.token.accessTokenTtl')
+       ORDER BY id ASC",
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(|e| DomainError::Internal(format!("load auth token policy: {e}")))?;
+    drop(conn);
+    let policy = parse_auth_token_policy(rows);
+    keyring::rotate_signing_key(&self.db, actor_id, expected_active_key_id, policy.access_token_ttl_secs).await
+  }
+
+  /// Deletes an expired retiring session signing key.
+  pub async fn delete_signing_key(
+    &self,
+    actor_id: &str,
+    key_id: &str,
+  ) -> Result<Vec<keyring::SigningKeyMetadata>, DomainError> {
+    keyring::delete_signing_key(&self.db, actor_id, key_id).await
+  }
+
+  /// Issues a compatibility cookie session directly for `user_id` (`UserType.token`).
+  pub async fn issue_cookie_session_for_user(&self, user_id: &str) -> Result<CookieSignInResult, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin issue_cookie_session_for_user: {e}")))?;
+    let disabled: Option<bool> = sqlx::query_scalar("SELECT disabled FROM users WHERE id = $1 FOR UPDATE")
+      .bind(user_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("lock user for cookie session: {e}")))?;
+    if disabled != Some(false) {
+      return Err(DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()));
+    }
+    let now = decision_time(tx.tx_mut()).await?;
+    let issued = self
+      .sessions
+      .issue_cookie_session(tx.tx_mut(), user_id, None, None, self.config.session_ttl_seconds, now)
+      .await
+      .map_err(|e| DomainError::Internal(format!("issue user cookie session: {e}")))?;
+    self
+      .session_policy
+      .on_session_created(tx.tx_mut(), user_id, &issued.session_id, now)
+      .await?;
+    let user = load_current_user_in_tx(tx.tx_mut(), user_id)
+      .await?
+      .ok_or_else(|| DomainError::Unauthorized("wrong_sign_in_credentials".to_owned()))?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit issue_cookie_session_for_user: {e}")))?;
+    Ok(CookieSignInResult {
+      user,
+      session_id: issued.session_id,
+      user_session_id: issued.user_session_id,
+      expires_at: issued.expires_at,
+      created_user: false,
+    })
   }
 
   /// Returns `true` when at least one registered user or active administrator

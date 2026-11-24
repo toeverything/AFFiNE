@@ -126,6 +126,14 @@ pub enum UserImportResultType {
   User(Box<UserType>),
 }
 
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "tokenType")]
+pub struct ClientTokenType {
+  pub token: String,
+  pub refresh: String,
+  pub session_token: Option<String>,
+}
+
 pub struct UserType {
   pub(crate) view: CurrentUserView,
 }
@@ -261,6 +269,28 @@ impl UserType {
   ) -> Result<super::notification::PaginatedNotificationObjectType> {
     super::notification::resolve_user_notifications(ctx, pagination).await
   }
+
+  #[graphql(deprecation = "use auth session exchange instead")]
+  async fn token(&self, ctx: &Context<'_>) -> Result<ClientTokenType> {
+    let caller = require_authenticated_user(ctx).await?;
+    super::enforce_strict_throttle_graphql(ctx).await?;
+    if self.view.id != caller.id {
+      return Err(domain_error_to_graphql(&DomainError::Forbidden(
+        "You are not allowed to perform this action.".into(),
+      )));
+    }
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let issued = state
+      .auth
+      .issue_cookie_session_for_user(&self.view.id)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(ClientTokenType {
+      session_token: Some(issued.session_id.clone()),
+      token: issued.session_id,
+      refresh: String::new(),
+    })
+  }
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
@@ -310,28 +340,7 @@ pub(crate) async fn resolve_public_user_by_id(ctx: &Context<'_>, id: String) -> 
   }))
 }
 
-pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserInput) -> Result<UserType> {
-  let user = require_authenticated_user(ctx).await?;
-  if input.name.is_none() {
-    return Ok(UserType { view: user });
-  }
-  let state = ctx.data_unchecked::<Arc<AppState>>();
-  let updated = state
-    .users
-    .update_profile(
-      &user.id,
-      UpdateProfileInput {
-        name: input.name,
-        avatar_url: None,
-      },
-    )
-    .await
-    .map_err(|e| domain_error_to_graphql(&e))?;
-  publish_user_profile_updated_events(state, &updated.id).await;
-  Ok(UserType { view: updated })
-}
-
-async fn publish_user_profile_updated_events(state: &AppState, user_id: &str) {
+pub(crate) async fn publish_user_updated_realtime(state: &AppState, user_id: &str) {
   let req_id = super::graphql_request_id(state);
   let _ = state
     .event_bus
@@ -381,21 +390,57 @@ async fn publish_user_profile_updated_events(state: &AppState, user_id: &str) {
     .unwrap_or_default(),
     Err(_) => Vec::new(),
   };
+  let mut docs_by_ws: std::collections::BTreeMap<String, Vec<String>> = std::collections::BTreeMap::new();
   for (ws_id, doc_id) in doc_rows {
-    let _ = state
-      .event_bus
-      .publish_event(
-        "realtime.topic.changed",
-        serde_json::json!({
-          "topic": "doc.grants.changed",
-          "room": format!("workspace:{ws_id}:doc:{doc_id}:grants"),
-          "input": { "workspaceId": ws_id, "docId": doc_id },
-          "event": { "changed": true, "reason": "user-updated" },
-        }),
-        Some(req_id.as_str()),
-      )
-      .await;
+    docs_by_ws.entry(ws_id).or_default().push(doc_id);
   }
+  for (ws_id, doc_ids) in docs_by_ws {
+    let aliases = state.doc_sharing.get_doc_id_aliases(&ws_id).await.unwrap_or_default();
+    for doc_id in doc_ids {
+      let mut targets = std::collections::BTreeSet::from([doc_id.clone()]);
+      for (logical, physical) in &aliases {
+        if physical == &doc_id {
+          targets.insert(logical.clone());
+        }
+      }
+      for target_id in targets {
+        let _ = state
+          .event_bus
+          .publish_event(
+            "realtime.topic.changed",
+            serde_json::json!({
+              "topic": "doc.grants.changed",
+              "room": format!("workspace:{ws_id}:doc:{target_id}:grants"),
+              "input": { "workspaceId": ws_id, "docId": target_id },
+              "event": { "changed": true, "reason": "user-updated" },
+            }),
+            Some(req_id.as_str()),
+          )
+          .await;
+      }
+    }
+  }
+}
+
+pub(crate) async fn mutate_update_profile(ctx: &Context<'_>, input: UpdateUserInput) -> Result<UserType> {
+  let user = require_authenticated_user(ctx).await?;
+  if input.name.is_none() {
+    return Ok(UserType { view: user });
+  }
+  let state = ctx.data_unchecked::<Arc<AppState>>();
+  let updated = state
+    .users
+    .update_profile(
+      &user.id,
+      UpdateProfileInput {
+        name: input.name,
+        avatar_url: None,
+      },
+    )
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  publish_user_updated_realtime(state, &updated.id).await;
+  Ok(UserType { view: updated })
 }
 
 fn image_format_not_supported_error() -> async_graphql::Error {
@@ -843,7 +888,7 @@ pub(crate) async fn mutate_admin_update_user(
     .admin_update_user(&id, input.email.as_deref(), input.name.as_deref())
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
-  publish_user_profile_updated_events(state, &view.id).await;
+  publish_user_updated_realtime(state, &view.id).await;
   Ok(UserType { view })
 }
 
