@@ -402,6 +402,7 @@ pub(in super::super) async fn probe_profile(
   root_secret: &[u8],
   policy: &ByokPolicy,
   input: ProbeByokProfileInput,
+  embedding_dimensions: u32,
 ) -> RuntimeResult<crate::llm::ByokProbeResultOutput> {
   let profile = sqlx::query_as::<_, ProfileRow>(
     r#"
@@ -430,8 +431,15 @@ pub(in super::super) async fn probe_profile(
       ),
     )
     .map_err(|_| RuntimeError::invalid_state("credential_unavailable"))?;
-  let mut result =
-    super::probe::execute_probe(&profile.provider, &definition, credential, policy, input.checks).await?;
+  let mut result = super::probe::execute_probe(
+    &profile.provider,
+    &definition,
+    credential,
+    policy,
+    input.checks,
+    embedding_dimensions,
+  )
+  .await?;
   let validation = ByokValidationOutput {
     definition_fingerprint: result.definition_fingerprint.clone(),
     credential_generation: profile.credential_generation,
@@ -462,6 +470,7 @@ pub(in super::super) async fn probe_draft(
   root_secret: &[u8],
   policy: &ByokPolicy,
   input: ProbeByokDraftInput,
+  embedding_dimensions: u32,
 ) -> RuntimeResult<crate::llm::ByokProbeResultOutput> {
   let definition = validate_definition(&input.provider, input.definition)
     .map_err(|error| RuntimeError::invalid_input(error.to_string()))?;
@@ -508,7 +517,15 @@ pub(in super::super) async fn probe_draft(
       ));
     }
   };
-  super::probe::execute_probe(&input.provider, &definition, credential, policy, input.checks).await
+  super::probe::execute_probe(
+    &input.provider,
+    &definition,
+    credential,
+    policy,
+    input.checks,
+    embedding_dimensions,
+  )
+  .await
 }
 
 async fn select_profile_for_update(

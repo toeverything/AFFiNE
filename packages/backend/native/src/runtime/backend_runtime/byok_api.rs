@@ -53,18 +53,30 @@ impl BackendRuntime {
   pub async fn probe_byok_profile(&self, input: ProbeByokProfileInput) -> Result<ByokProbeResultOutput> {
     let config = self.config()?;
     let policy = config.byok_policy();
-    byok::probe_profile(&self.pool().await?, config.private_key.as_bytes(), &policy, input)
-      .await
-      .map_err(to_napi_error)
+    byok::probe_profile(
+      &self.pool().await?,
+      config.private_key.as_bytes(),
+      &policy,
+      input,
+      config.embedding.dimensions,
+    )
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]
   pub async fn probe_byok_draft(&self, input: ProbeByokDraftInput) -> Result<ByokProbeResultOutput> {
     let config = self.config()?;
     let policy = config.byok_policy();
-    byok::probe_draft(&self.pool().await?, config.private_key.as_bytes(), &policy, input)
-      .await
-      .map_err(to_napi_error)
+    byok::probe_draft(
+      &self.pool().await?,
+      config.private_key.as_bytes(),
+      &policy,
+      input,
+      config.embedding.dimensions,
+    )
+    .await
+    .map_err(to_napi_error)
   }
 
   #[napi]

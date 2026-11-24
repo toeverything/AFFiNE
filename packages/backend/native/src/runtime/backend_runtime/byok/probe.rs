@@ -26,6 +26,7 @@ pub(super) async fn execute_probe(
   credential: SensitiveCredential,
   policy: &ByokPolicy,
   checks: Vec<ByokProbeCheckInput>,
+  embedding_dimensions: u32,
 ) -> RuntimeResult<ByokProbeResultOutput> {
   let tested_at_ms = chrono::Utc::now().timestamp_millis();
   let mut requested = Vec::new();
@@ -78,6 +79,7 @@ pub(super) async fn execute_probe(
             credential,
             &operation_for_task,
             egress_policy,
+            embedding_dimensions,
           )
         })
         .await
@@ -117,6 +119,7 @@ fn dispatch_check(
   credential: String,
   operation: &str,
   egress_policy: EgressPolicy,
+  embedding_dimensions: u32,
 ) -> ByokProbeStatusOutput {
   let checked_at = chrono::Utc::now().timestamp_millis();
   let operation_kind = match operation {
@@ -156,7 +159,7 @@ fn dispatch_check(
   };
   let route = match target.bind(
     BackendCredential::new(credential),
-    probe_request_for_operation(operation),
+    probe_request_for_operation(operation, embedding_dimensions),
   ) {
     Ok(route) => route,
     Err(_) => return failed(checked_at, "invalid_probe_request"),
@@ -196,7 +199,12 @@ fn dispatch_check(
       }
     }
     Ok(ExecutableResponse::Embedding(response)) if operation == "embedding" && !response.embeddings.is_empty() => {
-      verified(checked_at)
+      let expected = embedding_dimensions as usize;
+      if response.embeddings.iter().all(|embedding| embedding.len() == expected) {
+        verified(checked_at)
+      } else {
+        failed(checked_at, "embedding_dimension_mismatch")
+      }
     }
     Ok(ExecutableResponse::Rerank(response)) if operation == "rerank" && !response.scores.is_empty() => {
       verified(checked_at)
@@ -209,7 +217,7 @@ fn dispatch_check(
   }
 }
 
-fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
+fn probe_request_for_operation(operation: &str, embedding_dimensions: u32) -> ExecutableRequest {
   let message = CoreMessage {
     role: CoreRole::User,
     content: vec![CoreContent::Text {
@@ -261,7 +269,7 @@ fn probe_request_for_operation(operation: &str) -> ExecutableRequest {
     "embedding" => ExecutableRequest::Embedding(EmbeddingRequest {
       model: String::new(),
       inputs: vec!["BYOK probe".to_string()],
-      dimensions: None,
+      dimensions: Some(embedding_dimensions),
       task_type: None,
     }),
     "rerank" => ExecutableRequest::Rerank(RerankRequest {
@@ -467,7 +475,10 @@ mod tests {
     String::from_utf8(request).unwrap()
   }
 
-  fn serve_openai_compatible(request_count: usize) -> (String, mpsc::Receiver<String>, thread::JoinHandle<()>) {
+  fn serve_openai_compatible(
+    request_count: usize,
+    embedding_dimensions: usize,
+  ) -> (String, mpsc::Receiver<String>, thread::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let endpoint = format!("http://{}/v1", listener.local_addr().unwrap());
     let (sender, receiver) = mpsc::channel();
@@ -483,7 +494,7 @@ mod tests {
         let body = if embedding {
           json!({
             "model": "smoke-model",
-            "data": [{ "embedding": [0.1], "index": 0 }],
+            "data": [{ "embedding": vec![0.1; embedding_dimensions], "index": 0 }],
             "usage": { "prompt_tokens": 1, "total_tokens": 1 }
           })
         } else if image {
@@ -600,7 +611,7 @@ mod tests {
   #[test]
   fn openai_compatible_probe_smoke_uses_the_selected_dialect() {
     let operations = ["chat", "structured", "tool_calling", "embedding", "rerank", "image"];
-    let (endpoint, requests, server) = serve_openai_compatible(operations.len() * 2);
+    let (endpoint, requests, server) = serve_openai_compatible(operations.len() * 2, 4);
 
     for dialect in [OpenAiDialect::Responses, OpenAiDialect::ChatCompletions] {
       let endpoint = ByokEndpoint::OpenAiCompatible {
@@ -616,6 +627,7 @@ mod tests {
             "smoke-key".to_string(),
             operation,
             EgressPolicy::AllowPrivate,
+            4,
           )
           .kind,
           "verified"
@@ -664,5 +676,33 @@ mod tests {
         .filter(|request| !request.contains("\"logprobs\":true"))
         .all(|request| !request.contains("\"temperature\""))
     );
+    // The probe must ask for exactly what the runtime will ask for.
+    assert!(
+      requests
+        .iter()
+        .filter(|request| request.starts_with("POST /v1/embeddings "))
+        .all(|request| request.contains("\"dimensions\":4"))
+    );
+  }
+
+  #[test]
+  fn embedding_probe_rejects_dimension_mismatch() {
+    let (endpoint, _requests, server) = serve_openai_compatible(1, 1);
+    let endpoint = ByokEndpoint::OpenAiCompatible {
+      url: endpoint,
+      dialect: OpenAiDialect::ChatCompletions,
+    };
+    let status = dispatch_check(
+      "openai",
+      &endpoint,
+      "smoke-model",
+      "smoke-key".to_string(),
+      "embedding",
+      EgressPolicy::AllowPrivate,
+      4,
+    );
+    server.join().unwrap();
+    assert_eq!(status.kind, "failed");
+    assert_eq!(status.error_kind.as_deref(), Some("embedding_dimension_mismatch"));
   }
 }
