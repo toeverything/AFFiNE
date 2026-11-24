@@ -4,6 +4,7 @@ import {
   databaseBlockProperties,
   EditorHostKey,
 } from '@blocksuite/affine-block-database';
+import { insertTableBlockCommand } from '@blocksuite/affine-block-table';
 import { LinkExtension } from '@blocksuite/affine-inline-link';
 import { textKeymap } from '@blocksuite/affine-inline-preset';
 import type { AffineReference } from '@blocksuite/affine-inline-reference';
@@ -720,4 +721,43 @@ describe('slash-menu action semantics', () => {
     const richText = getRichTextByBlockId(first.id);
     expect(richText.inlineEditor.yTextString).toMatch(/\d{4}-\d{2}-\d{2}/);
   });
+});
+
+describe('table insertion', () => {
+  test.each([
+    { kind: 'empty', itemText: '', keptChildren: 0 },
+    { kind: 'non-empty', itemText: 'child', keptChildren: 1 },
+  ])(
+    'inserts the table after the top-level list from a nested list item that is $kind',
+    async ({ itemText, keptChildren }) => {
+      const noteId = addNote(doc);
+      const outerId = doc.addBlock(
+        'affine:list',
+        { type: 'bulleted', text: new Text('outer') },
+        noteId
+      );
+      const innerId = doc.addBlock(
+        'affine:list',
+        { type: 'bulleted', text: new Text(itemText) },
+        outerId
+      );
+      await wait();
+
+      const inner = doc.getBlock(innerId)?.model;
+      if (!inner) {
+        throw new Error('Cannot find nested list model');
+      }
+      const [, { insertedTableBlockId }] = editor.std.command.exec(
+        insertTableBlockCommand,
+        { selectedModels: [inner], place: 'after', removeEmptyLine: true }
+      );
+
+      const note = doc.getBlock(noteId)?.model;
+      expect(note?.children.slice(1).map(child => child.id)).toEqual([
+        outerId,
+        insertedTableBlockId,
+      ]);
+      expect(doc.getBlock(outerId)?.model.children).toHaveLength(keptChildren);
+    }
+  );
 });

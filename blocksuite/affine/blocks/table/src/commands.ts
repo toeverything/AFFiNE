@@ -20,12 +20,19 @@ export const insertTableBlockCommand: Command<
   const { selectedModels, place, removeEmptyLine, std } = ctx;
   if (!selectedModels?.length) return;
 
-  const targetModel =
+  const selected =
     place === 'before'
       ? selectedModels[0]
       : selectedModels[selectedModels.length - 1];
 
-  if (!targetModel) return;
+  if (!selected) return;
+
+  let targetModel = selected;
+  let parent = std.store.getParent(targetModel);
+  while (parent && parent.flavour !== 'affine:note') {
+    targetModel = parent;
+    parent = std.store.getParent(targetModel);
+  }
 
   const result = std.store.addSiblingBlocks(
     targetModel,
@@ -44,8 +51,8 @@ export const insertTableBlockCommand: Command<
   dataManager.addNRow(2);
   dataManager.addNColumn(2);
 
-  if (removeEmptyLine && targetModel.text?.length === 0) {
-    std.store.deleteBlock(targetModel);
+  if (removeEmptyLine && selected.text?.length === 0) {
+    std.store.deleteBlock(selected);
   }
 
   next({ insertedTableBlockId: blockId });
