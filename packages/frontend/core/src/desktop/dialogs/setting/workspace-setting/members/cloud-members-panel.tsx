@@ -212,19 +212,28 @@ export const CloudWorkspaceMembersPanel = ({
         setIsMutating(false);
         return;
       }
-      const results = await membersService.inviteMembers(uniqueEmails);
-      if (results) {
-        notify({
-          title: t['com.affine.payment.member.team.invite.notify.title']({
-            count: results.length.toString(),
-          }),
-          message: t['Invitation sent hint'](),
+      try {
+        const results = await membersService.inviteMembers(uniqueEmails);
+        if (results) {
+          notify({
+            title: t['com.affine.payment.member.team.invite.notify.title']({
+              count: results.length.toString(),
+            }),
+            message: t['Invitation sent hint'](),
+          });
+          setOpenInvite(false);
+          membersService.members.revalidate();
+          workspaceQuotaService.quota.revalidate();
+        }
+      } catch (err) {
+        const error = UserFriendlyError.fromAny(err);
+        notify.error({
+          title: error.name,
+          message: error.message,
         });
-        setOpenInvite(false);
-        membersService.members.revalidate();
-        workspaceQuotaService.quota.revalidate();
+      } finally {
+        setIsMutating(false);
       }
-      setIsMutating(false);
     },
     [isTeam, membersService, t, workspaceQuota, workspaceQuotaService.quota]
   );
