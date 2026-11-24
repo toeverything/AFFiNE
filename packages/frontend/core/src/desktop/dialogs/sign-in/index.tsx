@@ -29,8 +29,9 @@ export const SignInDialog = ({
         ['data-testid' as string]: 'auth-modal',
         style: {
           padding: '44px 40px 20px',
-          minHeight: 550,
-          maxHeight: 650,
+          minHeight: 'min(550px, calc(100dvh - 32px))',
+          maxHeight: 'min(650px, calc(100dvh - 32px))',
+          overflowY: 'auto',
         },
       }}
     >
