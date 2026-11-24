@@ -1,7 +1,7 @@
 import { test } from '@affine-test/kit/mobile';
 import { expect } from '@playwright/test';
 
-import { openTab, pageBack } from './utils';
+import { expandCollapsibleSection, openTab, pageBack } from './utils';
 
 test('toggle read-only mode disables editing, re-enables it, resets on navigation, and hides in non-editable edgeless mode', async ({
   page,
@@ -34,7 +34,10 @@ test('toggle read-only mode disables editing, re-enables it, resets on navigatio
   // re-enter read-only before navigating to verify the state resets on the next doc
   await toggleButton.click();
   await pageBack(page);
-  await openTab(page, 'New Page');
+  await expect(page).toHaveURL(/\/home$/);
+
+  const favorites = await expandCollapsibleSection(page, 'favorites');
+  await favorites.getByTestId('navigation-panel-bar-add-favorite-button').tap();
   await expect(page.locator('.affine-page-viewport')).toBeVisible();
 
   const paragraphB = page.locator('affine-paragraph rich-text').first();
