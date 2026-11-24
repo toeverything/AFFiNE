@@ -1,5 +1,7 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
+import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import { beforeEach, describe, expect, test } from 'vitest';
+import * as Y from 'yjs';
 
 import { wait } from '../utils/common.js';
 import { getSurface } from '../utils/edgeless.js';
@@ -181,6 +183,37 @@ describe('Connector rendering with DOM renderer', () => {
 
     const markers = defsElement?.querySelectorAll('marker');
     expect(markers?.length).toBeGreaterThan(0);
+  });
+
+  test('should position connector label relative to the connector element', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+
+    const connectorId = surfaceModel.addElement({
+      type: 'connector',
+      source: { position: [100, 100] },
+      target: { position: [300, 200] },
+      text: new Y.Text('label'),
+      labelXYWH: [180, 140, 40, 20],
+    });
+
+    const connectorElement = await waitForConnectorElement(
+      surfaceView,
+      connectorId
+    );
+    const labelElement =
+      connectorElement?.querySelector<HTMLElement>('svg + div');
+    expect(labelElement).toBeInstanceOf(HTMLElement);
+
+    const connector = surfaceModel.getElementById(
+      connectorId
+    ) as ConnectorElementModel;
+    const [lx, ly, lw, lh] = connector.labelXYWH!;
+    const { zoom } = surfaceView.renderer.viewport;
+    expect(labelElement!.style.left).toBe(`${(lx - connector.x) * zoom}px`);
+    expect(labelElement!.style.top).toBe(`${(ly - connector.y) * zoom}px`);
+    expect(labelElement!.style.width).toBe(`${lw * zoom}px`);
+    expect(labelElement!.style.height).toBe(`${lh * zoom}px`);
   });
 
   test('should remove connector DOM node when element is deleted', async () => {

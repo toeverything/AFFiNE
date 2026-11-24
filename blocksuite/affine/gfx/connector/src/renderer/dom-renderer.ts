@@ -225,8 +225,8 @@ function renderConnectorLabel(
 
   const labelElement = getOrCreateLabelElement(retained);
   labelElement.style.position = 'absolute';
-  labelElement.style.left = `${lx * zoom}px`;
-  labelElement.style.top = `${ly * zoom}px`;
+  labelElement.style.left = `${(lx - model.x) * zoom}px`;
+  labelElement.style.top = `${(ly - model.y) * zoom}px`;
   labelElement.style.width = `${lw * zoom}px`;
   labelElement.style.height = `${lh * zoom}px`;
   labelElement.style.pointerEvents = 'none';
