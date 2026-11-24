@@ -203,7 +203,7 @@ async function exportHandler({
       return true;
     }
     case 'pdf-export': {
-      await PdfTransformer.exportDoc(page);
+      await PdfTransformer.exportDoc(page, editorRoot?.std.provider);
       return true;
     }
   }
