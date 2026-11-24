@@ -14,8 +14,12 @@ async-trait.workspace  = true
 axum.workspace         = true
 chrono.workspace       = true
 server-types.workspace = true
+sha2.workspace         = true
 sqlx.workspace         = true
 
 [dev-dependencies]
+base64.workspace          = true
+p256.workspace            = true
+serde_json.workspace      = true
 test-db-harness.workspace = true
 tokio.workspace           = true

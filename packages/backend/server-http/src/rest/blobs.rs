@@ -331,6 +331,15 @@ pub(crate) async fn handle_get_doc_snapshot(
     .await
   {
     Ok(Some((bytes, publish_mode))) => {
+      if doc_id != workspace_id {
+        let doc_sharing = state.app.doc_sharing.clone();
+        let ws = workspace_id.clone();
+        let did = doc_id.clone();
+        let is_guest = user_id.is_none();
+        tokio::spawn(async move {
+          doc_sharing.record_doc_view(&ws, &did, is_guest).await;
+        });
+      }
       let mut resp = Response::new(axum::body::Body::from(bytes));
       *resp.status_mut() = StatusCode::OK;
       let h = resp.headers_mut();
@@ -354,4 +363,235 @@ pub(crate) async fn handle_get_doc_snapshot(
     }),
     Err(err) => domain_error_to_http_response(&err),
   }
+}
+
+/// `HEAD /api/workspaces/:workspace_id/public-docs/:doc_id`
+pub(crate) async fn handle_head_public_doc(
+  State(state): State<RouterState>,
+  Path((workspace_id, doc_id)): Path<(String, String)>,
+  headers: HeaderMap,
+) -> Response {
+  let user_id = match resolve_request_principal(&state, &headers).await {
+    Ok(principal) => principal.map(|p| p.into_user().id),
+    Err(err) => return err.into_http_response(),
+  };
+  match state
+    .app
+    .doc_sharing
+    .head_public_doc(&workspace_id, user_id.as_deref(), &doc_id)
+    .await
+  {
+    Ok((publish_mode, _storage_doc_id)) => {
+      let mut resp = StatusCode::OK.into_response();
+      resp
+        .headers_mut()
+        .insert("publish-mode", HeaderValue::from_static(publish_mode));
+      resp
+    }
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
+/// `GET /api/workspaces/:workspace_id/public-docs/:doc_id`
+pub(crate) async fn handle_get_public_doc(
+  State(state): State<RouterState>,
+  Path((workspace_id, doc_id)): Path<(String, String)>,
+  headers: HeaderMap,
+) -> Response {
+  let user_id = match resolve_request_principal(&state, &headers).await {
+    Ok(principal) => principal.map(|p| p.into_user().id),
+    Err(err) => return err.into_http_response(),
+  };
+  match state
+    .app
+    .doc_sharing
+    .get_public_doc_binary(&workspace_id, user_id.as_deref(), &doc_id)
+    .await
+  {
+    Ok((bytes, publish_mode, storage_doc_id)) => {
+      let doc_sharing = state.app.doc_sharing.clone();
+      let ws = workspace_id.clone();
+      let is_guest = user_id.is_none();
+      tokio::spawn(async move {
+        doc_sharing.record_doc_view(&ws, &storage_doc_id, is_guest).await;
+      });
+      let mut resp = Response::new(axum::body::Body::from(bytes));
+      *resp.status_mut() = StatusCode::OK;
+      let h = resp.headers_mut();
+      h.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/octet-stream"),
+      );
+      h.insert("publish-mode", HeaderValue::from_static(publish_mode));
+      resp
+    }
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
+/// `GET /api/workspaces/:workspace_id/public-docs/:doc_id/root-doc`
+pub(crate) async fn handle_get_public_root_doc(
+  State(state): State<RouterState>,
+  Path((workspace_id, doc_id)): Path<(String, String)>,
+  headers: HeaderMap,
+) -> Response {
+  let user_id = match resolve_request_principal(&state, &headers).await {
+    Ok(principal) => principal.map(|p| p.into_user().id),
+    Err(err) => return err.into_http_response(),
+  };
+  match state
+    .app
+    .doc_sharing
+    .get_public_root_doc(&workspace_id, user_id.as_deref(), &doc_id)
+    .await
+  {
+    Ok(bytes) => {
+      let mut resp = Response::new(axum::body::Body::from(bytes));
+      *resp.status_mut() = StatusCode::OK;
+      resp.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/octet-stream"),
+      );
+      resp
+    }
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
+fn parse_history_timestamp(raw: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+  if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(raw) {
+    return Some(dt.with_timezone(&chrono::Utc));
+  }
+  if let Ok(ms) = raw.parse::<i64>() {
+    return chrono::DateTime::from_timestamp_millis(ms);
+  }
+  None
+}
+
+/// `GET /api/workspaces/:workspace_id/docs/:guid/histories/:timestamp`
+pub(crate) async fn handle_get_doc_history(
+  State(state): State<RouterState>,
+  Path((workspace_id, guid, timestamp)): Path<(String, String, String)>,
+  headers: HeaderMap,
+) -> Response {
+  let user_id = match resolve_request_principal(&state, &headers).await {
+    Ok(Some(principal)) => principal.into_user().id,
+    Ok(None) => return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into())),
+    Err(err) => return err.into_http_response(),
+  };
+  let Some(ts) = parse_history_timestamp(&timestamp) else {
+    return envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::BAD_REQUEST.as_u16(),
+      code: "Bad Request".into(),
+      error_type: "INVALID_INPUT".into(),
+      name: "INVALID_HISTORY_TIMESTAMP".into(),
+      message: "Invalid history timestamp.".into(),
+      data: Some(serde_json::json!({ "timestamp": timestamp })),
+    });
+  };
+  match state
+    .app
+    .histories
+    .get_history_binary(&user_id, &workspace_id, &guid, ts)
+    .await
+  {
+    Ok(Some(bytes)) => {
+      let mut resp = Response::new(axum::body::Body::from(bytes));
+      *resp.status_mut() = StatusCode::OK;
+      let h = resp.headers_mut();
+      h.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/octet-stream"),
+      );
+      h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, no-store"));
+      resp
+    }
+    Ok(None) => envelope_to_http_response(LegacyErrorEnvelope {
+      status: StatusCode::NOT_FOUND.as_u16(),
+      code: "Not Found".into(),
+      error_type: "RESOURCE_NOT_FOUND".into(),
+      name: "DOC_HISTORY_NOT_FOUND".into(),
+      message: format!(
+        "History of {guid} at {} under Space {workspace_id}.",
+        ts.timestamp_millis()
+      ),
+      data: Some(serde_json::json!({
+        "spaceId": workspace_id,
+        "docId": guid,
+        "timestamp": ts.timestamp_millis(),
+      })),
+    }),
+    Err(err) => domain_error_to_http_response(&err),
+  }
+}
+
+/// `GET /api/workspaces/:workspace_id/docs/:doc_id/comment-attachments/:key`
+pub(crate) async fn handle_get_comment_attachment(
+  State(state): State<RouterState>,
+  Path((workspace_id, doc_id, key)): Path<(String, String, String)>,
+  headers: HeaderMap,
+) -> Response {
+  let user_id = match resolve_request_principal(&state, &headers).await {
+    Ok(Some(principal)) => principal.into_user().id,
+    Ok(None) => return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into())),
+    Err(err) => return err.into_http_response(),
+  };
+  let meta = match state
+    .app
+    .comments
+    .get_comment_attachment_meta(&user_id, &workspace_id, &doc_id, &key)
+    .await
+  {
+    Ok(Some(m)) => m,
+    Ok(None) => {
+      return envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::NOT_FOUND.as_u16(),
+        code: "Not Found".into(),
+        error_type: "RESOURCE_NOT_FOUND".into(),
+        name: "COMMENT_ATTACHMENT_NOT_FOUND".into(),
+        message: "Comment attachment not found.".into(),
+        data: None,
+      });
+    }
+    Err(err) => return domain_error_to_http_response(&err),
+  };
+  let object_key = format!("{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
+  let (bytes, obj_meta) = match state.app.comment_attachments.get(&object_key).await {
+    Ok(Some(v)) => v,
+    Ok(None) => {
+      return envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::NOT_FOUND.as_u16(),
+        code: "Not Found".into(),
+        error_type: "RESOURCE_NOT_FOUND".into(),
+        name: "COMMENT_ATTACHMENT_NOT_FOUND".into(),
+        message: "Comment attachment not found.".into(),
+        data: None,
+      });
+    }
+    Err(err) => {
+      tracing::warn!(error = %err, "failed to load comment attachment");
+      return domain_error_to_http_response(&DomainError::Unavailable(
+        "comment attachment storage unavailable".into(),
+      ));
+    }
+  };
+  let mut resp = (StatusCode::OK, bytes).into_response();
+  let h = resp.headers_mut();
+  let ct = if !meta.mime.is_empty() {
+    meta.mime.as_str()
+  } else {
+    obj_meta.content_type.as_str()
+  };
+  if let Ok(val) = HeaderValue::from_str(ct) {
+    h.insert(header::CONTENT_TYPE, val);
+  }
+  if let Ok(val) = HeaderValue::from_str(&obj_meta.content_length.to_string()) {
+    h.insert(header::CONTENT_LENGTH, val);
+  }
+  let last_mod = meta.created_at.format("%a, %d %b %Y %H:%M:%S GMT").to_string();
+  if let Ok(val) = HeaderValue::from_str(&last_mod) {
+    h.insert(header::LAST_MODIFIED, val);
+  }
+  apply_blob_security_headers(h, Some(ct), Some(&meta.name));
+  resp
 }

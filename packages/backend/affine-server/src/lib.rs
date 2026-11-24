@@ -19,7 +19,12 @@ use server_domain::app_config::{
   AppConfigService, RedisRuntimeConfig, RuntimeAppConfigBaseline, ServerRuntimeConfig, SmtpRuntimeConfig,
 };
 use server_domain::auth::{AuthConfig, AuthService};
+use server_domain::comments::CommentService;
+use server_domain::doc_sharing::DocSharingService;
 use server_domain::events::{EventBusPublisher, InvalidationPublisher, NoopEventPublisher, RedisEventPublisher};
+use server_domain::histories::DocHistoryService;
+use server_domain::notifications::NotificationService;
+use server_domain::selfhost_license::SelfhostLicenseService;
 use server_domain::users::UserService;
 use server_domain::workspaces::WorkspaceService;
 use server_http::{AppServices, AppState, RuntimeConfig, build_router};
@@ -628,9 +633,39 @@ async fn build_server_with_bound_port(
   )
   .with_rate_limit_policy(ext.rate_limit_policy());
   let users = UserService::new(db.clone());
+  let licenses = SelfhostLicenseService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation));
+  let effective_billing: Arc<dyn server_spi::BillingSpi> =
+    if deployment_mode == DeploymentMode::Selfhosted && ext.edition_name() == "community" {
+      Arc::new(server_domain::selfhost_license::SelfhostLicenseBillingSpi::new(
+        licenses.clone(),
+      ))
+    } else {
+      ext.billing_spi()
+    };
   let workspaces = WorkspaceService::new(db.clone(), ext.quota_gate(), Arc::clone(&invalidation))
     .with_rate_limit_policy(ext.rate_limit_policy())
+    .with_billing_spi(effective_billing)
     .with_redis(redis_client.clone());
+  let doc_sharing = DocSharingService::new(
+    db.clone(),
+    ext.quota_gate(),
+    Arc::clone(&invalidation),
+    Arc::clone(&event_bus),
+  );
+  let histories = DocHistoryService::new(db.clone(), ext.quota_gate(), doc_sharing.clone());
+  let comments = CommentService::new(
+    db.clone(),
+    ext.quota_gate(),
+    doc_sharing.clone(),
+    Arc::clone(&event_bus),
+  )
+  .with_invalidation(Arc::clone(&invalidation));
+  let notifications = NotificationService::new(
+    db.clone(),
+    ext.quota_gate(),
+    doc_sharing.clone(),
+    Arc::clone(&event_bus),
+  );
   let app_config = AppConfigService::new(db.clone(), app_config_baseline, Arc::clone(&event_bus));
   let blob_root = std::env::var_os("HOME")
     .map(PathBuf::from)
@@ -643,6 +678,10 @@ async fn build_server_with_bound_port(
     LocalFsBlobStorage::new(&blob_root_str, "avatars")
       .map_err(|e| ServerError::InvalidConfig(format!("invalid avatar storage config: {e}")))?,
   );
+  let comment_attachments: Arc<dyn server_blob::BlobStorageBackend> = Arc::new(
+    LocalFsBlobStorage::new(&blob_root_str, "comment-attachments")
+      .map_err(|e| ServerError::InvalidConfig(format!("invalid comment-attachments storage config: {e}")))?,
+  );
   let blobs = BlobService::new(db.clone(), Arc::new(storage), ext.quota_gate());
 
   let state = AppState::with_services(
@@ -654,9 +693,15 @@ async fn build_server_with_bound_port(
       auth: auth.clone(),
       users,
       workspaces,
+      doc_sharing,
+      histories,
+      comments,
+      notifications,
+      licenses,
       app_config,
       blobs,
       avatars,
+      comment_attachments,
       invalidation,
       event_bus,
     },
@@ -804,6 +849,99 @@ where
       },
     )
     .await;
+
+    let compactor_db = built.state.db.clone();
+    let compactor_quota = built.state.extension.quota_gate();
+    server_worker::spawn_locked_periodic_task(
+      &built.supervisor,
+      built.session_mutex.clone(),
+      "doc:compactor:pending-updates",
+      "doc-compactor",
+      Duration::from_secs(60),
+      120,
+      move |lease_cancel| {
+        let db = compactor_db.clone();
+        let quota = Arc::clone(&compactor_quota);
+        async move {
+          if let Err(err) =
+            server_domain::histories::compact_pending_docs_batch(&db, quota.as_ref(), 100, 500, 600_000, || {
+              lease_cancel.is_cancelled()
+            })
+            .await
+          {
+            tracing::warn!(error = %err, "doc compaction tick failed");
+          }
+        }
+      },
+    )
+    .await;
+
+    let hk_db = built.state.db.clone();
+    server_worker::spawn_locked_periodic_task(
+      &built.supervisor,
+      built.session_mutex.clone(),
+      "housekeeping:expired-records",
+      "housekeeping",
+      Duration::from_secs(1800),
+      300,
+      move |lease_cancel| {
+        let db = hk_db.clone();
+        async move {
+          if !lease_cancel.is_cancelled()
+            && let Err(err) = server_domain::histories::cleanup_expired_snapshot_histories(&db, 1_000).await
+          {
+            tracing::warn!(error = %err, "expired snapshot_histories cleanup failed");
+          }
+          if !lease_cancel.is_cancelled()
+            && let Err(err) = server_domain::histories::cleanup_expired_runtime_states(&db, 1_000).await
+          {
+            tracing::warn!(error = %err, "expired runtime_states cleanup failed");
+          }
+          if !lease_cancel.is_cancelled()
+            && let Err(err) = server_domain::histories::cleanup_expired_blob_reservations(&db, 1_000).await
+          {
+            tracing::warn!(error = %err, "expired blob reservation cleanup failed");
+          }
+        }
+      },
+    )
+    .await;
+
+    if built.state.config.load().deployment_mode == DeploymentMode::Selfhosted {
+      let startup_licenses = built.state.licenses.clone();
+      built
+        .supervisor
+        .spawn(move |shutdown| async move {
+          if shutdown.is_cancelled() {
+            return;
+          }
+          if let Err(err) = startup_licenses.check_licenses().await {
+            tracing::warn!(error = %err, "initial selfhost license health check failed");
+          }
+        })
+        .await;
+
+      let health_licenses = built.state.licenses.clone();
+      server_worker::spawn_locked_periodic_task(
+        &built.supervisor,
+        built.session_mutex.clone(),
+        "license:health-check",
+        "license-health-check",
+        Duration::from_secs(3600),
+        300,
+        move |lease_cancel| {
+          let licenses = health_licenses.clone();
+          async move {
+            if !lease_cancel.is_cancelled()
+              && let Err(err) = licenses.check_licenses().await
+            {
+              tracing::warn!(error = %err, "selfhost license health check tick failed");
+            }
+          }
+        },
+      )
+      .await;
+    }
   }
 
   if matches!(built.role, ServerRole::Allinone | ServerRole::Worker)

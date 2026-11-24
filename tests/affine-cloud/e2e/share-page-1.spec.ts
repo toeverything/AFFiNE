@@ -251,7 +251,6 @@ test('image preview should be shown', async ({ page, browser }) => {
     const locator = page.getByTestId('image-preview-modal');
     await expect(locator).toBeVisible();
     await page.getByTestId('image-preview-close-button').first().click();
-    await page.waitForTimeout(500);
     await expect(locator).not.toBeVisible();
   }
 });

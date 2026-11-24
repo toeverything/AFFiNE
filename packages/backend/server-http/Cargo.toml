@@ -38,6 +38,7 @@ uuid.workspace               = true
 [dev-dependencies]
 async-trait.workspace     = true
 crc32fast.workspace       = true
+p256.workspace            = true
 test-db-harness.workspace = true
 tower.workspace           = true
 y-octo.workspace          = true

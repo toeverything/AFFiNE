@@ -808,7 +808,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
     // Ensure CommunityQuotaGate compiles and works with WorkspaceService too.
     let community_ws = WorkspaceService::new(
       db.clone(),
-      Arc::new(CommunityQuotaGate),
+      Arc::new(CommunityQuotaGate::new()),
       Arc::new(NoopEventPublisher::default()),
     );
     let list = community_ws.list_user_workspaces(&admin.user.id).await.unwrap();
@@ -1137,7 +1137,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         workspace_id: &str,
         now: DateTime<Utc>,
       ) -> Result<AccessGrant, DomainError> {
-        let mut grant = CommunityQuotaGate
+        let mut grant = CommunityQuotaGate::new()
           .resolve_workspace_grant(tx, workspace_id, now)
           .await?;
         grant.rights.commercial = true;
@@ -1149,7 +1149,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         user_id: &str,
         now: DateTime<Utc>,
       ) -> Result<AccessGrant, DomainError> {
-        CommunityQuotaGate.resolve_user_grant(tx, user_id, now).await
+        CommunityQuotaGate::new().resolve_user_grant(tx, user_id, now).await
       }
       async fn check_seat_admission(
         &self,
@@ -1159,7 +1159,7 @@ fn auth_rollback_workspace_parity_quota_gate_and_redis_invalidation() {
         current_chargeable_invitations: i32,
         now: DateTime<Utc>,
       ) -> Result<AccessGrant, DomainError> {
-        let mut grant = CommunityQuotaGate
+        let mut grant = CommunityQuotaGate::new()
           .check_seat_admission(
             tx,
             workspace_id,
@@ -1336,7 +1336,7 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
     // 2. Workspace invite rate limit must roll back workspace_invitations and workspace_members.
     let workspaces = WorkspaceService::new(
       db.clone(),
-      Arc::new(CommunityQuotaGate),
+      Arc::new(CommunityQuotaGate::new()),
       Arc::new(NoopEventPublisher::default()),
     )
     .with_rate_limit_policy(policy);
@@ -1417,7 +1417,7 @@ fn rate_limit_policy_rejects_and_rolls_back_auth_mail_and_workspace_invite() {
     });
     let batch_workspaces = WorkspaceService::new(
       db.clone(),
-      Arc::new(CommunityQuotaGate),
+      Arc::new(CommunityQuotaGate::new()),
       Arc::new(NoopEventPublisher::default()),
     )
     .with_rate_limit_policy(recorder.clone());

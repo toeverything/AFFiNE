@@ -76,9 +76,6 @@ test.describe('comments', () => {
     await commentButton.click();
 
     // Verify comment sidebar is opened by checking comment editor is visible
-    await page.waitForTimeout(300); // Wait for sidebar animation
-
-    // Find the comment editor
     const commentEditor = page.locator(
       '.comment-editor-viewport .page-editor-container'
     );
@@ -96,9 +93,6 @@ test.describe('comments', () => {
     const commitButton = page.locator('.comment-editor-viewport button').last();
     await expect(commitButton).toBeVisible();
     await commitButton.click();
-
-    // Wait for comment to be saved
-    await page.waitForTimeout(500);
 
     // Verify the comment appears in the sidebar
     await expect(page.locator('text=Comments')).toBeVisible();

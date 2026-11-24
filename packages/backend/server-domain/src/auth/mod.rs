@@ -48,8 +48,30 @@ pub const REFRESH_RATE_LIMIT_MAX_REQUESTS: i64 = 30;
 pub const REFRESH_TOKEN_PREFIX: &str = "aff_rt_v1";
 const REFRESH_TOKEN_ID_BYTES: usize = 18;
 const REFRESH_TOKEN_SECRET_BYTES: usize = 32;
-pub const AUTH_SESSION_EXCHANGE_PURPOSE: &str = "auth_session_exchange";
-pub const AUTH_SESSION_EXCHANGE_TTL_SECONDS: i64 = 120;
+pub const AUTH_SESSION_EXCHANGE_PURPOSE: &str = "auth_challenge:auth_session_exchange";
+pub const AUTH_SESSION_EXCHANGE_TTL_SECONDS: i64 = 60;
+pub const OPEN_APP_PURPOSE: &str = "auth_challenge:open_app_sign_in";
+pub const OPEN_APP_TTL_SECONDS: i64 = 300;
+
+#[derive(Clone, Copy, Debug)]
+pub enum OpenAppIssueTarget<'a> {
+  Cookie {
+    existing_session_id: Option<&'a str>,
+    client_version: Option<&'a str>,
+  },
+  Native {
+    client_version: Option<&'a str>,
+  },
+}
+
+#[derive(Clone, Debug)]
+pub enum OpenAppSignInResult {
+  Cookie(CookieSignInResult),
+  Native {
+    user: CurrentUserView,
+    exchange_code: String,
+  },
+}
 pub const MAGIC_LINK_PURPOSE: &str = "magic_link_otp";
 pub const MAGIC_LINK_TTL_SECONDS: i64 = 1_800;
 pub const MAGIC_LINK_MAX_ATTEMPTS: i32 = 5;
@@ -1039,6 +1061,180 @@ impl AuthService {
       expires_at: issued.expires_at,
       created_user,
     })
+  }
+
+  /// Issues a one-time Open-App sign-in code stored in `public.runtime_states`.
+  pub async fn create_open_app_code(&self, user_id: &str) -> Result<String, DomainError> {
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin create_open_app_code: {e}")))?;
+    let row = sqlx::query("SELECT disabled, auth_epoch FROM users WHERE id = $1 FOR UPDATE")
+      .bind(user_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("lock open-app user: {e}")))?
+      .ok_or_else(|| DomainError::Unauthorized("invalid_auth_state".to_owned()))?;
+    if row.get::<bool, _>("disabled") {
+      return Err(DomainError::Unauthorized("invalid_auth_state".to_owned()));
+    }
+    let auth_epoch: i32 = row.get("auth_epoch");
+    let now = decision_time(tx.tx_mut()).await?;
+    let code = Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO runtime_states (purpose, token_hash, payload, expires_at) VALUES ($1, $2, $3, $4)")
+      .bind(OPEN_APP_PURPOSE)
+      .bind(token_hash(&code))
+      .bind(serde_json::json!({ "userId": user_id, "authEpoch": auth_epoch }))
+      .bind(now + Duration::seconds(OPEN_APP_TTL_SECONDS))
+      .execute(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("store open-app code: {e}")))?;
+    tx.commit()
+      .await
+      .map_err(|e| DomainError::Internal(format!("commit create_open_app_code: {e}")))?;
+    Ok(code)
+  }
+
+  /// Atomically consumes a one-time Open-App sign-in code and either issues a
+  /// cookie session (`OpenAppIssueTarget::Cookie`) or inserts a native
+  /// `auth_challenge:auth_session_exchange` code in the exact same transaction
+  /// without creating any cookie session (`OpenAppIssueTarget::Native`).
+  pub async fn complete_open_app(
+    &self,
+    code: &str,
+    target: OpenAppIssueTarget<'_>,
+  ) -> Result<OpenAppSignInResult, DomainError> {
+    let trimmed = code.trim();
+    if trimmed.is_empty() {
+      return Err(DomainError::Unauthorized("invalid_auth_state".to_owned()));
+    }
+    let hashed = token_hash(trimmed);
+    let preview: Option<Value> = {
+      let mut conn = self
+        .db
+        .acquire_tiered(WorkloadTier::InteractiveRead)
+        .await
+        .map_err(|e| DomainError::Internal(format!("acquire open-app code read: {e}")))?;
+      let row = sqlx::query_scalar(
+        "SELECT payload FROM runtime_states WHERE purpose = $1 AND token_hash = $2 AND consumed_at IS NULL AND expires_at > clock_timestamp()",
+      )
+      .bind(OPEN_APP_PURPOSE)
+      .bind(&hashed)
+      .fetch_optional(&mut *conn)
+      .await
+      .map_err(|e| DomainError::Internal(format!("load open-app code: {e}")))?;
+      drop(conn);
+      row
+    };
+    let user_id = preview
+      .as_ref()
+      .and_then(|v| v.get("userId"))
+      .and_then(Value::as_str)
+      .ok_or_else(|| DomainError::Unauthorized("invalid_auth_state".to_owned()))?
+      .to_owned();
+
+    let mut tx = self
+      .db
+      .begin_tiered(WorkloadTier::InteractiveWrite)
+      .await
+      .map_err(|e| DomainError::Internal(format!("begin complete_open_app: {e}")))?;
+    let user_row = sqlx::query("SELECT disabled, auth_epoch FROM users WHERE id = $1 FOR UPDATE")
+      .bind(&user_id)
+      .fetch_optional(&mut **tx.tx_mut())
+      .await
+      .map_err(|e| DomainError::Internal(format!("lock open-app completion user: {e}")))?
+      .ok_or_else(|| DomainError::Unauthorized("invalid_auth_state".to_owned()))?;
+    let disabled: bool = user_row.get("disabled");
+    let auth_epoch: i32 = user_row.get("auth_epoch");
+    let now = decision_time(tx.tx_mut()).await?;
+
+    let consumed: Option<Value> = sqlx::query_scalar(
+      r#"UPDATE runtime_states SET consumed_at = $3, updated_at = $3
+         WHERE purpose = $1 AND token_hash = $2 AND consumed_at IS NULL AND expires_at > $3
+         RETURNING payload"#,
+    )
+    .bind(OPEN_APP_PURPOSE)
+    .bind(&hashed)
+    .bind(now)
+    .fetch_optional(&mut **tx.tx_mut())
+    .await
+    .map_err(|e| DomainError::Internal(format!("consume open-app code: {e}")))?;
+    let valid = consumed.as_ref().is_some_and(|v| {
+      v.get("userId").and_then(Value::as_str) == Some(user_id.as_str())
+        && v.get("authEpoch").and_then(Value::as_i64) == Some(i64::from(auth_epoch))
+    });
+    if !valid || disabled {
+      return Err(DomainError::Unauthorized("invalid_auth_state".to_owned()));
+    }
+
+    let user = load_current_user_in_tx(tx.tx_mut(), &user_id)
+      .await?
+      .ok_or_else(|| DomainError::Internal("open-app user missing".to_owned()))?;
+
+    match target {
+      OpenAppIssueTarget::Native { client_version } => {
+        let exchange_code = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
+        let challenge_key = token_hash(&exchange_code);
+        let expires_at = now + Duration::seconds(AUTH_SESSION_EXCHANGE_TTL_SECONDS);
+        let payload = serde_json::json!({
+          "userId": user_id,
+          "authEpoch": auth_epoch,
+          "clientVersion": client_version,
+        });
+        sqlx::query(
+          r#"INSERT INTO runtime_states (purpose, token_hash, payload, created_at, updated_at, expires_at)
+             VALUES ($1, $2, $3, $4, $4, $5)"#,
+        )
+        .bind(AUTH_SESSION_EXCHANGE_PURPOSE)
+        .bind(&challenge_key)
+        .bind(&payload)
+        .bind(now)
+        .bind(expires_at)
+        .execute(&mut **tx.tx_mut())
+        .await
+        .map_err(|e| DomainError::Internal(format!("insert native open-app exchange code: {e}")))?;
+
+        tx.commit()
+          .await
+          .map_err(|e| DomainError::Internal(format!("commit complete_open_app native: {e}")))?;
+        Ok(OpenAppSignInResult::Native { user, exchange_code })
+      }
+      OpenAppIssueTarget::Cookie {
+        existing_session_id,
+        client_version,
+      } => {
+        let issued = self
+          .sessions
+          .issue_cookie_session(
+            tx.tx_mut(),
+            &user_id,
+            existing_session_id,
+            client_version,
+            self.config.session_ttl_seconds,
+            now,
+          )
+          .await
+          .map_err(|e| DomainError::Internal(format!("issue open-app cookie session: {e}")))?;
+
+        self
+          .session_policy
+          .on_session_created(tx.tx_mut(), &user_id, &issued.session_id, now)
+          .await?;
+
+        tx.commit()
+          .await
+          .map_err(|e| DomainError::Internal(format!("commit complete_open_app cookie: {e}")))?;
+
+        Ok(OpenAppSignInResult::Cookie(CookieSignInResult {
+          user,
+          session_id: issued.session_id,
+          user_session_id: issued.user_session_id,
+          expires_at: issued.expires_at,
+          created_user: false,
+        }))
+      }
+    }
   }
 
   /// Resolves an `Authorization: Bearer <jwt>` access token against
@@ -2840,7 +3036,7 @@ async fn lock_email(tx: &mut Transaction<'_, Postgres>, email: &str) -> Result<(
 }
 
 async fn decision_time(tx: &mut Transaction<'_, Postgres>) -> Result<DateTime<Utc>, DomainError> {
-  sqlx::query_scalar("SELECT clock_timestamp()")
+  sqlx::query_scalar("SELECT date_trunc('milliseconds', clock_timestamp())")
     .fetch_one(&mut **tx)
     .await
     .map_err(|e| DomainError::Internal(format!("load auth decision time: {e}")))
@@ -2982,5 +3178,45 @@ mod tests {
       MAX_REFRESH_RETENTION_SECS
     );
     assert_eq!(parse_refresh_retention_secs(None, 7200), 7200);
+  }
+
+  #[test]
+  fn decision_time_is_aligned_to_milliseconds_for_timestamptz3_parity() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("pg cluster");
+    let migrations_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/migrations");
+    let migrations = test_db_harness::migrations::MigrationSet::load(&migrations_dir).expect("load migrations");
+    let template = cluster.ensure_template(&migrations).expect("ensure template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test db");
+    let db_url = lease.url().to_owned();
+    let rt = tokio::runtime::Builder::new_current_thread()
+      .enable_all()
+      .build()
+      .expect("runtime");
+    rt.block_on(async move {
+      let db = ServerDb::connect(server_db::DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: server_types::ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 4,
+        statement_timeout_ms: 5_000,
+        tier_permits: [8, 4, 2, 2],
+      })
+      .await
+      .expect("connect db");
+      let mut tx = db.begin_tiered(WorkloadTier::InteractiveRead).await.expect("begin tx");
+      for _ in 0..8 {
+        let ts = decision_time(tx.tx_mut()).await.expect("decision_time");
+        assert_eq!(
+          ts.timestamp_subsec_nanos() % 1_000_000,
+          0,
+          "decision_time must be truncated to exact milliseconds, got {ts:?}"
+        );
+      }
+      let _ = tx.rollback().await;
+    });
+    drop(lease);
   }
 }

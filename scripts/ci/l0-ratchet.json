@@ -1,14 +1,12 @@
 {
   "waitForTimeout": {
-    "total": 312,
+    "total": 309,
     "files": {
       "tests/affine-cloud-copilot/e2e/basic/chat.spec.ts": 3,
       "tests/affine-cloud-copilot/e2e/insertion/save-as-doc.spec.ts": 2,
       "tests/affine-cloud-copilot/e2e/utils/chat-panel-utils.ts": 2,
       "tests/affine-cloud-copilot/e2e/utils/editor-utils.ts": 5,
       "tests/affine-cloud-copilot/e2e/utils/settings-panel-utils.ts": 1,
-      "tests/affine-cloud/e2e/comments.spec.ts": 2,
-      "tests/affine-cloud/e2e/share-page-1.spec.ts": 1,
       "tests/affine-desktop/e2e/basic.spec.ts": 6,
       "tests/affine-desktop/e2e/image.spec.ts": 3,
       "tests/affine-desktop/e2e/split-view.spec.ts": 1,

@@ -2,6 +2,10 @@
 
 pub mod admin;
 pub mod blob;
+pub mod comment;
+pub mod doc;
+pub mod license;
+pub mod notification;
 pub mod user;
 pub mod workspace;
 
@@ -24,11 +28,12 @@ pub use admin::{
 };
 pub use blob::{BlobUploadInit, BlobUploadMethod, BlobUploadedPart, ListedBlob};
 pub use user::{
-  LimitedUserType, PublicUserType, RemoveAvatar, UpdateUserInput, UserOrLimitedUser, UserType, WorkspaceUserType,
+  DeleteAccount, LimitedUserType, PublicUserType, RemoveAvatar, UpdateUserInput, UpdateUserSettingsInput,
+  UserOrLimitedUser, UserSettingsType, UserType, WorkspaceUserType,
 };
 pub use workspace::{
-  InvitationType, InvitationWorkspaceType, InviteLink, InviteResult, InviteUserType, Permission, UpdateWorkspaceInput,
-  WorkspaceInviteLinkExpireTime, WorkspaceMemberStatus, WorkspacePermissions, WorkspaceType,
+  DocPermissions, InvitationType, InvitationWorkspaceType, InviteLink, InviteResult, InviteUserType, Permission,
+  UpdateWorkspaceInput, WorkspaceInviteLinkExpireTime, WorkspaceMemberStatus, WorkspacePermissions, WorkspaceType,
 };
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
@@ -287,6 +292,146 @@ impl MutationRoot {
   async fn release_deleted_blobs(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
     blob::mutate_release_deleted_blobs(ctx, workspace_id).await
   }
+
+  async fn publish_doc(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    doc_id: String,
+    #[graphql(default_with = "doc::PublicDocMode::Page")] mode: doc::PublicDocMode,
+  ) -> Result<doc::DocType> {
+    doc::mutate_publish_doc(ctx, workspace_id, doc_id, mode).await
+  }
+
+  async fn revoke_public_doc(&self, ctx: &Context<'_>, workspace_id: String, doc_id: String) -> Result<doc::DocType> {
+    doc::mutate_revoke_public_doc(ctx, workspace_id, doc_id).await
+  }
+
+  async fn grant_doc_user_roles(&self, ctx: &Context<'_>, input: doc::GrantDocUserRolesInput) -> Result<bool> {
+    doc::mutate_grant_doc_user_roles(ctx, input).await
+  }
+
+  async fn revoke_doc_user_roles(&self, ctx: &Context<'_>, input: doc::RevokeDocUserRoleInput) -> Result<bool> {
+    doc::mutate_revoke_doc_user_roles(ctx, input).await
+  }
+
+  async fn update_doc_user_role(&self, ctx: &Context<'_>, input: doc::UpdateDocUserRoleInput) -> Result<bool> {
+    doc::mutate_update_doc_user_role(ctx, input).await
+  }
+
+  async fn update_doc_default_role(&self, ctx: &Context<'_>, input: doc::UpdateDocDefaultRoleInput) -> Result<bool> {
+    doc::mutate_update_doc_default_role(ctx, input).await
+  }
+
+  async fn recover_doc(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    guid: String,
+    timestamp: chrono::DateTime<chrono::Utc>,
+  ) -> Result<chrono::DateTime<chrono::Utc>> {
+    doc::mutate_recover_doc(ctx, workspace_id, guid, timestamp).await
+  }
+
+  async fn create_comment(
+    &self,
+    ctx: &Context<'_>,
+    input: comment::CommentCreateInput,
+  ) -> Result<comment::CommentObjectType> {
+    comment::mutate_create_comment(ctx, input).await
+  }
+
+  async fn update_comment(&self, ctx: &Context<'_>, input: comment::CommentUpdateInput) -> Result<bool> {
+    comment::mutate_update_comment(ctx, input).await
+  }
+
+  async fn resolve_comment(&self, ctx: &Context<'_>, input: comment::CommentResolveInput) -> Result<bool> {
+    comment::mutate_resolve_comment(ctx, input).await
+  }
+
+  async fn delete_comment(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    comment::mutate_delete_comment(ctx, id).await
+  }
+
+  async fn create_reply(
+    &self,
+    ctx: &Context<'_>,
+    input: comment::ReplyCreateInput,
+  ) -> Result<comment::ReplyObjectType> {
+    comment::mutate_create_reply(ctx, input).await
+  }
+
+  async fn update_reply(&self, ctx: &Context<'_>, input: comment::ReplyUpdateInput) -> Result<bool> {
+    comment::mutate_update_reply(ctx, input).await
+  }
+
+  async fn delete_reply(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    comment::mutate_delete_reply(ctx, id).await
+  }
+
+  async fn upload_comment_attachment(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    doc_id: String,
+    attachment: Upload,
+  ) -> Result<String> {
+    comment::mutate_upload_comment_attachment(ctx, workspace_id, doc_id, attachment).await
+  }
+
+  async fn mention_user(&self, ctx: &Context<'_>, input: notification::MentionInput) -> Result<async_graphql::ID> {
+    notification::mutate_mention_user(ctx, input).await
+  }
+
+  async fn read_notification(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    notification::mutate_read_notification(ctx, id).await
+  }
+
+  async fn read_all_notifications(&self, ctx: &Context<'_>) -> Result<bool> {
+    notification::mutate_read_all_notifications(ctx).await
+  }
+
+  async fn update_settings(&self, ctx: &Context<'_>, input: UpdateUserSettingsInput) -> Result<bool> {
+    user::mutate_update_settings(ctx, input).await
+  }
+
+  async fn delete_account(&self, ctx: &Context<'_>) -> Result<DeleteAccount> {
+    user::mutate_delete_account(ctx).await
+  }
+
+  async fn delete_user(&self, ctx: &Context<'_>, id: String) -> Result<DeleteAccount> {
+    user::mutate_delete_user(ctx, id).await
+  }
+
+  async fn activate_license(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    license: String,
+  ) -> Result<license::License> {
+    license::mutate_activate_license(ctx, workspace_id, license).await
+  }
+
+  async fn deactivate_license(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
+    license::mutate_deactivate_license(ctx, workspace_id).await
+  }
+
+  async fn install_license(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    license: Upload,
+  ) -> Result<license::License> {
+    license::mutate_install_license(ctx, workspace_id, license).await
+  }
+
+  async fn preview_license(&self, ctx: &Context<'_>, license: Upload) -> Result<license::AdminLicensePreview> {
+    license::mutate_preview_license(ctx, license).await
+  }
+
+  async fn create_selfhost_workspace_customer_portal(&self, ctx: &Context<'_>, workspace_id: String) -> Result<String> {
+    license::mutate_create_selfhost_workspace_customer_portal(ctx, workspace_id).await
+  }
 }
 
 pub fn build_schema(state: Arc<AppState>) -> AppSchema {
@@ -336,6 +481,11 @@ mod tests {
       })
       .await
       .expect("connect test db");
+      sqlx::raw_sql("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        .execute(db.pool())
+        .await
+        .expect("reset schema");
+      db.ensure_schema_ready().await.expect("ensure schema ready");
 
       let state = AppState::new(
         db.clone(),
@@ -546,7 +696,7 @@ mod tests {
         adding_seats: i32,
         now: DateTime<Utc>,
       ) -> std::result::Result<server_types::AccessGrant, DomainError> {
-        server_spi::CommunityQuotaGate
+        server_spi::CommunityQuotaGate::new()
           .check_seat_admission(tx, workspace_id, current_active_seats, adding_seats, now)
           .await
       }

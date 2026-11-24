@@ -1,8 +1,13 @@
 //! Canonical `LicenseEnvelopeV2` verification, keyring privilege separation,
 //! and bundled default self-hosted grant.
 
-use std::{collections::BTreeMap, sync::OnceLock};
+use std::{borrow::Cow, collections::BTreeMap, sync::OnceLock};
 
+use aes_gcm::{
+  AesGcm, KeyInit as _,
+  aead::{Aead as _, generic_array::typenum::U12},
+  aes::Aes256,
+};
 use base64::Engine as _;
 use chrono::{DateTime, Utc};
 use p256::{
@@ -10,8 +15,15 @@ use p256::{
   pkcs8::DecodePublicKey as _,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest as _, Sha256};
 
 use crate::{AccessGrant, BillingSubject, LicenseTier, Limits, Rights};
+
+const LICENSE_AES_KEY: Option<&str> = match option_env!("AFFINE_PRO_LICENSE_AES_KEY") {
+  Some(key) => Some(key),
+  None if cfg!(any(test, debug_assertions)) => Some("TEST_LICENSE_AES_KEY"),
+  None => None,
+};
 
 pub const COMMUNITY_DEFAULT_KID: &str = "community-default-v1";
 pub const PRO_KID: &str = "pro-v1";
@@ -462,6 +474,518 @@ pub fn default_selfhost_access_grant_from(payload: &[u8], keyring: &Keyring, now
   }
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacyEncryptedEnvelope {
+  payload: String,
+  signature: String,
+}
+
+/// Normalizes either plain JSON (`v1`/`v2`/`legacy-v0`) or legacy AES-256-GCM
+/// binary `.license` payloads into canonical JSON bytes.
+pub fn normalize_license(payload: &[u8]) -> Result<Cow<'_, [u8]>, LicenseV2Error> {
+  normalize_license_with_key(payload, LICENSE_AES_KEY)
+}
+
+/// Normalizes a license payload using an explicit optional AES key (for tests
+/// and import compatibility with `packages/backend/native/src/license_import.rs`).
+pub fn normalize_license_with_key<'a>(
+  payload: &'a [u8],
+  aes_key: Option<&str>,
+) -> Result<Cow<'a, [u8]>, LicenseV2Error> {
+  if payload.iter().find(|b| !b.is_ascii_whitespace()) == Some(&b'{') {
+    return Ok(Cow::Borrowed(payload));
+  }
+  if payload.len() <= 26 || payload[..2] != [12, 12] {
+    return Err(LicenseV2Error::InvalidJson("license_invalid_envelope".to_owned()));
+  }
+  let aes_key = aes_key.ok_or_else(|| LicenseV2Error::InvalidClaims("license_aes_key_missing".to_owned()))?;
+  let key: [u8; 32] = if aes_key.len() == 64 {
+    hex::decode(aes_key)
+      .ok()
+      .and_then(|bytes| bytes.try_into().ok())
+      .unwrap_or_else(|| Sha256::digest(aes_key.as_bytes()).into())
+  } else {
+    Sha256::digest(aes_key.as_bytes()).into()
+  };
+  let iv = &payload[2..14];
+  let mut ciphertext = payload[26..].to_vec();
+  ciphertext.extend_from_slice(&payload[14..26]);
+  let cipher = AesGcm::<Aes256, U12, U12>::new(&key.into());
+  let plaintext = cipher
+    .decrypt(iv.into(), ciphertext.as_ref())
+    .map_err(|_| LicenseV2Error::InvalidSignature("license_decrypt_failed".to_owned()))?;
+  let envelope: LegacyEncryptedEnvelope = serde_json::from_slice(&plaintext)
+    .map_err(|_| LicenseV2Error::InvalidJson("license_invalid_envelope".to_owned()))?;
+  serde_json::to_vec(&serde_json::json!({
+    "signatureVersion": "legacy-v0",
+    "iv": base64::engine::general_purpose::STANDARD.encode(iv),
+    "payload": envelope.payload,
+    "signature": envelope.signature,
+  }))
+  .map(Cow::Owned)
+  .map_err(|_| LicenseV2Error::InvalidJson("license_invalid_envelope".to_owned()))
+}
+
+#[derive(Deserialize)]
+struct AnyEnvelopeProbe {
+  #[serde(rename = "signatureVersion")]
+  signature_version: Option<serde::de::IgnoredAny>,
+  claims: Option<AnyClaimsVersionProbe>,
+}
+
+#[derive(Deserialize)]
+struct AnyClaimsVersionProbe {
+  #[serde(rename = "formatVersion")]
+  format_version: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct LegacyV0Envelope {
+  pub signature_version: String,
+  pub iv: String,
+  pub payload: String,
+  pub signature: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct LegacyV0Payload {
+  entity: String,
+  issuer: String,
+  #[serde(default)]
+  subject: Option<String>,
+  issued_at: String,
+  expires_at: String,
+  data: LegacyV0Data,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+struct LegacyV0Data {
+  id: String,
+  workspace_id: String,
+  quantity: i32,
+  plan: String,
+  recurring: String,
+  end_at: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedLegacyV0 {
+  pub license_id: String,
+  pub workspace_id: String,
+  pub entity: String,
+  pub issuer: String,
+  pub seat_quantity: i32,
+  pub recurring: String,
+  pub issued_at: DateTime<Utc>,
+  pub expires_at: DateTime<Utc>,
+  pub end_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct LicenseClaimsV1 {
+  pub format_version: u32,
+  pub license_id: String,
+  pub workspace_id: String,
+  pub audience: String,
+  pub plan: String,
+  pub seat_quantity: i32,
+  pub issued_at: String,
+  pub not_before: String,
+  pub expires_at: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct LicenseEnvelopeV1 {
+  pub claims: LicenseClaimsV1,
+  pub signature: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedLicenseV1 {
+  pub claims: LicenseClaimsV1,
+  pub issued_at: DateTime<Utc>,
+  pub not_before: DateTime<Utc>,
+  pub expires_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum VerifiedAnyLicense {
+  LegacyV0(VerifiedLegacyV0),
+  V1(VerifiedLicenseV1),
+  V2(VerifiedLicenseV2),
+}
+
+fn selfhost_team_grant(seat_quantity: i32, expires_at: Option<DateTime<Utc>>) -> AccessGrant {
+  const FIVE_HUNDRED_MIB: i64 = 500 * 1024 * 1024;
+  const TWENTY_GIB: i64 = 20 * 1024 * 1024 * 1024;
+  const HUNDRED_GIB: i64 = 100 * 1024 * 1024 * 1024;
+  const THIRTY_DAYS_SECS: i64 = 30 * 86_400;
+  let storage_quota_bytes = i64::from(seat_quantity)
+    .checked_mul(TWENTY_GIB)
+    .and_then(|v| v.checked_add(HUNDRED_GIB))
+    .unwrap_or(i64::MAX);
+  AccessGrant {
+    tier: LicenseTier::SelfhostTeam,
+    billing_subject: BillingSubject::Workspace,
+    seat_quantity: Some(seat_quantity),
+    expires_at,
+    limits: Limits {
+      blob_limit_bytes: FIVE_HUNDRED_MIB,
+      storage_quota_bytes,
+      seat_limit: seat_quantity,
+      seat_quota_bytes: Some(TWENTY_GIB),
+      history_period_seconds: THIRTY_DAYS_SECS,
+      copilot_action_limit: None,
+    },
+    rights: Rights {
+      commercial: true,
+      copilot_byok: true,
+      unlimited_copilot: false,
+    },
+    diagnostics: Vec::new(),
+  }
+}
+
+impl VerifiedAnyLicense {
+  pub fn license_id(&self) -> &str {
+    match self {
+      Self::LegacyV0(v) => &v.license_id,
+      Self::V1(v) => &v.claims.license_id,
+      Self::V2(v) => &v.claims.license_id,
+    }
+  }
+
+  pub fn workspace_id(&self) -> Option<&str> {
+    match self {
+      Self::LegacyV0(v) => Some(&v.workspace_id),
+      Self::V1(v) => Some(&v.claims.workspace_id),
+      Self::V2(v) => v.claims.scope.workspace_id.as_deref(),
+    }
+  }
+
+  pub fn tier(&self) -> LicenseTier {
+    match self {
+      Self::LegacyV0(_) | Self::V1(_) => LicenseTier::SelfhostTeam,
+      Self::V2(v) => v.tier,
+    }
+  }
+
+  pub fn seat_quantity(&self) -> i32 {
+    match self {
+      Self::LegacyV0(v) => v.seat_quantity,
+      Self::V1(v) => v.claims.seat_quantity,
+      Self::V2(v) => v.claims.limits.seat_limit,
+    }
+  }
+
+  pub fn issued_at(&self) -> DateTime<Utc> {
+    match self {
+      Self::LegacyV0(v) => v.issued_at,
+      Self::V1(v) => v.issued_at,
+      Self::V2(v) => v.issued_at,
+    }
+  }
+
+  pub fn not_before(&self) -> DateTime<Utc> {
+    match self {
+      Self::LegacyV0(_) => DateTime::<Utc>::MIN_UTC,
+      Self::V1(v) => v.not_before,
+      Self::V2(v) => v.not_before,
+    }
+  }
+
+  pub fn expires_at(&self) -> Option<DateTime<Utc>> {
+    match self {
+      Self::LegacyV0(v) => Some(v.expires_at.min(v.end_at)),
+      Self::V1(v) => Some(v.expires_at),
+      Self::V2(v) => v.expires_at,
+    }
+  }
+
+  pub fn end_at(&self) -> DateTime<Utc> {
+    match self {
+      Self::LegacyV0(v) => v.end_at,
+      Self::V1(v) => v.expires_at,
+      Self::V2(v) => v.expires_at.unwrap_or(v.issued_at),
+    }
+  }
+
+  pub fn recurring(&self) -> Option<&str> {
+    match self {
+      Self::LegacyV0(v) => Some(v.recurring.as_str()),
+      Self::V1(_) => None,
+      Self::V2(v) => v.claims.recurring.as_deref(),
+    }
+  }
+
+  pub fn entity(&self) -> &str {
+    match self {
+      Self::LegacyV0(v) => &v.entity,
+      Self::V1(_) => "workspace",
+      Self::V2(v) => &v.claims.scope.kind,
+    }
+  }
+
+  pub fn issuer(&self) -> &str {
+    match self {
+      Self::LegacyV0(v) => &v.issuer,
+      Self::V1(_) => PRO_KID,
+      Self::V2(v) => &v.claims.kid,
+    }
+  }
+
+  pub fn is_commercial(&self) -> bool {
+    match self {
+      Self::LegacyV0(_) | Self::V1(_) => true,
+      Self::V2(v) => v.claims.kid != COMMUNITY_DEFAULT_KID && v.claims.rights.commercial,
+    }
+  }
+
+  pub fn is_workspace_scoped(&self) -> bool {
+    match self {
+      Self::LegacyV0(_) | Self::V1(_) => true,
+      Self::V2(v) => v.claims.scope.kind == "workspace",
+    }
+  }
+
+  pub fn is_workspace_commercial(&self) -> bool {
+    self.is_commercial() && self.is_workspace_scoped()
+  }
+
+  /// Compatibility DB `entitlements.plan` label readable by `v0.27.5` (`Plan::parse`).
+  pub fn entitlement_plan_name(&self) -> &'static str {
+    match self.tier() {
+      LicenseTier::SelfhostDefault => "selfhost_free",
+      LicenseTier::SelfhostTeam | LicenseTier::SelfhostEnterprise => "selfhost_team",
+      _ => "selfhost_free",
+    }
+  }
+
+  pub fn to_access_grant(&self) -> AccessGrant {
+    match self {
+      Self::LegacyV0(v) => selfhost_team_grant(v.seat_quantity, Some(v.expires_at.min(v.end_at))),
+      Self::V1(v) => selfhost_team_grant(v.claims.seat_quantity, Some(v.expires_at)),
+      Self::V2(v) => v.to_access_grant(),
+    }
+  }
+}
+
+/// Verifies any supported self-hosted license format (`legacy-v0`, `v1`, `v2`)
+/// after JSON/AES normalization.
+pub fn verify_any_license(
+  payload: &[u8],
+  keyring: &Keyring,
+  expected_workspace_id: Option<&str>,
+  now: DateTime<Utc>,
+) -> Result<VerifiedAnyLicense, LicenseV2Error> {
+  let probe: AnyEnvelopeProbe =
+    serde_json::from_slice(payload).map_err(|e| LicenseV2Error::InvalidJson(e.to_string()))?;
+  if probe.signature_version.is_some() {
+    return verify_legacy_v0(payload, keyring, expected_workspace_id, now).map(VerifiedAnyLicense::LegacyV0);
+  }
+  if probe.claims.and_then(|c| c.format_version) == Some(2) {
+    return verify_license_v2(payload, keyring, expected_workspace_id, now).map(VerifiedAnyLicense::V2);
+  }
+  verify_license_v1(payload, keyring, expected_workspace_id, now).map(VerifiedAnyLicense::V1)
+}
+
+fn verify_legacy_v0(
+  payload: &[u8],
+  keyring: &Keyring,
+  expected_workspace_id: Option<&str>,
+  now: DateTime<Utc>,
+) -> Result<VerifiedLegacyV0, LicenseV2Error> {
+  let envelope: LegacyV0Envelope =
+    serde_json::from_slice(payload).map_err(|e| LicenseV2Error::InvalidJson(e.to_string()))?;
+  if envelope.signature_version != "legacy-v0" {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "unsupported legacy signatureVersion {:?}",
+      envelope.signature_version
+    )));
+  }
+  let iv = base64::engine::general_purpose::STANDARD
+    .decode(envelope.iv.trim())
+    .map_err(|e| LicenseV2Error::InvalidSignature(format!("invalid legacy iv base64: {e}")))?;
+  if iv.len() != 12 {
+    return Err(LicenseV2Error::InvalidSignature(format!(
+      "invalid legacy iv length {}, expected 12",
+      iv.len()
+    )));
+  }
+  let sig_bytes = hex::decode(envelope.signature.trim())
+    .map_err(|e| LicenseV2Error::InvalidSignature(format!("invalid legacy hex signature: {e}")))?;
+  let signature = DerSignature::from_bytes(&sig_bytes)
+    .map_err(|e| LicenseV2Error::InvalidSignature(format!("invalid legacy DER signature: {e}")))?;
+
+  let public_key_pem = keyring
+    .get(PRO_KID)
+    .ok_or_else(|| LicenseV2Error::UnknownKeyId(PRO_KID.to_owned()))?;
+  let verifying_key =
+    VerifyingKey::from_public_key_pem(public_key_pem).map_err(|e| LicenseV2Error::InvalidPublicKey {
+      kid: PRO_KID.to_owned(),
+      reason: e.to_string(),
+    })?;
+  let mut message = Vec::with_capacity(iv.len() + envelope.payload.len());
+  message.extend_from_slice(&iv);
+  message.extend_from_slice(envelope.payload.as_bytes());
+  verifying_key
+    .verify(&message, &signature)
+    .map_err(|e| LicenseV2Error::InvalidSignature(e.to_string()))?;
+
+  let parsed: LegacyV0Payload =
+    serde_json::from_str(&envelope.payload).map_err(|e| LicenseV2Error::InvalidJson(e.to_string()))?;
+  if parsed.entity.trim().is_empty()
+    || parsed.issuer.trim().is_empty()
+    || parsed.data.id.trim().is_empty()
+    || parsed.data.workspace_id.trim().is_empty()
+  {
+    return Err(LicenseV2Error::InvalidClaims(
+      "legacy license entity, issuer, id, and workspaceId must be non-empty".to_owned(),
+    ));
+  }
+  if parsed.data.plan != "selfhostedteam" {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "unsupported legacy license plan {:?}",
+      parsed.data.plan
+    )));
+  }
+  if !(1..=MAX_SEAT_LIMIT).contains(&parsed.data.quantity) {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "legacy license quantity {} out of bounds 1..={MAX_SEAT_LIMIT}",
+      parsed.data.quantity
+    )));
+  }
+  let recurring_lower = parsed.data.recurring.to_ascii_lowercase();
+  if !matches!(recurring_lower.as_str(), "monthly" | "yearly" | "lifetime") {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "invalid legacy license recurring {:?}",
+      parsed.data.recurring
+    )));
+  }
+  let issued_at = parse_rfc3339("issuedAt", &parsed.issued_at)?;
+  let expires_at = parse_rfc3339("expiresAt", &parsed.expires_at)?;
+  let end_at = parse_rfc3339("endAt", &parsed.data.end_at)?;
+  let effective_exp = expires_at.min(end_at);
+  if issued_at >= effective_exp {
+    return Err(LicenseV2Error::InvalidClaims(
+      "legacy license issuedAt must be before min(expiresAt, endAt)".to_owned(),
+    ));
+  }
+  if expected_workspace_id != Some(parsed.data.workspace_id.as_str()) {
+    return Err(LicenseV2Error::ScopeMismatch {
+      expected: expected_workspace_id.map(str::to_owned),
+      actual: Some(parsed.data.workspace_id),
+    });
+  }
+  if now >= effective_exp {
+    return Err(LicenseV2Error::Expired {
+      expires_at: effective_exp,
+      now,
+    });
+  }
+
+  Ok(VerifiedLegacyV0 {
+    license_id: parsed.data.id,
+    workspace_id: parsed.data.workspace_id,
+    entity: parsed.entity,
+    issuer: parsed.issuer,
+    seat_quantity: parsed.data.quantity,
+    recurring: recurring_lower,
+    issued_at,
+    expires_at,
+    end_at,
+  })
+}
+
+fn verify_license_v1(
+  payload: &[u8],
+  keyring: &Keyring,
+  expected_workspace_id: Option<&str>,
+  now: DateTime<Utc>,
+) -> Result<VerifiedLicenseV1, LicenseV2Error> {
+  let envelope: LicenseEnvelopeV1 =
+    serde_json::from_slice(payload).map_err(|e| LicenseV2Error::InvalidJson(e.to_string()))?;
+  let claims = &envelope.claims;
+  if claims.format_version != 1 {
+    return Err(LicenseV2Error::UnsupportedFormatVersion(claims.format_version));
+  }
+  if claims.license_id.trim().is_empty() || claims.workspace_id.trim().is_empty() {
+    return Err(LicenseV2Error::InvalidClaims(
+      "v1 licenseId and workspaceId must be non-empty".to_owned(),
+    ));
+  }
+  if claims.audience != LICENSE_AUDIENCE_SELFHOST {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "invalid v1 audience {:?}",
+      claims.audience
+    )));
+  }
+  if claims.plan != "selfhost_team" {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "unsupported v1 plan {:?}",
+      claims.plan
+    )));
+  }
+  if !(1..=MAX_SEAT_LIMIT).contains(&claims.seat_quantity) {
+    return Err(LicenseV2Error::InvalidClaims(format!(
+      "v1 seatQuantity {} out of bounds 1..={MAX_SEAT_LIMIT}",
+      claims.seat_quantity
+    )));
+  }
+
+  let public_key_pem = keyring
+    .get(PRO_KID)
+    .ok_or_else(|| LicenseV2Error::UnknownKeyId(PRO_KID.to_owned()))?;
+  let verifying_key =
+    VerifyingKey::from_public_key_pem(public_key_pem).map_err(|e| LicenseV2Error::InvalidPublicKey {
+      kid: PRO_KID.to_owned(),
+      reason: e.to_string(),
+    })?;
+  let sig_bytes = base64::engine::general_purpose::STANDARD
+    .decode(envelope.signature.trim())
+    .map_err(|e| LicenseV2Error::InvalidSignature(format!("invalid v1 base64 signature: {e}")))?;
+  let signature = DerSignature::from_bytes(&sig_bytes)
+    .map_err(|e| LicenseV2Error::InvalidSignature(format!("invalid v1 DER signature: {e}")))?;
+  let canonical = serde_json::to_vec(claims).map_err(|e| LicenseV2Error::InvalidJson(e.to_string()))?;
+  verifying_key
+    .verify(&canonical, &signature)
+    .map_err(|e| LicenseV2Error::InvalidSignature(e.to_string()))?;
+
+  let issued_at = parse_rfc3339("issuedAt", &claims.issued_at)?;
+  let not_before = parse_rfc3339("notBefore", &claims.not_before)?;
+  let expires_at = parse_rfc3339("expiresAt", &claims.expires_at)?;
+  if not_before > issued_at || issued_at >= expires_at {
+    return Err(LicenseV2Error::InvalidClaims(
+      "v1 timestamps must satisfy notBefore <= issuedAt < expiresAt".to_owned(),
+    ));
+  }
+  if expected_workspace_id != Some(claims.workspace_id.as_str()) {
+    return Err(LicenseV2Error::ScopeMismatch {
+      expected: expected_workspace_id.map(str::to_owned),
+      actual: Some(claims.workspace_id.clone()),
+    });
+  }
+  if now < not_before {
+    return Err(LicenseV2Error::NotYetValid { not_before, now });
+  }
+  if now >= expires_at {
+    return Err(LicenseV2Error::Expired { expires_at, now });
+  }
+
+  Ok(VerifiedLicenseV1 {
+    claims: envelope.claims,
+    issued_at,
+    not_before,
+    expires_at,
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use p256::{
@@ -742,5 +1266,124 @@ mod tests {
         "expected {label} > MAX_SAFE_INT to be rejected"
       );
     }
+  }
+
+  #[test]
+  fn legacy_v0_aes_v1_and_v2_verification_and_rejection() {
+    let (signing_key, pro_pem) = test_pro_keypair(0x88);
+    let keyring = Keyring::with_pro_public_key(&pro_pem);
+    let now = fixed_now();
+
+    // 1. Legacy AES .license -> normalized legacy-v0 JSON -> VerifiedAnyLicense::LegacyV0
+    let payload_str = serde_json::to_string_pretty(&serde_json::json!({
+      "entity": "acme",
+      "issuer": "Toeverything",
+      "subject": "selfhostedteam",
+      "issuedAt": "2026-01-01T00:00:00Z",
+      "expiresAt": "2027-01-01T00:00:00Z",
+      "data": {
+        "id": "legacy-lic-1",
+        "workspaceId": "ws-legacy",
+        "quantity": 12,
+        "plan": "selfhostedteam",
+        "recurring": "monthly",
+        "endAt": "2027-01-02T00:00:00Z"
+      }
+    }))
+    .unwrap();
+    let iv = [5u8; 12];
+    let mut msg = iv.to_vec();
+    msg.extend_from_slice(payload_str.as_bytes());
+    let sig: p256::ecdsa::Signature = signing_key.sign(&msg);
+    let plaintext = serde_json::to_vec(&serde_json::json!({
+      "payload": payload_str,
+      "signature": hex::encode(sig.to_der()),
+    }))
+    .unwrap();
+    let aes_key: [u8; 32] = Sha256::digest(b"TEST_LICENSE_AES_KEY").into();
+    let cipher = AesGcm::<Aes256, U12, U12>::new(&aes_key.into());
+    let ct = cipher.encrypt((&iv).into(), plaintext.as_ref()).unwrap();
+    let split = ct.len() - 12;
+    let mut legacy_bin = vec![12, 12];
+    legacy_bin.extend_from_slice(&iv);
+    legacy_bin.extend_from_slice(&ct[split..]);
+    legacy_bin.extend_from_slice(&ct[..split]);
+
+    let normalized = normalize_license_with_key(&legacy_bin, Some("TEST_LICENSE_AES_KEY")).unwrap();
+    let verified = verify_any_license(normalized.as_ref(), &keyring, Some("ws-legacy"), now).unwrap();
+    assert_eq!(verified.license_id(), "legacy-lic-1");
+    assert_eq!(verified.seat_quantity(), 12);
+    assert_eq!(verified.entitlement_plan_name(), "selfhost_team");
+    assert!(verified.is_workspace_commercial());
+    assert_eq!(verified.not_before(), DateTime::<Utc>::MIN_UTC);
+    let legacy_grant = verified.to_access_grant();
+    assert_eq!(legacy_grant.limits.blob_limit_bytes, 524_288_000);
+    assert_eq!(legacy_grant.limits.seat_quota_bytes, Some(21_474_836_480));
+    assert_eq!(
+      legacy_grant.limits.storage_quota_bytes,
+      100 * 1024 * 1024 * 1024 + 12 * 21_474_836_480
+    );
+    assert_eq!(legacy_grant.limits.seat_limit, 12);
+    assert_eq!(legacy_grant.limits.history_period_seconds, 2_592_000);
+    assert_eq!(legacy_grant.limits.copilot_action_limit, None);
+    assert!(legacy_grant.rights.commercial);
+    assert!(legacy_grant.rights.copilot_byok);
+    assert!(!legacy_grant.rights.unlimited_copilot);
+
+    // Wrong workspace, None workspace (instance context), and expired rejected.
+    assert!(matches!(
+      verify_any_license(normalized.as_ref(), &keyring, Some("ws-other"), now),
+      Err(LicenseV2Error::ScopeMismatch { .. })
+    ));
+    assert!(matches!(
+      verify_any_license(normalized.as_ref(), &keyring, None, now),
+      Err(LicenseV2Error::ScopeMismatch { .. })
+    ));
+    let after_exp = DateTime::parse_from_rfc3339("2027-02-01T00:00:00Z")
+      .unwrap()
+      .with_timezone(&Utc);
+    assert!(matches!(
+      verify_any_license(normalized.as_ref(), &keyring, Some("ws-legacy"), after_exp),
+      Err(LicenseV2Error::Expired { .. })
+    ));
+
+    // 2. V1 license golden vector matching frozen `affine_core::LicenseIssuer::issue` byte-for-byte:
+    //    `workspaceId` precedes `audience` and no `recurring` field exists.
+    let golden_claims_json = r#"{"formatVersion":1,"licenseId":"v1-lic-1","workspaceId":"ws-v1","audience":"affine-selfhost","plan":"selfhost_team","seatQuantity":15,"issuedAt":"2026-01-01T00:00:00Z","notBefore":"2026-01-01T00:00:00Z","expiresAt":"2027-01-01T00:00:00Z"}"#;
+    assert!(!golden_claims_json.contains("\"recurring\""));
+    assert!(golden_claims_json.find("\"workspaceId\"") < golden_claims_json.find("\"audience\""));
+    let v1_claims: LicenseClaimsV1 = serde_json::from_str(golden_claims_json).unwrap();
+    let v1_canonical = serde_json::to_vec(&v1_claims).unwrap();
+    assert_eq!(v1_canonical.as_slice(), golden_claims_json.as_bytes());
+    let v1_sig: DerSignature = signing_key.sign(golden_claims_json.as_bytes());
+    let v1_raw = serde_json::to_vec(&LicenseEnvelopeV1 {
+      claims: v1_claims,
+      signature: base64::engine::general_purpose::STANDARD.encode(v1_sig.as_bytes()),
+    })
+    .unwrap();
+    let v1_verified = verify_any_license(&v1_raw, &keyring, Some("ws-v1"), now).unwrap();
+    assert_eq!(v1_verified.license_id(), "v1-lic-1");
+    assert_eq!(v1_verified.seat_quantity(), 15);
+    assert_eq!(v1_verified.recurring(), None);
+    assert_eq!(v1_verified.entitlement_plan_name(), "selfhost_team");
+    let v1_grant = v1_verified.to_access_grant();
+    assert_eq!(v1_grant.limits.blob_limit_bytes, 524_288_000);
+    assert_eq!(v1_grant.limits.storage_quota_bytes, 429_496_729_600);
+    assert_eq!(v1_grant.limits.seat_quota_bytes, Some(21_474_836_480));
+    assert_eq!(v1_grant.limits.seat_limit, 15);
+    assert_eq!(v1_grant.limits.history_period_seconds, 2_592_000);
+    assert_eq!(v1_grant.limits.copilot_action_limit, None);
+    assert!(v1_grant.rights.commercial);
+    assert!(v1_grant.rights.copilot_byok);
+    assert!(!v1_grant.rights.unlimited_copilot);
+    assert!(matches!(
+      verify_any_license(&v1_raw, &keyring, None, now),
+      Err(LicenseV2Error::ScopeMismatch { .. })
+    ));
+    let v1_tampered = String::from_utf8(v1_raw).unwrap().replace("15", "99");
+    assert!(matches!(
+      verify_any_license(v1_tampered.as_bytes(), &keyring, Some("ws-v1"), now),
+      Err(LicenseV2Error::InvalidSignature(_))
+    ));
   }
 }

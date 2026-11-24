@@ -224,7 +224,42 @@ fn session_policy_hook_shares_txid_and_rolls_back_atomically() {
     assert_eq!(leftover_domain, 0);
     assert_eq!(leftover_audit, 0);
 
-    // 4. CommunityQuotaGate inside real PG tx: 10 seats allowed, 11th rejected.
+    pool.close().await;
+  });
+}
+
+#[test]
+fn community_quota_gate_enforces_seats_and_arbitrates_commercial_licenses() {
+  let cluster = PgCluster::from_env_or_docker().expect("test postgres cluster");
+  let migrations = MigrationSet {
+    migrations: vec![],
+    digest: "5b10000000000001".into(),
+  };
+  let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+  let lease = cluster
+    .lease(&template, DEFAULT_LEASE_TTL)
+    .expect("lease test database");
+  let db_url = lease.url().to_owned();
+
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .expect("build tokio runtime");
+
+  rt.block_on(async move {
+    let pool = setup_test_pool(&db_url).await;
+
+    // 1. CommunityQuotaGate inside real PG tx: 10 seats allowed, 11th rejected.
+    sqlx::query("CREATE TABLE IF NOT EXISTS installed_licenses (workspace_id TEXT PRIMARY KEY, license BYTEA)")
+      .execute(&pool)
+      .await
+      .expect("create installed_licenses table");
+    sqlx::query(
+      "CREATE TABLE IF NOT EXISTS entitlements (id TEXT, target_type TEXT, target_id TEXT, source TEXT, status TEXT, starts_at TIMESTAMPTZ, expires_at TIMESTAMPTZ, grace_until TIMESTAMPTZ, signed_payload BYTEA, updated_at TIMESTAMPTZ)",
+    )
+    .execute(&pool)
+    .await
+    .expect("create entitlements table");
     let ext = CommunityExtension::new();
     let gate = ext.quota_gate();
     let mut tx = pool.begin().await.expect("begin quota tx");
@@ -241,6 +276,146 @@ fn session_policy_hook_shares_txid_and_rolls_back_atomically() {
       .expect_err("11th seat must be rejected");
     assert!(matches!(err, DomainError::QuotaExceeded { kind: "seat_limit", .. }));
     tx.rollback().await.expect("rollback quota tx");
+
+    // 2. Commercial pro-v1 instance_default acceptance, workspace > instance_default priority,
+    //    and deterministic signed_payload lexicographic tie-breaking independent of updated_at.
+    use base64::Engine as _;
+    use p256::ecdsa::{DerSignature, SigningKey, VerifyingKey, signature::Signer as _};
+    use p256::pkcs8::{EncodePublicKey as _, LineEnding};
+    use server_spi::QuotaGate as _;
+    use server_types::license::{
+      Keyring, LICENSE_AUDIENCE_SELFHOST, LicenseClaimsV2, LicenseEnvelopeV2, LicenseLimitsV2, LicenseRightsV2,
+      LicenseScopeV2, PRO_KID,
+    };
+
+    let signing_key = SigningKey::from_slice(&[0x33u8; 32]).unwrap();
+    let pro_pem = VerifyingKey::from(&signing_key)
+      .to_public_key_pem(LineEnding::LF)
+      .unwrap();
+    let pro_gate = server_spi::CommunityQuotaGate::with_keyring(Keyring::with_pro_public_key(pro_pem));
+    let now = Utc::now();
+
+    let sign_v2 = |scope_kind: &str, ws: Option<&str>, seats: i32, blob_mib: i64, id: &str| -> Vec<u8> {
+      let claims = LicenseClaimsV2 {
+        format_version: 2,
+        kid: PRO_KID.to_owned(),
+        license_id: id.to_owned(),
+        audience: LICENSE_AUDIENCE_SELFHOST.to_owned(),
+        scope: LicenseScopeV2 {
+          kind: scope_kind.to_owned(),
+          workspace_id: ws.map(str::to_owned),
+        },
+        tier: "selfhost_team".to_owned(),
+        limits: LicenseLimitsV2 {
+          blob_limit_bytes: blob_mib * 1024 * 1024,
+          storage_quota_bytes: 1_099_511_627_776,
+          seat_limit: seats,
+          seat_quota_bytes: None,
+          history_period_seconds: 31_536_000,
+          copilot_action_limit: None,
+        },
+        rights: LicenseRightsV2 {
+          commercial: true,
+          copilot_byok: true,
+          unlimited_copilot: false,
+        },
+        recurring: Some("yearly".to_owned()),
+        issued_at: (now - chrono::Duration::days(1)).to_rfc3339(),
+        not_before: (now - chrono::Duration::days(2)).to_rfc3339(),
+        expires_at: Some((now + chrono::Duration::days(365)).to_rfc3339()),
+      };
+      let sig: DerSignature = signing_key.sign(&serde_json::to_vec(&claims).unwrap());
+      serde_json::to_vec(&LicenseEnvelopeV2 {
+        claims,
+        signature: base64::engine::general_purpose::STANDARD.encode(sig.as_bytes()),
+      })
+      .unwrap()
+    };
+
+    // (a) Single 100-seat pro-v1 instance_default commercial entitlement -> returns 100 seats.
+    let inst_100 = sign_v2("instance_default", None, 100, 500, "lic-inst-100");
+    sqlx::query(
+      "INSERT INTO entitlements (id, target_type, target_id, source, status, starts_at, expires_at, grace_until, signed_payload, updated_at)
+       VALUES ('ent-inst', 'workspace', 'ws-arb', 'selfhost_license', 'active', NULL, $1, NULL, $2, $3)",
+    )
+    .bind(now + chrono::Duration::days(30))
+    .bind(&inst_100)
+    .bind(now)
+    .execute(&pool)
+    .await
+    .unwrap();
+    {
+      let mut tx = pool.begin().await.unwrap();
+      let g = pro_gate.resolve_workspace_grant(&mut tx, "ws-arb", now).await.unwrap();
+      assert_eq!(g.limits.seat_limit, 100);
+      tx.rollback().await.unwrap();
+    }
+
+    // (b) 100-seat instance_default (active) + 20-seat workspace (valid grace) -> workspace wins (20 seats).
+    let ws_20 = sign_v2("workspace", Some("ws-arb"), 20, 500, "lic-ws-20");
+    sqlx::query(
+      "INSERT INTO entitlements (id, target_type, target_id, source, status, starts_at, expires_at, grace_until, signed_payload, updated_at)
+       VALUES ('ent-ws-grace', 'workspace', 'ws-arb', 'selfhost_license', 'grace', NULL, $1, $2, $3, $4)",
+    )
+    .bind(now - chrono::Duration::minutes(1))
+    .bind(now + chrono::Duration::hours(1))
+    .bind(&ws_20)
+    .bind(now - chrono::Duration::seconds(5))
+    .execute(&pool)
+    .await
+    .unwrap();
+    {
+      let mut tx = pool.begin().await.unwrap();
+      let g = pro_gate.resolve_workspace_grant(&mut tx, "ws-arb", now).await.unwrap();
+      assert_eq!(g.limits.seat_limit, 20);
+      tx.rollback().await.unwrap();
+    }
+
+    // (c) Two identical-priority active workspace V2 licenses (same seats/storage/tier, blob 200 MiB vs 500 MiB):
+    //     swapping updated_at must select the exact same winner via raw signed_payload byte order.
+    let ws_tie_200 = sign_v2("workspace", Some("ws-tie"), 30, 200, "lic-tie-a");
+    let ws_tie_500 = sign_v2("workspace", Some("ws-tie"), 30, 500, "lic-tie-b");
+    let t1 = now - chrono::Duration::seconds(10);
+    let t2 = now;
+    sqlx::query(
+      "INSERT INTO entitlements (id, target_type, target_id, source, status, starts_at, expires_at, grace_until, signed_payload, updated_at)
+       VALUES ('tie-1', 'workspace', 'ws-tie', 'selfhost_license', 'active', NULL, $1, NULL, $2, $3),
+              ('tie-2', 'workspace', 'ws-tie', 'selfhost_license', 'active', NULL, $1, NULL, $4, $5)",
+    )
+    .bind(now + chrono::Duration::days(30))
+    .bind(&ws_tie_200)
+    .bind(t1)
+    .bind(&ws_tie_500)
+    .bind(t2)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let winner_before = {
+      let mut tx = pool.begin().await.unwrap();
+      let g = pro_gate.resolve_workspace_grant(&mut tx, "ws-tie", now).await.unwrap();
+      tx.rollback().await.unwrap();
+      g
+    };
+    sqlx::query("UPDATE entitlements SET updated_at = $1 WHERE id = 'tie-1'")
+      .bind(t2)
+      .execute(&pool)
+      .await
+      .unwrap();
+    sqlx::query("UPDATE entitlements SET updated_at = $1 WHERE id = 'tie-2'")
+      .bind(t1)
+      .execute(&pool)
+      .await
+      .unwrap();
+    let winner_after = {
+      let mut tx = pool.begin().await.unwrap();
+      let g = pro_gate.resolve_workspace_grant(&mut tx, "ws-tie", now).await.unwrap();
+      tx.rollback().await.unwrap();
+      g
+    };
+    assert_eq!(
+      winner_before, winner_after,
+      "equal-priority tie-break must depend on signed_payload bytes, not updated_at"
+    );
 
     pool.close().await;
   });
