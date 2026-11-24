@@ -120,6 +120,7 @@ pub struct AppState {
   pub invalidation: Arc<dyn InvalidationPublisher>,
   pub event_bus: Arc<dyn EventBusPublisher>,
   pub avatar_transcode_sem: Arc<tokio::sync::Semaphore>,
+  pub strict_throttler: Arc<rest::throttle::StrictThrottler>,
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -261,6 +262,7 @@ impl AppState {
       invalidation: services.invalidation,
       event_bus: services.event_bus,
       avatar_transcode_sem: Arc::new(tokio::sync::Semaphore::new(4)),
+      strict_throttler: Arc::new(rest::throttle::StrictThrottler::new()),
     })
   }
 
@@ -412,8 +414,13 @@ async fn handle_readyz(State(state): State<RouterState>) -> (StatusCode, Json<Re
   )
 }
 
-async fn handle_graphql_post(State(state): State<RouterState>, headers: HeaderMap, req: GraphQLRequest) -> Response {
-  let lazy = LazyGraphqlPrincipal::new(state.clone(), headers.clone());
+async fn handle_graphql_post(
+  State(state): State<RouterState>,
+  rest::throttle::PeerAddr(peer): rest::throttle::PeerAddr,
+  headers: HeaderMap,
+  req: GraphQLRequest,
+) -> Response {
+  let lazy = LazyGraphqlPrincipal::new(state.clone(), headers.clone(), peer);
   let gql_req = req.into_inner().data(lazy.clone()).data(headers);
   let gql_resp: GraphQLResponse = state.schema.execute(gql_req).await.into();
   if let Some(http_err) = lazy.take_http_error() {

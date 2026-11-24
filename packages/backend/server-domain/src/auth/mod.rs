@@ -1,7 +1,11 @@
 //! Canonical authentication and session domain service.
 
 pub mod access_token;
+pub mod captcha;
 pub mod keyring;
+pub mod oauth;
+pub mod oauth_crypto;
+mod oauth_http;
 pub mod password;
 
 use std::{fmt, fmt::Write as _, sync::Arc, time::Duration as StdDuration};
@@ -171,6 +175,7 @@ impl EmailDomainVerifier for DnsEmailDomainVerifier {
 #[derive(Clone)]
 pub struct AuthConfig {
   pub allow_signup: bool,
+  pub allow_signup_for_oauth: bool,
   pub require_email_domain_verification: bool,
   pub private_key: String,
   pub server_name: String,
@@ -178,12 +183,14 @@ pub struct AuthConfig {
   pub password_max_length: usize,
   pub session_ttl_seconds: i64,
   pub session_ttr_seconds: i64,
+  pub oauth_providers: std::collections::HashMap<String, oauth::OAuthProviderConfig>,
 }
 
 impl fmt::Debug for AuthConfig {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("AuthConfig")
       .field("allow_signup", &self.allow_signup)
+      .field("allow_signup_for_oauth", &self.allow_signup_for_oauth)
       .field(
         "require_email_domain_verification",
         &self.require_email_domain_verification,
@@ -194,6 +201,7 @@ impl fmt::Debug for AuthConfig {
       .field("password_max_length", &self.password_max_length)
       .field("session_ttl_seconds", &self.session_ttl_seconds)
       .field("session_ttr_seconds", &self.session_ttr_seconds)
+      .field("oauth_providers", &self.oauth_providers.keys().collect::<Vec<_>>())
       .finish()
   }
 }
@@ -202,6 +210,7 @@ impl Default for AuthConfig {
   fn default() -> Self {
     Self {
       allow_signup: true,
+      allow_signup_for_oauth: true,
       require_email_domain_verification: false,
       private_key: String::new(),
       server_name: "AFFiNE".to_owned(),
@@ -209,6 +218,7 @@ impl Default for AuthConfig {
       password_max_length: 32,
       session_ttl_seconds: DEFAULT_COOKIE_SESSION_TTL_SECONDS,
       session_ttr_seconds: DEFAULT_COOKIE_SESSION_TTR_SECONDS,
+      oauth_providers: std::collections::HashMap::new(),
     }
   }
 }
@@ -2342,7 +2352,11 @@ impl AuthService {
     .map_err(|e| DomainError::Internal(format!("load login preflight user: {e}")))?;
     drop(conn);
 
-    let (registered, password_available, magic_link_available) = match rows.as_slice() {
+    let (allow_signup, allow_signup_for_oauth) =
+      oauth::load_signup_flags(&self.db, self.config.allow_signup, self.config.allow_signup_for_oauth).await?;
+    let oauth_providers = self.available_oauth_providers().await?;
+
+    let (registered, password_available, magic_link_available, oauth_available) = match rows.as_slice() {
       [] => {
         let domain_ok = if self.config.require_email_domain_verification {
           match self.domain_verifier.verify_email_domain(&email).await {
@@ -2357,20 +2371,25 @@ impl AuthService {
         } else {
           true
         };
-        let can_signup = self.config.allow_signup && domain_ok;
-        (false, false, can_signup)
+        let can_signup = allow_signup && domain_ok;
+        (
+          false,
+          false,
+          can_signup,
+          !oauth_providers.is_empty() && allow_signup_for_oauth,
+        )
       }
       [row] => {
         let reg: bool = row.get("registered");
         let disabled: bool = row.get("disabled");
         let has_password: bool = row.get("has_password");
         if disabled {
-          (false, false, false)
+          (false, false, false, false)
         } else {
-          (reg, has_password, true)
+          (reg, has_password, true, !oauth_providers.is_empty())
         }
       }
-      _ => (false, false, false),
+      _ => (false, false, false, false),
     };
 
     Ok(LoginPreflight {
@@ -2383,8 +2402,8 @@ impl AuthService {
           available: magic_link_available,
         },
         oauth: OAuthAvailability {
-          available: false,
-          providers: Vec::new(),
+          available: oauth_available,
+          providers: oauth_providers,
         },
         passkey: PasskeyAvailability {
           available: false,
@@ -3071,7 +3090,7 @@ fn email_selector(email: &str) -> String {
   token_hash(&email.trim().to_ascii_lowercase())
 }
 
-fn token_hash(raw: &str) -> String {
+pub fn token_hash(raw: &str) -> String {
   let digest = Sha256::digest(raw.as_bytes());
   let mut out = String::with_capacity(digest.len() * 2);
   for b in digest {

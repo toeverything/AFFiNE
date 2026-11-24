@@ -23,6 +23,7 @@ Never edit an existing SQL migration file. Add a new versioned file instead.
 2. Prefix new worker-only Redis keys with `v2:` to avoid collisions.
 3. Drain active workers before you release tracked leases on shutdown.
 4. Set `AFFINE_CHANNEL=canary` on `affine-server` wherever `v0.27.5` uses `AFFINE_ENV=dev` for the canary date client version window.
+5. `affine-server` hashes spoofed request-tracker headers longer than 256 bytes to `sha256:<hex>`; normal session IDs, IPs, and `CF-Ray` values (`<= 256` bytes) share exact `throttler:<tracker>;<tier>` Redis keys with `v0.27.5`.
 
 ## 4. Document Lifecycle Coexistence
 

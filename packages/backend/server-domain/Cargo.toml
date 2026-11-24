@@ -16,9 +16,11 @@ hex.workspace              = true
 hickory-resolver.workspace = true
 hkdf.workspace             = true
 hmac.workspace             = true
+p256.workspace             = true
 rand.workspace         = true
 redis.workspace        = true
 reqwest.workspace      = true
+ring.workspace         = true
 serde.workspace        = true
 serde_json.workspace   = true
 server-db.workspace    = true
@@ -39,7 +41,6 @@ zeroize.workspace               = true
 
 [dev-dependencies]
 futures-util.workspace    = true
-p256.workspace            = true
 postgres.workspace        = true
 test-db-harness.workspace = true
 

@@ -188,6 +188,8 @@ pub struct ServerCli {
 
   #[arg(long, env = "AFFINE_INDEXER_PASSWORD", default_value = "", hide_env_values = true)]
   pub search_password: String,
+  #[arg(long, env = "AFFINE_CONFIG_PATH")]
+  pub config_path: Option<PathBuf>,
 }
 
 impl Default for ServerCli {
@@ -227,6 +229,7 @@ impl Default for ServerCli {
       search_api_key: String::new(),
       search_username: String::new(),
       search_password: String::new(),
+      config_path: None,
     }
   }
 }
@@ -303,12 +306,16 @@ impl std::fmt::Debug for ServerCli {
   }
 }
 
-#[derive(Debug, Default, serde::Deserialize)]
+#[derive(Default, serde::Deserialize)]
 struct AffineConfigFile {
   #[serde(default)]
   server: Option<AffineConfigFileServer>,
   #[serde(default)]
   deployment: Option<AffineConfigFileDeployment>,
+  #[serde(default)]
+  auth: Option<serde_json::Value>,
+  #[serde(default)]
+  oauth: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -353,10 +360,14 @@ pub fn expand_module_config_paths(mut value: serde_json::Value) -> serde_json::V
   value
 }
 
-fn load_home_config_file() -> (AffineConfigFile, serde_json::Value) {
-  let path = std::env::var_os("AFFINE_CONFIG_PATH")
-    .filter(|p| !p.is_empty())
+fn load_home_config_file(override_path: Option<&std::path::Path>) -> (AffineConfigFile, serde_json::Value) {
+  let path = override_path
     .map(PathBuf::from)
+    .or_else(|| {
+      std::env::var_os("AFFINE_CONFIG_PATH")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+    })
     .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".affine/config/config.json")));
   let Some(raw_val) = path
     .and_then(|p| std::fs::read_to_string(p).ok())
@@ -568,7 +579,7 @@ async fn build_server_with_bound_port(
     None => generate_ephemeral_private_key(),
   };
 
-  let (file_cfg, file_json) = load_home_config_file();
+  let (file_cfg, file_json) = load_home_config_file(cli.config_path.as_deref());
   let server_name = file_cfg
     .server
     .as_ref()
@@ -732,11 +743,52 @@ async fn build_server_with_bound_port(
     }
   };
 
-  let auth_cfg = AuthConfig {
+  let mut auth_cfg = AuthConfig {
     server_name,
     private_key,
     ..AuthConfig::default()
   };
+  if let Some(a) = file_cfg.auth.as_ref() {
+    if let Some(v) = a.get("allowSignup").and_then(serde_json::Value::as_bool) {
+      auth_cfg.allow_signup = v;
+    }
+    if let Some(v) = a.get("allowSignupForOauth").and_then(serde_json::Value::as_bool) {
+      auth_cfg.allow_signup_for_oauth = v;
+    }
+    if let Some(v) = a
+      .get("requireEmailDomainVerification")
+      .and_then(serde_json::Value::as_bool)
+    {
+      auth_cfg.require_email_domain_verification = v;
+    }
+    if let Some(v) = a
+      .pointer("/passwordRequirements/min")
+      .and_then(serde_json::Value::as_u64)
+    {
+      auth_cfg.password_min_length = v as usize;
+    }
+    if let Some(v) = a
+      .pointer("/passwordRequirements/max")
+      .and_then(serde_json::Value::as_u64)
+    {
+      auth_cfg.password_max_length = v as usize;
+    }
+  }
+  if let Some(providers) = file_cfg
+    .oauth
+    .as_ref()
+    .and_then(|o| o.get("providers"))
+    .and_then(serde_json::Value::as_object)
+  {
+    for (raw_name, val) in providers {
+      let key = raw_name.trim().to_ascii_lowercase();
+      if let Ok(cfg) = serde_json::from_value::<server_domain::auth::oauth::OAuthProviderConfig>(val.clone())
+        && let Some(norm) = server_domain::auth::oauth::normalize_oauth_provider_config(&key, cfg)
+      {
+        auth_cfg.oauth_providers.insert(key, norm);
+      }
+    }
+  }
   let auth = AuthService::new(
     db.clone(),
     Arc::new(PhaseASessionRepository),

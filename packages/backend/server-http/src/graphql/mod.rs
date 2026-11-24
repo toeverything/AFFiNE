@@ -136,6 +136,7 @@ pub(crate) struct ResolvedGraphqlPrincipal {
 pub(crate) struct LazyGraphqlPrincipal {
   state: crate::RouterState,
   headers: axum::http::HeaderMap,
+  peer_addr: Option<std::net::SocketAddr>,
   resolved: Arc<
     tokio::sync::OnceCell<
       std::result::Result<ResolvedGraphqlPrincipal, crate::legacy_compat::errors::LegacyErrorEnvelope>,
@@ -146,14 +147,24 @@ pub(crate) struct LazyGraphqlPrincipal {
 }
 
 impl LazyGraphqlPrincipal {
-  pub(crate) fn new(state: crate::RouterState, headers: axum::http::HeaderMap) -> Self {
+  pub(crate) fn new(
+    state: crate::RouterState,
+    headers: axum::http::HeaderMap,
+    peer_addr: Option<std::net::SocketAddr>,
+  ) -> Self {
     Self {
       state,
       headers,
+      peer_addr,
       resolved: Arc::new(tokio::sync::OnceCell::new()),
       cookie_action: Arc::new(std::sync::Mutex::new(crate::rest::PrincipalCookieAction::None)),
       http_error: Arc::new(std::sync::Mutex::new(None)),
     }
+  }
+
+  #[allow(dead_code)]
+  pub(crate) fn peer_addr(&self) -> Option<std::net::SocketAddr> {
+    self.peer_addr
   }
 
   pub(crate) async fn resolve_once(

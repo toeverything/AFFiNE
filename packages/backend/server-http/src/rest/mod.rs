@@ -10,6 +10,7 @@ pub mod oauth;
 pub mod r2_proxy;
 pub mod static_files;
 pub mod telemetry;
+pub mod throttle;
 pub mod version_guard;
 pub mod worker_proxy;
 
@@ -34,7 +35,7 @@ pub const CSRF_COOKIE_NAME: &str = "affine_csrf_token";
 pub const SESSION_COOKIE_NAME: &str = "affine_session";
 pub const USER_ID_COOKIE_NAME: &str = "affine_user_id";
 
-const TRUSTED_REDIRECT_DOMAINS: &[&str] = &[
+pub(crate) const TRUSTED_REDIRECT_DOMAINS: &[&str] = &[
   "google.com",
   "stripe.com",
   "github.com",
@@ -475,7 +476,7 @@ pub(crate) async fn enforce_named_version_guard(
   Ok(())
 }
 
-fn build_allowed_origins(external_url: &str, server_hosts: &[String]) -> Vec<String> {
+pub(crate) fn build_allowed_origins(external_url: &str, server_hosts: &[String]) -> Vec<String> {
   let mut out = Vec::new();
   if let Ok(parsed) = url::Url::parse(external_url) {
     let scheme = parsed.scheme().to_owned();
@@ -563,6 +564,40 @@ pub fn validate_and_build_magic_link_callback_url(
   }
 
   Ok(parsed.into())
+}
+
+/// Resolves [`AuthRequestSource`] using the effective `auth.trustedCloudflareHeaders` flag.
+pub(crate) async fn resolve_auth_request_source(state: &RouterState, headers: &HeaderMap) -> AuthRequestSource {
+  let trusted_cf = state
+    .app
+    .app_config
+    .get_effective_app_config()
+    .await
+    .ok()
+    .and_then(|v| v.pointer("/auth/trustedCloudflareHeaders").and_then(|b| b.as_bool()))
+    .unwrap_or(false);
+  extract_request_source(headers, trusted_cf)
+}
+
+/// Validates that `raw` stays on the same origin and within the base path of
+/// `external_url` (matching `v0.27.5` `url.safeRedirect`); otherwise falls back
+/// to the full `baseUrl` (`origin + base_path`).
+pub fn evaluate_local_redirect(raw: &str, external_url: &str) -> String {
+  let Ok(base) = url::Url::parse(external_url) else {
+    return "/".to_owned();
+  };
+  let base_path = base.path().trim_end_matches('/');
+  let base_url = format!("{}{}", base.origin().ascii_serialization(), base_path);
+  let Ok(parsed) = parse_http_url_with_base(raw, external_url) else {
+    return base_url;
+  };
+  if parsed.origin() != base.origin() {
+    return base_url;
+  }
+  if !base_path.is_empty() && parsed.path() != base_path && !parsed.path().starts_with(&format!("{base_path}/")) {
+    return base_url;
+  }
+  parsed.into()
 }
 
 pub fn extract_request_source(headers: &HeaderMap, trusted_cloudflare_headers: bool) -> AuthRequestSource {

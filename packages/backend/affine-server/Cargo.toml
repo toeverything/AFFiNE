@@ -37,6 +37,9 @@ url.workspace                = true
 uuid.workspace               = true
 
 [dev-dependencies]
+base64.workspace          = true
+chrono.workspace          = true
+p256.workspace            = true
 serde_json.workspace      = true
 sqlx.workspace            = true
 test-db-harness.workspace = true

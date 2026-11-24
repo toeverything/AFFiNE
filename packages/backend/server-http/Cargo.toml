@@ -20,6 +20,7 @@ chrono.workspace             = true
 http.workspace               = true
 image.workspace              = true
 redis.workspace              = true
+ryu-js                       = "1.0.4"
 serde.workspace              = true
 serde_json.workspace         = true
 server-blob.workspace        = true

@@ -12,17 +12,18 @@ use server_domain::auth::{
 use server_types::DomainError;
 use uuid::Uuid;
 
+use super::throttle::{PeerAddr, ThrottleHeaders, ThrottleSpec, apply_throttle, enforce_throttle_http};
 use super::version_guard::extract_non_empty_client_version;
 use super::{
   CSRF_COOKIE_NAME, RequestPrincipal, SESSION_COOKIE_NAME, USER_ID_COOKIE_NAME, append_clear_auth_cookies,
   domain_error_to_http_response, enforce_named_version_guard, envelope_to_http_response, extract_cookie,
-  extract_request_source, format_http_date, json_utf8_response, parse_cookies, resolve_request_principal_with_policy,
-  validate_and_build_magic_link_callback_url,
+  format_http_date, json_utf8_response, parse_cookies, resolve_auth_request_source,
+  resolve_request_principal_with_policy, validate_and_build_magic_link_callback_url,
 };
 use crate::RouterState;
 use crate::legacy_compat::errors::LegacyErrorEnvelope;
 
-fn append_auth_cookies(headers: &mut HeaderMap, res: &CookieSignInResult, https: bool) {
+pub(crate) fn append_auth_cookies(headers: &mut HeaderMap, res: &CookieSignInResult, https: bool) {
   let expires = format_http_date(res.expires_at);
   let secure_attr = if https { "; Secure" } else { "" };
   let csrf_token = Uuid::new_v4().to_string();
@@ -131,14 +132,82 @@ struct SessionResponseDto {
   user: Option<SessionUserDto>,
 }
 
-pub(crate) async fn handle_get_session(State(state): State<RouterState>, headers: HeaderMap) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(resolved) => resolved,
-    Err(err) => return err.into_http_response(),
+async fn guard_public_auth(
+  state: &RouterState,
+  headers: &HeaderMap,
+  peer: Option<std::net::SocketAddr>,
+  spec: ThrottleSpec,
+  version_guard: bool,
+) -> Result<(super::ResolvedRequestPrincipal, Option<ThrottleHeaders>, bool), Box<Response>> {
+  let resolved = resolve_request_principal_with_policy(state, headers, true)
+    .await
+    .map_err(|e| Box::new(e.into_http_response()))?;
+  let https = state.app.config.load().https;
+  let throttle = match enforce_throttle_http(state, headers, peer, resolved.principal.as_ref(), spec).await {
+    Ok(h) => h,
+    Err(mut resp) => {
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return Err(resp);
+    }
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
+  if version_guard && let Err(mut resp) = enforce_named_version_guard(state, headers, &resolved.cookie_action).await {
+    apply_throttle(resp.headers_mut(), throttle);
+    return Err(resp);
   }
+  Ok((resolved, throttle, https))
+}
+
+async fn guard_authed_auth(
+  state: &RouterState,
+  headers: &HeaderMap,
+  peer: Option<std::net::SocketAddr>,
+  version_guard: bool,
+) -> Result<
+  (
+    RequestPrincipal,
+    super::PrincipalCookieAction,
+    Option<ThrottleHeaders>,
+    bool,
+  ),
+  Box<Response>,
+> {
+  let resolved = resolve_request_principal_with_policy(state, headers, false)
+    .await
+    .map_err(|e| Box::new(e.into_http_response()))?;
+  let https = state.app.config.load().https;
+  let Some(principal) = resolved.principal else {
+    let mut resp = domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return Err(Box::new(resp));
+  };
+  let throttle = match enforce_throttle_http(state, headers, peer, Some(&principal), ThrottleSpec::Strict).await {
+    Ok(h) => h,
+    Err(mut resp) => {
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return Err(resp);
+    }
+  };
+  if version_guard && let Err(mut resp) = enforce_named_version_guard(state, headers, &resolved.cookie_action).await {
+    apply_throttle(resp.headers_mut(), throttle);
+    return Err(resp);
+  }
+  Ok((principal, resolved.cookie_action, throttle, https))
+}
+
+pub(crate) async fn handle_get_session(
+  State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
+  headers: HeaderMap,
+) -> Response {
+  let spec = ThrottleSpec::DefaultCustom {
+    handler: "currentSessionUser",
+    limit: 1200,
+    ttl_ms: None,
+  };
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, spec, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
+  };
   let mut resp = json_utf8_response(
     StatusCode::OK,
     SessionResponseDto {
@@ -146,9 +215,8 @@ pub(crate) async fn handle_get_session(State(state): State<RouterState>, headers
     },
     true,
   );
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
@@ -170,17 +238,14 @@ fn invalid_email_response() -> Response {
 
 pub(crate) async fn handle_preflight(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
   let mut resp = match serde_json::from_slice::<PreflightBody>(&body_bytes) {
     Ok(body) => match canonical_email(&body.email) {
       Ok(email) => match state.app.auth.login_preflight(&email).await {
@@ -192,27 +257,25 @@ pub(crate) async fn handle_preflight(
     Err(_) => invalid_email_response(),
   };
   resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
-pub(crate) async fn handle_bound_methods(State(state): State<RouterState>, headers: HeaderMap) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+pub(crate) async fn handle_bound_methods(
+  State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
+  headers: HeaderMap,
+) -> Response {
+  let (principal, cookie_action, throttle, https) = match guard_authed_auth(&state, &headers, peer, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  let Some(principal) = resolved.principal else {
-    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
-  };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
   let mut resp = match state.app.auth.bound_methods(&principal.user().id).await {
     Ok(methods) => json_utf8_response(StatusCode::OK, methods, true),
     Err(err) => domain_error_to_http_response(&err),
   };
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
@@ -234,19 +297,24 @@ pub struct SignInBody {
 
 pub(crate) async fn handle_sign_in(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
+  let role = state.app.config.load().role;
+  if role != server_types::ServerRole::Front
+    && let Err(mut resp) = super::captcha::enforce_named_captcha_guard(&state, &headers, &resolved.cookie_action).await
+  {
+    apply_throttle(resp.headers_mut(), throttle);
     return *resp;
   }
-  let https = state.app.config.load().https;
   let apply_old_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   let body: SignInBody = match serde_json::from_slice(&body_bytes) {
@@ -305,6 +373,7 @@ pub(crate) async fn handle_sign_in(
         };
         let mut resp = json_utf8_response(StatusCode::OK, body, false);
         append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
+        apply_throttle(resp.headers_mut(), throttle);
         resp
       }
       Err(DomainError::Unauthorized(code)) if code == "wrong_sign_in_credentials" => {
@@ -353,15 +422,7 @@ pub(crate) async fn handle_sign_in(
     Err(err) => return apply_old_cookie(domain_error_to_http_response(&err)),
   };
 
-  let trusted_cf = state
-    .app
-    .app_config
-    .get_effective_app_config()
-    .await
-    .ok()
-    .and_then(|v| v.pointer("/auth/trustedCloudflareHeaders").and_then(|b| b.as_bool()))
-    .unwrap_or(false);
-  let source = extract_request_source(&headers, trusted_cf);
+  let source = resolve_auth_request_source(&state, &headers).await;
 
   let res = state
     .app
@@ -389,19 +450,22 @@ pub struct SignOutQuery {
 
 pub(crate) async fn handle_sign_out(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   Query(query): Query<SignOutQuery>,
   headers: HeaderMap,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (principal, cookie_action, throttle, https) = match guard_authed_auth(&state, &headers, peer, false).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  let Some(principal) = resolved.principal else {
-    let mut resp = json_utf8_response(StatusCode::OK, serde_json::json!({}), false);
-    resolved
-      .cookie_action
-      .apply_to(resp.headers_mut(), state.app.config.load().https);
-    return resp;
+  let finish = |mut resp: Response| -> Response {
+    apply_throttle(resp.headers_mut(), throttle);
+    resp
+  };
+  let finish_err = |mut resp: Response| -> Response {
+    cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
+    resp
   };
 
   let session_id = match principal {
@@ -414,9 +478,9 @@ pub(crate) async fn handle_sign_out(
         .revoke_auth_session(&auth_session_id, Some(&user.id), "current_device_sign_out")
         .await
       {
-        return domain_error_to_http_response(&err);
+        return finish_err(domain_error_to_http_response(&err));
       }
-      return json_utf8_response(StatusCode::OK, serde_json::json!({}), false);
+      return finish(json_utf8_response(StatusCode::OK, serde_json::json!({}), false));
     }
     RequestPrincipal::Cookie { session_id, .. } => session_id,
   };
@@ -430,9 +494,9 @@ pub(crate) async fn handle_sign_out(
     .filter(|s| !s.is_empty());
 
   if csrf_cookie.is_none() || csrf_header.is_none() || csrf_cookie != csrf_header {
-    return domain_error_to_http_response(&DomainError::Forbidden(
+    return finish_err(domain_error_to_http_response(&DomainError::Forbidden(
       "You are not allowed to perform this action.".into(),
-    ));
+    )));
   }
 
   if let Err(err) = state
@@ -441,21 +505,22 @@ pub(crate) async fn handle_sign_out(
     .sign_out_cookie(&session_id, query.user_id.as_deref())
     .await
   {
-    return domain_error_to_http_response(&err);
+    return finish_err(domain_error_to_http_response(&err));
   }
 
   let remaining = match state.app.auth.list_cookie_session_users(&session_id).await {
     Ok(users) => users,
-    Err(err) => return domain_error_to_http_response(&err),
+    Err(err) => return finish_err(domain_error_to_http_response(&err)),
   };
 
   let mut resp = json_utf8_response(StatusCode::OK, serde_json::json!({}), false);
   if let Some(last_user_id) = remaining.last() {
+    cookie_action.apply_to(resp.headers_mut(), https);
     append_user_id_cookie(resp.headers_mut(), last_user_id);
   } else {
     append_clear_auth_cookies(resp.headers_mut());
   }
-  resp
+  finish(resp)
 }
 
 #[derive(Debug, Deserialize)]
@@ -480,19 +545,17 @@ fn email_token_not_found_response() -> Response {
 
 pub(crate) async fn handle_complete_magic_link(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
   let apply_old_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   let body: MagicLinkCompleteBody = match serde_json::from_slice(&body_bytes) {
@@ -540,6 +603,7 @@ pub(crate) async fn handle_complete_magic_link(
       };
       let mut resp = json_utf8_response(StatusCode::CREATED, body, false);
       append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
+      apply_throttle(resp.headers_mut(), throttle);
       resp
     }
     Err(DomainError::Unauthorized(code)) if code == "invalid_auth_state" => {
@@ -582,19 +646,19 @@ fn invalid_auth_state_response() -> Response {
 }
 
 /// Issues a one-time Open-App sign-in code (`POST /api/auth/open-app/sign-in-code`).
-pub(crate) async fn handle_open_app_sign_in_code(State(state): State<RouterState>, headers: HeaderMap) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+pub(crate) async fn handle_open_app_sign_in_code(
+  State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
+  headers: HeaderMap,
+) -> Response {
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
   let Some(principal) = resolved.principal else {
     let mut resp = domain_error_to_http_response(&DomainError::Forbidden("Action forbidden.".into()));
-    resolved
-      .cookie_action
-      .apply_to(resp.headers_mut(), state.app.config.load().https);
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     return resp;
   };
   let user = principal.into_user();
@@ -603,28 +667,25 @@ pub(crate) async fn handle_open_app_sign_in_code(State(state): State<RouterState
     Err(DomainError::Unauthorized(_)) => invalid_auth_state_response(),
     Err(err) => domain_error_to_http_response(&err),
   };
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
 /// Redeems a one-time Open-App sign-in code (`POST /api/auth/open-app/sign-in`).
 pub(crate) async fn handle_open_app_sign_in(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
   let apply_old_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   let body: OpenAppSignInBody = match serde_json::from_slice::<OpenAppSignInBody>(&body_bytes) {
@@ -649,6 +710,7 @@ pub(crate) async fn handle_open_app_sign_in(
       let payload = serde_json::json!({ "id": user.id, "exchangeCode": exchange_code });
       let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
       append_clear_auth_cookies(resp.headers_mut());
+      apply_throttle(resp.headers_mut(), throttle);
       resp
     }
     Ok(server_domain::auth::OpenAppSignInResult::Cookie(sign_in)) => {
@@ -656,6 +718,7 @@ pub(crate) async fn handle_open_app_sign_in(
       let payload = serde_json::json!({ "id": sign_in.user.id });
       let mut resp = json_utf8_response(StatusCode::CREATED, payload, false);
       append_auth_cookies(resp.headers_mut(), &sign_in, cfg.https);
+      apply_throttle(resp.headers_mut(), throttle);
       resp
     }
     Err(DomainError::Unauthorized(_)) => apply_old_cookie(invalid_auth_state_response()),
@@ -663,7 +726,7 @@ pub(crate) async fn handle_open_app_sign_in(
   }
 }
 
-fn is_native_client_request(headers: &HeaderMap) -> bool {
+pub(crate) fn is_native_client_request(headers: &HeaderMap) -> bool {
   let kind = headers
     .get("x-affine-client-kind")
     .and_then(|v| v.to_str().ok())
@@ -743,19 +806,17 @@ fn is_zod_uuid(s: &str) -> bool {
 
 pub(crate) async fn handle_exchange_session(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
   let apply_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   if !is_native_client_request(&headers) {
@@ -840,19 +901,22 @@ fn extract_refresh_attempt(headers: &HeaderMap) -> Result<Option<String>, Box<Re
 
 pub(crate) async fn handle_refresh_session(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let spec = ThrottleSpec::DefaultCustom {
+    handler: "refreshAuthSession",
+    limit: 120,
+    ttl_ms: Some(60_000),
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, spec, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
+  };
   let apply_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   if !is_native_client_request(&headers) {
@@ -948,19 +1012,17 @@ pub(crate) async fn handle_refresh_session(
 
 pub(crate) async fn handle_revoke_current_session(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   headers: HeaderMap,
   body_bytes: Bytes,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
+  let (resolved, throttle, https) = match guard_public_auth(&state, &headers, peer, ThrottleSpec::Strict, true).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
-  if let Err(resp) = enforce_named_version_guard(&state, &headers, &resolved.cookie_action).await {
-    return *resp;
-  }
-  let https = state.app.config.load().https;
   let apply_cookie = |mut resp: Response| -> Response {
     resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     resp
   };
   if !is_native_client_request(&headers) {
@@ -993,13 +1055,14 @@ pub(crate) async fn handle_revoke_current_session(
   apply_cookie(resp)
 }
 
-pub(crate) async fn handle_list_auth_sessions(State(state): State<RouterState>, headers: HeaderMap) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
-  };
-  let Some(principal) = resolved.principal else {
-    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+pub(crate) async fn handle_list_auth_sessions(
+  State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
+  headers: HeaderMap,
+) -> Response {
+  let (principal, cookie_action, throttle, https) = match guard_authed_auth(&state, &headers, peer, false).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
   let current_id = match &principal {
     RequestPrincipal::Bearer { auth_session_id, .. } => Some(auth_session_id.as_str()),
@@ -1022,26 +1085,25 @@ pub(crate) async fn handle_list_auth_sessions(State(state): State<RouterState>, 
     }
     Err(err) => domain_error_to_http_response(&err),
   };
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
-pub(crate) async fn handle_revoke_all_sessions(State(state): State<RouterState>, headers: HeaderMap) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
-  };
-  let Some(principal) = resolved.principal else {
-    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+pub(crate) async fn handle_revoke_all_sessions(
+  State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
+  headers: HeaderMap,
+) -> Response {
+  let (principal, cookie_action, throttle, https) = match guard_authed_auth(&state, &headers, peer, false).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
   if matches!(principal, RequestPrincipal::Cookie { .. })
     && let Err(mut resp) = verify_cookie_csrf(&headers)
   {
-    resolved
-      .cookie_action
-      .apply_to(resp.headers_mut(), state.app.config.load().https);
+    cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     return *resp;
   }
   let mut resp = match state
@@ -1053,44 +1115,32 @@ pub(crate) async fn handle_revoke_all_sessions(State(state): State<RouterState>,
     Ok(()) => auth_session_json_response(StatusCode::CREATED, serde_json::json!({})),
     Err(err) => domain_error_to_http_response(&err),
   };
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
 
 pub(crate) async fn handle_revoke_auth_session_by_id(
   State(state): State<RouterState>,
+  PeerAddr(peer): PeerAddr,
   Path(auth_session_id): Path<String>,
   headers: HeaderMap,
 ) -> Response {
-  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
-    Ok(r) => r,
-    Err(err) => return err.into_http_response(),
-  };
-  let Some(principal) = resolved.principal else {
-    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+  let (principal, cookie_action, throttle, https) = match guard_authed_auth(&state, &headers, peer, false).await {
+    Ok(v) => v,
+    Err(resp) => return *resp,
   };
   if !is_zod_uuid(&auth_session_id) {
-    let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
-      status: StatusCode::BAD_REQUEST.as_u16(),
-      code: "Bad Request".into(),
-      error_type: "BAD_REQUEST".into(),
-      name: "INVALID_AUTH_STATE".into(),
-      message: "Invalid auth state.".into(),
-      data: None,
-    });
-    resolved
-      .cookie_action
-      .apply_to(resp.headers_mut(), state.app.config.load().https);
+    let mut resp = invalid_auth_state_response();
+    cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     return resp;
   }
   if matches!(principal, RequestPrincipal::Cookie { .. })
     && let Err(mut resp) = verify_cookie_csrf(&headers)
   {
-    resolved
-      .cookie_action
-      .apply_to(resp.headers_mut(), state.app.config.load().https);
+    cookie_action.apply_to(resp.headers_mut(), https);
+    apply_throttle(resp.headers_mut(), throttle);
     return *resp;
   }
   let mut resp = match state
@@ -1102,8 +1152,7 @@ pub(crate) async fn handle_revoke_auth_session_by_id(
     Ok(_) => auth_session_json_response(StatusCode::OK, serde_json::json!({})),
     Err(err) => domain_error_to_http_response(&err),
   };
-  resolved
-    .cookie_action
-    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  cookie_action.apply_to(resp.headers_mut(), https);
+  apply_throttle(resp.headers_mut(), throttle);
   resp
 }
