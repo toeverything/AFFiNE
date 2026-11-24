@@ -514,6 +514,10 @@ impl WorkspaceType {
     super::search::resolve_workspace_search_docs(ctx, &self.record.id, input).await
   }
 
+  async fn calendars(&self, ctx: &Context<'_>) -> Result<Vec<super::calendar::WorkspaceCalendarObjectType>> {
+    super::calendar::resolve_workspace_calendars(ctx, &self.record.id).await
+  }
+
   async fn public_docs(&self, ctx: &Context<'_>) -> Result<Vec<super::doc::DocType>> {
     let state = ctx.data_unchecked::<Arc<AppState>>();
     let actor = current_authenticated_user(ctx).map(|a| a.user_id);

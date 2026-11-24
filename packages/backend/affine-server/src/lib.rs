@@ -1093,6 +1093,27 @@ where
     )
     .await;
 
+    let cal_svc = built.state.calendar.clone();
+    server_worker::spawn_locked_periodic_task(
+      &built.supervisor,
+      built.session_mutex.clone(),
+      "calendar:sync-poll",
+      "calendar-sync",
+      Duration::from_secs(60),
+      120,
+      move |lease_cancel| {
+        let svc = cal_svc.clone();
+        async move {
+          if !lease_cancel.is_cancelled()
+            && let Err(err) = server_domain::calendar::sync::poll_due_calendar_subscriptions(&svc).await
+          {
+            tracing::warn!(error = %err, "calendar sync poll tick failed");
+          }
+        }
+      },
+    )
+    .await;
+
     if built.state.config.load().deployment_mode == DeploymentMode::Selfhosted {
       let startup_licenses = built.state.licenses.clone();
       built

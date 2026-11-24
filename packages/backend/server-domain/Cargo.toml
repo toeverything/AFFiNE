@@ -12,6 +12,7 @@ argon2.workspace       = true
 async-trait.workspace  = true
 base64.workspace       = true
 chrono.workspace           = true
+futures-util.workspace     = true
 hex.workspace              = true
 hickory-resolver.workspace = true
 hkdf.workspace             = true

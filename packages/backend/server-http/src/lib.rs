@@ -21,6 +21,8 @@ use server_db::ServerDb;
 use server_db::phase_a_compat::sessions::PhaseASessionRepository;
 use server_domain::app_config::{AppConfigService, RuntimeAppConfigBaseline};
 use server_domain::auth::{AuthConfig, AuthService};
+use server_domain::calendar::CalendarService;
+use server_domain::calendar::oauth::CalendarOAuthStore;
 use server_domain::comments::CommentService;
 use server_domain::doc_sharing::DocSharingService;
 use server_domain::events::{EventBusPublisher, InvalidationPublisher, NoopEventPublisher};
@@ -121,6 +123,9 @@ pub struct AppState {
   pub event_bus: Arc<dyn EventBusPublisher>,
   pub avatar_transcode_sem: Arc<tokio::sync::Semaphore>,
   pub strict_throttler: Arc<rest::throttle::StrictThrottler>,
+  pub calendar_webhook_token: Arc<std::sync::Mutex<Option<String>>>,
+  pub calendar: CalendarService,
+  pub calendar_oauth: Option<CalendarOAuthStore>,
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -240,6 +245,14 @@ impl AppState {
     services: AppServices,
   ) -> Arc<Self> {
     let admin = server_domain::admin::AdminService::new(db.clone());
+    let calendar_webhook_token = Arc::new(std::sync::Mutex::new(None));
+    let calendar = CalendarService::new(
+      db.clone(),
+      services.auth.config().private_key.clone(),
+      config.external_url.clone(),
+    )
+    .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
+    let calendar_oauth = CalendarOAuthStore::new(redis.clone(), config.session_redis_db_index).ok();
     Arc::new(Self {
       db,
       redis,
@@ -263,6 +276,9 @@ impl AppState {
       event_bus: services.event_bus,
       avatar_transcode_sem: Arc::new(tokio::sync::Semaphore::new(4)),
       strict_throttler: Arc::new(rest::throttle::StrictThrottler::new()),
+      calendar_webhook_token,
+      calendar,
+      calendar_oauth,
     })
   }
 

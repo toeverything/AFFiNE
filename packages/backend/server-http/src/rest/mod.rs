@@ -476,24 +476,51 @@ pub(crate) async fn enforce_named_version_guard(
   Ok(())
 }
 
-pub(crate) fn build_allowed_origins(external_url: &str, server_hosts: &[String]) -> Vec<String> {
-  let mut out = Vec::new();
-  if let Ok(parsed) = url::Url::parse(external_url) {
-    let scheme = parsed.scheme().to_owned();
-    out.push(parsed.origin().ascii_serialization());
-    for host in server_hosts {
-      let host = host.trim().trim_end_matches('/');
-      if host.is_empty() {
-        continue;
-      }
-      if host.starts_with("http://") || host.starts_with("https://") {
-        out.push(host.to_owned());
-      } else {
-        out.push(format!("{scheme}://{host}"));
-      }
-    }
+fn extract_hostname(raw: &str) -> Option<String> {
+  let t = raw.trim();
+  if t.is_empty() {
+    return None;
   }
-  out
+  if let Some(rest) = t.strip_prefix('[') {
+    let inner = rest[..rest.find(']')?].trim();
+    return (!inner.is_empty()).then(|| inner.to_owned());
+  }
+  let h = match t.split_once(':') {
+    Some((h, tail)) if !tail.contains(':') => h.trim(),
+    _ => t,
+  };
+  (!h.is_empty()).then(|| h.to_owned())
+}
+fn convert_host_to_origin(scheme: &str, host: &str, port: Option<u16>) -> String {
+  let host = host.trim().trim_end_matches('/');
+  if host.starts_with("http://") || host.starts_with("https://") {
+    return host.to_owned();
+  }
+  let is_v6 = host.parse::<std::net::Ipv6Addr>().is_ok();
+  let is_local = host.eq_ignore_ascii_case("localhost") || host.parse::<std::net::IpAddr>().is_ok();
+  let fmt_host = if is_v6 { format!("[{host}]") } else { host.to_owned() };
+  match port {
+    Some(p) if p != 0 && is_local => format!("{scheme}://{fmt_host}:{p}"),
+    _ => format!("{scheme}://{fmt_host}"),
+  }
+}
+pub(crate) fn build_allowed_origins_with_port(ext: &str, hosts: &[String], port: Option<u16>) -> Vec<String> {
+  let Ok(parsed) = url::Url::parse(ext) else {
+    return Vec::new();
+  };
+  let scheme = parsed.scheme();
+  std::iter::once(parsed.origin().ascii_serialization())
+    .chain(
+      hosts
+        .iter()
+        .map(|h| h.trim().trim_end_matches('/'))
+        .filter(|h| !h.is_empty())
+        .map(|h| convert_host_to_origin(scheme, h, port)),
+    )
+    .collect()
+}
+pub(crate) fn build_allowed_origins(external_url: &str, server_hosts: &[String]) -> Vec<String> {
+  build_allowed_origins_with_port(external_url, server_hosts, None)
 }
 
 fn parse_http_url_with_base(input: &str, base_url: &str) -> Result<url::Url, DomainError> {
@@ -530,6 +557,75 @@ fn matches_trusted_redirect_domain(url: &url::Url) -> bool {
   TRUSTED_REDIRECT_DOMAINS.iter().any(|domain| {
     hostname.eq_ignore_ascii_case(domain) || hostname.to_ascii_lowercase().ends_with(&format!(".{domain}"))
   })
+}
+
+pub(crate) fn calendar_request_origin(
+  external_url: &str,
+  server_hosts: &[String],
+  server_port: u16,
+  request_host: Option<&str>,
+) -> Option<(String, String)> {
+  let ext = url::Url::parse(external_url).ok()?;
+  let path = ext.path().trim_end_matches('/').to_owned();
+  let origin = if !server_hosts.is_empty()
+    && let Some(req_hostname) = request_host.and_then(extract_hostname)
+    && let Some(matched) = server_hosts
+      .iter()
+      .map(|h| h.trim())
+      .find(|h| !h.is_empty() && h.eq_ignore_ascii_case(&req_hostname))
+  {
+    convert_host_to_origin(ext.scheme(), matched, Some(server_port))
+  } else {
+    ext.origin().ascii_serialization()
+  };
+  Some((origin, path))
+}
+
+pub(crate) fn calendar_callback_origin(
+  external_url: &str,
+  server_hosts: &[String],
+  server_port: u16,
+  request_host: Option<&str>,
+) -> String {
+  calendar_request_origin(external_url, server_hosts, server_port, request_host)
+    .map(|(origin, _)| origin)
+    .unwrap_or_else(|| external_url.to_owned())
+}
+
+pub(crate) fn validate_and_build_calendar_redirect_uri(
+  raw: &str,
+  external_url: &str,
+  server_hosts: &[String],
+  server_port: u16,
+  request_host: Option<&str>,
+  extra_query: &[(&str, &str)],
+) -> Result<String, DomainError> {
+  let forbid = || DomainError::Forbidden("URL is not allowed".to_owned());
+  if raw.is_empty() {
+    return Err(forbid());
+  }
+  let (req_origin, _) =
+    calendar_request_origin(external_url, server_hosts, server_port, request_host).ok_or_else(forbid)?;
+  let base = url::Url::parse(&req_origin).map_err(|_| forbid())?;
+  let mut parsed = base.join(raw).map_err(|_| forbid())?;
+  let allowed = build_allowed_origins_with_port(external_url, server_hosts, Some(server_port));
+  if !matches!(parsed.scheme(), "http" | "https")
+    || !parsed.username().is_empty()
+    || parsed.password().is_some()
+    || (!has_allowed_origin(&parsed, &allowed) && !matches_trusted_redirect_domain(&parsed))
+  {
+    return Err(forbid());
+  }
+  if !extra_query.is_empty() {
+    let mut kept: Vec<(String, String)> = parsed
+      .query_pairs()
+      .filter(|(k, _)| !extra_query.iter().any(|(ek, _)| ek == k))
+      .map(|(k, v)| (k.into_owned(), v.into_owned()))
+      .collect();
+    kept.extend(extra_query.iter().map(|&(k, v)| (k.to_owned(), v.to_owned())));
+    parsed.query_pairs_mut().clear().extend_pairs(kept);
+  }
+  Ok(parsed.into())
 }
 
 pub fn validate_and_build_magic_link_callback_url(

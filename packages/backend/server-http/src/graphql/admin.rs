@@ -15,6 +15,9 @@ use server_domain::safe_fetch::{SafeFetchPolicy, SafeFetchRequest, safe_fetch};
 use server_mail::{MailSendResult, MailTemplate, SmtpConfig, SmtpMailer, TestMailProps};
 use server_types::{DeploymentMode, DomainError};
 
+use super::calendar::{
+  CalendarCalDAVProviderPresetObjectType, resolve_server_caldav_providers, resolve_server_calendar_providers,
+};
 use super::doc::{PageInfo, PaginationInput};
 use super::user::{
   CreateUserInput, ImportUsersInput, ListUserInput, ManageUserInput, UserImportResultType, UserType, WorkspaceUserType,
@@ -119,7 +122,6 @@ pub struct ServerConfigType {
   pub initialized: bool,
   pub base_url: String,
   pub features: Vec<ServerFeature>,
-  pub calendar_providers: Vec<CalendarProviderType>,
   pub credentials_requirement: CredentialsRequirementType,
   pub available_user_features: Vec<FeatureType>,
   pub oauth_providers: Vec<OAuthProviderType>,
@@ -204,6 +206,15 @@ impl ServerConfigType {
       guard.insert(cache_key, (Instant::now(), computed.clone()));
     }
     computed
+  }
+
+  async fn calendar_providers(&self, ctx: &Context<'_>) -> Result<Vec<CalendarProviderType>> {
+    resolve_server_calendar_providers(ctx).await
+  }
+
+  #[graphql(name = "calendarCalDAVProviders")]
+  async fn calendar_caldav_providers(&self, ctx: &Context<'_>) -> Result<Vec<CalendarCalDAVProviderPresetObjectType>> {
+    resolve_server_caldav_providers(ctx).await
   }
 }
 
@@ -777,7 +788,6 @@ pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerCon
     initialized,
     base_url: cfg.external_url.clone(),
     features,
-    calendar_providers: Vec::new(),
     credentials_requirement: CredentialsRequirementType {
       password: PasswordLimitsType {
         min_length: password_min,

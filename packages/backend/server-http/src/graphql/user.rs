@@ -291,6 +291,10 @@ impl UserType {
       refresh: String::new(),
     })
   }
+
+  async fn calendar_accounts(&self, ctx: &Context<'_>) -> Result<Vec<super::calendar::CalendarAccountObjectType>> {
+    super::calendar::resolve_user_calendar_accounts(ctx, &self.view.id).await
+  }
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
