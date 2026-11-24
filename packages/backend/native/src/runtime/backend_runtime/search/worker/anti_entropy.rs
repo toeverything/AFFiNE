@@ -5,7 +5,7 @@ use sqlx::{PgPool, Row};
 
 use super::{
   ActiveGeneration, RECONCILE_BATCH, SearchProvider, SearchTable, WorkspacePhase, WorkspaceReconcileContext,
-  WorkspaceStep, project_document, renew_workspace_lease, upsert_document,
+  WorkspaceStep, begin_generation_write, project_document, renew_workspace_lease, upsert_document,
 };
 use crate::{
   runtime::{RuntimeError, RuntimeResult},
@@ -102,14 +102,7 @@ pub(in crate::runtime::backend_runtime::search) async fn sweep_generation_orphan
 }
 
 pub(super) async fn capture_orphan_gc_high_water(pool: &PgPool, workspace_id: &str) -> RuntimeResult<Option<i64>> {
-  let mut transaction = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("begin generation orphan GC fence", error))?;
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
-    .execute(&mut *transaction)
-    .await
-    .map_err(|error| RuntimeError::database("lock generation orphan GC fence", error))?;
+  let mut transaction = begin_generation_write(pool).await?;
   let workspace_exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM workspaces WHERE id=$1)")
     .bind(workspace_id)
     .fetch_one(&mut *transaction)

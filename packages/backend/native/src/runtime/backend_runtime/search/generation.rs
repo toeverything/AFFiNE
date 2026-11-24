@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
@@ -28,6 +30,34 @@ impl ActiveGeneration {
   }
 }
 
+pub(super) async fn begin_generation_write(pool: &PgPool) -> RuntimeResult<sqlx::Transaction<'static, sqlx::Postgres>> {
+  tokio::time::timeout(Duration::from_secs(5), async {
+    loop {
+      let mut tx = pool
+        .begin()
+        .await
+        .map_err(|err| RuntimeError::database("begin search generation write", err))?;
+      // A queued exclusive lock would also block unrelated snapshot writers
+      // taking the shared lock.
+      let acquired = sqlx::query_scalar::<_, bool>(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended('search-projection-generation', 0))",
+      )
+      .fetch_one(&mut *tx)
+      .await
+      .map_err(|err| RuntimeError::database("lock search generation", err))?;
+      if acquired {
+        return Ok(tx);
+      }
+      tx.rollback()
+        .await
+        .map_err(|err| RuntimeError::database("release search generation transaction", err))?;
+      tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+  })
+  .await
+  .map_err(|_| RuntimeError::SearchIndexNotReady)?
+}
+
 pub(super) async fn ensure(
   pool: &PgPool,
   config: &SearchRuntimeConfig,
@@ -36,14 +66,7 @@ pub(super) async fn ensure(
 ) -> RuntimeResult<ActiveGeneration> {
   let expected_config_hash = config_hash(config);
   let expected_provider_identity = provider_identity(config);
-  let mut transaction = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("begin search generation", error))?;
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
-    .execute(&mut *transaction)
-    .await
-    .map_err(|error| RuntimeError::database("lock search generation", error))?;
+  let mut transaction = begin_generation_write(pool).await?;
   sqlx::query(
     r#"UPDATE search_projection.generations
        SET manifest=jsonb_set(manifest,'{providerIdentity}',to_jsonb($1::text),true)
@@ -308,14 +331,7 @@ pub(super) async fn activate(
   config: &SearchRuntimeConfig,
 ) -> RuntimeResult<()> {
   let expected_config_hash = config_hash(config);
-  let mut transaction = pool
-    .begin()
-    .await
-    .map_err(|error| RuntimeError::database("begin search generation activation", error))?;
-  sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
-    .execute(&mut *transaction)
-    .await
-    .map_err(|error| RuntimeError::database("lock search generation activation", error))?;
+  let mut transaction = begin_generation_write(pool).await?;
   let row = sqlx::query(
     r#"SELECT generation.state,generation.provider,generation.config_hash,generation.schema_version,
               generation.scan_high_water_sid IS NOT NULL

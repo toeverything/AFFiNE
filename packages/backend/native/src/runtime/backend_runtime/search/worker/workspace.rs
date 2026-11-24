@@ -463,15 +463,23 @@ mod tests {
       .await
       .unwrap();
     let mut blocker = pool.begin().await.unwrap();
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('search-projection-generation', 0))")
+    sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('search-projection-generation', 0))")
       .execute(&mut *blocker)
       .await
       .unwrap();
-    let sweep_pool = pool.clone();
+    let sweep_pool = sqlx::postgres::PgPoolOptions::new()
+      .max_connections(1)
+      .connect(&database_url)
+      .await
+      .unwrap();
+    let sweep_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+      .fetch_one(&sweep_pool)
+      .await
+      .unwrap();
     let sweep_embedded = Arc::clone(&embedded);
     let sweep_generation = generation.clone();
     let sweep_workspace_id = race_workspace_id.clone();
-    let mut sweep = tokio::spawn(async move {
+    let sweep = tokio::spawn(async move {
       reconcile_workspace(
         &sweep_pool,
         &sweep_embedded,
@@ -482,23 +490,39 @@ mod tests {
       .await
       .unwrap()
     });
-    // Recreate only after the sweep reaches the held GC fence.
-    let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
-      .fetch_one(&mut *blocker)
+    // Wait for the sweep's first lock attempt before sending another snapshot
+    // writer.
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+      loop {
+        let attempted: bool = sqlx::query_scalar(
+          "SELECT query = 'ROLLBACK' OR wait_event IS NOT DISTINCT FROM 'advisory' FROM pg_stat_activity WHERE pid=$1",
+        )
+        .bind(sweep_pid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        if attempted {
+          break;
+        }
+        assert!(!sweep.is_finished());
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+      }
+    })
+    .await
+    .unwrap();
+    let mut writer = pool.begin().await.unwrap();
+    sqlx::query("SET LOCAL lock_timeout = '1s'")
+      .execute(&mut *writer)
       .await
       .unwrap();
-    loop {
-      tokio::select! {
-        result = &mut sweep => panic!("workspace sweep finished before the GC fence: {result:?}"),
-        blocked = sqlx::query_scalar::<_, bool>(
-          "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))",
-        ).bind(blocker_pid).fetch_one(&pool) => {
-          if blocked.unwrap() {
-            break;
-          }
-        }
-      }
-    }
+    sqlx::query(
+      "INSERT INTO snapshots(workspace_id,guid,blob,updated_at) VALUES($1,'unrelated',decode('00','hex'),now())",
+    )
+    .bind(format!("other-{suffix}"))
+    .execute(&mut *writer)
+    .await
+    .unwrap();
+    writer.rollback().await.unwrap();
     sqlx::query("INSERT INTO workspaces(id) VALUES($1)")
       .bind(&race_workspace_id)
       .execute(&pool)
