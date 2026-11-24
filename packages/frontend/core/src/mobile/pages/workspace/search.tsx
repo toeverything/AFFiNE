@@ -114,6 +114,7 @@ const WithQueryList = () => {
         .filter(item => item.id !== 'search-locally')
         .map(item => ({
           id: item.payload.docId,
+          blockId: item.payload.blockId,
           icon: item.icon,
           title: <SearchResLabel item={item} />,
         })),
