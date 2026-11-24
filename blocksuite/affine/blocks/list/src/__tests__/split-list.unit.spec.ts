@@ -40,41 +40,39 @@ const getLists = (host: ReturnType<typeof setup>) =>
     );
 
 describe('splitListCommand', () => {
-  it('moves the children with the text when a collapsed list is split at the start', () => {
-    const host = setup(true);
+  it.each([
+    {
+      name: 'moves the children with the text when a collapsed list is split at the start',
+      collapsed: true,
+      inlineIndex: 0,
+      top: { text: '', children: 0, collapsed: false },
+      bottom: { text: 'parent', children: 1, collapsed: true },
+    },
+    {
+      name: 'moves the children with the text when an expanded list is split at the start',
+      collapsed: false,
+      inlineIndex: 0,
+      top: { text: '', children: 0, collapsed: false },
+      bottom: { text: 'parent', children: 1, collapsed: false },
+    },
+    {
+      name: 'keeps the children under the first line when a collapsed list is split in the middle',
+      collapsed: true,
+      inlineIndex: 3,
+      top: { text: 'par', children: 1, collapsed: true },
+      bottom: { text: 'ent', children: 0, collapsed: false },
+    },
+  ])('$name', ({ collapsed, inlineIndex, top, bottom }) => {
+    const host = setup(collapsed);
 
-    host.command.exec(splitListCommand, { blockId: 'parent', inlineIndex: 0 });
+    host.command.exec(splitListCommand, { blockId: 'parent', inlineIndex });
 
-    const [top, bottom] = getLists(host);
-    expect(getLists(host)).toHaveLength(2);
-    expect(top.props.text.toString()).toBe('');
-    expect(top.children).toHaveLength(0);
-    expect(bottom.props.text.toString()).toBe('parent');
-    expect(bottom.children).toHaveLength(1);
-    expect(bottom.props.collapsed).toBe(true);
-  });
-
-  it('moves the children with the text when an expanded list is split at the start', () => {
-    const host = setup(false);
-
-    host.command.exec(splitListCommand, { blockId: 'parent', inlineIndex: 0 });
-
-    const [top, bottom] = getLists(host);
-    expect(top.props.text.toString()).toBe('');
-    expect(top.children).toHaveLength(0);
-    expect(bottom.props.text.toString()).toBe('parent');
-    expect(bottom.children).toHaveLength(1);
-  });
-
-  it('keeps the children under the first line when a collapsed list is split in the middle', () => {
-    const host = setup(true);
-
-    host.command.exec(splitListCommand, { blockId: 'parent', inlineIndex: 3 });
-
-    const [top, bottom] = getLists(host);
-    expect(top.props.text.toString()).toBe('par');
-    expect(top.children).toHaveLength(1);
-    expect(bottom.props.text.toString()).toBe('ent');
-    expect(bottom.children).toHaveLength(0);
+    expect(
+      getLists(host).map(list => ({
+        text: list.props.text.toString(),
+        children: list.children.length,
+        collapsed: list.props.collapsed,
+      }))
+    ).toEqual([top, bottom]);
   });
 });
