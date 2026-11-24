@@ -139,6 +139,12 @@ fn non_admin_rejected_on_all_admin_queries_and_mutations() {
       r#"{ usersCount }"#,
       r#"{ userById(id: "u1") { id } }"#,
       r#"{ userByEmail(email: "member@affine.test") { id } }"#,
+      r#"{ adminWorkspaces(filter: { first: 10, skip: 0 }) { id } }"#,
+      r#"{ adminWorkspacesCount(filter: { first: 10, skip: 0 }) }"#,
+      r#"{ adminWorkspace(id: "ws1") { id } }"#,
+      r#"{ adminDashboard { syncActiveUsers } }"#,
+      r#"{ adminAllSharedLinks(pagination: { first: 10 }) { edges { cursor } } }"#,
+      r#"{ adminMailDeliveries { summary { total } } }"#,
       r#"{ appConfig }"#,
       r#"{ appConfigMetadata }"#,
       r#"{ validateAppConfig(updates: [{ module: "flags", key: "allowGuestDemoWorkspace", value: false }]) { valid } }"#,
@@ -148,6 +154,7 @@ fn non_admin_rejected_on_all_admin_queries_and_mutations() {
       r#"mutation { enableUser(id: "u1") { id } }"#,
       r#"mutation { updateUserFeatures(id: "u1", features: [Admin]) }"#,
       r#"mutation { importUsers(input: { users: [{ email: "imp@affine.test" }] }) { __typename } }"#,
+      r#"mutation { adminUpdateWorkspace(input: { id: "ws1", enableAi: false }) { id } }"#,
       r#"mutation { updateAppConfig(updates: [{ module: "flags", key: "allowGuestDemoWorkspace", value: false }]) }"#,
     ];
 
@@ -921,6 +928,49 @@ fn doc_analytics_viewers_server_config_capabilities_and_invitation_notifications
     assert!(features_after.contains(&json!("OAuth")));
     assert!(features_after.contains(&json!("Captcha")));
 
+    // 4b. In Selfhosted mode, the 6 Cloud-only admin console ops return 404 (and adminUpdateWorkspace does 0 DB writes),
+    // while adminMailDeliveries remains open.
+    let cloud_only_ops = [
+      r#"{ adminWorkspacesCount(filter: { first: 10, skip: 0 }) }"#,
+      r#"{ adminWorkspaces(filter: { first: 10, skip: 0 }) { id } }"#,
+      r#"{ adminWorkspace(id: "ws-any") { id } }"#,
+      r#"{ adminDashboard { syncActiveUsers } }"#,
+      r#"{ adminAllSharedLinks(pagination: { first: 10 }) { edges { cursor } } }"#,
+    ];
+    for op in cloud_only_ops {
+      let (_, resp) = post_graphql(&app, Some(&owner_cookie), op, json!({})).await;
+      assert_eq!(
+        resp["errors"][0]["extensions"]["status"], 404,
+        "expected 404 in Selfhosted for {op}, got: {resp}"
+      );
+    }
+    let (_, selfhost_upd) = post_graphql(
+      &app,
+      Some(&owner_cookie),
+      r#"mutation ($id: String!) { adminUpdateWorkspace(input: { id: $id, name: "Mutated" }) { id } }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert_eq!(selfhost_upd["errors"][0]["extensions"]["status"], 404);
+    let ws_name_after: Option<String> = sqlx::query_scalar("SELECT name FROM workspaces WHERE id = $1")
+      .bind(&ws.id)
+      .fetch_one(db.pool())
+      .await
+      .unwrap();
+    assert_eq!(ws_name_after.as_deref(), Some("Analytics WS"));
+
+    let (_, selfhost_mail) = post_graphql(
+      &app,
+      Some(&owner_cookie),
+      r#"{ adminMailDeliveries(input: { hours: 24 }) { summary { total successRate } byStatus { key total } } }"#,
+      json!({}),
+    )
+    .await;
+    assert!(
+      selfhost_mail["errors"].is_null(),
+      "adminMailDeliveries must work in Selfhosted: {selfhost_mail}"
+    );
+
     // 5. Invitation notification created for registered invitee, and single event bus emission on invite + accept.
     #[derive(Default)]
     struct RecordingEventBus {
@@ -1474,6 +1524,499 @@ fn doc_analytics_viewers_server_config_capabilities_and_invitation_notifications
     assert_eq!(skipped_row.2.as_deref(), Some("workspace_name_contains_domain"));
     assert!(skipped_row.3.is_none());
     assert!(skipped_row.4.is_none());
+
+    db.pool().close().await;
+  });
+}
+
+#[test]
+fn cloud_admin_console_workspaces_dashboard_shared_links_and_updates() {
+  with_migrated_db(|db_url| async move {
+    let db = connect_db(&db_url).await;
+    let state = AppState::new(
+      db.clone(),
+      None,
+      RuntimeConfig {
+        role: ServerRole::Allinone,
+        deployment_mode: server_types::DeploymentMode::Cloud,
+        ..RuntimeConfig::default()
+      },
+      Arc::new(CommunityExtension::new()),
+    );
+    let app = build_router(Arc::clone(&state));
+
+    let (admin_id, admin_cookie) = seed_user_with_cookie(&db, "cloud-admin@affine.test", "Cloud Admin", true).await;
+    let ws = state
+      .workspaces
+      .create_workspace(&admin_id, Some("Cloud Console WS"))
+      .await
+      .expect("create cloud workspace");
+
+    sqlx::query(
+      r#"INSERT INTO workspace_pages (workspace_id, page_id, title, published_at)
+         SELECT $1, 'shared-doc-' || g::text, 'Doc ' || g::text, clock_timestamp()
+         FROM generate_series(1, 501) AS g"#,
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      r#"INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at)
+         SELECT $1, 'shared-doc-' || g::text, 'public', 'external', clock_timestamp()
+         FROM generate_series(1, 501) AS g"#,
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_pages (workspace_id, page_id, title, published_at) VALUES ($1, 'invalid-wp-null', 'X', NULL)",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at) VALUES ($1, 'invalid-wp-null', 'public', 'external', clock_timestamp())",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_pages (workspace_id, page_id, title, published_at) VALUES ($1, 'invalid-dap-null', 'Y', clock_timestamp())",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at) VALUES ($1, 'invalid-dap-null', 'public', 'external', NULL)",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO workspace_pages (workspace_id, page_id, title, published_at, lifecycle_state) VALUES ($1, 'invalid-deleted', 'Z', clock_timestamp(), 'deleted')",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at) VALUES ($1, 'invalid-deleted', 'public', 'external', clock_timestamp())",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      r#"INSERT INTO snapshots (workspace_id, guid, blob, updated_at)
+         SELECT $1, 'shared-doc-' || g::text, $2, clock_timestamp()
+         FROM generate_series(1, 501) AS g"#,
+    )
+    .bind(&ws.id)
+    .bind(vec![0_u8, 0])
+    .execute(db.pool())
+    .await
+    .unwrap();
+    // Metadata-only doc with no snapshot/update and reserved root doc must be excluded from sharedLinks.
+    sqlx::query(
+      "INSERT INTO workspace_pages (workspace_id, page_id, title, published_at) VALUES ($1, 'no-source-doc', 'NoSrc', clock_timestamp()), ($1, $1, 'Root', clock_timestamp())",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO doc_access_policies (workspace_id, doc_id, visibility, public_role, published_at) VALUES ($1, 'no-source-doc', 'public', 'external', clock_timestamp()), ($1, $1, 'public', 'external', clock_timestamp())",
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+    sqlx::query(
+      "INSERT INTO snapshots (workspace_id, guid, blob, updated_at) VALUES ($1, $1, $2, clock_timestamp()) ON CONFLICT (workspace_id, guid) DO NOTHING",
+    )
+    .bind(&ws.id)
+    .bind(vec![0_u8, 0])
+    .execute(db.pool())
+    .await
+    .unwrap();
+    // Seed a retained 'accepted' invitation row alongside active owner member: invitation row must map to Pending.
+    let (inv_user_id, _) = seed_user_with_cookie(&db, "retained-inv@affine.test", "Retained Inv", false).await;
+    sqlx::query(
+      r#"INSERT INTO workspace_invitations
+           (id, workspace_id, invitee_user_id, normalized_email, inviter_user_id, requested_role, status, kind, created_at, updated_at)
+         VALUES ('inv-retained-1', $1, $2, 'retained-inv@affine.test', $3, 'member', 'accepted', 'email', now(), now())"#,
+    )
+    .bind(&ws.id)
+    .bind(&inv_user_id)
+    .bind(&admin_id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    sqlx::query(
+      r#"INSERT INTO workspace_doc_view_daily (workspace_id, doc_id, date, total_views, unique_views, guest_views, last_accessed_at)
+         VALUES ($1, 'shared-doc-1', CURRENT_DATE, 12, 5, 3, clock_timestamp())"#,
+    )
+    .bind(&ws.id)
+    .execute(db.pool())
+    .await
+    .unwrap();
+
+    let (_, admin_resp) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"query ($wsId: String!) {
+        adminWorkspacesCount(filter: { first: 10, skip: 0 })
+        adminWorkspaces(filter: { first: 10, skip: 0 }) { id name memberCount }
+        adminWorkspace(id: $wsId) { id name sharedLinks { docId } members(skip: 0, take: 10) { id status } }
+        adminDashboard { syncActiveUsers workspaceStorageBytes topSharedLinks { docId views shareUrl } }
+        adminAllSharedLinks(pagination: { first: 10 }, filter: { includeTotal: true }) {
+          totalCount
+          edges { node { docId views shareUrl } }
+        }
+        adminMailDeliveries(input: { hours: 24 }) { summary { total successRate } byStatus { key total } }
+      }"#,
+      json!({ "wsId": ws.id }),
+    )
+    .await;
+    assert!(
+      admin_resp["errors"].is_null(),
+      "cloud admin queries errors: {admin_resp}"
+    );
+    assert!(admin_resp["data"]["adminWorkspacesCount"].as_i64().unwrap() >= 1);
+    assert_eq!(admin_resp["data"]["adminDashboard"]["topSharedLinks"][0]["views"], 12);
+    let links = admin_resp["data"]["adminWorkspace"]["sharedLinks"].as_array().unwrap();
+    assert_eq!(
+      links.len(),
+      501,
+      "AdminWorkspace.sharedLinks must return all 501 valid links without LIMIT 500 and exclude invalid/deleted/no-source/reserved docs"
+    );
+    let members = admin_resp["data"]["adminWorkspace"]["members"].as_array().unwrap();
+    assert!(members.iter().any(|m| m["id"] == admin_id && m["status"] == "Accepted"));
+    assert!(
+      members
+        .iter()
+        .any(|m| m["id"] == inv_user_id && m["status"] == "Pending")
+    );
+
+    // adminAllSharedLinks guard order: non-admin with conflicting pagination returns 403 ACTION_FORBIDDEN;
+    // admin with whitespace-only after + offset succeeds (loose Base64); admin with valid cursor + offset returns 400.
+    let (_non_admin_id, non_admin_cookie) =
+      seed_user_with_cookie(&db, "cloud-non-admin@affine.test", "NonAdmin", false).await;
+    let (_, non_admin_links) = post_graphql(
+      &app,
+      Some(&non_admin_cookie),
+      r#"{ adminAllSharedLinks(pagination: { first: 10, offset: 1, after: "Y3Vyc29y" }) { edges { cursor } } }"#,
+      json!({}),
+    )
+    .await;
+    assert_eq!(non_admin_links["errors"][0]["extensions"]["status"], 403);
+    assert_eq!(non_admin_links["errors"][0]["extensions"]["type"], "ACTION_FORBIDDEN");
+
+    let (_, ws_after_links) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"{ adminAllSharedLinks(pagination: { first: 10, offset: 1, after: "   " }) { edges { cursor } } }"#,
+      json!({}),
+    )
+    .await;
+    assert!(
+      ws_after_links["errors"].is_null(),
+      "whitespace after must succeed: {ws_after_links}"
+    );
+
+    let long_kw = "x".repeat(300);
+    let (_, bad_links_pag) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"query ($q: String!) {
+        adminAllSharedLinks(pagination: { first: 10, offset: 1, after: "Y3Vyc29y" }, filter: { keyword: $q }) {
+          edges { cursor }
+        }
+      }"#,
+      json!({ "q": long_kw }),
+    )
+    .await;
+    assert_eq!(bad_links_pag["errors"][0]["extensions"]["status"], 400);
+    assert_eq!(bad_links_pag["errors"][0]["extensions"]["type"], "BAD_REQUEST");
+    assert_eq!(bad_links_pag["errors"][0]["extensions"]["name"], "BAD_REQUEST");
+    assert_eq!(
+      bad_links_pag["errors"][0]["extensions"]["message"],
+      "pagination.after and pagination.offset cannot be used together"
+    );
+
+    // Real endCursor pagination on adminAllSharedLinks: verbatim cursor and whitespace-inserted cursor
+    // must return identical, non-empty page 2 matching the deterministic offset=1 second record.
+    let shared_links_page_q = r#"query ($after: String, $offset: Int) {
+      adminAllSharedLinks(pagination: { first: 1, offset: $offset, after: $after }) {
+        pageInfo { endCursor hasNextPage }
+        edges { cursor node { workspaceId docId } }
+      }
+    }"#;
+    let (_, sl_p1) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      shared_links_page_q,
+      json!({ "after": Value::Null, "offset": 0 }),
+    )
+    .await;
+    assert!(sl_p1["errors"].is_null(), "adminAllSharedLinks page 1 error: {sl_p1}");
+    assert_eq!(sl_p1["data"]["adminAllSharedLinks"]["pageInfo"]["hasNextPage"], true);
+    let (_, sl_offset2) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      shared_links_page_q,
+      json!({ "after": Value::Null, "offset": 1 }),
+    )
+    .await;
+    assert!(
+      sl_offset2["errors"].is_null(),
+      "adminAllSharedLinks offset=1 error: {sl_offset2}"
+    );
+    let offset2_edges = sl_offset2["data"]["adminAllSharedLinks"]["edges"].as_array().unwrap();
+    assert_eq!(offset2_edges.len(), 1);
+    let expected_second_doc_id = offset2_edges[0]["node"]["docId"].as_str().unwrap().to_owned();
+    let sl_cursor = sl_p1["data"]["adminAllSharedLinks"]["pageInfo"]["endCursor"]
+      .as_str()
+      .expect("adminAllSharedLinks endCursor")
+      .to_owned();
+    let sl_mid = sl_cursor.len() / 2;
+    let sl_spaced = format!("{}  {}", &sl_cursor[..sl_mid], &sl_cursor[sl_mid..]);
+    let (_, sl_p2_exact) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      shared_links_page_q,
+      json!({ "after": sl_cursor, "offset": 0 }),
+    )
+    .await;
+    let (_, sl_p2_spaced) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      shared_links_page_q,
+      json!({ "after": sl_spaced, "offset": 0 }),
+    )
+    .await;
+    assert!(
+      sl_p2_exact["errors"].is_null(),
+      "adminAllSharedLinks page 2 exact error: {sl_p2_exact}"
+    );
+    assert!(
+      sl_p2_spaced["errors"].is_null(),
+      "adminAllSharedLinks page 2 spaced error: {sl_p2_spaced}"
+    );
+    let p2_exact_edges = sl_p2_exact["data"]["adminAllSharedLinks"]["edges"].as_array().unwrap();
+    let p2_spaced_edges = sl_p2_spaced["data"]["adminAllSharedLinks"]["edges"].as_array().unwrap();
+    assert_eq!(p2_exact_edges.len(), 1);
+    assert_eq!(p2_spaced_edges.len(), 1);
+    assert_eq!(p2_exact_edges[0]["node"]["docId"], expected_second_doc_id);
+    assert_eq!(p2_spaced_edges[0]["node"]["docId"], expected_second_doc_id);
+    assert_eq!(p2_exact_edges, p2_spaced_edges);
+
+    let (_, clear_name) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation ($id: String!) { adminUpdateWorkspace(input: { id: $id, name: null, public: true }) { id name public } }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert!(
+      clear_name["errors"].is_null(),
+      "adminUpdateWorkspace errors: {clear_name}"
+    );
+    assert!(clear_name["data"]["adminUpdateWorkspace"]["name"].is_null());
+    assert_eq!(clear_name["data"]["adminUpdateWorkspace"]["public"], true);
+
+    // public: null sets public = false (tri-state MaybeUndefined<bool>).
+    let (_, null_pub) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation ($id: String!) { adminUpdateWorkspace(input: { id: $id, public: null }) { id public enableAi enableSharing enableUrlPreview enableDocEmbedding } }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert!(null_pub["errors"].is_null(), "public: null errors: {null_pub}");
+    assert_eq!(null_pub["data"]["adminUpdateWorkspace"]["public"], false);
+
+    // Non-null bool fields: omitted leaves DB unchanged; explicit null returns 500 INTERNAL_SERVER_ERROR
+    // without modifying DB; explicit false updates normally.
+    let (_, omit_noop) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation ($id: String!) {
+        adminUpdateWorkspace(input: { id: $id }) {
+          enableAi enableSharing enableUrlPreview enableDocEmbedding
+        }
+      }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert!(omit_noop["errors"].is_null(), "omitted bools noop errors: {omit_noop}");
+    let before_bools = omit_noop["data"]["adminUpdateWorkspace"].clone();
+
+    let assert_internal_500 = |resp: &Value, ctx: &str| {
+      let err = &resp["errors"][0];
+      let ext = &err["extensions"];
+      assert_eq!(
+        err["message"], "An internal error occurred.",
+        "{ctx}: error message mismatch: {resp}"
+      );
+      assert_eq!(ext["status"], 500, "{ctx}: expected status 500: {resp}");
+      assert_eq!(ext["code"], "Internal Server Error", "{ctx}: code mismatch: {resp}");
+      assert_eq!(ext["type"], "INTERNAL_SERVER_ERROR", "{ctx}: type mismatch: {resp}");
+      assert_eq!(ext["name"], "INTERNAL_SERVER_ERROR", "{ctx}: name mismatch: {resp}");
+      assert_eq!(
+        ext["message"], "An internal error occurred.",
+        "{ctx}: extensions.message mismatch: {resp}"
+      );
+    };
+
+    for field in ["enableAi", "enableSharing", "enableUrlPreview", "enableDocEmbedding"] {
+      let q =
+        format!(r#"mutation ($id: String!) {{ adminUpdateWorkspace(input: {{ id: $id, {field}: null }}) {{ id }} }}"#);
+      let (_, err_resp) = post_graphql(&app, Some(&admin_cookie), &q, json!({ "id": ws.id })).await;
+      assert_internal_500(&err_resp, field);
+      let (_, after_null) = post_graphql(
+        &app,
+        Some(&admin_cookie),
+        r#"query ($id: String!) { adminWorkspace(id: $id) { enableAi enableSharing enableUrlPreview enableDocEmbedding } }"#,
+        json!({ "id": ws.id }),
+      )
+      .await;
+      assert_eq!(
+        after_null["data"]["adminWorkspace"], before_bools,
+        "{field}: null must not modify DB"
+      );
+    }
+    let (_, set_false) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation ($id: String!) {
+        adminUpdateWorkspace(input: { id: $id, enableAi: false, enableSharing: false, enableUrlPreview: false, enableDocEmbedding: false }) {
+          enableAi enableSharing enableUrlPreview enableDocEmbedding
+        }
+      }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert!(set_false["errors"].is_null(), "set false errors: {set_false}");
+    assert_eq!(set_false["data"]["adminUpdateWorkspace"]["enableAi"], false);
+    assert_eq!(set_false["data"]["adminUpdateWorkspace"]["enableSharing"], false);
+    assert_eq!(set_false["data"]["adminUpdateWorkspace"]["enableUrlPreview"], false);
+    assert_eq!(set_false["data"]["adminUpdateWorkspace"]["enableDocEmbedding"], false);
+
+    // Also verify missing workspace_access_policies row: null on enableSharing/enableUrlPreview returns
+    // 500 INTERNAL_SERVER_ERROR without inserting a policy row, while non-null updates create it cleanly.
+    sqlx::query("DELETE FROM workspace_access_policies WHERE workspace_id = $1")
+      .bind(&ws.id)
+      .execute(db.pool())
+      .await
+      .unwrap();
+    for field in ["enableSharing", "enableUrlPreview"] {
+      let cnt_before: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM workspace_access_policies WHERE workspace_id = $1")
+          .bind(&ws.id)
+          .fetch_one(db.pool())
+          .await
+          .unwrap();
+      assert_eq!(cnt_before, 0, "{field}: policy row must start absent");
+      let q =
+        format!(r#"mutation ($id: String!) {{ adminUpdateWorkspace(input: {{ id: $id, {field}: null }}) {{ id }} }}"#);
+      let (_, err_resp) = post_graphql(&app, Some(&admin_cookie), &q, json!({ "id": ws.id })).await;
+      assert_internal_500(&err_resp, &format!("missing-policy {field}"));
+      let cnt_after: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM workspace_access_policies WHERE workspace_id = $1")
+          .bind(&ws.id)
+          .fetch_one(db.pool())
+          .await
+          .unwrap();
+      assert_eq!(
+        cnt_after, 0,
+        "{field}: null must not insert workspace_access_policies row"
+      );
+    }
+    let (_, from_missing_policy) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation ($id: String!) {
+        adminUpdateWorkspace(input: { id: $id, public: true, enableSharing: false, enableUrlPreview: false }) {
+          public enableSharing enableUrlPreview
+        }
+      }"#,
+      json!({ "id": ws.id }),
+    )
+    .await;
+    assert!(
+      from_missing_policy["errors"].is_null(),
+      "missing policy row update errors: {from_missing_policy}"
+    );
+    assert_eq!(from_missing_policy["data"]["adminUpdateWorkspace"]["public"], true);
+    assert_eq!(
+      from_missing_policy["data"]["adminUpdateWorkspace"]["enableSharing"],
+      false
+    );
+    assert_eq!(
+      from_missing_policy["data"]["adminUpdateWorkspace"]["enableUrlPreview"],
+      false
+    );
+
+    // Empty patch on missing workspace returns null; non-empty patch on missing workspace returns 404 NOT_FOUND.
+    let (_, missing_empty) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation { adminUpdateWorkspace(input: { id: "missing-ws-id" }) { id } }"#,
+      json!({}),
+    )
+    .await;
+    assert!(missing_empty["errors"].is_null());
+    assert!(missing_empty["data"]["adminUpdateWorkspace"].is_null());
+
+    let (_, missing_patch) = post_graphql(
+      &app,
+      Some(&admin_cookie),
+      r#"mutation { adminUpdateWorkspace(input: { id: "missing-ws-id", public: false }) { id } }"#,
+      json!({}),
+    )
+    .await;
+    assert_eq!(missing_patch["errors"][0]["extensions"]["status"], 404);
+    assert_eq!(missing_patch["errors"][0]["extensions"]["type"], "RESOURCE_NOT_FOUND");
+    assert_eq!(missing_patch["errors"][0]["extensions"]["name"], "NOT_FOUND");
+    assert_eq!(
+      missing_patch["errors"][0]["extensions"]["message"],
+      "Resource not found."
+    );
+
+    // Selfhosted mode returns exact 404 NOT_FOUND ("Resource not found.") on all 6 Cloud-only admin endpoints.
+    let selfhost_state = AppState::new(
+      db.clone(),
+      None,
+      RuntimeConfig {
+        role: ServerRole::Allinone,
+        deployment_mode: server_types::DeploymentMode::Selfhosted,
+        ..RuntimeConfig::default()
+      },
+      Arc::new(CommunityExtension::new()),
+    );
+    let selfhost_app = build_router(selfhost_state);
+    for q in [
+      r#"{ adminWorkspacesCount(filter: { first: 10, skip: 0 }) }"#,
+      r#"{ adminWorkspaces(filter: { first: 10, skip: 0 }) { id } }"#,
+      r#"{ adminWorkspace(id: "x") { id } }"#,
+      r#"{ adminDashboard { syncActiveUsers } }"#,
+      r#"{ adminAllSharedLinks(pagination: { first: 10 }) { edges { cursor } } }"#,
+      r#"mutation { adminUpdateWorkspace(input: { id: "x", public: false }) { id } }"#,
+    ] {
+      let (_, resp) = post_graphql(&selfhost_app, Some(&admin_cookie), q, json!({})).await;
+      assert_eq!(resp["errors"][0]["extensions"]["status"], 404, "query={q} resp={resp}");
+      assert_eq!(resp["errors"][0]["extensions"]["type"], "RESOURCE_NOT_FOUND");
+      assert_eq!(resp["errors"][0]["extensions"]["name"], "NOT_FOUND");
+      assert_eq!(resp["errors"][0]["extensions"]["message"], "Resource not found.");
+    }
 
     db.pool().close().await;
   });

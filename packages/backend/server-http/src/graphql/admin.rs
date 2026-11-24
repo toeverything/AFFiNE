@@ -4,22 +4,29 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use async_graphql::{ComplexObject, Context, Enum, InputObject, Result, SimpleObject};
+use async_graphql::{ComplexObject, Context, Enum, InputObject, MaybeUndefined, Object, Result, SimpleObject};
 use chrono::{DateTime, Utc};
+use server_domain::admin::{
+  AdminAllSharedLinksQuery, AdminDashboardQuery, AdminSharedLinksOrderBy, AdminUpdateWorkspaceParams,
+  AdminWorkspaceFilter, AdminWorkspaceSortOrder, AdminWorkspaceSummary,
+};
 use server_domain::app_config::AppConfigUpdate;
 use server_domain::safe_fetch::{SafeFetchPolicy, SafeFetchRequest, safe_fetch};
 use server_mail::{MailSendResult, MailTemplate, SmtpConfig, SmtpMailer, TestMailProps};
 use server_types::{DeploymentMode, DomainError};
 
+use super::doc::{PageInfo, PaginationInput};
 use super::user::{
-  CreateUserInput, ImportUsersInput, ListUserInput, ManageUserInput, UserImportResultType, UserType,
+  CreateUserInput, ImportUsersInput, ListUserInput, ManageUserInput, UserImportResultType, UserType, WorkspaceUserType,
   mutate_admin_ban_user, mutate_admin_create_user, mutate_admin_enable_user, mutate_admin_import_users,
   mutate_admin_update_user, mutate_admin_update_user_features, resolve_admin_user_by_email, resolve_admin_user_by_id,
   resolve_admin_users, resolve_admin_users_count,
 };
+use super::workspace::WorkspaceMemberStatus;
 use super::{JsonObjectScalar, JsonScalar, require_admin_user};
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
+use crate::legacy_compat::quota::SafeInt;
 
 #[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
 #[graphql(name = "ServerDeploymentType")]
@@ -258,6 +265,438 @@ impl From<server_domain::doc_sharing::AdminTimeWindow> for TimeWindow {
   }
 }
 
+#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminWorkspaceSort")]
+pub enum AdminWorkspaceSort {
+  #[graphql(name = "BlobCount")]
+  BlobCount,
+  #[graphql(name = "BlobSize")]
+  BlobSize,
+  #[graphql(name = "CreatedAt")]
+  CreatedAt,
+  #[graphql(name = "MemberCount")]
+  MemberCount,
+  #[graphql(name = "PublicPageCount")]
+  PublicPageCount,
+  #[graphql(name = "SnapshotCount")]
+  SnapshotCount,
+  #[graphql(name = "SnapshotSize")]
+  SnapshotSize,
+}
+
+impl From<AdminWorkspaceSort> for AdminWorkspaceSortOrder {
+  fn from(s: AdminWorkspaceSort) -> Self {
+    match s {
+      AdminWorkspaceSort::BlobCount => Self::BlobCount,
+      AdminWorkspaceSort::BlobSize => Self::BlobSize,
+      AdminWorkspaceSort::CreatedAt => Self::CreatedAt,
+      AdminWorkspaceSort::MemberCount => Self::MemberCount,
+      AdminWorkspaceSort::PublicPageCount => Self::PublicPageCount,
+      AdminWorkspaceSort::SnapshotCount => Self::SnapshotCount,
+      AdminWorkspaceSort::SnapshotSize => Self::SnapshotSize,
+    }
+  }
+}
+
+#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminSharedLinksOrder")]
+pub enum AdminSharedLinksOrder {
+  #[graphql(name = "PublishedAtDesc")]
+  PublishedAtDesc,
+  #[graphql(name = "UpdatedAtDesc")]
+  UpdatedAtDesc,
+  #[graphql(name = "ViewsDesc")]
+  ViewsDesc,
+}
+
+impl From<AdminSharedLinksOrder> for AdminSharedLinksOrderBy {
+  fn from(o: AdminSharedLinksOrder) -> Self {
+    match o {
+      AdminSharedLinksOrder::PublishedAtDesc => Self::PublishedAtDesc,
+      AdminSharedLinksOrder::UpdatedAtDesc => Self::UpdatedAtDesc,
+      AdminSharedLinksOrder::ViewsDesc => Self::ViewsDesc,
+    }
+  }
+}
+
+#[derive(Enum, Clone, Copy, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminWorkspaceMemberRole")]
+pub enum AdminWorkspaceMemberRole {
+  #[graphql(name = "Admin")]
+  Admin,
+  #[graphql(name = "Collaborator")]
+  Collaborator,
+  #[graphql(name = "Owner")]
+  Owner,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "ListWorkspaceInput")]
+pub struct ListWorkspaceInput {
+  #[graphql(default = 20)]
+  pub first: i32,
+  #[graphql(default = 0)]
+  pub skip: i32,
+  pub keyword: Option<String>,
+  pub order_by: Option<AdminWorkspaceSort>,
+  pub public: Option<bool>,
+  pub enable_ai: Option<bool>,
+  pub enable_sharing: Option<bool>,
+  pub enable_url_preview: Option<bool>,
+  pub enable_doc_embedding: Option<bool>,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "AdminUpdateWorkspaceInput")]
+pub struct AdminUpdateWorkspaceInput {
+  pub id: String,
+  pub name: MaybeUndefined<String>,
+  pub avatar_key: MaybeUndefined<String>,
+  pub public: MaybeUndefined<bool>,
+  pub enable_ai: MaybeUndefined<bool>,
+  pub enable_sharing: MaybeUndefined<bool>,
+  pub enable_url_preview: MaybeUndefined<bool>,
+  pub enable_doc_embedding: MaybeUndefined<bool>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminWorkspaceMember")]
+pub struct AdminWorkspaceMember {
+  pub id: String,
+  pub name: String,
+  pub email: String,
+  pub avatar_url: Option<String>,
+  pub role: AdminWorkspaceMemberRole,
+  pub status: WorkspaceMemberStatus,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminWorkspaceSharedLink")]
+pub struct AdminWorkspaceSharedLink {
+  pub doc_id: String,
+  pub title: Option<String>,
+  pub published_at: Option<DateTime<Utc>>,
+}
+
+pub struct AdminWorkspace {
+  summary: AdminWorkspaceSummary,
+}
+
+#[Object(name = "AdminWorkspace")]
+impl AdminWorkspace {
+  async fn id(&self) -> &str {
+    &self.summary.id
+  }
+  async fn public(&self) -> bool {
+    self.summary.public
+  }
+  async fn created_at(&self) -> DateTime<Utc> {
+    self.summary.created_at
+  }
+  async fn name(&self) -> Option<&str> {
+    self.summary.name.as_deref()
+  }
+  async fn avatar_key(&self) -> Option<&str> {
+    self.summary.avatar_key.as_deref()
+  }
+  async fn enable_ai(&self) -> bool {
+    self.summary.enable_ai
+  }
+  async fn enable_sharing(&self) -> bool {
+    self.summary.enable_sharing
+  }
+  async fn enable_url_preview(&self) -> bool {
+    self.summary.enable_url_preview
+  }
+  async fn enable_doc_embedding(&self) -> bool {
+    self.summary.enable_doc_embedding
+  }
+  async fn owner(&self) -> Option<WorkspaceUserType> {
+    self.summary.owner.as_ref().map(|o| WorkspaceUserType {
+      id: o.id.clone(),
+      name: o.name.clone(),
+      email: o.email.clone(),
+      avatar_url: o.avatar_url.clone(),
+    })
+  }
+  async fn member_count(&self) -> i32 {
+    self.summary.member_count
+  }
+  async fn public_page_count(&self) -> i32 {
+    self.summary.public_page_count
+  }
+  async fn snapshot_count(&self) -> i32 {
+    self.summary.snapshot_count
+  }
+  async fn snapshot_size(&self) -> SafeInt {
+    SafeInt(self.summary.snapshot_size)
+  }
+  async fn blob_count(&self) -> i32 {
+    self.summary.blob_count
+  }
+  async fn blob_size(&self) -> SafeInt {
+    SafeInt(self.summary.blob_size)
+  }
+
+  async fn members(
+    &self,
+    ctx: &Context<'_>,
+    query: Option<String>,
+    skip: Option<i32>,
+    take: Option<i32>,
+  ) -> Result<Vec<AdminWorkspaceMember>> {
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let rows = state
+      .admin
+      .list_workspace_members(
+        &self.summary.id,
+        skip.unwrap_or(0),
+        take.unwrap_or(20),
+        query.as_deref(),
+      )
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(
+      rows
+        .into_iter()
+        .map(|r| AdminWorkspaceMember {
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          avatar_url: r.avatar_url,
+          role: match r.role.as_str() {
+            "Owner" => AdminWorkspaceMemberRole::Owner,
+            "Admin" => AdminWorkspaceMemberRole::Admin,
+            _ => AdminWorkspaceMemberRole::Collaborator,
+          },
+          status: match r.status.as_str() {
+            "Accepted" => WorkspaceMemberStatus::Accepted,
+            "UnderReview" => WorkspaceMemberStatus::UnderReview,
+            "NeedMoreSeat" => WorkspaceMemberStatus::NeedMoreSeat,
+            "NeedMoreSeatAndReview" => WorkspaceMemberStatus::NeedMoreSeatAndReview,
+            "AllocatingSeat" => WorkspaceMemberStatus::AllocatingSeat,
+            _ => WorkspaceMemberStatus::Pending,
+          },
+        })
+        .collect(),
+    )
+  }
+
+  async fn shared_links(&self, ctx: &Context<'_>) -> Result<Vec<AdminWorkspaceSharedLink>> {
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let rows = state
+      .admin
+      .list_workspace_shared_links(&self.summary.id)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(
+      rows
+        .into_iter()
+        .map(|r| AdminWorkspaceSharedLink {
+          doc_id: r.doc_id,
+          title: r.title,
+          published_at: r.published_at,
+        })
+        .collect(),
+    )
+  }
+}
+
+#[derive(InputObject, Clone, Debug, Default)]
+#[graphql(name = "AdminDashboardInput")]
+pub struct AdminDashboardInput {
+  #[graphql(default_with = "Some(\"UTC\".to_owned())")]
+  pub timezone: Option<String>,
+  #[graphql(default_with = "Some(30)")]
+  pub storage_history_days: Option<i32>,
+  #[graphql(default_with = "Some(48)")]
+  pub sync_history_hours: Option<i32>,
+  #[graphql(default_with = "Some(28)")]
+  pub shared_link_window_days: Option<i32>,
+  #[graphql(default_with = "Some(7)")]
+  pub copilot_window_days: Option<i32>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminDashboardMinutePoint")]
+pub struct AdminDashboardMinutePoint {
+  pub minute: DateTime<Utc>,
+  pub active_users: i32,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminDashboardValueDayPoint")]
+pub struct AdminDashboardValueDayPoint {
+  pub date: DateTime<Utc>,
+  pub value: SafeInt,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminSharedLinkTopItem")]
+pub struct AdminSharedLinkTopItem {
+  pub workspace_id: String,
+  pub doc_id: String,
+  pub title: Option<String>,
+  pub share_url: String,
+  pub published_at: Option<DateTime<Utc>>,
+  pub views: SafeInt,
+  pub unique_views: SafeInt,
+  pub guest_views: SafeInt,
+  pub last_accessed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminDashboard")]
+pub struct AdminDashboard {
+  pub sync_active_users: i32,
+  pub sync_active_users_timeline: Vec<AdminDashboardMinutePoint>,
+  pub sync_window: TimeWindow,
+  pub copilot_conversations: SafeInt,
+  pub copilot_window: TimeWindow,
+  pub workspace_storage_bytes: SafeInt,
+  pub blob_storage_bytes: SafeInt,
+  pub workspace_storage_history: Vec<AdminDashboardValueDayPoint>,
+  pub blob_storage_history: Vec<AdminDashboardValueDayPoint>,
+  pub storage_window: TimeWindow,
+  pub top_shared_links: Vec<AdminSharedLinkTopItem>,
+  pub top_shared_links_window: TimeWindow,
+  pub generated_at: DateTime<Utc>,
+}
+
+#[derive(InputObject, Clone, Debug, Default)]
+#[graphql(name = "AdminAllSharedLinksFilterInput")]
+pub struct AdminAllSharedLinksFilterInput {
+  pub keyword: Option<String>,
+  pub workspace_id: Option<String>,
+  pub updated_after: Option<DateTime<Utc>>,
+  #[graphql(default_with = "Some(AdminSharedLinksOrder::UpdatedAtDesc)")]
+  pub order_by: Option<AdminSharedLinksOrder>,
+  #[graphql(default_with = "Some(28)")]
+  pub analytics_window_days: Option<i32>,
+  #[graphql(default_with = "Some(false)")]
+  pub include_total: Option<bool>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminAllSharedLink")]
+pub struct AdminAllSharedLink {
+  pub workspace_id: String,
+  pub doc_id: String,
+  pub title: Option<String>,
+  pub published_at: Option<DateTime<Utc>>,
+  pub doc_updated_at: Option<DateTime<Utc>>,
+  pub workspace_owner_id: Option<String>,
+  pub last_updater_id: Option<String>,
+  pub share_url: String,
+  pub views: Option<SafeInt>,
+  pub unique_views: Option<SafeInt>,
+  pub guest_views: Option<SafeInt>,
+  pub last_accessed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminAllSharedLinkEdge")]
+pub struct AdminAllSharedLinkEdge {
+  pub cursor: String,
+  pub node: AdminAllSharedLink,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "PaginatedAdminAllSharedLink")]
+pub struct PaginatedAdminAllSharedLink {
+  pub edges: Vec<AdminAllSharedLinkEdge>,
+  pub page_info: PageInfo,
+  pub total_count: Option<i32>,
+  pub analytics_window: TimeWindow,
+}
+
+#[derive(InputObject, Clone, Debug)]
+#[graphql(name = "AdminMailDeliveriesInput")]
+pub struct AdminMailDeliveriesInput {
+  #[graphql(default = 24)]
+  pub hours: i32,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminMailDeliveryPoint")]
+pub struct AdminMailDeliveryPoint {
+  pub bucket: DateTime<Utc>,
+  pub count: i32,
+}
+
+#[derive(SimpleObject, Clone, Debug, Eq, PartialEq)]
+#[graphql(name = "AdminMailDeliverySeries")]
+pub struct AdminMailDeliverySeries {
+  pub key: String,
+  pub label: String,
+  pub total: i32,
+  pub points: Vec<AdminMailDeliveryPoint>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "AdminMailDeliverySummary")]
+pub struct AdminMailDeliverySummary {
+  pub total: i32,
+  pub sent: i32,
+  pub failed: i32,
+  pub skipped: i32,
+  pub canceled: i32,
+  pub queued: i32,
+  pub sending: i32,
+  pub retry_wait: i32,
+  pub success_rate: f64,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "AdminMailDeliveryAnalytics")]
+pub struct AdminMailDeliveryAnalytics {
+  pub window: TimeWindow,
+  pub summary: AdminMailDeliverySummary,
+  pub by_status: Vec<AdminMailDeliverySeries>,
+  pub by_type: Vec<AdminMailDeliverySeries>,
+  pub by_outcome: Vec<AdminMailDeliverySeries>,
+}
+
+fn not_found_graphql() -> async_graphql::Error {
+  crate::legacy_compat::errors::envelope_to_graphql(crate::legacy_compat::errors::LegacyErrorEnvelope {
+    status: 404,
+    code: "Not Found".into(),
+    error_type: "RESOURCE_NOT_FOUND".into(),
+    name: "NOT_FOUND".into(),
+    message: "Resource not found.".into(),
+    data: None,
+  })
+}
+
+fn require_cloud_admin_console(state: &AppState) -> Result<()> {
+  if state.config.load().deployment_mode == DeploymentMode::Selfhosted {
+    return Err(not_found_graphql());
+  }
+  Ok(())
+}
+
+fn maybe_undefined_to_patch(v: MaybeUndefined<String>) -> Option<Option<String>> {
+  match v {
+    MaybeUndefined::Undefined => None,
+    MaybeUndefined::Null => Some(None),
+    MaybeUndefined::Value(s) => Some(Some(s)),
+  }
+}
+
+fn to_domain_ws_filter(f: &ListWorkspaceInput) -> AdminWorkspaceFilter {
+  AdminWorkspaceFilter {
+    skip: f.skip,
+    first: f.first,
+    keyword: f.keyword.clone(),
+    order_by: f.order_by.map(Into::into).unwrap_or_default(),
+    public: f.public,
+    enable_ai: f.enable_ai,
+    enable_sharing: f.enable_sharing,
+    enable_url_preview: f.enable_url_preview,
+    enable_doc_embedding: f.enable_doc_embedding,
+  }
+}
+
 pub(crate) async fn resolve_server_config(ctx: &Context<'_>) -> Result<ServerConfigType> {
   let state = ctx.data_unchecked::<Arc<AppState>>();
   let cfg = state.config.load();
@@ -480,6 +919,223 @@ impl AdminQuery {
   async fn user_by_email(&self, ctx: &Context<'_>, email: String) -> Result<Option<UserType>> {
     resolve_admin_user_by_email(ctx, email).await
   }
+
+  async fn admin_workspaces(&self, ctx: &Context<'_>, filter: ListWorkspaceInput) -> Result<Vec<AdminWorkspace>> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let rows = state
+      .admin
+      .list_workspaces(&to_domain_ws_filter(&filter))
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(rows.into_iter().map(|summary| AdminWorkspace { summary }).collect())
+  }
+
+  async fn admin_workspaces_count(&self, ctx: &Context<'_>, filter: ListWorkspaceInput) -> Result<i32> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let total = state
+      .admin
+      .count_workspaces(&to_domain_ws_filter(&filter))
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(i32::try_from(total).unwrap_or(i32::MAX))
+  }
+
+  async fn admin_workspace(&self, ctx: &Context<'_>, id: String) -> Result<Option<AdminWorkspace>> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let row = state
+      .admin
+      .get_workspace(&id)
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    Ok(row.map(|summary| AdminWorkspace { summary }))
+  }
+
+  async fn admin_dashboard(&self, ctx: &Context<'_>, input: Option<AdminDashboardInput>) -> Result<AdminDashboard> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let inp = input.unwrap_or_default();
+    let include_top = ctx.look_ahead().field("topSharedLinks").exists();
+    let data = state
+      .admin
+      .get_dashboard(&AdminDashboardQuery {
+        timezone: inp.timezone,
+        storage_history_days: inp.storage_history_days,
+        sync_history_hours: inp.sync_history_hours,
+        shared_link_window_days: inp.shared_link_window_days,
+        copilot_window_days: inp.copilot_window_days,
+        include_top_shared_links: include_top,
+      })
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let base = state.config.load().external_url.trim_end_matches('/').to_owned();
+    Ok(AdminDashboard {
+      sync_active_users: data.sync_active_users,
+      sync_active_users_timeline: data
+        .sync_active_users_timeline
+        .into_iter()
+        .map(|p| AdminDashboardMinutePoint {
+          minute: p.minute,
+          active_users: p.active_users,
+        })
+        .collect(),
+      sync_window: data.sync_window.into(),
+      copilot_conversations: SafeInt(data.copilot_conversations),
+      copilot_window: data.copilot_window.into(),
+      workspace_storage_bytes: SafeInt(data.workspace_storage_bytes),
+      blob_storage_bytes: SafeInt(data.blob_storage_bytes),
+      workspace_storage_history: data
+        .workspace_storage_history
+        .into_iter()
+        .map(|p| AdminDashboardValueDayPoint {
+          date: p.date,
+          value: SafeInt(p.value),
+        })
+        .collect(),
+      blob_storage_history: data
+        .blob_storage_history
+        .into_iter()
+        .map(|p| AdminDashboardValueDayPoint {
+          date: p.date,
+          value: SafeInt(p.value),
+        })
+        .collect(),
+      storage_window: data.storage_window.into(),
+      top_shared_links: data
+        .top_shared_links
+        .into_iter()
+        .map(|l| AdminSharedLinkTopItem {
+          share_url: format!("{base}/workspace/{}/{}", l.workspace_id, l.doc_id),
+          workspace_id: l.workspace_id,
+          doc_id: l.doc_id,
+          title: l.title,
+          published_at: l.published_at,
+          views: SafeInt(l.views),
+          unique_views: SafeInt(l.unique_views),
+          guest_views: SafeInt(l.guest_views),
+          last_accessed_at: l.last_accessed_at,
+        })
+        .collect(),
+      top_shared_links_window: data.top_shared_links_window.into(),
+      generated_at: data.generated_at,
+    })
+  }
+
+  async fn admin_all_shared_links(
+    &self,
+    ctx: &Context<'_>,
+    filter: Option<AdminAllSharedLinksFilterInput>,
+    pagination: PaginationInput,
+  ) -> Result<PaginatedAdminAllSharedLink> {
+    let _admin = require_admin_user(ctx).await?;
+    let after = pagination.validate_and_resolve_after()?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let f = filter.unwrap_or_default();
+    let page = state
+      .admin
+      .paginate_all_shared_links(&AdminAllSharedLinksQuery {
+        keyword: f.keyword,
+        workspace_id: f.workspace_id,
+        updated_after: f.updated_after,
+        order_by: f.order_by.map(Into::into).unwrap_or_default(),
+        analytics_window_days: f.analytics_window_days,
+        include_total: f.include_total.unwrap_or(false),
+        first: pagination.resolved_first(10),
+        offset: pagination.resolved_offset(),
+        after,
+      })
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let base = state.config.load().external_url.trim_end_matches('/').to_owned();
+    let edges = page
+      .edges
+      .into_iter()
+      .map(|e| AdminAllSharedLinkEdge {
+        cursor: e.cursor,
+        node: AdminAllSharedLink {
+          share_url: format!("{base}/workspace/{}/{}", e.node.workspace_id, e.node.doc_id),
+          workspace_id: e.node.workspace_id,
+          doc_id: e.node.doc_id,
+          title: e.node.title,
+          published_at: e.node.published_at,
+          doc_updated_at: e.node.doc_updated_at,
+          workspace_owner_id: e.node.workspace_owner_id,
+          last_updater_id: e.node.last_updater_id,
+          views: Some(SafeInt(e.node.views)),
+          unique_views: Some(SafeInt(e.node.unique_views)),
+          guest_views: Some(SafeInt(e.node.guest_views)),
+          last_accessed_at: e.node.last_accessed_at,
+        },
+      })
+      .collect();
+    Ok(PaginatedAdminAllSharedLink {
+      edges,
+      page_info: PageInfo {
+        start_cursor: page.start_cursor,
+        end_cursor: page.end_cursor,
+        has_next_page: page.has_next_page,
+        has_previous_page: page.has_previous_page,
+      },
+      total_count: page.total_count,
+      analytics_window: page.analytics_window.into(),
+    })
+  }
+
+  async fn admin_mail_deliveries(
+    &self,
+    ctx: &Context<'_>,
+    input: Option<AdminMailDeliveriesInput>,
+  ) -> Result<AdminMailDeliveryAnalytics> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    let report = state
+      .admin
+      .aggregate_mail_deliveries(input.map(|i| i.hours))
+      .await
+      .map_err(|e| domain_error_to_graphql(&e))?;
+    let map_series = |list: Vec<server_domain::admin::AdminMailDeliverySeries>| -> Vec<AdminMailDeliverySeries> {
+      list
+        .into_iter()
+        .map(|s| AdminMailDeliverySeries {
+          key: s.key,
+          label: s.label,
+          total: s.total,
+          points: s
+            .points
+            .into_iter()
+            .map(|p| AdminMailDeliveryPoint {
+              bucket: p.bucket,
+              count: p.count,
+            })
+            .collect(),
+        })
+        .collect()
+    };
+    Ok(AdminMailDeliveryAnalytics {
+      window: report.window.into(),
+      summary: AdminMailDeliverySummary {
+        total: report.summary.total,
+        sent: report.summary.sent,
+        failed: report.summary.failed,
+        skipped: report.summary.skipped,
+        canceled: report.summary.canceled,
+        queued: report.summary.queued,
+        sending: report.summary.sending,
+        retry_wait: report.summary.retry_wait,
+        success_rate: report.summary.success_rate,
+      },
+      by_status: map_series(report.by_status),
+      by_type: map_series(report.by_type),
+      by_outcome: map_series(report.by_outcome),
+    })
+  }
 }
 
 #[derive(Default)]
@@ -516,5 +1172,54 @@ impl AdminMutation {
   }
   async fn import_users(&self, ctx: &Context<'_>, input: ImportUsersInput) -> Result<Vec<UserImportResultType>> {
     mutate_admin_import_users(ctx, input).await
+  }
+
+  async fn admin_update_workspace(
+    &self,
+    ctx: &Context<'_>,
+    input: AdminUpdateWorkspaceInput,
+  ) -> Result<Option<AdminWorkspace>> {
+    let _admin = require_admin_user(ctx).await?;
+    let state = ctx.data_unchecked::<Arc<AppState>>();
+    require_cloud_admin_console(state)?;
+    let reject_null_bool = |field: &str, v: MaybeUndefined<bool>| -> Result<Option<bool>> {
+      match v {
+        MaybeUndefined::Undefined => Ok(None),
+        MaybeUndefined::Value(b) => Ok(Some(b)),
+        MaybeUndefined::Null => Err(domain_error_to_graphql(&DomainError::Internal(format!(
+          "Field {field} cannot be null."
+        )))),
+      }
+    };
+    let ws_id = input.id.clone();
+    let public_patch = match input.public {
+      MaybeUndefined::Undefined => None,
+      MaybeUndefined::Null => Some(false),
+      MaybeUndefined::Value(b) => Some(b),
+    };
+    let enable_ai = reject_null_bool("enableAi", input.enable_ai)?;
+    let enable_sharing = reject_null_bool("enableSharing", input.enable_sharing)?;
+    let enable_url_preview = reject_null_bool("enableUrlPreview", input.enable_url_preview)?;
+    let enable_doc_embedding = reject_null_bool("enableDocEmbedding", input.enable_doc_embedding)?;
+    let access_changed = public_patch.is_some() || enable_sharing.is_some();
+    let params = AdminUpdateWorkspaceParams {
+      id: input.id,
+      name: maybe_undefined_to_patch(input.name),
+      avatar_key: maybe_undefined_to_patch(input.avatar_key),
+      public: public_patch,
+      enable_ai,
+      enable_sharing,
+      enable_url_preview,
+      enable_doc_embedding,
+    };
+    let has_changes = params.has_changes();
+    let row = state.admin.update_workspace(&params).await.map_err(|e| match &e {
+      DomainError::NotFound(msg) if msg == "not_found" => not_found_graphql(),
+      _ => domain_error_to_graphql(&e),
+    })?;
+    if has_changes && row.is_some() {
+      super::workspace::publish_workspace_updated_events(state, &ws_id, access_changed).await;
+    }
+    Ok(row.map(|summary| AdminWorkspace { summary }))
   }
 }

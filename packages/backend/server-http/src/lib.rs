@@ -106,6 +106,7 @@ pub struct AppState {
   pub auth: AuthService,
   pub users: UserService,
   pub workspaces: WorkspaceService,
+  pub admin: server_domain::admin::AdminService,
   pub doc_sharing: DocSharingService,
   pub histories: DocHistoryService,
   pub comments: CommentService,
@@ -237,6 +238,7 @@ impl AppState {
     extension: Arc<dyn ServerExtension>,
     services: AppServices,
   ) -> Arc<Self> {
+    let admin = server_domain::admin::AdminService::new(db.clone());
     Arc::new(Self {
       db,
       redis,
@@ -245,6 +247,7 @@ impl AppState {
       auth: services.auth,
       users: services.users,
       workspaces: services.workspaces,
+      admin,
       doc_sharing: services.doc_sharing,
       histories: services.histories,
       comments: services.comments,

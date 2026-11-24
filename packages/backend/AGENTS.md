@@ -40,8 +40,9 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 
 - `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `CopilotRuntimeSpi`, `RateLimitPolicy`, `BillingSpi`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, `CommunityBillingSpi`, `CommunityCopilotRuntime`, and `CommunityExtension`.
 
-- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `DocSharingService`, `DocHistoryService`, `CommentService`, `NotificationService`, `SelfhostLicenseService`, `AppConfigService`, `safe_fetch`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
+- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `AdminService`, `DocSharingService`, `DocHistoryService`, `CommentService`, `NotificationService`, `SelfhostLicenseService`, `AppConfigService`, `safe_fetch`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
   `AuthService` handles HS256 access tokens, `aff_rt_v1` refresh rotation, recovery, grace, preflight, and session cleanup.
+  `AdminService` aggregates admin workspace listings, dashboard metrics, shared links, and mail deliveries; `UserService` handles admin user CRUD, batch import, and recreate-for-ban transactions; `AppConfigService` serves redacted `appConfigMetadata`, dry-run `validateAppConfig`, and dynamic OAuth/Captcha capability flags.
   `acl` defines workspace and document permissions and classifies reserved documents.
   `server-domain` has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.
 
@@ -66,7 +67,7 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
   It renews the 90s `search_projection_lockless_v2` lease every 15s and serializes generations on `search-projection-lifecycle` with an `xid8` fence.
   It fences orphan GC per workspace on `search-projection-ws:<workspace_id>`.
 
-- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, and `/graphql` (including workspace `search`, `aggregate`, and `searchDocs`).
+- `server-http` (library `server_http`): `axum 0.8` and `async-graphql 7` transport layer with `/healthz`, `/readyz`, `/info`, and `/graphql` (including workspace `search`, `aggregate`, `searchDocs`, `workspaceRolePermissions`, `DocType.{analytics, lastAccessedMembers}`, and admin console user, workspace, dashboard, shared-link, mail-delivery, and app-config metadata/validation queries).
   Auth REST routes cover cookie/bearer sign-in, Open-App (`/api/auth/open-app/sign-in-code`, `/api/auth/open-app/sign-in`), and native sessions (`/api/auth/session/exchange`, `/api/auth/session/refresh`, `/api/auth/session/revoke`, `/api/auth/sessions`, `/api/auth/sessions/revoke-all`, `/api/auth/sessions/:id`).
   Storage REST routes cover avatars (`/api/avatars/:id`), public docs (`/api/workspaces/:id/public-docs/:docId`, `/root-doc`), doc histories (`/api/workspaces/:id/docs/:guid/histories/:timestamp`), comment attachments (`/api/workspaces/:id/docs/:docId/comment-attachments/:key`), and source-scoped blobs (`/api/workspaces/:id/blobs/v1/:name`, `blob-manifest/v1`, `readable-blob-manifest/v1`, doc snapshot read).
   Blob management mutations require `Owner` or commercial-grant `Admin`.

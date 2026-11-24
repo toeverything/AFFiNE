@@ -6,6 +6,7 @@
 //! compatibility layers.
 
 pub mod acl;
+pub mod admin;
 pub mod app_config;
 pub mod auth;
 pub mod comments;

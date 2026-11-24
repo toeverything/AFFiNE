@@ -863,6 +863,20 @@ pub(crate) async fn mutate_update_workspace(ctx: &Context<'_>, input: UpdateWork
     )
     .await
     .map_err(|e| domain_error_to_graphql(&e))?;
+  publish_workspace_updated_events(state, &ws_id, input.public.is_some() || input.enable_sharing.is_some()).await;
+  let usage = state
+    .workspaces
+    .load_workspace_usage(&ws_id)
+    .await
+    .map_err(|e| domain_error_to_graphql(&e))?;
+  Ok(WorkspaceType {
+    record,
+    used_storage_quota: usage.used_storage_quota,
+    member_count: usage.member_count,
+  })
+}
+
+pub(crate) async fn publish_workspace_updated_events(state: &AppState, ws_id: &str, access_changed: bool) {
   let req_id = super::graphql_request_id(state);
   let _ = state
     .event_bus
@@ -888,7 +902,7 @@ pub(crate) async fn mutate_update_workspace(ctx: &Context<'_>, input: UpdateWork
       Some(req_id.as_str()),
     )
     .await;
-  if input.public.is_some() || input.enable_sharing.is_some() {
+  if access_changed {
     let _ = state
       .event_bus
       .publish_event(
@@ -903,16 +917,6 @@ pub(crate) async fn mutate_update_workspace(ctx: &Context<'_>, input: UpdateWork
       )
       .await;
   }
-  let usage = state
-    .workspaces
-    .load_workspace_usage(&ws_id)
-    .await
-    .map_err(|e| domain_error_to_graphql(&e))?;
-  Ok(WorkspaceType {
-    record,
-    used_storage_quota: usage.used_storage_quota,
-    member_count: usage.member_count,
-  })
 }
 
 pub(crate) async fn mutate_delete_workspace(ctx: &Context<'_>, id: String) -> Result<bool> {
