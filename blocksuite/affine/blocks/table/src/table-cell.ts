@@ -320,7 +320,7 @@ export class TableCell extends SignalWatcher(
                 name: 'Move Up',
                 prefix: ArrowUpBigIcon(),
                 select: () => {
-                  this.dataManager.moveRow(rowIndex, rowIndex - 1);
+                  this.dataManager.moveRow(rowIndex, rowIndex - 2);
                 },
               }),
               menu.action({
