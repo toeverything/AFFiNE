@@ -10,21 +10,30 @@ fn main() {
 
   let migrations_dir = backend_root.join("server/migrations");
   let runtime_sql_dir = backend_root.join("native/src/runtime/sql");
+  let server_db_sql_dir = manifest_dir.join("sql");
   let runtime_sql_path = runtime_sql_dir.join("runtime_migrations.sql");
   let embedding_sql_files = ["embedding.sql", "embedding_v2.sql"];
-  let search_sql_files = [
-    "search_projection.sql",
-    "search_projection_v2.sql",
-    "search_projection_v3.sql",
-    "search_projection_v4.sql",
-    "search_projection_v5.sql",
-    "search_projection_v6.sql",
+  let search_sql_files: [(&str, bool); 6] = [
+    ("search_projection.sql", false),
+    ("search_projection_v2.sql", false),
+    ("search_projection_v3.sql", false),
+    ("search_projection_v4.sql", false),
+    ("search_projection_v5.sql", false),
+    ("search_projection_v6.sql", true),
   ];
 
   println!("cargo:rerun-if-changed={}", migrations_dir.display());
   println!("cargo:rerun-if-changed={}", runtime_sql_path.display());
-  for name in embedding_sql_files.iter().chain(search_sql_files.iter()) {
+  for name in &embedding_sql_files {
     println!("cargo:rerun-if-changed={}", runtime_sql_dir.join(name).display());
+  }
+  for (name, in_server_db) in &search_sql_files {
+    let dir = if *in_server_db {
+      &server_db_sql_dir
+    } else {
+      &runtime_sql_dir
+    };
+    println!("cargo:rerun-if-changed={}", dir.join(name).display());
   }
 
   let mut entries = Vec::new();
@@ -98,10 +107,14 @@ fn main() {
     "pub(crate) const BUNDLED_SEARCH_PROJECTION_MIGRATIONS: &[BundledNativeComponentMigration] = &["
   )
   .unwrap();
-  for (idx, file) in search_sql_files.iter().enumerate() {
-    let bytes = fs::read(runtime_sql_dir.join(file)).expect("read search_projection sql");
+  for (idx, (file, in_server_db)) in search_sql_files.iter().enumerate() {
+    let (full_path, rel) = if *in_server_db {
+      (server_db_sql_dir.join(file), format!("/sql/{file}"))
+    } else {
+      (runtime_sql_dir.join(file), format!("/../native/src/runtime/sql/{file}"))
+    };
+    let bytes = fs::read(&full_path).expect("read search_projection sql");
     let checksum = hex_sha256(&bytes);
-    let rel = format!("/../native/src/runtime/sql/{file}");
     writeln!(
       generated,
       "  BundledNativeComponentMigration {{\n    version: {},\n    checksum: {:?},\n    sql: include_str!(concat!(env!(\"CARGO_MANIFEST_DIR\"), {:?})),\n  }},",

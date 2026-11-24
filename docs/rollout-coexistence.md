@@ -22,11 +22,13 @@ Never edit an existing SQL migration file. Add a new versioned file instead.
 1. Share `SessionRedis` (`base_db + 2`) with `MutexLock:<resource>` keys and atomic Lua scripts.
 2. Prefix new worker-only Redis keys with `v2:` to avoid collisions.
 3. Drain active workers before you release tracked leases on shutdown.
+4. Set `AFFINE_CHANNEL=canary` on `affine-server` wherever `v0.27.5` uses `AFFINE_ENV=dev` for the canary date client version window.
 
 ## 4. Document Lifecycle Coexistence
 
-1. Keep `workspace_doc_lifecycle_activation` inactive until every node supports the new lifecycle model.
-2. While inactive, search and sync read the legacy workspace root document inventory.
+1. Startup on an existing `v0.27.5` database accepts a missing global `workspace_doc_lifecycle_activation` checkpoint (default `v1` sync protocol) or a checkpoint with `status = 'active'`.
+2. Startup rejects any other `workspace_doc_lifecycle_activation` checkpoint status without modifying the database.
+3. While the checkpoint is absent, search and sync read the legacy workspace root document inventory.
 
 ## 5. Blob and Storage Coexistence
 

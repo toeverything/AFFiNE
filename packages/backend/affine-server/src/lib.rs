@@ -347,6 +347,24 @@ fn generate_ephemeral_private_key() -> String {
   hex
 }
 
+/// Returns `true` when `NODE_ENV` is `"development"` (matching `v0.27.5` `env.dev`).
+pub fn is_dev_node_env(node_env: Option<&str>) -> bool {
+  node_env.is_some_and(|v| v.trim().eq_ignore_ascii_case("development"))
+}
+
+/// Resolves `(channel, dev_mode)` from `AFFINE_CHANNEL` and `NODE_ENV`.
+pub fn effective_runtime_flags(channel_arg: Option<&str>, node_env: Option<&str>) -> (String, bool) {
+  let channel = if let Some(ch) = channel_arg.map(str::trim).filter(|s| !s.is_empty()) {
+    ch.to_owned()
+  } else if node_env.is_some_and(|v| v.trim().eq_ignore_ascii_case("production")) {
+    "production".to_owned()
+  } else {
+    "canary".to_owned()
+  };
+  let dev_mode = is_dev_node_env(node_env);
+  (channel, dev_mode)
+}
+
 impl ServerCli {
   /// Effective listen IP (`LISTEN_ADDR` overrides `AFFINE_SERVER_HOST`).
   pub fn effective_host(&self) -> IpAddr {
@@ -356,16 +374,8 @@ impl ServerCli {
   /// Effective deployment channel (`AFFINE_CHANNEL`, else `"production"` when
   /// `NODE_ENV=production`, else `"canary"`).
   pub fn effective_channel(&self) -> String {
-    if let Some(ch) = self.channel.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-      return ch.to_owned();
-    }
-    if std::env::var("NODE_ENV")
-      .ok()
-      .is_some_and(|v| v.trim().eq_ignore_ascii_case("production"))
-    {
-      return "production".to_owned();
-    }
-    "canary".to_owned()
+    let node_env = std::env::var("NODE_ENV").ok();
+    effective_runtime_flags(self.channel.as_deref(), node_env.as_deref()).0
   }
 
   /// Effective Redis URL, preferring `REDIS_URL` and falling back to
@@ -648,6 +658,8 @@ async fn build_server_with_bound_port(
     server_name: server_name.clone(),
     external_url: external_url.clone(),
     https,
+    channel: channel.clone(),
+    dev_mode: is_dev_node_env(std::env::var("NODE_ENV").ok().as_deref()),
     deployment_mode,
     role,
     redis_db_index,
@@ -1228,5 +1240,24 @@ mod tests {
       Err(err) => err,
     };
     assert!(matches!(err, ServerError::InvalidConfig(_)), "got {err:?}");
+  }
+
+  #[test]
+  fn effective_runtime_flags_uses_node_env_for_dev_mode_not_channel() {
+    let (dev_channel, dev_mode) = effective_runtime_flags(None, Some("development"));
+    assert_eq!(dev_channel, "canary");
+    assert!(dev_mode);
+    let dev_matrix =
+      server_http::RouteMountMatrix::for_mode_and_role(DeploymentMode::Cloud, dev_mode, ServerRole::Allinone);
+    assert!(dev_matrix.worker_proxy);
+    assert!(!dev_matrix.selfhost_setup);
+
+    let (prod_channel, prod_dev_mode) = effective_runtime_flags(Some("dev"), Some("production"));
+    assert_eq!(prod_channel, "dev");
+    assert!(!prod_dev_mode);
+    let prod_matrix =
+      server_http::RouteMountMatrix::for_mode_and_role(DeploymentMode::Cloud, prod_dev_mode, ServerRole::Allinone);
+    assert!(!prod_matrix.worker_proxy);
+    assert!(!prod_matrix.selfhost_setup);
   }
 }

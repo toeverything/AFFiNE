@@ -200,3 +200,31 @@ pub(crate) async fn mutate_send_test_email(ctx: &Context<'_>, config: JsonObject
     ))),
   }
 }
+
+#[derive(Default)]
+pub struct AdminQuery;
+
+#[async_graphql::Object]
+impl AdminQuery {
+  async fn server_config(&self, ctx: &Context<'_>) -> Result<ServerConfigType> {
+    resolve_server_config(ctx).await
+  }
+
+  async fn app_config(&self, ctx: &Context<'_>) -> Result<JsonObjectScalar> {
+    resolve_app_config(ctx).await
+  }
+}
+
+#[derive(Default)]
+pub struct AdminMutation;
+
+#[async_graphql::Object]
+impl AdminMutation {
+  async fn update_app_config(&self, ctx: &Context<'_>, updates: Vec<UpdateAppConfigInput>) -> Result<JsonObjectScalar> {
+    mutate_update_app_config(ctx, updates).await
+  }
+
+  async fn send_test_email(&self, ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {
+    mutate_send_test_email(ctx, config).await
+  }
+}

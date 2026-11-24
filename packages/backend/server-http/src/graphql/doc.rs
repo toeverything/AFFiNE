@@ -9,7 +9,9 @@ use server_domain::acl::DocRole as DomainDocRole;
 use server_domain::doc_sharing::DocInfoView;
 use server_types::DomainError;
 
-use super::{AuthenticatedUser, DocPermissions, PublicUserType, WorkspaceUserType, require_authenticated_user};
+use super::{
+  DocPermissions, PublicUserType, WorkspaceUserType, current_authenticated_user, require_authenticated_user,
+};
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
 
@@ -545,12 +547,58 @@ pub(crate) async fn mutate_recover_doc(
 
 pub(crate) async fn resolve_workspace_doc(ctx: &Context<'_>, workspace_id: &str, doc_id: &str) -> Result<DocType> {
   let state = ctx.data_unchecked::<Arc<AppState>>();
-  let actor_user_id = ctx.data_opt::<AuthenticatedUser>().map(|a| a.user_id.as_str());
+  let actor_user_id = current_authenticated_user(ctx).map(|a| a.user_id);
   let info = state
     .doc_sharing
-    .get_doc_info(workspace_id, actor_user_id, doc_id)
+    .get_doc_info(workspace_id, actor_user_id.as_deref(), doc_id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))?
     .ok_or_else(|| domain_error_to_graphql(&DomainError::NotFound(format!("doc_not_found:{workspace_id}:{doc_id}"))))?;
   Ok(DocType::from_info(info))
+}
+
+#[derive(Default)]
+pub struct DocMutation;
+
+#[async_graphql::Object]
+impl DocMutation {
+  async fn publish_doc(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    doc_id: String,
+    #[graphql(default_with = "PublicDocMode::Page")] mode: PublicDocMode,
+  ) -> Result<DocType> {
+    mutate_publish_doc(ctx, workspace_id, doc_id, mode).await
+  }
+
+  async fn revoke_public_doc(&self, ctx: &Context<'_>, workspace_id: String, doc_id: String) -> Result<DocType> {
+    mutate_revoke_public_doc(ctx, workspace_id, doc_id).await
+  }
+
+  async fn grant_doc_user_roles(&self, ctx: &Context<'_>, input: GrantDocUserRolesInput) -> Result<bool> {
+    mutate_grant_doc_user_roles(ctx, input).await
+  }
+
+  async fn revoke_doc_user_roles(&self, ctx: &Context<'_>, input: RevokeDocUserRoleInput) -> Result<bool> {
+    mutate_revoke_doc_user_roles(ctx, input).await
+  }
+
+  async fn update_doc_user_role(&self, ctx: &Context<'_>, input: UpdateDocUserRoleInput) -> Result<bool> {
+    mutate_update_doc_user_role(ctx, input).await
+  }
+
+  async fn update_doc_default_role(&self, ctx: &Context<'_>, input: UpdateDocDefaultRoleInput) -> Result<bool> {
+    mutate_update_doc_default_role(ctx, input).await
+  }
+
+  async fn recover_doc(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    guid: String,
+    timestamp: chrono::DateTime<chrono::Utc>,
+  ) -> Result<chrono::DateTime<chrono::Utc>> {
+    mutate_recover_doc(ctx, workspace_id, guid, timestamp).await
+  }
 }

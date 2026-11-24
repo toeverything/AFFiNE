@@ -38,9 +38,9 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 - `server-db` (library `server_db`): single `PgPool` with `min_connections = 0`, `statement_timeout`, `idle_in_transaction_session_timeout = '10s'`, and `application_name = "affine:<channel>:<role>:v2"`.
   It exports `WorkloadTier` admission, `with_long_query_timeout`, `dedicated_session_conn`, `with_query_scope`, `ensure_schema_ready`, `SessionRepository`, and `phase_a_compat::sessions::PhaseASessionRepository`.
 
-- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `RateLimitPolicy`, `BillingSpi`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, `CommunityBillingSpi`, and `CommunityExtension`.
+- `server-spi` (library `server_spi`): SPI traits (`QuotaGate`, `SessionPolicyHook`, `CopilotPolicySpi`, `CopilotRuntimeSpi`, `RateLimitPolicy`, `BillingSpi`, `ServerExtension`), `RequestSource`, `CommunityRateLimitPolicy`, `CommunityBillingSpi`, `CommunityCopilotRuntime`, and `CommunityExtension`.
 
-- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `DocSharingService`, `DocHistoryService`, `CommentService`, `NotificationService`, `SelfhostLicenseService`, `AppConfigService`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
+- `server-domain` (library `server_domain`): pure domain services (`AuthService`, `UserService`, `WorkspaceService`, `DocSharingService`, `DocHistoryService`, `CommentService`, `NotificationService`, `SelfhostLicenseService`, `AppConfigService`, `safe_fetch`, and `acl`) plus `EventBusPublisher`, `InvalidationPublisher`, and `InvalidationHintV1`.
   `AuthService` handles HS256 access tokens, `aff_rt_v1` refresh rotation, recovery, grace, preflight, and session cleanup.
   `acl` defines workspace and document permissions and classifies reserved documents.
   `server-domain` has no `legacy_compat`, `phase_a_compat`, `axum`, or `async-graphql` dependencies.

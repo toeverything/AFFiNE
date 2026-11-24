@@ -255,3 +255,39 @@ pub(crate) async fn mutate_release_deleted_blobs(ctx: &Context<'_>, workspace_id
   }
   Ok(true)
 }
+
+#[derive(Default)]
+pub struct BlobMutation;
+
+#[async_graphql::Object]
+impl BlobMutation {
+  async fn create_blob_upload(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    key: String,
+    size: i32,
+    mime: String,
+  ) -> Result<BlobUploadInit> {
+    mutate_create_blob_upload(ctx, workspace_id, key, size, mime).await
+  }
+
+  async fn set_blob(&self, ctx: &Context<'_>, workspace_id: String, blob: async_graphql::Upload) -> Result<String> {
+    mutate_set_blob(ctx, workspace_id, blob).await
+  }
+
+  async fn delete_blob(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    key: Option<String>,
+    hash: Option<String>,
+    #[graphql(default = false)] permanently: bool,
+  ) -> Result<bool> {
+    mutate_delete_blob(ctx, workspace_id, key, hash, permanently).await
+  }
+
+  async fn release_deleted_blobs(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
+    mutate_release_deleted_blobs(ctx, workspace_id).await
+  }
+}

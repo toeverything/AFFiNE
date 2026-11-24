@@ -497,3 +497,47 @@ pub(crate) async fn resolve_workspace_comment_changes(
     },
   })
 }
+
+#[derive(Default)]
+pub struct CommentMutation;
+
+#[async_graphql::Object]
+impl CommentMutation {
+  async fn create_comment(&self, ctx: &Context<'_>, input: CommentCreateInput) -> Result<CommentObjectType> {
+    mutate_create_comment(ctx, input).await
+  }
+
+  async fn update_comment(&self, ctx: &Context<'_>, input: CommentUpdateInput) -> Result<bool> {
+    mutate_update_comment(ctx, input).await
+  }
+
+  async fn resolve_comment(&self, ctx: &Context<'_>, input: CommentResolveInput) -> Result<bool> {
+    mutate_resolve_comment(ctx, input).await
+  }
+
+  async fn delete_comment(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    mutate_delete_comment(ctx, id).await
+  }
+
+  async fn create_reply(&self, ctx: &Context<'_>, input: ReplyCreateInput) -> Result<ReplyObjectType> {
+    mutate_create_reply(ctx, input).await
+  }
+
+  async fn update_reply(&self, ctx: &Context<'_>, input: ReplyUpdateInput) -> Result<bool> {
+    mutate_update_reply(ctx, input).await
+  }
+
+  async fn delete_reply(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    mutate_delete_reply(ctx, id).await
+  }
+
+  async fn upload_comment_attachment(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    doc_id: String,
+    attachment: async_graphql::Upload,
+  ) -> Result<String> {
+    mutate_upload_comment_attachment(ctx, workspace_id, doc_id, attachment).await
+  }
+}

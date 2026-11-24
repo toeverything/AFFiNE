@@ -3,12 +3,17 @@
 //! Defines the exact trait boundaries between the open-source community core
 //! and commercial extensions, along with [`CommunityExtension`].
 
+pub mod billing;
+pub mod copilot;
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex, OnceLock};
 
+pub use billing::{BillingSpi, CommunityBillingSpi};
 use chrono::{DateTime, Utc};
+pub use copilot::{CommunityCopilotPolicySpi, CommunityCopilotRuntime, CopilotPolicySpi, CopilotRuntimeSpi};
 pub use server_types::BillingSubject;
 use server_types::{AccessGrant, DomainError};
 use sha2::{Digest, Sha256};
@@ -50,11 +55,6 @@ pub trait SessionPolicyHook: Send + Sync + 'static {
     session_id: &'a str,
     now: DateTime<Utc>,
   ) -> Pin<Box<dyn Future<Output = Result<(), DomainError>> + Send + 'a>>;
-}
-
-#[async_trait::async_trait]
-pub trait CopilotPolicySpi: Send + Sync + 'static {
-  async fn check_copilot_allowed(&self, grant: &AccessGrant, using_byok: bool) -> Result<(), DomainError>;
 }
 
 /// Request network source metadata passed to [`RateLimitPolicy`] for
@@ -151,35 +151,14 @@ pub trait RateLimitPolicy: Send + Sync + 'static {
   }
 }
 
-#[async_trait::async_trait]
-pub trait BillingSpi: Send + Sync + 'static {
-  async fn on_pre_delete_user(&self, _user_id: &str) -> Result<(), DomainError> {
-    Ok(())
-  }
-
-  async fn on_workspace_members_changed(&self, _workspace_id: &str) -> Result<(), DomainError> {
-    Ok(())
-  }
-
-  async fn create_selfhost_customer_portal(&self, _workspace_id: &str) -> Result<String, DomainError> {
-    Err(DomainError::Unavailable(
-      "Self-hosted customer portal is not configured.".to_owned(),
-    ))
-  }
-}
-
-/// Default community billing SPI (no-op hooks).
-#[derive(Clone, Copy, Debug, Default)]
-pub struct CommunityBillingSpi;
-
-#[async_trait::async_trait]
-impl BillingSpi for CommunityBillingSpi {}
-
 pub trait ServerExtension: Send + Sync + 'static {
   fn edition_name(&self) -> &'static str;
   fn quota_gate(&self) -> Arc<dyn QuotaGate>;
   fn session_policy(&self) -> Arc<dyn SessionPolicyHook>;
   fn copilot_policy(&self) -> Arc<dyn CopilotPolicySpi>;
+  fn copilot_runtime(&self) -> Arc<dyn CopilotRuntimeSpi> {
+    Arc::new(CommunityCopilotRuntime)
+  }
   fn rate_limit_policy(&self) -> Arc<dyn RateLimitPolicy> {
     Arc::new(CommunityRateLimitPolicy)
   }
@@ -434,28 +413,6 @@ impl SessionPolicyHook for CommunitySessionPolicyHook {
   }
 }
 
-/// Default community copilot policy SPI.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct CommunityCopilotPolicySpi;
-
-#[async_trait::async_trait]
-impl CopilotPolicySpi for CommunityCopilotPolicySpi {
-  async fn check_copilot_allowed(&self, grant: &AccessGrant, using_byok: bool) -> Result<(), DomainError> {
-    if using_byok && !grant.rights.copilot_byok {
-      return Err(DomainError::Forbidden(
-        "copilot BYOK requires a license with copilot_byok right".into(),
-      ));
-    }
-    if grant.limits.seat_limit <= 0 {
-      return Err(DomainError::QuotaExceeded {
-        kind: "copilot",
-        message: "workspace grant is read-only".into(),
-      });
-    }
-    Ok(())
-  }
-}
-
 /// Default community rate-limit policy (allows all requests).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CommunityRateLimitPolicy;
@@ -548,11 +505,17 @@ mod tests {
   use super::*;
   use server_types::{LicenseTier, Limits, Rights};
 
-  #[test]
-  fn community_extension_edition_and_extra_router() {
+  #[tokio::test]
+  async fn community_extension_edition_and_defaults() {
     let ext = CommunityExtension::new();
     assert_eq!(ext.edition_name(), "community");
     assert!(ext.extra_router().is_none());
+    let runtime = ext.copilot_runtime();
+    assert!(!runtime.is_enabled());
+    assert!(matches!(
+      runtime.assert_enabled().await,
+      Err(DomainError::Forbidden(msg)) if msg == "Copilot is disabled."
+    ));
   }
 
   #[tokio::test]

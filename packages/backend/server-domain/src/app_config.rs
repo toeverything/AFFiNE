@@ -1,7 +1,9 @@
 //! Runtime `appConfig` assembly and database override persistence matching
 //! `v0.27.5` `appConfig` GraphQL output 1:1 (with all secret keys redacted).
 
-use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
@@ -233,11 +235,17 @@ pub struct AppConfigUpdate {
   pub value: Option<Value>,
 }
 
+const APP_CONFIG_CACHE_TTL: Duration = Duration::from_secs(2);
+
+type CachedAppConfig = Option<(Instant, Arc<Value>)>;
+
 #[derive(Clone)]
 pub struct AppConfigService {
   db: ServerDb,
   baseline: RuntimeAppConfigBaseline,
   event_bus: Arc<dyn EventBusPublisher>,
+  cache: Arc<RwLock<CachedAppConfig>>,
+  generation: Arc<AtomicU64>,
 }
 
 impl AppConfigService {
@@ -246,13 +254,31 @@ impl AppConfigService {
       db,
       baseline,
       event_bus,
+      cache: Arc::new(RwLock::new(None)),
+      generation: Arc::new(AtomicU64::new(0)),
     }
   }
 
-  /// Builds the exact `v0.27.5` `appConfig` JSON object by combining runtime
-  /// defaults/env baseline with `public.app_configs` overrides and redacting
-  /// all secret keys.
-  pub async fn get_effective_app_config(&self) -> Result<Value, DomainError> {
+  /// Clears the in-memory `appConfig` snapshot cache and advances the cache
+  /// generation so in-flight stale reads cannot overwrite newer commits.
+  pub fn invalidate_cache(&self) {
+    self.generation.fetch_add(1, Ordering::AcqRel);
+    if let Ok(mut guard) = self.cache.write() {
+      *guard = None;
+    }
+  }
+
+  fn store_snapshot_if_generation_matches(&self, gen_before: u64, snapshot: &Arc<Value>) -> bool {
+    if let Ok(mut guard) = self.cache.write()
+      && self.generation.load(Ordering::Acquire) == gen_before
+    {
+      *guard = Some((Instant::now(), Arc::clone(snapshot)));
+      return true;
+    }
+    false
+  }
+
+  async fn load_effective_app_config_uncached(&self) -> Result<Arc<Value>, DomainError> {
     let mut config = default_app_config_json(&self.baseline);
 
     let mut conn = self
@@ -275,7 +301,46 @@ impl AppConfigService {
     }
 
     redact_secret_keys(&mut config);
-    Ok(config)
+    Ok(Arc::new(config))
+  }
+
+  async fn get_cached_effective_app_config(&self) -> Result<Arc<Value>, DomainError> {
+    if let Ok(guard) = self.cache.read()
+      && let Some((cached_at, ref snapshot)) = *guard
+      && cached_at.elapsed() < APP_CONFIG_CACHE_TTL
+    {
+      return Ok(Arc::clone(snapshot));
+    }
+
+    let gen_before = self.generation.load(Ordering::Acquire);
+    let snapshot = self.load_effective_app_config_uncached().await?;
+    self.store_snapshot_if_generation_matches(gen_before, &snapshot);
+    Ok(snapshot)
+  }
+
+  /// Builds the exact `v0.27.5` `appConfig` JSON object by combining runtime
+  /// defaults/env baseline with `public.app_configs` overrides and redacting
+  /// all secret keys.
+  pub async fn get_effective_app_config(&self) -> Result<Value, DomainError> {
+    let snapshot = self.get_cached_effective_app_config().await?;
+    Ok((*snapshot).clone())
+  }
+
+  /// Reads `(client.versionControl.enabled, client.versionControl.requiredVersion)`
+  /// directly from the cached `appConfig` snapshot without cloning the full JSON tree.
+  pub async fn get_client_version_control(&self) -> Result<(bool, String), DomainError> {
+    let snapshot = self.get_cached_effective_app_config().await?;
+    let vc = snapshot.get("client").and_then(|c| c.get("versionControl"));
+    let enabled = vc
+      .and_then(|v| v.get("enabled"))
+      .and_then(Value::as_bool)
+      .unwrap_or(false);
+    let required_version = vc
+      .and_then(|v| v.get("requiredVersion"))
+      .and_then(Value::as_str)
+      .unwrap_or(">=0.25.0")
+      .to_owned();
+    Ok((enabled, required_version))
   }
 
   /// Persists one or more `app_configs` overrides (or clears them when
@@ -337,12 +402,17 @@ impl AppConfigService {
       .await
       .map_err(|e| DomainError::Internal(format!("commit app_configs update: {e}")))?;
 
+    self.invalidate_cache();
+
     let _ = self
       .event_bus
       .publish_event("config.changed.broadcast", json!({ "keys": keys }), None)
       .await;
 
-    self.get_effective_app_config().await
+    let gen_before = self.generation.load(Ordering::Acquire);
+    let snapshot = self.load_effective_app_config_uncached().await?;
+    self.store_snapshot_if_generation_matches(gen_before, &snapshot);
+    Ok((*snapshot).clone())
   }
 }
 
@@ -1096,5 +1166,93 @@ mod tests {
       )
       .is_err()
     );
+  }
+
+  #[test]
+  fn stale_read_generation_cannot_overwrite_newer_invalidation() {
+    let cluster = test_db_harness::pg::PgCluster::from_env_or_docker().expect("test postgres cluster");
+    let migrations = test_db_harness::migrations::MigrationSet {
+      migrations: vec![],
+      digest: "5e20000000000003".into(),
+    };
+    let template = cluster.ensure_template(&migrations).expect("ensure empty template");
+    let lease = cluster
+      .lease(&template, test_db_harness::pg::DEFAULT_LEASE_TTL)
+      .expect("lease test database");
+    let db_url = lease.url().to_owned();
+    let rt = tokio::runtime::Builder::new_multi_thread()
+      .enable_all()
+      .build()
+      .expect("build tokio runtime");
+    rt.block_on(async move {
+      let db = ServerDb::connect(server_db::DbConfig {
+        database_url: db_url,
+        channel: "canary".into(),
+        role: server_types::ServerRole::Allinone,
+        selfhosted: true,
+        max_connections: 2,
+        statement_timeout_ms: 5_000,
+        tier_permits: [4, 2, 2, 1],
+      })
+      .await
+      .expect("connect test db");
+      sqlx::query(
+        r#"CREATE TABLE IF NOT EXISTS app_configs (
+             id TEXT PRIMARY KEY,
+             value JSONB NOT NULL,
+             last_updated_by TEXT,
+             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+           )"#,
+      )
+      .execute(db.pool())
+      .await
+      .expect("create app_configs");
+
+      let svc = AppConfigService::new(
+        db.clone(),
+        RuntimeAppConfigBaseline::default(),
+        Arc::new(crate::events::NoopEventPublisher::default()),
+      );
+
+      // 1. Reader captures generation before a concurrent write commits.
+      let stale_gen = svc.generation.load(Ordering::Acquire);
+      let stale_snapshot = svc.load_effective_app_config_uncached().await.expect("stale read");
+      assert_eq!(
+        stale_snapshot.pointer("/client/versionControl/enabled"),
+        Some(&json!(false))
+      );
+
+      // 2. Concurrent write commits enabled = true and advances generation.
+      svc
+        .update_app_config(
+          None,
+          &[
+            AppConfigUpdate {
+              key: "client.versionControl.enabled".into(),
+              value: Some(json!(true)),
+            },
+            AppConfigUpdate {
+              key: "client.versionControl.requiredVersion".into(),
+              value: Some(json!(">=0.27.0")),
+            },
+          ],
+        )
+        .await
+        .expect("update_app_config");
+
+      // 3. Stale reader finishes late and attempts to populate the cache -> rejected.
+      assert!(
+        !svc.store_snapshot_if_generation_matches(stale_gen, &stale_snapshot),
+        "stale generation must not overwrite newer cache entry"
+      );
+
+      // 4. Subsequent read immediately sees the committed values.
+      let (enabled, required) = svc.get_client_version_control().await.expect("read versionControl");
+      assert!(enabled);
+      assert_eq!(required, ">=0.27.0");
+
+      db.pool().close().await;
+    });
   }
 }

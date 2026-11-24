@@ -433,7 +433,7 @@ mod tests {
     let oracle_sdl =
       std::fs::read_to_string(&oracle_path).unwrap_or_else(|e| panic!("failed to read {}: {e}", oracle_path.display()));
 
-    let generated_sdl = Schema::new(QueryRoot, MutationRoot, EmptySubscription).sdl();
+    let generated_sdl = Schema::new(QueryRoot::default(), MutationRoot::default(), EmptySubscription).sdl();
 
     // Exact field name + GraphQL type (including SafeInt!, Int!, String! non-nullability)
     for type_name in [

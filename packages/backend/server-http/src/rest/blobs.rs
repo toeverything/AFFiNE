@@ -8,16 +8,25 @@ use server_types::DomainError;
 
 use super::{
   apply_blob_security_headers, domain_error_to_http_response, envelope_to_http_response, json_utf8_response,
-  resolve_request_principal,
+  resolve_request_principal_with_policy,
 };
 use crate::RouterState;
 use crate::legacy_compat::errors::LegacyErrorEnvelope;
 
 /// Serves locally stored user avatars (`GET /api/avatars/:id`) matching
 /// `v0.27.5` `core/user/controller.ts`.
-pub(crate) async fn handle_get_avatar(State(state): State<RouterState>, Path(id): Path<String>) -> Response {
+pub(crate) async fn handle_get_avatar(
+  State(state): State<RouterState>,
+  Path(id): Path<String>,
+  headers: HeaderMap,
+) -> Response {
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(r) => r,
+    Err(err) => return err.into_http_response(),
+  };
+  let https = state.app.config.load().https;
   if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains("..") || id.contains('\0') {
-    return envelope_to_http_response(LegacyErrorEnvelope {
+    let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::NOT_FOUND.as_u16(),
       code: "Not Found".into(),
       error_type: "RESOURCE_NOT_FOUND".into(),
@@ -25,11 +34,13 @@ pub(crate) async fn handle_get_avatar(State(state): State<RouterState>, Path(id)
       message: "User avatar not found.".into(),
       data: None,
     });
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return resp;
   }
   let obj = match state.app.avatars.get(&id).await {
     Ok(Some(obj)) => obj,
     Ok(None) => {
-      return envelope_to_http_response(LegacyErrorEnvelope {
+      let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
         status: StatusCode::NOT_FOUND.as_u16(),
         code: "Not Found".into(),
         error_type: "RESOURCE_NOT_FOUND".into(),
@@ -37,10 +48,14 @@ pub(crate) async fn handle_get_avatar(State(state): State<RouterState>, Path(id)
         message: "User avatar not found.".into(),
         data: None,
       });
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
     }
     Err(err) => {
       tracing::warn!(avatar_id = %id, error = %err, "failed to load avatar");
-      return domain_error_to_http_response(&DomainError::Unavailable("avatar storage unavailable".into()));
+      let mut resp = domain_error_to_http_response(&DomainError::Unavailable("avatar storage unavailable".into()));
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
     }
   };
 
@@ -61,6 +76,7 @@ pub(crate) async fn handle_get_avatar(State(state): State<RouterState>, Path(id)
     h.insert(header::LAST_MODIFIED, val);
   }
   apply_blob_security_headers(h, Some(&meta.content_type), Some(&id));
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
   resp
 }
 
@@ -109,16 +125,21 @@ pub(crate) async fn handle_get_blob_v1(
   Query(query): Query<BlobSourceQuery>,
   headers: HeaderMap,
 ) -> Response {
-  let (source_type, doc_id, timestamp_ms) = match validate_blob_source_query(&query) {
-    Ok(v) => v,
-    Err(resp) => return *resp,
-  };
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(r) => r,
     Err(err) => return err.into_http_response(),
   };
+  let https = state.app.config.load().https;
+  let (source_type, doc_id, timestamp_ms) = match validate_blob_source_query(&query) {
+    Ok(v) => v,
+    Err(mut resp) => {
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return *resp;
+    }
+  };
+  let user_id = resolved.principal.map(|p| p.into_user().id);
 
-  match state
+  let mut resp = match state
     .app
     .blobs
     .get_source_scoped_blob(
@@ -156,7 +177,9 @@ pub(crate) async fn handle_get_blob_v1(
       data: None,
     }),
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  resp
 }
 
 #[derive(Debug, Serialize)]
@@ -187,43 +210,51 @@ pub(crate) async fn handle_get_blob_manifest_v1(
   Query(query): Query<BlobSourceQuery>,
   headers: HeaderMap,
 ) -> Response {
-  let (source_type, doc_id, timestamp_ms) = match validate_blob_source_query(&query) {
-    Ok(v) => v,
-    Err(resp) => return *resp,
-  };
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(r) => r,
     Err(err) => return err.into_http_response(),
   };
-  let manifest_entries = match state
+  let https = state.app.config.load().https;
+  let (source_type, doc_id, timestamp_ms) = match validate_blob_source_query(&query) {
+    Ok(v) => v,
+    Err(mut resp) => {
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return *resp;
+    }
+  };
+  let user_id = resolved.principal.map(|p| p.into_user().id);
+  let mut resp = match state
     .app
     .blobs
     .get_doc_blob_manifest(&workspace_id, source_type, doc_id, timestamp_ms, user_id.as_deref())
     .await
   {
-    Ok(entries) => entries,
-    Err(err) => return domain_error_to_http_response(&err),
+    Ok(manifest_entries) => {
+      let entries: Vec<ManifestEntryDto> = manifest_entries
+        .into_iter()
+        .map(|b| ManifestEntryDto {
+          key: b.key,
+          size: b.size,
+          mime: b.mime,
+          created_at: b.created_at.to_rfc3339(),
+          source: ManifestSourceDto {
+            source_type: b.source_type,
+            workspace_id: b.workspace_id,
+            doc_id: b.doc_id,
+            timestamp_ms: b.timestamp_ms,
+          },
+        })
+        .collect();
+      json_utf8_response(
+        StatusCode::OK,
+        serde_json::json!({ "version": 1, "entries": entries }),
+        true,
+      )
+    }
+    Err(err) => domain_error_to_http_response(&err),
   };
-  let entries: Vec<ManifestEntryDto> = manifest_entries
-    .into_iter()
-    .map(|b| ManifestEntryDto {
-      key: b.key,
-      size: b.size,
-      mime: b.mime,
-      created_at: b.created_at.to_rfc3339(),
-      source: ManifestSourceDto {
-        source_type: b.source_type,
-        workspace_id: b.workspace_id,
-        doc_id: b.doc_id,
-        timestamp_ms: b.timestamp_ms,
-      },
-    })
-    .collect();
-  json_utf8_response(
-    StatusCode::OK,
-    serde_json::json!({ "version": 1, "entries": entries }),
-    true,
-  )
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  resp
 }
 
 #[derive(Debug, Deserialize)]
@@ -239,58 +270,72 @@ pub(crate) async fn handle_get_readable_blob_manifest_v1(
   Query(query): Query<ReadableManifestQuery>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(Some(principal)) => principal.into_user().id,
-    Ok(None) => return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into())),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
+    Ok(r) => r,
     Err(err) => return err.into_http_response(),
   };
+  let Some(principal) = resolved.principal else {
+    return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+  };
+  let https = state.app.config.load().https;
+  let user_id = principal.into_user().id;
   if let Err(err) = state
     .app
     .workspaces
     .require_active_member_role(&workspace_id, &user_id)
     .await
   {
-    return domain_error_to_http_response(&err);
+    let mut resp = domain_error_to_http_response(&err);
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return resp;
   }
   let limit = query.limit.unwrap_or(25).clamp(1, 100);
-  let page = match state
+  let mut resp = match state
     .app
     .blobs
     .get_readable_blob_manifest(&workspace_id, &user_id, query.cursor.as_deref(), limit)
     .await
   {
-    Ok(p) => p,
-    Err(err) => return domain_error_to_http_response(&err),
+    Ok(page) => {
+      let entries: Vec<ManifestEntryDto> = page
+        .entries
+        .into_iter()
+        .map(|b| ManifestEntryDto {
+          key: b.key,
+          size: b.size,
+          mime: b.mime,
+          created_at: b.created_at.to_rfc3339(),
+          source: ManifestSourceDto {
+            source_type: b.source_type,
+            workspace_id: b.workspace_id,
+            doc_id: b.doc_id,
+            timestamp_ms: b.timestamp_ms,
+          },
+        })
+        .collect();
+      json_utf8_response(
+        StatusCode::OK,
+        serde_json::json!({ "version": 1, "entries": entries, "nextCursor": page.next_cursor }),
+        true,
+      )
+    }
+    Err(err) => domain_error_to_http_response(&err),
   };
-  let entries: Vec<ManifestEntryDto> = page
-    .entries
-    .into_iter()
-    .map(|b| ManifestEntryDto {
-      key: b.key,
-      size: b.size,
-      mime: b.mime,
-      created_at: b.created_at.to_rfc3339(),
-      source: ManifestSourceDto {
-        source_type: b.source_type,
-        workspace_id: b.workspace_id,
-        doc_id: b.doc_id,
-        timestamp_ms: b.timestamp_ms,
-      },
-    })
-    .collect();
-  json_utf8_response(
-    StatusCode::OK,
-    serde_json::json!({ "version": 1, "entries": entries, "nextCursor": page.next_cursor }),
-    true,
-  )
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
+  resp
 }
 
 /// Deprecated legacy blob route (`GET /api/workspaces/:workspace_id/blobs/:name`)
 /// aligned 1:1 with `v0.27.5` `core/workspaces/controller.ts:169-178`.
 pub(crate) async fn handle_get_legacy_blob(
+  State(state): State<RouterState>,
   Path((_workspace_id, _name)): Path<(String, String)>,
   headers: HeaderMap,
 ) -> Response {
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(r) => r,
+    Err(err) => return err.into_http_response(),
+  };
   let client_version = headers
     .get("x-affine-version")
     .and_then(|v| v.to_str().ok())
@@ -298,7 +343,7 @@ pub(crate) async fn handle_get_legacy_blob(
     .filter(|s| !s.is_empty())
     .unwrap_or("unset_or_invalid");
   let required_version = ">=0.27.0 (source-scoped blob protocol)";
-  envelope_to_http_response(LegacyErrorEnvelope {
+  let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
     status: StatusCode::FORBIDDEN.as_u16(),
     code: "Forbidden".into(),
     error_type: "ACTION_FORBIDDEN".into(),
@@ -308,7 +353,11 @@ pub(crate) async fn handle_get_legacy_blob(
       "clientVersion": client_version,
       "requiredVersion": required_version,
     })),
-  })
+  });
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 /// Binary Yjs doc read (`GET /api/workspaces/:workspace_id/docs/:doc_id`),
@@ -320,11 +369,12 @@ pub(crate) async fn handle_get_doc_snapshot(
   Path((workspace_id, doc_id)): Path<(String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
-  match state
+  let user_id = resolved.principal.map(|p| p.into_user().id);
+  let mut resp = match state
     .app
     .workspaces
     .get_doc_binary_for_actor(&workspace_id, user_id.as_deref(), &doc_id)
@@ -362,7 +412,11 @@ pub(crate) async fn handle_get_doc_snapshot(
       data: Some(serde_json::json!({ "spaceId": workspace_id, "docId": doc_id })),
     }),
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 /// `HEAD /api/workspaces/:workspace_id/public-docs/:doc_id`
@@ -371,11 +425,12 @@ pub(crate) async fn handle_head_public_doc(
   Path((workspace_id, doc_id)): Path<(String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
-  match state
+  let user_id = resolved.principal.map(|p| p.into_user().id);
+  let mut resp = match state
     .app
     .doc_sharing
     .head_public_doc(&workspace_id, user_id.as_deref(), &doc_id)
@@ -389,7 +444,11 @@ pub(crate) async fn handle_head_public_doc(
       resp
     }
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 /// `GET /api/workspaces/:workspace_id/public-docs/:doc_id`
@@ -398,11 +457,12 @@ pub(crate) async fn handle_get_public_doc(
   Path((workspace_id, doc_id)): Path<(String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
-  match state
+  let user_id = resolved.principal.map(|p| p.into_user().id);
+  let mut resp = match state
     .app
     .doc_sharing
     .get_public_doc_binary(&workspace_id, user_id.as_deref(), &doc_id)
@@ -426,7 +486,11 @@ pub(crate) async fn handle_get_public_doc(
       resp
     }
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 /// `GET /api/workspaces/:workspace_id/public-docs/:doc_id/root-doc`
@@ -435,11 +499,12 @@ pub(crate) async fn handle_get_public_root_doc(
   Path((workspace_id, doc_id)): Path<(String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(principal) => principal.map(|p| p.into_user().id),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, true).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
-  match state
+  let user_id = resolved.principal.map(|p| p.into_user().id);
+  let mut resp = match state
     .app
     .doc_sharing
     .get_public_root_doc(&workspace_id, user_id.as_deref(), &doc_id)
@@ -455,7 +520,11 @@ pub(crate) async fn handle_get_public_root_doc(
       resp
     }
     Err(err) => domain_error_to_http_response(&err),
-  }
+  };
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 fn parse_history_timestamp(raw: &str) -> Option<chrono::DateTime<chrono::Utc>> {
@@ -474,55 +543,67 @@ pub(crate) async fn handle_get_doc_history(
   Path((workspace_id, guid, timestamp)): Path<(String, String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(Some(principal)) => principal.into_user().id,
-    Ok(None) => return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into())),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
-  let Some(ts) = parse_history_timestamp(&timestamp) else {
-    return envelope_to_http_response(LegacyErrorEnvelope {
+  let Some(principal) = resolved.principal else {
+    let mut resp = domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+    resolved
+      .cookie_action
+      .apply_to(resp.headers_mut(), state.app.config.load().https);
+    return resp;
+  };
+  let user_id = principal.into_user().id;
+  let mut resp = if let Some(ts) = parse_history_timestamp(&timestamp) {
+    match state
+      .app
+      .histories
+      .get_history_binary(&user_id, &workspace_id, &guid, ts)
+      .await
+    {
+      Ok(Some(bytes)) => {
+        let mut resp = Response::new(axum::body::Body::from(bytes));
+        *resp.status_mut() = StatusCode::OK;
+        let h = resp.headers_mut();
+        h.insert(
+          header::CONTENT_TYPE,
+          HeaderValue::from_static("application/octet-stream"),
+        );
+        h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, no-store"));
+        resp
+      }
+      Ok(None) => envelope_to_http_response(LegacyErrorEnvelope {
+        status: StatusCode::NOT_FOUND.as_u16(),
+        code: "Not Found".into(),
+        error_type: "RESOURCE_NOT_FOUND".into(),
+        name: "DOC_HISTORY_NOT_FOUND".into(),
+        message: format!(
+          "History of {guid} at {} under Space {workspace_id}.",
+          ts.timestamp_millis()
+        ),
+        data: Some(serde_json::json!({
+          "spaceId": workspace_id,
+          "docId": guid,
+          "timestamp": ts.timestamp_millis(),
+        })),
+      }),
+      Err(err) => domain_error_to_http_response(&err),
+    }
+  } else {
+    envelope_to_http_response(LegacyErrorEnvelope {
       status: StatusCode::BAD_REQUEST.as_u16(),
       code: "Bad Request".into(),
       error_type: "INVALID_INPUT".into(),
       name: "INVALID_HISTORY_TIMESTAMP".into(),
       message: "Invalid history timestamp.".into(),
       data: Some(serde_json::json!({ "timestamp": timestamp })),
-    });
+    })
   };
-  match state
-    .app
-    .histories
-    .get_history_binary(&user_id, &workspace_id, &guid, ts)
-    .await
-  {
-    Ok(Some(bytes)) => {
-      let mut resp = Response::new(axum::body::Body::from(bytes));
-      *resp.status_mut() = StatusCode::OK;
-      let h = resp.headers_mut();
-      h.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("application/octet-stream"),
-      );
-      h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, no-store"));
-      resp
-    }
-    Ok(None) => envelope_to_http_response(LegacyErrorEnvelope {
-      status: StatusCode::NOT_FOUND.as_u16(),
-      code: "Not Found".into(),
-      error_type: "RESOURCE_NOT_FOUND".into(),
-      name: "DOC_HISTORY_NOT_FOUND".into(),
-      message: format!(
-        "History of {guid} at {} under Space {workspace_id}.",
-        ts.timestamp_millis()
-      ),
-      data: Some(serde_json::json!({
-        "spaceId": workspace_id,
-        "docId": guid,
-        "timestamp": ts.timestamp_millis(),
-      })),
-    }),
-    Err(err) => domain_error_to_http_response(&err),
-  }
+  resolved
+    .cookie_action
+    .apply_to(resp.headers_mut(), state.app.config.load().https);
+  resp
 }
 
 /// `GET /api/workspaces/:workspace_id/docs/:doc_id/comment-attachments/:key`
@@ -531,11 +612,17 @@ pub(crate) async fn handle_get_comment_attachment(
   Path((workspace_id, doc_id, key)): Path<(String, String, String)>,
   headers: HeaderMap,
 ) -> Response {
-  let user_id = match resolve_request_principal(&state, &headers).await {
-    Ok(Some(principal)) => principal.into_user().id,
-    Ok(None) => return domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into())),
+  let resolved = match resolve_request_principal_with_policy(&state, &headers, false).await {
+    Ok(resolved) => resolved,
     Err(err) => return err.into_http_response(),
   };
+  let https = state.app.config.load().https;
+  let Some(principal) = resolved.principal else {
+    let mut resp = domain_error_to_http_response(&DomainError::Unauthorized("Authentication required".into()));
+    resolved.cookie_action.apply_to(resp.headers_mut(), https);
+    return resp;
+  };
+  let user_id = principal.into_user().id;
   let meta = match state
     .app
     .comments
@@ -544,7 +631,7 @@ pub(crate) async fn handle_get_comment_attachment(
   {
     Ok(Some(m)) => m,
     Ok(None) => {
-      return envelope_to_http_response(LegacyErrorEnvelope {
+      let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
         status: StatusCode::NOT_FOUND.as_u16(),
         code: "Not Found".into(),
         error_type: "RESOURCE_NOT_FOUND".into(),
@@ -552,14 +639,20 @@ pub(crate) async fn handle_get_comment_attachment(
         message: "Comment attachment not found.".into(),
         data: None,
       });
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
     }
-    Err(err) => return domain_error_to_http_response(&err),
+    Err(err) => {
+      let mut resp = domain_error_to_http_response(&err);
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
+    }
   };
   let object_key = format!("{}/{}/{}", meta.workspace_id, meta.doc_id, meta.key);
   let (bytes, obj_meta) = match state.app.comment_attachments.get(&object_key).await {
     Ok(Some(v)) => v,
     Ok(None) => {
-      return envelope_to_http_response(LegacyErrorEnvelope {
+      let mut resp = envelope_to_http_response(LegacyErrorEnvelope {
         status: StatusCode::NOT_FOUND.as_u16(),
         code: "Not Found".into(),
         error_type: "RESOURCE_NOT_FOUND".into(),
@@ -567,12 +660,16 @@ pub(crate) async fn handle_get_comment_attachment(
         message: "Comment attachment not found.".into(),
         data: None,
       });
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
     }
     Err(err) => {
       tracing::warn!(error = %err, "failed to load comment attachment");
-      return domain_error_to_http_response(&DomainError::Unavailable(
+      let mut resp = domain_error_to_http_response(&DomainError::Unavailable(
         "comment attachment storage unavailable".into(),
       ));
+      resolved.cookie_action.apply_to(resp.headers_mut(), https);
+      return resp;
     }
   };
   let mut resp = (StatusCode::OK, bytes).into_response();
@@ -593,5 +690,6 @@ pub(crate) async fn handle_get_comment_attachment(
     h.insert(header::LAST_MODIFIED, val);
   }
   apply_blob_security_headers(h, Some(ct), Some(&meta.name));
+  resolved.cookie_action.apply_to(resp.headers_mut(), https);
   resp
 }

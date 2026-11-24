@@ -1,10 +1,15 @@
 //! `async-graphql 7` root schema aligned with `v0.27.5` `schema.gql`.
 
 pub mod admin;
+pub mod auth;
+pub mod billing;
 pub mod blob;
+pub mod calendar;
 pub mod comment;
+pub mod copilot;
 pub mod doc;
 pub mod license;
+pub mod mcp;
 pub mod notification;
 pub mod search;
 pub mod user;
@@ -13,15 +18,16 @@ pub mod workspace;
 use std::sync::Arc;
 
 use async_graphql::{
-  Context, EmptySubscription, InputValueError, InputValueResult, Object, Result, Scalar, ScalarType, Schema, Upload,
-  Value,
+  Context, EmptySubscription, InputValueError, InputValueResult, MergedObject, Object, Result, Scalar, ScalarType,
+  Schema, Upload, Value,
 };
 use serde::{Deserialize, Serialize};
 use server_domain::users::CurrentUserView;
 use server_types::DomainError;
 
 use crate::AppState;
-use crate::legacy_compat::errors::domain_error_to_graphql;
+use crate::legacy_compat::errors::{domain_error_to_graphql, envelope_to_graphql};
+use crate::rest::version_guard::VersionGuardError;
 
 pub use admin::{
   CredentialsRequirementType, FeatureType, PasswordLimitsType, ServerConfigType, ServerDeploymentType, ServerFeature,
@@ -103,8 +109,219 @@ pub(crate) fn graphql_request_id(state: &AppState) -> String {
   format!("{deployment}:graphql:{}", uuid::Uuid::new_v4())
 }
 
+/// Request-scoped cookie version rejection stored when a GraphQL request's
+/// cookie session failed `client.versionControl` so `@Public()` queries see
+/// anonymous `None` while protected resolvers return `403 UNSUPPORTED_CLIENT_VERSION`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RejectedCookieVersion(pub VersionGuardError);
+
+/// Request-scoped principal resolution failure (e.g. Bearer version rejection
+/// or invalid access token) enforced per root GraphQL field so `async-graphql`
+/// attaches exact field `path` and preserves nullable vs non-null `data` semantics.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RejectedGraphqlAuth(pub crate::legacy_compat::errors::LegacyErrorEnvelope);
+
+#[derive(Clone, Debug)]
+pub(crate) struct ResolvedGraphqlPrincipal {
+  pub(crate) auth: Option<AuthenticatedUser>,
+  pub(crate) rejected_cookie_version: Option<VersionGuardError>,
+}
+
+/// Request-scoped lazy principal resolver for GraphQL HTTP requests.
+/// Runs `resolve_request_principal_with_policy` at most once and only when
+/// at least one non-introspection root `Query`/`Mutation` field actually executes,
+/// so syntax/validation errors, `{ __typename }`, and `@skip(if: true)` queries
+/// never trigger DB writes or session revocations.
+#[derive(Clone)]
+pub(crate) struct LazyGraphqlPrincipal {
+  state: crate::RouterState,
+  headers: axum::http::HeaderMap,
+  resolved: Arc<
+    tokio::sync::OnceCell<
+      std::result::Result<ResolvedGraphqlPrincipal, crate::legacy_compat::errors::LegacyErrorEnvelope>,
+    >,
+  >,
+  cookie_action: Arc<std::sync::Mutex<crate::rest::PrincipalCookieAction>>,
+  http_error: Arc<std::sync::Mutex<Option<axum::response::Response>>>,
+}
+
+impl LazyGraphqlPrincipal {
+  pub(crate) fn new(state: crate::RouterState, headers: axum::http::HeaderMap) -> Self {
+    Self {
+      state,
+      headers,
+      resolved: Arc::new(tokio::sync::OnceCell::new()),
+      cookie_action: Arc::new(std::sync::Mutex::new(crate::rest::PrincipalCookieAction::None)),
+      http_error: Arc::new(std::sync::Mutex::new(None)),
+    }
+  }
+
+  pub(crate) async fn resolve_once(
+    &self,
+  ) -> &std::result::Result<ResolvedGraphqlPrincipal, crate::legacy_compat::errors::LegacyErrorEnvelope> {
+    self
+      .resolved
+      .get_or_init(|| async {
+        match crate::rest::resolve_request_principal_with_policy(&self.state, &self.headers, true).await {
+          Ok(resolved) => {
+            if let Ok(mut guard) = self.cookie_action.lock() {
+              *guard = resolved.cookie_action;
+            }
+            let auth = resolved.principal.map(|p| {
+              let user = p.into_user();
+              AuthenticatedUser {
+                user_id: user.id.clone(),
+                user: Some(user),
+              }
+            });
+            Ok(ResolvedGraphqlPrincipal {
+              auth,
+              rejected_cookie_version: resolved.rejected_cookie_version,
+            })
+          }
+          Err(crate::rest::PrincipalResolutionError::VersionGuard { error, clear_cookies }) => {
+            if clear_cookies && let Ok(mut guard) = self.cookie_action.lock() {
+              *guard = crate::rest::PrincipalCookieAction::Clear;
+            }
+            Err(error.into_envelope())
+          }
+          Err(crate::rest::PrincipalResolutionError::AccessToken(code)) => {
+            let (env, _) = crate::rest::PrincipalResolutionError::AccessToken(code).into_envelope();
+            if let Ok(mut guard) = self.http_error.lock() {
+              *guard = Some(crate::rest::PrincipalResolutionError::AccessToken(code).into_http_response());
+            }
+            Err(env)
+          }
+          Err(crate::rest::PrincipalResolutionError::Domain(err)) => {
+            Err(crate::legacy_compat::errors::domain_error_to_envelope(&err))
+          }
+        }
+      })
+      .await
+  }
+
+  pub(crate) fn resolved_sync(&self) -> Option<&ResolvedGraphqlPrincipal> {
+    self.resolved.get().and_then(|res| res.as_ref().ok())
+  }
+
+  pub(crate) fn cookie_action(&self) -> crate::rest::PrincipalCookieAction {
+    self
+      .cookie_action
+      .lock()
+      .map(|g| g.clone())
+      .unwrap_or(crate::rest::PrincipalCookieAction::None)
+  }
+
+  pub(crate) fn take_http_error(&self) -> Option<axum::response::Response> {
+    self.http_error.lock().ok().and_then(|mut g| g.take())
+  }
+}
+
+pub(crate) fn current_authenticated_user(ctx: &Context<'_>) -> Option<AuthenticatedUser> {
+  if let Some(lazy) = ctx.data_opt::<LazyGraphqlPrincipal>() {
+    return lazy.resolved_sync().and_then(|r| r.auth.clone());
+  }
+  ctx.data_opt::<AuthenticatedUser>().cloned()
+}
+
+pub(crate) fn current_rejected_cookie_version(ctx: &Context<'_>) -> Option<VersionGuardError> {
+  if let Some(lazy) = ctx.data_opt::<LazyGraphqlPrincipal>() {
+    return lazy.resolved_sync().and_then(|r| r.rejected_cookie_version.clone());
+  }
+  ctx.data_opt::<RejectedCookieVersion>().map(|r| r.0.clone())
+}
+
+struct GraphqlAuthExtensionFactory;
+
+struct GraphqlAuthExtension {
+  deferred_errors: std::sync::Mutex<Vec<async_graphql::ServerError>>,
+}
+
+impl async_graphql::extensions::ExtensionFactory for GraphqlAuthExtensionFactory {
+  fn create(&self) -> Arc<dyn async_graphql::extensions::Extension> {
+    Arc::new(GraphqlAuthExtension {
+      deferred_errors: std::sync::Mutex::new(Vec::new()),
+    })
+  }
+}
+
+impl async_graphql::extensions::Extension for GraphqlAuthExtension {
+  fn execute<'life0, 'life1, 'life2, 'life3, 'life4, 'async_trait>(
+    &'life0 self,
+    ctx: &'life1 async_graphql::extensions::ExtensionContext<'life2>,
+    operation_name: Option<&'life3 str>,
+    next: async_graphql::extensions::NextExecute<'life4>,
+  ) -> std::pin::Pin<Box<dyn std::future::Future<Output = async_graphql::Response> + Send + 'async_trait>>
+  where
+    'life0: 'async_trait,
+    'life1: 'async_trait,
+    'life2: 'async_trait,
+    'life3: 'async_trait,
+    'life4: 'async_trait,
+    Self: 'async_trait,
+  {
+    Box::pin(async move {
+      let mut resp = next.run(ctx, operation_name).await;
+      if let Ok(mut errs) = self.deferred_errors.lock() {
+        resp.errors.extend(errs.drain(..));
+      }
+      resp
+    })
+  }
+
+  fn resolve<'life0, 'life1, 'life2, 'life3, 'life4, 'async_trait>(
+    &'life0 self,
+    ctx: &'life1 async_graphql::extensions::ExtensionContext<'life2>,
+    info: async_graphql::extensions::ResolveInfo<'life3>,
+    next: async_graphql::extensions::NextResolve<'life4>,
+  ) -> std::pin::Pin<
+    Box<dyn std::future::Future<Output = async_graphql::ServerResult<Option<Value>>> + Send + 'async_trait>,
+  >
+  where
+    'life0: 'async_trait,
+    'life1: 'async_trait,
+    'life2: 'async_trait,
+    'life3: 'async_trait,
+    'life4: 'async_trait,
+    Self: 'async_trait,
+  {
+    Box::pin(async move {
+      if info.path_node.parent.is_some() || info.name.starts_with("__") {
+        return next.run(ctx, info).await;
+      }
+      if info.parent_type == "Query" || info.parent_type == "Mutation" {
+        let rejected_env = if let Some(lazy) = ctx.data_opt::<LazyGraphqlPrincipal>() {
+          lazy.resolve_once().await.as_ref().err().cloned()
+        } else {
+          ctx.data_opt::<RejectedGraphqlAuth>().map(|r| r.0.clone())
+        };
+        if let Some(env) = rejected_env {
+          let response_key = match info.path_node.segment {
+            async_graphql::QueryPathSegment::Name(name) => name,
+            async_graphql::QueryPathSegment::Index(_) => info.name,
+          };
+          let pos = info.field.response_key().pos;
+          let mut err = envelope_to_graphql(env).into_server_error(pos);
+          err.path = vec![async_graphql::PathSegment::Field(response_key.to_owned())];
+          if info.return_type.ends_with('!') {
+            return Err(err);
+          }
+          if let Ok(mut errs) = self.deferred_errors.lock() {
+            errs.push(err);
+          }
+          return Ok(Some(Value::Null));
+        }
+      }
+      next.run(ctx, info).await
+    })
+  }
+}
+
 pub(crate) async fn require_authenticated_user(ctx: &Context<'_>) -> Result<CurrentUserView> {
-  let Some(auth) = ctx.data_opt::<AuthenticatedUser>() else {
+  let Some(auth) = current_authenticated_user(ctx) else {
+    if let Some(rejected) = current_rejected_cookie_version(ctx) {
+      return Err(envelope_to_graphql(rejected.into_envelope()));
+    }
     return Err(domain_error_to_graphql(&DomainError::Unauthorized(
       "Authentication required".into(),
     )));
@@ -131,14 +348,11 @@ pub(crate) async fn require_admin_user(ctx: &Context<'_>) -> Result<CurrentUserV
   Ok(user)
 }
 
-pub struct QueryRoot;
+#[derive(Default)]
+pub struct CoreQuery;
 
-#[Object(name = "Query")]
-impl QueryRoot {
-  async fn server_config(&self, ctx: &Context<'_>) -> Result<ServerConfigType> {
-    admin::resolve_server_config(ctx).await
-  }
-
+#[Object]
+impl CoreQuery {
   async fn current_user(&self, ctx: &Context<'_>) -> Option<UserType> {
     user::resolve_current_user(ctx)
   }
@@ -150,28 +364,24 @@ impl QueryRoot {
   async fn public_user_by_id(&self, ctx: &Context<'_>, id: String) -> Result<Option<PublicUserType>> {
     user::resolve_public_user_by_id(ctx, id).await
   }
-
-  async fn workspaces(&self, ctx: &Context<'_>) -> Result<Vec<WorkspaceType>> {
-    workspace::resolve_workspaces(ctx).await
-  }
-
-  async fn workspace(&self, ctx: &Context<'_>, id: String) -> Result<WorkspaceType> {
-    workspace::resolve_workspace(ctx, id).await
-  }
-
-  async fn get_invite_info(&self, ctx: &Context<'_>, invite_id: String) -> Result<InvitationType> {
-    workspace::resolve_get_invite_info(ctx, invite_id).await
-  }
-
-  async fn app_config(&self, ctx: &Context<'_>) -> Result<JsonObjectScalar> {
-    admin::resolve_app_config(ctx).await
-  }
 }
 
-pub struct MutationRoot;
+#[derive(MergedObject, Default)]
+#[graphql(name = "Query")]
+pub struct QueryRoot(
+  CoreQuery,
+  auth::AuthQuery,
+  admin::AdminQuery,
+  workspace::WorkspaceQuery,
+  mcp::McpQuery,
+  billing::BillingQuery,
+);
 
-#[Object(name = "Mutation")]
-impl MutationRoot {
+#[derive(Default)]
+pub struct CoreMutation;
+
+#[Object]
+impl CoreMutation {
   async fn update_profile(&self, ctx: &Context<'_>, input: UpdateUserInput) -> Result<UserType> {
     user::mutate_update_profile(ctx, input).await
   }
@@ -182,214 +392,6 @@ impl MutationRoot {
 
   async fn remove_avatar(&self, ctx: &Context<'_>) -> Result<RemoveAvatar> {
     user::mutate_remove_avatar(ctx).await
-  }
-
-  async fn create_workspace(&self, ctx: &Context<'_>, init: Option<Upload>) -> Result<WorkspaceType> {
-    workspace::mutate_create_workspace(ctx, init).await
-  }
-
-  async fn update_workspace(&self, ctx: &Context<'_>, input: UpdateWorkspaceInput) -> Result<WorkspaceType> {
-    workspace::mutate_update_workspace(ctx, input).await
-  }
-
-  async fn delete_workspace(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
-    workspace::mutate_delete_workspace(ctx, id).await
-  }
-
-  async fn leave_workspace(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    send_leave_mail: Option<bool>,
-    workspace_name: Option<String>,
-  ) -> Result<bool> {
-    workspace::mutate_leave_workspace(ctx, workspace_id, send_leave_mail, workspace_name).await
-  }
-
-  async fn grant_member(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    user_id: String,
-    permission: Permission,
-  ) -> Result<bool> {
-    workspace::mutate_grant_member(ctx, workspace_id, user_id, permission).await
-  }
-
-  async fn approve_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
-    workspace::mutate_approve_member(ctx, workspace_id, user_id).await
-  }
-
-  async fn invite_members(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    emails: Vec<String>,
-  ) -> Result<Vec<InviteResult>> {
-    workspace::mutate_invite_members(ctx, workspace_id, emails).await
-  }
-
-  async fn revoke_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
-    workspace::mutate_revoke_member(ctx, workspace_id, user_id).await
-  }
-
-  async fn accept_invite_by_id(
-    &self,
-    ctx: &Context<'_>,
-    invite_id: String,
-    send_accept_mail: Option<bool>,
-    workspace_id: Option<String>,
-  ) -> Result<bool> {
-    workspace::mutate_accept_invite_by_id(ctx, invite_id, send_accept_mail, workspace_id).await
-  }
-
-  async fn create_invite_link(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    expire_time: WorkspaceInviteLinkExpireTime,
-  ) -> Result<InviteLink> {
-    workspace::mutate_create_invite_link(ctx, workspace_id, expire_time).await
-  }
-
-  async fn revoke_invite_link(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
-    workspace::mutate_revoke_invite_link(ctx, workspace_id).await
-  }
-
-  async fn update_app_config(&self, ctx: &Context<'_>, updates: Vec<UpdateAppConfigInput>) -> Result<JsonObjectScalar> {
-    admin::mutate_update_app_config(ctx, updates).await
-  }
-
-  async fn send_test_email(&self, ctx: &Context<'_>, config: JsonObjectScalar) -> Result<bool> {
-    admin::mutate_send_test_email(ctx, config).await
-  }
-
-  async fn create_blob_upload(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    key: String,
-    size: i32,
-    mime: String,
-  ) -> Result<BlobUploadInit> {
-    blob::mutate_create_blob_upload(ctx, workspace_id, key, size, mime).await
-  }
-
-  async fn set_blob(&self, ctx: &Context<'_>, workspace_id: String, blob: Upload) -> Result<String> {
-    blob::mutate_set_blob(ctx, workspace_id, blob).await
-  }
-
-  async fn delete_blob(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    key: Option<String>,
-    hash: Option<String>,
-    #[graphql(default = false)] permanently: bool,
-  ) -> Result<bool> {
-    blob::mutate_delete_blob(ctx, workspace_id, key, hash, permanently).await
-  }
-
-  async fn release_deleted_blobs(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
-    blob::mutate_release_deleted_blobs(ctx, workspace_id).await
-  }
-
-  async fn publish_doc(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    doc_id: String,
-    #[graphql(default_with = "doc::PublicDocMode::Page")] mode: doc::PublicDocMode,
-  ) -> Result<doc::DocType> {
-    doc::mutate_publish_doc(ctx, workspace_id, doc_id, mode).await
-  }
-
-  async fn revoke_public_doc(&self, ctx: &Context<'_>, workspace_id: String, doc_id: String) -> Result<doc::DocType> {
-    doc::mutate_revoke_public_doc(ctx, workspace_id, doc_id).await
-  }
-
-  async fn grant_doc_user_roles(&self, ctx: &Context<'_>, input: doc::GrantDocUserRolesInput) -> Result<bool> {
-    doc::mutate_grant_doc_user_roles(ctx, input).await
-  }
-
-  async fn revoke_doc_user_roles(&self, ctx: &Context<'_>, input: doc::RevokeDocUserRoleInput) -> Result<bool> {
-    doc::mutate_revoke_doc_user_roles(ctx, input).await
-  }
-
-  async fn update_doc_user_role(&self, ctx: &Context<'_>, input: doc::UpdateDocUserRoleInput) -> Result<bool> {
-    doc::mutate_update_doc_user_role(ctx, input).await
-  }
-
-  async fn update_doc_default_role(&self, ctx: &Context<'_>, input: doc::UpdateDocDefaultRoleInput) -> Result<bool> {
-    doc::mutate_update_doc_default_role(ctx, input).await
-  }
-
-  async fn recover_doc(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    guid: String,
-    timestamp: chrono::DateTime<chrono::Utc>,
-  ) -> Result<chrono::DateTime<chrono::Utc>> {
-    doc::mutate_recover_doc(ctx, workspace_id, guid, timestamp).await
-  }
-
-  async fn create_comment(
-    &self,
-    ctx: &Context<'_>,
-    input: comment::CommentCreateInput,
-  ) -> Result<comment::CommentObjectType> {
-    comment::mutate_create_comment(ctx, input).await
-  }
-
-  async fn update_comment(&self, ctx: &Context<'_>, input: comment::CommentUpdateInput) -> Result<bool> {
-    comment::mutate_update_comment(ctx, input).await
-  }
-
-  async fn resolve_comment(&self, ctx: &Context<'_>, input: comment::CommentResolveInput) -> Result<bool> {
-    comment::mutate_resolve_comment(ctx, input).await
-  }
-
-  async fn delete_comment(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
-    comment::mutate_delete_comment(ctx, id).await
-  }
-
-  async fn create_reply(
-    &self,
-    ctx: &Context<'_>,
-    input: comment::ReplyCreateInput,
-  ) -> Result<comment::ReplyObjectType> {
-    comment::mutate_create_reply(ctx, input).await
-  }
-
-  async fn update_reply(&self, ctx: &Context<'_>, input: comment::ReplyUpdateInput) -> Result<bool> {
-    comment::mutate_update_reply(ctx, input).await
-  }
-
-  async fn delete_reply(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
-    comment::mutate_delete_reply(ctx, id).await
-  }
-
-  async fn upload_comment_attachment(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    doc_id: String,
-    attachment: Upload,
-  ) -> Result<String> {
-    comment::mutate_upload_comment_attachment(ctx, workspace_id, doc_id, attachment).await
-  }
-
-  async fn mention_user(&self, ctx: &Context<'_>, input: notification::MentionInput) -> Result<async_graphql::ID> {
-    notification::mutate_mention_user(ctx, input).await
-  }
-
-  async fn read_notification(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
-    notification::mutate_read_notification(ctx, id).await
-  }
-
-  async fn read_all_notifications(&self, ctx: &Context<'_>) -> Result<bool> {
-    notification::mutate_read_all_notifications(ctx).await
   }
 
   async fn update_settings(&self, ctx: &Context<'_>, input: UpdateUserSettingsInput) -> Result<bool> {
@@ -403,40 +405,29 @@ impl MutationRoot {
   async fn delete_user(&self, ctx: &Context<'_>, id: String) -> Result<DeleteAccount> {
     user::mutate_delete_user(ctx, id).await
   }
-
-  async fn activate_license(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    license: String,
-  ) -> Result<license::License> {
-    license::mutate_activate_license(ctx, workspace_id, license).await
-  }
-
-  async fn deactivate_license(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
-    license::mutate_deactivate_license(ctx, workspace_id).await
-  }
-
-  async fn install_license(
-    &self,
-    ctx: &Context<'_>,
-    workspace_id: String,
-    license: Upload,
-  ) -> Result<license::License> {
-    license::mutate_install_license(ctx, workspace_id, license).await
-  }
-
-  async fn preview_license(&self, ctx: &Context<'_>, license: Upload) -> Result<license::AdminLicensePreview> {
-    license::mutate_preview_license(ctx, license).await
-  }
-
-  async fn create_selfhost_workspace_customer_portal(&self, ctx: &Context<'_>, workspace_id: String) -> Result<String> {
-    license::mutate_create_selfhost_workspace_customer_portal(ctx, workspace_id).await
-  }
 }
 
+#[derive(MergedObject, Default)]
+#[graphql(name = "Mutation")]
+pub struct MutationRoot(
+  CoreMutation,
+  auth::AuthMutation,
+  admin::AdminMutation,
+  workspace::WorkspaceMutation,
+  doc::DocMutation,
+  blob::BlobMutation,
+  comment::CommentMutation,
+  notification::NotificationMutation,
+  license::LicenseMutation,
+  calendar::CalendarMutation,
+  mcp::McpMutation,
+  billing::BillingMutation,
+  copilot::CopilotMutation,
+);
+
 pub fn build_schema(state: Arc<AppState>) -> AppSchema {
-  Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+  Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription)
+    .extension(GraphqlAuthExtensionFactory)
     .data(state)
     .finish()
 }
@@ -1091,5 +1082,476 @@ mod tests {
 
       db.pool().close().await;
     });
+  }
+
+  #[test]
+  fn merged_schema_sdl_preserves_registered_definitions() {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    fn parse_sdl_blocks(sdl: &str) -> BTreeMap<String, BTreeSet<String>> {
+      let mut defs: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+      let mut in_doc_block = false;
+      let mut current_block: Option<String> = None;
+      let mut pending_member = String::new();
+      let mut paren_depth: i32 = 0;
+
+      for raw_line in sdl.lines() {
+        let line = raw_line.trim();
+        if line.is_empty() || line.starts_with('#') {
+          continue;
+        }
+        if in_doc_block {
+          if line.contains("\"\"\"") {
+            in_doc_block = false;
+          }
+          continue;
+        }
+        if let Some(rest) = line.strip_prefix("\"\"\"") {
+          if !rest.contains("\"\"\"") {
+            in_doc_block = true;
+          }
+          continue;
+        }
+        if line.starts_with('"') && line.ends_with('"') && line.len() >= 2 {
+          continue;
+        }
+
+        if let Some(block_key) = current_block.as_ref() {
+          if line == "}" {
+            if !pending_member.is_empty() {
+              defs
+                .entry(block_key.clone())
+                .or_default()
+                .insert(std::mem::take(&mut pending_member));
+              paren_depth = 0;
+            }
+            current_block = None;
+            continue;
+          }
+          if pending_member.is_empty() {
+            pending_member.push_str(line);
+          } else {
+            pending_member.push(' ');
+            pending_member.push_str(line);
+          }
+          for ch in line.chars() {
+            match ch {
+              '(' => paren_depth += 1,
+              ')' => paren_depth -= 1,
+              _ => {}
+            }
+          }
+          if paren_depth <= 0 {
+            defs
+              .entry(block_key.clone())
+              .or_default()
+              .insert(std::mem::take(&mut pending_member));
+            paren_depth = 0;
+          }
+          continue;
+        }
+
+        if let Some(header) = line.strip_suffix('{') {
+          let key = header.trim().to_owned();
+          defs.entry(key.clone()).or_default();
+          current_block = Some(key);
+        } else if line.starts_with("union ") || line.starts_with("scalar ") || line.starts_with("directive ") {
+          let mut parts = line.split_whitespace();
+          let kw = parts.next().unwrap_or_default();
+          let name = parts
+            .next()
+            .unwrap_or_default()
+            .split(['(', '='])
+            .next()
+            .unwrap_or_default();
+          let key = format!("{kw} {name}");
+          defs.entry(key).or_default().insert(line.to_owned());
+        }
+      }
+
+      defs
+    }
+
+    fn strip_deprecated_directives(sig: &str) -> String {
+      let bytes = sig.as_bytes();
+      let mut out = String::with_capacity(sig.len());
+      let mut i = 0;
+      while i < bytes.len() {
+        if sig[i..].starts_with("@deprecated") {
+          i += "@deprecated".len();
+          while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+          }
+          if i < bytes.len() && bytes[i] == b'(' {
+            let mut depth = 0i32;
+            let mut in_str = false;
+            while i < bytes.len() {
+              let b = bytes[i];
+              if in_str {
+                if b == b'\\' {
+                  i += 2;
+                  continue;
+                }
+                if b == b'"' {
+                  in_str = false;
+                }
+              } else if b == b'"' {
+                in_str = true;
+              } else if b == b'(' {
+                depth += 1;
+              } else if b == b')' {
+                depth -= 1;
+                i += 1;
+                if depth == 0 {
+                  break;
+                }
+                continue;
+              }
+              i += 1;
+            }
+          }
+          continue;
+        }
+        let ch = sig[i..].chars().next().unwrap();
+        out.push(ch);
+        i += ch.len_utf8();
+      }
+      out.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+
+    fn canonicalize_sdl_member(sig: &str) -> String {
+      let cleaned = strip_deprecated_directives(sig);
+      let Some(open_paren) = cleaned.find('(') else {
+        return cleaned;
+      };
+      let bytes = cleaned.as_bytes();
+      let mut depth = 0i32;
+      let mut in_str = false;
+      let mut close_paren = None;
+      let mut i = open_paren;
+      while i < bytes.len() {
+        let b = bytes[i];
+        if in_str {
+          if b == b'\\' {
+            i += 2;
+            continue;
+          }
+          if b == b'"' {
+            in_str = false;
+          }
+        } else if b == b'"' {
+          in_str = true;
+        } else if b == b'(' {
+          depth += 1;
+        } else if b == b')' {
+          depth -= 1;
+          if depth == 0 {
+            close_paren = Some(i);
+            break;
+          }
+        }
+        i += 1;
+      }
+      let Some(close_paren) = close_paren else {
+        return cleaned;
+      };
+      let prefix = cleaned[..open_paren].trim();
+      let args_raw = &cleaned[open_paren + 1..close_paren];
+      let suffix = cleaned[close_paren + 1..].trim();
+
+      let mut args = Vec::new();
+      let mut cur = String::new();
+      let mut paren_d = 0i32;
+      let mut bracket_d = 0i32;
+      let mut brace_d = 0i32;
+      let mut in_s = false;
+      let mut chars = args_raw.chars().peekable();
+      while let Some(c) = chars.next() {
+        if in_s {
+          cur.push(c);
+          if c == '\\' {
+            if let Some(esc) = chars.next() {
+              cur.push(esc);
+            }
+          } else if c == '"' {
+            in_s = false;
+          }
+          continue;
+        }
+        match c {
+          '"' => {
+            in_s = true;
+            cur.push(c);
+          }
+          '(' => {
+            paren_d += 1;
+            cur.push(c);
+          }
+          ')' => {
+            paren_d -= 1;
+            cur.push(c);
+          }
+          '[' => {
+            bracket_d += 1;
+            cur.push(c);
+          }
+          ']' => {
+            bracket_d -= 1;
+            cur.push(c);
+          }
+          '{' => {
+            brace_d += 1;
+            cur.push(c);
+          }
+          '}' => {
+            brace_d -= 1;
+            cur.push(c);
+          }
+          ',' if paren_d == 0 && bracket_d == 0 && brace_d == 0 => {
+            let trimmed = cur.trim();
+            if !trimmed.is_empty() {
+              args.push(trimmed.to_owned());
+            }
+            cur.clear();
+          }
+          _ => cur.push(c),
+        }
+      }
+      let trimmed = cur.trim();
+      if !trimmed.is_empty() {
+        args.push(trimmed.to_owned());
+      }
+      args.sort_by(|a, b| {
+        let name_a = a.split(':').next().unwrap_or(a).trim();
+        let name_b = b.split(':').next().unwrap_or(b).trim();
+        name_a.cmp(name_b)
+      });
+      format!("{prefix}({}){suffix}", args.join(", "))
+    }
+
+    let schema = Schema::build(QueryRoot::default(), MutationRoot::default(), EmptySubscription).finish();
+    let sdl = schema.sdl();
+
+    let baseline_sdl = include_str!("../../tests/fixtures/pre_split_baseline_schema.gql");
+    let oracle_sdl = include_str!("../../../../../tests/oracle-contracts/v0.27.5/schema.gql");
+
+    let baseline_defs = parse_sdl_blocks(baseline_sdl);
+    let actual_defs = parse_sdl_blocks(&sdl);
+    let oracle_defs = parse_sdl_blocks(oracle_sdl);
+    let canonical_oracle_defs: BTreeMap<String, BTreeSet<String>> = oracle_defs
+      .iter()
+      .map(|(k, v)| (k.clone(), v.iter().map(|m| canonicalize_sdl_member(m)).collect()))
+      .collect();
+
+    // 1. Every top-level definition and signature from the pre-split baseline must
+    //    remain intact (or match the canonicalized v0.27.5 oracle signature if updated
+    //    to align defaults/types with the oracle).
+    for (def_key, base_members) in &baseline_defs {
+      let actual_members = actual_defs
+        .get(def_key)
+        .unwrap_or_else(|| panic!("missing pre-split GraphQL definition `{def_key}` in merged SDL"));
+      let canonical_actual: BTreeSet<String> = actual_members.iter().map(|m| canonicalize_sdl_member(m)).collect();
+      let oracle_canonical = canonical_oracle_defs.get(def_key);
+      for base_sig in base_members {
+        if actual_members.contains(base_sig) {
+          continue;
+        }
+        let canon = canonicalize_sdl_member(base_sig);
+        let matches_oracle =
+          oracle_canonical.is_some_and(|os| os.contains(&canon)) && canonical_actual.contains(&canon);
+        assert!(
+          matches_oracle,
+          "pre-split GraphQL signature changed or dropped in `{def_key}`: `{base_sig}`"
+        );
+      }
+    }
+
+    // 2. Any top-level definition or member added beyond the pre-split baseline must
+    //    exactly match a canonicalized signature in the frozen v0.27.5 oracle schema.
+    for (def_key, actual_members) in &actual_defs {
+      if let Some(base_members) = baseline_defs.get(def_key) {
+        let oracle_canonical = canonical_oracle_defs.get(def_key);
+        for sig in actual_members {
+          if !base_members.contains(sig) {
+            let canon = canonicalize_sdl_member(sig);
+            assert!(
+              oracle_canonical.is_some_and(|os| os.contains(&canon)),
+              "new GraphQL signature in `{def_key}` does not match v0.27.5 oracle: `{sig}` (canonical: `{canon}`)"
+            );
+          }
+        }
+      } else {
+        let oracle_canonical = canonical_oracle_defs
+          .get(def_key)
+          .unwrap_or_else(|| panic!("new GraphQL top-level definition `{def_key}` is not in v0.27.5 oracle"));
+        let canonical_actual: BTreeSet<String> = actual_members.iter().map(|m| canonicalize_sdl_member(m)).collect();
+        assert_eq!(
+          &canonical_actual, oracle_canonical,
+          "new GraphQL definition `{def_key}` does not match v0.27.5 oracle 1:1"
+        );
+      }
+    }
+
+    // 3. When the 14 GraphQL submodules match the split baseline digest, enforce
+    //    exact 1:1 equality against the parent commit's pre-split SDL (zero drift).
+    const SPLIT_BASELINE_SUBMODULES_SHA256: &str = "37cca2f2bcdfc42fcf326042954f107e21edfa6f1406b0f9379f22bc5e167f42";
+    fn sha256_hex(chunks: &[&[u8]]) -> String {
+      const K: [u32; 64] = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98,
+        0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+        0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8,
+        0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
+        0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+        0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2,
+      ];
+      let mut data = Vec::new();
+      for c in chunks {
+        data.extend_from_slice(c);
+      }
+      let bit_len = (data.len() as u64) * 8;
+      data.push(0x80);
+      while (data.len() % 64) != 56 {
+        data.push(0);
+      }
+      data.extend_from_slice(&bit_len.to_be_bytes());
+      let mut h: [u32; 8] = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+      ];
+      for block in data.as_chunks::<64>().0 {
+        let mut w = [0u32; 64];
+        for i in 0..16 {
+          w[i] = u32::from_be_bytes([block[4 * i], block[4 * i + 1], block[4 * i + 2], block[4 * i + 3]]);
+        }
+        for i in 16..64 {
+          let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
+          let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
+          w[i] = w[i - 16].wrapping_add(s0).wrapping_add(w[i - 7]).wrapping_add(s1);
+        }
+        let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut hh] = h;
+        for i in 0..64 {
+          let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+          let ch = (e & f) ^ ((!e) & g);
+          let t1 = hh
+            .wrapping_add(s1)
+            .wrapping_add(ch)
+            .wrapping_add(K[i])
+            .wrapping_add(w[i]);
+          let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+          let maj = (a & b) ^ (a & c) ^ (b & c);
+          let t2 = s0.wrapping_add(maj);
+          hh = g;
+          g = f;
+          f = e;
+          e = d.wrapping_add(t1);
+          d = c;
+          c = b;
+          b = a;
+          a = t1.wrapping_add(t2);
+        }
+        for (slot, val) in h.iter_mut().zip([a, b, c, d, e, f, g, hh]) {
+          *slot = slot.wrapping_add(val);
+        }
+      }
+      let mut out = String::with_capacity(64);
+      for word in h {
+        use std::fmt::Write as _;
+        let _ = write!(&mut out, "{word:08x}");
+      }
+      out
+    }
+
+    let submodule_digest = sha256_hex(&[
+      b"admin.rs",
+      b"\0",
+      include_bytes!("admin.rs"),
+      b"\0",
+      b"auth.rs",
+      b"\0",
+      include_bytes!("auth.rs"),
+      b"\0",
+      b"billing.rs",
+      b"\0",
+      include_bytes!("billing.rs"),
+      b"\0",
+      b"blob.rs",
+      b"\0",
+      include_bytes!("blob.rs"),
+      b"\0",
+      b"calendar.rs",
+      b"\0",
+      include_bytes!("calendar.rs"),
+      b"\0",
+      b"comment.rs",
+      b"\0",
+      include_bytes!("comment.rs"),
+      b"\0",
+      b"copilot.rs",
+      b"\0",
+      include_bytes!("copilot.rs"),
+      b"\0",
+      b"doc.rs",
+      b"\0",
+      include_bytes!("doc.rs"),
+      b"\0",
+      b"license.rs",
+      b"\0",
+      include_bytes!("license.rs"),
+      b"\0",
+      b"mcp.rs",
+      b"\0",
+      include_bytes!("mcp.rs"),
+      b"\0",
+      b"notification.rs",
+      b"\0",
+      include_bytes!("notification.rs"),
+      b"\0",
+      b"search.rs",
+      b"\0",
+      include_bytes!("search.rs"),
+      b"\0",
+      b"user.rs",
+      b"\0",
+      include_bytes!("user.rs"),
+      b"\0",
+      b"workspace.rs",
+      b"\0",
+      include_bytes!("workspace.rs"),
+      b"\0",
+    ]);
+    if submodule_digest == SPLIT_BASELINE_SUBMODULES_SHA256 {
+      assert_eq!(actual_defs, baseline_defs);
+    }
+
+    // 3. Ensure every merged sub-root preserves the exact root type names (`Query` / `Mutation`)
+    //    and never leaks internal sub-root wrapper names into the schema.
+    assert!(sdl.contains("schema {\n\tquery: Query\n\tmutation: Mutation\n}"));
+    for internal_name in [
+      "CoreQuery",
+      "AuthQuery",
+      "AdminQuery",
+      "WorkspaceQuery",
+      "McpQuery",
+      "BillingQuery",
+      "CoreMutation",
+      "AuthMutation",
+      "AdminMutation",
+      "WorkspaceMutation",
+      "DocMutation",
+      "BlobMutation",
+      "CommentMutation",
+      "NotificationMutation",
+      "LicenseMutation",
+      "CalendarMutation",
+      "McpMutation",
+      "BillingMutation",
+      "CopilotMutation",
+    ] {
+      assert!(
+        !actual_defs.contains_key(&format!("type {internal_name}")),
+        "internal merged root `{internal_name}` leaked into SDL"
+      );
+    }
   }
 }

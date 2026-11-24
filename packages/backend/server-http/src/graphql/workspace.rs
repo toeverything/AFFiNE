@@ -10,8 +10,8 @@ use server_domain::workspaces::{
 use server_types::DomainError;
 
 use super::{
-  AuthenticatedUser, AuthorizedWorkspaceUsage, JsonObjectScalar, ListedBlob, UserType, WorkspaceUserType,
-  require_authenticated_user,
+  AuthorizedWorkspaceUsage, JsonObjectScalar, ListedBlob, UserType, WorkspaceUserType, current_authenticated_user,
+  current_rejected_cookie_version, require_authenticated_user,
 };
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
@@ -509,10 +509,10 @@ impl WorkspaceType {
 
   async fn public_docs(&self, ctx: &Context<'_>) -> Result<Vec<super::doc::DocType>> {
     let state = ctx.data_unchecked::<Arc<AppState>>();
-    let actor = ctx.data_opt::<AuthenticatedUser>().map(|a| a.user_id.as_str());
+    let actor = current_authenticated_user(ctx).map(|a| a.user_id);
     let docs = state
       .doc_sharing
-      .list_public_docs(&self.record.id, actor)
+      .list_public_docs(&self.record.id, actor.as_deref())
       .await
       .map_err(|e| domain_error_to_graphql(&e))?;
     Ok(docs.into_iter().map(super::doc::DocType::from_info).collect())
@@ -712,7 +712,12 @@ pub(crate) async fn resolve_workspaces(ctx: &Context<'_>) -> Result<Vec<Workspac
 }
 
 pub(crate) async fn resolve_workspace(ctx: &Context<'_>, id: String) -> Result<WorkspaceType> {
-  let Some(auth) = ctx.data_opt::<AuthenticatedUser>() else {
+  let Some(auth) = current_authenticated_user(ctx) else {
+    if let Some(rejected) = current_rejected_cookie_version(ctx) {
+      return Err(crate::legacy_compat::errors::envelope_to_graphql(
+        rejected.into_envelope(),
+      ));
+    }
     return Err(domain_error_to_graphql(&DomainError::Unauthorized(
       "Authentication required".into(),
     )));
@@ -1132,4 +1137,100 @@ pub(crate) async fn mutate_revoke_invite_link(ctx: &Context<'_>, workspace_id: S
     .revoke_invite_link(&user.id, &workspace_id)
     .await
     .map_err(|e| domain_error_to_graphql(&e))
+}
+
+#[derive(Default)]
+pub struct WorkspaceQuery;
+
+#[async_graphql::Object]
+impl WorkspaceQuery {
+  async fn workspaces(&self, ctx: &Context<'_>) -> Result<Vec<WorkspaceType>> {
+    resolve_workspaces(ctx).await
+  }
+
+  async fn workspace(&self, ctx: &Context<'_>, id: String) -> Result<WorkspaceType> {
+    resolve_workspace(ctx, id).await
+  }
+
+  async fn get_invite_info(&self, ctx: &Context<'_>, invite_id: String) -> Result<InvitationType> {
+    resolve_get_invite_info(ctx, invite_id).await
+  }
+}
+
+#[derive(Default)]
+pub struct WorkspaceMutation;
+
+#[async_graphql::Object]
+impl WorkspaceMutation {
+  async fn create_workspace(&self, ctx: &Context<'_>, init: Option<async_graphql::Upload>) -> Result<WorkspaceType> {
+    mutate_create_workspace(ctx, init).await
+  }
+
+  async fn update_workspace(&self, ctx: &Context<'_>, input: UpdateWorkspaceInput) -> Result<WorkspaceType> {
+    mutate_update_workspace(ctx, input).await
+  }
+
+  async fn delete_workspace(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    mutate_delete_workspace(ctx, id).await
+  }
+
+  async fn leave_workspace(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    send_leave_mail: Option<bool>,
+    workspace_name: Option<String>,
+  ) -> Result<bool> {
+    mutate_leave_workspace(ctx, workspace_id, send_leave_mail, workspace_name).await
+  }
+
+  async fn grant_member(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    user_id: String,
+    permission: Permission,
+  ) -> Result<bool> {
+    mutate_grant_member(ctx, workspace_id, user_id, permission).await
+  }
+
+  async fn approve_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
+    mutate_approve_member(ctx, workspace_id, user_id).await
+  }
+
+  async fn invite_members(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    emails: Vec<String>,
+  ) -> Result<Vec<InviteResult>> {
+    mutate_invite_members(ctx, workspace_id, emails).await
+  }
+
+  async fn revoke_member(&self, ctx: &Context<'_>, workspace_id: String, user_id: String) -> Result<bool> {
+    mutate_revoke_member(ctx, workspace_id, user_id).await
+  }
+
+  async fn accept_invite_by_id(
+    &self,
+    ctx: &Context<'_>,
+    invite_id: String,
+    send_accept_mail: Option<bool>,
+    workspace_id: Option<String>,
+  ) -> Result<bool> {
+    mutate_accept_invite_by_id(ctx, invite_id, send_accept_mail, workspace_id).await
+  }
+
+  async fn create_invite_link(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    expire_time: WorkspaceInviteLinkExpireTime,
+  ) -> Result<InviteLink> {
+    mutate_create_invite_link(ctx, workspace_id, expire_time).await
+  }
+
+  async fn revoke_invite_link(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
+    mutate_revoke_invite_link(ctx, workspace_id).await
+  }
 }

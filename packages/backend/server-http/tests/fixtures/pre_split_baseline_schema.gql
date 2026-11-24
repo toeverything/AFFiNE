@@ -1,0 +1,854 @@
+type AdminLicensePreview {
+	id: String!
+	workspaceId: String!
+	plan: SubscriptionPlan!
+	recurring: SubscriptionRecurring!
+	quantity: Int!
+	issuedAt: DateTime!
+	expiresAt: DateTime!
+	endAt: DateTime!
+	entity: String!
+	issuer: String!
+	valid: Boolean!
+}
+
+type AggregateBucketHitsObjectType {
+	nodes: [SearchNodeObjectType!]!
+}
+
+type AggregateBucketObjectType {
+	key: String!
+	count: Int!
+	hits: AggregateBucketHitsObjectType!
+}
+
+input AggregateHitsOptions {
+	fields: [String!]!
+	highlights: [SearchHighlight!]
+	pagination: AggregateHitsPagination
+}
+
+input AggregateHitsPagination {
+	limit: Int
+	skip: Int
+}
+
+input AggregateInput {
+	table: SearchTable!
+	query: SearchQuery!
+	field: String!
+	options: AggregateOptions!
+}
+
+input AggregateOptions {
+	hits: AggregateHitsOptions!
+	pagination: SearchPagination
+}
+
+type AggregateResultObjectType {
+	buckets: [AggregateBucketObjectType!]!
+	pagination: SearchResultPagination!
+}
+
+type BlobUploadInit {
+	alreadyUploaded: Boolean
+	blobKey: String!
+	expiresAt: DateTime
+	headers: JSONObject
+	method: BlobUploadMethod!
+	partSize: Int
+	uploadId: String
+	uploadUrl: String
+	uploadedParts: [BlobUploadedPart!]
+}
+
+enum BlobUploadMethod {
+	GRAPHQL
+	MULTIPART
+	PRESIGNED
+}
+
+type BlobUploadedPart {
+	etag: String!
+	partNumber: Int!
+}
+
+enum CalendarProviderType {
+	CalDAV
+	Google
+}
+
+enum CommentChangeAction {
+	update
+	delete
+}
+
+type CommentChangeObjectType {
+	action: CommentChangeAction!
+	id: ID!
+	commentId: ID
+	item: JSONObject!
+}
+
+type CommentChangeObjectTypeEdge {
+	cursor: String!
+	node: CommentChangeObjectType!
+}
+
+input CommentCreateInput {
+	workspaceId: ID!
+	docId: ID!
+	docTitle: String!
+	docMode: DocMode!
+	content: JSONObject!
+	mentions: [String!]
+}
+
+type CommentObjectType {
+	id: ID!
+	content: JSONObject!
+	resolved: Boolean!
+	user: PublicUserType!
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	replies: [ReplyObjectType!]!
+}
+
+type CommentObjectTypeEdge {
+	cursor: String!
+	node: CommentObjectType!
+}
+
+input CommentResolveInput {
+	id: ID!
+	resolved: Boolean!
+}
+
+input CommentUpdateInput {
+	id: ID!
+	content: JSONObject!
+}
+
+type CredentialsRequirementType {
+	password: PasswordLimitsType!
+}
+
+"""
+Implement the DateTime<Utc> scalar
+
+The input/output is a string in RFC3339 format.
+"""
+scalar DateTime
+
+type DeleteAccount {
+	success: Boolean!
+}
+
+type DocHistoryType {
+	workspaceId: String!
+	id: String!
+	timestamp: DateTime!
+	editor: EditorType
+}
+
+enum DocMode {
+	page
+	edgeless
+}
+
+type DocPermissions {
+	Doc_Analytics_Read: Boolean!
+	Doc_Analytics_Viewers_Read: Boolean!
+	Doc_Comments_Create: Boolean!
+	Doc_Comments_Moderate: Boolean!
+	Doc_Comments_Read: Boolean!
+	Doc_Copy: Boolean!
+	Doc_Delete: Boolean!
+	Doc_Duplicate: Boolean!
+	Doc_History_Read: Boolean!
+	Doc_Preview: Boolean!
+	Doc_Properties_Read: Boolean!
+	Doc_Properties_Update: Boolean!
+	Doc_Publish: Boolean!
+	Doc_Read: Boolean!
+	Doc_Restore: Boolean!
+	Doc_TransferOwner: Boolean!
+	Doc_Trash: Boolean!
+	Doc_Unpublish: Boolean!
+	Doc_Update: Boolean!
+	Doc_Users_Manage: Boolean!
+	Doc_Users_Read: Boolean!
+}
+
+enum DocRole {
+	None
+	External
+	Reader
+	Commenter
+	Editor
+	Manager
+	Owner
+}
+
+type DocType {
+	id: String!
+	workspaceId: String!
+	public: Boolean!
+	mode: PublicDocMode!
+	defaultRole: DocRole!
+	createdAt: DateTime
+	updatedAt: DateTime
+	creatorId: String
+	lastUpdaterId: String
+	title: String
+	summary: String
+	permissions: DocPermissions!
+	createdBy: PublicUserType
+	lastUpdatedBy: PublicUserType
+	meta: WorkspaceDocMeta!
+	grantedUsersList(pagination: PaginationInput!): PaginatedGrantedDocUserType!
+}
+
+type DocTypeEdge {
+	cursor: String!
+	node: DocType!
+}
+
+type EditorType {
+	name: String!
+	avatarUrl: String
+}
+
+enum FeatureType {
+	Admin
+}
+
+input GrantDocUserRolesInput {
+	docId: String!
+	workspaceId: String!
+	role: DocRole!
+	userIds: [String!]!
+}
+
+type GrantedDocUserType {
+	role: DocRole!
+	user: WorkspaceUserType!
+}
+
+type GrantedDocUserTypeEdge {
+	cursor: String!
+	node: GrantedDocUserType!
+}
+
+type InvitationType {
+	workspace: InvitationWorkspaceType!
+	user: WorkspaceUserType!
+	invitee: WorkspaceUserType!
+	status: WorkspaceMemberStatus
+}
+
+type InvitationWorkspaceType {
+	id: ID!
+	name: String!
+	avatar: String!
+}
+
+type InviteLink {
+	link: String!
+	expireTime: DateTime!
+}
+
+type InviteResult {
+	email: String!
+	inviteId: String
+	error: JSONObject
+}
+
+type InviteUserType {
+	id: ID!
+	name: String
+	email: String
+	avatarUrl: String
+	emailVerified: Boolean
+	disabled: Boolean
+	permission: Permission!
+	role: Permission!
+	inviteId: String!
+	status: WorkspaceMemberStatus!
+}
+
+scalar JSON
+
+scalar JSONObject
+
+type License {
+	quantity: Int!
+	recurring: SubscriptionRecurring!
+	variant: SubscriptionVariant
+	installedAt: DateTime!
+	validatedAt: DateTime!
+	expiredAt: DateTime
+}
+
+type LimitedUserType {
+	email: String!
+	hasPassword: Boolean
+}
+
+type ListedBlob {
+	key: String!
+	size: Int!
+	mime: String!
+	createdAt: String!
+}
+
+input MentionDocInput {
+	id: String!
+	title: String!
+	mode: DocMode!
+	blockId: String
+	elementId: String
+}
+
+input MentionInput {
+	userId: String!
+	workspaceId: String!
+	doc: MentionDocInput!
+}
+
+type Mutation {
+	updateProfile(input: UpdateUserInput!): UserType!
+	uploadAvatar(avatar: Upload!): UserType!
+	removeAvatar: RemoveAvatar!
+	createWorkspace(init: Upload): WorkspaceType!
+	updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
+	deleteWorkspace(id: String!): Boolean!
+	leaveWorkspace(workspaceId: String!, sendLeaveMail: Boolean, workspaceName: String): Boolean!
+	grantMember(workspaceId: String!, userId: String!, permission: Permission!): Boolean!
+	approveMember(workspaceId: String!, userId: String!): Boolean!
+	inviteMembers(workspaceId: String!, emails: [String!]!): [InviteResult!]!
+	revokeMember(workspaceId: String!, userId: String!): Boolean!
+	acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String): Boolean!
+	createInviteLink(workspaceId: String!, expireTime: WorkspaceInviteLinkExpireTime!): InviteLink!
+	revokeInviteLink(workspaceId: String!): Boolean!
+	updateAppConfig(updates: [UpdateAppConfigInput!]!): JSONObject!
+	sendTestEmail(config: JSONObject!): Boolean!
+	createBlobUpload(workspaceId: String!, key: String!, size: Int!, mime: String!): BlobUploadInit!
+	setBlob(workspaceId: String!, blob: Upload!): String!
+	deleteBlob(workspaceId: String!, key: String, hash: String, permanently: Boolean! = false): Boolean!
+	releaseDeletedBlobs(workspaceId: String!): Boolean!
+	publishDoc(workspaceId: String!, docId: String!, mode: PublicDocMode! = Page): DocType!
+	revokePublicDoc(workspaceId: String!, docId: String!): DocType!
+	grantDocUserRoles(input: GrantDocUserRolesInput!): Boolean!
+	revokeDocUserRoles(input: RevokeDocUserRoleInput!): Boolean!
+	updateDocUserRole(input: UpdateDocUserRoleInput!): Boolean!
+	updateDocDefaultRole(input: UpdateDocDefaultRoleInput!): Boolean!
+	recoverDoc(workspaceId: String!, guid: String!, timestamp: DateTime!): DateTime!
+	createComment(input: CommentCreateInput!): CommentObjectType!
+	updateComment(input: CommentUpdateInput!): Boolean!
+	resolveComment(input: CommentResolveInput!): Boolean!
+	deleteComment(id: String!): Boolean!
+	createReply(input: ReplyCreateInput!): ReplyObjectType!
+	updateReply(input: ReplyUpdateInput!): Boolean!
+	deleteReply(id: String!): Boolean!
+	uploadCommentAttachment(workspaceId: String!, docId: String!, attachment: Upload!): String!
+	mentionUser(input: MentionInput!): ID!
+	readNotification(id: String!): Boolean!
+	readAllNotifications: Boolean!
+	updateSettings(input: UpdateUserSettingsInput!): Boolean!
+	deleteAccount: DeleteAccount!
+	deleteUser(id: String!): DeleteAccount!
+	activateLicense(workspaceId: String!, license: String!): License!
+	deactivateLicense(workspaceId: String!): Boolean!
+	installLicense(workspaceId: String!, license: Upload!): License!
+	previewLicense(license: Upload!): AdminLicensePreview!
+	createSelfhostWorkspaceCustomerPortal(workspaceId: String!): String!
+}
+
+enum NotificationLevel {
+	Default
+	High
+	Low
+	Min
+	None
+}
+
+type NotificationObjectType {
+	id: ID!
+	level: NotificationLevel!
+	type: NotificationType!
+	read: Boolean!
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	body: JSONObject!
+}
+
+type NotificationObjectTypeEdge {
+	cursor: String!
+	node: NotificationObjectType!
+}
+
+enum NotificationType {
+	Comment
+	CommentMention
+	Invitation
+	InvitationAccepted
+	InvitationBlocked
+	InvitationRejected
+	InvitationReviewApproved
+	InvitationReviewDeclined
+	InvitationReviewRequest
+	Mention
+}
+
+type PageInfo {
+	startCursor: String
+	endCursor: String
+	hasNextPage: Boolean!
+	hasPreviousPage: Boolean!
+}
+
+type PaginatedCommentChangeObjectType {
+	totalCount: Int!
+	edges: [CommentChangeObjectTypeEdge!]!
+	pageInfo: PageInfo!
+}
+
+type PaginatedCommentObjectType {
+	totalCount: Int!
+	edges: [CommentObjectTypeEdge!]!
+	pageInfo: PageInfo!
+}
+
+type PaginatedDocType {
+	totalCount: Int!
+	edges: [DocTypeEdge!]!
+	pageInfo: PageInfo!
+}
+
+type PaginatedGrantedDocUserType {
+	totalCount: Int!
+	edges: [GrantedDocUserTypeEdge!]!
+	pageInfo: PageInfo!
+}
+
+type PaginatedNotificationObjectType {
+	totalCount: Int!
+	edges: [NotificationObjectTypeEdge!]!
+	pageInfo: PageInfo!
+}
+
+input PaginationInput {
+	first: Int
+	offset: Int
+	after: String
+}
+
+type PasswordLimitsType {
+	minLength: Int!
+	maxLength: Int!
+}
+
+enum Permission {
+	Admin
+	Collaborator
+	External
+	Owner
+}
+
+enum PublicDocMode {
+	Page
+	Edgeless
+}
+
+type PublicUserType {
+	id: String!
+	name: String!
+	avatarUrl: String
+}
+
+type Query {
+	serverConfig: ServerConfigType!
+	currentUser: UserType
+	user(email: String!): UserOrLimitedUser
+	publicUserById(id: String!): PublicUserType
+	workspaces: [WorkspaceType!]!
+	workspace(id: String!): WorkspaceType!
+	getInviteInfo(inviteId: String!): InvitationType!
+	appConfig: JSONObject!
+}
+
+type RemoveAvatar {
+	success: Boolean!
+}
+
+input ReplyCreateInput {
+	commentId: ID!
+	content: JSONObject!
+	docTitle: String!
+	docMode: DocMode!
+	mentions: [String!]
+}
+
+type ReplyObjectType {
+	commentId: ID!
+	id: ID!
+	content: JSONObject!
+	user: PublicUserType!
+	createdAt: DateTime!
+	updatedAt: DateTime!
+}
+
+input ReplyUpdateInput {
+	id: ID!
+	content: JSONObject!
+}
+
+input RevokeDocUserRoleInput {
+	docId: String!
+	workspaceId: String!
+	userId: String!
+}
+
+scalar SafeInt
+
+type SearchDocObjectType {
+	docId: String!
+	title: String!
+	blockId: String!
+	highlight: String!
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	createdByUser: PublicUserType
+	updatedByUser: PublicUserType
+}
+
+input SearchDocsInput {
+	keyword: String!
+	limit: Int
+}
+
+input SearchHighlight {
+	field: String!
+	before: String!
+	end: String!
+}
+
+input SearchInput {
+	table: SearchTable!
+	query: SearchQuery!
+	options: SearchOptions!
+}
+
+type SearchNodeObjectType {
+	fields: JSONObject!
+	highlights: JSONObject
+}
+
+input SearchOptions {
+	fields: [String!]!
+	highlights: [SearchHighlight!]
+	pagination: SearchPagination
+}
+
+input SearchPagination {
+	limit: Int
+	skip: Int
+	cursor: String
+}
+
+input SearchQuery {
+	type: SearchQueryType!
+	field: String
+	match: String
+	query: SearchQuery
+	queries: [SearchQuery!]
+	occur: SearchQueryOccur
+	boost: Float
+}
+
+enum SearchQueryOccur {
+	must
+	must_not
+	should
+}
+
+enum SearchQueryType {
+	all
+	boolean
+	boost
+	exists
+	match
+}
+
+type SearchResultObjectType {
+	nodes: [SearchNodeObjectType!]!
+	pagination: SearchResultPagination!
+}
+
+type SearchResultPagination {
+	count: Int!
+	hasMore: Boolean!
+	nextCursor: String
+}
+
+enum SearchTable {
+	block
+	doc
+}
+
+type ServerConfigType {
+	version: String!
+	name: String!
+	type: ServerDeploymentType!
+	initialized: Boolean!
+	baseUrl: String!
+	features: [ServerFeature!]!
+	calendarProviders: [CalendarProviderType!]!
+	credentialsRequirement: CredentialsRequirementType!
+}
+
+enum ServerDeploymentType {
+	Affine
+	Selfhosted
+}
+
+enum ServerFeature {
+	Captcha
+	Comment
+	Copilot
+	CopilotEmbedding
+	Indexer
+	LocalWorkspace
+	OAuth
+	Payment
+}
+
+enum SubscriptionPlan {
+	AI
+	Enterprise
+	Free
+	Pro
+	SelfHosted
+	SelfHostedTeam
+	Team
+}
+
+enum SubscriptionRecurring {
+	Lifetime
+	Monthly
+	Yearly
+}
+
+enum SubscriptionVariant {
+	Onetime
+}
+
+input UpdateAppConfigInput {
+	module: String!
+	key: String!
+	value: JSON
+	clear: Boolean
+}
+
+input UpdateDocDefaultRoleInput {
+	docId: String!
+	workspaceId: String!
+	role: DocRole!
+}
+
+input UpdateDocUserRoleInput {
+	docId: String!
+	workspaceId: String!
+	userId: String!
+	role: DocRole!
+}
+
+input UpdateUserInput {
+	name: String
+}
+
+input UpdateUserSettingsInput {
+	receiveInvitationEmail: Boolean
+	receiveMentionEmail: Boolean
+	receiveCommentEmail: Boolean
+}
+
+input UpdateWorkspaceInput {
+	id: ID!
+	public: Boolean
+	enableAi: Boolean
+	enableSharing: Boolean
+	enableUrlPreview: Boolean
+	enableDocEmbedding: Boolean
+}
+
+scalar Upload
+
+union UserOrLimitedUser = LimitedUserType | UserType
+
+type UserQuotaHumanReadableType {
+	name: String!
+	blobLimit: String!
+	storageQuota: String!
+	usedStorageQuota: String!
+	historyPeriod: String!
+	memberLimit: String!
+	copilotActionLimit: String!
+}
+
+type UserQuotaType {
+	name: String!
+	memberLimit: Int!
+	copilotActionLimit: Int
+	humanReadable: UserQuotaHumanReadableType!
+	blobLimit: SafeInt!
+	storageQuota: SafeInt!
+	usedStorageQuota: SafeInt!
+	historyPeriod: SafeInt!
+}
+
+type UserSettingsType {
+	receiveInvitationEmail: Boolean!
+	receiveMentionEmail: Boolean!
+	receiveCommentEmail: Boolean!
+}
+
+type UserType {
+	id: ID!
+	name: String!
+	email: String!
+	avatarUrl: String
+	disabled: Boolean!
+	emailVerified: Boolean!
+	hasPassword: Boolean
+	features: [FeatureType!]!
+	quota: UserQuotaType!
+	settings: UserSettingsType!
+	notifications(pagination: PaginationInput!): PaginatedNotificationObjectType!
+}
+
+type WorkspaceDocMeta {
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	createdBy: EditorType
+	updatedBy: EditorType
+}
+
+enum WorkspaceInviteLinkExpireTime {
+	OneDay
+	ThreeDays
+	OneWeek
+	OneMonth
+}
+
+enum WorkspaceMemberStatus {
+	Accepted
+	AllocatingSeat
+	NeedMoreSeat
+	NeedMoreSeatAndReview
+	Pending
+	UnderReview
+}
+
+type WorkspacePermissions {
+	Workspace_Administrators_Manage: Boolean!
+	Workspace_Blobs_Manage: Boolean!
+	Workspace_Blobs_Upload: Boolean!
+	Workspace_Copilot: Boolean!
+	Workspace_CreateDoc: Boolean!
+	Workspace_Delete: Boolean!
+	Workspace_Organize_Read: Boolean!
+	Workspace_Payment_Manage: Boolean!
+	Workspace_Preview: Boolean!
+	Workspace_Properties_Create: Boolean!
+	Workspace_Properties_Delete: Boolean!
+	Workspace_Properties_Read: Boolean!
+	Workspace_Properties_Update: Boolean!
+	Workspace_Read: Boolean!
+	Workspace_Settings_Read: Boolean!
+	Workspace_Settings_Update: Boolean!
+	Workspace_Sync: Boolean!
+	Workspace_TransferOwner: Boolean!
+	Workspace_Users_Manage: Boolean!
+	Workspace_Users_Read: Boolean!
+}
+
+type WorkspaceQuotaHumanReadableType {
+	name: String!
+	blobLimit: String!
+	storageQuota: String!
+	storageQuotaUsed: String!
+	historyPeriod: String!
+	memberLimit: String!
+	memberCount: String!
+	overcapacityMemberCount: String!
+}
+
+type WorkspaceQuotaType {
+	name: String!
+	memberLimit: Int!
+	memberCount: Int!
+	overcapacityMemberCount: Int!
+	humanReadable: WorkspaceQuotaHumanReadableType!
+	blobLimit: SafeInt!
+	storageQuota: SafeInt!
+	usedStorageQuota: SafeInt!
+	historyPeriod: SafeInt!
+}
+
+type WorkspaceType {
+	id: ID!
+	public: Boolean!
+	enableAi: Boolean!
+	enableDocEmbedding: Boolean!
+	enableSharing: Boolean!
+	enableUrlPreview: Boolean!
+	createdAt: DateTime!
+	initialized: Boolean!
+	team: Boolean!
+	owner: UserType!
+	memberCount: Int!
+	role: Permission!
+	permissions: WorkspacePermissions!
+	members(skip: Int, take: Int, query: String): [InviteUserType!]!
+	inviteLink: InviteLink
+	quota: WorkspaceQuotaType!
+	blobs(after: String, first: Int! = 1000): [ListedBlob!]!
+	doc(docId: String!): DocType!
+	search(input: SearchInput!): SearchResultObjectType!
+	aggregate(input: AggregateInput!): AggregateResultObjectType!
+	searchDocs(input: SearchDocsInput!): [SearchDocObjectType!]!
+	publicDocs: [DocType!]!
+	docs(pagination: PaginationInput!): PaginatedDocType!
+	recentlyUpdatedDocs(pagination: PaginationInput!): PaginatedDocType!
+	pageMeta(pageId: String!): WorkspaceDocMeta!
+	histories(guid: String!, before: DateTime, take: Int): [DocHistoryType!]!
+	comments(docId: String!, pagination: PaginationInput): PaginatedCommentObjectType!
+	commentChanges(docId: String!, pagination: PaginationInput!): PaginatedCommentChangeObjectType!
+	license: License
+}
+
+type WorkspaceUserType {
+	id: String!
+	name: String!
+	email: String!
+	avatarUrl: String
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Provides a scalar specification URL for specifying the behavior of custom scalar types.
+"""
+directive @specifiedBy(url: String!) on SCALAR
+schema {
+	query: Query
+	mutation: Mutation
+}

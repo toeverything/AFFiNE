@@ -245,3 +245,21 @@ pub(crate) async fn mutate_read_all_notifications(ctx: &Context<'_>) -> Result<b
     .map_err(|e| domain_error_to_graphql(&e))?;
   Ok(true)
 }
+
+#[derive(Default)]
+pub struct NotificationMutation;
+
+#[async_graphql::Object]
+impl NotificationMutation {
+  async fn mention_user(&self, ctx: &Context<'_>, input: MentionInput) -> Result<async_graphql::ID> {
+    mutate_mention_user(ctx, input).await
+  }
+
+  async fn read_notification(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    mutate_read_notification(ctx, id).await
+  }
+
+  async fn read_all_notifications(&self, ctx: &Context<'_>) -> Result<bool> {
+    mutate_read_all_notifications(ctx).await
+  }
+}

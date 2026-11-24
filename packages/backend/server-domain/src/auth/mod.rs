@@ -245,6 +245,8 @@ pub struct CookiePrincipal {
   pub user_session_id: String,
   pub expires_at: Option<DateTime<Utc>>,
   pub refreshed_expires_at: Option<DateTime<Utc>>,
+  pub sign_in_client_version: Option<String>,
+  pub refresh_client_version: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -599,6 +601,8 @@ impl AuthService {
       user_session_id: resolved.user_session_id,
       expires_at: resolved.expires_at,
       refreshed_expires_at: resolved.refreshed_expires_at,
+      sign_in_client_version: resolved.sign_in_client_version,
+      refresh_client_version: resolved.refresh_client_version,
     }))
   }
 
@@ -1313,6 +1317,8 @@ impl AuthService {
                 s.session_id,
                 s.user_id,
                 s.expires_at,
+                s.sign_in_client_version,
+                s.refresh_client_version,
                 a.id AS auth_session_id,
                 a.created_at AS auth_created_at,
                 a.idle_expires_at,
@@ -1364,6 +1370,8 @@ impl AuthService {
     let session_id: String = row.get("session_id");
     let user_session_id: String = row.get("user_session_id");
     let authenticated_at: DateTime<Utc> = row.get("auth_created_at");
+    let sign_in_client_version: Option<String> = row.get("sign_in_client_version");
+    let refresh_client_version: Option<String> = row.get("refresh_client_version");
 
     let _ = tx.commit().await;
 
@@ -1374,6 +1382,8 @@ impl AuthService {
       auth_session_id,
       authenticated_at,
       expires_at: user_session_expires_at,
+      sign_in_client_version,
+      refresh_client_version,
     })
   }
 

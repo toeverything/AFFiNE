@@ -17,6 +17,7 @@
 //      playground workflows run on pinned runners and test images.
 //   5. .gitignore ignores test output directories.
 
+import { createHash } from 'node:crypto';
 import {
   existsSync,
   readdirSync,
@@ -66,6 +67,210 @@ function* walk(dir) {
 }
 
 const lineOf = (text, index) => text.slice(0, index).split('\n').length;
+
+// Strip Rust `#[cfg(test)]` items (modules, functions, impls) while preserving
+// any production code that appears after them in the same file.
+function skipRustNonCodeOrLiteral(source, i) {
+  const n = source.length;
+  const ch = source[i];
+  // Line comment // ...
+  if (ch === '/' && source[i + 1] === '/') {
+    let j = i + 2;
+    while (j < n && source[j] !== '\n') j++;
+    return { next: j, isComment: true };
+  }
+  // Arbitrarily nested block comment /* ... /* ... */ ... */
+  if (ch === '/' && source[i + 1] === '*') {
+    let j = i + 2;
+    let depth = 1;
+    while (j < n && depth > 0) {
+      if (source[j] === '/' && source[j + 1] === '*') {
+        depth++;
+        j += 2;
+      } else if (source[j] === '*' && source[j + 1] === '/') {
+        depth--;
+        j += 2;
+      } else {
+        j++;
+      }
+    }
+    return { next: j, isComment: true };
+  }
+  // Raw string / raw byte string: r#*"..."#* or br#*"..."#*
+  const prev = i > 0 ? source[i - 1] : '';
+  const identBoundary = !/[A-Za-z0-9_]/.test(prev);
+  if (identBoundary && (ch === 'r' || (ch === 'b' && source[i + 1] === 'r'))) {
+    let j = ch === 'b' ? i + 2 : i + 1;
+    let hashes = 0;
+    while (j < n && source[j] === '#') {
+      hashes++;
+      j++;
+    }
+    if (source[j] === '"') {
+      j++;
+      while (j < n) {
+        if (source[j] === '"') {
+          let ok = true;
+          for (let h = 0; h < hashes; h++) {
+            if (source[j + 1 + h] !== '#') {
+              ok = false;
+              break;
+            }
+          }
+          if (ok) {
+            return { next: j + 1 + hashes, isComment: false };
+          }
+        }
+        j++;
+      }
+      return { next: n, isComment: false };
+    }
+  }
+  // Byte string b"..."
+  if (identBoundary && ch === 'b' && source[i + 1] === '"') {
+    let j = i + 2;
+    while (j < n) {
+      if (source[j] === '\\') j += 2;
+      else if (source[j] === '"') return { next: j + 1, isComment: false };
+      else j++;
+    }
+    return { next: n, isComment: false };
+  }
+  // Regular string "..."
+  if (ch === '"') {
+    let j = i + 1;
+    while (j < n) {
+      if (source[j] === '\\') j += 2;
+      else if (source[j] === '"') return { next: j + 1, isComment: false };
+      else j++;
+    }
+    return { next: n, isComment: false };
+  }
+  // Char or byte char literal ('x', '\n', '\x7f', '\u{1f600}', b'{'), skipping lifetimes ('a)
+  const quoteIdx =
+    identBoundary && ch === 'b' && source[i + 1] === "'"
+      ? i + 1
+      : ch === "'"
+        ? i
+        : -1;
+  if (quoteIdx >= 0) {
+    const next = source[quoteIdx + 1];
+    if (next === '\\') {
+      let j = quoteIdx + 2;
+      if (source[j] === 'x') j += 3;
+      else if (source[j] === 'u' && source[j + 1] === '{') {
+        j += 2;
+        while (j < n && source[j] !== '}' && source[j] !== '\n') j++;
+        if (source[j] === '}') j++;
+      } else {
+        j += 1;
+      }
+      if (source[j] === "'") return { next: j + 1, isComment: false };
+    } else if (
+      next &&
+      next !== "'" &&
+      next !== '\n' &&
+      source[quoteIdx + 2] === "'"
+    ) {
+      return { next: quoteIdx + 3, isComment: false };
+    }
+  }
+  return null;
+}
+
+function stripCfgTestItems(source) {
+  const out = source.split('');
+  const n = source.length;
+  const blank = (from, to) => {
+    for (let k = from; k < to; k++) {
+      if (out[k] !== '\n') out[k] = ' ';
+    }
+  };
+  let i = 0;
+  while (i < n) {
+    const skipped = skipRustNonCodeOrLiteral(source, i);
+    if (skipped) {
+      if (skipped.isComment) blank(i, skipped.next);
+      i = skipped.next;
+      continue;
+    }
+    // #[cfg(test)] attribute
+    if (source.startsWith('#[cfg(test)]', i)) {
+      const start = i;
+      i += '#[cfg(test)]'.length;
+      // Advance to the start of the annotated item's body `{` or terminating `;`
+      while (i < n && source[i] !== '{' && source[i] !== ';') {
+        const innerSkip = skipRustNonCodeOrLiteral(source, i);
+        if (innerSkip) i = innerSkip.next;
+        else i++;
+      }
+      if (i < n && source[i] === ';') {
+        i++;
+      } else if (i < n && source[i] === '{') {
+        let depth = 0;
+        while (i < n) {
+          const innerSkip = skipRustNonCodeOrLiteral(source, i);
+          if (innerSkip) {
+            i = innerSkip.next;
+            continue;
+          }
+          if (source[i] === '{') {
+            depth++;
+            i++;
+          } else if (source[i] === '}') {
+            depth--;
+            i++;
+            if (depth === 0) break;
+          } else {
+            i++;
+          }
+        }
+      }
+      blank(start, i);
+      continue;
+    }
+    i++;
+  }
+  return out.join('');
+}
+
+const HTTP_STUB_PATTERN =
+  /\b(?:todo!|unimplemented!)\s*\(|\b[a-z]\d+_(?:unimplemented|pending)(?:_[a-z0-9_]+)?\b|\b[a-z0-9_]*pending_resolver\b/;
+
+// Self-check: ensure test-only stubs (including braces inside char literals,
+// raw strings, and nested block comments) are ignored while production stubs
+// after #[cfg(test)] fail.
+{
+  const testOnly =
+    '#[cfg(test)] mod t { const C: char = \'{\'; const R: &str = r#"{"#; /* outer /* { inner */ still outer */ fn ok() { todo!(); } }';
+  if (HTTP_STUB_PATTERN.test(stripCfgTestItems(testOnly))) {
+    throw new Error(
+      'internal error: stripCfgTestItems failed on char/raw-string/nested-comment test mod'
+    );
+  }
+  const prodTodo = `${testOnly}\nfn prod() { todo!(); }`;
+  if (!HTTP_STUB_PATTERN.test(stripCfgTestItems(prodTodo))) {
+    throw new Error(
+      'internal error: HTTP_STUB_PATTERN failed to catch prod todo!()'
+    );
+  }
+  const stagedStub = `${testOnly}\nfn prod() { x1_pending(); }`;
+  if (!HTTP_STUB_PATTERN.test(stripCfgTestItems(stagedStub))) {
+    throw new Error(
+      'internal error: HTTP_STUB_PATTERN failed to catch staged pending stub'
+    );
+  }
+  for (const emojiSample of [
+    'fn sample(){/*💡*/todo!()}',
+    `// ${'💡'.repeat(16)}\n${testOnly}\nfn prod() { todo!(); }`,
+  ]) {
+    if (!HTTP_STUB_PATTERN.test(stripCfgTestItems(emojiSample))) {
+      throw new Error(
+        'internal error: stripCfgTestItems UTF-16 alignment failed after emoji comment'
+      );
+    }
+  }
+}
 
 // 1 + 2. packages/backend/ layering and hygiene -----------------------------
 
@@ -138,9 +343,7 @@ if (existsSync(CRATES)) {
 
     const httpCrate = path.startsWith('packages/backend/server-http/');
     if (httpCrate && path.endsWith('.rs')) {
-      const nonTest = text
-        .split(/#\[cfg\(test\)\]/)[0]
-        .replace(/\/\/[^\n]*/g, '');
+      const nonTest = stripCfgTestItems(text);
       const entMatch = /\b(?:FROM|JOIN)\s+(?:public\.)?entitlements\b/i.exec(
         nonTest
       );
@@ -149,6 +352,15 @@ if (existsSync(CRATES)) {
           'crates-layering',
           `${path}:${lineOf(nonTest, entMatch.index)}: server-http must not query entitlements directly; use BillingSubject on AccessGrant`
         );
+      }
+      if (path.startsWith('packages/backend/server-http/src/')) {
+        const stubMatch = HTTP_STUB_PATTERN.exec(nonTest);
+        if (stubMatch) {
+          fail(
+            'http-no-stubs',
+            `${path}:${lineOf(nonTest, stubMatch.index)}: placeholder "${stubMatch[0]}" is forbidden in server-http production code`
+          );
+        }
       }
     }
   }
@@ -367,6 +579,110 @@ const ignored = new Set(
 for (const dir of ['test-results/', '.artifacts/']) {
   if (!ignored.has(dir))
     fail('gitignore', `.gitignore must contain the line ${dir}`);
+}
+
+// 6. Phase A SQL ordered manifest -------------------------------------------
+
+const SQL_MANIFEST_PATH = join(
+  ROOT,
+  'packages/backend/server-db/sql-manifest.json'
+);
+if (!existsSync(SQL_MANIFEST_PATH)) {
+  fail('sql-manifest', 'missing packages/backend/server-db/sql-manifest.json');
+} else {
+  const manifest = JSON.parse(read(SQL_MANIFEST_PATH));
+  const expectedEntries = Array.isArray(manifest.entries)
+    ? manifest.entries
+    : [];
+  if (manifest.count !== expectedEntries.length) {
+    fail(
+      'sql-manifest',
+      `sql-manifest.json count (${manifest.count}) does not match entries length (${expectedEntries.length})`
+    );
+  }
+
+  const sha256File = absPath =>
+    createHash('sha256').update(readFileSync(absPath)).digest('hex');
+
+  const migDir = join(ROOT, 'packages/backend/server/migrations');
+  const prismaDirs = readdirSync(migDir, { withFileTypes: true })
+    .filter(
+      d => d.isDirectory() && existsSync(join(migDir, d.name, 'migration.sql'))
+    )
+    .map(d => d.name)
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const runtimeSqlDir = join(ROOT, 'packages/backend/native/src/runtime/sql');
+  const serverDbSqlDir = join(ROOT, 'packages/backend/server-db/sql');
+
+  const actualSqlPaths = [
+    ...prismaDirs.map(
+      name => `packages/backend/server/migrations/${name}/migration.sql`
+    ),
+    'packages/backend/native/src/runtime/sql/runtime_migrations.sql',
+    'packages/backend/native/src/runtime/sql/embedding.sql',
+    'packages/backend/native/src/runtime/sql/embedding_v2.sql',
+    'packages/backend/native/src/runtime/sql/search_projection.sql',
+    'packages/backend/native/src/runtime/sql/search_projection_v2.sql',
+    'packages/backend/native/src/runtime/sql/search_projection_v3.sql',
+    'packages/backend/native/src/runtime/sql/search_projection_v4.sql',
+    'packages/backend/native/src/runtime/sql/search_projection_v5.sql',
+    ...(existsSync(serverDbSqlDir)
+      ? readdirSync(serverDbSqlDir)
+          .filter(f => f.endsWith('.sql'))
+          .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(f => `packages/backend/server-db/sql/${f}`)
+      : []),
+  ];
+
+  // Check for unexpected extra .sql files in runtimeSqlDir
+  const knownRuntimeSql = new Set(
+    actualSqlPaths
+      .filter(p => p.startsWith('packages/backend/native/src/runtime/sql/'))
+      .map(p => p.slice('packages/backend/native/src/runtime/sql/'.length))
+  );
+  if (existsSync(runtimeSqlDir)) {
+    for (const file of readdirSync(runtimeSqlDir)) {
+      if (file.endsWith('.sql') && !knownRuntimeSql.has(file)) {
+        fail(
+          'sql-manifest',
+          `unexpected SQL file packages/backend/native/src/runtime/sql/${file} not in manifest`
+        );
+      }
+    }
+  }
+
+  if (expectedEntries.length !== actualSqlPaths.length) {
+    fail(
+      'sql-manifest',
+      `expected ${expectedEntries.length} SQL files in sql-manifest.json, found ${actualSqlPaths.length} on disk`
+    );
+  }
+
+  const len = Math.min(expectedEntries.length, actualSqlPaths.length);
+  for (let i = 0; i < len; i++) {
+    const entry = expectedEntries[i];
+    const actualPath = actualSqlPaths[i];
+    if (entry.path !== actualPath) {
+      fail(
+        'sql-manifest',
+        `entry #${i + 1} path mismatch: manifest has ${entry.path}, disk order has ${actualPath}`
+      );
+      continue;
+    }
+    const abs = join(ROOT, actualPath);
+    if (!existsSync(abs)) {
+      fail('sql-manifest', `missing SQL file on disk: ${actualPath}`);
+      continue;
+    }
+    const actualHash = sha256File(abs);
+    if (actualHash !== entry.sha256) {
+      fail(
+        'sql-manifest',
+        `SHA-256 mismatch for ${actualPath}: manifest ${entry.sha256}, actual ${actualHash}`
+      );
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

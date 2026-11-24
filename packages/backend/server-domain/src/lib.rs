@@ -14,6 +14,7 @@ pub mod doc_sharing;
 pub mod events;
 pub mod histories;
 pub mod notifications;
+pub mod safe_fetch;
 pub mod selfhost_license;
 pub mod users;
 pub mod workspaces;

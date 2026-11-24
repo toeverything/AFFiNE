@@ -1,0 +1,1223 @@
+{
+  "package": "semver@7.8.1",
+  "tarballUrl": "https://registry.npmjs.org/semver/-/semver-7.8.1.tgz",
+  "tarballSha512": "ae456adc85e1fb814319c87e2b0cd7dda57d5b790ee781b2120a6f0734b272d0c0e97b5ded1250575c665db790a79bfbf95ccb39f56a8aeb5213a1880a03c5be",
+  "hardRequiredVersion": ">=0.25.0",
+  "options": {
+    "rangeLoose": false,
+    "satisfiesIncludePrerelease": true
+  },
+  "vectors": [
+    {
+      "range": "~0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "~0.26"
+      }
+    },
+    {
+      "range": "^0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.x",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26",
+      "clientVersion": "0.26.9",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26",
+      "clientVersion": "0.27.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-0",
+        "requiredVersion": "~0.26"
+      }
+    },
+    {
+      "range": "~0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "~0.26.0"
+      }
+    },
+    {
+      "range": "~0.26.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26.0",
+      "clientVersion": "0.27.0-alpha.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-alpha.1",
+        "requiredVersion": "~0.26.0"
+      }
+    },
+    {
+      "range": "~0.26.1",
+      "clientVersion": "0.26.1-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.1-canary.1",
+        "requiredVersion": "~0.26.1"
+      }
+    },
+    {
+      "range": "~0.26.1",
+      "clientVersion": "0.26.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26.0-beta",
+      "clientVersion": "0.26.0-alpha",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-alpha",
+        "requiredVersion": "~0.26.0-beta"
+      }
+    },
+    {
+      "range": "~0.26.0-beta",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0.26.x",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "~0.26.x"
+      }
+    },
+    {
+      "range": "~0.26.x",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~> 0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "~> 0.26"
+      }
+    },
+    {
+      "range": "~> 0.26",
+      "clientVersion": "0.26.2",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~v0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "~v0.26"
+      }
+    },
+    {
+      "range": "~v0.26",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~1",
+      "clientVersion": "1.0.0-alpha.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-alpha.1",
+        "requiredVersion": "~1"
+      }
+    },
+    {
+      "range": "~1",
+      "clientVersion": "1.0.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~1",
+      "clientVersion": "1.9.9",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~1",
+      "clientVersion": "2.0.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0-0",
+        "requiredVersion": "~1"
+      }
+    },
+    {
+      "range": "~0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "~0",
+      "clientVersion": "0.0.0-a",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.0.0-a",
+        "requiredVersion": "~0"
+      }
+    },
+    {
+      "range": "~x",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0",
+      "clientVersion": "0.0.0-a",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.0.0-a",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": "^0",
+      "clientVersion": "1.0.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-0",
+        "requiredVersion": "^0"
+      }
+    },
+    {
+      "range": "^0.x",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0.0",
+      "clientVersion": "0.0.3",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.0.3",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": "^0.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0",
+        "requiredVersion": "^0.0"
+      }
+    },
+    {
+      "range": "^0.0.3",
+      "clientVersion": "0.0.3-alpha.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.0.3-alpha.1",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": "^0.0.3",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0",
+        "requiredVersion": "^0.0.3"
+      }
+    },
+    {
+      "range": "^0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0.26",
+      "clientVersion": "0.27.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-0",
+        "requiredVersion": "^0.26"
+      }
+    },
+    {
+      "range": "^0.26.0",
+      "clientVersion": "0.26.0-0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0.26.0",
+      "clientVersion": "0.27.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-0",
+        "requiredVersion": "^0.26.0"
+      }
+    },
+    {
+      "range": "^v0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^ 0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^0.26.0-beta",
+      "clientVersion": "0.26.0-alpha",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-alpha",
+        "requiredVersion": "^0.26.0-beta"
+      }
+    },
+    {
+      "range": "^0.26.0-beta",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1",
+      "clientVersion": "1.0.0-alpha.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1",
+      "clientVersion": "2.0.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0-0",
+        "requiredVersion": "^1"
+      }
+    },
+    {
+      "range": "^1.2",
+      "clientVersion": "1.2.0-beta.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1.2",
+      "clientVersion": "2.0.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0-0",
+        "requiredVersion": "^1.2"
+      }
+    },
+    {
+      "range": "^1.2.0",
+      "clientVersion": "1.2.0-beta.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.0-beta.1",
+        "requiredVersion": "^1.2.0"
+      }
+    },
+    {
+      "range": "^1.2.0",
+      "clientVersion": "1.2.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1.2.0",
+      "clientVersion": "1.9.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1.2.0",
+      "clientVersion": "2.0.0-alpha.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0-alpha.1",
+        "requiredVersion": "^1.2.0"
+      }
+    },
+    {
+      "range": "^1.2.3-beta.1",
+      "clientVersion": "1.2.3-alpha.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.3-alpha.1",
+        "requiredVersion": "^1.2.3-beta.1"
+      }
+    },
+    {
+      "range": "^1.2.3-beta.1",
+      "clientVersion": "1.2.3-beta.2",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^1.2.3-beta.1",
+      "clientVersion": "1.3.0-alpha.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "^*",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0",
+      "clientVersion": "0.26.0-0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0",
+      "clientVersion": "0.27.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0",
+      "clientVersion": "0.27.0-canary.9",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0",
+      "clientVersion": "0.27.1-a",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.1-a",
+        "requiredVersion": "0.26.0 - 0.27.0"
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27",
+      "clientVersion": "0.27.9",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27",
+      "clientVersion": "0.28.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.28.0-0",
+        "requiredVersion": "0.26.0 - 0.27"
+      }
+    },
+    {
+      "range": "0.26 - 0.27.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26 - 0.27",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.25 - 0.26.0",
+      "clientVersion": "0.25.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.25.0-canary.1",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": "0.26.0-beta - 0.27.0",
+      "clientVersion": "0.26.0-alpha",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-alpha",
+        "requiredVersion": "0.26.0-beta - 0.27.0"
+      }
+    },
+    {
+      "range": "0.26.0-beta - 0.27.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0-beta",
+      "clientVersion": "0.27.0-alpha",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - 0.27.0-beta",
+      "clientVersion": "0.27.0-rc.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-rc.1",
+        "requiredVersion": "0.26.0 - 0.27.0-beta"
+      }
+    },
+    {
+      "range": "* - 0.27.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 - *",
+      "clientVersion": "9.0.0-alpha.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26.0 -0.27.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0 - 0.27.0",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "=0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "=v0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "=0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": "=0.26.0"
+      }
+    },
+    {
+      "range": "=0.26.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.x",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=v0.26",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-canary.1",
+        "requiredVersion": ">=0.26.0"
+      }
+    },
+    {
+      "range": ">= 0.26.0 < 0.27.0",
+      "clientVersion": "0.26.5",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">0.26",
+      "clientVersion": "0.26.9",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.9",
+        "requiredVersion": ">0.26"
+      }
+    },
+    {
+      "range": ">0.26",
+      "clientVersion": "0.27.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">0.26.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0",
+        "requiredVersion": ">0.26.0"
+      }
+    },
+    {
+      "range": ">0.26.0",
+      "clientVersion": "0.26.1-0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">0",
+      "clientVersion": "1.0.0-0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">0",
+      "clientVersion": "0.99.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.99.0",
+        "requiredVersion": ">0"
+      }
+    },
+    {
+      "range": "<=0.26",
+      "clientVersion": "0.26.9",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "<=0.26",
+      "clientVersion": "0.27.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-canary.1",
+        "requiredVersion": "<=0.26"
+      }
+    },
+    {
+      "range": "<=0.26.x",
+      "clientVersion": "0.27.0-0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-0",
+        "requiredVersion": "<=0.26.x"
+      }
+    },
+    {
+      "range": "<0.27",
+      "clientVersion": "0.27.0-canary.1",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.27.0-canary.1",
+        "requiredVersion": "<0.27"
+      }
+    },
+    {
+      "range": "<0.27.0",
+      "clientVersion": "0.27.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "1.x",
+      "clientVersion": "1.0.0-0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "x",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "*",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "x.1",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "1.x.2",
+      "clientVersion": "1.5.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "   ",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "||",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0 ||",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0 || 0.25.x",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "<x || >=0.26.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "invalid || >=0.26.0",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.0-01",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-01",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.0-01a",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+build.meta-1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+001",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+build..meta",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.3+build..meta",
+        "requiredVersion": ">=1.0.0"
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.3+",
+        "requiredVersion": ">=1.0.0"
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+bad_char",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.3+bad_char",
+        "requiredVersion": ">=1.0.0"
+      }
+    },
+    {
+      "range": ">=0.26.0+build.1",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26+build.1",
+      "clientVersion": "0.26.0-canary.1",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0+bad_char",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "v0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "V0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "V0.26.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "=0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "=0.26.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": null,
+      "expected": {
+        "allowed": false,
+        "clientVersion": "unset_or_invalid",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "01.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "01.26.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.01.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.01.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.01",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.01",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "9007199254740991.0.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "9007199254740992.0.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "9007199254740992.0.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.9007199254740991.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.9007199254740992.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.9007199254740992.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.9007199254740991",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.9007199254740992",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.9007199254740992",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">=0.26.0-9007199254740990",
+      "clientVersion": "0.26.0-9007199254740990",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0-9007199254740991",
+      "clientVersion": "0.26.0-9007199254740990",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0-9007199254740990",
+        "requiredVersion": ">=0.26.0-9007199254740991"
+      }
+    },
+    {
+      "range": ">=0.26.0-9007199254740992",
+      "clientVersion": "0.26.0-900719925474099a",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=9007199254740992.0.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0",
+      "clientVersion": "1.2.3+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.2.3+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "requiredVersion": ">=1.0.0"
+      }
+    },
+    {
+      "range": "1.2.0\t-\t1.3.0",
+      "clientVersion": "2.0.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0",
+        "requiredVersion": "1.2.0\t-\t1.3.0"
+      }
+    },
+    {
+      "range": "1.2.0\t-\t1.3.0",
+      "clientVersion": "1.2.5",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "1.2.0\r\n-\r\n1.3.0",
+      "clientVersion": "2.0.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0",
+        "requiredVersion": "1.2.0\r\n-\r\n1.3.0"
+      }
+    },
+    {
+      "range": ">=0.26.0\t||\t0.25.x",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">1.0.0-9007199254740992",
+      "clientVersion": "1.0.0-9007199254740993",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-9007199254740993",
+        "requiredVersion": ">1.0.0-9007199254740992"
+      }
+    },
+    {
+      "range": "=1.0.0-9007199254740992",
+      "clientVersion": "1.0.0-9007199254740993",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=1.0.0-9007199254740992",
+      "clientVersion": "1.0.0-9007199254740993",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">1.0.0-9007199254740992",
+      "clientVersion": "1.0.0-9007199254740994",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "1.2.0﻿-﻿1.3.0",
+      "clientVersion": "2.0.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "2.0.0",
+        "requiredVersion": "1.2.0﻿-﻿1.3.0"
+      }
+    },
+    {
+      "range": "1.2.0﻿-﻿1.3.0",
+      "clientVersion": "1.2.5",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "1.2.0-1.3.0",
+      "clientVersion": "2.0.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": "﻿>=0.26.0﻿",
+      "clientVersion": "﻿0.26.0﻿",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.26.0",
+      "clientVersion": "0.25.0",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">=0.25.0",
+      "clientVersion": "0.26.0",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "0.26.0",
+        "requiredVersion": ">=0.25.0"
+      }
+    },
+    {
+      "range": ">1.0.0-9007199254740992.a",
+      "clientVersion": "1.0.0-9007199254740993.b",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-9007199254740993.b",
+        "requiredVersion": ">1.0.0-9007199254740992.a"
+      }
+    },
+    {
+      "range": "<1.0.0-9007199254740992.b",
+      "clientVersion": "1.0.0-9007199254740993.a",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-9007199254740993.a",
+        "requiredVersion": "<1.0.0-9007199254740992.b"
+      }
+    },
+    {
+      "range": "=1.0.0-9007199254740992.a",
+      "clientVersion": "1.0.0-9007199254740993.b",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">1.0.0-9007199254740992.a",
+      "clientVersion": "1.0.0-9007199254740992.b",
+      "expected": {
+        "allowed": true
+      }
+    },
+    {
+      "range": ">1.0.0-9007199254740992.b",
+      "clientVersion": "1.0.0-9007199254740992.a",
+      "expected": {
+        "allowed": false,
+        "clientVersion": "1.0.0-9007199254740992.a",
+        "requiredVersion": ">1.0.0-9007199254740992.b"
+      }
+    }
+  ]
+}

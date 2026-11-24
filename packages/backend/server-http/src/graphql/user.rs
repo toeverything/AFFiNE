@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use server_domain::users::{CurrentUserView, UpdateProfileInput};
 use server_types::DomainError;
 
-use super::{AuthenticatedUser, FeatureType, require_authenticated_user};
+use super::{FeatureType, current_authenticated_user, require_authenticated_user};
 use crate::AppState;
 use crate::legacy_compat::errors::domain_error_to_graphql;
 use crate::legacy_compat::quota::{UserQuotaType, user_quota_from_grant};
@@ -218,7 +218,7 @@ impl UserType {
 }
 
 pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
-  let auth = ctx.data_opt::<AuthenticatedUser>()?;
+  let auth = current_authenticated_user(ctx)?;
   if let Some(view) = &auth.user {
     return Some(UserType { view: view.clone() });
   }
@@ -238,7 +238,7 @@ pub(crate) fn resolve_current_user(ctx: &Context<'_>) -> Option<UserType> {
 
 pub(crate) async fn resolve_user_by_email(ctx: &Context<'_>, email: String) -> Result<Option<UserOrLimitedUser>> {
   let canonical = server_domain::auth::canonical_email(&email).map_err(|e| domain_error_to_graphql(&e))?;
-  let Some(auth) = ctx.data_opt::<AuthenticatedUser>() else {
+  let Some(auth) = current_authenticated_user(ctx) else {
     return Ok(None);
   };
   let state = ctx.data_unchecked::<Arc<AppState>>();

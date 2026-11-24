@@ -328,10 +328,9 @@ pub fn domain_error_to_envelope(err: &DomainError) -> LegacyErrorEnvelope {
   }
 }
 
-/// Converts a canonical [`DomainError`] into an `async_graphql::Error` with
+/// Converts a [`LegacyErrorEnvelope`] into an `async_graphql::Error` with
 /// `extensions.{status, code, type, name, message, data}`.
-pub fn domain_error_to_graphql(err: &DomainError) -> async_graphql::Error {
-  let envelope = domain_error_to_envelope(err);
+pub fn envelope_to_graphql(envelope: LegacyErrorEnvelope) -> async_graphql::Error {
   async_graphql::Error::new(envelope.message.clone()).extend_with(|_, ext| {
     ext.set("status", envelope.status);
     ext.set("code", envelope.code.clone());
@@ -344,6 +343,72 @@ pub fn domain_error_to_graphql(err: &DomainError) -> async_graphql::Error {
       ext.set("data", val);
     }
   })
+}
+
+/// Converts a canonical [`DomainError`] into an `async_graphql::Error` with
+/// `extensions.{status, code, type, name, message, data}`.
+pub fn domain_error_to_graphql(err: &DomainError) -> async_graphql::Error {
+  envelope_to_graphql(domain_error_to_envelope(err))
+}
+
+/// Maps a [`server_domain::safe_fetch::SafeFetchError`] to the exact `v0.27.5`
+/// `SSRF_BLOCKED_ERROR` or `RESPONSE_TOO_LARGE_ERROR` envelope (`def.ts:279-310`)
+/// without ever echoing resolved private IP addresses.
+pub fn safe_fetch_error_to_envelope(err: &server_domain::safe_fetch::SafeFetchError) -> LegacyErrorEnvelope {
+  use server_domain::safe_fetch::SafeFetchError;
+  if let Some(reason) = err.ssrf_reason() {
+    let message = match reason {
+      "invalid_url" => "Invalid URL".to_owned(),
+      "disallowed_protocol" => "URL protocol is not allowed".to_owned(),
+      "url_has_credentials" => "URL must not contain credentials".to_owned(),
+      "blocked_hostname" => "URL hostname is not allowed".to_owned(),
+      "host_not_allowed" => "URL hostname is outside the allowed hosts".to_owned(),
+      "unresolvable_hostname" => "Failed to resolve hostname".to_owned(),
+      "blocked_ip" => "URL resolves to a private or reserved IP address".to_owned(),
+      "too_many_redirects" => "Too many redirects".to_owned(),
+      other => format!("URL blocked by SSRF protection: {other}"),
+    };
+    return LegacyErrorEnvelope {
+      status: StatusCode::BAD_REQUEST.as_u16(),
+      code: "Bad Request".into(),
+      error_type: "INVALID_INPUT".into(),
+      name: "SSRF_BLOCKED_ERROR".into(),
+      message,
+      data: Some(serde_json::json!({ "reason": reason })),
+    };
+  }
+  match err {
+    SafeFetchError::ResponseTooLarge {
+      limit_bytes,
+      received_bytes,
+    } => LegacyErrorEnvelope {
+      status: StatusCode::BAD_REQUEST.as_u16(),
+      code: "Bad Request".into(),
+      error_type: "INVALID_INPUT".into(),
+      name: "RESPONSE_TOO_LARGE_ERROR".into(),
+      message: format!("Response too large ({received_bytes} bytes), limit is {limit_bytes} bytes"),
+      data: Some(serde_json::json!({
+        "limitBytes": limit_bytes,
+        "receivedBytes": received_bytes,
+      })),
+    },
+    SafeFetchError::Timeout | SafeFetchError::RequestFailed(_) => LegacyErrorEnvelope {
+      status: StatusCode::BAD_REQUEST.as_u16(),
+      code: "Bad Request".into(),
+      error_type: "BAD_REQUEST".into(),
+      name: "HTTP_REQUEST_ERROR".into(),
+      message: format!("HTTP request error, message: {err}"),
+      data: Some(serde_json::json!({ "message": err.to_string() })),
+    },
+    _ => LegacyErrorEnvelope {
+      status: StatusCode::BAD_REQUEST.as_u16(),
+      code: "Bad Request".into(),
+      error_type: "INVALID_INPUT".into(),
+      name: "SSRF_BLOCKED_ERROR".into(),
+      message: "URL blocked by SSRF protection".into(),
+      data: None,
+    },
+  }
 }
 
 #[cfg(test)]
@@ -401,5 +466,32 @@ mod tests {
     assert_eq!(env.code, "Internal Server Error");
     assert_eq!(env.message, "An internal error occurred.");
     assert!(!env.message.contains("secret"));
+
+    let ssrf_env = safe_fetch_error_to_envelope(&server_domain::safe_fetch::SafeFetchError::BlockedIp {
+      host: "internal.corp".into(),
+      ip: "10.0.0.42".parse().unwrap(),
+    });
+    assert_eq!(ssrf_env.status, 400);
+    assert_eq!(ssrf_env.error_type, "INVALID_INPUT");
+    assert_eq!(ssrf_env.name, "SSRF_BLOCKED_ERROR");
+    assert_eq!(ssrf_env.message, "URL resolves to a private or reserved IP address");
+    assert!(!ssrf_env.message.contains("10.0.0.42"));
+    assert_eq!(ssrf_env.data, Some(serde_json::json!({ "reason": "blocked_ip" })));
+
+    let large_env = safe_fetch_error_to_envelope(&server_domain::safe_fetch::SafeFetchError::ResponseTooLarge {
+      limit_bytes: 1024,
+      received_bytes: 2048,
+    });
+    assert_eq!(large_env.status, 400);
+    assert_eq!(large_env.error_type, "INVALID_INPUT");
+    assert_eq!(large_env.name, "RESPONSE_TOO_LARGE_ERROR");
+    assert_eq!(
+      large_env.message,
+      "Response too large (2048 bytes), limit is 1024 bytes"
+    );
+    assert_eq!(
+      large_env.data,
+      Some(serde_json::json!({ "limitBytes": 1024, "receivedBytes": 2048 }))
+    );
   }
 }

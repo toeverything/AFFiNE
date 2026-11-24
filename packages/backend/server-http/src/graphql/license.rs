@@ -270,3 +270,34 @@ pub(crate) async fn mutate_create_selfhost_workspace_customer_portal(
     Err(err) => Err(domain_error_to_graphql(&err)),
   }
 }
+
+#[derive(Default)]
+pub struct LicenseMutation;
+
+#[async_graphql::Object]
+impl LicenseMutation {
+  async fn activate_license(&self, ctx: &Context<'_>, workspace_id: String, license: String) -> Result<License> {
+    mutate_activate_license(ctx, workspace_id, license).await
+  }
+
+  async fn deactivate_license(&self, ctx: &Context<'_>, workspace_id: String) -> Result<bool> {
+    mutate_deactivate_license(ctx, workspace_id).await
+  }
+
+  async fn install_license(
+    &self,
+    ctx: &Context<'_>,
+    workspace_id: String,
+    license: async_graphql::Upload,
+  ) -> Result<License> {
+    mutate_install_license(ctx, workspace_id, license).await
+  }
+
+  async fn preview_license(&self, ctx: &Context<'_>, license: async_graphql::Upload) -> Result<AdminLicensePreview> {
+    mutate_preview_license(ctx, license).await
+  }
+
+  async fn create_selfhost_workspace_customer_portal(&self, ctx: &Context<'_>, workspace_id: String) -> Result<String> {
+    mutate_create_selfhost_workspace_customer_portal(ctx, workspace_id).await
+  }
+}

@@ -50,6 +50,8 @@ pub struct BearerPrincipal {
   pub auth_session_id: String,
   pub authenticated_at: DateTime<Utc>,
   pub expires_at: Option<DateTime<Utc>>,
+  pub sign_in_client_version: Option<String>,
+  pub refresh_client_version: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
