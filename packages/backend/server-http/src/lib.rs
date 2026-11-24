@@ -27,6 +27,7 @@ use server_domain::comments::CommentService;
 use server_domain::doc_sharing::DocSharingService;
 use server_domain::events::{EventBusPublisher, InvalidationPublisher, NoopEventPublisher};
 use server_domain::histories::DocHistoryService;
+use server_domain::mcp::McpCredentialService;
 use server_domain::notifications::NotificationService;
 use server_domain::selfhost_license::SelfhostLicenseService;
 use server_domain::users::UserService;
@@ -126,6 +127,8 @@ pub struct AppState {
   pub calendar_webhook_token: Arc<std::sync::Mutex<Option<String>>>,
   pub calendar: CalendarService,
   pub calendar_oauth: Option<CalendarOAuthStore>,
+  pub mcp: McpCredentialService,
+  pub mcp_throttler: Arc<crate::rest::mcp::McpDefaultThrottler>,
 }
 
 /// Pre-wired domain services passed into [`AppState::with_services`].
@@ -253,6 +256,10 @@ impl AppState {
     )
     .with_shared_webhook_token(Arc::clone(&calendar_webhook_token));
     let calendar_oauth = CalendarOAuthStore::new(redis.clone(), config.session_redis_db_index).ok();
+    let mcp = McpCredentialService::new(db.clone(), Arc::clone(&services.event_bus))
+      .with_quota_gate(extension.quota_gate())
+      .with_invalidation(Arc::clone(&services.invalidation));
+    let mcp_throttler = Arc::new(crate::rest::mcp::McpDefaultThrottler::new(redis.clone()));
     Arc::new(Self {
       db,
       redis,
@@ -279,6 +286,8 @@ impl AppState {
       calendar_webhook_token,
       calendar,
       calendar_oauth,
+      mcp,
+      mcp_throttler,
     })
   }
 
