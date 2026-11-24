@@ -64,20 +64,19 @@ test.describe('Code Block Preview', () => {
     await page.getByText('Preview').click();
     await expect(mermaidSvg).toBeVisible();
 
-    await mermaidContainer.evaluate(element => {
-      Object.defineProperty(element, 'requestFullscreen', {
-        configurable: true,
-        value: async () => {
-          element.setAttribute('data-fullscreen-requested', 'true');
-        },
-      });
-    });
-
-    await mermaidContainer.locator('[title="Toggle fullscreen"]').click();
-    await expect(mermaidContainer).toHaveAttribute(
-      'data-fullscreen-requested',
-      'true'
+    const toggleFullscreen = mermaidContainer.locator(
+      '[title="Toggle fullscreen"]'
     );
+    const isFullscreen = () =>
+      mermaidContainer.evaluate(
+        element =>
+          (element.getRootNode() as ShadowRoot).fullscreenElement === element
+      );
+
+    await toggleFullscreen.click();
+    await expect.poll(isFullscreen).toBe(true);
+    await toggleFullscreen.click();
+    await expect.poll(isFullscreen).toBe(false);
   });
 
   test('enable typst preview', async ({ page }) => {
