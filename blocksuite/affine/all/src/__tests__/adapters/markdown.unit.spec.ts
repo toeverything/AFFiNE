@@ -5189,9 +5189,10 @@ bbb
 
       const children = rawSliceSnapshot?.content?.[0]?.children;
       expect(children?.[1]?.flavour).toBe('affine:paragraph');
-      expect(children?.[1]?.props.text.delta).toEqual([
-        { insert: '  indented' },
-      ]);
+      expect(children?.[1]?.props.text).toEqual({
+        '$blocksuite:internal:text$': true,
+        delta: [{ insert: '  indented' }],
+      });
     });
   });
 
