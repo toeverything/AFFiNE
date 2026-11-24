@@ -2389,6 +2389,74 @@ describe('html to snapshot', () => {
     expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
   });
 
+  test('numbered list with start and whitespace between items', async () => {
+    const html = template(`<ol start="3">
+  <li>ccc</li>
+  <li>ddd</li>
+</ol>`);
+
+    const blockSnapshot: BlockSnapshot = {
+      type: 'block',
+      id: 'matchesReplaceMap[0]',
+      flavour: 'affine:note',
+      props: {
+        xywh: '[0,0,800,95]',
+        background: DefaultTheme.noteBackgrounColor,
+        index: 'a0',
+        hidden: false,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
+      children: [
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[1]',
+          flavour: 'affine:list',
+          props: {
+            type: 'numbered',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'ccc',
+                },
+              ],
+            },
+            checked: false,
+            collapsed: false,
+            order: 3,
+          },
+          children: [],
+        },
+        {
+          type: 'block',
+          id: 'matchesReplaceMap[2]',
+          flavour: 'affine:list',
+          props: {
+            type: 'numbered',
+            text: {
+              '$blocksuite:internal:text$': true,
+              delta: [
+                {
+                  insert: 'ddd',
+                },
+              ],
+            },
+            checked: false,
+            collapsed: false,
+            order: 4,
+          },
+          children: [],
+        },
+      ],
+    };
+
+    const htmlAdapter = new HtmlAdapter(createJob(), provider);
+    const rawBlockSnapshot = await htmlAdapter.toBlockSnapshot({
+      file: html,
+    });
+    expect(nanoidReplacement(rawBlockSnapshot)).toEqual(blockSnapshot);
+  });
+
   test('p in list', async () => {
     const html = template(`<ol><li><p>p in list</p></li></ol>`);
 
