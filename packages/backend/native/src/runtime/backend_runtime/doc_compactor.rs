@@ -590,6 +590,28 @@ mod tests {
         .to_string(),
       "older material"
     );
+    for (session_limit, expected_ms) in [("0", 60_000), ("10min", 60_000), ("5s", 5_000)] {
+      let mut tx = pool.begin().await.unwrap();
+      sqlx::query("SELECT set_config('idle_in_transaction_session_timeout',$1,true)")
+        .bind(session_limit)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+      sqlx::query("UPDATE snapshots SET updated_at=updated_at WHERE workspace_id=$1 AND guid=$2")
+        .bind(&workspace_id)
+        .bind(doc_id)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+      let limit: i32 = sqlx::query_scalar(
+        "SELECT (extract(epoch FROM current_setting('idle_in_transaction_session_timeout')::interval)*1000)::int",
+      )
+      .fetch_one(&mut *tx)
+      .await
+      .unwrap();
+      assert_eq!(limit, expected_ms);
+      tx.rollback().await.unwrap();
+    }
     let trigger = format!("rfc21_compactor_{}", uuid::Uuid::new_v4().simple());
     sqlx::raw_sql(&format!(
       "CREATE FUNCTION {trigger}() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RETURN NULL; END$$; CREATE TRIGGER \

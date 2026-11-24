@@ -8,7 +8,10 @@ mod runtime;
 mod types;
 mod worker;
 
-use generation::{ActiveGeneration, activate, cleanup_retired_generation, config_hash, ensure, fail, load_active};
+use generation::{
+  ActiveGeneration, activate, begin_generation_write, cleanup_retired_generation, config_hash, ensure, fail,
+  load_active,
+};
 #[cfg(test)]
 pub(super) use projection::project_current_doc;
 use projection::{ProjectionInput, project_document};
