@@ -1,0 +1,25 @@
+[package]
+name = "affine-store"
+workspace = "../../frontend"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+y-octo.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+chrono.workspace = true
+sqlx.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+tokio.workspace = true

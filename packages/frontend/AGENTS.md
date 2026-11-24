@@ -5,7 +5,7 @@ It uses `resolver = "3"`, edition 2024, and its own `rust-toolchain.toml` (`1.98
 
 ## Workspace boundaries and four-domain guards
 
-- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/ui`, `../../blocksuite/crates/doc`, and `../../blocksuite/crates/playground`).
+- `packages/frontend/Cargo.toml` lists every client member crate explicitly (`../ui/ui`, `../common/store`, `../../blocksuite/crates/doc`, and `../../blocksuite/crates/playground`).
   Never use directory wildcards that can scan asset directories.
 - `packages/frontend/Cargo.toml` excludes `native` and `mobile-native`.
   Those legacy crates remain members of the root `Cargo.toml` workspace.
@@ -17,7 +17,7 @@ It uses `resolver = "3"`, edition 2024, and its own `rust-toolchain.toml` (`1.98
 
 ### Performance guardrail and theme/style oracle
 
-- **`perf/` (`schema.json`, `accepted.json`, `compare-n3.mjs`, `compare-n3.test.mjs`)**: Zero-dependency rolling `N-3` CI comparator with strict schema validation and rerun history anchoring (`--run-id` `created_at` cutoff + pagination). Deterministic byte sizes (`artifacts_bytes.*`) and work counters (non-`_ms` `benchmarks.*`) are hard-gated at strictly `> 10%` (`--fail-on-regression` exits `1`); shared-runner wall-clock timings (`benchmarks.*_ms` at `> 10%`, `ci_wall_ms.*` at `> 10%` and `> 15_000 ms`) are report-only `ADVISORY_SLOWDOWN`. Intentional increases are acknowledged via `{ metric, accepted_value, reason }` ceiling entries in `packages/frontend/perf/accepted.json` (with report-only `stale_acceptances` once the rolling baseline catches up). Unmeasured sub-keys are omitted or `null` (never padded with synthetic `0`s) so newly introduced metrics transition through `BOOTSTRAP`.
+- **`perf/` (`schema.json`, `accepted.json`, `compare-n3.mjs`, `compare-n3.test.mjs`)**: Zero-dependency rolling `N-3` CI comparator with strict schema validation and rerun history anchoring (`--run-id` `created_at` cutoff + pagination). Deterministic byte sizes (`artifacts_bytes.*`), work counters (non-`_ms` `benchmarks.*`), and unacknowledged `DROPPED` / `--require-n3` `BOOTSTRAP` metrics are hard-gated (`--fail-on-regression` exits `1`); shared-runner wall-clock timings (`benchmarks.*_ms` at `> 10%`, `ci_wall_ms.*` at `> 10%` and `> 15_000 ms`) are report-only `ADVISORY_SLOWDOWN`. Intentional changes are acknowledged in `packages/frontend/perf/accepted.json` via `action: "ceiling"` (`{ metric, accepted_value, reason }`), `action: "bootstrap"` (newly added metrics under `--require-n3`), or `action: "drop"` (retired metrics), with report-only `stale_acceptances` once the rolling `N-3` baseline catches up. Unmeasured sub-keys are omitted or `null` (never padded with synthetic `0`s).
 
 ## Build & verification commands
 
@@ -28,6 +28,7 @@ CARGO_ENCODED_RUSTFLAGS="" cargo fmt --all -- --check
 CARGO_ENCODED_RUSTFLAGS="" cargo clippy --locked --workspace --all-targets --features harness -- -D warnings
 CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
 CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
+CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p affine-store --no-default-features --target wasm32-unknown-unknown
 CARGO_ENCODED_RUSTFLAGS="" cargo test --locked --workspace
 CARGO_ENCODED_RUSTFLAGS="" cargo test --locked --workspace --features harness
 CARGO_ENCODED_RUSTFLAGS="" cargo run --locked --bin bs-harness --features harness -- render --theme dark --mode page --out frame.png --snapshot frame.json

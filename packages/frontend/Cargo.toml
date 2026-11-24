@@ -2,11 +2,13 @@
 resolver = "3"
 members = [
     "../ui/ui",
+    "../common/store",
     "../../blocksuite/crates/doc",
     "../../blocksuite/crates/playground",
 ]
 default-members = [
     "../ui/ui",
+    "../common/store",
     "../../blocksuite/crates/doc",
     "../../blocksuite/crates/playground",
 ]
@@ -23,10 +25,12 @@ anyhow = "1.0.86"
 async-channel = { version = "2.5", default-features = false }
 async-task = "4.7"
 backtrace = "0.3"
+base64 = "0.22"
 bitflags = "2.6.0"
 block2 = "0.6"
 bytemuck = "1"
 cbindgen = { version = "0.28.0", default-features = false }
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 console_error_panic_hook = "0.1.7"
 core-foundation = "0.10"
 core-foundation-sys = "0.8.6"
@@ -159,14 +163,17 @@ seahash = "4.1"
 semver = { version = "1.0", features = ["serde"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0.144", features = ["preserve_order"] }
+sha2 = "0.10"
 slotmap = "1.0.6"
 smallvec = { version = "1.6", features = ["union", "const_new"] }
 smol_str = { version = "0.3.6", default-features = false, features = ["serde"] }
 spin = { version = "0.10", default-features = false, features = ["mutex", "spin_mutex", "lock_api"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite", "migrate", "runtime-tokio", "chrono"] }
 strum = { version = "0.28", features = ["derive"] }
 swash = "0.2.6"
 taffy = { version = "=0.15.0", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "float_layout", "content_size"] }
 thiserror = "2.0.12"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ttf-parser = "0.25"
 unicode-bidi = { version = "0.3.18", default-features = false, features = ["hardcoded-data"] }
 unicode-properties = "=0.1.3"
@@ -181,6 +188,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = "0.3"
 web-time = "1.1.0"
 wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "cddb2f5d80dc0009b2ef6767635140cacf90a007", default-features = false }
+y-octo = { version = "0.4.0", default-features = false, features = ["session", "large_refs"] }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "deny" }

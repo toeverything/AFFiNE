@@ -277,6 +277,7 @@ jobs:
         run: |
           cargo check --locked -p ui -p playground --target wasm32-unknown-unknown
           cargo check --locked -p blocksuite-playground-doc --no-default-features --target wasm32-unknown-unknown
+          cargo check --locked -p affine-store --no-default-features --target wasm32-unknown-unknown
 
   headless-linux-and-perf:
     name: Headless Linux, Web Smoke & Perf
@@ -369,6 +370,7 @@ jobs:
       - name: Compare against rolling N-3 baseline
         env:
           GH_TOKEN: ${{ github.token }}
+          NP_ALLOW_PERF_BOOTSTRAP: ${{ vars.NP_ALLOW_PERF_BOOTSTRAP }}
         run: |
           test -f perf/compare-n3.mjs
           STRICT_PERF_FLAG="--require-n3"
