@@ -113,7 +113,7 @@ impl DeletedUserCleanup {
 #[derive(Clone, Debug)]
 pub struct DeleteUserError {
   pub error: DomainError,
-  pub partial_cleanup: DeletedUserCleanup,
+  pub partial_cleanup: Box<DeletedUserCleanup>,
 }
 
 impl std::fmt::Display for DeleteUserError {
@@ -375,7 +375,7 @@ impl UserService {
       Ok(()) => Ok(cleanup),
       Err(error) => Err(DeleteUserError {
         error,
-        partial_cleanup: cleanup,
+        partial_cleanup: Box::new(cleanup),
       }),
     }
   }

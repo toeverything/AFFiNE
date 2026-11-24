@@ -631,7 +631,7 @@ pub(crate) async fn mutate_delete_account(ctx: &Context<'_>) -> Result<DeleteAcc
     }
     Err(del_err) => {
       if !del_err.partial_cleanup.is_empty() {
-        finish_deleted_user_cleanup(state, del_err.partial_cleanup).await;
+        finish_deleted_user_cleanup(state, *del_err.partial_cleanup).await;
       }
       Err(domain_error_to_graphql(&del_err.error))
     }
@@ -659,7 +659,7 @@ pub(crate) async fn mutate_delete_user(ctx: &Context<'_>, id: String) -> Result<
     }
     Err(del_err) => {
       if !del_err.partial_cleanup.is_empty() {
-        finish_deleted_user_cleanup(state, del_err.partial_cleanup).await;
+        finish_deleted_user_cleanup(state, *del_err.partial_cleanup).await;
       }
       Err(domain_error_to_graphql(&del_err.error))
     }
