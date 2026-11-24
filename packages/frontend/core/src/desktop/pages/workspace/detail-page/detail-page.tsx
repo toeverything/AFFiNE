@@ -314,10 +314,16 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, []);
 
   const [dragging, setDragging] = useState(false);
+  const isReadOnlyMode = useLiveData(editor.readOnlyMode$);
+
+  const onToggleReadOnly = useCallback(() => {
+    const on = editor.toggleReadOnlyMode();
+    track.$.header.actions.toggleReadOnlyMode({ on });
+  }, [editor]);
 
   const canEdit = useGuard('Doc_Update', doc.id);
-
-  const readonly = !canEdit || isInTrash;
+  const isPageEditable = !!canEdit && !isInTrash;
+  const readonly = !isPageEditable || isReadOnlyMode;
 
   return (
     <FrameworkScope scope={editor.scope}>
@@ -326,6 +332,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           page={doc.blockSuiteDoc}
           workspace={workspace}
           onDragging={setDragging}
+          onToggleReadOnly={isPageEditable ? onToggleReadOnly : undefined}
         />
       </ViewHeader>
       <ViewBody>

@@ -2542,6 +2542,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.header.mode-switch.edgeless"](): string;
     /**
+      * `Read only`
+      */
+    ["com.affine.header.readonly-toggle.read-only"](): string;
+    /**
+      * `Editing`
+      */
+    ["com.affine.header.readonly-toggle.editing"](): string;
+    /**
       * `Add tag`
       */
     ["com.affine.header.option.add-tag"](): string;
