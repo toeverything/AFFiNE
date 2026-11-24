@@ -1,6 +1,6 @@
 # Working on AFFiNE Native Playground (for agents)
 
-These rules apply at the repository root on the `darksky/native-playground` branch and on topic branches under `darksky/np/**`. Subdirectory `AGENTS.md` files (for example `blocksuite/native-playground/AGENTS.md`) give narrower rules beside the code they govern.
+These rules apply at the repository root on the `darksky/native-playground` branch and on topic branches under `darksky/np/**`. Subdirectory `AGENTS.md` files (for example `packages/frontend/AGENTS.md`, `packages/ui/AGENTS.md`, and `blocksuite/crates/AGENTS.md`) give narrower rules beside the code they govern.
 
 ## Branch and CI workflow
 
@@ -12,7 +12,7 @@ These rules apply at the repository root on the `darksky/native-playground` bran
 
 - **Performance regression gate:** A CI benchmark metric can regress by **more than 10%** against the rolling `N-3` baseline. In that case, the performance guardian reviews the change before it lands.
 
-- **Cargo rustflags isolation:** Root `.cargo/config.toml` adds NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`). Cargo joins these flags into nested workspaces. Always set `CARGO_ENCODED_RUSTFLAGS=""` when you build and test `blocksuite/native-playground` and the standalone `packages/backend/` workspace.
+- **Cargo rustflags isolation:** Root `.cargo/config.toml` adds NAPI linker flags (`-all_load`, `-undefined dynamic_lookup`, `-z nodelete`). Cargo joins these flags into nested workspaces. Always set `CARGO_ENCODED_RUSTFLAGS=""` when you build and test `packages/frontend/` and the standalone `packages/backend/` workspace.
 
 - **Static gates:** `node scripts/ci/check-l0-tier-a.mjs` has no dependencies and runs in under a second. It guards the `packages/backend/` layering and hygiene. It also guards workflow references and the `waitForTimeout` / `.skip` ratchet in `scripts/ci/l0-ratchet.json`. The ratchet counts can only go down. To lower the ceiling, run the script with `--update-baseline`.
 

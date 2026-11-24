@@ -43,7 +43,9 @@ FFI_TARGET=${1}
 SRC_ROOT=${2}
 # Keep Cargo artifacts in a stable repo-local location so Xcode does not inherit
 # a sandbox-specific CARGO_TARGET_DIR from the parent shell.
-export CARGO_TARGET_DIR="$SRC_ROOT/../../../target"
+REPO_ROOT="$(cd "$SRC_ROOT/../../.." && pwd)"
+MANIFEST_PATH="$REPO_ROOT/Cargo.toml"
+export CARGO_TARGET_DIR="$REPO_ROOT/target"
 # buildvariant from our xcconfigs
 BUILDVARIANT=$(echo "${3}" | tr '[:upper:]' '[:lower:]')
 
@@ -76,18 +78,18 @@ for arch in $ARCHS; do
 
       # Intel iOS simulator
       export CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios"
-      $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target x86_64-apple-ios --features use-as-lib
+      $CARGO rustc --manifest-path "$MANIFEST_PATH" -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target x86_64-apple-ios --features use-as-lib
       SIM_X86_64_LIB="$CARGO_TARGET_DIR/x86_64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a"
       ;;
 
     arm64)
       if [ $IS_SIMULATOR -eq 0 ]; then
         # Hardware iOS targets
-        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios --features use-as-lib
+        $CARGO rustc --manifest-path "$MANIFEST_PATH" -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios --features use-as-lib
         DEVICE_ARM64_LIB="$CARGO_TARGET_DIR/aarch64-apple-ios/${RELFLAG}/lib${FFI_TARGET}.a"
       else
         # Apple Silicon iOS simulator
-        $CARGO rustc -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios-sim --features use-as-lib
+        $CARGO rustc --manifest-path "$MANIFEST_PATH" -p "${FFI_TARGET}" --lib --crate-type staticlib ${CARGO_PROFILE_FLAG:+$CARGO_PROFILE_FLAG} --target aarch64-apple-ios-sim --features use-as-lib
         SIM_ARM64_LIB="$CARGO_TARGET_DIR/aarch64-apple-ios-sim/${RELFLAG}/lib${FFI_TARGET}.a"
       fi
       ;;
@@ -106,7 +108,7 @@ else
   exit 1
 fi
 
-$CARGO run -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
+$CARGO run --manifest-path "$MANIFEST_PATH" -p affine_mobile_native --features use-as-lib --bin uniffi-bindgen generate --no-format --library "$BINDGEN_LIB" --language swift --out-dir "$SRCROOT/../../ios/App/App/uniffi"
 
 if [ $IS_SIMULATOR -eq 0 ]; then
   cp "$DEVICE_ARM64_LIB" "$OUTPUT_LIB"

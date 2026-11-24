@@ -8,7 +8,7 @@ export default {
   test: {
     include: [
       'apps/_common/sync/room/__tests__/**/*.spec.ts',
-      '../native-playground/tokens/surface-oracle.spec.mjs',
+      '../crates/oracle/surface-oracle.spec.mjs',
     ],
     testTimeout: 60_000,
     hookTimeout: 30_000,

@@ -20,6 +20,10 @@
 //   7. compat-backlog: every `// compat(<kind>): <slug> -- <reason>` marker in
 //      packages/backend/ production Rust has a `### <slug>` entry in
 //      docs/post-cutover-ablation-backlog.md, and every entry has a marker.
+//   8. Directory classification: every first-level subdirectory under
+//      packages/frontend/, packages/common/, and blocksuite/ belongs to a known
+//      legacy Web set or a known Rust/client set, and native-playground.yml's
+//      web-build filter covers every legacy Web subdirectory.
 
 import { createHash } from 'node:crypto';
 import {
@@ -758,6 +762,184 @@ if (!existsSync(COMPAT_BACKLOG_PATH)) {
         `docs/post-cutover-ablation-backlog.md: ${slug} has no compat marker in packages/backend/`
       );
     }
+  }
+}
+
+// 8. Top-level directory classification for web-build filter ----------------
+
+const DOMAIN_CLASSIFICATION = {
+  'packages/ui': {
+    legacyWeb: new Set([]),
+    newRust: new Set(['ui', 'kit', 'tokens']),
+    ignored: new Set(['node_modules']),
+  },
+  'packages/frontend': {
+    legacyWeb: new Set([
+      'admin',
+      'apps',
+      'component',
+      'core',
+      'electron-api',
+      'i18n',
+      'mobile-native',
+      'native',
+      'routes',
+      'templates',
+      'track',
+    ]),
+    newRust: new Set([
+      'client',
+      'desktop',
+      'hosts',
+      'legacy-import',
+      'mobile',
+      'perf',
+      'scripts',
+    ]),
+    ignored: new Set(['target', 'artifacts', 'node_modules']),
+  },
+  'packages/common': {
+    legacyWeb: new Set([
+      'auth',
+      'debug',
+      'env',
+      'error',
+      'graphql',
+      'infra',
+      'native',
+      'nbstore',
+      'reader',
+      'realtime',
+      's3-compat',
+      'theme',
+    ]),
+    newRust: new Set(['store']),
+    ignored: new Set(['node_modules']),
+  },
+  blocksuite: {
+    legacyWeb: new Set([
+      'affine',
+      'docs',
+      'docs-site',
+      'framework',
+      'integration-test',
+      'playground',
+    ]),
+    newRust: new Set(['crates']),
+    ignored: new Set(['node_modules']),
+  },
+};
+
+const WEB_BUILD_FIXED_ENTRIES = new Set([
+  'blocksuite/tsconfig.json',
+  'tools/cli/**',
+  '**/package.json',
+  '**/tsconfig*.json',
+  'yarn.lock',
+  '.yarnrc.yml',
+  '.yarn/**',
+  '.github/actions/setup-node/**',
+  '.github/workflows/np-web-build.yml',
+]);
+
+const npWorkflowPath = join(WORKFLOWS, 'native-playground.yml');
+const npWorkflowText = existsSync(npWorkflowPath) ? read(npWorkflowPath) : '';
+const webBuildSectionMatch = /^\s*web-build:\n((?:\s+-\s+.*\n)+)/m.exec(
+  npWorkflowText
+);
+const webBuildEntries = new Set(
+  (webBuildSectionMatch?.[1] ?? '')
+    .split('\n')
+    .map(l => /^\s*-\s+['"]?([^'"]+?)['"]?\s*$/.exec(l)?.[1])
+    .filter(Boolean)
+);
+
+const expectedWebBuildEntries = new Set(WEB_BUILD_FIXED_ENTRIES);
+
+for (const [baseDir, sets] of Object.entries(DOMAIN_CLASSIFICATION)) {
+  const fullBase = join(ROOT, baseDir);
+  if (!existsSync(fullBase)) continue;
+  for (const entry of readdirSync(fullBase, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const name = entry.name;
+    if (sets.ignored.has(name)) continue;
+    if (!sets.legacyWeb.has(name) && !sets.newRust.has(name)) {
+      fail(
+        'dir-classification',
+        `${baseDir}/${name}: unclassified directory; add it to legacyWeb (and native-playground.yml web-build) or newRust in scripts/ci/check-l0-tier-a.mjs`
+      );
+    }
+  }
+  for (const legacy of sets.legacyWeb) {
+    expectedWebBuildEntries.add(`${baseDir}/${legacy}/**`);
+  }
+}
+
+for (const expected of expectedWebBuildEntries) {
+  if (!webBuildEntries.has(expected)) {
+    fail(
+      'dir-classification',
+      `.github/workflows/native-playground.yml: web-build filter is missing ${expected}`
+    );
+  }
+}
+for (const actual of webBuildEntries) {
+  if (!expectedWebBuildEntries.has(actual)) {
+    fail(
+      'dir-classification',
+      `.github/workflows/native-playground.yml: web-build filter contains unexpected broad or unknown pattern ${actual}`
+    );
+  }
+}
+
+function globToRegExp(glob) {
+  let out = '^';
+  for (let i = 0; i < glob.length; i += 1) {
+    if (glob.slice(i, i + 3) === '**/') {
+      out += '(?:.*/)?';
+      i += 2;
+    } else if (glob.slice(i, i + 2) === '**') {
+      out += '.*';
+      i += 1;
+    } else if (glob[i] === '*') {
+      out += '[^/]*';
+    } else {
+      out += glob[i].replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    }
+  }
+  return new RegExp(`${out}$`);
+}
+
+const webBuildRegexes = [...webBuildEntries].map(globToRegExp);
+const matchesWebBuild = paths =>
+  paths.some(p => webBuildRegexes.some(re => re.test(p)));
+
+const WEB_BUILD_FILTER_CASES = [
+  ['oracle-only', ['blocksuite/crates/oracle/style-oracle.json'], false],
+  [
+    'rust-only',
+    [
+      'packages/ui/ui/src/lib.rs',
+      'packages/common/store/AGENTS.md',
+      'blocksuite/crates/doc/src/lib.rs',
+    ],
+    false,
+  ],
+  ['legacy-ts', ['packages/frontend/core/src/index.ts'], true],
+  [
+    'mixed',
+    ['packages/ui/ui/src/lib.rs', 'packages/common/infra/src/index.ts'],
+    true,
+  ],
+];
+
+for (const [label, paths, expected] of WEB_BUILD_FILTER_CASES) {
+  const actual = matchesWebBuild(paths);
+  if (actual !== expected) {
+    fail(
+      'dir-classification',
+      `web-build filter self-test "${label}" returned ${actual}, expected ${expected}`
+    );
   }
 }
 

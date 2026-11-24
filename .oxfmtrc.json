@@ -6,5 +6,9 @@
   "tabWidth": 2,
   "arrowParens": "avoid",
   "sortPackageJson": false,
-  "ignorePatterns": ["**/*.toml"]
+  "ignorePatterns": [
+    "**/*.toml",
+    "packages/frontend/artifacts/**",
+    "blocksuite/crates/playground/web/pkg/**"
+  ]
 }

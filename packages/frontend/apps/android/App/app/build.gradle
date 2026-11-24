@@ -196,8 +196,9 @@ android.applicationVariants.configureEach { variant ->
     def variantName = "${variant.name.substring(0,1).toUpperCase()}${variant.name.substring(1)}"
     def t = tasks.register("generate${variantName}UniFFIBindings", Exec) {
         workingDir "${project.projectDir}"
+        def rootManifest = file("${project.projectDir}/../../../../../../Cargo.toml").canonicalPath
         // Runs the bindings generation, note that you must have uniffi-bindgen installed and in your PATH environment variable
-        commandLine "${cargoPath}", 'run', '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/${nativeAbi}/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
+        commandLine "${cargoPath}", 'run', '--manifest-path', "${rootManifest}", '--bin', 'uniffi-bindgen', 'generate', '--library', "${buildDir}/rustJniLibs/android/${nativeAbi}/libaffine_mobile_native.so", '--language', 'kotlin', '--out-dir', "${project.projectDir}/src/main/java"
         dependsOn(nativeLibraries)
     }
     tasks.named("compile${variantName}Kotlin").configure { dependsOn(t) }

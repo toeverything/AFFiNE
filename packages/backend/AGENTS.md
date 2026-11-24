@@ -8,7 +8,7 @@ It excludes `native/` and `server/` and does not join the root `Cargo.toml` work
 
 - `tools/frame-audit`: shared frame snapshot schema (`FrameSnapshot`, `DebugElementSnapshot`) and audit engine (`audit_frame_snapshot`, `rules::ALL`).
   It depends on `serde` only.
-  `blocksuite/native-playground/crates/ui` depends on it by path and re-exports it.
+  `packages/ui/ui` depends on it by path and re-exports it.
   Keep both workspaces' tests green when you change it.
 
 - `test-db-harness` (library `test_db_harness`, binary `affine-test-env`): PostgreSQL and Redis harness for server tests.
@@ -106,4 +106,4 @@ cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo test --locked --workspace
 ```
 
-After you change `tools/frame-audit`, also run `cargo test --locked -p ui --features harness` in `blocksuite/native-playground`.
+After you change `tools/frame-audit`, also run `cargo test --locked -p ui --features harness` in `packages/frontend`.

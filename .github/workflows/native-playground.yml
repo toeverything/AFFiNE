@@ -73,9 +73,36 @@ jobs:
               - '.github/actions/setup-node/**'
               - '.github/workflows/np-web-fast.yml'
             web-build:
-              - 'packages/frontend/**'
-              - 'packages/common/**'
-              - 'blocksuite/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css,json}'
+              - 'packages/frontend/admin/**'
+              - 'packages/frontend/apps/**'
+              - 'packages/frontend/component/**'
+              - 'packages/frontend/core/**'
+              - 'packages/frontend/electron-api/**'
+              - 'packages/frontend/i18n/**'
+              - 'packages/frontend/mobile-native/**'
+              - 'packages/frontend/native/**'
+              - 'packages/frontend/routes/**'
+              - 'packages/frontend/templates/**'
+              - 'packages/frontend/track/**'
+              - 'packages/common/auth/**'
+              - 'packages/common/debug/**'
+              - 'packages/common/env/**'
+              - 'packages/common/error/**'
+              - 'packages/common/graphql/**'
+              - 'packages/common/infra/**'
+              - 'packages/common/native/**'
+              - 'packages/common/nbstore/**'
+              - 'packages/common/reader/**'
+              - 'packages/common/realtime/**'
+              - 'packages/common/s3-compat/**'
+              - 'packages/common/theme/**'
+              - 'blocksuite/affine/**'
+              - 'blocksuite/framework/**'
+              - 'blocksuite/playground/**'
+              - 'blocksuite/integration-test/**'
+              - 'blocksuite/docs/**'
+              - 'blocksuite/docs-site/**'
+              - 'blocksuite/tsconfig.json'
               - 'tools/cli/**'
               - '**/package.json'
               - '**/tsconfig*.json'
@@ -176,6 +203,8 @@ jobs:
             --select server-mail --select server-blob --select server-sync \
             --select server-http --select server-worker --select affine-server "${timings[@]}"
           cat ../../.artifacts/server-harness/run.json
+          test -s ../../.artifacts/server-harness/run.json
+          test -s ../../.artifacts/csf-frame-audit/frames.json
           test "$status" = passed
 
       - name: Upload run report
@@ -193,7 +222,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: blocksuite/native-playground
+        working-directory: packages/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -212,7 +241,7 @@ jobs:
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: blocksuite/native-playground -> target
+          workspaces: packages/frontend -> target
           key: lint-wasm
 
       - name: Format check
@@ -227,8 +256,8 @@ jobs:
       - name: Perf guardrail self-tests and generated token/icon unit tests
         run: |
           node --test perf/compare-n3.test.mjs
-          rustc --edition 2024 --test -D warnings tokens/tokens.rs -o /tmp/tokens_test && /tmp/tokens_test
-          rustc --edition 2024 --test -D warnings tokens/icons.rs -o /tmp/icons_test && /tmp/icons_test
+          rustc --edition 2024 --test -D warnings ../ui/tokens/tokens.rs -o /tmp/tokens_test && /tmp/tokens_test
+          rustc --edition 2024 --test -D warnings ../ui/tokens/icons.rs -o /tmp/icons_test && /tmp/icons_test
           rm -f /tmp/tokens_test /tmp/icons_test
 
       - name: Verify generated tokens, icons, and fonts.lock have zero drift
@@ -241,7 +270,7 @@ jobs:
             | tar -xz --strip-components=1 -C /tmp/np-token-deps/node_modules/@toeverything/theme
           curl -fsSL "https://registry.npmjs.org/@blocksuite/icons/-/icons-${ICONS_VER}.tgz" \
             | tar -xz --strip-components=1 -C /tmp/np-token-deps/node_modules/@blocksuite/icons
-          node tokens/extract-tokens.mjs --check --node-modules /tmp/np-token-deps/node_modules
+          node ../ui/tokens/extract-tokens.mjs --check --node-modules /tmp/np-token-deps/node_modules
           rm -rf /tmp/np-token-deps
 
       - name: Check WebAssembly target
@@ -254,7 +283,7 @@ jobs:
     runs-on: ubuntu-24.04
     defaults:
       run:
-        working-directory: blocksuite/native-playground
+        working-directory: packages/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -284,7 +313,7 @@ jobs:
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: blocksuite/native-playground -> target
+          workspaces: packages/frontend -> target
           key: headless-linux
 
       - name: Run workspace unit tests (default and harness)
@@ -294,16 +323,18 @@ jobs:
 
       - name: Build WebAssembly bundle and run headless Chromium smoke test
         run: |
-          mkdir -p artifacts web/pkg
+          mkdir -p artifacts ../../blocksuite/crates/playground/web/pkg
           cargo build --locked -p playground --target wasm32-unknown-unknown --release
-          wasm-bindgen --target web --out-dir web/pkg target/wasm32-unknown-unknown/release/playground.wasm
-          WASM_RAW=$(wc -c < web/pkg/playground_bg.wasm | tr -d ' ')
-          WASM_GZIP=$(gzip -9 -c web/pkg/playground_bg.wasm | wc -c | tr -d ' ')
+          wasm-bindgen --target web --out-dir ../../blocksuite/crates/playground/web/pkg target/wasm32-unknown-unknown/release/playground.wasm
+          WASM_RAW=$(wc -c < ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm | tr -d ' ')
+          WASM_GZIP=$(gzip -9 -c ../../blocksuite/crates/playground/web/pkg/playground_bg.wasm | wc -c | tr -d ' ')
           echo "WASM_RAW=$WASM_RAW" >> "$GITHUB_ENV"
           echo "WASM_GZIP=$WASM_GZIP" >> "$GITHUB_ENV"
           node scripts/web-smoke.mjs \
             --out artifacts/wasm-chromium.png \
             --out-edgeless artifacts/wasm-chromium-edgeless.png
+          test -s artifacts/wasm-chromium.png
+          test -s artifacts/wasm-chromium-edgeless.png
 
       - name: Deterministic headless render, audit, 4-fps check, and 30-frame bench
         run: |
@@ -318,6 +349,8 @@ jobs:
             --snapshot artifacts/linux-run2.json \
             --width 1280 \
             --height 800
+          test -s artifacts/linux-run1.png
+          test -s artifacts/linux-run1.json
           sha1=$(sha256sum artifacts/linux-run1.png | awk '{print $1}')
           sha2=$(sha256sum artifacts/linux-run2.png | awk '{print $1}')
           echo "Run 1 SHA256: $sha1"
@@ -331,24 +364,55 @@ jobs:
             --commit "${{ github.sha }}" \
             --web-wasm-raw "$WASM_RAW" \
             --web-wasm-gzip "$WASM_GZIP"
+          test -s artifacts/perf-metrics.json
 
       - name: Compare against rolling N-3 baseline
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -f perf/compare-n3.mjs ]; then
-            node perf/compare-n3.mjs \
-              --fetch-github \
-              --repo "${{ github.repository }}" \
-              --branch darksky/native-playground \
-              --workflow native-playground.yml \
-              --run-id "${{ github.run_id }}" \
-              --current artifacts/perf-metrics.json \
-              --json-out artifacts/perf-verdict.json \
-              --fail-on-regression >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No perf/compare-n3.mjs present; skipping N-3 comparison." >> "$GITHUB_STEP_SUMMARY"
+          test -f perf/compare-n3.mjs
+          STRICT_PERF_FLAG="--require-n3"
+          if [ "${NP_ALLOW_PERF_BOOTSTRAP:-0}" = "1" ]; then
+            STRICT_PERF_FLAG=""
           fi
+          node perf/compare-n3.mjs \
+            --fetch-github \
+            --repo "${{ github.repository }}" \
+            --branch darksky/native-playground \
+            --workflow native-playground.yml \
+            --run-id "${{ github.run_id }}" \
+            --current artifacts/perf-metrics.json \
+            --json-out artifacts/perf-verdict.json \
+            $STRICT_PERF_FLAG \
+            --fail-on-regression >> "$GITHUB_STEP_SUMMARY"
+          test -s artifacts/perf-verdict.json
+          node -e '
+            const fs = require("node:fs");
+            const v = JSON.parse(fs.readFileSync("artifacts/perf-verdict.json", "utf8"));
+            const allowBootstrap = process.env.NP_ALLOW_PERF_BOOTSTRAP === "1";
+            const shaRe = /^[0-9a-f]{40}$/;
+            if (
+              (!allowBootstrap && (v.baseline_depth !== "N-3" || !shaRe.test(v.baseline_commit || ""))) ||
+              (allowBootstrap && v.baseline_depth !== "bootstrap" && !shaRe.test(v.baseline_commit || "")) ||
+              !Array.isArray(v.metrics) ||
+              v.metrics.length === 0
+            ) {
+              throw new Error(`Invalid perf-verdict.json: baseline_depth=${v.baseline_depth}, baseline_commit=${v.baseline_commit}, metrics=${v.metrics?.length}`);
+            }
+            const dropped = v.metrics.filter(m => m.status === "DROPPED");
+            if (dropped.length > 0) {
+              throw new Error(`Unacknowledged dropped baseline metrics: ${dropped.map(m => m.key).join(", ")}`);
+            }
+            const unacceptedBootstrap = v.metrics.filter(m => m.status === "BOOTSTRAP");
+            if (!allowBootstrap && unacceptedBootstrap.length > 0) {
+              throw new Error(`Unacknowledged BOOTSTRAP metrics against N-3 baseline: ${unacceptedBootstrap.map(m => m.key).join(", ")}`);
+            }
+            const compared = v.metrics.filter(m => m.baseline != null && m.current != null);
+            if (!allowBootstrap && compared.length === 0) {
+              throw new Error("No metrics were compared against prior N-3 baseline history");
+            }
+            console.log(`perf-verdict.json verified: ${v.baseline_depth} (${(v.baseline_commit || "none").slice(0, 10)}), ${v.metrics.length} metrics, ${unacceptedBootstrap.length} unacknowledged bootstrap, 0 dropped`);
+          '
 
       - name: Upload perf metrics artifact
         if: always()
@@ -356,8 +420,8 @@ jobs:
         with:
           name: perf-metrics
           path: |
-            blocksuite/native-playground/artifacts/perf-metrics.json
-            blocksuite/native-playground/artifacts/perf-verdict.json
+            packages/frontend/artifacts/perf-metrics.json
+            packages/frontend/artifacts/perf-verdict.json
           if-no-files-found: ignore
 
       - name: Upload Linux headless and Web smoke artifacts
@@ -366,10 +430,10 @@ jobs:
         with:
           name: headless-linux-artifacts
           path: |
-            blocksuite/native-playground/artifacts/linux-run1.png
-            blocksuite/native-playground/artifacts/linux-run1.json
-            blocksuite/native-playground/artifacts/wasm-chromium.png
-            blocksuite/native-playground/artifacts/wasm-chromium-edgeless.png
+            packages/frontend/artifacts/linux-run1.png
+            packages/frontend/artifacts/linux-run1.json
+            packages/frontend/artifacts/wasm-chromium.png
+            packages/frontend/artifacts/wasm-chromium-edgeless.png
           if-no-files-found: ignore
 
   macos-headless:
@@ -377,7 +441,7 @@ jobs:
     runs-on: macos-15
     defaults:
       run:
-        working-directory: blocksuite/native-playground
+        working-directory: packages/frontend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -388,7 +452,7 @@ jobs:
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: blocksuite/native-playground -> target
+          workspaces: packages/frontend -> target
           key: macos-headless
 
       - name: Check workspace all targets
@@ -412,6 +476,8 @@ jobs:
             --snapshot artifacts/macos-run2.json \
             --width 1280 \
             --height 800
+          test -s artifacts/macos-run1.png
+          test -s artifacts/macos-run1.json
           sha1=$(shasum -a 256 artifacts/macos-run1.png | awk '{print $1}')
           sha2=$(shasum -a 256 artifacts/macos-run2.png | awk '{print $1}')
           echo "Run 1 SHA256: $sha1"
@@ -424,8 +490,9 @@ jobs:
         with:
           name: headless-macos-artifacts
           path: |
-            blocksuite/native-playground/artifacts/macos-run1.png
-            blocksuite/native-playground/artifacts/macos-run1.json
+            packages/frontend/artifacts/macos-run1.png
+            packages/frontend/artifacts/macos-run1.json
+          if-no-files-found: error
 
   js-room-coop:
     name: JS Room Coop & Rust-JS E2E
@@ -461,15 +528,15 @@ jobs:
       - name: Cache Cargo artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: blocksuite/native-playground -> target
+          workspaces: packages/frontend -> target
           key: js-room-coop
 
       - name: Build bs-relay and bs_doc_driver
-        working-directory: blocksuite/native-playground
+        working-directory: packages/frontend
         run: cargo build --locked -p blocksuite-playground-doc --bin bs-relay --example bs_doc_driver
 
       - name: Verify JS-authored surface snapshots without writeback
-        working-directory: blocksuite/native-playground
+        working-directory: packages/frontend
         run: cargo test --locked -p blocksuite-playground-doc --example bs_doc_driver js_authored_surface
 
       - name: Lint, format, and typecheck JS room sync
@@ -500,8 +567,8 @@ jobs:
 
       - name: Verify surface geometry oracle and live Rust-JS room sync
         env:
-          BS_RELAY_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/bs-relay
-          BS_DOC_DRIVER_BIN: ${{ github.workspace }}/blocksuite/native-playground/target/debug/examples/bs_doc_driver
+          BS_RELAY_BIN: ${{ github.workspace }}/packages/frontend/target/debug/bs-relay
+          BS_DOC_DRIVER_BIN: ${{ github.workspace }}/packages/frontend/target/debug/examples/bs_doc_driver
         run: |
           (cd blocksuite/framework/sync && ../../../node_modules/.bin/vitest run)
           (cd blocksuite/playground && ../../node_modules/.bin/vitest run)

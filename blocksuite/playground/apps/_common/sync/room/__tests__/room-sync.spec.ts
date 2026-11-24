@@ -22,7 +22,7 @@ import {
   RoomWebSocketClient,
 } from '../index.js';
 
-const NATIVE_DIR = resolve(__dirname, '../../../../../../native-playground');
+const NATIVE_DIR = resolve(__dirname, '../../../../../../../packages/frontend');
 const RELAY_BIN =
   process.env.BS_RELAY_BIN ?? resolve(NATIVE_DIR, 'target/debug/bs-relay');
 const DRIVER_BIN =
