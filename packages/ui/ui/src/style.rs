@@ -394,6 +394,9 @@ pub struct Style {
     /// The grid location of this element
     pub grid_location: Option<GridLocation>,
 
+    /// Inline layout direction inherited along the element tree.
+    pub direction: LayoutDirection,
+
     /// Whether to draw a red debugging outline around this element
     #[cfg(debug_assertions)]
     pub debug: bool,
@@ -476,6 +479,8 @@ pub struct StyleRefinement {
     pub grid_rows: Option<GridTemplate>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub grid_location: Option<GridLocation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub direction: Option<LayoutDirection>,
     #[cfg(debug_assertions)]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub debug: Option<bool>,
@@ -595,6 +600,9 @@ impl crate::refineable::IsEmpty for StyleRefinement {
         {
             empty = empty && self.grid_location.is_none();
         }
+        {
+            empty = empty && self.direction.is_none();
+        }
         #[cfg(debug_assertions)]
         {
             empty = empty && self.debug.is_none();
@@ -696,6 +704,9 @@ impl crate::refineable::Refineable for Style {
         }
         if let Some(ref val) = refinement.grid_location {
             self.grid_location = Some(val.clone());
+        }
+        if let Some(ref val) = refinement.direction {
+            self.direction = *val;
         }
         #[cfg(debug_assertions)]
         if let Some(ref val) = refinement.debug {
@@ -922,6 +933,13 @@ impl crate::refineable::Refineable for Style {
                     .as_ref()
                     .is_none_or(|v| self.grid_location.as_ref() == Some(v));
         }
+        {
+            sup = sup
+                && refinement
+                    .direction
+                    .as_ref()
+                    .is_none_or(|v| &self.direction == v);
+        }
         #[cfg(debug_assertions)]
         {
             sup = sup && refinement.debug.as_ref().is_none_or(|v| &self.debug == v);
@@ -1025,6 +1043,9 @@ impl crate::refineable::Refineable for Style {
         if self.grid_location != refinement.grid_location {
             out.grid_location = self.grid_location.clone();
         }
+        if refinement.direction.as_ref() != Some(&self.direction) {
+            out.direction = Some(self.direction);
+        }
         #[cfg(debug_assertions)]
         if refinement.debug.as_ref() != Some(&self.debug) {
             out.debug = Some(self.debug.clone());
@@ -1126,6 +1147,9 @@ impl crate::refineable::Refineable for StyleRefinement {
         }
         if let Some(ref val) = refinement.grid_location {
             self.grid_location = Some(val.clone());
+        }
+        if let Some(ref val) = refinement.direction {
+            self.direction = Some(*val);
         }
         #[cfg(debug_assertions)]
         if let Some(ref val) = refinement.debug {
@@ -1352,6 +1376,13 @@ impl crate::refineable::Refineable for StyleRefinement {
                     .as_ref()
                     .is_none_or(|v| self.grid_location.as_ref() == Some(v));
         }
+        {
+            sup = sup
+                && refinement
+                    .direction
+                    .as_ref()
+                    .is_none_or(|v| self.direction.as_ref() == Some(v));
+        }
         #[cfg(debug_assertions)]
         {
             sup = sup
@@ -1458,6 +1489,9 @@ impl crate::refineable::Refineable for StyleRefinement {
         }
         if self.grid_location != refinement.grid_location {
             out.grid_location = self.grid_location.clone();
+        }
+        if self.direction != refinement.direction {
+            out.direction = self.direction;
         }
         #[cfg(debug_assertions)]
         if self.debug != refinement.debug {
@@ -1566,6 +1600,64 @@ pub enum TextOverflow {
     /// of the string (e.g., "long fi…name.rs"). Useful for filenames where both the prefix
     /// and the extension are important context.
     TruncateMiddle(SharedString),
+}
+
+/// Concrete inline layout direction resolved along the element tree.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Direction {
+    /// Left-to-right inline direction.
+    #[default]
+    Ltr,
+    /// Right-to-left inline direction.
+    Rtl,
+}
+
+impl Direction {
+    /// Returns true when the direction is right-to-left.
+    #[inline]
+    pub const fn is_rtl(self) -> bool {
+        matches!(self, Self::Rtl)
+    }
+
+    /// Returns true when the direction is left-to-right.
+    #[inline]
+    pub const fn is_ltr(self) -> bool {
+        matches!(self, Self::Ltr)
+    }
+}
+
+/// Inheritable layout direction on [`Style`].
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum LayoutDirection {
+    /// Inherit the parent element's resolved direction (root defaults to [`Direction::Ltr`]).
+    #[default]
+    Inherit,
+    /// Explicit left-to-right direction.
+    Ltr,
+    /// Explicit right-to-left direction.
+    Rtl,
+}
+
+impl LayoutDirection {
+    /// Resolves this direction against the parent's concrete [`Direction`].
+    #[inline]
+    pub const fn resolve(self, parent: Direction) -> Direction {
+        match self {
+            Self::Inherit => parent,
+            Self::Ltr => Direction::Ltr,
+            Self::Rtl => Direction::Rtl,
+        }
+    }
+}
+
+impl From<Direction> for LayoutDirection {
+    #[inline]
+    fn from(direction: Direction) -> Self {
+        match direction {
+            Direction::Ltr => Self::Ltr,
+            Direction::Rtl => Self::Rtl,
+        }
+    }
 }
 
 /// How to align text within the element
@@ -2470,6 +2562,7 @@ impl Default for Style {
             grid_rows: None,
             grid_cols: None,
             grid_location: None,
+            direction: LayoutDirection::Inherit,
 
             #[cfg(debug_assertions)]
             debug: false,

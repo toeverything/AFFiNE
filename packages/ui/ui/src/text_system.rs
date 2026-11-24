@@ -630,6 +630,45 @@ impl WindowTextSystem {
         Self::paintable_line(text, layout, runs)
     }
 
+    /// Shape a single line with an explicit UAX #9 paragraph base direction.
+    pub fn shape_line_with_direction(
+        &self,
+        text: SharedString,
+        font_size: Pixels,
+        runs: &[TextRun],
+        force_width: Option<Pixels>,
+        base_direction: BaseDirection,
+    ) -> ShapedLine {
+        let layout =
+            self.layout_line_with_direction(&text, font_size, runs, force_width, base_direction);
+        Self::paintable_line(text, layout, runs)
+    }
+
+    /// Layout the given line of text with an explicit UAX #9 paragraph base direction.
+    pub fn layout_line_with_direction<Text>(
+        &self,
+        text: Text,
+        font_size: Pixels,
+        runs: &[TextRun],
+        force_width: Option<Pixels>,
+        base_direction: BaseDirection,
+    ) -> Arc<LineLayout>
+    where
+        Text: AsRef<str>,
+        SharedString: From<Text>,
+    {
+        let font_runs = self.font_runs(runs);
+        let layout = self.line_layout_cache.layout_line_with_direction(
+            text,
+            font_size,
+            &font_runs,
+            force_width,
+            base_direction,
+        );
+        self.font_runs_buffer.set(font_runs);
+        layout
+    }
+
     fn paintable_line(text: SharedString, layout: Arc<LineLayout>, runs: &[TextRun]) -> ShapedLine {
         debug_assert!(
             text.find('\n').is_none(),
@@ -710,6 +749,26 @@ impl WindowTextSystem {
         wrap_width: Option<Pixels>,
         line_clamp: Option<usize>,
     ) -> Result<SmallVec<[WrappedLine; 1]>> {
+        self.shape_text_with_direction(
+            text,
+            font_size,
+            runs,
+            wrap_width,
+            line_clamp,
+            crate::BaseDirection::Ltr,
+        )
+    }
+
+    /// Shape a multi line string of text with an explicit UAX #9 paragraph base direction.
+    pub fn shape_text_with_direction(
+        &self,
+        text: SharedString,
+        font_size: Pixels,
+        runs: &[TextRun],
+        wrap_width: Option<Pixels>,
+        line_clamp: Option<usize>,
+        base_direction: crate::BaseDirection,
+    ) -> Result<SmallVec<[WrappedLine; 1]>> {
         let mut runs = runs.iter().filter(|run| run.len > 0).cloned().peekable();
         let mut font_runs = self.font_runs_buffer.take();
 
@@ -770,14 +829,19 @@ impl WindowTextSystem {
                 run_start += run_len_within_line;
             }
 
-            let layout = self.line_layout_cache.layout_wrapped_line(
+            let layout = self.line_layout_cache.layout_wrapped_line_with_direction(
                 &line_text,
                 font_size,
                 &font_runs,
                 wrap_width,
                 max_wrap_lines.map(|max| max.saturating_sub(wrapped_lines)),
+                base_direction,
             );
-            wrapped_lines += layout.wrap_boundaries.len();
+            wrapped_lines += if !layout.visual_rows.is_empty() {
+                layout.visual_rows.len().saturating_sub(1)
+            } else {
+                layout.wrap_boundaries.len()
+            };
 
             lines.push(WrappedLine {
                 layout,

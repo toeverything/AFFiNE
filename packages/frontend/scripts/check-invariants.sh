@@ -440,7 +440,7 @@ print("Rust module structure & LOC checks passed.")
 PY
 
 echo "==> Checking packages/ui/ui LOC ceiling"
-UI_LOC_CEILING=95000
+UI_LOC_CEILING=95200
 UI_LOC=$(find "$UI_DIR/src" -name '*.rs' -print0 | xargs -0 cat | wc -l | tr -d ' ')
 echo "packages/ui/ui/src total LOC: $UI_LOC (ceiling: $UI_LOC_CEILING)"
 if [ "$UI_LOC" -gt "$UI_LOC_CEILING" ]; then

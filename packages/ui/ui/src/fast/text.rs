@@ -43,6 +43,7 @@ pub(crate) struct TextMeasureInputs {
     text_style: Rc<TextStyle>,
     font_size: Pixels,
     line_height: Pixels,
+    base_direction: crate::BaseDirection,
     /// The layout of the element whose inputs these are, or of a later one
     /// that took the measurement over while leaving the node with these.
     layout: RefCell<TextLayout>,
@@ -136,6 +137,7 @@ impl TextMeasureInputs {
         if !(self.text == other.text
             && self.font_size == other.font_size
             && self.line_height == other.line_height
+            && self.base_direction == other.base_direction
             && style.white_space == other_style.white_space
             && style.line_clamp == other_style.line_clamp
             && style.text_overflow == other_style.text_overflow
@@ -192,14 +194,21 @@ impl TextMeasureInputs {
 /// the closure and the inputs of every unchanged text element, and dropping
 /// last frame's, was most of what it cost.
 #[inline]
-pub(crate) fn layout_text(
+pub(crate) fn layout_text_with_direction(
     layout: &TextLayout,
     text: SharedString,
     runs: Option<Vec<TextRun>>,
+    base_direction: Option<crate::BaseDirection>,
     window: &mut Window,
     cx: &mut App,
 ) -> LayoutId {
-    let inputs = measure_inputs(layout, text, runs.unwrap_or_default(), window);
+    let inputs = measure_inputs(
+        layout,
+        text,
+        runs.unwrap_or_default(),
+        base_direction,
+        window,
+    );
     window.request_carried_measured_layout(
         inputs,
         adopt_measurement,
@@ -215,6 +224,7 @@ fn measure_inputs(
     layout: &TextLayout,
     text: SharedString,
     runs: Vec<TextRun>,
+    base_direction: Option<crate::BaseDirection>,
     window: &Window,
 ) -> TextMeasureInputs {
     let text_style = crate::fast::text_style::text_style(window);
@@ -224,12 +234,17 @@ fn measure_inputs(
             .line_height
             .to_pixels(font_size.into(), window.rem_size()),
     );
+    let base_direction = base_direction.unwrap_or_else(|| match window.layout_direction() {
+        crate::Direction::Rtl => crate::BaseDirection::Rtl,
+        crate::Direction::Ltr => crate::BaseDirection::Ltr,
+    });
     TextMeasureInputs {
         text,
         runs,
         text_style,
         font_size,
         line_height,
+        base_direction,
         layout: RefCell::new(layout.clone()),
     }
 }
@@ -251,6 +266,17 @@ pub(crate) fn prepaint_text(
     window: &mut Window,
     cx: &mut App,
 ) {
+    prepaint_text_with_direction(layout, bounds, text, None, window, cx)
+}
+
+pub(crate) fn prepaint_text_with_direction(
+    layout: &TextLayout,
+    bounds: Bounds<Pixels>,
+    text: &str,
+    base_direction: Option<crate::BaseDirection>,
+    window: &mut Window,
+    cx: &mut App,
+) {
     if layout.0.borrow().is_none() {
         report_unmeasured(
             "text reached prepaint unmeasured; measured there as plain text",
@@ -260,6 +286,7 @@ pub(crate) fn prepaint_text(
             layout,
             SharedString::from(text.to_owned()),
             Vec::new(),
+            base_direction,
             window,
         );
         // A node no layout reached has no size: lay the text out unwrapped
@@ -279,6 +306,7 @@ pub(crate) fn prepaint_text(
     }
     if let Some(inner) = layout.0.borrow_mut().as_mut() {
         inner.bounds = Some(bounds);
+        inner.text_align = crate::fast::text_style::text_paint_style(window).text_align;
     }
 }
 
@@ -382,10 +410,11 @@ fn measure_text(
         text_style,
         font_size,
         line_height,
+        base_direction,
         layout,
     } = inputs;
     let layout = &*layout.borrow();
-    let (font_size, line_height) = (*font_size, *line_height);
+    let (font_size, line_height, base_direction) = (*font_size, *line_height, *base_direction);
     let wrap_width = if text_style.white_space == WhiteSpace::Normal {
         known_dimensions.width.or(match available_space.width {
             AvailableSpace::Definite(x) => Some(x),
@@ -420,7 +449,7 @@ fn measure_text(
                 && text_layout
                     .lines
                     .iter()
-                    .all(|line| line.wrap_boundaries.is_empty()))
+                    .all(|line| line.wrap_boundaries.is_empty() && line.visual_rows.len() <= 1))
             || (text_layout.wrap_width.is_none()
                 && wrap_width.is_some_and(|wrap_width| size.width <= wrap_width)))
         && truncate_width.is_none()
@@ -442,31 +471,36 @@ fn measure_text(
         if let Some(max_lines) = text_style.line_clamp
             && let Some(wrap_width) = wrap_width
         {
-            let truncated = line_wrapper.truncate_wrapped_line(
-                text.clone(),
-                wrap_width,
-                max_lines,
-                &truncation_affix,
-                runs,
-                truncate_from,
-            );
             let room = Room::Lines {
                 wrap_width,
                 max_lines: max_lines.max(1),
             };
-            truncation::fit(
-                text,
-                runs,
-                truncated,
-                &truncation_affix,
-                truncate_from,
-                room,
-                font_size,
-                window,
-            )
+            if truncation::fits(text, runs, room, font_size, base_direction, window) {
+                (text.clone(), Cow::Borrowed(runs))
+            } else {
+                let truncated = line_wrapper.truncate_wrapped_line(
+                    text.clone(),
+                    wrap_width,
+                    max_lines,
+                    &truncation_affix,
+                    runs,
+                    truncate_from,
+                );
+                truncation::fit(
+                    text,
+                    runs,
+                    truncated,
+                    &truncation_affix,
+                    truncate_from,
+                    room,
+                    font_size,
+                    base_direction,
+                    window,
+                )
+            }
         } else if let Some(unclipped) = window
             .text_system()
-            .shape_text(text.clone(), font_size, runs, None, None)
+            .shape_text_with_direction(text.clone(), font_size, runs, None, None, base_direction)
             .log_err()
             && unclipped
                 .iter()
@@ -493,6 +527,7 @@ fn measure_text(
                 truncate_from,
                 Room::Line(truncate_width),
                 font_size,
+                base_direction,
                 window,
             )
         }
@@ -503,7 +538,14 @@ fn measure_text(
 
     let Some(lines) = window
         .text_system()
-        .shape_text(text, font_size, &runs, wrap_width, text_style.line_clamp)
+        .shape_text_with_direction(
+            text,
+            font_size,
+            &runs,
+            wrap_width,
+            text_style.line_clamp,
+            base_direction,
+        )
         .log_err()
     else {
         layout.0.borrow_mut().replace(TextLayoutInner {
@@ -512,6 +554,7 @@ fn measure_text(
             line_height,
             wrap_width,
             truncate_width,
+            text_align: text_style.text_align,
             size: Some(Size::default()),
             bounds: None,
         });
@@ -530,6 +573,7 @@ fn measure_text(
         line_height,
         wrap_width,
         truncate_width,
+        text_align: text_style.text_align,
         size: Some(size),
         bounds: None,
     });
@@ -620,6 +664,7 @@ fn copy_measurement(inner: &TextLayoutInner) -> TextLayoutInner {
         line_height: inner.line_height,
         wrap_width: inner.wrap_width,
         truncate_width: inner.truncate_width,
+        text_align: inner.text_align,
         size: inner.size,
         bounds: None,
     }
@@ -777,15 +822,26 @@ impl LineShaping {
         text: &str,
         font_size: Pixels,
         runs: &[FontRun],
+        base_direction: crate::BaseDirection,
     ) -> LineLayout {
-        let hash = RecentShapes::hash(text, font_size, runs);
-        if let Some(layout) = self.recent.lock().get(hash, text, font_size, runs) {
+        let hash = RecentShapes::hash(text, font_size, runs, base_direction);
+        if let Some(layout) = self
+            .recent
+            .lock()
+            .get(hash, text, font_size, runs, base_direction)
+        {
             return layout;
         }
-        let layout = self.shape_line_uncached(platform_text_system, text, font_size, runs);
-        self.recent
-            .lock()
-            .insert(hash, text, font_size, runs, copy_layout(&layout));
+        let layout =
+            self.shape_line_uncached(platform_text_system, text, font_size, runs, base_direction);
+        self.recent.lock().insert(
+            hash,
+            text,
+            font_size,
+            runs,
+            base_direction,
+            copy_layout(&layout),
+        );
         layout
     }
 
@@ -795,13 +851,19 @@ impl LineShaping {
         text: &str,
         font_size: Pixels,
         runs: &[FontRun],
+        base_direction: crate::BaseDirection,
     ) -> LineLayout {
         let started_at = self.shape_timed.load(Ordering::Relaxed).then(Instant::now);
-        let layout = self
-            .numbers
-            .lock()
-            .shape(platform_text_system, text, font_size, runs)
-            .unwrap_or_else(|| platform_text_system.layout_line(text, font_size, runs));
+        let layout = if base_direction == crate::BaseDirection::Ltr {
+            self.numbers
+                .lock()
+                .shape(platform_text_system, text, font_size, runs)
+        } else {
+            None
+        }
+        .unwrap_or_else(|| {
+            platform_text_system.layout_line_with_direction(text, font_size, runs, base_direction)
+        });
         self.lines_shaped.fetch_add(1, Ordering::Relaxed);
         if let Some(started_at) = started_at {
             self.shape_nanos
@@ -839,6 +901,7 @@ struct RecentShape {
     text: Box<str>,
     font_size: Pixels,
     runs: SmallVec<[FontRun; 1]>,
+    base_direction: crate::BaseDirection,
     layout: LineLayout,
 }
 
@@ -856,11 +919,17 @@ pub(crate) struct RecentShapes {
 }
 
 impl RecentShapes {
-    pub(crate) fn hash(text: &str, font_size: Pixels, runs: &[FontRun]) -> u64 {
+    pub(crate) fn hash(
+        text: &str,
+        font_size: Pixels,
+        runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> u64 {
         let mut hasher = FxHasher::default();
         text.hash(&mut hasher);
         font_size.0.to_bits().hash(&mut hasher);
         runs.hash(&mut hasher);
+        base_direction.hash(&mut hasher);
         hasher.finish()
     }
 
@@ -870,6 +939,7 @@ impl RecentShapes {
         text: &str,
         font_size: Pixels,
         runs: &[FontRun],
+        base_direction: crate::BaseDirection,
     ) -> Option<LineLayout> {
         let fonts_generation = FONTS_GENERATION.load(Ordering::Relaxed);
         if fonts_generation != self.fonts_generation {
@@ -883,6 +953,7 @@ impl RecentShapes {
             &*shape.text == text
                 && shape.font_size.0.to_bits() == font_size.0.to_bits()
                 && shape.runs.as_slice() == runs
+                && shape.base_direction == base_direction
         };
         if let Some(shape) = self
             .current
@@ -908,6 +979,7 @@ impl RecentShapes {
         text: &str,
         font_size: Pixels,
         runs: &[FontRun],
+        base_direction: crate::BaseDirection,
         layout: LineLayout,
     ) {
         if self.fonts_generation != FONTS_GENERATION.load(Ordering::Relaxed) {
@@ -919,6 +991,7 @@ impl RecentShapes {
                 text: text.into(),
                 font_size,
                 runs: SmallVec::from(runs),
+                base_direction,
                 layout,
             },
         );
@@ -951,6 +1024,7 @@ fn copy_layout(layout: &LineLayout) -> LineLayout {
         descent,
         runs,
         len,
+        base_direction,
     } = layout;
     LineLayout {
         font_size: *font_size,
@@ -959,6 +1033,7 @@ fn copy_layout(layout: &LineLayout) -> LineLayout {
         descent: *descent,
         runs: runs.clone(),
         len: *len,
+        base_direction: *base_direction,
     }
 }
 
@@ -969,10 +1044,15 @@ pub(crate) fn shape_line(
     text: &str,
     font_size: Pixels,
     runs: &[FontRun],
+    base_direction: crate::BaseDirection,
 ) -> LineLayout {
-    cache
-        .shaping
-        .shape_line(&*cache.platform_text_system, text, font_size, runs)
+    cache.shaping.shape_line(
+        &*cache.platform_text_system,
+        text,
+        font_size,
+        runs,
+        base_direction,
+    )
 }
 
 /// The decoration runs of a line about to be measured. Most lines carry one

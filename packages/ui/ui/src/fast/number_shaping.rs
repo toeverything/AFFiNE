@@ -195,8 +195,13 @@ fn put_together(
         width: px(x + last.advance),
         ascent: font.ascent,
         descent: font.descent,
-        runs: vec![ShapedRun { font_id, glyphs }],
+        runs: vec![ShapedRun {
+            font_id,
+            glyphs,
+            bidi_level: 0,
+        }],
         len: bytes.len(),
+        base_direction: crate::BaseDirection::Ltr,
     })
 }
 

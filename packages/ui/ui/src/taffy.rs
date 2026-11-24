@@ -483,6 +483,12 @@ impl ToTaffy<taffy::style::Style> for Style {
 
         taffy::style::Style {
             display: self.display.into(),
+            direction: match self.direction {
+                crate::LayoutDirection::Rtl => taffy::style::Direction::Rtl,
+                crate::LayoutDirection::Inherit | crate::LayoutDirection::Ltr => {
+                    taffy::style::Direction::Ltr
+                }
+            },
             overflow: self.overflow.into(),
             scrollbar_width: self.scrollbar_width.to_taffy(rem_size, scale_factor),
             position: self.position.into(),
@@ -739,6 +745,165 @@ impl From<Size<Pixels>> for Size<AvailableSpace> {
         Size {
             width: AvailableSpace::Definite(size.width),
             height: AvailableSpace::Definite(size.height),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Corners, DefiniteLength, Direction, Display, Edges, FlexDirection, LayoutDirection, Length,
+        physical_x_to_scroll_inline_offset, px, scroll_inline_offset_to_physical_x,
+    };
+
+    #[test]
+    fn rtl_logical_geometry_and_taffy_direction_mirror_symmetry() {
+        // Table-driven Edges, Corners, and LayoutDirection inheritance checks.
+        let edge_cases = [
+            (10.0_f32, 12.0_f32, 14.0_f32, 24.0_f32),
+            (0.0, 8.0, 0.0, 32.0),
+            (4.0, 0.0, 6.0, 16.0),
+        ];
+        for (top, start, bottom, end) in edge_cases {
+            let ltr = Edges::from_logical(top, start, bottom, end, Direction::Ltr);
+            let rtl = Edges::from_logical(top, start, bottom, end, Direction::Rtl);
+            assert_eq!(ltr.left, start);
+            assert_eq!(ltr.right, end);
+            assert_eq!(rtl.right, start);
+            assert_eq!(rtl.left, end);
+            assert_eq!(*ltr.inline_start(Direction::Ltr), start);
+            assert_eq!(*ltr.inline_end(Direction::Ltr), end);
+            assert_eq!(*rtl.inline_start(Direction::Rtl), start);
+            assert_eq!(*rtl.inline_end(Direction::Rtl), end);
+            assert_eq!(ltr.resolve_physical(Direction::Rtl), rtl);
+            assert_eq!(rtl.resolve_physical(Direction::Rtl), ltr);
+        }
+
+        let corner_cases = [
+            (2.0_f32, 6.0_f32, 10.0_f32, 14.0_f32),
+            (8.0, 0.0, 4.0, 12.0),
+        ];
+        for (ts, te, be, bs) in corner_cases {
+            let ltr = Corners::from_logical(ts, te, be, bs, Direction::Ltr);
+            let rtl = Corners::from_logical(ts, te, be, bs, Direction::Rtl);
+            assert_eq!(*ltr.top_start(Direction::Ltr), ts);
+            assert_eq!(*ltr.top_end(Direction::Ltr), te);
+            assert_eq!(*ltr.bottom_end(Direction::Ltr), be);
+            assert_eq!(*ltr.bottom_start(Direction::Ltr), bs);
+            assert_eq!(*rtl.top_start(Direction::Rtl), ts);
+            assert_eq!(*rtl.top_end(Direction::Rtl), te);
+            assert_eq!(*rtl.bottom_end(Direction::Rtl), be);
+            assert_eq!(*rtl.bottom_start(Direction::Rtl), bs);
+            assert_eq!(ltr.resolve_physical(Direction::Rtl), rtl);
+        }
+
+        // Scroll inline offset <-> physical x symmetry.
+        let scroll_cases = [
+            (0.0_f32, 600.0_f32, 200.0_f32),
+            (75.0, 600.0, 200.0),
+            (400.0, 600.0, 200.0),
+            (999.0, 600.0, 200.0),
+            (50.0, 150.0, 200.0),
+        ];
+        for (offset, content_w, viewport_w) in scroll_cases {
+            let max_scroll = (content_w - viewport_w).max(0.0);
+            let expected = offset.clamp(0.0, max_scroll);
+            for dir in [Direction::Ltr, Direction::Rtl] {
+                let phys_x = scroll_inline_offset_to_physical_x(
+                    px(offset),
+                    px(content_w),
+                    px(viewport_w),
+                    dir,
+                );
+                let round_trip =
+                    physical_x_to_scroll_inline_offset(phys_x, px(content_w), px(viewport_w), dir);
+                assert!((f32::from(round_trip) - expected).abs() < 1e-4);
+            }
+            let ltr_x = scroll_inline_offset_to_physical_x(
+                px(offset),
+                px(content_w),
+                px(viewport_w),
+                Direction::Ltr,
+            );
+            let rtl_x = scroll_inline_offset_to_physical_x(
+                px(offset),
+                px(content_w),
+                px(viewport_w),
+                Direction::Rtl,
+            );
+            assert!((f32::from(ltr_x) + f32::from(rtl_x) + max_scroll).abs() < 1e-4);
+        }
+
+        // LayoutDirection inheritance.
+        assert_eq!(
+            LayoutDirection::Inherit.resolve(Direction::Ltr),
+            Direction::Ltr
+        );
+        assert_eq!(
+            LayoutDirection::Inherit.resolve(Direction::Rtl),
+            Direction::Rtl
+        );
+        assert_eq!(LayoutDirection::Ltr.resolve(Direction::Rtl), Direction::Ltr);
+        assert_eq!(LayoutDirection::Rtl.resolve(Direction::Ltr), Direction::Rtl);
+
+        // Taffy Direction::Ltr vs Direction::Rtl exact mirror symmetry:
+        // left_rtl == container_w - right_ltr.
+        let container_w = 320.0_f32;
+        let child_widths = [40.0_f32, 96.0, 64.0];
+        let run_layout = |dir: LayoutDirection| -> Vec<(f32, f32)> {
+            let mut engine = TaffyLayoutEngine::new();
+            let children: Vec<LayoutId> = child_widths
+                .iter()
+                .map(|&w| {
+                    let mut style = Style::default();
+                    style.size.width = Length::Definite(DefiniteLength::Absolute(px(w).into()));
+                    style.size.height = Length::Definite(DefiniteLength::Absolute(px(32.0).into()));
+                    engine.request_layout(None, style, px(16.0), 1.0, &[])
+                })
+                .collect();
+            let mut root_style = Style::default();
+            root_style.display = Display::Flex;
+            root_style.flex_direction = FlexDirection::Row;
+            root_style.direction = dir;
+            root_style.size.width =
+                Length::Definite(DefiniteLength::Absolute(px(container_w).into()));
+            root_style.size.height = Length::Definite(DefiniteLength::Absolute(px(48.0).into()));
+            root_style.gap.width = DefiniteLength::Absolute(px(12.0).into());
+            let root = engine.request_layout(None, root_style, px(16.0), 1.0, &children);
+            engine
+                .taffy
+                .compute_layout(
+                    root.into(),
+                    taffy::geometry::Size {
+                        width: taffy::style::AvailableSpace::Definite(container_w),
+                        height: taffy::style::AvailableSpace::Definite(48.0),
+                    },
+                )
+                .expect("taffy layout");
+            children
+                .into_iter()
+                .map(|child| {
+                    let layout = engine.taffy.layout(child.into()).expect("child layout");
+                    (layout.location.x, layout.location.x + layout.size.width)
+                })
+                .collect()
+        };
+
+        let ltr_boxes = run_layout(LayoutDirection::Ltr);
+        let rtl_boxes = run_layout(LayoutDirection::Rtl);
+        for ((left_ltr, right_ltr), (left_rtl, right_rtl)) in ltr_boxes.iter().zip(rtl_boxes.iter())
+        {
+            assert!(
+                (left_rtl - (container_w - right_ltr)).abs() < 1e-3,
+                "expected left_rtl ({left_rtl}) == container_w - right_ltr ({})",
+                container_w - right_ltr
+            );
+            assert!(
+                (right_rtl - (container_w - left_ltr)).abs() < 1e-3,
+                "expected right_rtl ({right_rtl}) == container_w - left_ltr ({})",
+                container_w - left_ltr
+            );
         }
     }
 }

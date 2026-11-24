@@ -300,7 +300,34 @@ impl PlatformTextSystem for CosmicTextSystem {
     }
 
     fn layout_line(&self, text: &str, font_size: Pixels, runs: &[FontRun]) -> LineLayout {
-        self.0.write().layout_line(text, font_size, runs)
+        self.layout_line_with_direction(text, font_size, runs, crate::BaseDirection::Ltr)
+    }
+
+    fn layout_line_with_direction(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> LineLayout {
+        let mut state = self.0.write();
+        if let Some(mark) = crate::bidi_direction_override_mark(text, base_direction) {
+            let mark_len = mark.len_utf8();
+            let mut prefixed = String::with_capacity(mark_len + text.len());
+            prefixed.push(mark);
+            prefixed.push_str(text);
+            let mut prefixed_runs = runs.to_vec();
+            if let Some(first) = prefixed_runs.first_mut() {
+                first.len += mark_len;
+            }
+            let mut layout = state.layout_line(&prefixed, font_size, &prefixed_runs);
+            crate::strip_leading_direction_mark(&mut layout, mark_len, text.len());
+            layout.apply_bidi_levels(text, base_direction);
+            return layout;
+        }
+        let mut layout = state.layout_line(text, font_size, runs);
+        layout.apply_bidi_levels(text, base_direction);
+        layout
     }
 
     fn recommended_rendering_mode(
@@ -909,6 +936,7 @@ impl CosmicTextSystemState {
                 descent: Pixels::ZERO,
                 runs: Vec::new(),
                 len: text.len(),
+                base_direction: crate::BaseDirection::Ltr,
             };
         };
 
@@ -980,15 +1008,15 @@ impl CosmicTextSystemState {
                 is_emoji,
             };
 
-            if let Some(last_run) = runs
-                .last_mut()
-                .filter(|last_run| last_run.font_id == font_id)
-            {
+            if let Some(last_run) = runs.last_mut().filter(|last_run| {
+                last_run.font_id == font_id && last_run.bidi_level == glyph.level.number()
+            }) {
                 last_run.glyphs.push(shaped_glyph);
             } else {
                 runs.push(ShapedRun {
                     font_id,
                     glyphs: vec![shaped_glyph],
+                    bidi_level: glyph.level.number(),
                 });
             }
         }
@@ -1009,6 +1037,11 @@ impl CosmicTextSystemState {
             descent: layout.max_descent.into(),
             runs,
             len: text.len(),
+            base_direction: if line.rtl {
+                crate::BaseDirection::Rtl
+            } else {
+                crate::BaseDirection::Ltr
+            },
         }
     }
 

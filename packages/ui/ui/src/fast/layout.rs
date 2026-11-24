@@ -961,14 +961,32 @@ pub(crate) fn request_layout(
     let rem_size = window.rem_size();
     let scale_factor = window.scale_factor();
     let key = crate::fast::layout_key::layout_key(window);
-    request_retained_layout(
-        window.layout_engine.as_mut().unwrap(),
-        key,
-        style,
-        rem_size,
-        scale_factor,
-        children,
-    )
+    let resolved_direction = style.direction.resolve(window.layout_direction());
+    // Zero-clone fast path: `LayoutDirection::Inherit` maps to Taffy LTR just like
+    // `LayoutDirection::Ltr`, so only inherited RTL requires overriding `style.direction`.
+    let needs_rtl_override = resolved_direction == crate::Direction::Rtl
+        && style.direction != crate::LayoutDirection::Rtl;
+    if !needs_rtl_override {
+        request_retained_layout(
+            window.layout_engine.as_mut().unwrap(),
+            key,
+            style,
+            rem_size,
+            scale_factor,
+            children,
+        )
+    } else {
+        let mut resolved_style = style.clone();
+        resolved_style.direction = crate::LayoutDirection::Rtl;
+        request_retained_layout(
+            window.layout_engine.as_mut().unwrap(),
+            key,
+            &resolved_style,
+            rem_size,
+            scale_factor,
+            children,
+        )
+    }
 }
 
 /// Adds a node to the layout tree, reusing the one retained under `key`
@@ -1333,6 +1351,8 @@ fn layout_fingerprint(style: &Style, rem_size: Pixels, scale_factor: f32) -> u64
     scale_factor.to_bits().hash(hasher);
 
     mem::discriminant(&style.display).hash(hasher);
+    let taffy_rtl = matches!(style.direction, crate::LayoutDirection::Rtl);
+    taffy_rtl.hash(hasher);
     mem::discriminant(&style.overflow.x).hash(hasher);
     mem::discriminant(&style.overflow.y).hash(hasher);
     absolute(hasher, &style.scrollbar_width);

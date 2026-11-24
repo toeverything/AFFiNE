@@ -481,6 +481,16 @@ impl HeadlessPlatform {
     /// Creates a deterministic headless platform with a `TestScheduler` clock and
     /// an offscreen display of `width x height` logical pixels at `scale_factor`.
     pub fn new(width: u32, height: u32, scale_factor: f32) -> Rc<Self> {
+        Self::new_with_text_system(width, height, scale_factor, create_headless_text_system())
+    }
+
+    /// Creates a deterministic headless platform with a custom [`PlatformTextSystem`].
+    pub fn new_with_text_system(
+        width: u32,
+        height: u32,
+        scale_factor: f32,
+        text_system: Arc<dyn PlatformTextSystem>,
+    ) -> Rc<Self> {
         let scheduler = Arc::new(TestScheduler::new(TestSchedulerConfig {
             seed: 0,
             randomize_order: false,
@@ -495,7 +505,6 @@ impl HeadlessPlatform {
             BackgroundExecutor::from_scheduler(sched_dyn.clone(), disp_dyn.clone());
         let foreground_executor =
             ForegroundExecutor::from_scheduler(dispatcher.session_id(), sched_dyn, disp_dyn);
-        let text_system = create_headless_text_system();
         let display = Rc::new(HeadlessDisplay::new(width as f32, height as f32));
 
         Rc::new_cyclic(|weak| Self {

@@ -76,6 +76,7 @@ pub(crate) struct Rebuild {
     /// and the keys of its nodes, are derived from.
     parent_layout_key: u64,
     text_style_stack: TextStyleStack,
+    layout_direction_stack: SmallVec<[crate::Direction; 8]>,
     element_offset: Point<Pixels>,
     rem_size: Pixels,
     /// The style it is laid out at, when it is a cached view.
@@ -111,6 +112,7 @@ impl Window {
             view: handle.0.clone()?,
             parent_layout_key: parent_layout_key?,
             text_style_stack: self.text_style_stack.clone(),
+            layout_direction_stack: self.layout_direction_stack.clone(),
             element_offset: self.element_offset(),
             rem_size: self.rem_size(),
             cached_style: cached_style.cloned(),
@@ -253,6 +255,7 @@ impl SplicedPrepaint {
 struct Inherited {
     element_id_stack: crate::window::ElementIdStack,
     text_style_stack: TextStyleStack,
+    layout_direction_stack: SmallVec<[crate::Direction; 8]>,
     content_mask_stack: Vec<ContentMask<Pixels>>,
     element_offset_stack: Vec<Point<Pixels>>,
     rem_size_override_stack: SmallVec<[Pixels; 8]>,
@@ -282,6 +285,10 @@ impl Window {
                 &mut self.text_style_stack,
                 rebuild.text_style_stack.clone(),
             ),
+            layout_direction_stack: mem::replace(
+                &mut self.layout_direction_stack,
+                rebuild.layout_direction_stack.clone(),
+            ),
             content_mask_stack: mem::replace(&mut self.content_mask_stack, vec![content_mask]),
             element_offset_stack: mem::replace(
                 &mut self.element_offset_stack,
@@ -298,6 +305,7 @@ impl Window {
     fn leave_gap(&mut self, inherited: Inherited) {
         self.element_id_stack = inherited.element_id_stack;
         self.text_style_stack = inherited.text_style_stack;
+        self.layout_direction_stack = inherited.layout_direction_stack;
         self.content_mask_stack = inherited.content_mask_stack;
         self.element_offset_stack = inherited.element_offset_stack;
         self.rem_size_override_stack = inherited.rem_size_override_stack;
@@ -957,6 +965,7 @@ impl Window {
                 parent_node: dispatch.refresh(deferred_draw.parent_node),
                 element_id_stack: deferred_draw.element_id_stack.clone(),
                 text_style_stack: deferred_draw.text_style_stack.clone(),
+                layout_direction_stack: deferred_draw.layout_direction_stack.clone(),
                 content_mask: deferred_draw.content_mask,
                 rem_size: deferred_draw.rem_size,
                 priority: deferred_draw.priority,

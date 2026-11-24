@@ -2290,6 +2290,83 @@ impl<T: Clone + Debug + Default + PartialEq> Edges<T> {
         }
     }
 
+    /// Constructs physical `Edges` from logical sides (`top`, `inline_start`, `bottom`, `inline_end`).
+    pub fn from_logical(
+        top: T,
+        inline_start: T,
+        bottom: T,
+        inline_end: T,
+        direction: crate::Direction,
+    ) -> Self {
+        match direction {
+            crate::Direction::Ltr => Self {
+                top,
+                right: inline_end,
+                bottom,
+                left: inline_start,
+            },
+            crate::Direction::Rtl => Self {
+                top,
+                right: inline_start,
+                bottom,
+                left: inline_end,
+            },
+        }
+    }
+
+    /// Returns the edge on the logical inline-start side for `direction`.
+    #[inline]
+    pub fn inline_start(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.left,
+            crate::Direction::Rtl => &self.right,
+        }
+    }
+
+    /// Returns the edge on the logical inline-end side for `direction`.
+    #[inline]
+    pub fn inline_end(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.right,
+            crate::Direction::Rtl => &self.left,
+        }
+    }
+
+    /// Sets the logical inline-start edge for `direction`.
+    #[inline]
+    pub fn with_inline_start(mut self, value: T, direction: crate::Direction) -> Self {
+        match direction {
+            crate::Direction::Ltr => self.left = value,
+            crate::Direction::Rtl => self.right = value,
+        }
+        self
+    }
+
+    /// Sets the logical inline-end edge for `direction`.
+    #[inline]
+    pub fn with_inline_end(mut self, value: T, direction: crate::Direction) -> Self {
+        match direction {
+            crate::Direction::Ltr => self.right = value,
+            crate::Direction::Rtl => self.left = value,
+        }
+        self
+    }
+
+    /// Resolves logical `Edges` (where `left` is `inline_start` and `right` is `inline_end`)
+    /// into physical `Edges` for `direction`.
+    #[inline]
+    pub fn resolve_physical(&self, direction: crate::Direction) -> Self {
+        match direction {
+            crate::Direction::Ltr => self.clone(),
+            crate::Direction::Rtl => Self {
+                top: self.top.clone(),
+                right: self.left.clone(),
+                bottom: self.bottom.clone(),
+                left: self.right.clone(),
+            },
+        }
+    }
+
     /// Applies a function to each field of the `Edges`, producing a new `Edges<U>`.
     ///
     /// This method allows for converting an `Edges<T>` to an `Edges<U>` by specifying a closure
@@ -2932,6 +3009,123 @@ impl<T: Clone + Debug + Default + PartialEq> crate::refineable::Refineable
         }
         out
     }
+}
+
+impl<T: Clone + Debug + Default + PartialEq> Corners<T> {
+    /// Constructs physical `Corners` from logical corners for `direction`.
+    pub fn from_logical(
+        top_start: T,
+        top_end: T,
+        bottom_end: T,
+        bottom_start: T,
+        direction: crate::Direction,
+    ) -> Self {
+        match direction {
+            crate::Direction::Ltr => Self {
+                top_left: top_start,
+                top_right: top_end,
+                bottom_right: bottom_end,
+                bottom_left: bottom_start,
+            },
+            crate::Direction::Rtl => Self {
+                top_left: top_end,
+                top_right: top_start,
+                bottom_right: bottom_start,
+                bottom_left: bottom_end,
+            },
+        }
+    }
+
+    /// Returns the corner at the top inline-start side for `direction`.
+    #[inline]
+    pub fn top_start(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.top_left,
+            crate::Direction::Rtl => &self.top_right,
+        }
+    }
+
+    /// Returns the corner at the top inline-end side for `direction`.
+    #[inline]
+    pub fn top_end(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.top_right,
+            crate::Direction::Rtl => &self.top_left,
+        }
+    }
+
+    /// Returns the corner at the bottom inline-start side for `direction`.
+    #[inline]
+    pub fn bottom_start(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.bottom_left,
+            crate::Direction::Rtl => &self.bottom_right,
+        }
+    }
+
+    /// Returns the corner at the bottom inline-end side for `direction`.
+    #[inline]
+    pub fn bottom_end(&self, direction: crate::Direction) -> &T {
+        match direction {
+            crate::Direction::Ltr => &self.bottom_right,
+            crate::Direction::Rtl => &self.bottom_left,
+        }
+    }
+
+    /// Resolves logical `Corners` (where `*_left` are start and `*_right` are end)
+    /// into physical `Corners` for `direction`.
+    #[inline]
+    pub fn resolve_physical(&self, direction: crate::Direction) -> Self {
+        match direction {
+            crate::Direction::Ltr => self.clone(),
+            crate::Direction::Rtl => Self {
+                top_left: self.top_right.clone(),
+                top_right: self.top_left.clone(),
+                bottom_right: self.bottom_left.clone(),
+                bottom_left: self.bottom_right.clone(),
+            },
+        }
+    }
+}
+
+/// Converts a non-negative logical inline scroll offset (`>= 0`) into a physical x-axis
+/// content translation offset for a horizontal scroll container.
+///
+/// In LTR, `0` aligns the left edge of the content with the left edge of the viewport
+/// (`physical_x = 0`), and scrolling forward moves content left (`physical_x = -offset`).
+/// In RTL, `0` aligns the right edge of the content with the right edge of the viewport
+/// (`physical_x = -(content_width - viewport_width)`), and scrolling forward toward the
+/// inline-end (left) moves content right (`physical_x = -max_scroll + offset`).
+#[inline]
+pub fn scroll_inline_offset_to_physical_x(
+    scroll_inline_offset: Pixels,
+    content_width: Pixels,
+    viewport_width: Pixels,
+    direction: crate::Direction,
+) -> Pixels {
+    let max_scroll = (content_width - viewport_width).max(Pixels::ZERO);
+    let clamped = scroll_inline_offset.clamp(Pixels::ZERO, max_scroll);
+    match direction {
+        crate::Direction::Ltr => -clamped,
+        crate::Direction::Rtl => clamped - max_scroll,
+    }
+}
+
+/// Converts a physical x-axis content translation offset back into a non-negative
+/// logical inline scroll offset (`>= 0`).
+#[inline]
+pub fn physical_x_to_scroll_inline_offset(
+    physical_x: Pixels,
+    content_width: Pixels,
+    viewport_width: Pixels,
+    direction: crate::Direction,
+) -> Pixels {
+    let max_scroll = (content_width - viewport_width).max(Pixels::ZERO);
+    let raw = match direction {
+        crate::Direction::Ltr => -physical_x,
+        crate::Direction::Rtl => max_scroll + physical_x,
+    };
+    raw.clamp(Pixels::ZERO, max_scroll)
 }
 
 impl<T> Corners<T>

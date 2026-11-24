@@ -25,6 +25,23 @@ pub trait Styled: Sized {
         self
     }
 
+    fn direction(mut self, direction: crate::LayoutDirection) -> Self {
+        self.style().direction = Some(direction);
+        self
+    }
+
+    fn dir_ltr(self) -> Self {
+        self.direction(crate::LayoutDirection::Ltr)
+    }
+
+    fn dir_rtl(self) -> Self {
+        self.direction(crate::LayoutDirection::Rtl)
+    }
+
+    fn dir_inherit(self) -> Self {
+        self.direction(crate::LayoutDirection::Inherit)
+    }
+
     fn relative(mut self) -> Self {
         self.style().position = Some(crate::Position::Relative);
         self

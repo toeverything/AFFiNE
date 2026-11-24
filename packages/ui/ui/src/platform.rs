@@ -6,14 +6,19 @@ mod keyboard;
 mod keystroke;
 mod platform_info;
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub mod apple;
 #[cfg(all(not(target_family = "wasm"), any(test, feature = "harness")))]
 pub mod headless;
+#[cfg(target_os = "ios")]
+pub mod ios;
 #[cfg(target_os = "macos")]
 pub mod macos;
 #[cfg(target_family = "wasm")]
 pub mod web;
+#[cfg(all(test, not(target_family = "wasm")))]
+#[path = "platform/web/viewport.rs"]
+mod web_viewport_unit_tests;
 #[cfg(any(target_os = "linux", target_family = "wasm"))]
 pub mod wgpu;
 
@@ -1427,6 +1432,18 @@ pub trait PlatformTextSystem: Send + Sync {
     ) -> Result<(Size<DevicePixels>, Vec<u8>)>;
     /// Layout a line of text with the given font runs.
     fn layout_line(&self, text: &str, font_size: Pixels, runs: &[FontRun]) -> LineLayout;
+    /// Layout a line of text with an explicit UAX #9 paragraph base direction.
+    fn layout_line_with_direction(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> LineLayout {
+        let mut layout = self.layout_line(text, font_size, runs);
+        layout.apply_bidi_levels(text, base_direction);
+        layout
+    }
     /// Returns the recommended text rendering mode for the given font and size.
     fn recommended_rendering_mode(&self, _font_id: FontId, _font_size: Pixels)
     -> TextRenderingMode;
@@ -1542,6 +1559,7 @@ impl PlatformTextSystem for NoopTextSystem {
             runs.push(ShapedRun {
                 font_id: FontId(0),
                 glyphs,
+                bidi_level: 0,
             });
         } else {
             position = px(0.);
@@ -1554,6 +1572,7 @@ impl PlatformTextSystem for NoopTextSystem {
             descent: font_size * (metrics.descent / metrics.units_per_em as f32),
             runs,
             len: text.len(),
+            base_direction: crate::BaseDirection::Ltr,
         }
     }
 

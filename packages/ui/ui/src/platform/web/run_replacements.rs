@@ -168,6 +168,7 @@ pub(crate) fn apply_replacements(layout: &mut LineLayout, replacements: Vec<Repl
     layout.runs.resize_with(final_run_count, || ShapedRun {
         font_id: FontId(0),
         glyphs: Vec::new(),
+        bidi_level: 0,
     });
 
     // Every destination is at or after its source. Expanding from the right
@@ -175,6 +176,7 @@ pub(crate) fn apply_replacements(layout: &mut LineLayout, replacements: Vec<Repl
     let mut destination_end = final_run_count;
     for (source_index, segments) in (0..source_run_count).zip(segments_by_run).rev() {
         let destination_start = destination_end - segments.len();
+        let source_bidi_level = layout.runs[source_index].bidi_level;
         let mut glyph_end = layout.runs[source_index].glyphs.len();
         for (segment_index, segment) in segments.into_iter().enumerate().rev() {
             let destination_index = destination_start + segment_index;
@@ -192,6 +194,7 @@ pub(crate) fn apply_replacements(layout: &mut LineLayout, replacements: Vec<Repl
                 layout.runs[destination_index] = ShapedRun {
                     font_id: segment.font_id,
                     glyphs,
+                    bidi_level: source_bidi_level,
                 };
                 glyph_end = glyph_start;
             }

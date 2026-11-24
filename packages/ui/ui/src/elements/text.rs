@@ -357,6 +357,7 @@ pub struct StyledText {
     runs: Option<Vec<TextRun>>,
     delayed_highlights: Option<Vec<(Range<usize>, HighlightStyle)>>,
     delayed_font_family_overrides: Option<Vec<(Range<usize>, SharedString)>>,
+    base_direction: Option<crate::BaseDirection>,
     layout: TextLayout,
 }
 
@@ -368,8 +369,15 @@ impl StyledText {
             runs: None,
             delayed_highlights: None,
             delayed_font_family_overrides: None,
+            base_direction: None,
             layout: TextLayout::default(),
         }
+    }
+
+    /// Override the UAX #9 paragraph base direction for this text element.
+    pub fn text_direction(mut self, direction: crate::BaseDirection) -> Self {
+        self.base_direction = Some(direction);
+        self
     }
 
     /// Get the layout for this element. This can be used to map indices to pixels and vice versa.
@@ -511,7 +519,13 @@ impl Element for StyledText {
             Self::apply_font_family_overrides(runs, overrides);
         }
 
-        let layout_id = self.layout.layout(self.text.clone(), runs, window, cx);
+        let layout_id = self.layout.layout_with_direction(
+            self.text.clone(),
+            runs,
+            self.base_direction,
+            window,
+            cx,
+        );
         (layout_id, ())
     }
 
@@ -524,7 +538,14 @@ impl Element for StyledText {
         _window: &mut Window,
         _cx: &mut App,
     ) {
-        crate::fast::text::prepaint_text(&self.layout, bounds, &self.text, _window, _cx)
+        crate::fast::text::prepaint_text_with_direction(
+            &self.layout,
+            bounds,
+            &self.text,
+            self.base_direction,
+            _window,
+            _cx,
+        )
     }
 
     fn paint(
@@ -558,6 +579,7 @@ pub(crate) struct TextLayoutInner {
     pub(crate) line_height: Pixels,
     pub(crate) wrap_width: Option<Pixels>,
     pub(crate) truncate_width: Option<Pixels>,
+    pub(crate) text_align: crate::TextAlign,
     pub(crate) size: Option<Size<Pixels>>,
     pub(crate) bounds: Option<Bounds<Pixels>>,
 }
@@ -570,7 +592,25 @@ impl TextLayout {
         window: &mut Window,
         fast_cx: &mut App,
     ) -> LayoutId {
-        crate::fast::text::layout_text(self, text, runs, window, fast_cx)
+        self.layout_with_direction(text, runs, None, window, fast_cx)
+    }
+
+    fn layout_with_direction(
+        &self,
+        text: SharedString,
+        runs: Option<Vec<TextRun>>,
+        base_direction: Option<crate::BaseDirection>,
+        window: &mut Window,
+        fast_cx: &mut App,
+    ) -> LayoutId {
+        crate::fast::text::layout_text_with_direction(
+            self,
+            text,
+            runs,
+            base_direction,
+            window,
+            fast_cx,
+        )
     }
 
     fn paint(&self, text: &str, window: &mut Window, cx: &mut App) {
@@ -662,7 +702,10 @@ impl TextLayout {
                 line_origin.y = line_bottom;
                 line_start_ix += line.len() + 1;
             } else {
-                let position_within_line = position - line_origin;
+                let mut position_within_line = position - line_origin;
+                let row_ix = (position_within_line.y.max(Pixels::ZERO) / line_height) as usize;
+                position_within_line.x -=
+                    line.row_align_offset(row_ix, element_state.text_align, bounds.size.width);
                 match line.index_for_position(position_within_line, line_height) {
                     Ok(index_within_line) => return Ok(line_start_ix + index_within_line),
                     Err(index_within_line) => return Err(line_start_ix + index_within_line),
@@ -697,7 +740,10 @@ impl TextLayout {
                 continue;
             } else {
                 let ix_within_line = index - line_start_ix;
-                return Some(line_origin + line.position_for_index(ix_within_line, line_height)?);
+                let mut pos = line.position_for_index(ix_within_line, line_height)?;
+                let row_ix = (pos.y / line_height).round() as usize;
+                pos.x += line.row_align_offset(row_ix, element_state.text_align, bounds.size.width);
+                return Some(line_origin + pos);
             }
         }
 

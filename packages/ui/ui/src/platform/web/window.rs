@@ -98,8 +98,6 @@ pub struct WebWindow {
     _raf_closure: Closure<dyn FnMut()>,
     _resize_observer: Option<web_sys::ResizeObserver>,
     _resize_observer_closure: Closure<dyn FnMut(js_sys::Array)>,
-    _safe_area_observer: Option<web_sys::ResizeObserver>,
-    _safe_area_observer_closure: Closure<dyn FnMut(js_sys::Array)>,
     _event_listeners: WebEventListeners,
 }
 
@@ -243,26 +241,6 @@ impl WebWindow {
         }
 
         let event_listeners = inner.register_event_listeners();
-        let safe_area_observer_closure = Closure::wrap(Box::new({
-            let inner = Rc::downgrade(&inner);
-            move |_: js_sys::Array| {
-                if let Some(inner) = inner.upgrade() {
-                    inner.notify_viewport_changed();
-                }
-            }
-        }) as Box<dyn FnMut(js_sys::Array)>);
-        let safe_area_observer =
-            match web_sys::ResizeObserver::new(safe_area_observer_closure.as_ref().unchecked_ref())
-            {
-                Ok(observer) => {
-                    inner.viewport.borrow().observe_safe_area(&observer);
-                    Some(observer)
-                }
-                Err(error) => {
-                    log::warn!("Failed to observe safe area: {error:?}");
-                    None
-                }
-            };
 
         Ok(Self {
             inner,
@@ -273,8 +251,6 @@ impl WebWindow {
             _resize_observer: resize_observer,
             _resize_observer_closure: resize_observer_closure,
             _event_listeners: event_listeners,
-            _safe_area_observer: safe_area_observer,
-            _safe_area_observer_closure: safe_area_observer_closure,
         })
     }
 
@@ -599,9 +575,6 @@ impl Drop for WebWindow {
         // freed closure; without a stored function, `wake_frame_loop` no-ops.
         self.inner.raf_function.borrow_mut().take();
         if let Some(ref observer) = self._resize_observer {
-            observer.disconnect();
-        }
-        if let Some(observer) = &self._safe_area_observer {
             observer.disconnect();
         }
 

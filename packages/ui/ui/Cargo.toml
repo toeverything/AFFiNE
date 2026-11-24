@@ -57,6 +57,7 @@ strum.workspace = true
 taffy.workspace = true
 thiserror.workspace = true
 ttf-parser.workspace = true
+unicode-bidi.workspace = true
 unicode-segmentation.workspace = true
 url.workspace = true
 usvg.workspace = true
@@ -139,7 +140,7 @@ swash.workspace = true
 unicode-bidi.workspace = true
 wgpu = { workspace = true, features = ["std", "vulkan", "gles", "wgsl"] }
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 block2.workspace = true
 core-foundation.workspace = true
 core-foundation-sys.workspace = true
@@ -152,7 +153,6 @@ foreign-types.workspace = true
 libc.workspace = true
 mach2.workspace = true
 objc2.workspace = true
-objc2-app-kit.workspace = true
 objc2-core-foundation.workspace = true
 objc2-core-graphics.workspace = true
 objc2-core-text = { workspace = true, optional = true }
@@ -164,5 +164,8 @@ objc2-uniform-type-identifiers.workspace = true
 pathfinder_geometry = { workspace = true, optional = true }
 semver.workspace = true
 
-[target.'cfg(target_os = "macos")'.build-dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit.workspace = true
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.build-dependencies]
 cbindgen.workspace = true

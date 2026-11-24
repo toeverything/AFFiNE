@@ -20,6 +20,7 @@
 extern crate self as ui;
 
 pub mod collections;
+pub mod gestures;
 pub mod gpui_util;
 pub mod motion;
 pub mod prelude;
@@ -84,12 +85,15 @@ pub use fast::app_borrow::app_is_borrowed;
 #[cfg(any(test, feature = "harness"))]
 pub use fast::stats::LayoutStats;
 pub use geometry::*;
+pub use gestures::{
+    BackPhase, PanHandoff, ScrollAxis, TouchGesture, TouchGestureConfig, TouchGestureRecognizer,
+};
 pub use global::*;
 pub use gpui_util::arc_cow::ArcCow;
 pub use input::*;
 pub use interactive::*;
 pub use keymap::*;
-pub use motion::{Motion, MotionCurve};
+pub use motion::{CriticallyDampedSpring, InertialDecay, Motion, MotionCurve, rubber_band};
 pub use path_builder::*;
 pub use platform::*;
 pub use refineable::*;
@@ -118,12 +122,17 @@ pub use platform::headless::{HeadlessDispatcher, HeadlessPlatform, HeadlessWindo
 #[cfg(any(test, feature = "harness"))]
 pub use scheduler::{Clock, Scheduler, TestScheduler, TestSchedulerConfig};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use platform::apple::AppleTextSystem;
-#[cfg(all(target_os = "macos", any(test, feature = "harness")))]
+#[cfg(all(
+    any(target_os = "macos", target_os = "ios"),
+    any(test, feature = "harness")
+))]
 pub use platform::apple::metal_renderer::MetalHeadlessRenderer;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 pub use platform::apple::metal_renderer::MetalRenderer;
+#[cfg(target_os = "ios")]
+pub use platform::ios::{IosDisplay, IosPlatform, IosWindow};
 #[cfg(target_os = "macos")]
 pub use platform::macos::MacPlatform;
 

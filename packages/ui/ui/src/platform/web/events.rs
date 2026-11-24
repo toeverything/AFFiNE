@@ -150,21 +150,37 @@ impl WebWindowInner {
     }
 
     fn register_viewport_changes(self: &Rc<Self>) -> Vec<EventListenerHandle> {
+        let mut handles = Vec::new();
         let mut targets: Vec<web_sys::EventTarget> = vec![self.browser_window.clone().into()];
         if let Some(viewport) = self.browser_window.visual_viewport() {
             targets.push(viewport.into());
         }
-        targets
-            .into_iter()
-            .flat_map(|target| {
-                ["resize", "scroll"].map(|event_name| {
-                    let this = Rc::clone(self);
-                    EventListenerHandle::add(&target, event_name, move |_| {
-                        this.notify_viewport_changed()
-                    })
-                })
-            })
-            .collect()
+        for target in targets {
+            for event_name in ["resize", "scroll"] {
+                let this = Rc::clone(self);
+                handles.push(EventListenerHandle::add(&target, event_name, move |_| {
+                    this.notify_viewport_changed()
+                }));
+            }
+        }
+        {
+            let this = Rc::clone(self);
+            handles.push(EventListenerHandle::add(
+                self.browser_window.as_ref(),
+                "orientationchange",
+                move |_| this.notify_viewport_changed(),
+            ));
+        }
+        let probe_target = self.viewport.borrow().probe_target();
+        for event_name in ["transitionrun", "transitionend"] {
+            let this = Rc::clone(self);
+            handles.push(EventListenerHandle::add(
+                &probe_target,
+                event_name,
+                move |_| this.notify_viewport_changed(),
+            ));
+        }
+        handles
     }
 
     fn listen(

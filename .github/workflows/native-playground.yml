@@ -460,6 +460,12 @@ jobs:
       - name: Check workspace all targets
         run: cargo check --locked --workspace --all-targets --features harness
 
+      - name: Check iOS device and simulator targets
+        run: |
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui --target aarch64-apple-ios
+          CARGO_ENCODED_RUSTFLAGS="" cargo check --locked -p ui --target aarch64-apple-ios-sim
+
       - name: Run UI, doc, and playground tests (default and harness)
         run: |
           cargo test --locked -p ui -p blocksuite-playground-doc -p playground

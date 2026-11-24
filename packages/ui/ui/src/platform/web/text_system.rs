@@ -398,6 +398,16 @@ impl PlatformTextSystem for WebTextSystem {
     }
 
     fn layout_line(&self, text: &str, font_size: Pixels, runs: &[FontRun]) -> LineLayout {
+        self.layout_line_with_direction(text, font_size, runs, crate::BaseDirection::Ltr)
+    }
+
+    fn layout_line_with_direction(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> LineLayout {
         let native_runs: Cow<'_, [FontRun]> =
             if runs.iter().any(|run| run.font_id.0 & CANVAS_FONT_BIT != 0) {
                 Cow::Owned(
@@ -411,7 +421,9 @@ impl PlatformTextSystem for WebTextSystem {
             } else {
                 Cow::Borrowed(runs)
             };
-        let mut layout = self.native.layout_line(text, font_size, &native_runs);
+        let mut layout =
+            self.native
+                .layout_line_with_direction(text, font_size, &native_runs, base_direction);
         self.apply_fallback(text, &native_runs, &mut layout);
         let sink = self.state.read().missing_glyph_sink.clone();
         if let Some(sink) = sink {

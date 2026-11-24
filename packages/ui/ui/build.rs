@@ -11,7 +11,10 @@ fn main() {
     }
 
     #[cfg(target_os = "macos")]
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+    if matches!(
+        std::env::var("CARGO_CFG_TARGET_OS").as_deref(),
+        Ok("macos" | "ios")
+    ) {
         apple_build::run();
     }
 }
@@ -127,7 +130,18 @@ mod apple_build {
         println!("cargo:rerun-if-env-changed=SDKROOT");
         println!("cargo:rerun-if-env-changed=DEVELOPER_DIR");
 
-        let sdk = env::var_os("SDKROOT").unwrap_or_else(|| OsString::from("macosx"));
+        let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_else(|_| "macos".to_string());
+        let target_abi = env::var("CARGO_CFG_TARGET_ABI").unwrap_or_default();
+        let (default_sdk, min_version_flag) = if target_os == "ios" {
+            if target_abi == "sim" {
+                ("iphonesimulator", "-miphonesimulator-version-min=16.5")
+            } else {
+                ("iphoneos", "-mios-version-min=16.5")
+            }
+        } else {
+            ("macosx", "-mmacosx-version-min=12.0")
+        };
+        let sdk = env::var_os("SDKROOT").unwrap_or_else(|| OsString::from(default_sdk));
         let shader_path = "./src/platform/apple/shaders.metal";
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
         let air_output_path = out_dir.join("shaders.air");
@@ -141,13 +155,7 @@ mod apple_build {
             .current_dir(&out_dir)
             .arg("-sdk")
             .arg(&sdk)
-            .args([
-                "metal",
-                "-gline-tables-only",
-                "-mmacosx-version-min=12.0",
-                "-MO",
-                "-c",
-            ])
+            .args(["metal", "-gline-tables-only", min_version_flag, "-MO", "-c"])
             .arg(&staged_shader_path)
             .args(["-include", header_path.to_str().unwrap(), "-o"])
             .arg(&air_output_path)

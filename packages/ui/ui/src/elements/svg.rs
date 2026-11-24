@@ -17,6 +17,7 @@ use crate::{
 pub struct Svg {
     interactivity: Interactivity,
     transformation: Option<Transformation>,
+    mirror_in_rtl: bool,
     path: Option<SharedString>,
     external_path: Option<SharedString>,
     data: Option<Arc<[u8]>>,
@@ -29,6 +30,7 @@ pub fn svg() -> Svg {
     Svg {
         interactivity: Interactivity::new(),
         transformation: None,
+        mirror_in_rtl: false,
         path: None,
         external_path: None,
         data: None,
@@ -37,6 +39,12 @@ pub fn svg() -> Svg {
 }
 
 impl Svg {
+    /// Mirror this SVG horizontally when painted in a right-to-left layout direction.
+    pub fn mirror_in_rtl(mut self, mirror: bool) -> Self {
+        self.mirror_in_rtl = mirror;
+        self
+    }
+
     /// Set the path to the SVG file for this element.
     pub fn path(mut self, path: impl Into<SharedString>) -> Self {
         self.path = Some(path.into());
@@ -132,13 +140,17 @@ impl Element for Svg {
             window,
             cx,
             |style, window, cx| {
-                let transformation = self
-                    .transformation
-                    .as_ref()
-                    .map(|transformation| {
-                        transformation.into_matrix(bounds.center(), window.scale_factor())
-                    })
-                    .unwrap_or_default();
+                let mut transform = self.transformation.unwrap_or_default();
+                if self.mirror_in_rtl && window.layout_direction().is_rtl() {
+                    transform.scale.width = -transform.scale.width;
+                }
+                let transformation = if self.transformation.is_some()
+                    || (self.mirror_in_rtl && window.layout_direction().is_rtl())
+                {
+                    transform.into_matrix(bounds.center(), window.scale_factor())
+                } else {
+                    TransformationMatrix::unit()
+                };
 
                 if let Some((data, path)) = self.data.as_ref().zip(self.data_path.as_ref()) {
                     if let Some(color) = style.text.color {

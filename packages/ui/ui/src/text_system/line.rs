@@ -89,6 +89,11 @@ impl ShapedLine {
         self.layout.width
     }
 
+    /// Compatibility index lookup returning the cluster start byte index at `x`, or `None` past `width`.
+    pub fn index_for_x(&self, x: Pixels) -> Option<usize> {
+        self.layout.legacy_index_for_x(x)
+    }
+
     /// Override the len, useful if you're rendering text a
     /// as text b (e.g. rendering invisibles).
     pub fn with_len(mut self, len: usize) -> Self {
@@ -100,6 +105,7 @@ impl ShapedLine {
             descent: layout.descent,
             runs: layout.runs.clone(),
             len,
+            base_direction: layout.base_direction,
         });
         self
     }
@@ -379,6 +385,26 @@ impl WrappedLine {
             None => self.layout.wrap_width,
         };
 
+        if !self.layout.visual_rows.is_empty() {
+            for (row_ix, row) in self.layout.visual_rows.iter().enumerate() {
+                paint_line(
+                    point(origin.x, origin.y + line_height * row_ix as f32),
+                    &row.layout,
+                    line_height,
+                    align,
+                    align_width,
+                    &self.decoration_runs,
+                    &[],
+                    window,
+                    cx,
+                    &mut |_, origin, width, style, window| {
+                        window.paint_underline(origin, width, style)
+                    },
+                )?;
+            }
+            return Ok(());
+        }
+
         paint_line(
             origin,
             &self.layout.unwrapped_layout,
@@ -411,6 +437,22 @@ impl WrappedLine {
         };
 
         if !has_background(&self.decoration_runs) {
+            return Ok(());
+        }
+        if !self.layout.visual_rows.is_empty() {
+            for (row_ix, row) in self.layout.visual_rows.iter().enumerate() {
+                paint_line_background(
+                    point(origin.x, origin.y + line_height * row_ix as f32),
+                    &row.layout,
+                    line_height,
+                    align,
+                    align_width,
+                    &self.decoration_runs,
+                    &[],
+                    window,
+                    cx,
+                )?;
+            }
             return Ok(());
         }
         paint_line_background(
@@ -746,8 +788,10 @@ fn paint_line_background(
         wrap_boundaries,
     );
     window.paint_layer(line_bounds, |window| {
-        let mut decoration_runs = decoration_runs.iter();
+        let all_decorations = decoration_runs;
+        let mut decoration_runs = all_decorations.iter();
         let mut wraps = wrap_boundaries.iter().peekable();
+        let mut run_start = 0;
         let mut run_end = 0;
         let mut current_background: Option<(Point<Pixels>, Hsla)> = None;
         let text_system = cx.text_system().clone();
@@ -805,6 +849,11 @@ fn paint_line_background(
                 prev_glyph_position = glyph.position;
 
                 let mut finished_background: Option<(Point<Pixels>, Hsla)> = None;
+                if glyph.index < run_start {
+                    // Visual order may traverse the logical decoration runs backwards.
+                    decoration_runs = all_decorations.iter();
+                    run_end = 0;
+                }
                 if glyph.index >= run_end {
                     let mut style_run = decoration_runs.next();
 
@@ -818,6 +867,7 @@ fn paint_line_background(
                     }
 
                     if let Some(style_run) = style_run {
+                        run_start = run_end;
                         if let Some((_, background_color)) = &mut current_background
                             && style_run.background_color.as_ref() != Some(background_color)
                         {
@@ -936,10 +986,174 @@ fn aligned_origin_x(
     };
 
     let line_width = end_of_line - last_glyph_x;
+    origin.x + crate::text_system::line_layout::row_align_x(*align, align_width, line_width)
+}
 
-    match align {
-        TextAlign::Left => origin.x,
-        TextAlign::Center => (origin.x * 2.0 + align_width - line_width) / 2.0,
-        TextAlign::Right => origin.x + align_width - line_width,
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        AppContext, Application, BaseDirection, BidiWrappedRow, Context, FontId, GlyphId,
+        HeadlessPlatform, IntoElement, NoopTextSystem, Render, ShapedGlyph, ShapedRun,
+        WindowOptions, canvas, rgb,
+    };
+
+    #[test]
+    fn wrapped_line_paints_bidi_visual_rows_with_multicolor_decorations() {
+        let platform =
+            HeadlessPlatform::new_with_text_system(320, 200, 1.0, Arc::new(NoopTextSystem::new()));
+        let painted_rows = std::rc::Rc::new(std::cell::Cell::new(0usize));
+        let painted_rows_clone = painted_rows.clone();
+
+        struct BidiPaintView {
+            painted_rows: std::rc::Rc<std::cell::Cell<usize>>,
+        }
+
+        impl Render for BidiPaintView {
+            fn render(
+                &mut self,
+                _window: &mut Window,
+                _cx: &mut Context<Self>,
+            ) -> impl IntoElement {
+                let painted_rows = self.painted_rows.clone();
+                canvas(
+                    |_, _, _| (),
+                    move |bounds, (), window, cx| {
+                        // Two deterministic visual rows with reversed RTL logical indices
+                        // crossing two foreground/background DecorationRuns.
+                        let row0 = LineLayout {
+                            font_size: px(16.0),
+                            width: px(40.0),
+                            ascent: px(12.0),
+                            descent: px(4.0),
+                            runs: vec![ShapedRun {
+                                font_id: FontId(0),
+                                bidi_level: 1,
+                                glyphs: vec![
+                                    ShapedGlyph {
+                                        id: GlyphId(1),
+                                        position: point(px(0.0), px(0.0)),
+                                        index: 4,
+                                        is_emoji: false,
+                                    },
+                                    ShapedGlyph {
+                                        id: GlyphId(2),
+                                        position: point(px(20.0), px(0.0)),
+                                        index: 0,
+                                        is_emoji: false,
+                                    },
+                                ],
+                            }],
+                            len: 8,
+                            base_direction: BaseDirection::Rtl,
+                        };
+                        let row1 = LineLayout {
+                            font_size: px(16.0),
+                            width: px(40.0),
+                            ascent: px(12.0),
+                            descent: px(4.0),
+                            runs: vec![ShapedRun {
+                                font_id: FontId(0),
+                                bidi_level: 1,
+                                glyphs: vec![
+                                    ShapedGlyph {
+                                        id: GlyphId(3),
+                                        position: point(px(0.0), px(0.0)),
+                                        index: 12,
+                                        is_emoji: false,
+                                    },
+                                    ShapedGlyph {
+                                        id: GlyphId(4),
+                                        position: point(px(20.0), px(0.0)),
+                                        index: 8,
+                                        is_emoji: false,
+                                    },
+                                ],
+                            }],
+                            len: 16,
+                            base_direction: BaseDirection::Rtl,
+                        };
+                        let layout = Arc::new(WrappedLineLayout {
+                            unwrapped_layout: Arc::new(LineLayout {
+                                font_size: px(16.0),
+                                width: px(80.0),
+                                ascent: px(12.0),
+                                descent: px(4.0),
+                                runs: Vec::new(),
+                                len: 16,
+                                base_direction: BaseDirection::Rtl,
+                            }),
+                            wrap_boundaries: SmallVec::new(),
+                            wrap_width: Some(px(50.0)),
+                            visual_rows: smallvec::smallvec![
+                                BidiWrappedRow {
+                                    byte_range: 0..8,
+                                    layout: row0,
+                                },
+                                BidiWrappedRow {
+                                    byte_range: 8..16,
+                                    layout: row1,
+                                },
+                            ],
+                        });
+                        let line = WrappedLine {
+                            layout,
+                            text: SharedString::from("0123456789abcdef"),
+                            decoration_runs: vec![
+                                DecorationRun {
+                                    len: 6,
+                                    color: rgb(0xff3344).into(),
+                                    background_color: Some(rgb(0x223344).into()),
+                                    underline: None,
+                                    strikethrough: None,
+                                },
+                                DecorationRun {
+                                    len: 10,
+                                    color: rgb(0x33cc66).into(),
+                                    background_color: Some(rgb(0x443322).into()),
+                                    underline: None,
+                                    strikethrough: None,
+                                },
+                            ],
+                        };
+                        line.paint_background(
+                            bounds.origin,
+                            px(20.0),
+                            TextAlign::Left,
+                            Some(bounds),
+                            window,
+                            cx,
+                        )
+                        .expect("paint_background on bidi visual_rows succeeds");
+                        line.paint(
+                            bounds.origin,
+                            px(20.0),
+                            TextAlign::Left,
+                            Some(bounds),
+                            window,
+                            cx,
+                        )
+                        .expect("paint on bidi visual_rows succeeds");
+                        painted_rows.set(line.layout.visual_rows.len());
+                    },
+                )
+            }
+        }
+
+        Application::with_platform(platform).run(move |cx| {
+            let handle = cx
+                .open_window(WindowOptions::default(), |_, cx| {
+                    cx.new(|_| BidiPaintView {
+                        painted_rows: painted_rows_clone,
+                    })
+                })
+                .expect("open headless window");
+            cx.update_window(handle.into(), |_, window, cx| {
+                window.draw(cx).clear(cx);
+            })
+            .expect("draw headless window");
+            cx.quit();
+        });
+        assert_eq!(painted_rows.get(), 2);
     }
 }

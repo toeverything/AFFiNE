@@ -244,7 +244,24 @@ impl PlatformTextSystem for AppleTextSystem {
     }
 
     fn layout_line(&self, text: &str, font_size: Pixels, font_runs: &[FontRun]) -> LineLayout {
-        self.0.write().layout_line(text, font_size, font_runs)
+        self.0.write().layout_line_with_direction(
+            text,
+            font_size,
+            font_runs,
+            crate::BaseDirection::Ltr,
+        )
+    }
+
+    fn layout_line_with_direction(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        font_runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> LineLayout {
+        self.0
+            .write()
+            .layout_line_with_direction(text, font_size, font_runs, base_direction)
     }
 
     fn recommended_rendering_mode(
@@ -574,20 +591,66 @@ impl AppleTextSystemState {
         }
     }
 
-    fn layout_line(&mut self, text: &str, font_size: Pixels, font_runs: &[FontRun]) -> LineLayout {
+    fn layout_line_with_direction(
+        &mut self,
+        text: &str,
+        font_size: Pixels,
+        font_runs: &[FontRun],
+        base_direction: crate::BaseDirection,
+    ) -> LineLayout {
+        if let Some(mark) = crate::bidi_direction_override_mark(text, base_direction) {
+            let mark_len = mark.len_utf8();
+            let mut prefixed = String::with_capacity(mark_len + text.len());
+            prefixed.push(mark);
+            prefixed.push_str(text);
+            let mut prefixed_runs = font_runs.to_vec();
+            if let Some(first) = prefixed_runs.first_mut() {
+                first.len += mark_len;
+            }
+            let mut layout = self.layout_line_raw(&prefixed, font_size, &prefixed_runs);
+            crate::strip_leading_direction_mark(&mut layout, mark_len, text.len());
+            layout.apply_bidi_levels(text, base_direction);
+            return layout;
+        }
+        let mut layout = self.layout_line_raw(text, font_size, font_runs);
+        layout.apply_bidi_levels(text, base_direction);
+        layout
+    }
+
+    fn layout_line_raw(
+        &mut self,
+        text: &str,
+        font_size: Pixels,
+        font_runs: &[FontRun],
+    ) -> LineLayout {
         // Construct the attributed string, converting UTF8 ranges to UTF16 ranges.
         let mut string = CFMutableAttributedString::new();
         let mut max_ascent = 0.0f32;
         let mut max_descent = 0.0f32;
 
         {
+            // Restrict to Arabic/Syriac/Thaana/NKo blocks and Arabic presentation forms
+            // (excluding U+FE0F emoji variation selectors and CJK compatibility forms).
+            let contains_joining_rtl = text.chars().any(|c| {
+                matches!(
+                    c,
+                    '\u{0600}'..='\u{08FF}' | '\u{FB50}'..='\u{FDFF}' | '\u{FE70}'..='\u{FEFC}'
+                )
+            });
             let mut text = text;
             // CoreText merges adjacent runs that end up in equal fonts, including runs of
             // different fonts that fall back to the same one, so every other run that inserts
             // text is set a hair larger to keep ligatures from forming across them. The first
             // run keeps its exact size: SF tracks by its exact point size, and a nudged size
             // draws wider or narrower than AppKit sets the same text.
+            //
+            // When the text contains contextual-joining RTL scripts (Arabic/Syriac) and adjacent
+            // runs share the same `font_id` (decoration-only split), match the preceding run's
+            // exact effective size (`prev_nudged`) so contextual letter joining is preserved
+            // across highlights/colors.
             let mut break_ligature = false;
+            let mut prev_font_id: Option<FontId> = None;
+            let mut prev_nudged = false;
             for run in font_runs {
                 let text_run;
                 (text_run, text) = text.split_at(run.len);
@@ -606,7 +669,14 @@ impl AppleTextSystemState {
                 max_ascent = max_ascent.max(font_metrics.ascent * font_scale);
                 max_descent = max_descent.max(-font_metrics.descent * font_scale);
 
-                let font_size = if break_ligature {
+                let preserve_rtl_joining =
+                    contains_joining_rtl && prev_font_id == Some(run.font_id);
+                let use_nudged = if preserve_rtl_joining {
+                    prev_nudged
+                } else {
+                    break_ligature
+                };
+                let font_size = if use_nudged {
                     px(f32::from(font_size).next_up())
                 } else {
                     font_size
@@ -624,7 +694,11 @@ impl AppleTextSystemState {
                     );
                 }
                 if length > 0 {
-                    break_ligature = !break_ligature;
+                    prev_nudged = use_nudged;
+                    if !preserve_rtl_joining {
+                        break_ligature = !use_nudged;
+                    }
+                    prev_font_id = Some(run.font_id);
                 }
             }
         }
@@ -649,6 +723,7 @@ impl AppleTextSystemState {
                     runs.push(ShapedRun {
                         font_id,
                         glyphs: Vec::with_capacity(run.glyph_count().try_into().unwrap_or(0)),
+                        bidi_level: 0,
                     });
                     &mut runs.last_mut().unwrap().glyphs
                 }
@@ -674,14 +749,17 @@ impl AppleTextSystemState {
             }
         }
         let typographic_bounds = line.get_typographic_bounds();
-        LineLayout {
+        let mut layout = LineLayout {
             runs,
             font_size,
             width: typographic_bounds.width.into(),
             ascent: max_ascent.into(),
             descent: max_descent.into(),
             len: text.len(),
-        }
+            base_direction: crate::BaseDirection::Ltr,
+        };
+        layout.apply_bidi_levels(text, crate::BaseDirection::AutoFirstStrong);
+        layout
     }
 }
 

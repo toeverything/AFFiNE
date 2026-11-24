@@ -253,6 +253,11 @@ impl MetalRenderer {
         }
     }
 
+    #[cfg(not(target_os = "macos"))]
+    fn create_device() -> Result<Retained<ProtocolObject<dyn MTLDevice>>> {
+        Self::system_default_device()
+    }
+
     fn system_default_device() -> Result<Retained<ProtocolObject<dyn MTLDevice>>> {
         MTLCreateSystemDefaultDevice().context("accessing a compatible Metal device")
     }

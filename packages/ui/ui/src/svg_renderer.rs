@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, LazyLock, OnceLock},
 };
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const EMOJI_FONT_FAMILIES: &[&str] = &["Apple Color Emoji", ".AppleColorEmojiUI"];
 
 #[cfg(target_os = "linux")]
