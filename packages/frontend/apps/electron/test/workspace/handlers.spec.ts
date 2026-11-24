@@ -391,6 +391,59 @@ describe('workspace db management', () => {
     ).toBe(true);
   });
 
+  test.each([
+    { name: 'removes the leftover', locked: false },
+    { name: 'keeps the backup when the leftover is locked', locked: true },
+  ])(
+    'deleting the backup of a workspace whose original survived trashing $name',
+    async ({ locked }) => {
+      const { deleteBackupWorkspace, listLocalWorkspaceIds } =
+        await import('@affine/electron/helper/workspace/handlers');
+      const workspaceId = v4();
+      const workspacePath = path.join(
+        appDataPath,
+        'workspaces',
+        'local',
+        workspaceId
+      );
+      const backupPath = path.join(
+        appDataPath,
+        'deleted-workspaces',
+        workspaceId
+      );
+      await fs.ensureFile(path.join(workspacePath, 'storage.db'));
+      await fs.ensureFile(path.join(backupPath, 'storage.db'));
+
+      const rm = fs.rm;
+      const rmSpy = vi.spyOn(fs, 'rm').mockImplementation(((
+        target: string,
+        options: Parameters<typeof rm>[1]
+      ) =>
+        locked && target === workspacePath
+          ? Promise.reject(
+              Object.assign(new Error('EBUSY: resource busy or locked'), {
+                code: 'EBUSY',
+              })
+            )
+          : rm(target, options)) as typeof rm);
+      try {
+        if (locked) {
+          await expect(deleteBackupWorkspace(workspaceId)).rejects.toThrow(
+            'EBUSY'
+          );
+        } else {
+          await deleteBackupWorkspace(workspaceId);
+        }
+      } finally {
+        rmSpy.mockRestore();
+      }
+
+      expect(await fs.pathExists(backupPath)).toBe(locked);
+      expect(await fs.pathExists(workspacePath)).toBe(locked);
+      expect(await listLocalWorkspaceIds()).not.toContain(workspaceId);
+    }
+  );
+
   test('delete workspace', async () => {
     const { deleteWorkspace } =
       await import('@affine/electron/helper/workspace/handlers');

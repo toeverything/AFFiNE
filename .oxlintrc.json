@@ -75,7 +75,8 @@
     "blocksuite/docs-site/api/**",
     "packages/frontend/admin/src/config.json",
     "**/test-docs.json",
-    "**/test-blocks.json"
+    "**/test-blocks.json",
+    "packages/backend/native/src/*.license.json"
   ],
   "rules": {
     "no-empty-static-block": "error",

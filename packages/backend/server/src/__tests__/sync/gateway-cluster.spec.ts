@@ -21,6 +21,10 @@ test('onClusterDocUpdatesPushed skips re-merging when compressed flag is present
 
   // Instantiate SpaceSyncGateway prototype without NestJS DI to test cluster handler in isolation
   const gateway = Object.create(SpaceSyncGateway.prototype) as any;
+  gateway.event = {
+    localChannel: 'canary',
+    getCurrentOriginChannel: () => undefined,
+  };
   gateway.activeDocSockets = new Map([
     ['workspace:ws-1:doc-1', new Set([fakeSocket])],
   ]);
@@ -53,4 +57,86 @@ test('onClusterDocUpdatesPushed skips re-merging when compressed flag is present
     editor: 'editor-1',
     compressed: true,
   });
+});
+
+test('onClusterDocUpdatesPushed broadcasts doc invalidation only for remote origin channels', t => {
+  const cases = [
+    {
+      name: 'remote payload originChannel',
+      payloadOriginChannel: 'beta',
+      currentOriginChannel: undefined,
+      expectBroadcast: true,
+    },
+    {
+      name: 'local payload originChannel',
+      payloadOriginChannel: 'canary',
+      currentOriginChannel: undefined,
+      expectBroadcast: false,
+    },
+    {
+      name: 'remote current originChannel fallback',
+      payloadOriginChannel: undefined,
+      currentOriginChannel: 'beta',
+      expectBroadcast: true,
+    },
+    {
+      name: 'missing originChannel',
+      payloadOriginChannel: undefined,
+      currentOriginChannel: undefined,
+      expectBroadcast: false,
+    },
+  ];
+
+  for (const tc of cases) {
+    const roomEmissions: Array<{ room: string; event: string; payload: any }> =
+      [];
+    const gateway = Object.create(SpaceSyncGateway.prototype) as any;
+    gateway.event = {
+      localChannel: 'canary',
+      getCurrentOriginChannel: () => tc.currentOriginChannel,
+    };
+    gateway.server = {
+      local: {
+        to(room: string) {
+          return {
+            emit(event: string, payload: any) {
+              roomEmissions.push({ room, event, payload });
+            },
+          };
+        },
+      },
+    };
+    gateway.activeDocSockets = new Map();
+
+    gateway.onClusterDocUpdatesPushed({
+      spaceType: 'workspace',
+      spaceId: 'ws-1',
+      docId: 'doc-1',
+      updates: [],
+      timestamp: 123456,
+      editor: 'editor-1',
+      compressed: true,
+      originChannel: tc.payloadOriginChannel,
+    });
+
+    if (tc.expectBroadcast) {
+      t.deepEqual(
+        roomEmissions,
+        [
+          {
+            room: 'workspace:ws-1:sync-027',
+            event: 'space:broadcast-doc-invalidation',
+            payload: {
+              spaceType: 'workspace',
+              spaceId: 'ws-1',
+              timestamp: 123456,
+            },
+          },
+        ],
+        tc.name
+      );
+    } else {
+      t.deepEqual(roomEmissions, [], tc.name);
+    }
+  }
 });

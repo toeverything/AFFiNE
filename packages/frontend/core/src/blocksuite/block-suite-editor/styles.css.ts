@@ -13,6 +13,7 @@ export const affineDocViewport = style({
   display: 'flex',
   flexDirection: 'column',
   paddingBottom: '100px',
+  isolation: 'isolate',
 });
 export const affineEdgelessDocViewport = style({
   height: '100%',
@@ -21,6 +22,9 @@ export const affineEdgelessDocViewport = style({
 
 export const docContainer = style({
   display: 'block',
+  // Editor popups live in this stacking context and must cover the panels
+  // rendered after the editor.
+  zIndex: 1,
   selectors: ['generating', 'finished', 'error'].reduce<
     NonNullable<StyleRule['selectors']>
   >((rules, state) => {

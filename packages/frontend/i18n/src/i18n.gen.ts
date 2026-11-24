@@ -1236,6 +1236,70 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.menubar.windowBehavior.startMinimized.description"](): string;
     /**
+      * `Open Journal`
+      */
+    ["com.affine.tray.open-journal"](): string;
+    /**
+      * `New Page`
+      */
+    ["com.affine.tray.new-page"](): string;
+    /**
+      * `New Edgeless`
+      */
+    ["com.affine.tray.new-edgeless"](): string;
+    /**
+      * `Meetings are disabled`
+      */
+    ["com.affine.tray.meetings-disabled"](): string;
+    /**
+      * `Required permissions not granted`
+      */
+    ["com.affine.tray.meetings-permissions-missing"](): string;
+    /**
+      * `Start Recording Meeting`
+      */
+    ["com.affine.tray.start-recording"](): string;
+    /**
+      * `System audio (all audio will be recorded)`
+      */
+    ["com.affine.tray.record-system-audio"](): string;
+    /**
+      * `Recording`
+      */
+    ["com.affine.tray.recording"](): string;
+    /**
+      * `Recording ({{appName}})`
+      */
+    ["com.affine.tray.recording-app"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.tray.stop-recording"](): string;
+    /**
+      * `Meetings Settings...`
+      */
+    ["com.affine.tray.meetings-settings"](): string;
+    /**
+      * `Open AFFiNE`
+      */
+    ["com.affine.tray.open-affine"](): string;
+    /**
+      * `Menubar settings...`
+      */
+    ["com.affine.tray.menubar-settings"](): string;
+    /**
+      * `About {{appName}}`
+      */
+    ["com.affine.tray.about"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Quit AFFiNE Completely...`
+      */
+    ["com.affine.tray.quit"](): string;
+    /**
       * `Theme`
       */
     ["com.affine.appearanceSettings.theme.title"](): string;
@@ -1547,6 +1611,10 @@ export function useAFFiNEI18N(): {
       * `Unable to connect to the server.`
       */
     ["com.affine.auth.sign.add-selfhosted.error"](): string;
+    /**
+      * `This app only connects to servers on your local network over http. Use an https:// address, or the server's local IP address or .local name.`
+      */
+    ["com.affine.auth.sign.add-selfhosted.public-http"](): string;
     /**
       * `Privacy policy`
       */
@@ -9010,6 +9078,10 @@ export function useAFFiNEI18N(): {
       * `Are you sure you want to delete these blob files? This action cannot be undone. Make sure you no longer need them before proceeding.`
       */
     ["com.affine.settings.workspace.storage.unused-blobs.delete.warning"](): string;
+    /**
+      * `Some blob files could not be deleted. Failed items remain selected.`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.failed"](): string;
     /**
       * `Join Failed`
       */

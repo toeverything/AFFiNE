@@ -11,11 +11,16 @@ export const imageBlockNotionHtmlAdapterMatcher: BlockNotionHtmlAdapterMatcher =
   {
     flavour: ImageBlockSchema.model.flavour,
     toMatch: o => {
+      if (!HastUtils.isElement(o.node)) {
+        return false;
+      }
+      if (o.node.tagName === 'img') {
+        const className = o.node.properties.className;
+        return !(Array.isArray(className) && className.includes('user-icon'));
+      }
       return (
-        HastUtils.isElement(o.node) &&
-        (o.node.tagName === 'img' ||
-          (o.node.tagName === 'figure' &&
-            !!HastUtils.querySelector(o.node, '.image')))
+        o.node.tagName === 'figure' &&
+        !!HastUtils.querySelector(o.node, '.image')
       );
     },
     fromMatch: () => false,

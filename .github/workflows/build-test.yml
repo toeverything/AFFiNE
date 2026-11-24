@@ -30,6 +30,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     permissions:
@@ -65,6 +66,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Setup Go (for actionlint)
@@ -101,6 +103,7 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
@@ -132,9 +135,80 @@ jobs:
             echo "All changes are submitted"
           fi
 
+  ci-scope:
+    name: CI scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      desktop: ${{ steps.decision.outputs.desktop }}
+      server: ${{ steps.decision.outputs.server }}
+      desktop-matrix: ${{ steps.decision.outputs.desktop_matrix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          filters: |
+            desktop:
+              - '.github/workflows/build-test.yml'
+              - '.github/actions/**'
+              - 'packages/frontend/apps/electron/**'
+              - 'packages/frontend/apps/electron-renderer/**'
+              - 'packages/frontend/native/**'
+              - 'packages/common/native/**'
+              - 'packages/common/nbstore/**'
+              - 'tests/affine-desktop/**'
+              - '.cargo/**'
+              - '**/Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain*'
+              - 'package.json'
+              - 'yarn.lock'
+            server:
+              - '.github/workflows/build-test.yml'
+              - '.github/actions/**'
+              - 'packages/backend/**'
+              - 'packages/common/**'
+              - 'tools/**'
+              - '.cargo/**'
+              - '**/Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain*'
+              - 'package.json'
+              - 'yarn.lock'
+
+      # Pull requests run the macOS/Windows desktop jobs and the server test
+      # suites only when they touch those areas; pushes and the merge queue
+      # always run everything.
+      - name: Decide test scope
+        id: decision
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            desktop=true
+            server=true
+          else
+            desktop="${{ steps.filter.outputs.desktop }}"
+            server="${{ steps.filter.outputs.server }}"
+          fi
+          linux='{"os":"ubuntu-24.04","platform":"linux","arch":"x64","target":"x86_64-unknown-linux-gnu","test":true}'
+          if [[ "$desktop" == "true" ]]; then
+            matrix='[{"os":"macos-latest","platform":"macos","arch":"x64","target":"x86_64-apple-darwin","test":false},{"os":"macos-latest","platform":"macos","arch":"arm64","target":"aarch64-apple-darwin","test":true},'"$linux"',{"os":"windows-latest","platform":"windows","arch":"x64","target":"x86_64-pc-windows-msvc","test":true}]'
+          else
+            matrix="[$linux]"
+          fi
+          {
+            echo "desktop=$desktop"
+            echo "server=$server"
+            echo "desktop_matrix=$matrix"
+          } >> "$GITHUB_OUTPUT"
+
   mobile-native-build-filter:
     name: Mobile native build filter
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     outputs:
       run-android: ${{ steps.mobile-native-filter.outputs.android }}
       run-ios: ${{ steps.mobile-native-filter.outputs.ios }}
@@ -166,6 +240,7 @@ jobs:
     name: Build Android app
     if: ${{ needs.mobile-native-build-filter.outputs.run-android == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - mobile-native-build-filter
     env:
@@ -332,6 +407,7 @@ jobs:
     name: Build iOS app
     if: ${{ needs.mobile-native-build-filter.outputs.run-ios == 'true' }}
     runs-on: xcode-27
+    timeout-minutes: 90
     needs:
       - mobile-native-build-filter
     steps:
@@ -405,6 +481,7 @@ jobs:
   rust-test-filter:
     name: Rust test filter
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     outputs:
       run-rust: ${{ steps.rust-filter.outputs.rust }}
     steps:
@@ -427,6 +504,7 @@ jobs:
     name: Lint Rust
     if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - rust-test-filter
     steps:
@@ -451,6 +529,7 @@ jobs:
   check-git-status:
     name: Check Git Status
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
     steps:
@@ -483,6 +562,7 @@ jobs:
   check-yarn-binary:
     name: Check yarn binary
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Run check
@@ -495,6 +575,7 @@ jobs:
   e2e-blocksuite-test:
     name: E2E BlockSuite Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -527,6 +608,7 @@ jobs:
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -560,6 +642,7 @@ jobs:
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
     env:
       DISTRIBUTION: web
       IN_CI_TEST: true
@@ -593,6 +676,7 @@ jobs:
   e2e-mobile-test:
     name: E2E Mobile Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     env:
       DISTRIBUTION: mobile
       IN_CI_TEST: true
@@ -624,6 +708,7 @@ jobs:
   unit-test:
     name: Unit Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     needs:
       - build-native-linux
     env:
@@ -663,6 +748,7 @@ jobs:
   build-native-linux:
     name: Build AFFiNE native (x86_64-unknown-linux-gnu)
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -696,7 +782,11 @@ jobs:
 
   build-native-macos:
     name: Build AFFiNE native (${{ matrix.spec.target }})
+    if: ${{ needs.ci-scope.outputs.desktop == 'true' }}
     runs-on: ${{ matrix.spec.os }}
+    timeout-minutes: 60
+    needs:
+      - ci-scope
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -739,7 +829,11 @@ jobs:
   # and other ci jobs required linux native
   build-native-windows:
     name: Build AFFiNE native (${{ matrix.spec.target }})
+    if: ${{ needs.ci-scope.outputs.desktop == 'true' }}
     runs-on: ${{ matrix.spec.os }}
+    timeout-minutes: 90
+    needs:
+      - ci-scope
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
       CARGO_PROFILE_RELEASE_DEBUG: '1'
@@ -789,6 +883,7 @@ jobs:
   build-server-native:
     name: Build Server native
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     env:
       AFFINE_PRO_PUBLIC_KEY: |
         -----BEGIN PUBLIC KEY-----
@@ -821,6 +916,7 @@ jobs:
   build-electron-renderer:
     name: Build @affine/electron renderer
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -846,6 +942,7 @@ jobs:
   native-unit-test:
     name: Native Unit Test
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-native-linux
     steps:
@@ -865,9 +962,12 @@ jobs:
 
   server-test:
     name: Server Test
+    if: ${{ needs.ci-scope.outputs.server == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
+      - ci-scope
     strategy:
       fail-fast: false
       matrix:
@@ -935,9 +1035,12 @@ jobs:
 
   server-test-elasticsearch:
     name: Server Test with Elasticsearch
+    if: ${{ needs.ci-scope.outputs.server == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
+      - ci-scope
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1014,9 +1117,12 @@ jobs:
 
   server-test-embedded:
     name: Server Test with Embedded Search
+    if: ${{ needs.ci-scope.outputs.server == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
+      - ci-scope
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1080,9 +1186,12 @@ jobs:
 
   server-test-manticoresearch:
     name: Server Test with Manticore Search
+    if: ${{ needs.ci-scope.outputs.server == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
+      - ci-scope
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1158,9 +1267,12 @@ jobs:
   server-e2e-test:
     # the new version of server e2e test should be super fast, so sharding testing is not needed
     name: Server E2E Test
+    if: ${{ needs.ci-scope.outputs.server == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
+      - ci-scope
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1218,6 +1330,7 @@ jobs:
     name: Run native tests
     if: ${{ needs.rust-test-filter.outputs.run-rust == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - rust-test-filter
     env:
@@ -1290,6 +1403,7 @@ jobs:
   copilot-test-filter:
     name: Copilot test filter
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     outputs:
       run-api: ${{ steps.decision.outputs.run_api }}
       run-e2e: ${{ steps.decision.outputs.run_e2e }}
@@ -1329,6 +1443,7 @@ jobs:
     name: Server Copilot Api Test
     if: ${{ needs.copilot-test-filter.outputs.run-api == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs:
       - build-server-native
       - copilot-test-filter
@@ -1397,6 +1512,7 @@ jobs:
     name: Frontend Copilot E2E Test
     if: ${{ needs.copilot-test-filter.outputs.run-e2e == 'true' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1458,6 +1574,7 @@ jobs:
   cloud-e2e-test:
     name: ${{ matrix.tests.name }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     needs:
       - build-server-native
       - build-native-linux
@@ -1549,8 +1666,13 @@ jobs:
 
   desktop-test:
     name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
+    # macOS/Windows native builds are skipped for pull requests outside the
+    # desktop scope, so only fail on a failed or cancelled dependency.
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ${{ matrix.spec.os }}
+    timeout-minutes: 60
     needs:
+      - ci-scope
       - build-electron-renderer
       - build-native-linux
       - build-native-macos
@@ -1558,35 +1680,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        spec:
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: x64,
-              target: x86_64-apple-darwin,
-              test: false,
-            }
-          - {
-              os: macos-latest,
-              platform: macos,
-              arch: arm64,
-              target: aarch64-apple-darwin,
-              test: true,
-            }
-          - {
-              os: ubuntu-24.04,
-              platform: linux,
-              arch: x64,
-              target: x86_64-unknown-linux-gnu,
-              test: true,
-            }
-          - {
-              os: windows-latest,
-              platform: windows,
-              arch: x64,
-              target: x86_64-pc-windows-msvc,
-              test: true,
-            }
+        spec: ${{ fromJSON(needs.ci-scope.outputs.desktop-matrix) }}
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js
@@ -1687,6 +1781,7 @@ jobs:
 
   test-done:
     needs:
+      - ci-scope
       - analyze
       - lint
       - typecheck
@@ -1722,6 +1817,7 @@ jobs:
       - cloud-e2e-test
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     name: 3, 2, 1 Launch
     steps:
       - run: exit 1

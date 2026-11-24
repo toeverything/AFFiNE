@@ -129,30 +129,21 @@ export const DocPeekViewControls = ({
         nameKey: 'open',
         name: t['com.affine.peek-view-controls.open-doc'](),
         icon: <ExpandFullIcon />,
-        onClick: () => {
-          workbench.openDoc(docRef);
-          peekView.close(false);
-        },
+        onClick: () => peekView.openInWorkbench(docRef),
         enabled: true,
       },
       {
         nameKey: 'new-tab',
         name: t['com.affine.peek-view-controls.open-doc-in-new-tab'](),
         icon: <OpenInNewIcon />,
-        onClick: () => {
-          workbench.openDoc(docRef, { at: 'new-tab' });
-          peekView.close(false);
-        },
+        onClick: () => peekView.openInWorkbench(docRef, { at: 'new-tab' }),
         enabled: true,
       },
       {
         nameKey: 'split-view',
         name: t['com.affine.peek-view-controls.open-doc-in-split-view'](),
         icon: <SplitViewIcon />,
-        onClick: () => {
-          workbench.openDoc(docRef, { at: 'beside' });
-          peekView.close(false);
-        },
+        onClick: () => peekView.openInWorkbench(docRef, { at: 'beside' }),
         enabled: BUILD_CONFIG.isElectron,
       },
       {

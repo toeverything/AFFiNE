@@ -118,7 +118,7 @@ const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
       .linkPreview(framework)
       .codeBlockPreview(framework)
       .iconPicker(framework)
-      .comment(enableComment, framework).value;
+      .comment(enableComment, framework, isInPeekView).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
       if (mode === 'page') {

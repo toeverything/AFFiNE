@@ -4,8 +4,8 @@ import {
   createDocExplorerContext,
   DocExplorerContext,
 } from '@affine/core/components/explorer/context';
+import { useExplorerDisplayPreference } from '@affine/core/components/explorer/display-preference';
 import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
-import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
 import {
   type Collection,
   CollectionService,
@@ -39,27 +39,29 @@ export const CollectionDetail = ({
 }: {
   collection: Collection;
 }) => {
-  const [explorerContextValue] = useState(createDocExplorerContext);
   const collectionRulesService = useService(CollectionRulesService);
 
   const permissionService = useService(WorkspacePermissionService);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
 
-  const displayPreference = useLiveData(
-    explorerContextValue.displayPreference$
+  const { viewMode, setViewMode, displayPreference, setDisplayPreference } =
+    useExplorerDisplayPreference({
+      viewModeKey: `collectionMode:${collection.id}`,
+      displayPreferenceKeyPrefix: `collectionDisplayPreference:${collection.id}:`,
+    });
+  const [explorerContextValue] = useState(() =>
+    createDocExplorerContext(displayPreference)
   );
-  const groupBy = useLiveData(explorerContextValue.groupBy$);
-  const orderBy = useLiveData(explorerContextValue.orderBy$);
+
+  const groupBy = displayPreference.groupBy;
+  const orderBy = displayPreference.orderBy;
   const rules = useLiveData(collection.rules$);
   const allowList = useLiveData(collection.allowList$);
 
-  const handleDisplayPreferenceChange = useCallback(
-    (displayPreference: ExplorerDisplayPreference) => {
-      explorerContextValue.displayPreference$.next(displayPreference);
-    },
-    [explorerContextValue]
-  );
+  useEffect(() => {
+    explorerContextValue.displayPreference$.next(displayPreference);
+  }, [displayPreference, explorerContextValue]);
 
   useEffect(() => {
     const subscription = collectionRulesService
@@ -107,8 +109,10 @@ export const CollectionDetail = ({
     <DocExplorerContext.Provider value={explorerContextValue}>
       <ViewHeader>
         <CollectionDetailHeader
+          viewMode={viewMode}
+          setViewMode={setViewMode}
           displayPreference={displayPreference}
-          onDisplayPreferenceChange={handleDisplayPreferenceChange}
+          onDisplayPreferenceChange={setDisplayPreference}
         />
       </ViewHeader>
       <ViewBody>
@@ -161,7 +165,7 @@ export const Component = function CollectionPage() {
     info?.allowList.length === 0 && info?.rules.filters.length === 0 ? (
       <Placeholder collection={collection} />
     ) : (
-      <CollectionDetail collection={collection} />
+      <CollectionDetail key={collection.id} collection={collection} />
     );
 
   return (

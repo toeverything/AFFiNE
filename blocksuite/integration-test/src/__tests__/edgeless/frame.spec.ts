@@ -2,6 +2,9 @@ import type { FrameBlockComponent } from '@blocksuite/affine/blocks/frame';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { FrameBlockModel } from '@blocksuite/affine/model';
 import type { AffineFrameTitleWidget } from '@blocksuite/affine/widgets/frame-title';
+import { OverlayIdentifier } from '@blocksuite/affine-block-surface';
+import type { ConnectionOverlay } from '@blocksuite/affine-gfx-connector';
+import type { IVec } from '@blocksuite/global/gfx';
 import { assertType } from '@blocksuite/global/utils';
 import { Text } from '@blocksuite/store';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -129,5 +132,35 @@ describe('frame', () => {
     expect(frames[0].descendantElements).toHaveLength(2);
     expect(frames[1].descendantElements).toHaveLength(1);
     expect(frames[2].descendantElements).toHaveLength(0);
+  });
+
+  test.each<{ name: string; point: IVec; target?: 'frame' | 'shape' }>([
+    { name: 'stays free inside a frame', point: [60, 200] },
+    { name: 'attaches to the frame border', point: [0, 200], target: 'frame' },
+    {
+      name: 'attaches to a shape in a frame',
+      point: [200, 200],
+      target: 'shape',
+    },
+  ])('connector endpoint $name', async ({ point, target }) => {
+    const frame = service.doc.addBlock(
+      'affine:frame',
+      { xywh: '[0,0,400,400]', title: new Text('Frame') },
+      service.surface.id
+    );
+    const shape = service.crud.addElement('shape', {
+      shapeType: 'rect',
+      xywh: '[150,150,100,100]',
+    })!;
+    service.viewport.setCenter(200, 200);
+    await wait();
+
+    const overlay = service.std.get(
+      OverlayIdentifier('connection')
+    ) as ConnectionOverlay;
+    const connection = overlay.renderConnector(point);
+
+    const ids = { frame, shape };
+    expect(connection.id).toBe(target && ids[target]);
   });
 });

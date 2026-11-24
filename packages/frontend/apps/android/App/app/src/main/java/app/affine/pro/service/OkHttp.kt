@@ -2,6 +2,7 @@ package app.affine.pro.service
 
 import app.affine.pro.AFFiNEApp
 import app.affine.pro.CapacitorConfig
+import app.affine.pro.utils.LocalNetwork
 import app.affine.pro.utils.dataStore
 import app.affine.pro.utils.del
 import app.affine.pro.utils.set
@@ -34,6 +35,7 @@ object OkHttp {
                 CookieStore.saveCookies(url.host, cookies)
             }
         })
+        .addInterceptor(LocalNetwork.cleartextGuard)
         .addInterceptor {
             it.proceed(
                 it.request()
@@ -54,6 +56,7 @@ object OkHttp {
 object AuthHttp {
     val client = OkHttpClient.Builder()
         .cookieJar(CookieJar.NO_COOKIES)
+        .addInterceptor(LocalNetwork.cleartextGuard)
         .addInterceptor {
             it.proceed(
                 it.request()

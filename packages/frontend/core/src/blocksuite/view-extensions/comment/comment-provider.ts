@@ -1,7 +1,11 @@
+import { PeekViewService } from '@affine/core/modules/peek-view';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { getSelectedBlocksCommand } from '@blocksuite/affine/shared/commands';
 import type { CommentProvider } from '@blocksuite/affine/shared/services';
-import { CommentProviderIdentifier } from '@blocksuite/affine/shared/services';
+import {
+  CommentProviderIdentifier,
+  DocModeProvider,
+} from '@blocksuite/affine/shared/services';
 import type { BlockStdScope } from '@blocksuite/affine/std';
 import { StdIdentifier } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
@@ -122,7 +126,8 @@ class AffineCommentService implements CommentProvider {
 
   constructor(
     private readonly std: BlockStdScope,
-    private readonly framework: FrameworkProvider
+    private readonly framework: FrameworkProvider,
+    private readonly isInPeekView: boolean
   ) {
     this.docCommentManager = framework.get(DocCommentManagerService);
     this.docCommentManager.std = std;
@@ -141,11 +146,27 @@ class AffineCommentService implements CommentProvider {
     return this.commentEntityRef.obj;
   }
 
-  addComment(selections: BaseSelection[]): void {
+  /**
+   * The comment panel lives in the workbench sidebar, which a peek view
+   * covers, so a doc in peek view is opened in the workbench first.
+   */
+  private openCommentPanel(commentId?: string) {
+    if (this.isInPeekView) {
+      this.framework.get(PeekViewService).peekView.openInWorkbench({
+        docId: this.currentDocId,
+        mode:
+          this.std.getOptional(DocModeProvider)?.getEditorMode() ?? undefined,
+        commentId,
+      });
+    }
     const workbench = this.framework.get(WorkbenchService).workbench;
     workbench.setSidebarOpen(true);
     workbench.activeView$.value.activeSidebarTab('comment');
+  }
+
+  addComment(selections: BaseSelection[]): void {
     const preview = getPreviewFromSelections(this.std, selections);
+    this.openCommentPanel();
     this.commentEntity.addComment(selections, preview).catch(console.error);
   }
 
@@ -155,9 +176,7 @@ class AffineCommentService implements CommentProvider {
 
   highlightComment(id: string | null): void {
     if (id !== null) {
-      const workbench = this.framework.get(WorkbenchService).workbench;
-      workbench.setSidebarOpen(true);
-      workbench.activeView$.value.activeSidebarTab('comment');
+      this.openCommentPanel(id);
     }
     this.commentEntity.highlightComment(id);
   }
@@ -188,14 +207,19 @@ class AffineCommentService implements CommentProvider {
 }
 
 export function AffineCommentProvider(
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  isInPeekView: boolean
 ): ExtensionType {
   return {
     setup: (di: Container) => {
       di.addImpl(
         CommentProviderIdentifier,
         provider =>
-          new AffineCommentService(provider.get(StdIdentifier), framework)
+          new AffineCommentService(
+            provider.get(StdIdentifier),
+            framework,
+            isInPeekView
+          )
       );
     },
   };

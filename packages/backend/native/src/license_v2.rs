@@ -211,7 +211,7 @@ impl VerifiedLicenseV2 {
 #[derive(Clone, Debug)]
 pub enum VerifiedAnyLicense {
   LegacyOrV1(VerifiedLicenseClaims),
-  V2(VerifiedLicenseV2),
+  V2(Box<VerifiedLicenseV2>),
 }
 
 impl VerifiedAnyLicense {
@@ -427,7 +427,8 @@ pub fn verify_any_license(
 ) -> Result<VerifiedAnyLicense, LicenseV2Error> {
   let probe: EnvelopeProbe = serde_json::from_slice(payload).map_err(|_| LicenseV2Error::InvalidEnvelope)?;
   if probe.signature_version.is_none() && probe.claims.and_then(|claims| claims.format_version) == Some(2) {
-    return verify_license_v2(payload, pro_public_key, expected_workspace_id, now).map(VerifiedAnyLicense::V2);
+    return verify_license_v2(payload, pro_public_key, expected_workspace_id, now)
+      .map(|verified| VerifiedAnyLicense::V2(Box::new(verified)));
   }
   let key = pro_public_key.ok_or(LicenseV2Error::PublicKeyMissing)?;
   LicenseVerifier::verify(payload, key, expected_workspace_id, now)
@@ -575,7 +576,8 @@ pub fn resolve_entitlements_with_v2(context: &AccessContext<'_>, facts: &[Entitl
       grant.limits.storage_quota,
     );
     // Equal quota tuples still need a stable winner if other signed limits
-    // differ. The signed envelope bytes provide a final deterministic tie-break.
+    // differ. The signed envelope bytes provide a final deterministic
+    // tie-break.
     let payload = fact.signed_payload.unwrap_or_default();
     if (priority, payload) > (best_priority, best_payload) {
       best_priority = priority;
@@ -914,7 +916,8 @@ mod tests {
       Err(LicenseV2Error::WorkspaceMismatch)
     );
 
-    // Grace workspace V2 license takes priority over Active instance_default V2 license
+    // Grace workspace V2 license takes priority over Active instance_default V2
+    // license
     let mut instance_claims = sample_pro_v2_claims("ws-123");
     instance_claims.scope = LicenseScopeV2 {
       kind: "instance_default".to_string(),
@@ -987,7 +990,8 @@ mod tests {
     assert_eq!(resolved.plan, Plan::SelfHostedTeam);
     assert_eq!(resolved.limits.seat_limit, 25);
 
-    // resolve_entitlements_with_v2: expired V2 fact falls back to embedded default with diagnostic
+    // resolve_entitlements_with_v2: expired V2 fact falls back to embedded
+    // default with diagnostic
     let expired_resolved = resolve_entitlements_with_v2(
       &AccessContext {
         deployment: CoreDeployment::SelfHosted,

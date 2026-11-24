@@ -5,6 +5,8 @@ pub(crate) struct FrontmatterMeta {
   pub(crate) tags: Option<Vec<String>>,
   pub(crate) favorite: Option<bool>,
   pub(crate) trash: Option<bool>,
+  /// Frontmatter lines AFFiNE does not sync, kept verbatim in the file.
+  pub(crate) extra: Vec<String>,
 }
 
 impl FrontmatterMeta {

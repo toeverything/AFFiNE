@@ -35,6 +35,32 @@ export async function getAttachmentBlob(model: AttachmentBlockModel) {
 }
 
 /**
+ * Resolves to `null` when the browser cannot read the video's dimensions
+ * within `timeout` milliseconds.
+ */
+export function readVideoSize(blob: Blob, timeout = 3000) {
+  return new Promise<{ width: number; height: number } | null>(resolve => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(blob);
+    const done = (size: { width: number; height: number } | null) => {
+      clearTimeout(timer);
+      video.onloadedmetadata = video.onerror = null;
+      video.removeAttribute('src');
+      URL.revokeObjectURL(url);
+      resolve(size);
+    };
+    const timer = setTimeout(() => done(null), timeout);
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      const { videoWidth: width, videoHeight: height } = video;
+      done(width && height ? { width, height } : null);
+    };
+    video.onerror = () => done(null);
+    video.src = url;
+  });
+}
+
+/**
  * Since the size of the attachment may be very large,
  * the download process may take a long time!
  */
