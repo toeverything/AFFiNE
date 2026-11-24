@@ -3,7 +3,10 @@ import '@affine/component/theme';
 import '@affine/core/mobile/styles/mobile.css';
 import './proxy';
 
+import { installCleartextGuard } from '@affine/core/utils/local-network/cleartext-guard';
 import { viewportRuntimeConfig } from '@blocksuite/affine/std/gfx';
+
+installCleartextGuard(globalThis);
 
 // Android WebView is less prone to the iOS WKWebView process kill, so keep the
 // user-facing zoom range unchanged. These knobs only reduce gesture-time work

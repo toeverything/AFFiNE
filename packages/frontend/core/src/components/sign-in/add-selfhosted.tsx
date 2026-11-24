@@ -8,6 +8,7 @@ import {
 } from '@affine/component/auth-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { ServersService } from '@affine/core/modules/cloud';
+import { isBlockedCleartextUrl } from '@affine/core/utils/local-network';
 import { UserFriendlyError } from '@affine/error';
 import { Trans, useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
@@ -64,6 +65,15 @@ export const AddSelfhostedStep = ({
   );
 
   const onConnect = useAsyncCallback(async () => {
+    // The mobile apps only allow plain http to servers on the local network.
+    if (
+      (BUILD_CONFIG.isAndroid || BUILD_CONFIG.isIOS) &&
+      isBlockedCleartextUrl(new URL(normalizeURL(baseURL)))
+    ) {
+      setError(true);
+      setErrorHint(t['com.affine.auth.sign.add-selfhosted.public-http']());
+      return;
+    }
     setIsConnecting(true);
     try {
       const server = await serversService.addOrGetServerByBaseUrl(

@@ -369,6 +369,7 @@
   "com.affine.auth.sign.add-selfhosted.baseurl": "AFFiNE Server URL",
   "com.affine.auth.sign.add-selfhosted.connect-button": "Connect",
   "com.affine.auth.sign.add-selfhosted.error": "Unable to connect to the server.",
+  "com.affine.auth.sign.add-selfhosted.public-http": "This app only connects to servers on your local network over http. Use an https:// address, or the server's local IP address or .local name.",
   "com.affine.auth.sign.add-selfhosted.description": "This is an AFFiNE server hosted by you or your team. After signing in, workspace data is saved to the AFFiNE server you enter, not to AFFiNE Cloud. <1>Learn more about self-hosting.</1>",
   "com.affine.auth.sign.message": "By clicking “Continue with Google/Email” above, you acknowledge that you agree to AFFiNE's <1>Terms of Conditions</1> and <3>Privacy Policy</3>.",
   "com.affine.auth.sign.policy": "Privacy policy",

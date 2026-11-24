@@ -341,6 +341,7 @@
   "com.affine.auth.sign.add-selfhosted.baseurl": "AFFiNE 服务器地址",
   "com.affine.auth.sign.add-selfhosted.connect-button": "连接",
   "com.affine.auth.sign.add-selfhosted.error": "无法连接至服务器。",
+  "com.affine.auth.sign.add-selfhosted.public-http": "本应用仅允许通过 http 连接局域网内的服务器。请使用 https:// 地址，或改用服务器的局域网 IP 地址或 .local 名称。",
   "com.affine.auth.sign.add-selfhosted.description": "这是你或团队自己部署的 AFFiNE。登录后，工作区数据会保存到你填写的 AFFiNE 服务器，而不是 AFFiNE 官方云。<1>了解有关自托管的更多信息。</1>",
   "com.affine.auth.sign.message": "点击上面的“谷歌登录以继续”，即表示您确认同意 AFFiNE 的<1>条件条款</1>和<3>隐私政策</3>。",
   "com.affine.auth.sign.policy": "隐私政策",
