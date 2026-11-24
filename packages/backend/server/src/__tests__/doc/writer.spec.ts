@@ -877,154 +877,71 @@ test('updateDocMeta skips empty title update and updates root doc via native hel
   t.is(updatedPages[0].title, 'New Title');
 });
 
-function createReaderStub() {
-  return {
-    async resolveStorageDocId(_workspaceId: string, docId: string) {
-      return docId;
-    },
-  };
+const docWriteHandlerCases = [
+  {
+    name: 'doc update',
+    build: buildDocUpdateHandler,
+    method: 'updateDoc',
+    errorName: 'Doc Update Failed',
+    arg: 'content',
+  },
+  {
+    name: 'doc update meta',
+    build: buildDocUpdateMetaHandler,
+    method: 'updateDocMeta',
+    errorName: 'Doc Meta Update Failed',
+    arg: 'New Title',
+  },
+] as const;
+
+const docWriteOutcomes = [
+  {
+    name: 'surfaces the writer error message',
+    thrown: new Error('source_merge: ambiguous_identity'),
+    expected: 'source_merge: ambiguous_identity',
+  },
+  {
+    name: 'surfaces a non-Error thrown value',
+    thrown: 'source_merge: invalid_projection',
+    expected: 'source_merge: invalid_projection',
+  },
+  {
+    name: 'reports not found for NotFoundException',
+    thrown: new NotFoundException('Document doc-1 not found'),
+    expected: 'Doc with id doc-1 not found.',
+  },
+];
+
+for (const handlerCase of docWriteHandlerCases) {
+  for (const outcome of docWriteOutcomes) {
+    test(`${handlerCase.name} handler ${outcome.name}`, async t => {
+      const writer = {
+        async [handlerCase.method]() {
+          throw outcome.thrown;
+        },
+      };
+      const reader = {
+        async resolveStorageDocId(_workspaceId: string, docId: string) {
+          return docId;
+        },
+      };
+      const handler = handlerCase.build(
+        writer as any,
+        createPermissionMock() as any,
+        reader as any
+      );
+
+      const result: any = await handler(
+        { user: 'user-1', workspace: 'ws-1' } as any,
+        'doc-1',
+        handlerCase.arg
+      );
+
+      t.like(result, {
+        type: 'error',
+        name: handlerCase.errorName,
+        message: outcome.expected,
+      });
+    });
+  }
 }
-
-const updateToolOptions = { user: 'user-1', workspace: 'ws-1' } as any;
-
-test('doc update handler surfaces writer errors instead of misleading not found', async t => {
-  const nativeError = new Error(
-    'source_merge: ambiguous_identity for duplicate line'
-  );
-  const writer = {
-    async updateDoc() {
-      throw nativeError;
-    },
-  };
-  const handler = buildDocUpdateHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'content');
-  t.is(result.type, 'error');
-  t.is(result.name, 'Doc Update Failed');
-  t.is(result.message, nativeError.message);
-});
-
-test('doc update handler returns not found only for NotFoundException', async t => {
-  const writer = {
-    async updateDoc() {
-      throw new NotFoundException('Document doc-1 not found');
-    },
-  };
-  const handler = buildDocUpdateHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'content');
-  t.is(result.type, 'error');
-  t.is(result.message, 'Doc with id doc-1 not found.');
-});
-
-test('doc update handler returns success when writer succeeds', async t => {
-  const writer = {
-    async updateDoc() {},
-  };
-  const handler = buildDocUpdateHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'content');
-  t.is(result.success, true);
-  t.is(result.docId, 'doc-1');
-});
-
-test('doc update meta handler surfaces writer errors instead of misleading not found', async t => {
-  const nativeError = new Error(
-    'source_merge: invalid_projection for empty line'
-  );
-  const writer = {
-    async updateDocMeta() {
-      throw nativeError;
-    },
-  };
-  const handler = buildDocUpdateMetaHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'New Title');
-  t.is(result.type, 'error');
-  t.is(result.name, 'Doc Meta Update Failed');
-  t.is(result.message, nativeError.message);
-});
-
-test('doc update meta handler returns not found only for NotFoundException', async t => {
-  const writer = {
-    async updateDocMeta() {
-      throw new NotFoundException('Document doc-1 not found');
-    },
-  };
-  const handler = buildDocUpdateMetaHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'New Title');
-  t.is(result.type, 'error');
-  t.is(result.message, 'Doc with id doc-1 not found.');
-});
-
-test('doc update meta handler returns success when writer succeeds', async t => {
-  const writer = {
-    async updateDocMeta() {},
-  };
-  const handler = buildDocUpdateMetaHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'New Title');
-  t.is(result.success, true);
-  t.is(result.docId, 'doc-1');
-});
-
-test('doc update handler surfaces non-Error thrown values as message', async t => {
-  const writer = {
-    async updateDoc() {
-      const failure: any = 'source_merge: ambiguous_identity';
-      throw failure;
-    },
-  };
-  const handler = buildDocUpdateHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'content');
-  t.is(result.type, 'error');
-  t.is(result.message, 'source_merge: ambiguous_identity');
-});
-
-test('doc update meta handler surfaces non-Error thrown values as message', async t => {
-  const writer = {
-    async updateDocMeta() {
-      const failure: any = 'source_merge: invalid_projection';
-      throw failure;
-    },
-  };
-  const handler = buildDocUpdateMetaHandler(
-    writer as any,
-    createPermissionMock() as any,
-    createReaderStub() as any
-  );
-
-  const result: any = await handler(updateToolOptions, 'doc-1', 'New Title');
-  t.is(result.type, 'error');
-  t.is(result.message, 'source_merge: invalid_projection');
-});
