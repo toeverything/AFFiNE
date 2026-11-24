@@ -765,7 +765,7 @@ impl SelfhostLicenseService {
       .acquire_tiered(WorkloadTier::InteractiveWrite)
       .await
       .map_err(|e| DomainError::Unavailable(format!("acquire seat sync schedule: {e}")))?;
-    let _ = sqlx::query(
+    sqlx::query(
       "UPDATE installed_licenses
        SET validated_at = LEAST(validated_at, clock_timestamp() - interval '1 hour')
        WHERE workspace_id = $1 AND key = $2 AND validate_key = $3",
@@ -774,7 +774,8 @@ impl SelfhostLicenseService {
     .bind(&installed.key)
     .bind(&installed.validate_key)
     .execute(&mut *conn)
-    .await;
+    .await
+    .map_err(|e| DomainError::Internal(format!("schedule pending license seat confirmation: {e}")))?;
     Ok(())
   }
 
